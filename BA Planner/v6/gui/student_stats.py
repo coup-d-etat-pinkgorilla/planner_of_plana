@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 import math
 from typing import Any, Sequence
 
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
+from PySide6.QtCore import QEasingCurve, QPointF, QRectF, Qt, Signal, QVariantAnimation
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -54,11 +54,14 @@ PALETTE: tuple[str, ...] = (
     "#90caf9",
 )
 
+SUNBURST_INNER_COLOR = "#ff2bb2"
+SUNBURST_OUTER_COLOR = "#ffa2e9"
+
 
 @dataclass(frozen=True, slots=True)
 class DistributionRow:
     label: str
-    count: int
+    count: int | float
     percent: float
     color: str
 
@@ -180,8 +183,17 @@ class SunburstWidget(QWidget):
         self._hover_segment: _SunburstSegment | None = None
         self._selected_path: tuple[str, ...] = ()
         self._breadcrumb: tuple[str, ...] = ()
+        self._sweep_progress = 1.0
+        self._animation_key: tuple | None = None
+        self._sweep_animation = QVariantAnimation(self)
+        self._sweep_animation.setDuration(360)
+        self._sweep_animation.setStartValue(0.0)
+        self._sweep_animation.setEndValue(1.0)
+        self._sweep_animation.setEasingCurve(QEasingCurve.OutCubic)
+        self._sweep_animation.valueChanged.connect(self._on_sweep_animation_value)
+        self._sweep_animation.finished.connect(self._on_sweep_animation_finished)
         self.setMouseTracking(True)
-        self.setMinimumSize(int(520 * ui_scale), int(430 * ui_scale))
+        self.setMinimumSize(int(420 * ui_scale), int(360 * ui_scale))
 
     def setRoot(
         self,
@@ -189,11 +201,20 @@ class SunburstWidget(QWidget):
         selected_path: Sequence[str] = (),
         breadcrumb: Sequence[str] = (),
     ) -> None:
+        animation_key = self._root_animation_key(root, tuple(breadcrumb))
+        should_animate = animation_key != self._animation_key
+        self._animation_key = animation_key
         self._root = root
         self._selected_path = tuple(selected_path)
         self._breadcrumb = tuple(breadcrumb)
         self._hover_segment = None
-        self.update()
+        if should_animate and root.children and root.total() > 0:
+            self._sweep_animation.stop()
+            self._sweep_progress = 0.0
+            self._sweep_animation.start()
+        else:
+            self._sweep_progress = 1.0
+            self.update()
 
     def paintEvent(self, _event) -> None:
         painter = QPainter(self)
@@ -215,23 +236,39 @@ class SunburstWidget(QWidget):
             painter.drawText(rect, Qt.AlignCenter, "No data available")
             return
 
-        max_depth = self._max_depth(self._root)
-        center_radius = max(42.0 * self._ui_scale, max_radius * 0.17)
-        ring_width = max(34.0 * self._ui_scale, (max_radius - center_radius) / max(1, max_depth))
+        max_depth = max(1, self._display_depth(self._root, is_root=True))
+        center_radius = max_radius * 0.34
+        ring_gap = max(2.0, 2.0 * self._ui_scale)
+        available_radius = max(1.0, max_radius - center_radius)
+        ring_bounds = self._ring_bounds(center_radius, available_radius, max_depth, ring_gap)
 
         parent_path = self._breadcrumb if self._breadcrumb else (self._root.label,)
-        self._draw_children(
-            painter,
-            self._root.children,
-            center,
-            1,
-            90.0,
-            -360.0,
-            center_radius,
-            ring_width,
-            parent_path,
-        )
+        sweep_span = -360.0 * max(0.0, min(1.0, self._sweep_progress))
+        if abs(sweep_span) > 0.1:
+            self._draw_children(
+                painter,
+                self._root.children,
+                center,
+                1,
+                90.0,
+                sweep_span,
+                center_radius,
+                ring_bounds,
+                len(ring_bounds),
+                parent_path,
+            )
         self._draw_center(painter, center, center_radius, root_total)
+
+    def _on_sweep_animation_value(self, value: object) -> None:
+        try:
+            self._sweep_progress = float(value)
+        except (TypeError, ValueError):
+            self._sweep_progress = 1.0
+        self.update()
+
+    def _on_sweep_animation_finished(self) -> None:
+        self._sweep_progress = 1.0
+        self.update()
 
     def mouseMoveEvent(self, event) -> None:
         segment = self._segment_at(event.position())
@@ -315,6 +352,9 @@ class SunburstWidget(QWidget):
                 kept.append(node)
             else:
                 grouped.append(node)
+        if not kept and grouped:
+            kept = grouped[:9]
+            grouped = grouped[9:]
         if not grouped:
             return kept
         grouped_total = sum(node.total() for node in grouped)
@@ -323,11 +363,30 @@ class SunburstWidget(QWidget):
                 "Other",
                 value=grouped_total,
                 children=grouped,
-                color="#6f7f8f",
+                color=None,
                 context=self._merged_context(grouped) | {"other": True, "children": grouped},
             )
         )
         return kept
+
+    @staticmethod
+    def _ring_bounds(
+        center_radius: float,
+        available_radius: float,
+        max_depth: int,
+        ring_gap: float,
+    ) -> list[tuple[float, float]]:
+        depth_count = max(1, max_depth)
+        usable_radius = max(1.0, available_radius - ring_gap * max(0, depth_count - 1))
+        weights = [1.0 for _index in range(depth_count)]
+        unit = usable_radius / max(1.0, sum(weights))
+        bounds: list[tuple[float, float]] = []
+        cursor = center_radius
+        for weight in weights:
+            width = max(3.0, unit * weight)
+            bounds.append((cursor, cursor + width))
+            cursor += width + ring_gap
+        return bounds
 
     def _draw_children(
         self,
@@ -338,7 +397,8 @@ class SunburstWidget(QWidget):
         start_angle: float,
         span_angle: float,
         center_radius: float,
-        ring_width: float,
+        ring_bounds: Sequence[tuple[float, float]],
+        max_depth: int,
         parent_path: tuple[str, ...],
     ) -> None:
         total = sum(node.total() for node in nodes)
@@ -347,12 +407,13 @@ class SunburstWidget(QWidget):
 
         cursor = start_angle
         siblings = self._display_nodes(nodes)
+        variation_count = max(1, len(siblings))
         for index, node in enumerate(siblings):
             node_total = node.total()
             node_span = span_angle * (node_total / total)
-            color = self._node_color(node, index, depth)
-            inner_radius = center_radius + (depth - 1) * ring_width
-            outer_radius = inner_radius + ring_width - max(2.0, 2.0 * self._ui_scale)
+            color = self._node_color(node, index, depth, max_depth)
+            track_inner, track_outer = ring_bounds[min(depth - 1, len(ring_bounds) - 1)]
+            inner_radius, outer_radius = self._variation_radii(track_inner, track_outer, index, variation_count)
             path = _sector_path(center, inner_radius, outer_radius, cursor, node_span)
             segment_path = (*parent_path, node.label)
             selected = bool(self._selected_path) and segment_path == self._selected_path
@@ -380,8 +441,7 @@ class SunburstWidget(QWidget):
                     context=node.context,
                 )
             )
-            self._draw_label(painter, center, inner_radius, outer_radius, cursor, node_span, node.label)
-            if node.children:
+            if node.children and not self._is_other_node(node):
                 self._draw_children(
                     painter,
                     node.children,
@@ -390,10 +450,18 @@ class SunburstWidget(QWidget):
                     cursor,
                     node_span,
                     center_radius,
-                    ring_width,
+                    ring_bounds,
+                    max_depth,
                     segment_path,
                 )
             cursor += node_span
+
+    @staticmethod
+    def _variation_radii(track_inner: float, track_outer: float, index: int, variation_count: int) -> tuple[float, float]:
+        track_width = max(1.0, track_outer - track_inner)
+        step = track_width / max(1, variation_count)
+        height = max(step, track_width - step * index)
+        return track_inner, track_inner + height
 
     def _draw_center(self, painter: QPainter, center: QPointF, radius: float, root_total: float) -> None:
         painter.setPen(QPen(QColor("#26384b"), max(1, int(1.2 * self._ui_scale))))
@@ -411,10 +479,10 @@ class SunburstWidget(QWidget):
         painter.setPen(QColor("#7b95aa"))
         painter.setFont(title_font)
         root_label = self._breadcrumb[-1] if self._breadcrumb else self._root.label
-        painter.drawText(text_rect.adjusted(0, -8 * self._ui_scale, 0, 0), Qt.AlignCenter, root_label)
+        painter.drawText(text_rect.adjusted(0, -12 * self._ui_scale, 0, 0), Qt.AlignCenter, root_label)
         painter.setPen(QColor("#d8e7f3"))
         painter.setFont(value_font)
-        painter.drawText(text_rect.adjusted(0, 14 * self._ui_scale, 0, 0), Qt.AlignCenter, f"{root_total:,.0f}")
+        painter.drawText(text_rect.adjusted(0, 18 * self._ui_scale, 0, 0), Qt.AlignCenter, f"{root_total:,.0f}")
 
     def _draw_label(
         self,
@@ -477,14 +545,34 @@ class SunburstWidget(QWidget):
             return 0
         return 1 + max(SunburstWidget._max_depth(child) for child in node.children)
 
+    def _display_depth(self, node: SunburstNode, *, is_root: bool = False) -> int:
+        if not is_root and self._is_other_node(node):
+            return 0
+        children = self._display_nodes(node.children)
+        if not children:
+            return 0
+        return 1 + max(self._display_depth(child) for child in children)
+
+    def _root_animation_key(self, root: SunburstNode, breadcrumb: tuple[str, ...]) -> tuple:
+        def describe(node: SunburstNode, depth: int) -> tuple:
+            if depth >= 3:
+                return (node.label, round(node.total(), 3), len(node.children))
+            children = tuple(describe(child, depth + 1) for child in node.children)
+            return (node.label, round(node.total(), 3), children)
+
+        return (breadcrumb, describe(root, 0))
+
     @staticmethod
-    def _node_color(node: SunburstNode, index: int, depth: int) -> str:
+    def _is_other_node(node: SunburstNode) -> bool:
+        context = node.context or {}
+        return bool(context.get("other"))
+
+    @staticmethod
+    def _node_color(node: SunburstNode, index: int, depth: int, max_depth: int = 5) -> str:
         if node.color:
             return node.color
-        base = QColor(PALETTE[index % len(PALETTE)])
-        if depth > 1:
-            base = _mix_color(base, QColor("#ffffff"), min(0.22, depth * 0.055))
-        return base.name()
+        amount = 0.0 if max_depth <= 1 else max(0.0, min(1.0, (depth - 1) / max(1, max_depth - 1)))
+        return _mix_color(QColor(SUNBURST_INNER_COLOR), QColor(SUNBURST_OUTER_COLOR), amount).name()
 
 
 class DonutWidget(QWidget):

@@ -2270,6 +2270,9 @@ class ThumbTask(QRunnable):
         self.signals.loaded.emit(self.student_id, str(path) if path else "", self.width, self.height)
 
 
+HIDDEN_STUDENT_FILTER_FIELDS: frozenset[str] = frozenset({"skill_special"})
+
+
 class FilterDialog(QDialog):
     def __init__(
         self,
@@ -2305,6 +2308,8 @@ class FilterDialog(QDialog):
         body_layout.setSpacing(scale_px(10, ui_scale))
 
         for key in FILTER_FIELD_ORDER:
+            if key in HIDDEN_STUDENT_FILTER_FIELDS:
+                continue
             options = filter_options.get(key) or []
             if not options:
                 continue
@@ -2799,6 +2804,7 @@ class PlannerScrollHandle(QWidget):
         self._radius_margin = radius_margin
         self._dragging = False
         self._drag_offset_y = 0
+        self._suppressed = False
         self.setCursor(Qt.PointingHandCursor)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         owner.verticalScrollBar().valueChanged.connect(lambda *_: self.update_position())
@@ -2850,6 +2856,9 @@ class PlannerScrollHandle(QWidget):
         return QRect(max(0, self._owner.width() - right_margin - width), top, width, max(0, bottom - top))
 
     def update_position(self) -> None:
+        if self._suppressed:
+            self.hide()
+            return
         bar = self._owner.verticalScrollBar()
         track = self._track_rect()
         if track.height() <= 0 or bar.maximum() <= bar.minimum() or not self._owner.isVisible():
@@ -2875,6 +2884,13 @@ class PlannerScrollHandle(QWidget):
         ratio = (clamped_y - track.y()) / travel
         bar.setValue(bar.minimum() + int(round((bar.maximum() - bar.minimum()) * ratio)))
         self.update_position()
+
+    def setSuppressed(self, suppressed: bool) -> None:
+        self._suppressed = suppressed
+        if suppressed:
+            self.hide()
+        else:
+            self.update_position()
 
 
 class PlanQuickAddListWidget(RoundedListWidget):
@@ -3398,7 +3414,7 @@ class TacticalDeckSlot(QWidget):
     def setData(self, *, name: str, pixmap: QPixmap) -> None:
         self._text = name
         self._pixmap = pixmap
-        self.setToolTip(name)
+        self.setToolTip("")
         self.update()
 
     def sizeHint(self) -> QSize:
@@ -3691,7 +3707,6 @@ class StudentViewerWindow(QMainWindow):
         self._startup_window_applied = False
         self._applying_work_area = False
         self._detail_panel: QFrame | None = None
-        self._detail_scroll: QScrollArea | None = None
         self._hero_wrap: QFrame | None = None
         self._busy_overlay: QFrame | None = None
         self._busy_label: QLabel | None = None
@@ -3705,7 +3720,7 @@ class StudentViewerWindow(QMainWindow):
         self._grid_width = self._thumb_width + outer_margin
         self._grid_height = self._thumb_height + outer_margin
         self.setWindowTitle("Blue Archive Planner")
-        self.resize(scale_px(1560, ui_scale), scale_px(980, ui_scale))
+        self.resize(scale_px(1760, ui_scale), scale_px(1000, ui_scale))
 
         self._pool = QThreadPool.globalInstance()
         self._all_students = load_students()
@@ -3753,6 +3768,7 @@ class StudentViewerWindow(QMainWindow):
         self._resource_include_unplanned_level = True
         self._resource_include_unplanned_equipment = True
         self._resource_include_unplanned_skills = True
+        self._resource_requirement_sort_mode = "default"
         self._resource_syncing_controls = False
         self._main_tabs: QTabWidget | None = None
         self._resource_tab: QWidget | None = None
@@ -3774,6 +3790,8 @@ class StudentViewerWindow(QMainWindow):
         self._storage_mtimes = self._snapshot_storage_mtimes()
         self._stats_cards_layout: QGridLayout | None = None
         self._stats_summary_host: QWidget | None = None
+        self._stats_chart_tabs: QTabBar | None = None
+        self._stats_active_chart_tab = "collection"
         self._stats_sunburst: SunburstWidget | None = None
         self._stats_sunburst_mode: QComboBox | None = None
         self._stats_sunburst_value_mode: QComboBox | None = None
@@ -3781,6 +3799,7 @@ class StudentViewerWindow(QMainWindow):
         self._stats_sunburst_top_detail: QLabel | None = None
         self._stats_sunburst_breadcrumb_host: QWidget | None = None
         self._stats_sunburst_breadcrumb_layout: QHBoxLayout | None = None
+        self._stats_sunburst_legend_layout: QVBoxLayout | None = None
         self._stats_sunburst_root_button: QPushButton | None = None
         self._stats_sunburst_back_button: QPushButton | None = None
         self._stats_sunburst_clear_button: QPushButton | None = None
@@ -3868,7 +3887,7 @@ class StudentViewerWindow(QMainWindow):
                 available = work_area
         if available.isEmpty():
             return
-        target_frame = _fit_rect_to_aspect(available)
+        target_frame = available
         frame = self.frameGeometry()
         client = self.geometry()
         left_margin = max(0, client.left() - frame.left())
@@ -3918,7 +3937,7 @@ class StudentViewerWindow(QMainWindow):
 
         resource_tab = QWidget()
         self._resource_tab = resource_tab
-        tabs.addTab(resource_tab, "Requirements")
+        tabs.addTab(resource_tab, "필요 재화")
         self._build_resource_tab(resource_tab)
 
         inventory_tab = QWidget()
@@ -3927,7 +3946,7 @@ class StudentViewerWindow(QMainWindow):
         self._build_inventory_tab(inventory_tab)
 
         tactical_tab = QWidget()
-        tabs.addTab(tactical_tab, "Tactical Challenge")
+        tabs.addTab(tactical_tab, "전술대항전")
         self._build_tactical_tab(tactical_tab)
 
         raid_guide_tab = QWidget()
@@ -4182,6 +4201,11 @@ class StudentViewerWindow(QMainWindow):
             }}
             QLabel#detailMiniValue {{
                 font-size: {scale_px(20, self._ui_scale)}px;
+                font-weight: 800;
+                color: {INK};
+            }}
+            QLabel#inventoryDetailMetricValue {{
+                font-size: {scale_px(18, self._ui_scale)}px;
                 font-weight: 800;
                 color: {INK};
             }}
@@ -4477,6 +4501,27 @@ class StudentViewerWindow(QMainWindow):
                 font-weight: 800;
                 min-width: {scale_px(58, self._ui_scale)}px;
             }}
+            QPushButton#planQuickButton:checked,
+            QPushButton#resourceModeButton:checked {{
+                background: transparent;
+                color: #ffa9f5;
+                border: 2px solid #ffa9f5;
+            }}
+            QPushButton#resourceModeButton {{
+                background: transparent;
+                color: #ffa9f5;
+                border: 1px solid {_mix_hex("#ffa9f5", SURFACE_ALT, 0.25)};
+                border-radius: {scale_px(11, self._ui_scale)}px;
+                padding: {scale_px(6, self._ui_scale)}px {scale_px(14, self._ui_scale)}px;
+                font-size: {scale_px(12, self._ui_scale)}px;
+                font-weight: 800;
+                min-width: {scale_px(58, self._ui_scale)}px;
+            }}
+            QLabel#resourceSectionTitle {{
+                font-size: {scale_px(17, self._ui_scale)}px;
+                font-weight: 900;
+                color: {INK};
+            }}
             QPushButton#planQuickButton:disabled {{
                 background: transparent;
                 color: {MUTED};
@@ -4570,7 +4615,7 @@ class StudentViewerWindow(QMainWindow):
 
     def _build_students_tab(self, root: QWidget) -> None:
         layout = QVBoxLayout(root)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 0, 0, scale_px(12, self._ui_scale))
         layout.setSpacing(scale_px(12, self._ui_scale))
 
         header = QFrame()
@@ -4615,13 +4660,13 @@ class StudentViewerWindow(QMainWindow):
         self._search.liveTextChanged.connect(self._schedule_filter_refresh)
         toolbar_layout.addWidget(self._search, 3)
 
-        self._sort_mode = QComboBox()
+        self._sort_mode = InventorySortDropdownButton()
         self._sort_mode.addItem("성급 높은순", "star_desc")
         self._sort_mode.addItem("성급 낮은순", "star_asc")
         self._sort_mode.addItem("레벨 높은순", "level_desc")
         self._sort_mode.addItem("이름순", "name_asc")
-        self._sort_mode.currentIndexChanged.connect(self._apply_filters)
-        toolbar_layout.addWidget(self._sort_mode, 1)
+        self._sort_mode.modeChanged.connect(lambda *_: self._apply_filters())
+        toolbar_layout.addWidget(self._sort_mode, 0, Qt.AlignVCenter)
 
         self._show_unowned = QCheckBox("미보유 학생 표시")
         self._show_unowned.setChecked(True)
@@ -4632,15 +4677,15 @@ class StudentViewerWindow(QMainWindow):
         self._hide_jp_only.stateChanged.connect(self._apply_filters)
         toolbar_layout.addWidget(self._hide_jp_only)
 
-        toolbar_buttons = ParallelogramButtonRow()
-        self._filter_button = ParallelogramButton("필터", style=self._card_button_style)
+        self._filter_button = QPushButton("필터")
+        self._filter_button.setObjectName("planQuickButton")
         self._filter_button.clicked.connect(self._open_filter_dialog)
-        toolbar_buttons.addButton(self._filter_button)
+        toolbar_layout.addWidget(self._filter_button)
 
-        refresh_button = ParallelogramButton("새로고침", style=self._card_button_style)
+        refresh_button = QPushButton("새로고침")
+        refresh_button.setObjectName("planQuickButton")
         refresh_button.clicked.connect(self._reload_data)
-        toolbar_buttons.addButton(refresh_button)
-        toolbar_layout.addWidget(toolbar_buttons, 0, Qt.AlignVCenter)
+        toolbar_layout.addWidget(refresh_button)
         layout.addWidget(toolbar)
 
         self._filter_summary = QLabel("적용된 필터 없음")
@@ -4664,22 +4709,19 @@ class StudentViewerWindow(QMainWindow):
         )
         list_layout.setSpacing(scale_px(10, self._ui_scale))
 
-        detail = QFrame()
+        detail = RoundedMaskFrame(ui_scale=self._ui_scale, radius=16)
         detail.setObjectName("planSectionPanel")
+        detail.setFrameShape(QFrame.NoFrame)
+        detail.setAttribute(Qt.WA_StyledBackground, True)
         detail_shell_layout = QVBoxLayout(detail)
         detail_shell_layout.setContentsMargins(0, 0, 0, 0)
         detail_shell_layout.setSpacing(0)
-        detail_scroll = QScrollArea()
-        self._detail_scroll = detail_scroll
-        detail_scroll.setObjectName("sectionScrollArea")
-        detail_scroll.setFrameShape(QScrollArea.NoFrame)
-        detail_scroll.setWidgetResizable(True)
-        detail_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        detail_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        detail_shell_layout.addWidget(detail_scroll)
         detail_body = QWidget()
+        detail_body.setObjectName("planTransparent")
+        detail_body.setAutoFillBackground(False)
+        detail_body.setAttribute(Qt.WA_TranslucentBackground, True)
         self._detail_panel = detail_body  # type: ignore[assignment]
-        detail_scroll.setWidget(detail_body)
+        detail_shell_layout.addWidget(detail_body)
         detail_layout = QVBoxLayout(detail_body)
         detail_layout.setContentsMargins(
             scale_px(16, self._ui_scale),
@@ -4882,11 +4924,33 @@ class StudentViewerWindow(QMainWindow):
         detail_card_layout.addWidget(self._detail_stats_line)
         detail_layout.addWidget(detail_card)
         detail_layout.addStretch(1)
+        self._student_grid_panel = PlanGridContentPanel(ui_scale=self._ui_scale)
+        student_grid_panel_layout = QVBoxLayout(self._student_grid_panel)
+        student_grid_panel_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(4, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
+        student_grid_panel_layout.setSpacing(0)
+
         self._student_grid = ParallelogramCardGrid(self._student_card_asset, self._ui_scale)
         self._student_grid.setObjectName("studentGrid")
+        self._student_grid.setFrameShape(QFrame.NoFrame)
+        self._student_grid.setAutoFillBackground(False)
+        self._student_grid.setAttribute(Qt.WA_TranslucentBackground, True)
+        self._student_grid.viewport().setAutoFillBackground(False)
+        self._student_grid.viewport().setAttribute(Qt.WA_TranslucentBackground, True)
+        self._student_grid.viewport().setStyleSheet("background: transparent; border: none;")
+        if self._student_grid.widget() is not None:
+            self._student_grid.widget().setAutoFillBackground(False)
+            self._student_grid.widget().setAttribute(Qt.WA_TranslucentBackground, True)
+            self._student_grid.widget().setStyleSheet("background: transparent; border: none;")
+        _install_planner_scroll_handle(self._student_grid, ui_scale=self._ui_scale)
         self._student_grid.current_changed.connect(self._on_student_card_changed)
         self._student_grid.layout_changed.connect(self._on_student_grid_layout_changed)
-        list_layout.addWidget(self._student_grid, 1)
+        student_grid_panel_layout.addWidget(self._student_grid, 1)
+        list_layout.addWidget(self._student_grid_panel, 1)
 
         detail.setMinimumWidth(scale_px(332, self._ui_scale))
         detail.setMaximumWidth(scale_px(376, self._ui_scale))
@@ -5009,7 +5073,7 @@ class StudentViewerWindow(QMainWindow):
         card_width = max(1, wrap_width - inset)
         card_height = max(1, int(round(card_width / max(0.01, self._student_card_asset.aspect_ratio))))
         preferred_height = card_height + inset
-        detail_height = self._detail_scroll.viewport().height() if self._detail_scroll is not None else self._detail_panel.height()
+        detail_height = self._detail_panel.height()
         max_height = max(scale_px(196, self._ui_scale), int(detail_height * 0.37)) if detail_height > 0 else preferred_height
         wrap_height = min(preferred_height, max_height)
         self._hero_wrap.setFixedHeight(wrap_height)
@@ -5076,7 +5140,7 @@ class StudentViewerWindow(QMainWindow):
 
     def _build_resource_tab(self, root: QWidget) -> None:
         layout = QVBoxLayout(root)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 0, 0, scale_px(12, self._ui_scale))
         layout.setSpacing(scale_px(12, self._ui_scale))
 
         header = QFrame()
@@ -5092,10 +5156,12 @@ class StudentViewerWindow(QMainWindow):
 
         title_wrap = QVBoxLayout()
         title_wrap.setSpacing(scale_px(4, self._ui_scale))
-        title = QLabel("재화 범위")
+        title = QLabel("필요 재화량")
         title.setObjectName("title")
         title_wrap.addWidget(title)
-        subtitle = QLabel("학생 범위를 만들고 계획 포함 여부와 합산 성장 재화를 확인합니다.")
+        subtitle = QLabel(
+            "계획된 범위의 학생들이 필요로 하는 재화량과, 계획에 포함되어 있지 않는 학생들을 임의로 묶어서 필요 재화량을 확인할 수 있습니다."
+        )
         subtitle.setObjectName("count")
         subtitle.setWordWrap(True)
         title_wrap.addWidget(subtitle)
@@ -5119,13 +5185,13 @@ class StudentViewerWindow(QMainWindow):
         self._resource_search.liveTextChanged.connect(self._schedule_filter_refresh)
         toolbar_layout.addWidget(self._resource_search, 3)
 
-        self._resource_sort_mode = QComboBox()
+        self._resource_sort_mode = InventorySortDropdownButton()
         self._resource_sort_mode.addItem("성급 높은순", "star_desc")
         self._resource_sort_mode.addItem("성급 낮은순", "star_asc")
         self._resource_sort_mode.addItem("레벨 높은순", "level_desc")
         self._resource_sort_mode.addItem("이름순", "name_asc")
-        self._resource_sort_mode.currentIndexChanged.connect(self._on_resource_sort_changed)
-        toolbar_layout.addWidget(self._resource_sort_mode, 1)
+        self._resource_sort_mode.modeChanged.connect(self._on_resource_sort_changed)
+        toolbar_layout.addWidget(self._resource_sort_mode, 0, Qt.AlignVCenter)
 
         self._resource_show_unowned = QCheckBox("미보유 학생 표시")
         self._resource_show_unowned.stateChanged.connect(self._on_resource_show_unowned_changed)
@@ -5135,14 +5201,14 @@ class StudentViewerWindow(QMainWindow):
         self._resource_hide_jp_only.stateChanged.connect(self._on_resource_hide_jp_only_changed)
         toolbar_layout.addWidget(self._resource_hide_jp_only)
 
-        resource_toolbar_buttons = ParallelogramButtonRow()
-        self._resource_filter_button = ParallelogramButton("필터", style=self._card_button_style)
+        self._resource_filter_button = QPushButton("필터")
+        self._resource_filter_button.setObjectName("planQuickButton")
         self._resource_filter_button.clicked.connect(self._open_filter_dialog)
-        resource_toolbar_buttons.addButton(self._resource_filter_button)
-        resource_refresh_button = ParallelogramButton("새로고침", style=self._card_button_style)
+        toolbar_layout.addWidget(self._resource_filter_button)
+        resource_refresh_button = QPushButton("새로고침")
+        resource_refresh_button.setObjectName("planQuickButton")
         resource_refresh_button.clicked.connect(self._reload_data)
-        resource_toolbar_buttons.addButton(resource_refresh_button)
-        toolbar_layout.addWidget(resource_toolbar_buttons, 0, Qt.AlignVCenter)
+        toolbar_layout.addWidget(resource_refresh_button)
 
         self._resource_filter_summary = QLabel("적용된 필터 없음")
         self._resource_filter_summary.setWordWrap(True)
@@ -5163,18 +5229,44 @@ class StudentViewerWindow(QMainWindow):
         )
         left_layout.setSpacing(scale_px(10, self._ui_scale))
 
-        self._resource_left_tabs = QTabBar()
-        self._resource_left_tabs.setObjectName("planEditorTabs")
-        self._resource_left_tabs.setExpanding(False)
-        self._resource_left_tabs.setUsesScrollButtons(False)
-        self._resource_left_tabs.addTab("범위")
-        self._resource_left_tabs.addTab("검색")
-        left_layout.addWidget(self._resource_left_tabs, 0, Qt.AlignLeft)
+        self._resource_left_top_panel = PlanEditorSectionCard(ui_scale=self._ui_scale, radius=16)
+        resource_left_top_layout = QVBoxLayout(self._resource_left_top_panel)
+        resource_left_top_layout.setContentsMargins(
+            scale_px(12, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(12, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
+        resource_left_top_layout.setSpacing(scale_px(8, self._ui_scale))
+
+        self._resource_left_header_host = QWidget()
+        self._resource_left_header_host.setObjectName("planTransparent")
+        left_header = QHBoxLayout(self._resource_left_header_host)
+        left_header.setContentsMargins(0, 0, 0, 0)
+        left_header.setSpacing(scale_px(8, self._ui_scale))
+        left_header_title = QLabel("범위 설정")
+        left_header_title.setObjectName("resourceSectionTitle")
+        left_header.addWidget(left_header_title)
+        left_header.addStretch(1)
+
+        self._resource_mode_buttons: dict[int, QPushButton] = {}
+        for index, label in enumerate(("범위", "검색")):
+            button = QPushButton(label)
+            button.setObjectName("resourceModeButton")
+            button.setCheckable(True)
+            button.clicked.connect(lambda _checked=False, value=index: self._set_resource_left_mode(value))
+            self._resource_mode_buttons[index] = button
+            left_header.addWidget(button, 0, Qt.AlignVCenter)
+
+        self._resource_left_top_stack = QStackedWidget()
+        self._resource_left_top_stack.setObjectName("sectionTransparentStack")
+        resource_left_top_layout.addWidget(self._resource_left_header_host, 0)
+        resource_left_top_layout.addWidget(self._resource_left_top_stack, 0)
+        left_layout.addWidget(self._resource_left_top_panel, 0)
 
         self._resource_left_stack = QStackedWidget()
         self._resource_left_stack.setObjectName("sectionTransparentStack")
         left_layout.addWidget(self._resource_left_stack, 1)
-        self._resource_left_tabs.currentChanged.connect(self._resource_left_stack.setCurrentIndex)
 
         scope_tab = QWidget()
         scope_tab.setObjectName("planTransparent")
@@ -5182,21 +5274,26 @@ class StudentViewerWindow(QMainWindow):
         scope_layout.setContentsMargins(0, 0, 0, 0)
         scope_layout.setSpacing(scale_px(10, self._ui_scale))
 
+        self._resource_scope_top_controls = QWidget()
+        self._resource_scope_top_controls.setObjectName("planTransparent")
+        scope_top_layout = QVBoxLayout(self._resource_scope_top_controls)
+        scope_top_layout.setContentsMargins(0, 0, 0, 0)
+        scope_top_layout.setSpacing(scale_px(6, self._ui_scale))
+
         scope_header = QHBoxLayout()
         scope_header.setContentsMargins(0, 0, 0, 0)
         scope_header.setSpacing(scale_px(8, self._ui_scale))
-        left_title = QLabel("범위 학생")
+        left_title = QLabel("계산 범위")
         left_title.setObjectName("sectionTitle")
         scope_header.addWidget(left_title)
-        self._resource_scope_count = QLabel("")
-        self._resource_scope_count.setObjectName("count")
-        scope_header.addWidget(self._resource_scope_count, 1, Qt.AlignRight)
-        scope_layout.addLayout(scope_header)
+        scope_header.addStretch(1)
+        scope_top_layout.addLayout(scope_header)
 
         self._resource_list_summary = QLabel("")
         self._resource_list_summary.setObjectName("detailSub")
         self._resource_list_summary.setWordWrap(True)
-        scope_layout.addWidget(self._resource_list_summary)
+        scope_top_layout.addWidget(self._resource_list_summary)
+        self._resource_left_top_stack.addWidget(self._resource_scope_top_controls)
 
         unplanned_options = QFrame()
         unplanned_options.setObjectName("planSectionPanel")
@@ -5227,13 +5324,37 @@ class StudentViewerWindow(QMainWindow):
         unplanned_row.addWidget(self._resource_unplanned_skills)
         unplanned_row.addStretch(1)
         unplanned_layout.addLayout(unplanned_row)
-        scope_layout.addWidget(unplanned_options, 0)
-
-        self._resource_scope_grid = ParallelogramCardGrid(self._student_card_asset, self._ui_scale)
+        resource_card_min_width = max(104, int(round(self._student_card_asset.base_size.width() * 0.52)))
+        self._resource_scope_grid = ParallelogramCardGrid(
+            self._student_card_asset,
+            self._ui_scale,
+            min_card_width=resource_card_min_width,
+        )
         self._resource_scope_grid.setObjectName("studentGrid")
+        self._resource_scope_grid.setFrameShape(QFrame.NoFrame)
+        self._resource_scope_grid.setAutoFillBackground(False)
+        self._resource_scope_grid.setAttribute(Qt.WA_TranslucentBackground, True)
+        self._resource_scope_grid.viewport().setAutoFillBackground(False)
+        self._resource_scope_grid.viewport().setAttribute(Qt.WA_TranslucentBackground, True)
+        self._resource_scope_grid.viewport().setStyleSheet("background: transparent; border: none;")
+        if self._resource_scope_grid.widget() is not None:
+            self._resource_scope_grid.widget().setAutoFillBackground(False)
+            self._resource_scope_grid.widget().setAttribute(Qt.WA_TranslucentBackground, True)
+            self._resource_scope_grid.widget().setStyleSheet("background: transparent; border: none;")
+        _install_planner_scroll_handle(self._resource_scope_grid, ui_scale=self._ui_scale)
         self._resource_scope_grid.current_changed.connect(self._on_resource_scope_card_changed)
         self._resource_scope_grid.layout_changed.connect(lambda *_: self._refresh_card_layout())
-        scope_layout.addWidget(self._resource_scope_grid, 1)
+        self._resource_scope_grid_panel = PlanGridContentPanel(ui_scale=self._ui_scale)
+        scope_grid_panel_layout = QVBoxLayout(self._resource_scope_grid_panel)
+        scope_grid_panel_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(4, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
+        scope_grid_panel_layout.setSpacing(0)
+        scope_grid_panel_layout.addWidget(self._resource_scope_grid, 1)
+        scope_layout.addWidget(self._resource_scope_grid_panel, 1)
 
         scope_buttons = QHBoxLayout()
         scope_buttons.setSpacing(scale_px(8, self._ui_scale))
@@ -5248,6 +5369,7 @@ class StudentViewerWindow(QMainWindow):
                 self._resource_remove_scope_button = button
             scope_buttons.addWidget(button)
         scope_buttons.addStretch(1)
+        scope_buttons.addWidget(unplanned_options, 0, Qt.AlignRight | Qt.AlignVCenter)
         scope_layout.addLayout(scope_buttons)
         self._resource_left_stack.addWidget(scope_tab)
 
@@ -5256,32 +5378,65 @@ class StudentViewerWindow(QMainWindow):
         search_layout = QVBoxLayout(search_tab)
         search_layout.setContentsMargins(0, 0, 0, 0)
         search_layout.setSpacing(scale_px(10, self._ui_scale))
-        search_layout.addWidget(toolbar, 0)
-        search_layout.addWidget(self._resource_filter_summary, 0)
+
+        self._resource_search_top_controls = QWidget()
+        self._resource_search_top_controls.setObjectName("planTransparent")
+        search_top_layout = QVBoxLayout(self._resource_search_top_controls)
+        search_top_layout.setContentsMargins(0, 0, 0, 0)
+        search_top_layout.setSpacing(scale_px(6, self._ui_scale))
+        search_top_layout.addWidget(toolbar, 0)
+        search_top_layout.addWidget(self._resource_filter_summary, 0)
 
         result_title = QLabel("검색 결과")
         result_title.setObjectName("sectionTitle")
-        search_layout.addWidget(result_title)
+        search_top_layout.addWidget(result_title)
         self._resource_search_summary = QLabel("")
         self._resource_search_summary.setObjectName("detailSub")
         self._resource_search_summary.setWordWrap(True)
-        search_layout.addWidget(self._resource_search_summary)
+        search_top_layout.addWidget(self._resource_search_summary)
+        self._resource_left_top_stack.addWidget(self._resource_search_top_controls)
 
-        self._resource_search_grid = ParallelogramCardGrid(self._student_card_asset, self._ui_scale, multi_select=True)
+        self._resource_search_grid = ParallelogramCardGrid(
+            self._student_card_asset,
+            self._ui_scale,
+            multi_select=True,
+            min_card_width=resource_card_min_width,
+        )
         self._resource_search_grid.setObjectName("studentGrid")
+        self._resource_search_grid.setFrameShape(QFrame.NoFrame)
+        self._resource_search_grid.setAutoFillBackground(False)
+        self._resource_search_grid.setAttribute(Qt.WA_TranslucentBackground, True)
+        self._resource_search_grid.viewport().setAutoFillBackground(False)
+        self._resource_search_grid.viewport().setAttribute(Qt.WA_TranslucentBackground, True)
+        self._resource_search_grid.viewport().setStyleSheet("background: transparent; border: none;")
+        if self._resource_search_grid.widget() is not None:
+            self._resource_search_grid.widget().setAutoFillBackground(False)
+            self._resource_search_grid.widget().setAttribute(Qt.WA_TranslucentBackground, True)
+            self._resource_search_grid.widget().setStyleSheet("background: transparent; border: none;")
+        _install_planner_scroll_handle(self._resource_search_grid, ui_scale=self._ui_scale)
         self._resource_search_grid.selection_changed.connect(self._on_resource_search_selection_changed)
         self._resource_search_grid.layout_changed.connect(lambda *_: self._refresh_card_layout())
-        search_layout.addWidget(self._resource_search_grid, 1)
+        self._resource_search_grid_panel = PlanGridContentPanel(ui_scale=self._ui_scale)
+        search_grid_panel_layout = QVBoxLayout(self._resource_search_grid_panel)
+        search_grid_panel_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(4, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
+        search_grid_panel_layout.setSpacing(0)
+        search_grid_panel_layout.addWidget(self._resource_search_grid, 1)
+        search_layout.addWidget(self._resource_search_grid_panel, 1)
 
         search_buttons = QHBoxLayout()
         search_buttons.setSpacing(scale_px(8, self._ui_scale))
-        self._resource_add_selected_button = QPushButton("선택 추가")
+        self._resource_add_selected_button = QPushButton("선택한 학생 추가")
         self._resource_add_selected_button.setObjectName("planQuickButton")
         self._resource_add_selected_button.clicked.connect(self._resource_add_pending_to_scope)
         search_buttons.addWidget(self._resource_add_selected_button)
         for label, handler in (
-            ("결과 추가", self._resource_check_visible),
-            ("계획 학생 추가", self._resource_check_visible_planned),
+            ("결과 전체 추가", self._resource_check_visible),
+            ("계획에 포함된 학생 전체 추가", self._resource_check_visible_planned),
             ("선택 해제", self._resource_clear_search_selection),
         ):
             button = QPushButton(label)
@@ -5291,6 +5446,7 @@ class StudentViewerWindow(QMainWindow):
         search_buttons.addStretch(1)
         search_layout.addLayout(search_buttons)
         self._resource_left_stack.addWidget(search_tab)
+        self._set_resource_left_mode(0)
 
         right_panel = QFrame()
         right_panel.setObjectName("planSectionPanel")
@@ -5303,31 +5459,43 @@ class StudentViewerWindow(QMainWindow):
         )
         right_layout.setSpacing(scale_px(10, self._ui_scale))
 
-        aggregate_options = QFrame()
-        aggregate_options.setObjectName("planSectionPanel")
-        aggregate_options_layout = QVBoxLayout(aggregate_options)
+        self._resource_right_top_controls = PlanEditorSectionCard(ui_scale=self._ui_scale, radius=16)
+        aggregate_options_layout = QVBoxLayout(self._resource_right_top_controls)
         aggregate_options_layout.setContentsMargins(
-            scale_px(14, self._ui_scale),
-            scale_px(14, self._ui_scale),
-            scale_px(14, self._ui_scale),
-            scale_px(14, self._ui_scale),
+            scale_px(12, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(12, self._ui_scale),
+            scale_px(10, self._ui_scale),
         )
         aggregate_options_layout.setSpacing(scale_px(8, self._ui_scale))
-        aggregate_title = QLabel("Combined Requirements")
+        aggregate_header = QHBoxLayout()
+        aggregate_header.setContentsMargins(0, 0, 0, 0)
+        aggregate_header.setSpacing(scale_px(8, self._ui_scale))
+        aggregate_title = QLabel("합산 결과")
         aggregate_title.setObjectName("sectionTitle")
-        aggregate_options_layout.addWidget(aggregate_title)
+        aggregate_header.addWidget(aggregate_title)
+        aggregate_header.addStretch(1)
+        aggregate_sort_label = QLabel("정렬")
+        aggregate_sort_label.setObjectName("detailMiniSub")
+        aggregate_header.addWidget(aggregate_sort_label, 0, Qt.AlignVCenter)
+        self._resource_requirement_sort = InventorySortDropdownButton()
+        self._resource_requirement_sort.addItem("일반", "default")
+        self._resource_requirement_sort.addItem("부족한 비율 순서", "shortage_ratio")
+        self._resource_requirement_sort.modeChanged.connect(self._on_resource_requirement_sort_changed)
+        aggregate_header.addWidget(self._resource_requirement_sort, 0, Qt.AlignVCenter)
+        aggregate_options_layout.addLayout(aggregate_header)
 
         self._resource_aggregate_summary = QLabel("학생을 범위에 추가하면 성장 비용을 합산합니다.")
         self._resource_aggregate_summary.setObjectName("detailSub")
         self._resource_aggregate_summary.setWordWrap(True)
         aggregate_options_layout.addWidget(self._resource_aggregate_summary)
-        right_layout.addWidget(aggregate_options, 0)
 
         self._resource_requirement_empty = QLabel("학생을 범위에 추가하면 필요한 재화를 미리 볼 수 있습니다.")
         self._resource_requirement_empty.setObjectName("filterSummary")
         self._resource_requirement_empty.setWordWrap(True)
         self._resource_requirement_empty.setMinimumHeight(scale_px(22, self._ui_scale))
-        right_layout.addWidget(self._resource_requirement_empty)
+        aggregate_options_layout.addWidget(self._resource_requirement_empty)
+        right_layout.addWidget(self._resource_right_top_controls, 0)
 
         self._resource_requirement_scroll = QScrollArea()
         self._resource_requirement_scroll.setObjectName("sectionScrollArea")
@@ -5336,6 +5504,7 @@ class StudentViewerWindow(QMainWindow):
         self._resource_requirement_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self._resource_requirement_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self._resource_requirement_scroll.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        _install_planner_scroll_handle(self._resource_requirement_scroll, ui_scale=self._ui_scale)
 
         self._resource_requirement_grid_host = QWidget()
         self._resource_requirement_grid_host.setObjectName("planTransparent")
@@ -5353,7 +5522,17 @@ class StudentViewerWindow(QMainWindow):
         for column in range(3):
             self._resource_requirement_grid.setColumnStretch(column, 1)
         self._resource_requirement_scroll.setWidget(self._resource_requirement_grid_host)
-        right_layout.addWidget(self._resource_requirement_scroll, 1)
+        self._resource_requirement_grid_panel = PlanGridContentPanel(ui_scale=self._ui_scale)
+        requirement_grid_panel_layout = QVBoxLayout(self._resource_requirement_grid_panel)
+        requirement_grid_panel_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(4, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
+        requirement_grid_panel_layout.setSpacing(0)
+        requirement_grid_panel_layout.addWidget(self._resource_requirement_scroll, 1)
+        right_layout.addWidget(self._resource_requirement_grid_panel, 1)
 
         splitter.addWidget(left_panel)
         splitter.addWidget(right_panel)
@@ -5365,6 +5544,7 @@ class StudentViewerWindow(QMainWindow):
         self._sync_resource_controls_from_students()
         self._refresh_resource_students_list()
         self._refresh_resource_view()
+        QTimer.singleShot(0, self._sync_resource_result_start)
         self._resources_dirty = False
 
     def _inventory_panel_margin(self) -> int:
@@ -5387,7 +5567,7 @@ class StudentViewerWindow(QMainWindow):
 
     def _build_inventory_tab(self, root: QWidget) -> None:
         layout = QVBoxLayout(root)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 0, 0, scale_px(12, self._ui_scale))
         layout.setSpacing(scale_px(12, self._ui_scale))
 
         header = QFrame()
@@ -5640,15 +5820,17 @@ class StudentViewerWindow(QMainWindow):
         bottleneck_layout.addWidget(self._inventory_bottleneck_rows, 0)
 
         school_panel = QFrame()
+        self._inventory_school_risk_panel = school_panel
         school_panel.setObjectName("planBand")
+        school_panel.setFixedHeight(scale_px(126, self._ui_scale))
         school_layout = QVBoxLayout(school_panel)
         school_layout.setContentsMargins(
             scale_px(10, self._ui_scale),
-            scale_px(8, self._ui_scale),
+            scale_px(7, self._ui_scale),
             scale_px(10, self._ui_scale),
-            scale_px(8, self._ui_scale),
+            scale_px(7, self._ui_scale),
         )
-        school_layout.setSpacing(scale_px(6, self._ui_scale))
+        school_layout.setSpacing(scale_px(5, self._ui_scale))
         school_layout.setAlignment(Qt.AlignTop)
         school_title = QLabel(_tr("inventory.school_shortage"))
         school_title.setObjectName("detailSectionTitle")
@@ -5657,7 +5839,7 @@ class StudentViewerWindow(QMainWindow):
         self._inventory_school_risk_rows_host.setObjectName("planTransparent")
         self._inventory_school_risk_rows_layout = QVBoxLayout(self._inventory_school_risk_rows_host)
         self._inventory_school_risk_rows_layout.setContentsMargins(0, 0, 0, 0)
-        self._inventory_school_risk_rows_layout.setSpacing(scale_px(7, self._ui_scale))
+        self._inventory_school_risk_rows_layout.setSpacing(scale_px(5, self._ui_scale))
         school_layout.addWidget(self._inventory_school_risk_rows_host, 0)
 
         lower_pressure_stack = QWidget()
@@ -5666,8 +5848,14 @@ class StudentViewerWindow(QMainWindow):
         lower_pressure_layout.setContentsMargins(0, 0, 0, 0)
         lower_pressure_layout.setSpacing(scale_px(10, self._ui_scale))
         lower_pressure_layout.addWidget(bottleneck_panel, 1)
-        lower_pressure_layout.addWidget(school_panel, 1)
+        lower_pressure_layout.addWidget(school_panel, 0)
         overview_layout.addWidget(lower_pressure_stack, 1)
+
+        detail_shell = QFrame()
+        detail_shell.setObjectName("planSectionPanel")
+        detail_shell.setMinimumWidth(scale_px(360, self._ui_scale))
+        detail_shell_layout = QVBoxLayout(detail_shell)
+        self._configure_inventory_panel_layout(detail_shell_layout)
 
         detail_scroll = QScrollArea()
         detail_scroll.setObjectName("sectionScrollArea")
@@ -5676,13 +5864,13 @@ class StudentViewerWindow(QMainWindow):
         detail_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         detail_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        detail_panel = QFrame()
-        detail_panel.setObjectName("planSectionPanel")
-        detail_panel.setMinimumWidth(scale_px(280, self._ui_scale))
+        detail_panel = QWidget()
+        detail_panel.setObjectName("planTransparent")
+        detail_panel.setMinimumWidth(scale_px(320, self._ui_scale))
         detail_layout = QVBoxLayout(detail_panel)
-        self._configure_inventory_panel_layout(detail_layout)
+        self._configure_inventory_panel_layout(detail_layout, margin=0)
         detail_scroll.setWidget(detail_panel)
-        detail_scroll.setMinimumWidth(scale_px(280, self._ui_scale))
+        detail_shell_layout.addWidget(detail_scroll, 1)
 
         def build_detail_card() -> tuple[QFrame, QVBoxLayout]:
             card = QFrame()
@@ -5703,13 +5891,14 @@ class StudentViewerWindow(QMainWindow):
             table.setHorizontalSpacing(scale_px(8, self._ui_scale))
             table.setVerticalSpacing(scale_px(6, self._ui_scale))
             table.setColumnStretch(0, 1)
-            table.setColumnMinimumWidth(1, scale_px(96, self._ui_scale))
+            table.setColumnMinimumWidth(1, scale_px(118, self._ui_scale))
             for row, (key, label) in enumerate(rows):
                 name_label = QLabel(label)
                 name_label.setObjectName("detailMiniSub")
                 value_label = QLabel("-")
-                value_label.setObjectName("detailMiniValue")
+                value_label.setObjectName("inventoryDetailMetricValue")
                 value_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                value_label.setMinimumWidth(scale_px(118, self._ui_scale))
                 self._inventory_oopart_metric_labels[key] = value_label
                 table.addWidget(name_label, row, 0)
                 table.addWidget(value_label, row, 1)
@@ -5781,7 +5970,7 @@ class StudentViewerWindow(QMainWindow):
 
         student_card, student_layout = build_detail_card()
         affected_value = QLabel("-")
-        affected_value.setObjectName("detailMiniValue")
+        affected_value.setObjectName("inventoryDetailMetricValue")
         affected_value.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self._inventory_oopart_metric_labels["affected"] = affected_value
         student_layout.addWidget(affected_value)
@@ -5805,14 +5994,14 @@ class StudentViewerWindow(QMainWindow):
 
         inventory_splitter.addWidget(overview_panel)
         inventory_splitter.addWidget(inventory_mode_panel)
-        inventory_splitter.addWidget(detail_scroll)
+        inventory_splitter.addWidget(detail_shell)
         inventory_splitter.setStretchFactor(0, 1)
         inventory_splitter.setStretchFactor(1, 5)
         inventory_splitter.setStretchFactor(2, 1)
         inventory_splitter.setSizes([
             scale_px(260, self._ui_scale),
-            scale_px(1300, self._ui_scale),
-            scale_px(260, self._ui_scale),
+            scale_px(1180, self._ui_scale),
+            scale_px(360, self._ui_scale),
         ])
         layout.addWidget(inventory_splitter, 1)
         self._refresh_inventory_tab()
@@ -5854,16 +6043,59 @@ class StudentViewerWindow(QMainWindow):
             if self._resource_search.text() != self._search.text():
                 self._resource_search.setText(self._search.text())
             target_sort = self._sort_mode.currentData()
-            for index in range(self._resource_sort_mode.count()):
-                if self._resource_sort_mode.itemData(index) == target_sort:
-                    self._resource_sort_mode.setCurrentIndex(index)
-                    break
+            self._resource_sort_mode.setCurrentData(str(target_sort))
             self._resource_show_unowned.setChecked(self._show_unowned.isChecked())
             self._resource_hide_jp_only.setChecked(self._hide_jp_only.isChecked())
             self._resource_filter_summary.setText(self._filter_summary.text())
             self._resource_filter_button.setText(self._filter_button.text())
         finally:
             self._resource_syncing_controls = False
+        QTimer.singleShot(0, self._sync_resource_result_start)
+
+    def _set_resource_left_mode(self, index: int) -> None:
+        index = 0 if index <= 0 else 1
+        if hasattr(self, "_resource_left_stack"):
+            self._resource_left_stack.setCurrentIndex(index)
+        if hasattr(self, "_resource_left_top_stack"):
+            self._resource_left_top_stack.setCurrentIndex(index)
+        for button_index, button in getattr(self, "_resource_mode_buttons", {}).items():
+            button.blockSignals(True)
+            button.setChecked(button_index == index)
+            button.blockSignals(False)
+        QTimer.singleShot(0, self._sync_resource_result_start)
+
+    def _sync_resource_result_start(self) -> None:
+        required = (
+            "_resource_left_top_panel",
+            "_resource_left_header_host",
+            "_resource_left_stack",
+            "_resource_left_top_stack",
+            "_resource_scope_top_controls",
+            "_resource_search_top_controls",
+            "_resource_right_top_controls",
+        )
+        if not all(hasattr(self, name) for name in required):
+            return
+        active_top = (
+            self._resource_search_top_controls
+            if self._resource_left_stack.currentIndex() == 1
+            else self._resource_scope_top_controls
+        )
+        left_header_height = self._resource_left_header_host.sizeHint().height()
+        left_vertical_margins = scale_px(20, self._ui_scale)
+        left_gap = scale_px(8, self._ui_scale)
+        left_natural_height = left_vertical_margins + left_header_height + left_gap + active_top.sizeHint().height()
+        target_height = max(left_natural_height, self._resource_right_top_controls.sizeHint().height())
+        active_height = max(1, target_height - left_vertical_margins - left_header_height - left_gap)
+        active_top.setFixedHeight(active_height)
+        self._resource_left_top_stack.setFixedHeight(active_height)
+        self._resource_left_top_panel.setFixedHeight(max(1, target_height))
+        self._resource_right_top_controls.setFixedHeight(max(1, target_height))
+
+    def _on_resource_requirement_sort_changed(self, _value: object) -> None:
+        selector = getattr(self, "_resource_requirement_sort", None)
+        self._resource_requirement_sort_mode = selector.currentData() if selector is not None else "default"
+        self._refresh_resource_view()
 
     def _on_resource_search_changed(self, text: str) -> None:
         if self._resource_syncing_controls:
@@ -5871,16 +6103,13 @@ class StudentViewerWindow(QMainWindow):
         if self._search.text() != text:
             self._search.setText(text)
 
-    def _on_resource_sort_changed(self, _index: int) -> None:
+    def _on_resource_sort_changed(self, _value: object) -> None:
         if self._resource_syncing_controls:
             return
         target_sort = self._resource_sort_mode.currentData()
         if self._sort_mode.currentData() == target_sort:
             return
-        for index in range(self._sort_mode.count()):
-            if self._sort_mode.itemData(index) == target_sort:
-                self._sort_mode.setCurrentIndex(index)
-                return
+        self._sort_mode.setCurrentData(str(target_sort))
 
     def _on_resource_show_unowned_changed(self, _state: int) -> None:
         if self._resource_syncing_controls:
@@ -6009,6 +6238,7 @@ class StudentViewerWindow(QMainWindow):
                 card = self._build_student_card(record)
             else:
                 self._apply_student_card_record(card, record)
+            card.setDisplayOptions(show_name_panel=False, show_unowned_badge=True)
             scope_cards.append(card)
             next_scope_by_id[record.student_id] = card
 
@@ -6032,10 +6262,8 @@ class StudentViewerWindow(QMainWindow):
                 card = self._build_student_card(record)
             else:
                 self._apply_student_card_record(card, record)
-            if record.student_id in self._resource_selected_ids:
-                card.setToolTip(f"{record.student_id}\n이미 범위에 있음")
-            else:
-                card.setToolTip(record.student_id)
+            card.setDisplayOptions(show_name_panel=False, show_unowned_badge=True)
+            card.setToolTip("")
             search_cards.append(card)
             next_search_by_id[record.student_id] = card
 
@@ -6043,8 +6271,6 @@ class StudentViewerWindow(QMainWindow):
         self._resource_search_grid.set_cards(search_cards)
         self._resource_search_grid.set_selected_card_ids(set(self._resource_search_pending_ids))
 
-        if hasattr(self, "_resource_scope_count"):
-            self._resource_scope_count.setText(f"{len(selected_records)}명")
         self._resource_list_summary.setText(
             f"범위 {len(selected_records)}명 · 계획 {planned_count}명 · 미계획 {len(selected_records) - planned_count}명"
         )
@@ -6060,6 +6286,7 @@ class StudentViewerWindow(QMainWindow):
             self._enqueue_thumb(record.student_id)
         for record in self._filtered_students:
             self._enqueue_thumb(record.student_id)
+        QTimer.singleShot(0, self._sync_resource_result_start)
 
     def _on_resource_scope_card_changed(self, current: str | None, _previous: str | None) -> None:
         self._resource_current_student_id = current
@@ -6082,6 +6309,7 @@ class StudentViewerWindow(QMainWindow):
         self._resource_search_summary.setText(
             f"검색 결과 {len(self._filtered_students)}명 · 계획 {visible_planned}명 · 이미 범위에 있음 {visible_selected}명 · 선택 {len(self._resource_search_pending_ids)}명"
         )
+        QTimer.singleShot(0, self._sync_resource_result_start)
 
     def _update_resource_scope_actions(self) -> None:
         if hasattr(self, "_resource_remove_scope_button"):
@@ -6102,8 +6330,7 @@ class StudentViewerWindow(QMainWindow):
             return
         self._resource_selected_ids.update(self._resource_search_pending_ids)
         self._resource_search_pending_ids.clear()
-        if hasattr(self, "_resource_left_tabs"):
-            self._resource_left_tabs.setCurrentIndex(0)
+        self._set_resource_left_mode(0)
         self._refresh_resource_students_list()
         self._refresh_resource_view()
 
@@ -6127,8 +6354,7 @@ class StudentViewerWindow(QMainWindow):
     def _resource_check_visible(self) -> None:
         self._resource_selected_ids.update(record.student_id for record in self._filtered_students)
         self._resource_search_pending_ids.clear()
-        if hasattr(self, "_resource_left_tabs"):
-            self._resource_left_tabs.setCurrentIndex(0)
+        self._set_resource_left_mode(0)
         self._refresh_resource_students_list()
         self._refresh_resource_view()
 
@@ -6136,8 +6362,7 @@ class StudentViewerWindow(QMainWindow):
         goal_map = self._plan_goal_map()
         self._resource_selected_ids.update(record.student_id for record in self._filtered_students if record.student_id in goal_map)
         self._resource_search_pending_ids.clear()
-        if hasattr(self, "_resource_left_tabs"):
-            self._resource_left_tabs.setCurrentIndex(0)
+        self._set_resource_left_mode(0)
         self._refresh_resource_students_list()
         self._refresh_resource_view()
 
@@ -6244,6 +6469,22 @@ class StudentViewerWindow(QMainWindow):
             chip.setData(requirement)
             grid.addWidget(chip, index // columns, index % columns)
 
+    def _sort_resource_requirement_entries(
+        self,
+        entries: list[PlanResourceRequirement],
+    ) -> list[PlanResourceRequirement]:
+        if getattr(self, "_resource_requirement_sort_mode", "default") != "shortage_ratio":
+            return entries
+        return sorted(
+            entries,
+            key=lambda entry: (
+                -(max(0, entry.required - entry.owned) / max(1, entry.required)),
+                -max(0, entry.required - entry.owned),
+                -entry.required,
+                entry.name.casefold(),
+            ),
+        )
+
     def _refresh_resource_view(self) -> None:
         if not hasattr(self, "_resource_requirement_grid"):
             return
@@ -6323,14 +6564,14 @@ class StudentViewerWindow(QMainWindow):
                 self._resource_requirement_empty.setText("현재 선택 범위에서 필요한 재화가 없습니다.")
                 self._resource_requirement_empty.setVisible(True)
                 return
-            entries = self._plan_requirement_entries(summary)
-            self._resource_requirement_empty.setText("" if entries else "The current scope does not require additional resources.")
+            entries = self._sort_resource_requirement_entries(self._plan_requirement_entries(summary))
+            self._resource_requirement_empty.setText("" if entries else "현재 계산 범위에는 추가 재화가 필요하지 않습니다.")
             self._resource_requirement_empty.setVisible(True)
             if not entries:
                 return
             shortages = sum(1 for entry in entries if entry.required > entry.owned)
             self._resource_aggregate_summary.setText(
-                f"{len(entries)}개 · 부족 {shortages}개 · 계획 {planned_count}명 / 미계획 {unplanned_included}/{unplanned_count}명 반영"
+                f"{len(entries)}종의 아이템 중 부족한 종류는 {shortages}개이며, 계획에 있는 학생 {planned_count}명과 포함되어 있지 않은 학생 {unplanned_included}명이 반영되어 있습니다."
             )
             self._populate_requirement_grid(self._resource_requirement_grid, entries)
         finally:
@@ -6697,7 +6938,21 @@ class StudentViewerWindow(QMainWindow):
             layout.addWidget(label)
             return
 
-        icon_size = scale_px(30, self._ui_scale)
+        spacing = scale_px(5, self._ui_scale)
+        row_host_height = self._inventory_school_risk_rows_host.height()
+        if row_host_height <= 0 and hasattr(self, "_inventory_school_risk_panel"):
+            row_host_height = max(
+                1,
+                self._inventory_school_risk_panel.height()
+                - scale_px(14, self._ui_scale)
+                - scale_px(22, self._ui_scale)
+                - spacing,
+            )
+        available_row_height = max(1, row_host_height - spacing * max(0, len(rows) - 1))
+        icon_size = max(
+            scale_px(18, self._ui_scale),
+            min(scale_px(30, self._ui_scale), available_row_height // max(1, len(rows))),
+        )
         for coverage, shortage, required, school, values in rows:
             row = QWidget()
             row.setObjectName("planTransparent")
@@ -6706,7 +6961,7 @@ class StudentViewerWindow(QMainWindow):
             row_layout.setSpacing(scale_px(6, self._ui_scale))
 
             icon = QLabel()
-            icon.setFixedSize(scale_px(58, self._ui_scale), icon_size)
+            icon.setFixedSize(scale_px(50, self._ui_scale), icon_size)
             icon.setAlignment(Qt.AlignCenter)
             logo_path = _school_logo_tinted_path(school, size=icon_size)
             if logo_path is not None and logo_path.exists():
@@ -7236,11 +7491,6 @@ class StudentViewerWindow(QMainWindow):
             self._inventory_oopart_farm_hint.setText(farm_hint)
         if hasattr(self, "_inventory_oopart_family_shortage"):
             self._inventory_oopart_family_shortage.setText(self._inventory_common_related_pressure_text(item_id, category))
-        if pool_required > 0:
-            self._inventory_oopart_impact_list.addItem(
-                f"전체 육성 수요: 필요 {_format_count(pool_required, compact=True)}, "
-                f"남음 {_format_count(pool_left, compact=True)}, 충족률 {self._inventory_coverage(owned, pool_required)}"
-            )
         exp_yield = self._inventory_exp_yield(category, item_id, name)
         if exp_yield is not None and owned > 0:
             label, value = exp_yield
@@ -7262,7 +7512,7 @@ class StudentViewerWindow(QMainWindow):
                     demand_text=(
                         f"{_format_count(amount, compact=True)}개"
                         if planned
-                        else f"전체 육성 : {_format_count(amount, compact=True)}개"
+                        else f"{_format_count(amount, compact=True)}개"
                     ),
                     pixmap=self._inventory_student_pixmap(student_id, scale_px(76, self._ui_scale)),
                     planned=planned,
@@ -7547,7 +7797,7 @@ class StudentViewerWindow(QMainWindow):
         if hasattr(self, "_inventory_oopart_family_shortage"):
             self._inventory_oopart_family_shortage.setText(self._inventory_oopart_family_shortage_text(item_id))
         if not usage.pool_impacts:
-            self._inventory_oopart_impact_list.addItem("전체 육성 기준 학생 수요가 없습니다.")
+            self._inventory_oopart_impact_list.addItem("표시할 학생 수요가 없습니다.")
             self._resize_inventory_impact_list_to_contents()
             return
 
@@ -8718,7 +8968,7 @@ class StudentViewerWindow(QMainWindow):
 
     def _build_tactical_tab(self, root: QWidget) -> None:
         layout = QVBoxLayout(root)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 0, 0, scale_px(12, self._ui_scale))
         layout.setSpacing(scale_px(12, self._ui_scale))
 
         header = QFrame()
@@ -8730,7 +8980,7 @@ class StudentViewerWindow(QMainWindow):
             scale_px(18, self._ui_scale),
             scale_px(16, self._ui_scale),
         )
-        title = QLabel("Tactical Challenge")
+        title = QLabel("전술대항전")
         title.setObjectName("title")
         subtitle = QLabel("전술대항전 전적, 상대 방어덱, 공격 족보를 한 곳에서 기록하고 찾아봅니다.")
         subtitle.setObjectName("count")
@@ -8743,21 +8993,34 @@ class StudentViewerWindow(QMainWindow):
         splitter.setChildrenCollapsible(False)
         layout.addWidget(splitter, 1)
 
-        input_panel = QFrame()
-        input_panel.setObjectName("planSectionPanel")
+        input_shell = QFrame()
+        input_shell.setObjectName("planSectionPanel")
+        input_shell_layout = QVBoxLayout(input_shell)
+        input_shell_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
+        input_shell_layout.setSpacing(0)
+
+        input_panel = QWidget()
+        input_panel.setObjectName("planTransparent")
         input_scroll = QScrollArea()
         input_scroll.setObjectName("sectionScrollArea")
         input_scroll.setWidgetResizable(True)
         input_scroll.setFrameShape(QFrame.NoFrame)
         input_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         input_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        _install_planner_scroll_handle(input_scroll, ui_scale=self._ui_scale)
         input_scroll.setWidget(input_panel)
+        input_shell_layout.addWidget(input_scroll, 1)
         input_layout = QVBoxLayout(input_panel)
         input_layout.setContentsMargins(
-            scale_px(14, self._ui_scale),
-            scale_px(14, self._ui_scale),
-            scale_px(14, self._ui_scale),
-            scale_px(14, self._ui_scale),
+            scale_px(4, self._ui_scale),
+            scale_px(4, self._ui_scale),
+            scale_px(4, self._ui_scale),
+            scale_px(4, self._ui_scale),
         )
         input_layout.setSpacing(scale_px(10, self._ui_scale))
 
@@ -8790,7 +9053,7 @@ class StudentViewerWindow(QMainWindow):
         self._tactical_status.setMaximumHeight(scale_px(48, self._ui_scale))
         self._tactical_status.hide()
         input_layout.addStretch(1)
-        splitter.addWidget(input_scroll)
+        splitter.addWidget(input_shell)
 
         history_panel = QFrame()
         history_panel.setObjectName("planSectionPanel")
@@ -8815,6 +9078,7 @@ class StudentViewerWindow(QMainWindow):
         self._tactical_match_search.textChanged.connect(lambda *_: self._reset_tactical_match_list())
         history_layout.addWidget(self._tactical_match_search)
         self._tactical_match_list = RoundedListWidget(ui_scale=self._ui_scale)
+        _install_planner_scroll_handle(self._tactical_match_list, ui_scale=self._ui_scale)
         self._tactical_match_list.currentItemChanged.connect(self._on_tactical_match_selected)
         history_layout.addWidget(self._tactical_match_list, 1)
         self._tactical_match_load_more_button = QPushButton("더 보기")
@@ -8826,6 +9090,8 @@ class StudentViewerWindow(QMainWindow):
         self._tactical_match_copy_attack_button.clicked.connect(self._copy_selected_tactical_match_attack)
         self._tactical_match_copy_defense_button = QPushButton("DEF Copy")
         self._tactical_match_copy_defense_button.clicked.connect(self._copy_selected_tactical_match_defense)
+        self._tactical_match_edit_button = QPushButton("수정")
+        self._tactical_match_edit_button.clicked.connect(self._edit_selected_tactical_match)
         self._tactical_match_delete_button = QPushButton("[삭제]")
         self._tactical_match_delete_button.clicked.connect(self._delete_selected_tactical_match)
         self._tactical_match_import_button = QPushButton("Excel Import")
@@ -8838,6 +9104,7 @@ class StudentViewerWindow(QMainWindow):
         match_action_row.addWidget(self._tactical_match_import_button)
         match_action_row.addWidget(self._tactical_match_copy_attack_button)
         match_action_row.addWidget(self._tactical_match_copy_defense_button)
+        match_action_row.addWidget(self._tactical_match_edit_button)
         match_action_row.addWidget(self._tactical_match_delete_button)
         history_layout.addLayout(match_action_row)
         splitter.addWidget(history_panel)
@@ -8851,14 +9118,44 @@ class StudentViewerWindow(QMainWindow):
             scale_px(14, self._ui_scale),
             scale_px(14, self._ui_scale),
         )
-        insight_tabs = QTabWidget()
-        insight_tabs.setObjectName("tacticalInsightTabs")
-        insight_layout.addWidget(insight_tabs, 1)
+        insight_layout.setSpacing(scale_px(10, self._ui_scale))
+        tactical_mode_buttons = QHBoxLayout()
+        tactical_mode_buttons.setContentsMargins(0, 0, 0, 0)
+        tactical_mode_buttons.setSpacing(scale_px(8, self._ui_scale))
+        tactical_insight_buttons: dict[int, QPushButton] = {}
+        tactical_insight_stack = QStackedWidget()
+        tactical_insight_stack.setObjectName("sectionTransparentStack")
+
+        def sync_tactical_insight_buttons(index: int) -> None:
+            for button_index, button in tactical_insight_buttons.items():
+                button.setChecked(button_index == index)
+
+        for index, label in enumerate(("상대", "족보")):
+            button = QPushButton(label)
+            button.setObjectName("inventoryModeButton")
+            button.setCheckable(True)
+            button.clicked.connect(lambda _checked=False, value=index: tactical_insight_stack.setCurrentIndex(value))
+            tactical_mode_buttons.addWidget(button, 0)
+            tactical_insight_buttons[index] = button
+        tactical_mode_buttons.addStretch(1)
+        tactical_insight_stack.currentChanged.connect(sync_tactical_insight_buttons)
+        insight_layout.addLayout(tactical_mode_buttons)
+        insight_layout.addWidget(tactical_insight_stack, 1)
 
         opponent_tab = QWidget()
         opponent_tab.setObjectName("planTransparent")
-        opponent_layout = QVBoxLayout(opponent_tab)
-        opponent_layout.setContentsMargins(0, 0, 0, 0)
+        opponent_tab_layout = QVBoxLayout(opponent_tab)
+        opponent_tab_layout.setContentsMargins(0, 0, 0, 0)
+        opponent_tab_layout.setSpacing(0)
+        opponent_container = QFrame()
+        opponent_container.setObjectName("planBand")
+        opponent_layout = QVBoxLayout(opponent_container)
+        opponent_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
         opponent_layout.setSpacing(scale_px(10, self._ui_scale))
         opponent_search_row = QHBoxLayout()
         self._tactical_opponent_search = QLineEdit()
@@ -8874,13 +9171,25 @@ class StudentViewerWindow(QMainWindow):
         self._tactical_opponent_summary.setWordWrap(True)
         opponent_layout.addWidget(self._tactical_opponent_summary)
         self._tactical_opponent_top_list = RoundedListWidget(ui_scale=self._ui_scale)
+        _install_planner_scroll_handle(self._tactical_opponent_top_list, ui_scale=self._ui_scale)
         opponent_layout.addWidget(self._tactical_opponent_top_list, 1)
-        insight_tabs.addTab(opponent_tab, "상대")
+        opponent_tab_layout.addWidget(opponent_container, 1)
+        tactical_insight_stack.addWidget(opponent_tab)
 
         jokbo_tab = QWidget()
         jokbo_tab.setObjectName("planTransparent")
-        jokbo_layout = QVBoxLayout(jokbo_tab)
-        jokbo_layout.setContentsMargins(0, 0, 0, 0)
+        jokbo_tab_layout = QVBoxLayout(jokbo_tab)
+        jokbo_tab_layout.setContentsMargins(0, 0, 0, 0)
+        jokbo_tab_layout.setSpacing(0)
+        jokbo_container = QFrame()
+        jokbo_container.setObjectName("planBand")
+        jokbo_layout = QVBoxLayout(jokbo_container)
+        jokbo_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
         jokbo_layout.setSpacing(scale_px(10, self._ui_scale))
         search_group, self._tactical_jokbo_search_inputs = self._build_tactical_deck_editor("방어덱 검색")
         jokbo_layout.addWidget(search_group)
@@ -8893,6 +9202,7 @@ class StudentViewerWindow(QMainWindow):
         search_buttons.addWidget(copy_search_button)
         jokbo_layout.addLayout(search_buttons)
         self._tactical_jokbo_results = RoundedListWidget(ui_scale=self._ui_scale)
+        _install_planner_scroll_handle(self._tactical_jokbo_results, ui_scale=self._ui_scale)
         jokbo_layout.addWidget(self._tactical_jokbo_results, 1)
         jokbo_action_row = QHBoxLayout()
         jokbo_action_row.setContentsMargins(0, 0, 0, 0)
@@ -8904,7 +9214,10 @@ class StudentViewerWindow(QMainWindow):
         jokbo_action_row.addWidget(self._tactical_jokbo_copy_attack_button)
         jokbo_action_row.addWidget(self._tactical_jokbo_copy_defense_button)
         jokbo_layout.addLayout(jokbo_action_row)
-        insight_tabs.addTab(jokbo_tab, "족보")
+        jokbo_tab_layout.addWidget(jokbo_container, 1)
+        tactical_insight_stack.addWidget(jokbo_tab)
+        tactical_insight_stack.setCurrentIndex(0)
+        sync_tactical_insight_buttons(0)
         splitter.addWidget(insight_panel)
         splitter.setSizes([scale_px(420, self._ui_scale), scale_px(520, self._ui_scale), scale_px(470, self._ui_scale)])
 
@@ -8998,6 +9311,10 @@ class StudentViewerWindow(QMainWindow):
             "defense": defense_editor,
             "notes": notes,
             "status": status,
+            "save_button": save_button,
+            "editing_match_id": "",
+            "editing_source": "",
+            "editing_created_at": "",
         }
         win_button.clicked.connect(lambda *_args, target=panel: self._set_tactical_panel_result(target, "win"))
         loss_button.clicked.connect(lambda *_args, target=panel: self._set_tactical_panel_result(target, "loss"))
@@ -9022,30 +9339,46 @@ class StudentViewerWindow(QMainWindow):
         header = QHBoxLayout()
         title = QLabel("줄임말 설정")
         title.setObjectName("sectionTitle")
+        self._tactical_abbrev_toggle = QPushButton("펼치기")
+        self._tactical_abbrev_toggle.setObjectName("planDisclosureButton")
+        self._tactical_abbrev_toggle.setCheckable(True)
+        self._tactical_abbrev_toggle.clicked.connect(lambda checked=False: self._set_tactical_abbreviation_expanded(bool(checked)))
+        header.addWidget(title)
+        header.addStretch(1)
+        header.addWidget(self._tactical_abbrev_toggle)
+        layout.addLayout(header)
+
+        self._tactical_abbrev_body = QWidget()
+        self._tactical_abbrev_body.setObjectName("planTransparent")
+        body_layout = QVBoxLayout(self._tactical_abbrev_body)
+        body_layout.setContentsMargins(0, 0, 0, 0)
+        body_layout.setSpacing(scale_px(7, self._ui_scale))
+
+        button_row = QHBoxLayout()
+        button_row.setContentsMargins(0, 0, 0, 0)
         add_striker_button = QPushButton("스트 추가")
         add_striker_button.clicked.connect(lambda *_: self._add_tactical_abbreviation_row("", "", "striker"))
         add_special_button = QPushButton("스페셜 추가")
         add_special_button.clicked.connect(lambda *_: self._add_tactical_abbreviation_row("", "", "special"))
-        header.addWidget(title)
-        header.addStretch(1)
-        header.addWidget(add_striker_button)
-        header.addWidget(add_special_button)
-        layout.addLayout(header)
+        button_row.addStretch(1)
+        button_row.addWidget(add_striker_button)
+        button_row.addWidget(add_special_button)
+        body_layout.addLayout(button_row)
 
         hint = QLabel("스트라이커와 스페셜 줄임말은 별도 사전입니다. 같은 글자도 슬롯에 따라 따로 해석됩니다.")
         hint.setObjectName("detailSub")
         hint.setWordWrap(True)
-        layout.addWidget(hint)
+        body_layout.addWidget(hint)
 
         self._tactical_abbrev_rows: list[tuple[QLineEdit, QLineEdit, QWidget]] = []
         self._tactical_special_abbrev_rows: list[tuple[QLineEdit, QLineEdit, QWidget]] = []
         striker_label = QLabel("스트라이커")
         striker_label.setObjectName("detailSectionTitle")
-        layout.addWidget(striker_label)
+        body_layout.addWidget(striker_label)
         self._tactical_abbrev_rows_layout = QVBoxLayout()
         self._tactical_abbrev_rows_layout.setContentsMargins(0, 0, 0, 0)
         self._tactical_abbrev_rows_layout.setSpacing(scale_px(5, self._ui_scale))
-        layout.addLayout(self._tactical_abbrev_rows_layout)
+        body_layout.addLayout(self._tactical_abbrev_rows_layout)
 
         for key, value in sorted((self._tactical_data.abbreviations or {}).items()):
             self._add_tactical_abbreviation_row(key, value, "striker")
@@ -9054,17 +9387,30 @@ class StudentViewerWindow(QMainWindow):
 
         special_label = QLabel("스페셜")
         special_label.setObjectName("detailSectionTitle")
-        layout.addWidget(special_label)
+        body_layout.addWidget(special_label)
         self._tactical_special_abbrev_rows_layout = QVBoxLayout()
         self._tactical_special_abbrev_rows_layout.setContentsMargins(0, 0, 0, 0)
         self._tactical_special_abbrev_rows_layout.setSpacing(scale_px(5, self._ui_scale))
-        layout.addLayout(self._tactical_special_abbrev_rows_layout)
+        body_layout.addLayout(self._tactical_special_abbrev_rows_layout)
 
         for key, value in sorted((self._tactical_data.special_abbreviations or {}).items()):
             self._add_tactical_abbreviation_row(key, value, "special")
         if not self._tactical_special_abbrev_rows:
             self._add_tactical_abbreviation_row("", "", "special")
+        layout.addWidget(self._tactical_abbrev_body)
+        self._set_tactical_abbreviation_expanded(False)
         return panel
+
+    def _set_tactical_abbreviation_expanded(self, expanded: bool) -> None:
+        body = getattr(self, "_tactical_abbrev_body", None)
+        toggle = getattr(self, "_tactical_abbrev_toggle", None)
+        if body is not None:
+            body.setVisible(expanded)
+        if toggle is not None:
+            toggle.blockSignals(True)
+            toggle.setChecked(expanded)
+            toggle.setText("접기" if expanded else "펼치기")
+            toggle.blockSignals(False)
 
     def _add_tactical_abbreviation_row(self, key: str, value: str, role: str = "striker") -> None:
         rows_layout_name = "_tactical_special_abbrev_rows_layout" if role == "special" else "_tactical_abbrev_rows_layout"
@@ -9104,7 +9450,10 @@ class StudentViewerWindow(QMainWindow):
     def _set_tactical_panel_mode(self, panel: dict, mode: str) -> None:
         panel["mode"] = mode if mode in {"attack", "defense", "jokbo"} else "attack"
         if "title" in panel:
-            panel["title"].setText("족보 모드" if panel["mode"] == "jokbo" else "대전 기록")
+            if panel.get("editing_match_id"):
+                panel["title"].setText("전적 수정")
+            else:
+                panel["title"].setText("족보 모드" if panel["mode"] == "jokbo" else "대전 기록")
         panel["attack_mode_button"].setChecked(panel["mode"] == "attack")
         panel["defense_mode_button"].setChecked(panel["mode"] == "defense")
         panel["jokbo_mode_button"].setChecked(panel["mode"] == "jokbo")
@@ -9129,6 +9478,36 @@ class StudentViewerWindow(QMainWindow):
         idle_style = f"background: transparent; color: {MUTED}; border: 1px solid {_mix_hex('#ffb5f0', SURFACE_ALT, 0.28)}; font-weight: 700;"
         panel["win_button"].setStyleSheet(selected_style if panel["result"] == "win" else idle_style)
         panel["loss_button"].setStyleSheet(selected_style if panel["result"] == "loss" else idle_style)
+
+    def _set_tactical_panel_editing(self, panel: dict, match: TacticalMatch | None = None) -> None:
+        panel["editing_match_id"] = match.id if match is not None else ""
+        panel["editing_source"] = match.source if match is not None else ""
+        panel["editing_created_at"] = match.created_at if match is not None else ""
+        save_button = panel.get("save_button")
+        if save_button is not None:
+            save_button.setText("Update" if match is not None else "Save")
+        self._set_tactical_panel_mode(panel, panel.get("mode", "attack"))
+
+    def _load_tactical_match_into_panel(self, panel: dict, match: TacticalMatch) -> None:
+        if hasattr(self, "_tactical_date"):
+            self._tactical_date.setText(match.date or "")
+        if hasattr(self, "_tactical_season"):
+            self._tactical_season.setText(match.season or self._tactical_data.season or "")
+        panel["opponent"].setText(match.opponent)
+        panel["notes"].setPlainText(match.notes)
+        self._set_tactical_panel_result(panel, match.result)
+        has_attack_pair = bool(match.my_attack.strikers or match.my_attack.supports or match.opponent_defense.strikers or match.opponent_defense.supports)
+        has_defense_pair = bool(match.my_defense.strikers or match.my_defense.supports or match.opponent_attack.strikers or match.opponent_attack.supports)
+        mode = "defense" if has_defense_pair and not has_attack_pair else "attack"
+        self._set_tactical_panel_mode(panel, mode)
+        if mode == "defense":
+            self._set_tactical_deck_inputs(panel["attack"], match.opponent_attack)
+            self._set_tactical_deck_inputs(panel["defense"], match.my_defense)
+        else:
+            self._set_tactical_deck_inputs(panel["attack"], match.my_attack)
+            self._set_tactical_deck_inputs(panel["defense"], match.opponent_defense)
+        self._set_tactical_panel_editing(panel, match)
+        self._set_tactical_status(f"{self._tactical_date_label(match)} {match.opponent} 전적을 수정 모드로 불러왔습니다.", panel=panel)
 
     def _tactical_import_key(self, value: object) -> str:
         return re.sub(r"[\s_\-./()]+", "", str(value or "").strip().casefold())
@@ -9437,6 +9816,9 @@ class StudentViewerWindow(QMainWindow):
         self._set_tactical_deck_inputs(panel["attack"], attack_deck)
         self._set_tactical_deck_inputs(panel["defense"], defense_deck)
         if panel.get("mode") == "jokbo":
+            if panel.get("editing_match_id"):
+                self._set_tactical_status("전적 수정 중에는 족보로 저장할 수 없습니다. Clear로 수정 모드를 끝낸 뒤 저장해 주세요.", error=True, panel=panel)
+                return
             if not any(defense_deck.strikers) and not any(defense_deck.supports):
                 self._set_tactical_status("족보의 방어덱을 입력해 주세요.", error=True, panel=panel)
                 return
@@ -9469,20 +9851,22 @@ class StudentViewerWindow(QMainWindow):
         if not opponent:
             self._set_tactical_status("상대 이름을 입력해 주세요.", error=True, panel=panel)
             return
+        editing_match_id = str(panel.get("editing_match_id") or "")
+        existing_match = get_tactical_match(self._tactical_path, editing_match_id) if editing_match_id else None
         is_defense_record = panel.get("mode") == "defense"
         match = TacticalMatch(
-            id=f"tc-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid4().hex[:6]}",
+            id=editing_match_id or f"tc-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid4().hex[:6]}",
             date=self._tactical_date.text().strip(),
             season=season,
             opponent=opponent,
             result=str(panel["result"]),
-            my_attack=TacticalDeck() if is_defense_record else attack_deck,
-            opponent_defense=TacticalDeck() if is_defense_record else defense_deck,
-            my_defense=defense_deck if is_defense_record else TacticalDeck(),
-            opponent_attack=attack_deck if is_defense_record else TacticalDeck(),
-            source="내 기록",
+            my_attack=(existing_match.my_attack if existing_match is not None else TacticalDeck()) if is_defense_record else attack_deck,
+            opponent_defense=(existing_match.opponent_defense if existing_match is not None else TacticalDeck()) if is_defense_record else defense_deck,
+            my_defense=defense_deck if is_defense_record else (existing_match.my_defense if existing_match is not None else TacticalDeck()),
+            opponent_attack=attack_deck if is_defense_record else (existing_match.opponent_attack if existing_match is not None else TacticalDeck()),
+            source=panel.get("editing_source") or (existing_match.source if existing_match is not None else "내 기록") or "내 기록",
             notes=panel["notes"].toPlainText().strip(),
-            created_at=now,
+            created_at=panel.get("editing_created_at") or (existing_match.created_at if existing_match is not None else now) or now,
         )
         self._tactical_selected_match_id = match.id
         self._show_busy_overlay()
@@ -9493,12 +9877,15 @@ class StudentViewerWindow(QMainWindow):
             self._refresh_tactical_match_list()
         finally:
             self._hide_busy_overlay()
-        self._set_tactical_status(f"{self._tactical_date_label(match)} {opponent} 전적을 저장했습니다.", panel=panel)
+        self._set_tactical_panel_editing(panel, match)
+        action_text = "수정했습니다" if editing_match_id else "저장했습니다"
+        self._set_tactical_status(f"{self._tactical_date_label(match)} {opponent} 전적을 {action_text}.", panel=panel)
 
     def _clear_tactical_match_panel(self, panel: dict) -> None:
         panel["opponent"].clear()
         panel["notes"].clear()
         self._set_tactical_status("", panel=panel)
+        self._set_tactical_panel_editing(panel, None)
         self._set_tactical_panel_result(panel, "win")
         self._set_tactical_panel_mode(panel, "attack")
         self._clear_tactical_deck_inputs(panel["attack"])
@@ -9996,6 +10383,9 @@ class StudentViewerWindow(QMainWindow):
                 return
             if self._tactical_selected_match_id == match_id:
                 self._tactical_selected_match_id = None
+            for panel in getattr(self, "_tactical_match_panels", []):
+                if panel.get("editing_match_id") == match_id:
+                    self._clear_tactical_match_panel(panel)
             self._storage_mtimes = self._snapshot_storage_mtimes()
             self._refresh_tactical_match_list()
         finally:
@@ -10019,6 +10409,15 @@ class StudentViewerWindow(QMainWindow):
         decks = self._selected_tactical_match_decks()
         if decks is not None:
             self._copy_tactical_deck_template(decks[1])
+
+    def _edit_selected_tactical_match(self) -> None:
+        match = self._selected_tactical_match()
+        if match is None:
+            self._set_tactical_status("수정할 전적을 먼저 선택해 주세요.", error=True)
+            return
+        if not self._tactical_match_panels:
+            return
+        self._load_tactical_match_into_panel(self._tactical_match_panels[0], match)
 
     def _delete_selected_tactical_match(self) -> None:
         match = self._selected_tactical_match()
@@ -10237,27 +10636,6 @@ class StudentViewerWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(scale_px(12, self._ui_scale))
 
-        header = QFrame()
-        header.setObjectName("header")
-        header_layout = QVBoxLayout(header)
-        header_layout.setContentsMargins(
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
-        )
-        title = QLabel("Collection Statistics")
-        title.setObjectName("title")
-        subtitle = QLabel("요약 카드, 구성 분포, 육성 상태, 계획 재화, 스킬 태그를 현재 필터 기준으로 봅니다.")
-        subtitle.setObjectName("count")
-        header_layout.addWidget(title)
-        header_layout.addWidget(subtitle)
-        layout.addWidget(header)
-
-        self._stats_summary_line = QLabel("")
-        self._stats_summary_line.setObjectName("filterSummary")
-        layout.addWidget(self._stats_summary_line)
-
         scroll = QScrollArea()
         scroll.setObjectName("sectionScrollArea")
         scroll.setWidgetResizable(True)
@@ -10276,6 +10654,10 @@ class StudentViewerWindow(QMainWindow):
         self._stats_summary_cards.setVerticalSpacing(scale_px(12, self._ui_scale))
         host_layout.addWidget(self._stats_summary_host)
 
+        middle_row = QHBoxLayout()
+        middle_row.setContentsMargins(0, 0, 0, 0)
+        middle_row.setSpacing(scale_px(12, self._ui_scale))
+
         sunburst_panel = QFrame()
         sunburst_panel.setObjectName("planSectionPanel")
         sunburst_layout = QVBoxLayout(sunburst_panel)
@@ -10290,7 +10672,7 @@ class StudentViewerWindow(QMainWindow):
         sunburst_header = QHBoxLayout()
         sunburst_header.setContentsMargins(0, 0, 0, 0)
         sunburst_header.setSpacing(scale_px(10, self._ui_scale))
-        sunburst_title = QLabel("복합 분포")
+        sunburst_title = QLabel("분포 탐색")
         sunburst_title.setObjectName("sectionTitle")
         sunburst_header.addWidget(sunburst_title)
         self._stats_sunburst_root_button = QPushButton("전체")
@@ -10320,33 +10702,61 @@ class StudentViewerWindow(QMainWindow):
         self._stats_sunburst_breadcrumb_layout = QHBoxLayout(self._stats_sunburst_breadcrumb_host)
         self._stats_sunburst_breadcrumb_layout.setContentsMargins(0, 0, 0, 0)
         self._stats_sunburst_breadcrumb_layout.setSpacing(scale_px(6, self._ui_scale))
-        sunburst_layout.addWidget(self._stats_sunburst_breadcrumb_host)
         self._stats_update_sunburst_value_options()
 
-        sunburst_body = QHBoxLayout()
-        sunburst_body.setContentsMargins(0, 0, 0, 0)
-        sunburst_body.setSpacing(scale_px(12, self._ui_scale))
+        chart_and_legend = QHBoxLayout()
+        chart_and_legend.setContentsMargins(0, 0, 0, 0)
+        chart_and_legend.setSpacing(scale_px(12, self._ui_scale))
         self._stats_sunburst = SunburstWidget(self._ui_scale)
         self._stats_sunburst.segmentSelected.connect(self._on_stats_sunburst_segment_selected)
-        sunburst_body.addWidget(self._stats_sunburst, 3)
+        chart_and_legend.addWidget(self._stats_sunburst, 1)
+        legend_panel = QFrame()
+        legend_panel.setObjectName("planBand")
+        legend_panel.setFixedWidth(scale_px(210, self._ui_scale))
+        legend_layout = QVBoxLayout(legend_panel)
+        legend_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
+        legend_layout.setSpacing(scale_px(6, self._ui_scale))
+        legend_title = QLabel("색상 경로")
+        legend_title.setObjectName("detailSectionTitle")
+        legend_layout.addWidget(legend_title)
+        self._stats_sunburst_legend_layout = QVBoxLayout()
+        self._stats_sunburst_legend_layout.setContentsMargins(0, 0, 0, 0)
+        self._stats_sunburst_legend_layout.setSpacing(scale_px(4, self._ui_scale))
+        legend_layout.addLayout(self._stats_sunburst_legend_layout)
+        legend_layout.addStretch(1)
+        chart_and_legend.addWidget(legend_panel, 0)
+        sunburst_layout.addLayout(chart_and_legend, 1)
+        self._stats_summary_line = QLabel("")
+        self._stats_summary_line.setObjectName("filterSummary")
+        sunburst_layout.addWidget(self._stats_summary_line)
+        middle_row.addWidget(sunburst_panel, 3)
+
         detail_panel = QFrame()
-        detail_panel.setObjectName("planBand")
+        detail_panel.setObjectName("planSectionPanel")
         detail_layout = QVBoxLayout(detail_panel)
         detail_layout.setContentsMargins(
-            scale_px(12, self._ui_scale),
-            scale_px(12, self._ui_scale),
-            scale_px(12, self._ui_scale),
-            scale_px(12, self._ui_scale),
+            scale_px(16, self._ui_scale),
+            scale_px(16, self._ui_scale),
+            scale_px(16, self._ui_scale),
+            scale_px(16, self._ui_scale),
         )
         detail_layout.setSpacing(scale_px(8, self._ui_scale))
-        detail_title = QLabel("Top Branches")
+        selected_title = QLabel("선택 상세 정보")
+        selected_title.setObjectName("sectionTitle")
+        detail_layout.addWidget(selected_title)
+        detail_title = QLabel("현재 root 상위 항목")
         detail_title.setObjectName("detailSectionTitle")
         detail_layout.addWidget(detail_title)
         self._stats_sunburst_top_detail = QLabel("")
         self._stats_sunburst_top_detail.setObjectName("detailSub")
         self._stats_sunburst_top_detail.setWordWrap(True)
         detail_layout.addWidget(self._stats_sunburst_top_detail)
-        selected_title = QLabel("Selected Segment")
+        selected_title = QLabel("선택된 segment")
         selected_title.setObjectName("detailSectionTitle")
         detail_layout.addWidget(selected_title)
         self._stats_sunburst_detail = QLabel("")
@@ -10354,17 +10764,32 @@ class StudentViewerWindow(QMainWindow):
         self._stats_sunburst_detail.setWordWrap(True)
         detail_layout.addWidget(self._stats_sunburst_detail)
         detail_layout.addStretch(1)
-        sunburst_body.addWidget(detail_panel, 2)
-        sunburst_layout.addLayout(sunburst_body, 1)
-        host_layout.addWidget(sunburst_panel)
+        middle_row.addWidget(detail_panel, 2)
+        host_layout.addLayout(middle_row, 1)
+
+        self._stats_chart_tabs = QTabBar()
+        self._stats_chart_tabs.setObjectName("inventorySubTabBar")
+        for label, value in (
+            ("컬렉션 구성", "collection"),
+            ("육성 상태", "growth"),
+            ("계획 진행", "plan"),
+            ("재화/인벤토리", "resource"),
+            ("스킬/기능 태그", "skill"),
+        ):
+            index = self._stats_chart_tabs.addTab(label)
+            self._stats_chart_tabs.setTabData(index, value)
+        self._stats_chart_tabs.currentChanged.connect(self._stats_chart_tab_changed)
+        host_layout.addWidget(self._stats_chart_tabs)
+        self._stats_chart_tabs.hide()
 
         cards_wrap = QWidget()
         self._stats_cards_layout = QGridLayout(cards_wrap)
         self._stats_cards_layout.setContentsMargins(0, 0, 0, 0)
         self._stats_cards_layout.setHorizontalSpacing(scale_px(12, self._ui_scale))
         self._stats_cards_layout.setVerticalSpacing(scale_px(12, self._ui_scale))
+        self._stats_cards_layout.setColumnStretch(0, 1)
         host_layout.addWidget(cards_wrap)
-        host_layout.addStretch(1)
+        cards_wrap.hide()
         scroll.setWidget(host)
         layout.addWidget(scroll, 1)
 
@@ -10577,9 +11002,9 @@ class StudentViewerWindow(QMainWindow):
         editor_header = PlanEditorSectionCard(ui_scale=self._ui_scale, radius=16)
         editor_header_layout = QHBoxLayout(editor_header)
         editor_header_layout.setContentsMargins(
-            scale_px(14, self._ui_scale),
             scale_px(12, self._ui_scale),
-            scale_px(14, self._ui_scale),
+            scale_px(12, self._ui_scale),
+            scale_px(12, self._ui_scale),
             scale_px(12, self._ui_scale),
         )
         editor_header_layout.setSpacing(scale_px(10, self._ui_scale))
@@ -10631,9 +11056,32 @@ class StudentViewerWindow(QMainWindow):
         resources_tab_layout.setSpacing(0)
 
         controls_wrap = PlanEditorContentPanel(ui_scale=self._ui_scale)
+        controls_wrap.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         controls_layout = QVBoxLayout(controls_wrap)
-        controls_layout.setContentsMargins(scale_px(10, self._ui_scale), scale_px(10, self._ui_scale), scale_px(10, self._ui_scale), scale_px(10, self._ui_scale))
-        controls_layout.setSpacing(scale_px(10, self._ui_scale))
+        controls_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
+        controls_layout.setSpacing(0)
+
+        self._plan_controls_scroll = QScrollArea()
+        self._plan_controls_scroll.setObjectName("sectionScrollArea")
+        self._plan_controls_scroll.setFrameShape(QFrame.NoFrame)
+        self._plan_controls_scroll.setWidgetResizable(True)
+        self._plan_controls_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self._plan_controls_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self._plan_controls_scroll.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        _install_planner_scroll_handle(self._plan_controls_scroll, ui_scale=self._ui_scale)
+
+        controls_content = QWidget()
+        controls_content.setObjectName("planTransparent")
+        controls_content_layout = QVBoxLayout(controls_content)
+        controls_content_layout.setContentsMargins(0, 0, 0, 0)
+        controls_content_layout.setSpacing(scale_px(10, self._ui_scale))
+        self._plan_controls_scroll.setWidget(controls_content)
+        controls_layout.addWidget(self._plan_controls_scroll, 1)
 
         def add_plan_level_row(
             parent_layout: QVBoxLayout,
@@ -10646,7 +11094,12 @@ class StudentViewerWindow(QMainWindow):
             row = QFrame()
             row.setObjectName("inventoryPressureRow")
             row_layout = QHBoxLayout(row)
-            row_layout.setContentsMargins(scale_px(12, self._ui_scale), scale_px(8, self._ui_scale), scale_px(12, self._ui_scale), scale_px(8, self._ui_scale))
+            row_layout.setContentsMargins(
+                scale_px(10, self._ui_scale),
+                scale_px(10, self._ui_scale),
+                scale_px(10, self._ui_scale),
+                scale_px(10, self._ui_scale),
+            )
             row_layout.setSpacing(scale_px(8, self._ui_scale))
             row_title = QLabel(label)
             row_title.setObjectName("detailSectionTitle")
@@ -10663,7 +11116,12 @@ class StudentViewerWindow(QMainWindow):
 
         progression_panel = PlanEditorSectionCard(ui_scale=self._ui_scale)
         progression_layout = QVBoxLayout(progression_panel)
-        progression_layout.setContentsMargins(scale_px(10, self._ui_scale), scale_px(8, self._ui_scale), scale_px(10, self._ui_scale), scale_px(8, self._ui_scale))
+        progression_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
         progression_layout.setSpacing(scale_px(8, self._ui_scale))
         progression_title = QLabel("목표 타겟")
         progression_title.setObjectName("sectionTitle")
@@ -10671,7 +11129,12 @@ class StudentViewerWindow(QMainWindow):
         progression_row = QFrame()
         progression_row.setObjectName("inventoryPressureRow")
         progression_row_layout = QHBoxLayout(progression_row)
-        progression_row_layout.setContentsMargins(scale_px(14, self._ui_scale), scale_px(10, self._ui_scale), scale_px(14, self._ui_scale), scale_px(10, self._ui_scale))
+        progression_row_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
         progression_row_layout.setSpacing(scale_px(12, self._ui_scale))
         progression_label = QLabel("성작 상태")
         progression_label.setObjectName("detailSectionTitle")
@@ -10701,16 +11164,16 @@ class StudentViewerWindow(QMainWindow):
             row = add_plan_level_row(progression_layout, field_name, label, 25, label_width=118)
             self._plan_stat_rows[field_name] = row
 
-        controls_layout.addWidget(progression_panel)
+        controls_content_layout.addWidget(progression_panel)
 
         requirement_panel = PlanEditorSectionCard(ui_scale=self._ui_scale)
         requirement_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         requirement_layout = QVBoxLayout(requirement_panel)
         requirement_layout.setContentsMargins(
             scale_px(10, self._ui_scale),
-            scale_px(8, self._ui_scale),
             scale_px(10, self._ui_scale),
-            scale_px(8, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
         )
         requirement_layout.setSpacing(scale_px(8, self._ui_scale))
         requirement_header = QHBoxLayout()
@@ -10760,7 +11223,12 @@ class StudentViewerWindow(QMainWindow):
 
         skill_panel = PlanEditorSectionCard(ui_scale=self._ui_scale)
         skill_layout = QVBoxLayout(skill_panel)
-        skill_layout.setContentsMargins(scale_px(10, self._ui_scale), scale_px(8, self._ui_scale), scale_px(10, self._ui_scale), scale_px(8, self._ui_scale))
+        skill_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
         skill_layout.setSpacing(scale_px(8, self._ui_scale))
         skill_title = QLabel("스킬")
         skill_title.setObjectName("sectionTitle")
@@ -10774,7 +11242,12 @@ class StudentViewerWindow(QMainWindow):
             row = QFrame()
             row.setObjectName("inventoryPressureRow")
             row_layout = QHBoxLayout(row)
-            row_layout.setContentsMargins(scale_px(14, self._ui_scale), scale_px(10, self._ui_scale), scale_px(14, self._ui_scale), scale_px(10, self._ui_scale))
+            row_layout.setContentsMargins(
+                scale_px(10, self._ui_scale),
+                scale_px(10, self._ui_scale),
+                scale_px(10, self._ui_scale),
+                scale_px(10, self._ui_scale),
+            )
             row_layout.setSpacing(scale_px(12, self._ui_scale))
             row_title = QLabel(label)
             row_title.setObjectName("detailSectionTitle")
@@ -10785,11 +11258,16 @@ class StudentViewerWindow(QMainWindow):
             self._plan_segment_inputs[field_name] = selector
             row_layout.addWidget(selector, 1)
             skill_layout.addWidget(row)
-        controls_layout.addWidget(skill_panel, 0)
+        controls_content_layout.addWidget(skill_panel, 0)
 
         equipment_panel = PlanEditorSectionCard(ui_scale=self._ui_scale)
         equipment_layout = QVBoxLayout(equipment_panel)
-        equipment_layout.setContentsMargins(scale_px(10, self._ui_scale), scale_px(8, self._ui_scale), scale_px(10, self._ui_scale), scale_px(8, self._ui_scale))
+        equipment_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
         equipment_layout.setSpacing(scale_px(8, self._ui_scale))
         equipment_title = QLabel("장비 티어")
         equipment_title.setObjectName("sectionTitle")
@@ -10808,7 +11286,12 @@ class StudentViewerWindow(QMainWindow):
         self._plan_unique_item_panel = QFrame()
         self._plan_unique_item_panel.setObjectName("inventoryPressureRow")
         unique_layout = QVBoxLayout(self._plan_unique_item_panel)
-        unique_layout.setContentsMargins(scale_px(12, self._ui_scale), scale_px(8, self._ui_scale), scale_px(12, self._ui_scale), scale_px(8, self._ui_scale))
+        unique_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
         unique_layout.setSpacing(scale_px(8, self._ui_scale))
         unique_title = QLabel("애용품")
         unique_title.setObjectName("detailSectionTitle")
@@ -10828,7 +11311,12 @@ class StudentViewerWindow(QMainWindow):
             row = QFrame()
             row.setObjectName("inventoryPressureRow")
             row_layout = QHBoxLayout(row)
-            row_layout.setContentsMargins(scale_px(12, self._ui_scale), scale_px(8, self._ui_scale), scale_px(12, self._ui_scale), scale_px(8, self._ui_scale))
+            row_layout.setContentsMargins(
+                scale_px(10, self._ui_scale),
+                scale_px(10, self._ui_scale),
+                scale_px(10, self._ui_scale),
+                scale_px(10, self._ui_scale),
+            )
             row_layout.setSpacing(scale_px(10, self._ui_scale))
             row_title = QLabel(f"장비 {slot_index}")
             row_title.setObjectName("detailSectionTitle")
@@ -10863,14 +11351,14 @@ class StudentViewerWindow(QMainWindow):
 
             row_layout.addLayout(control_stack, 1)
             equipment_main.addWidget(row)
-        controls_layout.addWidget(equipment_panel, 0)
+        controls_content_layout.addWidget(equipment_panel, 0)
 
         self._plan_student_summary = QLabel("필요 재화 미리보기가 여기에 표시됩니다.")
         self._plan_total_summary = QLabel("")
         self._plan_student_summary.setVisible(False)
         self._plan_total_summary.setVisible(False)
-        edit_tab_layout.addWidget(controls_wrap, 0)
-        edit_tab_layout.addStretch(1)
+        controls_content_layout.addStretch(1)
+        edit_tab_layout.addWidget(controls_wrap, 1)
         resources_tab_layout.addWidget(requirement_panel, 1)
         plan_editor_stack.addWidget(edit_tab)
         plan_editor_stack.addWidget(resources_tab)
@@ -10968,7 +11456,7 @@ class StudentViewerWindow(QMainWindow):
             divider_left=QColor(divider_primary),
             divider_right=QColor(divider_secondary),
         )
-        card.setToolTip(record.student_id)
+        card.setToolTip("")
 
     def _build_student_card(
         self,
@@ -10988,7 +11476,7 @@ class StudentViewerWindow(QMainWindow):
             show_name_panel=show_name_panel,
             show_unowned_badge=show_unowned_badge,
         )
-        card.setToolTip(record.student_id)
+        card.setToolTip("")
         self._apply_cached_thumb_to_card(card)
         return card
 
@@ -11544,6 +12032,22 @@ class StudentViewerWindow(QMainWindow):
         self._update_plan_student_summary(student_id)
         self._refresh_selected_plan_requirements(student_id)
 
+    def _set_plan_empty_scroll_margin_mode(self, empty: bool) -> None:
+        for attr in ("_plan_controls_scroll", "_plan_requirement_scroll"):
+            scroll_area = getattr(self, attr, None)
+            if scroll_area is None:
+                continue
+            margins = scroll_area.viewportMargins()
+            scroll_area.setViewportMargins(
+                margins.left(),
+                margins.top(),
+                0 if empty else scale_px(18, self._ui_scale),
+                margins.bottom(),
+            )
+            handle = getattr(scroll_area, "_planner_scroll_handle", None)
+            if isinstance(handle, PlannerScrollHandle):
+                handle.setSuppressed(empty)
+
     def _refresh_plan_lists(self) -> None:
         if not hasattr(self, "_plan_search_grid"):
             return
@@ -11773,6 +12277,7 @@ class StudentViewerWindow(QMainWindow):
         if record is None:
             self._clear_plan_editor()
             return
+        self._set_plan_empty_scroll_margin_mode(False)
         goal = self._plan_goal_map().get(student_id)
         self._plan_editor_guard = True
         try:
@@ -11790,6 +12295,7 @@ class StudentViewerWindow(QMainWindow):
         self._refresh_selected_plan_requirements(student_id)
 
     def _clear_plan_editor(self) -> None:
+        self._set_plan_empty_scroll_margin_mode(True)
         self._plan_editor_guard = True
         try:
             self._plan_name.setText("학생을 선택하세요")
@@ -12025,6 +12531,16 @@ class StudentViewerWindow(QMainWindow):
         setattr(self, attr_name, value)
         self._refresh_stats_tab()
 
+    def _stats_chart_tab_changed(self, index: int) -> None:
+        if self._stats_chart_tabs is None:
+            return
+        value = self._stats_chart_tabs.tabData(index)
+        next_tab = str(value or "collection")
+        if self._stats_active_chart_tab == next_tab:
+            return
+        self._stats_active_chart_tab = next_tab
+        self._refresh_stats_tab()
+
     def _stats_refresh_sunburst_mode(self) -> None:
         self._stats_update_sunburst_value_options()
         self._stats_sunburst_selected_path = ()
@@ -12077,10 +12593,10 @@ class StudentViewerWindow(QMainWindow):
             options = (("학생 수", "student_count"), ("보유 학생", "owned_count"), ("계획 학생", "planned_count"))
             default = "student_count"
         elif mode == "plan_required":
-            options = (("필요량", "required"), ("충족률", "coverage"), ("부족량", "shortage"))
+            options = (("필요 비율", "required"), ("충족률", "coverage"), ("부족 비율", "shortage"))
             default = "required"
         else:
-            options = (("부족량", "shortage"), ("필요량", "required"), ("충족률", "coverage"))
+            options = (("부족 비율", "shortage"), ("필요 비율", "required"), ("충족률", "coverage"))
             default = "shortage"
         current = self._stats_sunburst_value_key()
         if current not in {value for _label, value in options}:
@@ -12173,8 +12689,40 @@ class StudentViewerWindow(QMainWindow):
         ordered = [(label, count) for label, count in counts.items() if count > 0]
         for index, (label, count) in enumerate(sorted(ordered, key=lambda item: (-item[1], item[0].casefold()))):
             percent = (count / total * 100.0) if total else 0.0
-            rows.append(DistributionRow(label=label, count=int(count), percent=percent, color=PALETTE[index % len(PALETTE)]))
+            rows.append(DistributionRow(label=label, count=count, percent=percent, color=PALETTE[index % len(PALETTE)]))
         return rows
+
+    def _stats_resource_weight(self, amount: int | float, basis: int | float) -> float:
+        if basis <= 0:
+            return 0.0
+        return max(0.0, float(amount) / float(basis) * 100.0)
+
+    def _stats_resource_weighted_entries(
+        self,
+        records: list[StudentRecord],
+        goal_map: dict[str, StudentGoal],
+        *,
+        shortage_only: bool = False,
+    ) -> list[tuple[StudentRecord, PlanResourceRequirement, float, int]]:
+        weighted: list[tuple[StudentRecord, PlanResourceRequirement, float, int]] = []
+        for record in records:
+            summary = self._cached_goal_cost(record.student_id, record=record, goal=goal_map.get(record.student_id), goal_map=goal_map)
+            if summary is None:
+                continue
+            entries = self._plan_requirement_entries(summary, record=record)
+            if shortage_only:
+                basis = sum(max(0, entry.required - entry.owned) for entry in entries)
+            else:
+                basis = sum(entry.required for entry in entries)
+            if basis <= 0:
+                continue
+            for entry in entries:
+                shortage = max(0, entry.required - entry.owned)
+                amount = shortage if shortage_only else entry.required
+                weight = self._stats_resource_weight(amount, basis)
+                if weight > 0:
+                    weighted.append((record, entry, weight, shortage))
+        return weighted
 
     def _stats_field_rows(self, field_name: str, *, records: list[StudentRecord] | None = None, multi: bool = False) -> list[DistributionRow]:
         records = list(self._stats_scope_records() if records is None else records)
@@ -12403,10 +12951,13 @@ class StudentViewerWindow(QMainWindow):
 
         if mode in {"required_categories", "shortage_categories"}:
             counts: Counter[str] = Counter()
-            for entry in entries:
-                value = max(0, entry.required - entry.owned) if mode == "shortage_categories" else entry.required
-                if value > 0:
-                    counts[_plan_resource_category_label(entry.category)] += value
+            weighted_entries = self._stats_resource_weighted_entries(
+                planned_records,
+                goal_map,
+                shortage_only=mode == "shortage_categories",
+            )
+            for _record, entry, weight, _shortage in weighted_entries:
+                counts[_plan_resource_category_label(entry.category)] += weight
             return self._stats_make_rows(counts)
 
         if mode == "expensive_students":
@@ -12422,20 +12973,13 @@ class StudentViewerWindow(QMainWindow):
 
         if mode == "remaining_growth":
             counts = Counter()
-            for record in planned_records:
-                summary = self._cached_goal_cost(record.student_id, record=record, goal=goal_map.get(record.student_id), goal_map=goal_map)
-                if summary is None:
-                    continue
-                shortage_total = sum(max(0, entry.required - entry.owned) for entry in self._plan_requirement_entries(summary, record=record))
-                if shortage_total:
-                    counts[record.title] = shortage_total
+            for record, _entry, weight, _shortage in self._stats_resource_weighted_entries(planned_records, goal_map, shortage_only=True):
+                counts[record.title] += weight
             return self._stats_make_rows(counts)
 
         counts = Counter()
-        for entry in entries:
-            shortage = max(0, entry.required - entry.owned)
-            if shortage > 0:
-                counts[entry.name] += shortage
+        for _record, entry, weight, _shortage in self._stats_resource_weighted_entries(planned_records, goal_map, shortage_only=True):
+            counts[entry.name] += weight
         return self._stats_make_rows(counts)
 
     def _stats_resource_rows(self, mode: str) -> list[DistributionRow]:
@@ -12446,6 +12990,55 @@ class StudentViewerWindow(QMainWindow):
             return []
         entries = self._plan_requirement_entries(summary)
         counts: Counter[str] = Counter()
+
+        weighted_required = self._stats_resource_weighted_entries(planned_records, goal_map, shortage_only=False)
+        weighted_shortage = self._stats_resource_weighted_entries(planned_records, goal_map, shortage_only=True)
+
+        if mode == "required_totals":
+            for _record, entry, weight, _shortage in weighted_required:
+                counts[entry.name] += weight
+            return self._stats_make_rows(counts)
+        if mode == "shortage_categories":
+            for _record, entry, weight, _shortage in weighted_shortage:
+                counts[_plan_resource_category_label(entry.category)] += weight
+            return self._stats_make_rows(counts)
+        if mode == "shortage_items":
+            for _record, entry, weight, _shortage in weighted_shortage:
+                counts[entry.name] += weight
+            return self._stats_make_rows(counts)
+        if mode == "required_categories":
+            for _record, entry, weight, _shortage in weighted_required:
+                counts[_plan_resource_category_label(entry.category)] += weight
+            return self._stats_make_rows(counts)
+        if mode == "school_demand":
+            for _record, entry, weight, _shortage in weighted_required:
+                for pattern in (r"Item_Icon_Material_ExSkill_([^_]+)_", r"Item_Icon_SkillBook_([^_]+)_"):
+                    match = re.match(pattern, entry.key)
+                    if match:
+                        counts[match.group(1)] += weight
+                        break
+            return self._stats_make_rows(counts)
+        if mode == "oopart_family":
+            for _record, entry, weight, _shortage in weighted_required:
+                if entry.category not in {"ex_ooparts", "skill_ooparts"}:
+                    continue
+                family = re.sub(r"\s+T\d+$", "", entry.name).strip() or entry.name
+                counts[family] += weight
+            return self._stats_make_rows(counts)
+        if mode == "equipment_type":
+            for _record, entry, weight, _shortage in weighted_required:
+                if entry.category != "equipment_materials":
+                    continue
+                series = _equipment_series_key_from_item(entry.key, entry.name) or re.sub(r"\s+T\d+$", "", entry.name).strip() or entry.name
+                counts[_equipment_series_label(series)] += weight
+            return self._stats_make_rows(counts)
+        if mode == "equipment_tier":
+            for _record, entry, weight, _shortage in weighted_required:
+                if entry.category != "equipment_materials":
+                    continue
+                tier = _tier_from_item_id_or_name(entry.key, entry.name)
+                counts[f"T{tier}" if tier else "?곗뼱 誘몄긽"] += weight
+            return self._stats_make_rows(counts)
 
         if mode == "required_totals":
             counts["크레딧"] = summary.credits
@@ -12527,11 +13120,20 @@ class StudentViewerWindow(QMainWindow):
                 (
                     "Chart selection",
                     f"Label: {row.label}",
-                    f"Value: {_format_count(row.count, compact=True)}",
+                    f"Value: {self._stats_row_count_text(row.count, compact=True)}",
                     f"Share: {row.percent:.1f}%",
                 )
             )
         )
+
+    def _stats_row_count_text(self, value: int | float, *, compact: bool = False) -> str:
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return _format_count(value, compact=compact)
+        if not compact and not number.is_integer():
+            return f"{number:,.1f}"
+        return _format_count(value, compact=compact)
 
     def _stats_add_bar_rows(self, layout: QVBoxLayout, rows: list[DistributionRow], *, limit: int = 8, compact_count: bool = False) -> None:
         if not rows:
@@ -12555,7 +13157,7 @@ class StudentViewerWindow(QMainWindow):
             bar.setFixedHeight(scale_px(8, self._ui_scale))
             bar.setValue(max(0, min(100, int(round(row.percent)))))
             row_layout.addWidget(bar, 1, Qt.AlignVCenter)
-            count_text = _format_count(row.count, compact=compact_count)
+            count_text = self._stats_row_count_text(row.count, compact=compact_count)
             value = QLabel(f"{count_text} · {row.percent:.1f}%")
             value.setObjectName("detailSub")
             value.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -12578,7 +13180,7 @@ class StudentViewerWindow(QMainWindow):
         top_text = QVBoxLayout()
         main_label = QLabel(top.label)
         main_label.setObjectName("metricValue")
-        count_label = QLabel(f"{_format_count(top.count, compact=True)}")
+        count_label = QLabel(f"{self._stats_row_count_text(top.count, compact=True)}")
         count_label.setObjectName("detailSub")
         top_text.addWidget(main_label)
         top_text.addWidget(count_label)
@@ -12788,14 +13390,17 @@ class StudentViewerWindow(QMainWindow):
             summary = self._cached_goal_cost(record.student_id, record=record, goal=goal_map.get(record.student_id), goal_map=goal_map)
             if summary is None:
                 continue
-            for entry in self._plan_requirement_entries(summary, record=record):
+            entries = self._plan_requirement_entries(summary, record=record)
+            required_basis = sum(entry.required for entry in entries)
+            shortage_basis = sum(max(0, entry.required - entry.owned) for entry in entries)
+            for entry in entries:
                 shortage = max(0, entry.required - entry.owned)
                 if value_key == "coverage":
                     value = 100.0 if entry.required <= 0 else max(0.0, min(100.0, (entry.owned / entry.required) * 100.0))
                 elif shortage_only or value_key == "shortage":
-                    value = shortage
+                    value = self._stats_resource_weight(shortage, shortage_basis)
                 else:
-                    value = entry.required
+                    value = self._stats_resource_weight(entry.required, required_basis)
                 if value <= 0:
                     continue
                 base_path = resource_path(entry)
@@ -12811,6 +13416,7 @@ class StudentViewerWindow(QMainWindow):
                             "required": entry.required,
                             "owned": entry.owned,
                             "shortage": shortage,
+                            "weight": value,
                             "impacts": [(record.student_id, record.title, entry.name, int(entry.required), int(shortage))],
                         },
                     )
@@ -12867,6 +13473,7 @@ class StudentViewerWindow(QMainWindow):
         self._clear_layout_widgets(layout)
         if not breadcrumb:
             button = QPushButton("전체")
+            button.setFixedHeight(scale_px(24, self._ui_scale))
             button.clicked.connect(self._stats_reset_sunburst_root)
             layout.addWidget(button, 0, Qt.AlignLeft)
             layout.addStretch(1)
@@ -12877,6 +13484,7 @@ class StudentViewerWindow(QMainWindow):
                 separator.setObjectName("filterSummary")
                 layout.addWidget(separator, 0, Qt.AlignLeft)
             button = QPushButton(part)
+            button.setFixedHeight(scale_px(24, self._ui_scale))
             if index == 0:
                 button.clicked.connect(self._stats_reset_sunburst_root)
             else:
@@ -12884,6 +13492,125 @@ class StudentViewerWindow(QMainWindow):
                 button.clicked.connect(lambda _checked=False, path=target_path: self._stats_apply_sunburst_path(path, push_current=True))
             layout.addWidget(button, 0, Qt.AlignLeft)
         layout.addStretch(1)
+
+    def _stats_update_sunburst_legend(self, root: SunburstNode) -> None:
+        layout = self._stats_sunburst_legend_layout
+        if layout is None:
+            return
+        self._clear_layout_widgets(layout)
+        if self._stats_sunburst is None or not root.children:
+            empty = QLabel("표시할 경로가 없습니다.")
+            empty.setObjectName("detailSub")
+            empty.setWordWrap(True)
+            layout.addWidget(empty)
+            return
+        max_depth = max(1, self._stats_sunburst._display_depth(root, is_root=True))
+        guide = QLabel("색: 안쪽 #ff2bb2 → 바깥 #ffa2e9\n높이: 같은 Level 안에서 위쪽 항목일수록 높은 arc")
+        guide.setObjectName("detailSub")
+        guide.setWordWrap(True)
+        layout.addWidget(guide)
+        levels: dict[int, dict[str, dict[str, object]]] = defaultdict(dict)
+
+        def collect(nodes: list[SunburstNode], depth: int, path: tuple[str, ...]) -> None:
+            for index, node in enumerate(nodes):
+                value = node.total()
+                if value <= 0:
+                    continue
+                current_path = (*path, node.label)
+                level = levels[depth]
+                entry = level.setdefault(
+                    node.label,
+                    {
+                        "value": 0.0,
+                        "color": SunburstWidget._node_color(node, index, depth, max_depth),
+                        "paths": [],
+                    },
+                )
+                entry["value"] = float(entry.get("value", 0.0) or 0.0) + value
+                paths = entry.get("paths")
+                if isinstance(paths, list) and len(paths) < 6:
+                    paths.append(current_path)
+                if node.children and not (node.context or {}).get("other"):
+                    child_nodes = self._stats_sunburst._display_nodes(node.children)
+                    collect(child_nodes, depth + 1, current_path)
+
+        collect(self._stats_sunburst._display_nodes(root.children), 1, (root.label,))
+        max_rows_per_level = 12
+        for depth in sorted(levels):
+            entries = sorted(levels[depth].items(), key=lambda item: (-float(item[1].get("value", 0.0) or 0.0), item[0].casefold()))
+            if not entries:
+                continue
+            self._stats_add_sunburst_legend_header(
+                layout,
+                depth,
+                max_depth,
+                SunburstWidget._node_color(SunburstNode("Level"), 0, depth, max_depth),
+            )
+            level_total = sum(float(entry.get("value", 0.0) or 0.0) for _label, entry in entries)
+            for label, entry in entries[:max_rows_per_level]:
+                value = float(entry.get("value", 0.0) or 0.0)
+                percent = (value / level_total * 100.0) if level_total else 0.0
+                paths = entry.get("paths")
+                path_tuple = tuple(paths[0]) if isinstance(paths, list) and paths else (root.label, label)
+                tooltip_paths = [" > ".join(path) for path in paths] if isinstance(paths, list) else []
+                self._stats_add_sunburst_legend_row(
+                    layout,
+                    label,
+                    str(entry.get("color") or "#6f7f8f"),
+                    percent,
+                    depth,
+                    path_tuple,
+                    tooltip="\n".join(tooltip_paths),
+                )
+            if len(entries) > max_rows_per_level:
+                more = QLabel(f"+ {len(entries) - max_rows_per_level} more")
+                more.setObjectName("detailSub")
+                layout.addWidget(more)
+    def _stats_add_sunburst_legend_header(self, layout: QVBoxLayout, depth: int, max_depth: int, color: str) -> None:
+        row = QWidget()
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(0, scale_px(4, self._ui_scale), 0, 0)
+        row_layout.setSpacing(scale_px(6, self._ui_scale))
+        swatch = QLabel("")
+        swatch.setFixedSize(scale_px(10, self._ui_scale), scale_px(10, self._ui_scale))
+        swatch.setStyleSheet(f"background: {color}; border-radius: {scale_px(2, self._ui_scale)}px;")
+        row_layout.addWidget(swatch, 0, Qt.AlignVCenter)
+        position = "내부" if depth == 1 else "외부" if depth == max_depth else "중간"
+        header = QLabel(f"Level {depth} · {position}")
+        header.setObjectName("detailSub")
+        header.setStyleSheet("font-weight: 800; color: #d8e7f3;")
+        row_layout.addWidget(header, 1, Qt.AlignVCenter)
+        layout.addWidget(row)
+
+    def _stats_add_sunburst_legend_row(
+        self,
+        layout: QVBoxLayout,
+        label_text: str,
+        color: str,
+        percent: float,
+        depth: int,
+        path: tuple[str, ...],
+        tooltip: str | None = None,
+    ) -> None:
+        row = QWidget()
+        row.setFixedHeight(scale_px(20, self._ui_scale))
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(scale_px(max(0, depth - 1) * 14, self._ui_scale), 0, 0, 0)
+        row_layout.setSpacing(scale_px(6, self._ui_scale))
+        swatch = QLabel("")
+        swatch.setFixedSize(scale_px(9, self._ui_scale), scale_px(9, self._ui_scale))
+        swatch.setStyleSheet(f"background: {color}; border-radius: {scale_px(2, self._ui_scale)}px;")
+        row_layout.addWidget(swatch, 0, Qt.AlignVCenter)
+        label = QLabel(label_text)
+        label.setObjectName("detailSub")
+        label.setToolTip(tooltip or " > ".join(path))
+        row_layout.addWidget(label, 1, Qt.AlignVCenter)
+        value_label = QLabel(f"{percent:.1f}%")
+        value_label.setObjectName("detailSub")
+        value_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        value_label.setFixedWidth(scale_px(48, self._ui_scale))
+        row_layout.addWidget(value_label, 0, Qt.AlignVCenter)
+        layout.addWidget(row)
 
     def _refresh_stats_sunburst(self) -> None:
         if self._stats_sunburst is None or self._stats_sunburst_detail is None or self._stats_sunburst_top_detail is None:
@@ -12895,6 +13622,7 @@ class StudentViewerWindow(QMainWindow):
             breadcrumb = (root.label,)
         self._stats_sunburst.setRoot(display_root, selected_path=(), breadcrumb=breadcrumb)
         self._stats_rebuild_sunburst_breadcrumb(breadcrumb)
+        self._stats_update_sunburst_legend(display_root)
         if self._stats_sunburst_root_button is not None:
             self._stats_sunburst_root_button.setEnabled(display_root is not root or bool(self._stats_sunburst_selected_path))
         if self._stats_sunburst_back_button is not None:
@@ -12993,17 +13721,11 @@ class StudentViewerWindow(QMainWindow):
             shortage_count = sum(1 for entry in self._plan_requirement_entries(planned_summary) if entry.required > entry.owned)
 
         summary_cards = (
-            ("표시 학생", str(total), "현재 필터 기준"),
-            ("보유/미보유", f"{owned}/{unowned}", f"보유율 {(owned / max(1, total) * 100.0):.1f}%"),
-            ("계획 편입률", f"{(planned / max(1, total) * 100.0):.1f}%", f"{planned}명 계획"),
-            ("평균 레벨/성급", f"{avg_level} / {avg_star}", "보유 학생 기준"),
-            ("평균 전무/EX", f"{avg_weapon} / {avg_ex}", "전무 레벨 / EX"),
-            ("평균 일반 스킬", f"{avg_normal_skill}", "기본/강화/서브 평균"),
-            ("평균 장비", f"T{avg_equip}", "1-3번 장비 평균"),
-            ("능력개방 평균", f"{avg_ability}", "HP/ATK/HEAL 평균"),
-            ("육성 완성도", f"{avg_score:.1f}%", "레벨/성급/스킬/장비/전무/능력개방"),
-            ("계획 완료율", f"{completion:.1f}%", f"{complete_count}/{len(planned_records)}명 목표 달성"),
-            ("부족 재화", str(shortage_count), "계획 기준 부족 항목"),
+            ("표시 중 학생", str(total), "현재 필터 기준"),
+            ("보유율", f"{(owned / max(1, total) * 100.0):.1f}%", f"{owned} / {total}"),
+            ("계획 편입률", f"{(planned / max(1, total) * 100.0):.1f}%", f"{planned} / {total}"),
+            ("평균 레벨 / 성급", f"Lv.{avg_level} / ★{avg_star}", "보유 학생 기준"),
+            ("육성 완성도", f"{avg_score:.1f}%", f"계획 완료율 {completion:.1f}% · 부족 {shortage_count}종"),
         )
         for index, (label, value, sub) in enumerate(summary_cards):
             card = QFrame()
@@ -13019,7 +13741,8 @@ class StudentViewerWindow(QMainWindow):
             card_layout.addWidget(text_label)
             card_layout.addWidget(value_label)
             card_layout.addWidget(sub_label)
-            self._stats_summary_cards.addWidget(card, index // 4, index % 4)
+            self._stats_summary_cards.addWidget(card, 0, index)
+            self._stats_summary_cards.setColumnStretch(index, 1)
 
         if self._stats_scope_student_ids():
             self._stats_summary_line.setText(
@@ -13084,15 +13807,15 @@ class StudentViewerWindow(QMainWindow):
             ("계획 학교 구성", "planned_school"),
             ("계획 역할 구성", "planned_role"),
             ("계획 공격 타입", "planned_attack"),
-            ("필요 재화 카테고리", "required_categories"),
-            ("부족 재화 TOP", "shortage_items"),
+            ("필요 재화 비율", "required_categories"),
+            ("부족 재화 비율 TOP", "shortage_items"),
         )
         resource_options = (
-            ("총 필요량", "required_totals"),
-            ("부족 재화 TOP", "shortage_items"),
+            ("필요 재화 비율 TOP", "required_totals"),
+            ("부족 재화 비율 TOP", "shortage_items"),
             ("부족률 TOP", "shortage_rate"),
-            ("필요 카테고리", "required_categories"),
-            ("부족 카테고리", "shortage_categories"),
+            ("필요 카테고리 비율", "required_categories"),
+            ("부족 카테고리 비율", "shortage_categories"),
             ("학교별 BD/노트", "school_demand"),
             ("오파츠 계열", "oopart_family"),
             ("장비 종류", "equipment_type"),
@@ -13126,63 +13849,70 @@ class StudentViewerWindow(QMainWindow):
         if self._stats_skill_mode not in {value for _label, value in skill_options}:
             self._stats_skill_mode = "skill_buff"
 
-        self._stats_add_chart_card(
-            grid=self._stats_cards_layout,
-            index=0,
-            title="컬렉션 구성",
-            subtitle="비교 기준이 명확한 분포는 도넛과 상위 목록으로 보여줍니다.",
-            options=collection_options,
-            current_value=self._stats_collection_mode,
-            attr_name="_stats_collection_mode",
-            rows=self._stats_field_rows(self._stats_collection_mode),
-            chart_kind="distribution",
-        )
-        self._stats_add_chart_card(
-            grid=self._stats_cards_layout,
-            index=1,
-            title="육성 상태",
-            subtitle="레벨, 성급, 장비, 스킬처럼 순서가 있는 값은 구간 막대로 봅니다.",
-            options=growth_options,
-            current_value=self._stats_growth_mode,
-            attr_name="_stats_growth_mode",
-            rows=self._stats_growth_rows(self._stats_growth_mode),
-            chart_kind="bar",
-        )
-        self._stats_add_chart_card(
-            grid=self._stats_cards_layout,
-            index=2,
-            title="계획 / 재화",
-            subtitle="목표 완료 여부와 필요·부족 재화를 랭킹 형태로 봅니다.",
-            options=plan_options,
-            current_value=self._stats_plan_mode,
-            attr_name="_stats_plan_mode",
-            rows=self._stats_plan_rows(self._stats_plan_mode),
-            chart_kind="bar",
-            compact_count=True,
-        )
-        self._stats_add_chart_card(
-            grid=self._stats_cards_layout,
-            index=3,
-            title="재화 / 인벤토리",
-            subtitle="필요량, 부족량, 부족률, 학교·오파츠·장비 병목을 따로 확인합니다.",
-            options=resource_options,
-            current_value=self._stats_resource_mode,
-            attr_name="_stats_resource_mode",
-            rows=self._stats_resource_rows(self._stats_resource_mode),
-            chart_kind="bar",
-            compact_count=True,
-        )
-        self._stats_add_chart_card(
-            grid=self._stats_cards_layout,
-            index=4,
-            title="스킬 태그",
-            subtitle="버프, 디버프, CC, 회복, 특수 효과 보유 현황을 학생 비율로 봅니다.",
-            options=skill_options,
-            current_value=self._stats_skill_mode,
-            attr_name="_stats_skill_mode",
-            rows=self._stats_skill_rows(self._stats_skill_mode),
-            chart_kind="bar",
-        )
+        if self._stats_chart_tabs is not None:
+            target_index = next(
+                (index for index in range(self._stats_chart_tabs.count()) if self._stats_chart_tabs.tabData(index) == self._stats_active_chart_tab),
+                0,
+            )
+            if self._stats_chart_tabs.currentIndex() != target_index:
+                self._stats_chart_tabs.blockSignals(True)
+                self._stats_chart_tabs.setCurrentIndex(target_index)
+                self._stats_chart_tabs.blockSignals(False)
+
+        chart_specs = {
+            "collection": dict(
+                title="분포 분석",
+                subtitle="현재 root 범위",
+                options=collection_options,
+                current_value=self._stats_collection_mode,
+                attr_name="_stats_collection_mode",
+                rows=self._stats_field_rows(self._stats_collection_mode),
+                chart_kind="distribution",
+                compact_count=False,
+            ),
+            "growth": dict(
+                title="분포 분석",
+                subtitle="육성 상태 기준",
+                options=growth_options,
+                current_value=self._stats_growth_mode,
+                attr_name="_stats_growth_mode",
+                rows=self._stats_growth_rows(self._stats_growth_mode),
+                chart_kind="bar",
+                compact_count=False,
+            ),
+            "plan": dict(
+                title="분포 분석",
+                subtitle="계획 진행 기준",
+                options=plan_options,
+                current_value=self._stats_plan_mode,
+                attr_name="_stats_plan_mode",
+                rows=self._stats_plan_rows(self._stats_plan_mode),
+                chart_kind="bar",
+                compact_count=False,
+            ),
+            "resource": dict(
+                title="분포 분석",
+                subtitle="재화/인벤토리 기준",
+                options=resource_options,
+                current_value=self._stats_resource_mode,
+                attr_name="_stats_resource_mode",
+                rows=self._stats_resource_rows(self._stats_resource_mode),
+                chart_kind="bar",
+                compact_count=False,
+            ),
+            "skill": dict(
+                title="분포 분석",
+                subtitle="스킬/기능 태그 기준",
+                options=skill_options,
+                current_value=self._stats_skill_mode,
+                attr_name="_stats_skill_mode",
+                rows=self._stats_skill_rows(self._stats_skill_mode),
+                chart_kind="bar",
+                compact_count=False,
+            ),
+        }
+        spec = chart_specs.get(self._stats_active_chart_tab, chart_specs["collection"])
+        self._stats_add_chart_card(grid=self._stats_cards_layout, index=0, **spec)
 
     def _format_cost_summary(self, summary: PlanCostSummary) -> str:
         lines = [
@@ -13273,6 +14003,8 @@ class StudentViewerWindow(QMainWindow):
         self._plan_search_timer.start()
 
     def _apply_filters(self) -> None:
+        for key in HIDDEN_STUDENT_FILTER_FIELDS:
+            self._selected_filters.pop(key, None)
         active_search = self._resource_search if hasattr(self, "_resource_search") and self._resource_search.hasFocus() else self._search
         query = _live_line_edit_text(active_search).strip().casefold()
         sort_mode = self._sort_mode.currentData()
