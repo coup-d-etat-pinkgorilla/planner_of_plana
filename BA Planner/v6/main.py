@@ -457,11 +457,10 @@ class App(tk.Tk):
 
         if new == AppState.WATCHING:
             self._ensure_watcher_running()
+            self._overlay.set_lobby_state(bool(self._watcher and self._watcher.in_lobby))
             if self._should_show_watching_overlay():
-                self._overlay.set_lobby_state(True)
                 self._overlay.show()
             else:
-                self._overlay.set_lobby_state(False)
                 self._overlay.hide()
             return
 
@@ -567,7 +566,6 @@ class App(tk.Tk):
         return bool(
             self.state == AppState.WATCHING
             and self._watcher
-            and self._watcher.in_lobby
             and is_target_foreground()
         )
 
@@ -575,7 +573,7 @@ class App(tk.Tk):
         if self.state != AppState.WATCHING:
             return
         if self._should_show_watching_overlay():
-            self._overlay.set_lobby_state(True)
+            self._overlay.set_lobby_state(bool(self._watcher and self._watcher.in_lobby))
             self._overlay.show()
         else:
             self._overlay.set_lobby_state(bool(self._watcher and self._watcher.in_lobby))
@@ -591,7 +589,7 @@ class App(tk.Tk):
     def _on_lobby_leave(self) -> None:
         self._overlay.set_lobby_state(False)
         if self.state == AppState.WATCHING:
-            self._overlay.hide()
+            self._sync_watching_overlay_visibility()
         elif self.state != AppState.SCANNING:
             self._overlay.hide()
 
@@ -884,6 +882,8 @@ class App(tk.Tk):
             else:
                 meta["item_scan_filter_profile"] = None
             meta["item_scan_filter_label"] = inventory_profile_labels(item_scan_filter)
+        if mode in ("items", "equipment"):
+            meta["direct_inventory_scan"] = bool(self._watcher and not self._watcher.in_lobby)
         if student_scan_options:
             meta.update(student_scan_options)
         if meta.get("student_scan_strategy") == "fast":
@@ -940,11 +940,20 @@ class App(tk.Tk):
                 selected_filter = meta.get("item_scan_filter_label")
                 if selected_filter:
                     self._dispatch_ui(self._overlay.add_log, f"아이템 필터: {selected_filter}")
-                result.items = scanner.scan_items(meta.get("item_scan_filter_profile"))
+                direct_inventory_scan = bool(meta.get("direct_inventory_scan"))
+                result.items = scanner.scan_items(
+                    meta.get("item_scan_filter_profile"),
+                    navigate_from_menu=not direct_inventory_scan,
+                    return_to_lobby=not direct_inventory_scan,
+                )
                 self._dispatch_ui(self._overlay.add_log, f"아이템 {len(result.items)}개")
 
             if mode in ("equipment", "all") and not_stopped():
-                result.equipment = scanner.scan_equipment()
+                direct_inventory_scan = bool(meta.get("direct_inventory_scan"))
+                result.equipment = scanner.scan_equipment(
+                    navigate_from_menu=not direct_inventory_scan,
+                    return_to_lobby=not direct_inventory_scan,
+                )
                 self._dispatch_ui(self._overlay.add_log, f"장비 {len(result.equipment)}개")
 
             if mode in ("students", "all") and not_stopped():

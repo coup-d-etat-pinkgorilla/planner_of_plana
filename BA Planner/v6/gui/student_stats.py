@@ -75,7 +75,7 @@ class SunburstNode:
     context: dict[str, object] | None = None
 
     def total(self) -> float:
-        if self.context and self.context.get("value_mode") == "coverage":
+        if self.context and self.context.get("value_mode") in {"coverage", "training_avg"}:
             value = float(self.value or 0.0)
             if value > 0:
                 return value
@@ -193,6 +193,8 @@ class SunburstWidget(QWidget):
         self._sweep_animation.valueChanged.connect(self._on_sweep_animation_value)
         self._sweep_animation.finished.connect(self._on_sweep_animation_finished)
         self.setMouseTracking(True)
+        self.setAutoFillBackground(False)
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.setMinimumSize(int(420 * ui_scale), int(360 * ui_scale))
 
     def setRoot(
@@ -219,7 +221,11 @@ class SunburstWidget(QWidget):
     def paintEvent(self, _event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        painter.fillRect(self.rect(), QColor("#101a24"))
+        background_rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
+        radius = max(10.0, 16.0 * self._ui_scale)
+        painter.setPen(QPen(QColor("#26384b"), max(1, int(1.0 * self._ui_scale))))
+        painter.setBrush(QColor("#101a24"))
+        painter.drawRoundedRect(background_rect, radius, radius)
 
         rect = self.rect().adjusted(16, 14, -16, -14)
         size = min(rect.width(), rect.height())
@@ -324,6 +330,14 @@ class SunburstWidget(QWidget):
                     else:
                         target.add(str(value))
             for key in ("required", "owned", "shortage"):
+                value = context.get(key)
+                if value is None:
+                    continue
+                try:
+                    merged[key] = float(merged.get(key, 0.0) or 0.0) + float(value)
+                except (TypeError, ValueError):
+                    pass
+            for key in ("training_score_sum", "training_count"):
                 value = context.get(key)
                 if value is None:
                     continue

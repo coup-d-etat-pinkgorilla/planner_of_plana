@@ -97,7 +97,7 @@ from core.tactical_challenge import (
     upsert_tactical_matches,
 )
 from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QRectF, QRunnable, QSize, Qt, QThreadPool, QTimer, Signal
-from PySide6.QtGui import QColor, QFont, QFontDatabase, QFontMetrics, QIcon, QImage, QIntValidator, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRegion
+from PySide6.QtGui import QColor, QCursor, QFont, QFontDatabase, QFontMetrics, QIcon, QImage, QIntValidator, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRegion
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QAbstractScrollArea,
@@ -161,6 +161,7 @@ _I18N: dict[str, dict[str, str]] = {
         "inventory.category.weapon_parts": "무기 성장 재료",
         "inventory.category.tech_notes": "기술 노트",
         "inventory.category.bd": "BD",
+        "inventory.category.resources": "재화",
         "inventory.category.other": "기타",
         "inventory.header.material": "재화",
         "inventory.header.owned": "보유",
@@ -513,6 +514,10 @@ ACCENT_SOFT = _mix_hex(PALETTE_ACCENT, PALETTE_PANEL_ALT, 0.58)
 ACCENT_PALE = _mix_hex(PALETTE_SOFT, PALETTE_PANEL_ALT, 0.55)
 SHADOW = _mix_hex(PALETTE_PANEL_ALT, "#000000", 0.35)
 WORK_AREA_ASPECT_RATIO = 16 / 9
+PLANNER_BASE_WIDTH = 1920
+PLANNER_BASE_HEIGHT = 1080
+SMALL_16_9_SCALE_THRESHOLD = 0.85
+SMALL_16_9_SCALE_FACTOR = 0.9
 
 if os.name == "nt":
     _dwmapi = ctypes.WinDLL("dwmapi", use_last_error=True)
@@ -605,7 +610,6 @@ def get_qt_ui_scale(
     app: QApplication,
     base_width: int | None = None,
     base_height: int = 1080,
-    min_scale: float = 0.8,
     max_scale: float = 1.8,
 ) -> float:
     raw = os.getenv("BA_UI_SCALE")
@@ -617,14 +621,14 @@ def get_qt_ui_scale(
         except ValueError:
             pass
 
-    screen = app.primaryScreen()
+    screen = app.screenAt(QCursor.pos()) or app.primaryScreen()
     if screen is None:
         return 1.0
 
     geometry = screen.availableGeometry()
     if os.name == "nt":
-        work_area = _windows_primary_work_area()
-        if work_area is not None and not work_area.isEmpty():
+        work_area = _windows_work_area(0) or (_windows_primary_work_area() if screen == app.primaryScreen() else None)
+        if work_area is not None and not work_area.isEmpty() and work_area.intersects(geometry):
             geometry = work_area
     geometry = _fit_rect_to_aspect(geometry)
     height = max(1, geometry.height())
@@ -632,7 +636,10 @@ def get_qt_ui_scale(
     if base_width:
         width = max(1, geometry.width())
         scale = min(scale, width / float(base_width))
-    return max(min_scale, min(max_scale, scale))
+    if scale < SMALL_16_9_SCALE_THRESHOLD:
+        scale *= SMALL_16_9_SCALE_FACTOR
+    scale = min(max_scale, scale)
+    return max(0.1, scale)
 
 
 def scale_px(value: int | float, scale: float) -> int:
@@ -1871,7 +1878,60 @@ def _plan_resource_display_name(item_id: str | None, fallback: str) -> str:
     return str(display_name or fallback)
 
 
-def _inventory_quantity_index(inventory: dict[str, dict]) -> dict[str, int]:
+def load_latest_resource_snapshot() -> dict[str, int]:
+    paths = get_storage_paths()
+
+    def add_resource(target: dict[str, int], key: object, value: object) -> None:
+        quantity = _inventory_quantity_value(value)
+        if quantity is not None:
+            target[str(key)] = quantity
+
+    if paths.db_path.exists():
+        try:
+            init_db(paths.db_path)
+            conn = sqlite3.connect(paths.db_path)
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """
+                SELECT r.key, r.value
+                FROM resources AS r
+                JOIN scans AS s ON s.scan_id = r.scan_id
+                WHERE r.value IS NOT NULL AND r.value != ''
+                ORDER BY s.scanned_at DESC, r.scan_id DESC
+                """
+            ).fetchall()
+            conn.close()
+            latest: dict[str, int] = {}
+            for row in rows:
+                key = str(row["key"])
+                if key not in latest:
+                    add_resource(latest, key, row["value"])
+            if latest:
+                return latest
+        except Exception:
+            pass
+
+    if paths.scans_dir.exists():
+        try:
+            for path in sorted(paths.scans_dir.glob("*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                resources = payload.get("resources")
+                if not isinstance(resources, dict):
+                    resources = (payload.get("result") or {}).get("resources")
+                if not isinstance(resources, dict):
+                    continue
+                latest: dict[str, int] = {}
+                for key, value in resources.items():
+                    add_resource(latest, key, value)
+                if latest:
+                    return latest
+        except Exception:
+            pass
+
+    return {}
+
+
+def _inventory_quantity_index(inventory: dict[str, dict], resources: dict[str, int] | None = None) -> dict[str, int]:
     index: dict[str, int] = {}
     for item_key, payload in inventory.items():
         quantity = _inventory_quantity_value(payload.get("quantity"))
@@ -1886,6 +1946,10 @@ def _inventory_quantity_index(inventory: dict[str, dict]) -> dict[str, int]:
             candidates.add(str(name))
         for candidate in candidates:
             index[candidate] = max(index.get(candidate, 0), quantity)
+    credit_quantity = _inventory_quantity_value((resources or {}).get("credit"))
+    if credit_quantity is not None:
+        for candidate in ("Currency_Icon_Gold", "credit", "credits", "크레딧"):
+            index[candidate] = max(index.get(candidate, 0), credit_quantity)
     return index
 
 
@@ -3132,6 +3196,16 @@ class InventorySortDropdownButton(QPushButton):
         if not self._current_data:
             self._set_current_data(data, emit=False)
 
+    def clear(self) -> None:
+        self._menu.clear()
+        self._options.clear()
+        self._current_data = ""
+        self.setText("")
+
+    def setCurrentIndex(self, index: int) -> None:
+        if 0 <= index < len(self._options):
+            self._set_current_data(self._options[index][1], emit=False)
+
     def currentData(self) -> str:
         return self._current_data
 
@@ -3391,6 +3465,8 @@ class PlanResourceChip(QFrame):
 
 
 class TacticalDeckSlot(QWidget):
+    clicked = Signal()
+
     def __init__(
         self,
         *,
@@ -3406,14 +3482,17 @@ class TacticalDeckSlot(QWidget):
         self._preferred_size = QSize(preferred_width, preferred_height)
         self._pixmap = QPixmap()
         self._text = ""
+        self._badge_text = ""
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.setMinimumWidth(scale_px(24, self._ui_scale))
         self.setFixedHeight(preferred_height)
+        self.setCursor(Qt.PointingHandCursor)
 
-    def setData(self, *, name: str, pixmap: QPixmap) -> None:
+    def setData(self, *, name: str, pixmap: QPixmap, badge_text: str = "") -> None:
         self._text = name
         self._pixmap = pixmap
+        self._badge_text = str(badge_text or "").strip()
         self.setToolTip("")
         self.update()
 
@@ -3453,7 +3532,31 @@ class TacticalDeckSlot(QWidget):
         if self._text and self._pixmap.isNull():
             painter.setPen(QColor(MUTED))
             painter.drawText(self.rect(), Qt.AlignCenter, "*" if self._text.strip() == "*" else "?")
+        if self._badge_text:
+            badge_size = max(scale_px(22, self._ui_scale), min(card_width, card_height) // 4)
+            badge_rect = QRectF(
+                card_x + card_width - badge_size - scale_px(4, self._ui_scale),
+                card_y + scale_px(4, self._ui_scale),
+                badge_size,
+                badge_size,
+            )
+            painter.setPen(QPen(QColor("#ffffff"), max(1, scale_px(2, self._ui_scale))))
+            painter.setBrush(QColor(ACCENT_STRONG))
+            painter.drawEllipse(badge_rect)
+            badge_font = QFont(painter.font())
+            badge_font.setBold(True)
+            badge_font.setPixelSize(max(scale_px(11, self._ui_scale), int(badge_size * 0.52)))
+            painter.setFont(badge_font)
+            painter.setPen(QColor("#ffffff"))
+            painter.drawText(badge_rect, Qt.AlignCenter, self._badge_text)
         painter.end()
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit()
+            event.accept()
+            return
+        super().mousePressEvent(event)
 
 
 class InventoryOpartImpactRow(QWidget):
@@ -3546,8 +3649,10 @@ class TacticalDeckEditor(QWidget):
         self._ui_scale = ui_scale
         self._icon_provider = icon_provider
         self._deck_parser = deck_parser or parse_deck_template
-        self._slot_width = scale_px(74, self._ui_scale)
-        self._slot_height = max(scale_px(58, self._ui_scale), int(round(self._slot_width / self._card_asset.aspect_ratio)))
+        slot_base_width = 74 if self._ui_scale >= SMALL_16_9_SCALE_THRESHOLD else 58
+        slot_base_height = 58 if self._ui_scale >= SMALL_16_9_SCALE_THRESHOLD else 44
+        self._slot_width = scale_px(slot_base_width, self._ui_scale)
+        self._slot_height = max(scale_px(slot_base_height, self._ui_scale), int(round(self._slot_width / self._card_asset.aspect_ratio)))
         self._icons: list[TacticalDeckSlot] = []
         self._deck = TacticalDeck()
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -3701,9 +3806,10 @@ class TacticalDeckPreview(QWidget):
 
 
 class StudentViewerWindow(QMainWindow):
-    def __init__(self, ui_scale: float):
+    def __init__(self, ui_scale: float, startup_geometry: QRect | None = None):
         super().__init__()
         self._ui_scale = ui_scale
+        self._startup_geometry = QRect(startup_geometry) if startup_geometry is not None and not startup_geometry.isEmpty() else None
         self._startup_window_applied = False
         self._applying_work_area = False
         self._detail_panel: QFrame | None = None
@@ -3720,7 +3826,7 @@ class StudentViewerWindow(QMainWindow):
         self._grid_width = self._thumb_width + outer_margin
         self._grid_height = self._thumb_height + outer_margin
         self.setWindowTitle("Blue Archive Planner")
-        self.resize(scale_px(1760, ui_scale), scale_px(1000, ui_scale))
+        self.resize(scale_px(PLANNER_BASE_WIDTH, ui_scale), scale_px(PLANNER_BASE_HEIGHT, ui_scale))
 
         self._pool = QThreadPool.globalInstance()
         self._all_students = load_students()
@@ -3752,6 +3858,7 @@ class StudentViewerWindow(QMainWindow):
         self._selected_raid_guide_id: str | None = None
         self._raid_guide_editor_guard = False
         self._raid_deck_rows: list[dict[str, object]] = []
+        self._raid_selected_deck_slot_index = 0
         self._raid_student_lookup_index: dict[str, list[str]] | None = None
         self._plan_editor_guard = False
         self._selected_plan_student_id: str | None = None
@@ -3774,7 +3881,8 @@ class StudentViewerWindow(QMainWindow):
         self._resource_tab: QWidget | None = None
         self._resources_dirty = False
         self._inventory_snapshot = load_inventory_snapshot()
-        self._inventory_quantity_index_cache = _inventory_quantity_index(self._inventory_snapshot or {})
+        self._resource_snapshot = load_latest_resource_snapshot()
+        self._inventory_quantity_index_cache = _inventory_quantity_index(self._inventory_snapshot or {}, self._resource_snapshot)
         self._plan_goal_map_cache: dict[str, StudentGoal] | None = None
         self._plan_cost_cache: dict[tuple[str, tuple[object, ...]], PlanCostSummary] = {}
         self._plan_resource_icon_path_cache: dict[tuple[str | None, str], Path | None] = {}
@@ -3786,6 +3894,7 @@ class StudentViewerWindow(QMainWindow):
             self._plan_path,
             self._tactical_path,
             self._raid_guide_path,
+            storage_paths.db_path,
         )
         self._storage_mtimes = self._snapshot_storage_mtimes()
         self._stats_cards_layout: QGridLayout | None = None
@@ -3797,6 +3906,17 @@ class StudentViewerWindow(QMainWindow):
         self._stats_sunburst_value_mode: QComboBox | None = None
         self._stats_sunburst_detail: QLabel | None = None
         self._stats_sunburst_top_detail: QLabel | None = None
+        self._stats_detail_path_label: QLabel | None = None
+        self._stats_detail_name_label: QLabel | None = None
+        self._stats_detail_level_label: QLabel | None = None
+        self._stats_detail_total_label: QLabel | None = None
+        self._stats_detail_metric_count_label: QLabel | None = None
+        self._stats_detail_metric_percent_label: QLabel | None = None
+        self._stats_detail_owned_bar: QProgressBar | None = None
+        self._stats_detail_owned_bar_label: QLabel | None = None
+        self._stats_detail_owned_label: QLabel | None = None
+        self._stats_detail_unowned_label: QLabel | None = None
+        self._stats_detail_planned_label: QLabel | None = None
         self._stats_sunburst_breadcrumb_host: QWidget | None = None
         self._stats_sunburst_breadcrumb_layout: QHBoxLayout | None = None
         self._stats_sunburst_legend_layout: QVBoxLayout | None = None
@@ -3845,6 +3965,7 @@ class StudentViewerWindow(QMainWindow):
         self._refresh_resource_view()
         self._refresh_tactical_tab()
         self._resources_dirty = False
+        self.setMinimumSize(1, 1)
 
     def showEvent(self, event) -> None:
         super().showEvent(event)
@@ -3870,24 +3991,28 @@ class StudentViewerWindow(QMainWindow):
         self._reload_data()
 
     def _apply_startup_window_state(self) -> None:
-        self._apply_work_area_geometry()
+        self._apply_work_area_geometry(self._startup_geometry)
+        self._startup_geometry = None
         QTimer.singleShot(0, self._sync_hero_height)
         self._schedule_inventory_layout_sync()
         if os.name == "nt":
             self.winId()
             _set_windows_caption_theme(int(self.winId()), PALETTE_SOFT, _preferred_text_hex(PALETTE_SOFT))
 
-    def _apply_work_area_geometry(self) -> None:
-        screen = self.windowHandle().screen() if self.windowHandle() else QApplication.primaryScreen()
-        available = screen.availableGeometry() if screen is not None else QRect()
-        if os.name == "nt":
+    def _apply_work_area_geometry(self, available_override: QRect | None = None) -> None:
+        if available_override is not None and not available_override.isEmpty():
+            available = QRect(available_override)
+        else:
+            screen = self.windowHandle().screen() if self.windowHandle() else QApplication.primaryScreen()
+            available = screen.availableGeometry() if screen is not None else QRect()
+        if os.name == "nt" and (available_override is None or available_override.isEmpty()):
             self.winId()
             work_area = _windows_work_area(int(self.winId()))
             if work_area is not None:
                 available = work_area
         if available.isEmpty():
             return
-        target_frame = available
+        target_frame = _fit_rect_to_aspect(available)
         frame = self.frameGeometry()
         client = self.geometry()
         left_margin = max(0, client.left() - frame.left())
@@ -3907,6 +4032,10 @@ class StudentViewerWindow(QMainWindow):
         finally:
             self._applying_work_area = False
 
+    def _add_main_tab(self, tabs: QTabWidget, content: QWidget, label: str) -> QWidget:
+        tabs.addTab(content, label)
+        return content
+
     def _build_ui(self) -> None:
         root = QWidget(self)
         root.setObjectName("viewerRoot")
@@ -3925,36 +4054,35 @@ class StudentViewerWindow(QMainWindow):
         self._main_tabs = tabs
         tabs.setObjectName("mainTabs")
         tabs.tabBar().setObjectName("mainTabBar")
+        tabs.tabBar().setUsesScrollButtons(True)
         outer_layout.addWidget(tabs, 1)
 
         students_tab = QWidget()
-        tabs.addTab(students_tab, _tr("tab.students"))
+        self._add_main_tab(tabs, students_tab, _tr("tab.students"))
         self._build_students_tab(students_tab)
 
         plan_tab = QWidget()
-        tabs.addTab(plan_tab, _tr("tab.plans"))
+        self._add_main_tab(tabs, plan_tab, _tr("tab.plans"))
         self._build_plan_tab(plan_tab)
 
         resource_tab = QWidget()
-        self._resource_tab = resource_tab
-        tabs.addTab(resource_tab, "필요 재화")
+        self._resource_tab = self._add_main_tab(tabs, resource_tab, "필요 재화")
         self._build_resource_tab(resource_tab)
 
         inventory_tab = QWidget()
-        self._inventory_tab = inventory_tab
-        tabs.addTab(inventory_tab, _tr("tab.inventory"))
+        self._inventory_tab = self._add_main_tab(tabs, inventory_tab, _tr("tab.inventory"))
         self._build_inventory_tab(inventory_tab)
 
         tactical_tab = QWidget()
-        tabs.addTab(tactical_tab, "전술대항전")
+        self._add_main_tab(tabs, tactical_tab, "전술대항전")
         self._build_tactical_tab(tactical_tab)
 
         raid_guide_tab = QWidget()
-        tabs.addTab(raid_guide_tab, "공략 타임라인")
+        self._add_main_tab(tabs, raid_guide_tab, "공략 타임라인")
         self._build_raid_guide_tab(raid_guide_tab)
 
         stats_tab = QWidget()
-        tabs.addTab(stats_tab, "Statistics")
+        self._add_main_tab(tabs, stats_tab, "Statistics")
         self._build_stats_tab(stats_tab)
 
         tabs.currentChanged.connect(self._on_main_tab_changed)
@@ -5660,6 +5788,7 @@ class StudentViewerWindow(QMainWindow):
             ("weapon_parts", _tr("inventory.category.weapon_parts")),
             ("tech_notes", _tr("inventory.category.tech_notes")),
             ("bd", _tr("inventory.category.bd")),
+            ("resources", _tr("inventory.category.resources")),
             ("other", _tr("inventory.category.other")),
         ):
             tab = QWidget()
@@ -7824,6 +7953,8 @@ class StudentViewerWindow(QMainWindow):
     def _inventory_classify_item(self, item_key: str, payload: dict) -> str:
         item_id = str(payload.get("item_id") or "")
         name = _inventory_display_label(item_key, payload)
+        if item_id == "Currency_Icon_Gold":
+            return "resources"
         if item_id in _OPART_ITEM_IDS:
             return "ooparts"
         if item_id in _WB_ITEM_IDS or item_id in _WORKBOOK_ID_TO_NAME:
@@ -7839,6 +7970,18 @@ class StudentViewerWindow(QMainWindow):
         if _report_icon_for_entry(item_id or None, name):
             return "reports"
         return "other"
+
+    def _inventory_snapshot_with_resources(self, inventory: dict[str, dict]) -> dict[str, dict]:
+        merged = dict(inventory)
+        credit_quantity = _inventory_quantity_value(getattr(self, "_resource_snapshot", {}).get("credit"))
+        if credit_quantity is not None:
+            merged["Currency_Icon_Gold"] = {
+                "item_id": "Currency_Icon_Gold",
+                "name": "크레딧",
+                "quantity": credit_quantity,
+                "item_source": "resources",
+            }
+        return merged
 
     def _inventory_convertible_coverage_key(self, item_id: str, name: str, category: str) -> tuple[str, int] | None:
         stone_match = re.match(r"Equipment_Icon_Exp_(\d+)$", item_id)
@@ -8127,7 +8270,7 @@ class StudentViewerWindow(QMainWindow):
         if not hasattr(self, "_inventory_root_tabs"):
             return
 
-        inventory = self._inventory_snapshot or {}
+        inventory = self._inventory_snapshot_with_resources(self._inventory_snapshot or {})
         self._inventory_requirement_index = self._inventory_plan_requirement_index()
         self._inventory_pool_requirement_index = self._inventory_full_pool_requirement_index()
         if not inventory:
@@ -8193,6 +8336,7 @@ class StudentViewerWindow(QMainWindow):
             "weapon_parts": [],
             "tech_notes": [],
             "bd": [],
+            "resources": [],
             "other": [],
         }
 
@@ -8315,6 +8459,7 @@ class StudentViewerWindow(QMainWindow):
             "weapon_parts": sorted(item_groups["weapon_parts"], key=lambda entry: ordered_sort_key(weapon_order, entry)),
             "tech_notes": sorted(item_groups["tech_notes"], key=lambda entry: self._inventory_school_material_sort_key(entry, material="tech_notes")),
             "bd": sorted(item_groups["bd"], key=lambda entry: self._inventory_school_material_sort_key(entry, material="bd")),
+            "resources": sorted(item_groups["resources"], key=lambda entry: _inventory_display_label(entry[0], entry[1]).lower()),
             "other": sorted(item_groups["other"], key=lambda entry: _inventory_display_label(entry[0], entry[1]).lower()),
         }
 
@@ -8430,8 +8575,9 @@ class StudentViewerWindow(QMainWindow):
         self._raid_boss_input.setPlaceholderText("보스")
         self._raid_difficulty_input = QLineEdit()
         self._raid_difficulty_input.setPlaceholderText("난이도")
-        self._raid_terrain_input = QLineEdit()
-        self._raid_terrain_input.setPlaceholderText("지형")
+        self._raid_terrain_input = QComboBox()
+        for terrain in ("실내전", "시가전", "야전"):
+            self._raid_terrain_input.addItem(terrain, terrain)
         self._raid_time_limit_input = QSpinBox()
         self._raid_time_limit_input.setRange(0, 9999)
         self._raid_time_limit_input.setSuffix(" sec")
@@ -8453,6 +8599,21 @@ class StudentViewerWindow(QMainWindow):
         meta_layout.addWidget(self._raid_notes_input, 3, 0, 1, 6)
         editor_layout.addWidget(meta_panel)
 
+        step_row = QHBoxLayout()
+        step_row.setContentsMargins(0, 0, 0, 0)
+        step_row.setSpacing(scale_px(8, self._ui_scale))
+        self._raid_deck_step_button = QPushButton("1. 덱 설정")
+        self._raid_timeline_step_button = QPushButton("2. 타임라인 작성")
+        self._raid_deck_step_button.clicked.connect(lambda: self._set_raid_editor_step(0))
+        self._raid_timeline_step_button.clicked.connect(self._go_raid_timeline_step)
+        step_row.addWidget(self._raid_deck_step_button)
+        step_row.addWidget(self._raid_timeline_step_button)
+        step_row.addStretch(1)
+        editor_layout.addLayout(step_row)
+
+        self._raid_editor_stack = QStackedWidget()
+        self._raid_editor_stack.setObjectName("sectionTransparentStack")
+
         deck_panel = QFrame()
         deck_panel.setObjectName("planBand")
         deck_layout = QVBoxLayout(deck_panel)
@@ -8465,14 +8626,85 @@ class StudentViewerWindow(QMainWindow):
         deck_header = QLabel("덱")
         deck_header.setObjectName("sectionTitle")
         deck_layout.addWidget(deck_header)
-        self._raid_deck_host = QWidget()
-        self._raid_deck_host.setObjectName("planTransparent")
-        self._raid_deck_grid = QGridLayout(self._raid_deck_host)
-        self._raid_deck_grid.setContentsMargins(0, 0, 0, 0)
-        self._raid_deck_grid.setHorizontalSpacing(scale_px(8, self._ui_scale))
-        self._raid_deck_grid.setVerticalSpacing(scale_px(8, self._ui_scale))
-        deck_layout.addWidget(self._raid_deck_host)
-        editor_layout.addWidget(deck_panel)
+        deck_subtitle = QLabel("전술대항전 탭과 같은 카드 슬롯 형태로 덱을 먼저 확정한 뒤 타임라인을 작성합니다.")
+        deck_subtitle.setObjectName("filterSummary")
+        deck_subtitle.setWordWrap(True)
+        deck_layout.addWidget(deck_subtitle)
+        self._raid_deck_preview_host = QWidget()
+        self._raid_deck_preview_host.setObjectName("planTransparent")
+        self._raid_deck_preview_grid = QGridLayout(self._raid_deck_preview_host)
+        self._raid_deck_preview_grid.setContentsMargins(0, 0, 0, 0)
+        self._raid_deck_preview_grid.setHorizontalSpacing(scale_px(5, self._ui_scale))
+        self._raid_deck_preview_grid.setVerticalSpacing(scale_px(5, self._ui_scale))
+        deck_layout.addWidget(self._raid_deck_preview_host)
+        template_row = QHBoxLayout()
+        template_row.setContentsMargins(0, 0, 0, 0)
+        template_row.setSpacing(scale_px(6, self._ui_scale))
+        self._raid_deck_template_input = QLineEdit()
+        self._raid_deck_template_input.setPlaceholderText("스트라이커1,스트라이커2,...|스페셜1,스페셜2,...  예: 드히나,수시노|아코,히마리")
+        self._raid_deck_template_input.returnPressed.connect(self._import_raid_deck_template)
+        template_import_button = QPushButton("Import")
+        template_copy_button = QPushButton("Copy")
+        template_import_button.clicked.connect(self._import_raid_deck_template)
+        template_copy_button.clicked.connect(self._copy_raid_deck_template)
+        template_row.addWidget(self._raid_deck_template_input, 1)
+        template_row.addWidget(template_import_button)
+        template_row.addWidget(template_copy_button)
+        deck_layout.addLayout(template_row)
+        order_row = QHBoxLayout()
+        order_row.setContentsMargins(0, 0, 0, 0)
+        order_row.setSpacing(scale_px(6, self._ui_scale))
+        self._raid_order_pick_button = QPushButton("순서 설정")
+        self._raid_order_pick_button.setCheckable(True)
+        self._raid_order_pick_button.setToolTip("켜둔 상태에서 캐릭터 아이콘을 누르면 1번부터 첫 사용 순서가 붙습니다. 이미 번호가 붙은 아이콘을 누르면 해당 번호를 제거합니다.")
+        self._raid_order_pick_button.toggled.connect(self._update_raid_order_status)
+        self._raid_order_clear_button = QPushButton("순서 초기화")
+        self._raid_order_clear_button.setToolTip("모든 첫 사용 순서를 지웁니다.")
+        self._raid_order_clear_button.clicked.connect(self._clear_raid_first_orders)
+        self._raid_order_status = QLabel("")
+        self._raid_order_status.setObjectName("filterSummary")
+        self._raid_order_status.setWordWrap(True)
+        order_row.addWidget(self._raid_order_pick_button)
+        order_row.addWidget(self._raid_order_clear_button)
+        order_row.addWidget(self._raid_order_status, 1)
+        deck_layout.addLayout(order_row)
+        detail_panel = QFrame()
+        detail_panel.setObjectName("planSectionPanel")
+        detail_layout = QGridLayout(detail_panel)
+        detail_layout.setContentsMargins(
+            scale_px(12, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(12, self._ui_scale),
+            scale_px(10, self._ui_scale),
+        )
+        detail_layout.setHorizontalSpacing(scale_px(10, self._ui_scale))
+        detail_layout.setVerticalSpacing(scale_px(8, self._ui_scale))
+        self._raid_slot_detail_title = QLabel("슬롯을 선택하세요")
+        self._raid_slot_detail_title.setObjectName("sectionTitle")
+        self._raid_slot_detail_student = QLabel("")
+        self._raid_slot_detail_student.setObjectName("detailSub")
+        self._raid_slot_borrowed = QCheckBox("대여 학생")
+        self._raid_slot_borrowed.stateChanged.connect(self._update_selected_raid_slot_detail)
+        self._raid_slot_notes = QPlainTextEdit()
+        self._raid_slot_notes.setPlaceholderText("선택한 학생/슬롯 메모")
+        self._raid_slot_notes.setMinimumHeight(scale_px(128, self._ui_scale))
+        self._raid_slot_notes.textChanged.connect(self._update_selected_raid_slot_detail)
+        detail_layout.addWidget(self._raid_slot_detail_title, 0, 0)
+        detail_layout.addWidget(self._raid_slot_detail_student, 0, 1)
+        detail_layout.addWidget(self._raid_slot_borrowed, 0, 2)
+        detail_layout.addWidget(self._raid_slot_notes, 1, 0, 1, 3)
+        detail_layout.setColumnStretch(1, 1)
+        deck_layout.addWidget(detail_panel)
+        deck_action_row = QHBoxLayout()
+        deck_action_row.setContentsMargins(0, 0, 0, 0)
+        self._raid_deck_status = QLabel("")
+        self._raid_deck_status.setObjectName("filterSummary")
+        self._raid_deck_status.setWordWrap(True)
+        self._raid_to_timeline_button = QPushButton("타임라인 작성으로")
+        self._raid_to_timeline_button.clicked.connect(self._go_raid_timeline_step)
+        deck_action_row.addWidget(self._raid_deck_status, 1)
+        deck_action_row.addWidget(self._raid_to_timeline_button)
+        deck_layout.addLayout(deck_action_row)
 
         timeline_panel = QFrame()
         timeline_panel.setObjectName("planBand")
@@ -8489,6 +8721,9 @@ class StudentViewerWindow(QMainWindow):
         timeline_title = QLabel("타임라인")
         timeline_title.setObjectName("sectionTitle")
         action_row.addWidget(timeline_title)
+        edit_deck_button = QPushButton("덱 수정")
+        edit_deck_button.clicked.connect(lambda: self._set_raid_editor_step(0))
+        action_row.addWidget(edit_deck_button)
         action_row.addStretch(1)
         for label, callback in (
             ("행 추가", self._add_raid_timeline_row),
@@ -8501,6 +8736,14 @@ class StudentViewerWindow(QMainWindow):
             button.clicked.connect(callback)
             action_row.addWidget(button)
         timeline_layout.addLayout(action_row)
+
+        self._raid_deck_summary_host = QWidget()
+        self._raid_deck_summary_host.setObjectName("planTransparent")
+        self._raid_deck_summary_grid = QGridLayout(self._raid_deck_summary_host)
+        self._raid_deck_summary_grid.setContentsMargins(0, 0, 0, 0)
+        self._raid_deck_summary_grid.setHorizontalSpacing(scale_px(6, self._ui_scale))
+        self._raid_deck_summary_grid.setVerticalSpacing(scale_px(6, self._ui_scale))
+        timeline_layout.addWidget(self._raid_deck_summary_host)
 
         self._raid_timeline_table = QTableWidget(0, 8)
         self._raid_timeline_table.setHorizontalHeaderLabels(
@@ -8544,7 +8787,9 @@ class StudentViewerWindow(QMainWindow):
         save_button.clicked.connect(self._save_current_raid_guide)
         bottom_row.addWidget(save_button)
         timeline_layout.addLayout(bottom_row)
-        editor_layout.addWidget(timeline_panel, 1)
+        self._raid_editor_stack.addWidget(deck_panel)
+        self._raid_editor_stack.addWidget(timeline_panel)
+        editor_layout.addWidget(self._raid_editor_stack, 1)
         splitter.addWidget(editor_panel)
         splitter.setStretchFactor(0, 2)
         splitter.setStretchFactor(1, 7)
@@ -8555,6 +8800,7 @@ class StudentViewerWindow(QMainWindow):
         self._selected_raid_guide_id = self._raid_guide_data.guides[0].id if self._raid_guide_data.guides else None
         self._refresh_raid_guide_list()
         self._load_selected_raid_guide()
+        self._set_raid_editor_step(0)
 
     def _current_raid_guide(self) -> RaidGuide | None:
         selected_id = getattr(self, "_selected_raid_guide_id", None)
@@ -8562,6 +8808,50 @@ class StudentViewerWindow(QMainWindow):
             if guide.id == selected_id:
                 return guide
         return self._raid_guide_data.guides[0] if self._raid_guide_data.guides else None
+
+    def _set_raid_editor_step(self, index: int) -> None:
+        if not hasattr(self, "_raid_editor_stack"):
+            return
+        self._raid_editor_stack.setCurrentIndex(max(0, min(1, index)))
+        active = self._raid_editor_stack.currentIndex()
+        self._raid_deck_step_button.setStyleSheet("font-weight: 900;" if active == 0 else "")
+        self._raid_timeline_step_button.setStyleSheet("font-weight: 900;" if active == 1 else "")
+        if active == 1:
+            self._refresh_raid_deck_summary()
+
+    def _raid_deck_complete(self) -> bool:
+        for row in getattr(self, "_raid_deck_rows", []):
+            student_id = str(row.get("student_id") or "")
+            if not student_id or student_id not in self._records_by_id:
+                return False
+        return bool(getattr(self, "_raid_deck_rows", []))
+
+    def _go_raid_timeline_step(self) -> None:
+        self._sync_raid_deck_slot_icons()
+        if not self._raid_deck_complete():
+            self._raid_deck_status.setStyleSheet("color: #ffb84d; font-weight: 800;")
+            self._raid_deck_status.setText("모든 덱 슬롯을 채운 뒤 타임라인을 작성하세요.")
+            self._set_raid_editor_step(0)
+            return
+        self._raid_deck_status.setStyleSheet("")
+        self._set_raid_editor_step(1)
+
+    def _update_raid_step_state(self) -> None:
+        if not hasattr(self, "_raid_to_timeline_button"):
+            return
+        complete = self._raid_deck_complete()
+        self._raid_to_timeline_button.setEnabled(complete)
+        self._raid_timeline_step_button.setEnabled(complete)
+        if hasattr(self, "_raid_deck_status"):
+            guide = self._collect_raid_guide_from_editor()
+            filled = sum(1 for slot in guide.deck if slot.student_id)
+            total = len(guide.deck)
+            if complete:
+                self._raid_deck_status.setStyleSheet("")
+                self._raid_deck_status.setText(f"덱 설정 완료 · {filled}/{total}")
+            else:
+                self._raid_deck_status.setStyleSheet("")
+                self._raid_deck_status.setText(f"덱 슬롯 {filled}/{total} 입력")
 
     def _save_raid_guide_data(self) -> None:
         save_raid_guides(self._raid_guide_path, self._raid_guide_data)
@@ -8613,6 +8903,15 @@ class StudentViewerWindow(QMainWindow):
         matches = self._raid_student_lookup_index_map().get(self._raid_lookup_key(raw), [])
         return matches[0] if len(matches) == 1 else raw
 
+    def _raid_portrait_pixmap(self, student_id: str, size: int) -> QPixmap:
+        if not student_id or student_id not in self._records_by_id:
+            return QPixmap()
+        source = ensure_thumbnail(student_id, size, size)
+        if source is None or not source.exists():
+            return QPixmap()
+        pixmap = QPixmap(str(source))
+        return pixmap if not pixmap.isNull() else QPixmap()
+
     def _make_raid_student_combo(self, expected_class: str | None = None) -> QComboBox:
         combo = QComboBox()
         combo.setEditable(True)
@@ -8639,6 +8938,294 @@ class StudentViewerWindow(QMainWindow):
         if data:
             return str(data)
         return self._raid_student_id_for_text(combo.currentText())
+
+    def _raid_template_label_for_student(self, student_id: str) -> str:
+        return self._raid_student_label(student_id) if student_id in self._records_by_id else str(student_id or "")
+
+    def _raid_deck_template_from_slots(self) -> str:
+        strikers: list[str] = []
+        supports: list[str] = []
+        for row in getattr(self, "_raid_deck_rows", []):
+            student_id = str(row.get("student_id") or "")
+            label = self._raid_template_label_for_student(student_id)
+            if row.get("slot_type") == "striker":
+                strikers.append(label)
+            else:
+                supports.append(label)
+        return f"{','.join(strikers)}|{','.join(supports)}".strip("|")
+
+    def _sync_raid_template_from_slots(self) -> None:
+        if getattr(self, "_raid_template_sync_guard", False) or not hasattr(self, "_raid_deck_template_input"):
+            return
+        self._raid_template_sync_guard = True
+        self._raid_deck_template_input.setText(self._raid_deck_template_from_slots())
+        self._raid_template_sync_guard = False
+
+    def _raid_template_parts(self, value: str) -> list[str]:
+        normalized = str(value or "").replace("/", ",").replace(";", ",").replace("\n", ",")
+        return [part.strip() for part in normalized.split(",")]
+
+    def _raid_student_ids_for_text(self, text: str) -> list[str]:
+        needle = self._raid_lookup_key(text)
+        if not needle:
+            return []
+        return list(self._raid_student_lookup_index_map().get(needle, []))
+
+    def _parse_raid_deck_template(self, value: str) -> tuple[list[str], list[str], list[str]]:
+        raw = str(value or "").strip()
+        striker_count, support_count = slot_counts_for_mode(str(self._raid_mode_input.currentData() or ""))
+        if "|" in raw:
+            striker_raw, support_raw = raw.split("|", 1)
+            striker_tokens = self._raid_template_parts(striker_raw)
+            support_tokens = self._raid_template_parts(support_raw)
+        else:
+            tokens = self._raid_template_parts(raw)
+            striker_tokens = tokens[:striker_count]
+            support_tokens = tokens[striker_count : striker_count + support_count]
+
+        errors: list[str] = []
+
+        def resolve(tokens: list[str], expected_class: str, label: str, maximum: int) -> list[str]:
+            resolved: list[str] = []
+            for index, token in enumerate(tokens[:maximum], start=1):
+                if not token:
+                    resolved.append("")
+                    continue
+                matches = self._raid_student_ids_for_text(token)
+                if not matches:
+                    errors.append(f"{label}{index}: '{token}' 학생을 인식할 수 없습니다.")
+                    resolved.append(token)
+                    continue
+                if len(matches) > 1:
+                    names = ", ".join(self._raid_student_label(student_id) for student_id in matches[:6])
+                    suffix = "..." if len(matches) > 6 else ""
+                    errors.append(f"{label}{index}: '{token}' 중복 태그입니다. ({names}{suffix})")
+                    resolved.append(token)
+                    continue
+                student_id = matches[0]
+                if student_meta.combat_class(student_id) != expected_class:
+                    errors.append(f"{label}{index}: '{self._raid_student_label(student_id)}'는 {label} 슬롯에 배치할 수 없습니다.")
+                resolved.append(student_id)
+            resolved += [""] * max(0, maximum - len(resolved))
+            return resolved
+
+        return (
+            resolve(striker_tokens, "striker", "S", striker_count),
+            resolve(support_tokens, "special", "SP", support_count),
+            errors,
+        )
+
+    def _apply_raid_deck_template(self, value: str) -> list[str]:
+        strikers, supports, errors = self._parse_raid_deck_template(value)
+        self._raid_template_sync_guard = True
+        for row in getattr(self, "_raid_deck_rows", []):
+            source = strikers if row.get("slot_type") == "striker" else supports
+            slot_index = int(row.get("slot_index") or 1) - 1
+            row["student_id"] = source[slot_index] if slot_index < len(source) else ""
+        self._raid_template_sync_guard = False
+        self._sync_raid_deck_slot_icons()
+        self._sync_raid_template_from_slots()
+        self._refresh_selected_raid_slot_detail()
+        self._update_raid_step_state()
+        self._refresh_raid_validation()
+        return errors
+
+    def _import_raid_deck_template(self) -> None:
+        value = self._raid_deck_template_input.text().strip() or QApplication.clipboard().text().strip()
+        if not value:
+            return
+        errors = self._apply_raid_deck_template(value)
+        if errors:
+            self._raid_deck_status.setStyleSheet("color: #ffb84d; font-weight: 800;")
+            self._raid_deck_status.setText(" / ".join(errors[:3]) + (f" 외 {len(errors) - 3}개" if len(errors) > 3 else ""))
+
+    def _copy_raid_deck_template(self) -> None:
+        text = self._raid_deck_template_from_slots()
+        self._raid_deck_template_input.setText(text)
+        QApplication.clipboard().setText(text)
+
+    def _sync_raid_deck_slot_icons(self) -> None:
+        preview_icons = getattr(self, "_raid_deck_preview_icons", [])
+        for index, row in enumerate(getattr(self, "_raid_deck_rows", [])):
+            icon = preview_icons[index] if index < len(preview_icons) else None
+            if not isinstance(icon, TacticalDeckSlot):
+                continue
+            student_id = str(row.get("student_id") or "")
+            name = self._raid_student_label(student_id) if student_id in self._records_by_id else student_id
+            pixmap = self._raid_portrait_pixmap(student_id, max(self._thumb_width, self._thumb_height))
+            first_order = int(row.get("first_order") or 0)
+            icon.setData(name=name, pixmap=pixmap, badge_text=str(first_order) if first_order > 0 else "")
+        self._update_raid_order_status()
+
+    def _ordered_raid_deck_indices(self, *, exclude_index: int | None = None) -> list[int]:
+        ordered: list[tuple[int, int]] = []
+        for index, row in enumerate(getattr(self, "_raid_deck_rows", [])):
+            if exclude_index is not None and index == exclude_index:
+                continue
+            try:
+                order = int(row.get("first_order") or 0)
+            except (TypeError, ValueError):
+                order = 0
+            if order > 0:
+                ordered.append((order, index))
+        return [index for _order, index in sorted(ordered)]
+
+    def _apply_raid_first_order(self, index: int, order: int) -> None:
+        rows = getattr(self, "_raid_deck_rows", [])
+        if not rows or index < 0 or index >= len(rows):
+            return
+        ordered_indices = self._ordered_raid_deck_indices(exclude_index=index)
+        if order > 0:
+            insert_at = max(0, min(order - 1, len(ordered_indices)))
+            ordered_indices.insert(insert_at, index)
+        for row in rows:
+            row["first_order"] = 0
+        for order_index, row_index in enumerate(ordered_indices, start=1):
+            rows[row_index]["first_order"] = order_index
+        self._sync_raid_deck_slot_icons()
+        self._refresh_selected_raid_slot_detail()
+        self._refresh_raid_validation()
+
+    def _next_raid_first_order(self) -> int:
+        rows = getattr(self, "_raid_deck_rows", [])
+        used: set[int] = set()
+        for row in rows:
+            try:
+                order = int(row.get("first_order") or 0)
+            except (TypeError, ValueError):
+                order = 0
+            if order > 0:
+                used.add(order)
+        for order in range(1, len(rows) + 1):
+            if order not in used:
+                return order
+        return len(rows) + 1
+
+    def _update_raid_order_status(self, _checked: bool | None = None) -> None:
+        if not hasattr(self, "_raid_order_status"):
+            return
+        rows = getattr(self, "_raid_deck_rows", [])
+        count = 0
+        for row in rows:
+            try:
+                order = int(row.get("first_order") or 0)
+            except (TypeError, ValueError):
+                order = 0
+            if order > 0:
+                count += 1
+        if hasattr(self, "_raid_order_pick_button") and self._raid_order_pick_button.isChecked():
+            self._raid_order_pick_button.setText("확인")
+            next_order = self._next_raid_first_order()
+            self._raid_order_status.setText(f"아이콘을 누르면 {next_order}번으로 지정됩니다. 번호가 있는 아이콘은 누르면 해제됩니다.")
+        else:
+            if hasattr(self, "_raid_order_pick_button"):
+                self._raid_order_pick_button.setText("순서 설정")
+            self._raid_order_status.setText(f"첫 사용 순서 {count}/{len(rows)}")
+
+    def _on_raid_deck_slot_clicked(self, index: int) -> None:
+        self._select_raid_deck_slot(index)
+        if not hasattr(self, "_raid_order_pick_button") or not self._raid_order_pick_button.isChecked():
+            return
+        rows = getattr(self, "_raid_deck_rows", [])
+        if index < 0 or index >= len(rows):
+            return
+        if not str(rows[index].get("student_id") or ""):
+            self._update_raid_order_status()
+            return
+        current_order = int(rows[index].get("first_order") or 0)
+        self._apply_raid_first_order(index, 0 if current_order > 0 else self._next_raid_first_order())
+
+    def _clear_raid_first_orders(self) -> None:
+        for row in getattr(self, "_raid_deck_rows", []):
+            row["first_order"] = 0
+        self._sync_raid_deck_slot_icons()
+        self._refresh_selected_raid_slot_detail()
+        self._refresh_raid_validation()
+
+    def _select_raid_deck_slot(self, index: int) -> None:
+        rows = getattr(self, "_raid_deck_rows", [])
+        if not rows:
+            self._raid_selected_deck_slot_index = 0
+            return
+        self._raid_selected_deck_slot_index = max(0, min(index, len(rows) - 1))
+        self._refresh_selected_raid_slot_detail()
+
+    def _refresh_selected_raid_slot_detail(self) -> None:
+        if not hasattr(self, "_raid_slot_detail_title"):
+            return
+        rows = getattr(self, "_raid_deck_rows", [])
+        if not rows:
+            self._raid_slot_detail_title.setText("슬롯을 선택하세요")
+            self._raid_slot_detail_student.setText("")
+            return
+        index = max(0, min(getattr(self, "_raid_selected_deck_slot_index", 0), len(rows) - 1))
+        self._raid_selected_deck_slot_index = index
+        row = rows[index]
+        slot_label = "S" if row.get("slot_type") == "striker" else "SP"
+        student_id = str(row.get("student_id") or "")
+        name = self._raid_student_label(student_id) if student_id in self._records_by_id else student_id or "-"
+        self._raid_slot_detail_guard = True
+        self._raid_slot_detail_title.setText(f"{slot_label}{row.get('slot_index')} 상세")
+        self._raid_slot_detail_student.setText(name)
+        self._raid_slot_borrowed.setChecked(bool(row.get("borrowed")))
+        self._raid_slot_notes.setPlainText(str(row.get("notes") or ""))
+        self._raid_slot_detail_guard = False
+
+    def _update_selected_raid_slot_detail(self) -> None:
+        if getattr(self, "_raid_slot_detail_guard", False):
+            return
+        rows = getattr(self, "_raid_deck_rows", [])
+        if not rows:
+            return
+        index = max(0, min(getattr(self, "_raid_selected_deck_slot_index", 0), len(rows) - 1))
+        rows[index]["borrowed"] = self._raid_slot_borrowed.isChecked()
+        rows[index]["notes"] = self._raid_slot_notes.toPlainText().strip()
+        if not str(rows[index].get("student_id") or ""):
+            rows[index]["first_order"] = 0
+            self._sync_raid_deck_slot_icons()
+            self._refresh_raid_validation()
+            return
+        self._sync_raid_deck_slot_icons()
+        self._refresh_raid_validation()
+
+    def _refresh_raid_deck_summary(self) -> None:
+        if not hasattr(self, "_raid_deck_summary_grid"):
+            return
+        while self._raid_deck_summary_grid.count():
+            item = self._raid_deck_summary_grid.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        guide = self._collect_raid_guide_from_editor()
+        for index, slot in enumerate(guide.deck):
+            cell = QWidget()
+            cell.setObjectName("planTransparent")
+            layout = QVBoxLayout(cell)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(scale_px(3, self._ui_scale))
+            slot_width = scale_px(54, self._ui_scale)
+            slot_height = max(scale_px(42, self._ui_scale), int(round(slot_width / self._student_card_asset.aspect_ratio)))
+            icon = TacticalDeckSlot(
+                card_asset=self._student_card_asset,
+                ui_scale=self._ui_scale,
+                preferred_width=slot_width,
+                preferred_height=slot_height,
+            )
+            icon.setFixedSize(slot_width, slot_height)
+            name = self._raid_student_label(slot.student_id) if slot.student_id in self._records_by_id else slot.student_id
+            icon.setData(
+                name=name,
+                pixmap=self._raid_portrait_pixmap(slot.student_id, slot_width),
+                badge_text=str(slot.first_order) if getattr(slot, "first_order", 0) else "",
+            )
+            label_prefix = "S" if slot.slot_type == "striker" else "SP"
+            label = QLabel(f"{label_prefix}{slot.slot_index} {name or '-'}")
+            label.setObjectName("detailSub")
+            label.setAlignment(Qt.AlignCenter)
+            label.setWordWrap(False)
+            layout.addWidget(icon, 0, Qt.AlignCenter)
+            layout.addWidget(label)
+            self._raid_deck_summary_grid.addWidget(cell, index // 6, index % 6)
 
     def _refresh_raid_guide_list(self) -> None:
         if not hasattr(self, "_raid_guide_list"):
@@ -8686,61 +9273,73 @@ class StudentViewerWindow(QMainWindow):
         self._raid_mode_input.setCurrentIndex(max(0, mode_index))
         self._raid_boss_input.setText(guide.boss)
         self._raid_difficulty_input.setText(guide.difficulty)
-        self._raid_terrain_input.setText(guide.terrain)
+        terrain_index = self._raid_terrain_input.findData(guide.terrain)
+        self._raid_terrain_input.setCurrentIndex(max(0, terrain_index))
         self._raid_time_limit_input.setValue(int(guide.time_limit_seconds or 0))
         self._raid_notes_input.setPlainText(guide.notes)
         self._rebuild_raid_deck_editor(guide)
         self._set_raid_timeline_steps(guide.timeline)
         self._raid_guide_editor_guard = False
+        self._update_raid_step_state()
+        self._refresh_raid_deck_summary()
         self._refresh_raid_validation()
 
     def _rebuild_raid_deck_editor(self, guide: RaidGuide | None = None) -> None:
         guide = sanitize_guide(guide or self._collect_raid_guide_from_editor())
-        while self._raid_deck_grid.count():
-            item = self._raid_deck_grid.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
+        if hasattr(self, "_raid_deck_preview_grid"):
+            while self._raid_deck_preview_grid.count():
+                item = self._raid_deck_preview_grid.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
         self._raid_deck_rows = []
+        self._raid_deck_preview_icons: list[TacticalDeckSlot] = []
+        columns = max(1, len(guide.deck))
         for index, slot in enumerate(guide.deck):
-            row = QFrame()
-            row.setObjectName("planSectionPanel")
-            row_layout = QGridLayout(row)
-            row_layout.setContentsMargins(
-                scale_px(8, self._ui_scale),
-                scale_px(8, self._ui_scale),
-                scale_px(8, self._ui_scale),
-                scale_px(8, self._ui_scale),
-            )
             slot_label = "S" if slot.slot_type == "striker" else "SP"
-            title = QLabel(f"{slot_label}{slot.slot_index}")
-            title.setObjectName("detailSectionTitle")
-            combo = self._make_raid_student_combo("striker" if slot.slot_type == "striker" else "special")
-            self._set_combo_student(combo, slot.student_id)
-            alias = QLineEdit(slot.alias)
-            alias.setPlaceholderText("별칭")
-            borrowed = QCheckBox("대여")
-            borrowed.setChecked(bool(slot.is_borrowed))
-            notes = QLineEdit(slot.notes)
-            notes.setPlaceholderText("메모")
-            row_layout.addWidget(title, 0, 0)
-            row_layout.addWidget(combo, 0, 1, 1, 3)
-            row_layout.addWidget(alias, 1, 0, 1, 2)
-            row_layout.addWidget(borrowed, 1, 2)
-            row_layout.addWidget(notes, 1, 3)
-            target_column = index % 2
-            target_row = index // 2
-            self._raid_deck_grid.addWidget(row, target_row, target_column)
+            if len(guide.deck) > 6:
+                slot_width = min(self._thumb_width, scale_px(104, self._ui_scale))
+                slot_height = max(scale_px(78, self._ui_scale), int(round(slot_width / self._student_card_asset.aspect_ratio)))
+            else:
+                slot_width = min(self._thumb_width, scale_px(220, self._ui_scale))
+                slot_height = max(scale_px(120, self._ui_scale), int(round(slot_width / self._student_card_asset.aspect_ratio)))
+
+            preview_cell = QWidget()
+            preview_cell.setObjectName("planTransparent")
+            preview_layout = QVBoxLayout(preview_cell)
+            preview_layout.setContentsMargins(0, 0, 0, 0)
+            preview_layout.setSpacing(scale_px(3, self._ui_scale))
+            preview_icon = TacticalDeckSlot(
+                card_asset=self._student_card_asset,
+                ui_scale=self._ui_scale,
+                preferred_width=slot_width,
+                preferred_height=slot_height,
+            )
+            preview_icon.setFixedSize(slot_width, slot_height)
+            preview_label = QLabel(f"{slot_label}{slot.slot_index}")
+            preview_label.setObjectName("detailSub")
+            preview_label.setAlignment(Qt.AlignCenter)
+            preview_layout.addWidget(preview_icon, 0, Qt.AlignCenter)
+            preview_layout.addWidget(preview_label)
+            self._raid_deck_preview_grid.addWidget(preview_cell, index // columns, index % columns)
+            self._raid_deck_preview_icons.append(preview_icon)
+            preview_icon.clicked.connect(lambda slot_index=index: self._on_raid_deck_slot_clicked(slot_index))
             self._raid_deck_rows.append(
                 {
                     "slot_type": slot.slot_type,
                     "slot_index": slot.slot_index,
-                    "student": combo,
-                    "alias": alias,
-                    "borrowed": borrowed,
-                    "notes": notes,
+                    "student_id": slot.student_id,
+                    "alias": slot.alias,
+                    "borrowed": bool(slot.is_borrowed),
+                    "first_order": int(getattr(slot, "first_order", 0) or 0),
+                    "notes": slot.notes,
                 }
             )
+        self._raid_selected_deck_slot_index = min(getattr(self, "_raid_selected_deck_slot_index", 0), max(0, len(self._raid_deck_rows) - 1))
+        self._sync_raid_deck_slot_icons()
+        self._sync_raid_template_from_slots()
+        self._refresh_selected_raid_slot_detail()
+        self._update_raid_step_state()
 
     def _set_raid_timeline_steps(self, steps: list[TimelineStep]) -> None:
         self._raid_guide_editor_guard = True
@@ -8804,10 +9403,11 @@ class StudentViewerWindow(QMainWindow):
                 GuideDeckSlot(
                     slot_type=str(row["slot_type"]),
                     slot_index=int(row["slot_index"]),
-                    student_id=self._combo_student_id(row["student"]),
-                    alias=row["alias"].text().strip(),
-                    is_borrowed=row["borrowed"].isChecked(),
-                    notes=row["notes"].text().strip(),
+                    student_id=str(row.get("student_id") or ""),
+                    alias=str(row.get("alias") or ""),
+                    is_borrowed=bool(row.get("borrowed")),
+                    first_order=int(row.get("first_order") or 0),
+                    notes=str(row.get("notes") or ""),
                 )
             )
         return sanitize_guide(
@@ -8817,7 +9417,7 @@ class StudentViewerWindow(QMainWindow):
                 mode=str(mode or guide.mode),
                 boss=self._raid_boss_input.text().strip() if hasattr(self, "_raid_boss_input") else guide.boss,
                 difficulty=self._raid_difficulty_input.text().strip() if hasattr(self, "_raid_difficulty_input") else guide.difficulty,
-                terrain=self._raid_terrain_input.text().strip() if hasattr(self, "_raid_terrain_input") else guide.terrain,
+                terrain=str(self._raid_terrain_input.currentData() or self._raid_terrain_input.currentText()).strip() if hasattr(self, "_raid_terrain_input") else guide.terrain,
                 time_limit_seconds=self._raid_time_limit_input.value() if hasattr(self, "_raid_time_limit_input") else guide.time_limit_seconds,
                 notes=self._raid_notes_input.toPlainText().strip() if hasattr(self, "_raid_notes_input") else guide.notes,
                 deck=deck or default_deck_for_mode(str(mode or guide.mode)),
@@ -8831,6 +9431,7 @@ class StudentViewerWindow(QMainWindow):
         guide = self._collect_raid_guide_from_editor()
         guide.deck = default_deck_for_mode(guide.mode)
         self._rebuild_raid_deck_editor(guide)
+        self._set_raid_editor_step(0)
         self._refresh_raid_validation()
 
     def _on_raid_timeline_item_changed(self, item: QTableWidgetItem) -> None:
@@ -9237,9 +9838,9 @@ class StudentViewerWindow(QMainWindow):
         loss_button = QPushButton("패")
         win_button.setCheckable(True)
         loss_button.setCheckable(True)
-        save_button = QPushButton("Save")
-        clear_button = QPushButton("Clear")
-        action_width = scale_px(72, self._ui_scale)
+        save_button = QPushButton("전적 추가")
+        clear_button = QPushButton("새 입력")
+        action_width = scale_px(86 if self._ui_scale >= SMALL_16_9_SCALE_THRESHOLD else 68, self._ui_scale)
         for button in (win_button, loss_button, save_button, clear_button):
             button.setFixedWidth(action_width)
         header.addWidget(title)
@@ -9485,7 +10086,7 @@ class StudentViewerWindow(QMainWindow):
         panel["editing_created_at"] = match.created_at if match is not None else ""
         save_button = panel.get("save_button")
         if save_button is not None:
-            save_button.setText("Update" if match is not None else "Save")
+            save_button.setText("수정 저장" if match is not None else "전적 추가")
         self._set_tactical_panel_mode(panel, panel.get("mode", "attack"))
 
     def _load_tactical_match_into_panel(self, panel: dict, match: TacticalMatch) -> None:
@@ -9860,10 +10461,10 @@ class StudentViewerWindow(QMainWindow):
             season=season,
             opponent=opponent,
             result=str(panel["result"]),
-            my_attack=(existing_match.my_attack if existing_match is not None else TacticalDeck()) if is_defense_record else attack_deck,
-            opponent_defense=(existing_match.opponent_defense if existing_match is not None else TacticalDeck()) if is_defense_record else defense_deck,
-            my_defense=defense_deck if is_defense_record else (existing_match.my_defense if existing_match is not None else TacticalDeck()),
-            opponent_attack=attack_deck if is_defense_record else (existing_match.opponent_attack if existing_match is not None else TacticalDeck()),
+            my_attack=TacticalDeck() if is_defense_record else attack_deck,
+            opponent_defense=TacticalDeck() if is_defense_record else defense_deck,
+            my_defense=defense_deck if is_defense_record else TacticalDeck(),
+            opponent_attack=attack_deck if is_defense_record else TacticalDeck(),
             source=panel.get("editing_source") or (existing_match.source if existing_match is not None else "내 기록") or "내 기록",
             notes=panel["notes"].toPlainText().strip(),
             created_at=panel.get("editing_created_at") or (existing_match.created_at if existing_match is not None else now) or now,
@@ -9877,7 +10478,7 @@ class StudentViewerWindow(QMainWindow):
             self._refresh_tactical_match_list()
         finally:
             self._hide_busy_overlay()
-        self._set_tactical_panel_editing(panel, match)
+        self._set_tactical_panel_editing(panel, match if editing_match_id else None)
         action_text = "수정했습니다" if editing_match_id else "저장했습니다"
         self._set_tactical_status(f"{self._tactical_date_label(match)} {opponent} 전적을 {action_text}.", panel=panel)
 
@@ -9888,6 +10489,10 @@ class StudentViewerWindow(QMainWindow):
         self._set_tactical_panel_editing(panel, None)
         self._set_tactical_panel_result(panel, "win")
         self._set_tactical_panel_mode(panel, "attack")
+        if hasattr(self, "_tactical_date"):
+            self._tactical_date.setText(date.today().isoformat())
+        if hasattr(self, "_tactical_season"):
+            self._tactical_season.setText(self._tactical_data.season or "")
         self._clear_tactical_deck_inputs(panel["attack"])
         self._clear_tactical_deck_inputs(panel["defense"])
 
@@ -10675,28 +11280,36 @@ class StudentViewerWindow(QMainWindow):
         sunburst_title = QLabel("분포 탐색")
         sunburst_title.setObjectName("sectionTitle")
         sunburst_header.addWidget(sunburst_title)
-        self._stats_sunburst_root_button = QPushButton("전체")
-        self._stats_sunburst_root_button.clicked.connect(self._stats_reset_sunburst_root)
-        sunburst_header.addWidget(self._stats_sunburst_root_button, 0, Qt.AlignRight)
-        self._stats_sunburst_back_button = QPushButton("뒤로")
-        self._stats_sunburst_back_button.clicked.connect(self._stats_sunburst_back)
-        sunburst_header.addWidget(self._stats_sunburst_back_button, 0, Qt.AlignRight)
-        self._stats_sunburst_clear_button = QPushButton("선택 해제")
-        self._stats_sunburst_clear_button.clicked.connect(self._stats_clear_sunburst_selection)
-        sunburst_header.addWidget(self._stats_sunburst_clear_button, 0, Qt.AlignRight)
-        self._stats_sunburst_value_mode = QComboBox()
-        self._stats_sunburst_value_mode.currentIndexChanged.connect(lambda *_: self._stats_refresh_sunburst_mode())
-        sunburst_header.addWidget(self._stats_sunburst_value_mode, 0, Qt.AlignRight)
-        self._stats_sunburst_mode = QComboBox()
+        sunburst_header.addStretch(1)
+        self._stats_sunburst_mode = InventorySortDropdownButton()
         self._stats_sunburst_mode.addItem("학교 > 역할 > 공격 타입", "collection_school_role_attack")
         self._stats_sunburst_mode.addItem("Striker/Special > 역할 > 포지션", "collection_class_role_position")
         self._stats_sunburst_mode.addItem("공격 타입 > 방어 타입 > 역할", "collection_attack_defense_role")
+        self._stats_sunburst_mode.addItem("직군 > 육성도", "role_training")
         self._stats_sunburst_mode.addItem("필요 재화 > 세부 재화 > 티어/계열", "plan_required")
         self._stats_sunburst_mode.addItem("부족 재화 > 세부 재화 > 영향 학생", "plan_shortage")
         self._stats_sunburst_mode.addItem("기능군 > 태그 > 학생", "skill_function")
         self._stats_sunburst_mode.setCurrentIndex(4)
-        self._stats_sunburst_mode.currentIndexChanged.connect(lambda *_: self._stats_refresh_sunburst_mode())
+        self._stats_sunburst_mode.modeChanged.connect(lambda *_: self._stats_refresh_sunburst_mode())
         sunburst_header.addWidget(self._stats_sunburst_mode, 0, Qt.AlignRight)
+        self._stats_sunburst_value_mode = InventorySortDropdownButton()
+        self._stats_sunburst_value_mode.modeChanged.connect(lambda *_: self._stats_refresh_sunburst_mode())
+        sunburst_header.addWidget(self._stats_sunburst_value_mode, 0, Qt.AlignRight)
+        nav_buttons = QWidget()
+        nav_buttons.setObjectName("planTransparent")
+        nav_layout = QHBoxLayout(nav_buttons)
+        nav_layout.setContentsMargins(0, 0, 0, 0)
+        nav_layout.setSpacing(scale_px(6, self._ui_scale))
+        self._stats_sunburst_root_button = QPushButton("전체")
+        self._stats_sunburst_root_button.clicked.connect(self._stats_reset_sunburst_root)
+        nav_layout.addWidget(self._stats_sunburst_root_button)
+        self._stats_sunburst_back_button = QPushButton("뒤로")
+        self._stats_sunburst_back_button.clicked.connect(self._stats_sunburst_back)
+        nav_layout.addWidget(self._stats_sunburst_back_button)
+        self._stats_sunburst_clear_button = QPushButton("선택 해제")
+        self._stats_sunburst_clear_button.clicked.connect(self._stats_clear_sunburst_selection)
+        nav_layout.addWidget(self._stats_sunburst_clear_button)
+        sunburst_header.addWidget(nav_buttons, 0, Qt.AlignRight)
         sunburst_layout.addLayout(sunburst_header)
         self._stats_sunburst_breadcrumb_host = QWidget()
         self._stats_sunburst_breadcrumb_layout = QHBoxLayout(self._stats_sunburst_breadcrumb_host)
@@ -10749,20 +11362,97 @@ class StudentViewerWindow(QMainWindow):
         selected_title = QLabel("선택 상세 정보")
         selected_title.setObjectName("sectionTitle")
         detail_layout.addWidget(selected_title)
-        detail_title = QLabel("현재 root 상위 항목")
-        detail_title.setObjectName("detailSectionTitle")
-        detail_layout.addWidget(detail_title)
+
+        path_caption = QLabel("선택 경로")
+        path_caption.setObjectName("detailSub")
+        detail_layout.addWidget(path_caption)
+        self._stats_detail_path_label = QLabel("L0: 전체")
+        self._stats_detail_path_label.setObjectName("filterSummary")
+        detail_layout.addWidget(self._stats_detail_path_label, 0, Qt.AlignLeft)
+
+        divider = QFrame()
+        divider.setFrameShape(QFrame.HLine)
+        divider.setObjectName("sectionDivider")
+        detail_layout.addWidget(divider)
+
+        title_row = QHBoxLayout()
+        title_row.setContentsMargins(0, 0, 0, 0)
+        title_stack = QVBoxLayout()
+        title_stack.setContentsMargins(0, 0, 0, 0)
+        title_stack.setSpacing(0)
+        self._stats_detail_name_label = QLabel("전체")
+        self._stats_detail_name_label.setObjectName("detailSectionTitle")
+        self._stats_detail_level_label = QLabel("Level 0")
+        self._stats_detail_level_label.setObjectName("detailSub")
+        title_stack.addWidget(self._stats_detail_name_label)
+        title_stack.addWidget(self._stats_detail_level_label)
+        title_row.addLayout(title_stack, 1)
+        self._stats_detail_total_label = QLabel("0")
+        self._stats_detail_total_label.setObjectName("metricValue")
+        self._stats_detail_total_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        title_row.addWidget(self._stats_detail_total_label, 0)
+        detail_layout.addLayout(title_row)
+
+        metric_row = QHBoxLayout()
+        metric_row.setContentsMargins(0, 0, 0, 0)
+        metric_row.setSpacing(scale_px(8, self._ui_scale))
+        count_card = QFrame()
+        count_card.setObjectName("statPanel")
+        count_layout = QVBoxLayout(count_card)
+        count_layout.setContentsMargins(scale_px(10, self._ui_scale), scale_px(8, self._ui_scale), scale_px(10, self._ui_scale), scale_px(8, self._ui_scale))
+        count_title = QLabel("학생 수")
+        count_title.setObjectName("detailSub")
+        self._stats_detail_metric_count_label = QLabel("0")
+        self._stats_detail_metric_count_label.setObjectName("kpiValueSub")
+        count_layout.addWidget(count_title)
+        count_layout.addWidget(self._stats_detail_metric_count_label)
+        metric_row.addWidget(count_card, 1)
+        percent_card = QFrame()
+        percent_card.setObjectName("statPanel")
+        percent_layout = QVBoxLayout(percent_card)
+        percent_layout.setContentsMargins(scale_px(10, self._ui_scale), scale_px(8, self._ui_scale), scale_px(10, self._ui_scale), scale_px(8, self._ui_scale))
+        percent_title = QLabel("비율")
+        percent_title.setObjectName("detailSub")
+        self._stats_detail_metric_percent_label = QLabel("0.0%")
+        self._stats_detail_metric_percent_label.setObjectName("kpiValueSub")
+        percent_layout.addWidget(percent_title)
+        percent_layout.addWidget(self._stats_detail_metric_percent_label)
+        metric_row.addWidget(percent_card, 1)
+        detail_layout.addLayout(metric_row)
+
+        owned_label_row = QHBoxLayout()
+        owned_label_row.setContentsMargins(0, 0, 0, 0)
+        owned_title = QLabel("보유율")
+        owned_title.setObjectName("detailSub")
+        owned_label_row.addWidget(owned_title)
+        self._stats_detail_owned_bar_label = QLabel("0.0%")
+        self._stats_detail_owned_bar_label.setObjectName("detailSub")
+        self._stats_detail_owned_bar_label.setAlignment(Qt.AlignRight)
+        owned_label_row.addWidget(self._stats_detail_owned_bar_label)
+        detail_layout.addLayout(owned_label_row)
+        self._stats_detail_owned_bar = QProgressBar()
+        self._stats_detail_owned_bar.setRange(0, 100)
+        self._stats_detail_owned_bar.setTextVisible(False)
+        self._stats_detail_owned_bar.setFixedHeight(scale_px(8, self._ui_scale))
+        detail_layout.addWidget(self._stats_detail_owned_bar)
+
+        chip_row = QHBoxLayout()
+        chip_row.setContentsMargins(0, 0, 0, 0)
+        chip_row.setSpacing(scale_px(8, self._ui_scale))
+        self._stats_detail_owned_label = QLabel("보유\n0")
+        self._stats_detail_unowned_label = QLabel("미보유\n0")
+        self._stats_detail_planned_label = QLabel("계획\n0")
+        for chip in (self._stats_detail_owned_label, self._stats_detail_unowned_label, self._stats_detail_planned_label):
+            chip.setObjectName("filterSummary")
+            chip.setAlignment(Qt.AlignCenter)
+            chip.setMinimumHeight(scale_px(48, self._ui_scale))
+            chip_row.addWidget(chip, 1)
+        detail_layout.addLayout(chip_row)
+
         self._stats_sunburst_top_detail = QLabel("")
-        self._stats_sunburst_top_detail.setObjectName("detailSub")
-        self._stats_sunburst_top_detail.setWordWrap(True)
-        detail_layout.addWidget(self._stats_sunburst_top_detail)
-        selected_title = QLabel("선택된 segment")
-        selected_title.setObjectName("detailSectionTitle")
-        detail_layout.addWidget(selected_title)
+        self._stats_sunburst_top_detail.hide()
         self._stats_sunburst_detail = QLabel("")
-        self._stats_sunburst_detail.setObjectName("detailSub")
-        self._stats_sunburst_detail.setWordWrap(True)
-        detail_layout.addWidget(self._stats_sunburst_detail)
+        self._stats_sunburst_detail.hide()
         detail_layout.addStretch(1)
         middle_row.addWidget(detail_panel, 2)
         host_layout.addLayout(middle_row, 1)
@@ -12589,6 +13279,29 @@ class StudentViewerWindow(QMainWindow):
         if self._stats_sunburst_value_mode is None:
             return
         mode = self._stats_current_sunburst_mode()
+        if mode == "role_training":
+            options = (("직군 평균 육성도", "training_avg"), ("학생 수", "student_count"), ("보유 학생만", "owned_count"))
+            default = "training_avg"
+        elif mode.startswith("collection_") or mode == "skill_function":
+            options = (("학생 수", "student_count"), ("보유 학생만", "owned_count"), ("계획 학생만", "planned_count"))
+            default = "student_count"
+        elif mode == "plan_required":
+            options = (("필요 비율", "required"), ("충족률", "coverage"), ("부족 비율", "shortage"))
+            default = "required"
+        else:
+            options = (("부족 비율", "shortage"), ("필요 비율", "required"), ("충족률", "coverage"))
+            default = "shortage"
+        current = self._stats_sunburst_value_key()
+        if current not in {value for _label, value in options}:
+            current = default
+        self._stats_sunburst_value_mode.blockSignals(True)
+        self._stats_sunburst_value_mode.clear()
+        for label, value in options:
+            self._stats_sunburst_value_mode.addItem(label, value)
+        selected_index = next((index for index, (_label, value) in enumerate(options) if value == current), 0)
+        self._stats_sunburst_value_mode.setCurrentIndex(selected_index)
+        self._stats_sunburst_value_mode.blockSignals(False)
+        return
         if mode.startswith("collection_") or mode == "skill_function":
             options = (("학생 수", "student_count"), ("보유 학생", "owned_count"), ("계획 학생", "planned_count"))
             default = "student_count"
@@ -12797,6 +13510,23 @@ class StudentViewerWindow(QMainWindow):
             pieces.append((weapon_level + weapon_star) / 2)
         return (sum(pieces) / len(pieces) * 100.0) if pieces else 0.0
 
+    def _stats_training_score(self, record: StudentRecord) -> float:
+        return self._stats_growth_score(record)
+
+    def _stats_training_group_rows(self, field_name: str, records: list[StudentRecord]) -> list[DistributionRow]:
+        grouped: dict[str, list[float]] = defaultdict(list)
+        for record in records:
+            values = get_student_values(record, field_name)
+            label = format_filter_value(field_name, values[0]) if values else "(없음)"
+            grouped[label].append(self._stats_training_score(record))
+        rows: list[DistributionRow] = []
+        for index, (label, scores) in enumerate(
+            sorted(grouped.items(), key=lambda item: (-(sum(item[1]) / max(1, len(item[1]))), item[0].casefold()))
+        ):
+            average = sum(scores) / max(1, len(scores))
+            rows.append(DistributionRow(label=label, count=average, percent=average, color=PALETTE[index % len(PALETTE)]))
+        return rows
+
     def _stats_growth_rows(self, mode: str) -> list[DistributionRow]:
         records = [record for record in self._stats_scope_records() if record.owned]
         counts: Counter[str] = Counter()
@@ -12856,6 +13586,8 @@ class StudentViewerWindow(QMainWindow):
                     else:
                         counts["미장착/잠김"] += 1
             return self._stats_make_rows(counts, denominator=len(records) * 3)
+        elif mode == "role_training":
+            return self._stats_training_group_rows("role", records)
         elif mode in {"ability_hp", "ability_atk", "ability_heal"}:
             field_name = {"ability_hp": "stat_hp", "ability_atk": "stat_atk", "ability_heal": "stat_heal"}[mode]
             buckets = ((1, 5, "1-5"), (6, 10, "6-10"), (11, 15, "11-15"), (16, 20, "16-20"), (21, 24, "21-24"), (25, 25, "25"))
@@ -13251,6 +13983,14 @@ class StudentViewerWindow(QMainWindow):
                 current[key] = float(current.get(key, 0.0) or 0.0) + float(value)
             except (TypeError, ValueError):
                 pass
+        for key in ("training_score_sum", "training_count"):
+            value = incoming.get(key)
+            if value is None:
+                continue
+            try:
+                current[key] = float(current.get(key, 0.0) or 0.0) + float(value)
+            except (TypeError, ValueError):
+                pass
         impacts = incoming.get("impacts")
         if isinstance(impacts, list):
             current.setdefault("impacts", [])
@@ -13293,6 +14033,11 @@ class StudentViewerWindow(QMainWindow):
                 owned = float(context.get("owned", 0.0) or 0.0)
                 node_value = 100.0 if required <= 0 and owned > 0 else max(0.0, min(100.0, owned / required * 100.0)) if required > 0 else 0.0
                 context["value_mode"] = "coverage"
+            elif value_mode == "training_avg":
+                score_sum = float(context.get("training_score_sum", 0.0) or 0.0)
+                score_count = float(context.get("training_count", 0.0) or 0.0)
+                node_value = max(0.0, min(100.0, score_sum / score_count)) if score_count > 0 else 0.0
+                context["value_mode"] = "training_avg"
             node = SunburstNode(label=label, value=node_value, children=children, context=context)
             node.context = context | {"node": node}
             return node
@@ -13325,6 +14070,46 @@ class StudentViewerWindow(QMainWindow):
             or (value_key == "planned_count" and record.student_id in goal_map)
         ]
         return self._sunburst_tree_from_paths(title, paths)
+
+    @staticmethod
+    def _stats_training_bucket_label(score: float) -> str:
+        if score >= 90:
+            return "90-100%"
+        if score >= 75:
+            return "75-89%"
+        if score >= 60:
+            return "60-74%"
+        if score >= 40:
+            return "40-59%"
+        return "0-39%"
+
+    def _role_training_sunburst_root(self) -> SunburstNode:
+        value_key = self._stats_sunburst_value_key()
+        records = list(self._filtered_students)
+        paths: list[tuple] = []
+        value_mode: str | None = "training_avg" if value_key == "training_avg" else None
+        for record in records:
+            if value_key in {"training_avg", "owned_count"} and not record.owned:
+                continue
+            score = self._stats_training_score(record)
+            role_label = self._stats_value_label(record, "role")
+            bucket_label = self._stats_training_bucket_label(score)
+            if value_key == "student_count" or value_key == "owned_count":
+                value = 1.0
+            else:
+                value = score
+            paths.append(
+                (
+                    (role_label, bucket_label),
+                    value,
+                    {
+                        "student_ids": {record.student_id},
+                        "training_score_sum": score,
+                        "training_count": 1,
+                    },
+                )
+            )
+        return self._sunburst_tree_from_paths("직군별 육성도", paths, value_mode=value_mode if paths else None)
 
     def _skill_book_sunburst_path(self, item_id: str, name: str) -> tuple[str, ...]:
         if "SkillBook_Ultimate" in item_id or "Ultimate" in item_id:
@@ -13464,6 +14249,8 @@ class StudentViewerWindow(QMainWindow):
             return self._resource_sunburst_root(shortage_only=True)
         if mode == "skill_function":
             return self._skill_function_sunburst_root()
+        if mode == "role_training":
+            return self._role_training_sunburst_root()
         return self._collection_sunburst_root(str(mode or "collection_school_role_attack"))
 
     def _stats_rebuild_sunburst_breadcrumb(self, breadcrumb: tuple[str, ...]) -> None:
@@ -13505,10 +14292,6 @@ class StudentViewerWindow(QMainWindow):
             layout.addWidget(empty)
             return
         max_depth = max(1, self._stats_sunburst._display_depth(root, is_root=True))
-        guide = QLabel("색: 안쪽 #ff2bb2 → 바깥 #ffa2e9\n높이: 같은 Level 안에서 위쪽 항목일수록 높은 arc")
-        guide.setObjectName("detailSub")
-        guide.setWordWrap(True)
-        layout.addWidget(guide)
         levels: dict[int, dict[str, dict[str, object]]] = defaultdict(dict)
 
         def collect(nodes: list[SunburstNode], depth: int, path: tuple[str, ...]) -> None:
@@ -13547,7 +14330,8 @@ class StudentViewerWindow(QMainWindow):
                 SunburstWidget._node_color(SunburstNode("Level"), 0, depth, max_depth),
             )
             level_total = sum(float(entry.get("value", 0.0) or 0.0) for _label, entry in entries)
-            for label, entry in entries[:max_rows_per_level]:
+            visible_entries = entries[:max_rows_per_level]
+            for entry_index, (label, entry) in enumerate(visible_entries):
                 value = float(entry.get("value", 0.0) or 0.0)
                 percent = (value / level_total * 100.0) if level_total else 0.0
                 paths = entry.get("paths")
@@ -13561,6 +14345,8 @@ class StudentViewerWindow(QMainWindow):
                     depth,
                     path_tuple,
                     tooltip="\n".join(tooltip_paths),
+                    height_index=entry_index,
+                    height_total=len(visible_entries),
                 )
             if len(entries) > max_rows_per_level:
                 more = QLabel(f"+ {len(entries) - max_rows_per_level} more")
@@ -13591,6 +14377,8 @@ class StudentViewerWindow(QMainWindow):
         depth: int,
         path: tuple[str, ...],
         tooltip: str | None = None,
+        height_index: int = 0,
+        height_total: int = 1,
     ) -> None:
         row = QWidget()
         row.setFixedHeight(scale_px(20, self._ui_scale))
@@ -13598,7 +14386,9 @@ class StudentViewerWindow(QMainWindow):
         row_layout.setContentsMargins(scale_px(max(0, depth - 1) * 14, self._ui_scale), 0, 0, 0)
         row_layout.setSpacing(scale_px(6, self._ui_scale))
         swatch = QLabel("")
-        swatch.setFixedSize(scale_px(9, self._ui_scale), scale_px(9, self._ui_scale))
+        ratio = (height_total - height_index) / max(1, height_total)
+        swatch_height = scale_px(4 + ratio * 10, self._ui_scale)
+        swatch.setFixedSize(scale_px(9, self._ui_scale), swatch_height)
         swatch.setStyleSheet(f"background: {color}; border-radius: {scale_px(2, self._ui_scale)}px;")
         row_layout.addWidget(swatch, 0, Qt.AlignVCenter)
         label = QLabel(label_text)
@@ -13612,6 +14402,56 @@ class StudentViewerWindow(QMainWindow):
         row_layout.addWidget(value_label, 0, Qt.AlignVCenter)
         layout.addWidget(row)
 
+    def _stats_update_sunburst_detail_panel(self, display_root: SunburstNode, breadcrumb: tuple[str, ...]) -> None:
+        required_widgets = (
+            self._stats_detail_path_label,
+            self._stats_detail_name_label,
+            self._stats_detail_level_label,
+            self._stats_detail_total_label,
+            self._stats_detail_metric_count_label,
+            self._stats_detail_metric_percent_label,
+            self._stats_detail_owned_bar,
+            self._stats_detail_owned_bar_label,
+            self._stats_detail_owned_label,
+            self._stats_detail_unowned_label,
+            self._stats_detail_planned_label,
+        )
+        if any(widget is None for widget in required_widgets):
+            return
+        context = dict(display_root.context or {})
+        if self._stats_sunburst_selected_context:
+            context |= self._stats_sunburst_selected_context
+        path = self._stats_sunburst_selected_path or breadcrumb or (display_root.label,)
+        level = max(0, len(path) - 1)
+        label = path[-1] if path else display_root.label
+        student_ids_raw = context.get("student_ids")
+        student_ids = {str(item) for item in student_ids_raw} if isinstance(student_ids_raw, set) else set()
+        if not student_ids and isinstance(student_ids_raw, (list, tuple)):
+            student_ids = {str(item) for item in student_ids_raw}
+        scoped_records = [record for record in self._filtered_students if not student_ids or record.student_id in student_ids]
+        total_students = len(scoped_records)
+        owned = sum(1 for record in scoped_records if record.owned)
+        unowned = max(0, total_students - owned)
+        goal_map = self._plan_goal_map()
+        planned = sum(1 for record in scoped_records if record.student_id in goal_map)
+        percent = (total_students / max(1, len(self._filtered_students)) * 100.0) if self._filtered_students else 0.0
+        owned_rate = owned / max(1, total_students) * 100.0 if total_students else 0.0
+        training_sum = float(context.get("training_score_sum", 0.0) or 0.0)
+        training_count = float(context.get("training_count", 0.0) or 0.0)
+        total_text = f"{training_sum / training_count:.1f}%" if training_count > 0 else f"{total_students:,}"
+
+        self._stats_detail_path_label.setText(f"L{level}: {label}")
+        self._stats_detail_name_label.setText(label)
+        self._stats_detail_level_label.setText(f"Level {level}")
+        self._stats_detail_total_label.setText(total_text)
+        self._stats_detail_metric_count_label.setText(f"{total_students:,}")
+        self._stats_detail_metric_percent_label.setText(f"{percent:.1f}%")
+        self._stats_detail_owned_bar.setValue(max(0, min(100, int(round(owned_rate)))))
+        self._stats_detail_owned_bar_label.setText(f"{owned_rate:.1f}%")
+        self._stats_detail_owned_label.setText(f"보유\n{owned:,}")
+        self._stats_detail_unowned_label.setText(f"미보유\n{unowned:,}")
+        self._stats_detail_planned_label.setText(f"계획\n{planned:,}")
+
     def _refresh_stats_sunburst(self) -> None:
         if self._stats_sunburst is None or self._stats_sunburst_detail is None or self._stats_sunburst_top_detail is None:
             return
@@ -13623,6 +14463,7 @@ class StudentViewerWindow(QMainWindow):
         self._stats_sunburst.setRoot(display_root, selected_path=(), breadcrumb=breadcrumb)
         self._stats_rebuild_sunburst_breadcrumb(breadcrumb)
         self._stats_update_sunburst_legend(display_root)
+        self._stats_update_sunburst_detail_panel(display_root, breadcrumb)
         if self._stats_sunburst_root_button is not None:
             self._stats_sunburst_root_button.setEnabled(display_root is not root or bool(self._stats_sunburst_selected_path))
         if self._stats_sunburst_back_button is not None:
@@ -13652,6 +14493,10 @@ class StudentViewerWindow(QMainWindow):
                 lines.append("Path: " + " > ".join(self._stats_sunburst_selected_path))
             if student_count:
                 lines.append(f"Students: {student_count:,}")
+            training_sum = float(context.get("training_score_sum", 0.0) or 0.0)
+            training_count = float(context.get("training_count", 0.0) or 0.0)
+            if training_count > 0:
+                lines.append(f"Training: {training_sum / training_count:.1f}%")
             if required or owned or shortage:
                 coverage = 100.0 if required <= 0 else max(0.0, min(100.0, owned / required * 100.0))
                 lines.append(f"Required: {_format_count(required, compact=True)}")
@@ -13709,6 +14554,7 @@ class StudentViewerWindow(QMainWindow):
             1,
         ) if owned else 0
         avg_score = round(sum(self._stats_growth_score(record) for record in owned_records) / max(1, owned), 1) if owned else 0
+        avg_training = round(sum(self._stats_training_score(record) for record in owned_records) / max(1, owned), 1) if owned else 0
         complete_count = 0
         for record in planned_records:
             summary = self._cached_goal_cost(record.student_id, record=record, goal=goal_map.get(record.student_id), goal_map=goal_map)
@@ -13725,7 +14571,7 @@ class StudentViewerWindow(QMainWindow):
             ("보유율", f"{(owned / max(1, total) * 100.0):.1f}%", f"{owned} / {total}"),
             ("계획 편입률", f"{(planned / max(1, total) * 100.0):.1f}%", f"{planned} / {total}"),
             ("평균 레벨 / 성급", f"Lv.{avg_level} / ★{avg_star}", "보유 학생 기준"),
-            ("육성 완성도", f"{avg_score:.1f}%", f"계획 완료율 {completion:.1f}% · 부족 {shortage_count}종"),
+            ("육성 완성도", f"{avg_training:.1f}%", "기존 종합 점수 기준"),
         )
         for index, (label, value, sub) in enumerate(summary_cards):
             card = QFrame()
@@ -13788,6 +14634,7 @@ class StudentViewerWindow(QMainWindow):
             ("능력개방 HP", "ability_hp"),
             ("능력개방 ATK", "ability_atk"),
             ("능력개방 HEAL", "ability_heal"),
+            ("직군별 육성도", "role_training"),
             ("종합 완성도", "growth_score"),
         )
         plan_options = (
@@ -13976,7 +14823,8 @@ class StudentViewerWindow(QMainWindow):
     def _reload_data(self) -> None:
         self._all_students = load_students()
         self._inventory_snapshot = load_inventory_snapshot()
-        self._inventory_quantity_index_cache = _inventory_quantity_index(self._inventory_snapshot or {})
+        self._resource_snapshot = load_latest_resource_snapshot()
+        self._inventory_quantity_index_cache = _inventory_quantity_index(self._inventory_snapshot or {}, self._resource_snapshot)
         self._plan = load_plan(self._plan_path)
         self._tactical_data = load_tactical_challenge(self._tactical_path, load_matches=False)
         self._raid_guide_data = load_raid_guides(self._raid_guide_path)
@@ -14338,7 +15186,12 @@ def main() -> int:
     ui_font_family = _load_ui_font_family()
     if ui_font_family:
         app.setFont(QFont(ui_font_family))
-    window = StudentViewerWindow(get_qt_ui_scale(app, base_width=1680, base_height=1080))
+    startup_screen = app.screenAt(QCursor.pos()) or app.primaryScreen()
+    startup_geometry = startup_screen.availableGeometry() if startup_screen is not None else None
+    window = StudentViewerWindow(
+        get_qt_ui_scale(app, base_width=PLANNER_BASE_WIDTH, base_height=PLANNER_BASE_HEIGHT),
+        startup_geometry=startup_geometry,
+    )
     window.show()
     return app.exec()
 

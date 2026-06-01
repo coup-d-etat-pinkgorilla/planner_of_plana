@@ -374,6 +374,9 @@ class FloatingOverlay(tk.Toplevel):
         self._log_label.pack(padx=scale_px(6, self._ui_scale), pady=scale_px(4, self._ui_scale), fill="both")
 
     def _state_text(self) -> str:
+        if self._app_state == AppState.WATCHING:
+            label = "로비 감시 중" if self._in_lobby else "대상 창 감시 중"
+            return f"상태: {label}"
         labels = {
             AppState.INIT: "초기화 중",
             AppState.IDLE: "대상 창 선택 필요",
@@ -399,6 +402,8 @@ class FloatingOverlay(tk.Toplevel):
         if self._app_state == AppState.WATCHING:
             if not self._in_lobby:
                 return [
+                    ("아이템창 스캔", LBLUE, BG, "items"),
+                    ("장비창 스캔", PURPLE, BG, "equipment"),
                     ("현재 학생 스캔", GREEN, BG, "current_student"),
                     ("입력 테스트", LBLUE, BG, "input_test"),
                     ("학생 뷰어", YELLOW, BG, "view_students"),

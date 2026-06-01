@@ -3380,12 +3380,18 @@ class Scanner:
     def scan_items(
         self,
         inventory_profile_id: str | list[str] | tuple[str, ...] | None = None,
+        *,
+        navigate_from_menu: bool = True,
+        return_to_lobby: bool = True,
     ) -> list[ItemEntry]:
         self.log("[scan] item scan start")
         prev_forced_profile_id = self._forced_inventory_profile_id
         try:
-            if not self._open_menu():
-                return []
+            if navigate_from_menu:
+                if not self._open_menu():
+                    return []
+            else:
+                self.log("  using current item inventory screen")
             item_profiles = self._item_scan_profiles(inventory_profile_id)
             all_items: list[ItemEntry] = []
             sort_rule_checked = False
@@ -3394,10 +3400,11 @@ class Scanner:
                 profile_label = profile_id or "all"
                 self.log(f"[scan] item pass {index}/{len(item_profiles)} profile={profile_label}")
                 self._forced_inventory_profile_id = profile_id
-                if not self._go_to("item_entry_button", "items"):
-                    return all_items
-                if not self._wait(0.5):
-                    return all_items
+                if navigate_from_menu:
+                    if not self._go_to("item_entry_button", "items"):
+                        return all_items
+                    if not self._wait(0.5):
+                        return all_items
                 if not self._prepare_item_inventory(profile_id, ensure_sort_rule=not sort_rule_checked):
                     return all_items
                 sort_rule_checked = True
@@ -3405,7 +3412,7 @@ class Scanner:
                 result = self._scan_grid("item", "item", ITEM_INVENTORY_DRAG, ITEM_INVENTORY_DRAG.delta_px)
                 all_items.extend(result)
                 self.log(f"[scan] item pass done: {len(result)} entries")
-                if index < len(item_profiles):
+                if navigate_from_menu and index < len(item_profiles):
                     if not self._exit_inventory_to_menu():
                         return all_items
 
@@ -3416,19 +3423,28 @@ class Scanner:
             return []
         finally:
             self._forced_inventory_profile_id = prev_forced_profile_id
-            self._return_inventory_to_lobby()
+            if return_to_lobby:
+                self._return_inventory_to_lobby()
 
-    def scan_equipment(self) -> list[ItemEntry]:
+    def scan_equipment(
+        self,
+        *,
+        navigate_from_menu: bool = True,
+        return_to_lobby: bool = True,
+    ) -> list[ItemEntry]:
         self.log("[scan] equipment scan start")
         prev_forced_profile_id = self._forced_inventory_profile_id
         try:
             self._forced_inventory_profile_id = "equipment"
-            if not self._open_menu():
-                return []
-            if not self._go_to("equipment_entry_button", "equipment"): 
-                return []
-            if not self._wait(0.5):
-                return []
+            if navigate_from_menu:
+                if not self._open_menu():
+                    return []
+                if not self._go_to("equipment_entry_button", "equipment"):
+                    return []
+                if not self._wait(0.5):
+                    return []
+            else:
+                self.log("  using current equipment inventory screen")
             if not self._prepare_equipment_inventory():
                 return []
             self._reset_inventory_scan_state("equipment")
@@ -3445,7 +3461,8 @@ class Scanner:
             return []
         finally:
             self._forced_inventory_profile_id = prev_forced_profile_id
-            self._return_inventory_to_lobby()
+            if return_to_lobby:
+                self._return_inventory_to_lobby()
 
 
 

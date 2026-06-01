@@ -10,14 +10,15 @@ from uuid import uuid4
 
 RAID_GUIDE_DATA_VERSION = 1
 
+MODE_DECK_4_2 = "deck_4_2"
+MODE_DECK_6_4 = "deck_6_4"
 MODE_TOTAL_ASSAULT = "total_assault"
 MODE_GRAND_ASSAULT = "grand_assault"
 MODE_RESTRICTION_RELEASE = "restriction_release"
 
 RAID_GUIDE_MODES = {
-    MODE_TOTAL_ASSAULT: "총력전",
-    MODE_GRAND_ASSAULT: "대결전",
-    MODE_RESTRICTION_RELEASE: "제약해제결전",
+    MODE_DECK_4_2: "4:2",
+    MODE_DECK_6_4: "6:4",
 }
 
 STRIKER_SLOT = "striker"
@@ -55,6 +56,7 @@ class GuideDeckSlot:
     student_id: str = ""
     alias: str = ""
     is_borrowed: bool = False
+    first_order: int = 0
     notes: str = ""
 
 
@@ -82,7 +84,7 @@ class TimelineStep:
 class RaidGuide:
     id: str
     title: str = "새 공략"
-    mode: str = MODE_TOTAL_ASSAULT
+    mode: str = MODE_DECK_4_2
     boss: str = ""
     difficulty: str = ""
     terrain: str = ""
@@ -98,8 +100,14 @@ class RaidGuideData:
     guides: list[RaidGuide] = field(default_factory=list)
 
 
+def normalize_raid_guide_mode(mode: str) -> str:
+    if mode in {MODE_RESTRICTION_RELEASE, MODE_DECK_6_4}:
+        return MODE_DECK_6_4
+    return MODE_DECK_4_2
+
+
 def slot_counts_for_mode(mode: str) -> tuple[int, int]:
-    if mode == MODE_RESTRICTION_RELEASE:
+    if normalize_raid_guide_mode(mode) == MODE_DECK_6_4:
         return 6, 4
     return 4, 2
 
@@ -111,7 +119,7 @@ def default_deck_for_mode(mode: str) -> list[GuideDeckSlot]:
     return slots
 
 
-def new_raid_guide(title: str = "새 공략", mode: str = MODE_TOTAL_ASSAULT) -> RaidGuide:
+def new_raid_guide(title: str = "새 공략", mode: str = MODE_DECK_4_2) -> RaidGuide:
     return RaidGuide(id=uuid4().hex, title=title, mode=mode, deck=default_deck_for_mode(mode))
 
 
@@ -138,12 +146,17 @@ def sanitize_deck_slots(mode: str, slots: list[GuideDeckSlot] | list[dict[str, A
             slot_index = int(slot.slot_index)
         except (TypeError, ValueError):
             continue
+        try:
+            first_order = max(0, int(getattr(slot, "first_order", 0) or 0))
+        except (TypeError, ValueError):
+            first_order = 0
         incoming[(slot_type, slot_index)] = GuideDeckSlot(
             slot_type=slot_type,
             slot_index=slot_index,
             student_id=str(slot.student_id or "").strip(),
             alias=str(slot.alias or "").strip(),
             is_borrowed=bool(slot.is_borrowed),
+            first_order=first_order,
             notes=str(slot.notes or "").strip(),
         )
 
@@ -302,8 +315,7 @@ def sanitize_guide(guide: RaidGuide | dict[str, Any]) -> RaidGuide:
         filtered = {key: value for key, value in guide.items() if key in valid_fields}
         filtered.setdefault("id", uuid4().hex)
         result = RaidGuide(**filtered)
-    if result.mode not in RAID_GUIDE_MODES:
-        result.mode = MODE_TOTAL_ASSAULT
+    result.mode = normalize_raid_guide_mode(result.mode)
     result.title = str(result.title or "새 공략").strip() or "새 공략"
     try:
         result.time_limit_seconds = max(0, int(result.time_limit_seconds or 0))
@@ -353,6 +365,15 @@ def validate_guide(guide: RaidGuide, *, known_student_ids: set[str] | None = Non
         warnings.append("스페셜 슬롯 수가 모드 제한을 넘었습니다.")
 
     deck_ids = {slot.student_id for slot in guide.deck if slot.student_id}
+    first_orders: dict[int, str] = {}
+    for slot in guide.deck:
+        if slot.first_order <= 0:
+            continue
+        label = f"{slot.slot_type}{slot.slot_index}"
+        if slot.first_order in first_orders:
+            warnings.append(f"첫 사용 순서 {slot.first_order}이(가) {first_orders[slot.first_order]}와 {label}에 중복 지정되어 있습니다.")
+        else:
+            first_orders[slot.first_order] = label
     previous_actor = ""
     for step in guide.timeline:
         actor_id = step.actor_student_id.strip()
