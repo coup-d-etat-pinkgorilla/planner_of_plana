@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Optional
 
 import core.student_meta as student_meta
-from core.config import get_storage_paths
+from core.config import BASE_DIR, TEMPLATE_DIR, get_storage_paths
 from gui.student_filters import (
     FILTER_FIELD_LABELS,
     FILTER_FIELD_ORDER,
@@ -35,9 +35,8 @@ try:
 except ImportError:
     HAS_PIL = False
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-TEMPLATE_DIR = BASE_DIR / "templates" / "students_portraits"
-POLI_BG_DIR = BASE_DIR / "templates" / "icons" / "temp"
+PORTRAIT_DIR = TEMPLATE_DIR / "students_portraits"
+POLI_BG_DIR = TEMPLATE_DIR / "icons" / "temp"
 POLI_BG_TEXTURES = sorted(POLI_BG_DIR.glob("UITex_BGPoliLight_*.png"))
 MAIN_UI_PALETTE_PATH = BASE_DIR / "gui" / "main_ui_color_palete.txt"
 
@@ -275,7 +274,7 @@ def _load_photo(student_id: str, size: tuple[int, int]) -> Optional[ImageTk.Phot
         return _img_cache[key]
 
     path = next(
-        (candidate for candidate in (TEMPLATE_DIR / f"{student_id}.png", TEMPLATE_DIR / f"{student_id}.jpg") if candidate.exists()),
+        (candidate for candidate in (PORTRAIT_DIR / f"{student_id}.png", PORTRAIT_DIR / f"{student_id}.jpg") if candidate.exists()),
         None,
     )
     if path is None:

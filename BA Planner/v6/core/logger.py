@@ -39,6 +39,7 @@ core/logger.py — BA Analyzer v6
 from __future__ import annotations
 
 import logging
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -87,6 +88,7 @@ class _LevelFilter(logging.Filter):
 # ══════════════════════════════════════════════════════════
 
 _initialized = False
+_scan_debug_handler: Optional[logging.Handler] = None
 
 
 def setup_logging(
@@ -172,6 +174,46 @@ def get_logger(name: str) -> logging.Logger:
     if not _initialized:
         setup_logging()
     return logging.getLogger(name)
+
+
+def enable_scan_debug_log(
+    scan_id: str,
+    mode: str = "",
+    log_dir: Optional[Path] = None,
+) -> Path:
+    """Attach an extra DEBUG file handler for one scanner run."""
+    global _scan_debug_handler
+    if not _initialized:
+        setup_logging()
+
+    if log_dir is None:
+        from core.config import APP_DIR
+        log_dir = APP_DIR / "logs"
+
+    log_dir = Path(log_dir)
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_scan_id = re.sub(r"[^0-9A-Za-z._-]+", "_", str(scan_id or "unknown")).strip("._-") or "unknown"
+    safe_mode = re.sub(r"[^0-9A-Za-z._-]+", "_", str(mode or "scan")).strip("._-") or "scan"
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = log_dir / f"scan_{stamp}_{safe_mode}_{safe_scan_id}.log"
+
+    root = logging.getLogger(ROOT)
+    if _scan_debug_handler is not None:
+        try:
+            root.removeHandler(_scan_debug_handler)
+            _scan_debug_handler.close()
+        except Exception:
+            pass
+        _scan_debug_handler = None
+
+    handler = logging.FileHandler(log_path, encoding="utf-8")
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(logging.Formatter(_FILE_FMT, datefmt=_FILE_DATEFMT))
+    root.addHandler(handler)
+    _scan_debug_handler = handler
+    root.info("[Logger] scan debug log: %s", log_path)
+    return log_path
 
 
 # ══════════════════════════════════════════════════════════

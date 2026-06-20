@@ -48,6 +48,8 @@ SCALAR_FIELDS: tuple[str, ...] = (
     "terrain_urban",
     "terrain_indoor",
     "weapon3_terrain_boost",
+    "has_favorite_item_jp",
+    "has_favorite_item_kr",
 )
 SKILL_FIELDS: tuple[str, ...] = (
     "passive_stat",
@@ -584,6 +586,7 @@ def _mapped_material_rows(
 def scalar_values(local_student_id: str, student: dict[str, Any], items: dict[str, dict[str, Any]]) -> dict[str, Any]:
     equipment = list(student.get("Equipment") or [])
     growth_payload = _growth_material_payload(local_student_id, student, items)
+    gear_released = list((student.get("Gear") or {}).get("Released") or [])
     result = {
         "search_tags": _unique_text_values(student.get("SearchTags")),
         "school": SCHOOL_MAP.get(str(student.get("School")), student.get("School")),
@@ -616,6 +619,10 @@ def scalar_values(local_student_id: str, student: dict[str, Any], items: dict[st
         "terrain_urban": _terrain_rank(student.get("StreetBattleAdaptation")),
         "terrain_indoor": _terrain_rank(student.get("IndoorBattleAdaptation")),
         "weapon3_terrain_boost": WEAPON_BOOST_MAP.get(str((student.get("Weapon") or {}).get("AdaptationType"))),
+        # SchaleDB orders release flags as JP, Global/KR, CN. BA Planner uses
+        # the first two values because KR follows JP with a release delay.
+        "has_favorite_item_jp": "yes" if len(gear_released) > 0 and bool(gear_released[0]) else "no",
+        "has_favorite_item_kr": "yes" if len(gear_released) > 1 and bool(gear_released[1]) else "no",
     }
     return result
 

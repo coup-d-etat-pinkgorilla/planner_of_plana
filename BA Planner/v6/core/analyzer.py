@@ -43,6 +43,10 @@ STAT_MIN_VALUE   = 0
 # 스탯 해금 조건
 STAT_UNLOCK_LEVEL = 90
 STAT_UNLOCK_STAR  = 5
+SKILL3_UNLOCK_STAR = 3
+SKILL2_UNLOCK_STAR = 2
+EQUIP2_UNLOCK_LEVEL = 10
+EQUIP3_UNLOCK_LEVEL = 20
 
 # 신뢰도 채점 기본 필드 (weapon/equip4/stat 은 조건부 추가)
 _BASE_SCORED_FIELDS: tuple[str, ...] = (
@@ -51,14 +55,7 @@ _BASE_SCORED_FIELDS: tuple[str, ...] = (
     "weapon_state",
     "ex_skill",
     "skill1",
-    "skill2",
-    "skill3",
     "equip1",
-    "equip2",
-    "equip3",
-    "equip1_level",
-    "equip2_level",
-    "equip3_level",
 )
 _WEAPON_SCORED_FIELDS  = ("weapon_star", "weapon_level")
 _STAT_FIELDS           = ("stat_hp", "stat_atk", "stat_heal")
@@ -91,6 +88,23 @@ def _scored_fields_for(student: dict) -> list[str]:
     fields = list(_BASE_SCORED_FIELDS)
 
     sid = student.get("student_id", "")
+    level = _int(student.get("level"))
+    star = _int(student.get("student_star"))
+
+    if star is None or star >= SKILL2_UNLOCK_STAR:
+        fields.append("skill2")
+    if star is None or star >= SKILL3_UNLOCK_STAR:
+        fields.append("skill3")
+
+    if level is None or level >= EQUIP2_UNLOCK_LEVEL:
+        fields.append("equip2")
+    if level is None or level >= EQUIP3_UNLOCK_LEVEL:
+        fields.append("equip3")
+
+    unavailable_equipment = {None, "", "unknown", "empty", "level_locked", "love_locked", "null"}
+    for slot in (1, 2, 3):
+        if student.get(f"equip{slot}") not in unavailable_equipment:
+            fields.append(f"equip{slot}_level")
 
     # equip4: 해당 학생만 채점
     if favorite_item_enabled(sid):
@@ -98,13 +112,11 @@ def _scored_fields_for(student: dict) -> list[str]:
 
     # 무기 보유 시 weapon 필드 채점
     ws = student.get("weapon_state")
-    if ws in ("weapon_equipped", "weapon_unlocked_not_equipped"):
+    if ws == "weapon_equipped":
         fields += list(_WEAPON_SCORED_FIELDS)
 
     # 스탯: 해금 조건(Lv90 + 5★) 충족 시만 채점
-    level = student.get("level") or 0
-    star  = student.get("student_star") or 0
-    if level >= STAT_UNLOCK_LEVEL and star >= STAT_UNLOCK_STAR:
+    if (level or 0) >= STAT_UNLOCK_LEVEL and (star or 0) >= STAT_UNLOCK_STAR:
         fields += list(_STAT_FIELDS)
 
     return fields

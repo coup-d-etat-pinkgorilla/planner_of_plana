@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 import os
 import re
+import zlib
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 RAID_GUIDE_DATA_VERSION = 1
+RAID_GUIDE_SHARE_PREFIX = "BAPRG1:"
 
 MODE_DECK_4_2 = "deck_4_2"
 MODE_DECK_6_4 = "deck_6_4"
@@ -19,6 +23,55 @@ MODE_RESTRICTION_RELEASE = "restriction_release"
 RAID_GUIDE_MODES = {
     MODE_DECK_4_2: "4:2",
     MODE_DECK_6_4: "6:4",
+}
+
+RAID_GUIDE_DIFFICULTIES = (
+    "Normal",
+    "Hard",
+    "VeryHard",
+    "Hardcore",
+    "Extreme",
+    "Insane",
+    "Torment",
+    "Lunatic",
+)
+
+RAID_BOSS_TIME_LIMIT_SECONDS = {
+    "비나": 180,
+    "KAITEN FX Mk.0": 180,
+    "헤세드": 240,
+    "시로&쿠로": 240,
+    "예로니무스": 240,
+    "페로로지라": 240,
+    "호드": 240,
+    "고즈": 240,
+    "그레고리오": 240,
+    "호버크래프트": 240,
+    "쿠로카게": 240,
+    "게부라": 240,
+    "예소드": 270,
+    "세트의 분노": 270,
+    "호크마": 300,
+    "티페레트": 300,
+}
+
+RAID_BOSS_DEFAULT_MODES = {
+    "비나": MODE_DECK_4_2,
+    "KAITEN FX Mk.0": MODE_DECK_4_2,
+    "헤세드": MODE_DECK_4_2,
+    "시로&쿠로": MODE_DECK_4_2,
+    "예로니무스": MODE_DECK_4_2,
+    "페로로지라": MODE_DECK_4_2,
+    "호드": MODE_DECK_4_2,
+    "고즈": MODE_DECK_4_2,
+    "그레고리오": MODE_DECK_4_2,
+    "호버크래프트": MODE_DECK_4_2,
+    "쿠로카게": MODE_DECK_4_2,
+    "게부라": MODE_DECK_4_2,
+    "예소드": MODE_DECK_4_2,
+    "세트의 분노": MODE_DECK_6_4,
+    "호크마": MODE_DECK_6_4,
+    "티페레트": MODE_DECK_6_4,
 }
 
 STRIKER_SLOT = "striker"
@@ -57,6 +110,10 @@ class GuideDeckSlot:
     alias: str = ""
     is_borrowed: bool = False
     first_order: int = 0
+    star_conditions: dict[str, int] = field(default_factory=dict)
+    skill_conditions: dict[str, int] = field(default_factory=dict)
+    equipment_conditions: dict[str, int] = field(default_factory=dict)
+    stat_conditions: dict[str, int] = field(default_factory=dict)
     notes: str = ""
 
 
@@ -83,7 +140,7 @@ class TimelineStep:
 @dataclass(slots=True)
 class RaidGuide:
     id: str
-    title: str = "새 공략"
+    title: str = ""
     mode: str = MODE_DECK_4_2
     boss: str = ""
     difficulty: str = ""
@@ -119,12 +176,37 @@ def default_deck_for_mode(mode: str) -> list[GuideDeckSlot]:
     return slots
 
 
-def new_raid_guide(title: str = "새 공략", mode: str = MODE_DECK_4_2) -> RaidGuide:
+def new_raid_guide(title: str = "", mode: str = MODE_DECK_4_2) -> RaidGuide:
     return RaidGuide(id=uuid4().hex, title=title, mode=mode, deck=default_deck_for_mode(mode))
 
 
 def _valid_fields(dataclass_type: type) -> set[str]:
     return {item.name for item in fields(dataclass_type)}
+
+
+def _sanitize_int_condition_map(
+    value: Any,
+    *,
+    allowed_keys: set[str],
+    minimum: int,
+    maximum: int,
+    keep_zero: bool = False,
+) -> dict[str, int]:
+    if not isinstance(value, dict):
+        return {}
+    result: dict[str, int] = {}
+    for key, raw in value.items():
+        key_text = str(key or "")
+        if key_text not in allowed_keys:
+            continue
+        try:
+            number = int(raw or 0)
+        except (TypeError, ValueError):
+            number = 0
+        number = max(minimum, min(maximum, number))
+        if number > 0 or keep_zero:
+            result[key_text] = number
+    return result
 
 
 def sanitize_deck_slots(mode: str, slots: list[GuideDeckSlot] | list[dict[str, Any]] | None) -> list[GuideDeckSlot]:
@@ -150,6 +232,35 @@ def sanitize_deck_slots(mode: str, slots: list[GuideDeckSlot] | list[dict[str, A
             first_order = max(0, int(getattr(slot, "first_order", 0) or 0))
         except (TypeError, ValueError):
             first_order = 0
+        star_conditions = _sanitize_int_condition_map(
+            getattr(slot, "star_conditions", {}) or {},
+            allowed_keys={"star", "weapon_star", "weapon_level"},
+            minimum=0,
+            maximum=60,
+        )
+        if star_conditions.get("star", 0) > 5:
+            star_conditions["star"] = 5
+        if star_conditions.get("weapon_star", 0) > 4:
+            star_conditions["weapon_star"] = 4
+        if star_conditions.get("weapon_star", 0) > 0:
+            star_conditions["star"] = max(5, star_conditions.get("star", 0))
+        skill_conditions = _sanitize_int_condition_map(
+            getattr(slot, "skill_conditions", {}) or {},
+            allowed_keys={"ex", "basic", "enhanced", "sub"},
+            minimum=0,
+            maximum=10,
+            keep_zero=True,
+        )
+        if skill_conditions.get("ex", 0) > 5:
+            skill_conditions["ex"] = 5
+        equipment_conditions = _sanitize_int_condition_map(
+            getattr(slot, "equipment_conditions", {}) or {},
+            allowed_keys={"equip1", "equip2", "equip3", "unique"},
+            minimum=0,
+            maximum=10,
+        )
+        if equipment_conditions.get("unique", 0) > 2:
+            equipment_conditions["unique"] = 2
         incoming[(slot_type, slot_index)] = GuideDeckSlot(
             slot_type=slot_type,
             slot_index=slot_index,
@@ -157,6 +268,15 @@ def sanitize_deck_slots(mode: str, slots: list[GuideDeckSlot] | list[dict[str, A
             alias=str(slot.alias or "").strip(),
             is_borrowed=bool(slot.is_borrowed),
             first_order=first_order,
+            star_conditions=star_conditions,
+            skill_conditions=skill_conditions,
+            equipment_conditions=equipment_conditions,
+            stat_conditions=_sanitize_int_condition_map(
+                getattr(slot, "stat_conditions", {}) or {},
+                allowed_keys={"hp", "atk", "heal"},
+                minimum=0,
+                maximum=25,
+            ),
             notes=str(slot.notes or "").strip(),
         )
 
@@ -316,7 +436,7 @@ def sanitize_guide(guide: RaidGuide | dict[str, Any]) -> RaidGuide:
         filtered.setdefault("id", uuid4().hex)
         result = RaidGuide(**filtered)
     result.mode = normalize_raid_guide_mode(result.mode)
-    result.title = str(result.title or "새 공략").strip() or "새 공략"
+    result.title = str(result.title or "").strip()
     try:
         result.time_limit_seconds = max(0, int(result.time_limit_seconds or 0))
     except (TypeError, ValueError):
@@ -346,6 +466,42 @@ def save_raid_guides(path: Path, data: RaidGuideData) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(tmp, path)
+
+
+def encode_raid_guide_share(guide: RaidGuide | dict[str, Any]) -> str:
+    payload = {
+        "kind": "raid_guide",
+        "version": RAID_GUIDE_DATA_VERSION,
+        "assets": "external",
+        "guide": asdict(sanitize_guide(guide)),
+    }
+    raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    compressed = zlib.compress(raw, level=9)
+    token = base64.urlsafe_b64encode(compressed).decode("ascii").rstrip("=")
+    return RAID_GUIDE_SHARE_PREFIX + token
+
+
+def decode_raid_guide_share(value: str, *, regenerate_id: bool = True) -> RaidGuide:
+    raw_value = str(value or "").strip()
+    if not raw_value:
+        raise ValueError("empty raid guide share string")
+    match = re.search(re.escape(RAID_GUIDE_SHARE_PREFIX) + r"\s*([A-Za-z0-9_-]+)", raw_value)
+    raw_value = match.group(1) if match else "".join(raw_value.split())
+    padding = "=" * (-len(raw_value) % 4)
+    try:
+        compressed = base64.urlsafe_b64decode((raw_value + padding).encode("ascii"))
+        payload = json.loads(zlib.decompress(compressed).decode("utf-8"))
+    except (binascii.Error, UnicodeEncodeError, UnicodeDecodeError, zlib.error, json.JSONDecodeError) as exc:
+        raise ValueError("invalid raid guide share string") from exc
+    if not isinstance(payload, dict) or payload.get("kind") != "raid_guide":
+        raise ValueError("share string is not a raid guide")
+    guide_payload = payload.get("guide")
+    if not isinstance(guide_payload, dict):
+        raise ValueError("share string does not contain a raid guide")
+    if regenerate_id:
+        guide_payload = dict(guide_payload)
+        guide_payload["id"] = uuid4().hex
+    return sanitize_guide(guide_payload)
 
 
 def clone_guide(guide: RaidGuide) -> RaidGuide:

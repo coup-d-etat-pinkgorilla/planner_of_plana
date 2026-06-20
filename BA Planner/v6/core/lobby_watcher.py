@@ -168,7 +168,7 @@ class LobbyWatcher:
             self._state = WatcherState.PAUSED
 
         self._resume_event.clear()
-        _log.info("⏸ 일시정지 (scanner 실행 중)")
+        _log.info("pause (scanner running)")
 
     def resume(self) -> None:
         """

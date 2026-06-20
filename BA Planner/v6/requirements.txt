@@ -5,3 +5,4 @@ pyautogui>=0.9.54
 easyocr>=1.7.0
 numpy>=1.24.0
 PySide6>=6.7.0
+vgamepad>=0.1.0

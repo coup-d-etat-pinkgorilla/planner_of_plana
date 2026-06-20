@@ -9,8 +9,9 @@ from pathlib import Path
 
 from core.config import get_storage_paths
 
-APP_VERSION = "v5.1"
+APP_VERSION = "0.4.0"
 DB_PATH = Path(__file__).parent.parent / "ba_planner.db"
+_LOGGED_INIT_PATHS: set[Path] = set()
 
 
 def get_db_path() -> Path:
@@ -35,6 +36,7 @@ def _ensure_column(conn: sqlite3.Connection, table: str, column: str, definition
 
 def init_db(path: Path | None = None) -> None:
     path = path or get_db_path()
+    resolved_path = path.resolve()
     conn = get_connection(path)
     with conn:
         conn.executescript(
@@ -153,4 +155,6 @@ def init_db(path: Path | None = None) -> None:
         conn.execute("CREATE INDEX IF NOT EXISTS idx_items_item_id ON items(item_id)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_equip_items_item_id ON equipment_items(item_id)")
     conn.close()
-    print(f"[DB] initialized: {path}")
+    if resolved_path not in _LOGGED_INIT_PATHS:
+        _LOGGED_INIT_PATHS.add(resolved_path)
+        print(f"[DB] initialized: {path}")

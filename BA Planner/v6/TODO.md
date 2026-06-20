@@ -154,3 +154,7 @@
     - [ ] Rank impacted students by shortage contribution.
 
 - [ ] Inventory/Equipment 6자리 수량 템플릿 및 레이아웃 지원 추가
+
+- [ ] Raid guide live helper follow-ups
+  - [ ] In the future in-game raid helper, treat only exact time and cost cues as executable recognition targets. Free-form timing text such as auto, pattern timing, and as soon as possible should remain authoring notes and must not be OCR/runtime trigger targets.
+  - [ ] 이후 공략 라이브 헬퍼를 만들 때, 각 덱 학생의 저장된 육성 조건을 현재 보유 학생 데이터와 비교하고 스킬, 장비, 애용품, 능력개방 조건이 부족하면 경고를 표시한다.

@@ -15,10 +15,12 @@ from __future__ import annotations
 
 import cv2
 import numpy as np
+import os
+from functools import lru_cache
 from enum import Enum
 from pathlib import Path
 from PIL import Image
-from typing import Optional
+from typing import Iterable, Optional
 
 from core.config import TEMPLATE_DIR
 from core.logger import get_logger, LOG_MATCHER
@@ -38,6 +40,12 @@ from core.preprocess import (
     calc_color_hist,
 )
 from core.template_cache import get_cache, TemplateEntry
+from core.quad_roi import (
+    binary_glyph_similarity,
+    normalize_binary_glyph,
+    otsu_binary,
+    warp_quad_region,
+)
 
 
 # ══════════════════════════════════════════════════════════
@@ -169,6 +177,17 @@ THRESHOLD_STUDENT_ADDITIONAL_MENU = 0.90
 THRESHOLD_STUDENT_TAB_ON = 0.90
 TEXTURE_THRESHOLD        = 0.60
 TEXTURE_MARGIN_REQUIRED  = 0.05
+STUDENT_TEXTURE_TOP_K = 10
+STUDENT_TEXTURE_SHORTCUT_SCORE = 0.86
+STUDENT_TEXTURE_SHORTCUT_MARGIN = 0.10
+STUDENT_TEXTURE_TOP_K_ENV = "BA_STUDENT_TOPK"
+STUDENT_TEXTURE_TOPK_METHOD_ENV = "BA_STUDENT_TOPK_METHOD"
+STUDENT_TEXTURE_TOPK_SHADOW_ENV = "BA_STUDENT_TOPK_SHADOW"
+STUDENT_TEXTURE_TOPK_METHODS = {"fusion", "hybrid", "thumb", "hist", "hash"}
+WEAPON_STATE_MIN_SCORE = 0.62
+WEAPON_EQUIPPED_MIN_SCORE = 0.78
+WEAPON_EQUIPPED_MARGIN_REQUIRED = 0.12
+WEAPON_EQUIPPED_ORANGE_RATIO = 0.12
 
 
 # ══════════════════════════════════════════════════════════
@@ -178,6 +197,7 @@ TEXTURE_MARGIN_REQUIRED  = 0.05
 STUDENT_TEXTURE_DIR = "students"
 WEAPON_STATE_DIR    = "weapon_state"
 SKILL_CHECK_DIR     = "skillcheck"
+BASIC_SKILL_DIR     = "basic_skill"
 EQUIP_CHECK_DIR     = "equipcheck"
 
 WEAPON_STATE_FILES = {
@@ -770,7 +790,355 @@ def _color_hist_score(crop: Image.Image, tmpl_path: str) -> float:
         return 0.0
 
 
-def match_student_texture(crop: Image.Image) -> tuple[Optional[str], float]:
+@dataclass(frozen=True)
+class _StudentTextureFeature:
+    sid: str
+    path: str
+    thumb: np.ndarray
+    hist: np.ndarray
+    ahash: np.ndarray
+
+
+_STUDENT_TEXTURE_FEATURE_CACHE: dict[str, _StudentTextureFeature] | None = None
+_STUDENT_TEXTURE_TOPK_CONFIG_LOGGED: set[tuple[str, int]] = set()
+
+
+def _student_texture_thumb(img: Image.Image) -> np.ndarray:
+    small = img.convert("RGB").resize((32, 32), Image.BILINEAR)
+    return np.asarray(small, dtype=np.float32) / 255.0
+
+
+def _student_texture_hist(img: Image.Image) -> np.ndarray:
+    arr = np.asarray(img.convert("RGB").resize((48, 48), Image.BILINEAR), dtype=np.uint8)
+    bins = 4
+    quantized = np.clip(arr // (256 // bins), 0, bins - 1)
+    idx = (
+        quantized[:, :, 0].astype(np.int32) * bins * bins
+        + quantized[:, :, 1].astype(np.int32) * bins
+        + quantized[:, :, 2].astype(np.int32)
+    )
+    hist = np.bincount(idx.ravel(), minlength=bins ** 3).astype(np.float32)
+    total = float(hist.sum())
+    if total > 0:
+        hist /= total
+    return hist
+
+
+def _student_texture_hash(img: Image.Image) -> np.ndarray:
+    gray = img.convert("L").resize((16, 16), Image.BILINEAR)
+    arr = np.asarray(gray, dtype=np.float32)
+    return (arr >= float(arr.mean())).astype(np.uint8)
+
+
+def _student_texture_topk_from_env(default: int = STUDENT_TEXTURE_TOP_K) -> int:
+    raw = os.environ.get(STUDENT_TEXTURE_TOP_K_ENV, "").strip()
+    if not raw:
+        return default
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        _log.warning("invalid %s=%r -> using %d", STUDENT_TEXTURE_TOP_K_ENV, raw, default)
+        return default
+
+
+def _student_texture_topk_method_from_env() -> str:
+    raw = os.environ.get(STUDENT_TEXTURE_TOPK_METHOD_ENV, "fusion").strip().lower()
+    if raw in STUDENT_TEXTURE_TOPK_METHODS:
+        return raw
+    _log.warning(
+        "invalid %s=%r -> using fusion",
+        STUDENT_TEXTURE_TOPK_METHOD_ENV,
+        raw,
+    )
+    return "fusion"
+
+
+def _student_texture_topk_shadow_from_env() -> bool:
+    return os.environ.get(STUDENT_TEXTURE_TOPK_SHADOW_ENV, "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _log_student_texture_topk_config(method: str, top_k: int) -> None:
+    key = (method, top_k)
+    if key in _STUDENT_TEXTURE_TOPK_CONFIG_LOGGED:
+        return
+    _STUDENT_TEXTURE_TOPK_CONFIG_LOGGED.add(key)
+    _log.info(
+        "student_texture_topk_config experiment=%r method=%s k=%d shadow=%s env_%s=%r env_%s=%r",
+        os.environ.get("BA_STUDENT_TOPK_EXPERIMENT"),
+        method,
+        top_k,
+        str(_student_texture_topk_shadow_from_env()).lower(),
+        STUDENT_TEXTURE_TOPK_METHOD_ENV,
+        os.environ.get(STUDENT_TEXTURE_TOPK_METHOD_ENV),
+        STUDENT_TEXTURE_TOP_K_ENV,
+        os.environ.get(STUDENT_TEXTURE_TOP_K_ENV),
+    )
+
+
+def _student_texture_feature_score(
+    crop_thumb: np.ndarray,
+    crop_hist: np.ndarray,
+    crop_hash: np.ndarray,
+    feature: _StudentTextureFeature,
+    method: str,
+) -> float:
+    thumb_score = 1.0 - float(np.mean(np.abs(crop_thumb - feature.thumb)))
+    hist_score = float(np.minimum(crop_hist, feature.hist).sum())
+    hash_score = 1.0 - float(np.mean(crop_hash != feature.ahash))
+    if method == "thumb":
+        return thumb_score
+    if method == "hist":
+        return hist_score
+    if method == "hash":
+        return hash_score
+    if method == "hybrid":
+        return 0.65 * thumb_score + 0.35 * hist_score
+    return 0.45 * thumb_score + 0.35 * hist_score + 0.20 * hash_score
+
+
+def _student_texture_features() -> dict[str, _StudentTextureFeature]:
+    import core.student_meta as _sn
+    global _STUDENT_TEXTURE_FEATURE_CACHE
+    if _STUDENT_TEXTURE_FEATURE_CACHE is not None:
+        return _STUDENT_TEXTURE_FEATURE_CACHE
+
+    texture_dir = TEMPLATE_DIR / STUDENT_TEXTURE_DIR
+    features: dict[str, _StudentTextureFeature] = {}
+    if not texture_dir.exists():
+        _STUDENT_TEXTURE_FEATURE_CACHE = features
+        return features
+
+    for sid in _sn.all_ids():
+        path = texture_dir / _sn.template_path(sid)
+        if not path.exists():
+            continue
+        try:
+            with Image.open(path) as raw:
+                img = raw.convert("RGB")
+            features[sid] = _StudentTextureFeature(
+                sid=sid,
+                path=str(path),
+                thumb=_student_texture_thumb(img),
+                hist=_student_texture_hist(img),
+                ahash=_student_texture_hash(img),
+            )
+        except Exception:
+            _log.debug("failed to build student texture feature: %s", path, exc_info=True)
+
+    _STUDENT_TEXTURE_FEATURE_CACHE = features
+    return features
+
+
+def _student_texture_candidates(candidate_ids: Iterable[str] | None = None) -> dict[str, str]:
+    features = _student_texture_features()
+    if candidate_ids is None:
+        return {sid: feature.path for sid, feature in features.items()}
+    requested = set(candidate_ids)
+    return {sid: feature.path for sid, feature in features.items() if sid in requested}
+
+
+def _top_student_texture_candidates(
+    crop: Image.Image,
+    cands: dict[str, str],
+    top_k: int,
+    method: str,
+) -> dict[str, str]:
+    if top_k <= 0 or len(cands) <= top_k:
+        return cands
+    features = _student_texture_features()
+    crop_thumb = _student_texture_thumb(crop)
+    crop_hist = _student_texture_hist(crop)
+    crop_hash = _student_texture_hash(crop)
+    ranked = sorted(
+        (
+            (
+                sid,
+                _student_texture_feature_score(
+                    crop_thumb,
+                    crop_hist,
+                    crop_hash,
+                    features[sid],
+                    method,
+                ),
+            )
+            for sid in cands
+            if sid in features
+        ),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    selected = {sid for sid, _score in ranked[:top_k]}
+    _log.debug(
+        "texture_topk: method=%s pool=%d k=%d top=%s",
+        method,
+        len(cands),
+        min(top_k, len(cands)),
+        " ".join(f"{sid}({score:.3f})" for sid, score in ranked[:5]),
+    )
+    return {sid: cands[sid] for sid in selected}
+
+
+def _match_student_texture_precise(
+    crop: Image.Image,
+    cands: dict[str, str],
+    *,
+    label: str,
+) -> tuple[Optional[str], float, float]:
+    if not cands:
+        return None, 0.0, 0.0
+
+    scores = sorted(
+        [
+            (sid, 0.55 * match_score_resized(crop, p)
+                + 0.45 * _color_hist_score(crop, p))
+            for sid, p in cands.items()
+        ],
+        key=lambda x: x[1],
+        reverse=True,
+    )
+    best_id, best_s = scores[0]
+    second_s = scores[1][1] if len(scores) > 1 else 0.0
+    margin = best_s - second_s
+
+    _log.debug(
+        f"texture[{label}]: pool={len(cands)} "
+        f"1st={best_id}({best_s:.3f}) "
+        f"2nd={scores[1][0] if len(scores)>1 else '-'}({second_s:.3f}) "
+        f"margin={margin:.3f}"
+    )
+
+    if best_s < TEXTURE_THRESHOLD or margin < TEXTURE_MARGIN_REQUIRED:
+        return None, best_s, margin
+    return best_id, best_s, margin
+
+
+def _match_student_texture_with_topk(
+    crop: Image.Image,
+    cands: dict[str, str],
+    *,
+    label: str,
+    top_k: int,
+    method: str,
+) -> tuple[Optional[str], float, float]:
+    if not cands:
+        return None, 0.0, 0.0
+
+    if top_k > 0 and len(cands) > top_k:
+        top_cands = _top_student_texture_candidates(crop, cands, top_k, method)
+        sid, score, margin = _match_student_texture_precise(
+            crop,
+            top_cands,
+            label=f"{label}:topk",
+        )
+        if (
+            sid is not None
+            and score >= STUDENT_TEXTURE_SHORTCUT_SCORE
+            and margin >= STUDENT_TEXTURE_SHORTCUT_MARGIN
+        ):
+            _log.debug(
+                "texture_topk_accept: method=%s k=%d sid=%s score=%.3f margin=%.3f pool=%d",
+                method,
+                top_k,
+                sid,
+                score,
+                margin,
+                len(cands),
+            )
+            if _student_texture_topk_shadow_from_env():
+                full_sid, full_score, full_margin = _match_student_texture_precise(
+                    crop,
+                    cands,
+                    label=f"{label}:shadow_full",
+                )
+                matched = sid == full_sid
+                _log.info(
+                    "texture_topk_shadow: method=%s k=%d topk_sid=%s full_sid=%s "
+                    "matched=%s topk_score=%.3f full_score=%.3f full_margin=%.3f pool=%d",
+                    method,
+                    top_k,
+                    sid,
+                    full_sid,
+                    str(matched).lower(),
+                    score,
+                    full_score,
+                    full_margin,
+                    len(cands),
+                )
+                return full_sid, full_score, full_margin
+            return sid, score, margin
+        _log.debug(
+            "texture_topk_fallback: method=%s k=%d sid=%s score=%.3f margin=%.3f pool=%d",
+            method,
+            top_k,
+            sid,
+            score,
+            margin,
+            len(cands),
+        )
+
+    return _match_student_texture_precise(crop, cands, label=label)
+
+
+def _match_student_texture_optimized(
+    crop: Image.Image,
+    candidate_ids: Iterable[str] | None = None,
+    *,
+    fallback_candidate_ids: Iterable[str] | None = None,
+    top_k: int | None = None,
+) -> tuple[Optional[str], float]:
+    actual_top_k = _student_texture_topk_from_env() if top_k is None else max(0, top_k)
+    method = _student_texture_topk_method_from_env()
+    _log_student_texture_topk_config(method, actual_top_k)
+    primary_cands = _student_texture_candidates(candidate_ids)
+    sid, score, margin = _match_student_texture_with_topk(
+        crop,
+        primary_cands,
+        label="primary",
+        top_k=actual_top_k,
+        method=method,
+    )
+
+    if fallback_candidate_ids is None:
+        return sid, score
+
+    if (
+        sid is not None
+        and score >= STUDENT_TEXTURE_SHORTCUT_SCORE
+        and margin >= STUDENT_TEXTURE_SHORTCUT_MARGIN
+    ):
+        return sid, score
+
+    fallback_cands = _student_texture_candidates(fallback_candidate_ids)
+    fallback_sid, fallback_score, _fallback_margin = _match_student_texture_with_topk(
+        crop,
+        fallback_cands,
+        label="fallback",
+        top_k=actual_top_k,
+        method=method,
+    )
+    return fallback_sid, fallback_score
+
+
+def match_student_texture(
+    crop: Image.Image,
+    candidate_ids: Iterable[str] | None = None,
+    *,
+    fallback_candidate_ids: Iterable[str] | None = None,
+    top_k: int | None = None,
+) -> tuple[Optional[str], float]:
+    return _match_student_texture_optimized(
+        crop,
+        candidate_ids,
+        fallback_candidate_ids=fallback_candidate_ids,
+        top_k=top_k,
+    )
+
+def _match_student_texture_legacy(crop: Image.Image) -> tuple[Optional[str], float]:
     import core.student_meta as _sn
     texture_dir = TEMPLATE_DIR / STUDENT_TEXTURE_DIR
     if not texture_dir.exists():
@@ -834,11 +1202,34 @@ def detect_weapon_state(crop: Image.Image) -> tuple[WeaponState, float]:
     best_val = scores[best_key]
     _log.debug(f"weapon_state: { {k: f'{v:.3f}' for k,v in scores.items()} } → {best_key}")
 
-    if best_val < 0.55:
-        return WeaponState.WEAPON_UNLOCKED_NOT_EQUIPPED, best_val
+    if best_val < WEAPON_STATE_MIN_SCORE:
+        return WeaponState.NO_WEAPON_SYSTEM, best_val
+    if best_key == "weapon_unlocked":
+        rival = max(scores["no_weapon"], scores["weapon_locked"])
+        if (
+            best_val < WEAPON_EQUIPPED_MIN_SCORE
+            or (best_val - rival) < WEAPON_EQUIPPED_MARGIN_REQUIRED
+            or _orange_pixel_ratio(crop) < WEAPON_EQUIPPED_ORANGE_RATIO
+        ):
+            fallback_key = "weapon_locked" if scores["weapon_locked"] >= scores["no_weapon"] else "no_weapon"
+            return mapping[fallback_key], scores[fallback_key]
     return mapping[best_key], best_val
 
 detect_weapon_status = detect_weapon_state   # 하위 호환
+
+
+def _orange_pixel_ratio(crop: Image.Image) -> float:
+    try:
+        img = crop.convert("RGB")
+    except Exception:
+        return 0.0
+    width, height = img.size
+    total = max(1, width * height)
+    orange = 0
+    for r, g, b in img.getdata():
+        if r >= 180 and 85 <= g <= 215 and b <= 105 and (r - g) >= 20:
+            orange += 1
+    return orange / total
 
 
 # ══════════════════════════════════════════════════════════
@@ -911,6 +1302,8 @@ def read_equip_check(crop: Image.Image) -> CheckFlag:
 
 def read_equip_check_inside(crop: Image.Image) -> CheckFlag:
     TRUE_THRESHOLD = 0.55
+    TRUE_RELATIVE_THRESHOLD = 0.20
+    TRUE_MARGIN = 0.08
     d = TEMPLATE_DIR / EQUIP_CHECK_DIR
     scores = {
         flag: match_score_resized(crop, str(d / f"{flag}.png"))
@@ -919,7 +1312,13 @@ def read_equip_check_inside(crop: Image.Image) -> CheckFlag:
     }
     _log.debug(f"equip_check_inside: "
           + " ".join(f"{k}={v:.3f}" for k, v in scores.items()))
-    return CheckFlag.TRUE if scores.get("true", 0.0) >= TRUE_THRESHOLD else CheckFlag.FALSE
+    true_s = scores.get("true", 0.0)
+    false_s = scores.get("false", 0.0)
+    if true_s >= TRUE_THRESHOLD:
+        return CheckFlag.TRUE
+    if true_s >= TRUE_RELATIVE_THRESHOLD and true_s >= false_s + TRUE_MARGIN:
+        return CheckFlag.TRUE
+    return CheckFlag.FALSE
 
 
 # ══════════════════════════════════════════════════════════
@@ -1063,17 +1462,136 @@ def _read_digit_from_folder(
     return lbl
 
 
+def _rank_digit_candidates(
+    folder: Path,
+    prefix: int,
+    crop: Image.Image,
+) -> tuple[Optional[str], float, float]:
+    candidates = {
+        path.stem.split("_", 1)[1]: str(path)
+        for path in folder.glob(f"{prefix}_*.png")
+    }
+    ranked = sorted(
+        (
+            (label, match_score_resized(crop, path, focus_center=True))
+            for label, path in candidates.items()
+        ),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    if not ranked:
+        return None, 0.0, 0.0
+    label, score = ranked[0]
+    second = ranked[1][1] if len(ranked) > 1 else 0.0
+    return label, score, score - second
+
+
+def _normalize_dark_digit_glyph(crop: Image.Image) -> np.ndarray | None:
+    gray = cv2.cvtColor(np.asarray(crop.convert("RGB")), cv2.COLOR_RGB2GRAY)
+    gray = cv2.GaussianBlur(gray, (3, 3), 0)
+    _threshold, foreground = cv2.threshold(
+        gray,
+        0,
+        255,
+        cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU,
+    )
+    return normalize_binary_glyph(foreground)
+
+
+def _rank_adaptive_digit(
+    crop: Image.Image,
+    templates: dict[str, list[np.ndarray]] | None,
+) -> tuple[Optional[str], float, float]:
+    glyph = _normalize_dark_digit_glyph(crop)
+    if glyph is None or not templates:
+        return None, 0.0, 0.0
+    ranked = sorted(
+        (
+            (
+                label,
+                max(binary_glyph_similarity(glyph, template) for template in variants),
+            )
+            for label, variants in templates.items()
+            if variants
+        ),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    if not ranked:
+        return None, 0.0, 0.0
+    label, score = ranked[0]
+    second = ranked[1][1] if len(ranked) > 1 else 0.0
+    return label, score, score - second
+
+
+def _read_adaptive_equip_digit(
+    folder: Path,
+    prefix: int,
+    crop: Image.Image,
+    templates: dict[str, list[np.ndarray]] | None,
+) -> Optional[str]:
+    static_label, static_score, static_margin = _rank_digit_candidates(folder, prefix, crop)
+    adaptive_label, adaptive_score, adaptive_margin = _rank_adaptive_digit(crop, templates)
+
+    label: Optional[str] = None
+    learned_label_count = sum(
+        1 for variants in (templates or {}).values() if variants
+    )
+    if adaptive_label is not None and adaptive_score >= 0.72 and adaptive_margin >= 0.06:
+        if static_label == adaptive_label or (
+            static_score < 0.55 and learned_label_count >= 2
+        ):
+            label = adaptive_label
+    if label is None and static_label is not None and static_score >= 0.55:
+        label = static_label
+
+    # Only an independently strong static match may become a run-local sample.
+    # This prevents a weak adaptive guess from teaching itself as ground truth.
+    if (
+        templates is not None
+        and static_label is not None
+        and static_label.isdigit()
+        and static_score >= 0.78
+        and static_margin >= 0.06
+    ):
+        glyph = _normalize_dark_digit_glyph(crop)
+        if glyph is not None:
+            variants = templates.setdefault(static_label, [])
+            variants.append(glyph)
+            del variants[:-4]
+            _log.debug(
+                "equip_level_calibration: learned position=%d digit=%s score=%.3f margin=%.3f variants=%d",
+                prefix,
+                static_label,
+                static_score,
+                static_margin,
+                len(variants),
+            )
+    return label
+
+
 def read_equip_level(
     img: Image.Image,
     slot: int,
     d1_region: dict,
     d2_region: dict,
+    adaptive_templates: dict[int, dict[str, list[np.ndarray]]] | None = None,
 ) -> Optional[int]:
     from core.capture import crop_region
     folder1 = TEMPLATE_DIR / f"equip{slot}level_digit1"
     folder2 = TEMPLATE_DIR / f"equip{slot}level_digit2"
-    d1 = _read_digit_from_folder(folder1, 1, crop_region(img, d1_region))
-    d2 = _read_digit_from_folder(folder2, 2, crop_region(img, d2_region))
+    d1 = _read_adaptive_equip_digit(
+        folder1,
+        1,
+        crop_region(img, d1_region),
+        adaptive_templates.setdefault(1, {}) if adaptive_templates is not None else None,
+    )
+    d2 = _read_adaptive_equip_digit(
+        folder2,
+        2,
+        crop_region(img, d2_region),
+        adaptive_templates.setdefault(2, {}) if adaptive_templates is not None else None,
+    )
 
     if not d1 or d1 == "v":
         if d2:
@@ -1113,6 +1631,106 @@ def read_weapon_level(
         except ValueError: pass
     try: return int(d2)
     except ValueError: return None
+
+
+def read_basic_weapon_level_result(image: Image.Image, region: dict) -> RecognitionResult:
+    """Read the weapon level directly from the compact basic-info weapon card."""
+    output_size = tuple(region.get("output_size", (64, 48)))
+    crop = warp_quad_region(image, region, output_size=output_size)
+    if crop is None:
+        return RecognitionResult.fallback(None, "basic_weapon_level_region_missing")
+    return _read_weapon_level_glyph_result(crop)
+
+
+@lru_cache(maxsize=1)
+def _weapon_level_glyph_templates() -> dict[str, np.ndarray]:
+    directory = TEMPLATE_DIR / "weaponlevel_glyph"
+    templates: dict[str, np.ndarray] = {}
+    for path in sorted(directory.glob("*.png")):
+        if path.stem not in {str(value) for value in range(10)}:
+            continue
+        image = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+        if image is not None:
+            templates[path.stem] = image
+    return templates
+
+
+def _read_weapon_level_glyph_result(crop: Image.Image) -> RecognitionResult:
+    templates = _weapon_level_glyph_templates()
+    if not templates:
+        return RecognitionResult.fallback(None, "no_weapon_level_glyph_templates")
+
+    rgb = np.asarray(crop.convert("RGB"), dtype=np.uint8)
+    if rgb.size == 0:
+        return RecognitionResult.fallback(None, "empty_weapon_level_crop")
+
+    # Digit fill is nearly neutral white; the panel and weapon art are either
+    # blue-tinted or darker. This mask therefore survives both bright and dark
+    # weapon backgrounds without deleting the digit itself.
+    chroma = rgb.max(axis=2).astype(np.int16) - rgb.min(axis=2).astype(np.int16)
+    binary = ((rgb.min(axis=2) >= 238) & (chroma <= 28)).astype(np.uint8) * 255
+    count, labels, stats, _centroids = cv2.connectedComponentsWithStats(binary)
+    height, width = binary.shape
+    components: list[tuple[int, int]] = []
+    for index in range(1, count):
+        x, y, component_w, component_h, area = stats[index]
+        if area < max(12, int(round(binary.size * 0.012))):
+            continue
+        if not (0.36 * height <= component_h <= 0.78 * height):
+            continue
+        if y > 0.52 * height or component_w > 0.48 * width:
+            continue
+        components.append((int(x), index))
+
+    components.sort()
+    components = components[:2]
+    if not components:
+        return RecognitionResult.fallback(None, "weapon_level_glyph_missing")
+
+    digits: list[str] = []
+    scores: list[float] = []
+    margins: list[float] = []
+    for _x, component_index in components:
+        component = np.zeros_like(binary)
+        component[labels == component_index] = 255
+        glyph = normalize_binary_glyph(component)
+        if glyph is None:
+            return RecognitionResult.fallback(None, "weapon_level_glyph_normalize_fail")
+        ranked = sorted(
+            (
+                (digit, binary_glyph_similarity(glyph, template))
+                for digit, template in templates.items()
+            ),
+            key=lambda item: item[1],
+            reverse=True,
+        )
+        if not ranked:
+            return RecognitionResult.fallback(None, "weapon_level_glyph_match_fail")
+        digit, score = ranked[0]
+        second_score = ranked[1][1] if len(ranked) > 1 else 0.0
+        digits.append(digit)
+        scores.append(score)
+        margins.append(score - second_score)
+
+    value = int("".join(digits))
+    score = min(scores)
+    margin = min(margins)
+    valid = 1 <= value <= 60
+    uncertain = not valid or score < 0.72 or margin < 0.08
+    _log.debug(
+        "weapon_level_glyph: value=%s score=%.3f margin=%.3f uncertain=%s",
+        value,
+        score,
+        margin,
+        uncertain,
+    )
+    return RecognitionResult(
+        value=value if valid else None,
+        score=score,
+        source=RecogSource.COMBINED,
+        uncertain=uncertain,
+        label=f"weapon_level_glyph:{value}({score:.3f},margin={margin:.3f})",
+    )
 
 
 # ══════════════════════════════════════════════════════════
@@ -1318,9 +1936,268 @@ def read_skill_result(crop: Image.Image, skill_key: str) -> RecognitionResult:
     return _make_result(int_val, best_score, RecogSource.COMBINED)
 
 
+def read_basic_skill_result(crop: Image.Image, *, is_ex: bool) -> RecognitionResult:
+    """Read a skill level from the compact cards on the student basic-info tab."""
+    group = "ex" if is_ex else "normal"
+    directory = TEMPLATE_DIR / BASIC_SKILL_DIR / group
+    template_paths = sorted(directory.glob("*.png"))
+    if not template_paths:
+        return RecognitionResult.fallback(None, "no_basic_skill_templates")
+
+    scores: dict[str, tuple[float, float, float]] = {}
+    for path in template_paths:
+        label = path.stem.split("_", 1)[0]
+        ui = match_score_resized(crop, str(path))
+        text = match_score_textonly(crop, str(path))
+        final = 0.15 * ui + 0.85 * text
+        if label not in scores or final > scores[label][0]:
+            scores[label] = (final, ui, text)
+
+    ranked = sorted(scores.items(), key=lambda item: item[1][0], reverse=True)
+    best_label, (best_score, best_ui, best_text) = ranked[0]
+    second_score = ranked[1][1][0] if len(ranked) > 1 else 0.0
+    margin = best_score - second_score
+    max_level = 5 if is_ex else 10
+    value = max_level if best_label == "max" else int(best_label)
+    uncertain = best_score < 0.70 or margin < 0.04
+    _log.debug(
+        "basic_skill[%s]: %s final=%.3f ui=%.3f text=%.3f margin=%.3f uncertain=%s",
+        group,
+        best_label,
+        best_score,
+        best_ui,
+        best_text,
+        margin,
+        str(uncertain).lower(),
+    )
+    return RecognitionResult(
+        value=value if best_score >= 0.58 else None,
+        score=best_score,
+        source=RecogSource.COMBINED,
+        uncertain=uncertain or best_score < 0.58,
+        label=f"basic_skill:{group}:{best_label}:margin={margin:.3f}",
+    )
+
+
+@lru_cache(maxsize=1)
+def _basic_level_digit_templates() -> dict[str, tuple[np.ndarray, ...]]:
+    directory = TEMPLATE_DIR / "basic_student" / "level_digits"
+    grouped: dict[str, list[np.ndarray]] = {}
+    for path in sorted(directory.glob("*.png")):
+        label = path.stem.split("_", 1)[0]
+        if label not in {str(value) for value in range(10)}:
+            continue
+        image = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+        if image is not None:
+            grouped.setdefault(label, []).append(image)
+    return {label: tuple(images) for label, images in grouped.items()}
+
+
+def _match_basic_level_digit(
+    binary: np.ndarray,
+    adaptive_templates: dict[str, list[np.ndarray]] | None = None,
+) -> tuple[str | None, float, float]:
+    glyph = normalize_binary_glyph(binary)
+    if glyph is None:
+        return None, 0.0, 0.0
+    scores: list[tuple[str, float]] = []
+    labels = set(_basic_level_digit_templates())
+    if adaptive_templates:
+        labels.update(adaptive_templates)
+    for label in labels:
+        templates = list(_basic_level_digit_templates().get(label, ()))
+        if adaptive_templates:
+            templates.extend(adaptive_templates.get(label, ()))
+        if not templates:
+            continue
+        score = max(binary_glyph_similarity(glyph, template) for template in templates)
+        scores.append((label, score))
+    scores.sort(key=lambda item: item[1], reverse=True)
+    if not scores:
+        return None, 0.0, 0.0
+    best_label, best_score = scores[0]
+    second_score = scores[1][1] if len(scores) > 1 else 0.0
+    return best_label, best_score, best_score - second_score
+
+
+def _basic_level_cell_has_digit(binary: np.ndarray) -> bool:
+    count, _labels, stats, _centroids = cv2.connectedComponentsWithStats(binary)
+    components = [stats[index] for index in range(1, count) if stats[index, cv2.CC_STAT_AREA] >= 12]
+    if not components:
+        return False
+    dominant = max(components, key=lambda stat: stat[cv2.CC_STAT_AREA])
+    left = int(dominant[cv2.CC_STAT_LEFT])
+    # The optional second digit begins at the left edge of its canonical cell.
+    # On narrow layouts the EXP bar can enter from the right; do not mistake
+    # that tall right-edge block for a digit.
+    return left <= max(3, int(round(binary.shape[1] * 0.30)))
+
+
+def extract_basic_student_level_glyphs(
+    image: Image.Image,
+    region: dict,
+) -> tuple[list[np.ndarray], bool]:
+    """Return normalized digit glyphs and whether the second cell is occupied."""
+    output_size = tuple(region.get("output_size", (58, 46)))
+    warped = warp_quad_region(image, region, output_size=output_size)
+    if warped is None:
+        return [], False
+    binary = otsu_binary(warped)
+    midpoint = binary.shape[1] // 2
+    cells = (binary[:, :midpoint], binary[:, midpoint:])
+    has_second_digit = _basic_level_cell_has_digit(cells[1])
+    selected_cells = cells if has_second_digit else cells[:1]
+    glyphs = [normalize_binary_glyph(cell) for cell in selected_cells]
+    if any(glyph is None for glyph in glyphs):
+        return [], has_second_digit
+    return [glyph for glyph in glyphs if glyph is not None], has_second_digit
+
+
+def read_basic_student_level_result(
+    image: Image.Image,
+    region: dict,
+    adaptive_templates: dict[int, dict[str, list[np.ndarray]]] | None = None,
+) -> RecognitionResult:
+    """Read the compact left-card level after rectifying its slanted digit strip."""
+    output_size = tuple(region.get("output_size", (58, 46)))
+    warped = warp_quad_region(image, region, output_size=output_size)
+    if warped is None or not _basic_level_digit_templates():
+        return RecognitionResult.fallback(None, "basic_level_assets_missing")
+
+    binary = otsu_binary(warped)
+    midpoint = binary.shape[1] // 2
+    cells = (binary[:, :midpoint], binary[:, midpoint:])
+    results = [
+        _match_basic_level_digit(
+            cell,
+            adaptive_templates.get(position) if adaptive_templates else None,
+        )
+        for position, cell in enumerate(cells)
+    ]
+    first_label, first_score, first_margin = results[0]
+    second_label, second_score, second_margin = results[1]
+
+    second_occupancy = float(np.count_nonzero(cells[1])) / float(cells[1].size)
+    has_second_digit = _basic_level_cell_has_digit(cells[1])
+    if first_label is None:
+        return RecognitionResult(value=None, score=0.0, source=RecogSource.COMBINED, uncertain=True)
+
+    labels = [first_label]
+    scores = [first_score]
+    margins = [first_margin]
+    if has_second_digit:
+        if second_label is None:
+            return RecognitionResult(value=None, score=0.0, source=RecogSource.COMBINED, uncertain=True)
+        labels.append(second_label)
+        scores.append(second_score)
+        margins.append(second_margin)
+
+    value = int("".join(labels))
+    score = min(scores)
+    margin = min(margins)
+    valid = 1 <= value <= 90
+    uncertain = not valid or score < 0.70 or margin < 0.035
+    _log.debug(
+        "basic_level: value=%s score=%.3f margin=%.3f second_occ=%.3f adaptive=%d uncertain=%s",
+        value,
+        score,
+        margin,
+        second_occupancy,
+        sum(
+            len(templates)
+            for position in (adaptive_templates or {}).values()
+            for templates in position.values()
+        ),
+        str(uncertain).lower(),
+    )
+    return RecognitionResult(
+        value=value if valid else None,
+        score=score,
+        source=RecogSource.COMBINED,
+        uncertain=uncertain,
+        label=f"basic_level:{value}:margin={margin:.3f}",
+    )
+
+
+def read_basic_student_star_result(image: Image.Image, region: dict) -> RecognitionResult:
+    """Count the right-aligned yellow star strip using an HSV foreground mask."""
+    output_size = tuple(region.get("output_size", (185, 80)))
+    warped = warp_quad_region(image, region, output_size=output_size)
+    if warped is None:
+        return RecognitionResult.fallback(None, "basic_star_region_missing")
+
+    rgb = np.asarray(warped.convert("RGB"), dtype=np.uint8)
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+    mask = cv2.inRange(
+        hsv,
+        np.array((15, 80, 120), dtype=np.uint8),
+        np.array((42, 255, 255), dtype=np.uint8),
+    )
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((3, 3), dtype=np.uint8))
+    count, _labels, stats, _centroids = cv2.connectedComponentsWithStats(mask)
+    components = [stats[index] for index in range(1, count) if stats[index, cv2.CC_STAT_AREA] >= 20]
+    if not components:
+        return RecognitionResult(value=None, score=0.0, source=RecogSource.COMBINED, uncertain=True)
+
+    x1 = min(int(stat[cv2.CC_STAT_LEFT]) for stat in components)
+    y1 = min(int(stat[cv2.CC_STAT_TOP]) for stat in components)
+    x2 = max(int(stat[cv2.CC_STAT_LEFT] + stat[cv2.CC_STAT_WIDTH]) for stat in components)
+    y2 = max(int(stat[cv2.CC_STAT_TOP] + stat[cv2.CC_STAT_HEIGHT]) for stat in components)
+    width = x2 - x1
+    height = y2 - y1
+    if height < 8:
+        return RecognitionResult(value=None, score=0.0, source=RecogSource.COMBINED, uncertain=True)
+
+    raw_count = 1.0 + max(0.0, width - height) / (0.79 * height)
+    value = max(1, min(5, int(round(raw_count))))
+    residual = abs(raw_count - value)
+    score = max(0.0, min(1.0, 1.0 - residual / 0.35))
+    uncertain = residual > 0.20
+    _log.debug(
+        "basic_star_color: value=%s score=%.3f width=%d height=%d raw=%.3f uncertain=%s",
+        value,
+        score,
+        width,
+        height,
+        raw_count,
+        str(uncertain).lower(),
+    )
+    return RecognitionResult(
+        value=value,
+        score=score,
+        source=RecogSource.COMBINED,
+        uncertain=uncertain,
+        label=f"basic_star:{value}:raw={raw_count:.3f}",
+    )
+
+
 # ══════════════════════════════════════════════════════════
 # 장비 티어
 # ══════════════════════════════════════════════════════════
+
+def rank_equip_tier_candidates(crop: Image.Image, slot: int) -> list[tuple[str, float]]:
+    d = TEMPLATE_DIR / f"equip{slot}"
+    candidates: dict[str, str] = {}
+
+    empty_p = d / f"equip{slot}_empty.png"
+    if empty_p.exists():
+        candidates["empty"] = str(empty_p)
+    for p in d.glob(f"equip{slot}_T*.png"):
+        candidates[p.stem.replace(f"equip{slot}_", "")] = str(p)
+
+    return sorted(
+        (
+            (
+                lbl,
+                0.60 * match_score_resized(crop, path)
+                + 0.40 * _color_hist_score(crop, path),
+            )
+            for lbl, path in candidates.items()
+        ),
+        key=lambda x: x[1],
+        reverse=True,
+    )
+
 
 def read_equip_tier(crop: Image.Image, slot: int) -> str:
     d = TEMPLATE_DIR / f"equip{slot}"
@@ -1408,8 +2285,231 @@ def read_weapon_star_v5(crop: Image.Image) -> Optional[int]:
     return int(lbl) if lbl is not None else None
 
 
+@lru_cache(maxsize=1)
+def _weapon_star_reference_glyph() -> np.ndarray | None:
+    reference_path = TEMPLATE_DIR / "weapon_star" / "star_1.png"
+    if not reference_path.exists():
+        return None
+    with Image.open(reference_path) as raw:
+        reference_rgb = np.asarray(raw.convert("RGB"), dtype=np.uint8)
+    reference_hsv = cv2.cvtColor(reference_rgb, cv2.COLOR_RGB2HSV)
+    reference_mask = cv2.inRange(
+        reference_hsv,
+        np.array((80, 60, 100), dtype=np.uint8),
+        np.array((115, 255, 255), dtype=np.uint8),
+    )
+    return normalize_binary_glyph(
+        reference_mask,
+        output_size=(32, 40),
+        padding=1,
+    )
+
+
+def _count_weapon_star_slots(
+    mask: np.ndarray,
+    *,
+    centers: tuple[float, ...],
+    half_width: float,
+    y1_ratio: float,
+    y2_ratio: float,
+    threshold: float = 0.70,
+) -> tuple[Optional[int], float, tuple[float, ...]]:
+    reference_glyph = _weapon_star_reference_glyph()
+    if reference_glyph is None or mask.size == 0:
+        return None, 0.0, ()
+    height, width = mask.shape
+    scores: list[float] = []
+    for center in centers:
+        x1 = max(0, int(round((center - half_width) * width)))
+        x2 = min(width, int(round((center + half_width) * width)))
+        y1 = max(0, int(round(y1_ratio * height)))
+        y2 = min(height, int(round(y2_ratio * height)))
+        glyph = normalize_binary_glyph(
+            mask[y1:y2, x1:x2],
+            output_size=(32, 40),
+            padding=1,
+        )
+        scores.append(
+            binary_glyph_similarity(glyph, reference_glyph)
+            if glyph is not None
+            else 0.0
+        )
+    for index, slot_score in enumerate(scores):
+        if slot_score >= threshold:
+            value = len(centers) - index
+            score = min(1.0, 0.75 + (slot_score - threshold))
+            return value, score, tuple(scores)
+    return None, 0.0, tuple(scores)
+
+
+def read_basic_weapon_star_result(crop: Image.Image) -> RecognitionResult:
+    """Count 1-5 cyan stars on the compact basic-info weapon card."""
+    rgb = np.asarray(crop.convert("RGB"), dtype=np.uint8)
+    if rgb.size == 0:
+        return RecognitionResult.fallback(None, "empty_basic_weapon_star_crop")
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+    mask = cv2.inRange(
+        hsv,
+        np.array((80, 60, 100), dtype=np.uint8),
+        np.array((115, 255, 255), dtype=np.uint8),
+    )
+    slot_value, slot_score, slot_scores = _count_weapon_star_slots(
+        mask,
+        centers=(0.225, 0.3875, 0.55, 0.7125, 0.875),
+        half_width=0.0813,
+        y1_ratio=0.02,
+        y2_ratio=1.0,
+        threshold=0.62,
+    )
+    if slot_value is not None:
+        _log.debug(
+            "basic_weapon_star_slots: %s (score=%.3f slots=%s)",
+            slot_value,
+            slot_score,
+            " ".join(f"{item:.3f}" for item in slot_scores),
+        )
+        return RecognitionResult(
+            value=slot_value,
+            score=slot_score,
+            source=RecogSource.COMBINED,
+            uncertain=False,
+            label=f"basic_weapon_star_slots:{slot_value}({slot_score:.3f})",
+        )
+
+    count, _labels, stats, _centroids = cv2.connectedComponentsWithStats(mask)
+    components = [stats[index] for index in range(1, count) if stats[index, cv2.CC_STAT_AREA] >= 8]
+    if not components:
+        return RecognitionResult.fallback(None, "basic_weapon_stars_missing")
+
+    x1 = min(int(stat[cv2.CC_STAT_LEFT]) for stat in components)
+    y1 = min(int(stat[cv2.CC_STAT_TOP]) for stat in components)
+    x2 = max(int(stat[cv2.CC_STAT_LEFT] + stat[cv2.CC_STAT_WIDTH]) for stat in components)
+    y2 = max(int(stat[cv2.CC_STAT_TOP] + stat[cv2.CC_STAT_HEIGHT]) for stat in components)
+    width = x2 - x1
+    height = y2 - y1
+    if height < 4:
+        return RecognitionResult.fallback(None, "basic_weapon_star_height_invalid")
+
+    raw_count = width / (0.97 * height)
+    value = int(round(raw_count))
+    residual = abs(raw_count - value)
+    valid = 1 <= value <= 5 and residual <= 0.22
+    score = max(0.0, min(1.0, 1.0 - residual / 0.50))
+    _log.debug(
+        "basic_weapon_star_color: %s (score=%.3f width=%d height=%d raw=%.3f valid=%s)",
+        value,
+        score,
+        width,
+        height,
+        raw_count,
+        valid,
+    )
+    return RecognitionResult(
+        value=value if valid else None,
+        score=score,
+        source=RecogSource.COMBINED,
+        uncertain=not valid,
+        label=f"basic_weapon_star:{value}({score:.3f},raw={raw_count:.3f})",
+    )
+
+
+def _weapon_star_count_from_color(crop: Image.Image) -> tuple[Optional[int], float]:
+    """Count the contiguous cyan weapon-star strip, independent of its x offset."""
+    rgb = np.asarray(crop.convert("RGB"), dtype=np.uint8)
+    if rgb.size == 0:
+        return None, 0.0
+
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+    mask = cv2.inRange(
+        hsv,
+        np.array((80, 60, 100), dtype=np.uint8),
+        np.array((115, 255, 255), dtype=np.uint8),
+    )
+    # Match the four fixed, right-aligned star slots independently. A large
+    # cyan/white weapon can run behind this strip and connect to one of the
+    # stars; slot silhouettes keep that background from changing the count.
+    reference_path = TEMPLATE_DIR / "weapon_star" / "star_1.png"
+    if reference_path.exists():
+        reference_rgb = np.asarray(Image.open(reference_path).convert("RGB"), dtype=np.uint8)
+        reference_hsv = cv2.cvtColor(reference_rgb, cv2.COLOR_RGB2HSV)
+        reference_mask = cv2.inRange(
+            reference_hsv,
+            np.array((80, 60, 100), dtype=np.uint8),
+            np.array((115, 255, 255), dtype=np.uint8),
+        )
+        reference_glyph = normalize_binary_glyph(
+            reference_mask,
+            output_size=(32, 40),
+            padding=1,
+        )
+        if reference_glyph is not None:
+            height, width = mask.shape
+            centers = (0.186, 0.371, 0.557, 0.743)
+            slot_scores: list[float] = []
+            for center in centers:
+                x1 = max(0, int(round((center - 0.093) * width)))
+                x2 = min(width, int(round((center + 0.093) * width)))
+                y1 = max(0, int(round(0.25 * height)))
+                y2 = min(height, int(round(0.87 * height)))
+                glyph = normalize_binary_glyph(
+                    mask[y1:y2, x1:x2],
+                    output_size=(32, 40),
+                    padding=1,
+                )
+                slot_scores.append(
+                    binary_glyph_similarity(glyph, reference_glyph)
+                    if glyph is not None
+                    else 0.0
+                )
+            for index, slot_score in enumerate(slot_scores):
+                if slot_score >= 0.70:
+                    value = 4 - index
+                    score = min(1.0, 0.75 + (slot_score - 0.70))
+                    _log.debug(
+                        "weapon_star_slots: %s (score=%.3f slots=%s)",
+                        value,
+                        score,
+                        " ".join(f"{item:.3f}" for item in slot_scores),
+                    )
+                    return value, score
+
+    count, _, stats, _ = cv2.connectedComponentsWithStats(mask)
+    components = [stats[i] for i in range(1, count) if stats[i, cv2.CC_STAT_AREA] >= 8]
+    if not components:
+        return None, 0.0
+
+    x1 = min(int(stat[cv2.CC_STAT_LEFT]) for stat in components)
+    y1 = min(int(stat[cv2.CC_STAT_TOP]) for stat in components)
+    x2 = max(int(stat[cv2.CC_STAT_LEFT] + stat[cv2.CC_STAT_WIDTH]) for stat in components)
+    y2 = max(int(stat[cv2.CC_STAT_TOP] + stat[cv2.CC_STAT_HEIGHT]) for stat in components)
+    width = x2 - x1
+    height = y2 - y1
+    if height < 4:
+        return None, 0.0
+
+    # Current stars are spaced at about 0.97 star-heights per slot.
+    raw_count = width / (0.97 * height)
+    value = max(1, min(4, int(round(raw_count))))
+    residual = abs(raw_count - value)
+    score = max(0.0, min(1.0, 1.0 - residual / 0.45))
+    _log.debug(
+        "weapon_star_color: %s (score=%.3f width=%d height=%d raw=%.3f)",
+        value, score, width, height, raw_count,
+    )
+    return value, score
+
+
 def read_weapon_star_v5_result(crop: Image.Image) -> RecognitionResult:
     """무기 성작 인식 — RecognitionResult 반환."""
+    color_value, color_score = _weapon_star_count_from_color(crop)
+    if color_value is not None and color_score >= 0.75:
+        return _make_result(
+            color_value,
+            color_score,
+            RecogSource.COMBINED,
+            confident_thresh=0.75,
+        )
+
     d = TEMPLATE_DIR / "weapon_star"
     cands = {
         str(i): str(d / f"star_{i}.png")

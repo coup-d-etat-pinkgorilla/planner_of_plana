@@ -52,6 +52,8 @@ class StudentMeta(TypedDict):
     terrain_indoor: NotRequired[str | None]
     weapon3_terrain_boost: NotRequired[str | None]
     has_favorite_item: NotRequired[str | None]
+    has_favorite_item_jp: NotRequired[str | None]
+    has_favorite_item_kr: NotRequired[str | None]
     farmable: NotRequired[str | None]
     passive_stat: NotRequired[list[str]]
     weapon_passive_stat: NotRequired[list[str]]
@@ -105,6 +107,8 @@ EDITABLE_FIELDS: tuple[str, ...] = (
     "terrain_indoor",
     "weapon3_terrain_boost",
     "has_favorite_item",
+    "has_favorite_item_jp",
+    "has_favorite_item_kr",
     "farmable",
     "passive_stat",
     "weapon_passive_stat",
@@ -193,14 +197,13 @@ FAVORITE_ITEM_STUDENT_IDS: frozenset[str] = frozenset({
 FAVORITE_ITEM_MAX_TIER = "T2"
 
 JP_ONLY_STUDENT_IDS: frozenset[str] = frozenset(('akane_school_uniform',
- 'aris_battle',
  'eimi_battle',
  'erika',
  'haruka_dress',
- 'kei',
  'konoka',
  'koyuki_pajama',
  'kurumi',
+ 'mutsuki_dress',
  'niko',
  'otogi',
  'rena',
@@ -10875,7 +10878,7 @@ STUDENTS: dict[str, StudentMeta] = {'ayane': {'display_name': '아야네',
                                                  'Antikythera Mechanism T4': 8,
                                                  'Roman Dodecahedron T3': 15},
                                                 {'Millennium Note T5': 1}],
-                 'kr_search_tags': ['무리스', '임리스', '깡통', '게임개발부'],
+                 'kr_search_tags': ['무리스', '임리스', '깡통', '게임개발부', '건리스'],
                  'has_favorite_item': 'no'},
  'aris_maid': {'display_name': '아리스(메이드)',
                'template_name': 'aris_maid.png',
@@ -27324,15 +27327,32 @@ def weapon3_terrain_boost(student_id: str) -> str | None:
     return field(student_id, "weapon3_terrain_boost")
 
 
-def has_favorite_item(student_id: str) -> str | None:
+def has_favorite_item(student_id: str, server: str = "kr") -> str | None:
+    normalized_server = str(server or "kr").strip().casefold()
+    if normalized_server not in {"jp", "kr"}:
+        raise ValueError(f"unsupported server: {server}")
+    explicit = field(student_id, f"has_favorite_item_{normalized_server}")
+    if explicit is not None:
+        return explicit
+    # Older metadata only has the shared field. Keep it as a fallback so
+    # existing asset bundles continue to work while server-specific values
+    # are introduced incrementally.
     explicit = field(student_id, "has_favorite_item")
     if explicit is not None:
         return explicit
     return "yes" if student_id in FAVORITE_ITEM_STUDENT_IDS else "no"
 
 
-def favorite_item_enabled(student_id: str) -> bool:
-    return has_favorite_item(student_id) == "yes"
+def has_favorite_item_jp(student_id: str) -> str | None:
+    return has_favorite_item(student_id, server="jp")
+
+
+def has_favorite_item_kr(student_id: str) -> str | None:
+    return has_favorite_item(student_id, server="kr")
+
+
+def favorite_item_enabled(student_id: str, server: str = "kr") -> bool:
+    return has_favorite_item(student_id, server=server) == "yes"
 
 
 def is_jp_only(student_id: str) -> bool:
@@ -27418,3 +27438,27 @@ def terrain_with_weapon3(student_id: str, terrain_key: str) -> str | None:
     if boosted != terrain_key:
         return current
     return upgraded_terrain_rank(current)
+
+
+def _load_external_student_meta() -> None:
+    try:
+        from pathlib import Path
+        import runpy
+
+        from core.config import DEFAULT_ASSET_DIR
+
+        external_path = DEFAULT_ASSET_DIR / "core" / "student_meta.py"
+        if not external_path.exists():
+            return
+        if external_path.resolve() == Path(__file__).resolve():
+            return
+        namespace = runpy.run_path(str(external_path))
+        external_students = namespace.get("STUDENTS")
+        if isinstance(external_students, dict):
+            global STUDENTS
+            STUDENTS = external_students
+    except Exception:
+        return
+
+
+_load_external_student_meta()

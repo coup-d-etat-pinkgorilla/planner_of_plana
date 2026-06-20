@@ -50,6 +50,10 @@ WM_KEYDOWN     = 0x0100
 WM_KEYUP       = 0x0101
 MK_LBUTTON     = 0x0001
 VK_ESCAPE      = 0x1B
+VK_LEFT        = 0x25
+VK_UP          = 0x26
+VK_RIGHT       = 0x27
+VK_DOWN        = 0x28
 MAPVK_VK_TO_VSC = 0
 WHEEL_DELTA    = 120        # Windows 표준 휠 단위
 SW_RESTORE     = 9
@@ -57,6 +61,11 @@ MOUSEEVENTF_LEFTDOWN = 0x0002
 MOUSEEVENTF_LEFTUP   = 0x0004
 MOUSEEVENTF_WHEEL    = 0x0800
 INPUT_MOUSE          = 0
+INPUT_KEYBOARD       = 1
+KEYEVENTF_EXTENDEDKEY = 0x0001
+KEYEVENTF_KEYUP       = 0x0002
+KEYEVENTF_SCANCODE    = 0x0008
+FOREGROUND_CLICK_SETTLE = 0.90
 
 # ── Win32 API ─────────────────────────────────────────────
 _u32 = ctypes.windll.user32
@@ -77,8 +86,18 @@ class _MOUSEINPUT(ctypes.Structure):
     ]
 
 
+class _KEYBDINPUT(ctypes.Structure):
+    _fields_ = [
+        ("wVk", wintypes.WORD),
+        ("wScan", wintypes.WORD),
+        ("dwFlags", wintypes.DWORD),
+        ("time", wintypes.DWORD),
+        ("dwExtraInfo", ULONG_PTR),
+    ]
+
+
 class _INPUT_UNION(ctypes.Union):
-    _fields_ = [("mi", _MOUSEINPUT)]
+    _fields_ = [("mi", _MOUSEINPUT), ("ki", _KEYBDINPUT)]
 
 
 class _INPUT(ctypes.Structure):
@@ -138,6 +157,10 @@ def _move_cursor_to_client(hwnd: int, cx: int, cy: int) -> bool:
     if not converted:
         return False
     sx, sy = converted
+    return move_cursor_to_screen(sx, sy)
+
+
+def move_cursor_to_screen(sx: int, sy: int) -> bool:
     try:
         ok = bool(_u32.SetCursorPos(int(sx), int(sy)))
         _log.debug(f"cursor move screen=({sx},{sy}) ok={ok}")
@@ -199,6 +222,16 @@ def _post_escape(hwnd: int) -> bool:
     up_lparam = down_lparam | (1 << 30) | (1 << 31)
     ok1 = bool(_u32.PostMessageW(hwnd, WM_KEYDOWN, VK_ESCAPE, down_lparam))
     ok2 = bool(_u32.PostMessageW(hwnd, WM_KEYUP,   VK_ESCAPE, up_lparam))
+    return ok1 and ok2
+
+
+def _post_key(hwnd: int, vk: int) -> bool:
+    scan = int(_u32.MapVirtualKeyW(vk, MAPVK_VK_TO_VSC)) & 0xFF
+    extended = 1 << 24 if vk in (VK_LEFT, VK_RIGHT) else 0
+    down_lparam = 1 | (scan << 16) | extended
+    up_lparam = down_lparam | (1 << 30) | (1 << 31)
+    ok1 = bool(_u32.PostMessageW(hwnd, WM_KEYDOWN, vk, down_lparam))
+    ok2 = bool(_u32.PostMessageW(hwnd, WM_KEYUP, vk, up_lparam))
     return ok1 and ok2
 
 
@@ -289,6 +322,28 @@ def _sendinput_click(sx: int, sy: int) -> bool:
         return False
 
 
+def _sendinput_key(vk: int) -> bool:
+    try:
+        scan = int(_u32.MapVirtualKeyW(vk, MAPVK_VK_TO_VSC)) & 0xFF
+        if scan <= 0:
+            return False
+
+        flags = KEYEVENTF_SCANCODE
+        if vk in (VK_LEFT, VK_UP, VK_RIGHT, VK_DOWN):
+            flags |= KEYEVENTF_EXTENDEDKEY
+
+        inputs = (_INPUT * 2)()
+        inputs[0].type = INPUT_KEYBOARD
+        inputs[0].ki = _KEYBDINPUT(0, scan, flags, 0, 0)
+        inputs[1].type = INPUT_KEYBOARD
+        inputs[1].ki = _KEYBDINPUT(0, scan, flags | KEYEVENTF_KEYUP, 0, 0)
+        sent = _u32.SendInput(2, ctypes.byref(inputs), ctypes.sizeof(_INPUT))
+        return sent == 2
+    except Exception as e:
+        _log.warning(f"SendInput key failed vk={vk}: {e}")
+        return False
+
+
 def _pag_scroll(sx: int, sy: int, amount: int) -> bool:
     if not HAS_PAG:
         return False
@@ -337,6 +392,16 @@ def _pag_escape() -> bool:
         return True
     except Exception as e:
         _log.warning(f"pyautogui escape 실패: {e}")
+        return False
+
+def _pag_press(key_name: str) -> bool:
+    if not HAS_PAG:
+        return False
+    try:
+        _pag.press(key_name)
+        return True
+    except Exception as e:
+        _log.warning(f"pyautogui key press failed ({key_name}): {e}")
         return False
 
 
@@ -477,13 +542,32 @@ def click_point(
     delay: float = 0.0,
 ) -> bool:
     """
-    Move the system cursor first, then send the click through PostMessage.
-    Blue Archive appears to use the live cursor position during hit testing,
-    so foreground scans are more reliable when the cursor is aligned first.
+    Click a client-space point.
+
+    Windowed Blue Archive can accept the cursor move but ignore synthetic
+    WM_LBUTTON messages, so prefer a real foreground click and keep
+    PostMessage as a fallback for non-interactive/background cases.
     """
-    _move_cursor_to_client(hwnd, cx, cy)
-    ok = _post_click(hwnd, cx, cy)
-    _log.debug(f"postmessage click ({label}) client=({cx},{cy}) ok={ok}")
+    screen = client_to_screen(hwnd, cx, cy)
+    ok = False
+
+    if bool(screen) and _can_use_physical_fallback(hwnd):
+        activated = False
+        if not _is_foreground_window(hwnd):
+            activated = _activate_window(hwnd)
+            _log.debug(f"activate before click ({label}) ok={activated}")
+            time.sleep(FOREGROUND_CLICK_SETTLE)
+        can_physical_click = activated or _is_foreground_window(hwnd)
+        if can_physical_click:
+            screen = client_to_screen(hwnd, cx, cy)
+        if bool(screen) and can_physical_click:
+            ok = _pag_click(screen[0], screen[1])
+            _log.debug(f"physical click primary ({label}) screen=({screen[0]},{screen[1]}) ok={ok}")
+
+    if not ok:
+        _move_cursor_to_client(hwnd, cx, cy)
+        ok = _post_click(hwnd, cx, cy)
+        _log.debug(f"postmessage click fallback ({label}) client=({cx},{cy}) ok={ok}")
 
     if delay > 0:
         time.sleep(delay)
@@ -547,6 +631,35 @@ def send_escape(
     if (not ok) and _can_use_physical_fallback(hwnd) and _is_foreground_window(hwnd):
         ok = _pag_escape()
         _log.debug(f"physical escape ok={ok}")
+
+    if delay > 0:
+        time.sleep(delay)
+    return ok
+
+
+def send_key(
+    hwnd: int,
+    vk: int,
+    *,
+    key_name: str | None = None,
+    delay: float = 0.20,
+) -> bool:
+    ok = False
+    if _can_use_physical_fallback(hwnd):
+        if not _is_foreground_window(hwnd):
+            activated = _activate_window(hwnd)
+            _log.debug(f"activate before key ok={activated}")
+            time.sleep(0.05)
+        if _is_foreground_window(hwnd):
+            ok = _sendinput_key(vk)
+            _log.debug(f"sendinput key primary vk={vk} ok={ok}")
+            if (not ok) and key_name:
+                ok = _pag_press(key_name)
+                _log.debug(f"physical key fallback {key_name} ok={ok}")
+
+    if not ok:
+        ok = _post_key(hwnd, vk)
+        _log.debug(f"postmessage key fallback vk={vk} ok={ok}")
 
     if delay > 0:
         time.sleep(delay)

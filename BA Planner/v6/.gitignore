@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 
 .edge-headless/
+artifacts/
 debug/
 logs/
 scan_results/
@@ -12,8 +13,18 @@ log.txt
 *.log
 *.out
 *.err
+*.db
+*.db-*
+config.json
+
+# Build and release artifacts.
+build/
+dist/
+release/
+*.spec
 
 # Runtime profile data and scan outputs.
+profiles/
 profiles/*/ba_planner.db
 profiles/*/ba_planner.db-*
 profiles/*/scans/
@@ -21,3 +32,8 @@ profiles/*/data/scans/
 profiles/*/data/backups/
 profiles/*/data/history/
 profiles/*/data/current/
+
+# Local-only release preparation scratch space.
+.local/
+local/
+incoming_assets/

@@ -52,6 +52,7 @@ FORBIDDEN_ZONES: list[tuple[float, float, float, float]] = [
 PW_RENDERFULLCONTENT = 0x00000002   # PrintWindow 전체 렌더 플래그
 GWL_STYLE            = -16
 WS_MINIMIZE          = 0x20000000
+SW_RESTORE           = 9
 
 # ── Win32 API ────────────────────────────────────────────
 _u32  = ctypes.windll.user32
@@ -197,6 +198,19 @@ def is_target_foreground() -> bool:
         return False
 
 
+def activate_target_window() -> bool:
+    """Bring the selected target window to the foreground before an interactive scan."""
+    hwnd = find_target_hwnd()
+    if hwnd is None:
+        return False
+    try:
+        _u32.ShowWindow(hwnd, SW_RESTORE)
+        return bool(_u32.SetForegroundWindow(hwnd))
+    except Exception as exc:
+        _log.debug(f"target foreground activation failed: {exc}")
+        return False
+
+
 def get_window_rect() -> Optional[tuple[int, int, int, int]]:
     """Client area (left, top, width, height) 반환."""
     hwnd = find_target_hwnd()
@@ -302,7 +316,21 @@ def _print_window(hwnd: int) -> Optional[Image.Image]:
             return None
 
     _cache_window_metrics(hwnd, rect)
-    _, _, w, h = rect
+    client_left, client_top, client_w, client_h = rect
+    wr = _RECT()
+    use_window_frame = bool(_u32.GetWindowRect(hwnd, ctypes.byref(wr)))
+    if use_window_frame:
+        window_left = wr.left
+        window_top = wr.top
+        w = max(1, wr.right - wr.left)
+        h = max(1, wr.bottom - wr.top)
+        if w < client_w or h < client_h:
+            use_window_frame = False
+    if not use_window_frame:
+        window_left = client_left
+        window_top = client_top
+        w = client_w
+        h = client_h
 
     # GDI 비트맵 생성
     hdc_screen = _u32.GetDC(0)
@@ -351,8 +379,18 @@ def _print_window(hwnd: int) -> Optional[Image.Image]:
         if ret == 0:
             return None
 
-        img = Image.frombuffer("RGBA", (w, h), buf.raw, "raw", "BGRA", 0, 1)
-        return img.convert("RGB")
+        img = Image.frombuffer("RGBA", (w, h), buf.raw, "raw", "BGRA", 0, 1).convert("RGB")
+        if use_window_frame:
+            crop_left = client_left - window_left
+            crop_top = client_top - window_top
+            crop_right = crop_left + client_w
+            crop_bottom = crop_top + client_h
+            if (
+                0 <= crop_left < crop_right <= img.width
+                and 0 <= crop_top < crop_bottom <= img.height
+            ):
+                img = img.crop((crop_left, crop_top, crop_right, crop_bottom))
+        return img
 
     finally:
         _gdi.DeleteObject(hbmp)

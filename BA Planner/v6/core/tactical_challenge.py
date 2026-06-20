@@ -294,6 +294,18 @@ def deck_template(deck: TacticalDeck | dict[str, Any] | None) -> str:
     return f"{','.join(strikers)}|{','.join(supports)}"
 
 
+def deck_input_template(deck: TacticalDeck | dict[str, Any] | None) -> str:
+    normalized = normalize_deck(deck)
+    slots = normalized.strikers[:TACTICAL_STRIKER_SLOTS]
+    slots += [""] * max(0, TACTICAL_STRIKER_SLOTS - len(slots))
+    supports = normalized.supports[:TACTICAL_SUPPORT_SLOTS]
+    slots += supports
+    slots += [""] * max(0, TACTICAL_SUPPORT_SLOTS - len(supports))
+    while slots and not slots[-1]:
+        slots.pop()
+    return " ".join(item or "-" for item in slots)
+
+
 def parse_deck_template(value: str) -> TacticalDeck:
     raw = str(value or "").strip()
     if not raw:
@@ -304,8 +316,19 @@ def parse_deck_template(value: str) -> TacticalDeck:
         striker_raw, support_raw = raw, ""
 
     def _parts(part: str) -> list[str]:
-        normalized = part.replace("/", ",").replace(";", ",")
-        return [_clean_name(item) for item in normalized.split(",")]
+        text = str(part or "")
+        has_explicit_separator = any(separator in text for separator in ",/;")
+        if has_explicit_separator:
+            raw_items = text.replace("/", ",").replace(";", ",").replace("\n", ",").split(",")
+        else:
+            raw_items = text.split()
+        return ["" if _clean_name(item) == "-" else _clean_name(item) for item in raw_items]
+
+    if "|" not in raw:
+        tokens = _parts(raw)
+        striker_tokens = tokens[:TACTICAL_STRIKER_SLOTS]
+        support_tokens = tokens[TACTICAL_STRIKER_SLOTS : TACTICAL_STRIKER_SLOTS + TACTICAL_SUPPORT_SLOTS]
+        return normalize_deck(TacticalDeck(strikers=striker_tokens, supports=support_tokens))
 
     return normalize_deck(TacticalDeck(strikers=_parts(striker_raw), supports=_parts(support_raw)))
 

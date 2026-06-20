@@ -3,16 +3,15 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from functools import lru_cache
-from pathlib import Path
 
+from core.config import PLANNING_DATA_DIR
 from core.equipment_items import EQUIPMENT_SERIES_BY_KEY
 from core.planning import GrowthPlan, StudentGoal
 from core.schale_skill_material_map import is_skill_book_label
 from core import student_meta
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-PLANNING_DIR = BASE_DIR / "data" / "planning"
+PLANNING_DIR = PLANNING_DATA_DIR
 
 
 @dataclass(slots=True)

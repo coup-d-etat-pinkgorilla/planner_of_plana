@@ -21,6 +21,22 @@ def _windows_work_area_size() -> tuple[int, int] | None:
         return None
 
 
+def get_work_area_size(root: tk.Misc) -> tuple[int, int]:
+    """Return the usable screen size for fitting fixed-size dialogs."""
+    work_area = _windows_work_area_size()
+    if work_area is not None:
+        return work_area
+    try:
+        screen_w = max(1, int(root.winfo_screenwidth()))
+    except Exception:
+        screen_w = 1
+    try:
+        screen_h = max(1, int(root.winfo_screenheight()))
+    except Exception:
+        screen_h = 1
+    return screen_w, screen_h
+
+
 def get_ui_scale(
     root: tk.Misc,
     *,

@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from typing import Any
 
 # ── 상수 ──────────────────────────────────────────────────
-_TAKE_MAX_INT   = {"level", "student_star", "weapon_level",
+_TAKE_MAX_INT   = {"level", "student_star", "weapon_star", "weapon_level",
                    "equip1_level", "equip2_level", "equip3_level"}
 _EQUIP_TIER     = {"equip1", "equip2", "equip3", "equip4"}
 _STAT_FIELDS    = {"stat_hp", "stat_atk", "stat_heal"}
@@ -91,7 +91,13 @@ def _merge_weapon_state(old_v: str | None, new_v: str | None) -> str | None:
     return new_v
 
 
-def _merge_field(field: str, old_v: Any, new_v: Any) -> Any:
+def _merge_field(
+    field: str,
+    old_v: Any,
+    new_v: Any,
+    *,
+    authoritative: bool = False,
+) -> Any:
     """
     단일 필드 병합 규칙 적용.
     반환값은 항상 str | int | None (dict 저장 호환).
@@ -131,6 +137,8 @@ def _merge_field(field: str, old_v: Any, new_v: Any) -> Any:
             return n
         if n is None:
             return o
+        if authoritative:
+            return n
         result = max(o, n)
         if result != n:
             print(
@@ -169,7 +177,12 @@ _STUDENT_MERGE_FIELDS: tuple[str, ...] = (
 )
 
 
-def merge_student_entry(old: dict, new: dict) -> dict:
+def merge_student_entry(
+    old: dict,
+    new: dict,
+    *,
+    authoritative_fields: set[str] | frozenset[str] = frozenset(),
+) -> dict:
     """
     학생 1명의 old 상태와 new 스캔 결과를 병합해 반환.
     meta 필드(last_seen_at, last_scan_id)는 호출자가 채운다.
@@ -178,6 +191,7 @@ def merge_student_entry(old: dict, new: dict) -> dict:
     ----------
     old : 기존 current/students.json 레코드 (없으면 빈 dict)
     new : 이번 스캔 결과 dict
+    authoritative_fields : 판독 성공이 확인되어 감소도 허용할 필드 집합
 
     Returns
     -------
@@ -188,7 +202,12 @@ def merge_student_entry(old: dict, new: dict) -> dict:
     for field in _STUDENT_MERGE_FIELDS:
         old_v = old.get(field)
         new_v = new.get(field)
-        merged[field] = _merge_field(field, old_v, new_v)
+        merged[field] = _merge_field(
+            field,
+            old_v,
+            new_v,
+            authoritative=field in authoritative_fields,
+        )
 
     return merged
 

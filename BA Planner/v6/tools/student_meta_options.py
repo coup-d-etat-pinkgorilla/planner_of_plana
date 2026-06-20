@@ -154,6 +154,14 @@ FIELD_OPTIONS: dict[str, tuple[str, ...]] = {
         "yes",
         "no",
     ),
+    "has_favorite_item_jp": (
+        "yes",
+        "no",
+    ),
+    "has_favorite_item_kr": (
+        "yes",
+        "no",
+    ),
     "farmable": (
         "yes",
         "no",

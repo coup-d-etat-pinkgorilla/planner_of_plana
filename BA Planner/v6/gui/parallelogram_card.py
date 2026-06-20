@@ -664,6 +664,8 @@ class ParallelogramCardGrid(QScrollArea):
         reorder_enabled: bool = False,
         drag_enabled: bool = False,
         min_card_width: int | None = None,
+        fixed_card_width: bool = False,
+        fixed_column_count: int | None = None,
     ) -> None:
         super().__init__(parent)
         self._card_asset = card_asset
@@ -671,6 +673,8 @@ class ParallelogramCardGrid(QScrollArea):
         self._multi_select = multi_select
         self._reorder_enabled = reorder_enabled
         self._drag_enabled = drag_enabled
+        self._fixed_card_width = bool(fixed_card_width)
+        self._fixed_column_count = max(1, int(fixed_column_count)) if fixed_column_count is not None else None
         self._content = QWidget()
         self._content.setAttribute(Qt.WA_StyledBackground, True)
         self.setWidget(self._content)
@@ -1168,17 +1172,28 @@ class ParallelogramCardGrid(QScrollArea):
         gap_y = self._card_asset.style.grid_gap_y
         shared_overlap = max(0, overlap_x - gap_x)
 
-        columns = 1
-        while True:
-            next_columns = columns + 1
-            candidate_width = (available_width + shared_overlap * (next_columns - 1)) // next_columns
-            if candidate_width < self._min_card_width:
-                break
-            columns = next_columns
-
-        card_width = max(self._min_card_width, (available_width + shared_overlap * (columns - 1)) // columns)
+        if self._fixed_column_count is not None:
+            columns = self._fixed_column_count
+            card_width = max(1, (available_width + shared_overlap * max(0, columns - 1)) // columns)
+            advance_x = max(1, card_width - shared_overlap)
+        elif self._fixed_card_width:
+            card_width = self._min_card_width
+            advance_x = max(1, card_width - shared_overlap)
+            if available_width <= card_width:
+                columns = 1
+            else:
+                columns = max(1, 1 + (available_width - card_width) // advance_x)
+        else:
+            columns = 1
+            while True:
+                next_columns = columns + 1
+                candidate_width = (available_width + shared_overlap * (next_columns - 1)) // next_columns
+                if candidate_width < self._min_card_width:
+                    break
+                columns = next_columns
+            card_width = max(self._min_card_width, (available_width + shared_overlap * (columns - 1)) // columns)
+            advance_x = max(1, card_width - shared_overlap)
         card_height = max(1, int(round(card_width / self._card_asset.aspect_ratio)))
-        advance_x = max(1, card_width - shared_overlap)
         row_advance = card_height + gap_y
         return edge, columns, card_width, card_height, advance_x, row_advance
 

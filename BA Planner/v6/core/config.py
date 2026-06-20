@@ -6,19 +6,70 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+APP_NAME = "BA Planner"
 BASE_DIR = Path(__file__).parent.parent
-TEMPLATE_DIR = BASE_DIR / "templates"
-REGIONS_DIR = BASE_DIR / "regions"
-CONFIG_FILE = BASE_DIR / "config.json"
-PROFILES_DIR = BASE_DIR / "profiles"
-LEGACY_DATA_DIR = BASE_DIR / "data"
-LEGACY_DB_PATH = BASE_DIR / "ba_planner.db"
-LEGACY_SCANS_DIR = BASE_DIR / "scans"
+APP_DIR = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else BASE_DIR
+
+
+def _default_user_root() -> Path:
+    override = os.environ.get("BA_PLANNER_USER_DIR")
+    if override:
+        return Path(override).expanduser()
+    if getattr(sys, "frozen", False):
+        local_app_data = os.environ.get("LOCALAPPDATA")
+        if local_app_data:
+            return Path(local_app_data) / APP_NAME
+    return BASE_DIR
+
+
+USER_ROOT = _default_user_root()
+DEFAULT_ASSET_DIR = USER_ROOT / "assets" / "current"
+
+
+def _asset_candidate_roots() -> list[Path]:
+    candidates: list[Path] = []
+    override = os.environ.get("BA_PLANNER_ASSET_DIR")
+    if override:
+        candidates.append(Path(override).expanduser())
+    candidates.extend(
+        [
+            APP_DIR / "assets",
+            APP_DIR,
+            DEFAULT_ASSET_DIR,
+            USER_ROOT / "assets",
+            BASE_DIR,
+        ]
+    )
+    return candidates
+
+
+def _looks_like_asset_root(path: Path) -> bool:
+    return (path / "templates").is_dir() and (path / "regions").is_dir()
+
+
+def resolve_asset_dir() -> Path:
+    for candidate in _asset_candidate_roots():
+        if _looks_like_asset_root(candidate):
+            return candidate
+    return DEFAULT_ASSET_DIR
+
+
+ASSET_DIR = resolve_asset_dir()
+TEMPLATE_DIR = ASSET_DIR / "templates"
+REGIONS_DIR = ASSET_DIR / "regions"
+PLANNING_DATA_DIR = ASSET_DIR / "data" / "planning"
+CONFIG_FILE = USER_ROOT / "config.json"
+PROFILES_DIR = USER_ROOT / "profiles"
+LEGACY_DATA_DIR = USER_ROOT / "data"
+LEGACY_DB_PATH = USER_ROOT / "ba_planner.db"
+LEGACY_SCANS_DIR = USER_ROOT / "scans"
 
 _REGION_COORD_KEYS = frozenset({"x1", "y1", "x2", "y2"})
 

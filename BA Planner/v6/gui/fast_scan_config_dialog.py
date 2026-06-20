@@ -6,7 +6,7 @@ from tkinter import messagebox
 
 import core.student_meta as student_meta
 from core.student_order import ordered_student_ids
-from gui.ui_scale import get_ui_scale, scale_font, scale_px
+from gui.ui_scale import get_ui_scale, get_work_area_size, scale_font, scale_px
 
 
 @dataclass(slots=True)
@@ -27,7 +27,7 @@ class FastScanConfigDialog(tk.Toplevel):
         self.title("빠른 스캔 목록 설정")
         self.configure(bg="#101722")
         self.result = FastScanConfigResult(saved=False, student_ids=[])
-        self._ui_scale = get_ui_scale(self, base_width=860, base_height=840)
+        self._ui_scale = get_ui_scale(self, base_width=860, base_height=840, max_scale=1.0)
         self._saved_student_count = saved_student_count
         self._search = tk.StringVar(value="")
         self._selected: dict[str, tk.BooleanVar] = {
@@ -52,10 +52,10 @@ class FastScanConfigDialog(tk.Toplevel):
 
     def _show_dialog(self) -> None:
         self.update_idletasks()
-        width = scale_px(820, self._ui_scale)
-        height = scale_px(780, self._ui_scale)
-        sw = self.winfo_screenwidth()
-        sh = self.winfo_screenheight()
+        sw, sh = get_work_area_size(self)
+        margin = scale_px(32, self._ui_scale)
+        width = min(scale_px(820, self._ui_scale), max(1, sw - margin))
+        height = min(scale_px(780, self._ui_scale), max(1, sh - margin))
         self.geometry(f"{width}x{height}+{(sw-width)//2}+{(sh-height)//2}")
         self.deiconify()
         self.lift()
@@ -66,6 +66,8 @@ class FastScanConfigDialog(tk.Toplevel):
     def _build(self) -> None:
         wrap = tk.Frame(self, bg="#101722", padx=scale_px(18, self._ui_scale), pady=scale_px(18, self._ui_scale))
         wrap.pack(fill="both", expand=True)
+        wrap.grid_columnconfigure(0, weight=1)
+        wrap.grid_rowconfigure(4, weight=1)
 
         tk.Label(
             wrap,
@@ -73,7 +75,7 @@ class FastScanConfigDialog(tk.Toplevel):
             bg="#101722",
             fg="#e4f1ff",
             font=scale_font(("Malgun Gothic", 15, "bold"), self._ui_scale),
-        ).pack(anchor="w")
+        ).grid(row=0, column=0, sticky="w")
 
         base_text = (
             "학생별로 토글해서 빠른 스캔 기준 목록을 저장합니다.\n"
@@ -87,10 +89,15 @@ class FastScanConfigDialog(tk.Toplevel):
             justify="left",
             wraplength=scale_px(760, self._ui_scale),
             font=scale_font(("Malgun Gothic", 9), self._ui_scale),
-        ).pack(anchor="w", pady=(scale_px(6, self._ui_scale), scale_px(12, self._ui_scale)))
+        ).grid(
+            row=1,
+            column=0,
+            sticky="ew",
+            pady=(scale_px(6, self._ui_scale), scale_px(12, self._ui_scale)),
+        )
 
         head = tk.Frame(wrap, bg="#162130", padx=scale_px(12, self._ui_scale), pady=scale_px(10, self._ui_scale))
-        head.pack(fill="x")
+        head.grid(row=2, column=0, sticky="ew")
         self._count_label = tk.Label(
             head,
             text="",
@@ -110,7 +117,12 @@ class FastScanConfigDialog(tk.Toplevel):
         ).pack(side="right")
 
         search_wrap = tk.Frame(wrap, bg="#101722")
-        search_wrap.pack(fill="x", pady=(scale_px(12, self._ui_scale), scale_px(8, self._ui_scale)))
+        search_wrap.grid(
+            row=3,
+            column=0,
+            sticky="ew",
+            pady=(scale_px(12, self._ui_scale), scale_px(8, self._ui_scale)),
+        )
         tk.Label(
             search_wrap,
             text="검색",
@@ -131,7 +143,7 @@ class FastScanConfigDialog(tk.Toplevel):
         self._search.trace_add("write", lambda *_args: self._apply_filter())
 
         canvas_wrap = tk.Frame(wrap, bg="#101722")
-        canvas_wrap.pack(fill="both", expand=True)
+        canvas_wrap.grid(row=4, column=0, sticky="nsew")
         canvas = tk.Canvas(canvas_wrap, bg="#162130", highlightthickness=0)
         scrollbar = tk.Scrollbar(canvas_wrap, orient="vertical", command=canvas.yview)
         scrollbar.pack(side="right", fill="y")
@@ -170,7 +182,7 @@ class FastScanConfigDialog(tk.Toplevel):
             self._rows.append((student_id, row))
 
         actions = tk.Frame(wrap, bg="#101722")
-        actions.pack(fill="x", pady=(scale_px(10, self._ui_scale), 0))
+        actions.grid(row=5, column=0, sticky="ew", pady=(scale_px(10, self._ui_scale), 0))
         tk.Button(
             actions,
             text="전체 선택",
@@ -206,7 +218,7 @@ class FastScanConfigDialog(tk.Toplevel):
         ).pack(side="left", padx=(scale_px(8, self._ui_scale), 0))
 
         buttons = tk.Frame(wrap, bg="#101722")
-        buttons.pack(fill="x", pady=(scale_px(16, self._ui_scale), 0))
+        buttons.grid(row=6, column=0, sticky="ew", pady=(scale_px(16, self._ui_scale), 0))
         tk.Button(
             buttons,
             text="취소",

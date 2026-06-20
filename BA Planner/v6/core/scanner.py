@@ -12,9 +12,10 @@ import time
 import json
 import hashlib
 import numpy as np
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Iterable, Iterator, Optional
 from PIL import Image
 
 
@@ -41,6 +42,8 @@ from core.input import (
     press_esc,
     click_point,
     send_escape,
+    send_key,
+    client_to_screen,
     ratio_to_client,
 )
 
@@ -64,11 +67,17 @@ from core.matcher import (
     read_equip_check,
     read_equip_check_inside,
     read_equip_slot_flag,
+    rank_equip_tier_candidates,
     read_stat_value,
     read_student_star_v5,
     read_weapon_star_v5,
     read_skill,
-    read_equip_tier,
+    read_basic_skill_result,
+    read_basic_student_level_result,
+    read_basic_student_star_result,
+    read_basic_weapon_level_result,
+    read_basic_weapon_star_result,
+    extract_basic_student_level_glyphs,
     read_equip_level,
     read_weapon_level,
     read_student_level_v5,
@@ -76,7 +85,7 @@ from core.matcher import (
 
 import core.ocr as ocr
 import core.student_meta as student_meta
-from core.config import BASE_DIR, TEMPLATE_DIR
+from core.config import ASSET_DIR, BASE_DIR, TEMPLATE_DIR
 from core.inventory_profiles import (
     find_inventory_profile_duplicate,
     get_inventory_profile,
@@ -93,6 +102,12 @@ from core.inventory_count_matcher import (
     read_equipment_count_from_detail,
     read_item_count_from_detail,
 )
+from core.inventory_input import (
+    InventoryGridInput,
+    InventoryInputUnavailable,
+    create_inventory_input_backend,
+)
+from core.scan_status import make_status_event
 
 
 
@@ -104,11 +119,40 @@ SAME_THRESH          = 0.97
 STUDENT_MENU_WAIT    = 3.0
 MAX_CONSECUTIVE_DUP  = 3
 MAX_STUDENT_LEVEL    = 90
+MAX_EQUIP_LEVEL      = 70
+SKILL3_UNLOCK_STAR   = 3
+SKILL2_UNLOCK_STAR   = 2
+WEAPON_UNLOCK_STAR   = 5
+EQUIP2_UNLOCK_LEVEL  = 10
+EQUIP3_UNLOCK_LEVEL  = 20
 STAT_UNLOCK_LEVEL    = 90
 STAT_UNLOCK_STAR     = 5
+BASIC_EQUIP_EMPTY_DOT_REGIONS = {
+    1: {"x1": 0.5980, "y1": 0.7650, "x2": 0.6170, "y2": 0.7900},
+    2: {"x1": 0.6760, "y1": 0.7650, "x2": 0.6950, "y2": 0.7900},
+    3: {"x1": 0.7540, "y1": 0.7650, "x2": 0.7730, "y2": 0.7900},
+    4: {"x1": 0.8120, "y1": 0.7550, "x2": 0.8400, "y2": 0.7950},
+}
+BASIC_EQUIP_EMPTY_DOT_MIN_PIXELS = 40
+BASIC_EQUIP_EMPTY_DOT_MIN_RATIO = 0.035
+EQUIPMENT_GROWTH_ACTIVE_BLUE_MIN_RATIO = 0.25
+STUDENT_PANEL_TITLE_REGION = {"x1": 1030 / 2560, "y1": 145 / 1440, "x2": 1530 / 2560, "y2": 285 / 1440}
+STUDENT_PANEL_TITLE_MIN_SCORE = 0.86
+STUDENT_PANEL_TITLE_MIN_MARGIN = 0.04
+STUDENT_PANEL_TITLE_BOOTSTRAP_SCORE = 0.82
+STUDENT_PANEL_TITLE_BOOTSTRAP_MARGIN = 0.10
+STUDENT_PANEL_TITLE_ADAPTIVE_FLOOR = 0.82
+STUDENT_PANEL_TITLE_ADAPTIVE_LEAD = 0.025
+STUDENT_PANEL_TITLE_HISTORY_SIZE = 20
+STUDENT_PANEL_TITLE_TEMPLATES = {
+    "equipment": TEMPLATE_DIR / "menu_detect_flag" / "student_panel_title_equipment.png",
+    "weapon": TEMPLATE_DIR / "menu_detect_flag" / "student_panel_title_weapon.png",
+    "skill": TEMPLATE_DIR / "menu_detect_flag" / "student_panel_title_skill.png",
+    "stat": TEMPLATE_DIR / "menu_detect_flag" / "student_panel_title_stat.png",
+}
 DETAIL_READY_SCORE   = 0.80
 DETAIL_READY_WAIT    = 6.0
-DETAIL_READY_STABLE_POLLS = 2
+DETAIL_READY_STABLE_POLLS = 1
 LOBBY_EXIT_WAIT      = 5.5
 MENU_CLICK_SETTLE_WAIT = 1.2
 STUDENT_MENU_READY_STABLE_POLLS = 2
@@ -121,11 +165,19 @@ LEVEL_CAPTURE_RETRY_WAIT = 0.40
 WEAPON_CAPTURE_RETRY_WAIT = 0.40
 MENU_CLOSE_DETAIL_WAIT = 0.35
 EQUIP_CHECK_RETRY_WAIT = 0.25
+EQUIP_TIER_ACCEPT_SCORE = 0.72
+EQUIP_T10_LEVEL70_FALLBACK_SCORE = 0.66
 UI_FLAG_POLL = 0.12
 ADDITIONAL_PANEL_READY_WAIT = 1.8
 TAB_ON_READY_WAIT = 1.5
 UI_FLAG_MATCH_DELAY = 0.10
 STAT_PANEL_MATCH_DELAY = 0.22
+PANEL_TRANSITION_INITIAL_WAIT = 0.10
+PANEL_TRANSITION_MIN_WAIT = 0.08
+PANEL_TRANSITION_MAX_WAIT = 0.35
+PANEL_TRANSITION_LEAD = 0.10
+PANEL_TRANSITION_POLL = 0.08
+PANEL_TRANSITION_HISTORY_SIZE = 20
 CAPTURED_CLICK_POINTS_FILE = BASE_DIR / "debug" / "captured_click_points.json"
 REGION_CAPTURE_DIR = BASE_DIR / "debug" / "region_captures"
 INVENTORY_SORT_RULE_MATCH_THRESHOLD = 0.78
@@ -147,9 +199,20 @@ INVENTORY_PROFILE_MAX_DETAIL_CANDIDATES = {
     "activity_reports": 4,
 }
 PROFILE_DIRECT_MATCH_THRESHOLD = 0.82
+INVENTORY_DETAIL_ICON_MATCH_WEIGHT = 0.40
+INVENTORY_DETAIL_NAME_MATCH_WEIGHT = 0.60
 STRICT_DETAIL_FAMILY_THRESHOLDS: dict[str, tuple[float, float, float]] = {
     "Equipment_Icon_WeaponExpGrowth": (0.92, 0.025, 0.03),
 }
+
+
+def _combine_inventory_detail_scores(icon_score: float, name_score: float) -> float:
+    if name_score <= 0.0:
+        return icon_score
+    return (
+        INVENTORY_DETAIL_ICON_MATCH_WEIGHT * icon_score
+        + INVENTORY_DETAIL_NAME_MATCH_WEIGHT * name_score
+    )
 
 
 def _inventory_detail_strict_family(item_id: str | None) -> str | None:
@@ -183,6 +246,8 @@ def _inventory_detail_strict_family_position(
     return family_key, group_rank, tier_rank
 PROFILE_SEARCH_MATCH_THRESHOLD = 0.88
 VK_SPACE = 0x20
+VK_LEFT = 0x25
+VK_RIGHT = 0x27
 _USER32 = ctypes.windll.user32 if sys.platform == "win32" else None
 
 # Retry policy
@@ -192,26 +257,43 @@ DELAY_AFTER_CLICK = 0.22  # generic click settle
 DELAY_TAB_SWITCH  = 0.55  # tab switch settle
 DELAY_NEXT        = 1.20  # next student settle
 DELAY_ESC         = 0.35  # escape settle
+STUDENT_CHANGE_INITIAL_WAIT = 0.10
+STUDENT_CHANGE_POLL = 0.08
+STUDENT_CHANGE_STABLE_POLLS = 2
+STUDENT_CHANGE_STABLE_DELTA = 0.035
 
 
 @dataclass(frozen=True)
 class InventoryDragConfig:
-    start_screen_x: int
-    start_screen_y: int
+    start_base_x: int
+    start_base_y: int
     delta_px: int
     duration: float
+    base_width: int = 2560
+    base_height: int = 1440
+
+    @property
+    def start_rx(self) -> float:
+        return self.start_base_x / max(1, self.base_width)
+
+    @property
+    def start_ry(self) -> float:
+        return self.start_base_y / max(1, self.base_height)
+
+    def delta_ry(self, amount_px: int) -> float:
+        return amount_px / max(1, self.base_height)
 
 
 ITEM_INVENTORY_DRAG = InventoryDragConfig(
-    start_screen_x=1900,
-    start_screen_y=1135,
-    delta_px=-900,
+    start_base_x=1900,
+    start_base_y=1135,
+    delta_px=-650,
     duration=0.50,
 )
 
 EQUIPMENT_INVENTORY_DRAG = InventoryDragConfig(
-    start_screen_x=1900,
-    start_screen_y=1315,
+    start_base_x=1900,
+    start_base_y=1315,
     delta_px=-1108,
     duration=0.50,
 )
@@ -421,20 +503,60 @@ class StudentEntry:
         """List required fields that are still missing."""
         required = [
             "level", "student_star", "weapon_state",
-            "ex_skill", "skill1", "skill2", "skill3",
-            "equip1", "equip2", "equip3",
-            "equip1_level", "equip2_level", "equip3_level",
+            "ex_skill", "skill1",
+            "equip1",
         ]
+        if self.student_star is None or self.student_star >= SKILL2_UNLOCK_STAR:
+            required.append("skill2")
+        if self.student_star is None or self.student_star >= SKILL3_UNLOCK_STAR:
+            required.append("skill3")
+        if self.level is None or self.level >= EQUIP2_UNLOCK_LEVEL:
+            required.append("equip2")
+        if self.level is None or self.level >= EQUIP3_UNLOCK_LEVEL:
+            required.append("equip3")
+        if self.weapon_state == WeaponState.WEAPON_EQUIPPED:
+            required.extend(("weapon_star", "weapon_level"))
+        for slot in (1, 2, 3):
+            equip_value = getattr(self, f"equip{slot}")
+            if equip_value in (
+                EquipSlotFlag.EMPTY.value,
+                EquipSlotFlag.LEVEL_LOCKED.value,
+                EquipSlotFlag.LOVE_LOCKED.value,
+                EquipSlotFlag.NULL.value,
+            ):
+                continue
+            if equip_value not in (None, "unknown"):
+                required.append(f"equip{slot}_level")
         return [f for f in required if getattr(self, f) is None]
 
     def confidence(self) -> float:
         """Return the fraction of required fields that are filled."""
         required_all = [
             "level", "student_star", "weapon_state",
-            "ex_skill", "skill1", "skill2", "skill3",
-            "equip1", "equip2", "equip3",
-            "equip1_level", "equip2_level", "equip3_level",
+            "ex_skill", "skill1",
+            "equip1",
         ]
+        if self.student_star is None or self.student_star >= SKILL2_UNLOCK_STAR:
+            required_all.append("skill2")
+        if self.student_star is None or self.student_star >= SKILL3_UNLOCK_STAR:
+            required_all.append("skill3")
+        if self.level is None or self.level >= EQUIP2_UNLOCK_LEVEL:
+            required_all.append("equip2")
+        if self.level is None or self.level >= EQUIP3_UNLOCK_LEVEL:
+            required_all.append("equip3")
+        if self.weapon_state == WeaponState.WEAPON_EQUIPPED:
+            required_all.extend(("weapon_star", "weapon_level"))
+        for slot in (1, 2, 3):
+            equip_value = getattr(self, f"equip{slot}")
+            if equip_value in (
+                EquipSlotFlag.EMPTY.value,
+                EquipSlotFlag.LEVEL_LOCKED.value,
+                EquipSlotFlag.LOVE_LOCKED.value,
+                EquipSlotFlag.NULL.value,
+            ):
+                continue
+            if equip_value not in (None, "unknown"):
+                required_all.append(f"equip{slot}_level")
         filled = sum(1 for f in required_all if getattr(self, f) is not None)
         return round(filled / len(required_all), 3)
 
@@ -980,6 +1102,7 @@ class Scanner:
         regions: dict,
         on_progress: Optional[Callable[[str], None]] = None,
         on_progress_state: Optional[Callable[[dict], None]] = None,
+        on_status_event: Optional[Callable[[dict], None]] = None,
         maxed_ids:   Optional[set[str]]  = None,
         maxed_saved_data: Optional[dict[str, dict]] = None,
         student_saved_data: Optional[dict[str, dict]] = None,
@@ -992,6 +1115,7 @@ class Scanner:
         self.r             = regions
         self._on_progress  = on_progress
         self._on_progress_state = on_progress_state
+        self._on_status_event = on_status_event
         self._stop         = False
         self._space_stop_latched = False
         self._maxed_ids    = frozenset(maxed_ids or [])
@@ -1003,6 +1127,10 @@ class Scanner:
         self._student_basic_img: Optional[Image.Image] = None
         self._captured_click_points = self._load_captured_click_points()
         self._active_student_panel: str | None = None
+        self._panel_transition_history: dict[str, list[float]] = {}
+        self._panel_title_score_history: dict[str, list[float]] = {}
+        self._basic_level_run_templates: dict[int, dict[str, list[np.ndarray]]] = {}
+        self._equip_level_run_templates: dict[int, dict[str, list[np.ndarray]]] = {}
         self._inventory_icon_cache: dict[str, dict[str, tuple[str | None, str, str | None]]] = {
             "item": {},
             "equipment": {},
@@ -1023,12 +1151,20 @@ class Scanner:
             else self._default_inventory_profile_ids[0]
         )
 
+        _log.debug(
+            "scanner init: asset_dir=%s template_dir=%s inventory_profiles=%s detail_override=%s",
+            ASSET_DIR,
+            TEMPLATE_DIR,
+            self._default_inventory_profile_ids or ("all",),
+            self._inventory_detail_override_dir,
+        )
         if self._maxed_ids:
             self._info(f"만렙 스킵용 저장데이터 로드: {len(self._maxed_ids)}명")
 
     def stop(self) -> None:
         self._stop = True
         _log.info("스캔 중지 요청")
+        self._status("stop.requested")
 
     def clear_stop(self) -> None:
         self._stop = False
@@ -1040,16 +1176,98 @@ class Scanner:
             if not self._space_stop_latched:
                 self._space_stop_latched = True
                 self._info("[stop] Spacebar emergency stop requested")
+                self._status("stop.spacebar")
                 _log.info("spacebar emergency stop requested")
         return self._stop
 
     def _wait(self, seconds: float, step: float = 0.05) -> bool:
         end = time.monotonic() + max(0.0, seconds)
-        while time.monotonic() < end:
+        poll_step = max(0.001, step)
+        while True:
             if self._stop_requested():
                 return False
-            time.sleep(min(step, end - time.monotonic()))
+            remaining = end - time.monotonic()
+            if remaining <= 0:
+                break
+            time.sleep(min(poll_step, remaining))
         return not self._stop_requested()
+
+    def _panel_transition_initial_wait(self, key: str) -> float:
+        samples = self._panel_transition_history.get(key, ())
+        if len(samples) < 3:
+            return PANEL_TRANSITION_INITIAL_WAIT
+        ordered = sorted(samples)
+        middle = len(ordered) // 2
+        median = (
+            ordered[middle]
+            if len(ordered) % 2
+            else (ordered[middle - 1] + ordered[middle]) / 2.0
+        )
+        return max(
+            PANEL_TRANSITION_MIN_WAIT,
+            min(PANEL_TRANSITION_MAX_WAIT, median - PANEL_TRANSITION_LEAD),
+        )
+
+    def _record_panel_transition(
+        self,
+        key: str,
+        elapsed: float,
+        *,
+        success: bool,
+        initial_wait: float,
+    ) -> None:
+        samples = self._panel_transition_history.setdefault(key, [])
+        if success:
+            samples.append(max(0.0, elapsed))
+            del samples[:-PANEL_TRANSITION_HISTORY_SIZE]
+        median = sorted(samples)[len(samples) // 2] if samples else 0.0
+        _log.info(
+            "[panel_transition] key=%s elapsed=%.3fs initial=%.3fs success=%s samples=%d median=%.3fs",
+            key,
+            elapsed,
+            initial_wait,
+            str(success).lower(),
+            len(samples),
+            median,
+        )
+
+    def _reset_panel_transition_history(self) -> None:
+        self._panel_transition_history.clear()
+        self._panel_title_score_history.clear()
+        self._basic_level_run_templates.clear()
+        equip_templates = getattr(self, "_equip_level_run_templates", None)
+        if equip_templates is not None:
+            equip_templates.clear()
+        _log.info("[panel_transition] history reset for new student scan run")
+
+    def _panel_title_score_threshold(self, panel_name: str) -> float:
+        samples = self._panel_title_score_history.get(panel_name, ())
+        if not samples:
+            return STUDENT_PANEL_TITLE_MIN_SCORE
+        ordered = sorted(samples)
+        middle = len(ordered) // 2
+        median = (
+            ordered[middle]
+            if len(ordered) % 2
+            else (ordered[middle - 1] + ordered[middle]) / 2.0
+        )
+        return max(
+            STUDENT_PANEL_TITLE_ADAPTIVE_FLOOR,
+            min(STUDENT_PANEL_TITLE_MIN_SCORE, median - STUDENT_PANEL_TITLE_ADAPTIVE_LEAD),
+        )
+
+    def _record_panel_title_score(self, panel_name: str, score: float) -> None:
+        samples = self._panel_title_score_history.setdefault(panel_name, [])
+        samples.append(float(score))
+        del samples[:-STUDENT_PANEL_TITLE_HISTORY_SIZE]
+        threshold = self._panel_title_score_threshold(panel_name)
+        _log.info(
+            "[panel_title_calibration] panel=%s score=%.3f threshold=%.3f samples=%d",
+            panel_name,
+            score,
+            threshold,
+            len(samples),
+        )
 
     def _load_captured_click_points(self) -> dict[str, dict]:
         path = Path(CAPTURED_CLICK_POINTS_FILE)
@@ -1157,12 +1375,16 @@ class Scanner:
         return tuple(normalized)
 
     def _prepare_item_inventory(self, profile_id: str | None, *, ensure_sort_rule: bool) -> bool:
-        self.log("  item filter menu open")
+        self.log(
+            f"  item filter menu open "
+            f"(profile={profile_id or 'all'}, ensure_sort_rule={ensure_sort_rule})"
+        )
         if not self._click_region_capture(
             "filtermenu_button",
             label="filtermenu_button",
             delay=INVENTORY_FILTER_MENU_SETTLE_WAIT,
         ):
+            self.log("  item prepare failed: filtermenu_button click failed")
             return False
         if ensure_sort_rule:
             if not self._click_region_capture(
@@ -1170,23 +1392,27 @@ class Scanner:
                 label="sort_tab",
                 delay=INVENTORY_FILTER_TAB_SETTLE_WAIT,
             ):
+                self.log("  item prepare failed: sort_tab click failed")
                 return False
             if not self._ensure_region_matches_reference(
                 "sort_rule_check",
                 threshold=ITEM_SORT_RULE_MATCH_THRESHOLD,
             ):
+                self.log("  item prepare failed: sort_rule_check mismatch")
                 return False
         if not self._click_region_capture(
             "filter_tab",
             label="filter_tab",
             delay=INVENTORY_FILTER_TAB_SETTLE_WAIT,
         ):
+            self.log("  item prepare failed: filter_tab click failed")
             return False
         if not self._click_region_capture(
             "filter_reset_button",
             label="filter_reset_button",
             delay=INVENTORY_FILTER_TAB_SETTLE_WAIT,
         ):
+            self.log("  item prepare failed: filter_reset_button click failed")
             return False
 
         filter_button_by_profile = {
@@ -1198,11 +1424,13 @@ class Scanner:
         }
         filter_button = filter_button_by_profile.get(profile_id or "")
         if filter_button:
+            self.log(f"  item filter select: {filter_button}")
             if not self._click_region_capture(
                 filter_button,
                 label=filter_button,
                 delay=INVENTORY_FILTER_TAB_SETTLE_WAIT,
             ):
+                self.log(f"  item prepare failed: {filter_button} click failed")
                 return False
 
         if not self._click_region_capture(
@@ -1210,6 +1438,7 @@ class Scanner:
             label="filter_confirm_button",
             delay=INVENTORY_FILTER_CONFIRM_WAIT,
         ):
+            self.log("  item prepare failed: filter_confirm_button click failed")
             return False
         return self._wait(INVENTORY_FILTER_CONFIRM_WAIT)
 
@@ -1220,14 +1449,17 @@ class Scanner:
             label="eq_filtermenu_button",
             delay=INVENTORY_FILTER_MENU_SETTLE_WAIT,
         ):
+            self.log("  equipment prepare failed: eq_filtermenu_button click failed")
             return False
         if not self._ensure_region_matches_reference("eq_sort_rule_check"):
+            self.log("  equipment prepare failed: eq_sort_rule_check mismatch")
             return False
         if not self._click_region_capture(
             "eq_filter_confirm_button",
             label="eq_filter_confirm_button",
             delay=INVENTORY_FILTER_CONFIRM_WAIT,
         ):
+            self.log("  equipment prepare failed: eq_filter_confirm_button click failed")
             return False
         return self._wait(INVENTORY_FILTER_CONFIRM_WAIT)
 
@@ -1269,19 +1501,27 @@ class Scanner:
         region_key: str | None = None,
         settle_reason: str,
         wait: float = PANEL_CLOSE_SETTLE_WAIT,
-    ) -> None:
+    ) -> bool:
         sr = self.r["student"]
         self._active_student_panel = None
+        started = time.perf_counter()
         clicked = False
-        if capture_name:
-            clicked = self._click_captured_point(capture_name, label=capture_name, delay=wait)
-        if (not clicked) and region_key and region_key in sr:
+        if region_key and region_key in sr:
             clicked = self._click_r(sr[region_key], region_key)
-            if clicked and wait > 0:
-                self._wait(wait)
+        if (not clicked) and capture_name:
+            clicked = self._click_captured_point(capture_name, label=capture_name)
         if not clicked:
             self._esc(delay=wait)
-        self._settle_student_detail(settle_reason)
+            started = time.perf_counter()
+        ok = self._settle_student_detail(
+            settle_reason,
+            transition_key=f"close:{settle_reason}",
+            started_at=started,
+        )
+        if not ok:
+            self._esc(delay=wait)
+            ok = self._settle_student_detail(f"{settle_reason}_esc_retry", initial_wait=0.0)
+        return ok
 
     def _panel_close_spec(self, panel_name: str) -> tuple[str | None, str | None, str]:
         if panel_name == "skill":
@@ -1301,16 +1541,23 @@ class Scanner:
         capture_name, region_key, settle_reason = self._panel_close_spec(panel_name)
         self._active_student_panel = None
         sr = self.r["student"]
+        started = time.perf_counter()
         clicked = False
-        if capture_name:
-            clicked = self._click_captured_point(capture_name, label=capture_name, delay=wait)
-        if (not clicked) and region_key and region_key in sr:
+        if region_key and region_key in sr:
             clicked = self._click_r(sr[region_key], region_key)
-            if clicked and wait > 0:
-                self._wait(wait)
-        if clicked:
-            self._settle_student_detail(settle_reason)
-        return clicked
+        if (not clicked) and capture_name:
+            clicked = self._click_captured_point(capture_name, label=capture_name)
+        if not clicked:
+            return False
+        ok = self._settle_student_detail(
+            settle_reason,
+            transition_key=f"close:{settle_reason}",
+            started_at=started,
+        )
+        if not ok:
+            self._esc(delay=wait)
+            ok = self._settle_student_detail(f"{settle_reason}_esc_retry", initial_wait=0.0)
+        return ok
 
 
     # Forward logs to both the file logger and the UI progress callback.
@@ -1339,6 +1586,30 @@ class Scanner:
                 }
             )
 
+    def _status(self, event_id: str, **fields) -> None:
+        if not self._on_status_event:
+            return
+        try:
+            self._on_status_event(make_status_event(event_id, data=fields))
+        except Exception:
+            _log.exception("scan status callback failed: %s", event_id)
+
+    @contextmanager
+    def _perf_step(self, label: str, **fields) -> Iterator[None]:
+        """Log elapsed time for one scanner step into the per-scan debug log."""
+        started = time.perf_counter()
+        try:
+            yield
+        finally:
+            elapsed = time.perf_counter() - started
+            extras = " ".join(
+                f"{key}={value}"
+                for key, value in fields.items()
+                if value is not None
+            )
+            suffix = f" {extras}" if extras else ""
+            _log.info("[perf] %s elapsed=%.3fs%s", label, elapsed, suffix)
+
     def _warn(self, msg: str) -> None:
         _log.warning(msg)
         if self._on_progress:
@@ -1365,6 +1636,7 @@ class Scanner:
             display_name=student_meta.display_name(student_id),
             scan_state=ScanState.TEMP,
         )
+        self._status("student.scan.start", student_id=student_id, student_name=entry.display_name)
         _log.debug(f"[TEMP] start: {entry.label()}")
         return entry
 
@@ -1406,13 +1678,6 @@ class Scanner:
             and self._saved_int(saved, "skill3") == 10
         )
 
-    def _weapon_maxed_from_saved_data(self, saved: dict) -> bool:
-        return (
-            saved.get("weapon_state") == WeaponState.WEAPON_EQUIPPED.value
-            and self._saved_int(saved, "weapon_star") == 4
-            and self._saved_int(saved, "weapon_level") == 60
-        )
-
     def _equipment_maxed_from_saved_data(self, saved: dict) -> bool:
         return all(
             saved.get(f"equip{slot}") == "T10"
@@ -1422,6 +1687,12 @@ class Scanner:
 
     def _favorite_item_maxed_from_saved_data(self, student_id: str | None, saved: dict) -> bool:
         return bool(student_id) and student_meta.favorite_item_enabled(student_id) and saved.get("equip4") == "T2"
+
+    def _mark_favorite_item_unsupported(self, entry: StudentEntry, sid: str) -> None:
+        entry.equip4 = EquipSlotFlag.NULL.value
+        entry.set_meta("equip4", FieldMeta.skipped("favorite_item_unsupported"))
+        self._status("favorite.unsupported", student_name=entry.display_name or student_meta.display_name(sid))
+        self.log(f"  장비4: {sid}는 equip4 미지원 -> null")
 
     def _stats_maxed_from_saved_data(self, saved: dict) -> bool:
         return all(self._saved_int(saved, field_name) == 25 for field_name in ("stat_hp", "stat_atk", "stat_heal"))
@@ -1458,6 +1729,7 @@ class Scanner:
 
         if not entry.student_id:
             entry.scan_state = ScanState.FAILED
+            self._status("student.scan.failed", student_name=entry.display_name or "")
             return EntryCommitResult(
                 entry=entry, committed=False,
                 missing=[], confidence=0.0,
@@ -1474,6 +1746,11 @@ class Scanner:
             # Still log if any field succeeded with low confidence.
             uncertain = entry.uncertain_fields()
             if uncertain:
+                self._status(
+                    "summary.student.uncertain",
+                    student_name=entry.display_name,
+                    fields=", ".join(uncertain),
+                )
                 _log.warning(
                     f"{ctx} warning: committed with uncertain fields: {uncertain}"
                 )
@@ -1490,6 +1767,7 @@ class Scanner:
         # Missing fields are allowed in partial mode.
         if partial_ok:
             entry.scan_state = ScanState.PARTIAL
+            self._status("student.scan.partial_commit", student_name=entry.display_name)
             _log.warning(
                 f"{ctx} warning: PARTIAL "
                 f"(confidence={confidence:.2f} missing={missing})"
@@ -1502,6 +1780,7 @@ class Scanner:
 
         # In strict mode, missing required fields make the entry fail.
         entry.scan_state = ScanState.FAILED
+        self._status("student.scan.failed", student_name=entry.display_name)
         _log.warning(
             f"{ctx} FAILED (strict) "
             f"(confidence={confidence:.2f} missing={missing})"
@@ -1521,6 +1800,7 @@ class Scanner:
         """Append a validated entry to the results list when allowed."""
         entry = result.entry
         if not result.committed:
+            self._status("student.scan.failed", student_name=entry.display_name)
             _log.warning(
                 f"[{idx+1:>3}] skipped entry: {entry.label()} -> {result.reason}"
             )
@@ -1534,26 +1814,57 @@ class Scanner:
             f"(confidence={result.confidence:.2f})"
         )
         if result.missing:
+            self._status(
+                "summary.student.failed",
+                student_name=entry.display_name,
+                fields=", ".join(result.missing),
+            )
             self._warn(
                 f"  [{idx+1:>3}] {entry.label()} missing fields: {result.missing}"
             )
+        else:
+            self._status("student.scan.commit", student_name=entry.display_name)
         return True
 
 
 
     def _capture(self, retry: int = RETRY_CAPTURE) -> Optional[Image.Image]:
         """Capture the game window, retrying briefly on failure."""
+        started = time.perf_counter()
         for i in range(retry + 1):
             if self._stop_requested():
+                _log.debug(
+                    "[perf] capture elapsed=%.3fs success=false reason=stop attempt=%d",
+                    time.perf_counter() - started,
+                    i + 1,
+                )
                 return None
             img = capture_window_background()
             if img is not None:
+                _log.debug(
+                    "[perf] capture elapsed=%.3fs success=true attempt=%d size=%sx%s",
+                    time.perf_counter() - started,
+                    i + 1,
+                    img.width,
+                    img.height,
+                )
                 return img
             if i < retry:
                 _log.debug(f"capture retry ({i+1}/{retry})")
                 if not self._wait(0.1):
+                    _log.debug(
+                        "[perf] capture elapsed=%.3fs success=false reason=wait_stop attempt=%d",
+                        time.perf_counter() - started,
+                        i + 1,
+                    )
                     return None
         self._error("capture failed")
+        self._status("capture.failed")
+        _log.info(
+            "[perf] capture elapsed=%.3fs success=false attempts=%d",
+            time.perf_counter() - started,
+            retry + 1,
+        )
         return None
 
     def _invalidate_student_basic_capture(self) -> None:
@@ -1587,6 +1898,91 @@ class Scanner:
             "y2": max(0.0, min(1.0, region["y2"] + bottom)),
         }
 
+    def _basic_equipment_empty_dot_present(self, img: Image.Image, slot: int) -> bool:
+        region = BASIC_EQUIP_EMPTY_DOT_REGIONS.get(slot)
+        if not region:
+            return False
+        crop = crop_region(img, region).convert("RGB")
+        arr = np.asarray(crop)
+        if arr.size == 0:
+            return False
+        red = arr[:, :, 0].astype(np.int16)
+        green = arr[:, :, 1].astype(np.int16)
+        blue = arr[:, :, 2].astype(np.int16)
+        mask = (
+            (red > 230)
+            & (green > 145)
+            & (green < 220)
+            & (blue < 80)
+            & ((red - green) > 30)
+        )
+        pixels = int(mask.sum())
+        ratio = float(mask.mean())
+        _log.debug(f"basic equip{slot} empty dot: pixels={pixels} ratio={ratio:.3f}")
+        return (
+            pixels >= BASIC_EQUIP_EMPTY_DOT_MIN_PIXELS
+            and ratio >= BASIC_EQUIP_EMPTY_DOT_MIN_RATIO
+        )
+
+    def _equipment_growth_button_active(self, img: Image.Image, region: dict) -> bool:
+        ratio = self._active_blue_button_ratio(img, region, "equipment growth button")
+        return ratio >= EQUIPMENT_GROWTH_ACTIVE_BLUE_MIN_RATIO
+
+    def _active_blue_button_ratio(self, img: Image.Image, region: dict, label: str) -> float:
+        crop = crop_region(img, region).convert("RGB")
+        arr = np.asarray(crop)
+        if arr.size == 0:
+            return 0.0
+        red = arr[:, :, 0].astype(np.int16)
+        green = arr[:, :, 1].astype(np.int16)
+        blue = arr[:, :, 2].astype(np.int16)
+        mask = (
+            (blue > 180)
+            & (green > 150)
+            & (red < 170)
+            & ((blue - red) > 35)
+        )
+        ratio = float(mask.mean())
+        _log.debug(f"{label} active blue ratio={ratio:.3f}")
+        return ratio
+
+    def _apply_basic_equipment_hints(
+        self,
+        entry: StudentEntry,
+        img: Image.Image,
+        slots_to_scan: set[int],
+        *,
+        include_favorite: bool,
+        growth_button_active: bool,
+    ) -> None:
+        for slot in sorted(slots_to_scan):
+            if slot == 1:
+                if not self._basic_equipment_empty_dot_present(img, slot):
+                    continue
+                reason = "basic_empty_dot"
+                log_note = "기본 화면 노란 점"
+            elif slot in (2, 3):
+                if growth_button_active:
+                    continue
+                reason = "growth_button_off"
+                log_note = "장비 성장 OFF"
+            else:
+                continue
+            equip_key = f"equip{slot}"
+            level_key = f"equip{slot}_level"
+            setattr(entry, equip_key, EquipSlotFlag.EMPTY.value)
+            entry.set_meta(equip_key, FieldMeta.skipped(reason))
+            setattr(entry, level_key, None)
+            entry.set_meta(level_key, FieldMeta.skipped(reason))
+            slots_to_scan.discard(slot)
+            self.log(f"  장비{slot}: {log_note} -> 미장착 스킵")
+            if slot == 1:
+                self._status("equip1.empty", student_name=entry.display_name)
+            elif slot == 2:
+                self._status("equip2.button_off_empty", student_name=entry.display_name)
+            elif slot == 3:
+                self._status("equip3.button_off_empty", student_name=entry.display_name)
+
     def _is_lobby_capture(self, img: Optional[Image.Image]) -> bool:
         detect_r = self.r.get("lobby", {}).get("detect_flag")
         if img is None or not detect_r:
@@ -1613,11 +2009,57 @@ class Scanner:
         detect_r = self._student_additional_menu_region()
         if img is None or not detect_r:
             return False
+        if (
+            self._is_basic_info_tab_on_capture(img)
+            or self._is_level_tab_on_capture(img)
+            or self._is_star_tab_on_capture(img)
+        ):
+            return False
         roi = crop_region(img, detect_r)
         return is_student_additional_menu_on(
             roi,
             {"x1": 0.0, "y1": 0.0, "x2": 1.0, "y2": 1.0},
         )
+
+    def _is_student_panel_title_capture(self, img: Optional[Image.Image], panel_name: str) -> bool:
+        if img is None:
+            return False
+        expected_template = STUDENT_PANEL_TITLE_TEMPLATES.get(panel_name)
+        if expected_template is None or not expected_template.exists():
+            _log.warning("student panel title template missing: %s", panel_name)
+            return self._is_student_additional_menu_capture(img)
+        title_crop = crop_region(img, STUDENT_PANEL_TITLE_REGION)
+        scores: dict[str, float] = {}
+        for name, template_path in STUDENT_PANEL_TITLE_TEMPLATES.items():
+            if template_path.exists():
+                scores[name] = match_score_resized(title_crop, str(template_path))
+        expected_score = scores.get(panel_name, 0.0)
+        other_best = max((score for name, score in scores.items() if name != panel_name), default=0.0)
+        margin = expected_score - other_best
+        threshold = self._panel_title_score_threshold(panel_name)
+        has_history = bool(self._panel_title_score_history.get(panel_name))
+        bootstrap_match = (
+            not has_history
+            and expected_score >= STUDENT_PANEL_TITLE_BOOTSTRAP_SCORE
+            and margin >= STUDENT_PANEL_TITLE_BOOTSTRAP_MARGIN
+        )
+        adaptive_match = (
+            expected_score >= threshold
+            and margin >= STUDENT_PANEL_TITLE_MIN_MARGIN
+        )
+        matched = bootstrap_match or adaptive_match
+        _log.debug(
+            "student_panel_title[%s]: %s margin=%.3f threshold=%.3f bootstrap=%s matched=%s",
+            panel_name,
+            " ".join(f"{name}={score:.3f}" for name, score in sorted(scores.items())),
+            margin,
+            threshold,
+            str(bootstrap_match).lower(),
+            str(matched).lower(),
+        )
+        if matched:
+            self._record_panel_title_score(panel_name, expected_score)
+        return matched
 
     def _is_level_tab_on_capture(self, img: Optional[Image.Image]) -> bool:
         detect_r = self.r.get("student", {}).get("levelcheck_button")
@@ -1699,6 +2141,9 @@ class Scanner:
             if self._stop_requested():
                 return False
             img = self._capture()
+            if img is not None and self._is_basic_info_tab_on_capture(img):
+                self._student_basic_img = img
+                return True
             score = self._student_detail_score(img)
             _log.debug(
                 f"[detail_wait] texture_score={score:.3f} "
@@ -1754,6 +2199,25 @@ class Scanner:
             return None
         return hashlib.sha1(crop.tobytes()).hexdigest()
 
+    def _student_texture_signature(self, img: Optional[Image.Image]) -> Optional[np.ndarray]:
+        texture_r = self.r.get("student", {}).get("student_texture_region")
+        if img is None or not texture_r:
+            return None
+        try:
+            crop = crop_region(img, texture_r).convert("RGB").resize((24, 24), Image.BILINEAR)
+        except Exception:
+            return None
+        return np.asarray(crop, dtype=np.float32) / 255.0
+
+    @staticmethod
+    def _student_texture_signature_delta(
+        left: Optional[np.ndarray],
+        right: Optional[np.ndarray],
+    ) -> float:
+        if left is None or right is None or left.shape != right.shape:
+            return 1.0
+        return float(np.mean(np.abs(left - right)))
+
     def _current_student_digest(self, *, refresh: bool) -> Optional[str]:
         img = self._get_student_basic_capture(refresh=refresh)
         return self._student_texture_digest(img)
@@ -1763,21 +2227,57 @@ class Scanner:
         previous_digest: str,
         *,
         timeout: float = 3.0,
-        initial_wait: float = DELAY_NEXT,
-        poll: float = 0.12,
+        initial_wait: float = STUDENT_CHANGE_INITIAL_WAIT,
+        poll: float = STUDENT_CHANGE_POLL,
     ) -> Optional[str]:
+        started = time.perf_counter()
         if initial_wait > 0 and not self._wait(initial_wait):
             return None
         deadline = time.monotonic() + timeout
+        changed_digest: Optional[str] = None
+        previous_signature: Optional[np.ndarray] = None
+        stable_streak = 0
         while time.monotonic() < deadline:
             if self._stop_requested():
                 return None
             img = self._get_student_basic_capture(refresh=True)
             digest = self._student_texture_digest(img)
             if digest and digest != previous_digest:
-                return digest
+                signature = self._student_texture_signature(img)
+                delta = self._student_texture_signature_delta(previous_signature, signature)
+                stable_streak = stable_streak + 1 if delta <= STUDENT_CHANGE_STABLE_DELTA else 1
+                previous_signature = signature
+                changed_digest = digest
+                _log.debug(
+                    "[navigation_transition] changed=true stable_streak=%d delta=%.4f",
+                    stable_streak,
+                    delta,
+                )
+                if stable_streak >= STUDENT_CHANGE_STABLE_POLLS:
+                    _log.info(
+                        "[navigation_transition] elapsed=%.3fs initial=%.3fs success=true stable=true",
+                        time.perf_counter() - started,
+                        initial_wait,
+                    )
+                    return digest
+            else:
+                changed_digest = None
+                previous_signature = None
+                stable_streak = 0
             if not self._wait(poll):
                 return None
+        if changed_digest is not None:
+            _log.warning(
+                "[navigation_transition] elapsed=%.3fs initial=%.3fs success=true stable=false",
+                time.perf_counter() - started,
+                initial_wait,
+            )
+            return changed_digest
+        _log.warning(
+            "[navigation_transition] elapsed=%.3fs initial=%.3fs success=false stable=false",
+            time.perf_counter() - started,
+            initial_wait,
+        )
         return None
 
     def _wait_for_capture_match(
@@ -1828,25 +2328,51 @@ class Scanner:
         fallback_delay: float = DELAY_TAB_SWITCH,
         match_delay: float = UI_FLAG_MATCH_DELAY,
     ) -> Optional[Image.Image]:
+        started = time.perf_counter()
+        success = False
+        transition_key = f"open:{label}"
+        adaptive_initial_wait = self._panel_transition_initial_wait(transition_key)
         region = self.r.get("student", {}).get(region_key)
-        if not region:
-            self.log(f"  missing {region_key}")
+        try:
+            if not region:
+                self.log(f"  missing {region_key}")
+                return None
+            if not self._click_r(region, label):
+                return None
+            img = self._wait_for_capture_match(
+                predicate,
+                timeout=timeout,
+                initial_wait=adaptive_initial_wait,
+                poll=min(poll, PANEL_TRANSITION_POLL),
+                stable_polls=stable_polls,
+                label=label,
+            )
+            if img is not None:
+                success = True
+                return img
+            if fallback_delay > 0 and not self._wait(fallback_delay):
+                return None
+            img = self._capture()
+            if img is not None and predicate(img):
+                success = True
+                return img
+            _log.warning(f"{label} did not reach expected panel state")
             return None
-        if not self._click_r(region, label):
-            return None
-        img = self._wait_for_capture_match(
-            predicate,
-            timeout=timeout,
-            initial_wait=initial_wait + max(0.0, match_delay),
-            poll=poll,
-            stable_polls=stable_polls,
-            label=label,
-        )
-        if img is not None:
-            return img
-        if fallback_delay > 0 and not self._wait(fallback_delay):
-            return None
-        return self._capture()
+        finally:
+            elapsed = time.perf_counter() - started
+            self._record_panel_transition(
+                transition_key,
+                elapsed,
+                success=success,
+                initial_wait=adaptive_initial_wait,
+            )
+            _log.info(
+                "[perf] student.panel_wait elapsed=%.3fs label=%s region=%s success=%s",
+                elapsed,
+                label,
+                region_key,
+                str(success).lower(),
+            )
 
     def _recover_first_student_entry(self) -> bool:
         _log.warning("첫 학생 진입 복구 루틴 시작")
@@ -1972,13 +2498,26 @@ class Scanner:
         initial_wait: float = MENU_CLOSE_DETAIL_WAIT,
         timeout: float = 2.5,
         poll: float = 0.20,
+        transition_key: str | None = None,
+        started_at: float | None = None,
     ) -> bool:
+        effective_initial_wait = initial_wait
+        if transition_key:
+            effective_initial_wait = self._panel_transition_initial_wait(transition_key)
+        started = started_at if started_at is not None else time.perf_counter()
         self._invalidate_student_basic_capture()
         ok = self._wait_for_student_detail(
             timeout=timeout,
-            initial_wait=initial_wait,
-            poll=poll,
+            initial_wait=effective_initial_wait,
+            poll=min(poll, PANEL_TRANSITION_POLL) if transition_key else poll,
         )
+        if transition_key:
+            self._record_panel_transition(
+                transition_key,
+                time.perf_counter() - started,
+                success=ok,
+                initial_wait=effective_initial_wait,
+            )
         _log.debug(f"[detail_settle] reason={reason} ok={ok}")
         return ok
 
@@ -2034,6 +2573,24 @@ class Scanner:
 
     def _return_lobby(self) -> None:
         self.log("로비 복귀...")
+        back = (
+            self.r.get("student_menu", {}).get("backbutton")
+            or self.r.get("menu", {}).get("backbutton")
+        )
+        for attempt in range(4):
+            if self._stop_requested():
+                return
+            img = self._capture()
+            if self._is_lobby_capture(img):
+                return
+            if self._close_active_student_panel(wait=PANEL_CLOSE_SETTLE_WAIT):
+                continue
+            if back and self._click_r(back, f"student_backbutton_{attempt + 1}"):
+                if not self._wait(0.8):
+                    return
+                continue
+            break
+        self.log("  warning: 로비 복귀 버튼 경로 실패 -> ESC 1회 fallback")
         self._esc()
 
     def _capture_inventory_page(
@@ -2070,15 +2627,43 @@ class Scanner:
         count_r: dict,
         source: str,
         profile_id: str | None = None,
+        input_backend: InventoryGridInput | None = None,
+        slot_index: int | None = None,
     ) -> InventoryVerification | None:
-        click_ry = slot["y1"] + (slot["y2"] - slot["y1"]) * 0.4
-        safe_click(rect, slot["cx"], click_ry, f"{source}_slot")
+        self._debug(
+            f"    verify slot: source={source} profile={profile_id or '-'} "
+            f"slot=({slot.get('x1', 0):.3f},{slot.get('y1', 0):.3f},"
+            f"{slot.get('x2', 0):.3f},{slot.get('y2', 0):.3f})"
+        )
+        if input_backend is not None:
+            if slot_index is None:
+                self._debug("    verify failed: missing input slot index")
+                return None
+            input_backend.move_to_slot(slot_index)
+            input_backend.confirm_slot()
+            self._debug(
+                f"    verify slot via {input_backend.backend_name}: "
+                f"slot_index={slot_index}"
+            )
+        else:
+            click_ry = slot["y1"] + (slot["y2"] - slot["y1"]) * 0.4
+            safe_click(rect, slot["cx"], click_ry, f"{source}_slot")
         if not self._wait(DELAY_AFTER_CLICK):
             return None
 
         img2 = self._capture()
         if img2 is None:
+            self._debug("    verify failed: detail capture failed")
             return None
+        if input_backend is not None and os.environ.get("BA_INVENTORY_VCON_SLOT_DEBUG") == "1":
+            try:
+                debug_dir = BASE_DIR / "debug" / "inventory_vcon_slots"
+                debug_dir.mkdir(parents=True, exist_ok=True)
+                safe_profile = (profile_id or source or "inventory").replace("/", "_").replace("\\", "_")
+                safe_slot = slot_index if slot_index is not None else "unknown"
+                img2.save(debug_dir / f"{source}_{safe_profile}_slot{safe_slot}_{int(time.time() * 1000)}.png")
+            except Exception:
+                _log.debug("failed to save vcon slot debug capture", exc_info=True)
 
         count = ""
         if source == "item" or profile_id:
@@ -2108,6 +2693,7 @@ class Scanner:
                     f"(digits={count_match.digit_count}, conf={count_match.confidence:.2f})"
                 )
             if not count:
+                self._debug("    verify failed: count unresolved")
                 return None
             matched_item_id = None
             matched_score = 0.0
@@ -2123,6 +2709,11 @@ class Scanner:
                     self.log(
                         f"    detail template matched: {matched_item_id} "
                         f"(score={matched_score:.2f})"
+                    )
+                else:
+                    self._debug(
+                        f"    detail template unresolved "
+                        f"(best_score={matched_score:.2f}, profile={profile_id})"
                     )
             return InventoryVerification(
                 name=None,
@@ -2285,10 +2876,7 @@ class Scanner:
             icon_score = match_score_resized_raw(crop, path)
             name_path = name_catalog.get(item_id)
             name_score = match_score_textonly(name_crop, name_path) if name_crop is not None and name_path else 0.0
-            if name_score > 0.0:
-                score = 0.72 * icon_score + 0.28 * name_score
-            else:
-                score = icon_score
+            score = _combine_inventory_detail_scores(icon_score, name_score)
             if score > best_score:
                 second_best = best_score
                 best_score = score
@@ -2477,7 +3065,7 @@ class Scanner:
             if candidate.detail_name_crop is None or not name_path:
                 return icon_score
             name_score = match_score_textonly(candidate.detail_name_crop, name_path)
-            return 0.72 * icon_score + 0.28 * name_score
+            return _combine_inventory_detail_scores(icon_score, name_score)
 
         candidate_count = len(candidates)
         profile_count = len(ordered_names)
@@ -2893,15 +3481,12 @@ class Scanner:
             grid_cols=grid_cols,
         ) if before_img is not None else None
         next_amount = scroll_amount
-        left, top, width, height = rect
-        width = max(width, 1)
-        height = max(height, 1)
-        start_rx = (drag_config.start_screen_x - left) / width
-        start_ry = (drag_config.start_screen_y - top) / height
+        start_rx = drag_config.start_rx
+        start_ry = drag_config.start_ry
         attempts = [scroll_amount, int(scroll_amount * 1.05)]
 
         for idx, amount in enumerate(attempts, start=1):
-            end_ry = start_ry + (amount / height)
+            end_ry = start_ry + drag_config.delta_ry(amount)
             start_rx_clamped = max(0.02, min(0.98, start_rx))
             start_ry_clamped = max(0.02, min(0.98, start_ry))
             end_ry_clamped = max(0.02, min(0.98, end_ry))
@@ -2953,12 +3538,59 @@ class Scanner:
 
         return False, None, scroll_amount, 0
 
+    def _advance_inventory_page_with_input(
+        self,
+        input_backend: InventoryGridInput,
+        slots: list[dict],
+        grid_r: dict,
+        grid_cols: int,
+        before_page: InventoryPageSnapshot,
+    ) -> tuple[bool, Optional[InventoryPageSnapshot]]:
+        try:
+            input_backend.advance_page()
+        except Exception as exc:
+            self.log(f"  {input_backend.backend_name} page advance failed: {exc}")
+            _log.exception("inventory input page advance failed")
+            return False, None
+
+        if not self._wait(0.25):
+            return False, None
+
+        after_img = self._capture()
+        if after_img is None:
+            return False, None
+
+        after = crop_region(after_img, grid_r)
+        after_page = self._capture_inventory_page(
+            after_img,
+            slots,
+            grid_hash=_img_hash(after),
+            page_index=-1,
+            grid_cols=grid_cols,
+        )
+        before_hashes = [snap.icon_hash for snap in before_page.slots]
+        after_hashes = [snap.icon_hash for snap in after_page.slots]
+        moved = (
+            before_page.grid_hash != after_page.grid_hash
+            or before_hashes != after_hashes
+        )
+        self.log(
+            f"  {input_backend.backend_name} advance: moved={moved} "
+            f"(hash_changed={before_page.grid_hash != after_page.grid_hash}, "
+            f"slot_sequence_changed={before_hashes != after_hashes})"
+        )
+        if moved:
+            overlap_rows = _count_row_overlap(before_hashes, after_hashes, grid_cols)
+            self.log(f"  {input_backend.backend_name} advance: overlap_rows={overlap_rows}")
+        return moved, after_page
+
     def _scan_grid(
         self,
         section: str,
         source: str,
         drag_config: InventoryDragConfig,
         scroll_amount: int,
+        input_backend_name: str = "legacy",
     ) -> list[ItemEntry]:
         r_sec   = self.r[section]
         slots   = r_sec["grid_slots"]
@@ -2984,7 +3616,57 @@ class Scanner:
         profile_seen_names: set[str] = set()
         icon = "아이템" if source == "item" else "장비"
         grid_cols = int(r_sec.get("grid_cols", 0))
+        grid_rows = int(r_sec.get("grid_rows", 0))
+        if grid_cols <= 0:
+            grid_cols = max(1, int(round(len(slots) ** 0.5)))
+        if grid_rows <= 0:
+            grid_rows = max(1, (len(slots) + grid_cols - 1) // grid_cols)
         current_scroll_amount = scroll_amount
+        input_backend: InventoryGridInput | None = None
+        legacy_scroll = True
+        requested_backend = (input_backend_name or "legacy").strip().lower()
+        if requested_backend != "legacy":
+            self.log(
+                f"  inventory input backend requested: {requested_backend} "
+                "(experimental focus navigation)"
+            )
+            try:
+                cursor_anchor_screen = None
+                focus_anchor = None
+                if slots:
+                    hwnd = find_target_hwnd()
+                    anchor_cx, anchor_cy = ratio_to_client(
+                        rect,
+                        float(slots[0].get("cx", 0.0)),
+                        float(slots[0].get("cy", 0.0)),
+                    )
+                    if hwnd:
+                        cursor_anchor_screen = client_to_screen(hwnd, anchor_cx, anchor_cy)
+                        focus_anchor = (
+                            lambda hwnd=hwnd, cx=anchor_cx, cy=anchor_cy:
+                            click_point(hwnd, cx, cy, label="inventory_vcon_anchor", delay=0.25)
+                        )
+                input_backend = create_inventory_input_backend(
+                    requested_backend,
+                    cols=grid_cols,
+                    rows=grid_rows,
+                    cursor_anchor_screen=cursor_anchor_screen,
+                    focus_anchor=focus_anchor,
+                )
+                input_backend.start()
+                legacy_scroll = False
+                self.log(
+                    f"  inventory input backend: {input_backend.backend_name} "
+                    f"(grid={grid_cols}x{grid_rows})"
+                )
+            except InventoryInputUnavailable as exc:
+                self.log(
+                    f"  inventory input backend unavailable: {requested_backend} "
+                    f"({exc}) -> legacy scroll"
+                )
+                _log.warning("inventory input backend unavailable: %s", exc)
+                input_backend = None
+                legacy_scroll = True
         profile_ordered_names: list[str] = list(active_profile.ordered_names) if active_profile is not None else []
         profile_ordered_item_ids: list[str | None] = list(inventory_profile_ordered_item_ids(active_profile)) if active_profile is not None else []
         profile_index_by_name: dict[str, int] = {name: idx for idx, name in enumerate(profile_ordered_names)}
@@ -3000,6 +3682,13 @@ class Scanner:
         profile_max_detail_candidates = (
             INVENTORY_PROFILE_MAX_DETAIL_CANDIDATES.get(active_profile.profile_id)
             if active_profile is not None
+            else None
+        )
+        profile_slot_scan_limit = (
+            min(len(slots), profile_max_unique_items)
+            if input_backend is not None
+            and active_profile is not None
+            and profile_max_unique_items is not None
             else None
         )
         def _unique_scanned_item_count() -> int:
@@ -3023,6 +3712,8 @@ class Scanner:
                 f"  inventory profile forced: {active_profile.profile_id} "
                 f"({expected_count} expected{limit_suffix})"
             )
+            if profile_slot_scan_limit is not None:
+                self.log(f"  profile slot scan limit: {profile_slot_scan_limit}")
 
         def _profile_found_count() -> int:
             if active_profile is None:
@@ -3078,6 +3769,16 @@ class Scanner:
             for slot_idx, (slot, slot_snap) in enumerate(zip(slots, page.slots)):
                 if self._stop_requested():
                     break
+                if (
+                    profile_slot_scan_limit is not None
+                    and slot_idx >= profile_slot_scan_limit
+                ):
+                    self.log(
+                        f"  profile slot scan limit reached: "
+                        f"{slot_idx}/{profile_slot_scan_limit}"
+                    )
+                    profile_limit_reached = True
+                    break
 
                 icon_crop = crop_region(img, _slot_icon_region(slot))
                 icon_template_item_id, icon_template_score = self._match_inventory_icon(icon_crop, source)
@@ -3094,6 +3795,8 @@ class Scanner:
                     count_r,
                     source,
                     profile_id=active_profile.profile_id if active_profile is not None else None,
+                    input_backend=input_backend,
+                    slot_index=slot_idx,
                 )
                 if not verified:
                     continue
@@ -3255,6 +3958,12 @@ class Scanner:
                     profile_max_detail_candidates = INVENTORY_PROFILE_MAX_DETAIL_CANDIDATES.get(
                         active_profile.profile_id
                     )
+                    profile_slot_scan_limit = (
+                        min(len(slots), profile_max_unique_items)
+                        if input_backend is not None
+                        and profile_max_unique_items is not None
+                        else None
+                    )
                     profile_ordered_names = list(active_profile.ordered_names)
                     profile_ordered_item_ids = list(inventory_profile_ordered_item_ids(active_profile))
                     profile_index_by_name = {name: idx for idx, name in enumerate(profile_ordered_names)}
@@ -3319,6 +4028,8 @@ class Scanner:
 
             if profile_limit_reached:
                 break
+            if self._stop_requested():
+                break
 
             if active_profile is not None:
                 expected_count = len(active_profile.expected_item_ids) or len(active_profile.ordered_names)
@@ -3338,15 +4049,24 @@ class Scanner:
                     )
                     break
 
-            moved, after_page, current_scroll_amount, _overlap_rows = self._scroll_inventory_page(
-                rect,
-                slots,
-                grid_r,
-                drag_config,
-                current_scroll_amount,
-                grid_cols,
-            )
-            self.log(f"  next drag delta_px={current_scroll_amount}")
+            if input_backend is not None and not legacy_scroll:
+                moved, after_page = self._advance_inventory_page_with_input(
+                    input_backend,
+                    slots,
+                    grid_r,
+                    grid_cols,
+                    page,
+                )
+            else:
+                moved, after_page, current_scroll_amount, _overlap_rows = self._scroll_inventory_page(
+                    rect,
+                    slots,
+                    grid_r,
+                    drag_config,
+                    current_scroll_amount,
+                    grid_cols,
+                )
+                self.log(f"  next drag delta_px={current_scroll_amount}")
             if after_page is None:
                 break
             repeated_last_row = (
@@ -3375,6 +4095,8 @@ class Scanner:
                     source,
                 )
             items = self._fill_missing_profile_entries(items, active_profile, source)
+        if input_backend is not None:
+            input_backend.close()
         return items
 
     def scan_items(
@@ -3385,7 +4107,15 @@ class Scanner:
         return_to_lobby: bool = True,
     ) -> list[ItemEntry]:
         self.log("[scan] item scan start")
+        self._debug(
+            "item scan context: "
+            f"navigate_from_menu={navigate_from_menu} "
+            f"return_to_lobby={return_to_lobby} "
+            f"profiles={self._item_scan_profiles(inventory_profile_id)} "
+            f"icon_templates={len(_inventory_template_catalog('item'))}"
+        )
         prev_forced_profile_id = self._forced_inventory_profile_id
+        fallback_to_menu = False
         try:
             if navigate_from_menu:
                 if not self._open_menu():
@@ -3406,7 +4136,24 @@ class Scanner:
                     if not self._wait(0.5):
                         return all_items
                 if not self._prepare_item_inventory(profile_id, ensure_sort_rule=not sort_rule_checked):
-                    return all_items
+                    if not navigate_from_menu:
+                        self.log("  current item screen prepare failed -> retry from menu")
+                        fallback_to_menu = True
+                        self._return_lobby()
+                        if not self._open_menu():
+                            self.log("  item retry failed: menu open failed")
+                            return all_items
+                        if not self._go_to("item_entry_button", "items"):
+                            self.log("  item retry failed: item entry failed")
+                            return all_items
+                        if not self._wait(0.5):
+                            return all_items
+                        navigate_from_menu = True
+                        if not self._prepare_item_inventory(profile_id, ensure_sort_rule=not sort_rule_checked):
+                            self.log("  item retry failed: inventory prepare failed")
+                            return all_items
+                    else:
+                        return all_items
                 sort_rule_checked = True
                 self._reset_inventory_scan_state("item")
                 result = self._scan_grid("item", "item", ITEM_INVENTORY_DRAG, ITEM_INVENTORY_DRAG.delta_px)
@@ -3420,10 +4167,11 @@ class Scanner:
             return all_items
         except Exception as e:
             self.log(f"item scan error: {e}")
+            _log.exception("item scan error")
             return []
         finally:
             self._forced_inventory_profile_id = prev_forced_profile_id
-            if return_to_lobby:
+            if return_to_lobby or fallback_to_menu:
                 self._return_inventory_to_lobby()
 
     def scan_equipment(
@@ -3433,7 +4181,15 @@ class Scanner:
         return_to_lobby: bool = True,
     ) -> list[ItemEntry]:
         self.log("[scan] equipment scan start")
+        self._debug(
+            "equipment scan context: "
+            f"navigate_from_menu={navigate_from_menu} "
+            f"return_to_lobby={return_to_lobby} "
+            f"icon_templates={len(_inventory_template_catalog('equipment'))} "
+            f"detail_templates={len(_inventory_detail_template_catalog('equipment'))}"
+        )
         prev_forced_profile_id = self._forced_inventory_profile_id
+        fallback_to_menu = False
         try:
             self._forced_inventory_profile_id = "equipment"
             if navigate_from_menu:
@@ -3446,7 +4202,24 @@ class Scanner:
             else:
                 self.log("  using current equipment inventory screen")
             if not self._prepare_equipment_inventory():
-                return []
+                if not navigate_from_menu:
+                    self.log("  current equipment screen prepare failed -> retry from menu")
+                    fallback_to_menu = True
+                    self._return_lobby()
+                    if not self._open_menu():
+                        self.log("  equipment retry failed: menu open failed")
+                        return []
+                    if not self._go_to("equipment_entry_button", "equipment"):
+                        self.log("  equipment retry failed: equipment entry failed")
+                        return []
+                    if not self._wait(0.5):
+                        return []
+                    navigate_from_menu = True
+                    if not self._prepare_equipment_inventory():
+                        self.log("  equipment retry failed: inventory prepare failed")
+                        return []
+                else:
+                    return []
             self._reset_inventory_scan_state("equipment")
             result = self._scan_grid(
                 "equipment",
@@ -3458,10 +4231,11 @@ class Scanner:
             return result
         except Exception as e:
             self.log(f"equipment scan error: {e}")
+            _log.exception("equipment scan error")
             return []
         finally:
             self._forced_inventory_profile_id = prev_forced_profile_id
-            if return_to_lobby:
+            if return_to_lobby or fallback_to_menu:
                 self._return_inventory_to_lobby()
 
 
@@ -3472,48 +4246,78 @@ class Scanner:
             return self.scan_students_fast()
         return self.scan_students_v5()
 
+    def _scan_student_fields(self, entry: StudentEntry) -> bool:
+        """Scan fields in dependency order so locked features can be skipped."""
+        fields = {
+            "student_id": entry.student_id,
+            "student_name": entry.display_name,
+        }
+        with self._perf_step("student.fields", **fields):
+            with self._perf_step("student.read_level", **fields):
+                self.read_level(entry)
+            if self._stop_requested():
+                return False
+            with self._perf_step("student.read_weapon_state", **fields):
+                self.read_weapon_state(entry)
+            if self._stop_requested():
+                return False
+            with self._perf_step("student.read_star", **fields):
+                self.read_student_star(entry)
+            if self._stop_requested():
+                return False
+            with self._perf_step("student.restore_basic_after_star", **fields):
+                self._restore_basic_tab()
+            if self._stop_requested():
+                return False
+            with self._perf_step("student.read_skills", **fields):
+                self.read_skills(entry)
+            if self._stop_requested():
+                return False
+            with self._perf_step("student.read_weapon", **fields):
+                self.read_weapon(entry)
+            if self._stop_requested():
+                return False
+            with self._perf_step("student.read_equipment", **fields):
+                self.read_equipment(entry)
+            if self._stop_requested():
+                return False
+            with self._perf_step("student.read_stats", **fields):
+                self.read_stats(entry)
+        return not self._stop_requested()
+
     def scan_current_student(self) -> list[StudentEntry]:
+        self._reset_panel_transition_history()
         self._info("[scan] current student scan start")
+        self._status("session.start")
         self._emit_progress_state(current=0, total=1, note="현재 학생")
         results: list[StudentEntry] = []
 
         try:
-            sid = self.identify_student(0)
+            with self._perf_step("student.identify", index=1, mode="current"):
+                sid = self.identify_student(0)
             if sid is None:
                 self._warn("[현재 학생] 식별 실패")
+                self._status("student.identify.failed", index=1)
                 return []
 
             if sid in self._maxed_ids:
                 entry = self._make_skipped_entry(sid)
                 results.append(entry)
                 self._emit_progress_state(current=1, total=1, note="현재 학생")
+                self._status("student.scan.saved_max_skip", student_id=sid, student_name=entry.display_name)
                 self._info(f"  스킵 {entry.label()} (저장데이터 기준 만렙)")
                 return results
 
             ctx = ScanCtx(idx=1, student_id=sid)
             entry = self.begin_student_scan(sid)
 
-            self.read_skills(entry)
-            if self._stop_requested():
-                return results
-            self.read_weapon(entry)
-            if self._stop_requested():
-                return results
-            self.read_equipment(entry)
-            if self._stop_requested():
-                return results
-            self.read_level(entry)
-            if self._stop_requested():
-                return results
-            self.read_student_star(entry)
-            if self._stop_requested():
-                return results
-            self.read_stats(entry)
-            if self._stop_requested():
-                return results
+            with self._perf_step("student.total", index=1, student_id=sid, student_name=entry.display_name, mode="current"):
+                if not self._scan_student_fields(entry):
+                    return results
 
-            commit_result = self.finalize_student_entry(entry, ctx, partial_ok=True)
-            added = self.commit_student_entry(commit_result, results, 0)
+                with self._perf_step("student.finalize_commit", index=1, student_id=sid, student_name=entry.display_name, mode="current"):
+                    commit_result = self.finalize_student_entry(entry, ctx, partial_ok=True)
+                    added = self.commit_student_entry(commit_result, results, 0)
             if added:
                 self._emit_progress_state(current=1, total=1, note="현재 학생")
                 self._log_student(entry, 0)
@@ -3532,13 +4336,22 @@ class Scanner:
 
         summary = f"current student scan done: total {len(results)}"
         self._emit_progress_state(current=len(results), total=1, note="현재 학생")
+        self._status(
+            "summary.session.done_with_counts",
+            total=len(results),
+            scanned=len(results),
+            skipped=0,
+            warnings=0,
+        )
         _log.info(summary)
         self._info(f"[scan] {summary}")
         return results
 
     def scan_students_v5(self) -> list[StudentEntry]:
+        self._reset_panel_transition_history()
         log_section(_log, "학생 스캔 시작 (V6)")
         self._info("[scan] student scan start (v6)")
+        self._status("session.start")
         results:       list[StudentEntry] = []
         skipped_count  = 0
         scanned_count  = 0
@@ -3549,14 +4362,16 @@ class Scanner:
         )
 
         try:
-            if not self.enter_student_menu():
+            self._status("session.first_student.enter")
+            if not self._wait_for_student_detail(initial_wait=0.5, timeout=DETAIL_READY_WAIT):
+                self._status("session.first_student.enter_failed")
                 return []
-            if not self.enter_first_student():
-                return []
+            self._restore_basic_tab()
 
             seen_ids:        set[str]       = set()
             consecutive_dup: int            = 0
             prev_id:         Optional[str]  = None
+            all_student_ids = tuple(student_meta.all_ids())
 
             for idx in range(500):
                 if self._stop_requested():
@@ -3565,7 +4380,20 @@ class Scanner:
 
 
                 _log.debug(f"[{idx+1}] 학생 식별 시작")
-                sid = self.identify_student(idx)
+                preferred_ids = tuple(sid for sid in all_student_ids if sid not in seen_ids)
+                fallback_ids = all_student_ids if seen_ids else None
+                with self._perf_step(
+                    "student.identify",
+                    index=idx + 1,
+                    mode="v5",
+                    pool=len(preferred_ids),
+                    fallback_pool=len(fallback_ids or ()),
+                ):
+                    sid = self.identify_student(
+                        idx,
+                        candidate_ids=preferred_ids or None,
+                        fallback_candidate_ids=fallback_ids,
+                    )
                 if sid is None:
                     self._warn(f"[{idx+1}] 식별 실패로 스캔 종료")
                     break
@@ -3579,8 +4407,10 @@ class Scanner:
                     )
                     if consecutive_dup >= MAX_CONSECUTIVE_DUP:
                         _log.info("연속 동일 학생 감지, 마지막 학생으로 판단하고 종료")
+                        self._status("student.loop.seen_before", student_id=sid, student_name=student_meta.display_name(sid))
                         self._info("  종료: 마지막 학생으로 판단")
                         break
+                    self._status("student.loop.duplicate", student_id=sid, student_name=student_meta.display_name(sid), count=consecutive_dup, limit=MAX_CONSECUTIVE_DUP)
                     self._restore_basic_tab()
                     self.go_next_student()
                     continue
@@ -3590,6 +4420,7 @@ class Scanner:
 
                 if sid in seen_ids:
                     _log.info(f"[{idx+1}] 이미 스캔한 학생 {sid} -> 종료")
+                    self._status("student.loop.seen_before", student_id=sid, student_name=student_meta.display_name(sid))
                     self._info(f"  종료: 이미 스캔한 학생 {sid}")
                     break
                 seen_ids.add(sid)
@@ -3599,6 +4430,7 @@ class Scanner:
                     entry = self._make_skipped_entry(sid)
                     results.append(entry)
                     skipped_count += 1
+                    self._status("student.scan.saved_max_skip", student_id=sid, student_name=entry.display_name)
                     self._emit_progress_state(
                         current=len(results),
                         total=self._student_total_hint,
@@ -3617,34 +4449,20 @@ class Scanner:
                 # Create a temporary entry, then fill it step by step.
                 entry = self.begin_student_scan(sid)
 
-                # Keep going through the pipeline even if a step is missing.
-                # Each step writes into the same TEMP entry.
-                self.read_skills(entry)
-                if self._stop_requested():
-                    break
-                self.read_weapon(entry)
-                if self._stop_requested():
-                    break
-                self.read_equipment(entry)
-                if self._stop_requested():
-                    break
-                self.read_level(entry)
-                if self._stop_requested():
-                    break
-                self.read_student_star(entry)
-                if self._stop_requested():
-                    break
-                self.read_stats(entry)
-                if self._stop_requested():
-                    break
+                with self._perf_step("student.total", index=idx + 1, student_id=sid, student_name=entry.display_name, mode="v5"):
+                    # Keep going through the pipeline even if a step is missing.
+                    # Each step writes into the same TEMP entry.
+                    if not self._scan_student_fields(entry):
+                        break
 
-                # Validate TEMP entry and decide COMMITTED/PARTIAL
-                commit_result = self.finalize_student_entry(
-                    entry, ctx, partial_ok=True
-                )
+                    # Validate TEMP entry and decide COMMITTED/PARTIAL
+                    with self._perf_step("student.finalize_commit", index=idx + 1, student_id=sid, student_name=entry.display_name, mode="v5"):
+                        commit_result = self.finalize_student_entry(
+                            entry, ctx, partial_ok=True
+                        )
 
-                # Add the validated result unless it failed strict checks.
-                added = self.commit_student_entry(commit_result, results, idx)
+                        # Add the validated result unless it failed strict checks.
+                        added = self.commit_student_entry(commit_result, results, idx)
                 if added:
                     scanned_count += 1
                     self._emit_progress_state(
@@ -3658,7 +4476,8 @@ class Scanner:
                         self._asv.on_student_committed(entry)
 
                 self._restore_basic_tab()
-                self.go_next_student()
+                with self._perf_step("student.navigate_next", index=idx + 1, student_id=sid, student_name=entry.display_name, mode="v5"):
+                    self.go_next_student()
 
         except Exception as e:
             _log.exception(f"학생 스캔 중 예외 발생: {e}")
@@ -3668,8 +4487,6 @@ class Scanner:
                 partial = ScanResult(students=list(results))
                 self._asv.emergency_save(partial, {})
         finally:
-            self._return_lobby()
-
             if self._asv:
                 self._asv.log_stats()
 
@@ -3682,6 +4499,13 @@ class Scanner:
             total=max(self._student_total_hint or 0, len(results)) or None,
             note="학생 스캔",
         )
+        self._status(
+            "summary.session.done_with_counts",
+            total=len(results),
+            scanned=scanned_count,
+            skipped=skipped_count,
+            warnings=0,
+        )
         _log.info(summary)
         self._info(f"[scan] {summary}")
         return results
@@ -3691,8 +4515,10 @@ class Scanner:
         if not ordered_ids:
             return self.scan_students_v5()
 
+        self._reset_panel_transition_history()
         log_section(_log, "학생 패스트 스캔 시작")
         self._info("[scan] student fast scan start")
+        self._status("session.start")
         self._info(f"  패스트 기준 목록 {len(ordered_ids)}명")
         results: list[StudentEntry] = []
         skipped_count = 0
@@ -3700,11 +4526,12 @@ class Scanner:
         self._emit_progress_state(current=0, total=len(ordered_ids), note="학생 패스트 스캔")
 
         try:
-            if not self.enter_student_menu():
-                return []
-            if not self.enter_first_student_fast():
+            self._status("session.first_student.enter")
+            if not self._wait_for_student_detail_fast(initial_wait=0.5, timeout=DETAIL_READY_WAIT):
+                self._status("session.first_student.enter_failed")
                 self._warn("첫 학생 상세 화면 진입 확인 실패로 패스트 스캔을 중단합니다.")
                 return []
+            self._restore_basic_tab()
 
             current_digest = self._current_student_digest(refresh=False)
             if current_digest is None:
@@ -3722,6 +4549,7 @@ class Scanner:
                     entry = self._make_skipped_entry(sid)
                     results.append(entry)
                     skipped_count += 1
+                    self._status("student.scan.saved_max_skip", student_id=sid, student_name=entry.display_name)
                     self._emit_progress_state(current=len(results), total=len(ordered_ids), note="학생 패스트 스캔")
                     _log.info(f"[{idx+1:>3}] {entry.label()} -> 패스트 모드 저장데이터 기준 만렙 스킵")
                 else:
@@ -3729,27 +4557,13 @@ class Scanner:
                     ctx = ScanCtx(idx=idx + 1, student_id=sid)
                     entry = self.begin_student_scan(sid)
 
-                    self.read_skills(entry)
-                    if self._stop_requested():
-                        break
-                    self.read_weapon(entry)
-                    if self._stop_requested():
-                        break
-                    self.read_equipment(entry)
-                    if self._stop_requested():
-                        break
-                    self.read_level(entry)
-                    if self._stop_requested():
-                        break
-                    self.read_student_star(entry)
-                    if self._stop_requested():
-                        break
-                    self.read_stats(entry)
-                    if self._stop_requested():
-                        break
+                    with self._perf_step("student.total", index=idx + 1, student_id=sid, student_name=entry.display_name, mode="fast"):
+                        if not self._scan_student_fields(entry):
+                            break
 
-                    commit_result = self.finalize_student_entry(entry, ctx, partial_ok=True)
-                    added = self.commit_student_entry(commit_result, results, idx)
+                        with self._perf_step("student.finalize_commit", index=idx + 1, student_id=sid, student_name=entry.display_name, mode="fast"):
+                            commit_result = self.finalize_student_entry(entry, ctx, partial_ok=True)
+                            added = self.commit_student_entry(commit_result, results, idx)
                     if added:
                         scanned_count += 1
                         self._emit_progress_state(current=len(results), total=len(ordered_ids), note="학생 패스트 스캔")
@@ -3761,7 +4575,8 @@ class Scanner:
                     continue
 
                 self._restore_basic_tab()
-                next_digest = self.go_next_student_fast(current_digest)
+                with self._perf_step("student.navigate_next", index=idx + 1, student_id=sid, student_name=student_meta.display_name(sid), mode="fast"):
+                    next_digest = self.go_next_student_fast(current_digest)
                 if next_digest is None:
                     self._warn(
                         f"[{idx+1}] 다음 학생 이동 확인에 실패했습니다. "
@@ -3777,7 +4592,6 @@ class Scanner:
                 partial = ScanResult(students=list(results))
                 self._asv.emergency_save(partial, {})
         finally:
-            self._return_lobby()
             if self._asv:
                 self._asv.log_stats()
 
@@ -3786,6 +4600,13 @@ class Scanner:
             f"(스캔:{scanned_count} / 스킵:{skipped_count})"
         )
         self._emit_progress_state(current=len(results), total=len(ordered_ids), note="학생 패스트 스캔")
+        self._status(
+            "summary.session.done_with_counts",
+            total=len(results),
+            scanned=scanned_count,
+            skipped=skipped_count,
+            warnings=0,
+        )
         _log.info(summary)
         self._info(f"[scan] {summary}")
         return results
@@ -3812,9 +4633,11 @@ class Scanner:
 
     def enter_student_menu(self) -> bool:
         self.log("  학생 메뉴 진입...")
+        self._status("session.student_menu.enter")
         btn = self.r["lobby"].get("student_menu_button")
         if not btn:
             self.log("  missing student_menu_button")
+            self._status("session.student_menu.enter_failed")
             return False
 
         attempts = [
@@ -3834,13 +4657,16 @@ class Scanner:
                 return self._wait(STUDENT_MENU_READY_SETTLE_WAIT)
             if attempt < len(attempts):
                 self.log(f"  학생 메뉴 재시도... ({attempt+1}/{len(attempts)})")
+        self._status("session.student_menu.enter_failed")
         return False
 
     def enter_first_student(self) -> bool:
         self.log("  첫 학생 선택...")
+        self._status("session.first_student.enter")
         btn = self.r["student_menu"].get("first_student_button")
         if not btn:
             self.log("  missing first_student_button")
+            self._status("session.first_student.enter_failed")
             return False
 
         if not self._wait(FIRST_STUDENT_PRECLICK_WAIT):
@@ -3849,52 +4675,108 @@ class Scanner:
         clicked = self._click_r(btn, "first_student")
         _log.info(f"[first_student] clicked={clicked}")
         if not clicked:
+            self._status("session.first_student.enter_failed")
             return False
-        return self._wait_for_student_detail(initial_wait=DETAIL_CLICK_SETTLE_WAIT)
+        ok = self._wait_for_student_detail(initial_wait=DETAIL_CLICK_SETTLE_WAIT)
+        if not ok:
+            self._status("session.first_student.enter_failed")
+        return ok
 
     def enter_first_student_fast(self) -> bool:
         self.log("  첫 학생 선택(패스트)...")
+        self._status("session.first_student.enter")
         btn = self.r["student_menu"].get("first_student_button")
         if not btn:
             self.log("  missing first_student_button")
+            self._status("session.first_student.enter_failed")
             return False
         if not self._wait(FIRST_STUDENT_PRECLICK_WAIT):
             return False
         clicked = self._click_r(btn, "first_student_fast")
         _log.info(f"[first_student_fast] clicked={clicked}")
         if not clicked:
+            self._status("session.first_student.enter_failed")
             return False
-        return self._wait_for_student_detail_fast(initial_wait=DETAIL_CLICK_SETTLE_WAIT)
+        ok = self._wait_for_student_detail_fast(initial_wait=DETAIL_CLICK_SETTLE_WAIT)
+        if not ok:
+            self._status("session.first_student.enter_failed")
+        return ok
 
     def go_next_student(self) -> bool:
+        previous_digest = self._current_student_digest(refresh=False)
+        self._invalidate_student_basic_capture()
+        self._status("navigation.next.arrow")
+        if self._send_student_arrow("right"):
+            if previous_digest is None:
+                return self._wait(DELAY_NEXT)
+            if self._wait_for_student_change(previous_digest) is not None:
+                return True
+            self._status("navigation.next.no_change")
+            self._warn("  오른쪽 화살표 학생 이동 확인 실패 -> 버튼 클릭 fallback")
+
         btn = self.r["student"].get("next_student_button")
         if not btn:
             self.log("  missing next_student_button")
             return False
-        self._invalidate_student_basic_capture()
+        self._status("navigation.next.button_fallback")
         self._click_r(btn, "next_student")
+        if previous_digest is not None:
+            return self._wait_for_student_change(previous_digest) is not None
         return self._wait(DELAY_NEXT)
 
     def go_next_student_fast(self, previous_digest: str) -> Optional[str]:
+        self._invalidate_student_basic_capture()
+        self._status("navigation.next.arrow")
+        if self._send_student_arrow("right"):
+            next_digest = self._wait_for_student_change(previous_digest)
+            if next_digest is not None:
+                return next_digest
+            self._status("navigation.next.no_change")
+            self._warn("  오른쪽 화살표 학생 이동 확인 실패 -> 버튼 클릭 fallback")
+
         btn = self.r["student"].get("next_student_button")
         if not btn:
             self.log("  missing next_student_button")
             return None
         self._invalidate_student_basic_capture()
+        self._status("navigation.next.button_fallback")
         if not self._click_r(btn, "next_student_fast"):
             return None
         return self._wait_for_student_change(previous_digest)
 
+    def go_previous_student_fast(self, previous_digest: str) -> Optional[str]:
+        self._invalidate_student_basic_capture()
+        if self._send_student_arrow("left"):
+            return self._wait_for_student_change(previous_digest)
+        return None
+
+    def _send_student_arrow(self, direction: str) -> bool:
+        hwnd = find_target_hwnd()
+        if not hwnd:
+            self.log("  warning: target window missing -> arrow key skip")
+            return False
+        if direction == "left":
+            return send_key(hwnd, VK_LEFT, key_name="left", delay=0.0)
+        return send_key(hwnd, VK_RIGHT, key_name="right", delay=0.0)
 
 
-    def identify_student(self, idx: int = 0) -> Optional[str]:
+
+    def identify_student(
+        self,
+        idx: int = 0,
+        *,
+        candidate_ids: Iterable[str] | None = None,
+        fallback_candidate_ids: Iterable[str] | None = None,
+    ) -> Optional[str]:
         """Identify the current student from the portrait texture region."""
         sr = self.r["student"]
         texture_r = sr.get("student_texture_region")
         ctx = ScanCtx(idx=idx + 1, step="identify")
+        self._status("student.identify.start", index=idx + 1)
 
         if not texture_r:
             _log.warning(f"{ctx} student_texture_region missing -> cannot identify")
+            self._status("student.identify.failed", index=idx + 1)
             return None
 
         def _try() -> Optional[str]:
@@ -3902,7 +4784,11 @@ class Scanner:
             if img is None:
                 return None
             crop = crop_region(img, texture_r)
-            sid, score = match_student_texture(crop)
+            sid, score = match_student_texture(
+                crop,
+                candidate_ids=candidate_ids,
+                fallback_candidate_ids=fallback_candidate_ids,
+            )
             if sid is not None:
                 _log.info(
                     f"{ctx} 식별 성공: {student_meta.display_name(sid)} "
@@ -3911,32 +4797,109 @@ class Scanner:
                 self._info(
                     f"  인식 [{idx+1}] {student_meta.display_name(sid)} (score={score:.3f})"
                 )
+                self._status(
+                    "student.identify.success",
+                    index=idx + 1,
+                    student_id=sid,
+                    student_name=student_meta.display_name(sid),
+                    technical=f"score={score:.3f}",
+                )
                 return sid
 
             _log.debug(f"{ctx} 텍스처 식별 실패 (score={score:.3f})")
             dump_roi(crop, "identify_fail", score=score, reason="below_thresh")
             if self._asv:
                 self._asv.on_step_error("identify")
+            self._status("student.identify.retry", index=idx + 1, technical=f"score={score:.3f}")
             self._warn(f"[{idx+1}] 텍스처 식별 실패 (score={score:.3f})")
             return None
 
         sid = self._retry(_try, max_attempts=RETRY_IDENTIFY, delay=0.6, label="식별")
         if sid is not None or idx != 0:
+            if sid is None:
+                self._status("student.identify.failed", index=idx + 1)
             return sid
 
         _log.warning(f"{ctx} 첫 학생 식별 실패 -> 진입 복구 시도")
         self._warn(f"[{idx+1}] 첫 학생 진입 복구 시도")
         if not self._recover_first_student_entry():
+            self._status("student.identify.failed", index=idx + 1)
             return None
         self._restore_basic_tab()
         self._invalidate_student_basic_capture()
-        return self._retry(_try, max_attempts=RETRY_IDENTIFY, delay=0.6, label="식별 복구")
+        sid = self._retry(_try, max_attempts=RETRY_IDENTIFY, delay=0.6, label="식별 복구")
+        if sid is None:
+            self._status("student.identify.failed", index=idx + 1)
+        return sid
 
 
+
+    def _read_skills_from_basic(self, entry: StudentEntry, img: Image.Image) -> bool:
+        sr = self.r["student"]
+        staged: dict[str, tuple[Optional[int], FieldMeta]] = {}
+        specs = (
+            ("ex_skill", "basic_EX_skill", True, None),
+            ("skill1", "basic_Skill_1", False, None),
+            ("skill2", "basic_Skill_2", False, SKILL2_UNLOCK_STAR),
+            ("skill3", "basic_Skill_3", False, SKILL3_UNLOCK_STAR),
+        )
+        for field_name, region_key, is_ex, unlock_star in specs:
+            if (
+                unlock_star is not None
+                and entry.student_star is not None
+                and entry.student_star < unlock_star
+            ):
+                staged[field_name] = (None, FieldMeta.skipped("star_locked"))
+                continue
+            region = sr.get(region_key)
+            if region is None:
+                _log.debug("basic skill region missing: %s", region_key)
+                return False
+            result = read_basic_skill_result(crop_region(img, region), is_ex=is_ex)
+            if result.value is None or result.uncertain:
+                _log.info(
+                    "[basic_skill] fallback student=%s field=%s value=%s score=%.3f label=%s",
+                    entry.student_id,
+                    field_name,
+                    result.value,
+                    result.score,
+                    result.label,
+                )
+                return False
+            staged[field_name] = (
+                int(result.value),
+                FieldMeta.ok(FieldSource.TEMPLATE, score=result.score),
+            )
+
+        for field_name, (value, meta) in staged.items():
+            setattr(entry, field_name, value)
+            entry.set_meta(field_name, meta)
+        self.log(
+            f"  기본 화면 스킬: EX={entry.ex_skill} "
+            f"S1={entry.skill1} S2={entry.skill2} S3={entry.skill3}"
+        )
+        self._status(
+            "skills.basic.success",
+            student_name=entry.display_name,
+            ex=entry.ex_skill,
+            s1=entry.skill1,
+            s2=entry.skill2,
+            s3=entry.skill3,
+        )
+        self._status(
+            "skills.summary",
+            student_name=entry.display_name,
+            ex=entry.ex_skill,
+            s1=entry.skill1,
+            s2=entry.skill2,
+            s3=entry.skill3,
+        )
+        return True
 
     def read_skills(self, entry: StudentEntry) -> None:
         """Read the skill panel from a single capture and fill skill fields."""
         ctx = ScanCtx(student_id=entry.student_id, step="read_skills")
+        self._status("skills.start", student_name=entry.display_name)
         saved = self._saved_student(entry.student_id)
         if self._skills_maxed_from_saved_data(saved):
             self._apply_saved_fields(
@@ -3945,14 +4908,21 @@ class Scanner:
                 ("ex_skill", "skill1", "skill2", "skill3"),
                 "saved_skill_max",
             )
+            self._status("skills.saved_max_skip", student_name=entry.display_name)
             self.log("  저장데이터에서 스킬 5/10/10/10 확인 -> 스킬 스캔 생략")
             return
+
+        basic_img = self._get_student_basic_capture()
+        if basic_img is not None and self._read_skills_from_basic(entry, basic_img):
+            return
+        self._status("skills.basic.fallback", student_name=entry.display_name)
+        self.log("  기본 화면 스킬 판독 불확실 -> 기존 스킬창 판독")
 
         self._active_student_panel = "skill"
         img = self._click_student_region_and_wait(
             "skill_menu_button",
             "skill_menu_button",
-            self._is_student_additional_menu_capture,
+            lambda capture: self._is_student_panel_title_capture(capture, "skill"),
             timeout=ADDITIONAL_PANEL_READY_WAIT,
         )
         if img is None:
@@ -3982,6 +4952,18 @@ class Scanner:
             ("skill2",   "Skill_2",  "Skill2"),
             ("skill3",   "Skill_3",  "Skill3"),
         ]:
+            if field_name == "skill2" and entry.student_star is not None and entry.student_star < SKILL2_UNLOCK_STAR:
+                entry.skill2 = None
+                entry.set_meta("skill2", FieldMeta.skipped("star_locked"))
+                self._status("skills.skill2.skip_star_locked", student_name=entry.display_name, star=entry.student_star)
+                self.log(f"  {entry.student_star}성 -> Skill2 스킵")
+                continue
+            if field_name == "skill3" and entry.student_star is not None and entry.student_star < SKILL3_UNLOCK_STAR:
+                entry.skill3 = None
+                entry.set_meta("skill3", FieldMeta.skipped("star_locked"))
+                self._status("skills.skill3.skip_star_locked", student_name=entry.display_name, star=entry.student_star)
+                self.log(f"  {entry.student_star}성 -> Skill3 스킵")
+                continue
             region = sr.get(region_key)
             if region is None:
                 _log.warning(f"{ctx.with_step(field_name)} region missing -> skip")
@@ -4006,6 +4988,14 @@ class Scanner:
             f"  스킬: EX={entry.ex_skill} "
             f"S1={entry.skill1} S2={entry.skill2} S3={entry.skill3}"
         )
+        self._status(
+            "skills.summary",
+            student_name=entry.display_name,
+            ex=entry.ex_skill,
+            s1=entry.skill1,
+            s2=entry.skill2,
+            s3=entry.skill3,
+        )
         self._close_student_panel(
             capture_name="skill_close_button",
             region_key="skillmenu_quit_button",
@@ -4014,35 +5004,45 @@ class Scanner:
 
 
 
-    def read_weapon(self, entry: StudentEntry) -> None:
-        """Read weapon state and weapon panel information."""
-
-
-
+    def read_weapon_state(self, entry: StudentEntry) -> None:
+        """Read only the weapon unlock/equipped state from the basic tab."""
         ctx      = ScanCtx(student_id=entry.student_id, step="read_weapon")
-        saved   = self._saved_student(entry.student_id)
-        if self._weapon_maxed_from_saved_data(saved):
-            self._apply_saved_fields(
-                entry,
-                saved,
-                ("weapon_state", "weapon_star", "weapon_level"),
-                "saved_weapon_max",
-            )
-            self.log("  저장데이터에서 전용무기 4성 Lv.60 확인 -> 무기 스캔 생략")
-            return
-
-        sr       = self.r["student"]
-        weapon_r = sr.get("weapon_detect_flag_region") or sr.get("weapon_unlocked_flag")
-        if not weapon_r:
-
-            entry.weapon_state = WeaponState.NO_WEAPON_SYSTEM
-            entry.set_meta("weapon_state", FieldMeta.region_missing("weapon_detect_flag_region"))
-            return
-
+        self._status("weapon_state.start", student_name=entry.display_name)
         img = self._get_student_basic_capture()
         if img is None:
             entry.weapon_state = WeaponState.NO_WEAPON_SYSTEM
             entry.set_meta("weapon_state", FieldMeta.failed(FieldSource.TEMPLATE, "capture_fail"))
+            return
+
+        sr       = self.r["student"]
+        weapon_button_r = sr.get("weapon_info_menu_button")
+        if weapon_button_r:
+            active_ratio = self._active_blue_button_ratio(img, weapon_button_r, "weapon growth button")
+            is_active = active_ratio >= EQUIPMENT_GROWTH_ACTIVE_BLUE_MIN_RATIO
+            if is_active:
+                entry.weapon_state = WeaponState.WEAPON_EQUIPPED
+                entry.set_meta("weapon_state", FieldMeta.ok(FieldSource.TEMPLATE, score=active_ratio))
+                self._status(
+                    "weapon_state.equipped",
+                    student_name=entry.display_name,
+                    technical=f"button_blue_ratio={active_ratio:.3f}",
+                )
+                self.log(f"  무기 상태: WEAPON_EQUIPPED (button_blue_ratio={active_ratio:.3f})")
+                return
+            entry.weapon_state = WeaponState.NO_WEAPON_SYSTEM
+            entry.set_meta("weapon_state", FieldMeta.ok(FieldSource.TEMPLATE, score=1.0 - active_ratio))
+            self._status(
+                "weapon_state.no_system",
+                student_name=entry.display_name,
+                technical=f"button_blue_ratio={active_ratio:.3f}",
+            )
+            self.log(f"  무기 상태: NO_WEAPON_SYSTEM (button_blue_ratio={active_ratio:.3f})")
+            return
+
+        weapon_r = sr.get("weapon_detect_flag_region") or sr.get("weapon_unlocked_flag")
+        if not weapon_r:
+            entry.weapon_state = WeaponState.NO_WEAPON_SYSTEM
+            entry.set_meta("weapon_state", FieldMeta.region_missing("weapon_info_menu_button"))
             return
 
         state, score = detect_weapon_state(crop_region(img, weapon_r))
@@ -4052,13 +5052,60 @@ class Scanner:
             entry.set_meta("weapon_state",
                            FieldMeta.uncertain(FieldSource.TEMPLATE, score=score,
                                                note=state.value))
+            self._status("weapon_state.uncertain", student_name=entry.display_name, state=state.name, technical=f"score={score:.3f}")
             _log.warning(f"{ctx} 무기 상태 불확실 (score={score:.3f}, {state.name})")
         else:
             entry.set_meta("weapon_state",
                            FieldMeta.ok(FieldSource.TEMPLATE, score=score))
+            if state == WeaponState.WEAPON_EQUIPPED:
+                self._status("weapon_state.equipped", student_name=entry.display_name, technical=f"score={score:.3f}")
+            elif state == WeaponState.WEAPON_UNLOCKED_NOT_EQUIPPED:
+                self._status("weapon_state.unlocked_not_equipped", student_name=entry.display_name, technical=f"score={score:.3f}")
+            else:
+                self._status("weapon_state.no_system", student_name=entry.display_name, technical=f"score={score:.3f}")
         self.log(f"  무기 상태: {state.name} (score={score:.3f})")
 
+
+    def read_weapon(self, entry: StudentEntry) -> None:
+        """Read weapon detail when the weapon system is unlocked/equipped."""
+        self._status("weapon.start", student_name=entry.display_name)
+
+        if entry.weapon_state is None:
+            self.read_weapon_state(entry)
+
+        if entry.student_star is not None and entry.student_star < WEAPON_UNLOCK_STAR:
+            entry.weapon_star = None
+            entry.weapon_level = None
+            entry.set_meta("weapon_star", FieldMeta.skipped("star_locked"))
+            entry.set_meta("weapon_level", FieldMeta.skipped("star_locked"))
+            self._status("weapon.skip_star_locked", student_name=entry.display_name, star=entry.student_star)
+            self.log(f"  {entry.student_star}성 -> 전용무기 스캔 스킵")
+            return
+
+        state = entry.weapon_state
+        if state is None:
+            entry.set_meta("weapon_star", FieldMeta.skipped("weapon_state_missing"))
+            entry.set_meta("weapon_level", FieldMeta.skipped("weapon_state_missing"))
+            return
+        weapon_meta = entry.get_meta("weapon_state")
+        weapon_state_confirmed = (
+            weapon_meta is not None
+            and weapon_meta.status == FieldStatus.OK
+        )
+        if state == WeaponState.WEAPON_EQUIPPED and not weapon_state_confirmed:
+            entry.weapon_star = None
+            entry.weapon_level = None
+            entry.set_meta("weapon_star", FieldMeta.skipped("weapon_state_uncertain"))
+            entry.set_meta("weapon_level", FieldMeta.skipped("weapon_state_uncertain"))
+            self._status("weapon.skip_state_uncertain", student_name=entry.display_name)
+            self.log("  무기 상태 불확실 -> 전용무기 상세 스캔 스킵")
+            return
         if state == WeaponState.NO_WEAPON_SYSTEM:
+            entry.weapon_star = None
+            entry.weapon_level = None
+            entry.set_meta("weapon_star", FieldMeta.skipped("no_weapon_system"))
+            entry.set_meta("weapon_level", FieldMeta.skipped("no_weapon_system"))
+            self._status("weapon.skip_no_system", student_name=entry.display_name)
             return
 
         if state == WeaponState.WEAPON_UNLOCKED_NOT_EQUIPPED:
@@ -4066,19 +5113,74 @@ class Scanner:
             entry.weapon_level = None
             entry.set_meta("weapon_star",  FieldMeta.skipped("not_equipped"))
             entry.set_meta("weapon_level", FieldMeta.skipped("not_equipped"))
+            self._status("weapon.skip_not_equipped", student_name=entry.display_name)
             self.log("  무기 미장착 -> 레벨/성급 스킵")
             return
 
+        sr = self.r["student"]
+        basic_img = self._get_student_basic_capture()
+        basic_level_r = sr.get("basic_weapon_level_digits_quad")
+        basic_star_r = sr.get("basic_weapon_star_region")
+        if basic_img is not None and basic_level_r is not None and basic_star_r is not None:
+            basic_level = read_basic_weapon_level_result(basic_img, basic_level_r)
+            basic_star = read_basic_weapon_star_result(crop_region(basic_img, basic_star_r))
+            if (
+                basic_level.value is not None
+                and not basic_level.uncertain
+                and basic_star.value is not None
+                and not basic_star.uncertain
+            ):
+                entry.weapon_level = int(basic_level.value)
+                entry.weapon_star = int(basic_star.value)
+                entry.set_meta(
+                    "weapon_level",
+                    FieldMeta(
+                        status=FieldStatus.OK,
+                        source=FieldSource.TEMPLATE,
+                        score=basic_level.score,
+                        note="basic_info",
+                    ),
+                )
+                entry.set_meta(
+                    "weapon_star",
+                    FieldMeta(
+                        status=FieldStatus.OK,
+                        source=FieldSource.TEMPLATE,
+                        score=basic_star.score,
+                        note="basic_info",
+                    ),
+                )
+                self._status(
+                    "weapon.basic_fast_success",
+                    student_name=entry.display_name,
+                    star=entry.weapon_star,
+                    level=entry.weapon_level,
+                )
+                self.log(
+                    f"  기본 화면에서 전용무기 확정: {entry.weapon_star}성 Lv.{entry.weapon_level} "
+                    f"(level={basic_level.score:.3f}, star={basic_star.score:.3f})"
+                )
+                return
+            self._status("weapon.basic_fast_fallback", student_name=entry.display_name)
+            self.log(
+                "  기본 화면 전용무기 판정 불확실 -> 전용무기 메뉴에서 다시 확인 "
+                f"(level={basic_level.value}/{basic_level.score:.3f}, "
+                f"star={basic_star.value}/{basic_star.score:.3f})"
+            )
 
         self._active_student_panel = "weapon"
         img = self._click_student_region_and_wait(
             "weapon_info_menu_button",
             "weapon_info_menu",
-            self._is_student_additional_menu_capture,
+            lambda capture: self._is_student_panel_title_capture(capture, "weapon"),
             timeout=ADDITIONAL_PANEL_READY_WAIT,
         )
         if img is None:
             self.log("  missing weapon_info_menu_button")
+            entry.weapon_star = None
+            entry.weapon_level = None
+            entry.set_meta("weapon_star", FieldMeta.failed(FieldSource.TEMPLATE, "panel_not_detected"))
+            entry.set_meta("weapon_level", FieldMeta.failed(FieldSource.TEMPLATE, "panel_not_detected"))
             self._esc()
             return
 
@@ -4117,6 +5219,12 @@ class Scanner:
                            if entry.weapon_level is not None
                            else FieldMeta.failed(FieldSource.TEMPLATE, "digit_read_fail"))
             self.log(f"  전용무기: {entry.weapon_star}성 Lv.{entry.weapon_level}")
+            self._status(
+                "weapon.summary",
+                student_name=entry.display_name,
+                star=entry.weapon_star,
+                level=entry.weapon_level,
+            )
         else:
             self.log("  missing weapon_level_digit")
             entry.set_meta("weapon_level", FieldMeta.region_missing("weapon_level_digit"))
@@ -4131,7 +5239,7 @@ class Scanner:
 
     def read_equipment(self, entry: StudentEntry) -> None:
         """Read equipment state and slots from the equipment menu."""
-
+        self._status("equipment.start", student_name=entry.display_name)
 
 
         saved     = self._saved_student(entry.student_id)
@@ -4149,14 +5257,36 @@ class Scanner:
                 ),
                 "saved_equipment_max",
             )
+            self._status("equipment.saved_max_skip", student_name=entry.display_name)
             self.log("  저장데이터에서 장비 1~3 T10/Lv.70 확인 -> 장비 1~3 스캔 생략")
 
         if equip4_max:
             self._apply_saved_fields(entry, saved, ("equip4",), "saved_favorite_item_max")
+            self._status("equipment.favorite_saved_max_skip", student_name=entry.display_name)
             self.log("  저장데이터에서 애장품 T2 확인 -> 애장품 스캔 생략")
 
-        if equip_max and (equip4_max or not student_meta.favorite_item_enabled(sid)):
+        favorite_supported = student_meta.favorite_item_enabled(sid)
+        if not favorite_supported and entry.equip4 is None:
+            self._mark_favorite_item_unsupported(entry, sid)
+
+        if equip_max and (equip4_max or not favorite_supported):
             return
+
+        slots_to_scan = {1, 2, 3}
+        if entry.level is not None and entry.level < EQUIP2_UNLOCK_LEVEL:
+            entry.equip2 = EquipSlotFlag.LEVEL_LOCKED.value
+            entry.equip2_level = None
+            entry.set_meta("equip2", FieldMeta.skipped("level_locked"))
+            entry.set_meta("equip2_level", FieldMeta.skipped("level_locked"))
+            self._status("equip2.skip_level_locked_from_level", student_name=entry.display_name, level=entry.level)
+            slots_to_scan.discard(2)
+        if entry.level is not None and entry.level < EQUIP3_UNLOCK_LEVEL:
+            entry.equip3 = EquipSlotFlag.LEVEL_LOCKED.value
+            entry.equip3_level = None
+            entry.set_meta("equip3", FieldMeta.skipped("level_locked"))
+            entry.set_meta("equip3_level", FieldMeta.skipped("level_locked"))
+            self._status("equip3.skip_level_locked_from_level", student_name=entry.display_name, level=entry.level)
+            slots_to_scan.discard(3)
 
         sr        = self.r["student"]
         equip_btn = sr.get("equipment_button")
@@ -4168,24 +5298,63 @@ class Scanner:
         img = self._get_student_basic_capture()
         if img is None:
             return
+        growth_button_active = self._equipment_growth_button_active(img, equip_btn)
+        self._status(
+            "equipment.button.active" if growth_button_active else "equipment.button.inactive",
+            student_name=entry.display_name,
+        )
+        favorite_scan_needed = favorite_supported and not equip4_max
+        favorite_dot_present = (
+            favorite_scan_needed
+            and self._basic_equipment_empty_dot_present(img, 4)
+        )
+        if (
+            favorite_scan_needed
+            and growth_button_active
+            and favorite_dot_present
+        ):
+            self._status("favorite.growth_on_needs_menu", student_name=entry.display_name)
+        self._apply_basic_equipment_hints(
+            entry,
+            img,
+            slots_to_scan,
+            include_favorite=favorite_scan_needed,
+            growth_button_active=growth_button_active,
+        )
+        favorite_scan_needed = (
+            favorite_supported
+            and not equip4_max
+            and entry.equip4 is None
+        )
 
         pre = read_equip_check(crop_region(img, equip_btn))
-        if pre == CheckFlag.IMPOSSIBLE:
-            self.log("  장비 버튼이 비활성 상태라 장비 스캔을 스킵합니다")
-            # Mark every equipment field as skipped when the panel is unavailable.
-            for slot in (1, 2, 3, 4):
-                entry.set_meta(f"equip{slot}",
-                               FieldMeta.skipped("equipment_impossible"))
-                if slot <= 3:
-                    entry.set_meta(f"equip{slot}_level",
-                                   FieldMeta.skipped("equipment_impossible"))
+        if favorite_scan_needed and not growth_button_active:
+            if favorite_dot_present:
+                entry.equip4 = EquipSlotFlag.EMPTY.value
+                reason = "basic_empty_dot_growth_button_off"
+                status_id = "favorite.growth_off_dot_empty"
+                log_note = "장비 성장 OFF + 노란 점 -> 미장착 스킵"
+            else:
+                entry.equip4 = EquipSlotFlag.LOVE_LOCKED.value
+                reason = "growth_button_off_no_dot_love_locked"
+                status_id = "favorite.slot_flag.love_locked"
+                log_note = "장비 성장 OFF + 노란 점 없음 -> 인연 잠금 스킵"
+            entry.set_meta("equip4", FieldMeta.skipped(reason))
+            favorite_scan_needed = False
+            self._status(status_id, student_name=entry.display_name)
+            self.log(f"  장비4: {log_note}")
+
+        if not slots_to_scan and not favorite_scan_needed:
             return
+
+        if pre == CheckFlag.IMPOSSIBLE:
+            self.log("  장비 성장 버튼 비활성 상태지만 잠금 판별을 위해 메뉴 진입 시도")
 
         self._active_student_panel = "equipment"
         img = self._click_student_region_and_wait(
             "equipment_button",
             "equipment_tab",
-            self._is_student_additional_menu_capture,
+            lambda capture: self._is_student_panel_title_capture(capture, "equipment"),
             timeout=ADDITIONAL_PANEL_READY_WAIT,
         )
         if img is None:
@@ -4201,30 +5370,31 @@ class Scanner:
                     img = retry_img
                     check_state = read_equip_check_inside(crop_region(img, check_r))
             if check_state == CheckFlag.FALSE:
-                _log.warning(
-                    f"{entry.label()} 장비 전체보기 체크가 FALSE라 자동 클릭을 건너뜁니다"
-                )
-                if self._wait(0.35):
+                self.log("  장비 전체보기 체크가 OFF라 클릭합니다")
+                if self._click_r(check_r, "equipment_all_view_check") and self._wait(0.45):
                     retry_img = self._capture()
                     if retry_img is not None:
                         img = retry_img
+                        check_state = read_equip_check_inside(crop_region(img, check_r))
+            if check_state == CheckFlag.FALSE:
+                _log.warning(f"{entry.label()} 장비 전체보기 체크 활성화 확인 실패 -> 슬롯 판독 계속")
 
         # Slots 1-3 share the same equipment-menu capture.
         if not equip_max:
-            for slot in (1, 2, 3):
+            for slot in sorted(slots_to_scan):
                 skip_flags = {EquipSlotFlag.EMPTY}
                 if slot in (2, 3):
                     skip_flags.add(EquipSlotFlag.LEVEL_LOCKED)
                 self._scan_equip_slot(entry, img, sr, slot,
                                       skip_flags=skip_flags, scan_level=True)
 
-            if all(getattr(entry, f"equip{slot}") in (None, "unknown") for slot in (1, 2, 3)):
+            if slots_to_scan and all(getattr(entry, f"equip{slot}") in (None, "unknown") for slot in slots_to_scan):
                 _log.warning(f"{entry.label()} equipment capture unstable -> retry once")
                 if self._wait(0.35):
                     retry_img = self._capture()
                     if retry_img is not None:
                         img = retry_img
-                        for slot in (1, 2, 3):
+                        for slot in sorted(slots_to_scan):
                             skip_flags = {EquipSlotFlag.EMPTY}
                             if slot in (2, 3):
                                 skip_flags.add(EquipSlotFlag.LEVEL_LOCKED)
@@ -4232,7 +5402,8 @@ class Scanner:
                                                   skip_flags=skip_flags, scan_level=True)
 
         # ?щ’ 4
-        if student_meta.favorite_item_enabled(sid):
+        if favorite_supported:
+            self._status("favorite.start", student_name=entry.display_name)
             if not equip4_max:
                 self._scan_equip_slot(
                     entry, img, sr, 4,
@@ -4242,7 +5413,7 @@ class Scanner:
                     scan_level=False,
                 )
         else:
-            self.log(f"  장비4: {sid}는 equip4 미지원 -> 스킵")
+            self._mark_favorite_item_unsupported(entry, sid)
 
         self._close_student_panel(
             capture_name="equipment_close_button",
@@ -4276,26 +5447,46 @@ class Scanner:
                 if scan_level:
                     entry.set_meta(level_key,
                                    FieldMeta.skipped(f"slot_flag={slot_flag.value}"))
+                if slot == 2 and slot_flag == EquipSlotFlag.EMPTY:
+                    self._status("equip2.slot_flag.empty", student_name=entry.display_name)
+                elif slot == 2 and slot_flag == EquipSlotFlag.LEVEL_LOCKED:
+                    self._status("equip2.slot_flag.level_locked", student_name=entry.display_name)
+                elif slot == 3 and slot_flag == EquipSlotFlag.EMPTY:
+                    self._status("equip3.slot_flag.empty", student_name=entry.display_name)
+                elif slot == 3 and slot_flag == EquipSlotFlag.LEVEL_LOCKED:
+                    self._status("equip3.slot_flag.level_locked", student_name=entry.display_name)
+                elif slot == 4 and slot_flag == EquipSlotFlag.EMPTY:
+                    self._status("favorite.slot_flag.empty", student_name=entry.display_name)
+                elif slot == 4 and slot_flag == EquipSlotFlag.LOVE_LOCKED:
+                    self._status("favorite.slot_flag.love_locked", student_name=entry.display_name)
+                elif slot == 4 and slot_flag == EquipSlotFlag.NULL:
+                    self._status("favorite.slot_flag.null", student_name=entry.display_name)
                 return
 
         tier_r = sr.get(f"equipment_{slot}")
+        tier_candidates: list[tuple[str, float]] = []
         if tier_r:
-            tier = read_equip_tier(crop_region(img, tier_r), slot)
-            setattr(entry, equip_key, tier)
-            entry.set_meta(equip_key,
-                           FieldMeta.ok(FieldSource.TEMPLATE)
-                           if tier and tier != "unknown"
-                           else FieldMeta.uncertain(FieldSource.TEMPLATE,
-                                                    note=f"tier={tier}"))
-            self.log(f"  장비{slot} 티어: {tier}")
+            tier_crop = crop_region(img, tier_r)
+            tier_candidates = rank_equip_tier_candidates(tier_crop, slot)
+            _log.debug(
+                f"equip{slot} tier: "
+                + " ".join(f"{t}={s:.3f}" for t, s in tier_candidates)
+            )
         else:
             entry.set_meta(equip_key, FieldMeta.region_missing(f"equipment_{slot}"))
 
+        lv: int | None = None
         if scan_level:
             d1 = sr.get(f"equipment_{slot}_level_digit_1")
             d2 = sr.get(f"equipment_{slot}_level_digit_2")
             if d1 and d2:
-                lv = read_equip_level(img, slot, d1, d2)
+                lv = read_equip_level(
+                    img,
+                    slot,
+                    d1,
+                    d2,
+                    getattr(self, "_equip_level_run_templates", None),
+                )
                 setattr(entry, level_key, lv)
                 entry.set_meta(level_key,
                                FieldMeta.ok(FieldSource.TEMPLATE)
@@ -4303,16 +5494,103 @@ class Scanner:
                                else FieldMeta.failed(FieldSource.TEMPLATE,
                                                      "digit_read_fail"))
                 self.log(f"  장비{slot} 레벨: {lv}")
+                if lv is not None:
+                    self._status(f"equip{slot}.level.ok", student_name=entry.display_name, level=lv)
             else:
                 self.log(f"  missing equipment_{slot}_level_digit")
                 entry.set_meta(level_key,
                                FieldMeta.region_missing(f"equipment_{slot}_level_digit"))
 
+        if tier_r:
+            tier = "unknown"
+            tier_score = 0.0
+            if tier_candidates:
+                tier, tier_score = tier_candidates[0]
+                if tier_score < EQUIP_TIER_ACCEPT_SCORE:
+                    if (
+                        scan_level
+                        and lv == MAX_EQUIP_LEVEL
+                        and tier == "T10"
+                        and tier_score >= EQUIP_T10_LEVEL70_FALLBACK_SCORE
+                    ):
+                        entry.set_meta(
+                            equip_key,
+                            FieldMeta(
+                                status=FieldStatus.INFERRED,
+                                source=FieldSource.INFERRED,
+                                score=tier_score,
+                                note="level70_implies_t10",
+                            ),
+                        )
+                    else:
+                        tier = "unknown"
+                        entry.set_meta(
+                            equip_key,
+                            FieldMeta.uncertain(
+                                FieldSource.TEMPLATE,
+                                score=tier_score,
+                                note="tier=unknown",
+                            ),
+                        )
+                else:
+                    entry.set_meta(equip_key, FieldMeta.ok(FieldSource.TEMPLATE, score=tier_score))
+            else:
+                entry.set_meta(equip_key, FieldMeta.uncertain(FieldSource.TEMPLATE, note="tier=unknown"))
+            setattr(entry, equip_key, tier)
+            self.log(f"  장비{slot} 티어: {tier}")
+            if tier != "unknown":
+                if slot == 4:
+                    if tier == "T1":
+                        self._status("favorite.tier.t1", student_name=entry.display_name, tier=tier)
+                    elif tier == "T2":
+                        self._status("favorite.tier.t2", student_name=entry.display_name, tier=tier)
+                else:
+                    self._status(f"equip{slot}.tier.ok", student_name=entry.display_name, tier=tier)
+
+    def _learn_basic_level_for_run(
+        self,
+        image: Image.Image,
+        region: dict,
+        level: int,
+    ) -> bool:
+        digits = str(level)
+        glyphs, has_second_digit = extract_basic_student_level_glyphs(image, region)
+        detected_count = 2 if has_second_digit else 1
+        if len(digits) != detected_count or len(glyphs) != len(digits):
+            _log.info(
+                "[basic_level_calibration] rejected level=%s detected_digits=%d glyphs=%d",
+                level,
+                detected_count,
+                len(glyphs),
+            )
+            return False
+
+        learned = 0
+        for position, (digit, glyph) in enumerate(zip(digits, glyphs)):
+            position_templates = self._basic_level_run_templates.setdefault(position, {})
+            variants = position_templates.setdefault(digit, [])
+            variants.append(glyph.copy())
+            del variants[:-4]
+            learned += 1
+        total = sum(
+            len(variants)
+            for position_templates in self._basic_level_run_templates.values()
+            for variants in position_templates.values()
+        )
+        _log.info(
+            "[basic_level_calibration] learned level=%s digits=%s samples_added=%d total=%d",
+            level,
+            digits,
+            learned,
+            total,
+        )
+        return True
 
 
     def read_level(self, entry: StudentEntry) -> None:
         """Read the student level tab and parse the level digits."""
         ctx = ScanCtx(student_id=entry.student_id, step="read_level")
+        self._status("level.start", student_name=entry.display_name)
         saved = self._saved_student(entry.student_id)
 
         if self._saved_int(saved, "level") == MAX_STUDENT_LEVEL:
@@ -4321,9 +5599,41 @@ class Scanner:
         if entry.level == MAX_STUDENT_LEVEL:
             self.log("  학생 레벨이 이미 90이라 레벨 스캔을 생략합니다")
             entry.set_meta("level", FieldMeta.skipped("already_max"))
+            self._status("level.saved_max_skip", student_name=entry.display_name)
             return
 
-
+        sr = self.r["student"]
+        basic_region = sr.get("basic_level_digits_quad")
+        basic_img = self._get_student_basic_capture()
+        if basic_img is not None and basic_region is not None:
+            basic_result = read_basic_student_level_result(
+                basic_img,
+                basic_region,
+                self._basic_level_run_templates,
+            )
+            if basic_result.value is not None and not basic_result.uncertain:
+                entry.level = int(basic_result.value)
+                entry.set_meta("level", FieldMeta.ok(FieldSource.TEMPLATE, score=basic_result.score))
+                self._status("level.read.ok", student_name=entry.display_name, level=entry.level)
+                _log.info(
+                    "[basic_level] success student=%s value=%s score=%.3f label=%s",
+                    entry.student_id,
+                    entry.level,
+                    basic_result.score,
+                    basic_result.label,
+                )
+                self.log(
+                    f"  기본 화면 학생 레벨: {entry.label()} -> Lv.{entry.level} "
+                    f"(score={basic_result.score:.3f})"
+                )
+                return
+            _log.info(
+                "[basic_level] fallback student=%s value=%s score=%.3f label=%s",
+                entry.student_id,
+                basic_result.value,
+                basic_result.score,
+                basic_result.label,
+            )
 
         img = self._click_student_region_and_wait(
             "levelcheck_button",
@@ -4337,7 +5647,6 @@ class Scanner:
             entry.set_meta("level", FieldMeta.failed(FieldSource.TEMPLATE, "tab_fail"))
             return
 
-        sr = self.r["student"]
         d1 = sr.get("level_digit_1")
         d2 = sr.get("level_digit_2")
         if not d1 or not d2:
@@ -4364,9 +5673,13 @@ class Scanner:
 
         if lv is not None:
             entry.set_meta("level", FieldMeta.ok(FieldSource.TEMPLATE))
+            self._status("level.read.ok", student_name=entry.display_name, level=lv)
             self.log(f"  학생 레벨: {entry.label()} -> Lv.{lv}")
+            if basic_img is not None and basic_region is not None:
+                self._learn_basic_level_for_run(basic_img, basic_region, lv)
         else:
             entry.set_meta("level", FieldMeta.failed(FieldSource.TEMPLATE, "digit_read_fail"))
+            self._status("level.read.failed", student_name=entry.display_name)
             _log.warning(f"{ctx} 레벨 인식 실패")
             if self._asv:
                 self._asv.on_step_error("read_level", entry.student_id or "")
@@ -4377,20 +5690,70 @@ class Scanner:
 
     def read_student_star(self, entry: StudentEntry) -> None:
         """Read the student's star count, or infer it from weapon unlock state."""
-
+        self._status("star.start", student_name=entry.display_name)
 
 
         ctx = ScanCtx(student_id=entry.student_id, step="read_student_star")
 
-        if entry.weapon_state != WeaponState.NO_WEAPON_SYSTEM:
+        weapon_meta = entry.get_meta("weapon_state")
+        weapon_state_confirmed = (
+            weapon_meta is not None
+            and weapon_meta.status == FieldStatus.OK
+        )
+        can_infer_from_weapon = (
+            weapon_state_confirmed
+            and entry.weapon_state in (
+                WeaponState.WEAPON_EQUIPPED,
+                WeaponState.WEAPON_UNLOCKED_NOT_EQUIPPED,
+            )
+        )
+        if can_infer_from_weapon:
             # Students with a weapon system unlocked are guaranteed to be 5-star.
             entry.student_star = 5
             entry.set_meta("student_star",
                            FieldMeta.inferred("weapon_state 기반 5성 확정"))
+            self._status("star.infer_from_weapon", student_name=entry.display_name, star=5)
             self.log("  전용무기 보유 학생 -> 별 스캔 생략 (5성 확정)")
             return
+        if entry.weapon_state == WeaponState.WEAPON_UNLOCKED_NOT_EQUIPPED:
+            self.log("  무기 상태 불확실/미장착 -> 학생 별 직접 스캔")
 
         sr = self.r["student"]
+        basic_region = sr.get("basic_student_stars_quad")
+        basic_img = self._get_student_basic_capture()
+        if basic_img is not None and basic_region is not None:
+            basic_result = read_basic_student_star_result(basic_img, basic_region)
+            if basic_result.value is not None and not basic_result.uncertain:
+                entry.student_star = int(basic_result.value)
+                entry.set_meta(
+                    "student_star",
+                    FieldMeta.ok(FieldSource.TEMPLATE, score=basic_result.score),
+                )
+                self._status(
+                    "star.read.ok",
+                    student_name=entry.display_name,
+                    star=entry.student_star,
+                )
+                _log.info(
+                    "[basic_star] success student=%s value=%s score=%.3f label=%s",
+                    entry.student_id,
+                    entry.student_star,
+                    basic_result.score,
+                    basic_result.label,
+                )
+                self.log(
+                    f"  기본 화면 학생 별: {entry.label()} -> {entry.student_star}성 "
+                    f"(score={basic_result.score:.3f})"
+                )
+                return
+            _log.info(
+                "[basic_star] fallback student=%s value=%s score=%.3f label=%s",
+                entry.student_id,
+                basic_result.value,
+                basic_result.score,
+                basic_result.label,
+            )
+
         img = self._click_student_region_and_wait(
             "star_menu_button",
             "star_menu",
@@ -4423,10 +5786,12 @@ class Scanner:
                            FieldMeta.uncertain(FieldSource.TEMPLATE,
                                                score=r.score,
                                                note=f"value={r.value}"))
+            self._status("star.read.uncertain", student_name=entry.display_name, star=r.value, technical=f"score={r.score:.3f}")
             _log.warning(f"{ctx} 별 인식 불확실 (score={r.score:.3f} val={r.value})")
         else:
             entry.set_meta("student_star",
                            FieldMeta.ok(FieldSource.TEMPLATE, score=r.score))
+            self._status("star.read.ok", student_name=entry.display_name, star=entry.student_star)
             self.log(f"  학생 별: {entry.label()} -> {entry.student_star}성 (score={r.score:.3f})")
 
 
@@ -4436,6 +5801,7 @@ class Scanner:
         Lv.90 + 5성 조건을 만족할 때만 스탯을 읽습니다.
         상세 스탯 메뉴에 들어가서 HP / ATK / HEAL 값을 읽습니다.
         """
+        self._status("stats.start", student_name=entry.display_name)
         level_ok = entry.level is not None and entry.level >= STAT_UNLOCK_LEVEL
         star_ok  = entry.student_star is not None and entry.student_star >= STAT_UNLOCK_STAR
 
@@ -4444,6 +5810,7 @@ class Scanner:
                 f"  스탯 스캔 생략 "
                 f"(Lv.{entry.level} / {entry.student_star}성)"
             )
+            self._status("stats.skip_condition", student_name=entry.display_name, level=entry.level, star=entry.student_star)
             return
 
         saved = self._saved_student(entry.student_id)
@@ -4454,6 +5821,7 @@ class Scanner:
                 ("stat_hp", "stat_atk", "stat_heal"),
                 "saved_stat_max",
             )
+            self._status("stats.saved_max_skip", student_name=entry.display_name)
             self.log("  저장데이터에서 능력 개방 25/25/25 확인 -> 스탯 스캔 생략")
             return
 
@@ -4461,7 +5829,7 @@ class Scanner:
         img = self._click_student_region_and_wait(
             "stat_menu_button",
             "stat_menu_button",
-            self._is_student_additional_menu_capture,
+            lambda capture: self._is_student_panel_title_capture(capture, "stat"),
             timeout=ADDITIONAL_PANEL_READY_WAIT,
             fallback_delay=0.4,
             match_delay=STAT_PANEL_MATCH_DELAY,
@@ -4503,6 +5871,13 @@ class Scanner:
             f"  스탯: HP={entry.stat_hp} "
             f"ATK={entry.stat_atk} HEAL={entry.stat_heal}"
         )
+        self._status(
+            "stats.summary",
+            student_name=entry.display_name,
+            hp=entry.stat_hp,
+            atk=entry.stat_atk,
+            heal=entry.stat_heal,
+        )
         self._close_student_panel(
             capture_name="stat_close_button",
             region_key="statmenu_quit_button",
@@ -4531,6 +5906,12 @@ class Scanner:
             f"S2:{entry.skill2} S3:{entry.skill3}  "
             f"equip:{equip_info}  "
             f"stats(HP:{entry.stat_hp}/ATK:{entry.stat_atk}/HEAL:{entry.stat_heal})"
+        )
+        self._status(
+            "summary.student.compact",
+            student_name=entry.display_name,
+            level=entry.level,
+            star=entry.student_star,
         )
 
 

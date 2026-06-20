@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 
 from core.capture import capture_window_background, find_target_hwnd, get_window_rect
-from core.config import BASE_DIR
+from core.config import BASE_DIR, REGIONS_DIR, TEMPLATE_DIR
 from core.input import (
     DEBUG_CLICK_METHODS,
     debug_click_client,
@@ -43,10 +43,11 @@ PANEL_W = 430
 PANEL_H = 620
 POINT_CAPTURE_FILE = BASE_DIR / "debug" / "captured_click_points.json"
 REGION_CAPTURE_DIR = BASE_DIR / "debug" / "region_captures"
-INVENTORY_DETAIL_TEMPLATE_DIR = BASE_DIR / "templates" / "inventory_detail"
-INVENTORY_DETAIL_NAME_TEMPLATE_DIR = BASE_DIR / "templates" / "inventory_detail_names"
-INVENTORY_COUNT_TEMPLATE_DIR = BASE_DIR / "templates" / "inventory_count"
-EQUIPMENT_COUNT_TEMPLATE_DIR = BASE_DIR / "templates" / "equipment_count"
+INVENTORY_DETAIL_TEMPLATE_DIR = TEMPLATE_DIR / "inventory_detail"
+INVENTORY_DETAIL_NAME_TEMPLATE_DIR = TEMPLATE_DIR / "inventory_detail_names"
+INVENTORY_COUNT_TEMPLATE_DIR = TEMPLATE_DIR / "inventory_count"
+EQUIPMENT_COUNT_TEMPLATE_DIR = TEMPLATE_DIR / "equipment_count"
+STUDENT_NORMAL_INFO_REGION_FILE = REGIONS_DIR / "student_normal_info_regions.json"
 DEFAULT_CAPTURE_NAME = "skill_close_button"
 DEFAULT_REGION_CAPTURE_NAME = "debug_region"
 PRESET_CAPTURE_NAMES = (
@@ -64,6 +65,7 @@ REGION_TEMPLATE_PROFILE_OPTIONS = (
     ("equipment", "Equipment"),
     ("item_name_image_region", "Item Name Region"),
     ("equip_name_image_region", "Equip Name Region"),
+    ("student_texture_region", "Student Portrait Region"),
     ("digit2_2", "Digit 2_2"),
     ("digit5_5", "Digit 5_5"),
     ("eq_digit1", "Equip Digit 1"),
@@ -227,6 +229,31 @@ def _save_region_definition(payload: dict) -> Path:
     json_path = REGION_CAPTURE_DIR / f"{base_name}.region.json"
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return json_path
+
+
+def _payload_from_ratio_region(capture_name: str, region: dict) -> dict | None:
+    try:
+        x1 = max(0.0, min(1.0, float(region["x1"])))
+        y1 = max(0.0, min(1.0, float(region["y1"])))
+        x2 = max(0.0, min(1.0, float(region["x2"])))
+        y2 = max(0.0, min(1.0, float(region["y2"])))
+    except Exception:
+        return None
+    if x2 <= x1 or y2 <= y1:
+        return None
+    return {
+        "name": capture_name,
+        "window_rect": {},
+        "points_screen": [],
+        "points_client": [],
+        "points_ratio": [
+            {"x": round(x1, 6), "y": round(y1, 6)},
+            {"x": round(x2, 6), "y": round(y1, 6)},
+            {"x": round(x2, 6), "y": round(y2, 6)},
+            {"x": round(x1, 6), "y": round(y2, 6)},
+        ],
+        "shape": "rectangle",
+    }
 
 
 class RegionCaptureOverlay(tk.Toplevel):
@@ -1514,7 +1541,15 @@ class InputTestOverlay(tk.Toplevel):
         count_region_path = INVENTORY_COUNT_TEMPLATE_DIR / f"{profile_id}.region.json"
         equipment_count_region_path = EQUIPMENT_COUNT_TEMPLATE_DIR / f"{profile_id}.region.json"
         detail_name_region_path = INVENTORY_DETAIL_NAME_TEMPLATE_DIR / f"{profile_id}.region.json"
-        if count_region_path.exists():
+        if profile_id == "student_texture_region":
+            try:
+                regions = json.loads(STUDENT_NORMAL_INFO_REGION_FILE.read_text(encoding="utf-8-sig"))
+                region = regions.get("student_texture_region")
+                if isinstance(region, dict):
+                    payload = _payload_from_ratio_region(profile_id, region)
+            except Exception:
+                payload = None
+        elif count_region_path.exists():
             try:
                 payload = json.loads(count_region_path.read_text(encoding="utf-8-sig"))
             except Exception:

@@ -5,7 +5,8 @@ from pathlib import Path
 
 import tkinter as tk
 
-from gui.ui_scale import get_ui_scale, scale_font, scale_px
+from core.config import TEMPLATE_DIR
+from gui.ui_scale import get_ui_scale, get_work_area_size, scale_font, scale_px
 
 try:
     from PIL import Image, ImageOps, ImageTk
@@ -15,9 +16,8 @@ except ImportError:
     HAS_PIL = False
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-PORTRAIT_DIR = BASE_DIR / "templates" / "students_portraits"
-POLI_BG_DIR = BASE_DIR / "templates" / "icons" / "temp"
+PORTRAIT_DIR = TEMPLATE_DIR / "students_portraits"
+POLI_BG_DIR = TEMPLATE_DIR / "icons" / "temp"
 POLI_BG_TEXTURES = sorted(POLI_BG_DIR.glob("UITex_BGPoliLight_*.png"))
 GRID_COLUMNS = 6
 _PHOTO_CACHE: dict[str, object | None] = {}
@@ -26,6 +26,7 @@ _PHOTO_CACHE: dict[str, object | None] = {}
 @dataclass(slots=True)
 class FastScanDialogResult:
     action: str
+    merge_mode: str = "preserve"
 
 
 def _portrait_path(student_id: str) -> Path | None:
@@ -107,9 +108,10 @@ class FastScanDialog(tk.Toplevel):
         self._mode_label = mode_label
         self._roster_source_label = roster_source_label
         self._saved_student_count = saved_student_count
-        self._ui_scale = get_ui_scale(self, base_width=820, base_height=760)
+        self._ui_scale = get_ui_scale(self, base_width=820, base_height=760, max_scale=1.0)
         self._same_order = tk.BooleanVar(value=False)
         self._same_owned = tk.BooleanVar(value=False)
+        self._merge_mode = tk.StringVar(value="preserve")
 
         if master is not None:
             try:
@@ -126,10 +128,10 @@ class FastScanDialog(tk.Toplevel):
 
     def _show_dialog(self) -> None:
         self.update_idletasks()
-        width = scale_px(780, self._ui_scale)
-        height = scale_px(720, self._ui_scale)
-        sw = self.winfo_screenwidth()
-        sh = self.winfo_screenheight()
+        sw, sh = get_work_area_size(self)
+        margin = scale_px(32, self._ui_scale)
+        width = min(scale_px(780, self._ui_scale), max(1, sw - margin))
+        height = min(scale_px(720, self._ui_scale), max(1, sh - margin))
         self.geometry(f"{width}x{height}+{(sw-width)//2}+{(sh-height)//2}")
         self.deiconify()
         self.lift()
@@ -145,6 +147,8 @@ class FastScanDialog(tk.Toplevel):
             pady=scale_px(18, self._ui_scale),
         )
         wrap.pack(fill="both", expand=True)
+        wrap.grid_columnconfigure(0, weight=1)
+        wrap.grid_rowconfigure(3, weight=1)
 
         tk.Label(
             wrap,
@@ -152,7 +156,7 @@ class FastScanDialog(tk.Toplevel):
             bg="#101722",
             fg="#e4f1ff",
             font=scale_font(("Malgun Gothic", 15, "bold"), self._ui_scale),
-        ).pack(anchor="w")
+        ).grid(row=0, column=0, sticky="w")
 
         tk.Label(
             wrap,
@@ -165,10 +169,15 @@ class FastScanDialog(tk.Toplevel):
             justify="left",
             wraplength=scale_px(660, self._ui_scale),
             font=scale_font(("Malgun Gothic", 9), self._ui_scale),
-        ).pack(anchor="w", pady=(scale_px(6, self._ui_scale), scale_px(12, self._ui_scale)))
+        ).grid(
+            row=1,
+            column=0,
+            sticky="ew",
+            pady=(scale_px(6, self._ui_scale), scale_px(12, self._ui_scale)),
+        )
 
         info = tk.Frame(wrap, bg="#162130", padx=scale_px(12, self._ui_scale), pady=scale_px(10, self._ui_scale))
-        info.pack(fill="x")
+        info.grid(row=2, column=0, sticky="ew")
 
         tk.Label(
             info,
@@ -199,7 +208,12 @@ class FastScanDialog(tk.Toplevel):
         ).pack(fill="x", pady=(scale_px(4, self._ui_scale), 0))
 
         list_frame = tk.Frame(wrap, bg="#101722")
-        list_frame.pack(fill="both", expand=True, pady=(scale_px(14, self._ui_scale), scale_px(10, self._ui_scale)))
+        list_frame.grid(
+            row=3,
+            column=0,
+            sticky="nsew",
+            pady=(scale_px(14, self._ui_scale), scale_px(10, self._ui_scale)),
+        )
 
         tk.Label(
             list_frame,
@@ -213,7 +227,44 @@ class FastScanDialog(tk.Toplevel):
         self._build_roster_grid(list_frame)
 
         check_wrap = tk.Frame(wrap, bg="#101722")
-        check_wrap.pack(fill="x")
+        check_wrap.grid(row=4, column=0, sticky="ew")
+
+        tk.Label(
+            check_wrap,
+            text="기존 학생부 처리 방식",
+            bg="#101722",
+            fg="#8aa4bf",
+            anchor="w",
+            font=scale_font(("Malgun Gothic", 9, "bold"), self._ui_scale),
+        ).pack(fill="x", pady=(0, scale_px(4, self._ui_scale)))
+
+        tk.Radiobutton(
+            check_wrap,
+            text="이전 조건을 반영해서 스캔 (기존의 높은 기록 보존)",
+            variable=self._merge_mode,
+            value="preserve",
+            bg="#101722",
+            fg="#e4f1ff",
+            activebackground="#101722",
+            activeforeground="#e4f1ff",
+            selectcolor="#162130",
+            anchor="w",
+            font=scale_font(("Malgun Gothic", 10), self._ui_scale),
+        ).pack(fill="x")
+
+        tk.Radiobutton(
+            check_wrap,
+            text="이전 조건을 무시하고 스캔 (현재 인식 결과로 교체)",
+            variable=self._merge_mode,
+            value="replace",
+            bg="#101722",
+            fg="#e4f1ff",
+            activebackground="#101722",
+            activeforeground="#e4f1ff",
+            selectcolor="#162130",
+            anchor="w",
+            font=scale_font(("Malgun Gothic", 10), self._ui_scale),
+        ).pack(fill="x", pady=(0, scale_px(8, self._ui_scale)))
 
         self._check_order = tk.Checkbutton(
             check_wrap,
@@ -259,10 +310,10 @@ class FastScanDialog(tk.Toplevel):
             wraplength=scale_px(660, self._ui_scale),
             font=scale_font(("Malgun Gothic", 8), self._ui_scale),
         )
-        foot.pack(anchor="w", pady=(scale_px(10, self._ui_scale), 0))
+        foot.grid(row=5, column=0, sticky="ew", pady=(scale_px(10, self._ui_scale), 0))
 
         buttons = tk.Frame(wrap, bg="#101722")
-        buttons.pack(fill="x", pady=(scale_px(16, self._ui_scale), 0))
+        buttons.grid(row=6, column=0, sticky="ew", pady=(scale_px(16, self._ui_scale), 0))
 
         if self._has_rollback:
             tk.Button(
@@ -448,7 +499,7 @@ class FastScanDialog(tk.Toplevel):
         self._fast_button.configure(state="normal" if can_fast else "disabled")
 
     def _finish(self, action: str) -> None:
-        self.result = FastScanDialogResult(action=action)
+        self.result = FastScanDialogResult(action=action, merge_mode=self._merge_mode.get())
         self.destroy()
 
     def _normal(self) -> None:

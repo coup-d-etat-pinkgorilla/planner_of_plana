@@ -25,7 +25,7 @@ from core.inventory_profiles import (
     inventory_item_display_name,
     normalize_inventory_profile_ids,
 )
-from core.scanner import ItemEntry, ScanResult, StudentEntry
+from core.scanner import FieldStatus, ItemEntry, ScanResult, StudentEntry
 
 
 def _canonical_student_display_name(student_id: object, fallback: object = None) -> object:
@@ -124,6 +124,41 @@ def _items_to_inventory(items: list[ItemEntry]) -> dict:
     return inventory
 
 
+def _scanned_inventory_profile_ids(
+    items: list[ItemEntry],
+    profile_ids: tuple[str, ...],
+) -> tuple[str, ...]:
+    scanned: list[str] = []
+    seen: set[str] = set()
+    profiles = {
+        profile_id: get_inventory_profile(profile_id)
+        for profile_id in profile_ids
+    }
+
+    for profile_id in profile_ids:
+        profile = profiles.get(profile_id)
+        if profile is None:
+            continue
+        expected_item_ids = set(profile.expected_item_ids)
+        expected_names = set(profile.ordered_names)
+        for item in items:
+            meta = dict(getattr(item, "scan_meta", {}) or {})
+            if meta.get("profile_id") == profile_id:
+                matched = True
+            else:
+                matched = (
+                    bool(item.item_id and item.item_id in expected_item_ids)
+                    or bool(item.name and item.name in expected_names)
+                )
+            if matched:
+                if profile_id not in seen:
+                    seen.add(profile_id)
+                    scanned.append(profile_id)
+                break
+
+    return tuple(scanned)
+
+
 def _looks_like_item_id(value: object) -> bool:
     if not isinstance(value, str):
         return False
@@ -207,7 +242,12 @@ class ScanRepository:
         scanned_at = meta["scanned_at"]
 
         self._save_raw(result, meta)
-        student_changes = self._merge_students(result.students, scan_id, scanned_at)
+        student_changes = self._merge_students(
+            result.students,
+            scan_id,
+            scanned_at,
+            replace_previous=meta.get("student_merge_mode") == "replace",
+        )
         inventory_changes = self._merge_inventory(
             result.items + result.equipment,
             scan_id,
@@ -441,7 +481,14 @@ class ScanRepository:
         path = self._scans / f"{meta['scan_id']}.json"
         _write_json(path, raw)
 
-    def _merge_students(self, entries: list[StudentEntry], scan_id: str, scanned_at: str) -> int:
+    def _merge_students(
+        self,
+        entries: list[StudentEntry],
+        scan_id: str,
+        scanned_at: str,
+        *,
+        replace_previous: bool = False,
+    ) -> int:
         current: dict[str, dict] = _read_json(self._current / "students.json", default={})
         history: list[dict] = _read_json(self._history / "student_changes.json", default=[])
         total_changes = 0
@@ -453,7 +500,22 @@ class ScanRepository:
 
             new_dict = _student_entry_to_dict(entry)
             old_dict = current.get(sid, {})
-            merged = merge_student_entry(old_dict, new_dict)
+            authoritative_fields = {
+                field_name
+                for field_name in ("weapon_star", "weapon_level")
+                if (
+                    (field_meta := entry.get_meta(field_name)) is not None
+                    and field_meta.status == FieldStatus.OK
+                )
+            }
+            if replace_previous:
+                merged = dict(new_dict)
+            else:
+                merged = merge_student_entry(
+                    old_dict,
+                    new_dict,
+                    authoritative_fields=authoritative_fields,
+                )
             merged["last_seen_at"] = scanned_at
             merged["last_scan_id"] = scan_id
             merged["student_id"] = sid
@@ -491,10 +553,14 @@ class ScanRepository:
 
         new_snapshot = _normalize_inventory_snapshot(_items_to_inventory(items))
         normalized_profile_ids = normalize_inventory_profile_ids(profile_id)
+        profiles_to_replace = normalized_profile_ids
         if normalized_profile_ids and normalized_profile_ids != ("all",):
+            profiles_to_replace = _scanned_inventory_profile_ids(items, normalized_profile_ids)
+
+        if profiles_to_replace and profiles_to_replace != ("all",):
             expected_item_ids: set[str] = set()
             expected_names: set[str] = set()
-            for selected_profile_id in normalized_profile_ids:
+            for selected_profile_id in profiles_to_replace:
                 profile = get_inventory_profile(selected_profile_id)
                 if profile is None:
                     continue

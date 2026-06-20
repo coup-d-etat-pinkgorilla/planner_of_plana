@@ -3,6 +3,7 @@ Blue Archive Analyzer v6 entry point.
 """
 
 import ctypes
+import argparse
 import hashlib
 import importlib.util
 import json
@@ -10,7 +11,9 @@ import os
 import queue
 import sys
 import threading
+import time
 import traceback
+import webbrowser
 from datetime import datetime
 from pathlib import Path
 from tkinter import TclError, messagebox, ttk
@@ -18,7 +21,10 @@ from tkinter import TclError, messagebox, ttk
 import tkinter as tk
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+_SCANNER_MODE = "--scanner" in sys.argv[1:]
+
 _ERROR_ALREADY_EXISTS = 183
+SCANNER_CLOSE_GRACE_SECONDS = 5.0
 _kernel32 = None
 
 if sys.platform == "win32":
@@ -79,7 +85,7 @@ def _ensure_single_instance() -> bool:
     return True
 
 
-if __name__ == "__main__" and not _ensure_single_instance():
+if __name__ == "__main__" and _SCANNER_MODE and not _ensure_single_instance():
     print("BA Analyzer v6 is already running. Closing the new instance.")
     sys.exit(0)
 
@@ -98,9 +104,122 @@ if missing:
     print(f"Or:  {sys.executable} -m pip install -r requirements.txt")
     sys.exit(1)
 
+
+def _ensure_assets_with_startup_ui() -> None:
+    from core.asset_manager import ensure_assets_ready
+
+    state: dict[str, object] = {
+        "root": None,
+        "status": None,
+        "detail": None,
+        "bar": None,
+        "indeterminate": False,
+    }
+
+    stage_text = {
+        "download": "BA Planner 데이터를 다운로드하고 있습니다.",
+        "verify": "다운로드한 데이터를 확인하고 있습니다.",
+        "extract": "데이터를 설치할 준비를 하고 있습니다.",
+        "install": "데이터를 설치하고 있습니다.",
+        "done": "데이터 설치가 완료되었습니다.",
+    }
+
+    def format_bytes(value: int) -> str:
+        if value >= 1024 * 1024:
+            return f"{value / (1024 * 1024):.1f} MB"
+        if value >= 1024:
+            return f"{value / 1024:.1f} KB"
+        return f"{value} B"
+
+    def ensure_window() -> tuple[tk.Tk, tk.StringVar, tk.StringVar, ttk.Progressbar]:
+        root = state.get("root")
+        if root is not None:
+            return (
+                root,
+                state["status"],
+                state["detail"],
+                state["bar"],
+            )
+
+        root = tk.Tk()
+        root.title("BA Planner")
+        root.resizable(False, False)
+        root.attributes("-topmost", True)
+        root.protocol("WM_DELETE_WINDOW", lambda: None)
+
+        frame = ttk.Frame(root, padding=18)
+        frame.pack(fill="both", expand=True)
+        status = tk.StringVar(value="BA Planner 데이터를 준비하고 있습니다.")
+        detail = tk.StringVar(value="첫 실행에는 잠시 시간이 걸릴 수 있습니다.")
+        ttk.Label(frame, textvariable=status, width=46).pack(anchor="w")
+        ttk.Label(frame, textvariable=detail, width=46).pack(anchor="w", pady=(6, 10))
+        bar = ttk.Progressbar(frame, mode="indeterminate", length=360)
+        bar.pack(fill="x")
+
+        root.update_idletasks()
+        width = root.winfo_width()
+        height = root.winfo_height()
+        x = max(0, (root.winfo_screenwidth() - width) // 2)
+        y = max(0, (root.winfo_screenheight() - height) // 2)
+        root.geometry(f"+{x}+{y}")
+        root.deiconify()
+
+        state["root"] = root
+        state["status"] = status
+        state["detail"] = detail
+        state["bar"] = bar
+        return root, status, detail, bar
+
+    def progress(stage: str, current: int, total: int) -> None:
+        root, status, detail, bar = ensure_window()
+        status.set(stage_text.get(stage, "BA Planner 데이터를 준비하고 있습니다."))
+        if total > 0:
+            if state.get("indeterminate"):
+                bar.stop()
+                state["indeterminate"] = False
+            bar.configure(mode="determinate", maximum=total, value=current)
+            percent = min(100, int((current / total) * 100)) if total else 0
+            detail.set(f"{format_bytes(current)} / {format_bytes(total)} ({percent}%)")
+        else:
+            bar.configure(mode="indeterminate")
+            if not state.get("indeterminate"):
+                bar.start(12)
+                state["indeterminate"] = True
+            detail.set("잠시만 기다려 주세요.")
+        root.update_idletasks()
+        root.update()
+
+    try:
+        ensure_assets_ready(progress=progress)
+    finally:
+        root = state.get("root")
+        if root is not None:
+            try:
+                state["bar"].stop()
+                root.destroy()
+            except TclError:
+                pass
+
+
+try:
+    _ensure_assets_with_startup_ui()
+except Exception as exc:
+    print(f"Asset setup failed: {exc}")
+    try:
+        messagebox.showerror("BA Planner", f"BA Planner 데이터를 준비하지 못했습니다.\n\n{exc}")
+    except Exception:
+        pass
+    sys.exit(1)
+
+if __name__ == "__main__" and not _SCANNER_MODE:
+    from gui.viewer_app_qt import main as planner_main
+
+    raise SystemExit(planner_main())
+
 try:
     from core.analyzer import analyze_scan_summary, is_student_maxed
     from core.capture import (
+        activate_target_window,
         clear_target,
         find_target_hwnd,
         get_target_info,
@@ -110,6 +229,7 @@ try:
     from core.config import (
         activate_profile,
         get_active_profile_name,
+        get_storage_paths,
         list_profiles,
         load_config,
         load_regions,
@@ -119,8 +239,9 @@ try:
     from core.inventory_profiles import inventory_profile_labels, normalize_inventory_profile_ids
     from core.lobby_watcher import LobbyWatcher, WatcherState
     from core.log_context import set_debug_dump
-    from core.logger import LOG_APP, get_logger, setup_logging
+    from core.logger import LOG_APP, enable_scan_debug_log, get_logger, setup_logging
     from core.repository import ScanRepository
+    from core.scan_status import make_status_event, reset_status_log, write_status_event
     from core.scanner import ItemEntry, ScanResult, Scanner
     from core.student_order import ordered_owned_student_rows, ordered_student_rows
     from core.states import AppState, StateMachine, can_transition
@@ -344,11 +465,20 @@ class ScanReviewDialog(tk.Toplevel):
 
 
 class App(tk.Tk):
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        use_saved_target: bool = False,
+        auto_scan_mode: str = "",
+        suppress_overlay: bool = False,
+    ):
         super().__init__()
         self.withdraw()
         self.title("BA Analyzer v6")
         self.protocol("WM_DELETE_WINDOW", self._on_close_requested)
+        self._use_saved_target = bool(use_saved_target)
+        self._auto_scan_mode = str(auto_scan_mode or "").strip()
+        self._suppress_overlay = bool(suppress_overlay)
 
         setup_logging()
         _log.info("app init: loading regions")
@@ -360,11 +490,14 @@ class App(tk.Tk):
             len(profiles),
             last_profile or "<none>",
         )
-        selected_profile = choose_profile(
-            self,
-            profiles,
-            last_profile=last_profile,
-        )
+        if self._use_saved_target:
+            selected_profile = last_profile or (profiles[0] if profiles else "Default")
+        else:
+            selected_profile = choose_profile(
+                self,
+                profiles,
+                last_profile=last_profile,
+            )
         if not selected_profile:
             _log.info("app init: profile selection cancelled")
             self._destroyed = True
@@ -394,6 +527,7 @@ class App(tk.Tk):
         self._asv = None
         self._closing = False
         self._shutdown_requested = False
+        self._shutdown_deadline: float | None = None
         self._destroyed = False
         self._target_close_handled = False
         self._ui_queue: queue.Queue[tuple] = queue.Queue()
@@ -416,11 +550,22 @@ class App(tk.Tk):
         self.bind_all("<space>", self._on_spacebar_stop, add="+")
         self.bind_all("<KeyPress-space>", self._on_spacebar_stop, add="+")
 
-        clear_target()
         self._transition_to(AppState.IDLE, reason="startup_ready")
         self.after(50, self._drain_ui_queue)
         self.after(500, self._poll_target_window)
-        self.after(300, self._open_window_picker)
+        self.after(500, self._poll_scan_stop_request)
+        if self._use_saved_target and self._config.get("target_hwnd"):
+            set_target_window(
+                int(self._config.get("target_hwnd") or 0),
+                str(self._config.get("target_title") or ""),
+            )
+            self._transition_to(AppState.WATCHING, reason="saved_window_selected")
+            if self._auto_scan_mode:
+                self.after(800, lambda: self._request_scan(self._auto_scan_mode))
+        else:
+            clear_target()
+            self.after(300, self._open_window_picker)
+        self.after(1500, self._check_app_update_notice)
 
     @property
     def state(self) -> AppState:
@@ -446,6 +591,12 @@ class App(tk.Tk):
             self._apply_state_effects(old, new, reason)
         return ok
 
+    def _show_overlay_unless_suppressed(self) -> None:
+        if self._suppress_overlay:
+            self._overlay.hide()
+        else:
+            self._overlay.show()
+
     def _apply_state_effects(self, old: AppState, new: AppState, reason: str) -> None:
         self._overlay.set_app_state(new)
 
@@ -458,8 +609,8 @@ class App(tk.Tk):
         if new == AppState.WATCHING:
             self._ensure_watcher_running()
             self._overlay.set_lobby_state(bool(self._watcher and self._watcher.in_lobby))
-            if self._should_show_watching_overlay():
-                self._overlay.show()
+            if (not self._suppress_overlay) and self._should_show_watching_overlay():
+                self._show_overlay_unless_suppressed()
             else:
                 self._overlay.hide()
             return
@@ -467,7 +618,10 @@ class App(tk.Tk):
         if new == AppState.SCANNING:
             self._pause_watcher()
             self._input_test_overlay.hide()
-            self._overlay.show()
+            if self._suppress_overlay:
+                self._overlay.hide()
+            else:
+                self._show_overlay_unless_suppressed()
             return
 
         if new == AppState.ERROR:
@@ -475,7 +629,7 @@ class App(tk.Tk):
                 self._scanner.stop()
             self._pause_watcher()
             self._overlay.add_log("오류 상태 진입. 복구 동작만 허용됩니다.")
-            self._overlay.show()
+            self._show_overlay_unless_suppressed()
             return
 
         if new == AppState.STOPPING:
@@ -484,7 +638,7 @@ class App(tk.Tk):
             self._pause_watcher()
             self._input_test_overlay.hide()
             self._overlay.add_log("정리 중...")
-            self._overlay.show()
+            self._show_overlay_unless_suppressed()
 
     def _is_scanning(self) -> bool:
         return self.state == AppState.SCANNING
@@ -510,6 +664,31 @@ class App(tk.Tk):
             return False
         self._ui_queue.put((callback, args, kwargs))
         return True
+
+    def _check_app_update_notice(self) -> None:
+        def task() -> None:
+            try:
+                from core.app_update import check_for_app_update
+
+                update = check_for_app_update()
+            except Exception:
+                return
+            if update:
+                self._dispatch_ui(self._show_app_update_notice, update)
+
+        threading.Thread(target=task, name="AppUpdateCheck", daemon=True).start()
+
+    def _show_app_update_notice(self, update: dict) -> None:
+        version = str(update.get("app_version") or "").strip()
+        url = str(update.get("url") or update.get("release_url") or "").strip()
+        if not version or not url:
+            return
+        if messagebox.askyesno(
+            "BA Planner Update",
+            f"새 BA Planner 버전이 있습니다: {version}\n\n다운로드 페이지를 열까요?",
+            parent=self,
+        ):
+            webbrowser.open(url)
 
     def _drain_ui_queue(self) -> None:
         if self._destroyed:
@@ -563,6 +742,8 @@ class App(tk.Tk):
             self._watcher.pause()
 
     def _should_show_watching_overlay(self) -> bool:
+        if self._suppress_overlay:
+            return False
         return bool(
             self.state == AppState.WATCHING
             and self._watcher
@@ -574,7 +755,7 @@ class App(tk.Tk):
             return
         if self._should_show_watching_overlay():
             self._overlay.set_lobby_state(bool(self._watcher and self._watcher.in_lobby))
-            self._overlay.show()
+            self._show_overlay_unless_suppressed()
         else:
             self._overlay.set_lobby_state(bool(self._watcher and self._watcher.in_lobby))
             self._overlay.hide()
@@ -584,7 +765,7 @@ class App(tk.Tk):
         if self.state == AppState.WATCHING:
             self._sync_watching_overlay_visibility()
         elif self.state == AppState.ERROR:
-            self._overlay.show()
+            self._show_overlay_unless_suppressed()
 
     def _on_lobby_leave(self) -> None:
         self._overlay.set_lobby_state(False)
@@ -612,16 +793,70 @@ class App(tk.Tk):
         self._overlay.add_log(f"타겟 창이 닫혀서 BA Analyzer도 함께 종료합니다: {target_name}")
         self._on_close_requested()
 
+    def _scan_status_path(self) -> Path:
+        return get_storage_paths().current_dir / "scan_status.jsonl"
+
+    def _scan_stop_request_path(self) -> Path:
+        return get_storage_paths().current_dir / "scan_stop_requested.flag"
+
+    def _reset_scan_status_log(self) -> None:
+        try:
+            reset_status_log(self._scan_status_path())
+        except Exception:
+            _log.exception("failed to reset scan status log")
+
+    def _clear_scan_stop_request(self) -> None:
+        try:
+            self._scan_stop_request_path().unlink(missing_ok=True)
+        except Exception:
+            _log.exception("failed to clear scan stop request")
+
+    def _poll_scan_stop_request(self) -> None:
+        if self._destroyed:
+            return
+        try:
+            path = self._scan_stop_request_path()
+            if path.exists() and self.state in (AppState.SCANNING, AppState.PAUSED):
+                try:
+                    path.unlink(missing_ok=True)
+                except Exception:
+                    pass
+                self._stop_scan()
+        except Exception:
+            _log.exception("failed to poll scan stop request")
+        finally:
+            if not self._destroyed:
+                self.after(500, self._poll_scan_stop_request)
+
+    def _write_scan_status_event(self, event: dict) -> None:
+        try:
+            write_status_event(self._scan_status_path(), event)
+        except Exception:
+            _log.exception("failed to write scan status event")
+
+    def _handle_scan_progress_state(self, state: dict) -> None:
+        self._overlay.set_scan_progress(
+            state.get("current"),
+            state.get("total"),
+            state.get("note", ""),
+        )
+        self._write_scan_status_event(make_status_event("progress.update", data=state))
+
     def _build_scanner(self, meta: dict) -> Scanner:
         from core.autosave import AutoSaveManager
 
         current_students = self._repo.load_current_students()
+        force_student_measure = bool(meta.get("student_force_full_measure"))
         maxed_ids: set[str] = set()
         maxed_saved_data: dict[str, dict] = {}
-        for sid, data in current_students.items():
-            if is_student_maxed(data):
-                maxed_ids.add(sid)
-                maxed_saved_data[sid] = data
+        student_saved_data = current_students
+        if force_student_measure:
+            student_saved_data = {}
+        else:
+            for sid, data in current_students.items():
+                if is_student_maxed(data):
+                    maxed_ids.add(sid)
+                    maxed_saved_data[sid] = data
 
         scan_id = meta.get("scan_id", "unknown")
         self._asv = AutoSaveManager(
@@ -634,15 +869,11 @@ class App(tk.Tk):
         return Scanner(
             self._regions,
             on_progress=lambda msg: self._dispatch_ui(self._overlay.add_log, msg),
-            on_progress_state=lambda state: self._dispatch_ui(
-                self._overlay.set_scan_progress,
-                state.get("current"),
-                state.get("total"),
-                state.get("note", ""),
-            ),
+            on_progress_state=lambda state: self._dispatch_ui(self._handle_scan_progress_state, dict(state)),
+            on_status_event=lambda event: self._dispatch_ui(self._write_scan_status_event, event),
             maxed_ids=maxed_ids,
             maxed_saved_data=maxed_saved_data,
-            student_saved_data=current_students,
+            student_saved_data=student_saved_data,
             student_total_hint=len(current_students) or None,
             autosave_manager=self._asv,
             inventory_profile_id=meta.get("item_scan_filter_profile") or None,
@@ -823,10 +1054,12 @@ class App(tk.Tk):
                 return {
                     "student_scan_strategy": "fast",
                     "fast_student_ids": [student_id for student_id, _name in ordered_students],
+                    "student_merge_mode": result.merge_mode,
                 }
             return {
                 "student_scan_strategy": "normal",
                 "fast_student_ids": [],
+                "student_merge_mode": result.merge_mode,
             }
 
     def _request_scan(self, mode: str) -> None:
@@ -844,6 +1077,7 @@ class App(tk.Tk):
                 "창을 먼저 선택해 주세요." if self.state == AppState.IDLE else "현재 상태에서는 스캔할 수 없습니다."
             )
             return
+        activate_target_window()
         item_scan_filter: str | list[str] | None = None
         if mode == "items":
             item_scan_filter = self._choose_item_scan_filter()
@@ -884,6 +1118,8 @@ class App(tk.Tk):
             meta["item_scan_filter_label"] = inventory_profile_labels(item_scan_filter)
         if mode in ("items", "equipment"):
             meta["direct_inventory_scan"] = bool(self._watcher and not self._watcher.in_lobby)
+        if mode in ("students", "student_current", "all"):
+            meta["student_force_full_measure"] = True
         if student_scan_options:
             meta.update(student_scan_options)
         if meta.get("student_scan_strategy") == "fast":
@@ -900,7 +1136,12 @@ class App(tk.Tk):
                 f"패스트 스캔 백업 생성: {backup_path.name} "
                 f"({len(meta.get('fast_student_ids') or [])}명)"
             )
+        debug_log_path = enable_scan_debug_log(str(meta.get("scan_id") or "unknown"), mode)
+        meta["scan_debug_log_path"] = str(debug_log_path)
+        self._overlay.add_log(f"스캔 디버그 로그: {debug_log_path}")
         self._result = None
+        self._reset_scan_status_log()
+        self._clear_scan_stop_request()
         self._overlay.reset_scan_progress()
         self._scanner = self._build_scanner(meta)
         if self._scanner:
@@ -931,6 +1172,19 @@ class App(tk.Tk):
             return not scanner._stop
 
         try:
+            students_done = False
+            if mode == "all" and not_stopped():
+                if meta.get("student_scan_strategy") == "fast":
+                    self._dispatch_ui(self._overlay.add_log, "학생 패스트 스캔 모드 실행")
+                result.students = scanner.scan_students()
+                students_done = True
+                skipped = sum(1 for s in result.students if s.skipped)
+                self._dispatch_ui(
+                    self._overlay.add_log,
+                    f"학생 {len(result.students)}명 (스킵 {skipped})",
+                )
+                scanner._return_lobby()
+
             if mode in ("resources", "all"):
                 result.resources = scanner.scan_resources()
                 self._dispatch_ui(self._overlay.update_resources, result.resources)
@@ -956,7 +1210,7 @@ class App(tk.Tk):
                 )
                 self._dispatch_ui(self._overlay.add_log, f"장비 {len(result.equipment)}개")
 
-            if mode in ("students", "all") and not_stopped():
+            if mode in ("students", "all") and not students_done and not_stopped():
                 if meta.get("student_scan_strategy") == "fast":
                     self._dispatch_ui(self._overlay.add_log, "학생 패스트 스캔 모드 실행")
                 result.students = scanner.scan_students()
@@ -982,6 +1236,10 @@ class App(tk.Tk):
             traceback.print_exc()
             if self._asv:
                 self._asv.emergency_save(result, meta)
+            self._dispatch_ui(
+                self._write_scan_status_event,
+                make_status_event("scan.exception", error=str(exc)),
+            )
             self._dispatch_ui(self._overlay.add_log, f"스캔 오류: {exc}")
             self._dispatch_ui(self._transition_to, AppState.ERROR, str(exc))
 
@@ -1148,6 +1406,10 @@ class App(tk.Tk):
             self._finish_shutdown(reason="scan_thread_finished")
             return
 
+        if self._auto_scan_mode:
+            self._finish_shutdown(reason="auto_scan_finished")
+            return
+
         if self.state == AppState.STOPPING:
             next_state = AppState.WATCHING if self._config.get("target_hwnd") else AppState.IDLE
             self._transition_to(next_state, reason="stop_cleanup_finished")
@@ -1190,7 +1452,7 @@ class App(tk.Tk):
             if not result.students:
                 return
 
-            current_students = list(self._repo.load_current_students().values())
+            current_students = [student.to_dict() for student in result.students]
             all_changes = self._repo.load_student_changes()
             this_changes = [c for c in all_changes if c.get("scan_id") == scan_id]
             summary = analyze_scan_summary(current_students, this_changes, scan_id)
@@ -1260,6 +1522,7 @@ class App(tk.Tk):
             return
         self._closing = True
         self._shutdown_requested = True
+        self._shutdown_deadline = time.monotonic() + SCANNER_CLOSE_GRACE_SECONDS
         self._transition_to(AppState.STOPPING, reason="app_close")
         self._wait_for_shutdown()
 
@@ -1269,8 +1532,13 @@ class App(tk.Tk):
 
         thread = self._scan_thread
         if thread and thread.is_alive():
-            self.after(100, self._wait_for_shutdown)
-            return
+            if self._shutdown_deadline is None or time.monotonic() < self._shutdown_deadline:
+                self.after(100, self._wait_for_shutdown)
+                return
+            _log.warning("scanner shutdown grace expired; closing app with scan thread still alive")
+            self._scanner = None
+            self._scan_thread = None
+            self._overlay.reset_scan_progress()
 
         self._finish_shutdown(reason="shutdown_ready")
 
@@ -1297,9 +1565,28 @@ class App(tk.Tk):
         self.mainloop()
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="BA Planner scanner bridge")
+    parser.add_argument("--scanner", action="store_true", help="run the legacy scanner overlay")
+    parser.add_argument("--use-saved-target", action="store_true", help="use the saved profile and game window")
+    parser.add_argument("--suppress-overlay", action="store_true", help="hide the legacy scanner overlay during planner-launched scans")
+    parser.add_argument(
+        "--auto-scan",
+        choices=("", "resources", "items", "equipment", "students", "student_current", "all"),
+        default="",
+        help="start this scan mode after the scanner overlay initializes",
+    )
+    return parser.parse_args()
+
+
 def main() -> int:
+    args = parse_args()
     try:
-        App().run()
+        App(
+            use_saved_target=args.use_saved_target,
+            auto_scan_mode=args.auto_scan,
+            suppress_overlay=args.suppress_overlay,
+        ).run()
         return 0
     finally:
         if _STARTUP_INSTANCE_GUARD is not None:
