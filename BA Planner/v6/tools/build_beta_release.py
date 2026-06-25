@@ -18,11 +18,22 @@ APP_ARCHIVE_BASENAME = "ba-planner-windows"
 APP_NAME = "BA Planner"
 APP_MANIFEST_NAME = "app_manifest.json"
 
+# Keep this list broad for asset families that grow over time. Files here are
+# installed under the runtime asset root, so code that resolves paths from
+# ASSET_DIR/TEMPLATE_DIR.parent keeps working in the packaged app.
 ASSET_ROOTS = (
     "templates",
     "regions",
     "data/planning",
     "core/student_meta.py",
+    "gui/font",
+    "assets",
+)
+
+REQUIRED_ASSET_GLOBS = (
+    ("gui/font", "*.ttf"),
+    ("templates/icons/temp", "square.png"),
+    ("assets/plana", "*.png"),
 )
 
 
@@ -95,6 +106,23 @@ def _iter_asset_files() -> list[Path]:
     return sorted(files, key=lambda p: p.relative_to(ROOT_DIR).as_posix().casefold())
 
 
+def validate_asset_inputs(files: list[Path]) -> None:
+    rel_files = {path.relative_to(ROOT_DIR).as_posix() for path in files}
+    missing: list[str] = []
+    for rel_root, pattern in REQUIRED_ASSET_GLOBS:
+        root = ROOT_DIR / rel_root
+        matches = [
+            path
+            for path in root.glob(pattern)
+            if path.is_file() and path.relative_to(ROOT_DIR).as_posix() in rel_files
+        ] if root.exists() else []
+        if not matches:
+            missing.append(f"{rel_root}/{pattern}")
+    if missing:
+        joined = "\n".join(f"- {item}" for item in missing)
+        raise RuntimeError(f"Required runtime asset files are missing from the asset pack:\n{joined}")
+
+
 def build_file_manifest(files: list[Path]) -> dict[str, dict[str, object]]:
     manifest: dict[str, dict[str, object]] = {}
     for path in files:
@@ -113,6 +141,7 @@ def build_asset_archive(version: str, output_dir: Path) -> tuple[Path, str]:
         archive_path.unlink()
 
     files = _iter_asset_files()
+    validate_asset_inputs(files)
     with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in files:
             archive.write(path, path.relative_to(ROOT_DIR).as_posix())
@@ -321,6 +350,7 @@ def main() -> int:
     output_dir = RELEASE_DIR / args.version
     github_repo = args.github_repo or _default_github_repo()
     asset_files = _iter_asset_files()
+    validate_asset_inputs(asset_files)
     file_manifest = build_file_manifest(asset_files)
     archive_path, digest = build_asset_archive(args.version, output_dir)
     asset_url = args.asset_url or _release_asset_url(github_repo, args.github_release, archive_path.name)

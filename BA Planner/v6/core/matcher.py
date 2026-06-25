@@ -1,14 +1,14 @@
 """
-core/matcher.py — BA Analyzer v6
-OpenCV 템플릿 매칭 엔진
+core/matcher.py ??BA Analyzer v6
+OpenCV ??쀫탣??筌띲끉臾??遺우춭
 
-변경점 (v5 → v6):
-  - 전처리 코드 제거 → core/preprocess.py 위임
-  - 파일 I/O 제거 → core/template_cache.py 위임
-    · _load_tmpl (lru_cache) 완전 제거
-    · 모든 템플릿 접근은 _tmpl(path) 헬퍼를 통해 캐시에서만 읽음
-  - 함수 내부에 Image.open / cv2.imread / lru_cache 없음
-  - 디버그 로그 포맷 통일: [Matcher] {함수명}: {결과} ({점수:.3f})
+癰궰野껋럩??(v5 ??v6):
+  - ?袁⑹퓗???꾨뗀諭???볤탢 ??core/preprocess.py ?袁⑹뿫
+  - ???뵬 I/O ??볤탢 ??core/template_cache.py ?袁⑹뿫
+    夷?_load_tmpl (lru_cache) ?袁⑹읈 ??볤탢
+    夷?筌뤴뫀諭???쀫탣???臾롫젏?? _tmpl(path) ???곭몴????퉸 筌?Ŋ??癒?퐣筌???뚯벉
+  - ??λ땾 ?????Image.open / cv2.imread / lru_cache ??곸벉
+  - ?遺얠쒔域?嚥≪뮄?????????뵬: [Matcher] {??λ땾筌?: {野껉퀗?? ({?癒?땾:.3f})
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ import os
 from functools import lru_cache
 from enum import Enum
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from typing import Iterable, Optional
 
 from core.config import TEMPLATE_DIR
@@ -48,45 +48,45 @@ from core.quad_roi import (
 )
 
 
-# ══════════════════════════════════════════════════════════
-# 인식 결과 메타정보 타입
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# ?紐꾨뻼 野껉퀗??筌롫???類ｋ궖 ????
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 from dataclasses import dataclass, field as dc_field
 from enum import Enum as _Enum
 
 
 class RecogSource(_Enum):
-    """인식 방법 태그 — 디버그 추적용."""
+    """?紐꾨뻼 獄쎻뫖苡???볥젃 ???遺얠쒔域??곕뗄???"""
     TEMPLATE_RESIZED = "template_resized"   # match_score_resized
     TEMPLATE_MASKED  = "template_masked"    # match_masked_icon
     TEMPLATE_TEXT    = "template_text"      # match_score_textonly
-    TEMPLATE_RAW     = "template_raw"       # match_score (원본 크기)
+    TEMPLATE_RAW     = "template_raw"       # match_score (?癒?궚 ??由?
     COLOR_HIST       = "color_hist"         # _color_hist_score
-    COMBINED         = "combined"           # 여러 방법 혼합
+    COMBINED         = "combined"           # ????獄쎻뫖苡???노?
     OCR              = "ocr"                # EasyOCR
-    SKIPPED          = "skipped"            # 조건 미충족으로 스킵
-    FALLBACK         = "fallback"           # 기본값 사용
+    SKIPPED          = "skipped"            # 鈺곌퀗援?沃섎챷?먫?源놁몵嚥???쎄땁
+    FALLBACK         = "fallback"           # 疫꿸퀡??첎?????
 
 
 @dataclass
 class RecognitionResult:
     """
-    인식 결과 + 신뢰도 메타정보.
+    ?紐꾨뻼 野껉퀗??+ ?醫듚??筌롫???類ｋ궖.
 
     Attributes
     ----------
-    value      : 인식된 값 (int / str / None)
-    score      : 유사도 점수 0.0~1.0 (높을수록 확실)
-    source     : 어떤 방법으로 인식했는지
-    uncertain  : True 이면 score 가 UNCERTAIN 구간 (재검토 권장)
-    label      : 로그용 짧은 설명 (자동 생성)
+    value      : ?紐꾨뻼??揶?(int / str / None)
+    score      : ?醫롪텢???癒?땾 0.0~1.0 (?誘れ뱽??롮쨯 ?類ㅻ뼄)
+    source     : ??堉?獄쎻뫖苡??곗쨮 ?紐꾨뻼??덈뮉筌왖
+    uncertain  : True ????score 揶쎛 UNCERTAIN ?닌덉퍢 (?????亦낅슣??
+    label      : 嚥≪뮄???筌욁룂? ??살구 (?癒?짗 ??밴쉐)
 
-    사용 예
+    ??????
     -------
     r = read_skill_result(crop, "EX_Skill")
     if r.uncertain:
-        log(f"[경고] EX 스킬 인식 불확실: {r.value} ({r.score:.3f})")
+        log(f"[野껋럡?? EX ??쎄텢 ?紐꾨뻼 ?븍뜇??? {r.value} ({r.score:.3f})")
     entry.ex_skill = r.value
     """
     value:    Optional[int | str]
@@ -101,23 +101,23 @@ class RecognitionResult:
 
     @classmethod
     def skipped(cls, reason: str = "") -> "RecognitionResult":
-        """조건 미충족으로 스킵된 결과."""
+        """鈺곌퀗援?沃섎챷?먫?源놁몵嚥???쎄땁??野껉퀗??"""
         return cls(value=None, score=0.0,
                    source=RecogSource.SKIPPED, label=f"skipped:{reason}")
 
     @classmethod
     def fallback(cls, value, reason: str = "") -> "RecognitionResult":
-        """기본값으로 대체된 결과."""
+        """疫꿸퀡??첎誘れ몵嚥???筌ｋ?留?野껉퀗??"""
         return cls(value=value, score=0.0,
                    source=RecogSource.FALLBACK, label=f"fallback:{reason}")
 
 
-# ── 신뢰도 구간 상수 ──────────────────────────────────────
-# score 가 이 두 임계값 사이(SCORE_UNCERTAIN ~ SCORE_CONFIDENT)면
-# uncertain=True 로 마킹
-SCORE_CONFIDENT  = 0.75   # 이상이면 확실
-SCORE_UNCERTAIN  = 0.55   # 이상 CONFIDENT 미만이면 불확실
-                           # 미만이면 실패(value=None 처리)
+# ???? ?醫듚???닌덉퍢 ?怨몃땾 ????????????????????????????????????????????????????????????????????????????
+# score 揶쎛 ?????袁㏉롥첎?????SCORE_UNCERTAIN ~ SCORE_CONFIDENT)筌?
+# uncertain=True 嚥?筌띾뜇沅?
+SCORE_CONFIDENT  = 0.75   # ??곴맒?????類ㅻ뼄
+SCORE_UNCERTAIN  = 0.55   # ??곴맒 CONFIDENT 沃섎챶彛?????븍뜇???
+                           # 沃섎챶彛??????쎈솭(value=None 筌ｌ꼶??
 
 
 def _make_result(
@@ -129,11 +129,11 @@ def _make_result(
     uncertain_thresh:  float = SCORE_UNCERTAIN,
 ) -> RecognitionResult:
     """
-    score 구간에 따라 uncertain 플래그를 자동 설정하는 팩토리.
+    score ?닌덉퍢???怨뺤뵬 uncertain ???삋域밸챶? ?癒?짗 ??쇱젟??롫뮉 ??븍꽅??
 
-    score >= confident_thresh → uncertain=False
-    score >= uncertain_thresh → uncertain=True  (애매한 결과지만 반환)
-    score <  uncertain_thresh → value=None, uncertain=True (실패)
+    score >= confident_thresh ??uncertain=False
+    score >= uncertain_thresh ??uncertain=True  (?醫듼꼻??野껉퀗?듸쭪?筌?獄쏆꼹??
+    score <  uncertain_thresh ??value=None, uncertain=True (??쎈솭)
     """
     if value is None:
         return RecognitionResult(value=None, score=score,
@@ -144,30 +144,30 @@ def _make_result(
     if score >= uncertain_thresh:
         return RecognitionResult(value=value, score=score,
                                  source=source, uncertain=True)
-    # score 미달 → 실패
+    # score 沃섎챶??????쎈솭
     return RecognitionResult(value=None, score=score,
                              source=source, uncertain=True)
 
 
-# ── 템플릿 접근 헬퍼 ──────────────────────────────────────
+# ???? ??쀫탣???臾롫젏 ????????????????????????????????????????????????????????????????????????????????
 
 def _tmpl(path: str) -> Optional[TemplateEntry]:
     """
-    경로로 캐시에서 TemplateEntry 조회.
-    캐시 미스 시 on-demand 로드 후 반환.
-    파일 없으면 None.
+    野껋럥以덃에?筌?Ŋ??癒?퐣 TemplateEntry 鈺곌퀬??
+    筌?Ŋ??沃섎챷????on-demand 嚥≪뮆諭???獄쏆꼹??
+    ???뵬 ??곸몵筌?None.
     """
     cache = get_cache()
     entry = cache.get_by_path(path)
     if entry is not None:
         return entry
-    # warmup 에 포함되지 않은 파일 — on-demand 로드
+    # warmup ????釉??? ??? ???뵬 ??on-demand 嚥≪뮆諭?
     return cache.load(path)
 
 
-# ══════════════════════════════════════════════════════════
-# 매칭 임계값
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# 筌띲끉臾??袁㏉롥첎?
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 THRESHOLD         = 0.80
 THRESHOLD_LOOSE   = 0.72
@@ -178,8 +178,11 @@ THRESHOLD_STUDENT_TAB_ON = 0.90
 TEXTURE_THRESHOLD        = 0.60
 TEXTURE_MARGIN_REQUIRED  = 0.05
 STUDENT_TEXTURE_TOP_K = 10
-STUDENT_TEXTURE_SHORTCUT_SCORE = 0.86
-STUDENT_TEXTURE_SHORTCUT_MARGIN = 0.10
+STUDENT_TEXTURE_CONSENSUS_SCORE_FLOOR = 0.86
+STUDENT_TEXTURE_CONSENSUS_MARGIN = 0.10
+STUDENT_TEXTURE_PREFILTER_MARGIN = 0.008
+STUDENT_TEXTURE_ROBUST_WIDTH = 160
+STUDENT_TEXTURE_ROBUST_SCALES = (0.96, 1.0, 1.04)
 STUDENT_TEXTURE_TOP_K_ENV = "BA_STUDENT_TOPK"
 STUDENT_TEXTURE_TOPK_METHOD_ENV = "BA_STUDENT_TOPK_METHOD"
 STUDENT_TEXTURE_TOPK_SHADOW_ENV = "BA_STUDENT_TOPK_SHADOW"
@@ -190,9 +193,9 @@ WEAPON_EQUIPPED_MARGIN_REQUIRED = 0.12
 WEAPON_EQUIPPED_ORANGE_RATIO = 0.12
 
 
-# ══════════════════════════════════════════════════════════
-# 디렉터리 / 파일 상수
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# ?遺얠젂?怨뺚봺 / ???뵬 ?怨몃땾
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 STUDENT_TEXTURE_DIR = "students"
 WEAPON_STATE_DIR    = "weapon_state"
@@ -211,18 +214,19 @@ STAT_DIRS = {
     "atk":  "stat_atk",
     "heal": "stat_heal",
 }
+BASIC_ADDITIONAL_STAT_VALUE_DIR = "basic_additional_stat_values"
 
 
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 # Enum
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 class WeaponState(Enum):
     NO_WEAPON_SYSTEM             = "no_weapon_system"
     WEAPON_EQUIPPED              = "weapon_equipped"
     WEAPON_UNLOCKED_NOT_EQUIPPED = "weapon_unlocked_not_equipped"
 
-WeaponStatus = WeaponState   # 하위 호환
+WeaponStatus = WeaponState   # ??륁맄 ?紐낆넎
 
 
 class CheckFlag(Enum):
@@ -239,17 +243,17 @@ class EquipSlotFlag(Enum):
     NULL         = "null"
 
 
-# ── _load_tmpl 은 제거됨 → _tmpl() 헬퍼 사용 (파일 상단)
+# ???? _load_tmpl ?? ??볤탢????_tmpl() ????????(???뵬 ?怨룸뼊)
 
 
-# ══════════════════════════════════════════════════════════
-# 기본 매칭 함수
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# 疫꿸퀡??筌띲끉臾???λ땾
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 def match_score(crop: Image.Image, tmpl_path: str) -> float:
     """
-    원본 해상도 TM_CCOEFF_NORMED 매칭 (알파 마스크 지원).
-    파일 I/O 없음 — _tmpl() 캐시에서 읽음.
+    ?癒?궚 ??곴맒??TM_CCOEFF_NORMED 筌띲끉臾?(??곕솁 筌띾뜆???筌왖??.
+    ???뵬 I/O ??곸벉 ??_tmpl() 筌?Ŋ??癒?퐣 ??뚯벉.
     """
     entry = _tmpl(tmpl_path)
     if entry is None:
@@ -266,7 +270,7 @@ def match_score(crop: Image.Image, tmpl_path: str) -> float:
         _, val, _, _ = cv2.minMaxLoc(res)
         return float(val)
     except cv2.error as e:
-        log_cv2_error(_log, "match_score 실패", e,
+        log_cv2_error(_log, "match_score ??쎈솭", e,
                       ctx=MatchCtx(roi=Path(tmpl_path).stem))
         return 0.0
 
@@ -277,10 +281,10 @@ def match_score_resized(
     focus_center: bool = False,
 ) -> float:
     """
-    crop 을 템플릿 크기에 맞춰 리사이즈 후 이진화 비교.
-    전처리: preprocess_for_template()
-    점수: NCC 0.7 + pixel_diff 0.3
-    파일 I/O 없음 — _tmpl() 캐시에서 읽음.
+    crop ????쀫탣????由??筌띿쉸???귐딄텢??곸グ ????곸춭????쑨??
+    ?袁⑹퓗?? preprocess_for_template()
+    ?癒?땾: NCC 0.7 + pixel_diff 0.3
+    ???뵬 I/O ??곸벉 ??_tmpl() 筌?Ŋ??癒?퐣 ??뚯벉.
     """
     entry = _tmpl(tmpl_path)
     if entry is None:
@@ -352,10 +356,10 @@ def match_score_resized_masked(
     binarize_flag: bool = True,
 ) -> float:
     """
-    알파 마스크 기반 리사이즈 매칭.
-    전처리: preprocess_for_masked_template()
-    점수: corr 0.50 + diff 0.30 + edge 0.20
-    파일 I/O 없음 — _tmpl() 캐시에서 읽음.
+    ??곕솁 筌띾뜆???疫꿸퀡而??귐딄텢??곸グ 筌띲끉臾?
+    ?袁⑹퓗?? preprocess_for_masked_template()
+    ?癒?땾: corr 0.50 + diff 0.30 + edge 0.20
+    ???뵬 I/O ??곸벉 ??_tmpl() 筌?Ŋ??癒?퐣 ??뚯벉.
     """
     entry = _tmpl(tmpl_path)
     if entry is None:
@@ -374,7 +378,7 @@ def match_score_resized_masked(
                                       use_focus_crop=focus_center,
                                       do_binarize=binarize_flag)
 
-    # alpha_r 이 focus_crop 으로 잘렸을 수 있으니 크기 재확인
+    # alpha_r ??focus_crop ??곗쨮 ??롮죬??????됱몵????由??????
     h_p, w_p = crop_proc.shape[:2]
     if alpha_r is None:
         alpha_r = np.full((h_p, w_p), 255, dtype=np.uint8)
@@ -408,10 +412,10 @@ def match_score_resized_masked(
 
 def match_score_textonly(crop: Image.Image, tmpl_path: str) -> float:
     """
-    텍스트(숫자) 픽셀만 추출해서 비교.
-    전처리: preprocess_for_text_template()
-    점수: NCC 0.7 + pixel_diff 0.3
-    파일 I/O 없음 — _tmpl() 캐시에서 읽음.
+    ??용뮞????ъ쁽) ???筌??곕뗄???곴퐣 ??쑨??
+    ?袁⑹퓗?? preprocess_for_text_template()
+    ?癒?땾: NCC 0.7 + pixel_diff 0.3
+    ???뵬 I/O ??곸벉 ??_tmpl() 筌?Ŋ??癒?퐣 ??뚯벉.
     """
     entry = _tmpl(tmpl_path)
     if entry is None:
@@ -428,7 +432,7 @@ def match_score_textonly(crop: Image.Image, tmpl_path: str) -> float:
     return _ncc_diff_score(crop_proc, tmpl_proc)
 
 
-# ── 내부 헬퍼 ─────────────────────────────────────────────
+# ???? ??? ??????????????????????????????????????????????????????????????????????????????????????????????
 
 def _preprocess_tmpl_gray(
     tmpl_g: np.ndarray,
@@ -438,8 +442,8 @@ def _preprocess_tmpl_gray(
     do_binarize: bool = True,
 ) -> np.ndarray:
     """
-    이미 로드된 템플릿 gray ndarray 를 동일 파이프라인으로 전처리.
-    (PIL Image 변환 없이 바로 처리해 속도 절감)
+    ??? 嚥≪뮆諭????쀫탣??gray ndarray ????덉뵬 ???뵠?袁⑥뵬?紐꾩몵嚥??袁⑹퓗??
+    (PIL Image 癰궰????곸뵠 獄쏅뗀以?筌ｌ꼶?????얜즲 ??뉗빵)
     """
     arr = cv2.resize(tmpl_g, (w, h), interpolation=cv2.INTER_AREA)
     arr = normalize_hist(arr)
@@ -451,7 +455,7 @@ def _preprocess_tmpl_gray(
 
 
 def _ncc_diff_score(a: np.ndarray, b: np.ndarray) -> float:
-    """NCC 0.7 + pixel_diff 0.3 점수."""
+    """NCC 0.7 + pixel_diff 0.3 ?癒?땾."""
     if a.shape != b.shape:
         b = cv2.resize(b, (a.shape[1], a.shape[0]), interpolation=cv2.INTER_AREA)
     try:
@@ -460,31 +464,31 @@ def _ncc_diff_score(a: np.ndarray, b: np.ndarray) -> float:
         diff = np.mean(np.abs(a.astype(np.float32) - b.astype(np.float32))) / 255.0
         return 0.7 * float(ncc) + 0.3 * (1.0 - float(diff))
     except cv2.error as e:
-        log_cv2_error(_log, "_ncc_diff_score 실패", e)
+        log_cv2_error(_log, "_ncc_diff_score ??쎈솭", e)
         return 0.0
 
 
-# ══════════════════════════════════════════════════════════
-# 마스크 매칭 표준화 레이어
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# 筌띾뜆???筌띲끉臾????????됱뵠??
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 #
-# 규칙:
-#   - RGBA 템플릿  → 알파 채널을 마스크로 사용  (has_alpha=True)
-#   - RGB 템플릿   → 마스크 없음, 전체 픽셀 비교
-#   - 알파 threshold: ALPHA_THRESH (기본 30) 이상인 픽셀만 유효
-#   - 호출 지점 구분:
-#       별 / 무기별 / 아이콘  → match_masked_icon()   사용
-#       일반 UI 템플릿        → match_score_resized()  사용
-#       텍스트/숫자           → match_score_textonly() 사용
-#   - 두 경로를 섞어 쓰지 않도록 read_star / read_weapon_star 등에서
-#     반드시 match_masked_icon() 만 호출할 것
+# 域뱀뮇??
+#   - RGBA ??쀫탣?? ????곕솁 筌?쑬瑗??筌띾뜆???以????? (has_alpha=True)
+#   - RGB ??쀫탣??  ??筌띾뜆?????곸벉, ?袁⑷퍥 ??? ??쑨??
+#   - ??곕솁 threshold: ALPHA_THRESH (疫꿸퀡??30) ??곴맒?????筌??醫륁뒞
+#   - ?紐꾪뀱 筌왖???닌됲뀋:
+#       癰?/ ?얜떯由계퉪?/ ?袁⑹뵠?? ??match_masked_icon()   ????
+#       ??곗뺘 UI ??쀫탣??       ??match_score_resized()  ????
+#       ??용뮞????ъ쁽           ??match_score_textonly() ????
+#   - ??野껋럥以덄몴???롫선 ?怨? ??낅즲嚥?read_star / read_weapon_star ?源녿퓠??
+#     獄쏆꼶諭??match_masked_icon() 筌??紐꾪뀱??野?
 #
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
-# 알파 유효 픽셀 최소값 (0~255). 이 값 미만은 배경으로 간주.
+# ??곕솁 ?醫륁뒞 ??? 筌ㅼ뮇?쇔첎?(0~255). ??揶?沃섎챶彛?? 獄쏄퀗瑗??곗쨮 揶쏄쑴竊?
 ALPHA_THRESH: int = 30
 
-# 마스크 매칭 점수 가중치
+# 筌띾뜆???筌띲끉臾??癒?땾 揶쎛餓λ쵐??
 _MASK_W_CORR = 0.50
 _MASK_W_DIFF = 0.30
 _MASK_W_EDGE = 0.20
@@ -497,18 +501,18 @@ def _build_alpha_mask(
     thresh: int = ALPHA_THRESH,
 ) -> np.ndarray:
     """
-    알파 채널 → boolean 마스크 (유효 픽셀 = True).
+    ??곕솁 筌?쑬瑗???boolean 筌띾뜆???(?醫륁뒞 ??? = True).
 
     Parameters
     ----------
-    alpha    : 템플릿 알파 채널 (H×W uint8). None 이면 전체 유효.
-    target_h : 리사이즈 목표 높이
-    target_w : 리사이즈 목표 너비
-    thresh   : 유효 픽셀 최소 알파값
+    alpha    : ??쀫탣????곕솁 筌?쑬瑗?(H?얱 uint8). None ?????袁⑷퍥 ?醫륁뒞.
+    target_h : ?귐딄텢??곸グ 筌뤴뫚紐??誘れ뵠
+    target_w : ?귐딄텢??곸グ 筌뤴뫚紐???덊돩
+    thresh   : ?醫륁뒞 ??? 筌ㅼ뮇????곕솁揶?
 
     Returns
     -------
-    bool ndarray (target_h × target_w)
+    bool ndarray (target_h ??target_w)
     """
     if alpha is None:
         return np.ones((target_h, target_w), dtype=bool)
@@ -524,14 +528,14 @@ def _masked_score(
     mask:   np.ndarray,
 ) -> float:
     """
-    마스크 영역만 비교하는 점수 계산.
+    筌띾뜆????怨몃열筌???쑨???롫뮉 ?癒?땾 ?④쑴沅?
     corr 0.50 + diff 0.30 + edge 0.20
 
     Parameters
     ----------
-    crop_g : 전처리된 crop grayscale (H×W uint8)
-    tmpl_g : 전처리된 template grayscale (H×W uint8)
-    mask   : 유효 픽셀 boolean mask (H×W)
+    crop_g : ?袁⑹퓗?귐됰쭆 crop grayscale (H?얱 uint8)
+    tmpl_g : ?袁⑹퓗?귐됰쭆 template grayscale (H?얱 uint8)
+    mask   : ?醫륁뒞 ??? boolean mask (H?얱)
 
     Returns
     -------
@@ -543,18 +547,18 @@ def _masked_score(
     cf = crop_g.astype(np.float32)
     tf = tmpl_g.astype(np.float32)
 
-    # ── diff score ────────────────────────────────────────
+    # ???? diff score ????????????????????????????????????????????????????????????????????????????????
     diff_score = 1.0 - float(np.abs(cf - tf)[mask].mean() / 255.0)
 
-    # ── correlation score ─────────────────────────────────
+    # ???? correlation score ??????????????????????????????????????????????????????????????????
     cv_ = cf[mask] - cf[mask].mean()
     tv_ = tf[mask] - tf[mask].mean()
     dnom = np.linalg.norm(cv_) * np.linalg.norm(tv_)
     corr_raw = 0.0 if dnom < 1e-6 else float(np.dot(cv_, tv_) / dnom)
     corr = max(0.0, min(1.0, (corr_raw + 1.0) / 2.0))
 
-    # ── edge score ────────────────────────────────────────
-    # Canny 는 uint8 배열 필요
+    # ???? edge score ????????????????????????????????????????????????????????????????????????????????
+    # Canny ??uint8 獄쏄퀣肉??袁⑹뒄
     crop_u8 = crop_g
     tmpl_u8 = tmpl_g
     crop_edge = cv2.Canny(crop_u8, 50, 150)
@@ -577,18 +581,18 @@ def match_masked_icon(
     thresh:      int = ALPHA_THRESH,
 ) -> float:
     """
-    아이콘/별/무기별 전용 마스크 매칭 함수.
+    ?袁⑹뵠??癰??얜떯由계퉪??袁⑹뒠 筌띾뜆???筌띲끉臾???λ땾.
 
-    - RGBA 템플릿이면 알파를 마스크로 사용 → 배경 완전 무시
-    - RGB  템플릿이면 전체 픽셀 비교 (하위 호환)
-    - 항상 캐시에서 템플릿 읽음 (파일 I/O 없음)
+    - RGBA ??쀫탣?깆슦?좑쭖???곕솁??筌띾뜆???以???????獄쏄퀗瑗??袁⑹읈 ?얜똻??
+    - RGB  ??쀫탣?깆슦?좑쭖??袁⑷퍥 ??? ??쑨??(??륁맄 ?紐낆넎)
+    - ??湲?筌?Ŋ??癒?퐣 ??쀫탣????뚯벉 (???뵬 I/O ??곸벉)
 
     Parameters
     ----------
-    crop        : 비교 대상 PIL Image (이미 crop 된 ROI)
-    tmpl_path   : 템플릿 파일 절대 경로
-    target_size : (w, h) 리사이즈 목표. None 이면 템플릿 원본 크기 사용.
-    thresh      : 유효 픽셀 최소 알파값 (ALPHA_THRESH)
+    crop        : ??쑨??????PIL Image (??? crop ??ROI)
+    tmpl_path   : ??쀫탣?????뵬 ??? 野껋럥以?
+    target_size : (w, h) ?귐딄텢??곸グ 筌뤴뫚紐? None ??????쀫탣???癒?궚 ??由?????
+    thresh      : ?醫륁뒞 ??? 筌ㅼ뮇????곕솁揶?(ALPHA_THRESH)
 
     Returns
     -------
@@ -598,7 +602,7 @@ def match_masked_icon(
     if entry is None:
         return 0.0
 
-    # 목표 크기 결정
+    # 筌뤴뫚紐???由?野껉퀣??
     if target_size is not None:
         w_t, h_t = target_size
     else:
@@ -607,13 +611,13 @@ def match_masked_icon(
     if h_t < 2 or w_t < 2:
         return 0.0
 
-    # crop 전처리 (gray + normalize + binarize)
+    # crop ?袁⑹퓗??(gray + normalize + binarize)
     crop_proc = preprocess_for_template(crop, w_t, h_t)
 
-    # 템플릿 전처리 (캐시된 gray 재사용)
+    # ??쀫탣???袁⑹퓗??(筌?Ŋ???gray ??沅??
     tmpl_proc = _preprocess_tmpl_gray(entry.gray, w_t, h_t)
 
-    # 마스크 생성
+    # 筌띾뜆?????밴쉐
     mask = _build_alpha_mask(entry.alpha, h_t, w_t, thresh=thresh)
 
     return _masked_score(crop_proc, tmpl_proc, mask)
@@ -626,18 +630,18 @@ def best_match_masked_icons(
     thresh:     int   = ALPHA_THRESH,
 ) -> tuple[Optional[str], float]:
     """
-    후보 아이콘 집합에서 마스크 매칭으로 최고 점수 라벨 반환.
+    ?袁⑤궖 ?袁⑹뵠??筌욌쵑鍮?癒?퐣 筌띾뜆???筌띲끉臾??곗쨮 筌ㅼ뮄???癒?땾 ??곌볼 獄쏆꼹??
 
     Parameters
     ----------
-    crop       : 비교 대상 PIL Image
-    candidates : {label: tmpl_path} 매핑
-    threshold  : 최소 점수 (이 이상일 때만 반환)
-    thresh     : 유효 픽셀 최소 알파값
+    crop       : ??쑨??????PIL Image
+    candidates : {label: tmpl_path} 筌띲끋釉?
+    threshold  : 筌ㅼ뮇???癒?땾 (????곴맒?????춸 獄쏆꼹??
+    thresh     : ?醫륁뒞 ??? 筌ㅼ뮇????곕솁揶?
 
     Returns
     -------
-    (best_label, best_score)  점수 미달 시 (None, best_score)
+    (best_label, best_score)  ?癒?땾 沃섎챶????(None, best_score)
     """
     best_lbl:  Optional[str] = None
     best_scr:  float         = threshold
@@ -660,13 +664,13 @@ def best_match(
     masked: bool = False,
 ) -> tuple[Optional[str], float]:
     """
-    후보 집합에서 최고 점수 라벨 반환.
+    ?袁⑤궖 筌욌쵑鍮?癒?퐣 筌ㅼ뮄???癒?땾 ??곌볼 獄쏆꼹??
 
     Parameters
     ----------
-    masked : True 이면 match_masked_icon() 으로 위임.
-             별/아이콘 인식은 best_match_masked_icons() 를 직접 호출할 것.
-             이 파라미터는 하위 호환을 위해 유지하되 내부에서 표준 경로로 위임.
+    masked : True ????match_masked_icon() ??곗쨮 ?袁⑹뿫.
+             癰??袁⑹뵠???紐꾨뻼?? best_match_masked_icons() ??筌욊낯???紐꾪뀱??野?
+             ?????뵬沃섎챸苑????륁맄 ?紐낆넎???袁る퉸 ?醫???롫┷ ????癒?퐣 ??? 野껋럥以덃에??袁⑹뿫.
     """
     if masked:
         return best_match_masked_icons(crop, candidates, threshold=threshold)
@@ -680,9 +684,9 @@ def best_match(
     return best_lbl, best_scr
 
 
-# ══════════════════════════════════════════════════════════
-# 로비 감지
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# 嚥≪뮆??揶쏅Ŋ?
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 _MENU_DETECT_DIR = TEMPLATE_DIR / "menu_detect_flag"
 _LOBBY_TMPL = str(_MENU_DETECT_DIR / "lobby_template.png")
@@ -768,12 +772,12 @@ def is_star_tab_on(img: Image.Image, region: dict) -> bool:
     )
 
 
-# ══════════════════════════════════════════════════════════
-# 학생 텍스처 매칭
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# ??덇문 ??용뮞筌?筌띲끉臾?
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 def _color_hist_score(crop: Image.Image, tmpl_path: str) -> float:
-    """컬러 히스토그램 유사도. 파일 I/O 없음 — _tmpl() 캐시에서 읽음."""
+    """?뚎됱쑎 ??됰뮞?醫됰젃???醫롪텢?? ???뵬 I/O ??곸벉 ??_tmpl() 筌?Ŋ??癒?퐣 ??뚯벉."""
     entry = _tmpl(tmpl_path)
     if entry is None:
         return 0.0
@@ -785,7 +789,7 @@ def _color_hist_score(crop: Image.Image, tmpl_path: str) -> float:
         ht = calc_color_hist(hsv_t)
         return max(0.0, float(cv2.compareHist(hc, ht, cv2.HISTCMP_CORREL)))
     except cv2.error as e:
-        log_cv2_error(_log, "color_hist_score 실패", e,
+        log_cv2_error(_log, "color_hist_score ??쎈솭", e,
                       ctx=MatchCtx(roi=Path(tmpl_path).stem))
         return 0.0
 
@@ -983,6 +987,113 @@ def _top_student_texture_candidates(
     return {sid: cands[sid] for sid in selected}
 
 
+def _student_texture_prefilter_decision(
+    crop: Image.Image,
+    cands: dict[str, str],
+    method: str,
+) -> tuple[Optional[str], float, float]:
+    """Return the cheap feature winner and margin for shortlist consensus."""
+    if not cands:
+        return None, 0.0, 0.0
+    features = _student_texture_features()
+    crop_thumb = _student_texture_thumb(crop)
+    crop_hist = _student_texture_hist(crop)
+    crop_hash = _student_texture_hash(crop)
+    ranked = sorted(
+        (
+            (
+                sid,
+                _student_texture_feature_score(
+                    crop_thumb, crop_hist, crop_hash, features[sid], method
+                ),
+            )
+            for sid in cands
+            if sid in features
+        ),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    if not ranked:
+        return None, 0.0, 0.0
+    best_sid, best_score = ranked[0]
+    second_score = ranked[1][1] if len(ranked) > 1 else 0.0
+    return best_sid, best_score, best_score - second_score
+
+
+def _student_texture_robust_score(crop: Image.Image, template_path: str) -> float:
+    """Score one portrait after low-resolution, center-aligned scale matching."""
+    entry = _tmpl(template_path)
+    if entry is None:
+        return 0.0
+    crop_gray = cv2.cvtColor(to_bgr(crop), cv2.COLOR_BGR2GRAY)
+    template_gray = entry.gray
+    if crop_gray.size == 0 or template_gray.size == 0:
+        return 0.0
+
+    width = STUDENT_TEXTURE_ROBUST_WIDTH
+    height = max(32, int(round(width * template_gray.shape[0] / template_gray.shape[1])))
+    sample = cv2.resize(crop_gray, (width, height), interpolation=cv2.INTER_AREA)
+    template = cv2.resize(template_gray, (width, height), interpolation=cv2.INTER_AREA)
+
+    best_ncc = -1.0
+    for scale in STUDENT_TEXTURE_ROBUST_SCALES:
+        scaled_w = max(8, int(round(width * scale)))
+        scaled_h = max(8, int(round(height * scale)))
+        scaled = cv2.resize(template, (scaled_w, scaled_h), interpolation=cv2.INTER_AREA)
+
+        # Compare only center-aligned regions. Searching arbitrary offsets can
+        # align one student's background with another and raise false accepts.
+        common_w = min(width, scaled_w)
+        common_h = min(height, scaled_h)
+        sample_x = (width - common_w) // 2
+        sample_y = (height - common_h) // 2
+        scaled_x = (scaled_w - common_w) // 2
+        scaled_y = (scaled_h - common_h) // 2
+        sample_center = sample[
+            sample_y : sample_y + common_h,
+            sample_x : sample_x + common_w,
+        ]
+        scaled_center = scaled[
+            scaled_y : scaled_y + common_h,
+            scaled_x : scaled_x + common_w,
+        ]
+        result = cv2.matchTemplate(sample_center, scaled_center, cv2.TM_CCOEFF_NORMED)
+        _min_val, max_val, _min_loc, _max_loc = cv2.minMaxLoc(result)
+        best_ncc = max(best_ncc, float(max_val))
+
+    color_score = _color_hist_score(crop, template_path)
+    return max(0.0, min(1.0, 0.72 * best_ncc + 0.28 * color_score))
+
+
+def _match_student_texture_robust(
+    crop: Image.Image,
+    cands: dict[str, str],
+    *,
+    label: str,
+) -> tuple[Optional[str], float, float]:
+    if not cands:
+        return None, 0.0, 0.0
+    scores = sorted(
+        ((sid, _student_texture_robust_score(crop, path)) for sid, path in cands.items()),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    best_sid, best_score = scores[0]
+    second_score = scores[1][1] if len(scores) > 1 else 0.0
+    margin = best_score - second_score
+    _log.debug(
+        "texture_robust[%s]: pool=%d 1st=%s(%.3f) 2nd=%s(%.3f) margin=%.3f",
+        label,
+        len(cands),
+        best_sid,
+        best_score,
+        scores[1][0] if len(scores) > 1 else "-",
+        second_score,
+        margin,
+    )
+    return best_sid, best_score, margin
+
+
 def _match_student_texture_precise(
     crop: Image.Image,
     cands: dict[str, str],
@@ -1017,29 +1128,59 @@ def _match_student_texture_precise(
     return best_id, best_s, margin
 
 
-def _match_student_texture_with_topk(
+def _match_student_texture_with_topk_decision(
     crop: Image.Image,
     cands: dict[str, str],
     *,
     label: str,
     top_k: int,
     method: str,
-) -> tuple[Optional[str], float, float]:
+    injected_candidate_ids: Iterable[str] | None = None,
+) -> tuple[Optional[str], float, float, bool]:
     if not cands:
-        return None, 0.0, 0.0
+        return None, 0.0, 0.0, False
 
     if top_k > 0 and len(cands) > top_k:
         top_cands = _top_student_texture_candidates(crop, cands, top_k, method)
-        sid, score, margin = _match_student_texture_precise(
+        injected_ids = set(injected_candidate_ids or ()).intersection(cands)
+        if injected_ids:
+            top_cands.update({sid: cands[sid] for sid in injected_ids})
+            _log.debug(
+                "texture_topk_attribute_inject: visual=%d injected=%d union=%d",
+                min(top_k, len(cands)), len(injected_ids), len(top_cands),
+            )
+        feature_sid, feature_score, feature_margin = _student_texture_prefilter_decision(
+            crop, top_cands, method
+        )
+        sid, score, margin = _match_student_texture_robust(
             crop,
             top_cands,
-            label=f"{label}:topk",
+            label=f"{label}:topk_robust",
         )
-        if (
+        consensus = (
             sid is not None
-            and score >= STUDENT_TEXTURE_SHORTCUT_SCORE
-            and margin >= STUDENT_TEXTURE_SHORTCUT_MARGIN
-        ):
+            and sid == feature_sid
+            and score >= STUDENT_TEXTURE_CONSENSUS_SCORE_FLOOR
+            and margin >= STUDENT_TEXTURE_CONSENSUS_MARGIN
+            and feature_margin >= STUDENT_TEXTURE_PREFILTER_MARGIN
+            and (not injected_ids or sid in injected_ids)
+        )
+        _log.debug(
+            "texture_topk_consensus: method=%s k=%d robust_sid=%s feature_sid=%s "
+            "robust_score=%.3f robust_margin=%.3f feature_score=%.3f "
+            "feature_margin=%.3f accepted=%s pool=%d",
+            method,
+            top_k,
+            sid,
+            feature_sid,
+            score,
+            margin,
+            feature_score,
+            feature_margin,
+            str(consensus).lower(),
+            len(cands),
+        )
+        if consensus:
             _log.debug(
                 "texture_topk_accept: method=%s k=%d sid=%s score=%.3f margin=%.3f pool=%d",
                 method,
@@ -1069,8 +1210,8 @@ def _match_student_texture_with_topk(
                     full_margin,
                     len(cands),
                 )
-                return full_sid, full_score, full_margin
-            return sid, score, margin
+                return full_sid, full_score, full_margin, False
+            return sid, score, margin, True
         _log.debug(
             "texture_topk_fallback: method=%s k=%d sid=%s score=%.3f margin=%.3f pool=%d",
             method,
@@ -1081,7 +1222,25 @@ def _match_student_texture_with_topk(
             len(cands),
         )
 
-    return _match_student_texture_precise(crop, cands, label=label)
+    sid, score, margin = _match_student_texture_precise(crop, cands, label=label)
+    return sid, score, margin, False
+
+
+def _match_student_texture_with_topk(
+    crop: Image.Image,
+    cands: dict[str, str],
+    *,
+    label: str,
+    top_k: int,
+    method: str,
+    injected_candidate_ids: Iterable[str] | None = None,
+) -> tuple[Optional[str], float, float]:
+    """Compatibility wrapper returning the public three-value match tuple."""
+    sid, score, margin, _shortcut = _match_student_texture_with_topk_decision(
+        crop, cands, label=label, top_k=top_k, method=method,
+        injected_candidate_ids=injected_candidate_ids,
+    )
+    return sid, score, margin
 
 
 def _match_student_texture_optimized(
@@ -1090,36 +1249,37 @@ def _match_student_texture_optimized(
     *,
     fallback_candidate_ids: Iterable[str] | None = None,
     top_k: int | None = None,
+    injected_candidate_ids: Iterable[str] | None = None,
 ) -> tuple[Optional[str], float]:
     actual_top_k = _student_texture_topk_from_env() if top_k is None else max(0, top_k)
     method = _student_texture_topk_method_from_env()
     _log_student_texture_topk_config(method, actual_top_k)
     primary_cands = _student_texture_candidates(candidate_ids)
-    sid, score, margin = _match_student_texture_with_topk(
+    sid, score, margin, primary_shortcut = _match_student_texture_with_topk_decision(
         crop,
         primary_cands,
         label="primary",
         top_k=actual_top_k,
         method=method,
+        injected_candidate_ids=injected_candidate_ids,
     )
 
     if fallback_candidate_ids is None:
         return sid, score
 
-    if (
-        sid is not None
-        and score >= STUDENT_TEXTURE_SHORTCUT_SCORE
-        and margin >= STUDENT_TEXTURE_SHORTCUT_MARGIN
-    ):
+    if primary_shortcut:
         return sid, score
 
     fallback_cands = _student_texture_candidates(fallback_candidate_ids)
-    fallback_sid, fallback_score, _fallback_margin = _match_student_texture_with_topk(
+    fallback_sid, fallback_score, _fallback_margin, _fallback_shortcut = (
+        _match_student_texture_with_topk_decision(
         crop,
         fallback_cands,
         label="fallback",
         top_k=actual_top_k,
         method=method,
+        injected_candidate_ids=injected_candidate_ids,
+        )
     )
     return fallback_sid, fallback_score
 
@@ -1130,13 +1290,52 @@ def match_student_texture(
     *,
     fallback_candidate_ids: Iterable[str] | None = None,
     top_k: int | None = None,
+    injected_candidate_ids: Iterable[str] | None = None,
 ) -> tuple[Optional[str], float]:
     return _match_student_texture_optimized(
         crop,
         candidate_ids,
         fallback_candidate_ids=fallback_candidate_ids,
         top_k=top_k,
+        injected_candidate_ids=injected_candidate_ids,
     )
+
+
+_STUDENT_BASIC_ATTRIBUTE_FIELDS = {
+    "attack_type", "defense_type", "position", "combat_class", "role",
+}
+
+
+@lru_cache(maxsize=None)
+def _student_basic_attribute_templates(field: str) -> tuple[tuple[str, str], ...]:
+    if field not in _STUDENT_BASIC_ATTRIBUTE_FIELDS:
+        return ()
+    directory = TEMPLATE_DIR / "student_basic_attributes" / field
+    return tuple((path.stem, str(path)) for path in sorted(directory.glob("*.png")))
+
+
+def read_basic_student_attribute_result(crop: Image.Image, field: str) -> RecognitionResult:
+    """Classify one fixed basic-card attribute label."""
+    templates = _student_basic_attribute_templates(field)
+    if not templates:
+        return RecognitionResult.fallback(None, f"student_attribute_templates_missing:{field}")
+    ranked = sorted(
+        ((label, match_score_resized_raw(crop, path)) for label, path in templates),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    label, score = ranked[0]
+    second_score = ranked[1][1] if len(ranked) > 1 else 0.0
+    margin = score - second_score
+    uncertain = score < 0.90 or margin < 0.10
+    return RecognitionResult(
+        value=None if uncertain else label,
+        score=score,
+        source=RecogSource.TEMPLATE_RAW,
+        uncertain=uncertain,
+        label=f"student_attribute:{field}:{label}({score:.3f},margin={margin:.3f})",
+    )
+
 
 def _match_student_texture_legacy(crop: Image.Image) -> tuple[Optional[str], float]:
     import core.student_meta as _sn
@@ -1166,8 +1365,8 @@ def _match_student_texture_legacy(crop: Image.Image) -> tuple[Optional[str], flo
     margin   = best_s - second_s
 
     _log.debug(
-        f"texture: 1위={best_id}({best_s:.3f}) "
-        f"2위={scores[1][0] if len(scores)>1 else '-'}({second_s:.3f}) "
+        f"texture: 1??{best_id}({best_s:.3f}) "
+        f"2??{scores[1][0] if len(scores)>1 else '-'}({second_s:.3f}) "
         f"margin={margin:.3f}"
     )
 
@@ -1175,12 +1374,12 @@ def _match_student_texture_legacy(crop: Image.Image) -> tuple[Optional[str], flo
         return None, best_s
     return best_id, best_s
 
-identify_student_by_texture = match_student_texture   # 하위 호환
+identify_student_by_texture = match_student_texture   # ??륁맄 ?紐낆넎
 
 
-# ══════════════════════════════════════════════════════════
-# 무기 상태
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# ?얜떯由??怨밴묶
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 def detect_weapon_state(crop: Image.Image) -> tuple[WeaponState, float]:
     d = TEMPLATE_DIR / WEAPON_STATE_DIR
@@ -1200,7 +1399,7 @@ def detect_weapon_state(crop: Image.Image) -> tuple[WeaponState, float]:
 
     best_key = max(scores, key=lambda k: scores[k])
     best_val = scores[best_key]
-    _log.debug(f"weapon_state: { {k: f'{v:.3f}' for k,v in scores.items()} } → {best_key}")
+    _log.debug(f"weapon_state: { {k: f'{v:.3f}' for k,v in scores.items()} } ??{best_key}")
 
     if best_val < WEAPON_STATE_MIN_SCORE:
         return WeaponState.NO_WEAPON_SYSTEM, best_val
@@ -1215,7 +1414,7 @@ def detect_weapon_state(crop: Image.Image) -> tuple[WeaponState, float]:
             return mapping[fallback_key], scores[fallback_key]
     return mapping[best_key], best_val
 
-detect_weapon_status = detect_weapon_state   # 하위 호환
+detect_weapon_status = detect_weapon_state   # ??륁맄 ?紐낆넎
 
 
 def _orange_pixel_ratio(crop: Image.Image) -> float:
@@ -1232,9 +1431,9 @@ def _orange_pixel_ratio(crop: Image.Image) -> float:
     return orange / total
 
 
-# ══════════════════════════════════════════════════════════
-# Check 플래그
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# Check ???삋域?
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 def read_check_flag(crop: Image.Image, folder: str) -> CheckFlag:
     d = TEMPLATE_DIR / folder
@@ -1276,7 +1475,7 @@ def read_equip_check(crop: Image.Image) -> CheckFlag:
         margin       = abs(possible_s - impossible_s)
 
         if best_label == "impossible" and (best_score >= 0.50 or margin >= 0.03):
-            _log.warning(f"equip_check → IMPOSSIBLE")
+            _log.warning(f"equip_check ??IMPOSSIBLE")
             return CheckFlag.IMPOSSIBLE
         return CheckFlag.FALSE
 
@@ -1321,9 +1520,9 @@ def read_equip_check_inside(crop: Image.Image) -> CheckFlag:
     return CheckFlag.FALSE
 
 
-# ══════════════════════════════════════════════════════════
-# 장비 슬롯 플래그
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# ?貫?????????삋域?
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 def read_equip_slot_flag(crop: Image.Image, slot: int) -> EquipSlotFlag:
     d = TEMPLATE_DIR / f"equip{slot}_flag"
@@ -1347,9 +1546,9 @@ def read_equip_slot_flag(crop: Image.Image, slot: int) -> EquipSlotFlag:
     return EquipSlotFlag(lbl)
 
 
-# ══════════════════════════════════════════════════════════
-# 스탯
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# ??쎄틛
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 def read_stat_value(crop: Image.Image, stat_key: str) -> Optional[int]:
     folder = STAT_DIRS.get(stat_key)
@@ -1395,7 +1594,7 @@ def read_stat_value(crop: Image.Image, stat_key: str) -> Optional[int]:
 
 def read_stat_value_result(crop: Image.Image, stat_key: str) -> RecognitionResult:
     """
-    read_stat_value() 의 RecognitionResult 반환 버전.
+    read_stat_value() ??RecognitionResult 獄쏆꼹??甕곌쑴??
     """
     folder = STAT_DIRS.get(stat_key)
     if not folder:
@@ -1437,9 +1636,9 @@ def read_stat_value_result(crop: Image.Image, stat_key: str) -> RecognitionResul
     return _make_result(value, best_score, RecogSource.COMBINED)
 
 
-# ══════════════════════════════════════════════════════════
-# Digit 폴더 읽기 (장비 레벨 / 무기 레벨 / 학생 레벨 공통)
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# Digit ??????꾨┛ (?貫????덇볼 / ?얜떯由???덇볼 / ??덇문 ??덇볼 ?⑤벏??
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 def _read_digit_from_folder(
     folder: Path,
@@ -1596,13 +1795,13 @@ def read_equip_level(
     if not d1 or d1 == "v":
         if d2:
             try: return int(d2)
-            except ValueError as e: _log.debug(f"equip_level d2 변환 실패: {e}"); pass
+            except ValueError as e: _log.debug(f"equip_level d2 癰궰????쎈솭: {e}"); pass
         return None
     if d2:
         try: return int(d1 + d2)
-        except ValueError as e: _log.debug(f"equip_level d1+d2 변환 실패: {e}"); pass
+        except ValueError as e: _log.debug(f"equip_level d1+d2 癰궰????쎈솭: {e}"); pass
     try: return int(d1)
-    except ValueError as e: _log.debug(f"equip_level d1 변환 실패: {e}"); return None
+    except ValueError as e: _log.debug(f"equip_level d1 癰궰????쎈솭: {e}"); return None
 
 
 def read_weapon_level(
@@ -1639,7 +1838,1110 @@ def read_basic_weapon_level_result(image: Image.Image, region: dict) -> Recognit
     crop = warp_quad_region(image, region, output_size=output_size)
     if crop is None:
         return RecognitionResult.fallback(None, "basic_weapon_level_region_missing")
-    return _read_weapon_level_glyph_result(crop)
+    return _read_weapon_level_glyph_result(
+        crop,
+        center_trim=int(region.get("center_trim_pixels", 0) or 0),
+    )
+
+
+def _normalize_basic_equipment_glyph(crop: Image.Image) -> np.ndarray | None:
+    """Keep the navy/blue glyph while discarding the equipment artwork."""
+    rgb = np.asarray(crop.convert("RGB"), dtype=np.uint8)
+    if rgb.size == 0:
+        return None
+    red = rgb[:, :, 0].astype(np.int16)
+    blue = rgb[:, :, 2].astype(np.int16)
+    value = rgb.max(axis=2)
+    mask = ((blue - red >= 10) & (value < 195)).astype(np.uint8) * 255
+    return normalize_binary_glyph(mask)
+
+
+def _normalize_basic_equipment_tier_glyph(crop: Image.Image) -> np.ndarray | None:
+    """Normalize the complete ``Tn`` text group, not the surrounding badge."""
+    rgb = np.asarray(crop.convert("RGB"), dtype=np.uint8)
+    if rgb.size == 0:
+        return None
+    height, width = rgb.shape[:2]
+    # The text is anchored at the badge's left side. Excluding the far-right
+    # and extreme vertical edges prevents item art and the badge border from
+    # becoming part of the learned sample.
+    rgb = rgb[
+        max(0, int(height * 0.06)):max(1, int(height * 0.94)),
+        :max(1, int(width * 0.86)),
+    ]
+    red = rgb[:, :, 0].astype(np.int16)
+    green = rgb[:, :, 1].astype(np.int16)
+    blue = rgb[:, :, 2].astype(np.int16)
+    binary = (
+        (blue >= 125)
+        & (blue - red >= 45)
+        & (blue - green >= 8)
+    ).astype(np.uint8) * 255
+    count, labels, stats, _centroids = cv2.connectedComponentsWithStats(binary)
+    keep = [
+        index for index in range(1, count)
+        if stats[index, cv2.CC_STAT_AREA] >= 4
+        and stats[index, cv2.CC_STAT_HEIGHT] >= max(5, int(binary.shape[0] * 0.18))
+        and not (
+            stats[index, cv2.CC_STAT_WIDTH] >= int(binary.shape[1] * 0.80)
+            and stats[index, cv2.CC_STAT_HEIGHT] >= int(binary.shape[0] * 0.70)
+        )
+    ]
+    if not keep:
+        return None
+    cleaned = np.zeros_like(binary)
+    for index in keep:
+        cleaned[labels == index] = 255
+    ys, xs = np.where(cleaned > 0)
+    if xs.size == 0:
+        return None
+    group = cleaned[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    dst_w, dst_h = 40, 32
+    scale = min((dst_w - 4) / group.shape[1], (dst_h - 4) / group.shape[0])
+    resized = cv2.resize(
+        group,
+        (max(1, int(round(group.shape[1] * scale))),
+         max(1, int(round(group.shape[0] * scale)))),
+        interpolation=cv2.INTER_NEAREST,
+    )
+    canvas = np.zeros((dst_h, dst_w), dtype=np.uint8)
+    x = (dst_w - resized.shape[1]) // 2
+    y = (dst_h - resized.shape[0]) // 2
+    canvas[y:y + resized.shape[0], x:x + resized.shape[1]] = resized
+    return canvas
+
+
+def _rank_run_glyph(
+    glyph: np.ndarray | None,
+    templates: dict[str, list[np.ndarray]] | None,
+) -> tuple[str | None, float, float, int]:
+    if glyph is None or not templates:
+        return None, 0.0, 0.0, 0
+    ranked = sorted(
+        (
+            (label, max(binary_glyph_similarity(glyph, sample) for sample in samples))
+            for label, samples in templates.items()
+            if samples
+        ),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    if not ranked:
+        return None, 0.0, 0.0, 0
+    label, score = ranked[0]
+    second = ranked[1][1] if len(ranked) > 1 else 0.0
+    return label, score, score - second, len(ranked)
+
+
+def _basic_equipment_quad(image: Image.Image, region: dict) -> Image.Image | None:
+    return warp_quad_region(
+        image,
+        region,
+        output_size=tuple(region.get("output_size", (32, 44))),
+    )
+
+
+def _basic_equipment_level_cells(
+    image: Image.Image,
+    region: dict,
+) -> tuple[Image.Image, Image.Image] | None:
+    crop = _basic_equipment_quad(image, region)
+    if crop is None:
+        return None
+    midpoint = crop.width // 2
+    center_trim = max(0, int(region.get("center_trim_pixels", 0) or 0))
+    center_trim = min(center_trim, max(0, midpoint - 1))
+    return (
+        crop.crop((0, 0, midpoint - center_trim, crop.height)),
+        crop.crop((midpoint + center_trim, 0, crop.width, crop.height)),
+    )
+
+
+def read_basic_equipment_level_result(
+    image: Image.Image,
+    region: dict,
+    templates: dict[int, dict[str, list[np.ndarray]]] | None,
+) -> RecognitionResult:
+    cells = _basic_equipment_level_cells(image, region)
+    if cells is None:
+        return RecognitionResult.fallback(None, "basic_equip_level_region_missing")
+    glyphs = [_normalize_basic_equipment_glyph(cell) for cell in cells]
+    digits: list[str] = []
+    scores: list[float] = []
+    margins: list[float] = []
+    for position, glyph in enumerate(glyphs, start=1):
+        label, score, margin, label_count = _rank_run_glyph(
+            glyph,
+            (templates or {}).get(position),
+        )
+        # A run-local classifier needs competing labels before it may decide.
+        # Outlined 2/8 glyphs are intentionally similar; exact card-position
+        # samples still separate them, but with a much smaller margin.
+        if label is None or label_count < 2 or score < 0.74 or margin < 0.015:
+            if position == 2 and glyph is None and digits:
+                break
+            return RecognitionResult.fallback(None, f"basic_equip_level_digit{position}_uncertain")
+        digits.append(label)
+        scores.append(score)
+        margins.append(margin)
+    if not digits:
+        return RecognitionResult.fallback(None, "basic_equip_level_missing")
+    value = int("".join(digits))
+    valid = 1 <= value <= 70
+    detail = ",".join(
+        f"pos{position}={digit}:{score:.3f}/{margin:.3f}"
+        for position, (digit, score, margin) in enumerate(zip(digits, scores, margins), start=1)
+    )
+    return RecognitionResult(
+        value=value if valid else None,
+        score=min(scores),
+        source=RecogSource.COMBINED,
+        uncertain=not valid,
+        label=f"basic_equip_level:{value}:{detail}",
+    )
+
+
+def learn_basic_equipment_level(
+    image: Image.Image,
+    region: dict,
+    value: int,
+    templates: dict[int, dict[str, list[np.ndarray]]],
+) -> None:
+    cells = _basic_equipment_level_cells(image, region)
+    if cells is None:
+        return
+    digits = str(value)
+    for position, (digit, cell) in enumerate(zip(digits, cells), start=1):
+        glyph = _normalize_basic_equipment_glyph(cell)
+        if glyph is None:
+            continue
+        samples = templates.setdefault(position, {}).setdefault(digit, [])
+        samples.append(glyph)
+        del samples[:-4]
+        _log.debug(
+            "basic_equip_level_calibration: position=%d digit=%s variants=%d",
+            position, digit, len(samples),
+        )
+
+def _crop_equipment_icon_inner(image: Image.Image, crop_ratio: dict) -> Image.Image:
+    width, height = image.size
+    left = float(crop_ratio.get("left", 0.15))
+    right = float(crop_ratio.get("right", 0.15))
+    top = float(crop_ratio.get("top", 0.20))
+    bottom = float(crop_ratio.get("bottom", 0.30))
+    x1 = max(0, min(width - 1, int(round(width * left))))
+    x2 = max(x1 + 1, min(width, int(round(width * (1.0 - right)))))
+    y1 = max(0, min(height - 1, int(round(height * top))))
+    y2 = max(y1 + 1, min(height, int(round(height * (1.0 - bottom)))))
+    return image.crop((x1, y1, x2, y2))
+
+
+def _template_asset_path(value: str | None, fallback: str) -> Path:
+    raw = str(value or fallback).strip() or fallback
+    path = Path(raw)
+    if path.is_absolute():
+        return path
+    return TEMPLATE_DIR / path
+
+
+@lru_cache(maxsize=256)
+def _basic_equipment_icon_template(
+    equipment_family: str,
+    tier: int,
+    output_width: int,
+    output_height: int,
+    crop_left: float,
+    crop_right: float,
+    crop_top: float,
+    crop_bottom: float,
+    icon_width_ratio: float = 1.0,
+    icon_height_ratio: float = 1.0,
+    icon_offset_x_ratio: float = 0.0,
+    icon_offset_y_ratio: float = 0.0,
+    background_relpath: str = "icons/temp/square.png",
+) -> np.ndarray | None:
+    icon_path = TEMPLATE_DIR / "icons" / "equipment" / f"Equipment_Icon_{equipment_family}_Tier{tier}.png"
+    background_path = _template_asset_path(background_relpath, "icons/temp/square.png")
+    if not icon_path.exists() or not background_path.exists():
+        return None
+    source_icon = Image.open(icon_path).convert("RGBA")
+    precise_geometry = (
+        icon_width_ratio != 1.0 or icon_height_ratio != 1.0
+        or icon_offset_x_ratio != 0.0 or icon_offset_y_ratio != 0.0
+    )
+    if not precise_geometry:
+        background = Image.open(background_path).convert("RGBA").resize(
+            source_icon.size, Image.Resampling.LANCZOS,
+        )
+        composite = Image.alpha_composite(background, source_icon)
+    else:
+        full_width = max(
+            1,
+            int(round(output_width / max(0.01, 1.0 - crop_left - crop_right))),
+        )
+        full_height = max(
+            1,
+            int(round(output_height / max(0.01, 1.0 - crop_top - crop_bottom))),
+        )
+        icon = source_icon.resize(
+            (max(1, round(full_width * icon_width_ratio)),
+             max(1, round(full_height * icon_height_ratio))),
+            Image.Resampling.LANCZOS,
+        )
+        background = Image.open(background_path).convert("RGBA").resize(
+            (full_width, full_height), Image.Resampling.LANCZOS,
+        )
+        composite = background.copy()
+        composite.alpha_composite(
+            icon,
+            dest=(round(full_width * icon_offset_x_ratio),
+                  round(full_height * icon_offset_y_ratio)),
+        )
+    inner = _crop_equipment_icon_inner(
+        composite,
+        {
+            "left": crop_left,
+            "right": crop_right,
+            "top": crop_top,
+            "bottom": crop_bottom,
+        },
+    ).convert("RGB")
+    return np.asarray(
+        inner.resize((output_width, output_height), Image.Resampling.LANCZOS)
+    ).copy()
+
+
+_BASIC_EQUIPMENT_LEVEL_RANGES = {
+    1: range(1, 11), 2: range(11, 21), 3: range(21, 31), 4: range(31, 41),
+    5: range(41, 46), 6: range(46, 51), 7: range(51, 56), 8: range(56, 61),
+    9: range(61, 66), 10: range(66, 71),
+}
+_BASIC_EQUIPMENT_CARD_X = {1: 1356, 2: 1542, 3: 1728}
+_BASIC_EQUIPMENT_TEXT_X = {1: 1419, 2: 1605, 3: 1791}
+
+
+def _basic_equipment_font() -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    font_dir = TEMPLATE_DIR.parent / "gui" / "font"
+    candidates = [
+        font_dir / "GyeonggiTitle_Bold.ttf",
+        *sorted(font_dir.glob("*Bold.ttf")),
+        Path("C:/Windows/Fonts/arialbd.ttf"),
+    ]
+    for path in candidates:
+        try:
+            if path.exists():
+                return ImageFont.truetype(str(path), 28)
+        except OSError:
+            continue
+    return ImageFont.load_default()
+
+
+def _render_basic_equipment_level_text(value: int) -> Image.Image:
+    canvas = Image.new("RGBA", (179, 63), (0, 0, 0, 0))
+    font = _basic_equipment_font()
+    draw = ImageDraw.Draw(canvas)
+    draw.text(
+        (2, 2), f" {value}", font=font, fill="#FFFFFF",
+        stroke_width=1, stroke_fill="#505878",
+    )
+    shear = -0.25
+    shift = abs(shear) * canvas.height
+    expanded = Image.new("RGBA", (canvas.width + round(shift), canvas.height), (0, 0, 0, 0))
+    expanded.alpha_composite(canvas)
+    return expanded.transform(
+        expanded.size,
+        Image.Transform.AFFINE,
+        (1, -shear, 0, 0, 1, 0),
+        resample=Image.Resampling.BICUBIC,
+    ).crop((0, 0, canvas.width, canvas.height))
+
+
+def _basic_equipment_template_card(
+    equipment_family: str,
+    tier: int,
+    *,
+    background_relpath: str,
+    icon_width_ratio: float,
+    icon_height_ratio: float,
+    icon_offset_x_ratio: float,
+    icon_offset_y_ratio: float,
+) -> Image.Image | None:
+    icon_path = (
+        TEMPLATE_DIR / "icons" / "equipment"
+        / f"Equipment_Icon_{equipment_family}_Tier{tier}.png"
+    )
+    background_path = _template_asset_path(background_relpath, "icons/temp/square.png")
+    if not icon_path.exists() or not background_path.exists():
+        return None
+    card_width, card_height = 200, 160
+    card = Image.open(background_path).convert("RGBA").resize(
+        (card_width, card_height), Image.Resampling.LANCZOS,
+    )
+    icon = Image.open(icon_path).convert("RGBA").resize(
+        (
+            max(1, round(card_width * icon_width_ratio)),
+            max(1, round(card_height * icon_height_ratio)),
+        ),
+        Image.Resampling.LANCZOS,
+    )
+    card.alpha_composite(
+        icon,
+        dest=(
+            round(card_width * icon_offset_x_ratio),
+            round(card_height * icon_offset_y_ratio),
+        ),
+    )
+    return card
+
+
+@lru_cache(maxsize=768)
+def _basic_equipment_generated_level_crop(
+    slot: int,
+    equipment_family: str,
+    tier: int,
+    level: int,
+    points: tuple[float, ...],
+    output_width: int,
+    output_height: int,
+    background_relpath: str,
+    icon_width_ratio: float,
+    icon_height_ratio: float,
+    icon_offset_x_ratio: float,
+    icon_offset_y_ratio: float,
+) -> np.ndarray | None:
+    if slot not in _BASIC_EQUIPMENT_CARD_X:
+        return None
+    card = _basic_equipment_template_card(
+        equipment_family,
+        tier,
+        background_relpath=background_relpath,
+        icon_width_ratio=icon_width_ratio,
+        icon_height_ratio=icon_height_ratio,
+        icon_offset_x_ratio=icon_offset_x_ratio,
+        icon_offset_y_ratio=icon_offset_y_ratio,
+    )
+    if card is None:
+        return None
+    card.alpha_composite(
+        _render_basic_equipment_level_text(level),
+        dest=(_BASIC_EQUIPMENT_TEXT_X[slot] - _BASIC_EQUIPMENT_CARD_X[slot], 6),
+    )
+    reference = Image.new("RGB", (2560, 1440), "black")
+    reference.paste(card.convert("RGB"), (_BASIC_EQUIPMENT_CARD_X[slot], 1114))
+    local_region = {
+        "points_ratio": [
+            {"x": points[index], "y": points[index + 1]}
+            for index in range(0, len(points), 2)
+        ],
+        "output_size": [output_width, output_height],
+    }
+    crop = warp_quad_region(reference, local_region, output_size=(output_width, output_height))
+    return np.asarray(crop.convert("RGB")).copy() if crop is not None else None
+
+
+def _split_basic_equipment_level_rgb(
+    crop: Image.Image | np.ndarray,
+    region: dict,
+) -> tuple[np.ndarray, np.ndarray] | None:
+    if isinstance(crop, np.ndarray):
+        array = crop
+    else:
+        array = np.asarray(crop.convert("RGB"))
+    if array.size == 0 or array.shape[1] < 2:
+        return None
+    midpoint = array.shape[1] // 2
+    center_trim = max(0, int(region.get("center_trim_pixels", 0) or 0))
+    center_trim = min(center_trim, max(0, midpoint - 1))
+    return (
+        array[:, :midpoint - center_trim].copy(),
+        array[:, midpoint + center_trim:].copy(),
+    )
+
+
+@lru_cache(maxsize=256)
+def _basic_equipment_generated_digit_templates(
+    slot: int,
+    equipment_family: str,
+    tier: int,
+    points: tuple[float, ...],
+    output_width: int,
+    output_height: int,
+    center_trim_pixels: int,
+    background_relpath: str,
+    icon_width_ratio: float,
+    icon_height_ratio: float,
+    icon_offset_x_ratio: float,
+    icon_offset_y_ratio: float,
+) -> tuple[tuple[int, str, tuple[np.ndarray, ...]], ...]:
+    candidates = _BASIC_EQUIPMENT_LEVEL_RANGES.get(tier)
+    if not candidates:
+        return ()
+    local_region = {"center_trim_pixels": center_trim_pixels}
+    grouped: dict[tuple[int, str], list[np.ndarray]] = {}
+    for level in candidates:
+        crop = _basic_equipment_generated_level_crop(
+            slot,
+            equipment_family,
+            tier,
+            int(level),
+            points,
+            output_width,
+            output_height,
+            background_relpath,
+            icon_width_ratio,
+            icon_height_ratio,
+            icon_offset_x_ratio,
+            icon_offset_y_ratio,
+        )
+        cells = _split_basic_equipment_level_rgb(crop, local_region) if crop is not None else None
+        if cells is None:
+            continue
+        text = str(int(level))
+        labels = (text, "blank") if len(text) == 1 else (text[-2], text[-1])
+        for position, label, cell in ((1, labels[0], cells[0]), (2, labels[1], cells[1])):
+            grouped.setdefault((position, label), []).append(cell)
+    return tuple(
+        (position, label, tuple(samples))
+        for (position, label), samples in sorted(grouped.items())
+    )
+
+
+def _generated_digit_gray_plane(image: np.ndarray) -> np.ndarray:
+    if image.ndim == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    else:
+        gray = image.astype(np.uint8, copy=False)
+    gray = cv2.GaussianBlur(gray, (3, 3), 0)
+    low, high = np.percentile(gray, (2.0, 98.0))
+    if high - low < 1.0:
+        return np.zeros_like(gray, dtype=np.uint8)
+    normalized = (gray.astype(np.float32) - float(low)) * (255.0 / float(high - low))
+    return np.clip(normalized, 0, 255).astype(np.uint8)
+
+
+def _generated_digit_edge_plane(gray: np.ndarray) -> np.ndarray:
+    gx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+    gy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+    magnitude = cv2.magnitude(gx, gy)
+    max_value = float(np.max(magnitude)) if magnitude.size else 0.0
+    if max_value <= 0.0:
+        return np.zeros_like(gray, dtype=np.uint8)
+    return np.clip(magnitude * (255.0 / max_value), 0, 255).astype(np.uint8)
+
+
+def _generated_digit_plane_similarity(screen: np.ndarray, candidate: np.ndarray) -> float:
+    screen_f = screen.astype(np.float32)
+    candidate_f = candidate.astype(np.float32)
+    diff_score = 1.0 - float(np.mean(np.abs(screen_f - candidate_f)) / 255.0)
+    diff_score = max(0.0, min(1.0, diff_score))
+    score_map = cv2.matchTemplate(screen, candidate, cv2.TM_CCOEFF_NORMED)
+    corr = float(score_map[0, 0]) if score_map.size else 0.0
+    if not np.isfinite(corr):
+        corr = 0.0
+    corr = max(0.0, min(1.0, corr))
+    return 0.65 * corr + 0.35 * diff_score
+
+
+def _generated_digit_rgb_similarity(screen: np.ndarray, candidate: np.ndarray) -> float:
+    if candidate.shape[:2] != screen.shape[:2]:
+        candidate = cv2.resize(
+            candidate,
+            (screen.shape[1], screen.shape[0]),
+            interpolation=cv2.INTER_AREA,
+        )
+    screen_f = screen.astype(np.float32)
+    candidate_f = candidate.astype(np.float32)
+    diff_score = 1.0 - float(np.mean(np.abs(screen_f - candidate_f)) / 255.0)
+    diff_score = max(0.0, min(1.0, diff_score))
+    score_map = cv2.matchTemplate(screen, candidate, cv2.TM_CCOEFF_NORMED)
+    corr = float(score_map[0, 0]) if score_map.size else 0.0
+    if not np.isfinite(corr):
+        corr = 0.0
+    corr = max(0.0, min(1.0, corr))
+    return 0.55 * corr + 0.45 * diff_score
+
+def _generated_digit_similarity(screen: np.ndarray, candidate: np.ndarray) -> float:
+    if candidate.shape[:2] != screen.shape[:2]:
+        candidate = cv2.resize(
+            candidate,
+            (screen.shape[1], screen.shape[0]),
+            interpolation=cv2.INTER_AREA,
+        )
+    screen_gray = _generated_digit_gray_plane(screen)
+    candidate_gray = _generated_digit_gray_plane(candidate)
+    gray_score = _generated_digit_plane_similarity(screen_gray, candidate_gray)
+    screen_edge = _generated_digit_edge_plane(screen_gray)
+    candidate_edge = _generated_digit_edge_plane(candidate_gray)
+    edge_score = _generated_digit_plane_similarity(screen_edge, candidate_edge)
+    return 0.70 * gray_score + 0.30 * edge_score
+
+
+def _rank_generated_digit_cell(
+    screen: np.ndarray,
+    templates: dict[str, tuple[np.ndarray, ...]],
+    *,
+    ignore_color: bool = True,
+) -> tuple[str | None, float, float, int]:
+    if screen.size == 0 or not templates:
+        return None, 0.0, 0.0, 0
+    ranked: list[tuple[str, float]] = []
+    similarity = _generated_digit_similarity if ignore_color else _generated_digit_rgb_similarity
+    for label, samples in templates.items():
+        scores = [similarity(screen, sample) for sample in samples]
+        if scores:
+            ranked.append((label, max(scores)))
+    ranked.sort(key=lambda item: item[1], reverse=True)
+    if not ranked:
+        return None, 0.0, 0.0, 0
+    label, score = ranked[0]
+    second = ranked[1][1] if len(ranked) > 1 else 0.0
+    return label, score, score - second, len(ranked)
+
+def read_basic_equipment_generated_level_result(
+    image: Image.Image,
+    region: dict,
+    slot: int,
+    equipment_family: str | None,
+    tier: str | None,
+    icon_region: dict | None = None,
+) -> RecognitionResult:
+    if not equipment_family or not tier or not tier.startswith("T"):
+        return RecognitionResult.fallback(None, "basic_equip_generated_context_missing")
+    try:
+        tier_number = int(tier[1:])
+    except ValueError:
+        return RecognitionResult.fallback(None, "basic_equip_generated_tier_invalid")
+    candidates = _BASIC_EQUIPMENT_LEVEL_RANGES.get(tier_number)
+    points_rows = region.get("points_ratio") or []
+    if (
+        candidates is None
+        or len(points_rows) != 4
+        or any("x" not in row or "y" not in row for row in points_rows)
+    ):
+        return RecognitionResult.fallback(None, "basic_equip_generated_region_missing")
+    screen_crop = _basic_equipment_quad(image, region)
+    if screen_crop is None:
+        return RecognitionResult.fallback(None, "basic_equip_generated_crop_missing")
+    screen_cells = _split_basic_equipment_level_rgb(screen_crop, region)
+    if screen_cells is None:
+        return RecognitionResult.fallback(None, "basic_equip_generated_cells_missing")
+    points = tuple(
+        coordinate
+        for row in points_rows
+        for coordinate in (float(row["x"]), float(row["y"]))
+    )
+    icon_region = icon_region or {}
+    geometry = icon_region.get("template_geometry") or {}
+    template_rows = _basic_equipment_generated_digit_templates(
+        slot,
+        equipment_family,
+        tier_number,
+        points,
+        screen_crop.width,
+        screen_crop.height,
+        int(region.get("center_trim_pixels", 0) or 0),
+        str(icon_region.get("template_background") or "icons/temp/square.png"),
+        float(geometry.get("icon_width_ratio", 0.995)),
+        float(geometry.get("icon_height_ratio", 0.98125)),
+        float(geometry.get("icon_offset_x_ratio", 0.0)),
+        float(geometry.get("icon_offset_y_ratio", 0.0)),
+    )
+    if not template_rows:
+        return RecognitionResult.fallback(None, "basic_equip_generated_templates_missing")
+    templates: dict[int, dict[str, tuple[np.ndarray, ...]]] = {1: {}, 2: {}}
+    for position, label, samples in template_rows:
+        templates.setdefault(position, {})[label] = samples
+    labels: list[str] = []
+    scores: list[float] = []
+    details: list[str] = []
+    for position, screen_cell in enumerate(screen_cells, start=1):
+        label, score, margin, label_count = _rank_generated_digit_cell(
+            screen_cell,
+            templates.get(position, {}),
+        )
+        if label is None:
+            return RecognitionResult.fallback(None, f"basic_equip_generated_digit{position}_missing")
+        if score < 0.60 or (label_count > 1 and margin < 0.025):
+            return RecognitionResult(
+                value=None,
+                score=score,
+                source=RecogSource.TEMPLATE_RESIZED,
+                uncertain=True,
+                label=(
+                    f"basic_equip_generated_digit{position}_uncertain:"
+                    f"{label}:score={score:.3f}:margin={margin:.3f}"
+                ),
+            )
+        labels.append(label)
+        scores.append(score)
+        second = max(0.0, score - margin)
+        details.append(f"pos{position}={label}:{score:.3f}/{margin:.3f}/second={second:.3f}")
+    digit_text = "".join(label for label in labels if label != "blank")
+    if not digit_text:
+        return RecognitionResult.fallback(None, "basic_equip_generated_blank")
+    try:
+        value = int(digit_text)
+    except ValueError:
+        return RecognitionResult.fallback(None, "basic_equip_generated_value_invalid")
+    valid = value in set(candidates)
+    score = min(scores) if scores else 0.0
+    return RecognitionResult(
+        value=value if valid else None,
+        score=score,
+        source=RecogSource.TEMPLATE_RESIZED,
+        uncertain=not valid,
+        label=f"basic_equip_generated:{value}:mode=shape,{','.join(details)}",
+    )
+@lru_cache(maxsize=8)
+def _basic_favorite_templates(width: int, height: int) -> tuple[tuple[str, np.ndarray], ...]:
+    directory = TEMPLATE_DIR / "equip4_basic"
+    loaded: list[tuple[str, np.ndarray]] = []
+    for tier in ("T1", "T2"):
+        path = directory / f"equip4_{tier}.png"
+        if not path.exists():
+            continue
+        template = Image.open(path).convert("RGB").resize(
+            (width, height), Image.Resampling.LANCZOS,
+        )
+        loaded.append((tier, np.asarray(template).copy()))
+    return tuple(loaded)
+
+def read_basic_favorite_tier_result(
+    image: Image.Image,
+    region: dict,
+) -> RecognitionResult:
+    """Read the T1/T2 favorite-item marker directly from the basic screen."""
+    from core.capture import crop_region
+
+    crop = crop_region(image, region).convert("RGB")
+    if crop.width < 2 or crop.height < 2:
+        return RecognitionResult.fallback(None, "basic_favorite_region_missing")
+    screen = np.asarray(crop)
+    ranked: list[tuple[str, float]] = []
+    for tier, template in _basic_favorite_templates(crop.width, crop.height):
+        score_map = cv2.matchTemplate(screen, template, cv2.TM_CCOEFF_NORMED)
+        score = float(score_map[0, 0]) if score_map.size else 0.0
+        if not np.isfinite(score):
+            score = 0.0
+        ranked.append((tier, score))
+    ranked.sort(key=lambda item: item[1], reverse=True)
+    if not ranked:
+        return RecognitionResult.fallback(None, "basic_favorite_templates_missing")
+    label, score = ranked[0]
+    second = ranked[1][1] if len(ranked) > 1 else 0.0
+    margin = score - second
+    uncertain = score < 0.70 or margin < 0.10
+    return RecognitionResult(
+        value=label if not uncertain else None,
+        score=score,
+        source=RecogSource.TEMPLATE_RESIZED,
+        uncertain=uncertain,
+        label=f"basic_favorite:{label}:margin={margin:.3f}",
+    )
+
+def read_basic_equipment_icon_tier_result(
+    image: Image.Image,
+    region: dict,
+    equipment_family: str | None,
+) -> RecognitionResult:
+    if not equipment_family:
+        return RecognitionResult.fallback(None, "basic_equip_icon_family_missing")
+    from core.capture import crop_region
+    full_crop = crop_region(image, region)
+    if full_crop.width < 2 or full_crop.height < 2:
+        return RecognitionResult.fallback(None, "basic_equip_icon_region_missing")
+    crop_ratio = region.get("crop_ratio") or {}
+    screen_crop = _crop_equipment_icon_inner(full_crop, crop_ratio).convert("RGB")
+    screen = np.asarray(screen_crop)
+    output_width, output_height = screen_crop.size
+    geometry = region.get("template_geometry") or {}
+    ranked: list[tuple[str, float]] = []
+    for tier in range(1, 11):
+        template_rgb = _basic_equipment_icon_template(
+            equipment_family,
+            tier,
+            output_width,
+            output_height,
+            float(crop_ratio.get("left", 0.15)),
+            float(crop_ratio.get("right", 0.15)),
+            float(crop_ratio.get("top", 0.20)),
+            float(crop_ratio.get("bottom", 0.30)),
+            float(geometry.get("icon_width_ratio", 1.0)),
+            float(geometry.get("icon_height_ratio", 1.0)),
+            float(geometry.get("icon_offset_x_ratio", 0.0)),
+            float(geometry.get("icon_offset_y_ratio", 0.0)),
+            str(region.get("template_background") or "icons/temp/square.png"),
+        )
+        if template_rgb is None:
+            continue
+        score_map = cv2.matchTemplate(
+            screen,
+            template_rgb,
+            cv2.TM_CCOEFF_NORMED,
+        )
+        texture_score = float(score_map[0, 0]) if score_map.size else 0.0
+        if not np.isfinite(texture_score):
+            texture_score = 0.0
+        screen_mean = screen.reshape(-1, 3).mean(axis=0)
+        template_mean = template_rgb.reshape(-1, 3).mean(axis=0)
+        color_distance = float(np.linalg.norm(screen_mean - template_mean))
+        color_score = max(0.0, 1.0 - color_distance / 220.0)
+        score = 0.85 * max(0.0, texture_score) + 0.15 * color_score
+        ranked.append((f"T{tier}", score))
+    ranked.sort(key=lambda item: item[1], reverse=True)
+    if not ranked:
+        return RecognitionResult.fallback(None, "basic_equip_icon_templates_missing")
+    label, score = ranked[0]
+    second = ranked[1][1] if len(ranked) > 1 else 0.0
+    margin = score - second
+    uncertain = score < 0.35 or margin < 0.08
+    return RecognitionResult(
+        value=label,
+        score=score,
+        source=RecogSource.TEMPLATE_RESIZED,
+        uncertain=uncertain,
+        label=f"basic_equip_icon:{equipment_family}:{label}:margin={margin:.3f}",
+    )
+
+
+@lru_cache(maxsize=1)
+def _basic_combat_stat_digit_templates() -> dict[str, list[np.ndarray]]:
+    directory = TEMPLATE_DIR / "basic_combat_stat_digits"
+    templates: dict[str, list[np.ndarray]] = {}
+    for digit in range(10):
+        samples: list[np.ndarray] = []
+        for path in sorted((directory / str(digit)).glob("*.png")):
+            image = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+            if image is not None:
+                samples.append(image)
+        if samples:
+            templates[str(digit)] = samples
+    return templates
+
+
+@lru_cache(maxsize=1)
+def _basic_combat_stat_position_templates() -> dict[tuple[str, int], dict[str, list[np.ndarray]]]:
+    """Index samples by (stat field, digit position) encoded in each filename."""
+    directory = TEMPLATE_DIR / "basic_combat_stat_digits"
+    indexed: dict[tuple[str, int], dict[str, list[np.ndarray]]] = {}
+    for digit in range(10):
+        for path in sorted((directory / str(digit)).glob("*.png")):
+            parts = path.stem.rsplit("_", 2)
+            if len(parts) != 3 or parts[1] not in {"hp", "atk", "def", "heal"}:
+                continue
+            try:
+                position = int(parts[2])
+            except ValueError:
+                continue
+            image = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+            if image is not None:
+                indexed.setdefault((parts[1], position), {}).setdefault(str(digit), []).append(image)
+    return indexed
+
+
+def _basic_combat_cell_state(crop: Image.Image) -> tuple[str, float]:
+    """Return DIGIT, EMPTY, or LV before digit template matching."""
+    rgb = np.asarray(crop.convert("RGB"), dtype=np.uint8)
+    red = rgb[:, :, 0].astype(np.int16)
+    green = rgb[:, :, 1].astype(np.int16)
+    blue = rgb[:, :, 2].astype(np.int16)
+    badge_blue = (
+        (blue - red > 25)
+        & (blue - green > 5)
+        & (blue >= 70)
+        & (blue <= 190)
+        & (red < 150)
+    )
+    blue_ratio = float(badge_blue.mean())
+    if blue_ratio >= 0.08:
+        return "LV", blue_ratio
+    maximum = rgb.max(axis=2)
+    minimum = rgb.min(axis=2)
+    neutral_dark = (maximum < 180) & (maximum.astype(np.int16) - minimum.astype(np.int16) < 90)
+    dark_ratio = float(neutral_dark.mean())
+    if dark_ratio <= 0.02:
+        return "EMPTY", 1.0 - dark_ratio
+    return "DIGIT", dark_ratio
+
+
+def _normalize_basic_combat_stat_digit(crop: Image.Image) -> np.ndarray | None:
+    rgb = np.asarray(crop.convert("RGB"), dtype=np.uint8)
+    if rgb.size == 0:
+        return None
+    maximum = rgb.max(axis=2)
+    minimum = rgb.min(axis=2)
+    chroma = maximum.astype(np.int16) - minimum.astype(np.int16)
+    binary = ((maximum < 180) & (chroma < 90)).astype(np.uint8) * 255
+    return normalize_binary_glyph(binary, output_size=(20, 28), padding=2)
+
+
+def read_basic_combat_stat_result(image: Image.Image, region: dict) -> RecognitionResult:
+    templates = _basic_combat_stat_digit_templates()
+    position_templates = _basic_combat_stat_position_templates()
+    template_group = str(region.get("template_group", ""))
+    if not templates:
+        return RecognitionResult.fallback(None, "basic_combat_digit_templates_missing")
+    width, height = image.size
+    x0 = float(region["x1"])
+    y0 = float(region["y1"])
+    cell_width = float(region["cell_width"])
+    cell_height = float(region["cell_height"])
+    cells = region.get("cells") if isinstance(region.get("cells"), list) else None
+    max_digits = len(cells) if cells else max(1, int(region.get("max_digits", 6)))
+    min_digits = max(1, int(region.get("min_digits", 1)))
+    digits: list[str] = []
+    scores: list[float] = []
+    margins: list[float] = []
+    terminal_state = "LIMIT"
+    terminal_position = max_digits + 1
+    for position in range(max_digits):
+        if cells:
+            cell = cells[position]
+            crop_box = (
+                round(float(cell["x1"]) * width),
+                round(float(cell["y1"]) * height),
+                round(float(cell["x2"]) * width),
+                round(float(cell["y2"]) * height),
+            )
+        else:
+            crop_box = (
+                round((x0 + position * cell_width) * width),
+                round(y0 * height),
+                round((x0 + (position + 1) * cell_width) * width),
+                round((y0 + cell_height) * height),
+            )
+        crop = image.crop(crop_box)
+        cell_state, _state_score = _basic_combat_cell_state(crop)
+        if cell_state in {"EMPTY", "LV"}:
+            terminal_state = cell_state
+            terminal_position = position + 1
+            break
+        glyph = _normalize_basic_combat_stat_digit(crop)
+        if glyph is None:
+            break
+        ranked: list[tuple[str, float]] = []
+        local_templates = position_templates.get((template_group, position), {})
+        for label, shared_samples in templates.items():
+            samples = local_templates.get(label) or shared_samples
+            ranked.append((label, max(binary_glyph_similarity(glyph, sample) for sample in samples)))
+        ranked.sort(key=lambda item: item[1], reverse=True)
+        label, score = ranked[0]
+        margin = score - (ranked[1][1] if len(ranked) > 1 else 0.0)
+        if score < 0.72 or margin < 0.02:
+            return RecognitionResult(
+                value=None,
+                score=score,
+                source=RecogSource.TEMPLATE_MASKED,
+                uncertain=True,
+                label=f"basic_combat_digit{position + 1}_uncertain:{label}:margin={margin:.3f}",
+            )
+        digits.append(label)
+        scores.append(score)
+        margins.append(margin)
+    if len(digits) < min_digits:
+        return RecognitionResult.fallback(None, "basic_combat_digits_missing")
+    value = int("".join(digits))
+    return RecognitionResult(
+        value=value,
+        score=min(scores),
+        source=RecogSource.TEMPLATE_MASKED,
+        uncertain=False,
+        label=(
+            f"basic_combat_stat:{value}:digits={len(digits)}:"
+            f"margin={min(margins):.3f}:stop={terminal_state}@{terminal_position}"
+        ),
+    )
+
+
+def read_basic_additional_stat_badge_result(image: Image.Image, region: dict) -> RecognitionResult:
+    from core.capture import crop_region
+    crop = np.asarray(crop_region(image, region).convert("RGB"), dtype=np.uint8)
+    if crop.size == 0:
+        return RecognitionResult.fallback(None, "basic_stat_badge_region_missing")
+    red = crop[:, :, 0].astype(np.int16)
+    green = crop[:, :, 1].astype(np.int16)
+    blue = crop[:, :, 2].astype(np.int16)
+    mask = (
+        (blue - red > 25)
+        & (blue - green > 5)
+        & (blue >= 70)
+        & (blue <= 190)
+        & (red < 150)
+    )
+    ratio = float(mask.mean())
+    if ratio >= 0.08:
+        return RecognitionResult(True, min(1.0, ratio / 0.15), RecogSource.COLOR_HIST, False,
+                                 f"basic_stat_badge:present:ratio={ratio:.3f}")
+    if ratio <= 0.02:
+        return RecognitionResult(False, min(1.0, 1.0 - ratio / 0.02), RecogSource.COLOR_HIST, False,
+                                 f"basic_stat_badge:absent:ratio={ratio:.3f}")
+    return RecognitionResult(None, ratio, RecogSource.COLOR_HIST, True,
+                             f"basic_stat_badge:uncertain:ratio={ratio:.3f}")
+
+
+
+
+def _basic_additional_stat_blue_mask(crop: Image.Image) -> np.ndarray:
+    rgb = np.asarray(crop.convert("RGB"), dtype=np.uint8)
+    if rgb.size == 0:
+        return np.zeros((0, 0), dtype=np.uint8)
+    red = rgb[:, :, 0].astype(np.int16)
+    green = rgb[:, :, 1].astype(np.int16)
+    blue = rgb[:, :, 2].astype(np.int16)
+    mask = (
+        (blue - red > 25)
+        & (blue - green > 5)
+        & (blue >= 70)
+        & (blue <= 190)
+        & (red < 150)
+    )
+    return mask.astype(np.uint8) * 255
+
+
+def _normalize_basic_additional_stat_value_text(crop: Image.Image) -> tuple[np.ndarray | None, float]:
+    blue_mask = _basic_additional_stat_blue_mask(crop)
+    if blue_mask.size == 0:
+        return None, 0.0
+    blue_ratio = float((blue_mask > 0).mean())
+    ys, xs = np.where(blue_mask > 0)
+    if xs.size == 0:
+        return None, blue_ratio
+
+    rgb = np.asarray(crop.convert("RGB"), dtype=np.uint8)
+    sub = rgb[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    maximum = sub.max(axis=2)
+    minimum = sub.min(axis=2)
+    chroma = maximum.astype(np.int16) - minimum.astype(np.int16)
+    white = ((maximum > 185) & (chroma < 70)).astype(np.uint8) * 255
+
+    count, labels, stats, _centroids = cv2.connectedComponentsWithStats(white)
+    cleaned = np.zeros_like(white)
+    for index in range(1, count):
+        area = stats[index, cv2.CC_STAT_AREA]
+        height = stats[index, cv2.CC_STAT_HEIGHT]
+        if area >= 20 and height >= 4:
+            cleaned[labels == index] = 255
+    ys2, xs2 = np.where(cleaned > 0)
+    if xs2.size == 0:
+        return None, blue_ratio
+
+    glyph = cleaned[ys2.min():ys2.max() + 1, xs2.min():xs2.max() + 1]
+    dst_w, dst_h = 64, 32
+    padding = 2
+    usable_w = max(1, dst_w - padding * 2)
+    usable_h = max(1, dst_h - padding * 2)
+    scale = min(usable_w / glyph.shape[1], usable_h / glyph.shape[0])
+    resized_w = max(1, int(round(glyph.shape[1] * scale)))
+    resized_h = max(1, int(round(glyph.shape[0] * scale)))
+    resized = cv2.resize(glyph, (resized_w, resized_h), interpolation=cv2.INTER_NEAREST)
+    canvas = np.zeros((dst_h, dst_w), dtype=np.uint8)
+    x = (dst_w - resized_w) // 2
+    y = (dst_h - resized_h) // 2
+    canvas[y:y + resized_h, x:x + resized_w] = resized
+    return canvas, blue_ratio
+
+
+@lru_cache(maxsize=1)
+def _basic_additional_stat_value_templates() -> dict[str, list[np.ndarray]]:
+    directory = TEMPLATE_DIR / BASIC_ADDITIONAL_STAT_VALUE_DIR
+    templates: dict[str, list[np.ndarray]] = {}
+    for path in sorted(directory.glob("*.png")):
+        if not path.stem.isdigit():
+            continue
+        value = int(path.stem)
+        if not 1 <= value <= 25:
+            continue
+        try:
+            image = Image.open(path).convert("RGB")
+        except OSError:
+            continue
+        glyph, _ratio = _normalize_basic_additional_stat_value_text(image)
+        if glyph is not None:
+            templates.setdefault(str(value), []).append(glyph)
+    return templates
+
+
+def read_basic_additional_stat_value_result(image: Image.Image, region: dict) -> RecognitionResult:
+    from core.capture import crop_region
+    templates = _basic_additional_stat_value_templates()
+    if not templates:
+        return RecognitionResult.fallback(None, "basic_additional_stat_value_templates_missing")
+    crop = crop_region(image, region)
+    glyph, blue_ratio = _normalize_basic_additional_stat_value_text(crop)
+    if glyph is None:
+        if blue_ratio <= 0.02:
+            return RecognitionResult(
+                0,
+                min(1.0, 1.0 - blue_ratio / 0.02),
+                RecogSource.COLOR_HIST,
+                False,
+                f"basic_additional_stat_value:absent:ratio={blue_ratio:.3f}",
+            )
+        return RecognitionResult(
+            None,
+            blue_ratio,
+            RecogSource.COMBINED,
+            True,
+            f"basic_additional_stat_value_text_missing:ratio={blue_ratio:.3f}",
+        )
+
+    ranked: list[tuple[str, float]] = []
+    for label, samples in templates.items():
+        ranked.append((label, max(binary_glyph_similarity(glyph, sample) for sample in samples)))
+    ranked.sort(key=lambda item: item[1], reverse=True)
+    if not ranked:
+        return RecognitionResult.skipped("basic_additional_stat_value_no_scores")
+    label, score = ranked[0]
+    second = ranked[1][1] if len(ranked) > 1 else 0.0
+    margin = score - second
+    confident = (score >= 0.78 and margin >= 0.035) or (
+        score >= 0.62 and margin >= 0.30 and blue_ratio >= 0.08
+    )
+    uncertain = not confident
+    return RecognitionResult(
+        int(label) if not uncertain else None,
+        score,
+        RecogSource.TEMPLATE_MASKED,
+        uncertain,
+        f"basic_additional_stat_value:{label}:score={score:.3f}:margin={margin:.3f}:ratio={blue_ratio:.3f}",
+    )
+
+def read_basic_equipment_tier_result(
+    image: Image.Image,
+    region: dict,
+    templates: dict[str, list[np.ndarray]] | None,
+) -> RecognitionResult:
+    crop = _basic_equipment_quad(image, region)
+    glyph = _normalize_basic_equipment_tier_glyph(crop) if crop is not None else None
+    label, score, margin, label_count = _rank_run_glyph(glyph, templates)
+    valid = label in {f"T{tier}" for tier in range(1, 11)}
+    uncertain = not valid or label_count < 2 or score < 0.76 or margin < 0.07
+    return RecognitionResult(
+        value=label if valid else None,
+        score=score,
+        source=RecogSource.COMBINED,
+        uncertain=uncertain,
+        label=f"basic_equip_tier:{label or 'missing'}",
+    )
+
+
+def learn_basic_equipment_tier(
+    image: Image.Image,
+    region: dict,
+    tier: str,
+    templates: dict[str, list[np.ndarray]],
+) -> None:
+    crop = _basic_equipment_quad(image, region)
+    glyph = _normalize_basic_equipment_tier_glyph(crop) if crop is not None else None
+    if glyph is None or tier not in {f"T{value}" for value in range(1, 11)}:
+        return
+    samples = templates.setdefault(tier, [])
+    samples.append(glyph)
+    del samples[:-4]
+    _log.debug(
+        "basic_equip_tier_calibration: tier=%s variants=%d",
+        tier, len(samples),
+    )
 
 
 @lru_cache(maxsize=1)
@@ -1655,45 +2957,44 @@ def _weapon_level_glyph_templates() -> dict[str, np.ndarray]:
     return templates
 
 
-def _read_weapon_level_glyph_result(crop: Image.Image) -> RecognitionResult:
-    templates = _weapon_level_glyph_templates()
-    if not templates:
-        return RecognitionResult.fallback(None, "no_weapon_level_glyph_templates")
-
+def _weapon_level_cells(crop: Image.Image, center_trim: int = 0) -> tuple[np.ndarray, np.ndarray]:
+    """Mask the white level text and split it into independent digit cells."""
     rgb = np.asarray(crop.convert("RGB"), dtype=np.uint8)
     if rgb.size == 0:
-        return RecognitionResult.fallback(None, "empty_weapon_level_crop")
+        empty = np.zeros((1, 1), dtype=np.uint8)
+        return empty, empty
 
     # Digit fill is nearly neutral white; the panel and weapon art are either
     # blue-tinted or darker. This mask therefore survives both bright and dark
     # weapon backgrounds without deleting the digit itself.
     chroma = rgb.max(axis=2).astype(np.int16) - rgb.min(axis=2).astype(np.int16)
     binary = ((rgb.min(axis=2) >= 238) & (chroma <= 28)).astype(np.uint8) * 255
-    count, labels, stats, _centroids = cv2.connectedComponentsWithStats(binary)
-    height, width = binary.shape
-    components: list[tuple[int, int]] = []
-    for index in range(1, count):
-        x, y, component_w, component_h, area = stats[index]
-        if area < max(12, int(round(binary.size * 0.012))):
-            continue
-        if not (0.36 * height <= component_h <= 0.78 * height):
-            continue
-        if y > 0.52 * height or component_w > 0.48 * width:
-            continue
-        components.append((int(x), index))
+    midpoint = binary.shape[1] // 2
+    center_trim = max(0, min(int(center_trim), max(0, midpoint - 1)))
+    return binary[:, :midpoint - center_trim], binary[:, midpoint + center_trim:]
 
-    components.sort()
-    components = components[:2]
-    if not components:
-        return RecognitionResult.fallback(None, "weapon_level_glyph_missing")
+
+def _read_weapon_level_glyph_result(
+    crop: Image.Image,
+    *,
+    center_trim: int = 0,
+) -> RecognitionResult:
+    templates = _weapon_level_glyph_templates()
+    if not templates:
+        return RecognitionResult.fallback(None, "no_weapon_level_glyph_templates")
+
+    cells = _weapon_level_cells(crop, center_trim=center_trim)
+    if not any(cell.size and np.count_nonzero(cell) for cell in cells):
+        return RecognitionResult.fallback(None, "empty_weapon_level_crop")
 
     digits: list[str] = []
     scores: list[float] = []
     margins: list[float] = []
-    for _x, component_index in components:
-        component = np.zeros_like(binary)
-        component[labels == component_index] = 255
-        glyph = normalize_binary_glyph(component)
+    for index, cell in enumerate(cells):
+        occupancy = float(np.count_nonzero(cell)) / float(max(1, cell.size))
+        if index == 1 and occupancy < 0.012:
+            break
+        glyph = normalize_binary_glyph(cell)
         if glyph is None:
             return RecognitionResult.fallback(None, "weapon_level_glyph_normalize_fail")
         ranked = sorted(
@@ -1712,6 +3013,8 @@ def _read_weapon_level_glyph_result(crop: Image.Image) -> RecognitionResult:
         scores.append(score)
         margins.append(score - second_score)
 
+    if not digits:
+        return RecognitionResult.fallback(None, "weapon_level_glyph_missing")
     value = int("".join(digits))
     score = min(scores)
     margin = min(margins)
@@ -1732,16 +3035,15 @@ def _read_weapon_level_glyph_result(crop: Image.Image) -> RecognitionResult:
         label=f"weapon_level_glyph:{value}({score:.3f},margin={margin:.3f})",
     )
 
-
-# ══════════════════════════════════════════════════════════
-# 별 등급
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# 癰??源껎닋
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 def read_star(crop: Image.Image, folder: str, max_n: int) -> int:
     """
-    별 등급 인식.
-    RGBA 템플릿의 알파를 마스크로 사용 → 배경 색상 변화에 강건.
-    match_masked_icon() 경로로만 처리. best_match(masked=True) 혼용 금지.
+    癰??源껎닋 ?紐꾨뻼.
+    RGBA ??쀫탣?깆슦????곕솁??筌띾뜆???以???????獄쏄퀗瑗???깃맒 癰궰?遺용퓠 揶쏅벚援?
+    match_masked_icon() 野껋럥以덃에?뺤춸 筌ｌ꼶?? best_match(masked=True) ??깆뒠 疫뀀뜆?.
     """
     d = TEMPLATE_DIR / folder
     cands = {
@@ -1750,7 +3052,7 @@ def read_star(crop: Image.Image, folder: str, max_n: int) -> int:
         if (d / f"star_{i}.png").exists()
     }
     if not cands:
-        _log.warning(f"{folder}: 템플릿 없음 → 1")
+        _log.warning(f"{folder}: ??쀫탣????곸벉 ??1")
         return 1
 
     lbl, score = best_match_masked_icons(crop, cands, threshold=0.68)
@@ -1760,8 +3062,8 @@ def read_star(crop: Image.Image, folder: str, max_n: int) -> int:
 
 def read_star_result(crop: Image.Image, folder: str, max_n: int) -> RecognitionResult:
     """
-    read_star() 의 RecognitionResult 반환 버전.
-    별 개수 + score + source + uncertain 플래그 포함.
+    read_star() ??RecognitionResult 獄쏆꼹??甕곌쑴??
+    癰?揶쏆뮇??+ score + source + uncertain ???삋域???釉?
     """
     d = TEMPLATE_DIR / folder
     cands = {
@@ -1789,12 +3091,12 @@ def read_weapon_star(crop: Image.Image) -> int:
 def is_weapon_equipped(crop: Image.Image) -> bool:
     return detect_weapon_state(crop)[0] == WeaponState.WEAPON_EQUIPPED
 
-read_weapon_unlocked = is_weapon_equipped   # 하위 호환
+read_weapon_unlocked = is_weapon_equipped   # ??륁맄 ?紐낆넎
 
 
-# ══════════════════════════════════════════════════════════
-# 학생 레벨
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# ??덇문 ??덇볼
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 def read_level_digit(crop: Image.Image, digit_pos: int) -> Optional[str]:
     folder = TEMPLATE_DIR / f"studentlevel_digit{digit_pos}"
@@ -1825,15 +3127,15 @@ def read_student_level(
 
     if not d2 or d2 == "null":
         if d1:
-            _log.debug(f"student_level: 1자리 → {d1}")
+            _log.debug(f"student_level: 1?癒?봺 ??{d1}")
             return d1
         return "unknown"
     return f"{d1}{d2}" if d1 else d2
 
 
-# ══════════════════════════════════════════════════════════
-# 스킬 레벨
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# ??쎄텢 ??덇볼
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 def read_skill(crop: Image.Image, skill_key: str) -> str:
     d = TEMPLATE_DIR / skill_key
@@ -1882,8 +3184,8 @@ def read_skill(crop: Image.Image, skill_key: str) -> str:
 
 def read_skill_result(crop: Image.Image, skill_key: str) -> RecognitionResult:
     """
-    read_skill() 의 RecognitionResult 반환 버전.
-    score 와 uncertain 플래그가 함께 반환됨.
+    read_skill() ??RecognitionResult 獄쏆꼹??甕곌쑴??
+    score ?? uncertain ???삋域밸㈇? ??ｍ뜞 獄쏆꼹???
     """
     d = TEMPLATE_DIR / skill_key
     max_lv = 5 if skill_key == "EX_Skill" else 10
@@ -1979,6 +3281,222 @@ def read_basic_skill_result(crop: Image.Image, *, is_ex: bool) -> RecognitionRes
     )
 
 
+_BASIC_STUDENT_LEVEL_TEMPLATE_SIZE = (2560, 1440)
+_BASIC_STUDENT_LEVEL_TEXT_LAYERS = (
+    {"x": 108, "y": 1194, "width": 180, "height": 60, "shear": -0.2},
+    {"x": 126, "y": 1194, "width": 180, "height": 60, "shear": -0.2},
+)
+_BASIC_STUDENT_LEVEL_FILL = "#DDEAFF"
+_BASIC_STUDENT_LEVEL_STROKE = "#6C7288"
+_BASIC_STUDENT_LEVEL_STROKE_WIDTH = 2
+_BASIC_STUDENT_LEVEL_FONT_SIZE = 35
+_BASIC_STUDENT_LEVEL_CANDIDATES = tuple(range(1, 91))
+
+
+@lru_cache(maxsize=1)
+def _basic_student_level_font() -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    font_dir = TEMPLATE_DIR.parent / "gui" / "font"
+    candidates = [
+        *sorted(font_dir.glob("*Medium.ttf")),
+        *sorted(font_dir.glob("*Bold.ttf")),
+        Path(r"C:\Windows\Fonts\arialbd.ttf"),
+        Path(r"C:\Windows\Fonts\arial.ttf"),
+    ]
+    for path in candidates:
+        try:
+            if path.exists():
+                return ImageFont.truetype(str(path), _BASIC_STUDENT_LEVEL_FONT_SIZE)
+        except OSError:
+            continue
+    return ImageFont.load_default()
+
+
+def _render_basic_student_level_digit_text(label: str) -> Image.Image:
+    layer = _BASIC_STUDENT_LEVEL_TEXT_LAYERS[0]
+    canvas = Image.new("RGBA", (int(layer["width"]), int(layer["height"])), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(canvas)
+    draw.text(
+        (0, 0),
+        f" {label}",
+        font=_basic_student_level_font(),
+        fill=_BASIC_STUDENT_LEVEL_FILL,
+        stroke_width=_BASIC_STUDENT_LEVEL_STROKE_WIDTH,
+        stroke_fill=_BASIC_STUDENT_LEVEL_STROKE,
+    )
+    shear = float(layer["shear"])
+    if shear == 0.0:
+        return canvas
+    shift = abs(shear) * canvas.height
+    expanded = Image.new("RGBA", (canvas.width + round(shift), canvas.height), (0, 0, 0, 0))
+    expanded.alpha_composite(canvas)
+    return expanded.transform(
+        expanded.size,
+        Image.Transform.AFFINE,
+        (1, -shear, 0, 0, 1, 0),
+        resample=Image.Resampling.BICUBIC,
+    ).crop((0, 0, canvas.width, canvas.height))
+
+
+@lru_cache(maxsize=128)
+def _basic_student_generated_level_crop(
+    level: int,
+    points: tuple[float, ...],
+    output_width: int,
+    output_height: int,
+) -> np.ndarray | None:
+    if level not in _BASIC_STUDENT_LEVEL_CANDIDATES:
+        return None
+    reference = Image.new("RGBA", _BASIC_STUDENT_LEVEL_TEMPLATE_SIZE, (0, 0, 0, 255))
+    for index, label in enumerate(str(level)):
+        if index >= len(_BASIC_STUDENT_LEVEL_TEXT_LAYERS):
+            break
+        layer = _BASIC_STUDENT_LEVEL_TEXT_LAYERS[index]
+        reference.alpha_composite(
+            _render_basic_student_level_digit_text(label),
+            dest=(int(layer["x"]), int(layer["y"])),
+        )
+    reference = reference.convert("RGB")
+    local_region = {
+        "points_ratio": [
+            {"x": points[index], "y": points[index + 1]}
+            for index in range(0, len(points), 2)
+        ],
+        "output_size": [output_width, output_height],
+    }
+    crop = warp_quad_region(reference, local_region, output_size=(output_width, output_height))
+    return np.asarray(crop.convert("RGB")).copy() if crop is not None else None
+
+
+def _split_basic_student_level_rgb(
+    crop: Image.Image | np.ndarray,
+    region: dict,
+) -> tuple[np.ndarray, np.ndarray] | None:
+    if isinstance(crop, np.ndarray):
+        array = crop
+    else:
+        array = np.asarray(crop.convert("RGB"))
+    if array.size == 0 or array.shape[1] < 2:
+        return None
+    midpoint = array.shape[1] // 2
+    center_trim = max(0, int(region.get("center_trim_pixels", 0) or 0))
+    center_trim = min(center_trim, max(0, midpoint - 1))
+    return (
+        array[:, :midpoint - center_trim].copy(),
+        array[:, midpoint + center_trim:].copy(),
+    )
+
+
+@lru_cache(maxsize=16)
+def _basic_student_generated_digit_templates(
+    points: tuple[float, ...],
+    output_width: int,
+    output_height: int,
+    center_trim_pixels: int,
+) -> tuple[tuple[int, str, tuple[np.ndarray, ...]], ...]:
+    local_region = {"center_trim_pixels": center_trim_pixels}
+    grouped: dict[tuple[int, str], list[np.ndarray]] = {}
+    for level in _BASIC_STUDENT_LEVEL_CANDIDATES:
+        crop = _basic_student_generated_level_crop(level, points, output_width, output_height)
+        cells = _split_basic_student_level_rgb(crop, local_region) if crop is not None else None
+        if cells is None:
+            continue
+        text = str(level)
+        labels = (text, "blank") if len(text) == 1 else (text[0], text[1])
+        for position, label, cell in ((1, labels[0], cells[0]), (2, labels[1], cells[1])):
+            grouped.setdefault((position, label), []).append(cell)
+    return tuple(
+        (position, label, tuple(samples))
+        for (position, label), samples in sorted(grouped.items())
+    )
+
+
+def read_basic_student_generated_level_result(image: Image.Image, region: dict) -> RecognitionResult:
+    points_rows = region.get("points_ratio") or []
+    if (
+        len(points_rows) != 4
+        or any("x" not in row or "y" not in row for row in points_rows)
+    ):
+        return RecognitionResult.fallback(None, "basic_level_generated_region_missing")
+    output_size = tuple(region.get("output_size", (58, 46)))
+    screen_crop = warp_quad_region(image, region, output_size=output_size)
+    if screen_crop is None:
+        return RecognitionResult.fallback(None, "basic_level_generated_crop_missing")
+    screen_cells = _split_basic_student_level_rgb(screen_crop, region)
+    if screen_cells is None:
+        return RecognitionResult.fallback(None, "basic_level_generated_cells_missing")
+    points = tuple(
+        coordinate
+        for row in points_rows
+        for coordinate in (float(row["x"]), float(row["y"]))
+    )
+    template_rows = _basic_student_generated_digit_templates(
+        points,
+        screen_crop.width,
+        screen_crop.height,
+        int(region.get("center_trim_pixels", 0) or 0),
+    )
+    if not template_rows:
+        return RecognitionResult.fallback(None, "basic_level_generated_templates_missing")
+    templates: dict[int, dict[str, tuple[np.ndarray, ...]]] = {1: {}, 2: {}}
+    for position, label, samples in template_rows:
+        templates.setdefault(position, {})[label] = samples
+
+    labels: list[str] = []
+    scores: list[float] = []
+    margins: list[float] = []
+    details: list[str] = []
+    for position, screen_cell in enumerate(screen_cells, start=1):
+        label, score, margin, label_count = _rank_generated_digit_cell(
+            screen_cell,
+            templates.get(position, {}),
+            ignore_color=False,
+        )
+        if label is None:
+            return RecognitionResult.fallback(None, f"basic_level_generated_digit{position}_missing")
+        labels.append(label)
+        scores.append(score)
+        margins.append(margin)
+        second = max(0.0, score - margin)
+        details.append(f"pos{position}={label}:{score:.3f}/{margin:.3f}/second={second:.3f}")
+        if score < 0.60 or (label_count > 1 and margin < 0.025):
+            return RecognitionResult(
+                value=None,
+                score=score,
+                source=RecogSource.TEMPLATE_RESIZED,
+                uncertain=True,
+                label=(
+                    f"basic_level_generated_digit{position}_uncertain:"
+                    f"{label}:score={score:.3f}:margin={margin:.3f}"
+                ),
+            )
+
+    digit_text = "".join(label for label in labels if label != "blank")
+    if not digit_text:
+        return RecognitionResult.fallback(None, "basic_level_generated_blank")
+    try:
+        value = int(digit_text)
+    except ValueError:
+        return RecognitionResult.fallback(None, "basic_level_generated_value_invalid")
+    valid = value in _BASIC_STUDENT_LEVEL_CANDIDATES
+    score = min(scores) if scores else 0.0
+    margin = min(margins) if margins else 0.0
+    uncertain = (not valid) or score < 0.60 or margin < 0.025
+    _log.debug(
+        "basic_level_generated: value=%s score=%.3f margin=%.3f uncertain=%s details=%s",
+        value,
+        score,
+        margin,
+        str(uncertain).lower(),
+        ",".join(details),
+    )
+    return RecognitionResult(
+        value=value if valid else None,
+        score=score,
+        source=RecogSource.TEMPLATE_RESIZED,
+        uncertain=uncertain,
+        label=f"basic_level_generated:{value}:{','.join(details)}",
+    )
+
 @lru_cache(maxsize=1)
 def _basic_level_digit_templates() -> dict[str, tuple[np.ndarray, ...]]:
     directory = TEMPLATE_DIR / "basic_student" / "level_digits"
@@ -2020,6 +3538,117 @@ def _match_basic_level_digit(
     return best_label, best_score, best_score - second_score
 
 
+def _basic_student_level_lv_reference_crop(
+    image: Image.Image,
+    region: dict,
+    output_size: tuple[int, int],
+) -> Image.Image | None:
+    points_rows = region.get("points_ratio") or []
+    if (
+        len(points_rows) != 4
+        or any("x" not in row or "y" not in row for row in points_rows)
+    ):
+        return None
+    points = [(float(row["x"]), float(row["y"])) for row in points_rows]
+    top_left, top_right, bottom_right, bottom_left = points
+    top_vec = (top_right[0] - top_left[0], top_right[1] - top_left[1])
+    bottom_vec = (bottom_right[0] - bottom_left[0], bottom_right[1] - bottom_left[1])
+    left_scale = float(region.get("lv_color_left_scale", 1.55) or 1.55)
+    right_gap = float(region.get("lv_color_right_gap", 0.08) or 0.08)
+    sample_region = {
+        "points_ratio": [
+            {"x": top_left[0] - top_vec[0] * left_scale, "y": top_left[1] - top_vec[1] * left_scale},
+            {"x": top_left[0] - top_vec[0] * right_gap, "y": top_left[1] - top_vec[1] * right_gap},
+            {"x": bottom_left[0] - bottom_vec[0] * right_gap, "y": bottom_left[1] - bottom_vec[1] * right_gap},
+            {"x": bottom_left[0] - bottom_vec[0] * left_scale, "y": bottom_left[1] - bottom_vec[1] * left_scale},
+        ],
+    }
+    sample_width = max(16, int(round(output_size[0] * (left_scale - right_gap))))
+    return warp_quad_region(image, sample_region, output_size=(sample_width, output_size[1]))
+
+
+def _basic_student_level_text_color_binary(
+    image: Image.Image,
+    region: dict,
+    warped_digits: Image.Image,
+) -> np.ndarray | None:
+    reference = _basic_student_level_lv_reference_crop(image, region, warped_digits.size)
+    if reference is None:
+        return None
+    sample_rgb = np.asarray(reference.convert("RGB"), dtype=np.uint8)
+    digit_rgb = np.asarray(warped_digits.convert("RGB"), dtype=np.uint8)
+    if sample_rgb.size == 0 or digit_rgb.size == 0:
+        return None
+
+    sample_gray = cv2.cvtColor(sample_rgb, cv2.COLOR_RGB2GRAY)
+    sample_gray = cv2.GaussianBlur(sample_gray, (3, 3), 0)
+    threshold, bright = cv2.threshold(
+        sample_gray,
+        0,
+        255,
+        cv2.THRESH_BINARY + cv2.THRESH_OTSU,
+    )
+    relaxed_threshold = max(0, int(round(float(threshold) - 28.0)))
+    foreground = sample_gray >= relaxed_threshold
+    foreground = cv2.morphologyEx(
+        foreground.astype(np.uint8) * 255,
+        cv2.MORPH_OPEN,
+        np.ones((2, 2), dtype=np.uint8),
+    ) > 0
+    if int(np.count_nonzero(foreground)) < 8:
+        foreground = bright > 0
+    if int(np.count_nonzero(foreground)) < 8:
+        return None
+
+    sample_lab = cv2.cvtColor(sample_rgb, cv2.COLOR_RGB2LAB)
+    selected = sample_lab[foreground].reshape(-1, 3).astype(np.float32)
+    if selected.shape[0] < 8:
+        return None
+    cluster_count = min(3, selected.shape[0])
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 20, 1.0)
+    try:
+        _compactness, labels, centers = cv2.kmeans(
+            selected,
+            cluster_count,
+            None,
+            criteria,
+            3,
+            cv2.KMEANS_PP_CENTERS,
+        )
+    except cv2.error:
+        centers = np.asarray([np.median(selected, axis=0)], dtype=np.float32)
+
+    background_l = float(np.median(sample_lab[~foreground, 0])) if np.any(~foreground) else 0.0
+    centers = np.asarray(
+        [center for center in centers if float(center[0]) >= background_l + 6.0],
+        dtype=np.float32,
+    )
+    if centers.size == 0:
+        centers = np.asarray([np.median(selected, axis=0)], dtype=np.float32)
+
+    selected_distances = np.min(
+        np.linalg.norm(selected[:, None, :] - centers[None, :, :], axis=2),
+        axis=1,
+    )
+    max_distance = max(14.0, float(np.percentile(selected_distances, 92.0)) + 8.0)
+
+    digit_lab = cv2.cvtColor(digit_rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+    distances = np.min(
+        np.linalg.norm(digit_lab[:, :, None, :] - centers[None, None, :, :], axis=3),
+        axis=2,
+    )
+    digit_gray = cv2.cvtColor(digit_rgb, cv2.COLOR_RGB2GRAY)
+    mask = (distances <= max_distance) & (digit_gray >= max(0.0, background_l - 18.0))
+    mask = cv2.morphologyEx(
+        mask.astype(np.uint8) * 255,
+        cv2.MORPH_CLOSE,
+        np.ones((2, 2), dtype=np.uint8),
+    )
+    ratio = float(np.count_nonzero(mask)) / float(mask.size)
+    if ratio < 0.01 or ratio > 0.60:
+        return None
+    return mask
+
 def _basic_level_cell_has_digit(binary: np.ndarray) -> bool:
     count, _labels, stats, _centroids = cv2.connectedComponentsWithStats(binary)
     components = [stats[index] for index in range(1, count) if stats[index, cv2.CC_STAT_AREA] >= 12]
@@ -2033,19 +3662,35 @@ def _basic_level_cell_has_digit(binary: np.ndarray) -> bool:
     return left <= max(3, int(round(binary.shape[1] * 0.30)))
 
 
+def _basic_student_level_cells(
+    image: Image.Image,
+    region: dict,
+) -> tuple[tuple[np.ndarray, np.ndarray], bool]:
+    """Rotate the whole rectified strip, resize it, then split digit cells."""
+    output_size = tuple(region.get("output_size", (58, 46)))
+    warped = warp_quad_region(image, region, output_size=output_size)
+    if warped is None:
+        empty = np.zeros((1, 1), dtype=np.uint8)
+        return (empty, empty), False
+
+    binary = otsu_binary(warped)
+    midpoint = binary.shape[1] // 2
+    center_trim = max(0, int(region.get("center_trim_pixels", 0) or 0))
+    center_trim = min(center_trim, max(0, midpoint - 1))
+    cells = (
+        binary[:, :midpoint - center_trim],
+        binary[:, midpoint + center_trim:],
+    )
+    has_second_digit = _basic_level_cell_has_digit(cells[1])
+    return cells, has_second_digit
+
+
 def extract_basic_student_level_glyphs(
     image: Image.Image,
     region: dict,
 ) -> tuple[list[np.ndarray], bool]:
     """Return normalized digit glyphs and whether the second cell is occupied."""
-    output_size = tuple(region.get("output_size", (58, 46)))
-    warped = warp_quad_region(image, region, output_size=output_size)
-    if warped is None:
-        return [], False
-    binary = otsu_binary(warped)
-    midpoint = binary.shape[1] // 2
-    cells = (binary[:, :midpoint], binary[:, midpoint:])
-    has_second_digit = _basic_level_cell_has_digit(cells[1])
+    cells, has_second_digit = _basic_student_level_cells(image, region)
     selected_cells = cells if has_second_digit else cells[:1]
     glyphs = [normalize_binary_glyph(cell) for cell in selected_cells]
     if any(glyph is None for glyph in glyphs):
@@ -2059,14 +3704,10 @@ def read_basic_student_level_result(
     adaptive_templates: dict[int, dict[str, list[np.ndarray]]] | None = None,
 ) -> RecognitionResult:
     """Read the compact left-card level after rectifying its slanted digit strip."""
-    output_size = tuple(region.get("output_size", (58, 46)))
-    warped = warp_quad_region(image, region, output_size=output_size)
-    if warped is None or not _basic_level_digit_templates():
+    if not _basic_level_digit_templates():
         return RecognitionResult.fallback(None, "basic_level_assets_missing")
 
-    binary = otsu_binary(warped)
-    midpoint = binary.shape[1] // 2
-    cells = (binary[:, :midpoint], binary[:, midpoint:])
+    cells, has_second_digit = _basic_student_level_cells(image, region)
     results = [
         _match_basic_level_digit(
             cell,
@@ -2078,7 +3719,6 @@ def read_basic_student_level_result(
     second_label, second_score, second_margin = results[1]
 
     second_occupancy = float(np.count_nonzero(cells[1])) / float(cells[1].size)
-    has_second_digit = _basic_level_cell_has_digit(cells[1])
     if first_label is None:
         return RecognitionResult(value=None, score=0.0, source=RecogSource.COMBINED, uncertain=True)
 
@@ -2098,7 +3738,7 @@ def read_basic_student_level_result(
     valid = 1 <= value <= 90
     uncertain = not valid or score < 0.70 or margin < 0.035
     _log.debug(
-        "basic_level: value=%s score=%.3f margin=%.3f second_occ=%.3f adaptive=%d uncertain=%s",
+        "basic_level_otsu: value=%s score=%.3f margin=%.3f second_occ=%.3f adaptive=%d uncertain=%s",
         value,
         score,
         margin,
@@ -2113,9 +3753,9 @@ def read_basic_student_level_result(
     return RecognitionResult(
         value=value if valid else None,
         score=score,
-        source=RecogSource.COMBINED,
+        source=RecogSource.TEMPLATE_TEXT,
         uncertain=uncertain,
-        label=f"basic_level:{value}:margin={margin:.3f}",
+        label=f"basic_level_otsu:{value}:margin={margin:.3f}",
     )
 
 
@@ -2171,9 +3811,9 @@ def read_basic_student_star_result(image: Image.Image, region: dict) -> Recognit
     )
 
 
-# ══════════════════════════════════════════════════════════
-# 장비 티어
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# ?貫???怨쀫선
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 def rank_equip_tier_candidates(crop: Image.Image, slot: int) -> list[tuple[str, float]]:
     d = TEMPLATE_DIR / f"equip{slot}"
@@ -2210,7 +3850,7 @@ def read_equip_tier(crop: Image.Image, slot: int) -> str:
         candidates[p.stem.replace(f"equip{slot}_", "")] = str(p)
 
     if not candidates:
-        _log.warning(f"equip{slot}: 템플릿 없음 → unknown")
+        _log.warning(f"equip{slot}: ??쀫탣????곸벉 ??unknown")
         return "unknown"
 
     scores = {
@@ -2224,19 +3864,19 @@ def read_equip_tier(crop: Image.Image, slot: int) -> str:
 
     best_lbl, best_score = ranked[0]
     if best_score < THRESHOLD_LOOSE:
-        _log.debug(f"equip{slot}: {best_lbl}({best_score:.3f}) < {THRESHOLD_LOOSE} → unknown")
+        _log.debug(f"equip{slot}: {best_lbl}({best_score:.3f}) < {THRESHOLD_LOOSE} ??unknown")
         return "unknown"
     return best_lbl
 
 
-# ══════════════════════════════════════════════════════════
-# V5 공식 인터페이스 (하위 호환)
-# ══════════════════════════════════════════════════════════
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
+# V5 ?⑤벊???紐낃숲??륁뵠??(??륁맄 ?紐낆넎)
+# ?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름?癒λ름
 
 def read_student_star_v5(crop: Image.Image) -> Optional[int]:
     """
-    학생 성작 인식 (v5 호환 인터페이스).
-    내부적으로 match_masked_icon() 경로 사용.
+    ??덇문 ?源놁삂 ?紐꾨뻼 (v5 ?紐낆넎 ?紐낃숲??륁뵠??.
+    ????怨몄몵嚥?match_masked_icon() 野껋럥以?????
     """
     d = TEMPLATE_DIR / "star"
     cands = {
@@ -2252,7 +3892,7 @@ def read_student_star_v5(crop: Image.Image) -> Optional[int]:
 
 
 def read_student_star_v5_result(crop: Image.Image) -> RecognitionResult:
-    """학생 성작 인식 — RecognitionResult 반환."""
+    """??덇문 ?源놁삂 ?紐꾨뻼 ??RecognitionResult 獄쏆꼹??"""
     d = TEMPLATE_DIR / "star"
     cands = {
         str(i): str(d / f"star_{i}.png")
@@ -2269,8 +3909,8 @@ def read_student_star_v5_result(crop: Image.Image) -> RecognitionResult:
 
 def read_weapon_star_v5(crop: Image.Image) -> Optional[int]:
     """
-    무기 성작 인식 (v5 호환 인터페이스).
-    내부적으로 match_masked_icon() 경로 사용.
+    ?얜떯由??源놁삂 ?紐꾨뻼 (v5 ?紐낆넎 ?紐낃숲??륁뵠??.
+    ????怨몄몵嚥?match_masked_icon() 野껋럥以?????
     """
     d = TEMPLATE_DIR / "weapon_star"
     cands = {
@@ -2500,7 +4140,7 @@ def _weapon_star_count_from_color(crop: Image.Image) -> tuple[Optional[int], flo
 
 
 def read_weapon_star_v5_result(crop: Image.Image) -> RecognitionResult:
-    """무기 성작 인식 — RecognitionResult 반환."""
+    """?얜떯由??源놁삂 ?紐꾨뻼 ??RecognitionResult 獄쏆꼹??"""
     color_value, color_score = _weapon_star_count_from_color(crop)
     if color_value is not None and color_score >= 0.75:
         return _make_result(
@@ -2533,5 +4173,5 @@ def read_student_level_v5(
     try:
         return int(raw)
     except (TypeError, ValueError) as e:
-        _log.warning(f"read_student_level_v5: 변환 실패 (raw={raw!r}) — {e}")
+        _log.warning(f"read_student_level_v5: 癰궰????쎈솭 (raw={raw!r}) ??{e}")
         return None

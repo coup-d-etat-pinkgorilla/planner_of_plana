@@ -37,6 +37,10 @@ Managed asset files currently include:
 - `regions/`
 - `data/planning/`
 - `core/student_meta.py`
+- `gui/font/`
+- `assets/`
+
+`tools/build_beta_release.py` validates required runtime support assets before writing `asset_manifest.json`. If scanner code starts resolving another support directory from the runtime asset root, add that broad directory to `ASSET_ROOTS` so future files in it are picked up automatically.
 
 ## Build
 

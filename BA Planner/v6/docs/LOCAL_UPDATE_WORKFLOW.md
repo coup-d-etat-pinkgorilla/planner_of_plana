@@ -28,7 +28,7 @@ OK: no local-only files are visible to Git.
 
 Use this rule:
 
-- Student images, templates, planning data, or `core/student_meta.py` only: prepare an asset update.
+- Student images, templates, scanner fonts, app support images, planning data, or `core/student_meta.py` only: prepare an asset update.
 - Source code, UI, behavior, dependencies, or executable packaging changed: prepare an app update.
 - Both changed: prepare an app update with `--previous-manifest` so the same release also contains asset update files.
 

@@ -12,6 +12,7 @@ from core.matcher import (
     WeaponState,
     _read_adaptive_equip_digit,
     _read_weapon_level_glyph_result,
+    read_basic_equipment_icon_tier_result,
     read_basic_weapon_star_result,
     read_weapon_star_v5_result,
 )
@@ -41,6 +42,30 @@ class WeaponRegionConfigurationTests(unittest.TestCase):
         self.assertGreater(basic_star["x1"], 0.70)
         self.assertLessEqual(basic_star["x1"], 0.772)
         self.assertLess(basic_star["y2"] - basic_star["y1"], 0.04)
+
+    def test_basic_equipment_anchors_follow_each_card(self) -> None:
+        regions = json.loads(
+            Path("regions/student_normal_info_regions.json").read_text(encoding="utf-8")
+        )
+        previous_x = 0.0
+        for slot in (1, 2, 3):
+            level = regions[f"basic_equipment_{slot}_level_digits_quad"]
+            icon = regions[f"basic_equipment_{slot}_icon_region"]
+            level_points = level["points_ratio"]
+            self.assertGreater(level_points[1]["x"] - level_points[0]["x"], 30 / 2560)
+            self.assertEqual(level["center_trim_pixels"], 1)
+            self.assertEqual(level["output_size"], [48, 36])
+            self.assertEqual(icon["crop_ratio"]["left"], 0.15)
+            self.assertEqual(icon["crop_ratio"]["bottom"], 0.30)
+            self.assertEqual(icon["template_background"], "icons/temp/square.png")
+            level_x = min(point["x"] for point in level_points)
+            icon_x = icon["x1"] + icon["crop_ratio"]["left"] * (icon["x2"] - icon["x1"])
+            level_y = min(point["y"] for point in level["points_ratio"])
+            icon_y = icon["y1"] + icon["crop_ratio"]["top"] * (icon["y2"] - icon["y1"])
+            self.assertGreater(level_x, previous_x)
+            self.assertLess(icon_x, level_x)
+            self.assertLess(level_y, icon_y)
+            previous_x = level_x
 
 
 class WeaponBasicFastPathTests(unittest.TestCase):
@@ -200,6 +225,82 @@ class EquipmentLevelCalibrationTests(unittest.TestCase):
             )
 
         self.assertEqual("7", rescued)
+
+
+class EquipmentIconTierTests(unittest.TestCase):
+    def test_canonical_icon_crop_matches_its_tier(self) -> None:
+        icon = Image.open(
+            Path("templates/icons/equipment/Equipment_Icon_Shoes_Tier4.png")
+        ).convert("RGBA")
+        background = Image.open(
+            Path("templates/icons/temp/square.png")
+        ).convert("RGBA").resize(icon.size, Image.Resampling.LANCZOS)
+        screen = Image.alpha_composite(background, icon).convert("RGB")
+        region = {
+            "x1": 0.0, "y1": 0.0, "x2": 1.0, "y2": 1.0,
+            "crop_ratio": {
+                "left": 0.15, "right": 0.15, "top": 0.20, "bottom": 0.30,
+            },
+        }
+        result = read_basic_equipment_icon_tier_result(screen, region, "Shoes")
+        self.assertEqual("T4", result.value)
+        self.assertFalse(result.uncertain)
+        self.assertGreater(result.score, 0.99)
+
+
+class EquipmentBasicFastPathTests(unittest.TestCase):
+    def test_level_tier_ranges_are_cross_checked(self) -> None:
+        self.assertTrue(Scanner._equipment_level_matches_tier(21, "T3"))
+        self.assertTrue(Scanner._equipment_level_matches_tier(70, "T10"))
+        self.assertFalse(Scanner._equipment_level_matches_tier(48, "T4"))
+
+    def test_confident_basic_slot_is_committed(self) -> None:
+        scanner = Scanner.__new__(Scanner)
+        scanner._basic_equip_level_run_templates = {}
+        scanner._basic_equip_tier_run_templates = {}
+        scanner._info = Mock()
+        entry = StudentEntry(student_id="test")
+        regions = {
+            "basic_equipment_1_level_digits_quad": {"points_ratio": [{}] * 4},
+            "basic_equipment_1_icon_region": {"points_ratio": [{}] * 4},
+        }
+        level = RecognitionResult(43, 0.93, RecogSource.COMBINED, False)
+        tier = RecognitionResult("T5", 0.94, RecogSource.COMBINED, False)
+        with (
+            patch("core.scanner.read_basic_equipment_level_result", return_value=level),
+            patch("core.scanner.read_basic_equipment_icon_tier_result", return_value=tier),
+        ):
+            with patch("core.scanner.student_meta.equipment_slots", return_value=("Shoes", "Badge", "Watch")):
+                resolved = scanner._read_basic_equipment_slot(
+                    entry, Image.new("RGB", (32, 32)), regions, 1,
+                )
+        self.assertTrue(resolved)
+        self.assertEqual("T5", entry.equip1)
+        self.assertEqual(43, entry.equip1_level)
+        self.assertEqual("basic_info_icon", entry.get_meta("equip1").note)
+
+    def test_incompatible_basic_pair_falls_back(self) -> None:
+        scanner = Scanner.__new__(Scanner)
+        scanner._basic_equip_level_run_templates = {}
+        scanner._basic_equip_tier_run_templates = {}
+        scanner._info = Mock()
+        entry = StudentEntry(student_id="test")
+        regions = {
+            "basic_equipment_1_level_digits_quad": {"points_ratio": [{}] * 4},
+            "basic_equipment_1_icon_region": {"points_ratio": [{}] * 4},
+        }
+        level = RecognitionResult(48, 0.99, RecogSource.COMBINED, False)
+        tier = RecognitionResult("T4", 0.99, RecogSource.COMBINED, False)
+        with (
+            patch("core.scanner.read_basic_equipment_level_result", return_value=level),
+            patch("core.scanner.read_basic_equipment_icon_tier_result", return_value=tier),
+        ):
+            with patch("core.scanner.student_meta.equipment_slots", return_value=("Shoes", "Badge", "Watch")):
+                resolved = scanner._read_basic_equipment_slot(
+                    entry, Image.new("RGB", (32, 32)), regions, 1,
+                )
+        self.assertFalse(resolved)
+        self.assertIsNone(entry.equip1)
 
 
 class WeaponMergeCorrectionTests(unittest.TestCase):

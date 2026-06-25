@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import cv2
 import numpy as np
 from PIL import Image
@@ -33,13 +35,30 @@ def warp_quad_region(
     else:
         dst_w, dst_h = output_size
 
-    src = np.asarray(src_points, dtype=np.float32)
+    # Convert only the small area surrounding the quad. Converting a complete
+    # 2048x1152 capture for a 24-64px OCR target dominated the old path.
+    # Keep a two-pixel interpolation border so the rectified output remains
+    # equivalent at the quad edges.
+    border = 2
+    crop_left = max(0, int(math.floor(min(point[0] for point in src_points))) - border)
+    crop_top = max(0, int(math.floor(min(point[1] for point in src_points))) - border)
+    crop_right = min(width, int(math.ceil(max(point[0] for point in src_points))) + border + 1)
+    crop_bottom = min(height, int(math.ceil(max(point[1] for point in src_points))) + border + 1)
+    if crop_right <= crop_left or crop_bottom <= crop_top:
+        return None
+
+    local_points = [
+        (point[0] - crop_left, point[1] - crop_top)
+        for point in src_points
+    ]
+    src = np.asarray(local_points, dtype=np.float32)
     dst = np.asarray(
         ((0, 0), (dst_w - 1, 0), (dst_w - 1, dst_h - 1), (0, dst_h - 1)),
         dtype=np.float32,
     )
     matrix = cv2.getPerspectiveTransform(src, dst)
-    rgb = np.asarray(image.convert("RGB"))
+    source_crop = image.crop((crop_left, crop_top, crop_right, crop_bottom)).convert("RGB")
+    rgb = np.asarray(source_crop)
     warped = cv2.warpPerspective(rgb, matrix, (dst_w, dst_h), flags=cv2.INTER_CUBIC)
     return Image.fromarray(warped)
 

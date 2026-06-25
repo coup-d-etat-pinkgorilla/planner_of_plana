@@ -5,6 +5,7 @@ Standalone Qt-based student viewer process.
 from __future__ import annotations
 
 import ctypes
+import argparse
 import json
 import math
 import os
@@ -179,6 +180,30 @@ def set_target_window(hwnd: int, title: str) -> None:
     from core.capture import set_target_window as _set_target_window
 
     _set_target_window(hwnd, title)
+
+
+def is_target_foreground() -> bool:
+    from core.capture import is_target_foreground as _is_target_foreground
+
+    return _is_target_foreground()
+
+
+VIEWER_STUDENT_SCAN_DEBUG_FLAGS = {
+    "--student-scan-debug",
+    "--student-debug",
+    "--debug-student-scan",
+}
+VK_LEFT = 0x25
+VK_RIGHT = 0x27
+
+
+def _async_key_down(vk: int) -> bool:
+    if os.name != "nt":
+        return False
+    try:
+        return bool(ctypes.windll.user32.GetAsyncKeyState(int(vk)) & 0x8000)
+    except Exception:
+        return False
 
 _PLAN_GOAL_CACHE_FIELDS = tuple(field.name for field in fields(StudentGoal))
 RAID_CUSTOM_INPUT_LABEL = "직접 입력"
@@ -1081,22 +1106,22 @@ class EquipmentDetailCard(ParallelogramPanel):
         self._ui_scale = ui_scale
         self._icon = QPixmap()
         self._value_text = "-"
-        self._caption_text = "-"
+        self._level_text = ""
         self._value_color = QColor(INK)
-        self._caption_color = QColor(MUTED)
-        self.setMinimumHeight(scale_px(110, ui_scale))
+        self._level_color = QColor(INK)
+        self.setMinimumHeight(scale_px(92, ui_scale))
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-    def setData(self, *, icon: QPixmap | None, value: str, caption: str) -> None:
+    def setData(self, *, icon: QPixmap | None, value: str, level: str = "") -> None:
         self._icon = icon or QPixmap()
-        self._value_text = value
-        self._caption_text = caption
+        self._value_text = value or ""
+        self._level_text = level or ""
         self.update()
 
     def clearData(self) -> None:
         self._icon = QPixmap()
         self._value_text = "-"
-        self._caption_text = "-"
+        self._level_text = ""
         self.update()
 
     def paintEvent(self, event) -> None:
@@ -1107,51 +1132,49 @@ class EquipmentDetailCard(ParallelogramPanel):
         painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
 
         height = max(1, self.height())
-        width = max(1, self.width())
-        y_icon = height * 0.26
-        y_value = height * 0.67
-        y_caption = height * 0.84
+        pad_x = scale_px(8, self._ui_scale)
+        pad_y = scale_px(6, self._ui_scale)
+        center_y = height * 0.54
 
         if not self._icon.isNull():
-            icon_size = scale_px(60, self._ui_scale)
+            icon_size = scale_px(63, self._ui_scale)
             scaled = self._icon.scaled(icon_size, icon_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            left, right = self.edge_bounds_at_y(y_icon)
+            left, right = self.edge_bounds_at_y(center_y)
             center_x = (left + right) / 2.0
-            painter.drawPixmap(int(round(center_x - (scaled.width() / 2))), int(round(y_icon - (scaled.height() / 2))), scaled)
+            x = int(round(center_x - (scaled.width() / 2)))
+            y = int(round(center_y - (scaled.height() / 2)))
+            painter.drawPixmap(max(0, x), max(0, y), scaled)
 
-        value_font = QFont(self.font())
-        value_font.setBold(True)
-        value_font.setPixelSize(scale_px(24, self._ui_scale))
-        painter.setFont(value_font)
-        painter.setPen(self._value_color)
-        value_metrics = QFontMetrics(value_font)
-        value_width = min(width, value_metrics.horizontalAdvance(self._value_text) + scale_px(12, self._ui_scale))
-        left, right = self.edge_bounds_at_y(y_value)
-        value_center_x = (left + right) / 2.0
-        value_rect = QRect(
-            int(round(value_center_x - (value_width / 2))),
-            int(round(y_value - scale_px(16, self._ui_scale))),
-            int(round(value_width)),
-            scale_px(28, self._ui_scale),
-        )
-        painter.drawText(value_rect, Qt.AlignCenter, self._value_text)
+        if self._level_text:
+            level_font = QFont(self.font())
+            level_font.setItalic(True)
+            level_font.setBold(True)
+            level_font.setPixelSize(scale_px(17, self._ui_scale))
+            painter.setFont(level_font)
+            painter.setPen(self._level_color)
+            left, right = self.edge_bounds_at_y(pad_y + scale_px(10, self._ui_scale))
+            level_rect = QRect(
+                int(round(left + pad_x)),
+                pad_y,
+                max(scale_px(28, self._ui_scale), int(round(right - left - (pad_x * 2)))),
+                scale_px(22, self._ui_scale),
+            )
+            painter.drawText(level_rect, Qt.AlignLeft | Qt.AlignVCenter, self._level_text)
 
-        caption_font = QFont(self.font())
-        caption_font.setPixelSize(scale_px(12, self._ui_scale))
-        painter.setFont(caption_font)
-        painter.setPen(self._caption_color)
-        caption_metrics = QFontMetrics(caption_font)
-        left, right = self.edge_bounds_at_y(y_caption)
-        caption_center_x = (left + right) / 2.0
-        caption_width_limit = max(scale_px(42, self._ui_scale), int(right - left - scale_px(12, self._ui_scale)))
-        caption_text = caption_metrics.elidedText(self._caption_text, Qt.ElideRight, caption_width_limit)
-        caption_rect = QRect(
-            int(round(caption_center_x - (caption_width_limit / 2))),
-            int(round(y_caption - scale_px(10, self._ui_scale))),
-            caption_width_limit,
-            scale_px(18, self._ui_scale),
-        )
-        painter.drawText(caption_rect, Qt.AlignCenter, caption_text)
+        if self._value_text:
+            value_font = QFont(self.font())
+            value_font.setBold(True)
+            value_font.setPixelSize(scale_px(25 if len(self._value_text) <= 2 else 21, self._ui_scale))
+            painter.setFont(value_font)
+            painter.setPen(self._value_color)
+            left, right = self.edge_bounds_at_y(center_y)
+            value_rect = QRect(
+                int(round(left + pad_x)),
+                int(round(center_y - scale_px(18, self._ui_scale))),
+                max(scale_px(30, self._ui_scale), int(round(right - left - (pad_x * 2)))),
+                scale_px(36, self._ui_scale),
+            )
+            painter.drawText(value_rect, Qt.AlignCenter, self._value_text)
         painter.end()
 
 
@@ -1699,6 +1722,61 @@ def _equipment_icon_path(student_id: str, slot_index: int, tier: str | None) -> 
     return path if path.exists() else None
 
 
+def _slot_placeholder(value: str | None, *, supported: bool = True) -> str:
+    raw = str(value or "").strip().lower()
+    if not supported or raw in {"level_locked", "love_locked", "null", "unsupported", "no_system"}:
+        return ""
+    if raw in {"", "unknown", "empty", "none", "0"}:
+        return "-"
+    return str(value or "-")
+
+
+def _detail_stats_html(pairs: tuple[tuple[str, int | None], ...], *, font_px: int = 17) -> str:
+    normalized = tuple((label, f"{(_int_or_none(value) or 0):,}") for label, value in pairs)
+    if len(normalized) >= 4:
+        left_rows = normalized[0::2]
+        right_rows = normalized[1::2]
+        rows = []
+        for left, right in zip(left_rows, right_rows):
+            rows.append(
+                "<tr>"
+                f"<td align='left' width='34'>{escape(left[0])}</td>"
+                f"<td align='right' width='72' style='padding-left:8px;'>{escape(left[1])}</td>"
+                "<td width='28'></td>"
+                f"<td align='left' width='46'>{escape(right[0])}</td>"
+                f"<td align='right' width='72' style='padding-left:8px;'>{escape(right[1])}</td>"
+                "</tr>"
+            )
+        return (
+            f"<table align='center' cellspacing='0' cellpadding='0' "
+            f"style='font-size:{font_px}px; font-weight:800; color:#f7fbff;'>"
+            + "".join(rows)
+            + "</table>"
+        )
+
+    cells = []
+    for label, value in normalized:
+        cells.append(
+            f"<td align='left' width='34'>{escape(label)}</td>"
+            f"<td align='right' width='58' style='padding-left:8px; padding-right:10px;'>{escape(value)}</td>"
+        )
+    return (
+        f"<table align='center' cellspacing='0' cellpadding='0' "
+        f"style='font-size:{font_px}px; font-weight:800; color:#f7fbff;'><tr>"
+        + "".join(cells)
+        + "</tr></table>"
+    )
+
+
+def _detail_bonus_stats_html(pairs: tuple[tuple[str, int | None], ...], *, font_px: int = 13) -> str:
+    pieces = [f"{escape(label)} {(_int_or_none(value) or 0):,}" for label, value in pairs]
+    return (
+        f"<span style='font-size:{font_px}px; font-weight:800; color:#c9c9d4;'>"
+        + "&nbsp;&nbsp;|&nbsp;&nbsp;".join(pieces)
+        + "</span>"
+    )
+
+
 def _inventory_name_token(value: str | None) -> str:
     return "".join(str(value or "").split()).lower()
 
@@ -2067,6 +2145,10 @@ class StudentRecord:
     equip1_level: int | None
     equip2_level: int | None
     equip3_level: int | None
+    combat_hp: int | None
+    combat_atk: int | None
+    combat_def: int | None
+    combat_heal: int | None
     stat_hp: int | None
     stat_atk: int | None
     stat_heal: int | None
@@ -2275,6 +2357,10 @@ def _row_to_record(row: dict, owned: bool) -> StudentRecord:
         equip1_level=row.get("equip1_level"),
         equip2_level=row.get("equip2_level"),
         equip3_level=row.get("equip3_level"),
+        combat_hp=row.get("combat_hp"),
+        combat_atk=row.get("combat_atk"),
+        combat_def=row.get("combat_def"),
+        combat_heal=row.get("combat_heal"),
         stat_hp=row.get("stat_hp"),
         stat_atk=row.get("stat_atk"),
         stat_heal=row.get("stat_heal"),
@@ -4060,6 +4146,7 @@ class StudentViewerWindow(QMainWindow):
         ui_scale: float,
         startup_geometry: QRect | None = None,
         startup_screen_geometry: QRect | None = None,
+        student_scan_debug: bool = False,
     ):
         super().__init__()
         self._ui_scale = ui_scale
@@ -4071,6 +4158,8 @@ class StudentViewerWindow(QMainWindow):
         )
         self._startup_window_applied = False
         self._applying_work_area = False
+        self._student_scan_debug_enabled = bool(student_scan_debug)
+        self._ba_arrow_key_down = {VK_LEFT: False, VK_RIGHT: False}
         self._detail_panel: QFrame | None = None
         self._hero_wrap: QFrame | None = None
         self._busy_overlay: QFrame | None = None
@@ -4146,6 +4235,7 @@ class StudentViewerWindow(QMainWindow):
         self._main_tabs: QTabWidget | None = None
         self._settings_tab: QWidget | None = None
         self._scan_tab: QWidget | None = None
+        self._students_tab: QWidget | None = None
         self._scanner_process: subprocess.Popen | None = None
         self._scanner_mode: str = ""
         self._scanner_tray_icon: QSystemTrayIcon | None = None
@@ -4259,8 +4349,18 @@ class StudentViewerWindow(QMainWindow):
         self._scanner_poll_timer.setSingleShot(False)
         self._scanner_poll_timer.setInterval(1000)
         self._scanner_poll_timer.timeout.connect(self._check_scanner_process)
+        self._ba_input_poll_timer = QTimer(self)
+        self._ba_input_poll_timer.setSingleShot(False)
+        self._ba_input_poll_timer.setInterval(35)
+        self._ba_input_poll_timer.timeout.connect(self._poll_debug_ba_arrow_keys)
 
         self._build_ui()
+        app = QApplication.instance()
+        if app is not None:
+            app.installEventFilter(self)
+        if self._student_scan_debug_enabled:
+            self._load_saved_target_into_capture()
+            self._ba_input_poll_timer.start()
         self._apply_filters()
         self._refresh_plan_lists()
         self._refresh_plan_totals()
@@ -5690,7 +5790,7 @@ class StudentViewerWindow(QMainWindow):
         self._build_scan_tab(scan_tab)
 
         students_tab = QWidget()
-        self._add_main_tab(tabs, students_tab, _tr("tab.students"))
+        self._students_tab = self._add_main_tab(tabs, students_tab, _tr("tab.students"))
         self._build_students_tab(students_tab)
 
         plan_tab = QWidget()
@@ -6691,7 +6791,7 @@ class StudentViewerWindow(QMainWindow):
         equip_row.setContentsMargins(0, 0, 0, 0)
         equip_row.setSpacing(0)
         self._detail_equip_cards: dict[str, EquipmentDetailCard] = {}
-        for slot in ("equip1", "equip2", "equip3"):
+        for slot in ("equip1", "equip2", "equip3", "equip4"):
             card = EquipmentDetailCard(
                 self._ui_scale,
                 fill=_mix_hex(PALETTE_PANEL_ALT, PALETTE_SOFT, 0.18),
@@ -6705,8 +6805,18 @@ class StudentViewerWindow(QMainWindow):
         self._detail_stats_line = QLabel("-")
         self._detail_stats_line.setObjectName("detailMetaLine")
         self._detail_stats_line.setAlignment(Qt.AlignCenter)
-        self._detail_stats_line.setWordWrap(True)
+        self._detail_stats_line.setTextFormat(Qt.RichText)
+        self._detail_stats_line.setMinimumHeight(scale_px(38, self._ui_scale))
+        self._detail_stats_line.setWordWrap(False)
         detail_card_layout.addWidget(self._detail_stats_line)
+
+        self._detail_bonus_stats_line = QLabel("-")
+        self._detail_bonus_stats_line.setObjectName("detailMetaLine")
+        self._detail_bonus_stats_line.setAlignment(Qt.AlignCenter)
+        self._detail_bonus_stats_line.setTextFormat(Qt.RichText)
+        self._detail_bonus_stats_line.setMinimumHeight(scale_px(18, self._ui_scale))
+        self._detail_bonus_stats_line.setWordWrap(False)
+        detail_card_layout.addWidget(self._detail_bonus_stats_line)
         detail_layout.addWidget(detail_card)
         detail_layout.addStretch(1)
         self._student_grid_panel = PlanGridContentPanel(ui_scale=self._ui_scale)
@@ -6742,8 +6852,8 @@ class StudentViewerWindow(QMainWindow):
         student_grid_panel_layout.addWidget(self._student_grid, 1)
         list_layout.addWidget(self._student_grid_panel, 1)
 
-        detail.setMinimumWidth(scale_px(332, self._ui_scale))
-        detail.setMaximumWidth(scale_px(376, self._ui_scale))
+        detail.setMinimumWidth(scale_px(356, self._ui_scale))
+        detail.setMaximumWidth(scale_px(408, self._ui_scale))
         content.addWidget(list_panel)
         content.addWidget(detail)
         content.setStretchFactor(0, 5)
@@ -6869,7 +6979,93 @@ class StudentViewerWindow(QMainWindow):
         self._hero_wrap.setFixedHeight(wrap_height)
 
     def eventFilter(self, watched, event) -> bool:
+        if event.type() == QEvent.KeyPress and self._handle_student_tab_arrow_key(event):
+            return True
         return super().eventFilter(watched, event)
+
+    def _is_students_tab_active(self) -> bool:
+        return (
+            self._main_tabs is not None
+            and self._students_tab is not None
+            and self._main_tabs.currentWidget() is self._students_tab
+        )
+
+    def _open_students_tab(self) -> None:
+        if self._main_tabs is not None and self._students_tab is not None:
+            self._main_tabs.setCurrentWidget(self._students_tab)
+
+    def _handle_student_tab_arrow_key(self, event) -> bool:
+        if not self._is_students_tab_active():
+            return False
+        key = event.key()
+        if key not in {Qt.Key_Left, Qt.Key_Right, Qt.Key_Up, Qt.Key_Down}:
+            return False
+        modifiers = event.modifiers()
+        if modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier):
+            return False
+        focus = QApplication.focusWidget()
+        if isinstance(
+            focus,
+            (
+                QLineEdit,
+                QPlainTextEdit,
+                QComboBox,
+                QAbstractSpinBox,
+                QListWidget,
+                QTableWidget,
+                QTabBar,
+            ),
+        ):
+            return False
+        moved = self._move_student_selection_for_key(key)
+        if moved:
+            event.accept()
+        return moved
+
+    def _move_student_selection_for_key(self, key: int) -> bool:
+        columns = max(1, STUDENT_GRID_COLUMNS)
+        if key == Qt.Key_Left:
+            return self._move_student_selection(-1)
+        if key == Qt.Key_Right:
+            return self._move_student_selection(1)
+        if key == Qt.Key_Up:
+            return self._move_student_selection(-columns)
+        if key == Qt.Key_Down:
+            return self._move_student_selection(columns)
+        return False
+
+    def _move_student_selection(self, step: int) -> bool:
+        if not hasattr(self, "_student_grid") or not self._filtered_students:
+            return False
+        ids = [record.student_id for record in self._filtered_students if record.student_id in self._item_by_id]
+        if not ids:
+            return False
+        current = self._student_grid.current_card_id()
+        if current in ids:
+            current_index = ids.index(current)
+            next_index = max(0, min(len(ids) - 1, current_index + int(step)))
+        else:
+            next_index = 0 if step >= 0 else len(ids) - 1
+        next_id = ids[next_index]
+        if next_id == current:
+            return False
+        self._student_grid.set_current_card(next_id)
+        return True
+
+    def _poll_debug_ba_arrow_keys(self) -> None:
+        if not self._student_scan_debug_enabled:
+            return
+        if not is_target_foreground():
+            self._ba_arrow_key_down[VK_LEFT] = False
+            self._ba_arrow_key_down[VK_RIGHT] = False
+            return
+        for vk, key in ((VK_LEFT, Qt.Key_Left), (VK_RIGHT, Qt.Key_Right)):
+            down = _async_key_down(vk)
+            was_down = self._ba_arrow_key_down.get(vk, False)
+            self._ba_arrow_key_down[vk] = down
+            if down and not was_down:
+                self._open_students_tab()
+                self._move_student_selection_for_key(key)
 
     def _refresh_card_layout(self) -> None:
         if self._card_layout_guard or not hasattr(self, "_student_grid"):
@@ -17864,9 +18060,9 @@ class StudentViewerWindow(QMainWindow):
         self._detail_level_value.setText(str(record.level or "-") if record.owned else "-")
         self._detail_position_value.setText(_position_label(record.position))
         self._detail_class_value.setText((record.combat_class or "-").title())
-        has_weapon = record.owned and record.weapon_level is not None and (record.weapon_state or "") != "no_weapon_system"
-        self._detail_weapon_card.setVisible(has_weapon)
-        self._detail_weapon_value.setText(f"Lv.{record.weapon_level}" if has_weapon else "-")
+        has_weapon = record.owned and (record.weapon_state or "") != "no_weapon_system"
+        self._detail_weapon_card.setVisible(True)
+        self._detail_weapon_value.setText(f"Lv.{record.weapon_level}" if has_weapon and record.weapon_level is not None else "-")
         self._detail_weapon_sub.clear()
 
         self._detail_skill_labels["ex"].setText(str(record.ex_skill or "-") if record.owned else "-")
@@ -17877,25 +18073,53 @@ class StudentViewerWindow(QMainWindow):
         for index, slot in enumerate(("equip1", "equip2", "equip3"), start=1):
             tier = getattr(record, slot)
             tier_num = _parse_tier_number(tier)
-            caption_text = student_meta.equipment_slots(record.student_id)[index - 1] or slot.upper()
-            value_text = str(tier_num) if record.owned and tier_num is not None else "-"
+            level = _int_or_none(getattr(record, f"{slot}_level"))
+            value_text = _slot_placeholder(tier) if record.owned else "-"
             icon_path = _equipment_icon_path(record.student_id, index, tier) if record.owned else None
             icon_pixmap = QPixmap()
             if icon_path is not None:
                 loaded = QPixmap(str(icon_path))
                 if not loaded.isNull():
                     icon_pixmap = loaded
+                    value_text = ""
+            elif tier_num is not None:
+                value_text = f"T{tier_num}"
             self._detail_equip_cards[slot].setData(
                 icon=icon_pixmap,
                 value=value_text,
-                caption=caption_text.upper(),
+                level=str(level) if record.owned and level is not None else "",
             )
 
-        self._detail_stats_line.setText(
-            f"HP {record.stat_hp or 0:,}   |   ATK {record.stat_atk or 0:,}   |   HEAL {record.stat_heal or 0:,}"
-            if record.owned
-            else "No progression data available"
+        favorite_supported = student_meta.favorite_item_enabled(record.student_id)
+        favorite_tier = _parse_tier_number(record.equip4)
+        favorite_value = _slot_placeholder(record.equip4, supported=favorite_supported) if record.owned else "-"
+        if record.owned and favorite_tier is not None:
+            favorite_value = f"T{favorite_tier}"
+        self._detail_equip_cards["equip4"].setData(
+            icon=QPixmap(),
+            value=favorite_value,
+            level="",
         )
+
+        combat_values = (record.combat_hp, record.combat_atk, record.combat_def, record.combat_heal)
+        if record.owned and any(_int_or_none(value) is not None for value in combat_values):
+            self._detail_stats_line.setText(_detail_stats_html((
+                ("HP", record.combat_hp),
+                ("ATK", record.combat_atk),
+                ("DEF", record.combat_def),
+                ("HEAL", record.combat_heal),
+            ), font_px=scale_px(17, self._ui_scale)))
+        else:
+            self._detail_stats_line.setText("-")
+
+        if record.owned:
+            self._detail_bonus_stats_line.setText(_detail_bonus_stats_html((
+                ("HP", record.stat_hp),
+                ("ATK", record.stat_atk),
+                ("HEAL", record.stat_heal),
+            ), font_px=scale_px(13, self._ui_scale)))
+        else:
+            self._detail_bonus_stats_line.setText("-")
 
         hero_path = portrait_path(record.student_id)
         hero_size = self._hero.card_size()
@@ -17940,6 +18164,7 @@ class StudentViewerWindow(QMainWindow):
         for card in self._detail_equip_cards.values():
             card.clearData()
         self._detail_stats_line.setText("-")
+        self._detail_bonus_stats_line.setText("-")
         self._hero.clear()
 
     def _current_student_id(self) -> str | None:
@@ -17983,8 +18208,20 @@ def _install_qt_message_filter() -> None:
 _install_qt_message_filter()
 
 
+def _parse_viewer_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        *sorted(VIEWER_STUDENT_SCAN_DEBUG_FLAGS),
+        dest="student_scan_debug",
+        action="store_true",
+    )
+    args, remaining = parser.parse_known_args(argv[1:])
+    return args, [argv[0], *remaining]
+
+
 def main() -> int:
-    app = QApplication(sys.argv)
+    args, qt_argv = _parse_viewer_args(sys.argv)
+    app = QApplication(qt_argv)
     _apply_ui_font(app)
     startup_screen = app.screenAt(QCursor.pos()) or app.primaryScreen()
     startup_geometry = startup_screen.availableGeometry() if startup_screen is not None else None
@@ -17993,10 +18230,10 @@ def main() -> int:
         get_qt_ui_scale(app, base_width=PLANNER_BASE_WIDTH, base_height=PLANNER_BASE_HEIGHT),
         startup_geometry=startup_geometry,
         startup_screen_geometry=startup_screen_geometry,
+        student_scan_debug=args.student_scan_debug,
     )
     window.show()
     return app.exec()
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

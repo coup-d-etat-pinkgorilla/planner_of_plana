@@ -44,6 +44,10 @@ _STUDENT_FIELDS = (
     "equip1_level",
     "equip2_level",
     "equip3_level",
+    "combat_hp",
+    "combat_atk",
+    "combat_def",
+    "combat_heal",
     "stat_hp",
     "stat_atk",
     "stat_heal",
@@ -111,6 +115,10 @@ def _student_to_dict(entry: StudentEntry) -> dict[str, Any]:
         "equip1_level": entry.equip1_level,
         "equip2_level": entry.equip2_level,
         "equip3_level": entry.equip3_level,
+        "combat_hp":    entry.combat_hp,
+        "combat_atk":   entry.combat_atk,
+        "combat_def":   entry.combat_def,
+        "combat_heal":  entry.combat_heal,
         "stat_hp":      entry.stat_hp,
         "stat_atk":     entry.stat_atk,
         "stat_heal":    entry.stat_heal,
@@ -162,6 +170,7 @@ def _upsert_student(
             ex_skill, skill1, skill2, skill3,
             equip1, equip2, equip3, equip4,
             equip1_level, equip2_level, equip3_level,
+            combat_hp, combat_atk, combat_def, combat_heal,
             stat_hp, stat_atk, stat_heal,
             last_seen_at, last_scan_id
         ) VALUES (
@@ -170,6 +179,7 @@ def _upsert_student(
             :ex_skill, :skill1, :skill2, :skill3,
             :equip1, :equip2, :equip3, :equip4,
             :equip1_level, :equip2_level, :equip3_level,
+            :combat_hp, :combat_atk, :combat_def, :combat_heal,
             :stat_hp, :stat_atk, :stat_heal,
             :last_seen_at, :last_scan_id
         )
@@ -191,6 +201,10 @@ def _upsert_student(
             equip1_level  = excluded.equip1_level,
             equip2_level  = excluded.equip2_level,
             equip3_level  = excluded.equip3_level,
+            combat_hp     = excluded.combat_hp,
+            combat_atk    = excluded.combat_atk,
+            combat_def    = excluded.combat_def,
+            combat_heal   = excluded.combat_heal,
             stat_hp       = excluded.stat_hp,
             stat_atk      = excluded.stat_atk,
             stat_heal     = excluded.stat_heal,

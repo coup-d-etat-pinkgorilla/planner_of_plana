@@ -265,9 +265,13 @@ def capture_window_background(
     for attempt in range(retry + 1):
         img = _print_window(hwnd)
         if img is not None:
+            source_size = img.size
             if normalize:
                 from core.preprocess import normalize_frame
                 img = normalize_frame(img)
+            # Preserve the real client capture size. Scanner logs used to expose
+            # only the normalized QHD size, which hid window-mode upscaling.
+            img.info["capture_source_size"] = source_size
             return img
         if attempt < retry:
             log_capture_fail(_log, hwnd, attempt + 1, reason="PrintWindow 반환 None")
