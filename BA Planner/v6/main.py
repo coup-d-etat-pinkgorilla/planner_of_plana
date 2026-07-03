@@ -217,7 +217,7 @@ if __name__ == "__main__" and not _SCANNER_MODE:
     raise SystemExit(planner_main())
 
 try:
-    from core.analyzer import analyze_scan_summary, is_student_maxed
+    from core.analyzer import analyze_scan_summary
     from core.capture import (
         activate_target_window,
         clear_target,
@@ -241,13 +241,10 @@ try:
     from core.log_context import set_debug_dump
     from core.logger import LOG_APP, enable_scan_debug_log, get_logger, setup_logging
     from core.repository import ScanRepository
-    from core.scan_status import make_status_event, reset_status_log, write_status_event
+    from core.scan_status import make_status_event, read_status_ack, reset_status_log, write_status_ack, write_status_event
     from core.scanner import ItemEntry, ScanResult, Scanner
-    from core.student_order import ordered_owned_student_rows, ordered_student_rows
     from core.states import AppState, StateMachine, can_transition
     from core.template_cache import warmup_all
-    from gui.fast_scan_config_dialog import edit_fast_scan_config
-    from gui.fast_scan_dialog import choose_fast_scan_action
     from gui.floating import FloatingOverlay
     from gui.input_test_overlay import InputTestOverlay
     from gui.profile_dialog import choose_profile
@@ -267,10 +264,11 @@ _ITEM_SCAN_FILTER_OPTIONS: list[tuple[str, str]] = [
     ("tech_notes", "기술 노트"),
     ("tactical_bd", "전술 교육 BD"),
     ("ooparts", "오파츠"),
-    ("coins", "코인"),
+    ("student_elephs", "엘레프"),
     ("activity_reports", "활동 보고서"),
 ]
 _FULL_SCAN_ITEM_FILTERS: tuple[str, ...] = (
+    "student_elephs",
     "ooparts",
     "tactical_bd",
     "tech_notes",
@@ -531,6 +529,7 @@ class App(tk.Tk):
         self._destroyed = False
         self._target_close_handled = False
         self._ui_queue: queue.Queue[tuple] = queue.Queue()
+        self._scan_status_write_lock = threading.Lock()
         self._last_item_scan_filter: tuple[str, ...] = ("all",)
 
         self._overlay = FloatingOverlay(
@@ -799,9 +798,13 @@ class App(tk.Tk):
     def _scan_stop_request_path(self) -> Path:
         return get_storage_paths().current_dir / "scan_stop_requested.flag"
 
+    def _scan_status_ack_path(self) -> Path:
+        return get_storage_paths().current_dir / "scan_status_ack.json"
+
     def _reset_scan_status_log(self) -> None:
         try:
             reset_status_log(self._scan_status_path())
+            write_status_ack(self._scan_status_ack_path(), 0)
         except Exception:
             _log.exception("failed to reset scan status log")
 
@@ -830,9 +833,24 @@ class App(tk.Tk):
 
     def _write_scan_status_event(self, event: dict) -> None:
         try:
-            write_status_event(self._scan_status_path(), event)
+            with self._scan_status_write_lock:
+                write_status_event(self._scan_status_path(), event)
         except Exception:
             _log.exception("failed to write scan status event")
+
+    def _wait_scan_status_ack(self, seq: int, timeout: float = 0.55) -> bool:
+        if not seq or seq <= 0:
+            return True
+        deadline = time.monotonic() + max(0.0, timeout)
+        ack_path = self._scan_status_ack_path()
+        while time.monotonic() < deadline:
+            if self._destroyed or self._shutdown_requested:
+                return False
+            if read_status_ack(ack_path) >= seq:
+                return True
+            time.sleep(0.025)
+        _log.debug("scan status ack timeout: seq=%s ack=%s", seq, read_status_ack(ack_path))
+        return False
 
     def _handle_scan_progress_state(self, state: dict) -> None:
         self._overlay.set_scan_progress(
@@ -844,19 +862,6 @@ class App(tk.Tk):
 
     def _build_scanner(self, meta: dict) -> Scanner:
         from core.autosave import AutoSaveManager
-
-        current_students = self._repo.load_current_students()
-        force_student_measure = bool(meta.get("student_force_full_measure"))
-        maxed_ids: set[str] = set()
-        maxed_saved_data: dict[str, dict] = {}
-        student_saved_data = current_students
-        if force_student_measure:
-            student_saved_data = {}
-        else:
-            for sid, data in current_students.items():
-                if is_student_maxed(data):
-                    maxed_ids.add(sid)
-                    maxed_saved_data[sid] = data
 
         scan_id = meta.get("scan_id", "unknown")
         self._asv = AutoSaveManager(
@@ -870,14 +875,12 @@ class App(tk.Tk):
             self._regions,
             on_progress=lambda msg: self._dispatch_ui(self._overlay.add_log, msg),
             on_progress_state=lambda state: self._dispatch_ui(self._handle_scan_progress_state, dict(state)),
-            on_status_event=lambda event: self._dispatch_ui(self._write_scan_status_event, event),
-            maxed_ids=maxed_ids,
-            maxed_saved_data=maxed_saved_data,
-            student_saved_data=student_saved_data,
-            student_total_hint=len(current_students) or None,
+            on_status_event=self._write_scan_status_event,
+            on_status_ack_wait=self._wait_scan_status_ack,
+            student_saved_data={},
+            student_total_hint=None,
             autosave_manager=self._asv,
             inventory_profile_id=meta.get("item_scan_filter_profile") or None,
-            fast_student_ids=meta.get("fast_student_ids") or None,
             inventory_detail_override_dir=self._inventory_detail_override_dir(),
         )
 
@@ -973,94 +976,8 @@ class App(tk.Tk):
             self._last_item_scan_filter = normalized_choice
         return choice
 
-    def _restore_last_fast_scan_backup(self) -> bool:
-        try:
-            restored = self._repo.restore_student_snapshot_backup()
-        except FileNotFoundError:
-            self._overlay.add_log("복원할 빠른 스캔 백업이 없습니다.")
-            return False
-        except Exception as exc:
-            self._overlay.add_log(f"빠른 스캔 롤백 실패: {exc}")
-            return False
-
-        self._overlay.add_log(
-            "빠른 스캔 롤백 완료: "
-            f"{restored['student_count']}명 "
-            f"({restored.get('scan_id') or 'unknown'})"
-        )
-        return True
-
-    def _choose_student_scan_strategy(self, mode: str) -> dict | None:
-        current_students = self._repo.load_current_students()
-        saved_rows = ordered_owned_student_rows(current_students)
-        saved_student_ids = [student_id for student_id, _name in saved_rows]
-        mode_label = "전체 스캔" if mode == "all" else "학생 스캔"
-        has_rollback = self._repo.latest_student_snapshot_backup() is not None
-
-        configured_ids = self._repo.load_fast_scan_roster()
-
-        while True:
-            active_ids = list(configured_ids or saved_student_ids)
-            ordered_students = ordered_student_rows(active_ids)
-            if configured_ids:
-                roster_source_label = "설정 목록"
-            elif saved_student_ids:
-                roster_source_label = "저장 데이터"
-            else:
-                roster_source_label = "설정 필요"
-
-            result = choose_fast_scan_action(
-                self,
-                ordered_students=ordered_students,
-                has_rollback=has_rollback,
-                mode_label=mode_label,
-                roster_source_label=roster_source_label,
-                saved_student_count=len(saved_student_ids),
-            )
-            if result.action == "rollback":
-                self._restore_last_fast_scan_backup()
-                return {"student_scan_strategy": "rollback_only"}
-            if result.action == "cancel":
-                return None
-            if result.action == "edit":
-                editor = edit_fast_scan_config(
-                    self,
-                    initial_selected_ids=active_ids,
-                    saved_student_count=len(saved_student_ids),
-                )
-                if not editor.saved:
-                    continue
-                self._repo.save_fast_scan_roster(
-                    editor.student_ids,
-                    source="user_config",
-                    extra_meta={
-                        "saved_student_count": len(saved_student_ids),
-                        "mode": mode,
-                    },
-                )
-                configured_ids = editor.student_ids
-                self._overlay.add_log(f"빠른 스캔 기준 목록 저장: {len(configured_ids)}명")
-                continue
-            if result.action == "fast":
-                if not active_ids:
-                    self._overlay.add_log("빠른 스캔 기준 목록이 없습니다. 목록 편집에서 먼저 설정해 주세요.")
-                    continue
-                if configured_ids and len(configured_ids) < len(saved_student_ids):
-                    self._overlay.add_log(
-                        "빠른 스캔 기준 목록이 저장 데이터보다 적습니다. "
-                        "목록 편집에서 학생을 더 선택해 주세요."
-                    )
-                    continue
-                return {
-                    "student_scan_strategy": "fast",
-                    "fast_student_ids": [student_id for student_id, _name in ordered_students],
-                    "student_merge_mode": result.merge_mode,
-                }
-            return {
-                "student_scan_strategy": "normal",
-                "fast_student_ids": [],
-                "student_merge_mode": result.merge_mode,
-            }
+    def _student_scan_options(self) -> dict:
+        return {"student_merge_mode": "replace"}
 
     def _request_scan(self, mode: str) -> None:
         if self._is_scanning():
@@ -1087,13 +1004,8 @@ class App(tk.Tk):
         elif mode == "all":
             item_scan_filter = list(_FULL_SCAN_ITEM_FILTERS)
         student_scan_options: dict | None = None
-        if mode in ("students", "all"):
-            student_scan_options = self._choose_student_scan_strategy(mode)
-            if student_scan_options is None:
-                self._overlay.add_log("학생 스캔 시작이 취소되었습니다.")
-                return
-            if student_scan_options.get("student_scan_strategy") == "rollback_only":
-                return
+        if mode in ("students", "student_current", "all"):
+            student_scan_options = self._student_scan_options()
         self._scan(
             mode,
             item_scan_filter=item_scan_filter,
@@ -1120,22 +1032,9 @@ class App(tk.Tk):
             meta["direct_inventory_scan"] = bool(self._watcher and not self._watcher.in_lobby)
         if mode in ("students", "student_current", "all"):
             meta["student_force_full_measure"] = True
+            meta.update(self._student_scan_options())
         if student_scan_options:
             meta.update(student_scan_options)
-        if meta.get("student_scan_strategy") == "fast":
-            backup_path = self._repo.create_student_snapshot_backup(
-                scan_id=meta["scan_id"],
-                reason="fast_student_scan",
-                extra_meta={
-                    "mode": mode,
-                    "ordered_count": len(meta.get("fast_student_ids") or []),
-                },
-            )
-            meta["fast_scan_backup_path"] = str(backup_path)
-            self._overlay.add_log(
-                f"패스트 스캔 백업 생성: {backup_path.name} "
-                f"({len(meta.get('fast_student_ids') or [])}명)"
-            )
         debug_log_path = enable_scan_debug_log(str(meta.get("scan_id") or "unknown"), mode)
         meta["scan_debug_log_path"] = str(debug_log_path)
         self._overlay.add_log(f"스캔 디버그 로그: {debug_log_path}")
@@ -1174,8 +1073,6 @@ class App(tk.Tk):
         try:
             students_done = False
             if mode == "all" and not_stopped():
-                if meta.get("student_scan_strategy") == "fast":
-                    self._dispatch_ui(self._overlay.add_log, "학생 패스트 스캔 모드 실행")
                 result.students = scanner.scan_students()
                 students_done = True
                 skipped = sum(1 for s in result.students if s.skipped)
@@ -1211,8 +1108,6 @@ class App(tk.Tk):
                 self._dispatch_ui(self._overlay.add_log, f"장비 {len(result.equipment)}개")
 
             if mode in ("students", "all") and not students_done and not_stopped():
-                if meta.get("student_scan_strategy") == "fast":
-                    self._dispatch_ui(self._overlay.add_log, "학생 패스트 스캔 모드 실행")
                 result.students = scanner.scan_students()
                 skipped = sum(1 for s in result.students if s.skipped)
                 self._dispatch_ui(

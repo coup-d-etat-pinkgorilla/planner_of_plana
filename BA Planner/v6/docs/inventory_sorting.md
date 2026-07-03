@@ -38,12 +38,32 @@ Order:
 
 1. Same school order as tech notes.
 2. For each school, tier order is `0`, `1`, `2`, `3`.
+3. Final item is `Item_Icon_SkillBook_Ultimate_Piece`.
 
 ID pattern:
 
 ```text
 Item_Icon_Material_ExSkill_{School}_{Tier}
 ```
+
+Order-hint matching for tech notes and tactical BD uses the ordered profile
+cursor. Exact item IDs are preferred, but same-school candidates may be accepted
+with the expected tier when the count read is confident enough. This compensates
+for low icon margins and occasional tier-color contamination from the selected
+slot focus border.
+
+Tier color hinting uses the slot background color for the same zero-based tier
+order in both profiles: `0` = white/gray, `1` = blue, `2` = yellow, `3` =
+purple. When a new school is added in-game, update `_SCHOOL_ORDER`,
+`_SCHOOL_LABELS`, generated template assets, and this document together.
+
+`Item_Icon_SkillBook_Ultimate_Piece` is the final secret-note item for both
+`tech_notes` and `tactical_bd` profiles.
+
+The scanner can use confirmed tier colors as profile-order anchors. If a later
+ordered item is confidently matched while earlier ordered items were not visible,
+those skipped entries are treated as zero quantity because the game omits zero
+quantity cells from these sorted material lists.
 
 ### Ooparts
 
@@ -54,6 +74,39 @@ Order:
 1. `OPART_DEFINITIONS` declaration order in `core.oparts`.
 2. For each opart family, tier index order is `0`, `1`, `2`, `3`.
 3. Then workbook items in `OPART_WB_ITEMS` order.
+
+Current family order:
+
+1. Nebra Disk (`Nebra`)
+2. Phaistos Disc (`Phaistos`)
+3. Wolfsegg Steel (`Wolfsegg`)
+4. Nimrud Lens (`Nimrud`)
+5. Mandrake Extract (`Mandragora`)
+6. Rohonc Codex (`Rohonc`)
+7. Aether Essence (`Ether`)
+8. Antikythera Mechanism (`Antikythera`)
+9. Voynich Manuscript (`Voynich`)
+10. Crystal Haniwa (`CrystalHaniwa`)
+11. Totem Pole (`TotemPole`)
+12. Ancient Battery (`Baghdad`)
+13. Golden Fleece (`GoldenFleece`)
+14. Okiku Doll (`Kikuko`)
+15. Disco Colgante (`DiscoColgante`)
+16. Atlantis Medal (`AtlantisMedal`)
+17. Roman Dodecahedron (`RomanDice`)
+18. Quimbaya Relic (`Quimbaya`)
+19. Istanbul Rocket (`Rocket`)
+20. Mystery Stone / Winnipesaukee Stone (`WinniStone`)
+
+Workbook tail order:
+
+1. `Item_Icon_WorkBook_PotentialMaxHP` (PE / Max HP)
+2. `Item_Icon_WorkBook_PotentialAttack` (Shooting / Attack)
+3. `Item_Icon_WorkBook_PotentialHealPower` (Hygiene / Heal Power)
+
+When new ooparts are added in-game, append the family to `OPART_DEFINITIONS`
+in this exact scanner/display order. If the in-game order changes, update this
+list and the code together; profile cursor and order-hint matching depend on it.
 
 ID pattern:
 
@@ -85,13 +138,41 @@ Equipment_Icon_{SeriesIconKey}_Tier{Tier}
 Equipment_Icon_WeaponExpGrowth{PartKey}_{TierMinusOne}
 ```
 
+### Student Elephs
+
+Profile ID: `student_elephs`
+
+Student elephs use Korean-server student metadata from `core.student_meta`;
+`JP_ONLY_STUDENT_IDS` are excluded from the scan target list. The order is based
+on student display name, with variants sorted before the base form for the same
+student group. For example, Neru variants scan as school-uniform, bunny-girl,
+then base Neru.
+
+ID pattern:
+
+```text
+Item_Icon_SecretStone_{student_id}
+```
+
+Grid matching uses the eleph icon templates in `templates/students_elephs/` and
+the normal item T0 background composition. Because eleph icons share a large
+purple frame and T0 background, the `student_elephs` profile overrides the
+standard item crop with the central portrait crop from `debug/260703/eleph_work.json`:
+`left=0.3630`, `right=0.3592`, `top=0.2896`, `bottom=0.3159`. Tier color
+hinting is disabled because every eleph uses the T0 background.
+
+Detail fallback templates are generated under
+`templates/inventory_detail/student_elephs/` from the same `eleph_work` project.
+The detail ROI is `(511,331)-(809,658)` on a 2560x1440 reference, and each
+eleph icon is composited at `(-89,-25)` within that ROI at `476x377`.
+
 ### Coins
 
-Profile ID: `coins`
+Profile ID: none
 
-Coins currently use the explicit `_COIN_NAMES` list in `core.inventory_profiles`.
-They do not have stable item IDs in the profile yet, so storage falls back to
-the normalized name.
+Coins are no longer exposed as an item scan filter. Existing saved coin entries
+may still be displayed from stored inventory data, but new item scans skip the
+coin category.
 
 ### Activity Reports
 
@@ -118,6 +199,6 @@ The Qt inventory viewer groups items before sorting:
 
 1. Equipment tier items are grouped by equipment series and sorted by tier
    descending.
-2. Ooparts, workbooks, exp stones, reports, weapon parts, tech notes, and BD
-   each use their profile order map.
+2. Ooparts, workbooks, exp stones, reports, weapon parts, tech notes, BD,
+   and student elephs each use their profile order map.
 3. Unknown items fall back to display label alphabetical order.

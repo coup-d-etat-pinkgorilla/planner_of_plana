@@ -13,6 +13,7 @@ student_meta.py — 블루아카이브 학생 메타데이터 DB  (V6)
 
 from __future__ import annotations
 from functools import lru_cache
+import re
 from typing import Any, NotRequired, TypedDict
 
 
@@ -70,6 +71,39 @@ class StudentMeta(TypedDict):
     skill_is_area_damage: NotRequired[str | None]
     skill_buff_specials: NotRequired[list[str]]
     skill_knockback: NotRequired[str | None]
+
+
+class StudentFormMeta(TypedDict, total=False):
+    label: str
+    template_name: str
+    attack_type: str | None
+    attack_type_trait: str | None
+    defense_type: str | None
+    combat_class: str | None
+    cover_type: str | None
+    range_type: str | None
+    role: str | None
+    weapon_type: str | None
+    position: str | None
+    terrain_outdoor: str | None
+    terrain_urban: str | None
+    terrain_indoor: str | None
+    weapon3_terrain_boost: str | None
+    passive_stat: list[str]
+    weapon_passive_stat: list[str]
+    extra_passive_stat: list[str]
+    skill_buff: list[str]
+    skill_debuff: list[str]
+    skill_cc: list[str]
+    skill_special: list[str]
+    skill_heal_targets: list[str]
+    skill_dispel_targets: list[str]
+    skill_reposition_targets: list[str]
+    skill_summon_types: list[str]
+    skill_ignore_cover: str | None
+    skill_is_area_damage: str | None
+    skill_buff_specials: list[str]
+    skill_knockback: str | None
 
 
 EDITABLE_FIELDS: tuple[str, ...] = (
@@ -199,6 +233,7 @@ FAVORITE_ITEM_MAX_TIER = "T2"
 JP_ONLY_STUDENT_IDS: frozenset[str] = frozenset(('akane_school_uniform',
  'erika',
  'haruka_dress',
+ 'kisaki_swimsuit',
  'konoka',
  'koyuki_pajama',
  'kurumi',
@@ -206,7 +241,8 @@ JP_ONLY_STUDENT_IDS: frozenset[str] = frozenset(('akane_school_uniform',
  'nagusa_swimsuit',
  'niko',
  'otogi',
- 'rena'))
+ 'rena',
+ 'shun_swimsuit'))
 
 
 # ── 학생 메타데이터 DB ────────────────────────────────────
@@ -621,7 +657,9 @@ STUDENTS: dict[str, StudentMeta] = {'ayane': {'display_name': '아야네',
                                                     'Istanbul Rocket T3': 12},
                                                    {'Abydos Note T5': 1}],
                     'kr_search_tags': ['대책위원회', '학생회장', '임시노', '무시노', '공시노', '방시노'],
-                    'has_favorite_item': 'no'},
+                    'has_favorite_item': 'no',
+                    'has_favorite_item_jp': 'no',
+                    'has_favorite_item_kr': 'no'},
  'hoshino_swimsuit': {'display_name': '호시노(수영복)',
                       'template_name': 'hoshino_swimsuit.png',
                       'group': '호시노',
@@ -2057,8 +2095,10 @@ STUDENTS: dict[str, StudentMeta] = {'ayane': {'display_name': '아야네',
                                                      'Disco Colgante T4': 9,
                                                      'Aether Essence T3': 16},
                                                     {'Arius Note T5': 1}],
-                     'kr_search_tags': ['수미사키', '스쿼드'],
-                     'has_favorite_item': 'no'},
+                     'kr_search_tags': ['수미사키', '스쿼드', '수사키'],
+                     'has_favorite_item': 'no',
+                     'has_favorite_item_jp': 'no',
+                     'has_favorite_item_kr': 'no'},
  'saori': {'display_name': '사오리',
            'template_name': 'saori.png',
            'group': '사오리',
@@ -27246,10 +27286,392 @@ STUDENTS: dict[str, StudentMeta] = {'ayane': {'display_name': '아야네',
                      'skill_is_area_damage': 'no',
                      'skill_buff_specials': ['EnhanceExplosionRate'],
                      'skill_knockback': 'no',
+                     'has_favorite_item': 'no'},
+ 'shun_swimsuit': {'display_name': '슌(수영복)',
+                   'template_name': 'shun_swimsuit.png',
+                   'group': '슌',
+                   'variant': 'Swimsuit',
+                   'search_tags': ['sshun'],
+                   'kr_search_tags': ['수슌', '수슈에링', '매화원'],
+                   'school': 'Shanhaijing',
+                   'rarity': '3',
+                   'recruit_type': 'Regular',
+                   'attack_type': 'Sonic',
+                   'defense_type': 'Light',
+                   'growth_material_main': 'Okiku Doll',
+                   'growth_material_sub': 'Rohonc Codex',
+                   'raw_skill_ex_material': [[3070, 230],
+                                             [3071, 3070, 231, 150],
+                                             [3072, 3071, 232, 151],
+                                             [3073, 3072, 233, 152]],
+                   'raw_skill_ex_material_amount': [[12, 16],
+                                                    [12, 18, 15, 32],
+                                                    [12, 18, 11, 26],
+                                                    [8, 18, 7, 21]],
+                   'raw_skill_material': [[4070],
+                                          [4070],
+                                          [4071, 4070, 230],
+                                          [4071, 231, 150],
+                                          [4072, 4071, 231, 150],
+                                          [4072, 232, 151],
+                                          [4073, 4072, 233, 152],
+                                          [4073, 233, 152]],
+                   'raw_skill_material_amount': [[5],
+                                                 [8],
+                                                 [5, 12, 5],
+                                                 [8, 4, 13],
+                                                 [5, 12, 10, 17],
+                                                 [8, 3, 16],
+                                                 [8, 12, 5, 9],
+                                                 [12, 8, 13]],
+                   'mapped_skill_ex_material_rows': [{'Shanhaijing BD T1': 12, 'Okiku Doll T1': 16},
+                                                     {'Shanhaijing BD T2': 12,
+                                                      'Shanhaijing BD T1': 18,
+                                                      'Okiku Doll T2': 15,
+                                                      'Rohonc Codex T1': 32},
+                                                     {'Shanhaijing BD T3': 12,
+                                                      'Shanhaijing BD T2': 18,
+                                                      'Okiku Doll T3': 11,
+                                                      'Rohonc Codex T2': 26},
+                                                     {'Shanhaijing BD T4': 8,
+                                                      'Shanhaijing BD T3': 18,
+                                                      'Okiku Doll T4': 7,
+                                                      'Rohonc Codex T3': 21}],
+                   'mapped_skill_material_rows': [{'Shanhaijing Note T1': 5},
+                                                  {'Shanhaijing Note T1': 8},
+                                                  {'Shanhaijing Note T2': 5,
+                                                   'Shanhaijing Note T1': 12,
+                                                   'Okiku Doll T1': 5},
+                                                  {'Shanhaijing Note T2': 8,
+                                                   'Okiku Doll T2': 4,
+                                                   'Rohonc Codex T1': 13},
+                                                  {'Shanhaijing Note T3': 5,
+                                                   'Shanhaijing Note T2': 12,
+                                                   'Okiku Doll T2': 10,
+                                                   'Rohonc Codex T1': 17},
+                                                  {'Shanhaijing Note T3': 8,
+                                                   'Okiku Doll T3': 3,
+                                                   'Rohonc Codex T2': 16},
+                                                  {'Shanhaijing Note T4': 8,
+                                                   'Shanhaijing Note T3': 12,
+                                                   'Okiku Doll T4': 5,
+                                                   'Rohonc Codex T3': 9},
+                                                  {'Shanhaijing Note T4': 12,
+                                                   'Okiku Doll T4': 8,
+                                                   'Rohonc Codex T3': 13},
+                                                  {'Shanhaijing Note T5': 1}],
+                   'equipment_slot_1': 'Hat',
+                   'equipment_slot_2': 'Hairpin',
+                   'equipment_slot_3': 'Watch',
+                   'combat_class': 'striker',
+                   'cover_type': 'cover',
+                   'range_type': '750',
+                   'role': 'dealer',
+                   'weapon_type': 'SR',
+                   'position': 'back',
+                   'terrain_outdoor': 'S',
+                   'terrain_urban': 'B',
+                   'terrain_indoor': 'D',
+                   'weapon3_terrain_boost': 'terrain_outdoor',
+                   'has_favorite_item_jp': 'no',
+                   'has_favorite_item_kr': 'no',
+                   'passive_stat': ['AttackPower', 'CriticalPoint'],
+                   'weapon_passive_stat': ['AttackPower', 'EnhanceSonicRate'],
+                   'extra_passive_stat': ['EnhanceSonicRate'],
+                   'skill_ignore_cover': 'no',
+                   'skill_is_area_damage': 'no',
+                   'skill_knockback': 'no',
+                   'skill_buff': [],
+                   'skill_debuff': [],
+                   'skill_cc': [],
+                   'skill_special': [],
+                   'skill_heal_targets': [],
+                   'skill_dispel_targets': [],
+                   'skill_reposition_targets': [],
+                   'skill_summon_types': [],
+                   'skill_buff_specials': []},
+ 'kisaki_swimsuit': {'display_name': '키사키(수영복)',
+                     'template_name': 'kisaki_swimsuit.png',
+                     'group': '키사키',
+                     'variant': 'Swimsuit',
+                     'search_tags': ['skisaki'],
+                     'kr_search_tags': ['수키사키', '수사키', '현룡문', '수키키', '학생회장'],
+                     'school': 'Shanhaijing',
+                     'rarity': '3',
+                     'recruit_type': 'Regular',
+                     'attack_type': 'Sonic',
+                     'defense_type': 'Elastic',
+                     'growth_material_main': 'Aether Essence',
+                     'growth_material_sub': 'Istanbul Rocket',
+                     'raw_skill_ex_material': [[3070, 160],
+                                               [3071, 3070, 161, 280],
+                                               [3072, 3071, 162, 281],
+                                               [3073, 3072, 163, 282]],
+                     'raw_skill_ex_material_amount': [[12, 17],
+                                                      [12, 18, 14, 29],
+                                                      [12, 18, 10, 25],
+                                                      [8, 18, 9, 20]],
+                     'raw_skill_material': [[4070],
+                                            [4070],
+                                            [4071, 4070, 160],
+                                            [4071, 161, 280],
+                                            [4072, 4071, 161, 280],
+                                            [4072, 162, 281],
+                                            [4073, 4072, 163, 282],
+                                            [4073, 163, 282]],
+                     'raw_skill_material_amount': [[5],
+                                                   [8],
+                                                   [5, 12, 5],
+                                                   [8, 4, 13],
+                                                   [5, 12, 10, 19],
+                                                   [8, 3, 16],
+                                                   [8, 12, 4, 9],
+                                                   [12, 8, 15]],
+                     'mapped_skill_ex_material_rows': [{'Shanhaijing BD T1': 12,
+                                                        'Aether Essence T1': 17},
+                                                       {'Shanhaijing BD T2': 12,
+                                                        'Shanhaijing BD T1': 18,
+                                                        'Aether Essence T2': 14,
+                                                        'Istanbul Rocket T1': 29},
+                                                       {'Shanhaijing BD T3': 12,
+                                                        'Shanhaijing BD T2': 18,
+                                                        'Aether Essence T3': 10,
+                                                        'Istanbul Rocket T2': 25},
+                                                       {'Shanhaijing BD T4': 8,
+                                                        'Shanhaijing BD T3': 18,
+                                                        'Aether Essence T4': 9,
+                                                        'Istanbul Rocket T3': 20}],
+                     'mapped_skill_material_rows': [{'Shanhaijing Note T1': 5},
+                                                    {'Shanhaijing Note T1': 8},
+                                                    {'Shanhaijing Note T2': 5,
+                                                     'Shanhaijing Note T1': 12,
+                                                     'Aether Essence T1': 5},
+                                                    {'Shanhaijing Note T2': 8,
+                                                     'Aether Essence T2': 4,
+                                                     'Istanbul Rocket T1': 13},
+                                                    {'Shanhaijing Note T3': 5,
+                                                     'Shanhaijing Note T2': 12,
+                                                     'Aether Essence T2': 10,
+                                                     'Istanbul Rocket T1': 19},
+                                                    {'Shanhaijing Note T3': 8,
+                                                     'Aether Essence T3': 3,
+                                                     'Istanbul Rocket T2': 16},
+                                                    {'Shanhaijing Note T4': 8,
+                                                     'Shanhaijing Note T3': 12,
+                                                     'Aether Essence T4': 4,
+                                                     'Istanbul Rocket T3': 9},
+                                                    {'Shanhaijing Note T4': 12,
+                                                     'Aether Essence T4': 8,
+                                                     'Istanbul Rocket T3': 15},
+                                                    {'Shanhaijing Note T5': 1}],
+                     'equipment_slot_1': 'Gloves',
+                     'equipment_slot_2': 'Hairpin',
+                     'equipment_slot_3': 'Necklace',
+                     'combat_class': 'striker',
+                     'cover_type': 'cover',
+                     'range_type': '450',
+                     'role': 'supporter',
+                     'weapon_type': 'SMG',
+                     'position': 'front',
+                     'terrain_outdoor': 'D',
+                     'terrain_urban': 'S',
+                     'terrain_indoor': 'B',
+                     'weapon3_terrain_boost': 'terrain_urban',
+                     'has_favorite_item_jp': 'no',
+                     'has_favorite_item_kr': 'no',
+                     'passive_stat': ['MaxHP', 'Range'],
+                     'weapon_passive_stat': ['ExtendBuffDuration'],
+                     'skill_buff': ['CostChange'],
+                     'skill_heal_targets': ['Self'],
+                     'skill_ignore_cover': 'no',
+                     'skill_is_area_damage': 'no',
+                     'skill_knockback': 'no',
                      'has_favorite_item': 'no'}}
 
 
 # ── 조회 유틸 ─────────────────────────────────────────────
+
+_FORM_REF_RE = re.compile(r"^(?P<base>.*?)(?:\s*[#:@]\s*(?P<form>[1-9][0-9]*))?$")
+MULTI_FORM_STUDENTS: dict[str, tuple[StudentFormMeta, ...]] = {'hoshino_battle': ({'label': '1',
+                     'template_name': 'hoshino_battle.png',
+                     'attack_type': 'Mystic',
+                     'defense_type': 'Heavy',
+                     'combat_class': 'striker',
+                     'cover_type': 'no_cover',
+                     'range_type': '350',
+                     'role': 'tanker',
+                     'weapon_type': 'SG',
+                     'position': 'front',
+                     'terrain_outdoor': 'S',
+                     'terrain_urban': 'A',
+                     'terrain_indoor': 'D',
+                     'weapon3_terrain_boost': 'terrain_outdoor',
+                     'passive_stat': ['AttackPower', 'MaxHP'],
+                     'weapon_passive_stat': ['AttackPower', 'MaxHP'],
+                     'skill_reposition_targets': ['Self'],
+                     'skill_ignore_cover': 'no',
+                     'skill_is_area_damage': 'no',
+                     'skill_knockback': 'no'},
+                    {'label': '2',
+                     'template_name': 'hoshino_battle_1.png',
+                     'attack_type': 'Mystic',
+                     'defense_type': 'Heavy',
+                     'combat_class': 'striker',
+                     'cover_type': 'no_cover',
+                     'range_type': '350',
+                     'role': 'dealer',
+                     'weapon_type': 'SG',
+                     'position': 'front',
+                     'terrain_outdoor': 'S',
+                     'terrain_urban': 'A',
+                     'terrain_indoor': 'D',
+                     'weapon3_terrain_boost': 'terrain_outdoor',
+                     'passive_stat': ['CriticalDamageRate', 'Range'],
+                     'weapon_passive_stat': ['AttackPower'],
+                     'extra_passive_stat': ['AttackPower'],
+                     'skill_ignore_cover': 'yes',
+                     'skill_is_area_damage': 'yes',
+                     'skill_knockback': 'no'}),
+ 'shun_swimsuit': ({'label': '1',
+                    'template_name': 'shun_swimsuit.png',
+                    'attack_type': 'Sonic',
+                    'defense_type': 'Light',
+                    'combat_class': 'striker',
+                    'cover_type': 'cover',
+                    'range_type': '750',
+                    'role': 'dealer',
+                    'weapon_type': 'SR',
+                    'position': 'back',
+                    'terrain_outdoor': 'S',
+                    'terrain_urban': 'B',
+                    'terrain_indoor': 'D',
+                    'weapon3_terrain_boost': 'terrain_outdoor',
+                    'passive_stat': ['AttackPower'],
+                    'weapon_passive_stat': ['EnhanceSonicRate'],
+                    'skill_ignore_cover': 'no',
+                    'skill_is_area_damage': 'no',
+                    'skill_knockback': 'no'},
+                   {'label': '2',
+                    'template_name': 'shun_swimsuit_1.png',
+                    'attack_type': 'Sonic',
+                    'defense_type': 'Light',
+                    'combat_class': 'striker',
+                    'cover_type': 'cover',
+                    'range_type': '750',
+                    'role': 'dealer',
+                    'weapon_type': 'SR',
+                    'position': 'back',
+                    'terrain_outdoor': 'S',
+                    'terrain_urban': 'B',
+                    'terrain_indoor': 'D',
+                    'weapon3_terrain_boost': 'terrain_outdoor',
+                    'passive_stat': ['CriticalPoint'],
+                    'weapon_passive_stat': ['AttackPower'],
+                    'extra_passive_stat': ['EnhanceSonicRate'],
+                    'skill_ignore_cover': 'no',
+                    'skill_is_area_damage': 'no',
+                    'skill_knockback': 'no'})}
+
+
+def split_form_ref(value: object) -> tuple[str, int]:
+    raw = str(value or "").strip()
+    if not raw:
+        return "", 1
+    match = _FORM_REF_RE.match(raw)
+    if match is None:
+        return raw, 1
+    base = str(match.group("base") or "").strip()
+    try:
+        form_index = int(match.group("form") or 1)
+    except (TypeError, ValueError):
+        form_index = 1
+    return base, max(1, form_index)
+
+
+def format_form_ref(value: object, form_index: int | None = None) -> str:
+    base, parsed_form = split_form_ref(value)
+    requested_form = form_index if form_index is not None else parsed_form
+    if base in STUDENTS or base in MULTI_FORM_STUDENTS:
+        form = normalize_form_index(base, requested_form)
+    else:
+        try:
+            form = max(1, int(requested_form or 1))
+        except (TypeError, ValueError):
+            form = 1
+    if form <= 1:
+        return base
+    return f"{base}#{form}"
+
+
+def form_indexes(student_id: str) -> tuple[int, ...]:
+    forms = MULTI_FORM_STUDENTS.get(student_id)
+    if not forms:
+        return (1,)
+    return tuple(range(1, len(forms) + 1))
+
+
+def form_count(student_id: str) -> int:
+    return len(form_indexes(student_id))
+
+
+def is_multi_form(student_id: str) -> bool:
+    return form_count(student_id) > 1
+
+
+def normalize_form_index(student_id: str, form_index: int | None = None) -> int:
+    indexes = form_indexes(student_id)
+    try:
+        value = int(form_index or 1)
+    except (TypeError, ValueError):
+        value = 1
+    if value in indexes:
+        return value
+    return indexes[0]
+
+
+def form_meta(student_id: str, form_index: int | None = None) -> StudentFormMeta:
+    forms = MULTI_FORM_STUDENTS.get(student_id)
+    if not forms:
+        return {}
+    index = normalize_form_index(student_id, form_index) - 1
+    if 0 <= index < len(forms):
+        return forms[index]
+    return forms[0]
+
+
+def field_for_form(student_id: str, key: str, form_index: int | None = None, default: Any = None) -> Any:
+    meta = STUDENTS.get(student_id)
+    if not meta:
+        return default
+    override = form_meta(student_id, form_index)
+    if key in override:
+        return override.get(key, default)
+    return meta.get(key, default)
+
+
+def _value_tuple(value: Any) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, (list, tuple, set)):
+        return tuple(str(item) for item in value if str(item))
+    return (str(value),) if str(value) else ()
+
+
+def field_values(student_id: str, key: str, default: Any = None) -> tuple[str, ...]:
+    if not is_multi_form(student_id):
+        return _value_tuple(field(student_id, key, default))
+    values: list[str] = []
+    for form_index in form_indexes(student_id):
+        values.extend(_value_tuple(field_for_form(student_id, key, form_index, default)))
+    if not values:
+        values.extend(_value_tuple(field(student_id, key, default)))
+    return tuple(dict.fromkeys(values))
+
+
+def template_path_for_form(student_id: str, form_index: int | None = None) -> str:
+    template = field_for_form(student_id, "template_name", form_index)
+    return str(template or f"{student_id}.png")
+
 
 def get(student_id: str) -> StudentMeta | None:
     """student_id 로 메타데이터 조회. 없으면 None."""
@@ -27266,12 +27688,8 @@ def display_name(student_id: str) -> str:
 
 
 def template_path(student_id: str) -> str:
-    """
-    student_id → template_name.
-    DB에 없으면 '{student_id}.png' 를 fallback으로 반환.
-    """
-    meta = STUDENTS.get(student_id)
-    return meta["template_name"] if meta else f"{student_id}.png"
+    """Return the default portrait template filename for a student."""
+    return template_path_for_form(student_id, 1)
 
 
 def group(student_id: str) -> str | None:

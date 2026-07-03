@@ -250,7 +250,10 @@ class EquipmentIconTierTests(unittest.TestCase):
 
 class EquipmentBasicFastPathTests(unittest.TestCase):
     def test_level_tier_ranges_are_cross_checked(self) -> None:
+        self.assertTrue(Scanner._equipment_level_matches_tier(1, "T2"))
+        self.assertTrue(Scanner._equipment_level_matches_tier(1, "T10"))
         self.assertTrue(Scanner._equipment_level_matches_tier(21, "T3"))
+        self.assertTrue(Scanner._equipment_level_matches_tier(40, "T10"))
         self.assertTrue(Scanner._equipment_level_matches_tier(70, "T10"))
         self.assertFalse(Scanner._equipment_level_matches_tier(48, "T4"))
 

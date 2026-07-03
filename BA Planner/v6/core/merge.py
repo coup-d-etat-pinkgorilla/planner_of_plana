@@ -91,6 +91,26 @@ def _merge_weapon_state(old_v: str | None, new_v: str | None) -> str | None:
     return new_v
 
 
+def _merge_form_combat_stats(old_v: Any, new_v: Any) -> dict:
+    old = old_v if isinstance(old_v, dict) else {}
+    new = new_v if isinstance(new_v, dict) else {}
+    merged: dict = {str(k): dict(v) for k, v in old.items() if isinstance(v, dict)}
+    for form_key, stats in new.items():
+        if not isinstance(stats, dict):
+            continue
+        key = str(form_key)
+        current = dict(merged.get(key, {}))
+        for stat_key in ("combat_hp", "combat_atk", "combat_def", "combat_heal"):
+            value = stats.get(stat_key)
+            if value is not None:
+                current[stat_key] = value
+            elif stat_key not in current:
+                current[stat_key] = None
+        if any(current.get(stat_key) is not None for stat_key in ("combat_hp", "combat_atk", "combat_def", "combat_heal")):
+            merged[key] = current
+    return merged
+
+
 def _merge_field(
     field: str,
     old_v: Any,
@@ -103,6 +123,9 @@ def _merge_field(
     반환값은 항상 str | int | None (dict 저장 호환).
     """
     # ── weapon_state 전용 ──────────────────────────────────
+    if field == "form_combat_stats":
+        return _merge_form_combat_stats(old_v, new_v)
+
     if field == "weapon_state":
         return _merge_weapon_state(_str(old_v), _str(new_v))
 
@@ -175,6 +198,7 @@ _STUDENT_MERGE_FIELDS: tuple[str, ...] = (
     "combat_atk",
     "combat_def",
     "combat_heal",
+    "form_combat_stats",
     "stat_hp",
     "stat_atk",
     "stat_heal",

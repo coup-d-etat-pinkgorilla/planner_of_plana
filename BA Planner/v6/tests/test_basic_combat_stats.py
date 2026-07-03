@@ -175,6 +175,23 @@ class BasicAdditionalStatSkipTests(unittest.TestCase):
             (10000, 1000, 100, 2000),
         )
 
+class FieldConfirmedStatusTests(unittest.TestCase):
+    def _scanner(self) -> Scanner:
+        scanner = Scanner.__new__(Scanner)
+        scanner._status = Mock(return_value=1)
+        return scanner
+
+    def test_field_confirmed_uses_static_stat_labels(self) -> None:
+        scanner = self._scanner()
+        entry = StudentEntry(student_id="test", display_name="Test")
+
+        scanner._field_confirmed(entry, "level", 90, display_value="Lv.90")
+        scanner._field_confirmed(entry, "stat_atk", 12)
+        scanner._field_confirmed(entry, "stat_heal", 23)
+
+        labels = [call.kwargs["label"] for call in scanner._status.call_args_list]
+        self.assertEqual(labels, ["level", "bonus atk", "bonus heal"])
+
 
 if __name__ == "__main__":
     unittest.main()

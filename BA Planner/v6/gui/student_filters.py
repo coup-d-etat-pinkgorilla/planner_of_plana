@@ -332,6 +332,10 @@ def get_student_values(student: Any, key: str) -> tuple[str, ...]:
         values = tuple(str(item) for item in value if str(item))
     else:
         values = (str(value),)
+    if key in META_FILTER_KEYS:
+        meta_values = student_meta.field_values(student_id, key)
+        if meta_values:
+            values = tuple(dict.fromkeys([*values, *meta_values]))
     extras = EXTRA_FILTER_VALUES.get(student_id, {}).get(key, ())
     if extras:
         values = tuple(dict.fromkeys([*values, *extras]))

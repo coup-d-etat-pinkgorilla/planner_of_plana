@@ -1,0 +1,76 @@
+{
+  "name": "student_elephs_detail_region",
+  "window_rect": {
+    "left": 0,
+    "top": 0,
+    "width": 2560,
+    "height": 1440
+  },
+  "points_screen": [
+    {
+      "x": 511,
+      "y": 331
+    },
+    {
+      "x": 809,
+      "y": 331
+    },
+    {
+      "x": 809,
+      "y": 658
+    },
+    {
+      "x": 511,
+      "y": 658
+    }
+  ],
+  "points_client": [
+    {
+      "x": 511,
+      "y": 331
+    },
+    {
+      "x": 809,
+      "y": 331
+    },
+    {
+      "x": 809,
+      "y": 658
+    },
+    {
+      "x": 511,
+      "y": 658
+    }
+  ],
+  "points_ratio": [
+    {
+      "x": 0.199609,
+      "y": 0.229861
+    },
+    {
+      "x": 0.316016,
+      "y": 0.229861
+    },
+    {
+      "x": 0.316016,
+      "y": 0.456944
+    },
+    {
+      "x": 0.199609,
+      "y": 0.456944
+    }
+  ],
+  "shape": "rectangle",
+  "output_size": {
+    "width": 298,
+    "height": 327
+  },
+  "template_source": "debug/260703/eleph_work.json",
+  "background_reference": "C:\\Users\\brigh\\Pictures\\Screenshots\\스크린샷 2026-07-02 182354.png",
+  "overlay_geometry": {
+    "x": -89,
+    "y": -25,
+    "width": 476,
+    "height": 377
+  }
+}

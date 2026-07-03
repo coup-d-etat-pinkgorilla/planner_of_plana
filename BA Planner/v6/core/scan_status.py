@@ -24,6 +24,7 @@ PLANA_MESSAGES: dict[str, tuple[str, str, str]] = {
     "student.identify.start": ("primary", "identify", "{index}번째 학생의 신원을 확인합니다."),
     "student.identify.retry": ("warning", "identify", "오류. 학생의 사진이 잘 판별되지 않는 것 같습니다. 다시 진행합니다."),
     "student.identify.success": ("result", "identify", "확인했습니다. {student_name} 학생입니다."),
+    "student.form.switch": ("detail", "student", "{student_name} form {form_index} stats scan."),
     "student.identify.failed": ("error", "identify", "오류. 학생의 신원을 확정할 수 없습니다. 연속 정리를 중단합니다."),
     "student.scan.start": ("primary", "student", "{student_name} 학생의 학생부를 정리합니다."),
     "student.scan.saved_max_skip": ("skip", "student", "판단 완료. {student_name} 학생은 기존 기록상 정리가 완료되어 있습니다."),
@@ -52,7 +53,9 @@ PLANA_MESSAGES: dict[str, tuple[str, str, str]] = {
     "star.read.uncertain": ("warning", "star", "확인 필요. 별의 개수가 명확하지 않습니다. 기록을 주의 표시합니다."),
     "skills.start": ("primary", "skills", "{student_name} 학생의 스킬 기록을 정리합니다."),
     "skills.saved_max_skip": ("skip", "skills", "판단 완료. 기존 기록에서 스킬 성장이 완료되어 있습니다."),
+    "skills.skill2.skip_star_locked": ("skip", "skills", "판단 완료. 강화 스킬은 {star}성 상태에서 아직 해금되지 않습니다."),
     "skills.skill3.skip_star_locked": ("skip", "skills", "판단 완료. 서브 스킬은 {star}성 상태에서 아직 해금되지 않습니다."),
+    "skills.value.ok": ("result", "skills", "{label} 스킬 레벨 확인. Lv.{value}입니다."),
     "skills.summary": ("result", "skills", "스킬 기록 정리 완료. EX {ex}, 기본 {s1}, 강화 {s2}, 서브 {s3}입니다."),
     "weapon.start": ("primary", "weapon", "{student_name} 학생의 전용무기 상세 기록을 확인합니다."),
     "weapon.skip_star_locked": ("skip", "weapon", "판단 완료. {star}성 상태에서는 전용무기 상세 기록이 열리지 않습니다."),
@@ -98,7 +101,13 @@ PLANA_MESSAGES: dict[str, tuple[str, str, str]] = {
     "stop.requested": ("warning", "stop", "중지 요청 확인. 현재 서류를 정리한 뒤 멈추겠습니다."),
     "stop.spacebar": ("warning", "stop", "긴급 중지 신호를 확인했습니다. 작업을 중단합니다."),
     "progress.update": ("detail", "progress", "스캔 진행률을 갱신했습니다. {current}/{total}"),
+    "field.confirmed": ("detail", "field", "{label} 확인: {display_value}"),
     "capture.failed": ("warning", "capture", "오류. 현재 화면을 기록하지 못했습니다. 다시 확인합니다."),
+    "inventory.scan.start": ("primary", "inventory", "{source_label} 라이브 그리드를 준비합니다."),
+    "inventory.slot.tier_hint": ("detail", "inventory", "{slot_number}번 슬롯 배경 T{tier_hint} 힌트를 확인했습니다."),
+    "inventory.slot.confirmed": ("detail", "inventory", "{slot_number}번 슬롯 확인. {item_name} x{quantity}."),
+    "inventory.row_anchor.confirmed": ("detail", "inventory", "{row_number}\uD589 \uC575\uCEE4\uB97C {slot_number}\uBC88 \uC2AC\uB86F\uC5D0\uC11C \uD655\uC815\uD588\uC2B5\uB2C8\uB2E4."),
+    "inventory.scroll": ("detail", "inventory", "다음 페이지로 이동합니다. 중복 행 {overlap_rows}줄을 이어 붙입니다."),
     "scan.exception": ("error", "error", "오류. 학생부 정리 중 예외가 발생했습니다. {error}"),
     "summary.student.compact": ("result", "summary", "{student_name} 학생부 정리 완료. Lv.{level}, {star}성입니다."),
     "summary.student.uncertain": ("warning", "summary", "확인 필요. {student_name} 학생의 일부 기록이 불명확합니다: {fields}"),
@@ -213,3 +222,25 @@ def read_status_events(path: Path, offset: int = 0) -> tuple[list[dict[str, Any]
             if isinstance(raw, dict):
                 events.append(raw)
         return events, fh.tell()
+
+def write_status_ack(path: Path, seq: int) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"seq": int(seq or 0), "ts": time.time()}, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
+
+
+def read_status_ack(path: Path) -> int:
+    if not path.exists():
+        return 0
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8") or "{}")
+    except (OSError, json.JSONDecodeError):
+        return 0
+    if not isinstance(raw, dict):
+        return 0
+    try:
+        return int(raw.get("seq") or 0)
+    except (TypeError, ValueError):
+        return 0

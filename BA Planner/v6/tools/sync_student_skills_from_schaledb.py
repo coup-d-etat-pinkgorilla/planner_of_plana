@@ -17,7 +17,12 @@ from tools.schaledb_sync import (
     apply_sync_fields,
     check_schaledb_filter_schema,
 )
-from tools.student_meta_tool import _write_students, get_students
+from tools.student_meta_tool import (
+    _write_multi_form_students,
+    _write_students,
+    get_multi_form_students,
+    get_students,
+)
 
 
 def _print_fields() -> None:
@@ -72,14 +77,17 @@ def main() -> int:
         return _print_schema_check()
 
     local_students = get_students()
+    multi_form_students = get_multi_form_students()
     updated_count, missing = apply_sync_fields(
         local_students,
         selected_ids=set(args.student_ids) if args.student_ids else None,
         force_refresh=args.force_refresh,
+        multi_form_students=multi_form_students,
     )
 
     if not args.dry_run:
         _write_students(local_students)
+        _write_multi_form_students(multi_form_students)
 
     print(f"updated: {updated_count}")
     print(f"fields_synced: {len(SYNC_FIELDS)}")

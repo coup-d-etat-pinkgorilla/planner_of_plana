@@ -56,6 +56,36 @@ class BasicEquipmentGeneratedLevelTests(unittest.TestCase):
         self.assertIn("pos1=6", result.label)
         self.assertIn("pos2=3", result.label)
 
+    def test_tier_allows_lower_levels_down_to_one(self) -> None:
+        image = self._synthetic_basic_screen(slot=1, family="Shoes", tier=2, level=1)
+        result = read_basic_equipment_generated_level_result(
+            image,
+            REGIONS["basic_equipment_1_level_digits_quad"],
+            1,
+            "Shoes",
+            "T2",
+            REGIONS["basic_equipment_1_icon_region"],
+        )
+        self.assertEqual(result.value, 1)
+        self.assertFalse(result.uncertain)
+        self.assertIn("pos1=1", result.label)
+        self.assertIn("pos2=blank", result.label)
+
+    def test_t10_allows_mid_level_below_old_lower_bound(self) -> None:
+        image = self._synthetic_basic_screen(slot=3, family="Necklace", tier=10, level=40)
+        result = read_basic_equipment_generated_level_result(
+            image,
+            REGIONS["basic_equipment_3_level_digits_quad"],
+            3,
+            "Necklace",
+            "T10",
+            REGIONS["basic_equipment_3_icon_region"],
+        )
+        self.assertEqual(result.value, 40)
+        self.assertFalse(result.uncertain)
+        self.assertIn("pos1=4", result.label)
+        self.assertIn("pos2=0", result.label)
+
     def test_reads_single_digit_level_with_blank_second_cell(self) -> None:
         image = self._synthetic_basic_screen(slot=1, family="Shoes", tier=1, level=9)
         result = read_basic_equipment_generated_level_result(

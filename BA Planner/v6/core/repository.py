@@ -77,6 +77,7 @@ def _student_entry_to_dict(entry: StudentEntry) -> dict:
         "combat_atk": entry.combat_atk,
         "combat_def": entry.combat_def,
         "combat_heal": entry.combat_heal,
+        "form_combat_stats": dict(entry.form_combat_stats or {}),
         "stat_hp": entry.stat_hp,
         "stat_atk": entry.stat_atk,
         "stat_heal": entry.stat_heal,
@@ -629,7 +630,7 @@ class ScanRepository:
                             ex_skill, skill1, skill2, skill3,
                             equip1, equip2, equip3, equip4,
                             equip1_level, equip2_level, equip3_level,
-                            combat_hp, combat_atk, combat_def, combat_heal,
+                            combat_hp, combat_atk, combat_def, combat_heal, form_combat_stats,
                             stat_hp, stat_atk, stat_heal,
                             last_seen_at, last_scan_id
                         ) VALUES (
@@ -638,7 +639,7 @@ class ScanRepository:
                             :ex_skill, :skill1, :skill2, :skill3,
                             :equip1, :equip2, :equip3, :equip4,
                             :equip1_level, :equip2_level, :equip3_level,
-                            :combat_hp, :combat_atk, :combat_def, :combat_heal,
+                            :combat_hp, :combat_atk, :combat_def, :combat_heal, :form_combat_stats,
                             :stat_hp, :stat_atk, :stat_heal,
                             :last_seen_at, :last_scan_id
                         )
@@ -666,6 +667,7 @@ class ScanRepository:
                             "combat_atk": data.get("combat_atk"),
                             "combat_def": data.get("combat_def"),
                             "combat_heal": data.get("combat_heal"),
+                            "form_combat_stats": json.dumps(data.get("form_combat_stats") or {}, ensure_ascii=False, sort_keys=True),
                             "stat_hp": data.get("stat_hp"),
                             "stat_atk": data.get("stat_atk"),
                             "stat_heal": data.get("stat_heal"),

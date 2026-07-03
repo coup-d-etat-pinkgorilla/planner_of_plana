@@ -8,10 +8,13 @@ import sqlite3
 import zipfile
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, field, fields
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape as xml_escape
+
+import core.student_meta as student_meta
 
 
 TACTICAL_DATA_VERSION = 2
@@ -332,6 +335,80 @@ def parse_deck_template(value: str) -> TacticalDeck:
 
     return normalize_deck(TacticalDeck(strikers=_parts(striker_raw), supports=_parts(support_raw)))
 
+
+def _student_lookup_key(value: object) -> str:
+    return re.sub(r"\s+", "", _clean_name(value)).casefold()
+
+
+@lru_cache(maxsize=1)
+def _student_lookup_index() -> dict[str, list[str]]:
+    index: dict[str, set[str]] = defaultdict(set)
+    for student_id in student_meta.all_ids():
+        terms = [
+            student_id,
+            student_meta.display_name(student_id),
+            student_meta.group(student_id) or "",
+            *student_meta.search_tags(student_id),
+            *student_meta.kr_search_tags(student_id),
+        ]
+        for term in terms:
+            key = _student_lookup_key(term)
+            if key:
+                index[key].add(student_id)
+    return {key: sorted(values) for key, values in index.items()}
+
+
+def _student_id_for_tactical_name(name: object, *, role: str) -> str | None:
+    key = _student_lookup_key(name)
+    if not key:
+        return None
+    for student_id in _student_lookup_index().get(key, []):
+        if student_meta.combat_class(student_id) == role:
+            return student_id
+    return None
+
+
+def tactical_student_frequency(
+    data: TacticalChallengeData,
+    season: str = "",
+    *,
+    limit: int = 20,
+) -> dict[str, list[str]]:
+    effective_season = _clean_name(season or data.season)
+    counts: dict[str, Counter[str]] = {"striker": Counter(), "special": Counter()}
+
+    def count_deck(deck: TacticalDeck | dict[str, Any] | None) -> None:
+        normalized = normalize_deck(deck)
+        for name in normalized.strikers:
+            student_id = _student_id_for_tactical_name(name, role="striker")
+            if student_id:
+                counts["striker"][student_id] += 1
+        for name in normalized.supports:
+            student_id = _student_id_for_tactical_name(name, role="special")
+            if student_id:
+                counts["special"][student_id] += 1
+
+    for match in data.matches:
+        if effective_season and _clean_name(match.season) != effective_season:
+            continue
+        count_deck(match.my_attack)
+        count_deck(match.opponent_defense)
+        count_deck(match.my_defense)
+        count_deck(match.opponent_attack)
+
+    return {
+        role: [student_id for student_id, _count in counter.most_common(max(1, int(limit)))]
+        for role, counter in counts.items()
+    }
+
+
+def tactical_student_frequency_from_storage(
+    path: Path,
+    season: str = "",
+    *,
+    limit: int = 20,
+) -> dict[str, list[str]]:
+    return tactical_student_frequency(load_tactical_challenge(path), season, limit=limit)
 
 def _xlsx_col_to_index(col: str) -> int:
     out = 0

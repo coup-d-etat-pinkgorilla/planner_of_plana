@@ -313,12 +313,21 @@ class TacticAssistWindow(QWidget):
                 button.setIcon(QIcon())
                 button.setToolTip("")
 
+    def _student_form_index(self, student_id: str) -> int:
+        for slot in self._guide.deck:
+            if slot.student_id == student_id:
+                return student_meta.normalize_form_index(student_id, getattr(slot, "form_index", 1))
+        return 1
+
     def _student_icon(self, student_id: str) -> QIcon:
         if is_unknown_card(student_id):
             return QIcon()
-        template_name = student_meta.template_path(student_id)
+        form_index = self._student_form_index(student_id)
+        template_name = student_meta.template_path_for_form(student_id, form_index)
+        template_stem = Path(template_name).stem
         candidates = [
             TEMPLATE_DIR / "students_portraits" / template_name,
+            TEMPLATE_DIR / "students_portraits" / f"{template_stem}.png",
             TEMPLATE_DIR / "students_portraits" / f"{student_id}.png",
             TEMPLATE_DIR / "students" / template_name,
             TEMPLATE_DIR / "students" / f"{student_id}.png",

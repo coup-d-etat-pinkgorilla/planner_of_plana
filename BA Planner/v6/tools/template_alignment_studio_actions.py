@@ -1,12 +1,13 @@
 """Interaction methods for Template Alignment Studio."""
 
+from dataclasses import replace
 from pathlib import Path
 
 from PIL import Image
 from PySide6.QtCore import QPointF, Qt
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QPolygonF
 from PySide6.QtWidgets import (
-    QColorDialog, QFileDialog, QGraphicsItem, QGraphicsRectItem, QInputDialog,
+    QColorDialog, QFileDialog, QGraphicsItem, QGraphicsPolygonItem, QInputDialog,
     QListWidgetItem, QMessageBox,
 )
 
@@ -16,7 +17,17 @@ from tools.template_alignment_studio_model import (
 from tools.template_alignment_tool import IMAGE_FILTER, LayerItem, pil_to_pixmap
 
 
-class RoiItem(QGraphicsRectItem):
+def _copy_name(name: str, existing: set[str]) -> str:
+    base = f"{name}_copy" if name else "copy"
+    if base not in existing:
+        return base
+    index = 2
+    while f"{base}{index}" in existing:
+        index += 1
+    return f"{base}{index}"
+
+
+class RoiItem(QGraphicsPolygonItem):
     def __init__(self, index, moved, selected):
         super().__init__()
         self.index, self.moved_callback, self.selected_callback = index, moved, selected
@@ -24,6 +35,18 @@ class RoiItem(QGraphicsRectItem):
             QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable
             | QGraphicsItem.ItemSendsGeometryChanges
         )
+
+    def set_roi_shape(self, width: int, height: int, shape: str, slant: int) -> None:
+        width = max(1, int(width))
+        height = max(1, int(height))
+        slant = int(slant) if shape == "parallelogram" else 0
+        points = [
+            QPointF(slant, 0),
+            QPointF(width + slant, 0),
+            QPointF(width, height),
+            QPointF(0, height),
+        ]
+        self.setPolygon(QPolygonF(points))
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionChange:
@@ -124,6 +147,15 @@ class StudioActionsMixin:
         if self.layer_list.currentRow()==index:
             self._updating=True; self.lx.setValue(x); self.ly.setValue(y); self._updating=False
 
+    def copy_layer(self):
+        index=self.layer_list.currentRow()
+        if not 0<=index<len(self.project.layers): return
+        existing={layer.name for layer in self.project.layers}
+        source=self.project.layers[index]
+        copied=replace(source, name=_copy_name(source.name, existing), x=source.x+8, y=source.y+8)
+        self.project.layers.insert(index+1,copied)
+        self.rebuild_layers(index+1)
+
     def remove_layer(self):
         index=self.layer_list.currentRow()
         if 0<=index<len(self.project.layers):
@@ -150,6 +182,15 @@ class StudioActionsMixin:
             self.project.rois.append(RoiSpec(name or f"roi_{len(self.project.rois)+1}"))
             self.rebuild_rois(len(self.project.rois)-1)
 
+    def copy_roi(self):
+        index=self.roi_list.currentRow()
+        if not 0<=index<len(self.project.rois): return
+        existing={roi.name for roi in self.project.rois}
+        source=self.project.rois[index]
+        copied=replace(source, name=_copy_name(source.name, existing), x=source.x+8, y=source.y+8)
+        self.project.rois.insert(index+1,copied)
+        self.rebuild_rois(index+1)
+
     def remove_roi(self):
         index=self.roi_list.currentRow()
         if 0<=index<len(self.project.rois) and len(self.project.rois)>1:
@@ -162,9 +203,10 @@ class StudioActionsMixin:
         for index,roi in enumerate(self.project.rois):
             item=RoiItem(index,self.roi_moved,self.roi_item_selected)
             color=colors[index%len(colors)]; item.setPen(self.roi_pen(color)); item.setBrush(QColor(color.red(),color.green(),color.blue(),18))
-            item.setRect(0,0,roi.width,roi.height); item.setPos(roi.x,roi.y); item.setZValue(1000+index)
+            item.set_roi_shape(roi.width,roi.height,roi.shape,roi.slant); item.setPos(roi.x,roi.y); item.setZValue(1000+index)
             item.setVisible(roi.enabled); self.scene.addItem(item); self.roi_items.append(item)
-            self.roi_list.addItem(QListWidgetItem(roi.name))
+            suffix=" [para]" if roi.shape=="parallelogram" else ""
+            self.roi_list.addItem(QListWidgetItem(f"{roi.name}{suffix}"))
         if self.project.rois: self.roi_list.setCurrentRow(max(0,min(selected,len(self.project.rois)-1)))
 
     def roi_item_selected(self,index): self.roi_list.setCurrentRow(index)
@@ -173,6 +215,8 @@ class StudioActionsMixin:
         if not 0<=index<len(self.project.rois): return
         self._updating=True; roi=self.project.rois[index]
         self.roi_name.setText(roi.name); self.roi_enabled.setChecked(roi.enabled)
+        self.roi_shape.setCurrentText(roi.shape if roi.shape in {"rectangle","parallelogram"} else "rectangle")
+        self.rslant.setValue(roi.slant)
         for widget,value in ((self.rx,roi.x),(self.ry,roi.y),(self.rw,roi.width),(self.rh,roi.height)): widget.setValue(value)
         self.roi_items[index].setSelected(True); self._updating=False
 
@@ -180,9 +224,11 @@ class StudioActionsMixin:
         index=self.roi_list.currentRow()
         if self._updating or not 0<=index<len(self.project.rois): return
         roi=self.project.rois[index]; roi.name=self.roi_name.text() or roi.name; roi.enabled=self.roi_enabled.isChecked()
+        roi.shape=self.roi_shape.currentText() or "rectangle"; roi.slant=self.rslant.value()
         roi.x,roi.y,roi.width,roi.height=self.rx.value(),self.ry.value(),self.rw.value(),self.rh.value()
-        item=self.roi_items[index]; item.setRect(0,0,roi.width,roi.height); item.setPos(roi.x,roi.y); item.setVisible(roi.enabled)
-        self.roi_list.item(index).setText(roi.name)
+        item=self.roi_items[index]; item.set_roi_shape(roi.width,roi.height,roi.shape,roi.slant); item.setPos(roi.x,roi.y); item.setVisible(roi.enabled)
+        suffix=" [para]" if roi.shape=="parallelogram" else ""
+        self.roi_list.item(index).setText(f"{roi.name}{suffix}")
 
     def roi_moved(self,index,x,y):
         if self._updating:return

@@ -1,5 +1,26 @@
 # TODO
 
+- [ ] Scan window and release follow-ups
+  - [ ] During scanning, keep the top-right scan section width fixed so the progress bar does not stretch the section and break the layout ratio.
+  - [ ] In the top-right scan section, remove ETA and status text because the top-left section already owns those messages; leave only the progress bar and stop-scan button.
+  - [ ] In the top-right scan section's student scan flow, when scanning the current student, always run full fallback checks to prevent false positives.
+  - [ ] Remove the All button from the top-right scan section.
+  - [ ] Remove the name-sorted student scan mode because the normal scan is now fast enough to keep image-processing accuracy.
+  - [ ] When the Student Scan button is clicked, start the normal student scan immediately instead of opening the old options UI.
+  - [ ] Replace the old student scan option handling with forced override behavior.
+  - [ ] Remove the previous student scan behavior that reads the existing state and skips already maxed students.
+  - [ ] Fix item/eleph scanning stopping after a limited number of scans; use the logs as the primary reference.
+  - [ ] Fix equipment scanning getting stuck while opening the scan filter menu.
+  - [ ] Completely separate equipment filter-menu logic from item filter-menu logic because fixes in one path currently break the other.
+  - [ ] Fix item scan filter confirmation becoming confused when it tries to recognize the neighboring tab state.
+  - [ ] Handle the case where the sort tab is open when the item filter menu is opened.
+  - [ ] Fix student scanning not starting or not completing.
+  - [ ] When a BA window is connected, show connection state by changing the top section border of the Scan tab to a thick sky-blue border.
+  - [ ] Remove the debug message that displays the selected BA window HWND in the scan window.
+  - [ ] Make the "Current profile: xx" label 1.5x larger and display it in bold pink text.
+  - [ ] Hide Guide Timeline and Statistics for the first official release.
+  - [ ] Update the executable build so the exe uses `executable_icon.png` as its icon.
+
 - [x] Statistics tab implementation pass
   - [x] Summary cards, main sunburst, and five selectable chart cards are wired in the requested order.
   - [x] Sunburst modes cover collection composition, combat position, attack/defense/role, required resources, shortage resources, and skill/function tags.

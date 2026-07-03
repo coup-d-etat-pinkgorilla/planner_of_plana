@@ -1,0 +1,22 @@
+{
+  "profiles": [
+    {
+      "name": "manual_2560x1440",
+      "resolution": [2560, 1440],
+      "slots": [
+        {"index": 0, "name": "left_striker_1", "x": 205, "y": 1063, "width": 114, "height": 93},
+        {"index": 1, "name": "left_striker_2", "x": 355, "y": 1063, "width": 114, "height": 93},
+        {"index": 2, "name": "left_striker_3", "x": 506, "y": 1063, "width": 114, "height": 93},
+        {"index": 3, "name": "left_striker_4", "x": 656, "y": 1063, "width": 114, "height": 93},
+        {"index": 4, "name": "left_special_1", "x": 807, "y": 1063, "width": 114, "height": 93},
+        {"index": 5, "name": "left_special_2", "x": 957, "y": 1063, "width": 114, "height": 93},
+        {"index": 6, "name": "right_striker_1", "x": 1479, "y": 1063, "width": 114, "height": 93},
+        {"index": 7, "name": "right_striker_2", "x": 1629, "y": 1063, "width": 114, "height": 93},
+        {"index": 8, "name": "right_striker_3", "x": 1780, "y": 1063, "width": 114, "height": 93},
+        {"index": 9, "name": "right_striker_4", "x": 1930, "y": 1063, "width": 114, "height": 93},
+        {"index": 10, "name": "right_special_1", "x": 2081, "y": 1063, "width": 114, "height": 93},
+        {"index": 11, "name": "right_special_2", "x": 2231, "y": 1063, "width": 114, "height": 93}
+      ]
+    }
+  ]
+}

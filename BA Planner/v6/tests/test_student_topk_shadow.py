@@ -86,6 +86,78 @@ class StudentTopKShadowTests(unittest.TestCase):
         robust.assert_called_once()
         precise.assert_not_called()
 
+    def test_near_consensus_fast_verifies_single_winner(self) -> None:
+        with (
+            patch.dict("os.environ", {matcher.STUDENT_TEXTURE_TOPK_SHADOW_ENV: "0"}),
+            patch.object(
+                matcher,
+                "_top_student_texture_candidates",
+                return_value={"student_1": "template_1.png", "student_2": "template_2.png"},
+            ),
+            patch.object(
+                matcher,
+                "_student_texture_prefilter_decision",
+                return_value=("student_1", 0.98, 0.07),
+            ),
+            patch.object(
+                matcher,
+                "_match_student_texture_robust",
+                return_value=("student_1", 0.84, 0.21),
+            ),
+            patch.object(
+                matcher,
+                "_match_student_texture_precise",
+                return_value=("student_1", 0.72, 0.72),
+            ) as precise,
+        ):
+            result = matcher._match_student_texture_with_topk(
+                self.crop,
+                self.candidates,
+                label="test",
+                top_k=10,
+                method="fusion",
+            )
+
+        self.assertEqual(result, ("student_1", 0.72, 0.72))
+        precise.assert_called_once()
+        self.assertEqual({"student_1": "template_1.png"}, precise.call_args.args[1])
+
+    def test_failed_fast_verify_still_falls_back_to_full_pool(self) -> None:
+        with (
+            patch.object(
+                matcher,
+                "_top_student_texture_candidates",
+                return_value={"student_1": "template_1.png", "student_2": "template_2.png"},
+            ),
+            patch.object(
+                matcher,
+                "_student_texture_prefilter_decision",
+                return_value=("student_1", 0.98, 0.07),
+            ),
+            patch.object(
+                matcher,
+                "_match_student_texture_robust",
+                return_value=("student_1", 0.84, 0.21),
+            ),
+            patch.object(
+                matcher,
+                "_match_student_texture_precise",
+                side_effect=[(None, 0.65, 0.65), ("student_3", 0.91, 0.16)],
+            ) as precise,
+        ):
+            result = matcher._match_student_texture_with_topk(
+                self.crop,
+                self.candidates,
+                label="test",
+                top_k=10,
+                method="fusion",
+            )
+
+        self.assertEqual(result, ("student_3", 0.91, 0.16))
+        self.assertEqual(2, precise.call_count)
+        self.assertEqual({"student_1": "template_1.png"}, precise.call_args_list[0].args[1])
+        self.assertEqual(self.candidates, precise.call_args_list[1].args[1])
+
     def test_consensus_disagreement_falls_back_to_full_pool(self) -> None:
         with (
             patch.object(

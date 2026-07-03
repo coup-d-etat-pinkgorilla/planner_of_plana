@@ -10,7 +10,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QColor, QPen
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QDoubleSpinBox, QFormLayout, QGraphicsPixmapItem,
-    QGraphicsScene, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget,
+    QComboBox, QGraphicsScene, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget,
     QMainWindow, QPushButton, QSlider, QSpinBox, QSplitter, QTabWidget,
     QToolBar, QVBoxLayout, QWidget,
 )
@@ -58,7 +58,7 @@ class StudioWindow(StudioActionsMixin, StudioProjectMixin, QMainWindow):
         panel=QWidget(); root=QVBoxLayout(panel); root.addWidget(QLabel("Layers (bottom to top)"))
         self.layer_list=QListWidget(); self.layer_list.currentRowChanged.connect(self.select_layer); root.addWidget(self.layer_list,1)
         row=QHBoxLayout()
-        for text,callback in (("+ Image",self.choose_images),("+ Text",self.add_text),("Remove",self.remove_layer),
+        for text,callback in (("+ Image",self.choose_images),("+ Text",self.add_text),("Copy",self.copy_layer),("Remove",self.remove_layer),
                               ("Up",lambda:self.reorder_layer(1)),("Down",lambda:self.reorder_layer(-1))):
             button=QPushButton(text); button.clicked.connect(callback); row.addWidget(button)
         root.addLayout(row)
@@ -92,18 +92,21 @@ class StudioWindow(StudioActionsMixin, StudioProjectMixin, QMainWindow):
 
     def roi_panel(self):
         panel=QWidget(); root=QVBoxLayout(panel)
-        root.addWidget(QLabel("Named matcher ROIs. Drag rectangles on the canvas; resize here."))
+        root.addWidget(QLabel("Named matcher ROIs. Drag rectangles or parallelograms on the canvas; resize here."))
         self.roi_list=QListWidget(); self.roi_list.currentRowChanged.connect(self.select_roi); root.addWidget(self.roi_list,1)
-        row=QHBoxLayout(); add=QPushButton("New ROI"); add.clicked.connect(self.add_roi); remove=QPushButton("Remove"); remove.clicked.connect(self.remove_roi)
-        row.addWidget(add); row.addWidget(remove); root.addLayout(row)
+        row=QHBoxLayout(); add=QPushButton("New ROI"); add.clicked.connect(self.add_roi); copy=QPushButton("Copy"); copy.clicked.connect(self.copy_roi); remove=QPushButton("Remove"); remove.clicked.connect(self.remove_roi)
+        row.addWidget(add); row.addWidget(copy); row.addWidget(remove); root.addLayout(row)
         self.roi_name=QLineEdit("main"); self.roi_enabled=QCheckBox("Enabled"); self.roi_enabled.setChecked(True)
+        self.roi_shape=QComboBox(); self.roi_shape.addItems(["rectangle","parallelogram"])
         self.rx,self.ry=self.spin(),self.spin(); self.rw,self.rh=self.spin(1,20000),self.spin(1,20000)
+        self.rslant=self.spin(-20000,20000)
         form=QFormLayout()
-        for label,widget in (("Name",self.roi_name),("",self.roi_enabled),("X",self.rx),("Y",self.ry),
-                             ("Width",self.rw),("Height",self.rh)): form.addRow(label,widget)
+        for label,widget in (("Name",self.roi_name),("",self.roi_enabled),("Shape",self.roi_shape),("X",self.rx),("Y",self.ry),
+                             ("Width",self.rw),("Height",self.rh),("Slant",self.rslant)): form.addRow(label,widget)
         root.addLayout(form)
         self.roi_name.editingFinished.connect(self.roi_changed); self.roi_enabled.toggled.connect(self.roi_changed)
-        for widget in (self.rx,self.ry,self.rw,self.rh): widget.valueChanged.connect(self.roi_changed)
+        self.roi_shape.currentTextChanged.connect(self.roi_changed)
+        for widget in (self.rx,self.ry,self.rw,self.rh,self.rslant): widget.valueChanged.connect(self.roi_changed)
         root.addWidget(QLabel("Suggested names: main, equipment_icon, favorite_t1_marker, favorite_t2_marker"))
         return panel
 

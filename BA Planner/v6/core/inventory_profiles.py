@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import core.student_meta as student_meta
 from core.equipment_items import (
     EQUIPMENT_ITEM_ID_TO_NAME,
     EQUIPMENT_ORDERED_ITEM_IDS,
@@ -123,16 +124,39 @@ def _equipment_names() -> list[str]:
 def _equipment_ordered_item_ids() -> list[str]:
     return list(EQUIPMENT_ORDERED_ITEM_IDS)
 
-_COIN_NAMES = [
-    "총력전 코인",
-    "전술대회 코인",
-    "상급 총력전 코인",
-    "엘리그마",
-    "종합전술시험 코인",
-    "현상수배 코인",
-    "대결전 코인",
-    "상급 대결전 코인",
-]
+
+def _student_eleph_student_ids() -> list[str]:
+    def sort_key(student_id: str) -> tuple[str, int, str, str]:
+        group = student_meta.group(student_id) or student_meta.display_name(student_id)
+        variant = student_meta.variant(student_id)
+        variant_rank = 1 if variant is None else 0
+        return (
+            group.casefold(),
+            variant_rank,
+            student_meta.display_name(student_id).casefold(),
+            student_id.casefold(),
+        )
+
+    return sorted(
+        (student_id for student_id in student_meta.all_ids() if not student_meta.is_jp_only(student_id)),
+        key=sort_key,
+    )
+
+
+def _student_eleph_item_id(student_id: str) -> str:
+    return f"Item_Icon_SecretStone_{student_id}"
+
+
+def _student_eleph_name(student_id: str) -> str:
+    return f"{student_meta.display_name(student_id)}의 엘레프"
+
+
+def _student_eleph_ordered_names() -> list[str]:
+    return [_student_eleph_name(student_id) for student_id in _student_eleph_student_ids()]
+
+
+def _student_eleph_ordered_item_ids() -> list[str]:
+    return [_student_eleph_item_id(student_id) for student_id in _student_eleph_student_ids()]
 
 _REPORT_NAMES = [
     "초급 활동 보고서",
@@ -205,11 +229,13 @@ _PROFILES = {
         expected_item_ids=frozenset(EQUIPMENT_ORDERED_ITEM_IDS),
         terminal_item_ids=frozenset({"Equipment_Icon_WeaponExpGrowthA_0"}),
     ),
-    "coins": InventoryScanProfile(
-        profile_id="coins",
+    "student_elephs": InventoryScanProfile(
+        profile_id="student_elephs",
         source="item",
-        ordered_names=tuple(_COIN_NAMES),
-        terminal_names=frozenset({"상급 대결전 코인"}),
+        ordered_names=tuple(_student_eleph_ordered_names()),
+        terminal_names=frozenset({_student_eleph_ordered_names()[-1]}),
+        expected_item_ids=frozenset(_student_eleph_ordered_item_ids()),
+        terminal_item_ids=frozenset({_student_eleph_ordered_item_ids()[-1]}),
     ),
     "activity_reports": InventoryScanProfile(
         profile_id="activity_reports",
@@ -227,7 +253,7 @@ _PROFILE_LABELS = {
     "tactical_bd": "전술 교육 BD",
     "ooparts": "오파츠",
     "equipment": "장비",
-    "coins": "코인",
+    "student_elephs": "엘레프",
     "activity_reports": "활동 보고서",
 }
 
@@ -274,6 +300,11 @@ def _similarity(a: str, b: str) -> float:
 def inventory_item_display_name(item_id: str | None) -> str | None:
     if not item_id:
         return None
+
+    if item_id.startswith("Item_Icon_SecretStone_"):
+        student_id = item_id.removeprefix("Item_Icon_SecretStone_")
+        if student_meta.get(student_id) is not None:
+            return _student_eleph_name(student_id)
 
     if item_id.startswith("Item_Icon_SkillBook_"):
         suffix = item_id.removeprefix("Item_Icon_SkillBook_")
@@ -370,6 +401,9 @@ def inventory_profile_ordered_item_ids(profile: InventoryScanProfile) -> tuple[s
     if profile.profile_id == "equipment":
         return tuple(_equipment_ordered_item_ids())
 
+    if profile.profile_id == "student_elephs":
+        return tuple(_student_eleph_ordered_item_ids())
+
     return tuple(None for _ in profile.ordered_names)
 
 
@@ -437,6 +471,14 @@ def infer_inventory_scan_profile(
         return None
 
     if item_ids:
+        eleph_hits = [
+            item_id
+            for item_id in item_ids
+            if item_id in _PROFILES["student_elephs"].expected_item_ids
+        ]
+        if len(eleph_hits) >= 4 and len(eleph_hits) >= max(4, int(len(item_ids) * 0.7)):
+            return _PROFILES["student_elephs"]
+
         skill_book_hits = [item_id for item_id in item_ids if item_id.startswith("Item_Icon_SkillBook_")]
         if len(skill_book_hits) >= 4 and len(skill_book_hits) >= max(4, int(len(item_ids) * 0.7)):
             return _PROFILES["tech_notes"]

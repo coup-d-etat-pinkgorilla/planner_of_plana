@@ -99,6 +99,7 @@ def init_db(path: Path | None = None) -> None:
             combat_atk      INTEGER,
             combat_def      INTEGER,
             combat_heal     INTEGER,
+            form_combat_stats TEXT,
             stat_hp         INTEGER,
             stat_atk        INTEGER,
             stat_heal       INTEGER,
@@ -158,6 +159,7 @@ def init_db(path: Path | None = None) -> None:
         _ensure_column(conn, "equipment_items", "item_source", "TEXT")
         for column in ("combat_hp", "combat_atk", "combat_def", "combat_heal"):
             _ensure_column(conn, "students", column, "INTEGER")
+        _ensure_column(conn, "students", "form_combat_stats", "TEXT")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_items_item_id ON items(item_id)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_equip_items_item_id ON equipment_items(item_id)")
     conn.close()

@@ -15,6 +15,9 @@ class ScannerWaitTests(unittest.TestCase):
         scanner._panel_transition_history = {}
         scanner._panel_title_score_history = {}
         scanner._basic_level_run_templates = {}
+        scanner._on_progress = None
+        scanner._status = lambda *_args, **_kwargs: None
+        scanner._stop = False
         return scanner
 
     def test_clock_can_pass_deadline_between_checks(self) -> None:
@@ -39,6 +42,98 @@ class ScannerWaitTests(unittest.TestCase):
 
         sleep.assert_not_called()
 
+    def test_inventory_filter_panel_retries_until_title_is_recognized(self) -> None:
+        scanner = self._scanner()
+        clicks: list[str] = []
+        scanner._click_region_capture = lambda _name, *, label="", delay=0.0: clicks.append(label) or True
+        outcomes = iter([False, True])
+        scanner._wait_for_inventory_filter_menu_open = lambda **_kwargs: next(outcomes)
+
+        self.assertTrue(
+            scanner._open_inventory_filter_panel(
+                "filtermenu_button",
+                label="filtermenu_button",
+                max_attempts=2,
+            )
+        )
+        self.assertEqual(clicks, ["filtermenu_button", "filtermenu_button"])
+        self.assertFalse(scanner._stop)
+
+    def test_inventory_filter_panel_stops_when_title_is_not_recognized(self) -> None:
+        scanner = self._scanner()
+        scanner._click_region_capture = lambda _name, *, label="", delay=0.0: True
+        scanner._wait_for_inventory_filter_menu_open = lambda **_kwargs: False
+
+        self.assertFalse(
+            scanner._open_inventory_filter_panel(
+                "filtermenu_button",
+                label="filtermenu_button",
+                max_attempts=2,
+            )
+        )
+        self.assertTrue(scanner._stop)
+
+    def test_prepare_item_inventory_applies_filter_before_sort_rule(self) -> None:
+        scanner = self._scanner()
+        events: list[str] = []
+        scanner._wait = lambda *_args, **_kwargs: True
+        scanner._open_inventory_filter_panel = lambda name, **_kwargs: events.append(f"open:{name}") or True
+        scanner._click_region_capture = lambda name, *, label="", delay=0.0: events.append(f"click:{name}") or True
+        scanner._ensure_region_matches_reference = lambda name, **_kwargs: events.append(f"ensure:{name}") or True
+
+        self.assertTrue(scanner._prepare_item_inventory("ooparts", ensure_sort_rule=False))
+        self.assertEqual(
+            events,
+            [
+                "open:filtermenu_button",
+                "click:filter_tab",
+                "click:filter_reset_button",
+                "click:ooparts_filter",
+                "click:sort_tab",
+                "ensure:sort_rule_check",
+                "click:filter_confirm_button",
+            ],
+        )
+
+    def test_prepare_item_inventory_uses_name_sort_for_elephs(self) -> None:
+        scanner = self._scanner()
+        events: list[str] = []
+        scanner._wait = lambda *_args, **_kwargs: True
+        scanner._open_inventory_filter_panel = lambda name, **_kwargs: events.append(f"open:{name}") or True
+        scanner._click_region_capture = lambda name, *, label="", delay=0.0: events.append(f"click:{name}") or True
+        scanner._ensure_region_matches_reference = lambda name, **_kwargs: events.append(f"ensure:{name}") or True
+
+        self.assertTrue(scanner._prepare_item_inventory("student_elephs", ensure_sort_rule=True))
+        self.assertEqual(
+            events,
+            [
+                "open:filtermenu_button",
+                "click:filter_tab",
+                "click:filter_reset_button",
+                "click:eleph_filter",
+                "click:sort_tab",
+                "ensure:sort_name_rule_check",
+                "click:filter_confirm_button",
+            ],
+        )
+
+    def test_prepare_equipment_inventory_keeps_sort_default_then_confirms(self) -> None:
+        scanner = self._scanner()
+        events: list[str] = []
+        scanner._wait = lambda *_args, **_kwargs: True
+        scanner._open_inventory_filter_panel = lambda name, **_kwargs: events.append(f"open:{name}") or True
+        scanner._click_region_capture = lambda name, *, label="", delay=0.0: events.append(f"click:{name}") or True
+        scanner._ensure_region_matches_reference = lambda name, **_kwargs: events.append(f"ensure:{name}") or True
+
+        self.assertTrue(scanner._prepare_equipment_inventory())
+        self.assertEqual(
+            events,
+            [
+                "open:eq_filtermenu_button",
+                "ensure:eq_sort_rule_check",
+                "click:eq_filter_confirm_button",
+            ],
+        )
     def test_panel_transition_wait_learns_from_current_run(self) -> None:
         scanner = self._scanner()
         key = "open:skill_menu_button"

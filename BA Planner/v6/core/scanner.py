@@ -16,7 +16,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Iterable, Iterator, Optional
-from PIL import Image
+from PIL import Image, ImageDraw
 
 
 from core.logger import get_logger, log_section, LOG_SCANNER
@@ -44,6 +44,7 @@ from core.input import (
     send_escape,
     send_key,
     client_to_screen,
+    move_cursor_to_screen,
     ratio_to_client,
 )
 
@@ -108,10 +109,20 @@ from core.inventory_count_matcher import (
     read_equipment_count_from_detail,
     read_item_count_from_detail,
 )
+from core.equipment_items import canonical_equipment_item_id
+from core.inventory_grid_matcher import (
+    InventoryGridRowAnchorState,
+    detect_inventory_grid_tier_hint,
+    match_inventory_grid_template,
+)
 from core.inventory_input import (
     InventoryGridInput,
     InventoryInputUnavailable,
     create_inventory_input_backend,
+)
+from core.inventory_slot_count_matcher import (
+    estimate_item_slot_count_row_y_offset,
+    read_item_slot_count,
 )
 from core.scan_status import make_status_event
 from core.screen_crop_set import PreparedScreenRegion, ScreenCropSet
@@ -151,6 +162,10 @@ STUDENT_PANEL_TITLE_BOOTSTRAP_MARGIN = 0.10
 STUDENT_PANEL_TITLE_ADAPTIVE_FLOOR = 0.82
 STUDENT_PANEL_TITLE_ADAPTIVE_LEAD = 0.025
 STUDENT_PANEL_TITLE_HISTORY_SIZE = 20
+INVENTORY_FILTER_TITLE_REGION = STUDENT_PANEL_TITLE_REGION
+INVENTORY_FILTER_TITLE_TEMPLATE = TEMPLATE_DIR / "menu_detect_flag" / "inventory_filter_title_display_settings.png"
+INVENTORY_FILTER_TITLE_MIN_SCORE = 0.85
+INVENTORY_FILTER_TITLE_STABLE_POLLS = 1
 STUDENT_PANEL_TITLE_TEMPLATES = {
     "equipment": TEMPLATE_DIR / "menu_detect_flag" / "student_panel_title_equipment.png",
     "weapon": TEMPLATE_DIR / "menu_detect_flag" / "student_panel_title_weapon.png",
@@ -189,11 +204,15 @@ CAPTURED_CLICK_POINTS_FILE = BASE_DIR / "debug" / "captured_click_points.json"
 REGION_CAPTURE_DIR = BASE_DIR / "debug" / "region_captures"
 INVENTORY_SORT_RULE_MATCH_THRESHOLD = 0.78
 ITEM_SORT_RULE_MATCH_THRESHOLD = 0.68
+EQUIPMENT_SORT_RULE_MATCH_THRESHOLD = 0.70
 INVENTORY_SORT_RULE_MAX_ATTEMPTS = 3
 INVENTORY_FILTER_MENU_SETTLE_WAIT = 0.65
 INVENTORY_FILTER_TAB_SETTLE_WAIT = 0.45
 INVENTORY_SORT_RULE_CHECK_WAIT = 0.75
 INVENTORY_SORT_RULE_RETRY_WAIT = 0.45
+INVENTORY_PANEL_READY_THRESHOLD = 0.35
+INVENTORY_PANEL_OPEN_TIMEOUT = 1.8
+INVENTORY_PANEL_OPEN_ATTEMPTS = 3
 INVENTORY_FILTER_CONFIRM_WAIT = 0.65
 INVENTORY_PROFILE_MAX_UNIQUE_ITEMS = {
     "activity_reports": 4,
@@ -201,9 +220,6 @@ INVENTORY_PROFILE_MAX_UNIQUE_ITEMS = {
     "tactical_bd": 44,
     "ooparts": 83,
     "equipment": 110,
-}
-INVENTORY_PROFILE_MAX_DETAIL_CANDIDATES = {
-    "activity_reports": 4,
 }
 PROFILE_DIRECT_MATCH_THRESHOLD = 0.82
 INVENTORY_DETAIL_ICON_MATCH_WEIGHT = 0.40
@@ -276,6 +292,8 @@ class InventoryDragConfig:
     start_base_y: int
     delta_px: int
     duration: float
+    end_hold: float = 0.30
+    retry_scale: float = 1.05
     base_width: int = 2560
     base_height: int = 1440
 
@@ -292,17 +310,21 @@ class InventoryDragConfig:
 
 
 ITEM_INVENTORY_DRAG = InventoryDragConfig(
-    start_base_x=1900,
-    start_base_y=1135,
-    delta_px=-650,
-    duration=0.50,
+    start_base_x=1496,
+    start_base_y=1021,
+    delta_px=-656,
+    duration=0.65,
+    end_hold=0.40,
+    retry_scale=1.0,
 )
 
 EQUIPMENT_INVENTORY_DRAG = InventoryDragConfig(
-    start_base_x=1900,
-    start_base_y=1315,
-    delta_px=-1108,
-    duration=0.50,
+    start_base_x=1492,
+    start_base_y=1223,
+    delta_px=-874,
+    duration=0.65,
+    end_hold=0.40,
+    retry_scale=1.0,
 )
 
 
@@ -436,6 +458,53 @@ class ScanState:
     FAILED    = "failed"
 
 
+_COMBAT_STAT_FIELDS: tuple[str, ...] = ("combat_hp", "combat_atk", "combat_def", "combat_heal")
+
+
+def _normalize_form_combat_stats(raw: object) -> dict[str, dict[str, Optional[int]]]:
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except Exception:
+            raw = {}
+    if not isinstance(raw, dict):
+        return {}
+    normalized: dict[str, dict[str, Optional[int]]] = {}
+    for form_key, values in raw.items():
+        try:
+            form_index = int(str(form_key).replace("form_", ""))
+        except (TypeError, ValueError):
+            continue
+        if form_index < 1 or not isinstance(values, dict):
+            continue
+        stats: dict[str, Optional[int]] = {}
+        for field_name in _COMBAT_STAT_FIELDS:
+            value = values.get(field_name)
+            if value is None or value == "":
+                stats[field_name] = None
+                continue
+            try:
+                stats[field_name] = int(value)
+            except (TypeError, ValueError):
+                stats[field_name] = None
+        if any(value is not None for value in stats.values()):
+            normalized[str(form_index)] = stats
+    return normalized
+
+
+def _entry_combat_stats(entry: "StudentEntry") -> dict[str, Optional[int]]:
+    return {field_name: getattr(entry, field_name, None) for field_name in _COMBAT_STAT_FIELDS}
+
+
+def _store_entry_form_combat_stats(entry: "StudentEntry", form_index: int) -> None:
+    if form_index < 1:
+        return
+    stats = _entry_combat_stats(entry)
+    if not any(value is not None for value in stats.values()):
+        return
+    entry.form_combat_stats[str(form_index)] = stats
+
+
 @dataclass
 class StudentEntry:
     student_id:   Optional[str] = None
@@ -466,6 +535,7 @@ class StudentEntry:
     combat_atk:  Optional[int] = None
     combat_def:  Optional[int] = None
     combat_heal: Optional[int] = None
+    form_combat_stats: dict[str, dict[str, Optional[int]]] = field(default_factory=dict)
 
     stat_hp:   Optional[int] = None
     stat_atk:  Optional[int] = None
@@ -626,6 +696,7 @@ class StudentEntry:
             "combat_atk":   self.combat_atk,
             "combat_def":   self.combat_def,
             "combat_heal":  self.combat_heal,
+            "form_combat_stats": _normalize_form_combat_stats(self.form_combat_stats),
             "stat_hp":      self.stat_hp,
             "stat_atk":     self.stat_atk,
             "stat_heal":    self.stat_heal,
@@ -701,6 +772,7 @@ class StudentEntry:
             combat_atk=d.get("combat_atk"),
             combat_def=d.get("combat_def"),
             combat_heal=d.get("combat_heal"),
+            form_combat_stats=_normalize_form_combat_stats(d.get("form_combat_stats")),
             stat_hp=d.get("stat_hp"),
             stat_atk=d.get("stat_atk"),
             stat_heal=d.get("stat_heal"),
@@ -764,6 +836,17 @@ class InventoryPageSnapshot:
     slots: list[InventorySlotSnapshot]
 
 
+
+@dataclass
+class InventoryMotionEstimate:
+    expected_step_px: int
+    actual_move_px: int
+    y_offset_px: int
+    score: float
+    search_min_px: int
+    search_max_px: int
+    method: str = "row_feature_shift"
+
 @dataclass
 class InventoryVerification:
     name: Optional[str]
@@ -773,16 +856,6 @@ class InventoryVerification:
     detail_crop: Optional[Image.Image] = None
     detail_name_crop: Optional[Image.Image] = None
 
-
-@dataclass
-class InventoryDetailCandidate:
-    sequence: int
-    slot_index: int
-    count: str
-    detail_crop: Image.Image
-    detail_name_crop: Optional[Image.Image] = None
-    detected_item_id: Optional[str] = None
-    detected_score: float = 0.0
 
 
 
@@ -872,8 +945,488 @@ def _count_row_overlap(
     return 0
 
 
+def _new_inventory_slot_indices(
+    total_slots: int,
+    grid_cols: int,
+    grid_rows: int,
+    overlap_rows: int,
+) -> set[int] | None:
+    if total_slots <= 0 or grid_cols <= 0 or grid_rows <= 0:
+        return None
+    new_rows = grid_rows - max(0, min(grid_rows, overlap_rows))
+    if new_rows <= 0:
+        return set()
+    if new_rows >= grid_rows:
+        return None
+    start_row = max(0, grid_rows - new_rows)
+    start = min(total_slots, start_row * grid_cols)
+    return set(range(start, total_slots))
+
+
+
+def _shift_region_y(region: dict, y_offset_px: int, image_height: int) -> dict:
+    if y_offset_px == 0 or image_height <= 0:
+        return dict(region)
+    dy = y_offset_px / max(1, image_height)
+    shifted = dict(region)
+    region_h = float(region["y2"]) - float(region["y1"])
+    y1 = float(region["y1"]) + dy
+    y1 = max(0.0, min(1.0 - region_h, y1))
+    y2 = y1 + region_h
+    shifted["y1"] = y1
+    shifted["y2"] = y2
+    if "cy" in shifted:
+        shifted["cy"] = max(0.0, min(1.0, float(region["cy"]) + dy))
+    return shifted
+
+
+def _shift_slots_y(slots: list[dict], y_offset_px: int, image_size: tuple[int, int]) -> list[dict]:
+    return [_shift_region_y(slot, y_offset_px, image_size[1]) for slot in slots]
+
+
+
+
+def _inventory_debug_region_box(region: dict, size: tuple[int, int]) -> tuple[int, int, int, int]:
+    width, height = size
+    return (
+        int(round(float(region["x1"]) * width)),
+        int(round(float(region["y1"]) * height)),
+        int(round(float(region["x2"]) * width)),
+        int(round(float(region["y2"]) * height)),
+    )
+
+
+def _inventory_debug_label(draw: ImageDraw.ImageDraw, xy: tuple[int, int], text: str, fill: str) -> None:
+    x, y = xy
+    draw.rectangle((x, y, x + max(30, len(text) * 7), y + 14), fill=(0, 0, 0, 170))
+    draw.text((x + 2, y + 1), text, fill=fill)
+
+
+def _draw_inventory_scroll_debug_overlay(
+    image: Image.Image,
+    slots: list[dict],
+    *,
+    title: str,
+    output_path: Path,
+    grid_cols: int,
+    overlap_rows: int | None = None,
+    scan_indices: set[int] | None = None,
+    carried_rows: int = 0,
+) -> None:
+    canvas = image.convert("RGBA")
+    overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    size = canvas.size
+    draw.rectangle(_inventory_debug_region_box(_grid_region(slots), size), outline=(255, 255, 255, 220), width=3)
+
+    for idx, slot in enumerate(slots):
+        slot_box = _inventory_debug_region_box(slot, size)
+        icon_box = _inventory_debug_region_box(_slot_icon_region(slot), size)
+        is_scan_target = scan_indices is not None and idx in scan_indices
+        color = (255, 76, 210, 235) if is_scan_target else (80, 255, 120, 210)
+        draw.rectangle(slot_box, outline=color, width=4 if is_scan_target else 2)
+        draw.rectangle(icon_box, outline=(60, 220, 255, 180), width=1)
+        label = str(idx + 1)
+        if carried_rows > 0 and idx < carried_rows * max(1, grid_cols):
+            label = f"{idx + 1} old"
+        _inventory_debug_label(draw, (slot_box[0] + 3, slot_box[1] + 3), label, "white")
+
+    lines = [title]
+    if overlap_rows is not None:
+        target_count = len(scan_indices) if scan_indices is not None else len(slots)
+        lines.append(f"overlap_rows={overlap_rows} scan_slots={target_count}/{len(slots)}")
+    lines.append("green=slot, cyan=icon hash, magenta=next scan window")
+    header_h = 22 * len(lines) + 8
+    draw.rectangle((8, 8, min(size[0] - 8, 900), 8 + header_h), fill=(0, 0, 0, 185))
+    for i, line in enumerate(lines):
+        draw.text((16, 14 + i * 22), line, fill=(255, 255, 255, 255))
+    Image.alpha_composite(canvas, overlay).convert("RGB").save(output_path, quality=95)
+
+
+def _safe_debug_token(value: object) -> str:
+    text = str(value or "").strip()
+    cleaned = "".join(ch if ch.isalnum() or ch in "_.-" else "_" for ch in text)
+    return cleaned.strip("_") or "none"
+
+
+def _inventory_scroll_debug_dir(source: str, profile_id: str | None) -> Path | None:
+    if source != "item" or os.environ.get("BA_INVENTORY_SCROLL_DEBUG", "1") == "0":
+        return None
+    stamp = time.strftime("%Y%m%d_%H%M%S")
+    suffix = f"{_safe_debug_token(source)}_{_safe_debug_token(profile_id or 'auto')}"
+    path = BASE_DIR / "debug" / "inventory_scroll_scan" / f"{stamp}_{suffix}"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _save_inventory_scroll_debug(
+    debug_dir: Path | None,
+    *,
+    before_img: Image.Image | None,
+    after_img: Image.Image | None,
+    slots: list[dict],
+    grid_cols: int,
+    grid_rows: int,
+    scroll_index: int,
+    attempt_index: int,
+    amount: int,
+    scroll_ok: bool,
+    moved: bool,
+    image_changed: bool,
+    hash_changed: bool,
+    slot_sequence_changed: bool,
+    row_step_px: int,
+    expected_move_px: int,
+    search_margin_px: int,
+    motion: InventoryMotionEstimate | None,
+    overlap_rows: int,
+    moved_rows: int | None,
+    y_offset_px: int,
+    before_grid_hash: str,
+    after_grid_hash: str,
+    before_hashes: list[str],
+    after_hashes: list[str],
+    cursor_moved: bool = False,
+    before_y_offset_px: int = 0,
+    before_slots: list[dict] | None = None,
+    tail_scroll: bool = False
+) -> None:
+    if debug_dir is None or before_img is None or after_img is None:
+        return
+    try:
+        case_dir = debug_dir / f"scroll_{scroll_index + 1:02d}_try_{attempt_index:02d}"
+        case_dir.mkdir(parents=True, exist_ok=True)
+        before_path = case_dir / "before_capture.png"
+        after_path = case_dir / "after_capture.png"
+        before_overlay = case_dir / "before_overlay.png"
+        after_overlay = case_dir / "after_overlay.png"
+        before_img.convert("RGB").save(before_path, quality=95)
+        after_img.convert("RGB").save(after_path, quality=95)
+
+        scan_indices = _new_inventory_slot_indices(len(slots), grid_cols, grid_rows, overlap_rows)
+        if scan_indices is None:
+            scan_indices = set(range(len(slots)))
+        debug_before_slots = before_slots if before_slots is not None else slots
+        adjusted_slots = _shift_slots_y(slots, y_offset_px, after_img.size) if y_offset_px else slots
+        title = (
+            f"scroll={scroll_index + 1} try={attempt_index} moved={moved} "
+            f"amount={amount}px before_y={before_y_offset_px:+d}px y_offset={y_offset_px:+d}px"
+        )
+        _draw_inventory_scroll_debug_overlay(
+            before_img,
+            debug_before_slots,
+            title=f"before {title}",
+            output_path=before_overlay,
+            grid_cols=grid_cols,
+        )
+        _draw_inventory_scroll_debug_overlay(
+            after_img,
+            adjusted_slots,
+            title=f"after {title}",
+            output_path=after_overlay,
+            grid_cols=grid_cols,
+            overlap_rows=overlap_rows,
+            scan_indices=scan_indices,
+            carried_rows=overlap_rows,
+        )
+        motion_summary = None
+        if motion is not None:
+            motion_summary = {
+                "method": motion.method,
+                "expected_step_px": motion.expected_step_px,
+                "actual_move_px": motion.actual_move_px,
+                "y_offset_px": motion.y_offset_px,
+                "score": round(motion.score, 6),
+                "search_min_px": motion.search_min_px,
+                "search_max_px": motion.search_max_px,
+            }
+        summary = {
+            "scroll_index": scroll_index,
+            "attempt_index": attempt_index,
+            "amount_px": amount,
+            "scroll_ok": scroll_ok,
+            "moved": moved,
+            "image_changed": image_changed,
+            "hash_changed": hash_changed,
+            "slot_sequence_changed": slot_sequence_changed,
+            "cursor_moved_away_before_capture": cursor_moved,
+            "ignored_slot_side_bands_for_motion": True,
+            "grid_cols": grid_cols,
+            "grid_rows": grid_rows,
+            "slot_count": len(slots),
+            "row_step_px": row_step_px,
+            "expected_move_px": expected_move_px,
+            "search_margin_px": search_margin_px,
+            "movement_estimate": motion_summary,
+            "moved_rows": moved_rows,
+            "overlap_rows": overlap_rows,
+            "before_y_offset_px": before_y_offset_px,
+            "motion_y_offset_delta_px": y_offset_px - before_y_offset_px,
+            "after_y_offset_px": y_offset_px,
+            "tail_scroll": bool(tail_scroll),
+            "new_scan_slot_indices_0_based": sorted(scan_indices),
+            "new_scan_slot_numbers": [idx + 1 for idx in sorted(scan_indices)],
+            "before_grid_hash": before_grid_hash,
+            "after_grid_hash": after_grid_hash,
+            "before_slot_hashes": before_hashes,
+            "after_slot_hashes": after_hashes,
+            "before_capture": str(before_path),
+            "after_capture": str(after_path),
+            "before_overlay": str(before_overlay),
+            "after_overlay": str(after_overlay),
+        }
+        (case_dir / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        _log.debug("failed to save inventory scroll debug capture", exc_info=True)
+
+def _slot_row_step_px(slots: list[dict], image_size: tuple[int, int], grid_cols: int) -> int:
+    if grid_cols <= 0 or len(slots) <= grid_cols:
+        return 0
+    height = max(1, image_size[1])
+    steps: list[float] = []
+    for idx in range(grid_cols, len(slots), grid_cols):
+        prev = slots[idx - grid_cols]
+        cur = slots[idx]
+        steps.append((float(cur["cy"]) - float(prev["cy"])) * height)
+    if not steps:
+        return 0
+    return int(round(float(np.median(np.array(steps, dtype=np.float32)))))
+
+
+
+def _move_cursor_away_from_inventory_grid(rect: tuple[int, int, int, int]) -> bool:
+    hwnd = find_target_hwnd()
+    if not hwnd:
+        return False
+    # Keep the OS cursor out of the item grid before capture so hover/focus
+    # borders do not become part of the scroll-difference signal.
+    cx, cy = ratio_to_client(rect, 0.25, 0.55)
+    screen = client_to_screen(hwnd, cx, cy)
+    if screen is None:
+        return False
+    return move_cursor_to_screen(screen[0], screen[1])
+
+def _inventory_motion_region(grid_r: dict) -> dict:
+    return _expand_region(grid_r, left=0.03, top=0.04, right=0.02, bottom=0.03)
+
+
+def _inventory_overlap_rows_from_motion(
+    motion: InventoryMotionEstimate | None,
+    row_step_px: int,
+    grid_rows: int,
+) -> tuple[int, int, int, bool] | None:
+    if motion is None or row_step_px <= 0 or grid_rows <= 0:
+        return None
+    target_rows = max(1, grid_rows - 1)
+    actual_rows = motion.actual_move_px / max(1, row_step_px)
+    tail_scroll = motion.actual_move_px < row_step_px * max(1.0, target_rows - 0.5)
+    moved_rows = int(round(actual_rows))
+    moved_rows = max(0, min(grid_rows, moved_rows))
+    if tail_scroll and motion.actual_move_px >= row_step_px * 0.35:
+        moved_rows = max(1, moved_rows)
+    y_offset_px = int(round((moved_rows * row_step_px) - motion.actual_move_px))
+    if tail_scroll:
+        # Near the list end, the UI can clamp the scroll to a partial row.  The
+        # y-offset carries that partial alignment, so scanning an extra row would
+        # reread the previous bottom row and shift the true tail row downward.
+        overlap_rows = grid_rows - moved_rows
+        max_tail_offset = max(1, int(round(row_step_px * 0.45)))
+        y_offset_px = max(-max_tail_offset, min(max_tail_offset, y_offset_px))
+    else:
+        overlap_rows = grid_rows - moved_rows
+        # Normal drags settle on row boundaries. Large residual offsets here are
+        # usually a row-feature false peak; carrying them forward shifts every
+        # later slot ROI and can poison row-step calibration.
+        max_normal_offset = max(4, int(round(row_step_px * 0.04)))
+        if abs(y_offset_px) > max_normal_offset:
+            y_offset_px = 0
+    return max(0, min(grid_rows, overlap_rows)), moved_rows, y_offset_px, tail_scroll
+
+def _adapt_inventory_drag_amount(
+    amount_px: int,
+    motion: InventoryMotionEstimate | None,
+    row_step_px: int,
+    grid_rows: int,
+    drag_config: InventoryDragConfig,
+) -> tuple[int, int]:
+    if os.environ.get("BA_INVENTORY_DRAG_ADAPT", "0") != "1":
+        return amount_px, 0
+    if motion is None or row_step_px <= 0 or grid_rows <= 1 or motion.actual_move_px <= 0:
+        return amount_px, 0
+    if motion.score < 0.70:
+        return amount_px, row_step_px * max(1, grid_rows - 1)
+
+    target_rows = max(1, grid_rows - 1)
+    target_move_px = row_step_px * target_rows
+    if target_move_px <= 0:
+        return amount_px, 0
+
+    error_ratio = (target_move_px - motion.actual_move_px) / max(1, target_move_px)
+    if abs(error_ratio) < 0.06:
+        return amount_px, target_move_px
+
+    current_abs = max(1.0, float(abs(amount_px)))
+    desired_abs = current_abs * (target_move_px / max(1.0, float(motion.actual_move_px)))
+    gain = 0.35 if desired_abs > current_abs else 0.25
+    next_abs = current_abs + (desired_abs - current_abs) * gain
+
+    # Keep one bad drag from over-correcting. The row-motion matcher will carry
+    # the remaining offset, so the drag controller can be deliberately gentle.
+    if next_abs > current_abs:
+        next_abs = min(next_abs, current_abs * 1.15)
+    else:
+        next_abs = max(next_abs, current_abs * 0.85)
+
+    base_abs = max(1, abs(drag_config.delta_px))
+    min_abs = max(1, int(round(base_abs * 0.65)))
+    start_ry = max(0.02, min(0.98, drag_config.start_ry))
+    if amount_px < 0:
+        max_by_edge = int(round(max(0.01, start_ry - 0.04) * drag_config.base_height))
+    else:
+        max_by_edge = int(round(max(0.01, 0.96 - start_ry) * drag_config.base_height))
+    max_abs = max(min_abs, min(int(round(base_abs * 1.45)), max_by_edge))
+    next_abs = max(min_abs, min(max_abs, next_abs))
+    next_amount = int(round(next_abs)) * (-1 if amount_px < 0 else 1)
+    return next_amount, target_move_px
+
+def _inventory_motion_box(region: dict, image_size: tuple[int, int]) -> tuple[int, int, int, int]:
+    width, height = image_size
+    return (
+        int(round(float(region["x1"]) * width)),
+        int(round(float(region["y1"]) * height)),
+        int(round(float(region["x2"]) * width)),
+        int(round(float(region["y2"]) * height)),
+    )
+
+
+def _suppress_slot_side_bands(
+    edge: np.ndarray,
+    *,
+    motion_region: dict,
+    image_size: tuple[int, int],
+    slots: list[dict] | None,
+    side_fraction: float = 0.18,
+) -> np.ndarray:
+    if not slots or edge.size == 0:
+        return edge
+    region_left, region_top, region_right, region_bottom = _inventory_motion_box(motion_region, image_size)
+    if region_right <= region_left or region_bottom <= region_top:
+        return edge
+    masked = edge.copy()
+    height, width = masked.shape
+    for slot in slots:
+        slot_left, slot_top, slot_right, slot_bottom = _inventory_motion_box(slot, image_size)
+        local_y1 = max(0, min(height, slot_top - region_top))
+        local_y2 = max(0, min(height, slot_bottom - region_top))
+        if local_y2 <= local_y1:
+            continue
+        local_x1 = max(0, min(width, slot_left - region_left))
+        local_x2 = max(0, min(width, slot_right - region_left))
+        if local_x2 <= local_x1:
+            continue
+        band = max(3, int(round((local_x2 - local_x1) * side_fraction)))
+        band = min(band, max(1, (local_x2 - local_x1) // 2))
+        masked[local_y1:local_y2, local_x1:local_x1 + band] = 0.0
+        masked[local_y1:local_y2, local_x2 - band:local_x2] = 0.0
+    return masked
+
+
+def _inventory_motion_array(
+    image: Image.Image,
+    region: dict,
+    *,
+    slots: list[dict] | None = None,
+) -> np.ndarray | None:
+    crop = crop_region(image, region).convert("L")
+    arr = np.asarray(crop, dtype=np.float32)
+    if arr.size == 0 or arr.shape[0] < 8 or arr.shape[1] < 8:
+        return None
+    gx = np.abs(np.diff(arr, axis=1, prepend=arr[:, :1]))
+    gy = np.abs(np.diff(arr, axis=0, prepend=arr[:1, :]))
+    edge = _suppress_slot_side_bands(
+        gx + gy,
+        motion_region=region,
+        image_size=image.size,
+        slots=slots,
+    )
+
+    # Collapse each scanline into a compact horizontal descriptor. Matching
+    # row vectors across vertical shifts is less sensitive to slot text,
+    # focus borders, and small animation noise than comparing the whole grid
+    # bitmap directly.
+    bin_count = max(8, min(64, arr.shape[1] // 12))
+    chunks = np.array_split(edge, bin_count, axis=1)
+    features = np.stack([chunk.mean(axis=1) for chunk in chunks], axis=1)
+    if features.shape[0] >= 3:
+        features = (
+            np.roll(features, 1, axis=0)
+            + features
+            + np.roll(features, -1, axis=0)
+        ) / 3.0
+        features[0] = (features[0] + features[1]) / 2.0
+        features[-1] = (features[-2] + features[-1]) / 2.0
+    features -= features.mean(axis=1, keepdims=True)
+    features -= float(features.mean())
+    std = float(features.std())
+    if std > 1e-6:
+        features /= std
+    return features.astype(np.float32, copy=False)
+
+
+def _estimate_inventory_scroll_motion(
+    before_img: Image.Image,
+    after_img: Image.Image,
+    grid_r: dict,
+    expected_step_px: int,
+    *,
+    search_margin_px: int = 50,
+    slots: list[dict] | None = None,
+) -> InventoryMotionEstimate | None:
+    if expected_step_px <= 0:
+        return None
+    region = _inventory_motion_region(grid_r)
+    before = _inventory_motion_array(before_img, region, slots=slots)
+    after = _inventory_motion_array(after_img, region, slots=slots)
+    if before is None or after is None:
+        return None
+    height = min(before.shape[0], after.shape[0])
+    width = min(before.shape[1], after.shape[1])
+    if height <= expected_step_px + 16 or width <= 8:
+        return None
+    before = before[:height, :width]
+    after = after[:height, :width]
+    search_min = max(1, expected_step_px - max(1, search_margin_px))
+    search_max = min(height - 8, expected_step_px + max(1, search_margin_px))
+    if search_min > search_max:
+        return None
+
+    best_move = search_min
+    best_score = -1.0
+    for move in range(search_min, search_max + 1):
+        before_part = before[move:height, :]
+        after_part = after[:height - move, :]
+        denom = float(np.sqrt(np.sum(before_part * before_part) * np.sum(after_part * after_part)))
+        if denom <= 1e-6:
+            continue
+        score = float(np.sum(before_part * after_part) / denom)
+        if score > best_score:
+            best_score = score
+            best_move = move
+
+    if best_score < -0.5:
+        return None
+    return InventoryMotionEstimate(
+        expected_step_px=expected_step_px,
+        actual_move_px=best_move,
+        y_offset_px=expected_step_px - best_move,
+        score=best_score,
+        search_min_px=search_min,
+        search_max_px=search_max,
+        method="row_feature_shift_slot_sides_ignored",
+    )
+
 _INVENTORY_TEMPLATE_DIRS: dict[str, tuple[str, ...]] = {
-    "item": ("skill_book", "ooparts", "skill_db"),
+    "item": ("skill_book", "ooparts", "skill_db", "students_elephs"),
     "equipment": ("equipment",),
 }
 _INVENTORY_TEMPLATE_CATALOG: dict[str, list[tuple[str, str]]] = {}
@@ -886,20 +1439,45 @@ _REGION_CAPTURE_REGIONS: dict[str, dict] = {}
 _REGION_CAPTURE_REFERENCE_PATHS: dict[str, str | None] = {}
 
 
+def _inventory_grid_template_config(section: dict, profile_id: str | None) -> dict | None:
+    base_config = section.get("grid_template")
+    profile_configs = section.get("profile_grid_templates")
+    if not profile_id or not isinstance(profile_configs, dict):
+        return base_config
+    profile_config = profile_configs.get(profile_id)
+    if not isinstance(profile_config, dict):
+        return base_config
+    if not isinstance(base_config, dict):
+        return profile_config
+    merged = dict(base_config)
+    for key, value in profile_config.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            nested = dict(merged[key])
+            nested.update(value)
+            merged[key] = nested
+        else:
+            merged[key] = value
+    return merged
+
+
 def _inventory_template_catalog(source: str) -> list[tuple[str, str]]:
     cached = _INVENTORY_TEMPLATE_CATALOG.get(source)
     if cached is not None:
         return cached
 
     dirs = _INVENTORY_TEMPLATE_DIRS.get(source, ())
-    catalog: list[tuple[str, str]] = []
+    catalog_by_item_id: dict[str, str] = {}
     for dir_name in dirs:
-        base = TEMPLATE_DIR / "icons" / dir_name
+        base = TEMPLATE_DIR / dir_name if dir_name == "students_elephs" else TEMPLATE_DIR / "icons" / dir_name
         if not base.exists():
             continue
         for png in sorted(base.rglob("*.png")):
-            catalog.append((png.stem, str(png)))
+            item_id = png.stem
+            if source == "equipment":
+                item_id = canonical_equipment_item_id(item_id) or png.stem
+            catalog_by_item_id[item_id] = str(png)
 
+    catalog = list(catalog_by_item_id.items())
     _INVENTORY_TEMPLATE_CATALOG[source] = catalog
     return catalog
 
@@ -1112,6 +1690,7 @@ def _dict_to_student_entry(d: dict) -> StudentEntry:
         combat_atk=d.get("combat_atk"),
         combat_def=d.get("combat_def"),
         combat_heal=d.get("combat_heal"),
+        form_combat_stats=_normalize_form_combat_stats(d.get("form_combat_stats")),
         stat_hp=d.get("stat_hp"),
         stat_atk=d.get("stat_atk"),
         stat_heal=d.get("stat_heal"),
@@ -1131,6 +1710,7 @@ class Scanner:
         on_progress: Optional[Callable[[str], None]] = None,
         on_progress_state: Optional[Callable[[dict], None]] = None,
         on_status_event: Optional[Callable[[dict], None]] = None,
+        on_status_ack_wait: Optional[Callable[[int], bool]] = None,
         maxed_ids:   Optional[set[str]]  = None,
         maxed_saved_data: Optional[dict[str, dict]] = None,
         student_saved_data: Optional[dict[str, dict]] = None,
@@ -1144,14 +1724,14 @@ class Scanner:
         self._on_progress  = on_progress
         self._on_progress_state = on_progress_state
         self._on_status_event = on_status_event
+        self._on_status_ack_wait = on_status_ack_wait
+        self._status_seq = 0
+        self._last_status_seq = 0
         self._stop         = False
         self._space_stop_latched = False
-        self._maxed_ids    = frozenset(maxed_ids or [])
-        self._maxed_saved_data: dict[str, dict] = maxed_saved_data or {}
-        self._student_saved_data: dict[str, dict] = student_saved_data or {}
-        self._student_total_hint = student_total_hint if student_total_hint and student_total_hint > 0 else None
+        self._maxed_saved_data: dict[str, dict] = {}
+        self._student_total_hint = None
         self._asv          = autosave_manager   # AutoSaveManager or None
-        self._fast_student_ids = list(fast_student_ids or [])
         self._student_basic_img: Optional[Image.Image] = None
         self._student_basic_crops: Optional[ScreenCropSet] = None
         self._student_equipment_crops: Optional[ScreenCropSet] = None
@@ -1191,8 +1771,6 @@ class Scanner:
             self._default_inventory_profile_ids or ("all",),
             self._inventory_detail_override_dir,
         )
-        if self._maxed_ids:
-            self._info(f"maxed skip saved data loaded: {len(self._maxed_ids)} students")
 
     def stop(self) -> None:
         self._stop = True
@@ -1365,6 +1943,144 @@ class Scanner:
         crop = crop_region(img, region)
         return match_score_resized(crop, template_path, focus_center=True)
 
+    def _wait_for_region_capture_match(
+        self,
+        name: str,
+        *,
+        threshold: float,
+        timeout: float,
+        initial_wait: float = 0.0,
+        poll: float = UI_FLAG_POLL,
+    ) -> bool:
+        if initial_wait > 0 and not self._wait(initial_wait):
+            return False
+        deadline = time.monotonic() + timeout
+        last_score: float | None = None
+        while time.monotonic() < deadline:
+            if self._stop_requested():
+                return False
+            score = self._region_capture_match_score(name)
+            last_score = score
+            if score is not None and score >= threshold:
+                self._debug(f"  {name} ready score={score:.3f}")
+                return True
+            if not self._wait(poll):
+                return False
+        if last_score is None:
+            self.log(f"  {name} ready check unavailable")
+        else:
+            self.log(f"  {name} ready timeout score={last_score:.3f} < {threshold:.2f}")
+        return False
+
+
+    def _inventory_filter_title_score(self, img: Optional[Image.Image]) -> float | None:
+        if img is None or not INVENTORY_FILTER_TITLE_TEMPLATE.exists():
+            return None
+        title_crop = crop_region(img, INVENTORY_FILTER_TITLE_REGION)
+        return match_score_resized(title_crop, str(INVENTORY_FILTER_TITLE_TEMPLATE))
+
+    def _is_inventory_filter_menu_capture(self, img: Optional[Image.Image]) -> bool:
+        score = self._inventory_filter_title_score(img)
+        matched = score is not None and score >= INVENTORY_FILTER_TITLE_MIN_SCORE
+        _log.debug(
+            "inventory_filter_title: score=%s threshold=%.3f matched=%s",
+            "none" if score is None else f"{score:.3f}",
+            INVENTORY_FILTER_TITLE_MIN_SCORE,
+            str(matched).lower(),
+        )
+        return matched
+
+    def _wait_for_inventory_filter_menu_open(
+        self,
+        *,
+        timeout: float = INVENTORY_PANEL_OPEN_TIMEOUT,
+        initial_wait: float = INVENTORY_FILTER_MENU_SETTLE_WAIT,
+        poll: float = UI_FLAG_POLL,
+    ) -> bool:
+        if initial_wait > 0 and not self._wait(initial_wait):
+            return False
+        deadline = time.monotonic() + timeout
+        ready_streak = 0
+        last_score: float | None = None
+        while time.monotonic() < deadline:
+            if self._stop_requested():
+                return False
+            img = self._capture()
+            last_score = self._inventory_filter_title_score(img)
+            if last_score is not None and last_score >= INVENTORY_FILTER_TITLE_MIN_SCORE:
+                ready_streak += 1
+                if ready_streak >= INVENTORY_FILTER_TITLE_STABLE_POLLS:
+                    self._debug(f"  inventory filter title ready score={last_score:.3f}")
+                    return True
+            else:
+                ready_streak = 0
+            if not self._wait(poll):
+                return False
+        if last_score is None:
+            self.log("  inventory filter title check unavailable")
+        else:
+            self.log(
+                f"  inventory filter title timeout "
+                f"score={last_score:.3f} < {INVENTORY_FILTER_TITLE_MIN_SCORE:.2f}"
+            )
+        return False
+
+    def _click_region_capture_and_wait_for_reference(
+        self,
+        click_name: str,
+        reference_name: str,
+        *,
+        label: str = "",
+        threshold: float = INVENTORY_PANEL_READY_THRESHOLD,
+        timeout: float = INVENTORY_PANEL_OPEN_TIMEOUT,
+        initial_wait: float = INVENTORY_FILTER_TAB_SETTLE_WAIT,
+        max_attempts: int = INVENTORY_PANEL_OPEN_ATTEMPTS,
+    ) -> bool:
+        for attempt in range(1, max_attempts + 1):
+            if not self._click_region_capture(click_name, label=label or click_name):
+                return False
+            if self._wait_for_region_capture_match(
+                reference_name,
+                threshold=threshold,
+                timeout=timeout,
+                initial_wait=initial_wait,
+                poll=min(UI_FLAG_POLL, PANEL_TRANSITION_POLL),
+            ):
+                return True
+            if attempt < max_attempts:
+                self.log(
+                    f"  {click_name} did not open expected panel "
+                    f"({attempt}/{max_attempts}) -> retry"
+                )
+        return False
+
+    def _open_inventory_filter_panel(
+        self,
+        click_name: str,
+        *,
+        label: str,
+        timeout: float = INVENTORY_PANEL_OPEN_TIMEOUT,
+        initial_wait: float = INVENTORY_FILTER_MENU_SETTLE_WAIT,
+        max_attempts: int = 2,
+    ) -> bool:
+        for attempt in range(1, max_attempts + 1):
+            if not self._click_region_capture(click_name, label=label or click_name):
+                return False
+            if self._wait_for_inventory_filter_menu_open(
+                timeout=timeout,
+                initial_wait=initial_wait,
+                poll=min(UI_FLAG_POLL, PANEL_TRANSITION_POLL),
+            ):
+                return True
+            if attempt < max_attempts:
+                self.log(
+                    f"  {click_name} did not open inventory filter menu "
+                    f"({attempt}/{max_attempts}) -> retry"
+                )
+        self.log(f"  {label} failed: filter menu title was not recognized; stopping scan")
+        self.stop()
+        return False
+
     def _ensure_region_matches_reference(
         self,
         name: str,
@@ -1407,32 +2123,22 @@ class Scanner:
             return (None,)
         return tuple(normalized)
 
+    def _item_sort_rule_check_name(self, profile_id: str | None) -> str:
+        if profile_id == "student_elephs":
+            return "sort_name_rule_check"
+        return "sort_rule_check"
+
     def _prepare_item_inventory(self, profile_id: str | None, *, ensure_sort_rule: bool) -> bool:
-        self.log(
-            f"  item filter menu open "
-            f"(profile={profile_id or 'all'}, ensure_sort_rule={ensure_sort_rule})"
-        )
-        if not self._click_region_capture(
+        self.log(f"  item filter menu open (profile={profile_id or 'all'})")
+        if not self._open_inventory_filter_panel(
             "filtermenu_button",
             label="filtermenu_button",
-            delay=INVENTORY_FILTER_MENU_SETTLE_WAIT,
+            timeout=INVENTORY_PANEL_OPEN_TIMEOUT,
+            initial_wait=INVENTORY_FILTER_MENU_SETTLE_WAIT,
+            max_attempts=2,
         ):
-            self.log("  item prepare failed: filtermenu_button click failed")
+            self.log("  item prepare failed: filter menu did not open")
             return False
-        if ensure_sort_rule:
-            if not self._click_region_capture(
-                "sort_tab",
-                label="sort_tab",
-                delay=INVENTORY_FILTER_TAB_SETTLE_WAIT,
-            ):
-                self.log("  item prepare failed: sort_tab click failed")
-                return False
-            if not self._ensure_region_matches_reference(
-                "sort_rule_check",
-                threshold=ITEM_SORT_RULE_MATCH_THRESHOLD,
-            ):
-                self.log("  item prepare failed: sort_rule_check mismatch")
-                return False
         if not self._click_region_capture(
             "filter_tab",
             label="filter_tab",
@@ -1449,10 +2155,10 @@ class Scanner:
             return False
 
         filter_button_by_profile = {
+            "student_elephs": "eleph_filter",
             "tech_notes": "note_filter",
             "tactical_bd": "bd_filter",
             "ooparts": "ooparts_filter",
-            "coins": "coin_filter",
             "activity_reports": "reports_filter",
         }
         filter_button = filter_button_by_profile.get(profile_id or "")
@@ -1467,6 +2173,21 @@ class Scanner:
                 return False
 
         if not self._click_region_capture(
+            "sort_tab",
+            label="sort_tab",
+            delay=INVENTORY_FILTER_TAB_SETTLE_WAIT,
+        ):
+            self.log("  item prepare failed: sort_tab click failed")
+            return False
+        sort_rule_check = self._item_sort_rule_check_name(profile_id)
+        if not self._ensure_region_matches_reference(
+            sort_rule_check,
+            threshold=ITEM_SORT_RULE_MATCH_THRESHOLD,
+        ):
+            self.log(f"  item prepare failed: {sort_rule_check} mismatch")
+            return False
+
+        if not self._click_region_capture(
             "filter_confirm_button",
             label="filter_confirm_button",
             delay=INVENTORY_FILTER_CONFIRM_WAIT,
@@ -1477,14 +2198,19 @@ class Scanner:
 
     def _prepare_equipment_inventory(self) -> bool:
         self.log("  equipment filter menu open")
-        if not self._click_region_capture(
+        if not self._open_inventory_filter_panel(
             "eq_filtermenu_button",
             label="eq_filtermenu_button",
-            delay=INVENTORY_FILTER_MENU_SETTLE_WAIT,
+            timeout=INVENTORY_PANEL_OPEN_TIMEOUT,
+            initial_wait=INVENTORY_FILTER_MENU_SETTLE_WAIT,
+            max_attempts=2,
         ):
-            self.log("  equipment prepare failed: eq_filtermenu_button click failed")
+            self.log("  equipment prepare failed: filter panel did not open")
             return False
-        if not self._ensure_region_matches_reference("eq_sort_rule_check"):
+        if not self._ensure_region_matches_reference(
+            "eq_sort_rule_check",
+            threshold=EQUIPMENT_SORT_RULE_MATCH_THRESHOLD,
+        ):
             self.log("  equipment prepare failed: eq_sort_rule_check mismatch")
             return False
         if not self._click_region_capture(
@@ -1495,10 +2221,10 @@ class Scanner:
             self.log("  equipment prepare failed: eq_filter_confirm_button click failed")
             return False
         return self._wait(INVENTORY_FILTER_CONFIRM_WAIT)
-
     def _reset_inventory_scan_state(self, source: str) -> None:
         self._inventory_icon_cache[source] = {}
         self._inventory_failed_hashes[source] = set()
+        self._inventory_motion_row_step_px = None
 
     def _close_inventory_menu(self) -> bool:
         menu_back = self.r.get("menu", {}).get("backbutton")
@@ -1522,7 +2248,7 @@ class Scanner:
         return self._wait(1.0)
 
     def _return_inventory_to_lobby(self) -> None:
-        self.log("?黎??筌?????ㅼ뒧?戮ル탶椰꾨텑??...")
+        self.log("?????????????????????????????⑤벡???????????????????????????????????????꾩룆梨띰쭕?뚢뵾??????????????嶺뚮죭?댁젘??????????????????????釉먮폁???????????????????살몝????...")
         if not self._close_inventory_menu():
             return
         self._go_home_from_inventory()
@@ -1619,13 +2345,93 @@ class Scanner:
                 }
             )
 
-    def _status(self, event_id: str, **fields) -> None:
+    def _status(self, event_id: str, **fields) -> int | None:
         if not self._on_status_event:
-            return
+            return None
         try:
-            self._on_status_event(make_status_event(event_id, data=fields))
+            self._status_seq += 1
+            event = make_status_event(event_id, data=fields)
+            event["seq"] = self._status_seq
+            self._on_status_event(event)
+            self._last_status_seq = self._status_seq
+            return self._status_seq
         except Exception:
             _log.exception("scan status callback failed: %s", event_id)
+            return None
+
+    def _status_skill_value(self, entry: StudentEntry, field_name: str, value: object) -> None:
+        if value is None:
+            return
+        label_map = {
+            "ex_skill": "EX",
+            "skill1": "basic",
+            "skill2": "enhanced",
+            "skill3": "sub",
+        }
+        self._status(
+            "skills.value.ok",
+            student_name=entry.display_name,
+            skill=field_name,
+            label=label_map.get(field_name, field_name),
+            value=value,
+        )
+        self._field_confirmed(entry, field_name, value)
+
+    def _field_confirmed(
+        self,
+        entry: StudentEntry,
+        field_name: str,
+        value: object,
+        *,
+        label: str | None = None,
+        display_value: str | None = None,
+    ) -> int | None:
+        if value is None:
+            return None
+        label_map = {
+            "level": "level",
+            "student_star": "student star",
+            "weapon_star": "weapon star",
+            "weapon_level": "weapon level",
+            "ex_skill": "EX skill",
+            "skill1": "basic skill",
+            "skill2": "enhanced skill",
+            "skill3": "sub skill",
+            "equip1": "equipment 1 tier",
+            "equip2": "equipment 2 tier",
+            "equip3": "equipment 3 tier",
+            "equip1_level": "equipment 1 level",
+            "equip2_level": "equipment 2 level",
+            "equip3_level": "equipment 3 level",
+            "equip4": "favorite item",
+            "stat_hp": "bonus hp",
+            "stat_atk": "bonus atk",
+            "stat_heal": "bonus heal",
+            "combat_hp": "HP",
+            "combat_atk": "ATK",
+            "combat_def": "DEF",
+            "combat_heal": "HEAL",
+        }
+        return self._status(
+            "field.confirmed",
+            student_id=entry.student_id,
+            student_name=entry.display_name,
+            field=field_name,
+            value=value,
+            label=label or label_map.get(field_name, field_name),
+            display_value=display_value or str(value),
+        )
+
+    def _wait_ui_status_flush(self, seq: int | None = None, *, label: str = "") -> bool:
+        if not self._on_status_ack_wait:
+            return True
+        target = int(seq or self._last_status_seq or 0)
+        if target <= 0:
+            return True
+        ok = self._on_status_ack_wait(target)
+        if not ok:
+            _log.debug("ui status flush timeout: seq=%s label=%s", target, label)
+        return ok
 
     @contextmanager
     def _perf_step(self, label: str, **fields) -> Iterator[None]:
@@ -1646,12 +2452,12 @@ class Scanner:
     def _warn(self, msg: str) -> None:
         _log.warning(msg)
         if self._on_progress:
-            self._on_progress(f"????용츧???{msg}")
+            self._on_progress(f"??????????????????ш끽維뽳쭩?뱀땡???얩맪???????????????????轅붽틓??섑떊???⑤챷??????????????????{msg}")
 
     def _error(self, msg: str) -> None:
         _log.error(msg)
         if self._on_progress:
-            self._on_progress(f"?????⑤챷逾?{msg}")
+            self._on_progress(f"????????????????{msg}")
 
     # Backward-compatible alias so old code can keep using self.log(msg).
     @property
@@ -1673,63 +2479,11 @@ class Scanner:
         _log.debug(f"[TEMP] start: {entry.label()}")
         return entry
 
-    def _saved_student(self, student_id: str | None) -> dict:
-        if not student_id:
-            return {}
-        saved = self._student_saved_data.get(student_id)
-        return saved if isinstance(saved, dict) else {}
-
-    def _saved_int(self, saved: dict, field_name: str) -> int | None:
-        try:
-            value = saved.get(field_name)
-            return int(value) if value is not None else None
-        except (TypeError, ValueError):
-            return None
-
-    def _apply_saved_fields(
-        self,
-        entry: StudentEntry,
-        saved: dict,
-        field_names: tuple[str, ...],
-        note: str,
-    ) -> None:
-        for field_name in field_names:
-            value = saved.get(field_name)
-            if field_name == "weapon_state" and value is not None:
-                try:
-                    value = WeaponState(value)
-                except ValueError:
-                    value = None
-            setattr(entry, field_name, value)
-            entry.set_meta(field_name, FieldMeta.skipped(note))
-
-    def _skills_maxed_from_saved_data(self, saved: dict) -> bool:
-        return (
-            self._saved_int(saved, "ex_skill") == 5
-            and self._saved_int(saved, "skill1") == 10
-            and self._saved_int(saved, "skill2") == 10
-            and self._saved_int(saved, "skill3") == 10
-        )
-
-    def _equipment_maxed_from_saved_data(self, saved: dict) -> bool:
-        return all(
-            saved.get(f"equip{slot}") == "T10"
-            and self._saved_int(saved, f"equip{slot}_level") == 70
-            for slot in (1, 2, 3)
-        )
-
-    def _favorite_item_maxed_from_saved_data(self, student_id: str | None, saved: dict) -> bool:
-        return bool(student_id) and student_meta.favorite_item_enabled(student_id) and saved.get("equip4") == "T2"
-
     def _mark_favorite_item_unsupported(self, entry: StudentEntry, sid: str) -> None:
         entry.equip4 = EquipSlotFlag.NULL.value
         entry.set_meta("equip4", FieldMeta.skipped("favorite_item_unsupported"))
         self._status("favorite.unsupported", student_name=entry.display_name or student_meta.display_name(sid))
-        self.log(f"  ????: {sid}??equip4 ???遺븍き?寃밸윿???-> null")
-
-    def _stats_maxed_from_saved_data(self, saved: dict) -> bool:
-        return all(self._saved_int(saved, field_name) == 25 for field_name in ("stat_hp", "stat_atk", "stat_heal"))
-
+        self.log(f"  ????: {sid}??equip4 ???????????????????????????嫄?????????耀붾굝???????⑤슢??筌믩끃異?????????????????????????????룸㎗????꿔꺂?????????????????????????????곕춴???????????곕춴??????????????-> null")
 
 
 
@@ -2090,14 +2844,12 @@ class Scanner:
             self._status(f"equip{slot}.basic_empty_dot", student_name=entry.display_name)
     @staticmethod
     def _equipment_level_matches_tier(level: int, tier: str) -> bool:
-        ranges = {
-            "T1": (1, 10), "T2": (11, 20), "T3": (21, 30),
-            "T4": (31, 40), "T5": (41, 45), "T6": (46, 50),
-            "T7": (51, 55), "T8": (56, 60), "T9": (61, 65),
-            "T10": (66, 70),
+        max_levels = {
+            "T1": 10, "T2": 20, "T3": 30, "T4": 40, "T5": 45,
+            "T6": 50, "T7": 55, "T8": 60, "T9": 65, "T10": 70,
         }
-        bounds = ranges.get(tier)
-        return bool(bounds and bounds[0] <= level <= bounds[1])
+        max_level = max_levels.get(tier)
+        return bool(max_level is not None and 1 <= level <= max_level)
 
     def _read_basic_equipment_slot(
         self,
@@ -2165,6 +2917,10 @@ class Scanner:
             FieldMeta(status=FieldStatus.OK, source=FieldSource.TEMPLATE,
                       score=level_result.score, note="basic_info_icon"),
         )
+        self._status(f"equip{slot}.tier.ok", student_name=entry.display_name, tier=tier)
+        self._field_confirmed(entry, equip_key, tier)
+        self._status(f"equip{slot}.level.ok", student_name=entry.display_name, level=level)
+        self._field_confirmed(entry, level_key, level, display_value=f"Lv.{level}")
         self.log(f"  equipment{slot}: basic read {tier} Lv.{level}")
         return True
 
@@ -2732,7 +3488,7 @@ class Scanner:
 
 
     def scan_resources(self) -> dict:
-        self.log("?????????筌뤾퍗????..")
+        self.log("???????????????????????????..")
         img = self._capture()
         if img is None:
             return {}
@@ -2749,7 +3505,7 @@ class Scanner:
                     result[key] = ocr.read_item_count(crop)
                 except Exception as e:
                     result[key] = None
-                    _log.warning(f"?????OCR ?????怨뚯댅 ({key}): {type(e).__name__}: {e}")
+                    _log.warning(f"?????OCR ?????????????????????????곕춴??????({key}): {type(e).__name__}: {e}")
         finally:
             ocr.unload()
 
@@ -2764,7 +3520,7 @@ class Scanner:
         rect = self._rect()
         if not rect:
             return False
-        self.log("?轅붽틓??????????繹먮굟爰?..")
+        self.log("??????????????????????????????????????????????..")
         self._click_r(self.r["lobby"]["menu_button"], "menu_button")
         return self._wait(0.7)
 
@@ -2773,12 +3529,12 @@ class Scanner:
         if not btn:
             self.log(f"warning: {label} button region missing")
             return False
-        self.log(f"  {label} ?轅붽틓?????..")
+        self.log(f"  {label} ????????????????..")
         self._click_r(btn, label)
         return self._wait(1.0)
 
     def _return_lobby(self) -> None:
-        self.log("?黎??筌?????ㅼ뒧?戮ル탶椰꾨텑??...")
+        self.log("?????????????????????????????⑤벡???????????????????????????????????????꾩룆梨띰쭕?뚢뵾??????????????嶺뚮죭?댁젘??????????????????????釉먮폁???????????????????살몝????...")
         back = (
             self.r.get("student_menu", {}).get("backbutton")
             or self.r.get("menu", {}).get("backbutton")
@@ -2796,7 +3552,7 @@ class Scanner:
                     return
                 continue
             break
-        self.log("  warning: ?黎??筌?????ㅼ뒧?戮ル탶椰꾨텑?? ?嶺???????β뼯援????る쑏??????怨뚯댅 -> ESC 1??fallback")
+        self.log("  warning: ?????????????????????????????⑤벡???????????????????????????????????????꾩룆梨띰쭕?뚢뵾??????????????嶺뚮죭?댁젘??????????????????????釉먮폁???????????????????살몝???? ?????????????????????????????????거?????????????⑤벡瑜???饔낅떽???????멸괜????????????????????????????????????????곕춴??????-> ESC 1??fallback")
         self._esc()
 
     def _capture_inventory_page(
@@ -3199,456 +3955,6 @@ class Scanner:
             entry.index = idx
         return rebuilt + tail
 
-    def _recover_profile_gaps_from_candidates(
-        self,
-        items: list[ItemEntry],
-        candidates: list[InventoryDetailCandidate],
-        profile,
-        source: str,
-    ) -> list[ItemEntry]:
-        ordered_names = list(profile.ordered_names)
-        ordered_item_ids = list(inventory_profile_ordered_item_ids(profile))
-        if not ordered_names or not candidates:
-            return items
-
-        template_catalog = dict(self._inventory_detail_template_catalog_for_scan(profile.profile_id))
-        if not template_catalog:
-            return items
-        family_profile_indices: dict[str, list[int]] = {}
-        for idx, item_id in enumerate(ordered_item_ids):
-            family_key = _inventory_detail_strict_family(item_id)
-            if family_key is not None:
-                family_profile_indices.setdefault(family_key, []).append(idx)
-
-        def _template_path_for(idx: int) -> str | None:
-            if idx >= len(ordered_names):
-                return None
-            expected_id = ordered_item_ids[idx] if idx < len(ordered_item_ids) else None
-            expected_name = ordered_names[idx]
-            if expected_id and expected_id in template_catalog:
-                return template_catalog[expected_id]
-            if expected_name and expected_name in template_catalog:
-                return template_catalog[expected_name]
-            return None
-
-        name_template_catalog = dict(
-            self._inventory_detail_name_template_catalog_for_scan(profile.profile_id)
-        )
-
-        def _entry_index(entry: ItemEntry) -> int | None:
-            if entry.item_id:
-                for idx, expected_id in enumerate(ordered_item_ids):
-                    if expected_id == entry.item_id:
-                        return idx
-            if entry.name:
-                for idx, expected_name in enumerate(ordered_names):
-                    if expected_name == entry.name:
-                        return idx
-            return None
-
-        def _candidate_detected_index(candidate: InventoryDetailCandidate) -> int | None:
-            if not candidate.detected_item_id:
-                return None
-            for idx, expected_id in enumerate(ordered_item_ids):
-                if expected_id == candidate.detected_item_id:
-                    return idx
-            for idx, expected_name in enumerate(ordered_names):
-                if expected_name == candidate.detected_item_id:
-                    return idx
-            return None
-
-        def _entry_key_for(idx: int) -> str:
-            expected_id = ordered_item_ids[idx] if idx < len(ordered_item_ids) else None
-            return expected_id or ordered_names[idx]
-
-        def _score(candidate: InventoryDetailCandidate, idx: int) -> float:
-            template_path = _template_path_for(idx)
-            if not template_path:
-                return 0.0
-            icon_score = match_score_resized_raw(candidate.detail_crop, template_path)
-            expected_id = ordered_item_ids[idx] if idx < len(ordered_item_ids) else None
-            name_path = name_template_catalog.get(expected_id or "") if expected_id else None
-            if candidate.detail_name_crop is None or not name_path:
-                return icon_score
-            name_score = match_score_textonly(candidate.detail_name_crop, name_path)
-            return _combine_inventory_detail_scores(icon_score, name_score)
-
-        candidate_count = len(candidates)
-        profile_count = len(ordered_names)
-        score_cache: dict[tuple[int, int], float] = {}
-        family_margin_cache: dict[tuple[int, int], float] = {}
-        neg_inf = -10.0**9
-
-        def _normalized_distance(candidate_idx: int, profile_idx: int) -> float:
-            cand_ratio = (
-                candidate_idx / max(1, candidate_count - 1)
-                if candidate_count > 1
-                else 0.0
-            )
-            prof_ratio = (
-                profile_idx / max(1, profile_count - 1)
-                if profile_count > 1
-                else 0.0
-            )
-            return abs(cand_ratio - prof_ratio)
-
-        def _match_score(candidate_idx: int, profile_idx: int) -> float:
-            key = (candidate_idx, profile_idx)
-            cached = score_cache.get(key)
-            if cached is not None:
-                return cached
-
-            candidate = candidates[candidate_idx]
-            template_score = _score(candidate, profile_idx)
-            if template_score <= 0.0:
-                score_cache[key] = neg_inf
-                return neg_inf
-
-            detected_idx = _candidate_detected_index(candidate)
-            expected_item_id = ordered_item_ids[profile_idx] if profile_idx < len(ordered_item_ids) else None
-            family_key = _inventory_detail_strict_family(expected_item_id)
-            family_margin: float | None = None
-            detected_item_id = None
-            if detected_idx is not None and detected_idx < len(ordered_item_ids):
-                detected_item_id = ordered_item_ids[detected_idx]
-
-            if family_key is not None:
-                alt_best = 0.0
-                for alt_profile_idx in family_profile_indices.get(family_key, []):
-                    if alt_profile_idx == profile_idx:
-                        continue
-                    alt_score = _score(candidate, alt_profile_idx)
-                    if alt_score > alt_best:
-                        alt_best = alt_score
-                family_margin = template_score - alt_best
-                family_margin_cache[key] = family_margin
-                if template_score < 0.90 and family_margin < 0.015:
-                    score_cache[key] = neg_inf
-                    return neg_inf
-
-            score = (template_score - PROFILE_DIRECT_MATCH_THRESHOLD) * 4.0
-            if detected_idx == profile_idx:
-                if family_key is not None:
-                    strict_bonus = 0.45 + max(0.0, candidate.detected_score - 0.95) * 0.9
-                    if family_margin is not None:
-                        if family_margin >= 0.05:
-                            strict_bonus += 0.25
-                        elif family_margin < 0.03:
-                            strict_bonus -= 0.35
-                    score += strict_bonus
-                else:
-                    score += 1.6 + max(0.0, candidate.detected_score - PROFILE_DIRECT_MATCH_THRESHOLD) * 1.5
-            elif detected_idx is not None:
-                if family_key is not None:
-                    mismatch_distance = abs(detected_idx - profile_idx)
-                    score -= 1.35 + min(mismatch_distance * 0.32, 2.0)
-                    detected_position = _inventory_detail_strict_family_position(detected_item_id)
-                    expected_position = _inventory_detail_strict_family_position(expected_item_id)
-                    if detected_position is not None and expected_position is not None:
-                        _family, detected_group, detected_tier = detected_position
-                        _family, expected_group, expected_tier = expected_position
-                        score -= abs(detected_group - expected_group) * 0.55
-                        score -= abs(detected_tier - expected_tier) * 0.18
-                else:
-                    score -= 1.2 + min(abs(detected_idx - profile_idx) * 0.15, 0.9)
-
-            if family_key is not None and family_margin is not None:
-                if family_margin < 0.02:
-                    score -= 1.2
-                elif family_margin < 0.03:
-                    score -= 0.6
-
-            score -= _normalized_distance(candidate_idx, profile_idx) * 0.75
-            score_cache[key] = score
-            return score
-
-        def _skip_profile_penalty(profile_idx: int) -> float:
-            if profile_count <= 1:
-                return -0.45
-            edge_distance = min(profile_idx, profile_count - 1 - profile_idx)
-            return -0.35 if edge_distance == 0 else -0.55
-
-        def _skip_candidate_penalty(candidate_idx: int) -> float:
-            candidate = candidates[candidate_idx]
-            detected_idx = _candidate_detected_index(candidate)
-            if detected_idx is not None and candidate.detected_score >= PROFILE_DIRECT_MATCH_THRESHOLD:
-                return -1.25
-            if candidate.detected_score >= 0.90:
-                return -0.85
-            return -0.35
-
-        def _anchor_strength(candidate_idx: int, profile_idx: int) -> float:
-            candidate = candidates[candidate_idx]
-            if candidate.detected_score < 0.95:
-                return neg_inf
-            template_score = _score(candidate, profile_idx)
-            if template_score < 0.93:
-                return neg_inf
-
-            expected_item_id = (
-                ordered_item_ids[profile_idx]
-                if profile_idx < len(ordered_item_ids)
-                else None
-            )
-            family_key = _inventory_detail_strict_family(expected_item_id)
-            family_margin = family_margin_cache.get((candidate_idx, profile_idx))
-            if family_key is not None:
-                if family_margin is None:
-                    _match_score(candidate_idx, profile_idx)
-                    family_margin = family_margin_cache.get((candidate_idx, profile_idx))
-                if candidate.detected_score < 0.96 or template_score < 0.94:
-                    return neg_inf
-                if family_margin is None or family_margin < 0.035:
-                    return neg_inf
-            elif candidate.detected_score < 0.97:
-                return neg_inf
-
-            return candidate.detected_score + template_score
-
-        def _run_segment_dp(
-            candidate_start: int,
-            candidate_end: int,
-            profile_start: int,
-            profile_end: int,
-        ) -> tuple[dict[int, int], int, float]:
-            segment_candidate_count = candidate_end - candidate_start
-            segment_profile_count = profile_end - profile_start
-            if segment_candidate_count <= 0 and segment_profile_count <= 0:
-                return {}, 0, 0.0
-
-            dp: list[list[float]] = [
-                [neg_inf] * (segment_profile_count + 1)
-                for _ in range(segment_candidate_count + 1)
-            ]
-            prev: list[list[tuple[int, int, str] | None]] = [
-                [None] * (segment_profile_count + 1)
-                for _ in range(segment_candidate_count + 1)
-            ]
-            dp[0][0] = 0.0
-
-            for local_candidate_idx in range(segment_candidate_count + 1):
-                for local_profile_idx in range(segment_profile_count + 1):
-                    current = dp[local_candidate_idx][local_profile_idx]
-                    if current <= neg_inf / 2:
-                        continue
-
-                    global_candidate_idx = candidate_start + local_candidate_idx
-                    global_profile_idx = profile_start + local_profile_idx
-
-                    if local_profile_idx < segment_profile_count:
-                        score = current + _skip_profile_penalty(global_profile_idx)
-                        if score > dp[local_candidate_idx][local_profile_idx + 1]:
-                            dp[local_candidate_idx][local_profile_idx + 1] = score
-                            prev[local_candidate_idx][local_profile_idx + 1] = (
-                                local_candidate_idx,
-                                local_profile_idx,
-                                "skip_profile",
-                            )
-
-                    if local_candidate_idx < segment_candidate_count:
-                        score = current + _skip_candidate_penalty(global_candidate_idx)
-                        if score > dp[local_candidate_idx + 1][local_profile_idx]:
-                            dp[local_candidate_idx + 1][local_profile_idx] = score
-                            prev[local_candidate_idx + 1][local_profile_idx] = (
-                                local_candidate_idx,
-                                local_profile_idx,
-                                "skip_candidate",
-                            )
-
-                    if (
-                        local_candidate_idx < segment_candidate_count
-                        and local_profile_idx < segment_profile_count
-                    ):
-                        match_score = _match_score(
-                            global_candidate_idx,
-                            global_profile_idx,
-                        )
-                        if match_score > neg_inf / 2:
-                            score = current + match_score
-                            if score > dp[local_candidate_idx + 1][local_profile_idx + 1]:
-                                dp[local_candidate_idx + 1][local_profile_idx + 1] = score
-                                prev[local_candidate_idx + 1][local_profile_idx + 1] = (
-                                    local_candidate_idx,
-                                    local_profile_idx,
-                                    "match",
-                                )
-
-            segment_matches: dict[int, int] = {}
-            segment_skipped_candidates = 0
-            local_candidate_idx = segment_candidate_count
-            local_profile_idx = segment_profile_count
-            while local_candidate_idx > 0 or local_profile_idx > 0:
-                step = prev[local_candidate_idx][local_profile_idx]
-                if step is None:
-                    break
-                prev_local_candidate_idx, prev_local_profile_idx, action = step
-                if action == "match":
-                    segment_matches[profile_start + prev_local_profile_idx] = (
-                        candidate_start + prev_local_candidate_idx
-                    )
-                elif action == "skip_candidate":
-                    segment_skipped_candidates += 1
-                local_candidate_idx, local_profile_idx = (
-                    prev_local_candidate_idx,
-                    prev_local_profile_idx,
-                )
-
-            return (
-                segment_matches,
-                segment_skipped_candidates,
-                dp[segment_candidate_count][segment_profile_count],
-            )
-
-        raw_anchors: list[tuple[int, int, float]] = []
-        for candidate_idx, candidate in enumerate(candidates):
-            detected_idx = _candidate_detected_index(candidate)
-            if detected_idx is None:
-                continue
-            strength = _anchor_strength(candidate_idx, detected_idx)
-            if strength <= neg_inf / 2:
-                continue
-            raw_anchors.append((candidate_idx, detected_idx, strength))
-
-        anchors: list[tuple[int, int, float]] = []
-        for candidate_idx, profile_idx, strength in raw_anchors:
-            if not anchors:
-                anchors.append((candidate_idx, profile_idx, strength))
-                continue
-            last_candidate_idx, last_profile_idx, last_strength = anchors[-1]
-            if candidate_idx <= last_candidate_idx:
-                continue
-            if profile_idx > last_profile_idx:
-                anchors.append((candidate_idx, profile_idx, strength))
-                continue
-            if profile_idx == last_profile_idx and strength > last_strength:
-                anchors[-1] = (candidate_idx, profile_idx, strength)
-
-        matched_candidates: dict[int, int] = {}
-        skipped_candidates = 0
-        total_alignment_score = 0.0
-        segment_count = 0
-        anchor_points = [(-1, -1, 0.0), *anchors, (candidate_count, profile_count, 0.0)]
-        for segment_idx in range(len(anchor_points) - 1):
-            left_candidate_idx, left_profile_idx, _left_strength = anchor_points[segment_idx]
-            right_candidate_idx, right_profile_idx, right_strength = anchor_points[segment_idx + 1]
-            segment_matches, segment_skipped_candidates, segment_score = _run_segment_dp(
-                left_candidate_idx + 1,
-                right_candidate_idx,
-                left_profile_idx + 1,
-                right_profile_idx,
-            )
-            matched_candidates.update(segment_matches)
-            skipped_candidates += segment_skipped_candidates
-            total_alignment_score += segment_score
-            segment_count += 1
-            if right_candidate_idx < candidate_count and right_profile_idx < profile_count:
-                matched_candidates[right_profile_idx] = right_candidate_idx
-                total_alignment_score += _match_score(right_candidate_idx, right_profile_idx)
-
-        self.log(
-            f"  profile dp anchors: count={len(anchors)} segments={segment_count}"
-        )
-
-        matched_indices = sorted(matched_candidates)
-        first_match_idx = matched_indices[0] if matched_indices else None
-        last_match_idx = matched_indices[-1] if matched_indices else None
-
-        aligned: list[ItemEntry] = []
-        matched_count = 0
-        zero_filled_count = 0
-        for profile_idx, expected_name in enumerate(ordered_names):
-            expected_item_id = ordered_item_ids[profile_idx] if profile_idx < len(ordered_item_ids) else None
-            matched_candidate_idx = matched_candidates.get(profile_idx)
-            if matched_candidate_idx is None:
-                review_required = (
-                    first_match_idx is not None
-                    and last_match_idx is not None
-                    and first_match_idx <= profile_idx <= last_match_idx
-                )
-                aligned.append(
-                    ItemEntry(
-                        name=expected_name,
-                        quantity="0",
-                        item_id=expected_item_id,
-                        source=source,
-                        index=profile_idx,
-                        scan_meta={
-                            "status": "zero_filled",
-                            "reason": "dp_skip_profile",
-                            "profile_id": profile.profile_id,
-                            "profile_index": profile_idx,
-                            "review_required": review_required,
-                        },
-                    )
-                )
-                zero_filled_count += 1
-                continue
-
-            candidate = candidates[matched_candidate_idx]
-            template_score = _score(candidate, profile_idx)
-            detected_idx = _candidate_detected_index(candidate)
-            family_margin = family_margin_cache.get((matched_candidate_idx, profile_idx))
-            family_key = _inventory_detail_strict_family(expected_item_id)
-            detected_direct_match = (
-                detected_idx == profile_idx
-                and candidate.detected_score >= PROFILE_DIRECT_MATCH_THRESHOLD
-            )
-            strict_family_confident_direct = (
-                detected_direct_match
-                and family_key is not None
-                and candidate.detected_score >= 0.965
-                and template_score >= 0.94
-                and (family_margin or 0.0) >= 0.04
-            )
-            direct_match = (
-                strict_family_confident_direct
-                if family_key is not None
-                else detected_direct_match
-            )
-            status = "ok" if direct_match else "dp_aligned"
-            if direct_match:
-                reason = "direct_match"
-            elif detected_direct_match and family_key is not None:
-                reason = "strict_family_review"
-            else:
-                reason = "dp_sequence_alignment"
-            aligned.append(
-                ItemEntry(
-                    name=expected_name,
-                    quantity=candidate.count,
-                    item_id=expected_item_id,
-                    source=source,
-                    index=profile_idx,
-                    scan_meta={
-                        "status": status,
-                        "reason": reason,
-                        "profile_id": profile.profile_id,
-                        "profile_index": profile_idx,
-                        "candidate_sequence": candidate.sequence,
-                        "candidate_slot": candidate.slot_index,
-                        "detected_item_id": candidate.detected_item_id,
-                        "detected_score": round(candidate.detected_score, 4),
-                        "match_score": round(template_score, 4),
-                        "family_margin": round(family_margin, 4) if family_margin is not None else None,
-                        "strict_family_review": bool(
-                            detected_direct_match and family_key is not None and not direct_match
-                        ),
-                        "review_required": not direct_match,
-                    },
-                    detail_crop=candidate.detail_crop,
-                    detail_name_crop=candidate.detail_name_crop,
-                )
-            )
-            matched_count += 1
-
-        self.log(
-            f"  profile dp alignment: matched={matched_count} "
-            f"zero_filled={zero_filled_count} "
-            f"skipped_candidates={skipped_candidates} "
-            f"score={total_alignment_score:.2f}"
-        )
-        return aligned
-
     def _append_profile_gap_entries(
         self,
         items: list[ItemEntry],
@@ -3660,12 +3966,46 @@ class Scanner:
         source: str,
         start_idx: int,
         end_idx: int,
-    ) -> None:
+    ) -> int:
         if end_idx <= start_idx:
-            return
+            return 0
+        end_idx = min(end_idx, len(ordered_names))
         self.log(
-            f"  profile gap skipped: start={start_idx} end={min(end_idx, len(ordered_names))}"
+            f"  profile gap zero-fill: start={start_idx} end={end_idx}"
         )
+        added = 0
+        for profile_idx in range(max(0, start_idx), end_idx):
+            expected_name = ordered_names[profile_idx]
+            expected_item_id = (
+                ordered_item_ids[profile_idx]
+                if profile_idx < len(ordered_item_ids)
+                else None
+            )
+            if not expected_name and not expected_item_id:
+                continue
+            entry = ItemEntry(
+                name=expected_name,
+                quantity="0",
+                item_id=expected_item_id,
+                source=source,
+                index=len(items),
+                scan_meta={
+                    "status": "zero_filled",
+                    "reason": "profile_order_gap",
+                    "profile_id": profile.profile_id,
+                    "profile_index": profile_idx,
+                    "review_required": False,
+                },
+            )
+            key = entry.key()
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            if entry.name:
+                profile_seen_names.add(entry.name)
+            items.append(entry)
+            added += 1
+        return added
 
     def _scroll_inventory_page(
         self,
@@ -3675,21 +4015,37 @@ class Scanner:
         drag_config: InventoryDragConfig,
         scroll_amount: int,
         grid_cols: int,
-    ) -> tuple[bool, Optional[InventoryPageSnapshot], int, int]:
+        scroll_index: int = 0,
+        debug_dir: Path | None = None,
+        before_y_offset_px: int = 0,
+        drag_rx_offset: float = 0.0,
+    ) -> tuple[bool, Optional[InventoryPageSnapshot], int, int, int]:
         before_img = self._capture()
-        before = crop_region(before_img, grid_r) if before_img else None
+        before_slots = (
+            _shift_slots_y(slots, before_y_offset_px, before_img.size)
+            if before_img is not None and before_y_offset_px
+            else slots
+        )
+        before_grid_r = _grid_region(before_slots) if before_img is not None and before_y_offset_px else grid_r
+        before = crop_region(before_img, before_grid_r) if before_img else None
         before_grid_hash = _img_hash(before) if before is not None else ""
         before_page = self._capture_inventory_page(
             before_img,
-            slots,
+            before_slots,
             grid_hash=before_grid_hash,
             page_index=-1,
             grid_cols=grid_cols,
         ) if before_img is not None else None
         next_amount = scroll_amount
-        start_rx = drag_config.start_rx
+        start_rx = drag_config.start_rx + drag_rx_offset
         start_ry = drag_config.start_ry
-        attempts = [scroll_amount, int(scroll_amount * 1.05)]
+        if abs(drag_rx_offset) >= 0.0001:
+            self._debug(
+                f"  drag x offset: rx={start_rx:.6f} "
+                f"base={drag_config.start_rx:.6f} offset={drag_rx_offset:+.6f}"
+            )
+        retry_amount = int(scroll_amount * drag_config.retry_scale)
+        attempts = [scroll_amount, retry_amount]
 
         for idx, amount in enumerate(attempts, start=1):
             end_ry = start_ry + drag_config.delta_ry(amount)
@@ -3704,23 +4060,27 @@ class Scanner:
                 end_ry_clamped,
                 delay=0.35,
                 duration=drag_config.duration,
+                end_hold=drag_config.end_hold,
             )
             self.log(
                 f"  drag try {idx}: start=({start_rx_clamped:.6f},{start_ry_clamped:.6f}) "
                 f"end=({start_rx_clamped:.6f},{end_ry_clamped:.6f}) "
                 f"delta_px={amount} duration={drag_config.duration:.2f} ok={scroll_ok}"
             )
+            cursor_moved = _move_cursor_away_from_inventory_grid(rect)
+            if cursor_moved:
+                self._debug("  drag cursor moved away from inventory grid before capture")
             if not self._wait(0.18):
-                return False, None, next_amount, 0
+                return False, None, next_amount, 0, before_y_offset_px
 
             after_img = self._capture()
             if after_img is None:
-                return scroll_ok, None, next_amount, 0
-            after = crop_region(after_img, grid_r)
+                return scroll_ok, None, next_amount, 0, before_y_offset_px
+            after = crop_region(after_img, before_grid_r)
             after_grid_hash = _img_hash(after)
             after_page = self._capture_inventory_page(
                 after_img,
-                slots,
+                before_slots,
                 grid_hash=after_grid_hash,
                 page_index=-1,
                 grid_cols=grid_cols,
@@ -3737,12 +4097,160 @@ class Scanner:
                 f"slot_sequence_changed={slot_sequence_changed})"
             )
             if moved:
-                overlap_rows = _count_row_overlap(before_hashes, after_hashes, grid_cols)
-                self.log(f"  drag try {idx}: overlap_rows={overlap_rows}")
-                next_amount = amount
-                return True, after_page, next_amount, overlap_rows
+                grid_rows = max(1, (len(slots) + grid_cols - 1) // max(1, grid_cols))
+                base_row_step_px = _slot_row_step_px(before_slots, after_img.size, grid_cols)
+                calibrated_row_step_px = getattr(self, "_inventory_motion_row_step_px", None)
+                row_step_px = base_row_step_px
+                if calibrated_row_step_px is not None and base_row_step_px > 0:
+                    calibrated_int = int(round(float(calibrated_row_step_px)))
+                    if int(round(base_row_step_px * 0.97)) <= calibrated_int <= int(round(base_row_step_px * 1.03)):
+                        row_step_px = calibrated_int
+                expected_move_px = min(abs(amount), row_step_px * max(1, grid_rows - 1)) if row_step_px > 0 else abs(amount)
+                search_margin_px = max(50, row_step_px * max(1, grid_rows - 1)) if row_step_px > 0 else 50
+                motion = _estimate_inventory_scroll_motion(
+                    before_img,
+                    after_img,
+                    before_grid_r,
+                    expected_move_px,
+                    search_margin_px=search_margin_px,
+                    slots=before_slots,
+                ) if before_img is not None else None
+                motion_overlap = _inventory_overlap_rows_from_motion(motion, row_step_px, grid_rows)
+                moved_rows: int | None = None
+                tail_scroll = False
+                if motion_overlap is not None:
+                    overlap_rows, moved_rows, y_offset_delta_px, tail_scroll = motion_overlap
+                    y_offset_px = before_y_offset_px + y_offset_delta_px
+                    self.log(
+                        f"  drag try {idx}: motion actual={motion.actual_move_px}px "
+                        f"expected={motion.expected_step_px}px row_step={row_step_px}px "
+                        f"moved_rows={moved_rows} overlap_rows={overlap_rows} tail={tail_scroll} "
+                        f"before_y={before_y_offset_px:+d}px y_delta={y_offset_delta_px:+d}px "
+                        f"y_offset={y_offset_px:+d}px score={motion.score:.3f} method={motion.method}"
+                    )
+                    if (
+                        motion is not None
+                        and moved_rows is not None
+                        and moved_rows > 0
+                        and not tail_scroll
+                        and motion.score >= 0.70
+                        and base_row_step_px > 0
+                    ):
+                        observed_row_step = motion.actual_move_px / max(1, moved_rows)
+                        if base_row_step_px * 0.97 <= observed_row_step <= base_row_step_px * 1.03:
+                            previous_row_step = getattr(self, "_inventory_motion_row_step_px", None)
+                            if previous_row_step is None:
+                                updated_row_step = observed_row_step
+                            else:
+                                updated_row_step = (float(previous_row_step) * 0.65) + (observed_row_step * 0.35)
+                            self._inventory_motion_row_step_px = updated_row_step
+                            self.log(
+                                f"  drag try {idx}: observed row_step={observed_row_step:.2f}px "
+                                f"calibrated={updated_row_step:.2f}px base={base_row_step_px}px"
+                            )
+                else:
+                    overlap_rows = _count_row_overlap(before_hashes, after_hashes, grid_cols)
+                    y_offset_px = before_y_offset_px
+                    self.log(
+                        f"  drag try {idx}: overlap_rows={overlap_rows} source=hash "
+                        f"y_offset={y_offset_px:+d}px"
+                    )
 
-        return False, None, scroll_amount, 0
+                final_slots = _shift_slots_y(slots, y_offset_px, after_img.size) if y_offset_px else slots
+                final_grid_r = _grid_region(final_slots) if y_offset_px else grid_r
+                final_after = crop_region(after_img, final_grid_r)
+                final_after_grid_hash = _img_hash(final_after)
+                final_after_page = self._capture_inventory_page(
+                    after_img,
+                    final_slots,
+                    grid_hash=final_after_grid_hash,
+                    page_index=-1,
+                    grid_cols=grid_cols,
+                )
+                final_after_hashes = [snap.icon_hash for snap in final_after_page.slots]
+                adapted_amount, target_move_px = _adapt_inventory_drag_amount(
+                    amount,
+                    motion,
+                    row_step_px,
+                    grid_rows,
+                    drag_config,
+                )
+                if adapted_amount != amount:
+                    self.log(
+                        f"  drag try {idx}: adaptive next delta_px={adapted_amount} "
+                        f"(current={amount}, target_move={target_move_px}px, "
+                        f"actual={motion.actual_move_px if motion is not None else 0}px)"
+                    )
+
+                _save_inventory_scroll_debug(
+                    debug_dir,
+                    before_img=before_img,
+                    after_img=after_img,
+                    slots=slots,
+                    grid_cols=grid_cols,
+                    grid_rows=grid_rows,
+                    scroll_index=scroll_index,
+                    attempt_index=idx,
+                    amount=amount,
+                    scroll_ok=scroll_ok,
+                    moved=moved,
+                    image_changed=image_changed,
+                    hash_changed=hash_changed,
+                    slot_sequence_changed=slot_sequence_changed,
+                    row_step_px=row_step_px,
+                    expected_move_px=expected_move_px,
+                    search_margin_px=search_margin_px,
+                    motion=motion,
+                    overlap_rows=overlap_rows,
+                    moved_rows=moved_rows,
+                    y_offset_px=y_offset_px,
+                    before_grid_hash=before_grid_hash,
+                    after_grid_hash=final_after_grid_hash,
+                    before_hashes=before_hashes,
+                    after_hashes=final_after_hashes,
+                    cursor_moved=cursor_moved,
+                    before_y_offset_px=before_y_offset_px,
+                    before_slots=before_slots,
+                    tail_scroll=tail_scroll,
+                )
+                next_amount = adapted_amount
+                return True, final_after_page, next_amount, overlap_rows, y_offset_px
+
+            grid_rows = max(1, (len(slots) + grid_cols - 1) // max(1, grid_cols))
+            row_step_px = _slot_row_step_px(before_slots, after_img.size, grid_cols)
+            expected_move_px = min(abs(amount), row_step_px * max(1, grid_rows - 1)) if row_step_px > 0 else abs(amount)
+            search_margin_px = max(50, row_step_px * max(1, grid_rows - 1)) if row_step_px > 0 else 50
+            _save_inventory_scroll_debug(
+                debug_dir,
+                before_img=before_img,
+                after_img=after_img,
+                slots=slots,
+                grid_cols=grid_cols,
+                grid_rows=grid_rows,
+                scroll_index=scroll_index,
+                attempt_index=idx,
+                amount=amount,
+                scroll_ok=scroll_ok,
+                moved=moved,
+                image_changed=image_changed,
+                hash_changed=hash_changed,
+                slot_sequence_changed=slot_sequence_changed,
+                row_step_px=row_step_px,
+                expected_move_px=expected_move_px,
+                search_margin_px=search_margin_px,
+                motion=None,
+                overlap_rows=0,
+                moved_rows=None,
+                y_offset_px=before_y_offset_px,
+                before_grid_hash=before_grid_hash,
+                after_grid_hash=after_grid_hash,
+                before_hashes=before_hashes,
+                after_hashes=after_hashes,
+                cursor_moved=cursor_moved,
+                before_y_offset_px=before_y_offset_px,
+                before_slots=before_slots,
+            )
+        return False, None, scroll_amount, 0, before_y_offset_px
 
     def _advance_inventory_page_with_input(
         self,
@@ -3812,8 +4320,8 @@ class Scanner:
         items:       list[ItemEntry] = []
         seen_keys:   set[str]        = set()
         seen_hashes: list[str]       = []
-        detail_candidates: list[InventoryDetailCandidate] = []
-        detail_candidate_seq = 0
+        fast_grid_entries = 0
+        detail_verified_entries = 0
         icon_cache = self._inventory_icon_cache.setdefault(source, {})
         failed_hashes = self._inventory_failed_hashes.setdefault(source, set())
         active_profile = get_inventory_profile(self._forced_inventory_profile_id)
@@ -3821,12 +4329,25 @@ class Scanner:
             active_profile = None
         profile_seen_names: set[str] = set()
         icon = "item" if source == "item" else "equipment"
+        scroll_debug_dir = _inventory_scroll_debug_dir(source, self._forced_inventory_profile_id)
+        if scroll_debug_dir is not None:
+            self.log(f"  inventory scroll debug: {scroll_debug_dir}")
         grid_cols = int(r_sec.get("grid_cols", 0))
         grid_rows = int(r_sec.get("grid_rows", 0))
         if grid_cols <= 0:
             grid_cols = max(1, int(round(len(slots) ** 0.5)))
         if grid_rows <= 0:
             grid_rows = max(1, (len(slots) + grid_cols - 1) // grid_cols)
+        source_label = "\uC544\uC774\uD15C" if source == "item" else "\uC7A5\uBE44"
+        self._status(
+            "inventory.scan.start",
+            source=source,
+            source_label=source_label,
+            grid_cols=grid_cols,
+            grid_rows=grid_rows,
+            total_slots=len(slots),
+            profile_id=active_profile.profile_id if active_profile is not None else None,
+        )
         current_scroll_amount = scroll_amount
         input_backend: InventoryGridInput | None = None
         legacy_scroll = True
@@ -3885,11 +4406,6 @@ class Scanner:
             if active_profile is not None
             else None
         )
-        profile_max_detail_candidates = (
-            INVENTORY_PROFILE_MAX_DETAIL_CANDIDATES.get(active_profile.profile_id)
-            if active_profile is not None
-            else None
-        )
         profile_slot_scan_limit = (
             min(len(slots), profile_max_unique_items)
             if input_backend is not None
@@ -3906,7 +4422,7 @@ class Scanner:
                 }
             )
 
-        self.log(f"{icon} ????얠뺏癲???????筌뤾퍗????癲ル슢??節녿쨨?(????{len(slots)}??")
+        self.log(f"{icon} ?????????????????????????????????????????????????????????????(????{len(slots)}??")
         if active_profile is not None:
             expected_count = len(active_profile.expected_item_ids) or len(active_profile.ordered_names)
             limit_suffix = (
@@ -3940,41 +4456,176 @@ class Scanner:
                 }
             )
 
+        def _env_nonnegative_int(name: str, default: int) -> int:
+            try:
+                return max(0, int(os.environ.get(name, str(default))))
+            except (TypeError, ValueError):
+                return default
+
+        def _env_float(name: str, default: float) -> float:
+            try:
+                return float(os.environ.get(name, str(default)))
+            except (TypeError, ValueError):
+                return default
+
+        slot_count_row_gap_enabled = os.environ.get("BA_ITEM_COUNT_ROW_GAP_Y_OFFSET", "0") == "1"
+        slot_count_y_offset_search_radius = _env_nonnegative_int("BA_ITEM_COUNT_Y_OFFSET_SEARCH_PX", 2)
+        slot_count_color_filter_mode = os.environ.get("BA_ITEM_COUNT_COLOR_FILTER_MODE", "dark_ink")
+        self._debug(f"  item slot count color filter mode: {slot_count_color_filter_mode}")
+        self._inventory_motion_row_step_px = None
+        grid_match_enabled = os.environ.get("BA_INVENTORY_GRID_MATCH", "1") != "0"
+        grid_fast_min_score = _env_float("BA_ITEM_GRID_FAST_MIN_SCORE", 0.86)
+        grid_fast_min_margin = _env_float("BA_ITEM_GRID_FAST_MIN_MARGIN", 0.09)
+        grid_fast_min_count_confidence = _env_float("BA_ITEM_GRID_FAST_MIN_COUNT_CONF", 0.66)
+        grid_order_hint_enabled = grid_match_enabled and os.environ.get("BA_ITEM_GRID_ORDER_HINT", "1") != "0"
+        grid_order_hint_exact_min_score = _env_float("BA_ITEM_GRID_ORDER_HINT_EXACT_MIN_SCORE", 0.70)
+        grid_order_hint_family_min_score = _env_float("BA_ITEM_GRID_ORDER_HINT_FAMILY_MIN_SCORE", 0.78)
+        grid_order_hint_wb_min_score = _env_float("BA_ITEM_GRID_ORDER_HINT_WB_MIN_SCORE", 0.68)
+        grid_order_hint_min_count_confidence = _env_float("BA_ITEM_GRID_ORDER_HINT_MIN_COUNT_CONF", 0.60)
+        grid_row_anchor_hint_enabled = grid_order_hint_enabled and os.environ.get("BA_ITEM_GRID_ROW_ANCHOR_HINT", "1") != "0"
+        grid_terminal_anchor_min_score = _env_float("BA_ITEM_GRID_TERMINAL_ANCHOR_MIN_SCORE", 0.55)
+        self._debug(
+            f"  item grid matcher: enabled={grid_match_enabled} "
+            f"order_hint={grid_order_hint_enabled} row_anchor={grid_row_anchor_hint_enabled}"
+        )
+
+        def _next_profile_expected_item() -> tuple[int | None, str | None]:
+            if active_profile is None or not profile_ordered_item_ids:
+                return None, None
+            index = max(0, profile_cursor)
+            while index < len(profile_ordered_item_ids):
+                item_id = profile_ordered_item_ids[index]
+                name = profile_ordered_names[index] if index < len(profile_ordered_names) else None
+                if item_id and (not name or name not in profile_seen_names):
+                    return index, item_id
+                index += 1
+            return None, None
+
+        def _school_tier_parts(item_id: str | None, prefix: str) -> tuple[str, str] | None:
+            if not item_id or not item_id.startswith(prefix):
+                return None
+            suffix = item_id.removeprefix(prefix)
+            school, sep, tier = suffix.rpartition("_")
+            if not sep or not school or not tier.isdigit():
+                return None
+            return school, tier
+
+        def _is_school_order_profile(profile_id: str | None) -> bool:
+            return profile_id in {"tech_notes", "tactical_bd", "equipment", "student_elephs"}
+
+        def _profile_order_relation(
+            profile_id: str | None,
+            expected_item_id: str | None,
+            observed_item_id: str | None,
+        ) -> str | None:
+            if not expected_item_id or not observed_item_id:
+                return None
+            if expected_item_id == observed_item_id:
+                return "exact"
+            if profile_id == "tech_notes":
+                prefix = "Item_Icon_SkillBook_"
+                expected_parts = _school_tier_parts(expected_item_id, prefix)
+                observed_parts = _school_tier_parts(observed_item_id, prefix)
+                if expected_parts and observed_parts and expected_parts[0] == observed_parts[0]:
+                    return "same_family"
+                return None
+            if profile_id == "tactical_bd":
+                prefix = "Item_Icon_Material_ExSkill_"
+                expected_parts = _school_tier_parts(expected_item_id, prefix)
+                observed_parts = _school_tier_parts(observed_item_id, prefix)
+                if expected_parts and observed_parts and expected_parts[0] == observed_parts[0]:
+                    return "same_family"
+                return None
+            if profile_id != "ooparts":
+                return None
+            material_prefix = "Item_Icon_Material_"
+            if expected_item_id.startswith(material_prefix) and observed_item_id.startswith(material_prefix):
+                expected_base, _, expected_tier = expected_item_id.rpartition("_")
+                observed_base, _, observed_tier = observed_item_id.rpartition("_")
+                if expected_tier.isdigit() and observed_tier.isdigit() and expected_base == observed_base:
+                    return "same_family"
+            workbook_prefix = "Item_Icon_WorkBook_"
+            if expected_item_id.startswith(workbook_prefix):
+                if observed_item_id.startswith(workbook_prefix):
+                    return "workbook_tail"
+                return "workbook_expected"
+            return None
+
+        def _order_hint_min_score(relation: str | None) -> float:
+            if relation == "exact":
+                return grid_order_hint_exact_min_score
+            if relation == "same_family":
+                return grid_order_hint_family_min_score
+            if relation in {"workbook_tail", "workbook_expected"}:
+                return grid_order_hint_wb_min_score
+            return 1.0
+
+        next_scan_slot_indices: set[int] | None = None
+        next_scan_y_offset_px = 0
+
         for scroll_i in range(MAX_SCROLLS):
             if self._stop_requested():
                 break
 
+            current_scan_slot_indices = next_scan_slot_indices
+            current_scan_y_offset_px = next_scan_y_offset_px
+            next_scan_slot_indices = None
+            next_scan_y_offset_px = 0
+            if current_scan_slot_indices is not None:
+                if not current_scan_slot_indices:
+                    self.log("  row-step scan window empty -> stopping")
+                    break
+                self.log(
+                    f"  row-step scan window: "
+                    f"{len(current_scan_slot_indices)}/{len(slots)} slots "
+                    f"y_offset={current_scan_y_offset_px:+d}px"
+                )
 
             img = self._capture()
             if img is None:
                 break
 
-            grid_crop = crop_region(img, grid_r)
+            active_slots = _shift_slots_y(slots, current_scan_y_offset_px, img.size) if current_scan_y_offset_px else slots
+            active_grid_r = _grid_region(active_slots) if current_scan_y_offset_px else grid_r
+            grid_crop = crop_region(img, active_grid_r)
             cur_hash  = _img_hash(grid_crop)
             page = self._capture_inventory_page(
                 img,
-                slots,
+                active_slots,
                 grid_hash=cur_hash,
                 page_index=scroll_i,
                 grid_cols=grid_cols,
             )
 
             if cur_hash in seen_hashes:
-                self.log(f"  ?????⑤베??????거?쭛????ш끽維뽳쭩??????ル봿??? -> ????筌뤾퍗???????살꺎??({len(items)}??")
+                self.log(f"  ?????????????????????????⑤벡????????????????????????????????ш끽維뽳쭩?뱀땡???얩맪???????????????????轅붽틓??섑떊???⑤챷?????????????????????????嫄???????????????????????筌???????????????????????? -> ??????????????????????????????????????????({len(items)}??")
                 break
             seen_hashes.append(cur_hash)
             if len(seen_hashes) > 10:
                 seen_hashes.pop(0)
 
             new_this = 0
-            candidates_before_page = len(detail_candidates)
             page_item_ids: list[str] = []
             page_raw_names: list[str] = []
             profile_limit_reached = False
-            candidate_limit_reached = False
-            for slot_idx, (slot, slot_snap) in enumerate(zip(slots, page.slots)):
+            slot_count_y_offset_hint = 0
+            slot_count_row_y_offset_estimates = {}
+            grid_row_anchor_state = InventoryGridRowAnchorState(
+                grid_cols=grid_cols,
+                enabled=bool(
+                    grid_row_anchor_hint_enabled
+                    and active_profile is not None
+                    and _is_school_order_profile(active_profile.profile_id)
+                ),
+            )
+
+            for slot_idx, (slot, slot_snap) in enumerate(zip(active_slots, page.slots)):
                 if self._stop_requested():
                     break
+                if current_scan_slot_indices is not None and slot_idx not in current_scan_slot_indices:
+                    continue
+                if not slot_count_row_gap_enabled and grid_cols > 0 and slot_idx % grid_cols == 0:
+                    slot_count_y_offset_hint = 0
                 if (
                     profile_slot_scan_limit is not None
                     and slot_idx >= profile_slot_scan_limit
@@ -3989,59 +4640,314 @@ class Scanner:
                 icon_crop = crop_region(img, _slot_icon_region(slot))
                 icon_template_item_id, icon_template_score = self._match_inventory_icon(icon_crop, source)
                 icon_template_matched = icon_template_item_id is not None
+                grid_template_item_id: str | None = None
+                grid_template_score = 0.0
+                grid_template_matched = False
+                grid_count_confidence = 0.0
+                grid_count_raw = ""
                 detail_template_item_id: str | None = None
                 detail_template_score = 0.0
                 assigned_profile_idx: int | None = None
                 matched_profile_name: str | None = None
 
-                verified = self._verify_inventory_slot(
-                    rect,
-                    slot,
-                    name_r,
-                    count_r,
-                    source,
-                    profile_id=active_profile.profile_id if active_profile is not None else None,
-                    input_backend=input_backend,
-                    slot_index=slot_idx,
-                )
+                verified = None
+                if source in {"item", "equipment"} and grid_match_enabled:
+                    slot_crop = crop_region(img, slot)
+                    slot_count_search_px = slot_count_y_offset_search_radius
+                    slot_count_row_estimate = None
+                    if slot_count_row_gap_enabled and grid_cols > 0:
+                        slot_count_row_index = slot_idx // grid_cols
+                        slot_count_row_estimate = slot_count_row_y_offset_estimates.get(slot_count_row_index)
+                        if slot_count_row_estimate is None:
+                            row_start = slot_count_row_index * grid_cols
+                            row_end = min(len(active_slots), row_start + grid_cols)
+                            row_indices = [
+                                index
+                                for index in range(row_start, row_end)
+                                if current_scan_slot_indices is None or index in current_scan_slot_indices
+                            ]
+                            slot_count_row_estimate = estimate_item_slot_count_row_y_offset(
+                                img,
+                                [active_slots[index] for index in row_indices],
+                                center=0,
+                                radius=slot_count_y_offset_search_radius,
+                                color_filter_tolerance_percent=1.0,
+                                color_filter_mode=slot_count_color_filter_mode,
+                            )
+                            slot_count_row_y_offset_estimates[slot_count_row_index] = slot_count_row_estimate
+                            if slot_count_row_estimate.y_offset_px is not None:
+                                self._debug(
+                                    f"    row count y-offset: row={slot_count_row_index + 1} "
+                                    f"dy={slot_count_row_estimate.y_offset_px:+d}px "
+                                    f"gap={slot_count_row_estimate.mean_bottom_gap:.2f} "
+                                    f"samples={slot_count_row_estimate.sample_count} "
+                                    f"conf={slot_count_row_estimate.confidence:.2f}"
+                                )
+                        if slot_count_row_estimate.y_offset_px is not None:
+                            slot_count_y_offset_hint = slot_count_row_estimate.y_offset_px
+                            slot_count_search_px = 0
+                    slot_count_debug_dir = None
+                    debug_count_match = None
+                    if scroll_debug_dir is not None:
+                        slot_count_debug_dir = (
+                            scroll_debug_dir
+                            / "slot_count_digits"
+                            / f"page_{scroll_i + 1:02d}_slot_{slot_idx + 1:02d}"
+                        )
+                        debug_count_match = read_item_slot_count(
+                            img,
+                            slot,
+                            debug_dir=slot_count_debug_dir,
+                            y_offset_px=slot_count_y_offset_hint,
+                            y_offset_search_px=slot_count_search_px,
+                            color_filter_mode=slot_count_color_filter_mode,
+                        )
+                        slot_count_y_offset_hint = debug_count_match.y_offset_px
+                        if (
+                            debug_count_match.value is None
+                            and slot_count_search_px == 0
+                            and slot_count_row_estimate is not None
+                            and slot_count_row_estimate.y_offset_px is not None
+                            and slot_count_y_offset_search_radius > 0
+                        ):
+                            debug_count_match = read_item_slot_count(
+                                img,
+                                slot,
+                                debug_dir=slot_count_debug_dir,
+                                y_offset_px=slot_count_y_offset_hint,
+                                y_offset_search_px=slot_count_y_offset_search_radius,
+                                color_filter_mode=slot_count_color_filter_mode,
+                            )
+                            slot_count_y_offset_hint = debug_count_match.y_offset_px
+                    grid_template_config = _inventory_grid_template_config(
+                        r_sec,
+                        active_profile.profile_id if active_profile is not None else None,
+                    )
+                    grid_tier_hint, grid_tier_confidence = detect_inventory_grid_tier_hint(
+                        slot_crop,
+                        grid_template_config,
+                    )
+                    if grid_tier_hint is not None:
+                        self._status(
+                            "inventory.slot.tier_hint",
+                            source=source,
+                            source_label=source_label,
+                            slot_index=slot_idx,
+                            slot_number=slot_idx + 1,
+                            page_index=scroll_i + 1,
+                            tier_hint=grid_tier_hint,
+                            tier_confidence=round(grid_tier_confidence, 4),
+                            grid_cols=grid_cols,
+                            grid_rows=grid_rows,
+                            total_slots=len(slots),
+                            profile_id=active_profile.profile_id if active_profile is not None else None,
+                        )
+                    grid_catalog = _inventory_template_catalog(source)
+                    if active_profile is not None and profile_index_by_item_id:
+                        allowed_item_ids = set(profile_index_by_item_id)
+                        grid_catalog = [
+                            row for row in grid_catalog
+                            if row[0] in allowed_item_ids
+                        ]
+                    grid_match = match_inventory_grid_template(
+                        slot_crop,
+                        grid_catalog,
+                        grid_template_config,
+                        row_anchor_state=grid_row_anchor_state,
+                        slot_index=slot_idx,
+                        ordered_item_ids=profile_ordered_item_ids,
+                    )
+                    grid_row_anchor_candidate_count = grid_match.row_anchor_candidate_count
+                    grid_best_item_id = grid_match.best_item_id or grid_match.item_id
+                    grid_candidate_item_id = grid_match.item_id
+                    order_hint_item_id: str | None = None
+                    order_hint_profile_idx: int | None = None
+                    order_hint_relation: str | None = None
+                    if (
+                        grid_order_hint_enabled
+                        and active_profile is not None
+                        and grid_best_item_id is not None
+                    ):
+                        order_hint_profile_idx, expected_item_id = _next_profile_expected_item()
+                        order_hint_relation = _profile_order_relation(
+                            active_profile.profile_id,
+                            expected_item_id,
+                            grid_best_item_id,
+                        )
+                        if (
+                            order_hint_relation is not None
+                            and grid_match.score >= _order_hint_min_score(order_hint_relation)
+                        ):
+                            grid_candidate_item_id = grid_candidate_item_id or grid_best_item_id
+                            order_hint_item_id = expected_item_id
+                    if (
+                        grid_order_hint_enabled
+                        and active_profile is not None
+                        and grid_best_item_id is not None
+                        and not order_hint_item_id
+                        and grid_row_anchor_candidate_count == 1
+                        and grid_best_item_id in active_profile.terminal_item_ids
+                        and grid_match.score >= grid_terminal_anchor_min_score
+                    ):
+                        terminal_profile_idx = profile_index_by_item_id.get(grid_best_item_id)
+                        if terminal_profile_idx is not None:
+                            grid_candidate_item_id = grid_candidate_item_id or grid_best_item_id
+                            order_hint_item_id = grid_best_item_id
+                            order_hint_profile_idx = terminal_profile_idx
+                            order_hint_relation = "terminal_anchor"
+                    if grid_candidate_item_id:
+                        grid_profile_name = inventory_item_display_name(grid_candidate_item_id)
+                        grid_profile_idx = profile_index_by_item_id.get(grid_candidate_item_id)
+                        if grid_profile_idx is None and grid_profile_name:
+                            grid_profile_idx = profile_index_by_name.get(grid_profile_name)
+                        grid_allowed = active_profile is None or grid_profile_idx is not None
+                        if not grid_allowed:
+                            self._debug(
+                                f"    grid template outside profile fallback: "
+                                f"slot={slot_idx} item_id={grid_candidate_item_id}"
+                            )
+                            count_match = None
+                        else:
+                            count_match = debug_count_match or read_item_slot_count(
+                                img,
+                                slot,
+                                y_offset_px=slot_count_y_offset_hint,
+                                y_offset_search_px=slot_count_search_px,
+                                color_filter_mode=slot_count_color_filter_mode,
+                            )
+                        if (
+                            count_match is not None
+                            and count_match.value is None
+                            and debug_count_match is None
+                            and slot_count_search_px == 0
+                            and slot_count_row_estimate is not None
+                            and slot_count_row_estimate.y_offset_px is not None
+                            and slot_count_y_offset_search_radius > 0
+                        ):
+                            count_match = read_item_slot_count(
+                                img,
+                                slot,
+                                y_offset_px=slot_count_y_offset_hint,
+                                y_offset_search_px=slot_count_y_offset_search_radius,
+                                color_filter_mode=slot_count_color_filter_mode,
+                            )
+                        if count_match is not None:
+                            slot_count_y_offset_hint = count_match.y_offset_px
+                        if count_match is not None and count_match.value is not None:
+                            gate_reasons: list[str] = []
+                            if grid_match.score < grid_fast_min_score:
+                                gate_reasons.append(f"score<{grid_fast_min_score:.2f}")
+                            if grid_match.margin < grid_fast_min_margin:
+                                gate_reasons.append(f"margin<{grid_fast_min_margin:.3f}")
+                            if count_match.confidence < grid_fast_min_count_confidence:
+                                gate_reasons.append(f"count_conf<{grid_fast_min_count_confidence:.2f}")
+                            order_hint_accepted = bool(
+                                order_hint_item_id
+                                and count_match.confidence >= grid_order_hint_min_count_confidence
+                            )
+                            tier_suffix = (
+                                f" tier={grid_match.tier_hint} cand={grid_match.candidate_count}"
+                                if grid_match.tier_hint is not None
+                                else ""
+                            )
+                            anchor_suffix = (
+                                f" row_anchor_candidates={grid_row_anchor_candidate_count}"
+                                if grid_row_anchor_candidate_count
+                                else ""
+                            )
+                            if gate_reasons and not order_hint_accepted:
+                                self._debug(
+                                    f"    grid fast gated: slot={slot_idx} item_id={grid_candidate_item_id} "
+                                    f"x{count_match.value} reasons={','.join(gate_reasons)} "
+                                    f"score={grid_match.score:.2f} margin={grid_match.margin:.3f} "
+                                    f"count_conf={count_match.confidence:.2f} dy={count_match.y_offset_px:+d}"
+                                    f"{tier_suffix}"
+                                    f"{anchor_suffix}"
+                                )
+                            else:
+                                grid_template_item_id = order_hint_item_id if order_hint_accepted else grid_candidate_item_id
+                                if order_hint_accepted:
+                                    assigned_profile_idx = order_hint_profile_idx
+                                grid_template_score = grid_match.score
+                                grid_count_confidence = count_match.confidence
+                                grid_count_raw = count_match.raw
+                                grid_template_matched = True
+                                verified = InventoryVerification(
+                                    name=None,
+                                    count=count_match.value,
+                                    item_id=grid_template_item_id,
+                                    match_score=grid_template_score,
+                                )
+                                order_suffix = (
+                                    f", order_hint={order_hint_relation}:{grid_best_item_id}->{grid_template_item_id}"
+                                    if order_hint_accepted
+                                    else ""
+                                )
+                                self.log(
+                                    f"    grid template matched: {grid_template_item_id} "
+                                    f"x{count_match.value} "
+                                    f"(score={grid_match.score:.2f}, "
+                                    f"margin={grid_match.margin:.3f}, "
+                                    f"count_conf={count_match.confidence:.2f}, dy={count_match.y_offset_px:+d}"
+                                    f"{tier_suffix}"
+                                    f"{anchor_suffix}"
+                                    f"{order_suffix})"
+                                )
+                        elif count_match is not None:
+                            self._debug(
+                                f"    grid count fallback: slot={slot_idx} "
+                                f"reason={count_match.reason} raw={count_match.raw!r} dy={count_match.y_offset_px:+d}"
+                            )
+                    elif grid_match.score > 0.0:
+                        best_suffix = f" item_id={grid_best_item_id}" if grid_best_item_id else ""
+                        tier_suffix = (
+                            f" tier={grid_match.tier_hint} cand={grid_match.candidate_count}"
+                            if grid_match.tier_hint is not None
+                            else ""
+                        )
+                        anchor_suffix = (
+                            f" row_anchor_candidates={grid_row_anchor_candidate_count}"
+                            if grid_row_anchor_candidate_count
+                            else ""
+                        )
+                        self._debug(
+                            f"    grid template fallback: slot={slot_idx}{best_suffix} "
+                            f"best={grid_match.score:.2f} margin={grid_match.margin:.3f}"
+                            f"{tier_suffix}"
+                            f"{anchor_suffix}"
+                        )
+                used_detail_verification = verified is None
+                if verified is None:
+                    verified = self._verify_inventory_slot(
+                        rect,
+                        slot,
+                        name_r,
+                        count_r,
+                        source,
+                        profile_id=active_profile.profile_id if active_profile is not None else None,
+                        input_backend=input_backend,
+                        slot_index=slot_idx,
+                    )
                 if not verified:
                     continue
+                if grid_template_matched:
+                    fast_grid_entries += 1
+                elif used_detail_verification:
+                    detail_verified_entries += 1
                 name = verified.name
                 count = verified.count
                 if verified.item_id:
-                    detail_template_item_id = verified.item_id
-                    detail_template_score = verified.match_score
-                if active_profile is not None and verified.detail_crop is not None:
-                    detail_candidate_seq += 1
-                    detail_candidates.append(
-                        InventoryDetailCandidate(
-                            sequence=detail_candidate_seq,
-                            slot_index=slot_idx,
-                            count=count,
-                            detail_crop=verified.detail_crop,
-                            detail_name_crop=verified.detail_name_crop,
-                            detected_item_id=detail_template_item_id,
-                            detected_score=detail_template_score,
-                        )
-                    )
-                    if (
-                        profile_max_detail_candidates is not None
-                        and len(detail_candidates) >= profile_max_detail_candidates
-                    ):
-                        candidate_limit_reached = True
-                item_id = detail_template_item_id or icon_template_item_id
+                    if grid_template_matched and verified.item_id == grid_template_item_id:
+                        pass
+                    else:
+                        detail_template_item_id = verified.item_id
+                        detail_template_score = verified.match_score
+                item_id = grid_template_item_id or detail_template_item_id or icon_template_item_id
                 if not item_id:
                     self.log(f"  template unresolved skip: slot={slot_idx}")
-                    if candidate_limit_reached:
-                        self.log(
-                            f"  profile detail candidate limit reached: "
-                            f"{active_profile.profile_id} "
-                            f"({len(detail_candidates)}/{profile_max_detail_candidates})"
-                        )
-                        profile_limit_reached = True
-                        break
                     continue
 
+                row_anchor_confirmed = False
                 if active_profile is not None:
                     matched_profile_name = inventory_item_display_name(item_id)
                     if not matched_profile_name and item_id in profile_index_by_name:
@@ -4061,6 +4967,19 @@ class Scanner:
                         self.log(
                             f"  profile cursor jump: {profile_cursor} -> {assigned_profile_idx}"
                         )
+                        gap_added = self._append_profile_gap_entries(
+                            items,
+                            seen_keys,
+                            profile_seen_names,
+                            active_profile,
+                            profile_ordered_names,
+                            profile_ordered_item_ids,
+                            source,
+                            profile_cursor,
+                            assigned_profile_idx,
+                        )
+                        if gap_added:
+                            profile_cursor = max(profile_cursor, assigned_profile_idx)
                     if assigned_profile_idx < len(profile_ordered_names):
                         name = profile_ordered_names[assigned_profile_idx]
                     else:
@@ -4070,6 +4989,30 @@ class Scanner:
                         and profile_ordered_item_ids[assigned_profile_idx]
                     ):
                         item_id = profile_ordered_item_ids[assigned_profile_idx]
+                    if grid_row_anchor_state.record_confirmed(slot_idx, assigned_profile_idx):
+                        row_anchor_confirmed = True
+                        row_number = slot_idx // max(1, grid_cols) + 1
+                        self._debug(
+                            f"    grid row anchor confirmed: "
+                            f"row={row_number} "
+                            f"slot={slot_idx + 1} profile_idx={assigned_profile_idx}"
+                        )
+                        self._status(
+                            "inventory.row_anchor.confirmed",
+                            source=source,
+                            source_label=source_label,
+                            slot_index=slot_idx,
+                            slot_number=slot_idx + 1,
+                            row_number=row_number,
+                            page_index=scroll_i + 1,
+                            item_name=name or matched_profile_name or inventory_item_display_name(item_id) or item_id,
+                            item_id=item_id,
+                            profile_index=assigned_profile_idx,
+                            grid_cols=grid_cols,
+                            grid_rows=grid_rows,
+                            total_slots=len(slots),
+                            profile_id=active_profile.profile_id if active_profile is not None else None,
+                        )
 
                 if not name and item_id:
                     name = inventory_item_display_name(item_id) or item_id
@@ -4077,7 +5020,9 @@ class Scanner:
                     continue
 
                 icon_cache[slot_snap.icon_hash] = (name, count, item_id)
-                if detail_template_item_id is not None:
+                if grid_template_matched:
+                    detect_source = f"grid_template({grid_template_score:.2f})"
+                elif detail_template_item_id is not None:
                     detect_source = f"detail_image_template+detail({detail_template_score:.2f})"
                 elif icon_template_matched:
                     detect_source = f"icon_template+detail({icon_template_score:.2f})"
@@ -4116,7 +5061,13 @@ class Scanner:
                         "reason": "direct_match",
                         "profile_id": active_profile.profile_id if active_profile is not None else None,
                         "profile_index": assigned_profile_idx,
-                        "match_score": round(max(detail_template_score, icon_template_score), 4),
+                        "match_score": round(max(grid_template_score, detail_template_score, icon_template_score), 4),
+                        "detect_source": detect_source,
+                        "fast_grid": bool(grid_template_matched),
+                        "grid_template_score": round(grid_template_score, 4) if grid_template_matched else None,
+                        "grid_count_confidence": round(grid_count_confidence, 4) if grid_template_matched else None,
+                        "grid_count_raw": grid_count_raw if grid_template_matched else None,
+                        "roi_y_offset_px": current_scan_y_offset_px,
                         "review_required": False,
                     },
                     detail_crop=verified.detail_crop,
@@ -4134,6 +5085,22 @@ class Scanner:
                                 profile_cursor = max(profile_cursor, mapped_idx + 1)
                     new_this += 1
                     self.log(f"  {icon} [{len(items):>3}] {name}  x{count} ({detect_source})")
+                    self._status(
+                        "inventory.slot.confirmed",
+                        source=source,
+                        source_label=source_label,
+                        slot_index=slot_idx,
+                        slot_number=slot_idx + 1,
+                        page_index=scroll_i + 1,
+                        item_name=name,
+                        quantity=count,
+                        item_id=item_id,
+                        row_anchor=row_anchor_confirmed,
+                        grid_cols=grid_cols,
+                        grid_rows=grid_rows,
+                        total_slots=len(slots),
+                        profile_id=active_profile.profile_id if active_profile is not None else None,
+                    )
                     if (
                         profile_max_unique_items is not None
                         and _unique_scanned_item_count() >= profile_max_unique_items
@@ -4145,23 +5112,11 @@ class Scanner:
                         )
                         profile_limit_reached = True
                         break
-                if candidate_limit_reached:
-                    self.log(
-                        f"  profile detail candidate limit reached: "
-                        f"{active_profile.profile_id} "
-                        f"({len(detail_candidates)}/{profile_max_detail_candidates})"
-                    )
-                    profile_limit_reached = True
-                    break
-
             if active_profile is None:
                 active_profile = infer_inventory_scan_profile(source, page_item_ids, page_raw_names)
                 if active_profile is not None:
                     expected_count = len(active_profile.expected_item_ids) or len(active_profile.ordered_names)
                     profile_max_unique_items = INVENTORY_PROFILE_MAX_UNIQUE_ITEMS.get(
-                        active_profile.profile_id
-                    )
-                    profile_max_detail_candidates = INVENTORY_PROFILE_MAX_DETAIL_CANDIDATES.get(
                         active_profile.profile_id
                     )
                     profile_slot_scan_limit = (
@@ -4221,15 +5176,14 @@ class Scanner:
                         )
                         profile_limit_reached = True
 
-            new_candidates_this = len(detail_candidates) - candidates_before_page
-            candidate_suffix = (
-                f", candidates +{new_candidates_this}/{len(detail_candidates)}"
-                if active_profile is not None
+            fast_suffix = (
+                f", fast_grid={fast_grid_entries}, detail={detail_verified_entries}"
+                if source in {"item", "equipment"}
                 else ""
             )
             self.log(
                 f"  scroll {scroll_i+1}: new {new_this} / total {len(items)}"
-                f"{candidate_suffix}"
+                f"{fast_suffix}"
             )
 
             if profile_limit_reached:
@@ -4250,11 +5204,11 @@ class Scanner:
                 if is_inventory_profile_terminal_seen(active_profile, found_item_ids, found_names):
                     self.log(
                         f"  profile terminal reached: {active_profile.profile_id} "
-                        f"({_profile_found_count()}/{expected_count} matched, "
-                        f"candidates={len(detail_candidates)})"
+                        f"({_profile_found_count()}/{expected_count} matched)"
                     )
                     break
 
+            scroll_overlap_rows = 0
             if input_backend is not None and not legacy_scroll:
                 moved, after_page = self._advance_inventory_page_with_input(
                     input_backend,
@@ -4264,14 +5218,50 @@ class Scanner:
                     page,
                 )
             else:
-                moved, after_page, current_scroll_amount, _overlap_rows = self._scroll_inventory_page(
+                moved, after_page, current_scroll_amount, scroll_overlap_rows, next_scan_y_offset_px = self._scroll_inventory_page(
                     rect,
                     slots,
                     grid_r,
                     drag_config,
                     current_scroll_amount,
                     grid_cols,
+                    scroll_index=scroll_i,
+                    debug_dir=scroll_debug_dir,
+                    before_y_offset_px=current_scan_y_offset_px,
+                    drag_rx_offset=(
+                        float(os.environ.get("BA_INVENTORY_ITEM_DRAG_RX_OFFSET", "-0.006"))
+                        if source == "item"
+                        else 0.0
+                    ),
                 )
+                if (
+                    moved
+                    and scroll_overlap_rows <= 0
+                    and os.environ.get("BA_INVENTORY_STOP_ON_NO_SCROLL_OVERLAP", "1") != "0"
+                ):
+                    self.log(
+                        "  scroll overlap lost: no duplicated row detected after move "
+                        "-> stopping inventory scan to avoid drift/user-interaction corruption"
+                    )
+                    break
+                next_scan_slot_indices = _new_inventory_slot_indices(
+                    len(slots),
+                    grid_cols,
+                    grid_rows,
+                    scroll_overlap_rows,
+                )
+                if next_scan_slot_indices is None:
+                    self.log(
+                        f"  row-step scan window fallback: "
+                        f"overlap_rows={scroll_overlap_rows} -> all slots"
+                    )
+                else:
+                    self.log(
+                        f"  row-step next scan: "
+                        f"overlap_rows={scroll_overlap_rows} "
+                        f"slots={len(next_scan_slot_indices)}/{len(slots)} "
+                        f"y_offset={next_scan_y_offset_px:+d}px"
+                    )
                 self.log(f"  next drag delta_px={current_scroll_amount}")
             if after_page is None:
                 break
@@ -4286,20 +5276,21 @@ class Scanner:
             if repeated_last_row:
                 self.log(f"  repeated last row after scroll: total {len(items)}")
                 break
+            self._status(
+                "inventory.scroll",
+                source=source,
+                source_label=source_label,
+                scroll_index=scroll_i + 1,
+                next_page_index=scroll_i + 2,
+                grid_cols=grid_cols,
+                grid_rows=grid_rows,
+                total_slots=len(slots),
+                overlap_rows=scroll_overlap_rows,
+                moved_rows=max(0, grid_rows - scroll_overlap_rows),
+                scan_slots=sorted(next_scan_slot_indices) if next_scan_slot_indices is not None else None,
+                y_offset_px=next_scan_y_offset_px,
+            )
         if active_profile is not None:
-            expected_count = len(active_profile.expected_item_ids) or len(active_profile.ordered_names)
-            if detail_candidates:
-                self.log(
-                    f"  profile dp alignment start: "
-                    f"{active_profile.profile_id} "
-                    f"({len(items)}/{expected_count}, candidates={len(detail_candidates)})"
-                )
-                items = self._recover_profile_gaps_from_candidates(
-                    items,
-                    detail_candidates,
-                    active_profile,
-                    source,
-                )
             items = self._fill_missing_profile_entries(items, active_profile, source)
         if input_backend is not None:
             input_backend.close()
@@ -4321,7 +5312,6 @@ class Scanner:
             f"icon_templates={len(_inventory_template_catalog('item'))}"
         )
         prev_forced_profile_id = self._forced_inventory_profile_id
-        fallback_to_menu = False
         try:
             if navigate_from_menu:
                 if not self._open_menu():
@@ -4342,24 +5332,8 @@ class Scanner:
                     if not self._wait(0.5):
                         return all_items
                 if not self._prepare_item_inventory(profile_id, ensure_sort_rule=not sort_rule_checked):
-                    if not navigate_from_menu:
-                        self.log("  current item screen prepare failed -> retry from menu")
-                        fallback_to_menu = True
-                        self._return_lobby()
-                        if not self._open_menu():
-                            self.log("  item retry failed: menu open failed")
-                            return all_items
-                        if not self._go_to("item_entry_button", "items"):
-                            self.log("  item retry failed: item entry failed")
-                            return all_items
-                        if not self._wait(0.5):
-                            return all_items
-                        navigate_from_menu = True
-                        if not self._prepare_item_inventory(profile_id, ensure_sort_rule=not sort_rule_checked):
-                            self.log("  item retry failed: inventory prepare failed")
-                            return all_items
-                    else:
-                        return all_items
+                    self.log("  item inventory prepare failed; item scan stopped without lobby retry")
+                    return all_items
                 sort_rule_checked = True
                 self._reset_inventory_scan_state("item")
                 result = self._scan_grid("item", "item", ITEM_INVENTORY_DRAG, ITEM_INVENTORY_DRAG.delta_px)
@@ -4377,7 +5351,7 @@ class Scanner:
             return []
         finally:
             self._forced_inventory_profile_id = prev_forced_profile_id
-            if return_to_lobby or fallback_to_menu:
+            if return_to_lobby:
                 self._return_inventory_to_lobby()
 
     def scan_equipment(
@@ -4395,7 +5369,6 @@ class Scanner:
             f"detail_templates={len(_inventory_detail_template_catalog('equipment'))}"
         )
         prev_forced_profile_id = self._forced_inventory_profile_id
-        fallback_to_menu = False
         try:
             self._forced_inventory_profile_id = "equipment"
             if navigate_from_menu:
@@ -4408,24 +5381,8 @@ class Scanner:
             else:
                 self.log("  using current equipment inventory screen")
             if not self._prepare_equipment_inventory():
-                if not navigate_from_menu:
-                    self.log("  current equipment screen prepare failed -> retry from menu")
-                    fallback_to_menu = True
-                    self._return_lobby()
-                    if not self._open_menu():
-                        self.log("  equipment retry failed: menu open failed")
-                        return []
-                    if not self._go_to("equipment_entry_button", "equipment"):
-                        self.log("  equipment retry failed: equipment entry failed")
-                        return []
-                    if not self._wait(0.5):
-                        return []
-                    navigate_from_menu = True
-                    if not self._prepare_equipment_inventory():
-                        self.log("  equipment retry failed: inventory prepare failed")
-                        return []
-                else:
-                    return []
+                self.log("  equipment inventory prepare failed; equipment scan stopped without lobby retry")
+                return []
             self._reset_inventory_scan_state("equipment")
             result = self._scan_grid(
                 "equipment",
@@ -4441,15 +5398,11 @@ class Scanner:
             return []
         finally:
             self._forced_inventory_profile_id = prev_forced_profile_id
-            if return_to_lobby or fallback_to_menu:
+            if return_to_lobby:
                 self._return_inventory_to_lobby()
 
 
-
-
     def scan_students(self) -> list[StudentEntry]:
-        if self._fast_student_ids:
-            return self.scan_students_fast()
         return self.scan_students_v5()
 
     def _scan_student_fields(self, entry: StudentEntry) -> bool:
@@ -4489,6 +5442,10 @@ class Scanner:
                 return False
             with self._perf_step("student.read_basic_combat_stats", **fields):
                 self.read_basic_combat_stats(entry)
+            if self._stop_requested():
+                return False
+            with self._perf_step("student.read_multi_form_combat_stats", **fields):
+                self.read_multi_form_combat_stats(entry)
             self._release_student_basic_source()
             if self._stop_requested():
                 return False
@@ -4507,17 +5464,9 @@ class Scanner:
             with self._perf_step("student.identify", index=1, mode="current"):
                 sid = self.identify_student(0)
             if sid is None:
-                self._warn("[?????밸븶??????筌? ??癲ル슢?뤷쳞???????怨뚯댅")
+                self._warn("student identify failed")
                 self._status("student.identify.failed", index=1)
                 return []
-
-            if sid in self._maxed_ids:
-                entry = self._make_skipped_entry(sid)
-                results.append(entry)
-                self._emit_progress_state(current=1, total=1, note="current student scan")
-                self._status("student.scan.saved_max_skip", student_id=sid, student_name=entry.display_name)
-                self._info(f"  ????ш끽維??{entry.label()} (??????????꾤뙴????????? ?轅붽틓?????")
-                return results
 
             ctx = ScanCtx(idx=1, student_id=sid)
             entry = self.begin_student_scan(sid)
@@ -4535,8 +5484,8 @@ class Scanner:
                 if self._asv:
                     self._asv.on_student_committed(entry)
         except Exception as e:
-            _log.exception(f"?????밸븶??????筌?????筌뤾퍗???????濚밸Ŧ援????ш끽維뽳쭩?좊쐪筌먲퐢??? {e}")
-            self._error(f"?????밸븶??????筌?????筌뤾퍗???????⑤챷逾? {e}")
+            _log.exception(f"????????????????????밸븶筌믩끃??獄???????멥렑???????????????????耀붾굝?????臾먮뼁?????쇨덫?????????????????????????濾???????????????????????癲????????????????????????????????????????????????????????????????ш끽維뽳쭩?뱀땡???얩맪???????????????????轅붽틓??섑떊???⑤챷?????????????????????????嫄???????????????????????筌??????????????????????????????????????? {e}")
+            self._error(f"????????????????????밸븶筌믩끃??獄???????멥렑???????????????????耀붾굝?????臾먮뼁?????쇨덫?????????????????????????濾???????????????????????癲????????????????????????????????????????????? {e}")
             if self._asv:
                 partial = ScanResult(students=list(results))
                 self._asv.emergency_save(partial, {})
@@ -4560,7 +5509,7 @@ class Scanner:
 
     def scan_students_v5(self) -> list[StudentEntry]:
         self._reset_panel_transition_history()
-        log_section(_log, "????筌?????筌뤾퍗????癲ル슢??節녿쨨?(V6)")
+        log_section(_log, "???????????????????????????????????????????????????(V6)")
         self._info("[scan] student scan start (v6)")
         self._status("session.start")
         results:       list[StudentEntry] = []
@@ -4613,7 +5562,7 @@ class Scanner:
                 if sid == prev_id:
                     consecutive_dup += 1
                     _log.info(
-                        f"[{idx+1}] ?????⑤베??????筌?????????얜폀 ???ル봿???: {sid} "
+                        f"[{idx+1}] ?????????????????????????⑤벡??????????????????????? ????????????: {sid} "
                         f"({consecutive_dup}/{MAX_CONSECUTIVE_DUP})"
                     )
                     if consecutive_dup >= MAX_CONSECUTIVE_DUP:
@@ -4622,6 +5571,7 @@ class Scanner:
                         self._info("  repeated student detected; stopping")
                         break
                     self._status("student.loop.duplicate", student_id=sid, student_name=student_meta.display_name(sid), count=consecutive_dup, limit=MAX_CONSECUTIVE_DUP)
+                    self._wait_ui_status_flush(label=f"student:{sid}:skipped")
                     self._restore_basic_tab()
                     self.go_next_student()
                     continue
@@ -4632,29 +5582,14 @@ class Scanner:
                 if sid in seen_ids:
                     _log.info(f"[{idx+1}] already scanned student {sid}; stopping")
                     self._status("student.loop.seen_before", student_id=sid, student_name=student_meta.display_name(sid))
-                    self._info(f"  ?????살꺎?? ???? ????筌뤾퍗???????筌?{sid}")
+                    self._info(f"  ?????????????????????? ???? ???????????????????????????{sid}")
                     break
                 seen_ids.add(sid)
 
 
-                if sid in self._maxed_ids:
-                    entry = self._make_skipped_entry(sid)
-                    results.append(entry)
-                    skipped_count += 1
-                    self._status("student.scan.saved_max_skip", student_id=sid, student_name=entry.display_name)
-                    self._emit_progress_state(
-                        current=len(results),
-                        total=self._student_total_hint,
-            note="student scan",
-                    )
-                    _log.info(f"[{idx+1:>3}] {entry.label()} -> skipped by saved max data")
-                    self._info(f"  ????ш끽維??[{idx+1:>3}] {entry.label()} (??????????꾤뙴????????? ?轅붽틓?????")
-                    self._restore_basic_tab()
-                    self.go_next_student()
-                    continue
 
 
-                _log.info(f"[{idx+1:>3}] ????筌?????筌뤾퍗????癲ル슢??節녿쨨? {sid}")
+                _log.info(f"[{idx+1:>3}] ??????????????????????????????????????????????????? {sid}")
                 ctx = ScanCtx(idx=idx+1, student_id=sid)
 
                 # Create a temporary entry, then fill it step by step.
@@ -4685,14 +5620,15 @@ class Scanner:
 
                     if self._asv:
                         self._asv.on_student_committed(entry)
+                    self._wait_ui_status_flush(label=f"student:{sid}")
 
                 self._restore_basic_tab()
                 with self._perf_step("student.navigate_next", index=idx + 1, student_id=sid, student_name=entry.display_name, mode="v5"):
                     self.go_next_student()
 
         except Exception as e:
-            _log.exception(f"????筌?????筌뤾퍗???????濚밸Ŧ援????ш끽維뽳쭩?좊쐪筌먲퐢??? {e}")
-            self._error(f"????筌?????筌뤾퍗???????⑤챷逾? {e}")
+            _log.exception(f"?????????????????????????????????????????????????????????????ш끽維뽳쭩?뱀땡???얩맪???????????????????轅붽틓??섑떊???⑤챷?????????????????????????嫄???????????????????????筌??????????????????????????????????????? {e}")
+            self._error(f"?????????????????????????????????????????? {e}")
 
             if self._asv:
                 partial = ScanResult(students=list(results))
@@ -4703,7 +5639,7 @@ class Scanner:
 
         summary = (
             f"student scan done: total {len(results)} "
-            f"(????筌뤾퍗??{scanned_count} / ????ш끽維??{skipped_count})"
+            f"(????????????????????{scanned_count} / ???????????????????ш끽維뽳쭩?뱀땡???얩맪???????????????????轅붽틓??섑떊???⑤챷?????????????????????????嫄???????????????????????筌????{skipped_count})"
         )
         self._emit_progress_state(
             current=len(results),
@@ -4722,105 +5658,7 @@ class Scanner:
         return results
 
     def scan_students_fast(self) -> list[StudentEntry]:
-        ordered_ids = list(self._fast_student_ids)
-        if not ordered_ids:
-            return self.scan_students_v5()
-
-        self._reset_panel_transition_history()
-        log_section(_log, "student fast scan start")
-        self._info("[scan] student fast scan start")
-        self._status("session.start")
-        self._info(f"  fast scan order: {len(ordered_ids)} students")
-        results: list[StudentEntry] = []
-        skipped_count = 0
-        scanned_count = 0
-        self._emit_progress_state(current=0, total=len(ordered_ids), note="fast student scan")
-
-        try:
-            self._status("session.first_student.enter")
-            if not self._wait_for_student_detail_fast(initial_wait=0.5, timeout=DETAIL_READY_WAIT):
-                self._status("session.first_student.enter_failed")
-                self._warn("??????筌??????몃뱥??????거?쭛???轅붽틓???????꿔꺂??틝??????????怨뚯댅????逆곷틳源울쭪??????筌뤾퍗????μ떝?띄몭??袁㏉떄???癲ル슢?????")
-                return []
-            self._restore_basic_tab()
-
-            current_digest = self._current_student_digest(refresh=False)
-            if current_digest is None:
-                self._warn("??????筌????ㅳ늾?????????욱룏嶺???轅붽틓?????????????욱룑????逆곷틳源울쭪??????筌뤾퍗????μ떝?띄몭??袁㏉떄???癲ル슢?????")
-                return []
-
-            for idx, sid in enumerate(ordered_ids):
-                if self._stop_requested():
-                    _log.info("stop requested while fast scanning; breaking loop")
-                    break
-
-                self._info(f"  ??逆곷틳源울쭪??[{idx+1}] {student_meta.display_name(sid)}")
-
-                if sid in self._maxed_ids:
-                    entry = self._make_skipped_entry(sid)
-                    results.append(entry)
-                    skipped_count += 1
-                    self._status("student.scan.saved_max_skip", student_id=sid, student_name=entry.display_name)
-                    self._emit_progress_state(current=len(results), total=len(ordered_ids), note="fast student scan")
-                    _log.info(f"[{idx+1:>3}] {entry.label()} -> skipped by saved max data")
-                else:
-                    _log.info(f"[{idx+1:>3}] ????筌???逆곷틳源울쭪??????筌뤾퍗????癲ル슢??節녿쨨? {sid}")
-                    ctx = ScanCtx(idx=idx + 1, student_id=sid)
-                    entry = self.begin_student_scan(sid)
-
-                    with self._perf_step("student.total", index=idx + 1, student_id=sid, student_name=entry.display_name, mode="fast"):
-                        if not self._scan_student_fields(entry):
-                            break
-
-                        with self._perf_step("student.finalize_commit", index=idx + 1, student_id=sid, student_name=entry.display_name, mode="fast"):
-                            commit_result = self.finalize_student_entry(entry, ctx, partial_ok=True)
-                            added = self.commit_student_entry(commit_result, results, idx)
-                    if added:
-                        scanned_count += 1
-                        self._emit_progress_state(current=len(results), total=len(ordered_ids), note="fast student scan")
-                        self._log_student(entry, len(results) - 1)
-                        if self._asv:
-                            self._asv.on_student_committed(entry)
-
-                if idx >= len(ordered_ids) - 1:
-                    continue
-
-                self._restore_basic_tab()
-                with self._perf_step("student.navigate_next", index=idx + 1, student_id=sid, student_name=student_meta.display_name(sid), mode="fast"):
-                    next_digest = self.go_next_student_fast(current_digest)
-                if next_digest is None:
-                    self._warn(
-                        f"[{idx+1}] ???濚밸Ŧ援??????筌????????꿔꺂??틝???????????怨뚯댅???????????낆젵. "
-                        "????????꿔꺂???影??????濚밸Ŧ援앶뜮?????????濚밸Ŧ寃㎩쳞???黎앸럽?????????????????堉?????筌뤾퍗??????????癲ル슢?????"
-                    )
-                    break
-                current_digest = next_digest
-
-        except Exception as e:
-            _log.exception(f"????筌???逆곷틳源울쭪??????筌뤾퍗???????濚밸Ŧ援????ш끽維뽳쭩?좊쐪筌먲퐢??? {e}")
-            self._error(f"????筌???逆곷틳源울쭪??????筌뤾퍗???????⑤챷逾? {e}")
-            if self._asv:
-                partial = ScanResult(students=list(results))
-                self._asv.emergency_save(partial, {})
-        finally:
-            if self._asv:
-                self._asv.log_stats()
-
-        summary = (
-            f"student fast scan done: total {len(results)} "
-            f"(????筌뤾퍗??{scanned_count} / ????ш끽維??{skipped_count})"
-        )
-        self._emit_progress_state(current=len(results), total=len(ordered_ids), note="fast student scan")
-        self._status(
-            "summary.session.done_with_counts",
-            total=len(results),
-            scanned=scanned_count,
-            skipped=skipped_count,
-            warnings=0,
-        )
-        _log.info(summary)
-        self._info(f"[scan] {summary}")
-        return results
+        return self.scan_students_v5()
 
 
 
@@ -4843,7 +5681,7 @@ class Scanner:
 
 
     def enter_student_menu(self) -> bool:
-        self.log("  ????筌??轅붽틓???????轅붽틓?????..")
+        self.log("  ???????????????????????????????????????..")
         self._status("session.student_menu.enter")
         btn = self.r["lobby"].get("student_menu_button")
         if not btn:
@@ -4867,12 +5705,12 @@ class Scanner:
             ):
                 return self._wait(STUDENT_MENU_READY_SETTLE_WAIT)
             if attempt < len(attempts):
-                self.log(f"  ????筌??轅붽틓???????????.. ({attempt+1}/{len(attempts)})")
+                self.log(f"  ????????????????????????????.. ({attempt+1}/{len(attempts)})")
         self._status("session.student_menu.enter_failed")
         return False
 
     def enter_first_student(self) -> bool:
-        self.log("  ??????筌?????節떷??..")
+        self.log("  ???????????????????????..")
         self._status("session.first_student.enter")
         btn = self.r["student_menu"].get("first_student_button")
         if not btn:
@@ -4894,7 +5732,7 @@ class Scanner:
         return ok
 
     def enter_first_student_fast(self) -> bool:
-        self.log("  ??????筌?????節떷????逆곷틳源울쭪??...")
+        self.log("  ???????????????????????????????????????????????????...")
         self._status("session.first_student.enter")
         btn = self.r["student_menu"].get("first_student_button")
         if not btn:
@@ -4923,7 +5761,7 @@ class Scanner:
             if self._wait_for_student_change(previous_digest) is not None:
                 return True
             self._status("navigation.next.no_change")
-            self._warn("  ?????遊붋耀붾굛???????거?????????筌????????꿔꺂??틝??????????怨뚯댅 -> ?嶺??????????fallback")
+            self._warn("  ??????????????????????????????????????????????????????????????????????????????????????????????????????곕춴??????-> ????????????fallback")
 
         btn = self.r["student"].get("next_student_button")
         if not btn:
@@ -4943,7 +5781,7 @@ class Scanner:
             if next_digest is not None:
                 return next_digest
             self._status("navigation.next.no_change")
-            self._warn("  ?????遊붋耀붾굛???????거?????????筌????????꿔꺂??틝??????????怨뚯댅 -> ?嶺??????????fallback")
+            self._warn("  ??????????????????????????????????????????????????????????????????????????????????????????????????????곕춴??????-> ????????????fallback")
 
         btn = self.r["student"].get("next_student_button")
         if not btn:
@@ -5039,11 +5877,11 @@ class Scanner:
             )
             if sid is not None:
                 _log.info(
-                    f"{ctx} ??癲ル슢?뤷쳞????μ떜媛?슙?癰귥쥙?? {student_meta.display_name(sid)} "
+                    f"{ctx} ?????????????????????????????????????????????????????????????????????????????ㅻ깹???????????? {student_meta.display_name(sid)} "
                     f"(score={score:.3f})"
                 )
                 self._info(
-                    f"  ??꿔꺂????壤?[{idx+1}] {student_meta.display_name(sid)} (score={score:.3f})"
+                    f"  ??????????????????[{idx+1}] {student_meta.display_name(sid)} (score={score:.3f})"
                 )
                 self._status(
                     "student.identify.success",
@@ -5054,12 +5892,12 @@ class Scanner:
                 )
                 return sid
 
-            _log.debug(f"{ctx} ????筌뤾쑬已????癲ル슢?뤷쳞???????怨뚯댅 (score={score:.3f})")
+            _log.debug(f"{ctx} ?????????????????????????????????????????????????????????????????????????????????????????????곕춴??????(score={score:.3f})")
             dump_roi(crop, "identify_fail", score=score, reason="below_thresh")
             if self._asv:
                 self._asv.on_step_error("identify")
             self._status("student.identify.retry", index=idx + 1, technical=f"score={score:.3f}")
-            self._warn(f"[{idx+1}] ????筌뤾쑬已????癲ル슢?뤷쳞???????怨뚯댅 (score={score:.3f})")
+            self._warn(f"[{idx+1}] ?????????????????????????????????????????????????????????????????????????????????????????????곕춴??????(score={score:.3f})")
             return None
 
         sid = self._retry(_try, max_attempts=RETRY_IDENTIFY, delay=0.6, label="identify student")
@@ -5124,8 +5962,14 @@ class Scanner:
         for field_name, (value, meta) in staged.items():
             setattr(entry, field_name, value)
             entry.set_meta(field_name, meta)
+            if value is None and field_name == "skill2":
+                self._status("skills.skill2.skip_star_locked", student_name=entry.display_name, star=entry.student_star)
+            elif value is None and field_name == "skill3":
+                self._status("skills.skill3.skip_star_locked", student_name=entry.display_name, star=entry.student_star)
+            else:
+                self._status_skill_value(entry, field_name, value)
         self.log(
-            f"  ????????????거?쭛??????ш낄援?? EX={entry.ex_skill} "
+            f"  ?????????????????????????????????? EX={entry.ex_skill} "
             f"S1={entry.skill1} S2={entry.skill2} S3={entry.skill3}"
         )
         self._status(
@@ -5150,18 +5994,6 @@ class Scanner:
         """Read the skill panel from a single capture and fill skill fields."""
         ctx = ScanCtx(student_id=entry.student_id, step="read_skills")
         self._status("skills.start", student_name=entry.display_name)
-        saved = self._saved_student(entry.student_id)
-        if self._skills_maxed_from_saved_data(saved):
-            self._apply_saved_fields(
-                entry,
-                saved,
-                ("ex_skill", "skill1", "skill2", "skill3"),
-                "saved_skill_max",
-            )
-            self._status("skills.saved_max_skip", student_name=entry.display_name)
-            self.log("  saved max skills detected -> skipping skill scan")
-            return
-
         basic_img = self._get_student_basic_capture()
         if basic_img is not None and self._read_skills_from_basic(entry, basic_img):
             return
@@ -5176,7 +6008,7 @@ class Scanner:
             timeout=ADDITIONAL_PANEL_READY_WAIT,
         )
         if img is None:
-            _log.warning(f"{ctx} ????ш낄援???轅붽틓???????轅붽틓??????????怨뚯댅")
+            _log.warning(f"{ctx} skill menu open failed")
             self._esc()
             return
 
@@ -5192,7 +6024,7 @@ class Scanner:
                     return
                 img = self._capture()
                 if img is None:
-                    _log.warning(f"{ctx} ?轅붽틓??????⒟????筌??????????怨뚯댅")
+                    _log.warning(f"{ctx} skill menu capture failed")
                     self._esc()
                     return
 
@@ -5224,8 +6056,9 @@ class Scanner:
             try:
                 setattr(entry, field_name, int(raw))
                 entry.set_meta(field_name, FieldMeta.ok(FieldSource.TEMPLATE))
+                self._status_skill_value(entry, field_name, getattr(entry, field_name))
             except (TypeError, ValueError):
-                _log.debug(f"{ctx.with_step(field_name)} ?????ㅼ뒧?????????怨뚯댅 (raw={raw!r})")
+                _log.debug(f"{ctx.with_step(field_name)} ????????????????????????⑤벡??????????????????????????????????곕춴??????(raw={raw!r})")
                 dump_roi(crop, f"skill_{field_name}", reason="convert_fail")
                 setattr(entry, field_name, None)
                 entry.set_meta(field_name,
@@ -5235,7 +6068,7 @@ class Scanner:
                     self._asv.on_step_error("read_skills", entry.student_id or "")
 
         self.log(
-            f"  ????ш낄援?? EX={entry.ex_skill} "
+            f"  ????????????????? EX={entry.ex_skill} "
             f"S1={entry.skill1} S2={entry.skill2} S3={entry.skill3}"
         )
         self._status(
@@ -5280,7 +6113,7 @@ class Scanner:
                     student_name=entry.display_name,
                     technical=f"button_blue_ratio={active_ratio:.3f}",
                 )
-                self.log(f"  ???筌먲퐣苑??????釉먮빱?? WEAPON_EQUIPPED (button_blue_ratio={active_ratio:.3f})")
+                self.log(f"  ?????????????????????????????????????????? WEAPON_EQUIPPED (button_blue_ratio={active_ratio:.3f})")
                 return
             entry.weapon_state = WeaponState.NO_WEAPON_SYSTEM
             entry.set_meta("weapon_state", FieldMeta.ok(FieldSource.TEMPLATE, score=1.0 - active_ratio))
@@ -5289,7 +6122,7 @@ class Scanner:
                 student_name=entry.display_name,
                 technical=f"button_blue_ratio={active_ratio:.3f}",
             )
-            self.log(f"  ???筌먲퐣苑??????釉먮빱?? NO_WEAPON_SYSTEM (button_blue_ratio={active_ratio:.3f})")
+            self.log(f"  ?????????????????????????????????????????? NO_WEAPON_SYSTEM (button_blue_ratio={active_ratio:.3f})")
             return
 
         weapon_r = sr.get("weapon_detect_flag_region") or sr.get("weapon_unlocked_flag")
@@ -5306,7 +6139,7 @@ class Scanner:
                            FieldMeta.uncertain(FieldSource.TEMPLATE, score=score,
                                                note=state.value))
             self._status("weapon_state.uncertain", student_name=entry.display_name, state=state.name, technical=f"score={score:.3f}")
-            _log.warning(f"{ctx} ???筌먲퐣苑??????釉먮빱?????怨쀫뎐????(score={score:.3f}, {state.name})")
+            _log.warning(f"{ctx} ??????????????????????????????????????????????????????????(score={score:.3f}, {state.name})")
         else:
             entry.set_meta("weapon_state",
                            FieldMeta.ok(FieldSource.TEMPLATE, score=score))
@@ -5316,7 +6149,7 @@ class Scanner:
                 self._status("weapon_state.unlocked_not_equipped", student_name=entry.display_name, technical=f"score={score:.3f}")
             else:
                 self._status("weapon_state.no_system", student_name=entry.display_name, technical=f"score={score:.3f}")
-        self.log(f"  ???筌먲퐣苑??????釉먮빱?? {state.name} (score={score:.3f})")
+        self.log(f"  ?????????????????????????????????????????? {state.name} (score={score:.3f})")
 
 
     def read_weapon(self, entry: StudentEntry) -> None:
@@ -5414,14 +6247,16 @@ class Scanner:
                     star=entry.weapon_star,
                     level=entry.weapon_level,
                 )
+                self._field_confirmed(entry, "weapon_star", entry.weapon_star, display_value=f"{entry.weapon_star} stars")
+                self._field_confirmed(entry, "weapon_level", entry.weapon_level, display_value=f"Lv.{entry.weapon_level}")
                 self.log(
-                    f"  ????????????거?쭛???????????밸븶????筌먲퐣苑????꿔꺂??틝??? {entry.weapon_star}??Lv.{entry.weapon_level} "
+                    f"  ?????????????????????????????????????????밸븶筌믩끃??獄???????멥렑???????????????????耀붾굝?????臾먮뼁?????쇨덫?????????????????????????濾???????????????????????癲??????????????????????????????????????????????????? {entry.weapon_star}??Lv.{entry.weapon_level} "
                     f"(level={basic_level.score:.3f}, star={basic_star.score:.3f})"
                 )
                 return
             self._status("weapon.basic_fast_fallback", student_name=entry.display_name)
             self.log(
-                "  ????????????거?쭛???????밸븶????筌먲퐣苑??????????怨쀫뎐????-> ?????밸븶????筌먲퐣苑???轅붽틓???????????????ㅻ쿋????꿔꺂??틝?????"
+                "  ?????????????????????????????????????밸븶筌믩끃??獄???????멥렑???????????????????耀붾굝?????臾먮뼁?????쇨덫?????????????????????????濾???????????????????????癲??????????????????????????????????????????????????????-> ????????????????????밸븶筌믩끃??獄???????멥렑???????????????????耀붾굝?????臾먮뼁?????쇨덫?????????????????????????濾???????????????????????癲???????????????????????????????????????????????????????????????????????????????ㅻ깹??????????????????????????"
                 f"(level={basic_level.value}/{basic_level.score:.3f}, "
                 f"star={basic_star.value}/{basic_star.score:.3f})"
             )
@@ -5476,13 +6311,15 @@ class Scanner:
                            FieldMeta.ok(FieldSource.TEMPLATE)
                            if entry.weapon_level is not None
                            else FieldMeta.failed(FieldSource.TEMPLATE, "digit_read_fail"))
-            self.log(f"  ?????밸븶????筌먲퐣苑?? {entry.weapon_star}??Lv.{entry.weapon_level}")
+            self.log(f"  ????????????????????밸븶筌믩끃??獄???????멥렑???????????????????耀붾굝?????臾먮뼁?????쇨덫?????????????????????????濾???????????????????????癲????????????????????????????????? {entry.weapon_star}??Lv.{entry.weapon_level}")
             self._status(
                 "weapon.summary",
                 student_name=entry.display_name,
                 star=entry.weapon_star,
                 level=entry.weapon_level,
             )
+            self._field_confirmed(entry, "weapon_star", entry.weapon_star, display_value=f"{entry.weapon_star} stars")
+            self._field_confirmed(entry, "weapon_level", entry.weapon_level, display_value=f"Lv.{entry.weapon_level}")
         else:
             self.log("  missing weapon_level_digit")
             entry.set_meta("weapon_level", FieldMeta.region_missing("weapon_level_digit"))
@@ -5500,35 +6337,10 @@ class Scanner:
         self._status("equipment.start", student_name=entry.display_name)
 
 
-        saved     = self._saved_student(entry.student_id)
         sid       = entry.student_id or ""
-        equip_max = self._equipment_maxed_from_saved_data(saved)
-        equip4_max = self._favorite_item_maxed_from_saved_data(sid, saved)
-
-        if equip_max:
-            self._apply_saved_fields(
-                entry,
-                saved,
-                (
-                    "equip1", "equip2", "equip3",
-                    "equip1_level", "equip2_level", "equip3_level",
-                ),
-                "saved_equipment_max",
-            )
-            self._status("equipment.saved_max_skip", student_name=entry.display_name)
-            self.log("  saved max equipment 1-3 detected -> skipping equipment 1-3 scan")
-
-        if equip4_max:
-            self._apply_saved_fields(entry, saved, ("equip4",), "saved_favorite_item_max")
-            self._status("equipment.favorite_saved_max_skip", student_name=entry.display_name)
-            self.log("  saved max favorite item detected -> skipping favorite item scan")
-
         favorite_supported = student_meta.favorite_item_enabled(sid)
         if not favorite_supported and entry.equip4 is None:
             self._mark_favorite_item_unsupported(entry, sid)
-
-        if equip_max and (equip4_max or not favorite_supported):
-            return
 
         slots_to_scan = {1, 2, 3}
         if entry.level is not None and entry.level < EQUIP2_UNLOCK_LEVEL:
@@ -5562,7 +6374,7 @@ class Scanner:
             "equipment.button.active" if growth_button_active else "equipment.button.inactive",
             student_name=entry.display_name,
         )
-        favorite_scan_needed = favorite_supported and not equip4_max
+        favorite_scan_needed = favorite_supported
         favorite_dot_present = (
             favorite_scan_needed
             and self._basic_equipment_empty_dot_present(img, 4)
@@ -5587,10 +6399,9 @@ class Scanner:
             include_favorite=favorite_scan_needed,
             growth_button_active=growth_button_active,
         )
-        if not equip_max:
-            for slot in sorted(tuple(slots_to_scan)):
-                if self._read_basic_equipment_slot(entry, basic_img, sr, slot):
-                    slots_to_scan.discard(slot)
+        for slot in sorted(tuple(slots_to_scan)):
+            if self._read_basic_equipment_slot(entry, basic_img, sr, slot):
+                slots_to_scan.discard(slot)
         if favorite_scan_needed and entry.equip4 is None:
             favorite_region = sr.get("basic_favorite_tier_region")
             if favorite_region:
@@ -5618,12 +6429,9 @@ class Scanner:
                         student_name=entry.display_name,
                         tier=entry.equip4,
                     )
-                    self.log(f"  ???? ????????? {entry.equip4} (????????????거?쭛???轅붽틓??????됰ぁ?")
-        favorite_scan_needed = (
-            favorite_supported
-            and not equip4_max
-            and entry.equip4 is None
-        )
+                    self._field_confirmed(entry, "equip4", entry.equip4)
+                    self.log(f"  ???? ????????? {entry.equip4} (?????????????????????????????????????????????됰Ŧ?????????轅붽틓????곌램?뽳쭕????????????????????????????룸ı???嶺뚮슣??쮼??????????????????????ㅻ깹?????????ㅻ깹??????????????????????????????關?쒎첎?嫄??怨몃룯?????")
+        favorite_scan_needed = favorite_supported and entry.equip4 is None
 
         pre = read_equip_check(crop_region(img, equip_btn))
         if not slots_to_scan and not favorite_scan_needed:
@@ -5672,40 +6480,38 @@ class Scanner:
         )
 
         # Slots 1-3 share the same equipment-menu capture.
-        if not equip_max:
-            for slot in sorted(slots_to_scan):
-                skip_flags = {EquipSlotFlag.EMPTY}
-                if slot in (2, 3):
-                    skip_flags.add(EquipSlotFlag.LEVEL_LOCKED)
-                self._scan_equip_slot(entry, img, sr, slot,
-                                      skip_flags=skip_flags, scan_level=True)
-                self._learn_basic_equipment_slot(entry, basic_img, sr, slot)
+        for slot in sorted(slots_to_scan):
+            skip_flags = {EquipSlotFlag.EMPTY}
+            if slot in (2, 3):
+                skip_flags.add(EquipSlotFlag.LEVEL_LOCKED)
+            self._scan_equip_slot(entry, img, sr, slot,
+                                  skip_flags=skip_flags, scan_level=True)
+            self._learn_basic_equipment_slot(entry, basic_img, sr, slot)
 
-            if slots_to_scan and all(getattr(entry, f"equip{slot}") in (None, "unknown") for slot in slots_to_scan):
-                _log.warning(f"{entry.label()} equipment capture unstable -> retry once")
-                if self._wait(0.35):
-                    retry_img = self._capture()
-                    if retry_img is not None:
-                        img = retry_img
-                        for slot in sorted(slots_to_scan):
-                            skip_flags = {EquipSlotFlag.EMPTY}
-                            if slot in (2, 3):
-                                skip_flags.add(EquipSlotFlag.LEVEL_LOCKED)
-                            self._scan_equip_slot(entry, img, sr, slot,
-                                                  skip_flags=skip_flags, scan_level=True)
-                            self._learn_basic_equipment_slot(entry, basic_img, sr, slot)
+        if slots_to_scan and all(getattr(entry, f"equip{slot}") in (None, "unknown") for slot in slots_to_scan):
+            _log.warning(f"{entry.label()} equipment capture unstable -> retry once")
+            if self._wait(0.35):
+                retry_img = self._capture()
+                if retry_img is not None:
+                    img = retry_img
+                    for slot in sorted(slots_to_scan):
+                        skip_flags = {EquipSlotFlag.EMPTY}
+                        if slot in (2, 3):
+                            skip_flags.add(EquipSlotFlag.LEVEL_LOCKED)
+                        self._scan_equip_slot(entry, img, sr, slot,
+                                              skip_flags=skip_flags, scan_level=True)
+                        self._learn_basic_equipment_slot(entry, basic_img, sr, slot)
 
         # ????4
         if favorite_supported:
             self._status("favorite.start", student_name=entry.display_name)
-            if not equip4_max:
-                self._scan_equip_slot(
-                    entry, img, sr, 4,
-                    skip_flags={EquipSlotFlag.EMPTY,
-                                EquipSlotFlag.LOVE_LOCKED,
-                                EquipSlotFlag.NULL},
-                    scan_level=False,
-                )
+            self._scan_equip_slot(
+                entry, img, sr, 4,
+                skip_flags={EquipSlotFlag.EMPTY,
+                            EquipSlotFlag.LOVE_LOCKED,
+                            EquipSlotFlag.NULL},
+                scan_level=False,
+            )
         else:
             self._mark_favorite_item_unsupported(entry, sid)
 
@@ -5790,6 +6596,7 @@ class Scanner:
                 self.log(f"  equipment{slot} level: {lv}")
                 if lv is not None:
                     self._status(f"equip{slot}.level.ok", student_name=entry.display_name, level=lv)
+                    self._field_confirmed(entry, f"equip{slot}_level", lv, display_value=f"Lv.{lv}")
             else:
                 self.log(f"  missing equipment_{slot}_level_digit")
                 entry.set_meta(level_key,
@@ -5836,10 +6643,13 @@ class Scanner:
                 if slot == 4:
                     if tier == "T1":
                         self._status("favorite.tier.t1", student_name=entry.display_name, tier=tier)
+                        self._field_confirmed(entry, "equip4", tier)
                     elif tier == "T2":
                         self._status("favorite.tier.t2", student_name=entry.display_name, tier=tier)
+                        self._field_confirmed(entry, "equip4", tier)
                 else:
                     self._status(f"equip{slot}.tier.ok", student_name=entry.display_name, tier=tier)
+                    self._field_confirmed(entry, f"equip{slot}", tier)
 
     def _learn_basic_level_for_run(
         self,
@@ -5885,17 +6695,6 @@ class Scanner:
         """Read the student level tab and parse the level digits."""
         ctx = ScanCtx(student_id=entry.student_id, step="read_level")
         self._status("level.start", student_name=entry.display_name)
-        saved = self._saved_student(entry.student_id)
-
-        if self._saved_int(saved, "level") == MAX_STUDENT_LEVEL:
-            entry.level = MAX_STUDENT_LEVEL
-
-        if entry.level == MAX_STUDENT_LEVEL:
-            self.log("  student level already max -> skipping level menu scan")
-            entry.set_meta("level", FieldMeta.skipped("already_max"))
-            self._status("level.saved_max_skip", student_name=entry.display_name)
-            return
-
         sr = self.r["student"]
         basic_region = sr.get("basic_level_digits_quad")
         basic_img = self._get_student_basic_capture()
@@ -5912,6 +6711,7 @@ class Scanner:
                 entry.level = int(basic_result.value)
                 entry.set_meta("level", FieldMeta.ok(FieldSource.TEMPLATE, score=basic_result.score))
                 self._status("level.read.ok", student_name=entry.display_name, level=entry.level)
+                self._field_confirmed(entry, "level", entry.level, display_value=f"Lv.{entry.level}")
                 _log.info(
                     "[basic_level] success student=%s value=%s score=%.3f label=%s",
                     entry.student_id,
@@ -5920,7 +6720,7 @@ class Scanner:
                     basic_result.label,
                 )
                 self.log(
-                    f"  ????????????거?쭛??????筌?????筌??? {entry.label()} -> Lv.{entry.level} "
+                    f"  ??????????????????????????????? {entry.label()} -> Lv.{entry.level} "
                     f"(score={basic_result.score:.3f})"
                 )
                 return
@@ -5940,7 +6740,7 @@ class Scanner:
             fallback_delay=0.5,
         )
         if img is None:
-            _log.warning(f"{ctx} ????筌??????轅붽틓??????????怨뚯댅")
+            _log.warning(f"{ctx} level tab capture failed")
             entry.set_meta("level", FieldMeta.failed(FieldSource.TEMPLATE, "tab_fail"))
             return
 
@@ -5971,13 +6771,14 @@ class Scanner:
         if lv is not None:
             entry.set_meta("level", FieldMeta.ok(FieldSource.TEMPLATE))
             self._status("level.read.ok", student_name=entry.display_name, level=lv)
-            self.log(f"  ????筌?????筌??? {entry.label()} -> Lv.{lv}")
+            self._field_confirmed(entry, "level", lv, display_value=f"Lv.{lv}")
+            self.log(f"  ?????????????? {entry.label()} -> Lv.{lv}")
             if basic_img is not None and basic_region is not None:
                 self._learn_basic_level_for_run(basic_img, basic_region, lv)
         else:
             entry.set_meta("level", FieldMeta.failed(FieldSource.TEMPLATE, "digit_read_fail"))
             self._status("level.read.failed", student_name=entry.display_name)
-            _log.warning(f"{ctx} ????筌?????꿔꺂????壤??????怨뚯댅")
+            _log.warning(f"{ctx} level digit read failed")
             if self._asv:
                 self._asv.on_step_error("read_level", entry.student_id or "")
 
@@ -6010,7 +6811,8 @@ class Scanner:
             entry.set_meta("student_star",
                            FieldMeta.inferred("weapon_state implies student star 5"))
             self._status("star.infer_from_weapon", student_name=entry.display_name, star=5)
-            self.log("  ?????밸븶????筌먲퐣苑?????ㅼ뒧???? ????筌?-> ??????筌뤾퍗????癲ル슢????(5????꿔꺂??틝???")
+            self._field_confirmed(entry, "student_star", 5, display_value="5 stars")
+            self.log("  ????????????????????밸븶筌믩끃??獄???????멥렑???????????????????耀붾굝?????臾먮뼁?????쇨덫?????????????????????????濾???????????????????????癲???????????????????????????????????????????????????????⑤벡????????? ??????-> ????????????????????????????????????????(5????????????????????")
             return
         if entry.weapon_state == WeaponState.WEAPON_UNLOCKED_NOT_EQUIPPED:
             self.log("  weapon state implies 5-star -> skipping star menu scan")
@@ -6034,6 +6836,7 @@ class Scanner:
                     student_name=entry.display_name,
                     star=entry.student_star,
                 )
+                self._field_confirmed(entry, "student_star", entry.student_star, display_value=f"{entry.student_star} stars")
                 _log.info(
                     "[basic_star] success student=%s value=%s score=%.3f label=%s",
                     entry.student_id,
@@ -6042,7 +6845,7 @@ class Scanner:
                     basic_result.label,
                 )
                 self.log(
-                    f"  ????????????거?쭛??????筌??? {entry.label()} -> {entry.student_star}??"
+                    f"  ????????????????????????? {entry.label()} -> {entry.student_star}??"
                     f"(score={basic_result.score:.3f})"
                 )
                 return
@@ -6087,14 +6890,163 @@ class Scanner:
                                                score=r.score,
                                                note=f"value={r.value}"))
             self._status("star.read.uncertain", student_name=entry.display_name, star=r.value, technical=f"score={r.score:.3f}")
-            _log.warning(f"{ctx} ????꿔꺂????壤????怨쀫뎐????(score={r.score:.3f} val={r.value})")
+            _log.warning(f"{ctx} ????????????????????????????????????(score={r.score:.3f} val={r.value})")
         else:
             entry.set_meta("student_star",
                            FieldMeta.ok(FieldSource.TEMPLATE, score=r.score))
             self._status("star.read.ok", student_name=entry.display_name, star=entry.student_star)
-            self.log(f"  ????筌??? {entry.label()} -> {entry.student_star}??(score={r.score:.3f})")
+            self._field_confirmed(entry, "student_star", entry.student_star, display_value=f"{entry.student_star} stars")
+            self.log(f"  ???????? {entry.label()} -> {entry.student_star}??(score={r.score:.3f})")
 
 
+
+    def _student_form_template_candidates(self, student_id: str, form_index: int) -> list[Path]:
+        template_names: list[str] = []
+        configured = student_meta.field_for_form(student_id, "template_name", form_index)
+        if configured:
+            template_names.append(str(configured))
+        base_name = student_meta.template_path(student_id)
+        if form_index == 1:
+            template_names.append(base_name)
+        else:
+            base = Path(base_name)
+            suffix = base.suffix or ".png"
+            template_names.append(f"{base.stem}_{form_index - 1}{suffix}")
+            template_names.append(f"{student_id}_{form_index - 1}.png")
+        seen: set[str] = set()
+        paths: list[Path] = []
+        for template_name in template_names:
+            if not template_name or template_name in seen:
+                continue
+            seen.add(template_name)
+            path = TEMPLATE_DIR / "students" / template_name
+            if path.exists():
+                paths.append(path)
+        return paths
+
+    def _match_current_student_form_by_template(self, student_id: str, image: Image.Image) -> int | None:
+        texture_r = self.r.get("student", {}).get("student_texture_region")
+        if not texture_r:
+            return None
+        crop = crop_region(image, texture_r)
+        scores: list[tuple[int, float, str]] = []
+        for form_index in student_meta.form_indexes(student_id):
+            form_scores = [
+                match_score_resized(crop, str(path))
+                for path in self._student_form_template_candidates(student_id, form_index)
+            ]
+            if form_scores:
+                best_score = max(form_scores)
+                scores.append((form_index, best_score, str(form_scores)))
+        if not scores:
+            return None
+        scores.sort(key=lambda item: item[1], reverse=True)
+        best_form, best_score, _detail = scores[0]
+        second_score = scores[1][1] if len(scores) > 1 else 0.0
+        margin = best_score - second_score
+        _log.debug(
+            "multi-form template: student=%s best=%s score=%.3f margin=%.3f all=%s",
+            student_id,
+            best_form,
+            best_score,
+            margin,
+            " ".join(f"{form}({score:.3f})" for form, score, _ in scores),
+        )
+        if best_score >= 0.60 and margin >= 0.025:
+            return student_meta.normalize_form_index(student_id, best_form)
+        return None
+
+    def _match_current_student_form_by_attributes(self, student_id: str, image: Image.Image) -> int:
+        regions = self.r.get("student", {})
+        attributes: dict[str, str] = {}
+        for field in ("attack_type", "defense_type", "position", "combat_class", "role"):
+            region_key = f"basic_attribute_{field}"
+            region = regions.get(region_key)
+            if region is None:
+                continue
+            crop = crop_region(image, region)
+            result = read_basic_student_attribute_result(crop, field)
+            if result.value is not None and not result.uncertain:
+                attributes[field] = str(result.value)
+        best_form = 1
+        best_score = -1
+        for form_index in student_meta.form_indexes(student_id):
+            score = 0
+            for field, detected in attributes.items():
+                expected = student_meta.field_for_form(student_id, field, form_index)
+                if expected is not None and str(expected) == detected:
+                    score += 1
+            if score > best_score:
+                best_score = score
+                best_form = form_index
+        _log.debug("multi-form attribute: student=%s form=%s score=%s attrs=%s", student_id, best_form, best_score, attributes)
+        return student_meta.normalize_form_index(student_id, best_form)
+
+    def _current_student_form_index(self, student_id: str) -> int:
+        if not student_meta.is_multi_form(student_id):
+            return 1
+        image = self._get_student_basic_capture(refresh=True)
+        if image is None:
+            return 1
+        template_form = self._match_current_student_form_by_template(student_id, image)
+        if template_form is not None:
+            return template_form
+        return self._match_current_student_form_by_attributes(student_id, image)
+
+    def _student_form_region(self, form_index: int) -> Optional[dict]:
+        regions = self.r.get("student", {})
+        return regions.get(f"style_form_{form_index}_button") or regions.get(f"student_form_{form_index}_button")
+
+    def _switch_student_form(self, form_index: int) -> bool:
+        region = self._student_form_region(form_index)
+        if not region:
+            self.log(f"  form {form_index} switch region missing")
+            return False
+        self._invalidate_student_basic_capture()
+        if not self._click_r(region, f"student_form_{form_index}"):
+            return False
+        return self._settle_student_detail(f"student_form_{form_index}", initial_wait=0.35, timeout=2.0, poll=0.15)
+
+    def _copy_combat_stats_from_entry(self, source: StudentEntry, target: StudentEntry) -> None:
+        for field_name in _COMBAT_STAT_FIELDS:
+            setattr(target, field_name, getattr(source, field_name, None))
+            meta = source.get_meta(field_name)
+            if meta is not None:
+                target.set_meta(field_name, meta)
+
+    def read_multi_form_combat_stats(self, entry: StudentEntry) -> None:
+        student_id = entry.student_id or ""
+        if not student_meta.is_multi_form(student_id):
+            return
+        current_form = self._current_student_form_index(student_id)
+        _store_entry_form_combat_stats(entry, current_form)
+        other_forms = [form for form in student_meta.form_indexes(student_id) if form != current_form]
+        if not other_forms:
+            return
+        original_stats = _entry_combat_stats(entry)
+        original_meta = {field_name: entry.get_meta(field_name) for field_name in _COMBAT_STAT_FIELDS}
+        for form_index in other_forms:
+            if self._stop_requested():
+                break
+            if not self._switch_student_form(form_index):
+                continue
+            self._status("student.form.switch", student_id=entry.student_id, student_name=entry.display_name, form_index=form_index)
+            probe = StudentEntry(student_id=entry.student_id, display_name=entry.display_name)
+            self.read_basic_combat_stats(probe)
+            _store_entry_form_combat_stats(probe, form_index)
+            if str(form_index) in probe.form_combat_stats:
+                entry.form_combat_stats[str(form_index)] = probe.form_combat_stats[str(form_index)]
+                self.log(f"  form {form_index} combat stats saved: {entry.form_combat_stats[str(form_index)]}")
+        for field_name, value in original_stats.items():
+            setattr(entry, field_name, value)
+        for field_name, meta in original_meta.items():
+            if meta is not None:
+                entry.set_meta(field_name, meta)
+        if current_form != student_meta.normalize_form_index(student_id, current_form):
+            current_form = student_meta.normalize_form_index(student_id, current_form)
+        if other_forms and current_form in student_meta.form_indexes(student_id):
+            if self._switch_student_form(current_form):
+                self._status("student.form.switch", student_id=entry.student_id, student_name=entry.display_name, form_index=current_form)
 
     def read_basic_combat_stats(self, entry: StudentEntry) -> None:
         """Read basic-screen combat values and additional-stat badge presence."""
@@ -6129,6 +7081,7 @@ class Scanner:
                 ))
             else:
                 entry.set_meta(field_name, FieldMeta.ok(FieldSource.TEMPLATE, score=result.score))
+                self._field_confirmed(entry, field_name, result.value)
 
         badges: dict[str, Optional[bool]] = {}
         additional_values: dict[str, Optional[int]] = {}
@@ -6165,8 +7118,8 @@ class Scanner:
 
     def read_stats(self, entry: StudentEntry) -> None:
         """
-        Lv.90 + 5?????곗뒭????鸚???轅붽틓???????????????ш낄援ο쭛?????????????낆젵.
-        ?????몃뱥??????ш낄援ο쭛??轅붽틓????????????Β?띾쭡???ル봿????HP / ATK / HEAL ???ル봿???????????????낆젵.
+        Lv.90 + 5??????????????????????????????????????????????????????????????????????????????????????
+        ??????????????????????????????????ㅻ깹??????????????????????????????????????????????????????????????????????????HP / ATK / HEAL ??????????????????????????????????????
         """
         self._status("stats.start", student_name=entry.display_name)
         level_ok = entry.level is not None and entry.level >= STAT_UNLOCK_LEVEL
@@ -6174,22 +7127,10 @@ class Scanner:
 
         if not level_ok or not star_ok:
             self.log(
-                f"  ????ш낄援ο쭛?????筌뤾퍗????癲ル슢????"
+                f"  ??????????????????????????????????????????????????????????"
                 f"(Lv.{entry.level} / {entry.student_star}??"
             )
             self._status("stats.skip_condition", student_name=entry.display_name, level=entry.level, star=entry.student_star)
-            return
-
-        saved = self._saved_student(entry.student_id)
-        if self._stats_maxed_from_saved_data(saved):
-            self._apply_saved_fields(
-                entry,
-                saved,
-                ("stat_hp", "stat_atk", "stat_heal"),
-                "saved_stat_max",
-            )
-            self._status("stats.saved_max_skip", student_name=entry.display_name)
-            self.log("  saved max stats detected -> skipping stats scan")
             return
 
         badges = getattr(entry, "_basic_additional_badges", {})
@@ -6217,6 +7158,9 @@ class Scanner:
                 atk=entry.stat_atk,
                 heal=entry.stat_heal,
             )
+            self._field_confirmed(entry, "stat_hp", entry.stat_hp)
+            self._field_confirmed(entry, "stat_atk", entry.stat_atk)
+            self._field_confirmed(entry, "stat_heal", entry.stat_heal)
             self.log(
                 "  basic screen additional stats confirmed -> "
                 f"stat menu skipped ({entry.stat_hp}/{entry.stat_atk}/{entry.stat_heal})"
@@ -6271,9 +7215,10 @@ class Scanner:
             else:
                 entry.set_meta(field_name,
                                FieldMeta.ok(FieldSource.TEMPLATE, score=r.score))
+                self._field_confirmed(entry, field_name, r.value)
 
         self.log(
-            f"  ????ш낄援ο쭛? HP={entry.stat_hp} "
+            f"  ???????????????????? HP={entry.stat_hp} "
             f"ATK={entry.stat_atk} HEAL={entry.stat_heal}"
         )
         self._status(
@@ -6294,7 +7239,7 @@ class Scanner:
     def _log_student(self, entry: StudentEntry, idx: int) -> None:
         weapon_info = ""
         if entry.weapon_state == WeaponState.WEAPON_EQUIPPED:
-            weapon_info = f" | ???筌먲퐣苑??{entry.weapon_star}???筌롢끇??{entry.weapon_level}"
+            weapon_info = f" | ???????????????????????????????{entry.weapon_star}???????????????????{entry.weapon_level}"
         elif entry.weapon_state == WeaponState.WEAPON_UNLOCKED_NOT_EQUIPPED:
             weapon_info = " | weapon:not-equipped"
 
@@ -6356,5 +7301,4 @@ class Scanner:
             result.students  = self.scan_students()
         self.log("[scan] full scan done")
         return result
-
 

@@ -38,7 +38,7 @@ from core.config import (
     load_config,
     save_config,
 )
-from core.db import init_db
+from core.db import APP_VERSION, init_db
 from core.equipment_items import EQUIPMENT_EXP_ITEMS, EQUIPMENT_ITEM_ID_TO_NAME, EQUIPMENT_SERIES, WEAPON_PART_ITEMS
 from core.inventory_profiles import inventory_item_display_name
 from core.oparts import OPART_DEFINITIONS, OPART_ITEM_ID_TO_NAME, OPART_LEGACY_WB_ITEM_IDS, OPART_ORDERED_ITEM_IDS, OPART_WB_ITEMS
@@ -85,7 +85,8 @@ from core.raid_guide import (
     update_step_cue,
     validate_guide,
 )
-from core.scan_status import read_status_events, reset_status_log
+from core.scan_status import read_status_events, reset_status_log, write_status_ack
+from core.state_export import encode_state_export
 from core.tactical_challenge import (
     TACTICAL_STRIKER_SLOTS,
     TACTICAL_SUPPORT_SLOTS,
@@ -112,14 +113,19 @@ from core.tactical_challenge import (
     search_jokbo_from_storage,
     tactical_match_count,
     tactical_match_summary,
+    tactical_student_frequency_from_storage,
     upsert_tactical_jokbo,
     upsert_tactical_jokbo_entries,
     upsert_tactical_match,
     upsert_tactical_matches,
 )
-from core.tactical_screenshot import parse_tactical_result_screenshot
+from core.tactical_screenshot import (
+    collect_tactical_screenshot_images,
+    parse_tactical_result_screenshot,
+    tactical_screenshot_date_from_path,
+)
 from gui.tactic_assist_qt import TacticAssistWindow
-from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QRectF, QRunnable, QSize, Qt, QtMsgType, QThreadPool, QTimer, Signal, qInstallMessageHandler
+from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QParallelAnimationGroup, QPropertyAnimation, QRect, QRectF, QRunnable, QSize, Qt, QtMsgType, QThreadPool, QTimer, Signal, qInstallMessageHandler
 from PySide6.QtGui import QColor, QCursor, QFont, QFontDatabase, QFontMetrics, QIcon, QImage, QIntValidator, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRegion, QValidator
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -927,6 +933,8 @@ def _tinted_pixmap(pixmap: QPixmap, color: str, size: QSize | None = None) -> QP
 
 def _item_icon_tier_index(item_id: str | None) -> int | None:
     text = str(item_id or "")
+    if text in {"Item_Icon_SkillBook_Ultimate", "Item_Icon_SkillBook_Ultimate_Piece", "Item_Icon_SkillBook_Ultimated"}:
+        return 3
     match = re.search(r"_(\d+)$", text)
     if match:
         return int(match.group(1))
@@ -1016,6 +1024,69 @@ def _item_icon(icon_path: Path | None, *, size: QSize, item_id: str | None = Non
     pixmap = _item_icon_pixmap(size=size, item_id=item_id, icon_path=icon_path)
     return QIcon(pixmap) if not pixmap.isNull() else QIcon()
 
+
+def _scan_inventory_slot_pixmap(
+    *,
+    size: QSize,
+    item_id: str | None = None,
+    item_name: str | None = None,
+    quantity: str | None = None,
+    tier: object = None,
+    slot_number: int | None = None,
+) -> QPixmap:
+    if not size.isValid() or size.width() <= 0 or size.height() <= 0:
+        return QPixmap()
+
+    icon_path = _inventory_icon_path(item_id, item_name)
+    canvas = QPixmap(size)
+    canvas.fill(Qt.transparent)
+    painter = QPainter(canvas)
+    painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
+    painter.setRenderHint(QPainter.TextAntialiasing, True)
+
+    base_icon = QPixmap()
+    if icon_path is not None and icon_path.exists():
+        base_icon = _item_icon_pixmap(size=size, item_id=item_id, icon_path=icon_path)
+    if base_icon.isNull():
+        background_path = _item_icon_background_path(item_id)
+        if background_path is None or not background_path.exists():
+            background_path = ITEM_ICON_DEFAULT_BACKGROUND if ITEM_ICON_DEFAULT_BACKGROUND.exists() else None
+        if background_path is not None:
+            background = QPixmap(str(background_path))
+            if not background.isNull():
+                _draw_centered_pixmap(painter, background, canvas.rect())
+    else:
+        painter.drawPixmap(0, 0, base_icon)
+
+    badge_text = str(quantity or '').strip()
+    if not badge_text and slot_number is not None:
+        badge_text = str(slot_number)
+    if badge_text:
+        font = QFont()
+        font.setBold(True)
+        font.setPixelSize(max(9, int(round(size.height() * 0.24))))
+        metrics = QFontMetrics(font)
+        max_width = max(16, size.width() - max(6, int(round(size.width() * 0.16))))
+        painter.setFont(font)
+        text_width = metrics.horizontalAdvance(badge_text)
+        text_height = metrics.height()
+        pad_x = max(3, int(round(size.width() * 0.08)))
+        pad_y = max(2, int(round(size.height() * 0.06)))
+        rect_width = min(max_width, text_width + 2)
+        rect = QRect(
+            size.width() - rect_width - pad_x,
+            size.height() - text_height - pad_y,
+            rect_width,
+            text_height + 1,
+        )
+        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            painter.setPen(QColor(20, 24, 32, 220))
+            painter.drawText(rect.translated(dx, dy), Qt.AlignRight | Qt.AlignVCenter, badge_text)
+        painter.setPen(QColor('#ffffff'))
+        painter.drawText(rect, Qt.AlignRight | Qt.AlignVCenter, badge_text)
+
+    painter.end()
+    return canvas
 
 class ParallelogramPanel(QWidget):
     def __init__(
@@ -1231,6 +1302,85 @@ class DetailProgressStrip(QWidget):
         painter.end()
 
 
+
+class ScanLiveProgressStrip(QWidget):
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._star_count = 0
+        self._weapon_star_count = 0
+        self._show_weapon = False
+        self.setFixedHeight(34)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+    def setProgress(self, star_count: int, weapon_star_count: int, show_weapon: bool) -> None:
+        self._star_count = max(0, min(5, int(star_count)))
+        self._weapon_star_count = max(0, min(5, int(weapon_star_count)))
+        self._show_weapon = bool(show_weapon)
+        self.update()
+
+    def _draw_row(
+        self,
+        painter: QPainter,
+        *,
+        y: int,
+        row_height: int,
+        filled_count: int,
+        active_fill: str,
+        active_border: str,
+        inactive_mix: float,
+        enabled: bool = True,
+    ) -> None:
+        active_rect = self.rect().adjusted(0, 0, 0, -1)
+        segment_gap = 4
+        segment_count = 5
+        segment_width = max(10, int((active_rect.width() - (segment_gap * (segment_count - 1))) / segment_count))
+        segment_height = max(7, row_height)
+        for index in range(segment_count):
+            x = active_rect.x() + (index * (segment_width + segment_gap))
+            path = ParallelogramPanel._rounded_parallelogram_path(
+                segment_width,
+                segment_height,
+                max(4, int(round(segment_height * DETAIL_SLANT))),
+            )
+            painter.save()
+            painter.translate(x, y)
+            filled = enabled and index < filled_count
+            fill = QColor(active_fill if filled else _mix_hex(active_fill, SURFACE_ALT, inactive_mix))
+            border = QColor(active_border if filled else _mix_hex(active_border, SURFACE_ALT, 0.62))
+            painter.fillPath(path, fill)
+            painter.setPen(QPen(border, 1))
+            painter.drawPath(path)
+            painter.restore()
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        active_rect = self.rect().adjusted(0, 0, 0, -1)
+        row_gap = 5
+        row_height = max(7, int((active_rect.height() - row_gap) / 2))
+        top_y = active_rect.y()
+        bottom_y = top_y + row_height + row_gap
+        self._draw_row(
+            painter,
+            y=top_y,
+            row_height=row_height,
+            filled_count=self._star_count,
+            active_fill="#ffd84a",
+            active_border="#ffe88f",
+            inactive_mix=0.78,
+            enabled=True,
+        )
+        self._draw_row(
+            painter,
+            y=bottom_y,
+            row_height=row_height,
+            filled_count=self._weapon_star_count,
+            active_fill="#69c6ff",
+            active_border="#b6e6ff",
+            inactive_mix=0.82,
+            enabled=self._show_weapon,
+        )
+        painter.end()
 EQUIPMENT_TIER_MAX_LEVEL = {
     0: 0,
     1: 10,
@@ -1777,6 +1927,22 @@ def _detail_bonus_stats_html(pairs: tuple[tuple[str, int | None], ...], *, font_
     )
 
 
+
+def _scan_live_vertical_stats_html(pairs: tuple[tuple[str, int | None], ...], *, font_px: int = 14) -> str:
+    rows = []
+    for label, value in pairs:
+        rows.append(
+            "<tr>"
+            f"<td align='left' width='42'>{escape(label)}</td>"
+            f"<td align='right' width='76' style='padding-left:10px;'>{escape(f'{(_int_or_none(value) or 0):,}')}</td>"
+            "</tr>"
+        )
+    return (
+        f"<table align='center' cellspacing='0' cellpadding='0' "
+        f"style='font-size:{font_px}px; font-weight:800; color:#f7fbff;'>"
+        + "".join(rows)
+        + "</table>"
+    )
 def _inventory_name_token(value: str | None) -> str:
     return "".join(str(value or "").split()).lower()
 
@@ -1828,10 +1994,14 @@ def _inventory_icon_path(item_id: str | None, name: str | None) -> Path | None:
             if path.exists():
                 return path
         if item_id.startswith("Item_Icon_SkillBook_"):
-            path = SKILL_BOOK_ICON_DIR / f"{item_id}.png"
+            icon_item_id = "Item_Icon_SkillBook_Ultimate" if item_id in {
+                "Item_Icon_SkillBook_Ultimate_Piece",
+                "Item_Icon_SkillBook_Ultimated",
+            } else item_id
+            path = SKILL_BOOK_ICON_DIR / f"{icon_item_id}.png"
             if path.exists():
                 return path
-            path = INVENTORY_DETAIL_DIR / "tech_notes" / f"{item_id}.png"
+            path = INVENTORY_DETAIL_DIR / "tech_notes" / f"{icon_item_id}.png"
             if path.exists():
                 return path
         if item_id.startswith("Item_Icon_Material_ExSkill_"):
@@ -2499,14 +2669,20 @@ class TacticalScreenshotSignals(QObject):
 
 
 class TacticalScreenshotTask(QRunnable):
-    def __init__(self, path: str):
+    def __init__(self, path: str, candidate_priority: dict | None = None, answer_cache_path: str | None = None):
         super().__init__()
         self.path = path
+        self.candidate_priority = candidate_priority or {}
+        self.answer_cache_path = answer_cache_path
         self.signals = TacticalScreenshotSignals()
 
     def run(self) -> None:
         try:
-            readout = parse_tactical_result_screenshot(self.path)
+            readout = parse_tactical_result_screenshot(
+                self.path,
+                candidate_priority=self.candidate_priority,
+                answer_cache_path=self.answer_cache_path,
+            )
         except Exception as exc:
             self.signals.failed.emit(self.path, str(exc))
             return
@@ -2518,9 +2694,11 @@ class TacticalScreenshotBatchSignals(QObject):
 
 
 class TacticalScreenshotBatchTask(QRunnable):
-    def __init__(self, paths: list[str]):
+    def __init__(self, paths: list[str], candidate_priority: dict | None = None, answer_cache_path: str | None = None):
         super().__init__()
         self.paths = list(paths)
+        self.candidate_priority = candidate_priority or {}
+        self.answer_cache_path = answer_cache_path
         self.signals = TacticalScreenshotBatchSignals()
 
     def run(self) -> None:
@@ -2528,7 +2706,16 @@ class TacticalScreenshotBatchTask(QRunnable):
         errors: list[tuple[str, str]] = []
         for path in self.paths:
             try:
-                results.append((path, parse_tactical_result_screenshot(path)))
+                results.append(
+                    (
+                        path,
+                        parse_tactical_result_screenshot(
+                            path,
+                            candidate_priority=self.candidate_priority,
+                            answer_cache_path=self.answer_cache_path,
+                        ),
+                    )
+                )
             except Exception as exc:
                 errors.append((path, str(exc)))
         self.signals.completed.emit(results, errors)
@@ -2536,6 +2723,137 @@ class TacticalScreenshotBatchTask(QRunnable):
 
 HIDDEN_STUDENT_FILTER_FIELDS: frozenset[str] = frozenset({"skill_special"})
 
+
+class TacticalOpponentBatchDialog(QDialog):
+    def __init__(self, parent: QWidget, matches: list[TacticalMatch], ui_scale: float):
+        super().__init__(parent)
+        self._matches = list(matches)
+        self._ui_scale = ui_scale
+        self.setWindowTitle("상대 이름 일괄 입력")
+        self.resize(scale_px(920, ui_scale), scale_px(620, ui_scale))
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(
+            scale_px(14, ui_scale),
+            scale_px(14, ui_scale),
+            scale_px(14, ui_scale),
+            scale_px(14, ui_scale),
+        )
+        layout.setSpacing(scale_px(10, ui_scale))
+
+        guide = QLabel("상대 이름 칸을 직접 수정하거나, 여러 줄 이름을 클립보드에서 선택 행부터 붙여넣을 수 있습니다.")
+        guide.setObjectName("detailSub")
+        guide.setWordWrap(True)
+        layout.addWidget(guide)
+
+        self.table = QTableWidget(len(self._matches), 4)
+        self.table.setHorizontalHeaderLabels(["날짜", "결과", "덱", "상대 이름"])
+        self.table.verticalHeader().setVisible(False)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.table.setAlternatingRowColors(True)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        self.table.setColumnWidth(3, scale_px(170, ui_scale))
+        layout.addWidget(self.table, 1)
+
+        for row, match in enumerate(self._matches):
+            self._set_readonly_item(row, 0, match.date or "-")
+            self._set_readonly_item(row, 1, "승" if match.result == "win" else "패" if match.result == "loss" else "-")
+            self._set_readonly_item(row, 2, self._deck_summary(match))
+            item = QTableWidgetItem(match.opponent or "")
+            item.setData(Qt.UserRole, match.id)
+            self.table.setItem(row, 3, item)
+
+        actions = QHBoxLayout()
+        actions.setContentsMargins(0, 0, 0, 0)
+        paste_button = QPushButton("클립보드 붙여넣기")
+        paste_button.clicked.connect(self._paste_names)
+        clear_selected_button = QPushButton("선택 비우기")
+        clear_selected_button.clicked.connect(self._clear_selected_names)
+        fill_down_button = QPushButton("위 이름 채우기")
+        fill_down_button.clicked.connect(self._fill_down_names)
+        actions.addWidget(paste_button)
+        actions.addWidget(fill_down_button)
+        actions.addWidget(clear_selected_button)
+        actions.addStretch(1)
+        layout.addLayout(actions)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        buttons.button(QDialogButtonBox.StandardButton.Save).setText("저장")
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("취소")
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def _set_readonly_item(self, row: int, column: int, text: str) -> None:
+        item = QTableWidgetItem(str(text or ""))
+        item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+        self.table.setItem(row, column, item)
+
+    def _deck_summary(self, match: TacticalMatch) -> str:
+        attack_deck = match.my_attack if (match.my_attack.strikers or match.my_attack.supports) else match.opponent_attack
+        defense_deck = match.opponent_defense if (match.opponent_defense.strikers or match.opponent_defense.supports) else match.my_defense
+        return f"ATK {deck_input_template(attack_deck) or '-'} / DEF {deck_input_template(defense_deck) or '-'}"
+
+    def _target_start_row(self) -> int:
+        selected = sorted({index.row() for index in self.table.selectedIndexes()})
+        if selected:
+            return selected[0]
+        current = self.table.currentRow()
+        if current >= 0:
+            return current
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 3)
+            if item is not None and not item.text().strip():
+                return row
+        return 0
+
+    def _paste_names(self) -> None:
+        lines = [line.strip() for line in QApplication.clipboard().text().splitlines()]
+        names = [line for line in lines if line]
+        if not names:
+            return
+        row = self._target_start_row()
+        for name in names:
+            if row >= self.table.rowCount():
+                break
+            item = self.table.item(row, 3)
+            if item is not None:
+                item.setText(name)
+            row += 1
+
+    def _clear_selected_names(self) -> None:
+        rows = sorted({index.row() for index in self.table.selectedIndexes()})
+        for row in rows:
+            item = self.table.item(row, 3)
+            if item is not None:
+                item.setText("")
+
+    def _fill_down_names(self) -> None:
+        previous = ""
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 3)
+            if item is None:
+                continue
+            current = item.text().strip()
+            if current:
+                previous = current
+            elif previous:
+                item.setText(previous)
+
+    def edited_matches(self) -> list[TacticalMatch]:
+        updated: list[TacticalMatch] = []
+        for row, match in enumerate(self._matches):
+            item = self.table.item(row, 3)
+            opponent = item.text().strip() if item is not None else ""
+            if opponent == match.opponent:
+                continue
+            match.opponent = opponent
+            updated.append(match)
+        return updated
 
 class FilterDialog(QDialog):
     def __init__(
@@ -3235,6 +3553,44 @@ class RoundedMaskFrame(QFrame):
     def _update_mask(self) -> None:
         _apply_rounded_mask(self, radius=max(0, scale_px(self._radius, self._ui_scale)))
 
+
+class AspectRatioFrame(QFrame):
+    def __init__(
+        self,
+        *,
+        aspect_width: int = 16,
+        aspect_height: int = 9,
+        min_width: int = 1,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self._aspect_width = max(1, int(aspect_width))
+        self._aspect_height = max(1, int(aspect_height))
+        self._min_width = max(1, int(min_width))
+        policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        policy.setHeightForWidth(True)
+        self.setSizePolicy(policy)
+
+    def hasHeightForWidth(self) -> bool:
+        return True
+
+    def heightForWidth(self, width: int) -> int:
+        return max(1, int(round(max(1, width) * self._aspect_height / self._aspect_width)))
+
+    def sizeHint(self) -> QSize:
+        width = max(self._min_width, super().sizeHint().width())
+        return QSize(width, self.heightForWidth(width))
+
+    def minimumSizeHint(self) -> QSize:
+        return QSize(self._min_width, self.heightForWidth(self._min_width))
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        target_height = self.heightForWidth(max(self._min_width, self.width()))
+        if self.minimumHeight() != target_height or self.maximumHeight() != target_height:
+            self.setMinimumHeight(target_height)
+            self.setMaximumHeight(target_height)
+            self.updateGeometry()
 
 class RoundedMaskTabWidget(QTabWidget):
     def __init__(self, *, ui_scale: float, radius: int = 14, parent: QWidget | None = None) -> None:
@@ -4242,6 +4598,7 @@ class StudentViewerWindow(QMainWindow):
         self._settings_profile_combo: QComboBox | None = None
         self._settings_active_profile_label: QLabel | None = None
         self._settings_target_label: QLabel | None = None
+        self._scan_header: QFrame | None = None
         self._scan_profile_label: QLabel | None = None
         self._scan_target_label: QLabel | None = None
         self._scan_status_label: QLabel | None = None
@@ -4259,11 +4616,28 @@ class StudentViewerWindow(QMainWindow):
         self._scan_plana_log: QPlainTextEdit | None = None
         self._scan_plana_pixmaps: dict[str, QPixmap] = {}
         self._scan_student_card: QFrame | None = None
+        self._scan_inventory_card: QFrame | None = None
+        self._scan_detail_stack: QStackedWidget | None = None
+        self._scan_inventory_title_label: QLabel | None = None
+        self._scan_inventory_meta_label: QLabel | None = None
+        self._scan_inventory_grid_layout: QGridLayout | None = None
+        self._scan_inventory_grid_cells: list[dict[str, object]] = []
+        self._scan_inventory_grid_cols = 5
+        self._scan_inventory_grid_rows = 4
+        self._scan_inventory_visible_slots = 20
         self._scan_student_name_label: QLabel | None = None
         self._scan_student_meta_label: QLabel | None = None
         self._scan_student_value_labels: dict[str, QLabel] = {}
+        self._scan_student_equip_cards: dict[str, EquipmentDetailCard] = {}
+        self._scan_student_live_state: dict[str, object] = {}
+        self._scan_student_position_label: QLabel | None = None
+        self._scan_student_class_label: QLabel | None = None
+        self._scan_student_weapon_level_label: QLabel | None = None
+        self._scan_student_combat_stats_label: QLabel | None = None
         self._scan_current_student_id = ""
         self._scan_current_student_name = ""
+        self._scan_inventory_confirmed_count = 0
+        self._scan_inventory_scroll_animation: QParallelAnimationGroup | None = None
         self._scan_status_file_offset = 0
         self._scan_status_recent_messages: list[str] = []
         self._scan_started_at: datetime | None = None
@@ -4349,6 +4723,10 @@ class StudentViewerWindow(QMainWindow):
         self._scanner_poll_timer.setSingleShot(False)
         self._scanner_poll_timer.setInterval(1000)
         self._scanner_poll_timer.timeout.connect(self._check_scanner_process)
+        self._scan_status_poll_timer = QTimer(self)
+        self._scan_status_poll_timer.setSingleShot(False)
+        self._scan_status_poll_timer.setInterval(75)
+        self._scan_status_poll_timer.timeout.connect(self._poll_scan_status_events)
         self._ba_input_poll_timer = QTimer(self)
         self._ba_input_poll_timer.setSingleShot(False)
         self._ba_input_poll_timer.setInterval(35)
@@ -4389,6 +4767,8 @@ class StudentViewerWindow(QMainWindow):
     def _terminate_scanner_process(self) -> None:
         process = self._scanner_process
         self._scanner_poll_timer.stop()
+        if self._scan_status_poll_timer is not None:
+            self._scan_status_poll_timer.stop()
         if process is None:
             return
         self._scanner_process = None
@@ -4480,99 +4860,69 @@ class StudentViewerWindow(QMainWindow):
     def _build_scan_student_card(self) -> QFrame:
         card = QFrame()
         card.setObjectName("scanStudentCard")
-        card.setMinimumWidth(scale_px(286, self._ui_scale))
-        card.setMaximumWidth(scale_px(360, self._ui_scale))
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(
-            scale_px(16, self._ui_scale),
-            scale_px(16, self._ui_scale),
-            scale_px(16, self._ui_scale),
-            scale_px(16, self._ui_scale),
-        )
-        layout.setSpacing(scale_px(10, self._ui_scale))
+        card.setMinimumWidth(scale_px(560, self._ui_scale))
+        card.setMinimumHeight(scale_px(410, self._ui_scale))
+        card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         self._scan_student_value_labels = {}
+        self._scan_student_equip_cards = {}
+
+        capture_layout = QVBoxLayout(card)
+        capture_layout.setContentsMargins(
+            scale_px(18, self._ui_scale),
+            scale_px(18, self._ui_scale),
+            scale_px(18, self._ui_scale),
+            scale_px(18, self._ui_scale),
+        )
+        capture_layout.setSpacing(scale_px(12, self._ui_scale))
+
+        top_row = QHBoxLayout()
+        top_row.setContentsMargins(0, 0, 0, 0)
+        top_row.setSpacing(scale_px(18, self._ui_scale))
 
         hero_wrap = QFrame()
         hero_wrap.setObjectName("heroWrap")
+        hero_wrap.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        hero_wrap.setMinimumSize(scale_px(236, self._ui_scale), scale_px(178, self._ui_scale))
         hero_layout = QVBoxLayout(hero_wrap)
         hero_layout.setContentsMargins(
-            scale_px(12, self._ui_scale),
-            scale_px(12, self._ui_scale),
-            scale_px(12, self._ui_scale),
-            scale_px(12, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(10, self._ui_scale),
         )
         self._scan_student_hero = StudentPortraitWidget(self._student_card_asset)
         self._scan_student_hero.setObjectName("hero")
-        self._scan_student_hero.setMinimumWidth(scale_px(250, self._ui_scale))
-        self._scan_student_hero.setMinimumHeight(scale_px(185, self._ui_scale))
+        self._scan_student_hero.setMinimumSize(scale_px(220, self._ui_scale), scale_px(164, self._ui_scale))
+        self._scan_student_hero.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         hero_layout.addWidget(self._scan_student_hero)
-        layout.addWidget(hero_wrap)
+        top_row.addWidget(hero_wrap, 5)
 
-        detail_card = QFrame()
-        detail_card.setObjectName("detailCard")
-        detail_card_layout = QVBoxLayout(detail_card)
-        detail_card_layout.setContentsMargins(
-            scale_px(12, self._ui_scale),
-            scale_px(12, self._ui_scale),
-            scale_px(12, self._ui_scale),
-            scale_px(12, self._ui_scale),
+        top_panel = QFrame()
+        top_panel.setObjectName("scanStudentMetaPanel")
+        top_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        top_panel.setMinimumWidth(scale_px(250, self._ui_scale))
+        top_layout = QVBoxLayout(top_panel)
+        top_layout.setContentsMargins(
+            scale_px(10, self._ui_scale),
+            scale_px(8, self._ui_scale),
+            scale_px(10, self._ui_scale),
+            scale_px(8, self._ui_scale),
         )
-        detail_card_layout.setSpacing(scale_px(8, self._ui_scale))
+        top_layout.setSpacing(scale_px(8, self._ui_scale))
 
-        bar_row = QHBoxLayout()
-        bar_row.setContentsMargins(0, 0, 0, 0)
-        bar_row.setSpacing(scale_px(6, self._ui_scale))
-        attack_bar = ParallelogramPanel(fill=ACCENT_SOFT, border=ACCENT, slant=DETAIL_SLANT)
-        attack_bar.setFixedHeight(scale_px(8, self._ui_scale))
-        defense_bar = ParallelogramPanel(fill=ACCENT_PALE, border=PALETTE_SOFT, slant=DETAIL_SLANT)
-        defense_bar.setFixedHeight(scale_px(8, self._ui_scale))
-        bar_row.addWidget(attack_bar, 1)
-        bar_row.addWidget(defense_bar, 1)
-        detail_card_layout.addLayout(bar_row)
+        self._scan_student_progress_strip = ScanLiveProgressStrip()
+        top_layout.addWidget(self._scan_student_progress_strip)
 
-        self._scan_student_progress_strip = DetailProgressStrip()
-        detail_card_layout.addWidget(self._scan_student_progress_strip)
+        stat_row = QHBoxLayout()
+        stat_row.setContentsMargins(0, 0, 0, 0)
+        stat_row.setSpacing(scale_px(8, self._ui_scale))
 
-        name_row = QHBoxLayout()
-        name_row.setContentsMargins(0, 0, 0, 0)
-        name_row.setSpacing(scale_px(10, self._ui_scale))
-        school_icon = QLabel()
-        school_icon.setFixedSize(scale_px(26, self._ui_scale), scale_px(26, self._ui_scale))
-        name_row.addWidget(school_icon, 0, Qt.AlignTop)
-        name_col = QVBoxLayout()
-        name_col.setContentsMargins(0, 0, 0, 0)
-        name_col.setSpacing(scale_px(2, self._ui_scale))
-        self._scan_student_name_label = QLabel("대기 중")
-        self._scan_student_name_label.setObjectName("detailInlineName")
-        self._scan_student_name_label.setWordWrap(True)
-        self._scan_student_meta_label = QLabel("학생부 카드가 비어 있습니다.")
-        self._scan_student_meta_label.setObjectName("detailInlineSub")
-        self._scan_student_meta_label.setWordWrap(True)
-        name_col.addWidget(self._scan_student_name_label)
-        name_col.addWidget(self._scan_student_meta_label)
-        name_row.addLayout(name_col, 1)
-        detail_card_layout.addLayout(name_row)
-
-        chip_row = QHBoxLayout()
-        chip_row.setContentsMargins(0, 0, 0, 0)
-        chip_row.setSpacing(scale_px(8, self._ui_scale))
-        scan_chip = QLabel("SCAN")
-        scan_chip.setObjectName("detailChip")
-        confirm_chip = QLabel("LIVE")
-        confirm_chip.setObjectName("detailChip")
-        chip_row.addWidget(scan_chip, 0, Qt.AlignLeft)
-        chip_row.addWidget(confirm_chip, 0, Qt.AlignLeft)
-        chip_row.addStretch(1)
-        detail_card_layout.addLayout(chip_row)
-
-        top_stats = QHBoxLayout()
-        top_stats.setContentsMargins(0, 0, 0, 0)
-        top_stats.setSpacing(scale_px(6, self._ui_scale))
         level_card = ParallelogramPanel(fill=_mix_hex(PALETTE_SOFT, SURFACE_ALT, 0.52), border=PALETTE_SOFT, slant=DETAIL_SLANT)
+        level_card.setMinimumHeight(scale_px(108, self._ui_scale))
         level_layout = QVBoxLayout(level_card)
-        level_layout.setContentsMargins(scale_px(14, self._ui_scale), scale_px(14, self._ui_scale), scale_px(14, self._ui_scale), scale_px(14, self._ui_scale))
-        level_layout.setSpacing(scale_px(6, self._ui_scale))
+        level_layout.setContentsMargins(scale_px(14, self._ui_scale), scale_px(12, self._ui_scale), scale_px(14, self._ui_scale), scale_px(12, self._ui_scale))
+        level_layout.setSpacing(scale_px(4, self._ui_scale))
         level_title = QLabel("LEVEL")
         level_title.setObjectName("detailSectionTitle")
         level_title.setAlignment(Qt.AlignCenter)
@@ -4584,40 +4934,55 @@ class StudentViewerWindow(QMainWindow):
         level_layout.addStretch(1)
         level_layout.addWidget(level_value)
         level_layout.addStretch(1)
-        top_stats.addWidget(level_card, 3)
+        stat_row.addWidget(level_card, 3)
 
-        side_stats = QVBoxLayout()
-        side_stats.setContentsMargins(0, 0, 0, 0)
-        side_stats.setSpacing(scale_px(6, self._ui_scale))
-        for key, caption in (("star", "STAR"), ("weapon", "WEAPON")):
-            stat_card = ParallelogramPanel(fill=_mix_hex(PALETTE_PANEL, PALETTE_SOFT, 0.16), border=PALETTE_SOFT, slant=DETAIL_SLANT)
-            stat_layout = QVBoxLayout(stat_card)
-            stat_layout.setContentsMargins(scale_px(12, self._ui_scale), scale_px(10, self._ui_scale), scale_px(12, self._ui_scale), scale_px(10, self._ui_scale))
-            stat_layout.setSpacing(scale_px(2, self._ui_scale))
-            value_label = QLabel("-")
-            value_label.setObjectName("detailMiniValue")
+        side_cards = QVBoxLayout()
+        side_cards.setContentsMargins(0, 0, 0, 0)
+        side_cards.setSpacing(scale_px(6, self._ui_scale))
+        self._scan_student_position_label = QLabel("-")
+        self._scan_student_class_label = QLabel("-")
+        self._scan_student_weapon_level_label = QLabel("-")
+        for value_label, compact_text in (
+            (self._scan_student_position_label, True),
+            (self._scan_student_class_label, True),
+            (self._scan_student_weapon_level_label, "weapon"),
+        ):
+            mini_card = ParallelogramPanel(fill=_mix_hex(PALETTE_PANEL, PALETTE_SOFT, 0.16), border=PALETTE_SOFT, slant=DETAIL_SLANT)
+            mini_card.setMinimumHeight(scale_px(30, self._ui_scale))
+            mini_layout = QVBoxLayout(mini_card)
+            mini_layout.setContentsMargins(scale_px(10, self._ui_scale), scale_px(4, self._ui_scale), scale_px(10, self._ui_scale), scale_px(4, self._ui_scale))
+            value_label.setObjectName("scanLiveWeaponValue" if compact_text == "weapon" else "scanLiveMiniValue")
             value_label.setAlignment(Qt.AlignCenter)
-            value_label.setWordWrap(True)
-            self._scan_student_value_labels[key] = value_label
-            sub_label = QLabel(caption)
-            sub_label.setObjectName("detailMiniSub")
-            sub_label.setAlignment(Qt.AlignCenter)
-            stat_layout.addStretch(1)
-            stat_layout.addWidget(value_label)
-            stat_layout.addWidget(sub_label)
-            stat_layout.addStretch(1)
-            side_stats.addWidget(stat_card)
-        top_stats.addLayout(side_stats, 2)
-        detail_card_layout.addLayout(top_stats)
+            mini_layout.addWidget(value_label, 1)
+            side_cards.addWidget(mini_card)
+        stat_row.addLayout(side_cards, 2)
+        top_layout.addLayout(stat_row)
+
+        self._scan_student_value_labels["stats"] = QLabel("-")
+        self._scan_student_value_labels["stats"].setObjectName("detailMetaLine")
+        self._scan_student_value_labels["stats"].setAlignment(Qt.AlignCenter)
+        self._scan_student_value_labels["stats"].setTextFormat(Qt.RichText)
+        top_layout.addWidget(self._scan_student_value_labels["stats"])
+        top_row.addWidget(top_panel, 4)
+        capture_layout.addLayout(top_row, 3)
+
+        bottom_row = QHBoxLayout()
+        bottom_row.setContentsMargins(0, 0, 0, 0)
+        bottom_row.setSpacing(scale_px(18, self._ui_scale))
+
+        skill_equip_layout = QVBoxLayout()
+        skill_equip_layout.setContentsMargins(0, 0, 0, 0)
+        skill_equip_layout.setSpacing(scale_px(10, self._ui_scale))
 
         skill_row = QHBoxLayout()
         skill_row.setContentsMargins(0, 0, 0, 0)
-        skill_row.setSpacing(scale_px(4, self._ui_scale))
+        skill_row.setSpacing(scale_px(8, self._ui_scale))
         for key, caption in (("skill_ex", "EX"), ("skill_s1", "N"), ("skill_s2", "P"), ("skill_s3", "S")):
             skill_card = ParallelogramPanel(fill=_mix_hex(PALETTE_PANEL, PALETTE_ACCENT, 0.14), border=PALETTE_SOFT, slant=DETAIL_SLANT)
+            skill_card.setMinimumHeight(scale_px(76, self._ui_scale))
             skill_layout = QVBoxLayout(skill_card)
-            skill_layout.setContentsMargins(scale_px(10, self._ui_scale), scale_px(10, self._ui_scale), scale_px(10, self._ui_scale), scale_px(10, self._ui_scale))
-            skill_layout.setSpacing(scale_px(4, self._ui_scale))
+            skill_layout.setContentsMargins(scale_px(10, self._ui_scale), scale_px(7, self._ui_scale), scale_px(10, self._ui_scale), scale_px(7, self._ui_scale))
+            skill_layout.setSpacing(scale_px(3, self._ui_scale))
             caption_label = QLabel(caption)
             caption_label.setObjectName("detailSkillLabel")
             caption_label.setAlignment(Qt.AlignCenter)
@@ -4631,49 +4996,468 @@ class StudentViewerWindow(QMainWindow):
             skill_layout.addWidget(value_label)
             skill_layout.addStretch(1)
             skill_row.addWidget(skill_card, 1)
-        detail_card_layout.addLayout(skill_row)
+        skill_equip_layout.addLayout(skill_row, 1)
 
         equip_row = QHBoxLayout()
         equip_row.setContentsMargins(0, 0, 0, 0)
-        equip_row.setSpacing(0)
-        for key, caption in (("equip1", "E1"), ("equip2", "E2"), ("equip3", "E3")):
-            equip_card = ParallelogramPanel(fill=_mix_hex(PALETTE_PANEL_ALT, PALETTE_SOFT, 0.18), border=PALETTE_SOFT, slant=DETAIL_SLANT)
-            equip_layout = QVBoxLayout(equip_card)
-            equip_layout.setContentsMargins(scale_px(10, self._ui_scale), scale_px(8, self._ui_scale), scale_px(10, self._ui_scale), scale_px(8, self._ui_scale))
-            equip_layout.setSpacing(scale_px(3, self._ui_scale))
-            caption_label = QLabel(caption)
-            caption_label.setObjectName("detailEquipCaption")
-            caption_label.setAlignment(Qt.AlignCenter)
-            value_label = QLabel("-")
-            value_label.setObjectName("detailEquipValue")
-            value_label.setAlignment(Qt.AlignCenter)
-            value_label.setWordWrap(True)
-            self._scan_student_value_labels[key] = value_label
-            equip_layout.addStretch(1)
-            equip_layout.addWidget(caption_label)
-            equip_layout.addWidget(value_label)
-            equip_layout.addStretch(1)
+        equip_row.setSpacing(scale_px(8, self._ui_scale))
+        for key in ("equip1", "equip2", "equip3", "favorite"):
+            equip_card = EquipmentDetailCard(
+                self._ui_scale,
+                fill=_mix_hex(PALETTE_PANEL_ALT, PALETTE_SOFT, 0.18),
+                border=PALETTE_SOFT,
+                slant=DETAIL_SLANT,
+            )
+            equip_card.setMinimumHeight(scale_px(94, self._ui_scale))
             equip_row.addWidget(equip_card, 1)
-        detail_card_layout.addLayout(equip_row)
+            self._scan_student_equip_cards[key] = equip_card
+        skill_equip_layout.addLayout(equip_row, 1)
+        bottom_row.addLayout(skill_equip_layout, 10)
 
-        favorite_line = QLabel("FAV -")
-        favorite_line.setObjectName("detailMetaLine")
-        favorite_line.setAlignment(Qt.AlignCenter)
-        favorite_line.setWordWrap(True)
-        self._scan_student_value_labels["favorite"] = favorite_line
-        detail_card_layout.addWidget(favorite_line)
+        stats_panel = QFrame()
+        stats_panel.setObjectName("scanStudentMetaPanel")
+        stats_panel.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+        stats_panel.setMinimumWidth(scale_px(126, self._ui_scale))
+        stats_panel.setMaximumWidth(scale_px(154, self._ui_scale))
+        stats_layout = QVBoxLayout(stats_panel)
+        stats_layout.setContentsMargins(scale_px(8, self._ui_scale), scale_px(8, self._ui_scale), scale_px(8, self._ui_scale), scale_px(8, self._ui_scale))
+        self._scan_student_combat_stats_label = QLabel("-")
+        self._scan_student_combat_stats_label.setObjectName("detailMetaLine")
+        self._scan_student_combat_stats_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+        self._scan_student_combat_stats_label.setTextFormat(Qt.RichText)
+        self._scan_student_combat_stats_label.setMinimumHeight(scale_px(112, self._ui_scale))
+        self._scan_student_combat_stats_label.setWordWrap(False)
+        stats_layout.addWidget(self._scan_student_combat_stats_label, 1)
+        bottom_row.addWidget(stats_panel, 0)
+        capture_layout.addLayout(bottom_row, 2)
 
-        stats_line = QLabel("-")
-        stats_line.setObjectName("detailMetaLine")
-        stats_line.setAlignment(Qt.AlignCenter)
-        stats_line.setWordWrap(True)
-        self._scan_student_value_labels["stats"] = stats_line
-        detail_card_layout.addWidget(stats_line)
+        self._scan_student_name_label = QLabel("")
+        self._scan_student_meta_label = QLabel("")
+        self._scan_student_name_label.setVisible(False)
+        self._scan_student_meta_label.setVisible(False)
 
-        layout.addWidget(detail_card)
-        layout.addStretch(1)
         self._scan_student_card = card
+        self._render_scan_live_card()
         return card
+    def _build_scan_inventory_grid_card(self) -> QFrame:
+        card = QFrame()
+        card.setObjectName("scanInventoryCard")
+        card.setMinimumWidth(scale_px(560, self._ui_scale))
+        card.setMinimumHeight(scale_px(410, self._ui_scale))
+        card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(
+            scale_px(18, self._ui_scale),
+            scale_px(18, self._ui_scale),
+            scale_px(18, self._ui_scale),
+            scale_px(18, self._ui_scale),
+        )
+        layout.setSpacing(scale_px(12, self._ui_scale))
+
+        header_row = QHBoxLayout()
+        header_row.setContentsMargins(0, 0, 0, 0)
+        header_row.setSpacing(scale_px(12, self._ui_scale))
+        self._scan_inventory_title_label = QLabel("인벤토리 그리드")
+        self._scan_inventory_title_label.setObjectName("detailInlineName")
+        self._scan_inventory_title_label.setWordWrap(True)
+        header_row.addWidget(self._scan_inventory_title_label, 1)
+
+        self._scan_inventory_meta_label = QLabel("스캔 대기 중")
+        self._scan_inventory_meta_label.setObjectName("detailInlineSub")
+        self._scan_inventory_meta_label.setWordWrap(True)
+        self._scan_inventory_meta_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        header_row.addWidget(self._scan_inventory_meta_label, 2)
+        layout.addLayout(header_row)
+
+        grid_host = QFrame()
+        grid_host.setObjectName("scanInventoryGridHost")
+        grid_host.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        grid = QGridLayout(grid_host)
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setSpacing(scale_px(8, self._ui_scale))
+        self._scan_inventory_grid_layout = grid
+        self._scan_inventory_grid_cells = []
+        self._scan_inventory_grid_cols = 5
+        self._scan_inventory_grid_rows = 4
+        self._scan_inventory_visible_slots = 20
+        icon_min_size = scale_px(54, self._ui_scale)
+        cell_min_size = scale_px(68, self._ui_scale)
+        for index in range(25):
+            cell = QFrame()
+            cell.setObjectName("scanInventorySlot")
+            cell.setMinimumSize(cell_min_size, cell_min_size)
+            cell.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            cell_layout = QVBoxLayout(cell)
+            cell_layout.setContentsMargins(
+                scale_px(5, self._ui_scale),
+                scale_px(5, self._ui_scale),
+                scale_px(5, self._ui_scale),
+                scale_px(5, self._ui_scale),
+            )
+            cell_layout.setSpacing(scale_px(2, self._ui_scale))
+            icon_label = QLabel()
+            icon_label.setObjectName("scanInventorySlotImage")
+            icon_label.setMinimumSize(icon_min_size, icon_min_size)
+            icon_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            icon_label.setAlignment(Qt.AlignCenter)
+            cell_layout.addWidget(icon_label, 1)
+            quantity_label = QLabel("")
+            quantity_label.setObjectName("scanInventorySlotQuantity")
+            quantity_label.setAlignment(Qt.AlignCenter)
+            quantity_label.setMinimumHeight(scale_px(18, self._ui_scale))
+            quantity_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            cell_layout.addWidget(quantity_label, 0)
+            grid.addWidget(cell, index // self._scan_inventory_grid_cols, index % self._scan_inventory_grid_cols)
+            self._scan_inventory_grid_cells.append({
+                "frame": cell,
+                "image": icon_label,
+                "quantity_label": quantity_label,
+                "slot": index + 1,
+                "tier": None,
+            })
+        layout.addWidget(grid_host, 1)
+        self._scan_inventory_card = card
+        self._configure_scan_inventory_grid(5, 4)
+        return card
+    def _set_scan_detail_mode(self, mode: str) -> None:
+        stack = self._scan_detail_stack
+        if stack is None:
+            return
+        if mode == "inventory" and self._scan_inventory_card is not None:
+            stack.setCurrentWidget(self._scan_inventory_card)
+        elif self._scan_student_card is not None:
+            stack.setCurrentWidget(self._scan_student_card)
+
+    def _configure_scan_inventory_grid(self, grid_cols: object = None, grid_rows: object = None) -> None:
+        try:
+            cols = int(grid_cols)
+        except (TypeError, ValueError):
+            cols = 5
+        try:
+            rows = int(grid_rows)
+        except (TypeError, ValueError):
+            rows = 4
+        cols = max(1, min(5, cols))
+        rows = max(1, min(5, rows))
+        self._scan_inventory_grid_cols = cols
+        self._scan_inventory_grid_rows = rows
+        self._scan_inventory_visible_slots = min(len(self._scan_inventory_grid_cells), cols * rows)
+        grid = self._scan_inventory_grid_layout
+        if grid is not None:
+            for column in range(5):
+                grid.setColumnStretch(column, 1 if column < cols else 0)
+                grid.setColumnMinimumWidth(column, 0)
+            for row in range(5):
+                grid.setRowStretch(row, 1 if row < rows else 0)
+                grid.setRowMinimumHeight(row, 0)
+            for index, cell in enumerate(self._scan_inventory_grid_cells):
+                frame = cell.get("frame")
+                if isinstance(frame, QFrame):
+                    grid.removeWidget(frame)
+                    grid.addWidget(frame, index // cols, index % cols)
+        self._reset_scan_inventory_grid_cells()
+
+    def _inventory_slot_color(self, tier: object = None, confirmed: bool = False) -> str:
+        if confirmed:
+            return "#DDF7EC"
+        try:
+            tier_number = int(tier)
+        except (TypeError, ValueError):
+            tier_number = -1
+        return {
+            0: "#F7FAFC",
+            1: "#D8ECFF",
+            2: "#FFF0B8",
+            3: "#EBCBFF",
+        }.get(tier_number, "#EEF4F8")
+
+
+
+    def _style_scan_inventory_cell(
+        self,
+        cell: dict[str, object],
+        *,
+        tier: object = None,
+        confirmed: bool = False,
+        anchor: bool = False,
+        scan_target: bool = False,
+    ) -> None:
+        frame = cell.get("frame")
+        if not isinstance(frame, QFrame):
+            return
+        if anchor and confirmed:
+            bg = "rgba(255, 194, 87, 0.18)"
+            border = "#FFC247"
+        elif confirmed:
+            bg = "rgba(65, 184, 131, 0.12)"
+            border = "#41B883"
+        elif anchor:
+            bg = "rgba(255, 194, 87, 0.10)"
+            border = "#F5B944"
+        elif scan_target:
+            bg = "rgba(92, 205, 255, 0.08)"
+            border = "#5CCDFF"
+        else:
+            bg = "rgba(255, 255, 255, 0.04)"
+            border = "#9EB6C8"
+        frame.setStyleSheet(
+            f"QFrame#scanInventorySlot {{ background: {bg}; border: 1px solid {border}; border-radius: 6px; }} "
+            "QLabel { background: transparent; }"
+        )
+
+    def _empty_scan_inventory_state(self, slot_number: int) -> dict[str, object]:
+        return {
+            "slot": slot_number,
+            "tier": None,
+            "confirmed": False,
+            "anchor": False,
+            "scan_target": False,
+            "item_name": "",
+            "quantity": "",
+            "item_id": None,
+        }
+
+    def _scan_inventory_cell_state(self, cell: dict[str, object]) -> dict[str, object]:
+        return {
+            "tier": cell.get("tier"),
+            "confirmed": bool(cell.get("confirmed")),
+            "anchor": bool(cell.get("anchor")),
+            "scan_target": bool(cell.get("scan_target")),
+            "item_name": str(cell.get("item_name") or ""),
+            "quantity": str(cell.get("quantity") or ""),
+            "item_id": cell.get("item_id"),
+        }
+
+    def _render_scan_inventory_cell(self, cell: dict[str, object], slot_number: int) -> None:
+        image_label = cell.get("image")
+        quantity_label = cell.get("quantity_label")
+        tier = cell.get("tier")
+        confirmed = bool(cell.get("confirmed"))
+        anchor = bool(cell.get("anchor"))
+        scan_target = bool(cell.get("scan_target"))
+        item_name = str(cell.get("item_name") or "")
+        quantity = str(cell.get("quantity") or "")
+        item_id = cell.get("item_id")
+        tooltip = f"{slot_number}\uBC88 \uC2AC\uB86F"
+        if confirmed and item_name:
+            tooltip = f"{item_name} x{quantity}" if quantity else item_name
+        if anchor:
+            tooltip = f"\uC575\uCEE4 / {tooltip}"
+        if scan_target and not confirmed:
+            tooltip = f"\uB2E4\uC74C \uC2A4\uCE94 / {tooltip}"
+        if isinstance(image_label, QLabel):
+            label_size = image_label.size()
+            icon_side = max(
+                scale_px(54, self._ui_scale),
+                min(label_size.width(), label_size.height(), scale_px(86, self._ui_scale)),
+            )
+            image_label.setPixmap(
+                _scan_inventory_slot_pixmap(
+                    size=QSize(icon_side, icon_side),
+                    item_id=str(item_id) if item_id else None,
+                    item_name=item_name,
+                    quantity=None,
+                    tier=tier,
+                    slot_number=None,
+                )
+            )
+            image_label.setToolTip(tooltip)
+        if isinstance(quantity_label, QLabel):
+            quantity_text = str(quantity or "").strip()
+            display_quantity = f"x{quantity_text}" if quantity_text else ""
+            font_px = scale_px(15, self._ui_scale)
+            if (display_quantity.startswith("x") and len(display_quantity) > 6) or (display_quantity and not display_quantity.startswith("x") and len(display_quantity) >= 6):
+                font_px = scale_px(13, self._ui_scale)
+            quantity_label.setText(display_quantity)
+            quantity_label.setVisible(bool(display_quantity))
+            quantity_label.setStyleSheet(
+                f"background: transparent; color: #f7fbff; font-size: {font_px}px; font-weight: 900;"
+            )
+            quantity_label.setToolTip(tooltip)
+        frame = cell.get("frame")
+        if isinstance(frame, QFrame):
+            frame.setVisible(slot_number <= getattr(self, "_scan_inventory_visible_slots", 20))
+            frame.setToolTip(tooltip)
+        self._style_scan_inventory_cell(
+            cell,
+            tier=tier,
+            confirmed=confirmed,
+            anchor=anchor,
+            scan_target=scan_target,
+        )
+
+    def _apply_scan_inventory_cell_state(
+        self,
+        cell: dict[str, object],
+        slot_number: int,
+        state: dict[str, object] | None = None,
+    ) -> None:
+        next_state = self._empty_scan_inventory_state(slot_number)
+        if state:
+            for key in ("tier", "confirmed", "anchor", "scan_target", "item_name", "quantity", "item_id"):
+                next_state[key] = state.get(key, next_state.get(key))
+        cell.update(next_state)
+        self._render_scan_inventory_cell(cell, slot_number)
+
+    def _reset_scan_inventory_grid_cells(self) -> None:
+        visible_slots = int(getattr(self, "_scan_inventory_visible_slots", 20) or 20)
+        for index, cell in enumerate(getattr(self, "_scan_inventory_grid_cells", [])):
+            slot_number = index + 1
+            frame = cell.get("frame")
+            if isinstance(frame, QFrame):
+                frame.setVisible(index < visible_slots)
+            self._apply_scan_inventory_cell_state(cell, slot_number)
+
+    def _scan_inventory_cell(self, slot_number: object) -> dict[str, object] | None:
+        try:
+            index = int(slot_number) - 1
+        except (TypeError, ValueError):
+            return None
+        cells = getattr(self, "_scan_inventory_grid_cells", [])
+        if index < 0 or index >= len(cells) or index >= getattr(self, "_scan_inventory_visible_slots", len(cells)):
+            return None
+        return cells[index]
+
+    def _set_scan_inventory_cell_tier(self, slot_number: object, tier: object) -> None:
+        cell = self._scan_inventory_cell(slot_number)
+        if cell is None:
+            return
+        cell["tier"] = tier
+        self._render_scan_inventory_cell(cell, int(slot_number))
+
+    def _mark_scan_inventory_cell_anchor(self, slot_number: object) -> None:
+        cell = self._scan_inventory_cell(slot_number)
+        if cell is None:
+            return
+        cell["anchor"] = True
+        try:
+            slot_index = int(slot_number)
+        except (TypeError, ValueError):
+            slot_index = 1
+        self._render_scan_inventory_cell(cell, slot_index)
+
+    def _set_scan_inventory_cell_confirmed(
+        self,
+        slot_number: object,
+        item_name: str,
+        quantity: str,
+        item_id: str | None = None,
+        *,
+        row_anchor: bool = False,
+    ) -> None:
+        cell = self._scan_inventory_cell(slot_number)
+        if cell is None:
+            return
+        try:
+            slot_index = int(slot_number)
+        except (TypeError, ValueError):
+            slot_index = 1
+        cell["confirmed"] = True
+        cell["scan_target"] = False
+        cell["item_name"] = item_name
+        cell["quantity"] = quantity
+        cell["item_id"] = item_id
+        if row_anchor:
+            cell["anchor"] = True
+        self._render_scan_inventory_cell(cell, slot_index)
+
+    def _apply_scan_inventory_scroll_feedback(
+        self,
+        moved_rows: object = None,
+        overlap_rows: object = None,
+        scan_slots: object = None,
+    ) -> None:
+        visible_slots = int(getattr(self, "_scan_inventory_visible_slots", 20) or 20)
+        cols = max(1, int(getattr(self, "_scan_inventory_grid_cols", 5) or 5))
+        rows = max(1, int(getattr(self, "_scan_inventory_grid_rows", 4) or 4))
+        try:
+            moved = int(moved_rows)
+        except (TypeError, ValueError):
+            try:
+                moved = rows - int(overlap_rows)
+            except (TypeError, ValueError):
+                moved = rows
+        moved = max(0, min(rows, moved))
+        shift = moved * cols
+        cells = list(getattr(self, "_scan_inventory_grid_cells", []))
+        old_states = [self._scan_inventory_cell_state(cell) for cell in cells[:visible_slots]]
+        new_states = [self._empty_scan_inventory_state(index + 1) for index in range(visible_slots)]
+        if 0 < shift < visible_slots:
+            for src_index in range(shift, visible_slots):
+                dst_index = src_index - shift
+                carried = dict(old_states[src_index])
+                carried["scan_target"] = False
+                new_states[dst_index].update(carried)
+        elif shift == 0:
+            for index in range(visible_slots):
+                carried = dict(old_states[index])
+                carried["scan_target"] = False
+                new_states[index].update(carried)
+        target_indices: set[int] = set()
+        if isinstance(scan_slots, (list, tuple, set)):
+            for raw in scan_slots:
+                try:
+                    value = int(raw)
+                except (TypeError, ValueError):
+                    continue
+                if 0 <= value < visible_slots:
+                    target_indices.add(value)
+                elif 1 <= value <= visible_slots:
+                    target_indices.add(value - 1)
+        if not target_indices and shift > 0:
+            target_indices = set(range(max(0, visible_slots - shift), visible_slots))
+        for index in target_indices:
+            if 0 <= index < visible_slots:
+                new_states[index]["scan_target"] = True
+        for index, cell in enumerate(cells):
+            slot_number = index + 1
+            if index < visible_slots:
+                self._apply_scan_inventory_cell_state(cell, slot_number, new_states[index])
+            else:
+                frame = cell.get("frame")
+                if isinstance(frame, QFrame):
+                    frame.setVisible(False)
+        self._animate_scan_inventory_scroll(moved)
+
+    def _animate_scan_inventory_scroll(self, moved_rows: int) -> None:
+        if moved_rows <= 0:
+            return
+        visible_slots = int(getattr(self, "_scan_inventory_visible_slots", 20) or 20)
+        cols = max(1, int(getattr(self, "_scan_inventory_grid_cols", 5) or 5))
+        rows = max(1, int(getattr(self, "_scan_inventory_grid_rows", 4) or 4))
+        cells = list(getattr(self, "_scan_inventory_grid_cells", []))[:visible_slots]
+        frames = [cell.get("frame") for cell in cells]
+        frames = [frame for frame in frames if isinstance(frame, QFrame) and frame.isVisible()]
+        if not frames:
+            return
+        row_step = 0
+        if len(frames) > cols:
+            row_step = abs(frames[cols].pos().y() - frames[0].pos().y())
+        if row_step <= 0:
+            spacing = 0
+            grid = self._scan_inventory_grid_layout
+            if grid is not None:
+                spacing = max(0, grid.spacing())
+            row_step = frames[0].height() + spacing
+        offset = max(1, min(rows, int(moved_rows))) * max(1, row_step)
+        previous = getattr(self, "_scan_inventory_scroll_animation", None)
+        if previous is not None:
+            previous.stop()
+        group = QParallelAnimationGroup(self)
+        duration = max(150, min(360, 170 + int(moved_rows) * 35))
+        for frame in frames:
+            end_pos = frame.pos()
+            start_pos = end_pos + QPoint(0, offset)
+            frame.move(start_pos)
+            animation = QPropertyAnimation(frame, b"pos", group)
+            animation.setDuration(duration)
+            animation.setStartValue(start_pos)
+            animation.setEndValue(end_pos)
+            animation.setEasingCurve(QEasingCurve.OutCubic)
+            group.addAnimation(animation)
+        self._scan_inventory_scroll_animation = group
+        group.finished.connect(lambda: setattr(self, "_scan_inventory_scroll_animation", None))
+        group.start()
 
     def _build_scan_tab(self, root: QWidget) -> None:
         layout = QVBoxLayout(root)
@@ -4681,7 +5465,9 @@ class StudentViewerWindow(QMainWindow):
         layout.setSpacing(scale_px(12, self._ui_scale))
 
         header = QFrame()
-        header.setObjectName("header")
+        header.setObjectName("scanHeader")
+        header.setProperty("connected", False)
+        self._scan_header = header
         header_layout = QVBoxLayout(header)
         header_layout.setContentsMargins(
             scale_px(18, self._ui_scale),
@@ -4694,12 +5480,33 @@ class StudentViewerWindow(QMainWindow):
         title.setObjectName("title")
         header_layout.addWidget(title)
         self._scan_profile_label = QLabel()
-        self._scan_profile_label.setObjectName("count")
+        self._scan_profile_label.setObjectName("scanProfile")
         header_layout.addWidget(self._scan_profile_label)
         self._scan_target_label = QLabel()
         self._scan_target_label.setObjectName("count")
         self._scan_target_label.setWordWrap(True)
         header_layout.addWidget(self._scan_target_label)
+
+        scan_actions = QHBoxLayout()
+        scan_actions.setSpacing(scale_px(6, self._ui_scale))
+        for label, mode in (
+            ("학생", "students"),
+            ("현재 학생", "student_current"),
+            ("자원", "resources"),
+            ("아이템", "items"),
+            ("장비", "equipment"),
+        ):
+            button = QPushButton(label)
+            button.clicked.connect(lambda _checked=False, scan_mode=mode: self._launch_scanner(scan_mode))
+            scan_actions.addWidget(button)
+        scan_actions.addStretch(1)
+
+        self._scan_aspect_warning_label = QLabel("")
+        self._scan_aspect_warning_label.setObjectName("count")
+        self._scan_aspect_warning_label.setWordWrap(True)
+        self._scan_aspect_warning_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+        scan_actions.addWidget(self._scan_aspect_warning_label, 1, Qt.AlignVCenter)
+        header_layout.addLayout(scan_actions)
         layout.addWidget(header)
 
         body = QGridLayout()
@@ -4736,111 +5543,74 @@ class StudentViewerWindow(QMainWindow):
         summary_layout.addWidget(self._scan_plana_log, 1)
         body.addWidget(summary_panel, 0, 0)
 
+        right_column = QWidget()
+        right_column.setObjectName("planTransparent")
+        right_column.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        right_column_layout = QVBoxLayout(right_column)
+        right_column_layout.setContentsMargins(0, 0, 0, 0)
+        right_column_layout.setSpacing(scale_px(12, self._ui_scale))
+        body.addWidget(right_column, 0, 1, 2, 1)
         panel = QFrame()
         panel.setObjectName("panel")
+        panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         panel_layout = QVBoxLayout(panel)
         panel_layout.setContentsMargins(
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
+            scale_px(14, self._ui_scale),
+            scale_px(14, self._ui_scale),
+            scale_px(14, self._ui_scale),
+            scale_px(14, self._ui_scale),
         )
-        panel_layout.setSpacing(scale_px(12, self._ui_scale))
+        panel_layout.setSpacing(scale_px(8, self._ui_scale))
 
-        row = QHBoxLayout()
-        row.setSpacing(scale_px(10, self._ui_scale))
-        for label, mode in (
-            ("전체", "all"),
-            ("학생", "students"),
-            ("현재 학생", "student_current"),
-            ("자원", "resources"),
-            ("아이템", "items"),
-            ("장비", "equipment"),
-        ):
-            button = QPushButton(label)
-            button.clicked.connect(lambda _checked=False, scan_mode=mode: self._launch_scanner(scan_mode))
-            row.addWidget(button)
-        row.addStretch(1)
-        panel_layout.addLayout(row)
-
-        self._scan_start_hint_label = QLabel(
-            "학생 연속 스캔은 로비가 아니라 첫 번째로 스캔할 학생의 기본 정보 화면에서 시작합니다."
-        )
-        self._scan_start_hint_label.setObjectName("count")
-        self._scan_start_hint_label.setWordWrap(True)
-        panel_layout.addWidget(self._scan_start_hint_label)
-
-        self._scan_aspect_warning_label = QLabel("")
-        self._scan_aspect_warning_label.setObjectName("count")
-        self._scan_aspect_warning_label.setWordWrap(True)
-        panel_layout.addWidget(self._scan_aspect_warning_label)
-
-        self._scan_status_label = QLabel("대기 중")
-        self._scan_status_label.setObjectName("count")
-        panel_layout.addWidget(self._scan_status_label)
+        controls_row = QHBoxLayout()
+        controls_row.setContentsMargins(0, 0, 0, 0)
+        controls_row.setSpacing(scale_px(8, self._ui_scale))
 
         progress_panel = QFrame()
         progress_panel.setObjectName("inventoryPressureRow")
-        progress_layout = QVBoxLayout(progress_panel)
+        progress_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        progress_layout = QHBoxLayout(progress_panel)
         progress_layout.setContentsMargins(
-            scale_px(12, self._ui_scale),
-            scale_px(10, self._ui_scale),
-            scale_px(12, self._ui_scale),
-            scale_px(10, self._ui_scale),
+            scale_px(8, self._ui_scale),
+            scale_px(4, self._ui_scale),
+            scale_px(8, self._ui_scale),
+            scale_px(4, self._ui_scale),
         )
-        progress_layout.setSpacing(scale_px(8, self._ui_scale))
-
-        progress_header = QHBoxLayout()
-        progress_header.setContentsMargins(0, 0, 0, 0)
-        progress_title = QLabel("진행률")
-        progress_title.setObjectName("detailSectionTitle")
-        progress_header.addWidget(progress_title)
-        progress_header.addStretch(1)
-        self._scan_progress_label = QLabel("0%")
-        self._scan_progress_label.setObjectName("count")
-        progress_header.addWidget(self._scan_progress_label)
-        progress_layout.addLayout(progress_header)
+        progress_layout.setSpacing(scale_px(6, self._ui_scale))
 
         self._scan_progress_bar = QProgressBar()
         self._scan_progress_bar.setRange(0, 100)
         self._scan_progress_bar.setValue(0)
         self._scan_progress_bar.setTextVisible(False)
-        progress_layout.addWidget(self._scan_progress_bar)
+        self._scan_progress_bar.setMinimumWidth(scale_px(120, self._ui_scale))
+        self._scan_progress_bar.setMaximumWidth(scale_px(320, self._ui_scale))
+        self._scan_progress_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        progress_layout.addWidget(self._scan_progress_bar, 1)
 
-        self._scan_eta_label = QLabel("예상 완료: 대기 중")
-        self._scan_eta_label.setObjectName("count")
-        self._scan_eta_label.setWordWrap(True)
-        progress_layout.addWidget(self._scan_eta_label)
-        panel_layout.addWidget(progress_panel)
+        self._scan_progress_label = None
+        self._scan_eta_label = None
+        self._scan_status_label = self._scan_plana_meta_label
+        controls_row.addWidget(progress_panel, 1)
 
         self._scan_stop_button = QPushButton("스캔 중지")
         self._scan_stop_button.setEnabled(False)
         self._scan_stop_button.clicked.connect(self._request_scanner_stop)
-        panel_layout.addWidget(self._scan_stop_button)
-        body.addWidget(panel, 0, 1)
+        controls_row.addWidget(self._scan_stop_button, 0, Qt.AlignVCenter)
+        panel_layout.addLayout(controls_row)
+        right_column_layout.addWidget(panel, 0)
 
-        lower_left = QFrame()
-        lower_left.setObjectName("panel")
-        lower_left_layout = QHBoxLayout(lower_left)
-        lower_left_layout.setContentsMargins(
-            scale_px(18, self._ui_scale),
-            scale_px(10, self._ui_scale),
-            scale_px(18, self._ui_scale),
-            scale_px(10, self._ui_scale),
-        )
-        lower_left_layout.setSpacing(scale_px(12, self._ui_scale))
 
-        self._scan_plana_image_label = QLabel()
-        self._scan_plana_image_label.setAlignment(Qt.AlignBottom | Qt.AlignCenter)
-        self._scan_plana_image_label.setMinimumHeight(scale_px(320, self._ui_scale))
-        self._scan_plana_image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        lower_left_layout.addWidget(self._scan_plana_image_label, 1)
-        lower_left_layout.addWidget(self._build_scan_student_card(), 0)
-        body.addWidget(lower_left, 1, 0)
+        self._scan_plana_image_label = None
+        self._scan_detail_stack = QStackedWidget()
+        self._scan_detail_stack.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self._scan_detail_stack.addWidget(self._build_scan_student_card())
+        self._scan_detail_stack.addWidget(self._build_scan_inventory_grid_card())
+        body.addWidget(self._scan_detail_stack, 1, 0)
 
-        preview_panel = QFrame()
+        preview_min_width = scale_px(560, self._ui_scale)
+        preview_panel = AspectRatioFrame(aspect_width=16, aspect_height=9, min_width=preview_min_width)
         preview_panel.setObjectName("scanPreviewPanel")
-        preview_panel.setMinimumHeight(scale_px(260, self._ui_scale))
+        preview_panel.setMinimumSize(preview_min_width, preview_panel.heightForWidth(preview_min_width))
         preview_layout = QVBoxLayout(preview_panel)
         preview_layout.setContentsMargins(
             scale_px(18, self._ui_scale),
@@ -4849,7 +5619,7 @@ class StudentViewerWindow(QMainWindow):
             scale_px(18, self._ui_scale),
         )
         preview_layout.addStretch(1)
-        body.addWidget(preview_panel, 1, 1)
+        right_column_layout.addWidget(preview_panel, 1)
 
         body.setColumnStretch(0, 1)
         body.setColumnStretch(1, 2)
@@ -4961,16 +5731,29 @@ class StudentViewerWindow(QMainWindow):
     def _sync_settings_labels(self) -> None:
         profile = get_active_profile_name("Default") or "Default"
         hwnd, title = self._saved_target()
-        target = f"{title} (HWND={hwnd})" if hwnd else "선택된 창 없음"
+        settings_target = f"{title} (HWND={hwnd})" if hwnd else "선택된 창 없음"
+        scan_target = title if hwnd else "선택된 창 없음"
+        target_connected = False
+        if hwnd:
+            try:
+                target_connected = any(int(window.get("hwnd") or 0) == hwnd for window in get_all_windows())
+            except Exception:
+                target_connected = True
         aspect_warning = self._target_aspect_warning(hwnd)
         if self._settings_active_profile_label is not None:
             self._settings_active_profile_label.setText(f"현재 프로필: {profile}")
         if self._settings_target_label is not None:
-            self._settings_target_label.setText(f"선택된 BA 창: {target}")
+            self._settings_target_label.setText(f"선택된 BA 창: {settings_target}")
         if self._scan_profile_label is not None:
             self._scan_profile_label.setText(f"현재 프로필: {profile}")
         if self._scan_target_label is not None:
-            self._scan_target_label.setText(f"선택된 BA 창: {target}")
+            self._scan_target_label.setText(f"선택된 BA 창: {scan_target}")
+        if self._scan_header is not None:
+            if self._scan_header.property("connected") != target_connected:
+                self._scan_header.setProperty("connected", target_connected)
+                self._scan_header.style().unpolish(self._scan_header)
+                self._scan_header.style().polish(self._scan_header)
+                self._scan_header.update()
         if self._scan_aspect_warning_label is not None:
             self._scan_aspect_warning_label.setText(aspect_warning)
 
@@ -5226,6 +6009,9 @@ class StudentViewerWindow(QMainWindow):
     def _scan_stop_request_path(self) -> Path:
         return get_storage_paths().current_dir / "scan_stop_requested.flag"
 
+    def _scan_status_ack_path(self) -> Path:
+        return get_storage_paths().current_dir / "scan_status_ack.json"
+
     def _clear_scan_stop_request(self) -> None:
         try:
             self._scan_stop_request_path().unlink(missing_ok=True)
@@ -5334,17 +6120,30 @@ class StudentViewerWindow(QMainWindow):
             return ""
         return ""
 
-    def _set_scan_student_portrait(self, student_id: str) -> None:
+    def _scan_portrait_source(self, student_id: str, form_index: object = 1) -> Path | None:
+        sid = str(student_id or "").strip()
+        if not sid:
+            return None
+        try:
+            form = int(form_index or 1)
+        except (TypeError, ValueError):
+            form = 1
+        if form > 1:
+            suffix = form - 1
+            for ext in (".png", ".jpg", ".jpeg", ".webp"):
+                path = PORTRAIT_DIR / f"{sid}_{suffix}{ext}"
+                if path.exists():
+                    return path
+        return portrait_path(sid)
+
+    def _set_scan_student_portrait(self, student_id: str, form_index: object = 1) -> None:
         if self._scan_student_hero is None:
             return
         sid = str(student_id or "").strip()
         if not sid:
             self._scan_student_hero.clear()
             return
-        hero_size = self._scan_student_hero.card_size()
-        width = hero_size.width() if hero_size.width() > 0 else scale_px(250, self._ui_scale)
-        height = hero_size.height() if hero_size.height() > 0 else max(1, int(round(width / max(0.01, self._student_card_asset.aspect_ratio))))
-        source = ensure_thumbnail(sid, width, height)
+        source = self._scan_portrait_source(sid, form_index)
         if source is None or not source.exists():
             self._scan_student_hero.clear()
             return
@@ -5355,7 +6154,166 @@ class StudentViewerWindow(QMainWindow):
         record = self._records_by_id.get(sid)
         self._scan_student_hero.setPixmap(portrait, owned=record.owned if record is not None else True)
 
+    def _reset_scan_live_state(self, student_id: str) -> None:
+        sid = str(student_id or "").strip()
+        record = self._records_by_id.get(sid)
+        position = student_meta.field(sid, "position") if sid else None
+        combat_class = student_meta.field(sid, "combat_class") if sid else None
+        if record is not None:
+            position = record.position or position
+            combat_class = record.combat_class or combat_class
+        self._scan_student_live_state = {
+            "student_id": sid,
+            "form_index": 1,
+            "position": _position_label(position),
+            "combat_class": (str(combat_class or "-").title() if combat_class else "-"),
+            "level": None,
+            "student_star": None,
+            "weapon_star": None,
+            "weapon_level": None,
+            "weapon_status": None,
+            "ex_skill": None,
+            "skill1": None,
+            "skill2": None,
+            "skill3": None,
+            "equip1": None,
+            "equip2": None,
+            "equip3": None,
+            "equip4": None,
+            "equip1_level": None,
+            "equip2_level": None,
+            "equip3_level": None,
+            "combat_hp": None,
+            "combat_atk": None,
+            "combat_def": None,
+            "combat_heal": None,
+            "stat_hp": None,
+            "stat_atk": None,
+            "stat_heal": None,
+        }
+
+    def _scan_int_value(self, value: object) -> int | None:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return int(value)
+        if isinstance(value, int):
+            return value
+        text = str(value).strip().replace(",", "")
+        if not text or text == "-":
+            return None
+        match = re.search(r"-?\d+", text)
+        if not match:
+            return None
+        try:
+            return int(match.group(0))
+        except ValueError:
+            return None
+
+    def _scan_text_value(self, value: object) -> str | None:
+        text = str(value or "").strip()
+        return text or None
+
+    def _scan_tier_value(self, value: object) -> str | None:
+        text = str(value or "").strip().upper()
+        if not text or text == "-":
+            return None
+        match = re.search(r"T\s*(\d+)", text)
+        if match:
+            return f"T{match.group(1)}"
+        if text in {"EMPTY", "LEVEL_LOCKED", "LOVE_LOCKED", "NULL", "UNSUPPORTED", "UNKNOWN", "NO_SYSTEM"}:
+            return text.lower()
+        return text
+
+    def _render_scan_live_card(self) -> None:
+        state = getattr(self, "_scan_student_live_state", {}) or {}
+        sid = str(state.get("student_id") or self._scan_current_student_id or "").strip()
+        if self._scan_student_progress_strip is not None:
+            star = self._scan_int_value(state.get("student_star")) or 0
+            weapon_star = self._scan_int_value(state.get("weapon_star")) or 0
+            show_weapon = bool(weapon_star or state.get("weapon_level") is not None or state.get("weapon_status"))
+            self._scan_student_progress_strip.setProgress(star, weapon_star, show_weapon)
+
+        level_label = self._scan_student_value_labels.get("level")
+        if level_label is not None:
+            level = self._scan_int_value(state.get("level"))
+            level_label.setText(str(level) if level is not None else "-")
+        if self._scan_student_position_label is not None:
+            self._scan_student_position_label.setText(str(state.get("position") or "-"))
+        if self._scan_student_class_label is not None:
+            self._scan_student_class_label.setText(str(state.get("combat_class") or "-"))
+        if self._scan_student_weapon_level_label is not None:
+            weapon_level = self._scan_int_value(state.get("weapon_level"))
+            if weapon_level is not None:
+                self._scan_student_weapon_level_label.setText(f"Lv.{weapon_level}")
+            else:
+                self._scan_student_weapon_level_label.setText(str(state.get("weapon_status") or "-"))
+
+        skill_pairs = {
+            "skill_ex": "ex_skill",
+            "skill_s1": "skill1",
+            "skill_s2": "skill2",
+            "skill_s3": "skill3",
+        }
+        for label_key, state_key in skill_pairs.items():
+            label = self._scan_student_value_labels.get(label_key)
+            if label is not None:
+                label.setText(str(state.get(state_key) or "-"))
+
+        bonus_label = self._scan_student_value_labels.get("stats")
+        bonus_values = (state.get("stat_hp"), state.get("stat_atk"), state.get("stat_heal"))
+        if bonus_label is not None:
+            if any(self._scan_int_value(value) is not None for value in bonus_values):
+                bonus_label.setText(_detail_bonus_stats_html((
+                    ("HP", self._scan_int_value(state.get("stat_hp"))),
+                    ("ATK", self._scan_int_value(state.get("stat_atk"))),
+                    ("HEAL", self._scan_int_value(state.get("stat_heal"))),
+                ), font_px=scale_px(13, self._ui_scale)))
+            else:
+                bonus_label.setText("-")
+
+        combat_values = (state.get("combat_hp"), state.get("combat_atk"), state.get("combat_def"), state.get("combat_heal"))
+        if self._scan_student_combat_stats_label is not None:
+            if any(self._scan_int_value(value) is not None for value in combat_values):
+                self._scan_student_combat_stats_label.setText(_scan_live_vertical_stats_html((
+                    ("HP", self._scan_int_value(state.get("combat_hp"))),
+                    ("ATK", self._scan_int_value(state.get("combat_atk"))),
+                    ("DEF", self._scan_int_value(state.get("combat_def"))),
+                    ("HEAL", self._scan_int_value(state.get("combat_heal"))),
+                ), font_px=scale_px(14, self._ui_scale)))
+            else:
+                self._scan_student_combat_stats_label.setText("-")
+
+        for index, slot in enumerate(("equip1", "equip2", "equip3"), start=1):
+            card = self._scan_student_equip_cards.get(slot)
+            if card is None:
+                continue
+            tier = self._scan_text_value(state.get(slot))
+            level = self._scan_int_value(state.get(f"{slot}_level"))
+            icon_path = _equipment_icon_path(sid, index, tier) if sid else None
+            icon_pixmap = QPixmap()
+            value_text = _slot_placeholder(tier)
+            if icon_path is not None:
+                loaded = QPixmap(str(icon_path))
+                if not loaded.isNull():
+                    icon_pixmap = loaded
+                    value_text = ""
+            elif _parse_tier_number(tier) is not None:
+                value_text = str(tier)
+            card.setData(icon=icon_pixmap, value=value_text, level=str(level) if level is not None else "")
+
+        favorite_card = self._scan_student_equip_cards.get("favorite")
+        if favorite_card is not None:
+            favorite_supported = student_meta.favorite_item_enabled(sid) if sid else True
+            tier = self._scan_text_value(state.get("equip4"))
+            tier_num = _parse_tier_number(tier)
+            value_text = _slot_placeholder(tier, supported=favorite_supported)
+            if tier_num is not None:
+                value_text = f"T{tier_num}"
+            favorite_card.setData(icon=QPixmap(), value=value_text, level="")
+
     def _reset_scan_student_card(self, student_id: object = None, student_name: object = None, meta: str = "") -> None:
+        self._set_scan_detail_mode("student")
         name = str(student_name or "").strip()
         sid = self._resolve_scan_student_id(student_id, name)
         if sid and not name:
@@ -5365,42 +6323,246 @@ class StudentViewerWindow(QMainWindow):
                 name = sid
         self._scan_current_student_id = sid
         self._scan_current_student_name = name
+        self._reset_scan_live_state(sid)
         if self._scan_student_name_label is not None:
-            self._scan_student_name_label.setText(name or "대기 중")
+            self._scan_student_name_label.setText(name or "")
         if self._scan_student_meta_label is not None:
-            self._scan_student_meta_label.setText(meta or ("학생부 기록을 비우고 새로 확인합니다." if name else "학생부 카드가 비어 있습니다."))
+            self._scan_student_meta_label.setText(meta or "")
         for label in self._scan_student_value_labels.values():
             label.setText("-")
         if self._scan_student_progress_strip is not None:
             self._scan_student_progress_strip.setProgress(0, 0, False)
-        self._set_scan_student_portrait(sid)
+        for card in self._scan_student_equip_cards.values():
+            card.clearData()
+        self._set_scan_student_portrait(sid, 1)
+        self._render_scan_live_card()
 
     def _set_scan_student_value(self, key: str, value: object) -> None:
-        label = self._scan_student_value_labels.get(key)
-        if label is None:
-            return
+        state = getattr(self, "_scan_student_live_state", None)
+        if state is None:
+            self._scan_student_live_state = {}
+            state = self._scan_student_live_state
         text = str(value or "").strip()
-        label.setText(text or "-")
+        if key == "level":
+            state["level"] = self._scan_int_value(value) if self._scan_int_value(value) is not None else text or None
+        elif key == "star":
+            state["student_star"] = self._scan_int_value(value)
+        elif key == "weapon":
+            level = self._scan_int_value(re.search(r"Lv\.\s*(\d+)", text).group(1) if re.search(r"Lv\.\s*(\d+)", text) else None)
+            star_match = re.search(r"(\d+)\s*성", text)
+            if star_match:
+                state["weapon_star"] = self._scan_int_value(star_match.group(1))
+            if level is not None:
+                state["weapon_level"] = level
+            elif text and not star_match:
+                state["weapon_status"] = text
+        elif key in {"skill_ex", "skill_s1", "skill_s2", "skill_s3"}:
+            state[{"skill_ex": "ex_skill", "skill_s1": "skill1", "skill_s2": "skill2", "skill_s3": "skill3"}[key]] = self._scan_int_value(value) if self._scan_int_value(value) is not None else text or None
+        elif key in {"equip1", "equip2", "equip3"}:
+            tier = self._scan_tier_value(value)
+            if tier is not None:
+                state[key] = tier
+            level_match = re.search(r"Lv\.\s*(\d+)", text)
+            if level_match:
+                state[f"{key}_level"] = self._scan_int_value(level_match.group(1))
+        elif key == "favorite":
+            state["equip4"] = self._scan_tier_value(value) or text or None
+        elif key == "stats":
+            match = re.search(r"HP\s+([^/]+)\s*/\s*ATK\s+([^/]+)\s*/\s*HEAL\s+(.+)$", text)
+            if match:
+                state["stat_hp"] = self._scan_int_value(match.group(1))
+                state["stat_atk"] = self._scan_int_value(match.group(2))
+                state["stat_heal"] = self._scan_int_value(match.group(3))
+        elif key == "combat_stats":
+            match = re.search(r"HP\s+([^/]+)\s*/\s*ATK\s+([^/]+)\s*/\s*DEF\s+([^/]+)\s*/\s*HEAL\s+(.+)$", text)
+            if match:
+                state["combat_hp"] = self._scan_int_value(match.group(1))
+                state["combat_atk"] = self._scan_int_value(match.group(2))
+                state["combat_def"] = self._scan_int_value(match.group(3))
+                state["combat_heal"] = self._scan_int_value(match.group(4))
+        label = self._scan_student_value_labels.get(key)
+        if label is not None:
+            label.setText(text or "-")
+        self._render_scan_live_card()
 
     def _merge_scan_equipment_value(self, key: str, *, tier: object = None, level: object = None) -> None:
-        label = self._scan_student_value_labels.get(key)
-        if label is None:
-            return
-        current = label.text().strip()
-        parts = [] if not current or current == "-" else current.split()
+        state = self._scan_student_live_state
         if tier is not None and str(tier).strip():
-            parts = [part for part in parts if not part.startswith("T")]
-            parts.insert(0, str(tier).strip())
+            state[key] = self._scan_tier_value(tier)
         if level is not None and str(level).strip():
-            parts = [part for part in parts if not part.startswith("Lv.")]
-            parts.append(f"Lv.{level}")
-        label.setText(" ".join(parts) if parts else "-")
+            state[f"{key}_level"] = self._scan_int_value(level)
+        self._render_scan_live_card()
+
+    def _merge_scan_weapon_value(self, *, star: object = None, level: object = None) -> None:
+        state = self._scan_student_live_state
+        if star is not None and str(star).strip():
+            state["weapon_star"] = self._scan_int_value(star)
+            state["weapon_status"] = None
+        if level is not None and str(level).strip():
+            state["weapon_level"] = self._scan_int_value(level)
+            state["weapon_status"] = None
+        self._render_scan_live_card()
+
+    def _merge_scan_stat_value(self, field_name: str, value: object) -> None:
+        self._scan_student_live_state[field_name] = self._scan_int_value(value)
+        self._render_scan_live_card()
+
+    def _merge_scan_combat_stat_value(self, field_name: str, value: object) -> None:
+        self._scan_student_live_state[field_name] = self._scan_int_value(value)
+        self._render_scan_live_card()
+
+    def _apply_scan_field_confirmed_event(self, fields: dict) -> None:
+        field_name = str(fields.get("field") or "").strip()
+        value = fields.get("value")
+        if not field_name:
+            return
+        direct_map = {
+            "level": "level",
+            "student_star": "star",
+            "ex_skill": "skill_ex",
+            "skill1": "skill_s1",
+            "skill2": "skill_s2",
+            "skill3": "skill_s3",
+            "equip4": "favorite",
+        }
+        label_key = direct_map.get(field_name)
+        if label_key:
+            self._set_scan_student_value(label_key, value)
+            return
+        if field_name == "weapon_star":
+            self._merge_scan_weapon_value(star=value)
+        elif field_name == "weapon_level":
+            self._merge_scan_weapon_value(level=value)
+        elif field_name in {"equip1", "equip2", "equip3"}:
+            self._merge_scan_equipment_value(field_name, tier=value)
+        elif field_name in {"equip1_level", "equip2_level", "equip3_level"}:
+            self._merge_scan_equipment_value(field_name.removesuffix("_level"), level=value)
+        elif field_name in {"stat_hp", "stat_atk", "stat_heal"}:
+            self._merge_scan_stat_value(field_name, value)
+        elif field_name in {"combat_hp", "combat_atk", "combat_def", "combat_heal"}:
+            self._merge_scan_combat_stat_value(field_name, value)
+    def _reset_scan_inventory_card(self, source_label: object = None, meta: str = "", grid_cols: object = None, grid_rows: object = None) -> None:
+        label = str(source_label or "").strip() or "인벤토리"
+        self._set_scan_detail_mode("inventory")
+        if grid_cols is not None or grid_rows is not None:
+            self._configure_scan_inventory_grid(grid_cols, grid_rows)
+        else:
+            self._reset_scan_inventory_grid_cells()
+        if self._scan_inventory_title_label is not None:
+            self._scan_inventory_title_label.setText(f"{label} 그리드")
+        if self._scan_inventory_meta_label is not None:
+            self._scan_inventory_meta_label.setText(meta or "그리드 상태를 확인하고 있습니다.")
+        self._scan_inventory_confirmed_count = 0
+        self._scan_current_student_id = ""
+        self._scan_current_student_name = ""
+        if self._scan_student_name_label is not None:
+            self._scan_student_name_label.setText(f"{label} 스캔 중")
+        if self._scan_student_meta_label is not None:
+            self._scan_student_meta_label.setText(meta or "그리드 상태를 확인하고 있습니다.")
+        for value_label in self._scan_student_value_labels.values():
+            value_label.setText("-")
+        self._set_scan_student_value("level", "그리드")
+        self._set_scan_student_value("star", "대기")
+        self._set_scan_student_value("equip1", "확정 0")
+        self._set_scan_student_value("equip2", "티어 대기")
+        self._set_scan_student_value("equip3", "스크롤 대기")
+        if self._scan_student_progress_strip is not None:
+            self._scan_student_progress_strip.setProgress(0, 0, False)
+        if self._scan_student_hero is not None:
+            self._scan_student_hero.clear()
 
     def _update_scan_student_card_from_event(self, event: dict) -> None:
         event_id = str(event.get("id") or "")
         fields = event.get("fields") if isinstance(event.get("fields"), dict) else {}
         student_name = str(fields.get("student_name") or "").strip()
         student_id = self._resolve_scan_student_id(fields.get("student_id"), student_name)
+
+        if event_id == "field.confirmed":
+            self._apply_scan_field_confirmed_event(fields)
+            return
+        if event_id == "student.form.switch":
+            form_index = fields.get("form_index") or 1
+            sid = student_id or self._scan_current_student_id
+            if sid:
+                self._scan_student_live_state["form_index"] = self._scan_int_value(form_index) or 1
+                self._set_scan_student_portrait(sid, form_index)
+            return
+        if event_id == "inventory.scan.start":
+            source_label = fields.get("source_label") or fields.get("source") or "\uC778\uBCA4\uD1A0\uB9AC"
+            grid_cols = fields.get("grid_cols")
+            grid_rows = fields.get("grid_rows")
+            total_slots = fields.get("total_slots")
+            profile_id = str(fields.get("profile_id") or "").strip()
+            grid_text = f"{grid_cols}x{grid_rows} \uADF8\uB9AC\uB4DC" if grid_cols and grid_rows else "\uADF8\uB9AC\uB4DC"
+            meta_parts = [grid_text]
+            if total_slots:
+                meta_parts.append(f"{total_slots}\uCE78")
+            if profile_id:
+                meta_parts.append(profile_id)
+            self._reset_scan_inventory_card(source_label, " / ".join(meta_parts), grid_cols, grid_rows)
+            self._set_scan_student_value("star", f"{total_slots}\uCE78" if total_slots else "\uD655\uC778 \uC911")
+            return
+        if event_id == "inventory.slot.tier_hint":
+            tier = fields.get("tier_hint")
+            slot_number = fields.get("slot_number")
+            if tier is not None:
+                suffix = f" ({slot_number}\uBC88)" if slot_number else ""
+                self._set_scan_student_value("equip2", f"T{tier} \uD78C\uD2B8{suffix}")
+                self._set_scan_inventory_cell_tier(slot_number, tier)
+            return
+        if event_id == "inventory.row_anchor.confirmed":
+            slot_number = fields.get("slot_number")
+            row_number = fields.get("row_number")
+            self._mark_scan_inventory_cell_anchor(slot_number)
+            label = f"{row_number}\uD589 \uC575\uCEE4" if row_number else "\uD589 \uC575\uCEE4"
+            if slot_number:
+                label = f"{label} {slot_number}\uBC88"
+            self._set_scan_student_value("equip2", label)
+            if self._scan_inventory_meta_label is not None:
+                self._scan_inventory_meta_label.setText(f"{label} \uD655\uC815")
+            return
+        if event_id == "inventory.slot.confirmed":
+            self._scan_inventory_confirmed_count = max(0, self._scan_inventory_confirmed_count) + 1
+            item_name = str(fields.get("item_name") or "").strip()
+            quantity = str(fields.get("quantity") or "").strip()
+            slot_number = fields.get("slot_number")
+            row_anchor = bool(fields.get("row_anchor"))
+            self._set_scan_student_value("equip1", f"\uD655\uC815 {self._scan_inventory_confirmed_count}")
+            if item_name:
+                detail = f"{item_name} x{quantity}" if quantity else item_name
+                self._set_scan_student_value("favorite", detail)
+            item_id = fields.get("item_id")
+            self._set_scan_inventory_cell_confirmed(
+                slot_number,
+                item_name,
+                quantity,
+                str(item_id) if item_id else None,
+                row_anchor=row_anchor,
+            )
+            if self._scan_inventory_meta_label is not None:
+                suffix = " / \uC575\uCEE4" if row_anchor else ""
+                self._scan_inventory_meta_label.setText(f"\uD655\uC815 {self._scan_inventory_confirmed_count}\uAC1C{suffix}")
+            if self._scan_student_meta_label is not None:
+                slot_text = f"{slot_number}\uBC88 \uC2AC\uB86F" if slot_number else "\uC2AC\uB86F"
+                self._scan_student_meta_label.setText(f"{slot_text} \uD655\uC815 \uC911")
+            return
+        if event_id == "inventory.scroll":
+            overlap_rows = fields.get("overlap_rows")
+            moved_rows = fields.get("moved_rows")
+            self._apply_scan_inventory_scroll_feedback(
+                moved_rows=moved_rows,
+                overlap_rows=overlap_rows,
+                scan_slots=fields.get("scan_slots"),
+            )
+            if moved_rows is not None:
+                self._set_scan_student_value("equip3", f"{moved_rows}\uD589 \uC774\uB3D9")
+            elif overlap_rows is not None:
+                self._set_scan_student_value("equip3", f"\uC911\uBCF5 {overlap_rows}\uD589")
+            if self._scan_student_meta_label is not None:
+                self._scan_student_meta_label.setText("\uB2E4\uC74C \uADF8\uB9AC\uB4DC \uD398\uC774\uC9C0\uB85C \uC774\uB3D9 \uC911")
+            if self._scan_inventory_meta_label is not None:
+                self._scan_inventory_meta_label.setText("\uADF8\uB9AC\uB4DC\uB97C \uC704\uB85C \uBC00\uC5B4 \uB2E4\uC74C \uD398\uC774\uC9C0\uB97C \uC900\uBE44\uD569\uB2C8\uB2E4")
+            return
 
         if event_id == "student.identify.start":
             index = str(fields.get("index") or "").strip()
@@ -5461,11 +6623,23 @@ class StudentViewerWindow(QMainWindow):
                     self._scan_student_progress_strip.setProgress(student_star, weapon_star, True)
                 except (TypeError, ValueError):
                     pass
+        elif event_id == "skills.value.ok":
+            skill_key = str(fields.get("skill") or "")
+            label_key = {
+                "ex_skill": "skill_ex",
+                "skill1": "skill_s1",
+                "skill2": "skill_s2",
+                "skill3": "skill_s3",
+            }.get(skill_key)
+            if label_key:
+                self._set_scan_student_value(label_key, fields.get("value"))
         elif event_id == "skills.summary":
             self._set_scan_student_value("skill_ex", fields.get("ex"))
             self._set_scan_student_value("skill_s1", fields.get("s1"))
             self._set_scan_student_value("skill_s2", fields.get("s2"))
             self._set_scan_student_value("skill_s3", fields.get("s3"))
+        elif event_id == "skills.skill2.skip_star_locked":
+            self._set_scan_student_value("skill_s2", "잠금")
         elif event_id == "skills.skill3.skip_star_locked":
             self._set_scan_student_value("skill_s3", "잠금")
         elif event_id == "equipment.saved_max_skip":
@@ -5482,9 +6656,9 @@ class StudentViewerWindow(QMainWindow):
         elif event_id in {"equip2.slot_flag.empty", "equip3.slot_flag.empty"}:
             self._set_scan_student_value(event_id[:6], "미장착")
         elif event_id in {"equip2.slot_flag.level_locked", "equip3.slot_flag.level_locked"}:
-            self._set_scan_student_value(event_id[:6], "잠금")
+            self._set_scan_student_value(event_id[:6], "잠김")
         elif event_id in {"equip2.skip_level_locked_from_level", "equip3.skip_level_locked_from_level"}:
-            self._set_scan_student_value(event_id[:6], f"Lv.{fields.get('level')} 잠금")
+            self._set_scan_student_value(event_id[:6], "잠김")
         elif event_id.startswith("equip") and event_id.endswith(".tier.ok"):
             slot = event_id[5:6]
             if slot in {"1", "2", "3"}:
@@ -5577,10 +6751,11 @@ class StudentViewerWindow(QMainWindow):
         self._scan_status_recent_messages = []
         try:
             reset_status_log(self._scan_status_path())
+            write_status_ack(self._scan_status_ack_path(), 0)
         except Exception:
             pass
         self._set_plana_message(
-            "학생부를 가져오는 중입니다. 잠시만 기다려 주십시오, 선생님.",
+            "스캔을 준비하는 중입니다. 잠시만 기다려 주십시오, 선생님.",
             f"{mode_label} 준비 중",
         )
         self._set_plana_expression("neutral")
@@ -5638,8 +6813,18 @@ class StudentViewerWindow(QMainWindow):
         except Exception:
             return
         self._scan_status_file_offset = offset
+        last_seq = 0
         for event in events:
             self._append_plana_status_event(event)
+            try:
+                last_seq = max(last_seq, int(event.get("seq") or 0))
+            except (TypeError, ValueError):
+                pass
+        if last_seq > 0:
+            try:
+                write_status_ack(self._scan_status_ack_path(), last_seq)
+            except Exception:
+                pass
 
     def _scanner_mode_label(self, mode: str) -> str:
         labels = {
@@ -5660,6 +6845,8 @@ class StudentViewerWindow(QMainWindow):
             return False
         self._scanner_process = None
         self._scanner_poll_timer.stop()
+        if self._scan_status_poll_timer is not None:
+            self._scan_status_poll_timer.stop()
         self._on_scanner_process_finished(code, notify=notify)
         return True
 
@@ -5740,6 +6927,8 @@ class StudentViewerWindow(QMainWindow):
         label = self._scanner_mode_label(mode)
         self._reset_plana_scan_status(label)
         self._reset_scan_progress_view(label)
+        if mode in {"items", "equipment", "resources"}:
+            self._reset_scan_inventory_card(label, f"{label} 준비 중", 5, 5 if mode == "equipment" else 4)
         if mode in {"students", "all"}:
             self._set_plana_message(
                 "첫 번째 학생의 기본 정보 화면을 확인합니다. 선생님, 스캔할 첫 번째 학생의 정보창을 띄워 주십시오.",
@@ -5751,10 +6940,78 @@ class StudentViewerWindow(QMainWindow):
             self._scan_stop_button.setEnabled(True)
             self._scan_stop_button.setText("스캔 중지")
         self._scanner_poll_timer.start()
+        if self._scan_status_poll_timer is not None:
+            self._scan_status_poll_timer.start()
+
+    def _state_export_students(self) -> list[dict[str, object]]:
+        field_map = (
+            ("student_id", "student_id"),
+            ("display_name", "display_name"),
+            ("level", "level"),
+            ("student_star", "star"),
+            ("weapon_state", "weapon_state"),
+            ("weapon_star", "weapon_star"),
+            ("weapon_level", "weapon_level"),
+            ("ex_skill", "ex_skill"),
+            ("skill1", "skill1"),
+            ("skill2", "skill2"),
+            ("skill3", "skill3"),
+            ("equip1", "equip1"),
+            ("equip2", "equip2"),
+            ("equip3", "equip3"),
+            ("equip4", "equip4"),
+            ("equip1_level", "equip1_level"),
+            ("equip2_level", "equip2_level"),
+            ("equip3_level", "equip3_level"),
+            ("combat_hp", "combat_hp"),
+            ("combat_atk", "combat_atk"),
+            ("combat_def", "combat_def"),
+            ("combat_heal", "combat_heal"),
+            ("stat_hp", "stat_hp"),
+            ("stat_atk", "stat_atk"),
+            ("stat_heal", "stat_heal"),
+        )
+        rows: list[dict[str, object]] = []
+        for record in self._all_students:
+            if not record.owned:
+                continue
+            rows.append({export_key: getattr(record, attr) for export_key, attr in field_map})
+        return rows
+
+    def _copy_state_export_to_clipboard(self) -> None:
+        try:
+            students = self._state_export_students()
+            token = encode_state_export(
+                students=students,
+                inventory=self._inventory_snapshot or {},
+                resources=self._resource_snapshot or {},
+                profile_name=get_active_profile_name("Default"),
+                app_version=APP_VERSION,
+            )
+        except Exception as exc:
+            QMessageBox.warning(self, "BA Planner", f"State export failed.\n\n{exc}")
+            return
+        QApplication.clipboard().setText(token)
+        student_count = len(students)
+        inventory_count = len(self._inventory_snapshot or {})
+        resource_count = len(self._resource_snapshot or {})
+        if self._scan_status_label is not None:
+            self._scan_status_label.setText(
+                f"State export copied: students {student_count}, inventory {inventory_count}, resources {resource_count}"
+            )
+        QMessageBox.information(
+            self,
+            "BA Planner",
+            "State export copied to clipboard.\n\n"
+            f"Students: {student_count} / Inventory: {inventory_count} / Resources: {resource_count}\n"
+            f"Length: {len(token):,} characters",
+        )
 
     def _check_scanner_process(self) -> None:
         if self._scanner_process is None:
             self._scanner_poll_timer.stop()
+            if self._scan_status_poll_timer is not None:
+                self._scan_status_poll_timer.stop()
             return
         self._poll_scan_status_events()
         code = self._scanner_process.poll()
@@ -5762,6 +7019,8 @@ class StudentViewerWindow(QMainWindow):
             return
         self._scanner_process = None
         self._scanner_poll_timer.stop()
+        if self._scan_status_poll_timer is not None:
+            self._scan_status_poll_timer.stop()
         self._on_scanner_process_finished(code)
 
     def _build_ui(self) -> None:
@@ -5937,15 +7196,33 @@ class StudentViewerWindow(QMainWindow):
                 border-bottom-color: {ACCENT};
                 font-weight: 900;
             }}
-            QFrame#header, QFrame#panel, QFrame#statPanel, QFrame#summaryCard, QFrame#scanStudentCard {{
+            QFrame#header, QFrame#panel, QFrame#statPanel, QFrame#summaryCard, QFrame#scanInventoryCard {{
                 background: {SURFACE};
                 border: 1px solid {BORDER};
                 border-radius: {scale_px(14, self._ui_scale)}px;
+            }}
+            QFrame#scanHeader {{
+                background: {SURFACE};
+                border: 1px solid {BORDER};
+                border-radius: {scale_px(14, self._ui_scale)}px;
+            }}
+            QFrame#scanHeader[connected="true"] {{
+                border: {scale_px(3, self._ui_scale)}px solid #76d7ff;
             }}
             QFrame#scanPreviewPanel {{
                 background: #05070d;
                 border: 1px solid {_mix_hex(BORDER, '#ffffff', 0.12)};
                 border-radius: {scale_px(14, self._ui_scale)}px;
+            }}
+            QFrame#scanStudentCard, QFrame#scanStudentCaptureCard {{
+                background: {_mix_hex(SURFACE_ALT, BG, 0.08)};
+                border: none;
+                border-radius: {scale_px(8, self._ui_scale)}px;
+            }}
+            QFrame#scanStudentMetaPanel {{
+                background: {_mix_hex(PALETTE_PANEL, SURFACE_ALT, 0.18)};
+                border: 1px solid {_mix_hex(BORDER, '#ffffff', 0.2)};
+                border-radius: {scale_px(8, self._ui_scale)}px;
             }}
             QLabel#scanStudentValue {{
                 color: {INK};
@@ -5973,6 +7250,11 @@ class StudentViewerWindow(QMainWindow):
             }}
             QLabel#title {{ font-size: {scale_px(24, self._ui_scale)}px; font-weight: 800; color: {INK}; }}
             QLabel#count, QLabel#detailSub, QLabel#filterSummary, QLabel#sectionSub, QLabel#kpiValueSub {{ color: {MUTED}; }}
+            QLabel#scanProfile {{
+                color: #ff8fd6;
+                font-size: {scale_px(15, self._ui_scale)}px;
+                font-weight: 900;
+            }}
             QLabel#sectionTitle {{ font-size: {scale_px(15, self._ui_scale)}px; font-weight: 800; color: {INK}; }}
             QLabel#badge {{
                 background: {ACCENT_PALE};
@@ -6075,6 +7357,16 @@ class StudentViewerWindow(QMainWindow):
             }}
             QLabel#detailMiniValue {{
                 font-size: {scale_px(20, self._ui_scale)}px;
+                font-weight: 800;
+                color: {INK};
+            }}
+            QLabel#scanLiveMiniValue {{
+                font-size: {scale_px(10, self._ui_scale)}px;
+                font-weight: 800;
+                color: {INK};
+            }}
+            QLabel#scanLiveWeaponValue {{
+                font-size: {scale_px(16, self._ui_scale)}px;
                 font-weight: 800;
                 color: {INK};
             }}
@@ -12359,6 +13651,8 @@ class StudentViewerWindow(QMainWindow):
         self._tactical_match_copy_defense_button.clicked.connect(self._copy_selected_tactical_match_defense)
         self._tactical_match_edit_button = QPushButton("수정")
         self._tactical_match_edit_button.clicked.connect(self._edit_selected_tactical_match)
+        self._tactical_match_batch_names_button = QPushButton("이름 일괄")
+        self._tactical_match_batch_names_button.clicked.connect(self._edit_tactical_opponents_batch)
         self._tactical_match_delete_button = QPushButton("[삭제]")
         self._tactical_match_delete_button.clicked.connect(self._delete_selected_tactical_match)
         self._tactical_match_import_button = QPushButton("Excel Import")
@@ -12371,6 +13665,7 @@ class StudentViewerWindow(QMainWindow):
         match_action_row.addWidget(self._tactical_match_import_button)
         match_action_row.addWidget(self._tactical_match_copy_attack_button)
         match_action_row.addWidget(self._tactical_match_copy_defense_button)
+        match_action_row.addWidget(self._tactical_match_batch_names_button)
         match_action_row.addWidget(self._tactical_match_edit_button)
         match_action_row.addWidget(self._tactical_match_delete_button)
         history_layout.addLayout(match_action_row)
@@ -12528,12 +13823,14 @@ class StudentViewerWindow(QMainWindow):
         recent_row.setContentsMargins(0, 0, 0, 0)
         recent_row.setSpacing(button_spacing)
         paste_screenshot_button = QPushButton("붙여넣기")
+        folder_screenshot_button = QPushButton("Folder")
         screenshot_button = QPushButton("캡처")
         recent_attack_button = QPushButton("최근 공격")
         recent_defense_button = QPushButton("최근 방어")
-        result_action_span = result_width * 2 + action_width * 2 + button_spacing * 3
+        result_action_span = result_width * 2 + action_width * 3 + button_spacing * 4
         recent_button_width = (result_action_span - button_spacing) // 2
         screenshot_button.setFixedWidth(action_width)
+        folder_screenshot_button.setFixedWidth(action_width)
         paste_screenshot_button.setFixedWidth(action_width)
         recent_min_width = scale_px(86 if self._ui_scale >= SMALL_16_9_SCALE_THRESHOLD else 76, self._ui_scale)
         for button in (recent_attack_button, recent_defense_button):
@@ -12541,11 +13838,13 @@ class StudentViewerWindow(QMainWindow):
             button.setMaximumWidth(recent_button_width)
             button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         screenshot_button.setToolTip("전술대항전 결과창 스크린샷에서 승패와 공방덱을 읽어옵니다.")
+        folder_screenshot_button.setToolTip("Recursively scans 16:9 images in a folder. Date-like folder names such as 260606 are used as match dates.")
         recent_attack_button.setToolTip("상대 이름으로 최근 공격 기록의 공덱/방덱을 가져옵니다.")
         recent_defense_button.setToolTip("상대 이름으로 최근 방어 기록의 공덱/방덱을 가져옵니다.")
         paste_screenshot_button.setToolTip("Analyze one image copied to the clipboard, the same as uploading a screenshot.")
         recent_row.addStretch(1)
         recent_row.addWidget(screenshot_button)
+        recent_row.addWidget(folder_screenshot_button)
         recent_row.addWidget(paste_screenshot_button)
         recent_row.addWidget(recent_attack_button, 1)
         recent_row.addWidget(recent_defense_button, 1)
@@ -12611,6 +13910,7 @@ class StudentViewerWindow(QMainWindow):
         save_button.clicked.connect(lambda *_args, target=panel: self._save_tactical_match_panel(target))
         clear_button.clicked.connect(lambda *_args, target=panel: self._clear_tactical_match_panel(target))
         screenshot_button.clicked.connect(lambda *_args, target=panel: self._import_tactical_screenshot_panel(target))
+        folder_screenshot_button.clicked.connect(lambda *_args, target=panel: self._import_tactical_screenshot_folder_panel(target))
         paste_screenshot_button.clicked.connect(lambda *_args, target=panel: self._paste_tactical_screenshot_panel(target))
         recent_attack_button.clicked.connect(lambda *_args, target=panel: self._load_recent_tactical_match_panel(target, "attack"))
         recent_defense_button.clicked.connect(lambda *_args, target=panel: self._load_recent_tactical_match_panel(target, "defense"))
@@ -13214,7 +14514,7 @@ class StudentViewerWindow(QMainWindow):
 
     def _start_tactical_screenshot_task(self, panel: dict, path: str, busy_text: str) -> None:
         self._show_busy_overlay(busy_text)
-        task = TacticalScreenshotTask(path)
+        task = TacticalScreenshotTask(path, self._tactical_screenshot_candidate_priority(), self._tactical_screenshot_answer_cache_path())
         task.signals.loaded.connect(
             lambda loaded_path, readout, target=panel, finished_task=task: self._apply_tactical_screenshot_readout(
                 target,
@@ -13234,6 +14534,29 @@ class StudentViewerWindow(QMainWindow):
         self._tactical_screenshot_tasks.append(task)
         self._pool.start(task)
 
+    def _start_tactical_screenshot_batch_task(self, panel: dict, paths: list[str], busy_text: str) -> None:
+        self._show_busy_overlay(busy_text)
+        task = TacticalScreenshotBatchTask(paths, self._tactical_screenshot_candidate_priority(), self._tactical_screenshot_answer_cache_path())
+        task.signals.completed.connect(
+            lambda results, errors, target=panel, finished_task=task: self._apply_tactical_screenshot_batch(
+                target,
+                results,
+                errors,
+                finished_task,
+            )
+        )
+        self._tactical_screenshot_tasks.append(task)
+        self._pool.start(task)
+
+    def _tactical_screenshot_answer_cache_path(self) -> str:
+        return str(get_storage_paths().current_dir / "tactical_screenshot_answer_cache.json")
+
+    def _tactical_screenshot_candidate_priority(self) -> dict[str, list[str]]:
+        season = self._tactical_season.text().strip() if hasattr(self, "_tactical_season") else ""
+        try:
+            return tactical_student_frequency_from_storage(self._tactical_path, season, limit=20)
+        except Exception:
+            return {}
     def _paste_tactical_screenshot_panel(self, panel: dict) -> None:
         clipboard = QApplication.clipboard()
         image = clipboard.image()
@@ -13268,48 +14591,45 @@ class StudentViewerWindow(QMainWindow):
     def _import_tactical_screenshot_panel(self, panel: dict) -> None:
         paths, _selected_filter = QFileDialog.getOpenFileNames(
             self,
-            "전술대항전 결과창 스크린샷 선택",
+            "Select tactical result screenshots",
             str(Path.home() / "Pictures" / "Screenshots"),
-            "Images (*.png *.jpg *.jpeg *.bmp);;All Files (*)",
+            "Images (*.png *.jpg *.jpeg *.bmp *.webp);;All Files (*)",
         )
         if not paths:
             return
         paths = sorted(paths, key=self._tactical_screenshot_file_time_key)
         if len(paths) > 1:
-            self._show_busy_overlay(f"스크린샷 {len(paths)}장 분석 중...")
-            task = TacticalScreenshotBatchTask(paths)
-            task.signals.completed.connect(
-                lambda results, errors, target=panel, finished_task=task: self._apply_tactical_screenshot_batch(
-                    target,
-                    results,
-                    errors,
-                    finished_task,
-                )
+            self._start_tactical_screenshot_batch_task(
+                panel,
+                paths,
+                f"Analyzing {len(paths)} screenshots...",
             )
-            self._tactical_screenshot_tasks.append(task)
-            self._pool.start(task)
             return
+        self._start_tactical_screenshot_task(panel, paths[0], "Analyzing screenshot...")
 
-        self._show_busy_overlay("스크린샷 분석 중...")
-        task = TacticalScreenshotTask(paths[0])
-        task.signals.loaded.connect(
-            lambda loaded_path, readout, target=panel, finished_task=task: self._apply_tactical_screenshot_readout(
-                target,
-                loaded_path,
-                readout,
-                finished_task,
-            )
+    def _import_tactical_screenshot_folder_panel(self, panel: dict) -> None:
+        folder = QFileDialog.getExistingDirectory(
+            self,
+            "Select tactical screenshot folder",
+            str(Path.home() / "Pictures" / "Screenshots"),
         )
-        task.signals.failed.connect(
-            lambda loaded_path, message, target=panel, finished_task=task: self._fail_tactical_screenshot_import(
-                target,
-                loaded_path,
-                message,
-                finished_task,
-            )
+        if not folder:
+            return
+        paths = [str(path) for path in collect_tactical_screenshot_images(folder)]
+        if not paths:
+            self._set_tactical_status("Folder contains no readable 16:9 screenshots.", error=True, panel=panel)
+            return
+        paths = sorted(paths, key=self._tactical_screenshot_batch_sort_key)
+        self._start_tactical_screenshot_batch_task(
+            panel,
+            paths,
+            f"Analyzing {len(paths)} folder screenshots...",
         )
-        self._tactical_screenshot_tasks.append(task)
-        self._pool.start(task)
+
+    def _tactical_screenshot_batch_sort_key(self, path: str) -> tuple[str, int, int, str]:
+        inferred_date = tactical_screenshot_date_from_path(path)
+        created_ns, modified_ns, folded = self._tactical_screenshot_file_time_key(path)
+        return (inferred_date, created_ns, modified_ns, folded)
 
     def _tactical_screenshot_file_time_key(self, path: str) -> tuple[int, int, str]:
         try:
@@ -13393,9 +14713,9 @@ class StudentViewerWindow(QMainWindow):
             self._set_tactical_status(f"스크린샷 분석 실패: {preview}", error=True, panel=panel)
             return
 
-        match_date = self._tactical_date.text().strip() if hasattr(self, "_tactical_date") else ""
-        if not match_date:
-            match_date = date.today().isoformat()
+        fallback_match_date = self._tactical_date.text().strip() if hasattr(self, "_tactical_date") else ""
+        if not fallback_match_date:
+            fallback_match_date = date.today().isoformat()
         season = self._tactical_season.text().strip() if hasattr(self, "_tactical_season") else ""
         now = datetime.now()
         matches: list[TacticalMatch] = []
@@ -13405,7 +14725,7 @@ class StudentViewerWindow(QMainWindow):
             match = self._tactical_match_from_screenshot_readout(
                 readout,
                 opponent="",
-                match_date=match_date,
+                match_date=tactical_screenshot_date_from_path(path) or fallback_match_date,
                 season=season,
                 source="스크린샷",
                 notes="",
@@ -13429,6 +14749,7 @@ class StudentViewerWindow(QMainWindow):
             error=bool(failures or warnings),
             panel=panel,
         )
+        self._open_tactical_opponents_batch(matches, panel=panel)
 
     def _apply_tactical_screenshot_readout(
         self,
@@ -13847,6 +15168,38 @@ class StudentViewerWindow(QMainWindow):
         self._refresh_tactical_match_list()
         self._refresh_tactical_opponent_report()
         self._refresh_tactical_jokbo_results()
+
+    def _blank_tactical_opponent_matches(self) -> list[TacticalMatch]:
+        total = tactical_match_count(self._tactical_path, "")
+        matches = query_tactical_matches(self._tactical_path, "", limit=max(total, self._tactical_match_page_size))
+        return [match for match in matches if not match.opponent.strip()]
+
+    def _edit_tactical_opponents_batch(self) -> None:
+        matches = self._blank_tactical_opponent_matches()
+        if not matches:
+            QMessageBox.information(self, "BA Planner", "상대 이름이 비어 있는 전술대항전 기록이 없습니다.")
+            return
+        self._open_tactical_opponents_batch(matches)
+
+    def _open_tactical_opponents_batch(self, matches: list[TacticalMatch], panel: dict | None = None) -> None:
+        rows = [match for match in matches if match is not None]
+        if not rows:
+            return
+        dialog = TacticalOpponentBatchDialog(self, rows, self._ui_scale)
+        if dialog.exec() != QDialog.Accepted:
+            return
+        updated = dialog.edited_matches()
+        if not updated:
+            return
+        upsert_tactical_matches(self._tactical_path, updated)
+        self._storage_mtimes = self._snapshot_storage_mtimes()
+        self._tactical_match_loaded_count = max(self._tactical_match_loaded_count, self._tactical_match_page_size)
+        if updated:
+            self._tactical_selected_match_id = updated[-1].id
+        self._refresh_tactical_match_list()
+        self._refresh_tactical_opponent_report()
+        self._refresh_tactical_jokbo_results()
+        self._set_tactical_status(f"상대 이름 {len(updated)}건을 저장했습니다.", panel=panel)
 
     def _reset_tactical_match_list(self) -> None:
         self._tactical_match_loaded_count = self._tactical_match_page_size

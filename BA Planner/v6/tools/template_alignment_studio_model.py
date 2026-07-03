@@ -39,6 +39,8 @@ class RoiSpec:
     width: int = 128
     height: int = 128
     enabled: bool = True
+    shape: str = "rectangle"
+    slant: int = 0
 
 
 @dataclass
@@ -80,6 +82,22 @@ def load_project(path: Path) -> StudioProject:
     return StudioProject(reference, layers, rois or [RoiSpec()])
 
 
+def _roi_points(roi: RoiSpec) -> list[dict[str, int]]:
+    slant = int(roi.slant) if roi.shape == "parallelogram" else 0
+    return [
+        {"x": roi.x + slant, "y": roi.y},
+        {"x": roi.x + roi.width + slant, "y": roi.y},
+        {"x": roi.x + roi.width, "y": roi.y + roi.height},
+        {"x": roi.x, "y": roi.y + roi.height},
+    ]
+
+
+def _roi_payload(roi: RoiSpec) -> dict:
+    row = asdict(roi)
+    row["points"] = _roi_points(roi)
+    return row
+
+
 def save_project(project: StudioProject, path: Path) -> None:
     base = path.parent.resolve()
 
@@ -94,11 +112,12 @@ def save_project(project: StudioProject, path: Path) -> None:
 
     payload = asdict(project)
     payload["reference_path"] = portable(project.reference_path)
+    payload["rois"] = [_roi_payload(roi) for roi in project.rois]
     for row, layer in zip(payload["layers"], project.layers):
         row["path"] = portable(layer.path)
         row["font_path"] = portable(layer.font_path)
     # Keep a legacy primary ROI so older readers can still inspect the project.
-    payload["roi"] = asdict(project.rois[0]) if project.rois else asdict(RoiSpec())
+    payload["roi"] = _roi_payload(project.rois[0]) if project.rois else _roi_payload(RoiSpec())
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -202,13 +221,22 @@ def export_project(project: StudioProject, output_dir: Path) -> list[Path]:
         if not roi.enabled:
             continue
         name = _safe_name(roi.name)
-        box = (roi.x, roi.y, roi.x + roi.width, roi.y + roi.height)
+        points = _roi_points(roi)
+        xs = [point["x"] for point in points]
+        ys = [point["y"] for point in points]
+        box = (min(xs), min(ys), max(xs), max(ys))
         for prefix, image in (
             ("reference", reference), ("virtual_template", virtual),
             ("overlay_preview", preview),
         ):
             target = output_dir / f"{name}_{prefix}.png"
-            image.crop(box).save(target)
+            crop = image.crop(box)
+            if roi.shape == "parallelogram":
+                mask = Image.new("L", crop.size, 0)
+                local_points = [(point["x"] - box[0], point["y"] - box[1]) for point in points]
+                ImageDraw.Draw(mask).polygon(local_points, fill=255)
+                crop.putalpha(mask)
+            crop.save(target)
             paths.append(target)
     full = output_dir / "virtual_template_full.png"
     virtual.save(full)

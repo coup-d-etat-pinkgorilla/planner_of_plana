@@ -69,6 +69,22 @@ SKILL_FIELDS: tuple[str, ...] = (
     "skill_knockback",
 )
 SYNC_FIELDS: tuple[str, ...] = SCALAR_FIELDS + SKILL_FIELDS
+FORM_SYNC_FIELDS: tuple[str, ...] = (
+    "attack_type",
+    "attack_type_trait",
+    "defense_type",
+    "combat_class",
+    "cover_type",
+    "range_type",
+    "role",
+    "weapon_type",
+    "position",
+    "terrain_outdoor",
+    "terrain_urban",
+    "terrain_indoor",
+    "weapon3_terrain_boost",
+    *SKILL_FIELDS,
+)
 EXCLUDED_SKILL_STATS: frozenset[str] = frozenset({
     "IgnoreDelayCount",
 })
@@ -153,9 +169,14 @@ PATH_EXCEPTIONS: dict[str, str] = {
     "shoukouhou_misaki": "shokuhou_misaki",
     "shun_kid": "shun_small",
 }
-SCHALE_MERGE_PATHS: dict[str, tuple[str, ...]] = {
-    "hoshino_battle": ("hoshino_battle_tank", "hoshino_battle_dealer"),
-}
+SCHALE_MERGE_PATHS: dict[str, tuple[str, ...]] = {'hoshino_battle': ('hoshino_battle_tank', 'hoshino_battle_dealer'),
+ 'shun_swimsuit': ('shun_swimsuit', 'shunling_swimsuit')}
+
+
+def _default_form_template_name(local_student_id: str, form_index: int) -> str:
+    if form_index <= 1:
+        return f"{local_student_id}.png"
+    return f"{local_student_id}_{form_index - 1}.png"
 PATH_REPLACEMENTS: tuple[tuple[str, str], ...] = (
     ("_bunny_girl", "_bunnygirl"),
     ("_school_uniform", "_uniform"),
@@ -315,6 +336,9 @@ def parse_student_source(source: str) -> str:
 
 
 def local_id_to_schale_path(student_id: str) -> str:
+    merge_paths = SCHALE_MERGE_PATHS.get(student_id)
+    if merge_paths:
+        return merge_paths[0]
     if student_id in PATH_EXCEPTIONS:
         return PATH_EXCEPTIONS[student_id]
 
@@ -324,8 +348,19 @@ def local_id_to_schale_path(student_id: str) -> str:
     return normalized
 
 
+def _merge_local_id_for_schale_path(path_name: str) -> str | None:
+    normalized = _normalize_key(path_name)
+    for local_student_id, merge_paths in SCHALE_MERGE_PATHS.items():
+        if any(_normalize_key(path) == normalized for path in merge_paths):
+            return local_student_id
+    return None
+
+
 def schale_path_to_local_id(path_name: str) -> str:
     normalized = path_name.strip().lower()
+    merge_local_id = _merge_local_id_for_schale_path(normalized)
+    if merge_local_id:
+        return merge_local_id
     normalized = REVERSE_PATH_EXCEPTIONS.get(normalized, normalized)
     for old, new in REVERSE_PATH_REPLACEMENTS:
         normalized = normalized.replace(old, new)
@@ -825,6 +860,50 @@ def _merge_skill_values(*payloads: dict[str, Any]) -> dict[str, Any]:
     return merged
 
 
+def _form_payload_values(
+    local_student_id: str,
+    student: dict[str, Any],
+    schale_students: dict[str, dict[str, Any]],
+    items: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    payload = scalar_values(local_student_id, student, items)
+    payload.update(skill_values(student, schale_students))
+    return payload
+
+
+def multi_form_values(
+    local_student_id: str,
+    primary_student: dict[str, Any],
+    schale_students: dict[str, dict[str, Any]],
+    items: dict[str, dict[str, Any]],
+    *,
+    existing_forms: tuple[dict[str, Any], ...] | None = None,
+) -> tuple[dict[str, Any], ...]:
+    path_lookup = _student_path_lookup(schale_students)
+    merge_paths = SCHALE_MERGE_PATHS.get(local_student_id)
+    if not merge_paths:
+        return ()
+
+    forms: list[dict[str, Any]] = []
+    existing_forms = existing_forms or ()
+    for index, path_name in enumerate(merge_paths, start=1):
+        student = _schale_student_by_path(path_name, path_lookup)
+        if student is None:
+            continue
+        payload = _form_payload_values(local_student_id, student, schale_students, items)
+        previous = existing_forms[index - 1] if index - 1 < len(existing_forms) else {}
+        form: dict[str, Any] = {
+            "label": str(previous.get("label") or index),
+            "template_name": str(previous.get("template_name") or _default_form_template_name(local_student_id, index)),
+        }
+        for field_name in FORM_SYNC_FIELDS:
+            value = payload.get(field_name)
+            if value not in (None, "", []):
+                form[field_name] = value
+        forms.append(form)
+    return tuple(forms)
+
+
 def merged_skill_values(
     local_student_id: str,
     primary_student: dict[str, Any],
@@ -882,6 +961,7 @@ def build_student_meta_from_schale(
     source: str,
     *,
     existing_students: dict[str, dict[str, Any]] | None = None,
+    existing_multi_form_students: dict[str, tuple[dict[str, Any], ...]] | None = None,
     preferred_student_id: str | None = None,
     force_refresh: bool = False,
 ) -> dict[str, Any]:
@@ -894,6 +974,8 @@ def build_student_meta_from_schale(
     slug, schale_student = get_schale_student(source, schale_students=schale_students)
     local_student_id = (preferred_student_id or "").strip() or schale_path_to_local_id(slug)
     current_meta = dict(existing_students.get(local_student_id, {}))
+    existing_multi_form_students = existing_multi_form_students or {}
+    current_forms = tuple(existing_multi_form_students.get(local_student_id, ()))
 
     group_hint, variant_hint = _guess_variant_label(local_student_id, existing_students)
     display_name = str(current_meta.get("display_name") or _best_display_name(schale_student, local_student_id))
@@ -908,6 +990,13 @@ def build_student_meta_from_schale(
     }
     next_meta.update(scalar_values(local_student_id, schale_student, schale_items))
     next_meta.update(merged_skill_values(local_student_id, schale_student, schale_students))
+    next_forms = multi_form_values(
+        local_student_id,
+        schale_student,
+        schale_students,
+        schale_items,
+        existing_forms=current_forms,
+    )
 
     changed_fields = sorted(
         field_name
@@ -922,6 +1011,9 @@ def build_student_meta_from_schale(
         "meta": next_meta,
         "changed_fields": changed_fields,
         "schale_name": _best_display_name(schale_student, local_student_id),
+        "current_forms": current_forms,
+        "multi_form_meta": next_forms,
+        "multi_form_changed": bool(next_forms and next_forms != current_forms),
     }
 
 
@@ -930,6 +1022,7 @@ def apply_sync_fields(
     *,
     selected_ids: set[str] | None = None,
     force_refresh: bool = False,
+    multi_form_students: dict[str, tuple[dict[str, Any], ...]] | None = None,
 ) -> tuple[int, list[str]]:
     if force_refresh:
         clear_cache()
@@ -973,6 +1066,19 @@ def apply_sync_fields(
             if meta.get(field_name) != next_value:
                 meta[field_name] = next_value
                 changed = True
+
+        if multi_form_students is not None and student_id in SCHALE_MERGE_PATHS:
+            next_forms = multi_form_values(
+                student_id,
+                schale_student,
+                schale_students,
+                schale_items,
+                existing_forms=multi_form_students.get(student_id, ()),
+            )
+            if next_forms and multi_form_students.get(student_id) != next_forms:
+                multi_form_students[student_id] = next_forms
+                changed = True
+
         if changed:
             updated_count += 1
 

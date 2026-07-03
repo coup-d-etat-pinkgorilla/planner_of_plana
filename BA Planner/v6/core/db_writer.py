@@ -10,6 +10,7 @@ core/db_writer.py — ScanResult → SQLite 저장/업데이트
   - load_student_history() : 변경 이력 조회
 """
 
+import json
 import sqlite3
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -48,6 +49,7 @@ _STUDENT_FIELDS = (
     "combat_atk",
     "combat_def",
     "combat_heal",
+    "form_combat_stats",
     "stat_hp",
     "stat_atk",
     "stat_heal",
@@ -119,6 +121,7 @@ def _student_to_dict(entry: StudentEntry) -> dict[str, Any]:
         "combat_atk":   entry.combat_atk,
         "combat_def":   entry.combat_def,
         "combat_heal":  entry.combat_heal,
+        "form_combat_stats": json.dumps(entry.form_combat_stats or {}, ensure_ascii=False, sort_keys=True),
         "stat_hp":      entry.stat_hp,
         "stat_atk":     entry.stat_atk,
         "stat_heal":    entry.stat_heal,
@@ -170,7 +173,7 @@ def _upsert_student(
             ex_skill, skill1, skill2, skill3,
             equip1, equip2, equip3, equip4,
             equip1_level, equip2_level, equip3_level,
-            combat_hp, combat_atk, combat_def, combat_heal,
+            combat_hp, combat_atk, combat_def, combat_heal, form_combat_stats,
             stat_hp, stat_atk, stat_heal,
             last_seen_at, last_scan_id
         ) VALUES (
@@ -179,7 +182,7 @@ def _upsert_student(
             :ex_skill, :skill1, :skill2, :skill3,
             :equip1, :equip2, :equip3, :equip4,
             :equip1_level, :equip2_level, :equip3_level,
-            :combat_hp, :combat_atk, :combat_def, :combat_heal,
+            :combat_hp, :combat_atk, :combat_def, :combat_heal, :form_combat_stats,
             :stat_hp, :stat_atk, :stat_heal,
             :last_seen_at, :last_scan_id
         )
@@ -205,6 +208,7 @@ def _upsert_student(
             combat_atk    = excluded.combat_atk,
             combat_def    = excluded.combat_def,
             combat_heal   = excluded.combat_heal,
+            form_combat_stats = excluded.form_combat_stats,
             stat_hp       = excluded.stat_hp,
             stat_atk      = excluded.stat_atk,
             stat_heal     = excluded.stat_heal,

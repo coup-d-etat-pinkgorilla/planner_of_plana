@@ -110,6 +110,7 @@ class GuideDeckSlot:
     alias: str = ""
     is_borrowed: bool = False
     first_order: int = 0
+    form_index: int = 1
     star_conditions: dict[str, int] = field(default_factory=dict)
     skill_conditions: dict[str, int] = field(default_factory=dict)
     equipment_conditions: dict[str, int] = field(default_factory=dict)
@@ -232,6 +233,10 @@ def sanitize_deck_slots(mode: str, slots: list[GuideDeckSlot] | list[dict[str, A
             first_order = max(0, int(getattr(slot, "first_order", 0) or 0))
         except (TypeError, ValueError):
             first_order = 0
+        try:
+            form_index = max(1, int(getattr(slot, "form_index", 1) or 1))
+        except (TypeError, ValueError):
+            form_index = 1
         star_conditions = _sanitize_int_condition_map(
             getattr(slot, "star_conditions", {}) or {},
             allowed_keys={"star", "weapon_star", "weapon_level"},
@@ -268,6 +273,7 @@ def sanitize_deck_slots(mode: str, slots: list[GuideDeckSlot] | list[dict[str, A
             alias=str(slot.alias or "").strip(),
             is_borrowed=bool(slot.is_borrowed),
             first_order=first_order,
+            form_index=form_index,
             star_conditions=star_conditions,
             skill_conditions=skill_conditions,
             equipment_conditions=equipment_conditions,

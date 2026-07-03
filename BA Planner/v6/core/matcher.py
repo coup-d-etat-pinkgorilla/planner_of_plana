@@ -181,6 +181,10 @@ STUDENT_TEXTURE_TOP_K = 10
 STUDENT_TEXTURE_CONSENSUS_SCORE_FLOOR = 0.86
 STUDENT_TEXTURE_CONSENSUS_MARGIN = 0.10
 STUDENT_TEXTURE_PREFILTER_MARGIN = 0.008
+STUDENT_TEXTURE_FAST_VERIFY_SCORE_FLOOR = 0.83
+STUDENT_TEXTURE_FAST_VERIFY_ROBUST_MARGIN = 0.18
+STUDENT_TEXTURE_FAST_VERIFY_FEATURE_MARGIN = 0.05
+STUDENT_TEXTURE_FAST_VERIFY_PRECISE_SCORE = 0.68
 STUDENT_TEXTURE_ROBUST_WIDTH = 160
 STUDENT_TEXTURE_ROBUST_SCALES = (0.96, 1.0, 1.04)
 STUDENT_TEXTURE_TOP_K_ENV = "BA_STUDENT_TOPK"
@@ -1212,6 +1216,63 @@ def _match_student_texture_with_topk_decision(
                 )
                 return full_sid, full_score, full_margin, False
             return sid, score, margin, True
+        fast_verify = (
+            sid is not None
+            and sid == feature_sid
+            and sid in cands
+            and score >= STUDENT_TEXTURE_FAST_VERIFY_SCORE_FLOOR
+            and margin >= STUDENT_TEXTURE_FAST_VERIFY_ROBUST_MARGIN
+            and feature_margin >= STUDENT_TEXTURE_FAST_VERIFY_FEATURE_MARGIN
+            and (not injected_ids or sid in injected_ids)
+        )
+        if fast_verify:
+            verify_sid, verify_score, verify_margin = _match_student_texture_precise(
+                crop,
+                {sid: cands[sid]},
+                label=f"{label}:fast_verify",
+            )
+            verified = (
+                verify_sid == sid
+                and verify_score >= STUDENT_TEXTURE_FAST_VERIFY_PRECISE_SCORE
+            )
+            _log.debug(
+                "texture_topk_fast_verify: method=%s k=%d sid=%s "
+                "robust_score=%.3f robust_margin=%.3f feature_score=%.3f "
+                "feature_margin=%.3f precise_score=%.3f accepted=%s pool=%d",
+                method,
+                top_k,
+                sid,
+                score,
+                margin,
+                feature_score,
+                feature_margin,
+                verify_score,
+                str(verified).lower(),
+                len(cands),
+            )
+            if verified:
+                if _student_texture_topk_shadow_from_env():
+                    full_sid, full_score, full_margin = _match_student_texture_precise(
+                        crop,
+                        cands,
+                        label=f"{label}:shadow_full",
+                    )
+                    matched = verify_sid == full_sid
+                    _log.info(
+                        "texture_topk_shadow: method=%s k=%d topk_sid=%s full_sid=%s "
+                        "matched=%s topk_score=%.3f full_score=%.3f full_margin=%.3f pool=%d",
+                        method,
+                        top_k,
+                        verify_sid,
+                        full_sid,
+                        str(matched).lower(),
+                        verify_score,
+                        full_score,
+                        full_margin,
+                        len(cands),
+                    )
+                    return full_sid, full_score, full_margin, False
+                return verify_sid, verify_score, verify_margin, True
         _log.debug(
             "texture_topk_fallback: method=%s k=%d sid=%s score=%.3f margin=%.3f pool=%d",
             method,
@@ -2112,9 +2173,9 @@ def _basic_equipment_icon_template(
 
 
 _BASIC_EQUIPMENT_LEVEL_RANGES = {
-    1: range(1, 11), 2: range(11, 21), 3: range(21, 31), 4: range(31, 41),
-    5: range(41, 46), 6: range(46, 51), 7: range(51, 56), 8: range(56, 61),
-    9: range(61, 66), 10: range(66, 71),
+    1: range(1, 11), 2: range(1, 21), 3: range(1, 31), 4: range(1, 41),
+    5: range(1, 46), 6: range(1, 51), 7: range(1, 56), 8: range(1, 61),
+    9: range(1, 66), 10: range(1, 71),
 }
 _BASIC_EQUIPMENT_CARD_X = {1: 1356, 2: 1542, 3: 1728}
 _BASIC_EQUIPMENT_TEXT_X = {1: 1419, 2: 1605, 3: 1791}

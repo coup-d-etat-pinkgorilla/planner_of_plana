@@ -5,6 +5,7 @@ import ast
 import importlib
 import json
 import pprint
+import re
 import sys
 import tkinter as tk
 from collections import Counter
@@ -16,12 +17,15 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from core.config import get_storage_paths
+import core.student_meta as student_meta
+import tools.schaledb_sync as schaledb_sync
 from gui.ui_scale import get_ui_scale, scale_px
 from tools.schaledb_sync import SYNC_FIELDS, build_student_meta_from_schale, local_id_to_schale_path, parse_student_source
 from tools.student_meta_options import FIELD_OPTIONS
 
 MODULE_NAME = "core.student_meta"
 MODULE_PATH = ROOT_DIR / "core" / "student_meta.py"
+SCHALE_SYNC_MODULE_PATH = ROOT_DIR / "tools" / "schaledb_sync.py"
 PLAN_FILE = "item_plan_adjustments.json"
 STUDENT_TEMPLATE_DIR = ROOT_DIR / "templates" / "students"
 PORTRAIT_TEMPLATE_DIR = ROOT_DIR / "templates" / "students_portraits"
@@ -355,8 +359,32 @@ def resolve_match_template_path(student_id: str) -> Path | None:
     return _resolve_student_asset_path(STUDENT_TEMPLATE_DIR, student_id)
 
 
+def resolve_match_template_paths(student_id: str) -> tuple[Path | None, ...]:
+    indexes = getattr(student_meta, "form_indexes", lambda value: (1,))(student_id)
+    paths: list[Path | None] = []
+    for form_index in indexes:
+        template_name = getattr(student_meta, "template_path_for_form", lambda value, _form=None: f"{value}.png")(student_id, form_index)
+        stem = Path(str(template_name)).stem
+        paths.append(_resolve_student_asset_path(STUDENT_TEMPLATE_DIR, stem))
+    if not paths:
+        paths.append(resolve_match_template_path(student_id))
+    return tuple(paths)
+
+
 def resolve_student_portrait_path(student_id: str) -> Path | None:
-    return _resolve_student_asset_path(PORTRAIT_TEMPLATE_DIR, student_id)
+    template_name = getattr(student_meta, "template_path", lambda value: f"{value}.png")(student_id)
+    return resolve_portrait_template_path(template_name) or _resolve_student_asset_path(PORTRAIT_TEMPLATE_DIR, student_id)
+
+
+def resolve_student_portrait_paths(student_id: str) -> tuple[Path | None, ...]:
+    indexes = getattr(student_meta, "form_indexes", lambda value: (1,))(student_id)
+    paths: list[Path | None] = []
+    for form_index in indexes:
+        template_name = getattr(student_meta, "template_path_for_form", lambda value, _form=None: f"{value}.png")(student_id, form_index)
+        paths.append(resolve_portrait_template_path(template_name))
+    if not paths:
+        paths.append(resolve_student_portrait_path(student_id))
+    return tuple(paths)
 
 
 def resolve_student_eleph_path(student_id: str) -> Path | None:
@@ -367,17 +395,23 @@ def _asset_status(path: Path | None) -> str:
     return "OK" if path is not None else "Missing"
 
 
+def _multi_asset_status(paths: tuple[Path | None, ...]) -> str:
+    missing = sum(1 for path in paths if path is None)
+    if missing:
+        return f"Missing ({len(paths) - missing}/{len(paths)})" if len(paths) > 1 else "Missing"
+    return f"OK ({len(paths)})" if len(paths) > 1 else "OK"
+
+
 def build_student_asset_status(student_id: str) -> dict[str, str]:
     return {
-        "match_template_asset": _asset_status(resolve_match_template_path(student_id)),
-        "portrait_asset": _asset_status(resolve_student_portrait_path(student_id)),
+        "match_template_asset": _multi_asset_status(resolve_match_template_paths(student_id)),
+        "portrait_asset": _multi_asset_status(resolve_student_portrait_paths(student_id)),
         "eleph_asset": _asset_status(resolve_student_eleph_path(student_id)),
     }
 
-
 def warn_missing_portrait_template(student_id: str, meta: dict[str, object]) -> bool:
     template_name = str(meta.get("template_name") or "").strip()
-    if resolve_portrait_template_path(template_name) is not None:
+    if all(path is not None for path in resolve_student_portrait_paths(student_id)):
         return False
     display_name = str(meta.get("display_name") or student_id)
     messagebox.showwarning(
@@ -398,6 +432,60 @@ def _write_students(students: dict[str, dict]) -> None:
     source = MODULE_PATH.read_text(encoding="utf-8")
     rendered = "STUDENTS: dict[str, StudentMeta] = " + pprint.pformat(students, width=100, sort_dicts=False)
     MODULE_PATH.write_text(_replace_named_assignment(source, "STUDENTS", rendered), encoding="utf-8")
+
+
+def get_multi_form_students() -> dict[str, tuple[dict[str, object], ...]]:
+    module = _reload_module()
+    return {
+        student_id: tuple(dict(form) for form in forms)
+        for student_id, forms in getattr(module, "MULTI_FORM_STUDENTS", {}).items()
+    }
+
+
+def _write_multi_form_students(forms: dict[str, tuple[dict[str, object], ...]]) -> None:
+    source = MODULE_PATH.read_text(encoding="utf-8")
+    rendered = (
+        "MULTI_FORM_STUDENTS: dict[str, tuple[StudentFormMeta, ...]] = "
+        + pprint.pformat(forms, width=100, sort_dicts=False)
+    )
+    MODULE_PATH.write_text(_replace_named_assignment(source, "MULTI_FORM_STUDENTS", rendered), encoding="utf-8")
+
+
+
+def get_schale_merge_paths() -> dict[str, tuple[str, ...]]:
+    module = importlib.reload(schaledb_sync)
+    return {
+        student_id: tuple(str(path).strip() for path in paths if str(path).strip())
+        for student_id, paths in getattr(module, "SCHALE_MERGE_PATHS", {}).items()
+    }
+
+
+def _write_schale_merge_paths(merge_paths: dict[str, tuple[str, ...]]) -> None:
+    normalized = {
+        str(student_id).strip(): tuple(str(path).strip() for path in paths if str(path).strip())
+        for student_id, paths in merge_paths.items()
+        if str(student_id).strip()
+    }
+    normalized = {student_id: paths for student_id, paths in sorted(normalized.items()) if paths}
+    seen_paths: dict[str, str] = {}
+    for student_id, paths in normalized.items():
+        for path in paths:
+            key = path.casefold()
+            previous = seen_paths.get(key)
+            if previous and previous != student_id:
+                raise ValueError(f"SchaleDB slug '{path}' is already used by {previous}.")
+            seen_paths[key] = student_id
+    source = SCHALE_SYNC_MODULE_PATH.read_text(encoding="utf-8")
+    rendered = "SCHALE_MERGE_PATHS: dict[str, tuple[str, ...]] = " + pprint.pformat(
+        normalized,
+        width=100,
+        sort_dicts=False,
+    )
+    SCHALE_SYNC_MODULE_PATH.write_text(
+        _replace_named_assignment(source, "SCHALE_MERGE_PATHS", rendered),
+        encoding="utf-8",
+    )
+    importlib.reload(schaledb_sync)
 
 
 def get_jp_only_ids() -> set[str]:
@@ -510,6 +598,13 @@ def load_item_plan_adjustments(path: Path) -> dict[str, int]:
 
 
 def _resolved_field_value(student_id: str, meta: dict[str, object], field_name: str) -> object:
+    value = meta.get(field_name)
+    if value not in (None, ""):
+        return value
+    if field_name in {"has_favorite_item_jp", "has_favorite_item_kr"}:
+        legacy = meta.get("has_favorite_item")
+        if legacy not in (None, ""):
+            return legacy
     module = _load_module()
     getter = getattr(module, field_name, None)
     if callable(getter):
@@ -517,7 +612,7 @@ def _resolved_field_value(student_id: str, meta: dict[str, object], field_name: 
             return getter(student_id)
         except Exception:
             pass
-    return meta.get(field_name)
+    return value
 
 
 def collect_attribute_value_options(students: dict[str, dict], field_name: str) -> tuple[str, ...]:
@@ -678,6 +773,19 @@ def build_metadata_detail_rows(student_id: str, students: dict[str, dict]) -> li
     rows = [("student_id", "Student ID", student_id), ("server", "Server", _server_label(student_id))]
     for field_name, value in build_student_asset_status(student_id).items():
         rows.append((field_name, LABELS.get(field_name, field_name), value))
+    forms = get_multi_form_students().get(student_id, ())
+    rows.append(("multi_form_count", "Multi Forms", str(len(forms)) if forms else "single"))
+    for index, form in enumerate(forms, start=1):
+        summary_bits = [
+            f"template={form.get('template_name', '')}",
+            f"role={form.get('role', '')}",
+            f"atk={form.get('attack_type', '')}",
+            f"def={form.get('defense_type', '')}",
+        ]
+        passive = form.get("passive_stat")
+        if passive:
+            summary_bits.append(f"passive={_display('passive_stat', passive)}")
+        rows.append((f"form_{index}", f"Form {form.get('label') or index}", "  ".join(summary_bits)))
     for field_name in DETAIL_FIELD_ORDER:
         if field_name in {"match_template_asset", "portrait_asset", "eleph_asset"}:
             continue
@@ -771,6 +879,12 @@ class StudentMetaToolApp:
         self.preview_summary_var = tk.StringVar(value="Enter a SchaleDB URL or slug to preview a student.")
         self.preview_tree: ttk.Treeview | None = None
         self.preview_payload: dict[str, object] | None = None
+        self.form_summary_var = tk.StringVar(value="No student loaded")
+        self.form_text: tk.Text | None = None
+        self.merge_local_id_var = tk.StringVar()
+        self.merge_paths_var = tk.StringVar()
+        self.merge_summary_var = tk.StringVar(value="Manage SchaleDB merge paths for multi-form imports.")
+        self.merge_tree: ttk.Treeview | None = None
         self._build_ui()
         self._refresh_student_list()
         self._new_student()
@@ -778,6 +892,7 @@ class StudentMetaToolApp:
         self._refresh_student_analysis()
         self._reload_inventory_analysis()
         self._refresh_metadata_debug()
+        self._refresh_schale_merge_path_list()
 
     def _build_ui(self) -> None:
         self.root.columnconfigure(0, weight=1)
@@ -881,6 +996,20 @@ class StudentMetaToolApp:
         ttk.Button(action_bar, text="Duplicate as New", command=self._duplicate_current).grid(row=0, column=2)
         self.status_var = tk.StringVar(value="Ready")
         ttk.Label(right, textvariable=self.status_var).grid(row=3, column=0, sticky="w", pady=(10, 0))
+
+        form_frame = ttk.LabelFrame(right, text="Multi Form Overrides", padding=8)
+        form_frame.grid(row=4, column=0, sticky="ew", pady=(10, 0))
+        form_frame.columnconfigure(0, weight=1)
+        ttk.Label(form_frame, textvariable=self.form_summary_var).grid(row=0, column=0, sticky="w")
+        form_buttons = ttk.Frame(form_frame)
+        form_buttons.grid(row=0, column=1, sticky="e", padx=(8, 0))
+        ttk.Button(form_buttons, text="Load", command=self._load_multi_form_editor).grid(row=0, column=0, padx=(0, 6))
+        ttk.Button(form_buttons, text="Seed 2 Forms", command=self._seed_multi_form_editor).grid(row=0, column=1, padx=(0, 6))
+        ttk.Button(form_buttons, text="Save Forms", command=self._save_multi_form_editor).grid(row=0, column=2, padx=(0, 6))
+        ttk.Button(form_buttons, text="Clear Forms", command=self._clear_multi_form_editor).grid(row=0, column=3)
+        self.form_text = tk.Text(form_frame, height=8, width=96, wrap="none")
+        self.form_text.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(8, 0))
+        self._bind_scroll_region(self.form_text)
 
     def _build_student_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
@@ -1005,6 +1134,28 @@ class StudentMetaToolApp:
             self.preview_tree.column(key, width=width, anchor="center" if key == "status" else "w")
         self.preview_tree.grid(row=3, column=0, columnspan=8, sticky="ew", pady=(8, 0))
 
+        merge_frame = ttk.LabelFrame(sync_frame, text="SchaleDB Merge Paths", padding=8)
+        merge_frame.grid(row=4, column=0, columnspan=8, sticky="ew", pady=(10, 0))
+        merge_frame.columnconfigure(1, weight=1)
+        merge_frame.columnconfigure(3, weight=1)
+        ttk.Label(merge_frame, text="Local ID").grid(row=0, column=0, sticky="w")
+        ttk.Entry(merge_frame, textvariable=self.merge_local_id_var, width=28).grid(row=0, column=1, sticky="ew", padx=(6, 12))
+        ttk.Label(merge_frame, text="SchaleDB slugs").grid(row=0, column=2, sticky="w")
+        ttk.Entry(merge_frame, textvariable=self.merge_paths_var).grid(row=0, column=3, sticky="ew", padx=(6, 12))
+        merge_buttons = ttk.Frame(merge_frame)
+        merge_buttons.grid(row=0, column=4, sticky="e")
+        ttk.Button(merge_buttons, text="Use Selected", command=self._prefill_merge_path_from_selection).grid(row=0, column=0, padx=(0, 6))
+        ttk.Button(merge_buttons, text="Load", command=self._load_merge_path_editor).grid(row=0, column=1, padx=(0, 6))
+        ttk.Button(merge_buttons, text="Save", command=self._save_merge_path_editor).grid(row=0, column=2, padx=(0, 6))
+        ttk.Button(merge_buttons, text="Clear", command=self._clear_merge_path_editor).grid(row=0, column=3)
+        ttk.Label(merge_frame, textvariable=self.merge_summary_var).grid(row=1, column=0, columnspan=5, sticky="w", pady=(6, 6))
+        self.merge_tree = ttk.Treeview(merge_frame, columns=("local_id", "paths"), show="headings", height=4)
+        for key, text, width in (("local_id", "Local ID", 180), ("paths", "SchaleDB slugs", 520)):
+            self.merge_tree.heading(key, text=text)
+            self.merge_tree.column(key, width=width, anchor="w")
+        self.merge_tree.grid(row=2, column=0, columnspan=5, sticky="ew")
+        self.merge_tree.bind("<<TreeviewSelect>>", self._on_merge_path_selected)
+
         body = ttk.Panedwindow(parent, orient="horizontal")
         body.grid(row=1, column=0, sticky="nsew")
         table_frame = ttk.Frame(body, padding=4)
@@ -1047,6 +1198,92 @@ class StudentMetaToolApp:
         self.detail_tree.grid(row=1, column=0, sticky="nsew")
         body.add(detail_frame, weight=2)
 
+    def _refresh_schale_merge_path_list(self, *, select_student_id: str | None = None) -> None:
+        merge_paths = get_schale_merge_paths()
+        if self.merge_tree is not None:
+            for item_id in self.merge_tree.get_children():
+                self.merge_tree.delete(item_id)
+            for student_id, paths in merge_paths.items():
+                self.merge_tree.insert("", "end", iid=student_id, values=(student_id, ", ".join(paths)))
+        if select_student_id and self.merge_tree is not None and self.merge_tree.exists(select_student_id):
+            self.merge_tree.selection_set(select_student_id)
+            self.merge_tree.focus(select_student_id)
+        self.merge_summary_var.set(f"{len(merge_paths)} merge path rules loaded.")
+
+    def _selected_merge_local_id(self) -> str | None:
+        if self.merge_tree is None:
+            return None
+        selection = self.merge_tree.selection()
+        return str(selection[0]) if selection else None
+
+    def _on_merge_path_selected(self, _event=None) -> None:
+        student_id = self._selected_merge_local_id()
+        if student_id:
+            self._load_merge_path_editor(student_id)
+
+    def _load_merge_path_editor(self, student_id: str | None = None) -> None:
+        student_id = student_id or self.merge_local_id_var.get().strip()
+        if not student_id:
+            messagebox.showinfo("Merge Paths", "Enter or select a local student ID first.")
+            return
+        merge_paths = get_schale_merge_paths()
+        paths = merge_paths.get(student_id, ())
+        self.merge_local_id_var.set(student_id)
+        self.merge_paths_var.set(", ".join(paths))
+        label = ", ".join(paths) if paths else "no merge rule"
+        self.merge_summary_var.set(f"{student_id}: {label}")
+
+    def _prefill_merge_path_from_selection(self) -> None:
+        student_id = self._selected_metadata_student_id() or self.vars["student_id"].get().strip()
+        if not student_id:
+            messagebox.showinfo("Merge Paths", "Select a student from the table or editor first.")
+            return
+        merge_paths = get_schale_merge_paths()
+        paths = merge_paths.get(student_id) or (local_id_to_schale_path(student_id),)
+        self.merge_local_id_var.set(student_id)
+        self.merge_paths_var.set(", ".join(paths))
+        self.merge_summary_var.set(f"Editing merge rule for {student_id}.")
+
+    def _parse_merge_path_editor(self) -> tuple[str, tuple[str, ...]]:
+        student_id = self.merge_local_id_var.get().strip()
+        if not student_id:
+            raise ValueError("Local ID is required.")
+        paths = tuple(part.strip().lower() for part in re.split(r"[,\s]+", self.merge_paths_var.get()) if part.strip())
+        if len(paths) < 2:
+            raise ValueError("Enter at least two SchaleDB slugs for a merge rule.")
+        return student_id, paths
+
+    def _save_merge_path_editor(self) -> None:
+        try:
+            student_id, paths = self._parse_merge_path_editor()
+            merge_paths = get_schale_merge_paths()
+            merge_paths[student_id] = paths
+            _write_schale_merge_paths(merge_paths)
+        except Exception as exc:
+            messagebox.showerror("Merge Path Save Failed", str(exc))
+            return
+        self._refresh_schale_merge_path_list(select_student_id=student_id)
+        self.merge_summary_var.set(f"Saved {student_id}: {', '.join(paths)}")
+        self.status_var.set(f"Saved SchaleDB merge paths: {student_id}")
+
+    def _clear_merge_path_editor(self) -> None:
+        student_id = self.merge_local_id_var.get().strip() or self._selected_merge_local_id()
+        if not student_id:
+            self.merge_paths_var.set("")
+            return
+        try:
+            merge_paths = get_schale_merge_paths()
+            removed = merge_paths.pop(student_id, None)
+            _write_schale_merge_paths(merge_paths)
+        except Exception as exc:
+            messagebox.showerror("Merge Path Clear Failed", str(exc))
+            return
+        self.merge_local_id_var.set(student_id)
+        self.merge_paths_var.set("")
+        self._refresh_schale_merge_path_list()
+        self.merge_summary_var.set(f"Cleared {student_id}." if removed else f"No merge rule existed for {student_id}.")
+        self.status_var.set(f"Cleared SchaleDB merge paths: {student_id}")
+
     def _current_attribute_name(self) -> str:
         for field_name in ANALYTICS_FIELDS:
             if LABELS[field_name] == self.attribute_var.get():
@@ -1086,6 +1323,109 @@ class StudentMetaToolApp:
         for var in self.vars.values():
             var.set("")
 
+
+    def _current_editor_student_id(self) -> str:
+        return self.vars.get("student_id", tk.StringVar()).get().strip()
+
+    def _set_multi_form_editor_text(self, text: str) -> None:
+        if self.form_text is None:
+            return
+        self.form_text.delete("1.0", tk.END)
+        if text:
+            self.form_text.insert("1.0", text)
+
+    def _multi_form_text_for_student(self, student_id: str) -> str:
+        forms = get_multi_form_students().get(student_id, ())
+        if not forms:
+            return ""
+        return pprint.pformat(tuple(dict(form) for form in forms), width=100, sort_dicts=False)
+
+    def _refresh_multi_form_summary(self, student_id: str | None = None) -> None:
+        student_id = student_id or self._current_editor_student_id()
+        if not student_id:
+            self.form_summary_var.set("No student loaded")
+            return
+        forms = get_multi_form_students().get(student_id, ())
+        if not forms:
+            self.form_summary_var.set(f"{student_id}: single form")
+            return
+        labels = ", ".join(str(form.get("label") or index) for index, form in enumerate(forms, start=1))
+        self.form_summary_var.set(f"{student_id}: {len(forms)} forms ({labels})")
+
+    def _load_multi_form_editor(self, student_id: str | None = None) -> None:
+        student_id = student_id or self._current_editor_student_id()
+        self._set_multi_form_editor_text(self._multi_form_text_for_student(student_id) if student_id else "")
+        self._refresh_multi_form_summary(student_id)
+
+    def _seed_multi_form_editor(self) -> None:
+        student_id = self._current_editor_student_id()
+        if not student_id:
+            messagebox.showinfo("Multi Form", "Set a student_id first.")
+            return
+        template_name = self.vars.get("template_name", tk.StringVar(value=f"{student_id}.png")).get().strip() or f"{student_id}.png"
+        stem = Path(template_name).stem
+        suffix = Path(template_name).suffix or ".png"
+        forms = (
+            {"label": "1", "template_name": template_name},
+            {"label": "2", "template_name": f"{stem}_1{suffix}"},
+        )
+        self._set_multi_form_editor_text(pprint.pformat(forms, width=100, sort_dicts=False))
+        self.form_summary_var.set(f"{student_id}: seeded 2 forms")
+
+    def _parse_multi_form_editor(self) -> tuple[dict[str, object], ...]:
+        if self.form_text is None:
+            return ()
+        raw = self.form_text.get("1.0", tk.END).strip()
+        if not raw:
+            return ()
+        parsed = ast.literal_eval(raw)
+        if isinstance(parsed, dict):
+            parsed_forms = (parsed,)
+        elif isinstance(parsed, (list, tuple)):
+            parsed_forms = tuple(parsed)
+        else:
+            raise ValueError("Forms must be a dict, list, or tuple of dicts.")
+        forms: list[dict[str, object]] = []
+        for index, value in enumerate(parsed_forms, start=1):
+            if not isinstance(value, dict):
+                raise ValueError(f"Form {index} must be a dict.")
+            form = dict(value)
+            form.setdefault("label", str(index))
+            template_name = str(form.get("template_name") or "").strip()
+            if not template_name:
+                raise ValueError(f"Form {index} requires template_name.")
+            form["template_name"] = template_name
+            forms.append(form)
+        return tuple(forms)
+
+    def _save_multi_form_editor(self) -> None:
+        student_id = self._current_editor_student_id()
+        if not student_id:
+            messagebox.showinfo("Multi Form", "Set a student_id first.")
+            return
+        try:
+            forms = self._parse_multi_form_editor()
+            all_forms = get_multi_form_students()
+            if forms:
+                all_forms[student_id] = forms
+            else:
+                all_forms.pop(student_id, None)
+            _write_multi_form_students(all_forms)
+        except Exception as exc:
+            messagebox.showerror("Multi Form Save Failed", str(exc))
+            return
+        self._refresh_multi_form_summary(student_id)
+        self._refresh_metadata_debug(select_student_id=student_id)
+        self.status_var.set(f"Saved forms: {student_id}")
+
+    def _clear_multi_form_editor(self) -> None:
+        student_id = self._current_editor_student_id()
+        self._set_multi_form_editor_text("")
+        if student_id:
+            self.form_summary_var.set(f"{student_id}: forms cleared in editor")
+        else:
+            self.form_summary_var.set("No student loaded")
+
     def _load_student_into_form(self, student_id: str) -> None:
         self.selected_student_id = student_id
         meta = self.students[student_id]
@@ -1095,6 +1435,7 @@ class StudentMetaToolApp:
             name = str(spec["name"])
             if name != "student_id":
                 self.vars[name].set(_display(name, _resolved_field_value(student_id, meta, name)))
+        self._load_multi_form_editor(student_id)
         self.status_var.set(f"Loaded: {student_id}")
 
     def _on_select_student(self, _event=None) -> None:
@@ -1105,6 +1446,8 @@ class StudentMetaToolApp:
     def _new_student(self) -> None:
         self.selected_student_id = None
         self._clear_form()
+        self._set_multi_form_editor_text("")
+        self._refresh_multi_form_summary("")
         self.status_var.set("New student form")
 
     def _refresh_field_options(self) -> None:
@@ -1119,6 +1462,7 @@ class StudentMetaToolApp:
             messagebox.showinfo("Duplicate", "Load a student first.")
             return
         self.vars["student_id"].set(f"{current_id}_copy")
+        self._seed_multi_form_editor() if get_multi_form_students().get(current_id) else self._set_multi_form_editor_text("")
         self.status_var.set("Duplicated into new draft")
 
     def _collect_form_data(self) -> tuple[str, dict[str, object | None]]:
@@ -1228,6 +1572,7 @@ class StudentMetaToolApp:
         self._refresh_attribute_value_options()
         self._refresh_student_analysis()
         self._refresh_metadata_debug(select_student_id=preserve_student_id)
+        self._refresh_schale_merge_path_list(select_student_id=preserve_student_id)
         if preserve_student_id and preserve_student_id in self.students:
             self._load_student_into_form(preserve_student_id)
         elif preserve_student_id is None:
@@ -1340,6 +1685,10 @@ class StudentMetaToolApp:
 
     def _preview_schale_import(self) -> None:
         source = self.preview_source_var.get().strip()
+        preferred_student_id = self.preview_student_id_var.get().strip()
+        if not source and preferred_student_id:
+            source = local_id_to_schale_path(preferred_student_id)
+            self.preview_source_var.set(source)
         if not source:
             messagebox.showinfo("SchaleDB Preview", "Enter a SchaleDB URL or student slug first.")
             return
@@ -1347,7 +1696,8 @@ class StudentMetaToolApp:
             payload = build_student_meta_from_schale(
                 source,
                 existing_students=self.students,
-                preferred_student_id=self.preview_student_id_var.get().strip() or None,
+                existing_multi_form_students=get_multi_form_students(),
+                preferred_student_id=preferred_student_id or None,
             )
         except Exception as exc:
             messagebox.showerror("SchaleDB Preview Failed", str(exc))
@@ -1358,6 +1708,8 @@ class StudentMetaToolApp:
         is_new = bool(payload["is_new"])
         slug = str(payload["slug"])
         changed = len(payload["changed_fields"])
+        form_count = len(payload.get("multi_form_meta") or ())
+        form_changed = bool(payload.get("multi_form_changed"))
         try:
             parsed_slug = parse_student_source(source)
         except Exception:
@@ -1368,9 +1720,10 @@ class StudentMetaToolApp:
             self.preview_mark_jp_only_var.set(True)
         current_meta = payload["current_meta"]
         next_meta = payload["meta"]
+        form_note = f"  forms={form_count}{' changed' if form_changed else ''}" if form_count else ""
         self.preview_summary_var.set(
             f"Preview ready: slug={slug}  local_id={resolved_student_id}  "
-            f"{'new student' if is_new else 'existing student'}  changed_fields={changed}"
+            f"{'new student' if is_new else 'existing student'}  changed_fields={changed}{form_note}"
         )
         self._populate_tree(self.preview_tree, build_preview_diff_rows(current_meta, next_meta))
 
@@ -1386,6 +1739,13 @@ class StudentMetaToolApp:
         for field_name, value in meta.items():
             if field_name in self.vars:
                 self.vars[field_name].set(_display(field_name, value))
+        forms = tuple(dict(form) for form in (self.preview_payload.get("multi_form_meta") or ()))
+        if forms:
+            self._set_multi_form_editor_text(pprint.pformat(forms, width=100, sort_dicts=False))
+            self.form_summary_var.set(f"{student_id}: preview loaded with {len(forms)} forms")
+        else:
+            self._set_multi_form_editor_text("")
+            self._refresh_multi_form_summary(student_id)
         self.status_var.set(f"Preview loaded into editor: {student_id}")
 
     def _save_preview_to_db(self) -> None:
@@ -1399,6 +1759,11 @@ class StudentMetaToolApp:
         next_is_jp_only = self.preview_mark_jp_only_var.get()
         try:
             upsert_student(student_id, meta)
+            forms = tuple(dict(form) for form in (self.preview_payload.get("multi_form_meta") or ()))
+            if forms:
+                all_forms = get_multi_form_students()
+                all_forms[student_id] = forms
+                _write_multi_form_students(all_forms)
             set_jp_only(student_id, next_is_jp_only)
         except Exception as exc:
             messagebox.showerror("Import Failed", str(exc))

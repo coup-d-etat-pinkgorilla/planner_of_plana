@@ -4,9 +4,34 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QPoint, QRect, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QFont, QImage, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QImage, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QLabel, QScrollArea, QSizePolicy, QWidget
 
+
+SOURCE_UNIT_SCALE = 4 / 3
+
+
+def _fit_bold_font(
+    text: str,
+    rect: QRect,
+    *,
+    max_point_size: float,
+    min_point_size: float,
+) -> tuple[QFont, str]:
+    font = QFont()
+    font.setBold(True)
+    target_size = max(min_point_size, max_point_size)
+    available_width = max(1, rect.width())
+    available_height = max(1, rect.height())
+    while target_size > min_point_size:
+        font.setPointSizeF(target_size)
+        metrics = QFontMetrics(font)
+        if metrics.horizontalAdvance(text) <= available_width and metrics.height() <= available_height + 2:
+            return font, text
+        target_size -= 0.5
+    font.setPointSizeF(min_point_size)
+    metrics = QFontMetrics(font)
+    return font, metrics.elidedText(text, Qt.ElideRight, available_width)
 
 @dataclass(slots=True)
 class ParallelogramCardStyle:
@@ -41,29 +66,31 @@ class ParallelogramCardStyle:
 
 
 def build_card_style(asset_path: str | Path, ui_scale: float = 1.0) -> ParallelogramCardStyle:
-    scale = max(0.8, float(ui_scale))
+    scale = max(0.1, float(ui_scale)) * SOURCE_UNIT_SCALE
+
+    def scaled(value: int, minimum: int = 1) -> int:
+        return max(minimum, int(round(value * scale)))
+
     return ParallelogramCardStyle(
         asset_path=Path(asset_path),
         outer_margin=0,
         outline_enabled=False,
-        grid_overlap_x=max(8, int(round(18 * scale))),
-        grid_gap_x=max(2, int(round(6 * scale))),
-        grid_gap_y=max(6, int(round(10 * scale))),
-        grid_edge_padding=max(2, int(round(4 * scale))),
-        selected_expand=max(6, int(round(10 * scale))),
-        selected_lift_y=max(2, int(round(4 * scale))),
-        panel_height=max(28, int(round(36 * scale))),
+        grid_overlap_x=scaled(18),
+        grid_gap_x=scaled(6),
+        grid_gap_y=scaled(10),
+        grid_edge_padding=scaled(4),
+        selected_expand=scaled(10),
+        selected_lift_y=scaled(4),
+        panel_height=scaled(36),
         panel_bottom=0,
-        panel_padding_x=max(8, int(round(10 * scale))),
-        divider_height=max(3, int(round(4 * scale))),
-        unowned_badge_width=max(54, int(round(68 * scale))),
-        unowned_badge_height=max(18, int(round(22 * scale))),
-        unowned_badge_top=max(8, int(round(12 * scale))),
-        unowned_badge_inset_left=max(8, int(round(12 * scale))),
-        unowned_badge_inset_right=max(10, int(round(16 * scale))),
+        panel_padding_x=scaled(10),
+        divider_height=scaled(4),
+        unowned_badge_width=scaled(68),
+        unowned_badge_height=scaled(22),
+        unowned_badge_top=scaled(12),
+        unowned_badge_inset_left=scaled(12),
+        unowned_badge_inset_right=scaled(16),
     )
-
-
 class ParallelogramCardAsset:
     _image_cache: dict[Path, QImage] = {}
 
@@ -495,13 +522,22 @@ class StudentCardWidget(QWidget):
         left_bottom, right_bottom = self._card_asset.row_bounds(self.size(), panel_bottom)
         text_left = max(left_top, left_bottom) + style.panel_padding_x
         text_right = min(right_top, right_bottom) - style.panel_padding_x
-        text_rect = QRect(text_left, panel_top + 4, max(1, text_right - text_left), max(1, panel_height - 6))
-        font = QFont()
-        font.setBold(True)
-        font.setPointSizeF(max(12.6, min(self.width(), self.height()) * 0.072))
+        text_vpad = max(1, int(round(panel_height * (4 / 36))))
+        text_rect = QRect(
+            text_left,
+            panel_top + text_vpad,
+            max(1, text_right - text_left),
+            max(1, panel_height - text_vpad * 2),
+        )
+        font, text = _fit_bold_font(
+            self._title,
+            text_rect,
+            max_point_size=max(12.6, min(self.width(), self.height()) * 0.072),
+            min_point_size=8.0,
+        )
         painter.setFont(font)
         painter.setPen(style.name_text_color)
-        painter.drawText(text_rect, Qt.AlignCenter | Qt.TextSingleLine, self._title)
+        painter.drawText(text_rect, Qt.AlignCenter | Qt.TextSingleLine, text)
 
     def _paint_unowned_badge(self, painter: QPainter) -> None:
         style = self._card_asset.style
@@ -529,16 +565,20 @@ class StudentCardWidget(QWidget):
         shadow_rect.translate(0, 1)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(0, 0, 0, 70))
-        painter.drawRoundedRect(shadow_rect, 10, 10)
+        radius = max(1, badge_rect.height() // 2)
+        painter.drawRoundedRect(shadow_rect, radius, radius)
         painter.setBrush(QColor(6, 8, 14, 222))
-        painter.setPen(QPen(QColor(255, 255, 255, 42), 1))
-        painter.drawRoundedRect(badge_rect, 10, 10)
-        font = QFont()
-        font.setBold(True)
-        font.setPointSizeF(max(7.2, min(reference_size.width(), reference_size.height()) * 0.034))
+        painter.setPen(QPen(QColor(255, 255, 255, 42), max(1, int(round(style.unowned_badge_height / 22)))))
+        painter.drawRoundedRect(badge_rect, radius, radius)
+        font, text = _fit_bold_font(
+            "UNOWNED",
+            badge_rect,
+            max_point_size=max(7.2, min(reference_size.width(), reference_size.height()) * 0.034),
+            min_point_size=6.0,
+        )
         painter.setFont(font)
         painter.setPen(self._card_asset.style.name_text_color)
-        painter.drawText(badge_rect, Qt.AlignCenter, "UNOWNED")
+        painter.drawText(badge_rect, Qt.AlignCenter, text)
 
 
 class StudentPortraitWidget(QWidget):
@@ -633,16 +673,20 @@ class StudentPortraitWidget(QWidget):
         shadow_rect.translate(0, 1)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(0, 0, 0, 70))
-        painter.drawRoundedRect(shadow_rect, 10, 10)
+        radius = max(1, badge_rect.height() // 2)
+        painter.drawRoundedRect(shadow_rect, radius, radius)
         painter.setBrush(QColor(6, 8, 14, 222))
-        painter.setPen(QPen(QColor(255, 255, 255, 42), 1))
-        painter.drawRoundedRect(badge_rect, 10, 10)
-        font = QFont()
-        font.setBold(True)
-        font.setPointSizeF(max(7.2, min(size.width(), size.height()) * 0.034))
+        painter.setPen(QPen(QColor(255, 255, 255, 42), max(1, int(round(style.unowned_badge_height / 22)))))
+        painter.drawRoundedRect(badge_rect, radius, radius)
+        font, text = _fit_bold_font(
+            "UNOWNED",
+            badge_rect,
+            max_point_size=max(7.2, min(size.width(), size.height()) * 0.034),
+            min_point_size=6.0,
+        )
         painter.setFont(font)
         painter.setPen(self._card_asset.style.name_text_color)
-        painter.drawText(badge_rect, Qt.AlignCenter, "UNOWNED")
+        painter.drawText(badge_rect, Qt.AlignCenter, text)
 
 
 class ParallelogramCardGrid(QScrollArea):
@@ -695,7 +739,7 @@ class ParallelogramCardGrid(QScrollArea):
         self._external_drop_placeholder_active = False
         self._app_drag_filter_installed = False
         self._dragging_reorder = False
-        self._drag_threshold = max(8, int(round(8 * max(0.8, ui_scale))))
+        self._drag_threshold = max(1, int(round(8 * max(0.1, ui_scale))))
         self._base_size = card_asset.base_size
         self._min_card_width = (
             max(1, int(min_card_width))

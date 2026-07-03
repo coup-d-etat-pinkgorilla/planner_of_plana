@@ -177,6 +177,47 @@ EQUIPMENT_SERIES_BY_KEY: dict[str, EquipmentSeries] = {
 }
 
 
+def equipment_series_tier_parts(item_id: str | None) -> tuple[str, int, bool] | None:
+    text = str(item_id or "")
+    prefix = "Equipment_Icon_"
+    if not text.startswith(prefix) or "_Tier" not in text:
+        return None
+    body = text[len(prefix):]
+    series_key, _separator, tier_text = body.partition("_Tier")
+    if series_key not in EQUIPMENT_SERIES_BY_KEY:
+        return None
+    is_piece = False
+    if tier_text.endswith("_Piece"):
+        is_piece = True
+        tier_text = tier_text[: -len("_Piece")]
+    if not tier_text.isdigit():
+        return None
+    return series_key, int(tier_text), is_piece
+
+
+def canonical_equipment_item_id(item_id: str | None) -> str | None:
+    if item_id is None:
+        return None
+    parts = equipment_series_tier_parts(item_id)
+    if parts is None:
+        return str(item_id)
+    series_key, tier, _is_piece = parts
+    return f"Equipment_Icon_{series_key}_Tier{tier}"
+
+
+def equipment_grid_icon_item_id(item_id: str | None) -> str | None:
+    canonical = canonical_equipment_item_id(item_id)
+    if canonical is None:
+        return None
+    parts = equipment_series_tier_parts(canonical)
+    if parts is None:
+        return canonical
+    _series_key, tier, _is_piece = parts
+    if 2 <= tier <= 10:
+        return f"{canonical}_Piece"
+    return canonical
+
+
 def _ordered_equipment_series_item_ids() -> list[str]:
     ordered: list[str] = []
     for series in EQUIPMENT_SERIES:

@@ -8,6 +8,9 @@ from PySide6.QtGui import QColor, QFontMetrics, QIcon, QImage, QLinearGradient, 
 from PySide6.QtWidgets import QPushButton, QSizePolicy, QWidget
 
 
+SOURCE_UNIT_SCALE = 4 / 3
+
+
 @dataclass(slots=True)
 class ParallelogramButtonStyle:
     normal_asset: Path
@@ -40,20 +43,22 @@ class ParallelogramButtonStyle:
 
 
 def build_card_button_style(asset_path: str | Path, ui_scale: float = 1.0) -> ParallelogramButtonStyle:
-    scale = max(0.8, float(ui_scale))
+    scale = max(0.1, float(ui_scale)) * SOURCE_UNIT_SCALE
+
+    def scaled(value: int, minimum: int = 1) -> int:
+        return max(minimum, int(round(value * scale)))
+
     return ParallelogramButtonStyle(
         normal_asset=Path(asset_path),
-        fixed_height=max(40, int(round(50 * scale))),
+        fixed_height=scaled(50),
         source_left_slice=94,
         source_right_slice=94,
         source_overlap_x=58,
-        strip_gap_x=max(3, int(round(8 * scale))),
-        content_padding_left=max(34, int(round(48 * scale))),
-        content_padding_right=max(14, int(round(20 * scale))),
-        text_optical_offset_x=max(0, int(round(2 * scale))),
+        strip_gap_x=scaled(8),
+        content_padding_left=scaled(48),
+        content_padding_right=scaled(20),
+        text_optical_offset_x=scaled(2, minimum=0),
     )
-
-
 class ParallelogramButton(QPushButton):
     _image_cache: dict[Path, QImage] = {}
 
