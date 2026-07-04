@@ -219,8 +219,17 @@ INVENTORY_PROFILE_MAX_UNIQUE_ITEMS = {
     "tech_notes": 45,
     "tactical_bd": 44,
     "ooparts": 83,
+    "presents": 76,
     "equipment": 110,
 }
+INVENTORY_GRID_ORDER_HINT_PROFILES = frozenset({
+    "tech_notes",
+    "tactical_bd",
+    "equipment",
+    "student_elephs",
+    "ooparts",
+    "presents",
+})
 PROFILE_DIRECT_MATCH_THRESHOLD = 0.82
 INVENTORY_DETAIL_ICON_MATCH_WEIGHT = 0.40
 INVENTORY_DETAIL_NAME_MATCH_WEIGHT = 0.60
@@ -328,6 +337,12 @@ EQUIPMENT_INVENTORY_DRAG = InventoryDragConfig(
 )
 
 
+INVENTORY_SCROLL_RESIDUAL_SETTLE_WAIT = 0.28
+INVENTORY_SCROLL_RESIDUAL_MIN_SCORE = 0.82
+INVENTORY_SCROLL_NEAR_ZERO_VERIFY_WAIT = 0.30
+INVENTORY_SCROLL_NEAR_ZERO_EXPECTED_BAND_RATIO = 0.28
+INVENTORY_SCROLL_NEAR_ZERO_EXPECTED_MIN_SCORE = 0.70
+INVENTORY_SCROLL_NEAR_ZERO_EXPECTED_MAX_SCORE_GAP = 0.12
 
 
 @dataclass
@@ -963,6 +978,62 @@ def _new_inventory_slot_indices(
     return set(range(start, total_slots))
 
 
+def _inventory_anchor_scan_order(
+    total_slots: int,
+    grid_cols: int,
+    grid_rows: int,
+    scan_indices: set[int] | None = None,
+) -> list[int]:
+    if total_slots <= 0:
+        return []
+    allowed = set(range(total_slots)) if scan_indices is None else {idx for idx in scan_indices if 0 <= idx < total_slots}
+    if grid_cols <= 0 or grid_rows <= 0:
+        return [idx for idx in range(total_slots) if idx in allowed]
+    anchor_col = min(4, grid_cols - 1)
+    ordered: list[int] = []
+    seen: set[int] = set()
+
+    def add_slot(idx: int) -> None:
+        if idx < total_slots and idx in allowed and idx not in seen:
+            ordered.append(idx)
+            seen.add(idx)
+
+    for row in range(grid_rows):
+        row_start = row * grid_cols
+        row_end = min(total_slots, row_start + grid_cols)
+        if row_start >= total_slots:
+            break
+        anchor_idx = row_start + anchor_col
+        if anchor_idx >= row_end:
+            anchor_idx = row_end - 1
+        add_slot(anchor_idx)
+        for idx in range(row_start, row_end):
+            add_slot(idx)
+
+    for idx in range(total_slots):
+        add_slot(idx)
+    return ordered
+
+
+def _carried_inventory_anchor_indices(
+    confirmed_profile_indices: dict[int, int],
+    total_slots: int,
+    grid_cols: int,
+    grid_rows: int,
+    overlap_rows: int,
+) -> dict[int, int]:
+    if not confirmed_profile_indices or total_slots <= 0 or grid_cols <= 0 or grid_rows <= 0:
+        return {}
+    carried_rows = max(0, min(grid_rows, overlap_rows))
+    if carried_rows <= 0:
+        return {}
+    old_start = max(0, (grid_rows - carried_rows) * grid_cols)
+    carried_limit = min(total_slots, old_start + carried_rows * grid_cols)
+    carried: dict[int, int] = {}
+    for old_slot_idx, profile_idx in confirmed_profile_indices.items():
+        if old_start <= old_slot_idx < carried_limit:
+            carried[old_slot_idx - old_start] = profile_idx
+    return carried
 
 def _shift_region_y(region: dict, y_offset_px: int, image_height: int) -> dict:
     if y_offset_px == 0 or image_height <= 0:
@@ -1050,7 +1121,7 @@ def _safe_debug_token(value: object) -> str:
 
 
 def _inventory_scroll_debug_dir(source: str, profile_id: str | None) -> Path | None:
-    if source != "item" or os.environ.get("BA_INVENTORY_SCROLL_DEBUG", "1") == "0":
+    if source not in {"item", "equipment"} or os.environ.get("BA_INVENTORY_SCROLL_DEBUG", "0") == "0":
         return None
     stamp = time.strftime("%Y%m%d_%H%M%S")
     suffix = f"{_safe_debug_token(source)}_{_safe_debug_token(profile_id or 'auto')}"
@@ -1193,7 +1264,6 @@ def _slot_row_step_px(slots: list[dict], image_size: tuple[int, int], grid_cols:
     return int(round(float(np.median(np.array(steps, dtype=np.float32)))))
 
 
-
 def _move_cursor_away_from_inventory_grid(rect: tuple[int, int, int, int]) -> bool:
     hwnd = find_target_hwnd()
     if not hwnd:
@@ -1210,16 +1280,28 @@ def _inventory_motion_region(grid_r: dict) -> dict:
     return _expand_region(grid_r, left=0.03, top=0.04, right=0.02, bottom=0.03)
 
 
+def _inventory_normal_residual_limit_px(row_step_px: int) -> int:
+    return max(4, int(round(row_step_px * 0.04)))
+
+
+def _inventory_normal_residual_carry_limit_px(row_step_px: int) -> int:
+    return max(_inventory_normal_residual_limit_px(row_step_px), int(round(row_step_px * 0.25)))
+
+
 def _inventory_overlap_rows_from_motion(
     motion: InventoryMotionEstimate | None,
     row_step_px: int,
     grid_rows: int,
+    *,
+    carry_normal_offset: bool = False,
 ) -> tuple[int, int, int, bool] | None:
     if motion is None or row_step_px <= 0 or grid_rows <= 0:
         return None
     target_rows = max(1, grid_rows - 1)
     actual_rows = motion.actual_move_px / max(1, row_step_px)
     tail_scroll = motion.actual_move_px < row_step_px * max(1.0, target_rows - 0.5)
+    if tail_scroll and motion.actual_move_px < row_step_px * 0.35:
+        return None
     moved_rows = int(round(actual_rows))
     moved_rows = max(0, min(grid_rows, moved_rows))
     if tail_scroll and motion.actual_move_px >= row_step_px * 0.35:
@@ -1234,14 +1316,14 @@ def _inventory_overlap_rows_from_motion(
         y_offset_px = max(-max_tail_offset, min(max_tail_offset, y_offset_px))
     else:
         overlap_rows = grid_rows - moved_rows
-        # Normal drags settle on row boundaries. Large residual offsets here are
-        # usually a row-feature false peak; carrying them forward shifts every
-        # later slot ROI and can poison row-step calibration.
-        max_normal_offset = max(4, int(round(row_step_px * 0.04)))
+        # Normal drags usually settle on row boundaries. A large residual can be
+        # a false peak, so callers must explicitly opt in after a settle recheck.
+        max_normal_offset = _inventory_normal_residual_limit_px(row_step_px)
+        max_carry_offset = _inventory_normal_residual_carry_limit_px(row_step_px)
         if abs(y_offset_px) > max_normal_offset:
-            y_offset_px = 0
+            if not carry_normal_offset or abs(y_offset_px) > max_carry_offset:
+                y_offset_px = 0
     return max(0, min(grid_rows, overlap_rows)), moved_rows, y_offset_px, tail_scroll
-
 def _adapt_inventory_drag_amount(
     amount_px: int,
     motion: InventoryMotionEstimate | None,
@@ -1373,30 +1455,23 @@ def _inventory_motion_array(
     return features.astype(np.float32, copy=False)
 
 
-def _estimate_inventory_scroll_motion(
-    before_img: Image.Image,
-    after_img: Image.Image,
-    grid_r: dict,
+def _estimate_inventory_scroll_motion_from_arrays(
+    before: np.ndarray,
+    after: np.ndarray,
     expected_step_px: int,
+    search_min: int,
+    search_max: int,
     *,
-    search_margin_px: int = 50,
-    slots: list[dict] | None = None,
+    method: str,
 ) -> InventoryMotionEstimate | None:
-    if expected_step_px <= 0:
-        return None
-    region = _inventory_motion_region(grid_r)
-    before = _inventory_motion_array(before_img, region, slots=slots)
-    after = _inventory_motion_array(after_img, region, slots=slots)
-    if before is None or after is None:
-        return None
     height = min(before.shape[0], after.shape[0])
     width = min(before.shape[1], after.shape[1])
     if height <= expected_step_px + 16 or width <= 8:
         return None
     before = before[:height, :width]
     after = after[:height, :width]
-    search_min = max(1, expected_step_px - max(1, search_margin_px))
-    search_max = min(height - 8, expected_step_px + max(1, search_margin_px))
+    search_min = max(1, search_min)
+    search_max = min(height - 8, search_max)
     if search_min > search_max:
         return None
 
@@ -1422,11 +1497,91 @@ def _estimate_inventory_scroll_motion(
         score=best_score,
         search_min_px=search_min,
         search_max_px=search_max,
+        method=method,
+    )
+
+
+def _inventory_motion_feature_pair(
+    before_img: Image.Image,
+    after_img: Image.Image,
+    grid_r: dict,
+    *,
+    slots: list[dict] | None = None,
+) -> tuple[np.ndarray, np.ndarray] | None:
+    region = _inventory_motion_region(grid_r)
+    before = _inventory_motion_array(before_img, region, slots=slots)
+    after = _inventory_motion_array(after_img, region, slots=slots)
+    if before is None or after is None:
+        return None
+    return before, after
+
+
+def _estimate_inventory_scroll_motion(
+    before_img: Image.Image,
+    after_img: Image.Image,
+    grid_r: dict,
+    expected_step_px: int,
+    *,
+    search_margin_px: int = 50,
+    slots: list[dict] | None = None,
+) -> InventoryMotionEstimate | None:
+    if expected_step_px <= 0:
+        return None
+    pair = _inventory_motion_feature_pair(before_img, after_img, grid_r, slots=slots)
+    if pair is None:
+        return None
+    before, after = pair
+    search_min = max(1, expected_step_px - max(1, search_margin_px))
+    search_max = expected_step_px + max(1, search_margin_px)
+    return _estimate_inventory_scroll_motion_from_arrays(
+        before,
+        after,
+        expected_step_px,
+        search_min,
+        search_max,
         method="row_feature_shift_slot_sides_ignored",
     )
 
+
+def _verify_inventory_near_zero_motion(
+    before_img: Image.Image,
+    after_img: Image.Image,
+    grid_r: dict,
+    expected_step_px: int,
+    row_step_px: int,
+    reference_motion: InventoryMotionEstimate | None,
+    *,
+    slots: list[dict] | None = None,
+) -> InventoryMotionEstimate | None:
+    if expected_step_px <= 0 or row_step_px <= 0:
+        return None
+    pair = _inventory_motion_feature_pair(before_img, after_img, grid_r, slots=slots)
+    if pair is None:
+        return None
+    before, after = pair
+    band_px = max(8, int(round(row_step_px * INVENTORY_SCROLL_NEAR_ZERO_EXPECTED_BAND_RATIO)))
+    candidate = _estimate_inventory_scroll_motion_from_arrays(
+        before,
+        after,
+        expected_step_px,
+        expected_step_px - band_px,
+        expected_step_px + band_px,
+        method="row_feature_shift_expected_band",
+    )
+    if candidate is None:
+        return None
+    if candidate.actual_move_px < row_step_px * 0.35:
+        return None
+    if candidate.score < INVENTORY_SCROLL_NEAR_ZERO_EXPECTED_MIN_SCORE:
+        return None
+    if (
+        reference_motion is not None
+        and reference_motion.score > candidate.score + INVENTORY_SCROLL_NEAR_ZERO_EXPECTED_MAX_SCORE_GAP
+    ):
+        return None
+    return candidate
 _INVENTORY_TEMPLATE_DIRS: dict[str, tuple[str, ...]] = {
-    "item": ("skill_book", "ooparts", "skill_db", "students_elephs"),
+    "item": ("skill_book", "ooparts", "skill_db", "students_elephs", "presents"),
     "equipment": ("equipment",),
 }
 _INVENTORY_TEMPLATE_CATALOG: dict[str, list[tuple[str, str]]] = {}
@@ -2025,6 +2180,67 @@ class Scanner:
             )
         return False
 
+    def _wait_for_item_inventory_filter_menu_open(
+        self,
+        *,
+        timeout: float = INVENTORY_PANEL_OPEN_TIMEOUT,
+        initial_wait: float = INVENTORY_FILTER_MENU_SETTLE_WAIT,
+        poll: float = UI_FLAG_POLL,
+    ) -> bool:
+        return self._wait_for_inventory_filter_menu_open(
+            timeout=timeout,
+            initial_wait=initial_wait,
+            poll=poll,
+        )
+
+    def _wait_for_equipment_inventory_filter_menu_open(
+        self,
+        *,
+        timeout: float = INVENTORY_PANEL_OPEN_TIMEOUT,
+        initial_wait: float = INVENTORY_FILTER_MENU_SETTLE_WAIT,
+        poll: float = UI_FLAG_POLL,
+    ) -> bool:
+        if initial_wait > 0 and not self._wait(initial_wait):
+            return False
+        deadline = time.monotonic() + timeout
+        ready_streak = 0
+        last_title_score: float | None = None
+        last_sort_score: float | None = None
+        while time.monotonic() < deadline:
+            if self._stop_requested():
+                return False
+            img = self._capture()
+            last_title_score = self._inventory_filter_title_score(img)
+            last_sort_score = self._region_capture_match_score("eq_sort_rule_check")
+            title_ready = (
+                last_title_score is not None
+                and last_title_score >= INVENTORY_FILTER_TITLE_MIN_SCORE
+            )
+            sort_ready = (
+                last_sort_score is not None
+                and last_sort_score >= EQUIPMENT_SORT_RULE_MATCH_THRESHOLD
+            )
+            if title_ready or sort_ready:
+                ready_streak += 1
+                if ready_streak >= INVENTORY_FILTER_TITLE_STABLE_POLLS:
+                    self._debug(
+                        "  equipment filter menu ready "
+                        f"title_score={'none' if last_title_score is None else f'{last_title_score:.3f}'} "
+                        f"sort_score={'none' if last_sort_score is None else f'{last_sort_score:.3f}'}"
+                    )
+                    return True
+            else:
+                ready_streak = 0
+            if not self._wait(poll):
+                return False
+        self.log(
+            "  equipment filter menu open check inconclusive "
+            f"title_score={'none' if last_title_score is None else f'{last_title_score:.3f}'} "
+            f"sort_score={'none' if last_sort_score is None else f'{last_sort_score:.3f}'} "
+            "-> continuing with equipment-only sort verification"
+        )
+        return True
+
     def _click_region_capture_and_wait_for_reference(
         self,
         click_name: str,
@@ -2081,6 +2297,69 @@ class Scanner:
         self.stop()
         return False
 
+    def _open_item_inventory_filter_panel(
+        self,
+        *,
+        timeout: float = INVENTORY_PANEL_OPEN_TIMEOUT,
+        initial_wait: float = INVENTORY_FILTER_MENU_SETTLE_WAIT,
+        max_attempts: int = 2,
+    ) -> bool:
+        label = "filtermenu_button"
+        for attempt in range(1, max_attempts + 1):
+            if not self._click_region_capture("filtermenu_button", label=label):
+                return False
+            if self._wait_for_item_inventory_filter_menu_open(
+                timeout=timeout,
+                initial_wait=initial_wait,
+                poll=min(UI_FLAG_POLL, PANEL_TRANSITION_POLL),
+            ):
+                return True
+            if attempt < max_attempts:
+                self.log(
+                    f"  {label} did not open item filter menu "
+                    f"({attempt}/{max_attempts}) -> retry"
+                )
+        self.log("  item filtermenu_button failed: item filter menu title was not recognized; stopping scan")
+        self.stop()
+        return False
+
+    def _open_equipment_inventory_filter_panel(
+        self,
+        *,
+        timeout: float = INVENTORY_PANEL_OPEN_TIMEOUT,
+        initial_wait: float = INVENTORY_FILTER_MENU_SETTLE_WAIT,
+        max_attempts: int = 2,
+    ) -> bool:
+        label = "eq_filtermenu_button"
+        for attempt in range(1, max_attempts + 1):
+            if not self._click_region_capture("eq_filtermenu_button", label=label):
+                return False
+            if self._wait_for_equipment_inventory_filter_menu_open(
+                timeout=timeout,
+                initial_wait=initial_wait,
+                poll=min(UI_FLAG_POLL, PANEL_TRANSITION_POLL),
+            ):
+                return True
+            if attempt < max_attempts:
+                self.log(
+                    f"  {label} did not open equipment filter menu "
+                    f"({attempt}/{max_attempts}) -> retry"
+                )
+        self.log("  eq_filtermenu_button failed: equipment filter menu did not become ready; stopping scan")
+        self.stop()
+        return False
+
+    def _click_inventory_tab_stable(self, name: str, *, label: str = "") -> bool:
+        click_label = label or name
+        for _ in range(2):
+            if not self._click_region_capture(
+                name,
+                label=click_label,
+                delay=INVENTORY_FILTER_TAB_SETTLE_WAIT,
+            ):
+                return False
+        return True
+
     def _ensure_region_matches_reference(
         self,
         name: str,
@@ -2130,20 +2409,14 @@ class Scanner:
 
     def _prepare_item_inventory(self, profile_id: str | None, *, ensure_sort_rule: bool) -> bool:
         self.log(f"  item filter menu open (profile={profile_id or 'all'})")
-        if not self._open_inventory_filter_panel(
-            "filtermenu_button",
-            label="filtermenu_button",
+        if not self._open_item_inventory_filter_panel(
             timeout=INVENTORY_PANEL_OPEN_TIMEOUT,
             initial_wait=INVENTORY_FILTER_MENU_SETTLE_WAIT,
             max_attempts=2,
         ):
             self.log("  item prepare failed: filter menu did not open")
             return False
-        if not self._click_region_capture(
-            "filter_tab",
-            label="filter_tab",
-            delay=INVENTORY_FILTER_TAB_SETTLE_WAIT,
-        ):
+        if not self._click_inventory_tab_stable("filter_tab", label="filter_tab"):
             self.log("  item prepare failed: filter_tab click failed")
             return False
         if not self._click_region_capture(
@@ -2159,6 +2432,7 @@ class Scanner:
             "tech_notes": "note_filter",
             "tactical_bd": "bd_filter",
             "ooparts": "ooparts_filter",
+            "presents": "ooparts_filter",
             "activity_reports": "reports_filter",
         }
         filter_button = filter_button_by_profile.get(profile_id or "")
@@ -2172,11 +2446,7 @@ class Scanner:
                 self.log(f"  item prepare failed: {filter_button} click failed")
                 return False
 
-        if not self._click_region_capture(
-            "sort_tab",
-            label="sort_tab",
-            delay=INVENTORY_FILTER_TAB_SETTLE_WAIT,
-        ):
+        if not self._click_inventory_tab_stable("sort_tab", label="sort_tab"):
             self.log("  item prepare failed: sort_tab click failed")
             return False
         sort_rule_check = self._item_sort_rule_check_name(profile_id)
@@ -2198,9 +2468,7 @@ class Scanner:
 
     def _prepare_equipment_inventory(self) -> bool:
         self.log("  equipment filter menu open")
-        if not self._open_inventory_filter_panel(
-            "eq_filtermenu_button",
-            label="eq_filtermenu_button",
+        if not self._open_equipment_inventory_filter_panel(
             timeout=INVENTORY_PANEL_OPEN_TIMEOUT,
             initial_wait=INVENTORY_FILTER_MENU_SETTLE_WAIT,
             max_attempts=2,
@@ -3581,6 +3849,7 @@ class Scanner:
             slots=slot_snaps,
         )
 
+
     def _verify_inventory_slot(
         self,
         rect: tuple[int, int, int, int],
@@ -4116,6 +4385,104 @@ class Scanner:
                     slots=before_slots,
                 ) if before_img is not None else None
                 motion_overlap = _inventory_overlap_rows_from_motion(motion, row_step_px, grid_rows)
+                if (
+                    before_img is not None
+                    and motion is not None
+                    and motion_overlap is not None
+                    and row_step_px > 0
+                ):
+                    _initial_overlap_rows, initial_moved_rows, _initial_y_delta, initial_tail_scroll = motion_overlap
+                    initial_raw_y_delta = int(round((initial_moved_rows * row_step_px) - motion.actual_move_px))
+                    residual_limit = _inventory_normal_residual_limit_px(row_step_px)
+                    residual_carry_limit = _inventory_normal_residual_carry_limit_px(row_step_px)
+                    should_recheck_residual = (
+                        not initial_tail_scroll
+                        and initial_moved_rows > 0
+                        and motion.score >= INVENTORY_SCROLL_RESIDUAL_MIN_SCORE
+                        and abs(initial_raw_y_delta) > residual_limit
+                        and abs(initial_raw_y_delta) <= residual_carry_limit
+                    )
+                    if should_recheck_residual:
+                        self.log(
+                            f"  drag try {idx}: normal residual {initial_raw_y_delta:+d}px "
+                            f"> limit {residual_limit}px -> settle recheck"
+                        )
+                        if self._wait(INVENTORY_SCROLL_RESIDUAL_SETTLE_WAIT):
+                            settled_img = self._capture()
+                            if settled_img is not None:
+                                settled_after = crop_region(settled_img, before_grid_r)
+                                settled_after_grid_hash = _img_hash(settled_after)
+                                settled_after_page = self._capture_inventory_page(
+                                    settled_img,
+                                    before_slots,
+                                    grid_hash=settled_after_grid_hash,
+                                    page_index=-1,
+                                    grid_cols=grid_cols,
+                                )
+                                settled_after_hashes = [snap.icon_hash for snap in settled_after_page.slots]
+                                settled_motion = _estimate_inventory_scroll_motion(
+                                    before_img,
+                                    settled_img,
+                                    before_grid_r,
+                                    expected_move_px,
+                                    search_margin_px=search_margin_px,
+                                    slots=before_slots,
+                                )
+                                settled_overlap = _inventory_overlap_rows_from_motion(
+                                    settled_motion,
+                                    row_step_px,
+                                    grid_rows,
+                                )
+                                if settled_motion is not None and settled_overlap is not None:
+                                    (
+                                        _settled_overlap_rows,
+                                        settled_moved_rows,
+                                        settled_y_delta,
+                                        settled_tail_scroll,
+                                    ) = settled_overlap
+                                    settled_raw_y_delta = int(
+                                        round((settled_moved_rows * row_step_px) - settled_motion.actual_move_px)
+                                    )
+                                    same_direction = (
+                                        initial_raw_y_delta == 0
+                                        or settled_raw_y_delta == 0
+                                        or (initial_raw_y_delta > 0) == (settled_raw_y_delta > 0)
+                                    )
+                                    carry_settled_residual = (
+                                        not settled_tail_scroll
+                                        and settled_moved_rows == initial_moved_rows
+                                        and same_direction
+                                        and settled_motion.score >= INVENTORY_SCROLL_RESIDUAL_MIN_SCORE
+                                        and abs(settled_raw_y_delta) > residual_limit
+                                        and abs(settled_raw_y_delta) <= residual_carry_limit
+                                    )
+                                    if carry_settled_residual:
+                                        settled_overlap = _inventory_overlap_rows_from_motion(
+                                            settled_motion,
+                                            row_step_px,
+                                            grid_rows,
+                                            carry_normal_offset=True,
+                                        )
+                                        if settled_overlap is not None:
+                                            settled_y_delta = settled_overlap[2]
+                                    action = "carry" if carry_settled_residual else "settled"
+                                    self.log(
+                                        f"  drag try {idx}: residual recheck actual={settled_motion.actual_move_px}px "
+                                        f"raw_y_delta={settled_raw_y_delta:+d}px "
+                                        f"y_delta={settled_y_delta:+d}px action={action} "
+                                        f"score={settled_motion.score:.3f}"
+                                    )
+                                    after_img = settled_img
+                                    after = settled_after
+                                    after_grid_hash = settled_after_grid_hash
+                                    after_page = settled_after_page
+                                    after_hashes = settled_after_hashes
+                                    image_changed = before is None or not _images_similar(before, after)
+                                    hash_changed = before_grid_hash != after_grid_hash
+                                    slot_sequence_changed = before_hashes != after_hashes
+                                    moved = image_changed or hash_changed or slot_sequence_changed
+                                    motion = settled_motion
+                                    motion_overlap = settled_overlap
                 moved_rows: int | None = None
                 tail_scroll = False
                 if motion_overlap is not None:
@@ -4149,12 +4516,130 @@ class Scanner:
                                 f"calibrated={updated_row_step:.2f}px base={base_row_step_px}px"
                             )
                 else:
-                    overlap_rows = _count_row_overlap(before_hashes, after_hashes, grid_cols)
-                    y_offset_px = before_y_offset_px
-                    self.log(
-                        f"  drag try {idx}: overlap_rows={overlap_rows} source=hash "
-                        f"y_offset={y_offset_px:+d}px"
-                    )
+                    if (
+                        motion is not None
+                        and row_step_px > 0
+                        and motion.actual_move_px < row_step_px * 0.35
+                    ):
+                        verified_motion = (
+                            _verify_inventory_near_zero_motion(
+                                before_img,
+                                after_img,
+                                before_grid_r,
+                                expected_move_px,
+                                row_step_px,
+                                motion,
+                                slots=before_slots,
+                            )
+                            if before_img is not None
+                            else None
+                        )
+                        if verified_motion is None and before_img is not None:
+                            self.log(
+                                f"  drag try {idx}: near-zero motion actual={motion.actual_move_px}px "
+                                f"row_step={row_step_px}px -> verify recapture"
+                            )
+                            if self._wait(INVENTORY_SCROLL_NEAR_ZERO_VERIFY_WAIT):
+                                verified_img = self._capture()
+                                if verified_img is not None:
+                                    verified_after = crop_region(verified_img, before_grid_r)
+                                    verified_after_grid_hash = _img_hash(verified_after)
+                                    verified_after_page = self._capture_inventory_page(
+                                        verified_img,
+                                        before_slots,
+                                        grid_hash=verified_after_grid_hash,
+                                        page_index=-1,
+                                        grid_cols=grid_cols,
+                                    )
+                                    verified_after_hashes = [snap.icon_hash for snap in verified_after_page.slots]
+                                    recaptured_motion = _estimate_inventory_scroll_motion(
+                                        before_img,
+                                        verified_img,
+                                        before_grid_r,
+                                        expected_move_px,
+                                        search_margin_px=search_margin_px,
+                                        slots=before_slots,
+                                    )
+                                    verified_motion = _verify_inventory_near_zero_motion(
+                                        before_img,
+                                        verified_img,
+                                        before_grid_r,
+                                        expected_move_px,
+                                        row_step_px,
+                                        recaptured_motion,
+                                        slots=before_slots,
+                                    )
+                                    if verified_motion is not None:
+                                        after_img = verified_img
+                                        after = verified_after
+                                        after_grid_hash = verified_after_grid_hash
+                                        after_page = verified_after_page
+                                        after_hashes = verified_after_hashes
+                                        image_changed = before is None or not _images_similar(before, after)
+                                        hash_changed = before_grid_hash != after_grid_hash
+                                        slot_sequence_changed = before_hashes != after_hashes
+                                        moved = image_changed or hash_changed or slot_sequence_changed
+                                        motion = verified_motion
+                        verified_overlap = _inventory_overlap_rows_from_motion(
+                            verified_motion,
+                            row_step_px,
+                            grid_rows,
+                        )
+                        if verified_motion is not None and verified_overlap is not None:
+                            motion = verified_motion
+                            overlap_rows, moved_rows, y_offset_delta_px, tail_scroll = verified_overlap
+                            y_offset_px = before_y_offset_px + y_offset_delta_px
+                            self.log(
+                                f"  drag try {idx}: near-zero verified actual={motion.actual_move_px}px "
+                                f"expected={motion.expected_step_px}px row_step={row_step_px}px "
+                                f"moved_rows={moved_rows} overlap_rows={overlap_rows} "
+                                f"before_y={before_y_offset_px:+d}px y_delta={y_offset_delta_px:+d}px "
+                                f"y_offset={y_offset_px:+d}px score={motion.score:.3f} method={motion.method}"
+                            )
+                        else:
+                            self.log(
+                                f"  drag try {idx}: near-zero motion actual={motion.actual_move_px}px "
+                                f"row_step={row_step_px}px verification failed -> stop without retry"
+                            )
+                            _save_inventory_scroll_debug(
+                                debug_dir,
+                                before_img=before_img,
+                                after_img=after_img,
+                                slots=slots,
+                                grid_cols=grid_cols,
+                                grid_rows=grid_rows,
+                                scroll_index=scroll_index,
+                                attempt_index=idx,
+                                amount=amount,
+                                scroll_ok=scroll_ok,
+                                moved=moved,
+                                image_changed=image_changed,
+                                hash_changed=hash_changed,
+                                slot_sequence_changed=slot_sequence_changed,
+                                row_step_px=row_step_px,
+                                expected_move_px=expected_move_px,
+                                search_margin_px=search_margin_px,
+                                motion=motion,
+                                overlap_rows=0,
+                                moved_rows=0,
+                                y_offset_px=before_y_offset_px,
+                                before_grid_hash=before_grid_hash,
+                                after_grid_hash=after_grid_hash,
+                                before_hashes=before_hashes,
+                                after_hashes=after_hashes,
+                                cursor_moved=cursor_moved,
+                                before_y_offset_px=before_y_offset_px,
+                                before_slots=before_slots,
+                                tail_scroll=False,
+                            )
+                            return False, None, next_amount, 0, before_y_offset_px
+                    else:
+                        overlap_rows = _count_row_overlap(before_hashes, after_hashes, grid_cols)
+                        y_offset_px = before_y_offset_px
+                        self.log(
+                            f"  drag try {idx}: overlap_rows={overlap_rows} source=hash "
+                            f"y_offset={y_offset_px:+d}px"
+                        )
 
                 final_slots = _shift_slots_y(slots, y_offset_px, after_img.size) if y_offset_px else slots
                 final_grid_r = _grid_region(final_slots) if y_offset_px else grid_r
@@ -4438,6 +4923,7 @@ class Scanner:
                 self.log(f"  profile slot scan limit: {profile_slot_scan_limit}")
 
         def _profile_found_count() -> int:
+
             if active_profile is None:
                 return 0
             if active_profile.expected_item_ids:
@@ -4467,7 +4953,6 @@ class Scanner:
                 return float(os.environ.get(name, str(default)))
             except (TypeError, ValueError):
                 return default
-
         slot_count_row_gap_enabled = os.environ.get("BA_ITEM_COUNT_ROW_GAP_Y_OFFSET", "0") == "1"
         slot_count_y_offset_search_radius = _env_nonnegative_int("BA_ITEM_COUNT_Y_OFFSET_SEARCH_PX", 2)
         slot_count_color_filter_mode = os.environ.get("BA_ITEM_COUNT_COLOR_FILTER_MODE", "dark_ink")
@@ -4477,6 +4962,7 @@ class Scanner:
         grid_fast_min_score = _env_float("BA_ITEM_GRID_FAST_MIN_SCORE", 0.86)
         grid_fast_min_margin = _env_float("BA_ITEM_GRID_FAST_MIN_MARGIN", 0.09)
         grid_fast_min_count_confidence = _env_float("BA_ITEM_GRID_FAST_MIN_COUNT_CONF", 0.66)
+        grid_relaxed_min_count_confidence = _env_float("BA_ITEM_GRID_RELAXED_MIN_COUNT_CONF", 0.55)
         grid_order_hint_enabled = grid_match_enabled and os.environ.get("BA_ITEM_GRID_ORDER_HINT", "1") != "0"
         grid_order_hint_exact_min_score = _env_float("BA_ITEM_GRID_ORDER_HINT_EXACT_MIN_SCORE", 0.70)
         grid_order_hint_family_min_score = _env_float("BA_ITEM_GRID_ORDER_HINT_FAMILY_MIN_SCORE", 0.78)
@@ -4511,7 +4997,7 @@ class Scanner:
             return school, tier
 
         def _is_school_order_profile(profile_id: str | None) -> bool:
-            return profile_id in {"tech_notes", "tactical_bd", "equipment", "student_elephs"}
+            return profile_id in INVENTORY_GRID_ORDER_HINT_PROFILES
 
         def _profile_order_relation(
             profile_id: str | None,
@@ -4562,6 +5048,8 @@ class Scanner:
 
         next_scan_slot_indices: set[int] | None = None
         next_scan_y_offset_px = 0
+        carried_grid_anchor_profile_indices: dict[int, int] = {}
+        profile_scan_incomplete = False
 
         for scroll_i in range(MAX_SCROLLS):
             if self._stop_requested():
@@ -4618,8 +5106,28 @@ class Scanner:
                     and _is_school_order_profile(active_profile.profile_id)
                 ),
             )
+            for carried_slot_idx, carried_profile_idx in carried_grid_anchor_profile_indices.items():
+                grid_row_anchor_state.record_confirmed(carried_slot_idx, carried_profile_idx)
+            total_page_slots = min(len(active_slots), len(page.slots))
+            slot_scan_order = _inventory_anchor_scan_order(
+                total_page_slots,
+                grid_cols,
+                grid_rows,
+                current_scan_slot_indices,
+            ) if grid_row_anchor_state.enabled else [
+                idx for idx in range(total_page_slots)
+                if current_scan_slot_indices is None or idx in current_scan_slot_indices
+            ]
 
-            for slot_idx, (slot, slot_snap) in enumerate(zip(active_slots, page.slots)):
+            processed_slot_indices: set[int] = set()
+            for slot_idx in slot_scan_order:
+                has_unprocessed_prior_slot = any(
+                    prior_slot_idx < slot_idx and prior_slot_idx not in processed_slot_indices
+                    for prior_slot_idx in slot_scan_order
+                )
+                slot = active_slots[slot_idx]
+                slot_snap = page.slots[slot_idx]
+                processed_slot_indices.add(slot_idx)
                 if self._stop_requested():
                     break
                 if current_scan_slot_indices is not None and slot_idx not in current_scan_slot_indices:
@@ -4645,6 +5153,7 @@ class Scanner:
                 grid_template_matched = False
                 grid_count_confidence = 0.0
                 grid_count_raw = ""
+                grid_count_low_confidence = False
                 detail_template_item_id: str | None = None
                 detail_template_score = 0.0
                 assigned_profile_idx: int | None = None
@@ -4808,6 +5317,37 @@ class Scanner:
                             )
                             count_match = None
                         else:
+                            visual_anchor_strong = bool(
+                                grid_profile_idx is not None
+                                and grid_candidate_item_id
+                                and grid_match.score >= grid_fast_min_score
+                                and grid_match.margin >= grid_fast_min_margin
+                            )
+                            if grid_row_anchor_state.should_promote_anchor(slot_idx, strong_match=visual_anchor_strong):
+                                if grid_row_anchor_state.record_confirmed(slot_idx, grid_profile_idx, as_anchor=True):
+                                    row_number = slot_idx // max(1, grid_cols) + 1
+                                    visual_anchor_name = inventory_item_display_name(grid_candidate_item_id) or grid_candidate_item_id
+                                    self._debug(
+                                        f"    grid visual anchor confirmed: "
+                                        f"row={row_number} slot={slot_idx + 1} profile_idx={grid_profile_idx} "
+                                        f"score={grid_match.score:.2f} margin={grid_match.margin:.3f}"
+                                    )
+                                    self._status(
+                                        "inventory.row_anchor.confirmed",
+                                        source=source,
+                                        source_label=source_label,
+                                        slot_index=slot_idx,
+                                        slot_number=slot_idx + 1,
+                                        row_number=row_number,
+                                        page_index=scroll_i + 1,
+                                        item_name=visual_anchor_name,
+                                        item_id=grid_candidate_item_id,
+                                        profile_index=grid_profile_idx,
+                                        grid_cols=grid_cols,
+                                        grid_rows=grid_rows,
+                                        total_slots=len(slots),
+                                        profile_id=active_profile.profile_id if active_profile is not None else None,
+                                    )
                             count_match = debug_count_match or read_item_slot_count(
                                 img,
                                 slot,
@@ -4841,9 +5381,31 @@ class Scanner:
                                 gate_reasons.append(f"margin<{grid_fast_min_margin:.3f}")
                             if count_match.confidence < grid_fast_min_count_confidence:
                                 gate_reasons.append(f"count_conf<{grid_fast_min_count_confidence:.2f}")
+                            order_hint_visual_gate_ok = (
+                                not order_hint_item_id
+                                or (
+                                    grid_match.score >= grid_fast_min_score
+                                    and grid_match.margin >= grid_fast_min_margin
+                                )
+                            )
                             order_hint_accepted = bool(
                                 order_hint_item_id
+                                and order_hint_visual_gate_ok
                                 and count_match.confidence >= grid_order_hint_min_count_confidence
+                            )
+                            visual_gate_ok = (
+                                grid_match.score >= grid_fast_min_score
+                                and grid_match.margin >= grid_fast_min_margin
+                            )
+                            relaxed_count_accepted = bool(
+                                gate_reasons
+                                and visual_gate_ok
+                                and count_match.confidence >= grid_relaxed_min_count_confidence
+                                and (
+                                    grid_row_anchor_candidate_count == 1
+                                    or grid_match.candidate_count == 1
+                                    or grid_match.margin >= grid_fast_min_margin * 1.75
+                                )
                             )
                             tier_suffix = (
                                 f" tier={grid_match.tier_hint} cand={grid_match.candidate_count}"
@@ -4855,7 +5417,7 @@ class Scanner:
                                 if grid_row_anchor_candidate_count
                                 else ""
                             )
-                            if gate_reasons and not order_hint_accepted:
+                            if gate_reasons and not order_hint_accepted and not relaxed_count_accepted:
                                 self._debug(
                                     f"    grid fast gated: slot={slot_idx} item_id={grid_candidate_item_id} "
                                     f"x{count_match.value} reasons={','.join(gate_reasons)} "
@@ -4871,6 +5433,7 @@ class Scanner:
                                 grid_template_score = grid_match.score
                                 grid_count_confidence = count_match.confidence
                                 grid_count_raw = count_match.raw
+                                grid_count_low_confidence = bool(relaxed_count_accepted and count_match.confidence < grid_fast_min_count_confidence)
                                 grid_template_matched = True
                                 verified = InventoryVerification(
                                     name=None,
@@ -4881,7 +5444,7 @@ class Scanner:
                                 order_suffix = (
                                     f", order_hint={order_hint_relation}:{grid_best_item_id}->{grid_template_item_id}"
                                     if order_hint_accepted
-                                    else ""
+                                    else (", relaxed_count_conf" if relaxed_count_accepted else "")
                                 )
                                 self.log(
                                     f"    grid template matched: {grid_template_item_id} "
@@ -4967,19 +5530,26 @@ class Scanner:
                         self.log(
                             f"  profile cursor jump: {profile_cursor} -> {assigned_profile_idx}"
                         )
-                        gap_added = self._append_profile_gap_entries(
-                            items,
-                            seen_keys,
-                            profile_seen_names,
-                            active_profile,
-                            profile_ordered_names,
-                            profile_ordered_item_ids,
-                            source,
-                            profile_cursor,
-                            assigned_profile_idx,
-                        )
-                        if gap_added:
-                            profile_cursor = max(profile_cursor, assigned_profile_idx)
+                        defer_gap_fill = bool(grid_row_anchor_state.enabled and has_unprocessed_prior_slot)
+                        if defer_gap_fill:
+                            self._debug(
+                                f"    profile gap zero-fill deferred: "
+                                f"slot={slot_idx + 1} cursor={profile_cursor} target={assigned_profile_idx}"
+                            )
+                        else:
+                            gap_added = self._append_profile_gap_entries(
+                                items,
+                                seen_keys,
+                                profile_seen_names,
+                                active_profile,
+                                profile_ordered_names,
+                                profile_ordered_item_ids,
+                                source,
+                                profile_cursor,
+                                assigned_profile_idx,
+                            )
+                            if gap_added:
+                                profile_cursor = max(profile_cursor, assigned_profile_idx)
                     if assigned_profile_idx < len(profile_ordered_names):
                         name = profile_ordered_names[assigned_profile_idx]
                     else:
@@ -4989,7 +5559,8 @@ class Scanner:
                         and profile_ordered_item_ids[assigned_profile_idx]
                     ):
                         item_id = profile_ordered_item_ids[assigned_profile_idx]
-                    if grid_row_anchor_state.record_confirmed(slot_idx, assigned_profile_idx):
+                    promote_to_anchor = grid_row_anchor_state.should_promote_anchor(slot_idx, strong_match=grid_template_matched)
+                    if grid_row_anchor_state.record_confirmed(slot_idx, assigned_profile_idx, as_anchor=promote_to_anchor):
                         row_anchor_confirmed = True
                         row_number = slot_idx // max(1, grid_cols) + 1
                         self._debug(
@@ -5067,6 +5638,7 @@ class Scanner:
                         "grid_template_score": round(grid_template_score, 4) if grid_template_matched else None,
                         "grid_count_confidence": round(grid_count_confidence, 4) if grid_template_matched else None,
                         "grid_count_raw": grid_count_raw if grid_template_matched else None,
+                        "grid_count_low_confidence": grid_count_low_confidence if grid_template_matched else False,
                         "roi_y_offset_px": current_scan_y_offset_px,
                         "review_required": False,
                     },
@@ -5112,6 +5684,51 @@ class Scanner:
                         )
                         profile_limit_reached = True
                         break
+                else:
+                    existing_index = next(
+                        (idx for idx, existing in enumerate(items) if existing.key() == k),
+                        None,
+                    )
+                    existing = items[existing_index] if existing_index is not None else None
+                    existing_meta = getattr(existing, "scan_meta", {}) or {}
+                    if (
+                        existing is not None
+                        and existing_meta.get("status") == "zero_filled"
+                        and str(existing.quantity or "").strip() in ("", "0")
+                        and str(entry.quantity or "").strip() not in ("", "0")
+                    ):
+                        entry.index = existing.index
+                        entry.scan_meta = dict(entry.scan_meta or {})
+                        entry.scan_meta["replaced_zero_fill"] = True
+                        items[existing_index] = entry
+                        if entry.name:
+                            profile_seen_names.add(entry.name)
+                            if active_profile is not None:
+                                mapped_idx = profile_index_by_name.get(entry.name)
+                                if mapped_idx is not None:
+                                    profile_cursor = max(profile_cursor, mapped_idx + 1)
+                        new_this += 1
+                        self.log(
+                            f"  {icon} [{entry.index + 1:>3}] {name}  x{count} "
+                            f"({detect_source}; zero-fill replaced)"
+                        )
+                        self._status(
+                            "inventory.slot.confirmed",
+                            source=source,
+                            source_label=source_label,
+                            slot_index=slot_idx,
+                            slot_number=slot_idx + 1,
+                            page_index=scroll_i + 1,
+                            item_name=name,
+                            quantity=count,
+                            item_id=item_id,
+                            row_anchor=row_anchor_confirmed,
+                            grid_cols=grid_cols,
+                            grid_rows=grid_rows,
+                            total_slots=len(slots),
+                            profile_id=active_profile.profile_id if active_profile is not None else None,
+                        )
+
             if active_profile is None:
                 active_profile = infer_inventory_scan_profile(source, page_item_ids, page_raw_names)
                 if active_profile is not None:
@@ -5239,6 +5856,7 @@ class Scanner:
                     and scroll_overlap_rows <= 0
                     and os.environ.get("BA_INVENTORY_STOP_ON_NO_SCROLL_OVERLAP", "1") != "0"
                 ):
+                    profile_scan_incomplete = active_profile is not None
                     self.log(
                         "  scroll overlap lost: no duplicated row detected after move "
                         "-> stopping inventory scan to avoid drift/user-interaction corruption"
@@ -5264,7 +5882,29 @@ class Scanner:
                     )
                 self.log(f"  next drag delta_px={current_scroll_amount}")
             if after_page is None:
+                profile_scan_incomplete = active_profile is not None
+                if profile_scan_incomplete:
+                    self.log(
+                        "  scroll failed before next page capture "
+                        "-> profile tail zero-fill disabled"
+                    )
                 break
+            if input_backend is not None and not legacy_scroll:
+                before_hashes = [slot.icon_hash for slot in page.slots]
+                after_hashes = [slot.icon_hash for slot in after_page.slots]
+                scroll_overlap_rows = _count_row_overlap(before_hashes, after_hashes, grid_cols)
+                next_scan_slot_indices = _new_inventory_slot_indices(
+                    len(slots),
+                    grid_cols,
+                    grid_rows,
+                    scroll_overlap_rows,
+                )
+                self.log(
+                    f"  row-step next scan: "
+                    f"overlap_rows={scroll_overlap_rows} "
+                    f"slots={'all' if next_scan_slot_indices is None else len(next_scan_slot_indices)}/{len(slots)} "
+                    f"y_offset={next_scan_y_offset_px:+d}px"
+                )
             repeated_last_row = (
                 page.last_row_hashes
                 and after_page.last_row_hashes
@@ -5276,6 +5916,21 @@ class Scanner:
             if repeated_last_row:
                 self.log(f"  repeated last row after scroll: total {len(items)}")
                 break
+            carried_grid_anchor_profile_indices = _carried_inventory_anchor_indices(
+                grid_row_anchor_state.anchor_profile_indices(),
+                len(slots),
+                grid_cols,
+                grid_rows,
+                scroll_overlap_rows,
+            )
+            if carried_grid_anchor_profile_indices:
+                self._debug(
+                    "    carried grid anchors: "
+                    + ", ".join(
+                        f"slot={slot_idx + 1}->profile={profile_idx}"
+                        for slot_idx, profile_idx in sorted(carried_grid_anchor_profile_indices.items())
+                    )
+                )
             self._status(
                 "inventory.scroll",
                 source=source,
@@ -5291,10 +5946,210 @@ class Scanner:
                 y_offset_px=next_scan_y_offset_px,
             )
         if active_profile is not None:
+            if profile_cursor < len(profile_ordered_names):
+                if profile_scan_incomplete:
+                    self.log(
+                        f"  profile tail zero-fill skipped: scan incomplete "
+                        f"cursor={profile_cursor} end={len(profile_ordered_names)}"
+                    )
+                else:
+                    self._append_profile_gap_entries(
+                        items,
+                        seen_keys,
+                        profile_seen_names,
+                        active_profile,
+                        profile_ordered_names,
+                        profile_ordered_item_ids,
+                        source,
+                        profile_cursor,
+                        len(profile_ordered_names),
+                    )
             items = self._fill_missing_profile_entries(items, active_profile, source)
         if input_backend is not None:
             input_backend.close()
         return items
+
+
+    def capture_inventory_scroll_debug(
+        self,
+        section: str,
+        source: str,
+        drag_config: InventoryDragConfig,
+        scroll_amount: int,
+        debug_dir: Path,
+    ) -> dict:
+        """Capture inventory scroll movement without reading grid contents."""
+        r_sec = self.r[section]
+        slots = r_sec["grid_slots"]
+        grid_r = _grid_region(slots)
+
+        rect = self._rect()
+        if not rect:
+            self.log("window not found")
+            return {"ok": False, "reason": "window_not_found", "scrolls": 0}
+
+        debug_dir.mkdir(parents=True, exist_ok=True)
+        grid_cols = int(r_sec.get("grid_cols", 0))
+        grid_rows = int(r_sec.get("grid_rows", 0))
+        if grid_cols <= 0:
+            grid_cols = max(1, int(round(len(slots) ** 0.5)))
+        if grid_rows <= 0:
+            grid_rows = max(1, (len(slots) + grid_cols - 1) // grid_cols)
+
+        self.log(
+            f"[debug] {source} scroll capture start: "
+            f"slots={len(slots)} grid={grid_cols}x{grid_rows} dir={debug_dir}"
+        )
+        self._reset_inventory_scan_state(source)
+
+        seen_hashes: list[str] = []
+        current_scroll_amount = scroll_amount
+        next_scan_slot_indices: set[int] | None = None
+        next_scan_y_offset_px = 0
+        scroll_rows: list[dict] = []
+        stop_reason = "max_scrolls"
+
+        for scroll_i in range(MAX_SCROLLS):
+            if self._stop_requested():
+                stop_reason = "stop_requested"
+                break
+
+            current_scan_slot_indices = next_scan_slot_indices
+            current_scan_y_offset_px = next_scan_y_offset_px
+            next_scan_slot_indices = None
+            next_scan_y_offset_px = 0
+            if current_scan_slot_indices is not None:
+                if not current_scan_slot_indices:
+                    stop_reason = "empty_next_scan_window"
+                    self.log("  row-step scan window empty -> stopping")
+                    break
+                self.log(
+                    f"  row-step scan window skipped for debug: "
+                    f"{len(current_scan_slot_indices)}/{len(slots)} slots "
+                    f"y_offset={current_scan_y_offset_px:+d}px"
+                )
+
+            img = self._capture()
+            if img is None:
+                stop_reason = "capture_failed"
+                break
+
+            active_slots = _shift_slots_y(slots, current_scan_y_offset_px, img.size) if current_scan_y_offset_px else slots
+            active_grid_r = _grid_region(active_slots) if current_scan_y_offset_px else grid_r
+            grid_crop = crop_region(img, active_grid_r)
+            cur_hash = _img_hash(grid_crop)
+            page = self._capture_inventory_page(
+                img,
+                active_slots,
+                grid_hash=cur_hash,
+                page_index=scroll_i,
+                grid_cols=grid_cols,
+            )
+
+            if cur_hash in seen_hashes:
+                stop_reason = "duplicate_grid_hash"
+                self.log("  repeated grid hash before drag -> stopping")
+                break
+            seen_hashes.append(cur_hash)
+            if len(seen_hashes) > 10:
+                seen_hashes.pop(0)
+
+            moved, after_page, current_scroll_amount, scroll_overlap_rows, next_scan_y_offset_px = self._scroll_inventory_page(
+                rect,
+                slots,
+                grid_r,
+                drag_config,
+                current_scroll_amount,
+                grid_cols,
+                scroll_index=scroll_i,
+                debug_dir=debug_dir,
+                before_y_offset_px=current_scan_y_offset_px,
+                drag_rx_offset=(
+                    float(os.environ.get("BA_INVENTORY_ITEM_DRAG_RX_OFFSET", "-0.006"))
+                    if source == "item"
+                    else 0.0
+                ),
+            )
+            next_scan_slot_indices = _new_inventory_slot_indices(
+                len(slots),
+                grid_cols,
+                grid_rows,
+                scroll_overlap_rows,
+            )
+            scroll_rows.append(
+                {
+                    "scroll_index": scroll_i,
+                    "moved": bool(moved),
+                    "overlap_rows": scroll_overlap_rows,
+                    "next_scan_slots": (
+                        sorted(next_scan_slot_indices)
+                        if next_scan_slot_indices is not None
+                        else None
+                    ),
+                    "next_y_offset_px": next_scan_y_offset_px,
+                    "next_drag_delta_px": current_scroll_amount,
+                }
+            )
+
+            if (
+                moved
+                and scroll_overlap_rows <= 0
+                and os.environ.get("BA_INVENTORY_STOP_ON_NO_SCROLL_OVERLAP", "1") != "0"
+            ):
+                stop_reason = "overlap_lost"
+                self.log(
+                    "  scroll overlap lost: no duplicated row detected after move "
+                    "-> stopping debug capture"
+                )
+                break
+            if after_page is None:
+                stop_reason = "scroll_failed"
+                self.log("  scroll failed before next page capture -> stopping debug capture")
+                break
+
+            repeated_last_row = (
+                page.last_row_hashes
+                and after_page.last_row_hashes
+                and page.last_row_hashes == after_page.last_row_hashes
+            )
+            if not moved:
+                stop_reason = "not_moved"
+                self.log("  scroll finished: no movement")
+                break
+            if repeated_last_row:
+                stop_reason = "repeated_last_row"
+                self.log("  repeated last row after scroll")
+                break
+
+            self.log(
+                f"  debug scroll {scroll_i + 1}: "
+                f"overlap_rows={scroll_overlap_rows} "
+                f"next_slots={'all' if next_scan_slot_indices is None else len(next_scan_slot_indices)} "
+                f"y_offset={next_scan_y_offset_px:+d}px "
+                f"next_delta_px={current_scroll_amount}"
+            )
+
+        summary = {
+            "ok": stop_reason not in {"window_not_found", "capture_failed"},
+            "section": section,
+            "source": source,
+            "profile_id": self._forced_inventory_profile_id,
+            "grid_cols": grid_cols,
+            "grid_rows": grid_rows,
+            "slot_count": len(slots),
+            "scrolls": scroll_rows,
+            "stop_reason": stop_reason,
+            "debug_dir": str(debug_dir),
+        }
+        (debug_dir / "debug_capture_summary.json").write_text(
+            json.dumps(summary, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        self.log(
+            f"[debug] {source} scroll capture done: "
+            f"scrolls={len(scroll_rows)} reason={stop_reason}"
+        )
+        return summary
 
     def scan_items(
         self,
@@ -7301,4 +8156,3 @@ class Scanner:
             result.students  = self.scan_students()
         self.log("[scan] full scan done")
         return result
-

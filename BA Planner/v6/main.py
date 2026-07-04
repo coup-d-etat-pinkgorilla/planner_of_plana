@@ -265,10 +265,12 @@ _ITEM_SCAN_FILTER_OPTIONS: list[tuple[str, str]] = [
     ("tactical_bd", "전술 교육 BD"),
     ("ooparts", "오파츠"),
     ("student_elephs", "엘레프"),
+    ("presents", "선물"),
     ("activity_reports", "활동 보고서"),
 ]
 _FULL_SCAN_ITEM_FILTERS: tuple[str, ...] = (
     "student_elephs",
+    "presents",
     "ooparts",
     "tactical_bd",
     "tech_notes",

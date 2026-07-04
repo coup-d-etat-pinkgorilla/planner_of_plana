@@ -189,6 +189,26 @@
         },
         "threshold": 0.8,
         "margin": 0.015
+      },
+      "presents": {
+        "crop_ratio": {
+          "left": 0.363,
+          "right": 0.3592,
+          "top": 0.2896,
+          "bottom": 0.3159
+        },
+        "tier_hint": {
+          "enabled": false
+        },
+        "threshold": 0.8,
+        "margin": 0.015,
+        "background": "icons/temp/square_yellow.png",
+        "background_rules": [
+          {
+            "contains": "SSR",
+            "background": "icons/temp/square_purple.png"
+          }
+        ]
       }
     }
   }

@@ -28,8 +28,67 @@ class InventoryGridMatchResult:
 class InventoryGridRowAnchorState:
     grid_cols: int
     enabled: bool = True
-    row_anchor_indices: dict[int, int] = field(default_factory=dict)
-    row_used_indices: dict[int, set[int]] = field(default_factory=dict)
+    confirmed_profile_indices: dict[int, int] = field(default_factory=dict)
+    used_profile_indices: set[int] = field(default_factory=set)
+    anchor_slots: set[int] = field(default_factory=set)
+
+    def anchor_profile_indices(self) -> dict[int, int]:
+        return {
+            slot_index: profile_index
+            for slot_index, profile_index in self.confirmed_profile_indices.items()
+            if slot_index in self.anchor_slots
+        }
+
+    def row_has_anchor(self, slot_index: int) -> bool:
+        if not self.enabled or self.grid_cols <= 0:
+            return False
+        row_index = slot_index // self.grid_cols
+        return any(anchor_slot // self.grid_cols == row_index for anchor_slot in self.anchor_slots)
+
+    def should_promote_anchor(self, slot_index: int, *, strong_match: bool) -> bool:
+        return bool(self.enabled and strong_match and not self.row_has_anchor(slot_index))
+
+    def surrounding_anchors(self, slot_index: int) -> tuple[tuple[int, int] | None, tuple[int, int] | None]:
+        if not self.enabled or self.grid_cols <= 0:
+            return None, None
+        previous_anchors = [
+            (confirmed_slot, self.confirmed_profile_indices[confirmed_slot])
+            for confirmed_slot in self.anchor_slots
+            if confirmed_slot < slot_index and confirmed_slot in self.confirmed_profile_indices
+        ]
+        next_anchors = [
+            (confirmed_slot, self.confirmed_profile_indices[confirmed_slot])
+            for confirmed_slot in self.anchor_slots
+            if confirmed_slot > slot_index and confirmed_slot in self.confirmed_profile_indices
+        ]
+        lower = max(previous_anchors, key=lambda row: row[0]) if previous_anchors else None
+        upper = min(next_anchors, key=lambda row: row[0]) if next_anchors else None
+        return lower, upper
+
+    def exact_profile_index_for_slot(self, slot_index: int) -> int | None:
+        lower, upper = self.surrounding_anchors(slot_index)
+        if lower is None or upper is None:
+            return None
+        lower_slot, lower_index = lower
+        upper_slot, upper_index = upper
+        slot_gap = upper_slot - lower_slot - 1
+        profile_gap = upper_index - lower_index - 1
+        if slot_gap <= 0 or profile_gap != slot_gap:
+            return None
+        profile_index = lower_index + (slot_index - lower_slot)
+        if lower_index < profile_index < upper_index:
+            return profile_index
+        return None
+
+    def has_sparse_anchor_gap(self, slot_index: int) -> bool:
+        lower, upper = self.surrounding_anchors(slot_index)
+        if lower is None or upper is None:
+            return False
+        lower_slot, lower_index = lower
+        upper_slot, upper_index = upper
+        slot_gap = upper_slot - lower_slot - 1
+        profile_gap = upper_index - lower_index - 1
+        return slot_gap > 0 and 0 <= profile_gap < slot_gap
 
     def candidate_item_ids_for_slot(
         self,
@@ -38,33 +97,59 @@ class InventoryGridRowAnchorState:
     ) -> list[str] | None:
         if not self.enabled or self.grid_cols <= 0 or not ordered_item_ids:
             return None
-        row_index, column_index = divmod(slot_index, self.grid_cols)
-        if column_index <= 0:
+        lower_anchor, upper_anchor = self.surrounding_anchors(slot_index)
+        if lower_anchor is None and upper_anchor is None:
             return None
-        anchor_index = self.row_anchor_indices.get(row_index)
-        if anchor_index is None:
-            return None
-        used_indices = self.row_used_indices.get(row_index, set())
-        end_index = min(len(ordered_item_ids), anchor_index + self.grid_cols)
+        if lower_anchor is not None and upper_anchor is not None:
+            lower_slot, lower_index = lower_anchor
+            upper_slot, upper_index = upper_anchor
+            slot_gap = upper_slot - lower_slot - 1
+            profile_gap = upper_index - lower_index - 1
+            if slot_gap <= 0:
+                return []
+            if profile_gap < slot_gap:
+                return None
+            offset = slot_index - lower_slot
+            extra_candidates = profile_gap - slot_gap
+            start_index = lower_index + offset
+            end_index = min(upper_index, start_index + extra_candidates + 1)
+        elif upper_anchor is not None:
+            upper_slot, upper_index = upper_anchor
+            slot_gap = upper_slot
+            profile_gap = upper_index
+            if slot_gap > 0 and profile_gap >= slot_gap:
+                offset = slot_index
+                extra_candidates = profile_gap - slot_gap
+                start_index = offset
+                end_index = min(upper_index, start_index + extra_candidates + 1)
+            else:
+                start_index = 0
+                end_index = upper_index
+        else:
+            lower_index = lower_anchor[1] if lower_anchor is not None else None
+            start_index = (lower_index + 1) if lower_index is not None else 0
+            end_index = len(ordered_item_ids)
+
+        if end_index <= start_index:
+            return []
         return [
             item_id
             for profile_index, item_id in enumerate(
-                ordered_item_ids[anchor_index + 1:end_index],
-                start=anchor_index + 1,
+                ordered_item_ids[start_index:end_index],
+                start=start_index,
             )
-            if item_id and profile_index not in used_indices
+            if item_id and profile_index not in self.used_profile_indices
         ]
 
-    def record_confirmed(self, slot_index: int, profile_index: int | None) -> bool:
+    def record_confirmed(self, slot_index: int, profile_index: int | None, *, as_anchor: bool = True) -> bool:
         if not self.enabled or self.grid_cols <= 0 or profile_index is None:
             return False
-        row_index, column_index = divmod(slot_index, self.grid_cols)
-        self.row_used_indices.setdefault(row_index, set()).add(profile_index)
-        if column_index == 0:
-            self.row_anchor_indices[row_index] = profile_index
-            return True
-        return False
-
+        previous = self.confirmed_profile_indices.get(slot_index)
+        self.confirmed_profile_indices[slot_index] = profile_index
+        self.used_profile_indices.add(profile_index)
+        if as_anchor:
+            self.anchor_slots.add(slot_index)
+        return bool(as_anchor and previous != profile_index)
 
 DEFAULT_GRID_TEMPLATE = {
     "background": "icons/temp/square.png",
@@ -126,6 +211,7 @@ def _merged_config(config: dict | None) -> dict:
     merged = {
         "background": DEFAULT_GRID_TEMPLATE["background"],
         "tier_backgrounds": dict(DEFAULT_GRID_TEMPLATE["tier_backgrounds"]),
+        "background_rules": [],
         "background_geometry": dict(DEFAULT_GRID_TEMPLATE["background_geometry"]),
         "icon_geometry": dict(DEFAULT_GRID_TEMPLATE["icon_geometry"]),
         "crop_ratio": dict(DEFAULT_GRID_TEMPLATE["crop_ratio"]),
@@ -144,6 +230,9 @@ def _merged_config(config: dict | None) -> dict:
     value = config.get("tier_backgrounds")
     if isinstance(value, dict):
         merged["tier_backgrounds"].update(value)
+    value = config.get("background_rules")
+    if isinstance(value, list):
+        merged["background_rules"] = [rule for rule in value if isinstance(rule, dict)]
     for key in ("background_geometry", "icon_geometry", "crop_ratio"):
         value = config.get(key)
         if isinstance(value, dict):
@@ -161,16 +250,25 @@ def _merged_config(config: dict | None) -> dict:
 
 
 def _background_for_item(item_id: str, config: dict) -> Path:
+    fallback = str(config.get("background") or "icons/temp/square.png")
+    text = item_id.casefold()
+    rules = config.get("background_rules")
+    if isinstance(rules, list):
+        for rule in rules:
+            if not isinstance(rule, dict):
+                continue
+            contains = str(rule.get("contains") or "").casefold()
+            background = rule.get("background")
+            if contains and contains in text and background:
+                return _template_asset_path(str(background), fallback)
+
     tier_token = item_id.rsplit("_", 1)[-1]
     tier_backgrounds = config.get("tier_backgrounds")
     if isinstance(tier_backgrounds, dict):
         background = tier_backgrounds.get(tier_token)
         if background:
-            return _template_asset_path(
-                str(background),
-                str(config.get("background") or "icons/temp/square.png"),
-            )
-    return _template_asset_path(str(config.get("background")), "icons/temp/square.png")
+            return _template_asset_path(str(background), fallback)
+    return _template_asset_path(fallback, "icons/temp/square.png")
 
 
 def _crop_inner(image: Image.Image, crop_ratio: dict) -> Image.Image:
@@ -525,9 +623,9 @@ def match_inventory_grid_template(
         slot_crop,
         match_catalog,
         merged,
-        use_tier_hint=not row_anchor_applied,
+        use_tier_hint=True,
     )
-    filtered_catalog = [] if row_anchor_applied else _tier_filtered_catalog(match_catalog, tier_hint)
+    filtered_catalog = _tier_filtered_catalog(match_catalog, tier_hint)
     if not ranked:
         return InventoryGridMatchResult(
             None,

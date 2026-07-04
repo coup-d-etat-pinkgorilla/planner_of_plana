@@ -143,10 +143,11 @@ Equipment_Icon_WeaponExpGrowth{PartKey}_{TierMinusOne}
 Profile ID: `student_elephs`
 
 Student elephs use Korean-server student metadata from `core.student_meta`;
-`JP_ONLY_STUDENT_IDS` are excluded from the scan target list. The order is based
-on student display name, with variants sorted before the base form for the same
-student group. For example, Neru variants scan as school-uniform, bunny-girl,
-then base Neru.
+`JP_ONLY_STUDENT_IDS` are excluded from the scan target list. The order follows
+the full localized eleph item label, using the student display name plus the
+eleph suffix. This matches in-game ordering where punctuation and full names
+participate in the same comparison; for example, Mari scans as Mari (Idol),
+Mari (Sportswear), Marina (Qipao), Marina, then base Mari.
 
 ID pattern:
 
@@ -165,6 +166,41 @@ Detail fallback templates are generated under
 `templates/inventory_detail/student_elephs/` from the same `eleph_work` project.
 The detail ROI is `(511,331)-(809,658)` on a 2560x1440 reference, and each
 eleph icon is composited at `(-89,-25)` within that ROI at `476x377`.
+
+### Presents
+
+Profile ID: `presents`
+
+Presents use the same grid-matching composition as the student-eleph profile,
+but the icon candidates come only from `templates/icons/presents/`. The profile
+uses the present icon file stems as stable item IDs and scan labels. The expected
+grid order follows the same natural filename order as that folder, and the
+scanner uses that order for row-anchor candidate narrowing and gap zero-fill.
+
+ID pattern examples:
+
+```text
+Item_Icon_Favor_{Index}
+Item_Icon_Favor_Lv2_{Index}
+Item_Icon_Favor_SSR_GL_{Index}
+```
+
+Grid matching reuses the eleph central crop override from
+`student_elephs`: `left=0.3630`, `right=0.3592`, `top=0.2896`,
+`bottom=0.3159`, with tier color hinting disabled. Template composition uses
+the T2 item background (`square_yellow.png`) by default; item IDs containing
+`SSR` use the T3 background (`square_purple.png`).
+
+Detail fallback templates are generated under `templates/inventory_detail/presents/`
+using the same ROI and overlay geometry as `student_elephs`: detail ROI
+`(511,331)-(809,658)` on a 2560x1440 reference and overlay geometry
+`(-89,-25)` at `476x377`. The same present background rule is used for these
+fallback templates.
+
+The scan preparation keeps the default item sort rule (`sort_rule_check`),
+unlike student elephs, which use the name-sort reference. Until the dedicated
+present filter image is supplied, the UI click target is temporarily mapped to
+the ooparts filter position.
 
 ### Coins
 

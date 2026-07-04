@@ -5156,6 +5156,31 @@ class StudentViewerWindow(QMainWindow):
                     grid.removeWidget(frame)
                     grid.addWidget(frame, index // cols, index % cols)
         self._reset_scan_inventory_grid_cells()
+        self._reflow_scan_inventory_grid()
+
+    def _reflow_scan_inventory_grid(self) -> None:
+        grid = self._scan_inventory_grid_layout
+        if grid is None:
+            return
+        cols = max(1, int(getattr(self, "_scan_inventory_grid_cols", 5) or 5))
+        visible_slots = int(getattr(self, "_scan_inventory_visible_slots", 20) or 20)
+        cells = list(getattr(self, "_scan_inventory_grid_cells", []))
+        visible_cells = [
+            (index, cell)
+            for index, cell in enumerate(cells[:visible_slots])
+        ]
+        for index, cell in visible_cells:
+            frame = cell.get("frame")
+            if isinstance(frame, QFrame):
+                grid.removeWidget(frame)
+                grid.addWidget(frame, index // cols, index % cols)
+                frame.setVisible(True)
+        for index, cell in enumerate(cells[visible_slots:], start=visible_slots):
+            frame = cell.get("frame")
+            if isinstance(frame, QFrame):
+                grid.removeWidget(frame)
+                grid.addWidget(frame, index // cols, index % cols)
+                frame.setVisible(False)
 
     def _inventory_slot_color(self, tier: object = None, confirmed: bool = False) -> str:
         if confirmed:
@@ -5335,6 +5360,7 @@ class StudentViewerWindow(QMainWindow):
         except (TypeError, ValueError):
             slot_index = 1
         self._render_scan_inventory_cell(cell, slot_index)
+        self._reflow_scan_inventory_grid()
 
     def _set_scan_inventory_cell_confirmed(
         self,
@@ -5360,6 +5386,7 @@ class StudentViewerWindow(QMainWindow):
         if row_anchor:
             cell["anchor"] = True
         self._render_scan_inventory_cell(cell, slot_index)
+        self._reflow_scan_inventory_grid()
 
     def _apply_scan_inventory_scroll_feedback(
         self,
@@ -5417,6 +5444,7 @@ class StudentViewerWindow(QMainWindow):
                 frame = cell.get("frame")
                 if isinstance(frame, QFrame):
                     frame.setVisible(False)
+        self._reflow_scan_inventory_grid()
         self._animate_scan_inventory_scroll(moved)
 
     def _animate_scan_inventory_scroll(self, moved_rows: int) -> None:

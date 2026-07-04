@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 import core.student_meta as student_meta
+from core.config import TEMPLATE_DIR
 from core.equipment_items import (
     EQUIPMENT_ITEM_ID_TO_NAME,
     EQUIPMENT_ORDERED_ITEM_IDS,
@@ -126,16 +128,10 @@ def _equipment_ordered_item_ids() -> list[str]:
 
 
 def _student_eleph_student_ids() -> list[str]:
-    def sort_key(student_id: str) -> tuple[str, int, str, str]:
-        group = student_meta.group(student_id) or student_meta.display_name(student_id)
-        variant = student_meta.variant(student_id)
-        variant_rank = 1 if variant is None else 0
-        return (
-            group.casefold(),
-            variant_rank,
-            student_meta.display_name(student_id).casefold(),
-            student_id.casefold(),
-        )
+    def sort_key(student_id: str) -> tuple[str, str]:
+        display_name = student_meta.display_name(student_id)
+        item_label = f"{display_name}\uc758 \uc5d8\ub808\ud504"
+        return (item_label.casefold(), student_id.casefold())
 
     return sorted(
         (student_id for student_id in student_meta.all_ids() if not student_meta.is_jp_only(student_id)),
@@ -157,6 +153,29 @@ def _student_eleph_ordered_names() -> list[str]:
 
 def _student_eleph_ordered_item_ids() -> list[str]:
     return [_student_eleph_item_id(student_id) for student_id in _student_eleph_student_ids()]
+
+
+def _natural_sort_key(text: str) -> tuple[object, ...]:
+    parts: list[object] = []
+    for part in re.split(r"(\d+)", text.casefold()):
+        if not part:
+            continue
+        parts.append(int(part) if part.isdigit() else part)
+    return tuple(parts)
+
+
+def _present_ordered_item_ids() -> tuple[str, ...]:
+    base = TEMPLATE_DIR / "icons" / "presents"
+    if not base.exists():
+        return ()
+    return tuple(
+        path.stem
+        for path in sorted(base.glob("*.png"), key=lambda path: _natural_sort_key(path.stem))
+    )
+
+
+def _present_ordered_names() -> tuple[str, ...]:
+    return _present_ordered_item_ids()
 
 _REPORT_NAMES = [
     "초급 활동 보고서",
@@ -237,6 +256,14 @@ _PROFILES = {
         expected_item_ids=frozenset(_student_eleph_ordered_item_ids()),
         terminal_item_ids=frozenset({_student_eleph_ordered_item_ids()[-1]}),
     ),
+    "presents": InventoryScanProfile(
+        profile_id="presents",
+        source="item",
+        ordered_names=tuple(_present_ordered_names()),
+        terminal_names=frozenset(_present_ordered_names()[-1:]),
+        expected_item_ids=frozenset(_present_ordered_item_ids()),
+        terminal_item_ids=frozenset(_present_ordered_item_ids()[-1:]),
+    ),
     "activity_reports": InventoryScanProfile(
         profile_id="activity_reports",
         source="item",
@@ -254,6 +281,7 @@ _PROFILE_LABELS = {
     "ooparts": "오파츠",
     "equipment": "장비",
     "student_elephs": "엘레프",
+    "presents": "선물",
     "activity_reports": "활동 보고서",
 }
 
@@ -404,6 +432,9 @@ def inventory_profile_ordered_item_ids(profile: InventoryScanProfile) -> tuple[s
     if profile.profile_id == "student_elephs":
         return tuple(_student_eleph_ordered_item_ids())
 
+    if profile.profile_id == "presents":
+        return tuple(_present_ordered_item_ids())
+
     return tuple(None for _ in profile.ordered_names)
 
 
@@ -494,6 +525,14 @@ def infer_inventory_scan_profile(
         ]
         if len(report_hits) >= 2 and len(report_hits) >= max(2, int(len(item_ids) * 0.7)):
             return _PROFILES["activity_reports"]
+
+        present_hits = [
+            item_id
+            for item_id in item_ids
+            if item_id in _PROFILES["presents"].expected_item_ids
+        ]
+        if len(present_hits) >= 4 and len(present_hits) >= max(4, int(len(item_ids) * 0.7)):
+            return _PROFILES["presents"]
 
     sample = [_compact(name) for name in (raw_names or []) if name]
     if not sample:
