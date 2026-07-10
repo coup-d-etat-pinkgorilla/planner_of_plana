@@ -19,7 +19,11 @@ from core.scanner import (
     ITEM_INVENTORY_DRAG,
     Scanner,
 )
-from tools.replay_inventory_scroll_debug import export_studio_projects, replay_scroll_folder
+from tools.replay_inventory_scroll_debug import (
+    export_gray_band_layout_studio_projects,
+    export_studio_projects,
+    replay_scroll_folder,
+)
 
 
 DEFAULT_OUTPUT_DIR = BASE_DIR / "debug" / "item_equip_scroll_debugger"
@@ -75,6 +79,19 @@ def parse_args() -> argparse.Namespace:
         "--no-studio-export",
         action="store_true",
         help="skip Template Alignment Studio JSON export",
+    )
+    parser.add_argument(
+        "--no-gray-band-layout-export",
+        action="store_true",
+        help="skip gray-band-layout Template Alignment Studio export",
+    )
+    parser.add_argument(
+        "--focus-anchor-before-scroll",
+        action="store_true",
+        help=(
+            "before each scroll capture, click inventory slot 1, move the OS cursor "
+            "away from the grid, then capture after a short settle wait"
+        ),
     )
     parser.add_argument("--hwnd", type=int, default=None)
     parser.add_argument("--title-contains", default="Blue Archive")
@@ -155,6 +172,12 @@ def _export_studio(capture_dir: Path, section: str, target_dir: Path) -> list[st
     return [str(path) for path in written]
 
 
+def _export_gray_band_layout_studio(capture_dir: Path, section: str, target_dir: Path) -> list[str]:
+    rows = replay_scroll_folder(capture_dir, section)
+    written = export_gray_band_layout_studio_projects(capture_dir, section, rows, target_dir)
+    return [str(path) for path in written]
+
+
 def _write_target_index(target_dir: Path, payload: dict) -> None:
     target_dir.mkdir(parents=True, exist_ok=True)
     (target_dir / "index.json").write_text(
@@ -169,13 +192,16 @@ def _capture_item_profile(
     profile_id: str | None,
     *,
     export_studio: bool,
+    export_gray_band_layout: bool,
     ensure_sort_rule: bool,
+    focus_anchor_before_scroll: bool,
 ) -> dict:
     label = _safe_token(profile_id or "all")
     target_dir = output_root / "item" / label
     _replace_dir(target_dir, output_root)
     capture_dir = target_dir / "captures"
     studio_dir = target_dir / "studio_projects"
+    gray_band_studio_dir = target_dir / "gray_band_layout_studio_projects"
 
     scanner._forced_inventory_profile_id = profile_id
     if not scanner._prepare_item_inventory(profile_id, ensure_sort_rule=ensure_sort_rule):
@@ -195,8 +221,14 @@ def _capture_item_profile(
         ITEM_INVENTORY_DRAG,
         ITEM_INVENTORY_DRAG.delta_px,
         capture_dir,
+        focus_anchor_before_scroll=focus_anchor_before_scroll,
     )
     studio_files = [] if not export_studio else _export_studio(capture_dir, "item", studio_dir)
+    gray_band_studio_files = (
+        []
+        if not export_gray_band_layout
+        else _export_gray_band_layout_studio(capture_dir, "item", gray_band_studio_dir)
+    )
     payload = {
         "ok": bool(summary.get("ok")),
         "target": "item",
@@ -205,6 +237,8 @@ def _capture_item_profile(
         "captures_dir": str(capture_dir),
         "studio_dir": str(studio_dir) if export_studio else None,
         "studio_files": studio_files,
+        "gray_band_layout_studio_dir": str(gray_band_studio_dir) if export_gray_band_layout else None,
+        "gray_band_layout_studio_files": gray_band_studio_files,
         "capture_summary": summary,
     }
     _write_target_index(target_dir, payload)
@@ -216,11 +250,14 @@ def _capture_equipment(
     output_root: Path,
     *,
     export_studio: bool,
+    export_gray_band_layout: bool,
+    focus_anchor_before_scroll: bool,
 ) -> dict:
     target_dir = output_root / "equipment"
     _replace_dir(target_dir, output_root)
     capture_dir = target_dir / "captures"
     studio_dir = target_dir / "studio_projects"
+    gray_band_studio_dir = target_dir / "gray_band_layout_studio_projects"
 
     scanner._forced_inventory_profile_id = "equipment"
     if not scanner._prepare_equipment_inventory():
@@ -240,8 +277,14 @@ def _capture_equipment(
         EQUIPMENT_INVENTORY_DRAG,
         EQUIPMENT_INVENTORY_DRAG.delta_px,
         capture_dir,
+        focus_anchor_before_scroll=focus_anchor_before_scroll,
     )
     studio_files = [] if not export_studio else _export_studio(capture_dir, "equipment", studio_dir)
+    gray_band_studio_files = (
+        []
+        if not export_gray_band_layout
+        else _export_gray_band_layout_studio(capture_dir, "equipment", gray_band_studio_dir)
+    )
     payload = {
         "ok": bool(summary.get("ok")),
         "target": "equipment",
@@ -250,6 +293,8 @@ def _capture_equipment(
         "captures_dir": str(capture_dir),
         "studio_dir": str(studio_dir) if export_studio else None,
         "studio_files": studio_files,
+        "gray_band_layout_studio_dir": str(gray_band_studio_dir) if export_gray_band_layout else None,
+        "gray_band_layout_studio_files": gray_band_studio_files,
         "capture_summary": summary,
     }
     _write_target_index(target_dir, payload)
@@ -314,7 +359,9 @@ def main() -> int:
                         output_root,
                         profile_id,
                         export_studio=not args.no_studio_export,
+                        export_gray_band_layout=(not args.no_studio_export and not args.no_gray_band_layout_export),
                         ensure_sort_rule=True,
+                        focus_anchor_before_scroll=args.focus_anchor_before_scroll,
                     )
                 )
 
@@ -346,6 +393,8 @@ def main() -> int:
                     scanner,
                     output_root,
                     export_studio=not args.no_studio_export,
+                    export_gray_band_layout=(not args.no_studio_export and not args.no_gray_band_layout_export),
+                    focus_anchor_before_scroll=args.focus_anchor_before_scroll,
                 )
             )
 
@@ -359,6 +408,8 @@ def main() -> int:
         "target": args.target,
         "item_profiles": [profile or "all" for profile in item_profiles],
         "output_root": str(output_root),
+        "focus_anchor_before_scroll": bool(args.focus_anchor_before_scroll),
+        "gray_band_layout_export": bool(not args.no_studio_export and not args.no_gray_band_layout_export),
         "results": results,
     }
     (output_root / "index.json").write_text(

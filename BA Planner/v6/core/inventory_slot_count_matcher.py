@@ -45,6 +45,7 @@ SLOT_COUNT_CONFUSION_PAIRS = frozenset({
         ("6", "8"),
     )
 })
+K_SUFFIX_DIGIT_LEFT_SHIFT_PX = 6
 
 @dataclass(frozen=True)
 class SlotCountResult:
@@ -837,7 +838,13 @@ def _slot_count_y_offset_candidates(center: int, radius: int) -> list[int]:
             deduped.append(candidate)
     return deduped
 
-def _digit_region(slot: dict, position: int, image_size: tuple[int, int]) -> dict:
+def _digit_region(
+    slot: dict,
+    position: int,
+    image_size: tuple[int, int],
+    *,
+    x_offset_px: int = 0,
+) -> dict:
     width, height = image_size
     slot_x1 = float(slot["x1"]) * width
     slot_y1 = float(slot["y1"]) * height
@@ -846,7 +853,7 @@ def _digit_region(slot: dict, position: int, image_size: tuple[int, int]) -> dic
     return {
         "points_ratio": [
             {
-                "x": (slot_x1 + rel_x * slot_w) / width,
+                "x": (slot_x1 + rel_x * slot_w + x_offset_px) / width,
                 "y": (slot_y1 + rel_y * slot_h) / height,
             }
             for rel_x, rel_y in _DIGIT_RELATIVE_POINTS[position]
@@ -1318,15 +1325,68 @@ def read_item_slot_count(
         name = _save_debug_asset(position, "used_outline", feature.outline, scale=6)
         if name:
             debug_entry["images"]["used_outline"] = name
-        position_records.append(
-            {
-                "position": position,
-                "feature": feature,
-                "text_pixels": text_pixels,
-                "blank_threshold": active_blank_threshold,
-                "debug": debug_entry,
-            }
-        )
+        record = {
+            "position": position,
+            "feature": feature,
+            "text_pixels": text_pixels,
+            "blank_threshold": active_blank_threshold,
+            "debug": debug_entry,
+        }
+        if position > 0:
+            shifted_payload = _digit_region(
+                effective_slot,
+                position,
+                image.size,
+                x_offset_px=-K_SUFFIX_DIGIT_LEFT_SHIFT_PX,
+            )
+            shifted_crop = warp_quad_region(image, shifted_payload)
+            if shifted_crop is not None:
+                shifted_debug = {
+                    "position": position,
+                    "variant": "k_suffix_left_shift",
+                    "x_offset_px": -K_SUFFIX_DIGIT_LEFT_SHIFT_PX,
+                }
+                if color_filter_enabled and slot_color_mask is not None:
+                    shifted_feature, shifted_pixels, shifted_source_pixels = _extract_color_text_from_subtractor_mask(
+                        slot_color_mask,
+                        shifted_payload,
+                    )
+                    shifted_debug["color_source_pixels"] = shifted_source_pixels
+                    shifted_debug["color_text_pixels"] = shifted_pixels
+                    shifted_blank_threshold = color_blank_text_threshold
+                    if shifted_pixels < shifted_blank_threshold and outline_fallback_enabled:
+                        shifted_outline_feature, shifted_outline_pixels = _extract_outline_text(
+                            shifted_crop,
+                            white_threshold=white_threshold,
+                            black_threshold=black_threshold,
+                            dilate=dilate,
+                        )
+                        shifted_debug["outline_fallback"] = True
+                        shifted_debug["outline_text_pixels"] = shifted_outline_pixels
+                        shifted_feature = shifted_outline_feature
+                        shifted_pixels = shifted_outline_pixels
+                        shifted_blank_threshold = blank_text_threshold
+                else:
+                    shifted_feature, shifted_pixels = _extract_outline_text(
+                        shifted_crop,
+                        white_threshold=white_threshold,
+                        black_threshold=black_threshold,
+                        dilate=dilate,
+                    )
+                    shifted_blank_threshold = blank_text_threshold
+                shifted_debug["method"] = shifted_feature.method
+                shifted_debug["text_pixels"] = shifted_pixels
+                shifted_debug["blank_threshold"] = shifted_blank_threshold
+                record["k_suffix_record"] = {
+                    "position": position,
+                    "feature": shifted_feature,
+                    "text_pixels": shifted_pixels,
+                    "blank_threshold": shifted_blank_threshold,
+                    "debug": shifted_debug,
+                    "variant": "k_suffix_left_shift",
+                    "x_offset_px": -K_SUFFIX_DIGIT_LEFT_SHIFT_PX,
+                }
+        position_records.append(record)
 
     def _is_blank_record(record: dict) -> bool:
         return int(record["text_pixels"]) < int(record["blank_threshold"])
@@ -1399,6 +1459,8 @@ def read_item_slot_count(
             "context_soft": context_soft_digit,
             "hole_soft": hole_soft,
             "hole_rule": hole_rule,
+            "variant": record.get("variant", "normal"),
+            "x_offset_px": int(record.get("x_offset_px", 0) or 0),
         }
 
     def _classify_k_record(record: dict) -> dict | None:
@@ -1418,11 +1480,39 @@ def read_item_slot_count(
             "hard": hard_k,
             "soft": hard_k,
         }
+
+    k_results_by_position: dict[int, dict] = {}
+
+    def _has_later_hard_k(position: int) -> bool:
+        return any(
+            int(pos) > position and bool(result.get("hard") or result.get("soft"))
+            for pos, result in k_results_by_position.items()
+        )
+
+    def _best_digit_for_context(record: dict, *, later_k: bool) -> dict | None:
+        normal = _classify_digit_record(record)
+        shifted = None
+        if later_k and record.get("k_suffix_record") is not None:
+            shifted = _classify_digit_record(record["k_suffix_record"])
+        if shifted is None:
+            return normal
+        if normal is None:
+            return shifted
+        normal_accept = bool(normal.get("hard") or normal.get("soft") or normal.get("context_soft"))
+        shifted_accept = bool(shifted.get("hard") or shifted.get("soft") or shifted.get("context_soft"))
+        if shifted_accept and not normal_accept:
+            return shifted
+        if shifted_accept == normal_accept and float(shifted.get("score") or 0.0) >= float(normal.get("score") or 0.0) + 0.02:
+            return shifted
+        return normal
     for record in position_records:
         if _is_blank_record(record):
             record["debug"]["decision"] = "blank"
             continue
         record["x_result"] = _classify_x_record(record)
+        k_result = _classify_k_record(record)
+        if k_result is not None:
+            k_results_by_position[int(record["position"])] = k_result
 
     x_candidates: list[dict] = []
     for record in position_records:
@@ -1451,11 +1541,11 @@ def read_item_slot_count(
                 if attempt_digits:
                     break
                 return {"ok": False, "reason": "blank_after_prefix", "confidence": min(attempt_confidences), "raw": "".join(attempt_raw), "decisions": decisions}
-            digit_result = _classify_digit_record(record)
             later_text = any(
                 int(other["position"]) > position and not _is_blank_record(other)
                 for other in position_records
             )
+            digit_result = _best_digit_for_context(record, later_k=_has_later_hard_k(position))
             digit_context_soft = bool(
                 attempt_digits
                 and later_text
@@ -1564,6 +1654,9 @@ def read_item_slot_count(
             debug_entry["margin"] = round(float(digit_result["margin"]), 6)
             if digit_result.get("hole_rule") is not None:
                 debug_entry["hole_5_6"] = digit_result["hole_rule"]
+            if digit_result.get("variant") != "normal":
+                debug_entry["variant"] = digit_result.get("variant")
+                debug_entry["x_offset_px"] = digit_result.get("x_offset_px")
             if digit_result["hard"] or digit_result["soft"]:
                 if digit_result.get("hole_soft") and not digit_result["hard"]:
                     debug_entry["decision"] = "accepted_digit_5_6_hole"

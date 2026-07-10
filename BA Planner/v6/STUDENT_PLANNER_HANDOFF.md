@@ -24,7 +24,7 @@ The app currently works in this order:
    - Current inventory: profile-specific `current/inventory.json`
    - SQLite cache: profile-specific `ba_planner.db`
 2. The viewer loads student rows in `gui/viewer_app_qt.py` via `load_students()`.
-3. Loaded rows are enriched with metadata from `core/student_meta.py`.
+3. Loaded rows are enriched through the lookup API in `core/student_meta.py`; generated values live in `core/student_meta_data.py`.
 4. Filters are applied through `gui/student_filters.py`.
 5. The statistics tab always uses `self._filtered_students`.
 6. The planner stores target values in profile-specific `current/growth_plan.json`.
@@ -55,7 +55,7 @@ Use these for "what the player currently has".
 
 ### Static student metadata
 
-Stored in [student_meta.py](C:/Users/brigh/planner_of_plana/BA Planner/v6/core/student_meta.py).
+Exposed by [student_meta.py](C:/Users/brigh/planner_of_plana/BA Planner/v6/core/student_meta.py) and stored in `core/student_meta_data.py`.
 
 Typical metadata fields:
 
@@ -290,7 +290,7 @@ So when adding a new filter, first decide whether the value is:
 
 ### Safe procedure for adding a new filter
 
-1. Add the field to `core/student_meta.py` if it is metadata.
+1. Add the type/API contract in `core/student_meta_types.py` or `core/student_meta.py`, and generated values in `core/student_meta_data.py`.
 2. Add the field to `StudentRecord` and `_row_to_record()` in `viewer_app_qt.py`.
 3. Add it to `FILTER_FIELD_ORDER`.
 4. Add its label to `FILTER_FIELD_LABELS`.
@@ -404,6 +404,6 @@ Do not collapse those into one overloaded field.
 - `calculate_goal_cost()` is the single-student cost entry point
 - `calculate_plan_totals()` is the whole-plan cost entry point
 - statistics use `filtered_students`
-- `core/student_meta.py` is the single source of truth for static student metadata
+- `core/student_meta_data.py` is the generated source of truth for static student metadata; `core/student_meta.py` is the stable lookup API
 
 If those boundaries are preserved, the GUI and statistics layers can change quite freely without breaking planner math or storage behavior.

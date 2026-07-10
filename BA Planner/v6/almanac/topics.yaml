@@ -1,0 +1,21 @@
+topics:
+  - slug: architecture
+    title: Architecture
+    description: 프로세스, 계층, 런타임 경계
+    parents: []
+  - slug: scanning
+    title: Scanning
+    description: 학생 및 인벤토리 화면 자동화와 인식 흐름
+    parents: [architecture]
+  - slug: data
+    title: Data
+    description: 현재 상태, 목표, 메타데이터, 저장 형식의 의미
+    parents: [architecture]
+  - slug: planning
+    title: Planning
+    description: 성장 목표와 비용 계산 의미
+    parents: [data]
+  - slug: refactoring
+    title: Refactoring
+    description: 대형 모듈을 안전하게 변경하기 위한 제약
+    parents: [architecture]

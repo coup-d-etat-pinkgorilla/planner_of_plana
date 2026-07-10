@@ -24,7 +24,7 @@ from tools.schaledb_sync import SYNC_FIELDS, build_student_meta_from_schale, loc
 from tools.student_meta_options import FIELD_OPTIONS
 
 MODULE_NAME = "core.student_meta"
-MODULE_PATH = ROOT_DIR / "core" / "student_meta.py"
+MODULE_PATH = ROOT_DIR / "core" / "student_meta_data.py"
 SCHALE_SYNC_MODULE_PATH = ROOT_DIR / "tools" / "schaledb_sync.py"
 PLAN_FILE = "item_plan_adjustments.json"
 STUDENT_TEMPLATE_DIR = ROOT_DIR / "templates" / "students"
@@ -323,7 +323,7 @@ def _replace_named_assignment(source: str, assignment_name: str, rendered_assign
                     target = node
                     break
     if target is None:
-        raise RuntimeError(f"{assignment_name} assignment not found in core.student_meta")
+        raise RuntimeError(f"{assignment_name} assignment not found in core.student_meta_data")
     lines = source.splitlines()
     return "\n".join(lines[: target.lineno - 1] + rendered_assignment.rstrip("\n").splitlines() + lines[target.end_lineno :]) + "\n"
 

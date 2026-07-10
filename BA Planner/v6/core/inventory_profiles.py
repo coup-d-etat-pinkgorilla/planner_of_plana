@@ -164,6 +164,82 @@ def _natural_sort_key(text: str) -> tuple[object, ...]:
     return tuple(parts)
 
 
+_PRESENT_ITEM_ID_TO_NAME = {
+    'Item_Icon_Favor_0': '웨이브캣 배게',
+    'Item_Icon_Favor_1': '페로로 휠 슬라이드',
+    'Item_Icon_Favor_2': '에이~팟 프로',
+    'Item_Icon_Favor_3': '금단의 연애 ~허락되지 않아서, 더욱 아름다운 사랑~',
+    'Item_Icon_Favor_4': '게임 잡지 『히트걸즈』',
+    'Item_Icon_Favor_5': '체리로즈 립글로즈',
+    'Item_Icon_Favor_6': '피부까지 투명해지는 BB크림',
+    'Item_Icon_Favor_7': '밀리터리 3종 위장용 파운데이션',
+    'Item_Icon_Favor_8': '고급 쿠키 세트',
+    'Item_Icon_Favor_9': '<총, 귀여움, 청춘>',
+    'Item_Icon_Favor_10': '천체망원경',
+    'Item_Icon_Favor_11': '게임걸 컬러 복각판',
+    'Item_Icon_Favor_12': 'MX-레이션 C형 디저트 맛',
+    'Item_Icon_Favor_13': '말차맛 라무네',
+    'Item_Icon_Favor_14': '젤리즈 쿠션',
+    'Item_Icon_Favor_15': '초절 토끼 탐정 ~안개로 가려진 온천 미끄덩 사건~',
+    'Item_Icon_Favor_16': 'O-오피트',
+    'Item_Icon_Favor_17': '매장금의 지도',
+    'Item_Icon_Favor_18': '코스프레용 뱅뱅이 안경',
+    'Item_Icon_Favor_19': '세상에서 가장 쓸데없는 기계',
+    'Item_Icon_Favor_20': '리본이 달린 곰인형',
+    'Item_Icon_Favor_21': '영화 예매권',
+    'Item_Icon_Favor_22': '30색 물감 세트',
+    'Item_Icon_Favor_23': '고전 시집',
+    'Item_Icon_Favor_24': '귀여운 그릇 세트',
+    'Item_Icon_Favor_25': '두뇌개발용 퍼즐 큐브',
+    'Item_Icon_Favor_26': '대형 홀 케이크',
+    'Item_Icon_Favor_27': '고급 뷔페 초대권',
+    'Item_Icon_Favor_28': '식충식물 화분',
+    'Item_Icon_Favor_29': '비싸보이는 금박 욕망의 항아리',
+    'Item_Icon_Favor_30': '태엽장치 오르골',
+    'Item_Icon_Favor_31': '자수가 놓인 손수건',
+    'Item_Icon_Favor_32': '백과사전',
+    'Item_Icon_Favor_33': '건강보조식품',
+    'Item_Icon_Favor_34': '여름용 튜브',
+    'Item_Icon_Favor_Lv2_0': '레이스 베개',
+    'Item_Icon_Favor_Lv2_1': '스트리트 오브 불량배 1권',
+    'Item_Icon_Favor_Lv2_2': '사무엘라 <더 비욘드>',
+    'Item_Icon_Favor_Lv2_3': '고풍스러운 달걀 공예품',
+    'Item_Icon_Favor_Lv2_4': '밀피유의 정통 파르페',
+    'Item_Icon_Favor_Lv2_5': '에이~북 레어',
+    'Item_Icon_Favor_Lv2_6': '세련된 머리빗',
+    'Item_Icon_Favor_Lv2_7': '영양가득 종합 비타민 젤리',
+    'Item_Icon_Favor_Lv2_8': '최고급 단풍나무 분재',
+    'Item_Icon_Favor_Lv2_9': '반짇고리 키트',
+    'Item_Icon_Favor_Lv2_10': '음악 연주회 입장권',
+    'Item_Icon_Favor_Lv2_11': '하루 세 번 덤벨 세트',
+    'Item_Icon_Favor_Lv2_12': '보드 게임 <더 인생>',
+    'Item_Icon_Favor_Lv2_Package': '아름다운 꽃다발',
+    'Item_Icon_Favor_Lv2_Special': '싱그러운 꽃다발',
+    'Item_Icon_Favor_SSR_1': '반짝이는 꽃다발',
+    'Item_Icon_Favor_SSR_2': '하츠네 미쿠의 포토 카드',
+    'Item_Icon_Favor_SSR_GL_1': '프랭크 버거 기념카드',
+    'Item_Icon_Favor_SSR_GL_2': '달콤 커피 기념카드',
+    'Item_Icon_Favor_SSR_GL_3': '현대백화점 PEER 기념 카드',
+    'Item_Icon_Favor_SSR_GL_4': '오케스트라 기념 티켓',
+    'Item_Icon_Favor_SSR_GL_5': '맘스터치 기념 카드',
+    'Item_Icon_Favor_SSR_GL_6': '이디야커피 기념 티켓',
+    'Item_Icon_Favor_SSR_GL_7': 'GS25 기념 카드',
+    'Item_Icon_Favor_SSR_GL_8': '파파존스 기념 카드',
+    'Item_Icon_Favor_SSR_GL_9': '넥슨 30주년 기념 카드',
+    'Item_Icon_Favor_SSR_GL_10': '사운드 아카이브 기념 티켓',
+    'Item_Icon_Favor_SSR_GL_11': '무신사 기념 카드',
+    'Item_Icon_Favor_SSR_GL_12': '대한적십자사 기념 카드',
+    'Item_Icon_Favor_SSR_GL_13': 'GS25 기념 도시락',
+    'Item_Icon_Favor_SSR_GL_14': 'VE WONG 기념 카드',
+    'Item_Icon_Favor_SSR_GL_15': 'BEARHOUSE 기념 카드',
+    'Item_Icon_Favor_SSR_GL_16': '맘스터치 기념 세트',
+    'Item_Icon_Favor_SSR_GL_17': 'CuteBoy 기념 카드',
+    'Item_Icon_Favor_SSR_GL_18': '롯데시네마 기념 콤보',
+    'Item_Icon_Favor_SSR_GL_19': '피크닉 기념 스위트 드링크',
+    'Item_Icon_Favor_SSR_GL_20': 'Anime Expo 기념 카드',
+}
+
+
 def _present_ordered_item_ids() -> tuple[str, ...]:
     base = TEMPLATE_DIR / "icons" / "presents"
     if not base.exists():
@@ -175,7 +251,7 @@ def _present_ordered_item_ids() -> tuple[str, ...]:
 
 
 def _present_ordered_names() -> tuple[str, ...]:
-    return _present_ordered_item_ids()
+    return tuple(_PRESENT_ITEM_ID_TO_NAME.get(item_id, item_id) for item_id in _present_ordered_item_ids())
 
 _REPORT_NAMES = [
     "초급 활동 보고서",
@@ -333,6 +409,10 @@ def inventory_item_display_name(item_id: str | None) -> str | None:
         student_id = item_id.removeprefix("Item_Icon_SecretStone_")
         if student_meta.get(student_id) is not None:
             return _student_eleph_name(student_id)
+
+    present_name = _PRESENT_ITEM_ID_TO_NAME.get(item_id)
+    if present_name:
+        return present_name
 
     if item_id.startswith("Item_Icon_SkillBook_"):
         suffix = item_id.removeprefix("Item_Icon_SkillBook_")

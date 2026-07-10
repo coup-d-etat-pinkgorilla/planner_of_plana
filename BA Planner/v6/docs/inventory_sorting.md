@@ -52,6 +52,11 @@ with the expected tier when the count read is confident enough. This compensates
 for low icon margins and occasional tier-color contamination from the selected
 slot focus border.
 
+Grid recognition is hierarchical for both profiles. The background first
+selects one of the four tier groups, then a profile-specific school-mark ROI
+selects the school. Tech notes and tactical BD intentionally use different
+ROIs because the BD disc and cover geometry do not align with the note card.
+
 Tier color hinting uses the slot background color for the same zero-based tier
 order in both profiles: `0` = white/gray, `1` = blue, `2` = yellow, `3` =
 purple. When a new school is added in-game, update `_SCHOOL_ORDER`,
@@ -103,6 +108,12 @@ Workbook tail order:
 1. `Item_Icon_WorkBook_PotentialMaxHP` (PE / Max HP)
 2. `Item_Icon_WorkBook_PotentialAttack` (Shooting / Attack)
 3. `Item_Icon_WorkBook_PotentialHealPower` (Hygiene / Heal Power)
+
+Grid matching first filters normal ooparts by the detected tier background and
+then compares only the twenty family icons at that tier. Workbook templates are
+canonical grid candidates from `templates/icons/temp/`, use the yellow T2
+background, and are ranked in a separate three-item branch so their margins are
+not diluted by normal oopart families.
 
 When new ooparts are added in-game, append the family to `OPART_DEFINITIONS`
 in this exact scanner/display order. If the in-game order changes, update this
@@ -157,10 +168,11 @@ Item_Icon_SecretStone_{student_id}
 
 Grid matching uses the eleph icon templates in `templates/students_elephs/` and
 the normal item T0 background composition. Because eleph icons share a large
-purple frame and T0 background, the `student_elephs` profile overrides the
-standard item crop with the central portrait crop from `debug/260703/eleph_work.json`:
-`left=0.3630`, `right=0.3592`, `top=0.2896`, `bottom=0.3159`. Tier color
-hinting is disabled because every eleph uses the T0 background.
+purple frame and T0 background, tier color hinting is disabled. Recognition
+combines the established face crop (`left=0.3630`, `right=0.3592`,
+`top=0.2896`, `bottom=0.3159`) at weight `0.9` with a wider hair/headgear and
+outer-appearance crop at weight `0.1`. The second ROI is a cross-check; the
+stored first-page captures showed that giving it more weight reduced margin.
 
 Detail fallback templates are generated under
 `templates/inventory_detail/student_elephs/` from the same `eleph_work` project.
@@ -185,11 +197,11 @@ Item_Icon_Favor_Lv2_{Index}
 Item_Icon_Favor_SSR_GL_{Index}
 ```
 
-Grid matching reuses the eleph central crop override from
-`student_elephs`: `left=0.3630`, `right=0.3592`, `top=0.2896`,
-`bottom=0.3159`, with tier color hinting disabled. Template composition uses
-the T2 item background (`square_yellow.png`) by default; item IDs containing
-`SSR` use the T3 background (`square_purple.png`).
+Grid matching uses a dedicated, wider object crop (`left=0.34`, `right=0.34`,
+`top=0.28`, `bottom=0.30`) rather than the eleph face crop. Background color is
+also a strict rarity gate: normal presents use the T2 yellow background and
+only `SSR` or `Lv2` IDs enter the T3 purple branch. Numeric filename suffixes
+are present indices and must never be interpreted as tiers.
 
 Detail fallback templates are generated under `templates/inventory_detail/presents/`
 using the same ROI and overlay geometry as `student_elephs`: detail ROI
@@ -216,6 +228,11 @@ Profile ID: `activity_reports`
 
 Reports use `_REPORT_NAMES` for display labels and stable zero-based item IDs
 for storage and detail templates.
+
+The four legacy grid assets `templates/icons/temp/report_0.png` through
+`report_3.png` are exposed through the canonical IDs below. Tier-background
+detection strictly reduces the grid catalog to one report candidate before the
+composite score is evaluated.
 
 ID pattern:
 

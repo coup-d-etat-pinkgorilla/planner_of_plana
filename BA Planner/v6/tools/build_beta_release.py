@@ -25,15 +25,18 @@ ASSET_ROOTS = (
     "templates",
     "regions",
     "data/planning",
-    "core/student_meta.py",
+    "core/student_meta_data.py",
     "gui/font",
     "assets",
+    "debug/region_captures",
 )
 
 REQUIRED_ASSET_GLOBS = (
     ("gui/font", "*.ttf"),
     ("templates/icons/temp", "square.png"),
     ("assets/plana", "*.png"),
+    ("debug/region_captures", "filtermenu_button.region.json"),
+    ("debug/region_captures", "eq_filtermenu_button.region.json"),
 )
 
 
@@ -132,6 +135,33 @@ def build_file_manifest(files: list[Path]) -> dict[str, dict[str, object]]:
             "sha256": _sha256(path),
         }
     return manifest
+
+
+def _pyinstaller_asset_data_args() -> list[str]:
+    data_args = [
+        "gui/font;gui/font",
+        "gui/main_ui_color_palete.txt;gui",
+        "assets/plana;assets/plana",
+    ]
+    asset_roots = (
+        "templates",
+        "regions",
+        "data/planning",
+        "core/student_meta_data.py",
+        "debug/region_captures",
+    )
+    for rel_root in asset_roots:
+        source = ROOT_DIR / rel_root
+        if not source.exists():
+            raise FileNotFoundError(f"Missing PyInstaller asset input: {source}")
+        destination = f"assets/{Path(rel_root).parent.as_posix()}" if source.is_file() else f"assets/{rel_root}"
+        if destination.endswith("/."):
+            destination = destination[:-2]
+        data_args.append(f"{rel_root};{destination}")
+    args: list[str] = []
+    for data in data_args:
+        args.extend(["--add-data", data])
+    return args
 
 
 def build_asset_archive(version: str, output_dir: Path) -> tuple[Path, str]:
@@ -245,12 +275,7 @@ def build_exe(manifest_path: Path, app_manifest_path: Path) -> Path:
             "--windowed",
             "--name",
             APP_NAME,
-            "--add-data",
-            "gui/font;gui/font",
-            "--add-data",
-            "gui/main_ui_color_palete.txt;gui",
-            "--add-data",
-            "assets/plana;assets/plana",
+            *_pyinstaller_asset_data_args(),
             "--collect-all",
             "vgamepad",
             "main.py",

@@ -147,7 +147,7 @@ def _write_release_notes(
         "## Changed Inputs",
         "",
         *[f"- `{path.relative_to(ROOT_DIR).as_posix()}`" for path in image_outputs],
-        "- `core/student_meta.py`",
+        "- `core/student_meta_data.py`",
         "",
         "## Upload Files",
         "",

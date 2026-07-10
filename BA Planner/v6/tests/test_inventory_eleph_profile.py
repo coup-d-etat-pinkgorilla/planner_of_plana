@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from PIL import Image
 
@@ -12,9 +14,11 @@ from core.inventory_profiles import (
     inventory_profile_ordered_item_ids,
 )
 from core.scanner import (
+    INVENTORY_DIRECT_ICON_MATCH_ENV,
     _inventory_detail_template_catalog,
     _inventory_detail_template_region,
     _inventory_grid_template_config,
+    _inventory_grid_template_matching_config,
     _inventory_template_catalog,
 )
 
@@ -67,10 +71,41 @@ class InventoryElephProfileTests(unittest.TestCase):
     def test_secret_stone_display_name_uses_student_name(self) -> None:
         self.assertEqual(inventory_item_display_name("Item_Icon_SecretStone_aru"), ARU_ELEPH)
 
+    def test_present_display_names_use_korean_labels(self) -> None:
+        self.assertEqual(inventory_item_display_name("Item_Icon_Favor_0"), "웨이브캣 배게")
+        self.assertEqual(inventory_item_display_name("Item_Icon_Favor_Lv2_10"), "음악 연주회 입장권")
+        self.assertEqual(inventory_item_display_name("Item_Icon_Favor_SSR_GL_20"), "Anime Expo 기념 카드")
+
     def test_item_grid_catalog_includes_student_eleph_icons(self) -> None:
         catalog = dict(_inventory_template_catalog("item"))
         self.assertIn("Item_Icon_SecretStone_aru", catalog)
         self.assertTrue(catalog["Item_Icon_SecretStone_aru"].endswith("Item_Icon_SecretStone_aru.png"))
+
+    def test_scan_matching_config_enables_direct_icon_by_default(self) -> None:
+        section = json.loads(Path("regions/item_regions.json").read_text(encoding="utf-8-sig"))["item"]
+        base_config = _inventory_grid_template_config(section, "tech_notes")
+        self.assertIsNotNone(base_config)
+        assert base_config is not None
+        self.assertTrue(base_config["direct_icon_match"]["enabled"])
+
+        with patch.dict("os.environ", {}, clear=False):
+            os.environ.pop(INVENTORY_DIRECT_ICON_MATCH_ENV, None)
+            config = _inventory_grid_template_matching_config(section, "tech_notes")
+
+        self.assertIsNotNone(config)
+        assert config is not None
+        self.assertTrue(config["direct_icon_match"]["enabled"])
+        self.assertTrue(base_config["direct_icon_match"]["enabled"])
+
+    def test_scan_matching_config_can_disable_direct_icon_by_env(self) -> None:
+        section = json.loads(Path("regions/item_regions.json").read_text(encoding="utf-8-sig"))["item"]
+
+        with patch.dict("os.environ", {INVENTORY_DIRECT_ICON_MATCH_ENV: "0"}):
+            config = _inventory_grid_template_matching_config(section, "tech_notes")
+
+        self.assertIsNotNone(config)
+        assert config is not None
+        self.assertFalse(config["direct_icon_match"]["enabled"])
 
     def test_student_eleph_grid_config_uses_custom_crop(self) -> None:
         section = json.loads(Path("regions/item_regions.json").read_text(encoding="utf-8-sig"))["item"]
@@ -78,6 +113,8 @@ class InventoryElephProfileTests(unittest.TestCase):
         self.assertIsNotNone(config)
         assert config is not None
         self.assertEqual(config["tier_hint"]["enabled"], False)
+        self.assertEqual([row["name"] for row in config["composite_rois"]], ["face", "outer_appearance"])
+        self.assertAlmostEqual(config["composite_rois"][0]["weight"], 0.9)
         self.assertAlmostEqual(config["crop_ratio"]["left"], 0.3630, places=4)
         self.assertAlmostEqual(config["crop_ratio"]["right"], 0.3592, places=4)
         self.assertAlmostEqual(config["crop_ratio"]["top"], 0.2896, places=4)
@@ -101,14 +138,17 @@ class InventoryElephProfileTests(unittest.TestCase):
         config = _inventory_grid_template_config(section, "presents")
         self.assertIsNotNone(config)
         assert config is not None
-        self.assertEqual(config["tier_hint"]["enabled"], False)
+        self.assertEqual(config["tier_hint"]["enabled"], True)
         self.assertEqual(config["background"], "icons/temp/square_yellow.png")
+        self.assertEqual(config["candidate_filter"]["mode"], "background_tier")
+        self.assertEqual(config["use_numeric_tier_backgrounds"], False)
         self.assertEqual(config["background_rules"][0]["contains"], "SSR")
         self.assertEqual(config["background_rules"][0]["background"], "icons/temp/square_purple.png")
-        self.assertAlmostEqual(config["crop_ratio"]["left"], 0.3630, places=4)
-        self.assertAlmostEqual(config["crop_ratio"]["right"], 0.3592, places=4)
-        self.assertAlmostEqual(config["crop_ratio"]["top"], 0.2896, places=4)
-        self.assertAlmostEqual(config["crop_ratio"]["bottom"], 0.3159, places=4)
+        self.assertEqual(config["background_rules"][1]["contains"], "Lv2")
+        self.assertEqual(config["background_rules"][1]["background"], "icons/temp/square_purple.png")
+        self.assertAlmostEqual(config["crop_ratio"]["left"], 0.34, places=4)
+        self.assertAlmostEqual(config["crop_ratio"]["right"], 0.34, places=4)
+        self.assertEqual(config["composite_rois"][0]["name"], "object")
 
     def test_present_profile_order_matches_folder_natural_order(self) -> None:
         profile = get_inventory_profile("presents")

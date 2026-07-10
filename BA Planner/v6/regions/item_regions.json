@@ -187,28 +187,185 @@
         "tier_hint": {
           "enabled": false
         },
+        "composite_rois": [
+          {
+            "name": "face",
+            "weight": 0.9,
+            "crop_ratio": {
+              "left": 0.363,
+              "right": 0.3592,
+              "top": 0.2896,
+              "bottom": 0.3159
+            }
+          },
+          {
+            "name": "outer_appearance",
+            "weight": 0.1,
+            "crop_ratio": {
+              "left": 0.34,
+              "right": 0.34,
+              "top": 0.24,
+              "bottom": 0.28
+            }
+          }
+        ],
         "threshold": 0.8,
         "margin": 0.015
       },
       "presents": {
         "crop_ratio": {
-          "left": 0.363,
-          "right": 0.3592,
-          "top": 0.2896,
-          "bottom": 0.3159
+          "left": 0.34,
+          "right": 0.34,
+          "top": 0.28,
+          "bottom": 0.3
         },
         "tier_hint": {
-          "enabled": false
+          "enabled": true
         },
+        "candidate_filter": {
+          "mode": "background_tier",
+          "strict": true
+        },
+        "composite_rois": [
+          {
+            "name": "object",
+            "weight": 1.0,
+            "crop_ratio": {
+              "left": 0.34,
+              "right": 0.34,
+              "top": 0.28,
+              "bottom": 0.3
+            }
+          }
+        ],
         "threshold": 0.8,
         "margin": 0.015,
         "background": "icons/temp/square_yellow.png",
+        "use_numeric_tier_backgrounds": false,
         "background_rules": [
           {
             "contains": "SSR",
             "background": "icons/temp/square_purple.png"
+          },
+          {
+            "contains": "Lv2",
+            "background": "icons/temp/square_purple.png"
           }
         ]
+      },
+      "activity_reports": {
+        "candidate_filter": {
+          "mode": "background_tier",
+          "strict": true
+        }
+      },
+      "ooparts": {
+        "background_rules": [
+          {
+            "contains": "Item_Icon_WorkBook_",
+            "background": "icons/temp/square_yellow.png"
+          }
+        ],
+        "candidate_filter": {
+          "mode": "background_tier",
+          "strict": true,
+          "separate_workbook_branch": true
+        }
+      },
+      "tactical_bd": {
+        "candidate_filter": {
+          "mode": "background_tier",
+          "strict": true
+        },
+        "direct_icon_match": {
+          "enabled": true,
+          "screen_crop_ratio": {
+            "left": 0.3,
+            "right": 0.34,
+            "top": 0.25,
+            "bottom": 0.35
+          },
+          "template_crop_ratio": {
+            "left": 0.295,
+            "right": 0.34,
+            "top": 0.24,
+            "bottom": 0.34
+          },
+          "threshold": 0.88,
+          "margin": 0.04,
+          "fast_min_score": 0.9,
+          "fast_min_margin": 0.045,
+          "include_tierless": false
+        }
+      },
+      "tech_notes": {
+        "candidate_filter": {
+          "mode": "background_tier",
+          "strict": true
+        },
+        "tier_hint": {
+          "enabled": true,
+          "reference_width": 234,
+          "reference_height": 190,
+          "sample_box": {
+            "x": 27,
+            "y": 58,
+            "width": 20,
+            "height": 20
+          },
+          "sample_search_box": {
+            "x": 27,
+            "y": 58,
+            "width": 20,
+            "height": 20
+          },
+          "sample_stride": 20,
+          "palette": {
+            "0": [
+              181,
+              203,
+              218
+            ],
+            "1": [
+              119,
+              176,
+              253
+            ],
+            "2": [
+              237,
+              158,
+              140
+            ],
+            "3": [
+              174,
+              93,
+              253
+            ]
+          },
+          "max_distance": 70.0,
+          "min_distance_margin": 8.0,
+          "fallback_min_score": 0.82
+        },
+        "direct_icon_match": {
+          "enabled": true,
+          "screen_crop_ratio": {
+            "left": 0.3547,
+            "right": 0.4103,
+            "top": 0.2632,
+            "bottom": 0.4474
+          },
+          "template_crop_ratio": {
+            "left": 0.348,
+            "right": 0.4097,
+            "top": 0.2541,
+            "bottom": 0.442
+          },
+          "threshold": 0.82,
+          "margin": 0.08,
+          "fast_min_score": 0.82,
+          "fast_min_margin": 0.08,
+          "include_tierless": false
+        }
       }
     }
   }

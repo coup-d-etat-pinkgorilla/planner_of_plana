@@ -96,7 +96,7 @@ class LobbyWatcher:
         # set = 실행 가능, clear = pause
         self._resume_event = threading.Event()
         self._resume_event.set()   # 기본값: 실행 가능
-
+        self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
 
     # ── 공개 프로퍼티 ─────────────────────────────────────
@@ -124,6 +124,7 @@ class LobbyWatcher:
             self._state = WatcherState.RUNNING
 
         self._resume_event.set()
+        self._stop_event.clear()
         self._thread = threading.Thread(
             target=self._loop,
             name="LobbyWatcher",
@@ -143,6 +144,7 @@ class LobbyWatcher:
             self._state = WatcherState.STOPPED
 
         # pause 중이어도 루프가 종료 조건 확인할 수 있도록 event set
+        self._stop_event.set()
         self._resume_event.set()
 
         if self._thread and self._thread.is_alive():
@@ -207,8 +209,8 @@ class LobbyWatcher:
                 _log.error(f"체크 오류: {e}", exc_info=True)
 
             # 다음 사이클까지 대기
-            # Event.wait 로 구현 → stop() 시 즉시 깨어날 수 있음
-            self._resume_event.wait(timeout=self.INTERVAL_RUNNING)
+            # stop 전용 Event를 기다려 주기를 지키고 stop() 시에만 즉시 깨어난다.
+            self._stop_event.wait(timeout=self.INTERVAL_RUNNING)
 
     # ── 감지 로직 ─────────────────────────────────────────
 

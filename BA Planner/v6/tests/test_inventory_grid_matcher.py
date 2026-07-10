@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from core.config import TEMPLATE_DIR
 from core.inventory_grid_matcher import DEFAULT_GRID_TEMPLATE, InventoryGridRowAnchorState, _background_for_item, match_inventory_grid_template
@@ -16,7 +17,13 @@ from core.scanner import (
     _inventory_anchor_scan_order,
     _carried_inventory_anchor_indices,
     _inventory_template_catalog,
+    inventory_profile_template_catalog,
     _new_inventory_slot_indices,
+    _inventory_gray_band_layout_slots,
+    _inventory_grid_template_matching_config,
+    _inventory_gray_band_scan_region,
+    _inventory_tail_empty_slot_detected,
+    _inventory_tail_empty_slot_gray_scores,
 )
 
 
@@ -89,16 +96,131 @@ class InventoryGridMatcherTests(unittest.TestCase):
         self.assertEqual(result.item_id, "Item_Icon_Material_Nebra_3")
         self.assertGreaterEqual(result.score, 0.95)
 
-    def test_present_profile_background_rules_use_t2_default_and_t3_for_ssr(self) -> None:
+    def test_direct_icon_match_uses_inner_icon_and_color_tier(self) -> None:
+        correct = TEMPLATE_DIR / "icons" / "skill_book" / "Item_Icon_SkillBook_Gehenna_3.png"
+        wrong = TEMPLATE_DIR / "icons" / "skill_book" / "Item_Icon_SkillBook_Shanhaijing_3.png"
+        self.assertTrue(correct.exists())
+        self.assertTrue(wrong.exists())
+        config = {
+            "tier_hint": {
+                "enabled": True,
+                "reference_width": 234,
+                "reference_height": 190,
+                "sample_box": {"x": 27, "y": 58, "width": 20, "height": 20},
+                "sample_search_box": {"x": 27, "y": 58, "width": 20, "height": 20},
+                "sample_stride": 20,
+                "palette": {
+                    "0": (181, 203, 218),
+                    "1": (119, 176, 253),
+                    "2": (237, 158, 140),
+                    "3": (174, 93, 253),
+                },
+            },
+            "direct_icon_match": {
+                "enabled": True,
+                "screen_crop_ratio": {
+                    "left": 0.3547,
+                    "right": 0.4103,
+                    "top": 0.2632,
+                    "bottom": 0.4474,
+                },
+                "template_crop_ratio": {
+                    "left": 0.3480,
+                    "right": 0.4097,
+                    "top": 0.2541,
+                    "bottom": 0.4420,
+                },
+                "threshold": 0.82,
+                "margin": 0.08,
+            },
+        }
+
+        result = match_inventory_grid_template(
+            self._render_slot(correct, background="icons/temp/square_purple.png"),
+            [
+                ("Item_Icon_SkillBook_Shanhaijing_3", str(wrong)),
+                ("Item_Icon_SkillBook_Gehenna_3", str(correct)),
+            ],
+            config,
+        )
+
+        self.assertEqual(result.tier_hint, 3)
+        self.assertEqual(result.item_id, "Item_Icon_SkillBook_Gehenna_3")
+        self.assertGreater(result.margin, 0.08)
+
+    def test_present_profile_background_rules_use_t2_default_and_t3_for_ssr_or_lv2(self) -> None:
         config = {
             "background": "icons/temp/square_yellow.png",
+            "use_numeric_tier_backgrounds": False,
             "background_rules": [
                 {"contains": "SSR", "background": "icons/temp/square_purple.png"},
+                {"contains": "Lv2", "background": "icons/temp/square_purple.png"},
             ],
         }
 
         self.assertEqual(_background_for_item("Item_Icon_Favor_0", config).name, "square_yellow.png")
         self.assertEqual(_background_for_item("Item_Icon_Favor_SSR_GL_20", config).name, "square_purple.png")
+        self.assertEqual(_background_for_item("Item_Icon_Favor_Lv2_10", config).name, "square_purple.png")
+
+    def test_activity_report_background_tier_reduces_grid_candidates_to_one(self) -> None:
+        section = json.loads((ROOT / "regions" / "item_regions.json").read_text(encoding="utf-8-sig"))["item"]
+        config = _inventory_grid_template_matching_config(section, "activity_reports")
+        catalog = inventory_profile_template_catalog("item", "activity_reports")
+        item_id = "Item_Icon_ExpItem_2"
+        icon = ROOT / "templates" / "icons" / "temp" / "report_2.png"
+
+        result = match_inventory_grid_template(
+            self._render_slot(icon, background="icons/temp/square_yellow.png"),
+            catalog,
+            config,
+        )
+
+        self.assertEqual(result.item_id, item_id)
+        self.assertEqual(result.candidate_count, 1)
+        self.assertAlmostEqual(result.margin, result.score)
+
+    def test_strict_background_tier_does_not_fall_back_to_wrong_tier(self) -> None:
+        icon = ROOT / "templates" / "icons" / "temp" / "report_0.png"
+        result = match_inventory_grid_template(
+            self._render_slot(icon, background="icons/temp/square_yellow.png"),
+            [("Item_Icon_ExpItem_0", str(icon))],
+            {"candidate_filter": {"mode": "background_tier", "strict": True}},
+        )
+
+        self.assertIsNone(result.item_id)
+        self.assertIsNone(result.best_item_id)
+
+    def test_ooparts_workbooks_are_ranked_in_a_separate_branch(self) -> None:
+        section = json.loads((ROOT / "regions" / "item_regions.json").read_text(encoding="utf-8-sig"))["item"]
+        config = _inventory_grid_template_matching_config(section, "ooparts")
+        catalog = inventory_profile_template_catalog("item", "ooparts")
+        item_id = "Item_Icon_WorkBook_PotentialAttack"
+        icon = Path(dict(catalog)[item_id])
+
+        result = match_inventory_grid_template(
+            self._render_slot(icon, background="icons/temp/square_yellow.png"),
+            catalog,
+            config,
+        )
+
+        self.assertEqual(result.item_id, item_id)
+        self.assertTrue((result.second_item_id or "").startswith("Item_Icon_WorkBook_"))
+
+    def test_tactical_bd_uses_its_own_school_mark_roi(self) -> None:
+        section = json.loads((ROOT / "regions" / "item_regions.json").read_text(encoding="utf-8-sig"))["item"]
+        config = _inventory_grid_template_matching_config(section, "tactical_bd")
+        catalog = dict(inventory_profile_template_catalog("item", "tactical_bd"))
+        correct_id = "Item_Icon_Material_ExSkill_Gehenna_3"
+        wrong_id = "Item_Icon_Material_ExSkill_Shanhaijing_3"
+
+        result = match_inventory_grid_template(
+            self._render_slot(Path(catalog[correct_id]), background="icons/temp/square_purple.png"),
+            [(wrong_id, catalog[wrong_id]), (correct_id, catalog[correct_id])],
+            config,
+        )
+
+        self.assertEqual(result.item_id, correct_id)
+        self.assertAlmostEqual(config["direct_icon_match"]["screen_crop_ratio"]["left"], 0.3)
 
     def test_equipment_tier_one_uses_item_style_crop(self) -> None:
         icon = TEMPLATE_DIR / "icons" / "equipment" / "Equipment_Icon_Hairpin_Tier1.png"
@@ -140,6 +262,47 @@ class InventoryGridMatcherTests(unittest.TestCase):
         )
 
         self.assertEqual(result.item_id, "Equipment_Icon_WeaponExpGrowthZ_3")
+        self.assertGreaterEqual(result.score, 0.95)
+
+    def test_item_scan_matching_uses_composited_icon_background_template(self) -> None:
+        section = json.loads((ROOT / "regions" / "item_regions.json").read_text(encoding="utf-8-sig"))["item"]
+        config = _inventory_grid_template_matching_config(section, "tech_notes")
+        self.assertIsNotNone(config)
+        assert config is not None
+        self.assertTrue(config["direct_icon_match"]["enabled"])
+
+        correct = TEMPLATE_DIR / "icons" / "skill_book" / "Item_Icon_SkillBook_Gehenna_3.png"
+        wrong = TEMPLATE_DIR / "icons" / "skill_book" / "Item_Icon_SkillBook_Shanhaijing_3.png"
+        result = match_inventory_grid_template(
+            self._render_slot(correct, background="icons/temp/square_purple.png"),
+            [
+                ("Item_Icon_SkillBook_Shanhaijing_3", str(wrong)),
+                ("Item_Icon_SkillBook_Gehenna_3", str(correct)),
+            ],
+            config,
+        )
+
+        self.assertEqual(result.item_id, "Item_Icon_SkillBook_Gehenna_3")
+        self.assertGreaterEqual(result.score, 0.95)
+
+    def test_equipment_scan_matching_uses_composited_icon_background_template(self) -> None:
+        section = json.loads((ROOT / "regions" / "equipment_regions.json").read_text(encoding="utf-8-sig"))["equipment"]
+        config = _inventory_grid_template_matching_config(section, "equipment")
+        self.assertIsNotNone(config)
+        assert config is not None
+
+        catalog = dict(_inventory_template_catalog("equipment"))
+        correct_id = "Equipment_Icon_Hairpin_Tier7"
+        wrong_id = "Equipment_Icon_Bag_Tier7"
+        correct = Path(catalog[correct_id])
+        wrong = Path(catalog[wrong_id])
+        result = match_inventory_grid_template(
+            self._render_slot(correct),
+            [(wrong_id, str(wrong)), (correct_id, str(correct))],
+            config,
+        )
+
+        self.assertEqual(result.item_id, correct_id)
         self.assertGreaterEqual(result.score, 0.95)
 
     def test_equipment_grid_catalog_prefers_piece_icons_for_tier_two_to_ten(self) -> None:
@@ -240,6 +403,17 @@ class InventoryGridMatcherTests(unittest.TestCase):
         self.assertEqual(state.surrounding_anchors(3), ((0, 1), (4, 7)))
         self.assertEqual(state.candidate_item_ids_for_slot(3, ordered), ["item_4", "item_5", "item_6"])
 
+    def test_reconfirmed_slot_releases_previous_profile_index(self) -> None:
+        ordered = [f"item_{idx}" for idx in range(8)]
+        state = InventoryGridRowAnchorState(grid_cols=5)
+
+        self.assertTrue(state.record_confirmed(4, 1))
+        self.assertTrue(state.record_confirmed(4, 3))
+
+        self.assertEqual(state.anchor_profile_indices(), {4: 3})
+        self.assertEqual(state.used_profile_indices, {3})
+        self.assertEqual(state.candidate_item_ids_for_slot(0, ordered), ["item_0", "item_1", "item_2"])
+
     def test_row_anchor_sparse_gap_does_not_constrain_candidates(self) -> None:
         ordered = [f"item_{idx}" for idx in range(12)]
         state = InventoryGridRowAnchorState(grid_cols=5)
@@ -280,6 +454,183 @@ class InventoryCarriedAnchorTests(unittest.TestCase):
             _carried_inventory_anchor_indices(confirmed, total_slots=20, grid_cols=5, grid_rows=4, overlap_rows=3),
             {0: 15, 4: 19, 5: 20, 10: 25, 14: 29},
         )
+
+class InventoryGrayBandLayoutTests(unittest.TestCase):
+    def _synthetic_slots(self, rows: int, image_size: tuple[int, int], *, base_cy: float = 395.0) -> list[dict]:
+        slots = []
+        slot_w = 234
+        slot_h = 190
+        x_start = 1379
+        x_step = 221
+        for row in range(rows):
+            cy = base_cy + row * 202
+            for col in range(5):
+                x1 = x_start + col * x_step
+                y1 = cy - slot_h / 2
+                slots.append(
+                    {
+                        "x1": x1 / image_size[0],
+                        "y1": y1 / image_size[1],
+                        "x2": (x1 + slot_w) / image_size[0],
+                        "y2": (y1 + slot_h) / image_size[1],
+                        "cx": (x1 + slot_w / 2) / image_size[0],
+                        "cy": cy / image_size[1],
+                    }
+                )
+        return slots
+
+    def test_gray_band_layout_marks_item_tail_signature(self) -> None:
+        image_size = (2560, 1440)
+        image = Image.new("RGB", image_size, (30, 30, 30))
+        draw = ImageDraw.Draw(image)
+        for y in [398, 599, 801, 1004]:
+            draw.rectangle((1357, int(y - 4), 2506, int(y + 3)), fill=(0xC4, 0xCF, 0xD4))
+
+        layout = _inventory_gray_band_layout_slots(
+            image,
+            self._synthetic_slots(4, image_size),
+            grid_cols=5,
+            grid_rows=4,
+            row_step_px=202,
+        )
+
+        self.assertIsNotNone(layout)
+        assert layout is not None
+        self.assertTrue(layout["tail_page_detected"])
+        self.assertLess(layout["tail_signature"]["mean_error_px"], 1.1)
+        self.assertAlmostEqual(layout["slots"][15]["y1"] * image_size[1], 1010.0, delta=1.0)
+
+    def test_gray_band_layout_marks_equipment_tail_signature(self) -> None:
+        image_size = (2560, 1440)
+        image = Image.new("RGB", image_size, (30, 30, 30))
+        draw = ImageDraw.Draw(image)
+        for y in [565.5, 767.5, 959.5, 1162.5, 1364.5]:
+            draw.rectangle((1353, int(round(y - 4)), 2502, int(round(y + 3))), fill=(0xC4, 0xCF, 0xD4))
+
+        layout = _inventory_gray_band_layout_slots(
+            image,
+            self._synthetic_slots(5, image_size, base_cy=414.0),
+            grid_cols=5,
+            grid_rows=5,
+            row_step_px=202,
+        )
+
+        self.assertIsNotNone(layout)
+        assert layout is not None
+        self.assertTrue(layout["tail_page_detected"])
+        self.assertLess(layout["tail_signature"]["mean_error_px"], 1.1)
+        self.assertAlmostEqual(layout["slots"][20]["y1"] * image_size[1], 1171.0, delta=1.0)
+
+    def test_equipment_gray_band_scan_region_uses_taller_height(self) -> None:
+        image_size = (2600, 1400)
+        slots = []
+        slot_w = 234
+        slot_h = 190
+        x_start = 1379
+        x_step = 221
+        for row in range(5):
+            cy = 395 + row * 202
+            for col in range(5):
+                x1 = x_start + col * x_step
+                y1 = cy - slot_h / 2
+                slots.append(
+                    {
+                        "x1": x1 / image_size[0],
+                        "y1": y1 / image_size[1],
+                        "x2": (x1 + slot_w) / image_size[0],
+                        "y2": (y1 + slot_h) / image_size[1],
+                        "cx": (x1 + slot_w / 2) / image_size[0],
+                        "cy": cy / image_size[1],
+                    }
+                )
+
+        region = _inventory_gray_band_scan_region(slots, image_size)
+
+        self.assertEqual(round((region["y2"] - region["y1"]) * image_size[1]), 1050)
+
+    def test_places_slot_rows_between_detected_gray_bands(self) -> None:
+        image_size = (2600, 1400)
+        image = Image.new("RGB", image_size, (30, 30, 30))
+        draw = ImageDraw.Draw(image)
+        band_tops = [510, 712, 915, 1117]
+        for y in band_tops:
+            draw.rectangle((1350, y, 2500, y + 7), fill=(0xC4, 0xCF, 0xD4))
+
+        slots = []
+        slot_w = 234
+        slot_h = 190
+        x_start = 1379
+        x_step = 221
+        for row in range(4):
+            cy = 395 + row * 202
+            for col in range(5):
+                x1 = x_start + col * x_step
+                y1 = cy - slot_h / 2
+                slots.append(
+                    {
+                        "x1": x1 / image_size[0],
+                        "y1": y1 / image_size[1],
+                        "x2": (x1 + slot_w) / image_size[0],
+                        "y2": (y1 + slot_h) / image_size[1],
+                        "cx": (x1 + slot_w / 2) / image_size[0],
+                        "cy": cy / image_size[1],
+                    }
+                )
+
+        layout = _inventory_gray_band_layout_slots(
+            image,
+            slots,
+            grid_cols=5,
+            grid_rows=4,
+            row_step_px=202,
+        )
+
+        self.assertIsNotNone(layout)
+        assert layout is not None
+        self.assertGreater(layout["score"], 0.99)
+        self.assertEqual([round(v, 1) for v in layout["row_centers_px"]], [412.5, 614.5, 817.0, 1019.5])
+        self.assertAlmostEqual(layout["slots"][0]["cy"] * image_size[1], 412.5, places=1)
+        self.assertAlmostEqual(layout["slots"][15]["cy"] * image_size[1], 1019.5, places=1)
+
+
+    def test_tail_empty_slot_detects_gray_item_background_and_digit_regions(self) -> None:
+        image_size = (2560, 1440)
+        image = Image.new("RGB", image_size, (30, 30, 30))
+        slot = self._synthetic_slots(4, image_size)[15]
+        box = (
+            int(slot["x1"] * image_size[0]),
+            int(slot["y1"] * image_size[1]),
+            int(slot["x2"] * image_size[0]),
+            int(slot["y2"] * image_size[1]),
+        )
+        ImageDraw.Draw(image).rectangle(box, fill=(0xC4, 0xCF, 0xD4))
+
+        scores = _inventory_tail_empty_slot_gray_scores(image, slot)
+
+        self.assertTrue(_inventory_tail_empty_slot_detected(scores))
+        self.assertGreater(scores["mean"], 0.98)
+
+    def test_tail_empty_slot_rejects_colored_item_region(self) -> None:
+        image_size = (2560, 1440)
+        image = Image.new("RGB", image_size, (0xC4, 0xCF, 0xD4))
+        slot = self._synthetic_slots(4, image_size)[15]
+        x1 = int(slot["x1"] * image_size[0])
+        y1 = int(slot["y1"] * image_size[1])
+        x2 = int(slot["x2"] * image_size[0])
+        y2 = int(slot["y2"] * image_size[1])
+        width = x2 - x1
+        height = y2 - y1
+        ImageDraw.Draw(image).rectangle(
+            (x1 + int(width * 0.25), y1 + int(height * 0.18), x1 + int(width * 0.75), y1 + int(height * 0.58)),
+            fill=(80, 140, 220),
+        )
+
+        scores = _inventory_tail_empty_slot_gray_scores(image, slot)
+
+        self.assertFalse(_inventory_tail_empty_slot_detected(scores))
+        self.assertLess(scores["icon"], 0.82)
+
+
 
 class InventoryScrollDebugDirTests(unittest.TestCase):
     def test_equipment_scan_uses_inventory_scroll_debug_folder(self) -> None:

@@ -36,7 +36,7 @@ Managed asset files currently include:
 - `templates/`
 - `regions/`
 - `data/planning/`
-- `core/student_meta.py`
+- `core/student_meta_data.py`
 - `gui/font/`
 - `assets/`
 
@@ -76,7 +76,7 @@ py -3.11 tools\prepare_student_asset_update.py `
 The helper will:
 
 - Copy images into `templates/students/`, `templates/students_portraits/`, and `templates/students_elephs/`.
-- Build or update the student entry in `core/student_meta.py` from SchaleDB.
+- Build or update the student entry in `core/student_meta_data.py` from SchaleDB through the metadata tools.
 - Build `ba-planner-assets-<version>.zip`.
 - Build a patch zip containing only changed files when `--previous-manifest` is provided.
 - Write `release_notes_<version>.md` with the upload list.
