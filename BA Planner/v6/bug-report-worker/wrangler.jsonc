@@ -32,7 +32,25 @@
 			"tag": "v1",
 			"new_sqlite_classes": ["ReportRateLimiter"]
 		}
-	]
+	],
+	"env": {
+		"staging": {
+			"name": "bug-report-worker-staging",
+			"vars": {
+				"GITHUB_OWNER": "coup-d-etat-pinkgorilla",
+				"GITHUB_REPO": "planner_of_plana",
+				"REPORTING_ENABLED": "false"
+			},
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "REPORT_RATE_LIMITER",
+						"class_name": "ReportRateLimiter"
+					}
+				]
+			}
+		}
+	}
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

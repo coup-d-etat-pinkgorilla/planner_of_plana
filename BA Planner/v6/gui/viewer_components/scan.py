@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from gui import viewer_shared as _viewer_shared
+from gui.bug_report_dialog import BugReportDialog
 
 globals().update({name: value for name, value in vars(_viewer_shared).items() if not name.startswith("__")})
 
@@ -868,10 +869,41 @@ class ScanTabComponent:
         window_buttons.addStretch(1)
         window_layout.addLayout(window_buttons)
         layout.addWidget(window_panel)
+
+        report_panel = QFrame()
+        report_panel.setObjectName("panel")
+        report_layout = QVBoxLayout(report_panel)
+        report_layout.setContentsMargins(
+            scale_px(18, self._ui_scale),
+            scale_px(18, self._ui_scale),
+            scale_px(18, self._ui_scale),
+            scale_px(18, self._ui_scale),
+        )
+        report_layout.setSpacing(scale_px(10, self._ui_scale))
+        report_title = QLabel("지원")
+        report_title.setObjectName("sectionTitle")
+        report_layout.addWidget(report_title)
+        report_description = QLabel("문제가 발생했다면 설명과 진단정보를 작성해 신고할 수 있습니다.")
+        report_description.setObjectName("count")
+        report_description.setWordWrap(True)
+        report_layout.addWidget(report_description)
+        report_button_row = QHBoxLayout()
+        report_button = QPushButton("문제 신고")
+        report_button.clicked.connect(self._open_bug_report_dialog)
+        report_button_row.addWidget(report_button)
+        report_button_row.addStretch(1)
+        report_layout.addLayout(report_button_row)
+        layout.addWidget(report_panel)
         layout.addStretch(1)
 
         self._refresh_settings_profiles()
         self._sync_settings_labels()
+    def _open_bug_report_dialog(self) -> None:
+        dialog = BugReportDialog(
+            profile_name=get_active_profile_name("Default"),
+            parent=self,
+        )
+        dialog.exec()
     def _saved_target(self) -> tuple[int, str]:
         config = load_config()
         try:
