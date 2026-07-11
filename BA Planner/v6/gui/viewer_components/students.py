@@ -1202,6 +1202,7 @@ class StudentsTabComponent:
 
         self._busy_overlay = overlay
         self._busy_label = label
+        self._busy_progress = progress
     def _sync_busy_overlay_geometry(self) -> None:
         if self._busy_overlay is None:
             return
@@ -1209,11 +1210,24 @@ class StudentsTabComponent:
         if parent is None:
             return
         self._busy_overlay.setGeometry(parent.rect())
-    def _show_busy_overlay(self, text: str = "저장 중...") -> None:
+    def _show_busy_overlay(
+        self,
+        text: str = "저장 중...",
+        *,
+        progress_current: int | None = None,
+        progress_total: int | None = None,
+    ) -> None:
         if self._busy_overlay is None:
             return
         if self._busy_label is not None:
             self._busy_label.setText(text)
+        if self._busy_progress is not None:
+            if progress_total is not None and progress_total > 0:
+                self._busy_progress.setRange(0, int(progress_total))
+                self._busy_progress.setValue(max(0, min(int(progress_current or 0), int(progress_total))))
+            else:
+                self._busy_progress.setRange(0, 0)
+                self._busy_progress.setValue(0)
         self._sync_busy_overlay_geometry()
         self._busy_overlay.raise_()
         self._busy_overlay.show()
@@ -1221,6 +1235,15 @@ class StudentsTabComponent:
             QApplication.setOverrideCursor(Qt.WaitCursor)
             self._busy_cursor_active = True
         QApplication.processEvents()
+    def _update_busy_overlay_progress(self, current: int, total: int, text: str) -> None:
+        safe_total = max(1, int(total))
+        safe_current = max(0, min(int(current), safe_total))
+        percent = round((safe_current / safe_total) * 100)
+        if self._busy_label is not None:
+            self._busy_label.setText(f"{text}\n{safe_current} / {safe_total} ({percent}%)")
+        if self._busy_progress is not None:
+            self._busy_progress.setRange(0, safe_total)
+            self._busy_progress.setValue(safe_current)
     def _hide_busy_overlay(self) -> None:
         if self._busy_overlay is not None:
             self._busy_overlay.hide()

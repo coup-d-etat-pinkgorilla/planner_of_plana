@@ -241,6 +241,35 @@ INVENTORY_GRID_ORDER_HINT_PROFILES = frozenset({
     "ooparts",
     "presents",
 })
+
+
+def inventory_grid_hint_flags(
+    profile_id: str | None,
+    *,
+    grid_match_enabled: bool,
+) -> tuple[bool, bool, bool]:
+    """Return anchor, order-hint, and row-anchor runtime flags.
+
+    Presents use their canonical folder/game order in production by default.
+    Other profiles retain the opt-in umbrella anchor flag until their rollout is
+    explicitly promoted.  The two focused environment flags remain available
+    as emergency kill switches for every profile.
+    """
+
+    anchor_enabled = bool(
+        grid_match_enabled
+        and os.environ.get(INVENTORY_ANCHOR_MATCH_ENV, "0") != "0"
+    )
+    profile_defaults_enabled = bool(grid_match_enabled and profile_id == "presents")
+    order_hint_enabled = bool(
+        (anchor_enabled or profile_defaults_enabled)
+        and os.environ.get("BA_ITEM_GRID_ORDER_HINT", "1") != "0"
+    )
+    row_anchor_enabled = bool(
+        (anchor_enabled or profile_defaults_enabled)
+        and os.environ.get("BA_ITEM_GRID_ROW_ANCHOR_HINT", "1") != "0"
+    )
+    return anchor_enabled, order_hint_enabled, row_anchor_enabled
 PROFILE_DIRECT_MATCH_THRESHOLD = 0.82
 INVENTORY_DETAIL_ICON_MATCH_WEIGHT = 0.40
 INVENTORY_DETAIL_NAME_MATCH_WEIGHT = 0.60

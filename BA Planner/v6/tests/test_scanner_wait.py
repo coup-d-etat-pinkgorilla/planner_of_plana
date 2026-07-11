@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import os
 import unittest
 from unittest.mock import patch
 
 from PIL import Image
 
-from core.scanner import INVENTORY_GRID_ORDER_HINT_PROFILES, INVENTORY_PROFILE_SLOT_SCAN_LIMITS, Scanner
+from core.scanner import (
+    INVENTORY_GRID_ORDER_HINT_PROFILES,
+    INVENTORY_PROFILE_SLOT_SCAN_LIMITS,
+    Scanner,
+    inventory_grid_hint_flags,
+)
 
 
 class ScannerWaitTests(unittest.TestCase):
@@ -119,6 +125,54 @@ class ScannerWaitTests(unittest.TestCase):
 
     def test_presents_use_grid_order_hint_profile(self) -> None:
         self.assertIn("presents", INVENTORY_GRID_ORDER_HINT_PROFILES)
+
+    def test_presents_enable_order_and_row_hints_without_global_anchor_flag(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "BA_INVENTORY_ANCHOR_MATCH": "0",
+                "BA_ITEM_GRID_ORDER_HINT": "1",
+                "BA_ITEM_GRID_ROW_ANCHOR_HINT": "1",
+            },
+        ):
+            self.assertEqual(
+                inventory_grid_hint_flags("presents", grid_match_enabled=True),
+                (False, True, True),
+            )
+            self.assertEqual(
+                inventory_grid_hint_flags("ooparts", grid_match_enabled=True),
+                (False, False, False),
+            )
+
+    def test_present_hint_specific_kill_switches_remain_available(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "BA_INVENTORY_ANCHOR_MATCH": "0",
+                "BA_ITEM_GRID_ORDER_HINT": "0",
+                "BA_ITEM_GRID_ROW_ANCHOR_HINT": "0",
+            },
+        ):
+            self.assertEqual(
+                inventory_grid_hint_flags("presents", grid_match_enabled=True),
+                (False, False, False),
+            )
+
+    def test_icon_fallback_uses_only_active_profile_catalog(self) -> None:
+        scanner = self._scanner()
+        icon = Image.new("RGB", (20, 20), "white")
+        with (
+            patch(
+                "core.scanner.inventory_profile_template_catalog",
+                return_value=[("Item_Icon_Favor_9", "present.png")],
+            ) as catalog,
+            patch("core.scanner.match_score_resized_raw", return_value=0.91),
+        ):
+            item_id, score = scanner._match_inventory_icon(icon, "item", "presents")
+
+        catalog.assert_called_once_with("item", "presents")
+        self.assertEqual(item_id, "Item_Icon_Favor_9")
+        self.assertAlmostEqual(score, 0.91)
 
     def test_activity_reports_scans_only_first_four_slots(self) -> None:
         self.assertEqual(INVENTORY_PROFILE_SLOT_SCAN_LIMITS["activity_reports"], 4)

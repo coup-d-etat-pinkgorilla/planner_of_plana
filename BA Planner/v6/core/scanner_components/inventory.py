@@ -654,10 +654,11 @@ class InventoryScannerComponent:
         self,
         icon_crop: Image.Image,
         source: str,
+        profile_id: str | None = None,
     ) -> tuple[str | None, float]:
         best_item_id: str | None = None
         best_score = 0.0
-        for item_id, path in _inventory_template_catalog(source):
+        for item_id, path in inventory_profile_template_catalog(source, profile_id):
             score = match_score_resized_raw(icon_crop, path)
             if score > best_score:
                 best_score = score
@@ -1789,13 +1790,19 @@ class InventoryScannerComponent:
         grid_fast_min_margin = _env_float("BA_ITEM_GRID_FAST_MIN_MARGIN", 0.09)
         grid_fast_min_count_confidence = _env_float("BA_ITEM_GRID_FAST_MIN_COUNT_CONF", 0.66)
         grid_relaxed_min_count_confidence = _env_float("BA_ITEM_GRID_RELAXED_MIN_COUNT_CONF", 0.55)
-        grid_anchor_match_enabled = grid_match_enabled and os.environ.get(INVENTORY_ANCHOR_MATCH_ENV, "0") != "0"
-        grid_order_hint_enabled = grid_anchor_match_enabled and os.environ.get("BA_ITEM_GRID_ORDER_HINT", "1") != "0"
+        active_profile_id = active_profile.profile_id if active_profile is not None else None
+        (
+            grid_anchor_match_enabled,
+            grid_order_hint_enabled,
+            grid_row_anchor_hint_enabled,
+        ) = inventory_grid_hint_flags(
+            active_profile_id,
+            grid_match_enabled=grid_match_enabled,
+        )
         grid_order_hint_exact_min_score = _env_float("BA_ITEM_GRID_ORDER_HINT_EXACT_MIN_SCORE", 0.70)
         grid_order_hint_family_min_score = _env_float("BA_ITEM_GRID_ORDER_HINT_FAMILY_MIN_SCORE", 0.78)
         grid_order_hint_wb_min_score = _env_float("BA_ITEM_GRID_ORDER_HINT_WB_MIN_SCORE", 0.68)
         grid_order_hint_min_count_confidence = _env_float("BA_ITEM_GRID_ORDER_HINT_MIN_COUNT_CONF", 0.60)
-        grid_row_anchor_hint_enabled = grid_anchor_match_enabled and os.environ.get("BA_ITEM_GRID_ROW_ANCHOR_HINT", "1") != "0"
         grid_terminal_anchor_min_score = _env_float("BA_ITEM_GRID_TERMINAL_ANCHOR_MIN_SCORE", 0.70)
         grid_anchor_cross_check_enabled = grid_anchor_match_enabled and os.environ.get("BA_ITEM_GRID_ANCHOR_CROSS_CHECK", "1") != "0"
         grid_anchor_cross_check_min_score = _env_float("BA_ITEM_GRID_ANCHOR_CROSS_CHECK_MIN_SCORE", 0.78)
@@ -2015,7 +2022,11 @@ class InventoryScannerComponent:
                         continue
 
                 icon_crop = crop_region(img, _slot_icon_region(slot))
-                icon_template_item_id, icon_template_score = self._match_inventory_icon(icon_crop, source)
+                icon_template_item_id, icon_template_score = self._match_inventory_icon(
+                    icon_crop,
+                    source,
+                    active_profile.profile_id if active_profile is not None else None,
+                )
                 icon_template_matched = icon_template_item_id is not None
                 grid_template_item_id: str | None = None
                 grid_template_score = 0.0

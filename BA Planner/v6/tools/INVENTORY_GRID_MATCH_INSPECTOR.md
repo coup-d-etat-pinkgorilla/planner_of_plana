@@ -90,3 +90,19 @@ debug/item_equip_scroll_debugger/inspector_sessions/
 
 도구는 `regions/*.json`을 자동 수정하지 않습니다. 검증된 실험값만 별도의
 소스 변경으로 반영해야 합니다.
+
+## 상세 폴백 합성 템플릿 확인
+
+각 슬롯 행의 후보를 선택하면 그리드 matcher용 `최종 합성 템플릿` 옆에
+`상세 폴백 합성 템플릿`이 함께 표시됩니다. 이 이미지는 별도의 미리보기가
+아니라 실제 상세 검증의 `_match_inventory_detail_crop()`가 비교하는
+`templates/inventory_detail/<profile>/<item_id>.png` 파일입니다.
+
+따라서 한 후보에 대해 다음 두 production 합성 결과를 나란히 확인할 수 있습니다.
+
+- 현재 슬롯 배경과 아이콘을 실시간 합성한 그리드 템플릿
+- 상세 화면 배경과 아이콘을 합성해 저장한 상세 폴백 템플릿
+
+후보를 바꾸거나 `최고 후보 계산`을 실행하면 상세 폴백 합성 템플릿도 같은
+item ID로 즉시 바뀝니다. 템플릿이 없는 프로필이나 후보는 해당 칸을 비워 두고
+점수 설명에 `Detail fallback: -`로 표시합니다.

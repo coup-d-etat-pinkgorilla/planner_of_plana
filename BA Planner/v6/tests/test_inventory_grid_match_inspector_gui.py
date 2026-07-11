@@ -49,9 +49,11 @@ class InventoryGridMatchInspectorGuiTests(unittest.TestCase):
             self.assertEqual(len(window.rows), 20)
             self.assertEqual(window.sample_x.value(), initial_x + 1)
             self.assertEqual(window.rows[0].current_item_id(), "Item_Icon_ExpItem_0")
+            detail_path = window.detail_fallback_by_id["Item_Icon_ExpItem_0"]
+            self.assertIn("inventory_detail", Path(detail_path).parts)
+            self.assertFalse(window.rows[0].detail_template.pixmap().isNull())
             window.close()
 
 
 if __name__ == "__main__":
     unittest.main()
-

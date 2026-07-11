@@ -63,6 +63,8 @@ npm test
 - `docs/inventory_scan_algorithm.md`: 아이템·장비 스캔 전체 흐름
 - `docs/inventory_sorting.md`: 프로필별 정렬과 순서 계약
 - `docs/gui_element_glossary.md`: GUI 표면과 구성요소 명칭
+- `docs/design/current-ui-audit.md`: 현재 UI의 사용자 흐름, 정보 계층, 시각·해상도 문제 감사
+- `docs/design/imagegen-brief.md`: UI 목업 이미지 생성을 위한 화면·정보·시각 방향 브리프
 - `docs/REPOSITORY_POLICY.md`: 공개 릴리스 저장소와 로컬 데이터 정책
 - `docs/LOCAL_UPDATE_WORKFLOW.md`: 앱·에셋 업데이트 절차
 - `docs/BETA_TESTING.md`: 베타 패키징과 테스트 체크리스트

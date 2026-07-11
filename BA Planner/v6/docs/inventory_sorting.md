@@ -189,6 +189,15 @@ uses the present icon file stems as stable item IDs and scan labels. The expecte
 grid order follows the same natural filename order as that folder, and the
 scanner uses that order for row-anchor candidate narrowing and gap zero-fill.
 
+For `presents`, profile-order hints and row anchors are enabled by default even
+when the umbrella `BA_INVENTORY_ANCHOR_MATCH` experiment is off. They can still
+be disabled independently with `BA_ITEM_GRID_ORDER_HINT=0` and
+`BA_ITEM_GRID_ROW_ANCHOR_HINT=0`. Other profiles retain the umbrella opt-in.
+
+Legacy icon fallback candidates are restricted to the active profile catalog,
+so a weak present slot cannot be replaced by a visually similar eleph or other
+item family before profile validation.
+
 ID pattern examples:
 
 ```text
@@ -207,7 +216,12 @@ Detail fallback templates are generated under `templates/inventory_detail/presen
 using the same ROI and overlay geometry as `student_elephs`: detail ROI
 `(511,331)-(809,658)` on a 2560x1440 reference and overlay geometry
 `(-89,-25)` at `476x377`. The same present background rule is used for these
-fallback templates.
+fallback templates. Unlike grid matching, detail fallback does not use the
+yellow/purple rarity backgrounds. It uses the common blue detail-screen crop in
+`templates/inventory_detail_backgrounds/presents.png`. Regenerate the 75
+composites with `python -m tools.build_present_detail_templates`; pass
+`--background-source` only when replacing the committed blue crop from a full
+detail-screen screenshot.
 
 The scan preparation keeps the default item sort rule (`sort_rule_check`),
 unlike student elephs, which use the name-sort reference. Until the dedicated
@@ -233,6 +247,12 @@ The four legacy grid assets `templates/icons/temp/report_0.png` through
 `report_3.png` are exposed through the canonical IDs below. Tier-background
 detection strictly reduces the grid catalog to one report candidate before the
 composite score is evaluated.
+
+Grid counts ending in `K` use a second, consistently left-shifted glyph layout
+for the `x` prefix and every preceding digit. A weak terminal `K` may select
+this layout when the final cell cannot be accepted as a digit. The abbreviated
+grid value is still not expanded or stored as an exact quantity; it requests
+detail-screen count verification.
 
 ID pattern:
 

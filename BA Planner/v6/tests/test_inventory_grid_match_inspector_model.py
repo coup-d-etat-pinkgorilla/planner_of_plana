@@ -94,6 +94,16 @@ class InventoryGridMatchInspectorModelTests(unittest.TestCase):
         self.assertEqual(config["tier_hint"]["sample_search_box"], experiment.sample_box)
         self.assertEqual(config["tier_hint"]["sample_stride"], 7.0)
 
+    def test_detail_fallback_catalog_exposes_composed_production_templates(self) -> None:
+        catalog = dict(model.detail_fallback_catalog("presents"))
+
+        self.assertIn("Item_Icon_Favor_0", catalog)
+        path = Path(catalog["Item_Icon_Favor_0"])
+        self.assertEqual(path.parent.name, "presents")
+        self.assertEqual(path.parent.parent.name, "inventory_detail")
+        with Image.open(path) as image:
+            self.assertEqual(image.size, (298, 327))
+
 
 if __name__ == "__main__":
     unittest.main()

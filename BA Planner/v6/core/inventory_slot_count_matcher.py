@@ -861,6 +861,19 @@ def _digit_region(
     }
 
 
+def _uses_k_suffix_layout(
+    *,
+    nonblank_count: int,
+    terminal_digit_accepted: bool,
+    terminal_k_accepted: bool,
+) -> bool:
+    """Return whether the complete count run should use the K-shifted ROIs."""
+    return bool(
+        nonblank_count >= 3
+        and (terminal_k_accepted or not terminal_digit_accepted)
+    )
+
+
 def _mask_bottom_gap(mask: Image.Image) -> int | None:
     arr = np.asarray(mask.convert("L"), dtype=np.uint8)
     ys, _xs = np.nonzero(arr > 0)
@@ -1489,7 +1502,33 @@ def read_item_slot_count(
             for pos, result in k_results_by_position.items()
         )
 
-    def _best_digit_for_context(record: dict, *, later_k: bool) -> dict | None:
+    nonblank_records = [record for record in position_records if not _is_blank_record(record)]
+    terminal_record = nonblank_records[-1] if nonblank_records else None
+    terminal_digit_result = _classify_digit_record(terminal_record) if terminal_record is not None else None
+    terminal_k_result = _classify_k_record(terminal_record) if terminal_record is not None else None
+    terminal_digit_accepted = bool(
+        terminal_digit_result
+        and (
+            terminal_digit_result.get("hard")
+            or terminal_digit_result.get("soft")
+            or terminal_digit_result.get("context_soft")
+        )
+    )
+    # A large terminal K shifts the complete right-aligned count run to the
+    # left.  Do not require a strong K template before selecting that geometry:
+    # the existing terminal-K heuristic is specifically for cases where the
+    # glyph is too wide/partial to classify cleanly.  A terminal glyph that is
+    # not an acceptable digit is sufficient structural evidence to compare the
+    # shifted run, while an accepted final digit keeps the normal geometry.
+    k_suffix_layout = _uses_k_suffix_layout(
+        nonblank_count=len(nonblank_records),
+        terminal_digit_accepted=terminal_digit_accepted,
+        terminal_k_accepted=bool(
+            terminal_k_result and (terminal_k_result.get("hard") or terminal_k_result.get("soft"))
+        ),
+    )
+
+    def _best_digit_for_context(record: dict, *, later_k: bool, prefer_shifted: bool = False) -> dict | None:
         normal = _classify_digit_record(record)
         shifted = None
         if later_k and record.get("k_suffix_record") is not None:
@@ -1500,6 +1539,8 @@ def read_item_slot_count(
             return shifted
         normal_accept = bool(normal.get("hard") or normal.get("soft") or normal.get("context_soft"))
         shifted_accept = bool(shifted.get("hard") or shifted.get("soft") or shifted.get("context_soft"))
+        if prefer_shifted and shifted_accept:
+            return shifted
         if shifted_accept and not normal_accept:
             return shifted
         if shifted_accept == normal_accept and float(shifted.get("score") or 0.0) >= float(normal.get("score") or 0.0) + 0.02:
@@ -1509,7 +1550,26 @@ def read_item_slot_count(
         if _is_blank_record(record):
             record["debug"]["decision"] = "blank"
             continue
-        record["x_result"] = _classify_x_record(record)
+        normal_x_result = _classify_x_record(record)
+        shifted_x_result = None
+        if k_suffix_layout and record.get("k_suffix_record") is not None:
+            shifted_x_result = _classify_x_record(record["k_suffix_record"])
+        if shifted_x_result is not None and (
+            normal_x_result is None
+            or (
+                bool(shifted_x_result.get("hard") or shifted_x_result.get("soft"))
+                and (
+                    k_suffix_layout
+                    or float(shifted_x_result.get("score") or 0.0)
+                    >= float(normal_x_result.get("score") or 0.0)
+                )
+            )
+        ):
+            record["x_result"] = shifted_x_result
+            record["x_result"]["variant"] = "k_suffix_left_shift"
+            record["x_result"]["x_offset_px"] = -K_SUFFIX_DIGIT_LEFT_SHIFT_PX
+        else:
+            record["x_result"] = normal_x_result
         k_result = _classify_k_record(record)
         if k_result is not None:
             k_results_by_position[int(record["position"])] = k_result
@@ -1545,7 +1605,11 @@ def read_item_slot_count(
                 int(other["position"]) > position and not _is_blank_record(other)
                 for other in position_records
             )
-            digit_result = _best_digit_for_context(record, later_k=_has_later_hard_k(position))
+            digit_result = _best_digit_for_context(
+                record,
+                later_k=k_suffix_layout or _has_later_hard_k(position),
+                prefer_shifted=k_suffix_layout,
+            )
             digit_context_soft = bool(
                 attempt_digits
                 and later_text
@@ -1643,6 +1707,9 @@ def read_item_slot_count(
             debug_entry["best_score"] = round(float(x_result["score"]), 6)
             debug_entry["margin"] = round(float(x_result["margin"]), 6)
             debug_entry["decision"] = "accepted_x" if x_result["hard"] else "accepted_x_soft"
+            if x_result.get("variant") == "k_suffix_left_shift":
+                debug_entry["variant"] = x_result["variant"]
+                debug_entry["x_offset_px"] = x_result["x_offset_px"]
         elif decision["kind"] == "digit":
             digit_result = decision["digit_result"]
             debug_entry["top"] = [

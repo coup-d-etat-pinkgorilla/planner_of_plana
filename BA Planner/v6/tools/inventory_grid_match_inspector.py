@@ -42,6 +42,7 @@ from tools.inventory_grid_match_inspector_model import (
     SlotRecord,
     aggregate_color_inspections,
     base_matching_config,
+    detail_fallback_catalog,
     discover_capture_cases,
     effective_matching_config,
     inspect_record_color,
@@ -134,6 +135,7 @@ class SlotRowWidget(QFrame):
         self.record = record
         self.catalog = window.catalog
         self.catalog_by_id = dict(self.catalog)
+        self.detail_fallback_by_id = window.detail_fallback_by_id
         self.setFrameShape(QFrame.StyledPanel)
 
         layout = QHBoxLayout(self)
@@ -144,9 +146,17 @@ class SlotRowWidget(QFrame):
         self.original.sample_position_changed.connect(window.place_sample_box)
         self.screen = QLabel(alignment=Qt.AlignCenter)
         self.template = QLabel(alignment=Qt.AlignCenter)
+        self.detail_template = QLabel(alignment=Qt.AlignCenter)
         self.diff = QLabel(alignment=Qt.AlignCenter)
         self.color_patch = QLabel(alignment=Qt.AlignCenter)
-        for label in (self.original, self.screen, self.template, self.diff, self.color_patch):
+        for label in (
+            self.original,
+            self.screen,
+            self.template,
+            self.detail_template,
+            self.diff,
+            self.color_patch,
+        ):
             label.setMinimumHeight(THUMBNAIL_HEIGHT + 8)
 
         controls = QWidget()
@@ -177,6 +187,7 @@ class SlotRowWidget(QFrame):
         layout.addWidget(self._column("원본+ROI", self.original))
         layout.addWidget(self._column("최종 Screen ROI", self.screen))
         layout.addWidget(self._column("최종 합성 템플릿", self.template))
+        layout.addWidget(self._column("상세 폴백 합성 템플릿", self.detail_template))
         layout.addWidget(self._column("Difference", self.diff))
         layout.addWidget(self._column("색상 샘플", self.color_patch))
         layout.addWidget(controls, 1)
@@ -264,6 +275,19 @@ class SlotRowWidget(QFrame):
             return
 
         path = self.catalog_by_id[item_id]
+        detail_path = self.detail_fallback_by_id.get(item_id)
+        detail_size_text = "-"
+        if detail_path:
+            try:
+                with Image.open(detail_path) as detail_image:
+                    detail_rgb = detail_image.convert("RGB")
+                    detail_size_text = f"{detail_rgb.width}x{detail_rgb.height}"
+                    self.detail_template.setPixmap(_pixmap(detail_rgb))
+            except OSError:
+                self.detail_template.clear()
+                detail_size_text = "load failed"
+        else:
+            self.detail_template.clear()
         production = prepare_comparison(
             self.record,
             item_id,
@@ -307,6 +331,7 @@ class SlotRowWidget(QFrame):
             f"경로: {experiment.mode}\n"
             f"Production: {pscore:.4f}\nExperiment: {escore:.4f}\n"
             f"NCC {experiment.similarity.ncc_score:.4f} / Pixel {experiment.similarity.pixel_diff_score:.4f}\n"
+            f"Detail fallback: {detail_size_text}\n"
             f"Tier {inspection.tier_hint} conf={inspection.confidence:.3f}\n"
             f"RGB({rgb_text}) dist={'-' if distance is None else f'{distance:.2f}'} margin={inspection.distance_margin:.2f}"
         )
@@ -326,6 +351,7 @@ class InspectorWindow(QMainWindow):
         self.base_config: dict = {}
         self.effective_config: dict = {}
         self.catalog: list[tuple[str, str]] = []
+        self.detail_fallback_by_id: dict[str, str] = {}
         self._loading_controls = False
 
         self._build_ui()
@@ -515,6 +541,9 @@ class InspectorWindow(QMainWindow):
             return
         self.base_config = base_matching_config(self.current_case.source, self.current_case.profile_id)
         self.catalog = profile_catalog(self.current_case.source, self.current_case.profile_id)
+        self.detail_fallback_by_id = dict(
+            detail_fallback_catalog(self.current_case.profile_id)
+        )
         self._load_controls_from_config()
         self.rebuild_rows()
 

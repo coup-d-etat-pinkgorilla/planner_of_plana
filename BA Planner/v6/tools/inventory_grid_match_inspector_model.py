@@ -20,6 +20,7 @@ from core.inventory_grid_matcher import (
     rank_inventory_grid_templates,
 )
 from core.scanner_shared import (
+    _inventory_detail_template_catalog,
     _inventory_grid_template_matching_config,
     _shift_slots_y,
     inventory_profile_template_catalog,
@@ -251,6 +252,12 @@ def effective_matching_config(base: dict, experiment: InspectorExperiment) -> di
 
 def profile_catalog(source: str, profile_id: str) -> list[tuple[str, str]]:
     return inventory_profile_template_catalog(source, profile_id)
+
+
+def detail_fallback_catalog(profile_id: str) -> list[tuple[str, str]]:
+    """Return the exact composed templates used by detail fallback matching."""
+
+    return list(_inventory_detail_template_catalog(profile_id))
 
 
 def prepare_comparison(

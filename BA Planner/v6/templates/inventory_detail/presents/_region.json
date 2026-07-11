@@ -66,7 +66,7 @@
     "height": 327
   },
   "template_source": "templates/inventory_detail/student_elephs/_region.json",
-  "background_reference": "C:\\Users\\brigh\\Pictures\\Screenshots\\스크린샷 2026-07-02 182354.png",
+  "background_reference": "templates/inventory_detail_backgrounds/presents.png",
   "overlay_geometry": {
     "x": -89,
     "y": -25,

@@ -992,8 +992,21 @@ class TacticalTabComponent:
         self._tactical_screenshot_tasks.append(task)
         self._pool.start(task)
     def _start_tactical_screenshot_batch_task(self, panel: dict, paths: list[str], busy_text: str) -> None:
-        self._show_busy_overlay(busy_text)
+        total = len(paths)
+        progress_text = "스크린샷 분석 중..."
+        self._show_busy_overlay(
+            f"{progress_text}\n0 / {total} (0%)",
+            progress_current=0,
+            progress_total=total,
+        )
         task = TacticalScreenshotBatchTask(paths, self._tactical_screenshot_candidate_priority(), self._tactical_screenshot_answer_cache_path())
+        task.signals.progress.connect(
+            lambda current, progress_total, text=progress_text: self._update_busy_overlay_progress(
+                current,
+                progress_total,
+                text,
+            )
+        )
         task.signals.completed.connect(
             lambda results, errors, target=panel, finished_task=task: self._apply_tactical_screenshot_batch(
                 target,

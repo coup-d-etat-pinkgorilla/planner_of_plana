@@ -2714,6 +2714,7 @@ class TacticalScreenshotTask(QRunnable):
 
 
 class TacticalScreenshotBatchSignals(QObject):
+    progress = Signal(int, int)
     completed = Signal(object, object)
 
 
@@ -2728,7 +2729,8 @@ class TacticalScreenshotBatchTask(QRunnable):
     def run(self) -> None:
         results: list[tuple[str, object]] = []
         errors: list[tuple[str, str]] = []
-        for path in self.paths:
+        total = len(self.paths)
+        for index, path in enumerate(self.paths, start=1):
             try:
                 results.append(
                     (
@@ -2742,6 +2744,7 @@ class TacticalScreenshotBatchTask(QRunnable):
                 )
             except Exception as exc:
                 errors.append((path, str(exc)))
+            self.signals.progress.emit(index, total)
         self.signals.completed.emit(results, errors)
 
 

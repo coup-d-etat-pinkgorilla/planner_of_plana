@@ -31,6 +31,7 @@ class ViewerWindowComponent:
         self._hero_wrap: QFrame | None = None
         self._busy_overlay: QFrame | None = None
         self._busy_label: QLabel | None = None
+        self._busy_progress: QProgressBar | None = None
         self._busy_cursor_active = False
         self._student_card_asset = ParallelogramCardAsset(build_card_style(CARD_BUTTON_ASSET, ui_scale))
         self._card_button_style = build_card_button_style(CARD_BUTTON_ASSET, ui_scale)

@@ -34,9 +34,6 @@ _REFINED_VARIANT_FACTORS = (0.88, 0.94, 1.00, 1.06, 1.12)
 _REFINED_VARIANT_OFFSETS_X = (-8, -4, 0, 4, 8, 12)
 _REFINED_VARIANT_OFFSETS_Y = (-12, -8, -4, 0, 4, 8)
 _REFINED_CANDIDATE_COUNT = 5
-_PRIORITY_ACCEPT_SCORE = 0.82
-_PRIORITY_ACCEPT_MARGIN = 0.025
-_ANSWER_CACHE_ACCEPT_SCORE = 0.86
 _ANSWER_CACHE_STORE_SCORE = 0.80
 _ANSWER_CACHE_STORE_MARGIN = 0.020
 _ANSWER_CACHE_MAX_RECORDS_PER_SLOT = 24
@@ -546,31 +543,31 @@ def _match_slot(
     role = "striker" if slot_index % 6 < 4 else "special"
     candidate_role = role if role_hint == "fixed" else "any"
 
-    cached = _match_slot_from_answer_cache(image.width, image.height, crop, crop_rgb_f, crop_gray, crop_hsv, slot_index, role, context.answer_cache)
-    if cached is not None:
-        return cached
+    cached_scores = _score_answer_cache_hints(
+        image.width,
+        image.height,
+        crop,
+        crop_rgb_f,
+        crop_gray,
+        crop_hsv,
+        slot_index,
+        role,
+        context.answer_cache,
+    )
 
     priority_ids = _priority_candidate_ids(candidate_role, context.candidate_priority)
     priority_scores = _coarse_score_candidates(crop, crop_rgb_f, crop_gray, crop_hsv, priority_ids)
-    priority_refined = _refine_scores(crop, crop_rgb_f, crop_gray, crop_hsv, priority_scores)
-    priority_match = _match_from_ranked(slot_index, role, priority_refined or priority_scores, source="priority")
-    if (
-        priority_match.student_id
-        and priority_match.score >= _PRIORITY_ACCEPT_SCORE
-        and priority_match.margin >= _PRIORITY_ACCEPT_MARGIN
-    ):
-        context.answer_cache.remember(image.width, image.height, priority_match)
-        return priority_match
-
-    fallback_ids = [student_id for student_id in _candidate_student_ids(candidate_role) if student_id not in set(priority_ids)]
-    all_scores = [*priority_scores, *_coarse_score_candidates(crop, crop_rgb_f, crop_gray, crop_hsv, fallback_ids)]
+    priority_set = set(priority_ids)
+    fallback_ids = [student_id for student_id in _candidate_student_ids(candidate_role) if student_id not in priority_set]
+    fallback_scores = _coarse_score_candidates(crop, crop_rgb_f, crop_gray, crop_hsv, fallback_ids)
+    all_scores = _merge_candidate_scores(cached_scores, priority_scores, fallback_scores)
     refined_scores = _refine_scores(crop, crop_rgb_f, crop_gray, crop_hsv, all_scores)
-    match = _match_from_ranked(slot_index, role, refined_scores or all_scores, source="fallback")
+    match = _match_from_ranked(slot_index, role, refined_scores or all_scores, source="verified")
     context.answer_cache.remember(image.width, image.height, match)
     return match
 
 
-def _match_slot_from_answer_cache(
+def _score_answer_cache_hints(
     image_width: int,
     image_height: int,
     crop: Image.Image,
@@ -580,7 +577,7 @@ def _match_slot_from_answer_cache(
     slot_index: int,
     role: str,
     answer_cache: _AnswerCache,
-) -> TacticalSlotMatch | None:
+) -> list[_CandidateScore]:
     ranked: list[_CandidateScore] = []
     for hint in answer_cache.hints(image_width, image_height, slot_index, role):
         student_id = str(hint.get("student_id") or "")
@@ -596,11 +593,18 @@ def _match_slot_from_answer_cache(
         score = _variant_score(crop_rgb_f, crop_gray, crop_hsv, variant)
         ranked.append(_CandidateScore(float(score), student_id, variant))
     ranked.sort(key=lambda item: item.score, reverse=True)
-    if not ranked or ranked[0].score < _ANSWER_CACHE_ACCEPT_SCORE:
-        return None
-    match = _match_from_ranked(slot_index, role, ranked, source="answer_cache")
-    answer_cache.remember(image_width, image_height, match)
-    return match
+    return ranked
+
+
+def _merge_candidate_scores(*groups: Sequence[_CandidateScore]) -> list[_CandidateScore]:
+    """Combine hint and full-pool scores without allowing group order to bias Top-K."""
+    best_by_student: dict[str, _CandidateScore] = {}
+    for group in groups:
+        for candidate in group:
+            current = best_by_student.get(candidate.student_id)
+            if current is None or candidate.score > current.score:
+                best_by_student[candidate.student_id] = candidate
+    return sorted(best_by_student.values(), key=lambda item: item.score, reverse=True)
 
 
 def _priority_candidate_ids(role: str, candidate_priority: dict[str, tuple[str, ...]]) -> tuple[str, ...]:

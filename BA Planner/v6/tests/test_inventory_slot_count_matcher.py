@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import unittest
 
-from core.inventory_slot_count_matcher import K_SUFFIX_DIGIT_LEFT_SHIFT_PX, _digit_region, _expand_slot_count_value
+from core.inventory_slot_count_matcher import (
+    K_SUFFIX_DIGIT_LEFT_SHIFT_PX,
+    _digit_region,
+    _expand_slot_count_value,
+    _uses_k_suffix_layout,
+)
 
 
 class InventorySlotCountMatcherTests(unittest.TestCase):
@@ -25,6 +30,24 @@ class InventorySlotCountMatcherTests(unittest.TestCase):
         normal_x = normal["points_ratio"][0]["x"] * 1000
         shifted_x = shifted["points_ratio"][0]["x"] * 1000
         self.assertAlmostEqual(normal_x - shifted_x, 6.0)
+
+    def test_weak_terminal_k_uses_shifted_layout_when_final_cell_is_not_a_digit(self) -> None:
+        self.assertTrue(
+            _uses_k_suffix_layout(
+                nonblank_count=4,
+                terminal_digit_accepted=False,
+                terminal_k_accepted=False,
+            )
+        )
+
+    def test_plain_count_keeps_normal_layout_when_final_digit_is_accepted(self) -> None:
+        self.assertFalse(
+            _uses_k_suffix_layout(
+                nonblank_count=4,
+                terminal_digit_accepted=True,
+                terminal_k_accepted=False,
+            )
+        )
 
 
 if __name__ == "__main__":
