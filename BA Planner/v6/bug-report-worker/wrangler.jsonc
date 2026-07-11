@@ -13,6 +13,25 @@
 	"upload_source_maps": true,
 	"compatibility_flags": [
 		"nodejs_compat"
+	],
+	"vars": {
+		"GITHUB_OWNER": "coup-d-etat-pinkgorilla",
+		"GITHUB_REPO": "planner_of_plana",
+		"REPORTING_ENABLED": "true"
+	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "REPORT_RATE_LIMITER",
+				"class_name": "ReportRateLimiter"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["ReportRateLimiter"]
+		}
 	]
 	/**
 	 * Smart Placement
@@ -31,7 +50,6 @@
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
 	 */
-	// "vars": {  "MY_VARIABLE": "production_value" }
 	/**
 	 * Static Assets
 	 * https://developers.cloudflare.com/workers/static-assets/binding/
