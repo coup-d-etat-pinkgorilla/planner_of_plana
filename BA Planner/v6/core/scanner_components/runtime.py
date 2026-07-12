@@ -23,6 +23,7 @@ class ScannerRuntimeComponent:
         inventory_profile_id: str | list[str] | tuple[str, ...] | None = None,
         fast_student_ids: Optional[list[str]] = None,
         inventory_detail_override_dir: str | os.PathLike | None = None,
+        inventory_capture_resolution: object = None,
     ):
         self.r             = regions
         self._on_progress  = on_progress
@@ -62,6 +63,7 @@ class ScannerRuntimeComponent:
             if inventory_detail_override_dir
             else None
         )
+        self._inventory_capture_resolution = inventory_resolution_key(inventory_capture_resolution)
         self._forced_inventory_profile_id: str | None = (
             None
             if not self._default_inventory_profile_ids or self._default_inventory_profile_ids == ("all",)
@@ -433,6 +435,7 @@ class ScannerRuntimeComponent:
                     source_w, source_h = source_size
                 except (TypeError, ValueError):
                     source_w, source_h = img.size
+                self._inventory_capture_resolution = inventory_resolution_key((source_w, source_h))
                 _log.debug(
                     "[perf] capture elapsed=%.3fs success=true attempt=%d "
                     "source_size=%sx%s normalized_size=%sx%s size=%sx%s",

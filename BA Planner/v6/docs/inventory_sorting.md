@@ -65,6 +65,10 @@ purple. When a new school is added in-game, update `_SCHOOL_ORDER`,
 `Item_Icon_SkillBook_Ultimate_Piece` is the final secret-note item for both
 `tech_notes` and `tactical_bd` profiles.
 
+The tech-note grid maps this terminal item explicitly to the T3 purple
+background. Its ID has no numeric tier suffix, so the explicit background rule
+is required to keep a visible secret note in the strict T3 candidate branch.
+
 The scanner can use confirmed tier colors as profile-order anchors. If a later
 ordered item is confidently matched while earlier ordered items were not visible,
 those skipped entries are treated as zero quantity because the game omits zero

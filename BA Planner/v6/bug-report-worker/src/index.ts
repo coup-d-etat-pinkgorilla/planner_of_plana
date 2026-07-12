@@ -9,6 +9,7 @@ type WorkerEnv = Env & Secrets;
 interface ReportPayload {
 	title: string;
 	body: string;
+	diagnosticRecords?: string[];
 }
 
 interface GitHubIssueResponse {
@@ -93,17 +94,55 @@ function isReportPayload(value: unknown): value is ReportPayload {
 
 	const payload = value as Record<string, unknown>;
 	const keys = Object.keys(payload).sort();
+	const validKeys =
+		(keys.length === 2 && keys[0] === "body" && keys[1] === "title") ||
+		(keys.length === 3 &&
+			keys[0] === "body" &&
+			keys[1] === "diagnosticRecords" &&
+			keys[2] === "title");
 	return (
-		keys.length === 2 &&
-		keys[0] === "body" &&
-		keys[1] === "title" &&
+		validKeys &&
 		typeof payload.title === "string" &&
 		payload.title.trim().length > 0 &&
 		payload.title.trim().length <= MAX_TITLE_LENGTH &&
 		typeof payload.body === "string" &&
 		payload.body.trim().length > 0 &&
-		payload.body.trim().length <= MAX_BODY_LENGTH
+		payload.body.trim().length <= MAX_BODY_LENGTH &&
+		(payload.diagnosticRecords === undefined ||
+			(Array.isArray(payload.diagnosticRecords) &&
+				payload.diagnosticRecords.every(
+					(record) => typeof record === "string" && record.trim().length > 0,
+				)))
 	);
+}
+
+function githubHeaders(env: WorkerEnv): Record<string, string> {
+	return {
+		Accept: "application/vnd.github+json",
+		Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+		"Content-Type": "application/json",
+		"User-Agent": "BA-Planner-Bug-Report-Worker",
+		"X-GitHub-Api-Version": "2026-03-10",
+	};
+}
+
+function diagnosticComment(records: string[]): string {
+	const sections = records.map((record, index) => {
+		const indented = record
+			.split("\n")
+			.map((line) => `    ${line}`)
+			.join("\n");
+		return `### Diagnostic record set ${index + 1}\n\n${indented}`;
+	});
+	return [
+		"## Complete diagnostic records",
+		"",
+		"<details><summary>Show privacy-scrubbed raw diagnostics</summary>",
+		"",
+		sections.join("\n\n"),
+		"",
+		"</details>",
+	].join("\n");
 }
 
 async function hashClientAddress(address: string): Promise<string> {
@@ -219,13 +258,7 @@ export default {
 				`https://api.github.com/repos/${encodeURIComponent(env.GITHUB_OWNER)}/${encodeURIComponent(env.GITHUB_REPO)}/issues`,
 				{
 					method: "POST",
-					headers: {
-						Accept: "application/vnd.github+json",
-						Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-						"Content-Type": "application/json",
-						"User-Agent": "BA-Planner-Bug-Report-Worker",
-						"X-GitHub-Api-Version": "2026-03-10",
-					},
+					headers: githubHeaders(env),
 					body: JSON.stringify({
 						title: payload.title.trim(),
 						body: payload.body.trim(),
@@ -245,9 +278,53 @@ export default {
 		} catch {
 			return error(502, "GITHUB_INVALID_RESPONSE", "GitHub returned an invalid response");
 		}
+		let diagnosticsUploaded = true;
+		let warning = "";
+		const diagnosticRecords = payload.diagnosticRecords ?? [];
+		if (diagnosticRecords.length > 0) {
+			diagnosticsUploaded = false;
+			if (issue.number !== undefined) {
+				try {
+					const commentResponse = await fetch(
+						`https://api.github.com/repos/${encodeURIComponent(env.GITHUB_OWNER)}/${encodeURIComponent(env.GITHUB_REPO)}/issues/${issue.number}/comments`,
+						{
+							method: "POST",
+							headers: githubHeaders(env),
+							body: JSON.stringify({ body: diagnosticComment(diagnosticRecords) }),
+						},
+					);
+					diagnosticsUploaded = commentResponse.ok;
+				} catch {
+					diagnosticsUploaded = false;
+				}
+			}
+
+			if (!diagnosticsUploaded) {
+				warning = "Complete diagnostic records could not be attached";
+				if (issue.number !== undefined) {
+					try {
+						await fetch(
+							`https://api.github.com/repos/${encodeURIComponent(env.GITHUB_OWNER)}/${encodeURIComponent(env.GITHUB_REPO)}/issues/${issue.number}`,
+							{
+								method: "PATCH",
+								headers: githubHeaders(env),
+								body: JSON.stringify({
+									body: `${payload.body.trim()}\n\n> ⚠️ ${warning}.`,
+								}),
+							},
+						);
+					} catch {
+						// The response still reports the partial failure to the desktop app.
+					}
+				}
+			}
+		}
+
 		return respond(201, {
 			issueUrl: issue.html_url ?? null,
 			issueNumber: issue.number ?? null,
+			diagnosticsUploaded,
+			warning: warning || null,
 		});
 	},
 } satisfies ExportedHandler<WorkerEnv>;

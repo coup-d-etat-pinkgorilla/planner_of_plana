@@ -228,6 +228,16 @@ class ScannerWaitTests(unittest.TestCase):
 
         self.assertTrue(scanner._wait_for_equipment_inventory_filter_menu_open(initial_wait=0.0))
 
+    def test_equipment_filter_panel_stops_when_menu_is_not_recognized(self) -> None:
+        scanner = self._scanner()
+        clicks: list[str] = []
+        scanner._click_region_capture = lambda _name, *, label="", delay=0.0: clicks.append(label) or True
+        scanner._wait_for_equipment_inventory_filter_menu_open = lambda **_kwargs: False
+
+        self.assertFalse(scanner._open_equipment_inventory_filter_panel(max_attempts=2))
+        self.assertEqual(clicks, ["eq_filtermenu_button", "eq_filtermenu_button"])
+        self.assertTrue(scanner._stop)
+
     def test_item_filter_menu_open_accepts_item_sort_reference(self) -> None:
         scanner = self._scanner()
         scanner._wait = lambda *_args, **_kwargs: True

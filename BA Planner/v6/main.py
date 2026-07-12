@@ -237,6 +237,7 @@ try:
     )
     from core.db_writer import build_scan_meta
     from core.inventory_profiles import inventory_profile_labels, normalize_inventory_profile_ids
+    from core.inventory_answer_samples import inventory_resolution_key, resolution_sample_dir
     from core.lobby_watcher import LobbyWatcher, WatcherState
     from core.log_context import set_debug_dump
     from core.logger import LOG_APP, enable_scan_debug_log, get_logger, setup_logging
@@ -884,6 +885,7 @@ class App(tk.Tk):
             autosave_manager=self._asv,
             inventory_profile_id=meta.get("item_scan_filter_profile") or None,
             inventory_detail_override_dir=self._inventory_detail_override_dir(),
+            inventory_capture_resolution=meta.get("window_size"),
         )
 
     def _choose_item_scan_filter(self) -> str | list[str] | None:
@@ -1173,22 +1175,37 @@ class App(tk.Tk):
             profile_id = str(scan_meta.get("profile_id") or "").strip()
             if not profile_id:
                 continue
+            resolution = inventory_resolution_key(
+                scan_meta.get("capture_resolution") or meta.get("window_size")
+            )
+            if resolution is None:
+                continue
 
             safe_name = self._safe_template_name(item_id)
             if not safe_name:
                 continue
-            target_dir = override_root / profile_id
+            target_dir = resolution_sample_dir(override_root, resolution, profile_id, safe_name)
+            if target_dir is None:
+                continue
             target_dir.mkdir(parents=True, exist_ok=True)
-            image_path = target_dir / f"{safe_name}.png"
-            json_path = target_dir / f"{safe_name}.json"
+            sample_stem = self._safe_template_name(scan_id) or "sample"
+            sample_name = sample_stem
+            suffix = 2
+            while (target_dir / f"{sample_name}.png").exists():
+                sample_name = f"{sample_stem}_{suffix}"
+                suffix += 1
+            image_path = target_dir / f"{sample_name}.png"
+            json_path = target_dir / f"{sample_name}.json"
 
             crop.save(image_path)
             name_crop = getattr(item, "detail_name_crop", None)
             name_image_path = None
             if name_crop is not None:
-                name_target_dir = name_override_root / profile_id
+                name_target_dir = resolution_sample_dir(name_override_root, resolution, profile_id, safe_name)
+                if name_target_dir is None:
+                    continue
                 name_target_dir.mkdir(parents=True, exist_ok=True)
-                name_image_path = name_target_dir / f"{safe_name}.png"
+                name_image_path = name_target_dir / f"{sample_name}.png"
                 name_crop.save(name_image_path)
 
             payload = {
@@ -1203,6 +1220,10 @@ class App(tk.Tk):
                 "image_path": str(image_path),
                 "name_image_path": str(name_image_path) if name_image_path else None,
                 "template_source": "user_confirmed_scan",
+                "capture_resolution": resolution,
+                "sample_schema_version": 2,
+                "roi_version": "inventory_detail_ratio_v1",
+                "app_version": meta.get("app_version"),
                 "scan_meta": scan_meta,
             }
             json_path.write_text(

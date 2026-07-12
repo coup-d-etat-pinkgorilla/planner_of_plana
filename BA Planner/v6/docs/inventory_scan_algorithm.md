@@ -184,6 +184,37 @@ flowchart TD
 
 ## 프로필과 순서 힌트
 
+### 페이지 공동 추론 shadow 방식
+
+`presents`, `student_elephs`, `tactical_bd`, `tech_notes`, `equipment`는 페이지 공동 추론을
+기본 판정으로 사용한다. 강제된 인벤토리 프로필과 grid matcher가 모두 활성화되어야 동작한다.
+각 페이지의 슬롯은 row anchor 없이
+병렬로 Top-K 후보를 만들고, `core/inventory_page_shadow.py`가 프로필 순번이 단조 증가하는
+최적 경로를 계산한다. 공동 추론에서 확정된 item ID가 실제 결과와 profile cursor에 사용되며,
+수량 신뢰도가 낮으면 기존 상세 화면 검증은 계속 수행한다. 공동 추론이 준비되지 못한 페이지는
+기존 판정으로 조용히 전환하지 않고 스캔을 불완전 종료한다.
+
+첫 페이지의 worker 실행 전에 메인 스레드가 현재 슬롯 크기에 필요한 모든 템플릿 crop을 한 번
+생성해 LRU cache에 넣는다. 따라서 여러 worker가 같은 템플릿을 동시에 처음 읽고 변환하는 cold
+miss가 제거된다. 같은 프로필과 슬롯 크기는 이후 페이지에서 다시 prewarm하지 않는다.
+
+`BA_INVENTORY_PAGE_SHADOW_AUTHORITATIVE=0`을 설정하면 공동 추론을 다시 비교 전용 모드로
+내릴 수 있다. `BA_INVENTORY_PAGE_SHADOW=0`은 기능 전체를 끈다. 위 목록 외 프로필은 공동
+추론을 명시적으로 켜더라도 아직 기본 판정으로 승격되지 않는다.
+
+기본 평가 설정은 다음 환경 변수로 조정할 수 있다.
+
+| 환경 변수 | 기본값 | 의미 |
+| --- | ---: | --- |
+| `BA_INVENTORY_PAGE_SHADOW_WORKERS` | `4` | 슬롯 후보 생성 worker 수 |
+| `BA_INVENTORY_PAGE_SHADOW_TOP_K` | `4` | 슬롯별 유지 후보 수 |
+| `BA_INVENTORY_PAGE_SHADOW_MIN_SCORE` | `0.55` | 공동 추론에 넣을 최소 시각 점수 |
+| `BA_INVENTORY_PAGE_SHADOW_AUTHORITATIVE` | `1` | 승격 프로필에서 공동 추론 결과를 실제 판정으로 사용 (`0`: 비교 전용) |
+
+일반 로그에는 prewarm 템플릿 수·cache hit/miss·처리시간과 페이지별 할당됨·미해결·실제 반영
+수가 남는다. 비교 전용 모드에서는 기존 결과 대비 agreement 집계와 debug 불일치도 기록한다.
+다음 실측에서는 단독 판정 로그뿐 아니라 실제 캡처 답지와 최종 결과를 함께 대조해야 한다.
+
 ```mermaid
 flowchart TD
     A["활성 프로필"] --> B["ordered_item_ids / ordered_names"]
@@ -217,6 +248,22 @@ flowchart TD
 `quantity = "0"`인 `zero_filled` 항목으로 보강할 수 있다.
 
 ## 스크롤과 drift 방지
+
+드래그 직후의 첫 캡처는 모션 추정에 바로 사용하지 않는다. 스캐너는 짧은 간격의 후속 캡처에서
+회색 밴드 중심 좌표를 비교하고, 행 간격의 1% 이내로 연속 두 번 유지된 마지막 프레임만
+스크롤 후 안정 프레임으로 채택한다. 제한된 캡처 횟수 안에 안정화되지 않으면 이동량을
+추정하지 않고 스캔을 중단한다. 따라서 이동량과 겹침 행은 스크롤 전 안정 프레임과 스크롤 후
+안정 프레임 사이에서만 계산된다.
+
+5행 그리드에서 행 간격에 맞는 회색 밴드가 6개 검출되면, 가장 위 밴드는 첫 행의 위쪽 경계로
+취급한다. 각 행 중심은 인접한 밴드 두 개 사이에 배치한다. 유효한 6밴드 연속열이 없을 때만
+기존처럼 5개 아래쪽 밴드와 추정된 위쪽 경계를 사용한다.
+
+코사인 기반 모션 추정이 겹침 행을 0으로 계산하면 슬롯 아이콘 해시의 행 중복을 교차검증한다.
+해시에서 중복 행이 확인되면 해당 값을 우선하여 잘못된 원거리 상관 피크를 복구한다. 마지막
+페이지 signature가 확인된 경우에는 겹침 행 소실로 중단하지 않고 전체 슬롯을 한 번 검사한 뒤
+종료한다. 상세 검증 클릭은 슬롯 내부에서 금지구역 바로 위의 허용 좌표로 보정하며, 클릭 자체가
+실패하면 이전 상세 화면을 읽지 않고 해당 검증을 실패 처리한다.
 
 ```mermaid
 flowchart TD
@@ -275,6 +322,35 @@ flowchart TD
 `scan_meta` 안의 `detect_source`는 결과가 어떤 경로로 확정되었는지 알려준다.
 대표 값은 `grid_template(...)`, `detail_image_template+detail(...)`,
 `icon_template+detail(...)`, `detail_template`이다.
+
+## 계정·해상도별 답지 샘플
+
+아이템과 장비의 상세 화면 검토에서 사용자가 항목을 확정하면 상세 이미지와 이름 영역을
+현재 계정 프로필 아래에 답지 샘플로 저장한다. 자동 판정만으로는 샘플을 만들지 않는다.
+
+```text
+profiles/{profile_key}/templates/inventory_detail/
+└─ {capture_width}x{capture_height}/
+   └─ {inventory_profile_id}/
+      └─ {item_id}/
+         ├─ {scan_id}.png
+         └─ {scan_id}.json
+```
+
+이름 영역 샘플은 같은 구조를 `inventory_detail_names/` 아래에 사용한다. 해상도 키는
+내부 인식용 QHD 정규화 크기가 아니라 캡처 이미지의 `capture_source_size`, 즉 실제 게임
+창의 client 크기다.
+
+- 해당 계정·해상도의 샘플이 없는 첫 스캔은 배포 기본 에셋만 사용한다.
+- 이후 같은 계정과 같은 해상도의 스캔은 저장된 모든 확정 샘플을 후보로 먼저 추가한다.
+- 배포 기본 에셋도 후보에 남겨 사용자 샘플이 약하거나 없는 항목의 fallback으로 사용한다.
+- 다른 해상도 또는 다른 계정의 샘플은 후보에 포함하지 않는다.
+- 동일 item_id의 샘플은 덮어쓰지 않고 누적한다. 같은 scan_id가 이미 있으면 번호 suffix를 붙인다.
+- 무기 성장 부품은 기존 정책대로 사용자 상세 샘플 대상에서 제외한다.
+- 해상도를 알 수 없는 결과는 잘못된 공용 샘플 생성을 막기 위해 저장하지 않는다.
+
+해상도 분리 이전에 저장된 `inventory_detail/{profile_id}/{item_id}.png` 형식은 호환
+fallback으로 읽지만, 새 샘플은 항상 해상도별 구조에만 기록한다.
 
 ## 관련 코드 지도
 

@@ -8,7 +8,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtWidgets import QApplication
 
-from core.bug_report import BugReportClient
+from core.bug_report import BugReportClient, RecentLogDiagnostics
 from gui.bug_report_dialog import BugReportDialog
 
 
@@ -19,10 +19,19 @@ def _app() -> QApplication:
 class BugReportDialogTests(unittest.TestCase):
     def setUp(self) -> None:
         _app()
-        self.dialog = BugReportDialog(
-            profile_name="PrivateProfile",
-            client=BugReportClient("https://worker.example/report"),
+        diagnostics = RecentLogDiagnostics(
+            scan_resolution="1920x1080",
+            relevant_records="2026-07-12 ERROR complete test error",
+            source_files=("ba_2026-07-12.log",),
         )
+        with patch(
+            "gui.bug_report_dialog.collect_recent_log_diagnostics",
+            return_value=diagnostics,
+        ):
+            self.dialog = BugReportDialog(
+                profile_name="PrivateProfile",
+                client=BugReportClient("https://worker.example/report"),
+            )
 
     def tearDown(self) -> None:
         self.dialog.close()
@@ -31,6 +40,8 @@ class BugReportDialogTests(unittest.TestCase):
         diagnostics = self.dialog.diagnostic_input.toPlainText()
         self.assertIn("[REDACTED_PROFILE]", diagnostics)
         self.assertNotIn("PrivateProfile", diagnostics)
+        self.assertIn("Scan resolution: 1920x1080", diagnostics)
+        self.assertIn("complete test error", diagnostics)
         self.assertFalse(self.dialog.diagnostic_input.isReadOnly())
 
     def test_requires_title_and_description(self) -> None:
@@ -52,9 +63,12 @@ class BugReportDialogTests(unittest.TestCase):
         pool.start.assert_called_once()
         task = pool.start.call_args.args[0]
         self.assertEqual("Problem", task.title)
+        self.assertIn("## Diagnostic summary", task.body)
         self.assertIn("[REDACTED_EMAIL]", task.body)
-        self.assertIn("[REDACTED_PROFILE]", task.body)
         self.assertNotIn("user@example.com", task.body)
+        self.assertEqual(1, len(task.diagnostic_records))
+        self.assertIn("[REDACTED_PROFILE]", task.diagnostic_records[0])
+        self.assertNotIn("user@example.com", task.diagnostic_records[0])
         self.assertFalse(self.dialog.send_button.isEnabled())
 
 

@@ -39,6 +39,9 @@ REQUIRED_ASSET_GLOBS = (
     ("debug/region_captures", "eq_filtermenu_button.region.json"),
 )
 
+RUNTIME_ASSET_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".webp", ".ttf"})
+RUNTIME_SOURCE_DIRS = ("core", "gui")
+
 
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -126,6 +129,35 @@ def validate_asset_inputs(files: list[Path]) -> None:
         raise RuntimeError(f"Required runtime asset files are missing from the asset pack:\n{joined}")
 
 
+def validate_no_unmanaged_runtime_assets(files: list[Path]) -> None:
+    """Reject runtime images/fonts placed outside the managed asset roots.
+
+    Code under core/ and gui/ is packaged by PyInstaller, but non-Python files are
+    easy to omit accidentally. Runtime images and fonts must live in a managed
+    asset root so both full and asset-only releases receive the same files.
+    """
+    managed = {path.resolve() for path in files}
+    unmanaged: list[str] = []
+    for rel_root in RUNTIME_SOURCE_DIRS:
+        root = ROOT_DIR / rel_root
+        if not root.exists():
+            continue
+        for path in root.rglob("*"):
+            if (
+                path.is_file()
+                and path.suffix.casefold() in RUNTIME_ASSET_EXTENSIONS
+                and path.resolve() not in managed
+            ):
+                unmanaged.append(path.relative_to(ROOT_DIR).as_posix())
+    if unmanaged:
+        joined = "\n".join(f"- {rel}" for rel in sorted(unmanaged, key=str.casefold))
+        raise RuntimeError(
+            "Runtime image/font files are outside the managed asset roots. "
+            "Move them under assets/templates or add their broad directory to ASSET_ROOTS:\n"
+            f"{joined}"
+        )
+
+
 def build_file_manifest(files: list[Path]) -> dict[str, dict[str, object]]:
     manifest: dict[str, dict[str, object]] = {}
     for path in files:
@@ -177,6 +209,71 @@ def build_asset_archive(version: str, output_dir: Path) -> tuple[Path, str]:
             archive.write(path, path.relative_to(ROOT_DIR).as_posix())
 
     return archive_path, _sha256(archive_path)
+
+
+def validate_asset_archive(
+    archive_path: Path,
+    files: dict[str, dict[str, object]],
+) -> None:
+    """Verify the produced zip contains exactly the manifest files and hashes."""
+    with zipfile.ZipFile(archive_path) as archive:
+        archive_files = {
+            info.filename: info
+            for info in archive.infolist()
+            if not info.is_dir()
+        }
+        expected_names = set(files)
+        actual_names = set(archive_files)
+        missing = sorted(expected_names - actual_names)
+        unexpected = sorted(actual_names - expected_names)
+        mismatched: list[str] = []
+        for rel in sorted(expected_names & actual_names):
+            info = archive_files[rel]
+            expected = files[rel]
+            digest = hashlib.sha256(archive.read(info)).hexdigest()
+            if info.file_size != int(expected.get("size") or -1) or digest != str(expected.get("sha256") or ""):
+                mismatched.append(rel)
+    if missing or unexpected or mismatched:
+        details = []
+        details.extend(f"missing: {rel}" for rel in missing)
+        details.extend(f"unexpected: {rel}" for rel in unexpected)
+        details.extend(f"hash/size mismatch: {rel}" for rel in mismatched)
+        raise RuntimeError("Asset archive verification failed:\n" + "\n".join(f"- {item}" for item in details))
+
+
+def validate_full_release(
+    *,
+    app_archive: Path,
+    asset_archive: Path,
+    asset_manifest_path: Path,
+    app_manifest_path: Path,
+) -> None:
+    """Verify the full-compile artifacts agree before they can be published."""
+    asset_manifest = json.loads(asset_manifest_path.read_text(encoding="utf-8"))
+    app_manifest = json.loads(app_manifest_path.read_text(encoding="utf-8"))
+    if str(asset_manifest.get("archive_name") or "") != asset_archive.name:
+        raise RuntimeError("Asset manifest archive_name does not match the generated asset zip.")
+    if str(asset_manifest.get("sha256") or "") != _sha256(asset_archive):
+        raise RuntimeError("Asset manifest SHA256 does not match the generated asset zip.")
+    if str(app_manifest.get("archive_name") or "") != app_archive.name:
+        raise RuntimeError("App manifest archive_name does not match the generated app zip.")
+    if str(app_manifest.get("sha256") or "") != _sha256(app_archive):
+        raise RuntimeError("App manifest SHA256 does not match the generated app zip.")
+
+    prefix = f"{APP_NAME}/"
+    with zipfile.ZipFile(app_archive) as archive:
+        names = set(archive.namelist())
+        required = {
+            f"{prefix}{APP_NAME}.exe",
+            f"{prefix}asset_manifest.json",
+            f"{prefix}{APP_MANIFEST_NAME}",
+        }
+        missing = sorted(required - names)
+        if missing:
+            raise RuntimeError("Full app archive is missing required files:\n" + "\n".join(f"- {name}" for name in missing))
+        embedded_asset_manifest = json.loads(archive.read(f"{prefix}asset_manifest.json").decode("utf-8"))
+    if embedded_asset_manifest != asset_manifest:
+        raise RuntimeError("The app zip contains a stale asset_manifest.json.")
 
 
 def _safe_version_text(value: str) -> str:
@@ -376,8 +473,11 @@ def main() -> int:
     github_repo = args.github_repo or _default_github_repo()
     asset_files = _iter_asset_files()
     validate_asset_inputs(asset_files)
+    if not args.skip_exe:
+        validate_no_unmanaged_runtime_assets(asset_files)
     file_manifest = build_file_manifest(asset_files)
     archive_path, digest = build_asset_archive(args.version, output_dir)
+    validate_asset_archive(archive_path, file_manifest)
     asset_url = args.asset_url or _release_asset_url(github_repo, args.github_release, archive_path.name)
     manifest_url = args.manifest_url or _release_asset_url(github_repo, args.latest_manifest_release, "asset_manifest.json")
     app_archive_name = f"{APP_ARCHIVE_BASENAME}-{args.version}.zip"
@@ -450,6 +550,12 @@ def main() -> int:
         release_url=release_url,
         sha256=_sha256(app_archive),
         output_dir=output_dir,
+    )
+    validate_full_release(
+        app_archive=app_archive,
+        asset_archive=archive_path,
+        asset_manifest_path=manifest_path,
+        app_manifest_path=app_manifest_path,
     )
     print(f"Release folder: {output_dir}")
     print(f"App archive: {app_archive}")

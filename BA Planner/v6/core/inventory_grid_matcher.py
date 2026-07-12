@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
+from time import perf_counter
 
 import cv2
 import numpy as np
@@ -50,6 +51,14 @@ class InventoryGridTierColorInspection:
     median_rgb: tuple[float, float, float] | None
     distances: tuple[tuple[int, float], ...] = ()
     distance_margin: float = 0.0
+
+
+@dataclass(frozen=True)
+class InventoryGridPrewarmResult:
+    template_count: int
+    cache_hits: int
+    cache_misses: int
+    elapsed_ms: float
 
 
 @dataclass
@@ -822,6 +831,34 @@ def _composite_roi_pairs(
         if template_arr is not None:
             pairs.append((screen_arr, template_arr, weight))
     return pairs
+
+
+def prewarm_inventory_grid_templates(
+    catalog: list[tuple[str, str]],
+    config: dict | None,
+    slot_size: tuple[int, int],
+) -> InventoryGridPrewarmResult:
+    """Populate production grid-template crops once before slot workers start."""
+    merged = _merged_config(config)
+    configured = merged.get("composite_rois")
+    rois = [row for row in configured if isinstance(row, dict)] if isinstance(configured, list) else []
+    crop_ratios = [row.get("crop_ratio") for row in rois if isinstance(row.get("crop_ratio"), dict)]
+    if not crop_ratios:
+        crop_ratios = [None]
+    before = _grid_template_crop.cache_info()
+    started = perf_counter()
+    template_count = 0
+    for item_id, path in catalog:
+        for crop_ratio in crop_ratios:
+            if _template_for(item_id, path, slot_size, merged, crop_ratio) is not None:
+                template_count += 1
+    after = _grid_template_crop.cache_info()
+    return InventoryGridPrewarmResult(
+        template_count=template_count,
+        cache_hits=after.hits - before.hits,
+        cache_misses=after.misses - before.misses,
+        elapsed_ms=(perf_counter() - started) * 1000.0,
+    )
 
 
 def _weighted_similarity_breakdown(

@@ -633,6 +633,33 @@ class InventoryTabComponent:
                 total.merge(summary)
         entries = self._plan_requirement_entries(total)
         return {entry.key: entry for entry in entries}
+    def _inventory_max_student_counts(self) -> tuple[int, int]:
+        inventory_index = getattr(self, "_inventory_quantity_index_cache", {})
+        report_exp = sum(
+            inventory_index.get(f"Item_Icon_ExpItem_{tier}", 0) * value
+            for tier, value in enumerate((50, 500, 2_000, 10_000))
+        )
+        stone_exp = sum(
+            inventory_index.get(f"Equipment_Icon_Exp_{tier}", 0) * value
+            for tier, value in enumerate((90, 360, 1_440, 5_760))
+        )
+
+        level_costs: list[int] = []
+        equipment_costs: list[int] = []
+        for record in self._all_students:
+            goal = self._inventory_full_pool_goal_for_student(record)
+            summary = self._cached_goal_cost(record.student_id, record=record, goal=goal)
+            if summary is None:
+                continue
+            if summary.level_exp > 0:
+                level_costs.append(summary.level_exp)
+            if summary.equipment_exp > 0:
+                equipment_costs.append(summary.equipment_exp)
+
+        return (
+            _max_affordable_student_count(report_exp, level_costs, max(level_costs, default=0)),
+            _max_affordable_student_count(stone_exp, equipment_costs, max(equipment_costs, default=0)),
+        )
     def _inventory_requirement_for_entry(
         self,
         item_id: str,
@@ -2110,6 +2137,7 @@ class InventoryTabComponent:
         )
         latest_seen = max((str(payload.get("last_seen_at") or "") for payload in inventory.values()), default="")
         latest_time = _tr("inventory.last_updated", time=latest_seen) if latest_seen else "확인되지 않았습니다"
+        report_students, equipment_students = self._inventory_max_student_counts()
         self._inventory_summary.setText(
             _tr(
                 "inventory.summary_scanned",
@@ -2117,6 +2145,7 @@ class InventoryTabComponent:
                 quantity=_format_count(total_quantity, compact=True),
                 time=latest_time,
             )
+            + f" 현재 보고서로 {report_students}명의 학생, 강화석으로 {equipment_students}명의 학생을 최대치까지 올릴 수 있습니다."
         )
 
         self._inventory_oopart_plan_usage = self._inventory_build_oopart_plan_usage()

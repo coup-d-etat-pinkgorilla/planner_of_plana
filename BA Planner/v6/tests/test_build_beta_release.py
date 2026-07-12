@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -76,6 +79,61 @@ class BuildBetaReleaseAssetTests(unittest.TestCase):
                 files = build_beta_release._iter_asset_files()
                 with self.assertRaisesRegex(RuntimeError, "gui/font/\\*.ttf"):
                     build_beta_release.validate_asset_inputs(files)
+
+    def test_unmanaged_gui_image_fails_full_release_input_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            root = Path(raw_dir)
+            managed = self._write(root, "assets/ui/managed.png")
+            self._write(root, "gui/new_feature/banner.png")
+
+            with patch.object(build_beta_release, "ROOT_DIR", root):
+                with self.assertRaisesRegex(RuntimeError, "gui/new_feature/banner.png"):
+                    build_beta_release.validate_no_unmanaged_runtime_assets([managed])
+
+    def test_asset_archive_verification_detects_missing_file(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            root = Path(raw_dir)
+            archive_path = root / "assets.zip"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.writestr("assets/one.png", b"one")
+            files = {
+                "assets/one.png": {"size": 3, "sha256": hashlib.sha256(b"one").hexdigest()},
+                "assets/two.png": {"size": 3, "sha256": hashlib.sha256(b"two").hexdigest()},
+            }
+            with self.assertRaisesRegex(RuntimeError, "missing: assets/two.png"):
+                build_beta_release.validate_asset_archive(archive_path, files)
+
+    def test_full_release_verifies_embedded_asset_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            root = Path(raw_dir)
+            asset_archive = root / "ba-planner-assets-1.0.zip"
+            asset_archive.write_bytes(b"assets")
+            asset_manifest = {
+                "archive_name": asset_archive.name,
+                "sha256": hashlib.sha256(b"assets").hexdigest(),
+                "files": {},
+            }
+            asset_manifest_path = root / "asset_manifest.json"
+            asset_manifest_path.write_text(json.dumps(asset_manifest), encoding="utf-8")
+
+            app_archive = root / "ba-planner-windows-1.0.zip"
+            with zipfile.ZipFile(app_archive, "w") as archive:
+                archive.writestr("BA Planner/BA Planner.exe", b"exe")
+                archive.writestr("BA Planner/asset_manifest.json", json.dumps(asset_manifest))
+                archive.writestr("BA Planner/app_manifest.json", "{}")
+            app_manifest = {
+                "archive_name": app_archive.name,
+                "sha256": build_beta_release._sha256(app_archive),
+            }
+            app_manifest_path = root / "app_manifest.json"
+            app_manifest_path.write_text(json.dumps(app_manifest), encoding="utf-8")
+
+            build_beta_release.validate_full_release(
+                app_archive=app_archive,
+                asset_archive=asset_archive,
+                asset_manifest_path=asset_manifest_path,
+                app_manifest_path=app_manifest_path,
+            )
 
 
 class BuildBetaReleaseRegionCaptureValidationTests(unittest.TestCase):

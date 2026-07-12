@@ -9,8 +9,30 @@ globals().update({name: value for name, value in vars(_viewer_shared).items() if
 
 class StudentsTabComponent:
     def _build_ui(self) -> None:
-        root = QWidget(self)
+        root = TriangleTextureWidget(
+            TriangleTextureConfig(
+                base_color=BG,
+                panel_color=PALETTE_PANEL,
+                soft_color=PALETTE_SOFT,
+                accent_color=PALETTE_ACCENT,
+                triangle_size=scale_px(130, self._ui_scale),
+                tessellation_contrast=0.032,
+                random_seed=7319,
+                macro_triangle_chance=0.075,
+                macro_triangle_scale=3.0,
+                macro_triangle_contrast=0.024,
+                light_direction_degrees=132.0,
+                light_strength=0.16,
+                light_center_x=0.5,
+                light_center_y=0.5,
+                edge_vignette_strength=0.2,
+                fog_direction_degrees=18.0,
+                fog_strength=0.13,
+            ),
+            self,
+        )
         root.setObjectName("viewerRoot")
+        self._background_texture = root
         self.setCentralWidget(root)
 
         outer_layout = QVBoxLayout(root)
@@ -71,7 +93,8 @@ class StudentsTabComponent:
 
         self.setStyleSheet(
             f"""
-            QMainWindow, QWidget {{ background: {BG}; color: {INK}; }}
+            QMainWindow {{ background: {BG}; color: {INK}; }}
+            QWidget {{ background: transparent; color: {INK}; }}
             QLabel {{ background: transparent; }}
             QTabWidget#mainTabs::pane {{
                 border: none;
@@ -1455,9 +1478,23 @@ class StudentsTabComponent:
         ]
 
         if sort_mode == "star_desc":
-            items.sort(key=lambda record: (-record.star, -(record.level or 0), record.title.lower()))
+            items.sort(
+                key=lambda record: (
+                    -student_growth_sort_key(record)[0],
+                    -student_growth_sort_key(record)[1],
+                    -(record.level or 0),
+                    record.title.lower(),
+                )
+            )
         elif sort_mode == "star_asc":
-            items.sort(key=lambda record: (record.star, record.level or 0, record.title.lower()))
+            items.sort(
+                key=lambda record: (
+                    student_growth_sort_key(record)[0],
+                    student_growth_sort_key(record)[1],
+                    record.level or 0,
+                    record.title.lower(),
+                )
+            )
         elif sort_mode == "level_desc":
             items.sort(key=lambda record: (-(record.level or 0), -record.star, record.title.lower()))
         else:

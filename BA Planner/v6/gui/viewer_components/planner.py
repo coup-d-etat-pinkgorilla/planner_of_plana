@@ -1591,6 +1591,8 @@ class PlannerTabComponent:
                 return
             item_id = _plan_resource_item_id(key, category)
             name = _plan_resource_display_name(item_id, key)
+            if category == "equipment_materials":
+                name = _equipment_resource_display_name(item_id, name)
             owned = inventory_index.get(item_id or "", inventory_index.get(key, 0))
             icon_path = self._cached_plan_resource_icon_path(item_id, name)
             icon = self._cached_plan_resource_pixmap(icon_path)

@@ -37,6 +37,7 @@ from core.capture import (
     find_target_hwnd,
 )
 from core.input import (
+    FORBIDDEN_ZONES,
     click_center,
     safe_click,
     drag_scroll,
@@ -110,12 +111,20 @@ from core.inventory_count_matcher import (
     read_equipment_count_from_detail,
     read_item_count_from_detail,
 )
+from core.inventory_answer_samples import (
+    inventory_resolution_key,
+    merge_answer_samples,
+    resolution_sample_catalog,
+)
 from core.equipment_items import canonical_equipment_item_id
 from core.inventory_grid_matcher import (
+    InventoryGridMatchResult,
     InventoryGridRowAnchorState,
     detect_inventory_grid_tier_hint,
     match_inventory_grid_template,
+    prewarm_inventory_grid_templates,
 )
+from core.inventory_page_shadow import evaluate_inventory_page_shadow
 from core.inventory_input import (
     InventoryGridInput,
     InventoryInputUnavailable,
@@ -240,6 +249,13 @@ INVENTORY_GRID_ORDER_HINT_PROFILES = frozenset({
     "student_elephs",
     "ooparts",
     "presents",
+})
+INVENTORY_PAGE_JOINT_INFERENCE_PROFILES = frozenset({
+    "presents",
+    "student_elephs",
+    "tactical_bd",
+    "tech_notes",
+    "equipment",
 })
 
 
@@ -380,6 +396,9 @@ EQUIPMENT_INVENTORY_DRAG = InventoryDragConfig(
 INVENTORY_SCROLL_RESIDUAL_SETTLE_WAIT = 0.28
 INVENTORY_SCROLL_RESIDUAL_MIN_SCORE = 0.82
 INVENTORY_SCROLL_NEAR_ZERO_VERIFY_WAIT = 0.30
+INVENTORY_SCROLL_STABLE_FRAME_WAIT = 0.08
+INVENTORY_SCROLL_STABLE_REQUIRED_COMPARISONS = 2
+INVENTORY_SCROLL_STABLE_MAX_CAPTURES = 8
 INVENTORY_SCROLL_NEAR_ZERO_EXPECTED_BAND_RATIO = 0.28
 INVENTORY_SCROLL_NEAR_ZERO_EXPECTED_MIN_SCORE = 0.70
 INVENTORY_SCROLL_NEAR_ZERO_EXPECTED_MAX_SCORE_GAP = 0.12
@@ -1018,6 +1037,97 @@ def _new_inventory_slot_indices(
     return set(range(start, total_slots))
 
 
+def _inventory_slot_safe_click_point(slot: dict) -> tuple[float, float] | None:
+    """Return a slot click point adjusted to remain outside global forbidden zones."""
+    click_rx = float(slot.get("cx", (float(slot["x1"]) + float(slot["x2"])) / 2.0))
+    slot_y1 = float(slot["y1"])
+    slot_y2 = float(slot["y2"])
+    click_ry = slot_y1 + (slot_y2 - slot_y1) * 0.4
+    margin = 0.005
+
+    def allowed(ry: float) -> bool:
+        return not any(
+            fx1 <= click_rx <= fx2 and fy1 <= ry <= fy2
+            for fx1, fy1, fx2, fy2 in FORBIDDEN_ZONES
+        )
+
+    if allowed(click_ry):
+        return click_rx, click_ry
+    upper_limits = [fy1 - margin for fx1, fy1, fx2, _fy2 in FORBIDDEN_ZONES if fx1 <= click_rx <= fx2]
+    if upper_limits:
+        click_ry = min(click_ry, min(upper_limits))
+    if slot_y1 <= click_ry <= slot_y2 and allowed(click_ry):
+        return click_rx, click_ry
+    return None
+
+
+def _inventory_scan_indices_after_scroll(
+    total_slots: int,
+    grid_cols: int,
+    grid_rows: int,
+    overlap_rows: int,
+    *,
+    tail_page_detected: bool,
+) -> set[int] | None:
+    if tail_page_detected:
+        return set(range(max(0, total_slots)))
+    return _new_inventory_slot_indices(total_slots, grid_cols, grid_rows, overlap_rows)
+
+
+def _inventory_overlap_requires_stop(
+    moved: bool,
+    overlap_rows: int,
+    *,
+    tail_page_detected: bool,
+    stop_on_no_overlap: bool,
+) -> bool:
+    return bool(moved and overlap_rows <= 0 and not tail_page_detected and stop_on_no_overlap)
+
+
+def inventory_page_shadow_enabled(profile_id: str | None, *, grid_match_enabled: bool) -> bool:
+    if not grid_match_enabled or not profile_id:
+        return False
+    configured = os.environ.get("BA_INVENTORY_PAGE_SHADOW")
+    if configured is not None:
+        return configured != "0"
+    return profile_id in INVENTORY_PAGE_JOINT_INFERENCE_PROFILES
+
+
+def inventory_page_shadow_authoritative(profile_id: str | None, *, shadow_enabled: bool) -> bool:
+    if not shadow_enabled or profile_id not in INVENTORY_PAGE_JOINT_INFERENCE_PROFILES:
+        return False
+    return os.environ.get("BA_INVENTORY_PAGE_SHADOW_AUTHORITATIVE", "1") != "0"
+
+
+def inventory_page_shadow_matching_config(section_config: dict, profile_id: str | None) -> dict:
+    if not isinstance(section_config, dict):
+        raise TypeError("inventory page shadow requires an inventory section mapping")
+    return _inventory_grid_template_matching_config(section_config, profile_id)
+
+
+def _reconcile_inventory_scroll_overlap(
+    motion_overlap: tuple[int, int, int, bool],
+    before_hashes: list[str],
+    after_hashes: list[str],
+    *,
+    grid_cols: int,
+    grid_rows: int,
+) -> tuple[tuple[int, int, int, bool], bool]:
+    """Use slot identity overlap to recover from a zero-overlap motion peak."""
+    overlap_rows, _moved_rows, _y_offset_px, tail_scroll = motion_overlap
+    if overlap_rows > 0:
+        return motion_overlap, False
+    hash_overlap = _count_row_overlap(before_hashes, after_hashes, grid_cols)
+    if hash_overlap <= 0:
+        return motion_overlap, False
+    return (
+        hash_overlap,
+        max(0, grid_rows - hash_overlap),
+        0,
+        tail_scroll,
+    ), True
+
+
 def _inventory_anchor_scan_order(
     total_slots: int,
     grid_cols: int,
@@ -1455,6 +1565,46 @@ def _inventory_slots_from_gray_band_spaces(
     return rebuilt, row_centers
 
 
+def _inventory_slots_between_gray_band_boundaries(
+    base_slots: list[dict],
+    image_size: tuple[int, int],
+    *,
+    grid_cols: int,
+    grid_rows: int,
+    bands: list[dict],
+) -> tuple[list[dict], list[float]]:
+    """Place rows between explicit upper/lower band boundaries."""
+    if grid_cols <= 0 or grid_rows <= 0 or not base_slots:
+        return list(base_slots), []
+    image_h = image_size[1]
+    boundaries = sorted(float(row["y_center_px"]) for row in bands)
+    if len(boundaries) < grid_rows + 1:
+        return list(base_slots), []
+    row_centers = [
+        (boundaries[row_index] + boundaries[row_index + 1]) / 2.0
+        for row_index in range(grid_rows)
+    ]
+    rebuilt: list[dict] = []
+    for index, slot in enumerate(base_slots):
+        row_index = index // grid_cols
+        if row_index >= len(row_centers):
+            rebuilt.append(dict(slot))
+            continue
+        slot_h = (float(slot["y2"]) - float(slot["y1"])) * image_h
+        center_y = row_centers[row_index]
+        y1 = max(0.0, min(float(image_h), center_y - (slot_h / 2.0)))
+        y2 = max(0.0, min(float(image_h), center_y + (slot_h / 2.0)))
+        if y2 <= y1:
+            y2 = min(float(image_h), y1 + max(1.0, slot_h))
+        rebuilt_slot = dict(slot)
+        rebuilt_slot["y1"] = y1 / max(1, image_h)
+        rebuilt_slot["y2"] = y2 / max(1, image_h)
+        if "cy" in rebuilt_slot:
+            rebuilt_slot["cy"] = center_y / max(1, image_h)
+        rebuilt.append(rebuilt_slot)
+    return rebuilt, row_centers
+
+
 def _inventory_gray_band_layout_slots(
     image: Image.Image,
     base_slots: list[dict],
@@ -1475,7 +1625,18 @@ def _inventory_gray_band_layout_slots(
         count=grid_rows,
         expected_spacing_px=row_step_px,
     )
-    if tail_signature is not None:
+    boundary_sequence = _choose_inventory_gray_band_sequence(
+        bands,
+        count=grid_rows + 1,
+        expected_spacing_px=row_step_px,
+    )
+    use_explicit_boundaries = bool(
+        boundary_sequence is not None
+        and float(boundary_sequence["score"]) >= float(min_score)
+    )
+    if use_explicit_boundaries:
+        sequence = boundary_sequence
+    elif tail_signature is not None:
         sequence = {
             "bands": tail_signature["bands"],
             "score": tail_signature["score"],
@@ -1492,10 +1653,18 @@ def _inventory_gray_band_layout_slots(
             grid_rows=grid_rows,
             row_step_px=row_step_px,
         )
-        if tail_signature is not None
+        if tail_signature is not None and not use_explicit_boundaries
         else None
     )
-    if tail_anchor_layout is not None:
+    if use_explicit_boundaries:
+        slots, row_centers = _inventory_slots_between_gray_band_boundaries(
+            base_slots,
+            image.size,
+            grid_cols=grid_cols,
+            grid_rows=grid_rows,
+            bands=sequence["bands"],
+        )
+    elif tail_anchor_layout is not None:
         slots, row_centers = tail_anchor_layout
     else:
         slots, row_centers = _inventory_slots_from_gray_band_spaces(
@@ -1526,10 +1695,27 @@ def _inventory_gray_band_layout_slots(
         "mean_strength": float(sequence["mean_strength"]),
         "spacing_score": float(sequence["spacing_score"]),
         "candidate_count": len(bands),
+        "explicit_boundary_bands": bool(use_explicit_boundaries),
         "tail_page_detected": tail_signature is not None,
         "tail_signature": public_tail_signature,
         "tail_last_row_top_px": round(float(_inventory_tail_last_row_top_px(grid_rows, image.size[1]) or 0.0), 3) if tail_signature is not None else None,
     }
+
+
+def _inventory_gray_band_centers_stable(
+    previous_layout: dict | None,
+    current_layout: dict | None,
+    row_step_px: int,
+) -> bool:
+    """Return whether two consecutive gray-band layouts represent a settled grid."""
+    if previous_layout is None or current_layout is None or row_step_px <= 0:
+        return False
+    previous = [float(value) for value in previous_layout.get("row_centers_px", [])]
+    current = [float(value) for value in current_layout.get("row_centers_px", [])]
+    if not previous or len(previous) != len(current):
+        return False
+    tolerance_px = max(1.0, float(row_step_px) * 0.01)
+    return max(abs(before - after) for before, after in zip(previous, current)) <= tolerance_px
 
 
 

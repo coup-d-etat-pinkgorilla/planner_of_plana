@@ -43,6 +43,9 @@ near-zero 이동, 불확실한 겹침, 마지막 빈 슬롯은 서로 다른 종
 - 이미 확인한 anchor와 zero-fill보다 강한 새 증거만 기존 항목을 교체합니다.
 - 템플릿, ROI, threshold 변경은 해당 이미지 fixture와 스크롤 회귀 테스트를 함께
   갱신합니다.
+- 사용자 검토에서 확정한 상세 crop은 계정 프로필 루트 아래에 실제 캡처 해상도별로
+  누적합니다. 같은 계정·같은 해상도에서만 다시 후보로 사용하며, 배포 기본 에셋은 항상
+  fallback 후보로 유지합니다. 자동 판정만으로 답지 샘플을 생성하지 않습니다.
 
 `core/scanner.py`에서 이 흐름을 분리할 때는
 [Large Module Change Safety](../gotchas/large-module-change-safety)의 호출자·상태 소유권

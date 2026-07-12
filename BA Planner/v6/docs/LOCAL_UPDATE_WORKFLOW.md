@@ -94,6 +94,15 @@ py -3.11 tools\publish_beta_release.py --version 0.1.0-beta.2
 
 Use this when code, UI, behavior, or packaging changed.
 
+Full compilation performs release completeness checks before succeeding:
+
+- Runtime images and fonts under `core/` or `gui/` must belong to a managed asset root.
+- Every file recorded in `asset_manifest.json` must exist in the asset zip with the same size and SHA256.
+- The app and asset manifest archive names and SHA256 values must match the generated zip files.
+- The app zip must contain the executable and both manifests, including the current asset manifest.
+
+Place new runtime images under `assets/` or `templates/`. If a new broad runtime asset directory is required, add it to `ASSET_ROOTS` in `tools/build_beta_release.py` deliberately.
+
 Build the new release:
 
 ```powershell

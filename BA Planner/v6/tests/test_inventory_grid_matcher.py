@@ -9,8 +9,18 @@ from unittest.mock import patch
 from PIL import Image, ImageDraw
 
 from core.config import TEMPLATE_DIR
-from core.inventory_grid_matcher import DEFAULT_GRID_TEMPLATE, InventoryGridRowAnchorState, _background_for_item, match_inventory_grid_template
+from core.inventory_grid_matcher import (
+    DEFAULT_GRID_TEMPLATE,
+    InventoryGridRowAnchorState,
+    _background_for_item,
+    _background_tier_for_item,
+    _merged_config,
+    _tier_filtered_catalog,
+    match_inventory_grid_template,
+    prewarm_inventory_grid_templates,
+)
 from core.scanner import (
+    Scanner,
     InventoryMotionEstimate,
     _inventory_overlap_rows_from_motion,
     _inventory_scroll_debug_dir,
@@ -20,6 +30,14 @@ from core.scanner import (
     inventory_profile_template_catalog,
     _new_inventory_slot_indices,
     _inventory_gray_band_layout_slots,
+    _inventory_gray_band_centers_stable,
+    _inventory_scan_indices_after_scroll,
+    _inventory_overlap_requires_stop,
+    _inventory_slot_safe_click_point,
+    _reconcile_inventory_scroll_overlap,
+    inventory_page_shadow_enabled,
+    inventory_page_shadow_authoritative,
+    inventory_page_shadow_matching_config,
     _inventory_grid_template_matching_config,
     _inventory_gray_band_scan_region,
     _inventory_tail_empty_slot_detected,
@@ -31,6 +49,218 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class InventoryGridMatcherTests(unittest.TestCase):
+    def test_page_shadow_is_authoritative_by_default_for_promoted_profiles(self) -> None:
+        with patch.dict("core.scanner.os.environ", {}, clear=True):
+            for profile_id in (
+                "presents",
+                "student_elephs",
+                "tactical_bd",
+                "tech_notes",
+                "equipment",
+            ):
+                with self.subTest(profile_id=profile_id):
+                    self.assertTrue(
+                        inventory_page_shadow_authoritative(profile_id, shadow_enabled=True)
+                    )
+            self.assertFalse(
+                inventory_page_shadow_authoritative("ooparts", shadow_enabled=True)
+            )
+            self.assertFalse(
+                inventory_page_shadow_authoritative("presents", shadow_enabled=False)
+            )
+
+    def test_page_shadow_authoritative_mode_has_an_environment_rollback(self) -> None:
+        with patch.dict(
+            "core.scanner.os.environ",
+            {"BA_INVENTORY_PAGE_SHADOW_AUTHORITATIVE": "0"},
+            clear=True,
+        ):
+            self.assertFalse(
+                inventory_page_shadow_authoritative("presents", shadow_enabled=True)
+            )
+
+    def test_page_shadow_prewarm_populates_then_reuses_production_cache(self) -> None:
+        section = json.loads(
+            (ROOT / "regions" / "item_regions.json").read_text(encoding="utf-8-sig")
+        )["item"]
+        config = _inventory_grid_template_matching_config(section, "presents")
+        catalog = inventory_profile_template_catalog("item", "presents")[:1]
+        unique_slot_size = (239, 193)
+
+        first = prewarm_inventory_grid_templates(catalog, config, unique_slot_size)
+        second = prewarm_inventory_grid_templates(catalog, config, unique_slot_size)
+
+        expected_rois = len(config.get("composite_rois") or [None])
+        self.assertEqual(first.template_count, expected_rois)
+        self.assertEqual(first.cache_misses, expected_rois)
+        self.assertEqual(second.template_count, expected_rois)
+        self.assertEqual(second.cache_misses, 0)
+        self.assertEqual(second.cache_hits, expected_rois)
+
+    def test_promoted_profiles_supply_joint_inference_catalog_and_config(self) -> None:
+        item_section = json.loads(
+            (ROOT / "regions" / "item_regions.json").read_text(encoding="utf-8-sig")
+        )["item"]
+        equipment_section = json.loads(
+            (ROOT / "regions" / "equipment_regions.json").read_text(encoding="utf-8-sig")
+        )["equipment"]
+        for source, profile_id, section, slot_size in (
+            ("item", "tactical_bd", item_section, (241, 194)),
+            ("item", "tech_notes", item_section, (242, 194)),
+            ("equipment", "equipment", equipment_section, (243, 194)),
+        ):
+            with self.subTest(profile_id=profile_id):
+                catalog = inventory_profile_template_catalog(source, profile_id)
+                config = inventory_page_shadow_matching_config(section, profile_id)
+                self.assertTrue(catalog)
+                prewarm = prewarm_inventory_grid_templates(catalog[:1], config, slot_size)
+                self.assertGreater(prewarm.template_count, 0)
+
+    def test_page_shadow_matching_config_requires_section_mapping(self) -> None:
+        with self.assertRaises(TypeError):
+            inventory_page_shadow_matching_config("item", "presents")
+        config = inventory_page_shadow_matching_config(
+            {"grid_template": {"icon_crop": {"left": 0.1}}},
+            "presents",
+        )
+        self.assertIsInstance(config, dict)
+
+    def test_page_shadow_defaults_on_for_promoted_profiles_only(self) -> None:
+        with patch.dict("core.scanner.os.environ", {}, clear=True):
+            for profile_id in (
+                "presents",
+                "student_elephs",
+                "tactical_bd",
+                "tech_notes",
+                "equipment",
+            ):
+                with self.subTest(profile_id=profile_id):
+                    self.assertTrue(
+                        inventory_page_shadow_enabled(profile_id, grid_match_enabled=True)
+                    )
+            self.assertFalse(inventory_page_shadow_enabled("ooparts", grid_match_enabled=True))
+            self.assertFalse(inventory_page_shadow_enabled(None, grid_match_enabled=True))
+
+    def test_page_shadow_environment_can_disable_defaults_or_enable_other_profiles(self) -> None:
+        with patch.dict("core.scanner.os.environ", {"BA_INVENTORY_PAGE_SHADOW": "0"}, clear=True):
+            for profile_id in (
+                "presents",
+                "student_elephs",
+                "tactical_bd",
+                "tech_notes",
+                "equipment",
+            ):
+                with self.subTest(profile_id=profile_id):
+                    self.assertFalse(
+                        inventory_page_shadow_enabled(profile_id, grid_match_enabled=True)
+                    )
+        with patch.dict("core.scanner.os.environ", {"BA_INVENTORY_PAGE_SHADOW": "1"}, clear=True):
+            self.assertTrue(inventory_page_shadow_enabled("ooparts", grid_match_enabled=True))
+
+    def test_tail_signature_prevents_no_overlap_stop(self) -> None:
+        self.assertFalse(
+            _inventory_overlap_requires_stop(
+                True,
+                0,
+                tail_page_detected=True,
+                stop_on_no_overlap=True,
+            )
+        )
+        self.assertTrue(
+            _inventory_overlap_requires_stop(
+                True,
+                0,
+                tail_page_detected=False,
+                stop_on_no_overlap=True,
+            )
+        )
+
+    def test_rejected_detail_click_does_not_capture_stale_detail_screen(self) -> None:
+        scanner = object.__new__(Scanner)
+        scanner._debug = lambda _message: None
+        scanner._wait = lambda _seconds: self.fail("wait should not run after a rejected click")
+        scanner._capture = lambda: self.fail("capture should not run after a rejected click")
+        slot = {"x1": 0.2, "x2": 0.3, "y1": 0.2, "y2": 0.3, "cx": 0.25}
+
+        with patch("core.scanner.safe_click", return_value=False):
+            result = scanner._verify_inventory_slot(
+                (0, 0, 2560, 1440),
+                slot,
+                {},
+                {},
+                "equipment",
+                profile_id="equipment",
+            )
+
+        self.assertIsNone(result)
+
+    def test_last_row_detail_click_is_clamped_above_forbidden_zone(self) -> None:
+        point = _inventory_slot_safe_click_point(
+            {"x1": 0.537, "x2": 0.628, "y1": 0.809, "y2": 0.941, "cx": 0.583}
+        )
+
+        self.assertIsNotNone(point)
+        self.assertEqual(point[0], 0.583)
+        self.assertLess(point[1], 0.86)
+        self.assertGreaterEqual(point[1], 0.809)
+
+    def test_tail_page_scans_all_slots_even_when_motion_overlap_is_zero(self) -> None:
+        self.assertEqual(
+            _inventory_scan_indices_after_scroll(25, 5, 5, 0, tail_page_detected=True),
+            set(range(25)),
+        )
+
+    def test_zero_motion_overlap_is_recovered_from_slot_hash_overlap(self) -> None:
+        before = [f"row{row}-col{col}" for row in range(5) for col in range(5)]
+        after = before[20:25] + [f"new{row}-col{col}" for row in range(4) for col in range(5)]
+
+        reconciled, recovered = _reconcile_inventory_scroll_overlap(
+            (0, 5, 0, False),
+            before,
+            after,
+            grid_cols=5,
+            grid_rows=5,
+        )
+
+        self.assertTrue(recovered)
+        self.assertEqual(reconciled, (1, 4, 0, False))
+
+    def test_settle_capture_waits_for_two_consecutive_stable_band_layouts(self) -> None:
+        scanner = object.__new__(Scanner)
+        frames = [Image.new("RGB", (32, 32), color=(value, 0, 0)) for value in range(5)]
+        captures = iter(frames[1:])
+        scanner._wait = lambda _seconds: True
+        scanner._capture = lambda: next(captures)
+        layouts = iter(
+            [
+                {"row_centers_px": [440.0, 642.0]},
+                {"row_centers_px": [443.0, 645.0]},
+                {"row_centers_px": [444.0, 646.0]},
+                {"row_centers_px": [444.5, 646.5]},
+            ]
+        )
+        with patch("core.scanner._inventory_gray_band_layout_slots", side_effect=lambda *_args, **_kwargs: next(layouts)):
+            settled, layout, capture_count = scanner._capture_settled_inventory_scroll_frame(
+                frames[0],
+                [{"x1": 0.1, "y1": 0.1, "x2": 0.2, "y2": 0.2}],
+                grid_cols=1,
+                grid_rows=2,
+                row_step_px=202,
+            )
+
+        self.assertIs(settled, frames[3])
+        self.assertEqual(layout, {"row_centers_px": [444.5, 646.5]})
+        self.assertEqual(capture_count, 3)
+
+    def test_gray_band_centers_require_consecutive_position_stability(self) -> None:
+        baseline = {"row_centers_px": [444.0, 646.0, 848.0, 1050.0, 1252.0]}
+        within_measured_jitter = {"row_centers_px": [443.0, 645.5, 847.5, 1050.0, 1253.0]}
+        still_moving = {"row_centers_px": [439.0, 641.0, 843.0, 1045.0, 1247.0]}
+
+        self.assertTrue(_inventory_gray_band_centers_stable(baseline, within_measured_jitter, 202))
+        self.assertFalse(_inventory_gray_band_centers_stable(baseline, still_moving, 202))
+        self.assertFalse(_inventory_gray_band_centers_stable(baseline, None, 202))
+
     def _render_slot(
         self,
         icon_path: Path,
@@ -189,6 +419,23 @@ class InventoryGridMatcherTests(unittest.TestCase):
 
         self.assertIsNone(result.item_id)
         self.assertIsNone(result.best_item_id)
+
+    def test_tech_notes_map_secret_note_to_t3_strict_tier_branch(self) -> None:
+        section = json.loads((ROOT / "regions" / "item_regions.json").read_text(encoding="utf-8-sig"))["item"]
+        config = _inventory_grid_template_matching_config(section, "tech_notes")
+        catalog = inventory_profile_template_catalog("item", "tech_notes")
+        merged = _merged_config(config)
+
+        filtered = _tier_filtered_catalog(catalog, 3, merged)
+
+        self.assertEqual(
+            3,
+            _background_tier_for_item("Item_Icon_SkillBook_Ultimate_Piece", merged),
+        )
+        self.assertIn(
+            "Item_Icon_SkillBook_Ultimate_Piece",
+            {item_id for item_id, _path in filtered},
+        )
 
     def test_ooparts_workbooks_are_ranked_in_a_separate_branch(self) -> None:
         section = json.loads((ROOT / "regions" / "item_regions.json").read_text(encoding="utf-8-sig"))["item"]
@@ -478,6 +725,26 @@ class InventoryGrayBandLayoutTests(unittest.TestCase):
                     }
                 )
         return slots
+
+    def test_six_bands_use_the_top_band_as_the_first_row_upper_boundary(self) -> None:
+        image_size = (2560, 1440)
+        image = Image.new("RGB", image_size, (30, 30, 30))
+        bands = [
+            {"y_center_px": float(y), "strength": 1.0}
+            for y in [300, 502, 704, 906, 1108, 1310]
+        ]
+        with patch("core.scanner._inventory_detect_gray_bands", return_value=bands):
+            layout = _inventory_gray_band_layout_slots(
+                image,
+                self._synthetic_slots(5, image_size),
+                grid_cols=5,
+                grid_rows=5,
+                row_step_px=202,
+            )
+
+        self.assertIsNotNone(layout)
+        self.assertTrue(layout["explicit_boundary_bands"])
+        self.assertEqual(layout["row_centers_px"], [401.0, 603.0, 805.0, 1007.0, 1209.0])
 
     def test_gray_band_layout_marks_item_tail_signature(self) -> None:
         image_size = (2560, 1440)

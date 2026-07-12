@@ -20,7 +20,10 @@ from core.bug_report import (
     BugReportError,
     BugReportResult,
     build_diagnostic_text,
-    build_report_body,
+    build_diagnostic_summary,
+    build_summary_report_body,
+    collect_recent_log_diagnostics,
+    redact_sensitive_text,
 )
 
 
@@ -30,16 +33,27 @@ class _SubmitSignals(QObject):
 
 
 class _SubmitTask(QRunnable):
-    def __init__(self, client: BugReportClient, title: str, body: str) -> None:
+    def __init__(
+        self,
+        client: BugReportClient,
+        title: str,
+        body: str,
+        diagnostic_records: tuple[str, ...],
+    ) -> None:
         super().__init__()
         self.client = client
         self.title = title
         self.body = body
+        self.diagnostic_records = diagnostic_records
         self.signals = _SubmitSignals()
 
     def run(self) -> None:
         try:
-            result = self.client.submit(self.title, self.body)
+            result = self.client.submit(
+                self.title,
+                self.body,
+                diagnostic_records=self.diagnostic_records,
+            )
         except Exception as exc:
             self.signals.failed.emit(exc)
         else:
@@ -79,9 +93,19 @@ class BugReportDialog(QDialog):
         self.description_input.setPlaceholderText("발생한 문제와 재현 절차를 자세히 적어 주세요")
         form.addRow("설명", self.description_input)
 
+        log_diagnostics = collect_recent_log_diagnostics()
+        recent_sections = []
+        if recent_error:
+            recent_sections.append(f"--- current error ---\n{recent_error}")
+        if log_diagnostics.relevant_records != "(none)":
+            recent_sections.append(log_diagnostics.relevant_records)
         self.diagnostic_input = QPlainTextEdit()
         self.diagnostic_input.setPlainText(
-            build_diagnostic_text(profile_name=profile_name, recent_error=recent_error)
+            build_diagnostic_text(
+                profile_name=profile_name,
+                recent_error="\n\n".join(recent_sections) or "(none)",
+                scan_resolution=log_diagnostics.scan_resolution,
+            )
         )
         self.diagnostic_input.setPlaceholderText("함께 보낼 진단정보")
         form.addRow("진단정보", self.diagnostic_input)
@@ -113,13 +137,19 @@ class BugReportDialog(QDialog):
             self.description_input.setFocus()
             return
 
-        body = build_report_body(
-            description,
+        diagnostic_text = redact_sensitive_text(
             self.diagnostic_input.toPlainText(),
             profile_name=self._profile_name,
         )
+        summary = build_diagnostic_summary(diagnostic_text)
+        body = build_summary_report_body(
+            description,
+            summary,
+            profile_name=self._profile_name,
+        )
         self._set_submitting(True)
-        task = _SubmitTask(self._client, title, body)
+        diagnostic_records = (diagnostic_text,) if diagnostic_text.strip() else ()
+        task = _SubmitTask(self._client, title, body, diagnostic_records)
         task.signals.succeeded.connect(self._on_success)
         task.signals.failed.connect(self._on_failure)
         self._task = task
@@ -141,7 +171,10 @@ class BugReportDialog(QDialog):
         message.setWindowTitle("문제 신고 완료")
         message.setIcon(QMessageBox.Icon.Information)
         message.setText(f"문제 신고 {number}가 등록되었습니다.")
-        message.setInformativeText("생성된 페이지를 브라우저에서 열 수 있습니다.")
+        informative = "생성된 페이지를 브라우저에서 열 수 있습니다."
+        if not result.diagnostics_uploaded:
+            informative += "\n\n진단 원문 댓글 등록에는 실패했습니다. Issue 본문의 경고를 확인해 주세요."
+        message.setInformativeText(informative)
         message.setStandardButtons(QMessageBox.StandardButton.Open | QMessageBox.StandardButton.Ok)
         message.button(QMessageBox.StandardButton.Open).setText("브라우저에서 열기")
         if message.exec() == QMessageBox.StandardButton.Open and result.issue_url:

@@ -57,6 +57,8 @@ describe("bug report worker", () => {
 		expect(response.status).toBe(201);
 		expect(result.issueUrl).toBe("https://github.com/example/issues/42");
 		expect(result.issueNumber).toBe(42);
+		expect(result.diagnosticsUploaded).toBe(true);
+		expect(result.warning).toBeNull();
 		expect(result.requestId).toEqual(expect.any(String));
 		expect(response.headers.get("X-Request-ID")).toBe(result.requestId);
 		expect(githubFetch).toHaveBeenCalledOnce();
@@ -68,6 +70,70 @@ describe("bug report worker", () => {
 			title: "Test issue",
 			body: "Details",
 		});
+	});
+
+	it("adds complete diagnostic records as an issue comment", async () => {
+		const githubFetch = vi.spyOn(globalThis, "fetch").mockImplementation(
+			async (input) => {
+				const url = String(input);
+				if (url.endsWith("/comments")) {
+					return Response.json({ id: 99 }, { status: 201 });
+				}
+				return Response.json(
+					{ html_url: "https://github.com/example/issues/42", number: 42 },
+					{ status: 201 },
+				);
+			},
+		);
+		const completeRecord =
+			"2026-07-12 ERROR complete failure\nTraceback line\nRuntimeError: detail";
+		const response = await dispatch(
+			reportRequest({
+				title: "Test issue",
+				body: "Compact summary",
+				diagnosticRecords: [completeRecord],
+			}),
+		);
+		const result = (await response.json()) as Record<string, unknown>;
+
+		expect(response.status).toBe(201);
+		expect(result.diagnosticsUploaded).toBe(true);
+		expect(githubFetch).toHaveBeenCalledTimes(2);
+		const [commentUrl, commentInit] = githubFetch.mock.calls[1];
+		expect(String(commentUrl)).toContain("/issues/42/comments");
+		const commentPayload = JSON.parse(String(commentInit?.body));
+		expect(commentPayload.body).toContain(completeRecord.replaceAll("\n", "\n    "));
+	});
+
+	it("marks the issue when diagnostic comment upload fails", async () => {
+		const githubFetch = vi
+			.spyOn(globalThis, "fetch")
+			.mockResolvedValueOnce(
+				Response.json(
+					{ html_url: "https://github.com/example/issues/42", number: 42 },
+					{ status: 201 },
+				),
+			)
+			.mockResolvedValueOnce(Response.json({ message: "failed" }, { status: 500 }))
+			.mockResolvedValueOnce(Response.json({}, { status: 200 }));
+		const response = await dispatch(
+			reportRequest({
+				title: "Test issue",
+				body: "Compact summary",
+				diagnosticRecords: ["complete raw record"],
+			}),
+		);
+		const result = (await response.json()) as Record<string, unknown>;
+
+		expect(response.status).toBe(201);
+		expect(result.diagnosticsUploaded).toBe(false);
+		expect(result.warning).toBe(
+			"Complete diagnostic records could not be attached",
+		);
+		expect(githubFetch).toHaveBeenCalledTimes(3);
+		const [, patchInit] = githubFetch.mock.calls[2];
+		expect(patchInit?.method).toBe("PATCH");
+		expect(JSON.parse(String(patchInit?.body)).body).toContain("⚠️");
 	});
 
 	it("rejects invalid JSON", async () => {
@@ -87,6 +153,8 @@ describe("bug report worker", () => {
 		{ title: "", body: "Details" },
 		{ title: "Title", body: "   " },
 		{ title: "Title", body: "Details", extra: true },
+		{ title: "Title", body: "Details", diagnosticRecords: [""] },
+		{ title: "Title", body: "Details", diagnosticRecords: [123] },
 		{ title: "x".repeat(201), body: "Details" },
 		{ title: "Title", body: "x".repeat(20_001) },
 	])("rejects an invalid payload", async (payload) => {

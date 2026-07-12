@@ -67,7 +67,11 @@ SHA-256 파생 키마다 분리된 SQLite-backed Durable Object가 최근 요청
 Qt 설정 탭의 문제 신고 다이얼로그는 입력과 비동기 작업 상태만 소유합니다. 진단정보
 구성과 민감정보 제거, HTTP 오류 계약은 `core/bug_report.py`를 통과하며, Worker URL은
 환경 변수로 production과 staging을 선택합니다. 실제 GitHub 토큰과 rate-limit 상태는
-데스크톱 프로세스로 가져오지 않습니다. [@bug-report-dialog] [@bug-report-client]
+데스크톱 프로세스로 가져오지 않습니다. 신고 진단정보는 최신 로그의 완전한 오류·fallback
+레코드와 실제 스캔 해상도만 포함하며, 오류를 요청 한도에 맞춰 자동 절단하지 않습니다.
+클라이언트는 결정적 집계 요약과 무손실 원문을 분리하고, Worker는 요약을 Issue 본문,
+원문을 Issue 댓글에 기록합니다. 댓글 등록 실패는 Issue와 앱 응답 양쪽에 명시합니다.
+[@bug-report-dialog] [@bug-report-client]
 
 ## 리팩토링 기준
 

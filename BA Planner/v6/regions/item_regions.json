@@ -303,6 +303,12 @@
           "mode": "background_tier",
           "strict": true
         },
+        "background_rules": [
+          {
+            "contains": "Item_Icon_SkillBook_Ultimate_Piece",
+            "background": "icons/temp/square_purple.png"
+          }
+        ],
         "tier_hint": {
           "enabled": true,
           "reference_width": 234,

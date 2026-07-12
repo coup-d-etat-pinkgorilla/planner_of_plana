@@ -125,6 +125,7 @@ from core.tactical_screenshot import (
     tactical_screenshot_date_from_path,
 )
 from gui.tactic_assist_qt import TacticAssistWindow
+from gui.triangle_texture import TriangleTextureConfig, TriangleTextureWidget, paint_triangle_texture
 from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QParallelAnimationGroup, QPropertyAnimation, QRect, QRectF, QRunnable, QSize, Qt, QtMsgType, QThreadPool, QTimer, Signal, qInstallMessageHandler
 from PySide6.QtGui import QColor, QCursor, QFont, QFontDatabase, QFontMetrics, QIcon, QImage, QIntValidator, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRegion, QValidator
 from PySide6.QtWidgets import (
@@ -506,6 +507,7 @@ from gui.student_filters import (
     get_student_value,
     get_student_values,
     matches_student_filters,
+    student_growth_sort_key,
     summarize_filters,
 )
 from gui.parallelogram_button import (
@@ -2211,6 +2213,32 @@ def _plan_resource_display_name(item_id: str | None, fallback: str) -> str:
         return "Favorite Gift Selection"
     display_name = inventory_item_display_name(item_id) if item_id else None
     return str(display_name or fallback)
+
+
+def _equipment_resource_display_name(item_id: str | None, name: str) -> str:
+    """Add an explicit tier to equipment names used in requirement views."""
+    tier = _tier_from_item_id_or_name(item_id, name)
+    if tier <= 0 or re.search(r"\(T\d+\)$", name):
+        return name
+    return f"{name} (T{tier})"
+
+
+def _max_affordable_student_count(
+    available_exp: int,
+    student_exp_costs: list[int],
+    full_student_exp_cost: int,
+) -> int:
+    """Return the maximum count when cheaper current-state upgrades are used first."""
+    remaining = max(0, int(available_exp))
+    count = 0
+    for cost in sorted(value for value in student_exp_costs if value > 0):
+        if cost > remaining:
+            break
+        remaining -= cost
+        count += 1
+    if full_student_exp_cost > 0:
+        count += remaining // full_student_exp_cost
+    return count
 
 
 def load_latest_resource_snapshot() -> dict[str, int]:

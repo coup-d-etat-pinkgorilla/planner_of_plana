@@ -12,6 +12,13 @@ WEAPON_STATE_LABELS: dict[str, str] = {
     "no_weapon_system": "없음",
 }
 
+
+def student_growth_sort_key(student: object) -> tuple[int, int]:
+    """Return owned growth rank: student stars, then UE stars after 5-star."""
+    star = int(getattr(student, "star", 0) or 0)
+    weapon_star = int(getattr(student, "weapon_star", 0) or 0) if star >= 5 else 0
+    return star, weapon_star
+
 FILTER_FIELD_ORDER: tuple[str, ...] = (
     "student_star",
     "weapon_state",

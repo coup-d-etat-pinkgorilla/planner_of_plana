@@ -8,6 +8,48 @@ globals().update({name: value for name, value in vars(_scanner_shared).items() i
 
 
 class InventoryScannerComponent:
+    def _capture_settled_inventory_scroll_frame(
+        self,
+        initial_img: Image.Image,
+        slots: list[dict],
+        *,
+        grid_cols: int,
+        grid_rows: int,
+        row_step_px: int,
+    ) -> tuple[Image.Image | None, dict | None, int]:
+        """Capture until gray-band row centers are stable across consecutive frames."""
+        previous_img = initial_img
+        previous_layout = _inventory_gray_band_layout_slots(
+            previous_img,
+            slots,
+            grid_cols=grid_cols,
+            grid_rows=grid_rows,
+            row_step_px=row_step_px,
+        )
+        stable_comparisons = 0
+        for capture_index in range(1, INVENTORY_SCROLL_STABLE_MAX_CAPTURES + 1):
+            if not self._wait(INVENTORY_SCROLL_STABLE_FRAME_WAIT):
+                return None, None, capture_index
+            current_img = self._capture()
+            if current_img is None:
+                return None, None, capture_index
+            current_layout = _inventory_gray_band_layout_slots(
+                current_img,
+                slots,
+                grid_cols=grid_cols,
+                grid_rows=grid_rows,
+                row_step_px=row_step_px,
+            )
+            if _inventory_gray_band_centers_stable(previous_layout, current_layout, row_step_px):
+                stable_comparisons += 1
+            else:
+                stable_comparisons = 0
+            if stable_comparisons >= INVENTORY_SCROLL_STABLE_REQUIRED_COMPARISONS:
+                return current_img, current_layout, capture_index
+            previous_img = current_img
+            previous_layout = current_layout
+        return None, previous_layout, INVENTORY_SCROLL_STABLE_MAX_CAPTURES
+
     def _inventory_filter_title_score(self, img: Optional[Image.Image]) -> float | None:
         if img is None or not INVENTORY_FILTER_TITLE_TEMPLATE.exists():
             return None
@@ -144,12 +186,11 @@ class InventoryScannerComponent:
             if not self._wait(poll):
                 return False
         self.log(
-            "  equipment filter menu open check inconclusive "
+            "  equipment filter menu open check failed "
             f"title_score={'none' if last_title_score is None else f'{last_title_score:.3f}'} "
-            f"sort_score={'none' if last_sort_score is None else f'{last_sort_score:.3f}'} "
-            "-> continuing with equipment-only sort verification"
+            f"sort_score={'none' if last_sort_score is None else f'{last_sort_score:.3f}'}"
         )
-        return True
+        return False
     def _click_region_capture_and_wait_for_reference(
         self,
         click_name: str,
@@ -562,8 +603,16 @@ class InventoryScannerComponent:
                 f"slot_index={slot_index}"
             )
         else:
-            click_ry = slot["y1"] + (slot["y2"] - slot["y1"]) * 0.4
-            safe_click(rect, slot["cx"], click_ry, f"{source}_slot")
+            click_point = _inventory_slot_safe_click_point(slot)
+            if click_point is None:
+                self._debug("    verify failed: slot has no allowed click point")
+                return None
+            click_rx, click_ry = click_point
+            if not safe_click(rect, click_rx, click_ry, f"{source}_slot"):
+                self._debug(
+                    f"    verify failed: slot click rejected at ({click_rx:.3f},{click_ry:.3f})"
+                )
+                return None
         if not self._wait(DELAY_AFTER_CLICK):
             return None
 
@@ -693,35 +742,21 @@ class InventoryScannerComponent:
         if not profile_id or self._inventory_detail_override_dir is None:
             return base_catalog
 
-        override_base = self._inventory_detail_override_dir / profile_id
-        if not override_base.exists():
-            return base_catalog
-
-        override_by_id: dict[str, str] = {}
-        for png in sorted(override_base.glob("*.png")):
-            override_by_id[png.stem] = str(png)
-        if not override_by_id:
-            return base_catalog
-
-        catalog: list[tuple[str, str]] = []
-        used: set[str] = set()
-        for item_id, path in base_catalog:
-            if item_id.startswith("Equipment_Icon_WeaponExpGrowth"):
-                catalog.append((item_id, path))
-                used.add(item_id)
-                continue
-            override_path = override_by_id.get(item_id)
-            if override_path:
-                catalog.append((item_id, override_path))
-                used.add(item_id)
-            else:
-                catalog.append((item_id, path))
-        for item_id, path in override_by_id.items():
-            if item_id.startswith("Equipment_Icon_WeaponExpGrowth"):
-                continue
-            if item_id not in used:
-                catalog.append((item_id, path))
-        return catalog
+        samples = resolution_sample_catalog(
+            self._inventory_detail_override_dir,
+            self._inventory_capture_resolution,
+            profile_id,
+        )
+        # Compatibility fallback for confirmed templates saved before samples
+        # were separated by capture resolution.
+        legacy_base = self._inventory_detail_override_dir / profile_id
+        for png in sorted(legacy_base.glob("*.png")):
+            samples.setdefault(png.stem, [str(png)])
+        return merge_answer_samples(
+            base_catalog,
+            samples,
+            excluded_prefixes=("Equipment_Icon_WeaponExpGrowth",),
+        )
     def _inventory_detail_name_template_catalog_for_scan(
         self,
         profile_id: str | None,
@@ -730,24 +765,16 @@ class InventoryScannerComponent:
         if not profile_id or self._inventory_detail_override_dir is None:
             return base_catalog
 
-        override_base = self._inventory_detail_override_dir.parent / "inventory_detail_names" / profile_id
-        if not override_base.exists():
-            return base_catalog
-
-        override_by_id = {png.stem: str(png) for png in sorted(override_base.glob("*.png"))}
-        if not override_by_id:
-            return base_catalog
-
-        catalog: list[tuple[str, str]] = []
-        used: set[str] = set()
-        for item_id, path in base_catalog:
-            override_path = override_by_id.get(item_id)
-            catalog.append((item_id, override_path or path))
-            used.add(item_id)
-        for item_id, path in override_by_id.items():
-            if item_id not in used:
-                catalog.append((item_id, path))
-        return catalog
+        name_root = self._inventory_detail_override_dir.parent / "inventory_detail_names"
+        samples = resolution_sample_catalog(
+            name_root,
+            self._inventory_capture_resolution,
+            profile_id,
+        )
+        legacy_base = name_root / profile_id
+        for png in sorted(legacy_base.glob("*.png")):
+            samples.setdefault(png.stem, [str(png)])
+        return merge_answer_samples(base_catalog, samples)
     def _match_inventory_detail_name_crop(
         self,
         crop: Image.Image | None,
@@ -759,17 +786,14 @@ class InventoryScannerComponent:
         if not catalog:
             return None, 0.0
 
-        best_item_id: str | None = None
-        best_score = 0.0
-        second_best = 0.0
+        scores_by_id: dict[str, float] = {}
         for item_id, path in catalog:
             score = match_score_textonly(crop, path)
-            if score > best_score:
-                second_best = best_score
-                best_score = score
-                best_item_id = item_id
-            elif score > second_best:
-                second_best = score
+            scores_by_id[item_id] = max(scores_by_id.get(item_id, 0.0), score)
+
+        ranked = sorted(scores_by_id.items(), key=lambda row: row[1], reverse=True)
+        best_item_id, best_score = ranked[0] if ranked else (None, 0.0)
+        second_best = ranked[1][1] if len(ranked) > 1 else 0.0
 
         if best_score < 0.72 or (best_score - second_best) < 0.02:
             return None, best_score
@@ -785,31 +809,32 @@ class InventoryScannerComponent:
         catalog = self._inventory_detail_template_catalog_for_scan(profile_id)
         if not catalog:
             return None, 0.0
-        name_catalog = dict(self._inventory_detail_name_template_catalog_for_scan(profile_id))
+        name_catalog: dict[str, list[str]] = {}
+        for item_id, path in self._inventory_detail_name_template_catalog_for_scan(profile_id):
+            name_catalog.setdefault(item_id, []).append(path)
 
-        best_item_id: str | None = None
-        best_score = 0.0
-        second_best = 0.0
+        scores_by_id: dict[str, float] = {}
         family_top_scores: dict[str, list[tuple[str, float]]] = {}
         for item_id, path in catalog:
             icon_score = match_score_resized_raw(crop, path)
-            name_path = name_catalog.get(item_id)
-            name_score = match_score_textonly(name_crop, name_path) if name_crop is not None and name_path else 0.0
+            name_score = 0.0
+            if name_crop is not None:
+                for name_path in name_catalog.get(item_id, ()):
+                    name_score = max(name_score, match_score_textonly(name_crop, name_path))
             score = _combine_inventory_detail_scores(icon_score, name_score)
-            if score > best_score:
-                second_best = best_score
-                best_score = score
-                best_item_id = item_id
-            elif score > second_best:
-                second_best = score
+            scores_by_id[item_id] = max(scores_by_id.get(item_id, 0.0), score)
 
+        ranked = sorted(scores_by_id.items(), key=lambda row: row[1], reverse=True)
+        best_item_id, best_score = ranked[0] if ranked else (None, 0.0)
+        second_best = ranked[1][1] if len(ranked) > 1 else 0.0
+        for item_id, score in scores_by_id.items():
             family_key = _inventory_detail_strict_family(item_id)
             if family_key is not None:
                 top_scores = family_top_scores.setdefault(family_key, [])
                 top_scores.append((item_id, score))
-                top_scores.sort(key=lambda row: row[1], reverse=True)
-                if len(top_scores) > 4:
-                    del top_scores[4:]
+        for top_scores in family_top_scores.values():
+            top_scores.sort(key=lambda row: row[1], reverse=True)
+            del top_scores[4:]
 
         if best_score < 0.88 or (best_score - second_best) < 0.015:
             return None, best_score
@@ -1043,6 +1068,23 @@ class InventoryScannerComponent:
             after_img = self._capture()
             if after_img is None:
                 return scroll_ok, None, next_amount, 0, before_y_offset_px
+            grid_rows = max(1, (len(slots) + grid_cols - 1) // max(1, grid_cols))
+            row_step_px = _slot_row_step_px(before_slots, after_img.size, grid_cols)
+            settled_img, settled_gray_layout, settle_captures = self._capture_settled_inventory_scroll_frame(
+                after_img,
+                slots,
+                grid_cols=grid_cols,
+                grid_rows=grid_rows,
+                row_step_px=row_step_px,
+            )
+            if settled_img is None:
+                self.log(
+                    f"  drag try {idx}: grid did not settle after {settle_captures} captures "
+                    "-> stopping without motion estimation"
+                )
+                return False, None, next_amount, 0, before_y_offset_px
+            after_img = settled_img
+            self.log(f"  drag try {idx}: grid settled after {settle_captures} verification captures")
             after = crop_region(after_img, before_grid_r)
             after_grid_hash = _img_hash(after)
             after_page = self._capture_inventory_page(
@@ -1064,7 +1106,6 @@ class InventoryScannerComponent:
                 f"slot_sequence_changed={slot_sequence_changed})"
             )
             if moved:
-                grid_rows = max(1, (len(slots) + grid_cols - 1) // max(1, grid_cols))
                 base_row_step_px = _slot_row_step_px(before_slots, after_img.size, grid_cols)
                 calibrated_row_step_px = getattr(self, "_inventory_motion_row_step_px", None)
                 row_step_px = base_row_step_px
@@ -1185,7 +1226,19 @@ class InventoryScannerComponent:
                 tail_scroll = False
                 y_offset_refinement = None
                 if motion_overlap is not None:
+                    motion_overlap, hash_overlap_recovered = _reconcile_inventory_scroll_overlap(
+                        motion_overlap,
+                        before_hashes,
+                        after_hashes,
+                        grid_cols=grid_cols,
+                        grid_rows=grid_rows,
+                    )
                     overlap_rows, moved_rows, y_offset_delta_px, tail_scroll = motion_overlap
+                    if hash_overlap_recovered:
+                        self.log(
+                            f"  drag try {idx}: motion overlap recovered by slot hashes "
+                            f"moved_rows={moved_rows} overlap_rows={overlap_rows}"
+                        )
                     digit_vote = None
                     if (
                         before_img is not None
@@ -1424,7 +1477,7 @@ class InventoryScannerComponent:
                 final_slots = _shift_slots_y(slots, y_offset_px, after_img.size) if y_offset_px else slots
                 final_gray_band_layout = None
                 if row_step_px > 0:
-                    gray_layout = _inventory_gray_band_layout_slots(
+                    gray_layout = settled_gray_layout or _inventory_gray_band_layout_slots(
                         after_img,
                         slots,
                         grid_cols=grid_cols,
@@ -1808,11 +1861,28 @@ class InventoryScannerComponent:
         grid_anchor_cross_check_min_score = _env_float("BA_ITEM_GRID_ANCHOR_CROSS_CHECK_MIN_SCORE", 0.78)
         grid_anchor_cross_check_margin = _env_float("BA_ITEM_GRID_ANCHOR_CROSS_CHECK_MARGIN", 0.04)
         grid_direct_icon_match_enabled = os.environ.get(INVENTORY_DIRECT_ICON_MATCH_ENV, "0") != "0"
+        page_shadow_enabled = inventory_page_shadow_enabled(
+            active_profile_id,
+            grid_match_enabled=grid_match_enabled,
+        )
+        page_shadow_authoritative = inventory_page_shadow_authoritative(
+            active_profile_id,
+            shadow_enabled=page_shadow_enabled,
+        )
+        if page_shadow_authoritative:
+            grid_anchor_match_enabled = False
+            grid_order_hint_enabled = False
+            grid_row_anchor_hint_enabled = False
+        page_shadow_workers = max(1, _env_nonnegative_int("BA_INVENTORY_PAGE_SHADOW_WORKERS", 4))
+        page_shadow_top_k = max(1, _env_nonnegative_int("BA_INVENTORY_PAGE_SHADOW_TOP_K", 4))
+        page_shadow_min_score = _env_float("BA_INVENTORY_PAGE_SHADOW_MIN_SCORE", 0.55)
         self._debug(
             f"  item grid matcher: enabled={grid_match_enabled} "
             f"anchor_match={grid_anchor_match_enabled} "
             f"order_hint={grid_order_hint_enabled} row_anchor={grid_row_anchor_hint_enabled} "
-            f"direct_icon={grid_direct_icon_match_enabled}"
+            f"direct_icon={grid_direct_icon_match_enabled} "
+            f"page_shadow={page_shadow_enabled} "
+            f"shadow_authoritative={page_shadow_authoritative}"
         )
         def _next_profile_expected_item() -> tuple[int | None, str | None]:
             if active_profile is None or not profile_ordered_item_ids:
@@ -1890,6 +1960,7 @@ class InventoryScannerComponent:
         carried_grid_anchor_profile_indices: dict[int, int] = {}
         profile_scan_incomplete = False
         next_page_tail_detected = False
+        shadow_prewarmed_keys: set[tuple[str, int, int]] = set()
 
         for scroll_i in range(MAX_SCROLLS):
             if self._stop_requested():
@@ -1983,6 +2054,67 @@ class InventoryScannerComponent:
                 if current_scan_slot_indices is None or idx in current_scan_slot_indices
             ]
 
+            page_shadow_result = None
+            page_shadow_config = None
+            shadow_assignments_by_slot = {}
+            page_actual_item_ids: dict[int, str] = {}
+            if page_shadow_enabled and active_profile is not None and profile_ordered_item_ids:
+                try:
+                    shadow_catalog = inventory_profile_template_catalog(source, active_profile.profile_id)
+                    page_shadow_config = inventory_page_shadow_matching_config(r_sec, active_profile.profile_id)
+                    if active_slots:
+                        shadow_slot_size = crop_region(img, active_slots[0]).size
+                        prewarm_key = (active_profile.profile_id, *shadow_slot_size)
+                        if prewarm_key not in shadow_prewarmed_keys:
+                            prewarm_result = prewarm_inventory_grid_templates(
+                                shadow_catalog,
+                                page_shadow_config,
+                                shadow_slot_size,
+                            )
+                            shadow_prewarmed_keys.add(prewarm_key)
+                            self.log(
+                                f"  inventory page shadow prewarm: profile={active_profile.profile_id} "
+                                f"slot_size={shadow_slot_size[0]}x{shadow_slot_size[1]} "
+                                f"templates={prewarm_result.template_count} "
+                                f"hits={prewarm_result.cache_hits} misses={prewarm_result.cache_misses} "
+                                f"elapsed_ms={prewarm_result.elapsed_ms:.1f}"
+                            )
+                    page_shadow_result = evaluate_inventory_page_shadow(
+                        img,
+                        active_slots[:total_page_slots],
+                        shadow_catalog,
+                        page_shadow_config,
+                        profile_ordered_item_ids,
+                        scan_indices=current_scan_slot_indices,
+                        top_k=page_shadow_top_k,
+                        workers=page_shadow_workers,
+                        min_score=page_shadow_min_score,
+                    )
+                    shadow_resolved = sum(
+                        1 for assignment in page_shadow_result.assignments if assignment.item_id
+                    )
+                    self.log(
+                        f"  inventory page shadow prepared: profile={active_profile.profile_id} "
+                        f"page={scroll_i + 1} "
+                        f"slots={len(page_shadow_result.assignments)} "
+                        f"resolved={shadow_resolved} workers={page_shadow_result.worker_count} "
+                        f"elapsed_ms={page_shadow_result.elapsed_ms:.1f}"
+                    )
+                    shadow_assignments_by_slot = {
+                        assignment.slot_index: assignment
+                        for assignment in page_shadow_result.assignments
+                    }
+                except Exception:
+                    _log.exception("inventory page shadow failed")
+                    self.log(f"  inventory page shadow failed: page={scroll_i + 1}")
+            if page_shadow_authoritative and page_shadow_result is None:
+                profile_scan_incomplete = active_profile is not None
+                self.log(
+                    f"  inventory shadow authoritative unavailable: "
+                    f"profile={active_profile_id or '-'} page={scroll_i + 1} -> stopping"
+                )
+                break
+
             processed_slot_indices: set[int] = set()
             for slot_idx in slot_scan_order:
                 has_unprocessed_prior_slot = any(
@@ -2021,12 +2153,24 @@ class InventoryScannerComponent:
                         )
                         continue
 
+                shadow_assignment = shadow_assignments_by_slot.get(slot_idx)
+                if page_shadow_authoritative and (
+                    shadow_assignment is None or shadow_assignment.item_id is None
+                ):
+                    self._debug(
+                        f"    shadow authoritative unresolved skip: slot={slot_idx} page={scroll_i + 1}"
+                    )
+                    continue
+
                 icon_crop = crop_region(img, _slot_icon_region(slot))
-                icon_template_item_id, icon_template_score = self._match_inventory_icon(
-                    icon_crop,
-                    source,
-                    active_profile.profile_id if active_profile is not None else None,
-                )
+                if page_shadow_authoritative:
+                    icon_template_item_id, icon_template_score = None, 0.0
+                else:
+                    icon_template_item_id, icon_template_score = self._match_inventory_icon(
+                        icon_crop,
+                        source,
+                        active_profile.profile_id if active_profile is not None else None,
+                    )
                 icon_template_matched = icon_template_item_id is not None
                 grid_template_item_id: str | None = None
                 grid_template_score = 0.0
@@ -2113,7 +2257,7 @@ class InventoryScannerComponent:
                                 color_filter_mode=slot_count_color_filter_mode,
                             )
                             slot_count_y_offset_hint = debug_count_match.y_offset_px
-                    grid_template_config = _inventory_grid_template_matching_config(
+                    grid_template_config = page_shadow_config or _inventory_grid_template_matching_config(
                         r_sec,
                         active_profile.profile_id if active_profile is not None else None,
                     )
@@ -2146,18 +2290,28 @@ class InventoryScannerComponent:
                             total_slots=len(slots),
                             profile_id=active_profile.profile_id if active_profile is not None else None,
                         )
-                    grid_catalog = inventory_profile_template_catalog(
-                        source,
-                        active_profile.profile_id if active_profile is not None else None,
-                    )
-                    grid_match = match_inventory_grid_template(
-                        slot_crop,
-                        grid_catalog,
-                        grid_template_config,
-                        row_anchor_state=grid_row_anchor_state,
-                        slot_index=slot_idx,
-                        ordered_item_ids=profile_ordered_item_ids,
-                    )
+                    if page_shadow_authoritative:
+                        grid_match = InventoryGridMatchResult(
+                            item_id=shadow_assignment.item_id,
+                            best_item_id=shadow_assignment.item_id,
+                            score=float(shadow_assignment.score),
+                            margin=1.0,
+                            candidate_count=1,
+                        )
+                        grid_catalog = []
+                    else:
+                        grid_catalog = inventory_profile_template_catalog(
+                            source,
+                            active_profile.profile_id if active_profile is not None else None,
+                        )
+                        grid_match = match_inventory_grid_template(
+                            slot_crop,
+                            grid_catalog,
+                            grid_template_config,
+                            row_anchor_state=grid_row_anchor_state,
+                            slot_index=slot_idx,
+                            ordered_item_ids=profile_ordered_item_ids,
+                        )
                     grid_row_anchor_candidate_count = grid_match.row_anchor_candidate_count
                     grid_best_item_id = grid_match.best_item_id or grid_match.item_id
                     grid_candidate_item_id = grid_match.item_id
@@ -2301,9 +2455,9 @@ class InventoryScannerComponent:
                             slot_count_y_offset_hint = count_match.y_offset_px
                         if count_match is not None and count_match.value is not None:
                             gate_reasons: list[str] = []
-                            if grid_match.score < grid_match_min_score:
+                            if not page_shadow_authoritative and grid_match.score < grid_match_min_score:
                                 gate_reasons.append(f"score<{grid_match_min_score:.2f}")
-                            if grid_match.margin < grid_match_min_margin:
+                            if not page_shadow_authoritative and grid_match.margin < grid_match_min_margin:
                                 gate_reasons.append(f"margin<{grid_match_min_margin:.3f}")
                             if count_match.confidence < grid_fast_min_count_confidence:
                                 gate_reasons.append(f"count_conf<{grid_fast_min_count_confidence:.2f}")
@@ -2319,9 +2473,12 @@ class InventoryScannerComponent:
                                 and order_hint_visual_gate_ok
                                 and count_match.confidence >= grid_order_hint_min_count_confidence
                             )
-                            visual_gate_ok = (
-                                grid_match.score >= grid_match_min_score
-                                and grid_match.margin >= grid_match_min_margin
+                            visual_gate_ok = bool(
+                                page_shadow_authoritative
+                                or (
+                                    grid_match.score >= grid_match_min_score
+                                    and grid_match.margin >= grid_match_min_margin
+                                )
                             )
                             relaxed_count_accepted = bool(
                                 gate_reasons
@@ -2388,7 +2545,8 @@ class InventoryScannerComponent:
                                     else (", relaxed_count_conf" if relaxed_count_accepted else "")
                                 )
                                 self.log(
-                                    f"    grid template matched: {grid_template_item_id} "
+                                    f"    {'shadow authoritative' if page_shadow_authoritative else 'grid template'} matched: "
+                                    f"{grid_template_item_id} "
                                     f"x{count_match.value} "
                                     f"(score={grid_match.score:.2f}, "
                                     f"margin={grid_match.margin:.3f}, "
@@ -2447,6 +2605,17 @@ class InventoryScannerComponent:
                             f"(score={grid_template_score:.2f}, "
                             f"count_conf={grid_count_confidence:.2f})"
                         )
+                if verified is not None and page_shadow_authoritative and shadow_assignment.item_id:
+                    verified = InventoryVerification(
+                        name=verified.name,
+                        count=verified.count,
+                        item_id=shadow_assignment.item_id,
+                        match_score=float(shadow_assignment.score),
+                        detail_crop=verified.detail_crop,
+                        detail_name_crop=verified.detail_name_crop,
+                    )
+                    grid_template_item_id = shadow_assignment.item_id
+                    grid_template_score = float(shadow_assignment.score)
                 if not verified:
                     continue
                 if grid_template_matched:
@@ -2547,7 +2716,9 @@ class InventoryScannerComponent:
                     continue
 
                 icon_cache[slot_snap.icon_hash] = (name, count, item_id)
-                if grid_template_matched:
+                if page_shadow_authoritative:
+                    detect_source = f"shadow_authoritative({grid_template_score:.2f})"
+                elif grid_template_matched:
                     detect_source = f"grid_template({grid_template_score:.2f})"
                 elif detail_template_item_id is not None:
                     detect_source = f"detail_image_template+detail({detail_template_score:.2f})"
@@ -2574,6 +2745,7 @@ class InventoryScannerComponent:
                             continue
                 if item_id:
                     page_item_ids.append(item_id)
+                    page_actual_item_ids[slot_idx] = item_id
                 if name:
                     page_raw_names.append(name)
 
@@ -2597,6 +2769,7 @@ class InventoryScannerComponent:
                         "grid_count_low_confidence": grid_count_low_confidence if grid_template_matched else False,
                         "roi_y_offset_px": current_scan_y_offset_px,
                         "review_required": False,
+                        "capture_resolution": self._inventory_capture_resolution,
                     },
                     detail_crop=verified.detail_crop,
                     detail_name_crop=verified.detail_name_crop,
@@ -2683,6 +2856,38 @@ class InventoryScannerComponent:
                             grid_rows=grid_rows,
                             total_slots=len(slots),
                             profile_id=active_profile.profile_id if active_profile is not None else None,
+                        )
+
+            if page_shadow_result is not None and page_shadow_authoritative:
+                resolved_slots = sum(
+                    1 for assignment in page_shadow_result.assignments if assignment.item_id
+                )
+                self.log(
+                    f"  inventory page shadow authoritative result: "
+                    f"profile={active_profile.profile_id} page={scroll_i + 1} "
+                    f"assigned={resolved_slots} "
+                    f"unresolved={len(page_shadow_result.assignments) - resolved_slots} "
+                    f"committed={len(page_actual_item_ids)}"
+                )
+            elif page_shadow_result is not None:
+                comparison = page_shadow_result.comparison(page_actual_item_ids)
+                self.log(
+                    f"  inventory page shadow comparison: profile={active_profile.profile_id} "
+                    f"page={scroll_i + 1} "
+                    f"comparable={comparison['comparable']} agreed={comparison['agreed']} "
+                    f"disagreed={comparison['disagreed']} shadow_only={comparison['shadow_only']} "
+                    f"actual_only={comparison['actual_only']}"
+                )
+                for assignment in page_shadow_result.assignments:
+                    actual_item_id = page_actual_item_ids.get(assignment.slot_index)
+                    if assignment.item_id != actual_item_id:
+                        self._debug(
+                            f"  inventory page shadow difference: profile={active_profile.profile_id} "
+                            f"page={scroll_i + 1} "
+                            f"slot={assignment.slot_index + 1} "
+                            f"shadow={assignment.item_id or 'unresolved'} "
+                            f"score={assignment.score:.3f} "
+                            f"actual={actual_item_id or 'unresolved'}"
                         )
 
             if active_profile is None:
@@ -2825,10 +3030,13 @@ class InventoryScannerComponent:
                 next_page_tail_detected = bool(getattr(self, "_last_inventory_tail_page_detected", False))
                 if next_page_tail_detected:
                     self.log("  next page tail signature detected -> will stop after scanning it")
-                if (
-                    moved
-                    and scroll_overlap_rows <= 0
-                    and os.environ.get("BA_INVENTORY_STOP_ON_NO_SCROLL_OVERLAP", "1") != "0"
+                if _inventory_overlap_requires_stop(
+                    moved,
+                    scroll_overlap_rows,
+                    tail_page_detected=next_page_tail_detected,
+                    stop_on_no_overlap=(
+                        os.environ.get("BA_INVENTORY_STOP_ON_NO_SCROLL_OVERLAP", "1") != "0"
+                    ),
                 ):
                     profile_scan_incomplete = active_profile is not None
                     self.log(
@@ -2836,11 +3044,12 @@ class InventoryScannerComponent:
                         "-> stopping inventory scan to avoid drift/user-interaction corruption"
                     )
                     break
-                next_scan_slot_indices = _new_inventory_slot_indices(
+                next_scan_slot_indices = _inventory_scan_indices_after_scroll(
                     len(slots),
                     grid_cols,
                     grid_rows,
                     scroll_overlap_rows,
+                    tail_page_detected=next_page_tail_detected,
                 )
                 if next_scan_slot_indices is None:
                     self.log(
@@ -2905,6 +3114,12 @@ class InventoryScannerComponent:
                         for slot_idx, profile_idx in sorted(carried_grid_anchor_profile_indices.items())
                     )
                 )
+            ui_next_scan_slot_indices = _new_inventory_slot_indices(
+                len(slots),
+                grid_cols,
+                grid_rows,
+                scroll_overlap_rows,
+            )
             self._status(
                 "inventory.scroll",
                 source=source,
@@ -2916,7 +3131,15 @@ class InventoryScannerComponent:
                 total_slots=len(slots),
                 overlap_rows=scroll_overlap_rows,
                 moved_rows=max(0, grid_rows - scroll_overlap_rows),
-                scan_slots=sorted(next_scan_slot_indices) if next_scan_slot_indices is not None else None,
+                # A tail page is intentionally scanned in full for verification,
+                # but the live UI should only highlight rows newly exposed by
+                # the scroll.  Otherwise carried overlap rows look like duplicate
+                # user-visible work even though duplicate keys are not committed.
+                scan_slots=(
+                    sorted(ui_next_scan_slot_indices)
+                    if ui_next_scan_slot_indices is not None
+                    else None
+                ),
                 y_offset_px=next_scan_y_offset_px,
             )
         if active_profile is not None:
