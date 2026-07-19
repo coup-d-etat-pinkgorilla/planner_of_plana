@@ -44,7 +44,11 @@ def main() -> int:
         return 0
 
     if _has_qt():
-        from gui.viewer_app_qt import main as qt_main
+        if "--legacy-ui" in sys.argv:
+            sys.argv.remove("--legacy-ui")
+            from gui.viewer_app_qt import main as qt_main
+        else:
+            from gui.quick_app import main as qt_main
 
         return qt_main()
 

@@ -37,6 +37,7 @@ for _shared_name, _shared_value in vars(_viewer_shared).items():
 
 from gui.viewer_components.window import ViewerWindowComponent
 from gui.viewer_components.scan import ScanTabComponent
+from gui.viewer_components.home import HomeTabComponent
 from gui.viewer_components.students import StudentsTabComponent
 from gui.viewer_components.resources import ResourcesTabComponent
 from gui.viewer_components.inventory import InventoryTabComponent
@@ -49,6 +50,7 @@ from gui.viewer_components.planner import PlannerTabComponent
 class StudentViewerWindow(
         ViewerWindowComponent,
         ScanTabComponent,
+        HomeTabComponent,
         StudentsTabComponent,
         ResourcesTabComponent,
         InventoryTabComponent,
@@ -66,6 +68,7 @@ class StudentViewerWindow(
 for _component_type in (
     ViewerWindowComponent,
     ScanTabComponent,
+    HomeTabComponent,
     StudentsTabComponent,
     ResourcesTabComponent,
     InventoryTabComponent,
@@ -114,12 +117,17 @@ def _parse_viewer_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
 def main() -> int:
     args, qt_argv = _parse_viewer_args(sys.argv)
     app = QApplication(qt_argv)
-    _apply_ui_font(app)
     startup_screen = app.screenAt(QCursor.pos()) or app.primaryScreen()
     startup_geometry = startup_screen.availableGeometry() if startup_screen is not None else None
     startup_screen_geometry = startup_screen.geometry() if startup_screen is not None else None
+    ui_scale = get_qt_ui_scale(
+        app,
+        base_width=PLANNER_BASE_WIDTH,
+        base_height=PLANNER_BASE_HEIGHT,
+    )
+    _apply_ui_font(app, ui_scale)
     window = StudentViewerWindow(
-        get_qt_ui_scale(app, base_width=PLANNER_BASE_WIDTH, base_height=PLANNER_BASE_HEIGHT),
+        ui_scale,
         startup_geometry=startup_geometry,
         startup_screen_geometry=startup_screen_geometry,
         student_scan_debug=args.student_scan_debug,

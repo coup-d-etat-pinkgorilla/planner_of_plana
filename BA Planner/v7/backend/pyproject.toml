@@ -1,0 +1,10 @@
+[project]
+name = "ba-planner-v7-backend"
+version = "0.1.0"
+description = "Headless Python backend for BA Planner v7"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.setuptools]
+packages = ["core"]
+

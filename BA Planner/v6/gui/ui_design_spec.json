@@ -1,0 +1,248 @@
+{
+  "version": 1,
+  "palette": {
+    "accent": "#f266b3",
+    "soft": "#efe4f2",
+    "panel": "#313b59",
+    "panel_alt": "#2c3140",
+    "text": "#f2f2f2"
+  },
+  "components": {
+    "StudentViewerWindow/TriangleTextureWidget#viewerRoot/QTabWidget#mainTabs/QStackedWidget#qt_tabwidget_stackedwidget/QWidget[6]/DiagonalScanFrame#scanHeaderSection": {
+      "geometry": [
+        0,
+        0,
+        2435,
+        207
+      ],
+      "minimum_size": [
+        0,
+        0
+      ],
+      "maximum_size": [
+        16777215,
+        16777215
+      ],
+      "visible": true,
+      "enabled": true,
+      "style_sheet": "",
+      "layout_margins": [
+        5,
+        5,
+        5,
+        5
+      ],
+      "layout_spacing": 6
+    },
+    "StudentViewerWindow/TriangleTextureWidget#viewerRoot/QTabWidget#mainTabs/QStackedWidget#qt_tabwidget_stackedwidget/QWidget[6]/DiagonalScanFrame#scanHeaderSection/DiagonalScanFrame#scanHeaderActiveRegion/SlantedScanHeader#scanHeader": {
+      "geometry": [
+        6,
+        6,
+        2198,
+        187
+      ],
+      "minimum_size": [
+        0,
+        0
+      ],
+      "maximum_size": [
+        16777215,
+        16777215
+      ],
+      "visible": true,
+      "enabled": true,
+      "style_sheet": "",
+      "layout_margins": [
+        23,
+        23,
+        30,
+        23
+      ],
+      "layout_spacing": 8
+    },
+    "StudentViewerWindow/TriangleTextureWidget#viewerRoot/QTabWidget#mainTabs/QStackedWidget#qt_tabwidget_stackedwidget/QWidget[6]/DiagonalScanFrame#scanHeaderSection/DiagonalScanFrame#scanHeaderActiveRegion/StudentPortraitWidget#scanHeaderAccessory": {
+      "geometry": [
+        2182,
+        6,
+        237,
+        187
+      ],
+      "minimum_size": [
+        237,
+        187
+      ],
+      "maximum_size": [
+        237,
+        187
+      ],
+      "fixed_size": [
+        237,
+        187
+      ],
+      "visible": true,
+      "enabled": true,
+      "style_sheet": ""
+    },
+    "StudentViewerWindow/TriangleTextureWidget#viewerRoot/QTabWidget#mainTabs/QStackedWidget#qt_tabwidget_stackedwidget/QWidget[6]/QStackedWidget": {
+      "geometry": [
+        0,
+        227,
+        2435,
+        1035
+      ],
+      "minimum_size": [
+        0,
+        0
+      ],
+      "maximum_size": [
+        16777215,
+        16777215
+      ],
+      "visible": true,
+      "enabled": true,
+      "style_sheet": "",
+      "layout_margins": [
+        9,
+        9,
+        9,
+        9
+      ],
+      "layout_spacing": 6
+    },
+    "StudentViewerWindow/TriangleTextureWidget#viewerRoot/QTabWidget#mainTabs/QStackedWidget#qt_tabwidget_stackedwidget/QWidget[6]/QStackedWidget/HomeDashboardWidget#homeDashboard/HomeSectionHost[2]/HomeGlassSection#homeConnectionSection/DiagonalScrollList#homeWindowCandidateList": {
+      "geometry": [
+        30,
+        122,
+        700,
+        827
+      ],
+      "minimum_size": [
+        0,
+        0
+      ],
+      "maximum_size": [
+        16777215,
+        16777215
+      ],
+      "visible": true,
+      "enabled": true,
+      "style_sheet": "QListWidget { background: transparent; border: none; outline: none; }QListWidget::item { background: transparent; border: none; }QListWidget::item:selected { background: transparent; }"
+    },
+    "StudentViewerWindow/TriangleTextureWidget#viewerRoot/QTabWidget#mainTabs/QStackedWidget#qt_tabwidget_stackedwidget/QWidget[6]/QStackedWidget/HomeDashboardWidget#homeDashboard/HomeSectionHost[2]/HomeGlassSection#homeConnectionSection/QLabel#count": {
+      "geometry": [
+        206,
+        -30,
+        486,
+        232
+      ],
+      "minimum_size": [
+        0,
+        0
+      ],
+      "maximum_size": [
+        16777215,
+        16777215
+      ],
+      "visible": true,
+      "enabled": true,
+      "style_sheet": ""
+    },
+    "StudentViewerWindow/TriangleTextureWidget#viewerRoot/QTabWidget#mainTabs/QStackedWidget#qt_tabwidget_stackedwidget/QWidget[6]/QStackedWidget/HomeDashboardWidget#homeDashboard/HomeSectionHost[2]/HomeGlassSection#homeConnectionSection/QLabel#filterSummary": {
+      "geometry": [
+        206,
+        -10,
+        486,
+        231
+      ],
+      "minimum_size": [
+        0,
+        0
+      ],
+      "maximum_size": [
+        16777215,
+        16777215
+      ],
+      "visible": true,
+      "enabled": true,
+      "style_sheet": ""
+    },
+    "StudentViewerWindow/TriangleTextureWidget#viewerRoot/QTabWidget#mainTabs/QStackedWidget#qt_tabwidget_stackedwidget/QWidget[6]/QStackedWidget/HomeDashboardWidget#homeDashboard/HomeSectionHost[2]/HomeGlassSection#homeConnectionSection/QLabel#title": {
+      "geometry": [
+        206,
+        -70,
+        486,
+        232
+      ],
+      "minimum_size": [
+        0,
+        0
+      ],
+      "maximum_size": [
+        16777215,
+        16777215
+      ],
+      "visible": true,
+      "enabled": true,
+      "style_sheet": ""
+    },
+    "StudentViewerWindow/TriangleTextureWidget#viewerRoot/QTabWidget#mainTabs/QStackedWidget#qt_tabwidget_stackedwidget/QWidget[6]/QStackedWidget/HomeDashboardWidget#homeDashboard/HomeSectionHost[2]/HomeGlassSection#homeConnectionSection/QPushButton[0]": {
+      "geometry": [
+        30,
+        962,
+        144,
+        50
+      ],
+      "minimum_size": [
+        0,
+        50
+      ],
+      "maximum_size": [
+        16777215,
+        16777215
+      ],
+      "visible": true,
+      "enabled": true,
+      "style_sheet": ""
+    },
+    "StudentViewerWindow/TriangleTextureWidget#viewerRoot/QTabWidget#mainTabs/QStackedWidget#qt_tabwidget_stackedwidget/QWidget[6]/QStackedWidget/HomeDashboardWidget#homeDashboard/HomeSectionHost[2]/HomeGlassSection#homeConnectionSection/QPushButton[1]": {
+      "geometry": [
+        545,
+        962,
+        56,
+        50
+      ],
+      "minimum_size": [
+        0,
+        50
+      ],
+      "maximum_size": [
+        16777215,
+        16777215
+      ],
+      "visible": true,
+      "enabled": true,
+      "style_sheet": ""
+    },
+    "StudentViewerWindow/TriangleTextureWidget#viewerRoot/QTabWidget#mainTabs/QStackedWidget#qt_tabwidget_stackedwidget/QWidget[6]/QStackedWidget/HomeDashboardWidget#homeDashboard/HomeSectionHost[2]/HomeGlassSection#homeConnectionSection/QPushButton[2]": {
+      "geometry": [
+        608,
+        962,
+        122,
+        50
+      ],
+      "minimum_size": [
+        0,
+        50
+      ],
+      "maximum_size": [
+        16777215,
+        16777215
+      ],
+      "visible": true,
+      "enabled": true,
+      "style_sheet": ""
+    }
+  },
+  "new_widgets": [],
+  "animations": []
+}

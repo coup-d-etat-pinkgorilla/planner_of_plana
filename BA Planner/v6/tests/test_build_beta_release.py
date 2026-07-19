@@ -58,6 +58,7 @@ class BuildBetaReleaseAssetTests(unittest.TestCase):
 
         data_args = [args[index + 1] for index, value in enumerate(args) if value == "--add-data"]
         self.assertIn("templates;assets/templates", data_args)
+        self.assertIn("gui/quick/qml;gui/quick/qml", data_args)
         self.assertIn("regions;assets/regions", data_args)
         self.assertIn("data/planning;assets/data/planning", data_args)
         self.assertIn("core/student_meta_data.py;assets/core", data_args)

@@ -2,13 +2,228 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from gui import viewer_shared as _viewer_shared
 from gui.bug_report_dialog import BugReportDialog
+from gui.viewer_components.home import (
+    DiagonalComponentControlSlot,
+    DiagonalMenuComboBox,
+    HomeElidedLabel,
+    HomeGlassSection,
+    HomeMenuButtonRow,
+    HomeSettingsMenuRowsWidget,
+    ParallelogramActionButton,
+)
 
 globals().update({name: value for name, value in vars(_viewer_shared).items() if not name.startswith("__")})
 
 
+class DiagonalScanFrame(QFrame):
+    """Palette surface with a rounded near-vertical cut on its right edge."""
+
+    def __init__(self, *, fill: str, radius: int, angle_degrees: float = 80.0) -> None:
+        super().__init__()
+        self._fill = QColor(fill)
+        self._radius = max(0, int(radius))
+        self._angle_degrees = float(angle_degrees)
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
+
+    def paintEvent(self, event) -> None:
+        width = float(self.width())
+        height = float(self.height())
+        if width <= 0 or height <= 0:
+            return
+        radius = min(float(self._radius), width / 2.0, height / 2.0)
+        vertical_run = max(0.0, height - (2.0 * radius))
+        cut = vertical_run / max(0.01, math.tan(math.radians(self._angle_degrees)))
+        lower_right = max(radius * 2.0, width - cut)
+
+        path = QPainterPath()
+        path.moveTo(radius, 0.0)
+        path.lineTo(width - radius, 0.0)
+        path.quadTo(width, 0.0, width, radius)
+        path.lineTo(lower_right, height - radius)
+        path.quadTo(lower_right, height, lower_right - radius, height)
+        path.lineTo(radius, height)
+        path.quadTo(0.0, height, 0.0, height - radius)
+        path.lineTo(0.0, radius)
+        path.quadTo(0.0, 0.0, radius, 0.0)
+        path.closeSubpath()
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(self._fill)
+        painter.drawPath(path)
+        painter.end()
+
+
+class SlantedScanHeader(QFrame):
+    _BAR_TRIANGLE_HEIGHT_RATIO = 0.8
+
+    def __init__(self, *, fill: str, radius: int, angle_degrees: float = 80.0) -> None:
+        super().__init__()
+        self._fill = QColor(fill)
+        self._radius = max(0, int(radius))
+        self._angle_degrees = float(angle_degrees)
+        self._texture_config = TriangleTextureConfig(
+            base_color=fill,
+            panel_color=PALETTE_PANEL_ALT,
+            soft_color=PALETTE_SOFT,
+            accent_color=PALETTE_ACCENT,
+            triangle_size=6.0,
+            tessellation_contrast=0.07,
+            random_seed=8041,
+            macro_triangle_chance=0.11,
+            macro_triangle_scale=3.0,
+            macro_triangle_contrast=0.026,
+            light_direction_degrees=350.0,
+            light_strength=0.12,
+            light_center_x=0.12,
+            light_center_y=0.5,
+            edge_vignette_strength=0.0,
+            fog_direction_degrees=350.0,
+            fog_strength=0.045,
+        )
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
+
+    @classmethod
+    def _triangle_size_for_height(cls, height: float) -> float:
+        return max(6.0, float(height) * cls._BAR_TRIANGLE_HEIGHT_RATIO)
+
+    def paintEvent(self, event) -> None:
+        width = float(self.width())
+        height = float(self.height())
+        if width <= 0 or height <= 0:
+            return
+        radius = min(float(self._radius), width / 2.0, height / 2.0)
+        vertical_run = max(0.0, height - (2.0 * radius))
+        cut = vertical_run / max(0.01, math.tan(math.radians(self._angle_degrees)))
+        lower_right = max(radius * 2.0, width - cut)
+
+        path = QPainterPath()
+        path.moveTo(radius, 0.0)
+        path.lineTo(width - radius, 0.0)
+        path.quadTo(width, 0.0, width, radius)
+        path.lineTo(lower_right, height - radius)
+        path.quadTo(lower_right, height, lower_right - radius, height)
+        path.lineTo(radius, height)
+        path.quadTo(0.0, height, 0.0, height - radius)
+        path.lineTo(0.0, radius)
+        path.quadTo(0.0, 0.0, radius, 0.0)
+        path.closeSubpath()
+
+        texture_image = QImage(self.size(), QImage.Format_ARGB32_Premultiplied)
+        texture_image.fill(Qt.transparent)
+        texture_painter = QPainter(texture_image)
+        texture_config = replace(
+            self._texture_config,
+            triangle_size=self._triangle_size_for_height(height),
+        )
+        paint_triangle_texture(
+            texture_painter,
+            QRectF(0.0, 0.0, width, height),
+            texture_config,
+        )
+        texture_painter.end()
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.setClipPath(path)
+        painter.drawImage(0, 0, texture_image)
+
+        fade_radians = math.radians(350.0)
+        fade_dx = math.cos(fade_radians)
+        fade_dy = math.sin(fade_radians)
+        fade_span = abs(fade_dx) * width + abs(fade_dy) * height
+        fade_center = QPointF(width * 0.5, height * 0.5)
+        fade_offset = QPointF(fade_dx * fade_span * 0.5, fade_dy * fade_span * 0.5)
+        fade = QLinearGradient(fade_center - fade_offset, fade_center + fade_offset)
+        clear_fill = QColor(self._fill)
+        clear_fill.setAlpha(0)
+        opaque_fill = QColor(self._fill)
+        fade.setColorAt(0.0, clear_fill)
+        fade.setColorAt(0.28, clear_fill)
+        fade.setColorAt(0.42, opaque_fill)
+        fade.setColorAt(1.0, opaque_fill)
+        painter.fillRect(QRectF(0.0, 0.0, width, height), fade)
+        painter.end()
+
+
 class ScanTabComponent:
+    _SCAN_SECTION_PULL_MS = 150
+    _SCAN_SECTION_EXIT_MS = 430
+    _SCAN_RESULT_RISE_MS = 520
+    _SCAN_RESULT_SETTLE_MS = 260
+    _BA_CONNECTED_WAVE_MS = 1800
+    _SCAN_PREPARE_WAVE_MS = 980
+    _SCAN_SUCCESS_WAVE_MS = 900
+    _SCAN_ERROR_WAVE_MS = 430
+
+    def _play_background_wave(
+        self,
+        color: str,
+        *,
+        duration_ms: int,
+        mode: str,
+        front_width: float,
+        front_alpha: float,
+        hold_alpha: float = 0.3,
+        seed_offset: int = 0,
+    ) -> None:
+        background = getattr(self, "_background_texture", None)
+        if not isinstance(background, TriangleTextureWidget):
+            return
+        background.playWave(
+            color,
+            duration_ms=duration_ms,
+            mode=mode,
+            front_width=front_width,
+            front_alpha=front_alpha,
+            hold_alpha=hold_alpha,
+            seed_offset=seed_offset,
+        )
+
+    def _play_ba_connected_wave(self) -> None:
+        self._play_background_wave(
+            "#76D7FF",
+            duration_ms=self._BA_CONNECTED_WAVE_MS,
+            mode="pulse",
+            front_width=0.24,
+            front_alpha=0.54,
+            seed_offset=101,
+        )
+
+    def _schedule_startup_connection_wave(self, target_connection_confirmed: bool) -> None:
+        if self._startup_connection_wave_checked:
+            return
+        self._startup_connection_wave_checked = True
+        if target_connection_confirmed:
+            QTimer.singleShot(0, self._play_ba_connected_wave)
+
+    def _play_scan_prepare_wave(self) -> None:
+        self._play_background_wave(
+            PALETTE_ACCENT,
+            duration_ms=self._SCAN_PREPARE_WAVE_MS,
+            mode="hold",
+            front_width=0.2,
+            front_alpha=0.6,
+            hold_alpha=0.3,
+            seed_offset=211,
+        )
+
+    def _play_scan_finished_wave(self, *, success: bool) -> None:
+        self._play_background_wave(
+            "#AEB7C6" if success else "#FF5F70",
+            duration_ms=self._SCAN_SUCCESS_WAVE_MS if success else self._SCAN_ERROR_WAVE_MS,
+            mode="restore",
+            front_width=0.2 if success else 0.13,
+            front_alpha=0.52 if success else 0.72,
+            hold_alpha=0.0,
+            seed_offset=307 if success else 401,
+        )
+
     def _build_scan_student_card(self) -> QFrame:
         card = QFrame()
         card.setObjectName("scanStudentCard")
@@ -626,7 +841,47 @@ class ScanTabComponent:
         layout.setContentsMargins(0, 0, 0, scale_px(12, self._ui_scale))
         layout.setSpacing(scale_px(12, self._ui_scale))
 
-        header = QFrame()
+        header_section = DiagonalScanFrame(
+            fill=_alpha_hex(_mix_hex(BG, PALETTE_PANEL_ALT, 0.62), 0.78),
+            radius=scale_px(5, self._ui_scale),
+            angle_degrees=80.0,
+        )
+        header_section.setObjectName("scanHeaderSection")
+        self._scan_header_section = header_section
+        header_section_layout = QVBoxLayout(header_section)
+        header_section_layout.setContentsMargins(
+            scale_px(4, self._ui_scale),
+            scale_px(4, self._ui_scale),
+            scale_px(4, self._ui_scale),
+            scale_px(4, self._ui_scale),
+        )
+
+        active_connector = QFrame(header_section)
+        active_connector.setObjectName("scanHeaderActiveConnector")
+        active_connector.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        self._scan_header_active_connector = active_connector
+
+        active_region = DiagonalScanFrame(
+            fill=_mix_hex(PALETTE_ACCENT, PALETTE_PANEL_ALT, 0.62),
+            radius=scale_px(5, self._ui_scale),
+            angle_degrees=80.0,
+        )
+        active_region.setObjectName("scanHeaderActiveRegion")
+        active_region.setProperty("firstActive", True)
+        self._scan_header_active_region = active_region
+        active_region_layout = QVBoxLayout(active_region)
+        active_region_layout.setContentsMargins(
+            scale_px(5, self._ui_scale),
+            scale_px(5, self._ui_scale),
+            scale_px(34, self._ui_scale),
+            scale_px(5, self._ui_scale),
+        )
+
+        header = SlantedScanHeader(
+            fill=SURFACE,
+            radius=scale_px(14, self._ui_scale),
+            angle_degrees=80.0,
+        )
         header.setObjectName("scanHeader")
         header.setProperty("connected", False)
         self._scan_header = header
@@ -634,42 +889,38 @@ class ScanTabComponent:
         header_layout.setContentsMargins(
             scale_px(18, self._ui_scale),
             scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
+            scale_px(24, self._ui_scale),
             scale_px(18, self._ui_scale),
         )
         header_layout.setSpacing(scale_px(6, self._ui_scale))
-        title = QLabel("스캔")
+        title = QLabel("안녕하세요 선생님. 기다리고 있었습니다")
         title.setObjectName("title")
         header_layout.addWidget(title)
         self._scan_profile_label = QLabel()
         self._scan_profile_label.setObjectName("scanProfile")
         header_layout.addWidget(self._scan_profile_label)
-        self._scan_target_label = QLabel()
-        self._scan_target_label.setObjectName("count")
-        self._scan_target_label.setWordWrap(True)
-        header_layout.addWidget(self._scan_target_label)
-
-        scan_actions = QHBoxLayout()
-        scan_actions.setSpacing(scale_px(6, self._ui_scale))
-        for label, mode in (
-            ("학생", "students"),
-            ("현재 학생", "student_current"),
-            ("자원", "resources"),
-            ("아이템", "items"),
-            ("장비", "equipment"),
-        ):
-            button = QPushButton(label)
-            button.clicked.connect(lambda _checked=False, scan_mode=mode: self._launch_scanner(scan_mode))
-            scan_actions.addWidget(button)
-        scan_actions.addStretch(1)
-
+        self._scan_target_label = None
         self._scan_aspect_warning_label = QLabel("")
         self._scan_aspect_warning_label.setObjectName("count")
         self._scan_aspect_warning_label.setWordWrap(True)
         self._scan_aspect_warning_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
-        scan_actions.addWidget(self._scan_aspect_warning_label, 1, Qt.AlignVCenter)
-        header_layout.addLayout(scan_actions)
-        layout.addWidget(header)
+        header_layout.addWidget(self._scan_aspect_warning_label)
+        header_row = QHBoxLayout()
+        header_row.setContentsMargins(0, 0, 0, 0)
+        header_row.setSpacing(0)
+        header_row.addWidget(header, 1)
+
+        header_accessory = StudentPortraitWidget(self._student_card_asset)
+        header_accessory.setObjectName("scanHeaderAccessory")
+        self._scan_header_accessory = header_accessory
+        accessory_height = scale_px(148, self._ui_scale)
+        accessory_width = scale_px(188, self._ui_scale)
+        header_accessory.setFixedSize(accessory_width, accessory_height)
+        self._refresh_scan_account_portrait()
+        header_row.addWidget(header_accessory, 0, Qt.AlignVCenter)
+        active_region_layout.addLayout(header_row)
+        header_section_layout.addWidget(active_region)
+        layout.addWidget(header_section)
 
         body = QGridLayout()
         body.setSpacing(scale_px(12, self._ui_scale))
@@ -703,17 +954,35 @@ class ScanTabComponent:
         self._scan_plana_log.setPlaceholderText("학생 스캔을 실행하면 프라나의 업무 보고가 표시됩니다.")
         self._scan_plana_log.setMinimumHeight(scale_px(150, self._ui_scale))
         summary_layout.addWidget(self._scan_plana_log, 1)
-        body.addWidget(summary_panel, 0, 0)
+        debug_section = QFrame()
+        debug_section.setObjectName("scanDebugSection")
+        debug_section_layout = QVBoxLayout(debug_section)
+        debug_section_layout.setContentsMargins(
+            scale_px(8, self._ui_scale),
+            scale_px(8, self._ui_scale),
+            scale_px(8, self._ui_scale),
+            scale_px(8, self._ui_scale),
+        )
+        debug_section_layout.addWidget(summary_panel)
+        body.addWidget(debug_section, 0, 0)
+        self._scan_debug_section = debug_section
 
-        right_column = QWidget()
-        right_column.setObjectName("planTransparent")
+        right_column = QFrame()
+        right_column.setObjectName("scanWorkSection")
         right_column.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         right_column_layout = QVBoxLayout(right_column)
-        right_column_layout.setContentsMargins(0, 0, 0, 0)
+        right_column_layout.setContentsMargins(
+            scale_px(12, self._ui_scale),
+            scale_px(12, self._ui_scale),
+            scale_px(12, self._ui_scale),
+            scale_px(12, self._ui_scale),
+        )
         right_column_layout.setSpacing(scale_px(12, self._ui_scale))
         body.addWidget(right_column, 0, 1, 2, 1)
+        self._scan_right_section = right_column
+
         panel = QFrame()
-        panel.setObjectName("panel")
+        panel.setObjectName("scanProgressSection")
         panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         panel_layout = QVBoxLayout(panel)
         panel_layout.setContentsMargins(
@@ -760,6 +1029,7 @@ class ScanTabComponent:
         controls_row.addWidget(self._scan_stop_button, 0, Qt.AlignVCenter)
         panel_layout.addLayout(controls_row)
         right_column_layout.addWidget(panel, 0)
+        self._scan_progress_section = panel
 
 
         self._scan_plana_image_label = None
@@ -767,11 +1037,22 @@ class ScanTabComponent:
         self._scan_detail_stack.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self._scan_detail_stack.addWidget(self._build_scan_student_card())
         self._scan_detail_stack.addWidget(self._build_scan_inventory_grid_card())
-        body.addWidget(self._scan_detail_stack, 1, 0)
+        mirror_section = QFrame()
+        mirror_section.setObjectName("scanMirrorSection")
+        mirror_section_layout = QVBoxLayout(mirror_section)
+        mirror_section_layout.setContentsMargins(
+            scale_px(8, self._ui_scale),
+            scale_px(8, self._ui_scale),
+            scale_px(8, self._ui_scale),
+            scale_px(8, self._ui_scale),
+        )
+        mirror_section_layout.addWidget(self._scan_detail_stack)
+        body.addWidget(mirror_section, 1, 0)
+        self._scan_mirror_section = mirror_section
 
         preview_min_width = scale_px(560, self._ui_scale)
         preview_panel = AspectRatioFrame(aspect_width=16, aspect_height=9, min_width=preview_min_width)
-        preview_panel.setObjectName("scanPreviewPanel")
+        preview_panel.setObjectName("scanPreviewSection")
         preview_panel.setMinimumSize(preview_min_width, preview_panel.heightForWidth(preview_min_width))
         preview_layout = QVBoxLayout(preview_panel)
         preview_layout.setContentsMargins(
@@ -782,6 +1063,22 @@ class ScanTabComponent:
         )
         preview_layout.addStretch(1)
         right_column_layout.addWidget(preview_panel, 1)
+        self._scan_preview_section = preview_panel
+
+        result_section = QFrame()
+        result_section.setObjectName("scanResultSection")
+        result_section.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        result_section.setAttribute(Qt.WA_StyledBackground, True)
+        result_layout = QVBoxLayout(result_section)
+        result_layout.setContentsMargins(
+            scale_px(14, self._ui_scale),
+            scale_px(14, self._ui_scale),
+            scale_px(14, self._ui_scale),
+            scale_px(14, self._ui_scale),
+        )
+        result_section.setVisible(False)
+        body.addWidget(result_section, 0, 1, 2, 1)
+        self._scan_result_section = result_section
 
         body.setColumnStretch(0, 1)
         body.setColumnStretch(1, 2)
@@ -790,18 +1087,89 @@ class ScanTabComponent:
         self._set_plana_expression("neutral")
         self._reset_scan_student_card()
         self._sync_settings_labels()
-    def _build_settings_tab(self, root: QWidget) -> None:
-        layout = QVBoxLayout(root)
-        layout.setContentsMargins(0, 0, 0, scale_px(12, self._ui_scale))
-        layout.setSpacing(scale_px(12, self._ui_scale))
+        QTimer.singleShot(0, self._sync_scan_header_compound_shape)
 
-        header = QFrame()
-        header.setObjectName("header")
+    def _sync_scan_header_compound_shape(self) -> None:
+        tabs = self._main_tabs
+        section = self._scan_header_section
+        active_region = self._scan_header_active_region
+        connector = self._scan_header_active_connector
+        if tabs is None or section is None or active_region is None or connector is None:
+            return
+        tab_bar = tabs.tabBar()
+        index = tabs.currentIndex()
+        if index < 0:
+            connector.hide()
+            return
+        tab_rect = tab_bar.tabRect(index)
+        tab_origin = section.mapFromGlobal(tab_bar.mapToGlobal(tab_rect.topLeft()))
+        first_left_margin = scale_px(4, self._ui_scale) if index == 0 else 0
+        right_margin = scale_px(6, self._ui_scale)
+        connector.setGeometry(
+            tab_origin.x() + first_left_margin,
+            0,
+            max(1, tab_rect.width() - first_left_margin - right_margin),
+            scale_px(5, self._ui_scale),
+        )
+        connector.show()
+        connector.raise_()
+        is_first = index == 0
+        if active_region.property("firstActive") != is_first:
+            active_region.setProperty("firstActive", is_first)
+            active_region.style().unpolish(active_region)
+            active_region.style().polish(active_region)
+            active_region.update()
+    def _build_settings_tab(self, root: QWidget, menu_section: HomeGlassSection) -> None:
+        layout = QVBoxLayout(root)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        surface_fill = _alpha_hex(_mix_hex(SURFACE, PALETTE_PANEL_ALT, 0.36), 0.92)
+        surface_radius = scale_px(7, self._ui_scale)
+        settings_shadow = self._home_settings_shadow
+
+        def settings_texture(name: str, base_color: str, *, button: bool = False) -> TriangleTextureConfig:
+            # A stable name-derived seed keeps every surface visually distinct
+            # without allowing the triangulation to flicker between launches.
+            seed = 3100 + sum((index + 1) * ord(char) for index, char in enumerate(name))
+            panel_color = _mix_hex(base_color, PALETTE_PANEL_ALT, 0.12) if button else PALETTE_PANEL_ALT
+            soft_color = _mix_hex(base_color, PALETTE_SOFT, 0.10) if button else PALETTE_SOFT
+            return TriangleTextureConfig(
+                base_color=base_color,
+                panel_color=panel_color,
+                soft_color=soft_color,
+                accent_color=PALETTE_ACCENT,
+                triangle_size=scale_px(42 if button else 54, self._ui_scale),
+                tessellation_contrast=0.026,
+                random_seed=seed,
+                macro_triangle_chance=0.06,
+                macro_triangle_scale=2.6,
+                macro_triangle_contrast=0.014 if button else 0.018,
+                light_strength=0.025 if button else 0.085,
+                edge_vignette_strength=0.065 if button else 0.10,
+                fog_strength=0.015 if button else 0.055,
+            )
+
+        def settings_surface(name: str) -> HomeGlassSection:
+            surface = HomeGlassSection(
+                fill=surface_fill,
+                radius=surface_radius,
+                cut_right=True,
+                extend_left=scale_px(30, self._ui_scale),
+                angle_degrees=80.0,
+                round_extension_corners=True,
+                triangle_texture=settings_texture(name, surface_fill),
+                lifted_shadow=settings_shadow,
+            )
+            surface.setObjectName(name)
+            return surface
+
+        header = settings_surface("homeSettingsHeaderSurface")
         header_layout = QVBoxLayout(header)
-        header_layout.setContentsMargins(
+        header.setBaseContentMargins(
             scale_px(18, self._ui_scale),
             scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
+            scale_px(24, self._ui_scale),
             scale_px(18, self._ui_scale),
         )
         title = QLabel("설정")
@@ -810,74 +1178,118 @@ class ScanTabComponent:
         self._settings_active_profile_label = QLabel()
         self._settings_active_profile_label.setObjectName("count")
         header_layout.addWidget(self._settings_active_profile_label)
-        self._settings_target_label = QLabel()
+        self._settings_target_label = HomeElidedLabel("")
         self._settings_target_label.setObjectName("count")
-        self._settings_target_label.setWordWrap(True)
         header_layout.addWidget(self._settings_target_label)
-        layout.addWidget(header)
-
-        profile_panel = QFrame()
-        profile_panel.setObjectName("panel")
+        profile_panel = settings_surface("homeSettingsProfileSurface")
         profile_layout = QVBoxLayout(profile_panel)
-        profile_layout.setContentsMargins(
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
+        profile_panel.setBaseContentMargins(
+            scale_px(14, self._ui_scale),
+            scale_px(12, self._ui_scale),
+            scale_px(24, self._ui_scale),
+            scale_px(12, self._ui_scale),
         )
-        profile_layout.setSpacing(scale_px(10, self._ui_scale))
         profile_title = QLabel("계정 관리")
         profile_title.setObjectName("sectionTitle")
         profile_layout.addWidget(profile_title)
-        self._settings_profile_combo = QComboBox()
-        profile_layout.addWidget(self._settings_profile_combo)
-        profile_buttons = QHBoxLayout()
-        apply_profile = QPushButton("프로필 적용")
+        combo_fill = _alpha_hex(_mix_hex(SURFACE_ALT, PALETTE_ACCENT, 0.14), 0.96)
+        button_fill = _mix_hex(PALETTE_ACCENT, PALETTE_PANEL_ALT, 0.62)
+        menu_gap = scale_px(8, self._ui_scale)
+        menu_radius = scale_px(7, self._ui_scale)
+        profile_layout.setSpacing(menu_gap)
+        self._home_settings_button_fill = button_fill
+        self._home_settings_group_gap = menu_gap
+        control_left_clearance = scale_px(14, self._ui_scale)
+        control_right_clearance = scale_px(24, self._ui_scale)
+        self._home_settings_control_slots: list[DiagonalComponentControlSlot] = []
+
+        def add_projected_control(layout, surface: HomeGlassSection, control: QWidget) -> QWidget:
+            slot = DiagonalComponentControlSlot(
+                surface,
+                control,
+                left_clearance=control_left_clearance,
+                right_clearance=control_right_clearance,
+            )
+            self._home_settings_control_slots.append(slot)
+            layout.addWidget(slot)
+            return control
+
+        self._settings_profile_combo = DiagonalMenuComboBox(
+            fill=combo_fill,
+            accent=ACCENT,
+            angle_degrees=80.0,
+            radius=menu_radius,
+            triangle_texture=settings_texture("profile:dropdown", combo_fill, button=True),
+        )
+        self._settings_profile_combo.setAccessibleName("프로필 선택")
+        add_projected_control(profile_layout, profile_panel, self._settings_profile_combo)
+
+        def menu_button(text: str) -> ParallelogramActionButton:
+            return ParallelogramActionButton(
+                text,
+                fill=button_fill,
+                accent=ACCENT,
+                slant=menu_gap,
+                extend_left=True,
+                angle_degrees=80.0,
+                radius=menu_radius,
+                full_height_slant=True,
+            )
+
+        def menu_row(*buttons: ParallelogramActionButton) -> HomeMenuButtonRow:
+            row = HomeMenuButtonRow(
+                list(buttons),
+                seam_gap=menu_gap,
+                angle_degrees=80.0,
+                radius=menu_radius,
+                full_height_slant=True,
+            )
+            row.setFixedHeight(max(54, scale_px(54, self._ui_scale)))
+            self._home_settings_menu_rows.append(row)
+            return row
+
+        self._home_settings_menu_rows: list[HomeMenuButtonRow] = []
+        apply_profile = menu_button("프로필 적용")
         apply_profile.clicked.connect(self._apply_selected_profile)
-        profile_buttons.addWidget(apply_profile)
-        new_profile = QPushButton("새 프로필")
+        new_profile = menu_button("새 프로필")
         new_profile.clicked.connect(self._create_profile)
-        profile_buttons.addWidget(new_profile)
-        refresh_profile = QPushButton("새로고침")
+        add_projected_control(profile_layout, profile_panel, menu_row(apply_profile, new_profile))
+
+        refresh_profile = menu_button("새로고침")
         refresh_profile.clicked.connect(self._refresh_settings_profiles)
-        profile_buttons.addWidget(refresh_profile)
-        profile_buttons.addStretch(1)
-        profile_layout.addLayout(profile_buttons)
+        account_settings = menu_button("계정 설정")
+        account_settings.clicked.connect(self._open_account_settings_dialog)
+        add_projected_control(profile_layout, profile_panel, menu_row(refresh_profile, account_settings))
 
-        delete_data_button = QPushButton("현재 프로필 데이터 삭제")
+        delete_data_button = menu_button("현재 프로필 데이터 삭제")
         delete_data_button.clicked.connect(self._confirm_delete_current_profile_data)
-        profile_layout.addWidget(delete_data_button)
-        layout.addWidget(profile_panel)
+        add_projected_control(profile_layout, profile_panel, menu_row(delete_data_button))
+        profile_panel.setAccessibleName("계정 관리")
 
-        window_panel = QFrame()
-        window_panel.setObjectName("panel")
+        window_panel = settings_surface("homeSettingsWindowSurface")
         window_layout = QVBoxLayout(window_panel)
-        window_layout.setContentsMargins(
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
+        window_panel.setBaseContentMargins(
+            scale_px(14, self._ui_scale),
+            scale_px(12, self._ui_scale),
+            scale_px(24, self._ui_scale),
+            scale_px(12, self._ui_scale),
         )
         window_layout.setSpacing(scale_px(10, self._ui_scale))
-        window_title = QLabel("블루아카이브 창 인식")
+        window_title = QLabel("블루아카이브 창 인식 해제")
         window_title.setObjectName("sectionTitle")
         window_layout.addWidget(window_title)
-        window_buttons = QHBoxLayout()
-        refresh_windows = QPushButton("창 목록 열기")
-        refresh_windows.clicked.connect(self._open_window_picker_dialog)
-        window_buttons.addWidget(refresh_windows)
-        window_buttons.addStretch(1)
-        window_layout.addLayout(window_buttons)
-        layout.addWidget(window_panel)
+        self._settings_disconnect_button = menu_button("연결 해제")
+        self._settings_disconnect_button.clicked.connect(self._disconnect_target_window)
+        add_projected_control(window_layout, window_panel, menu_row(self._settings_disconnect_button))
+        window_panel.setAccessibleName("블루아카이브 창 인식 해제")
 
-        report_panel = QFrame()
-        report_panel.setObjectName("panel")
+        report_panel = settings_surface("homeSettingsSupportSurface")
         report_layout = QVBoxLayout(report_panel)
-        report_layout.setContentsMargins(
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
-            scale_px(18, self._ui_scale),
+        report_panel.setBaseContentMargins(
+            scale_px(14, self._ui_scale),
+            scale_px(12, self._ui_scale),
+            scale_px(24, self._ui_scale),
+            scale_px(12, self._ui_scale),
         )
         report_layout.setSpacing(scale_px(10, self._ui_scale))
         report_title = QLabel("지원")
@@ -887,17 +1299,220 @@ class ScanTabComponent:
         report_description.setObjectName("count")
         report_description.setWordWrap(True)
         report_layout.addWidget(report_description)
-        report_button_row = QHBoxLayout()
-        report_button = QPushButton("문제 신고")
+        report_button = menu_button("문제 신고")
         report_button.clicked.connect(self._open_bug_report_dialog)
-        report_button_row.addWidget(report_button)
-        report_button_row.addStretch(1)
-        report_layout.addLayout(report_button_row)
-        layout.addWidget(report_panel)
-        layout.addStretch(1)
+        add_projected_control(report_layout, report_panel, menu_row(report_button))
+        report_panel.setAccessibleName("지원")
+
+        settings_rows = [header, profile_panel, window_panel, report_panel]
+        settings_layout = HomeSettingsMenuRowsWidget(
+            menu_section,
+            settings_rows,
+            row_heights=[
+                scale_px(108, self._ui_scale),
+                scale_px(286, self._ui_scale),
+                scale_px(108, self._ui_scale),
+                scale_px(158, self._ui_scale),
+            ],
+            row_gap=scale_px(8, self._ui_scale),
+            parent=root,
+        )
+        self._home_settings_component_rows = settings_rows
+        self._home_settings_component_layout = settings_layout
+        layout.addWidget(settings_layout, 1)
 
         self._refresh_settings_profiles()
         self._sync_settings_labels()
+
+    def _account_portrait_options(self) -> list[tuple[str, str, int]]:
+        options: list[tuple[str, str, int]] = []
+        for student_id in student_meta.all_ids():
+            display_name = student_meta.display_name(student_id)
+            for form_index in student_meta.form_indexes(student_id):
+                source = self._scan_portrait_source(student_id, form_index)
+                if source is None or not source.exists():
+                    continue
+                suffix = f" _{form_index - 1}" if form_index > 1 else ""
+                options.append((f"{display_name}{suffix}", student_id, form_index))
+        options.sort(key=lambda option: (option[0].casefold(), option[1], option[2]))
+        return options
+
+    def _open_account_settings_dialog(self) -> None:
+        dialog = QDialog(self)
+        dialog.setWindowTitle("계정 설정")
+        dialog.setModal(True)
+        dialog.setMinimumWidth(scale_px(420, self._ui_scale))
+
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(
+            scale_px(18, self._ui_scale),
+            scale_px(18, self._ui_scale),
+            scale_px(18, self._ui_scale),
+            scale_px(18, self._ui_scale),
+        )
+        layout.setSpacing(scale_px(10, self._ui_scale))
+
+        title = QLabel("홈 스캔 화면 계정 초상화")
+        title.setObjectName("sectionTitle")
+        layout.addWidget(title)
+        hint = QLabel("현재 프로필을 구분할 학생 초상화를 선택하세요. 보유 여부와 관계없이 선택할 수 있습니다.")
+        hint.setObjectName("count")
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+
+        portrait_combo = QComboBox()
+        options = self._account_portrait_options()
+        selected_student_id, selected_form_index = get_profile_account_portrait()
+        selected_index = 0
+        for index, (label, student_id, form_index) in enumerate(options):
+            portrait_combo.addItem(label, (student_id, form_index))
+            if student_id == selected_student_id and form_index == selected_form_index:
+                selected_index = index
+        portrait_combo.setCurrentIndex(selected_index)
+        layout.addWidget(portrait_combo)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.button(QDialogButtonBox.StandardButton.Save).setText("저장")
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("취소")
+        buttons.button(QDialogButtonBox.StandardButton.Save).setEnabled(bool(options))
+        layout.addWidget(buttons)
+
+        def save_selection() -> None:
+            selected = portrait_combo.currentData()
+            if not isinstance(selected, tuple) or len(selected) != 2:
+                return
+            student_id, form_index = selected
+            set_profile_account_portrait(str(student_id), int(form_index))
+            self._refresh_scan_account_portrait()
+            dialog.accept()
+
+        buttons.accepted.connect(save_selection)
+        buttons.rejected.connect(dialog.reject)
+        dialog.exec()
+
+    def _refresh_scan_account_portrait(self) -> None:
+        accessory = self._scan_header_accessory
+        if accessory is None:
+            return
+        student_id, form_index = get_profile_account_portrait()
+        source = self._scan_portrait_source(student_id, form_index)
+        if source is None or not source.exists():
+            source = self._scan_portrait_source("hasumi", 1)
+        accessory.clear()
+        if source is None:
+            return
+        portrait = QPixmap(str(source))
+        if portrait.isNull():
+            return
+        card_size = self._student_card_asset.base_size
+        fitted = QPixmap(card_size)
+        fitted.fill(Qt.transparent)
+        max_width = max(1, int(round(card_size.width() * 0.98)))
+        max_height = max(1, int(round(card_size.height() * 0.98)))
+        scaled_portrait = portrait.scaled(
+            max_width,
+            max_height,
+            Qt.KeepAspectRatio,
+            Qt.SmoothTransformation,
+        )
+        painter = QPainter(fitted)
+        painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
+        painter.drawPixmap(
+            (card_size.width() - scaled_portrait.width()) // 2,
+            (card_size.height() - scaled_portrait.height()) // 2,
+            scaled_portrait,
+        )
+        painter.end()
+        accessory.setPixmap(fitted, owned=True)
+
+    def _minimize_connected_game_window(self) -> None:
+        if os.name != "nt":
+            return
+        hwnd, _title = self._saved_target()
+        if not hwnd:
+            return
+        try:
+            ctypes.windll.user32.ShowWindow(int(hwnd), 6)  # SW_MINIMIZE
+        except Exception:
+            pass
+
+    def _reset_scan_result_transition(self) -> None:
+        if self._scan_section_animation is not None:
+            self._scan_section_animation.stop()
+            self._scan_section_animation = None
+        self._scan_result_view_visible = False
+        if self._scan_result_section is not None:
+            self._scan_result_section.hide()
+        if self._scan_right_section is not None:
+            if self._scan_result_section is not None and self._scan_result_section.geometry().isValid():
+                self._scan_right_section.setGeometry(self._scan_result_section.geometry())
+            self._scan_right_section.show()
+
+    def _show_scan_result_transition(self) -> None:
+        outgoing = self._scan_right_section
+        incoming = self._scan_result_section
+        if outgoing is None or incoming is None or self._scan_result_view_visible:
+            return
+        if outgoing.width() <= 0 or outgoing.height() <= 0:
+            return
+
+        self._minimize_connected_game_window()
+        self._scan_result_view_visible = True
+        start = outgoing.pos()
+        incoming.setGeometry(outgoing.geometry())
+        pull = start + QPoint(-scale_px(24, self._ui_scale), 0)
+        exit_pos = start + QPoint(max(self.width(), outgoing.width()) + scale_px(80, self._ui_scale), 0)
+
+        pull_animation = QPropertyAnimation(outgoing, b"pos")
+        pull_animation.setDuration(self._SCAN_SECTION_PULL_MS)
+        pull_animation.setStartValue(start)
+        pull_animation.setEndValue(pull)
+        pull_animation.setEasingCurve(QEasingCurve.OutCubic)
+
+        exit_animation = QPropertyAnimation(outgoing, b"pos")
+        exit_animation.setDuration(self._SCAN_SECTION_EXIT_MS)
+        exit_animation.setStartValue(pull)
+        exit_animation.setEndValue(exit_pos)
+        exit_animation.setEasingCurve(QEasingCurve.InCubic)
+
+        group = QSequentialAnimationGroup(self)
+        group.addAnimation(pull_animation)
+        group.addAnimation(exit_animation)
+        self._scan_section_animation = group
+
+        def reveal_result() -> None:
+            outgoing.hide()
+            final_pos = start
+            rise_start = final_pos + QPoint(0, max(incoming.height(), outgoing.height()) + scale_px(48, self._ui_scale))
+            cruise_end = final_pos + QPoint(0, scale_px(72, self._ui_scale))
+            incoming.move(rise_start)
+            incoming.show()
+            incoming.raise_()
+
+            cruise = QPropertyAnimation(incoming, b"pos")
+            cruise.setDuration(self._SCAN_RESULT_RISE_MS)
+            cruise.setStartValue(rise_start)
+            cruise.setEndValue(cruise_end)
+            cruise.setEasingCurve(QEasingCurve.Linear)
+
+            settle = QPropertyAnimation(incoming, b"pos")
+            settle.setDuration(self._SCAN_RESULT_SETTLE_MS)
+            settle.setStartValue(cruise_end)
+            settle.setEndValue(final_pos)
+            settle.setEasingCurve(QEasingCurve.OutCubic)
+
+            entrance = QSequentialAnimationGroup(self)
+            entrance.addAnimation(cruise)
+            entrance.addAnimation(settle)
+            entrance.finished.connect(lambda: setattr(self, "_scan_section_animation", None))
+            self._scan_section_animation = entrance
+            entrance.start()
+
+        group.finished.connect(reveal_result)
+        group.start()
+
     def _open_bug_report_dialog(self) -> None:
         dialog = BugReportDialog(
             profile_name=get_active_profile_name("Default"),
@@ -921,22 +1536,25 @@ class ScanTabComponent:
         profile = get_active_profile_name("Default") or "Default"
         hwnd, title = self._saved_target()
         settings_target = f"{title} (HWND={hwnd})" if hwnd else "선택된 창 없음"
-        scan_target = title if hwnd else "선택된 창 없음"
         target_connected = False
+        target_connection_confirmed = False
         if hwnd:
             try:
                 target_connected = any(int(window.get("hwnd") or 0) == hwnd for window in get_all_windows())
+                target_connection_confirmed = target_connected
             except Exception:
                 target_connected = True
+        self._schedule_startup_connection_wave(target_connection_confirmed)
         aspect_warning = self._target_aspect_warning(hwnd)
         if self._settings_active_profile_label is not None:
             self._settings_active_profile_label.setText(f"현재 프로필: {profile}")
         if self._settings_target_label is not None:
-            self._settings_target_label.setText(f"선택된 BA 창: {settings_target}")
+            self._settings_target_label.setFullText(f"선택된 BA 창: {settings_target}")
+        disconnect_button = getattr(self, "_settings_disconnect_button", None)
+        if disconnect_button is not None:
+            disconnect_button.setEnabled(bool(hwnd))
         if self._scan_profile_label is not None:
             self._scan_profile_label.setText(f"현재 프로필: {profile}")
-        if self._scan_target_label is not None:
-            self._scan_target_label.setText(f"선택된 BA 창: {scan_target}")
         if self._scan_header is not None:
             if self._scan_header.property("connected") != target_connected:
                 self._scan_header.setProperty("connected", target_connected)
@@ -945,6 +1563,9 @@ class ScanTabComponent:
                 self._scan_header.update()
         if self._scan_aspect_warning_label is not None:
             self._scan_aspect_warning_label.setText(aspect_warning)
+        sync_home = getattr(self, "_sync_home_connection_state", None)
+        if callable(sync_home):
+            sync_home(target_connected, title)
     def _target_aspect_warning(self, hwnd: int) -> str:
         if not hwnd:
             return ""
@@ -984,6 +1605,28 @@ class ScanTabComponent:
         if index >= 0:
             self._settings_profile_combo.setCurrentIndex(index)
         self._sync_settings_labels()
+    def _apply_target_window_selection(self, hwnd: int, title: str) -> bool:
+        if not hwnd:
+            return False
+        config = load_config()
+        config["target_hwnd"] = int(hwnd)
+        config["target_title"] = str(title)
+        save_config(config)
+        set_target_window(int(hwnd), str(title))
+        self._sync_settings_labels()
+        self._play_ba_connected_wave()
+        if self._scan_status_label is not None:
+            self._scan_status_label.setText(f"BA 창 설정 완료: {title}")
+        return True
+    def _disconnect_target_window(self) -> None:
+        config = load_config()
+        config.pop("target_hwnd", None)
+        config.pop("target_title", None)
+        save_config(config)
+        clear_target_window()
+        self._sync_settings_labels()
+        if self._scan_status_label is not None:
+            self._scan_status_label.setText("BA 창 연결 해제 완료")
     def _open_window_picker_dialog(self) -> None:
         dialog = QDialog(self)
         dialog.setWindowTitle("Blue Archive 창 선택")
@@ -1050,16 +1693,8 @@ class ScanTabComponent:
                 return
             hwnd = int(window.get("hwnd") or 0)
             title = str(window.get("title") or "")
-            if not hwnd:
+            if not self._apply_target_window_selection(hwnd, title):
                 return
-            config = load_config()
-            config["target_hwnd"] = hwnd
-            config["target_title"] = title
-            save_config(config)
-            set_target_window(hwnd, title)
-            self._sync_settings_labels()
-            if self._scan_status_label is not None:
-                self._scan_status_label.setText(f"BA 창 설정 완료: {title}")
             dialog.accept()
 
         list_widget.itemSelectionChanged.connect(lambda: ok_button.setEnabled(list_widget.currentItem() is not None))
@@ -1175,13 +1810,17 @@ class ScanTabComponent:
             )
             self._reload_data()
             self._sync_settings_labels()
+            self._refresh_scan_account_portrait()
             if self._scan_status_label is not None:
                 self._scan_status_label.setText(f"프로필 전환 완료: {name}")
         except Exception as exc:
             QMessageBox.warning(self, "BA Planner", f"프로필 전환에 실패했습니다.\n\n{exc}")
     def _open_settings_tab(self) -> None:
-        if self._main_tabs is not None and self._settings_tab is not None:
-            self._main_tabs.setCurrentWidget(self._settings_tab)
+        if self._main_tabs is not None and getattr(self, "_home_tab", None) is not None:
+            self._main_tabs.setCurrentWidget(self._home_tab)
+        show_settings = getattr(self, "_home_show_settings", None)
+        if callable(show_settings):
+            show_settings()
     def _scan_status_path(self) -> Path:
         return get_storage_paths().current_dir / "scan_status.jsonl"
     def _scan_stop_request_path(self) -> Path:
@@ -2001,6 +2640,7 @@ class ScanTabComponent:
         mode = self._scanner_mode
         self._scanner_mode = ""
         label = self._scanner_mode_label(mode)
+        self._play_scan_finished_wave(success=code == 0)
         self._finish_scan_progress_view(code)
         if self._scan_status_label is not None:
             self._scan_status_label.setText(
@@ -2011,6 +2651,8 @@ class ScanTabComponent:
                 self._reload_data()
             except Exception:
                 pass
+            if mode in {"students", "student_current", "items", "equipment"}:
+                QTimer.singleShot(0, self._show_scan_result_transition)
         if notify:
             self._notify_scanner_finished(label, code)
     def _notify_scanner_finished(self, label: str, code: int) -> None:
@@ -2036,38 +2678,42 @@ class ScanTabComponent:
             self._scanner_tray_icon.setIcon(icon)
         tray_icon = QSystemTrayIcon.Information if code == 0 else QSystemTrayIcon.Warning
         self._scanner_tray_icon.showMessage(title, message, tray_icon, 8000)
-    def _scanner_command(self, mode: str) -> list[str]:
+    def _scanner_command(self, mode: str, *, item_filter: str | None = None) -> list[str]:
         command = [sys.executable]
         if not getattr(sys, "frozen", False):
             command.append(str(BASE_DIR / "main.py"))
         command.extend(["--scanner", "--use-saved-target", "--suppress-overlay"])
         if mode:
             command.extend(["--auto-scan", mode])
+        if item_filter:
+            command.extend(["--item-scan-filter", item_filter])
         return command
-    def _launch_scanner(self, mode: str) -> None:
+    def _launch_scanner(self, mode: str, *, item_filter: str | None = None) -> bool:
         self._cleanup_finished_scanner_process(notify=False)
         if self._scanner_process is not None and self._scanner_process.poll() is None:
             QMessageBox.information(self, "BA Planner", "이미 스캐너가 실행 중입니다.")
-            return
+            return False
         if not self._load_saved_target_into_capture():
-            QMessageBox.information(self, "BA Planner", "먼저 설정 탭에서 BA 창을 선택해주세요.")
+            QMessageBox.information(self, "BA Planner", "먼저 홈의 연결 메뉴에서 Blue Archive 창을 선택해주세요.")
             self._open_settings_tab()
-            return
+            return False
+        self._reset_scan_result_transition()
         self._sync_settings_labels()
         activate_target_window()
         self._clear_scan_stop_request()
         creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" and hasattr(subprocess, "CREATE_NO_WINDOW") else 0
         try:
             self._scanner_process = subprocess.Popen(
-                self._scanner_command(mode),
+                self._scanner_command(mode, item_filter=item_filter),
                 cwd=str(BASE_DIR),
                 creationflags=creationflags,
             )
         except Exception as exc:
             QMessageBox.warning(self, "BA Planner", f"스캐너 실행에 실패했습니다.\n\n{exc}")
-            return
+            return False
         self._scanner_mode = mode
         label = self._scanner_mode_label(mode)
+        self._play_scan_prepare_wave()
         self._reset_plana_scan_status(label)
         self._reset_scan_progress_view(label)
         if mode in {"items", "equipment", "resources"}:
@@ -2085,6 +2731,7 @@ class ScanTabComponent:
         self._scanner_poll_timer.start()
         if self._scan_status_poll_timer is not None:
             self._scan_status_poll_timer.start()
+        return True
     def _state_export_students(self) -> list[dict[str, object]]:
         field_map = (
             ("student_id", "student_id"),

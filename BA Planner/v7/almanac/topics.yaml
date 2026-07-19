@@ -1,0 +1,14 @@
+topics:
+  - slug: architecture
+    title: Architecture
+    description: Flutter, Python service, contract 경계
+    parents: []
+  - slug: migration
+    title: Migration
+    description: v6 동작을 보존하며 수직 이전하는 규칙
+    parents: [architecture]
+  - slug: data
+    title: Data
+    description: 현재 상태, 메타데이터, 목표, 계산 결과의 의미
+    parents: [architecture]
+

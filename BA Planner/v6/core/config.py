@@ -232,6 +232,44 @@ def get_active_profile_name(default: str | None = None) -> str | None:
     return default
 
 
+def get_profile_account_portrait(profile_name: str | None = None) -> tuple[str, int]:
+    """Return the student portrait used to identify a viewer profile."""
+    resolved_name = normalize_profile_name(profile_name or get_active_profile_name("") or "")
+    if not resolved_name:
+        return "hasumi", 1
+    config = load_app_config()
+    entry = _find_profile_entry(config, resolved_name)
+    if entry is None:
+        return "hasumi", 1
+    student_id = str(entry.get("account_portrait_student_id") or "hasumi").strip() or "hasumi"
+    try:
+        form_index = max(1, int(entry.get("account_portrait_form_index") or 1))
+    except (TypeError, ValueError):
+        form_index = 1
+    return student_id, form_index
+
+
+def set_profile_account_portrait(
+    student_id: str,
+    form_index: int = 1,
+    profile_name: str | None = None,
+) -> None:
+    """Persist the account-identifying portrait on a viewer profile."""
+    resolved_name = normalize_profile_name(profile_name or get_active_profile_name("") or "")
+    normalized_student_id = str(student_id or "").strip()
+    if not resolved_name:
+        raise RuntimeError("Active profile is not set")
+    if not normalized_student_id:
+        raise ValueError("Student id is empty")
+    config = load_app_config()
+    entry = _find_profile_entry(config, resolved_name)
+    if entry is None:
+        raise ValueError(f"Unknown profile: {resolved_name}")
+    entry["account_portrait_student_id"] = normalized_student_id
+    entry["account_portrait_form_index"] = max(1, int(form_index or 1))
+    save_app_config(config)
+
+
 def get_storage_paths(profile_name: str | None = None) -> StoragePaths:
     resolved_name = normalize_profile_name(profile_name or get_active_profile_name("") or "")
     if not resolved_name:

@@ -212,7 +212,13 @@ except Exception as exc:
     sys.exit(1)
 
 if __name__ == "__main__" and not _SCANNER_MODE:
-    from gui.viewer_app_qt import main as planner_main
+    if "--quick-ui" in sys.argv:
+        sys.argv.remove("--quick-ui")
+    if "--legacy-ui" in sys.argv:
+        sys.argv.remove("--legacy-ui")
+        from gui.viewer_app_qt import main as planner_main
+    else:
+        from gui.quick_app import main as planner_main
 
     raise SystemExit(planner_main())
 
@@ -471,6 +477,7 @@ class App(tk.Tk):
         *,
         use_saved_target: bool = False,
         auto_scan_mode: str = "",
+        item_scan_filter: str = "",
         suppress_overlay: bool = False,
     ):
         super().__init__()
@@ -479,6 +486,7 @@ class App(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self._on_close_requested)
         self._use_saved_target = bool(use_saved_target)
         self._auto_scan_mode = str(auto_scan_mode or "").strip()
+        self._auto_item_scan_filter = str(item_scan_filter or "").strip()
         self._suppress_overlay = bool(suppress_overlay)
 
         setup_logging()
@@ -525,6 +533,8 @@ class App(tk.Tk):
         self._watcher: LobbyWatcher | None = None
         self._result: ScanResult | None = None
         self._scan_thread: threading.Thread | None = None
+        self._save_thread: threading.Thread | None = None
+        self._scan_worker_finished = False
         self._asv = None
         self._closing = False
         self._shutdown_requested = False
@@ -1001,9 +1011,11 @@ class App(tk.Tk):
         activate_target_window()
         item_scan_filter: str | list[str] | None = None
         if mode == "items":
-            item_scan_filter = self._choose_item_scan_filter()
+            item_scan_filter = self.__dict__.get("_auto_item_scan_filter", "") or self._choose_item_scan_filter()
             if item_scan_filter is None:
                 self._overlay.add_log("아이템 스캔 필터 선택이 취소되었습니다.")
+                if self._auto_scan_mode:
+                    self._finish_shutdown(reason="auto_scan_filter_cancelled")
                 return
         elif mode == "all":
             item_scan_filter = list(_FULL_SCAN_ITEM_FILTERS)
@@ -1043,6 +1055,7 @@ class App(tk.Tk):
         meta["scan_debug_log_path"] = str(debug_log_path)
         self._overlay.add_log(f"스캔 디버그 로그: {debug_log_path}")
         self._result = None
+        self._scan_worker_finished = False
         self._reset_scan_status_log()
         self._clear_scan_stop_request()
         self._overlay.reset_scan_progress()
@@ -1318,7 +1331,19 @@ class App(tk.Tk):
     def _on_scan_finished(self) -> None:
         self._scanner = None
         self._scan_thread = None
+        self._scan_worker_finished = True
         self._overlay.reset_scan_progress()
+
+        save_thread = self._save_thread
+        if save_thread is not None:
+            _log.info("scan worker finished; waiting for save worker")
+            return
+
+        self._complete_scan_lifecycle()
+
+    def _complete_scan_lifecycle(self) -> None:
+        if not self._scan_worker_finished:
+            return
 
         if self._shutdown_requested:
             self._finish_shutdown(reason="scan_thread_finished")
@@ -1350,48 +1375,76 @@ class App(tk.Tk):
         return "break"
 
     def _auto_save(self, result: ScanResult, meta: dict) -> None:
+        if self._save_thread is not None and self._save_thread.is_alive():
+            _log.error("save worker already running")
+            self._overlay.add_log("저장이 이미 진행 중입니다.")
+            return
+
+        scan_id = str(meta.get("scan_id") or "unknown")
+        self._overlay.add_log(f"스캔 결과 저장 중 ({scan_id})...")
+
+        def task() -> None:
+            try:
+                messages = self._save_scan_result(result, meta)
+            except Exception as exc:
+                traceback.print_exc()
+                self._dispatch_ui(self._on_save_finished, False, scan_id, [], str(exc))
+                return
+            self._dispatch_ui(self._on_save_finished, True, scan_id, messages, "")
+
+        self._save_thread = threading.Thread(
+            target=task,
+            name=f"ScanSave-{scan_id}",
+            daemon=True,
+        )
+        self._save_thread.start()
+
+    def _save_scan_result(self, result: ScanResult, meta: dict) -> list[str]:
         from core.serializer import make_status_report, save_scan_json
 
         scan_id = meta.get("scan_id", "unknown")
-        try:
-            if self._asv:
-                if not self._asv.final_save(result, meta):
-                    raise RuntimeError("최종 저장 파일 작성 실패")
-            else:
-                json_path = self._storage.scans_dir / f"{scan_id}.json"
-                save_scan_json(result, json_path, meta)
-                _log.info(f"scan json saved: {json_path}")
-            self._repo.save(result, meta)
-            self._dispatch_ui(self._overlay.add_log, f"저장 완료 ({scan_id})")
+        if self._asv:
+            if not self._asv.final_save(result, meta):
+                raise RuntimeError("최종 저장 파일 작성 실패")
+        else:
+            json_path = self._storage.scans_dir / f"{scan_id}.json"
+            save_scan_json(result, json_path, meta)
+            _log.info("scan json saved: %s", json_path)
+        self._repo.save(result, meta)
 
-            for line in make_status_report(result):
-                self._dispatch_ui(self._overlay.add_log, line)
+        messages = list(make_status_report(result))
+        if not result.students:
+            return messages
 
-            if not result.students:
-                return
+        current_students = [student.to_dict() for student in result.students]
+        all_changes = self._repo.load_student_changes()
+        this_changes = [c for c in all_changes if c.get("scan_id") == scan_id]
+        summary = analyze_scan_summary(current_students, this_changes, scan_id)
+        if summary.total_field_changes:
+            messages.append(f"변경 {summary.total_field_changes}건 ({summary.changed_students}명)")
+        if summary.low_confidence:
+            messages.append(f"낮은 신뢰도 학생 {len(summary.low_confidence)}명")
+        return messages
 
-            current_students = [student.to_dict() for student in result.students]
-            all_changes = self._repo.load_student_changes()
-            this_changes = [c for c in all_changes if c.get("scan_id") == scan_id]
-            summary = analyze_scan_summary(current_students, this_changes, scan_id)
+    def _on_save_finished(
+        self,
+        success: bool,
+        scan_id: str,
+        messages: list[str],
+        error: str,
+    ) -> None:
+        self._save_thread = None
+        if success:
+            self._overlay.add_log(f"저장 완료 ({scan_id})")
+            for line in messages:
+                self._overlay.add_log(line)
+            self._complete_scan_lifecycle()
+            return
 
-            if summary.total_field_changes:
-                self._dispatch_ui(
-                    self._overlay.add_log,
-                    f"변경 {summary.total_field_changes}건 ({summary.changed_students}명)",
-                )
-
-            if summary.low_confidence:
-                self._dispatch_ui(
-                    self._overlay.add_log,
-                    f"낮은 신뢰도 학생 {len(summary.low_confidence)}명",
-                )
-        except Exception as exc:
-            import traceback
-
-            traceback.print_exc()
-            self._dispatch_ui(self._overlay.add_log, f"저장 실패: {exc}")
-            self._dispatch_ui(self._transition_to, AppState.ERROR, f"save_failed:{exc}")
+        self._overlay.add_log(f"저장 실패: {error}")
+        self._transition_to(AppState.ERROR, f"save_failed:{error}")
+        if self._auto_scan_mode or self._shutdown_requested:
+            self._finish_shutdown(reason="save_failed")
 
     def _open_window_picker(self) -> None:
         if self.state in (AppState.SCANNING, AppState.STOPPING):
@@ -1448,14 +1501,19 @@ class App(tk.Tk):
         if self._destroyed:
             return
 
-        thread = self._scan_thread
-        if thread and thread.is_alive():
+        active_threads = [
+            thread
+            for thread in (self._scan_thread, self._save_thread)
+            if thread is not None and thread.is_alive()
+        ]
+        if active_threads:
             if self._shutdown_deadline is None or time.monotonic() < self._shutdown_deadline:
                 self.after(100, self._wait_for_shutdown)
                 return
-            _log.warning("scanner shutdown grace expired; closing app with scan thread still alive")
+            _log.warning("scanner shutdown grace expired; closing app with worker thread still alive")
             self._scanner = None
             self._scan_thread = None
+            self._save_thread = None
             self._overlay.reset_scan_progress()
 
         self._finish_shutdown(reason="shutdown_ready")
@@ -1494,6 +1552,12 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="start this scan mode after the scanner overlay initializes",
     )
+    parser.add_argument(
+        "--item-scan-filter",
+        choices=tuple(value for value, _label in _ITEM_SCAN_FILTER_OPTIONS),
+        default="",
+        help="skip the item filter dialog and scan this inventory category",
+    )
     return parser.parse_args()
 
 
@@ -1503,6 +1567,7 @@ def main() -> int:
         App(
             use_saved_target=args.use_saved_target,
             auto_scan_mode=args.auto_scan,
+            item_scan_filter=args.item_scan_filter,
             suppress_overlay=args.suppress_overlay,
         ).run()
         return 0

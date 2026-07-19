@@ -94,7 +94,14 @@
 | canonical name | Korean name | What it means | Code / objectName |
 | --- | --- | --- | --- |
 | `Viewer Root` | 뷰어 루트 | 전체 Qt 창의 중앙 위젯 | `viewerRoot` |
-| `Main Tabs` | 메인 탭 바 | Students, Plans, Requirements, Inventory, Statistics 탭 | `mainTabs` |
+| `Main Tabs` | 메인 탭 바 | 홈, 학생, 플랜, 인벤토리, 전술대항전 탭. 필요 재화와 통계 페이지는 현재 숨김 | `mainTabs` |
+| `Home Tab` | 홈 탭 | 연결·스캔·설정과 주요 업무 이동을 묶는 시작 화면 | `_build_home_tab` |
+| `Home Menu Section` | 홈 메뉴 섹션 | 연결 상태에 따라 연결/스캔 행동을 교체하고 주요 탭으로 이동하는 좌측 글라스 메뉴 | `homeMenuSection` |
+| `Home Connection Section` | 연결 섹션 | Blue Archive 창 목록과 연결 상태를 직접 보여주는 우측 확장 글라스 영역 | `homeConnectionSection` |
+| `Home Window Candidate List` | 연결 창 목록 | 사선 경계를 따라 행이 이동하며 실행 중인 창을 선택하는 스크롤 목록 | `homeWindowCandidateList` |
+| `Home Scan Section` | 스캔 선택 섹션 | 아이템·장비·전술대항전 스캔 진입점을 배치한 우측 영역 | `homeScanSection` |
+| `Home Item Category Section` | 아이템 범위 섹션 | 평소에는 비어 있는 중앙 열에 호출할 때만 나타나는 오파츠·기술 노트·전술 교육 BD·활동 보고서·엘레프·자원 선택 영역 | `homeItemCategorySection` |
+| `Home Resource Prompt` | 자원 입력 섹션 | OCR 대신 크레딧과 청휘석을 직접 입력하는 중앙 영역 | `homeResourcePromptSection` |
 | `Students Tab` | 학생 탭 | 학생 탐색과 상세 보기 화면 | `_build_students_tab` |
 | `Plans Tab` | 계획 탭 | 성장 목표 계획 편집 화면 | `_build_plan_tab` |
 | `Requirements Tab` | 필요 재화 탭 | scope 학생 집합의 누적 필요 재화 계산 화면 | `_build_resource_tab` |

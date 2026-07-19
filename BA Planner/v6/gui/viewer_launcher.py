@@ -15,12 +15,21 @@ from gui.student_viewer import open_viewer as open_tk_viewer
 BASE_DIR = Path(__file__).resolve().parent.parent
 VIEWER_SCRIPT = Path(__file__).resolve().parent / "viewer_app_qt.py"
 VIEWER_MODULE = "gui.viewer_app_qt"
+QUICK_VIEWER_SCRIPT = Path(__file__).resolve().parent / "quick_app.py"
+QUICK_VIEWER_MODULE = "gui.quick_app"
 
 _viewer_process: subprocess.Popen | None = None
 
 
 def _can_launch_qt_viewer() -> bool:
     return importlib.util.find_spec("PySide6") is not None and VIEWER_SCRIPT.exists()
+
+
+def _selected_viewer_module() -> str:
+    use_legacy = os.environ.get("BA_PLANNER_LEGACY_UI", "").strip().casefold() in {"1", "true", "yes", "on"}
+    if use_legacy or not QUICK_VIEWER_SCRIPT.exists():
+        return VIEWER_MODULE
+    return QUICK_VIEWER_MODULE
 
 
 def _launch_qt_viewer() -> bool:
@@ -44,7 +53,7 @@ def _launch_qt_viewer() -> bool:
 
     try:
         _viewer_process = subprocess.Popen(
-            [sys.executable, "-m", VIEWER_MODULE],
+            [sys.executable, "-m", _selected_viewer_module()],
             cwd=str(BASE_DIR),
             creationflags=creationflags,
         )

@@ -32,11 +32,13 @@ from core.config import (
     TEMPLATE_DIR,
     activate_profile,
     get_active_profile_name,
+    get_profile_account_portrait,
     get_storage_paths,
     ensure_profile_storage,
     list_profiles,
     load_config,
     save_config,
+    set_profile_account_portrait,
 )
 from core.db import APP_VERSION, init_db
 from core.equipment_items import EQUIPMENT_EXP_ITEMS, EQUIPMENT_ITEM_ID_TO_NAME, EQUIPMENT_SERIES, WEAPON_PART_ITEMS
@@ -53,6 +55,7 @@ from core.planning import (
     MAX_TARGET_STAT,
     MAX_TARGET_WEAPON_LEVEL,
     MAX_TARGET_WEAPON_STAR,
+    GrowthPlan,
     StudentGoal,
     load_plan,
     save_plan,
@@ -91,6 +94,7 @@ from core.tactical_challenge import (
     TACTICAL_STRIKER_SLOTS,
     TACTICAL_SUPPORT_SLOTS,
     TacticalDeck,
+    TacticalChallengeData,
     TacticalJokboEntry,
     TacticalMatch,
     clear_tactical_import_template,
@@ -126,7 +130,18 @@ from core.tactical_screenshot import (
 )
 from gui.tactic_assist_qt import TacticAssistWindow
 from gui.triangle_texture import TriangleTextureConfig, TriangleTextureWidget, paint_triangle_texture
-from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QParallelAnimationGroup, QPropertyAnimation, QRect, QRectF, QRunnable, QSize, Qt, QtMsgType, QThreadPool, QTimer, Signal, qInstallMessageHandler
+from gui.ui_scale import (
+    UI_ASPECT_RATIO,
+    UI_BASE_FONT_POINT_SIZE,
+    UI_BASE_HEIGHT,
+    UI_BASE_WIDTH,
+    UI_MAX_SCALE,
+    UI_MIN_SCALE,
+    UIScaleContext,
+    aspect_ratio_from_size,
+    fit_size_to_aspect,
+)
+from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QPointF, QParallelAnimationGroup, QPropertyAnimation, QRect, QRectF, QRunnable, QSequentialAnimationGroup, QSize, Qt, QtMsgType, QThreadPool, QTimer, Signal, qInstallMessageHandler
 from PySide6.QtGui import QColor, QCursor, QFont, QFontDatabase, QFontMetrics, QIcon, QImage, QIntValidator, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRegion, QValidator
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -187,6 +202,12 @@ def set_target_window(hwnd: int, title: str) -> None:
     from core.capture import set_target_window as _set_target_window
 
     _set_target_window(hwnd, title)
+
+
+def clear_target_window() -> None:
+    from core.capture import clear_target as _clear_target
+
+    _clear_target()
 
 
 def is_target_foreground() -> bool:
@@ -523,6 +544,12 @@ from gui.parallelogram_card import (
     build_card_style,
 )
 from gui.student_stats import DistributionRow, DonutWidget, PALETTE, SunburstNode, SunburstWidget, build_distribution
+from gui.ui_design_runtime import (
+    apply_ui_design_spec,
+    capture_transient_widget_state,
+    restore_transient_widget_state,
+)
+from gui.ui_design_spec import UI_DESIGN_SPEC_PATH, load_ui_design_spec
 
 
 def _normalize_hex(color: str, fallback: str) -> str:
@@ -559,6 +586,23 @@ def _mix_hex(color_a: str, color_b: str, amount_from_b: float) -> str:
 
 def _load_main_palette() -> tuple[str, str, str, str, str]:
     fallback = ("#f266b3", "#efe4f2", "#313b59", "#2c3140", "#f2f2f2")
+    studio_palette_raw = os.environ.get("BA_PLANNER_UI_STUDIO_PALETTE", "").strip()
+    if studio_palette_raw:
+        try:
+            studio_palette = json.loads(studio_palette_raw)
+            return tuple(
+                _normalize_hex(studio_palette.get(key, fallback[index]), fallback[index])
+                for index, key in enumerate(("accent", "soft", "panel", "panel_alt", "text"))
+            )  # type: ignore[return-value]
+        except (TypeError, ValueError):
+            pass
+    design_palette = load_ui_design_spec().palette
+    design_values = tuple(
+        _normalize_hex(design_palette.get(key, fallback[index]), fallback[index])
+        for index, key in enumerate(("accent", "soft", "panel", "panel_alt", "text"))
+    )
+    if UI_DESIGN_SPEC_PATH.exists():
+        return design_values  # type: ignore[return-value]
     if not MAIN_UI_PALETTE_PATH.exists():
         return fallback
 
@@ -577,6 +621,12 @@ def _preferred_text_hex(background: str) -> str:
     red, green, blue = _hex_to_rgb(background)
     luminance = (0.299 * red) + (0.587 * green) + (0.114 * blue)
     return "#101722" if luminance >= 170 else "#f2f2f2"
+
+
+def _alpha_hex(color: str, alpha: float) -> str:
+    value = QColor(color)
+    value.setAlphaF(max(0.0, min(1.0, alpha)))
+    return value.name(QColor.HexArgb)
 
 
 def _live_line_edit_text(widget: QLineEdit | None) -> str:
@@ -598,11 +648,10 @@ ACCENT_STRONG = _mix_hex(PALETTE_ACCENT, "#ffffff", 0.14)
 ACCENT_SOFT = _mix_hex(PALETTE_ACCENT, PALETTE_PANEL_ALT, 0.58)
 ACCENT_PALE = _mix_hex(PALETTE_SOFT, PALETTE_PANEL_ALT, 0.55)
 SHADOW = _mix_hex(PALETTE_PANEL_ALT, "#000000", 0.35)
-WORK_AREA_ASPECT_RATIO = 16 / 9
-PLANNER_BASE_WIDTH = 1920
-PLANNER_BASE_HEIGHT = 1080
+WORK_AREA_ASPECT_RATIO = UI_ASPECT_RATIO
+PLANNER_BASE_WIDTH = UI_BASE_WIDTH
+PLANNER_BASE_HEIGHT = UI_BASE_HEIGHT
 SMALL_16_9_SCALE_THRESHOLD = 0.85
-SMALL_16_9_SCALE_FACTOR = 0.9
 STUDENT_GRID_CARD_BASE_WIDTH = 252
 PLAN_GRID_CARD_BASE_WIDTH = 252
 STUDENT_GRID_COLUMNS = 8
@@ -695,23 +744,29 @@ def _fit_rect_to_aspect(rect: QRect, aspect_ratio: float = WORK_AREA_ASPECT_RATI
     return QRect(x, y, max(1, target_width), max(1, target_height))
 
 
-def _window_frame_for_screen_area(screen_geometry: QRect, available_geometry: QRect) -> QRect:
+def _window_frame_for_screen_area(
+    screen_geometry: QRect,
+    available_geometry: QRect,
+    aspect_ratio: float | None = None,
+) -> QRect:
     if available_geometry.isEmpty():
         return QRect()
-    if screen_geometry.isEmpty():
-        return _fit_rect_to_aspect(available_geometry)
-    target_with_reserved_area = _fit_rect_to_aspect(screen_geometry)
-    target_frame = target_with_reserved_area.intersected(available_geometry)
-    if target_frame.isEmpty():
-        return _fit_rect_to_aspect(available_geometry)
-    return target_frame
+    resolved_aspect = aspect_ratio
+    if resolved_aspect is None:
+        resolved_aspect = aspect_ratio_from_size(
+            screen_geometry.width(),
+            screen_geometry.height(),
+            WORK_AREA_ASPECT_RATIO,
+        )
+    return _fit_rect_to_aspect(available_geometry, resolved_aspect)
 
 
 def get_qt_ui_scale(
     app: QApplication,
     base_width: int | None = None,
     base_height: int = 1080,
-    max_scale: float = 1.8,
+    max_scale: float = UI_MAX_SCALE,
+    min_scale: float = UI_MIN_SCALE,
 ) -> float:
     raw = os.getenv("BA_UI_SCALE")
     if raw:
@@ -733,15 +788,15 @@ def get_qt_ui_scale(
         if work_area is not None and not work_area.isEmpty() and work_area.intersects(available_geometry):
             available_geometry = work_area
     target_frame = _window_frame_for_screen_area(screen_geometry, available_geometry)
-    height = max(1, target_frame.height())
-    scale = height / float(base_height)
-    if base_width:
-        width = max(1, target_frame.width())
-        scale = min(scale, width / float(base_width))
-    if scale < SMALL_16_9_SCALE_THRESHOLD:
-        scale *= SMALL_16_9_SCALE_FACTOR
-    scale = min(max_scale, scale)
-    return max(0.1, scale)
+    context = UIScaleContext.from_size(
+        target_frame.width(),
+        target_frame.height(),
+        base_width=base_width or PLANNER_BASE_WIDTH,
+        base_height=base_height,
+        min_scale=min_scale,
+        max_scale=max_scale,
+    )
+    return context.scale
 
 
 def scale_px(value: int | float, scale: float) -> int:
@@ -2326,14 +2381,26 @@ def _load_ui_font_family() -> str | None:
     return families[0] if families else None
 
 
-def _apply_ui_font(app: QApplication) -> None:
+def _scaled_ui_font(scale: float = 1.0) -> QFont | None:
     ui_font_family = _load_ui_font_family()
     if not ui_font_family:
-        return
-    ui_font = QFont(app.font())
+        return None
+    ui_font = QFont()
     ui_font.setFamily(ui_font_family)
-    ui_font.setPointSize(11)
-    app.setFont(ui_font)
+    ui_font.setPointSizeF(max(1.0, UI_BASE_FONT_POINT_SIZE * max(0.1, float(scale))))
+    return ui_font
+
+
+def _apply_ui_font(app: QApplication, scale: float = 1.0) -> None:
+    ui_font = _scaled_ui_font(scale)
+    if ui_font is not None:
+        app.setFont(ui_font)
+
+
+def apply_window_ui_font(window: QWidget, scale: float) -> None:
+    ui_font = _scaled_ui_font(scale)
+    if ui_font is not None:
+        window.setFont(ui_font)
 
 
 def _int_or_none(value: object) -> int | None:

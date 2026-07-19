@@ -51,28 +51,30 @@ class StudentsTabComponent:
         tabs.tabBar().setUsesScrollButtons(True)
         outer_layout.addWidget(tabs, 1)
 
-        scan_tab = QWidget()
-        self._scan_tab = self._add_main_tab(tabs, scan_tab, "스캔")
-        self._build_scan_tab(scan_tab)
+        home_tab = QWidget()
+        self._home_tab = self._add_main_tab(tabs, home_tab, "홈")
+        self._scan_tab = self._home_tab
+        self._build_home_tab(home_tab)
 
         students_tab = QWidget()
         self._students_tab = self._add_main_tab(tabs, students_tab, _tr("tab.students"))
         self._build_students_tab(students_tab)
 
         plan_tab = QWidget()
-        self._add_main_tab(tabs, plan_tab, _tr("tab.plans"))
+        self._plan_tab = self._add_main_tab(tabs, plan_tab, _tr("tab.plans"))
         self._build_plan_tab(plan_tab)
 
         resource_tab = QWidget()
         self._resource_tab = self._add_main_tab(tabs, resource_tab, "필요 재화")
         self._build_resource_tab(resource_tab)
+        tabs.setTabVisible(tabs.indexOf(resource_tab), False)
 
         inventory_tab = QWidget()
         self._inventory_tab = self._add_main_tab(tabs, inventory_tab, _tr("tab.inventory"))
         self._build_inventory_tab(inventory_tab)
 
         tactical_tab = QWidget()
-        self._add_main_tab(tabs, tactical_tab, "전술대항전")
+        self._tactical_tab = self._add_main_tab(tabs, tactical_tab, "전술대항전")
         self._build_tactical_tab(tactical_tab)
 
         if SHOW_RAID_GUIDE_TAB:
@@ -80,16 +82,15 @@ class StudentsTabComponent:
             self._add_main_tab(tabs, raid_guide_tab, "공략 타임라인")
             self._build_raid_guide_tab(raid_guide_tab)
 
-        if SHOW_STATS_TAB:
-            stats_tab = QWidget()
-            self._add_main_tab(tabs, stats_tab, "Statistics")
-            self._build_stats_tab(stats_tab)
-
-        settings_tab = QWidget()
-        self._settings_tab = self._add_main_tab(tabs, settings_tab, "설정")
-        self._build_settings_tab(settings_tab)
+        stats_tab = QWidget()
+        self._stats_tab = self._add_main_tab(tabs, stats_tab, "통계")
+        self._build_stats_tab(stats_tab)
+        tabs.setTabVisible(tabs.indexOf(stats_tab), False)
 
         tabs.currentChanged.connect(self._on_main_tab_changed)
+        tabs.currentChanged.connect(self._animate_main_tab_change)
+        tabs.tabBarClicked.connect(self._prepare_main_tab_click)
+        tabs.currentChanged.connect(lambda _index: QTimer.singleShot(0, self._sync_scan_header_compound_shape))
 
         self.setStyleSheet(
             f"""
@@ -98,9 +99,9 @@ class StudentsTabComponent:
             QLabel {{ background: transparent; }}
             QTabWidget#mainTabs::pane {{
                 border: none;
-                border-radius: {scale_px(18, self._ui_scale)}px;
+                border-radius: 0px;
                 background: transparent;
-                top: {scale_px(3, self._ui_scale)}px;
+                top: 0px;
             }}
             QTabWidget#tacticalInsightTabs::pane {{
                 border: none;
@@ -124,7 +125,14 @@ class StudentsTabComponent:
                 font-weight: 700;
             }}
             QTabBar#mainTabBar {{
-                margin-bottom: {scale_px(2, self._ui_scale)}px;
+                background: {_alpha_hex(_mix_hex(BG, PALETTE_PANEL_ALT, 0.62), 0.78)};
+                border: none;
+                border-top-left-radius: {scale_px(5, self._ui_scale)}px;
+                border-top-right-radius: {scale_px(5, self._ui_scale)}px;
+                border-bottom-left-radius: 0px;
+                border-bottom-right-radius: 0px;
+                padding: {scale_px(4, self._ui_scale)}px {scale_px(4, self._ui_scale)}px 0px {scale_px(4, self._ui_scale)}px;
+                margin-bottom: 0px;
             }}
             QTabBar#mainTabBar::tab {{
                 background: transparent;
@@ -132,8 +140,12 @@ class StudentsTabComponent:
                 border: 2px solid transparent;
                 border-radius: {scale_px(10, self._ui_scale)}px;
                 padding: {scale_px(8, self._ui_scale)}px {scale_px(14, self._ui_scale)}px;
+                margin-top: {scale_px(4, self._ui_scale)}px;
                 margin-right: {scale_px(6, self._ui_scale)}px;
                 font-weight: 700;
+            }}
+            QTabBar#mainTabBar::tab:first {{
+                margin-left: {scale_px(4, self._ui_scale)}px;
             }}
             QTabBar#mainTabBar::tab:hover {{
                 background: transparent;
@@ -141,9 +153,13 @@ class StudentsTabComponent:
                 border-color: {_mix_hex("#ffb5f0", SURFACE_ALT, 0.28)};
             }}
             QTabBar#mainTabBar::tab:selected {{
-                background: transparent;
-                color: #ffb5f0;
-                border: 2px solid #ffb5f0;
+                background: {_mix_hex(PALETTE_ACCENT, PALETTE_PANEL_ALT, 0.62)};
+                color: {INK};
+                border: none;
+                border-top-left-radius: {scale_px(5, self._ui_scale)}px;
+                border-top-right-radius: {scale_px(5, self._ui_scale)}px;
+                border-bottom-left-radius: 0px;
+                border-bottom-right-radius: 0px;
                 font-weight: 800;
             }}
             QTabWidget#inventoryRootTabs {{
@@ -206,23 +222,60 @@ class StudentsTabComponent:
                 border-bottom-color: {ACCENT};
                 font-weight: 900;
             }}
-            QFrame#header, QFrame#panel, QFrame#statPanel, QFrame#summaryCard, QFrame#scanInventoryCard {{
+            QFrame#panel, QFrame#statPanel, QFrame#summaryCard, QFrame#scanInventoryCard,
+            QFrame#scanProgressSection {{
+                background: {SURFACE};
+                border: 1px solid {BORDER};
+                border-radius: {scale_px(14, self._ui_scale)}px;
+            }}
+            QFrame#header {{
                 background: {SURFACE};
                 border: 1px solid {BORDER};
                 border-radius: {scale_px(14, self._ui_scale)}px;
             }}
             QFrame#scanHeader {{
-                background: {SURFACE};
-                border: 1px solid {BORDER};
-                border-radius: {scale_px(14, self._ui_scale)}px;
+                background: transparent;
+                border: none;
+                border-radius: 0px;
             }}
-            QFrame#scanHeader[connected="true"] {{
-                border: {scale_px(3, self._ui_scale)}px solid #76d7ff;
+            QWidget#scanHeaderAccessory {{
+                background: transparent;
+                border: none;
             }}
-            QFrame#scanPreviewPanel {{
+            QFrame#scanHeaderSection {{
+                background: transparent;
+                border: none;
+                border-top-left-radius: 0px;
+                border-top-right-radius: {scale_px(5, self._ui_scale)}px;
+                border-bottom-left-radius: {scale_px(5, self._ui_scale)}px;
+                border-bottom-right-radius: {scale_px(5, self._ui_scale)}px;
+            }}
+            QFrame#scanHeaderActiveRegion {{
+                background: transparent;
+                border: none;
+                border-top-left-radius: {scale_px(5, self._ui_scale)}px;
+                border-top-right-radius: {scale_px(5, self._ui_scale)}px;
+                border-bottom-left-radius: {scale_px(5, self._ui_scale)}px;
+                border-bottom-right-radius: {scale_px(5, self._ui_scale)}px;
+            }}
+            QFrame#scanHeaderActiveRegion[firstActive="true"] {{
+                border-top-left-radius: 0px;
+            }}
+            QFrame#scanHeaderActiveConnector {{
+                background: {_mix_hex(PALETTE_ACCENT, PALETTE_PANEL_ALT, 0.62)};
+                border: none;
+                border-radius: 0px;
+            }}
+            QFrame#scanPreviewSection {{
                 background: #05070d;
                 border: 1px solid {_mix_hex(BORDER, '#ffffff', 0.12)};
                 border-radius: {scale_px(14, self._ui_scale)}px;
+            }}
+            QFrame#scanWorkSection, QFrame#scanResultSection,
+            QFrame#scanDebugSection, QFrame#scanMirrorSection {{
+                background: {_alpha_hex(_mix_hex(BG, PALETTE_PANEL_ALT, 0.62), 0.78)};
+                border: none;
+                border-radius: {scale_px(5, self._ui_scale)}px;
             }}
             QFrame#scanStudentCard, QFrame#scanStudentCaptureCard {{
                 background: {_mix_hex(SURFACE_ALT, BG, 0.08)};
@@ -287,6 +340,12 @@ class StudentsTabComponent:
                 color: #ffb5f0;
                 border: 1px solid {_mix_hex("#ffb5f0", SURFACE_ALT, 0.28)};
                 font-weight: 700;
+            }}
+            QPushButton[homeAction="true"] {{
+                background: transparent;
+                border: none;
+                padding: 0px;
+                min-height: {scale_px(42, self._ui_scale)}px;
             }}
             QPushButton:hover {{
                 background: transparent;
@@ -799,6 +858,12 @@ class StudentsTabComponent:
             """
         )
         self._build_busy_overlay(root)
+        if not getattr(self, "_design_mode", False):
+            self._ui_design_widget_index = apply_ui_design_spec(
+                self,
+                load_ui_design_spec(),
+                play_animations=True,
+            )
     def _build_students_tab(self, root: QWidget) -> None:
         layout = QVBoxLayout(root)
         layout.setContentsMargins(0, 0, 0, scale_px(12, self._ui_scale))
@@ -1166,6 +1231,9 @@ class StudentsTabComponent:
         super().resizeEvent(event)
         QTimer.singleShot(0, self._sync_hero_height)
         self._sync_busy_overlay_geometry()
+        handler = getattr(self, "_handle_window_resize_for_scale", None)
+        if callable(handler):
+            handler(event)
     def _build_busy_overlay(self, parent: QWidget) -> None:
         overlay = QFrame(parent)
         overlay.setObjectName("busyOverlay")

@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+profiles/
+*.db
+config.json
+logs/
+scan_results/
+release/
+

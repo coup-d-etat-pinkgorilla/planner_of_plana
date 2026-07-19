@@ -172,6 +172,7 @@ def build_file_manifest(files: list[Path]) -> dict[str, dict[str, object]]:
 def _pyinstaller_asset_data_args() -> list[str]:
     data_args = [
         "gui/font;gui/font",
+        "gui/quick/qml;gui/quick/qml",
         "gui/main_ui_color_palete.txt;gui",
         "assets/plana;assets/plana",
     ]

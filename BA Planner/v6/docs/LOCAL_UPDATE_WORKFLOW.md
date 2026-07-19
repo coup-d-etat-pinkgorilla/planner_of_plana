@@ -212,5 +212,5 @@ Then test from a clean folder:
 - Run `BA Planner.exe`.
 - Confirm assets install or download.
 - Confirm the planner opens as the first screen.
-- In `설정`, create or select a profile, open the window list, and save the Blue Archive window.
-- In `스캔`, run at least one scan mode and confirm the saved Blue Archive window is brought forward.
+- In `홈 > 설정`, create or select a profile, open the window list, and save the Blue Archive window.
+- In `홈 > 스캔`, run at least one scan mode and confirm the saved Blue Archive window is brought forward.

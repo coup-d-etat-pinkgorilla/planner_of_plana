@@ -1,0 +1,79 @@
+{
+  "source": "v6 core.planning_calc.calculate_goal_cost",
+  "record": {
+    "student_id": "ayane",
+    "level": 1,
+    "student_star": 1,
+    "weapon_state": "weapon_locked",
+    "weapon_star": 0,
+    "weapon_level": 0,
+    "ex_skill": 1,
+    "skill1": 1,
+    "skill2": 1,
+    "skill3": 1,
+    "equip1": "T1",
+    "equip2": "T1",
+    "equip3": "T1",
+    "equip4": null,
+    "equip1_level": 1,
+    "equip2_level": 1,
+    "equip3_level": 1,
+    "stat_hp": 0,
+    "stat_atk": 0,
+    "stat_heal": 0
+  },
+  "goal": {
+    "student_id": "ayane",
+    "target_level": 10,
+    "target_star": 2,
+    "target_ex_skill": 2,
+    "target_skill1": 2,
+    "target_skill2": 2,
+    "target_skill3": 2,
+    "target_equip1_tier": 2,
+    "target_equip2_tier": 2,
+    "target_equip3_tier": 2,
+    "target_equip1_level": 20,
+    "target_equip2_level": 20,
+    "target_equip3_level": 20,
+    "target_stat_hp": 1,
+    "target_stat_atk": 1,
+    "target_stat_heal": 1
+  },
+  "expected": {
+    "credits": 439944,
+    "level_exp": 540,
+    "equipment_exp": 6666,
+    "weapon_exp": 0,
+    "star_materials": { "Item_Icon_SecretStone_ayane": 30 },
+    "equipment_materials": {
+      "어그 부츠": 15,
+      "헤어 슈슈": 15,
+      "눈꽃 펜던트": 15
+    },
+    "level_exp_items": {
+      "Item_Icon_ExpItem_0 T2": 1,
+      "Item_Icon_ExpItem_0 T1": 1
+    },
+    "equipment_exp_items": {
+      "Equipment_Icon_Exp_0 T2": 6,
+      "Equipment_Icon_Exp_0 T1": 6,
+      "Equipment_Icon_Exp_0 T3": 3
+    },
+    "weapon_exp_items": {},
+    "skill_books": {
+      "Abydos BD T1": 12,
+      "Abydos Note T1": 15
+    },
+    "ex_ooparts": { "Nebra Disk T1": 14 },
+    "skill_ooparts": {},
+    "favorite_item_materials": {},
+    "stat_materials": {
+      "Item_Icon_WorkBook_PotentialMaxHP T1": 6,
+      "Nebra Disk T1": 30
+    },
+    "stat_levels": { "HP": 1, "ATK": 1, "HEAL": 1 },
+    "warnings": []
+  }
+}
+

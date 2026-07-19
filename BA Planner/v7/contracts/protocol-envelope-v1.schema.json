@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/protocol-envelope-v1.schema.json",
+  "title": "BA Planner local protocol envelope v1",
+  "type": "object",
+  "required": ["protocol", "id", "type", "method", "payload"],
+  "properties": {
+    "protocol": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "type": { "enum": ["request", "response", "event"] },
+    "method": { "type": "string", "minLength": 1 },
+    "payload": { "type": "object" }
+  },
+  "additionalProperties": false
+}
+
