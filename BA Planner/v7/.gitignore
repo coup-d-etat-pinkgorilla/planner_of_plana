@@ -8,4 +8,6 @@ config.json
 logs/
 scan_results/
 release/
-
+/BA Planner v7.exe
+/BA Planner v7 DevTools Debug.exe
+/BA Planner v7 DevTools Profile.exe
