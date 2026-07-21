@@ -80,6 +80,8 @@ Almanac 검증과 Windows release build가 통과했다. 변경은 아직 커밋
   수신·staging 검사·`MASTER_PROMPT.md` 클립보드 복사를 수행한다.
 - 슬레이브는 `$HOME/.codex/ba-planner-slave/Send-SlaveResult.ps1` 단일 래퍼로
   패키징·UDP 마스터 자동 발견·무선 업로드를 수행하며 IP·port·token을 수동 입력하지 않는다.
+- Windows UDP discovery는 도달 불가능한 가상 어댑터의 ICMP connection-reset을 개별
+  probe 잡음으로 무시하고 nonce가 일치하는 수신기 응답을 계속 기다린다.
 
 ## 확인된 P0/P1 산출물
 
@@ -124,7 +126,7 @@ Almanac 검증과 Windows release build가 통과했다. 변경은 아직 커밋
 - 입력: `docs/migration/p2-planning-screen/input.md`
 - 출력 보고서: `docs/migration/p2-planning-screen/output.md` (인계 전)
 - 결과물: `docs/migration/p2-planning-screen/artifacts/` 및 cross-PC 전달 패키지 (인계 전)
-- 검증: 패키징·UDP 자동 discovery·무선 4파일 송수신·SHA-256·마스터 클립보드 경로 종단간 통과
+- 검증: 패키징·UDP 자동 discovery·무선 4파일 송수신·SHA-256·마스터 클립보드 종단간 통과; connection-reset/no-receiver fallback 통과
 - 결정 및 제약: 정확한 학생 ID 조회, in-memory 현재 상태, 부족량·저장·scanner 제외, 서로 다른 PC는 ZIP·SHA-256으로 인계
 - 차단 사항: 없음
 - 다음 행동: 슬레이브 저장소에 송신 도구를 전달하고 설치 스크립트로 단일 래퍼를 설치한 뒤 결과 수신 시작

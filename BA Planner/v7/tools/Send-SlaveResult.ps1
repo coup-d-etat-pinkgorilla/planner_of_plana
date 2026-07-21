@@ -120,6 +120,21 @@ $requestBytes = [System.Text.Encoding]::UTF8.GetBytes($requestJson)
 $udp = New-Object System.Net.Sockets.UdpClient
 $udp.EnableBroadcast = $true
 $udp.Client.ReceiveTimeout = 1200
+try {
+    # Windows reports ICMP port-unreachable replies from unrelated broadcast
+    # targets as WSAECONNRESET on the next Receive call. Discovery probes many
+    # adapters, so suppress that per-target noise and keep waiting for a valid
+    # nonce-matched response.
+    $sioUdpConnectionReset = -1744830452
+    [void]$udp.Client.IOControl(
+        $sioUdpConnectionReset,
+        [byte[]](0),
+        [byte[]](0)
+    )
+}
+catch {
+    Write-Verbose "Could not disable UDP connection-reset notifications: $_"
+}
 $discoveryResponse = $null
 $discoveryRemote = $null
 
@@ -162,7 +177,13 @@ try {
                 $discoveryRemote = $remoteEndpoint
             }
             catch [System.Net.Sockets.SocketException] {
-                if ($_.Exception.SocketErrorCode -ne [System.Net.Sockets.SocketError]::TimedOut) {
+                $ignorableErrors = @(
+                    [System.Net.Sockets.SocketError]::TimedOut,
+                    [System.Net.Sockets.SocketError]::ConnectionReset,
+                    [System.Net.Sockets.SocketError]::NetworkUnreachable,
+                    [System.Net.Sockets.SocketError]::HostUnreachable
+                )
+                if ($ignorableErrors -notcontains $_.Exception.SocketErrorCode) {
                     throw
                 }
                 break
