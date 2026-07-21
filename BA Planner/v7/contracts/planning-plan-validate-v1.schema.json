@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/planning-plan-validate-v1.schema.json",
+  "title": "planning.plan.validate request and success response",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" }
+  ],
+  "$defs": {
+    "request": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        {
+          "type": "object",
+          "properties": {
+            "protocol": { "const": 1 },
+            "id": { "type": "string", "minLength": 1 },
+            "type": { "const": "request" },
+            "method": { "const": "planning.plan.validate" },
+            "payload": {
+              "type": "object",
+              "required": ["plan"],
+              "properties": {
+                "plan": { "$ref": "planning-types-v1.schema.json#/$defs/growthPlan" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "response": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        {
+          "type": "object",
+          "properties": {
+            "protocol": { "const": 1 },
+            "id": { "type": "string", "minLength": 1 },
+            "type": { "const": "response" },
+            "method": { "const": "planning.plan.validate" },
+            "payload": {
+              "type": "object",
+              "required": ["valid", "plan"],
+              "properties": {
+                "valid": { "const": true },
+                "plan": { "$ref": "planning-types-v1.schema.json#/$defs/growthPlan" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

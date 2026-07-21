@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/planning-student-get-v1.schema.json",
+  "title": "planning.student.get request and success response",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" }
+  ],
+  "$defs": {
+    "request": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        {
+          "type": "object",
+          "properties": {
+            "protocol": { "const": 1 },
+            "id": { "type": "string", "minLength": 1 },
+            "type": { "const": "request" },
+            "method": { "const": "planning.student.get" },
+            "payload": {
+              "type": "object",
+              "required": ["student_id"],
+              "properties": {
+                "student_id": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "response": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        {
+          "type": "object",
+          "properties": {
+            "protocol": { "const": 1 },
+            "id": { "type": "string", "minLength": 1 },
+            "type": { "const": "response" },
+            "method": { "const": "planning.student.get" },
+            "payload": {
+              "type": "object",
+              "required": ["student"],
+              "properties": {
+                "student": {
+                  "oneOf": [
+                    { "$ref": "planning-types-v1.schema.json#/$defs/studentMeta" },
+                    { "type": "null" }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

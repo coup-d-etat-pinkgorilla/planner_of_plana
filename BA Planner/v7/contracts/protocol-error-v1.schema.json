@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/protocol-error-v1.schema.json",
+  "title": "BA Planner protocol v1 structured error response",
+  "oneOf": [
+    { "$ref": "#/$defs/unknownMethod" },
+    { "$ref": "#/$defs/studentGet" },
+    { "$ref": "#/$defs/planValidate" },
+    { "$ref": "#/$defs/planCalculate" }
+  ],
+  "$defs": {
+    "errorEnvelope": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        {
+          "type": "object",
+          "properties": {
+            "protocol": { "const": 1 },
+            "id": { "type": "string", "minLength": 1 },
+            "type": { "const": "response" },
+            "method": { "type": "string", "minLength": 1 },
+            "payload": {
+              "type": "object",
+              "required": ["error"],
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "required": ["code", "message"],
+                  "properties": {
+                    "code": { "type": "string" },
+                    "message": { "type": "string", "minLength": 1 },
+                    "details": { "type": "object" }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "unknownMethod": {
+      "allOf": [
+        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "properties": {
+            "method": {
+              "not": {
+                "enum": [
+                  "planning.student.get",
+                  "planning.plan.validate",
+                  "planning.plan.calculate"
+                ]
+              }
+            },
+            "payload": {
+              "properties": {
+                "error": { "properties": { "code": { "const": "unknown_method" } } }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "studentGet": {
+      "allOf": [
+        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "properties": {
+            "method": { "const": "planning.student.get" },
+            "payload": {
+              "properties": {
+                "error": {
+                  "properties": {
+                    "code": { "enum": ["invalid_payload", "metadata_lookup_failed"] }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "planValidate": {
+      "allOf": [
+        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "properties": {
+            "method": { "const": "planning.plan.validate" },
+            "payload": {
+              "properties": {
+                "error": { "properties": { "code": { "const": "invalid_payload" } } }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "planCalculate": {
+      "allOf": [
+        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "properties": {
+            "method": { "const": "planning.plan.calculate" },
+            "payload": {
+              "properties": {
+                "error": {
+                  "properties": {
+                    "code": { "enum": ["invalid_payload", "calculation_failed"] }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

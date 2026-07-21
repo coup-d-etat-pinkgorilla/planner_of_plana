@@ -5,6 +5,13 @@
 - Read `README.md` and the relevant page under `almanac/` before changing a subsystem.
 - Read `docs/migration/v6-knowledge-baseline.md` before copying or adapting v6 code.
 - Treat `../v6` as a behavioral reference, not as an importable runtime dependency.
+- When writing a prompt for a slave agent, read and apply
+  `almanac/workflows/slave-artifact-handoff.md` so the slave returns `output.md` and
+  its actual artifacts together.
+- Before continuing any P0-P6 workflow, read
+  `almanac/workflows/p0-p6-workflow-status.md`. Update it whenever a phase's status,
+  decisions, artifacts, verification, or next action changes, and retain it until
+  the full P0-P6 workflow is complete.
 
 ## Migration Rules
 
@@ -29,4 +36,3 @@
 - Python: `cd backend; py -3.11 -m unittest discover -s tests -v`
 - Flutter: `cd frontend; flutter analyze; flutter test`
 - Windows release: `cd frontend; flutter build windows --release`
-

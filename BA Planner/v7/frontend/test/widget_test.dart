@@ -6,8 +6,10 @@ import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/ui/app_section.dart';
 import 'package:ba_planner_v7/ui/widgets/animated_section_stack.dart';
 import 'package:ba_planner_v7/ui/widgets/ba_triangle_background.dart';
+import 'package:ba_planner_v7/ui/widgets/diagonal_header.dart';
 import 'package:ba_planner_v7/ui/widgets/diagonal_menu.dart';
 import 'package:ba_planner_v7/ui/widgets/lifted_path_shadow.dart';
 import 'package:flutter/material.dart';
@@ -92,6 +94,22 @@ void main() {
     expect(following.contains(const Offset(2, 138)), isTrue);
   });
 
+  test('nested header keeps rounded corners and an 80 degree right cut', () {
+    const size = Size(800, 109);
+    const radius = 14.0;
+    final path = buildRightCutRoundedPath(size, radius: radius);
+    final expectedCut =
+        (size.height - radius * 2) / math.tan(80 * math.pi / 180);
+
+    expect(path.contains(const Offset(0, 0)), isFalse);
+    expect(path.contains(const Offset(radius, 1)), isTrue);
+    expect(path.contains(const Offset(799, radius)), isTrue);
+    expect(
+      path.contains(Offset(size.width - expectedCut / 2, size.height - 1)),
+      isFalse,
+    );
+  });
+
   testWidgets('diagonal menu row keeps a constant visible seam gap', (
     tester,
   ) async {
@@ -168,7 +186,7 @@ void main() {
     expect(find.byKey(const ValueKey('home-menu-section')), findsOneWidget);
     expect(find.text('학생부 확인'), findsOneWidget);
 
-    await tester.tap(find.text('학생').first);
+    await tester.tap(find.byKey(const ValueKey('top-tab-students')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 60));
     expect(find.text('학생 목록과 육성 상태 화면의 v7 골격입니다.'), findsOneWidget);
@@ -179,14 +197,24 @@ void main() {
       find.byKey(const ValueKey('animated-section-1')),
     );
     expect(outgoing.transform.getTranslation().x, greaterThan(0));
-    expect(outgoing.transform.getTranslation().y, lessThan(0));
+    expect(outgoing.transform.getTranslation().y, closeTo(0, 1e-6));
     expect(incoming.transform.getTranslation().y, greaterThan(0));
 
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('animated-section-0')), findsNothing);
     expect(find.byKey(const ValueKey('animated-section-1')), findsOneWidget);
 
-    await tester.tap(find.text('설정').first);
+    await tester.tap(find.text(AppSection.home.label).first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+    final returningHome = tester.widget<Transform>(
+      find.byKey(const ValueKey('animated-section-0')),
+    );
+    expect(returningHome.transform.getTranslation().x, lessThan(0));
+    expect(returningHome.transform.getTranslation().y, closeTo(0, 1e-6));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('top-tab-settings')));
     await tester.pumpAndSettle();
     expect(find.text('Adaptive-Sync 진단'), findsWidgets);
   });
@@ -227,6 +255,101 @@ void main() {
     }
   });
 
+  testWidgets('tabs live inside the aligned header surface', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(BAPlannerApp(service: MockAppService()));
+
+    final header = tester.getRect(
+      find.byKey(const ValueKey('page-header-surface')),
+    );
+    final active = tester.getRect(find.byKey(const ValueKey('top-tab-home')));
+    final inactive = tester.getRect(
+      find.byKey(const ValueKey('top-tab-students')),
+    );
+    final section = tester.getRect(
+      find.byKey(const ValueKey('home-menu-section')),
+    );
+    final nestedHeader = tester.getRect(
+      find.byKey(const ValueKey('nested-page-header')),
+    );
+
+    expect(
+      find.byKey(const ValueKey('l-glass-header-background')),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<Material>(find.byKey(const ValueKey('top-tab-home'))).color,
+      Colors.transparent,
+    );
+    expect(header.left, closeTo(section.left, 1e-6));
+    expect(nestedHeader.left, closeTo(header.left + 5, 1e-6));
+    expect(nestedHeader.top, closeTo(header.top + 53, 1e-6));
+    expect(nestedHeader.right, lessThan(header.right));
+    expect(
+      find.byKey(const ValueKey('header-triangle-texture')),
+      findsOneWidget,
+    );
+    expect(active.top, greaterThanOrEqualTo(header.top));
+    expect(active.bottom, lessThan(header.bottom));
+    expect(inactive.top, active.top);
+    expect(inactive.bottom, active.bottom);
+
+    await tester.tap(find.byKey(const ValueKey('top-tab-students')));
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('page-header-content-students')),
+      findsOneWidget,
+    );
+    expect(find.byType(AnimatedSwitcher), findsWidgets);
+  });
+
+  testWidgets('home menu captions preserve the v6 wash and typography', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 1300));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(BAPlannerApp(service: MockAppService()));
+
+    final button = find.byKey(const ValueKey('home-menu-students'));
+    final captionFinder = find.descendant(
+      of: button,
+      matching: find.byType(Text),
+    );
+    final caption = tester.widget<Text>(captionFinder);
+    expect(caption.softWrap, isTrue);
+    expect(caption.maxLines, isNull);
+    expect(caption.style?.fontFamily, 'GyeonggiTitle');
+    expect(caption.style?.fontWeight, FontWeight.bold);
+    expect(caption.style?.fontSize, 24);
+    expect(caption.style?.color, Colors.white);
+
+    final positioned = tester.widget<Positioned>(
+      find.ancestor(of: captionFinder, matching: find.byType(Positioned)).first,
+    );
+    expect(positioned.left, closeTo(238 * 0.08, 1e-6));
+    expect(positioned.top, closeTo(238 * 0.65, 1e-6));
+    expect(positioned.bottom, closeTo(238 * 0.055, 1e-6));
+
+    final gradients = tester
+        .widgetList<DecoratedBox>(
+          find.descendant(of: button, matching: find.byType(DecoratedBox)),
+        )
+        .map((box) => box.decoration)
+        .whereType<BoxDecoration>()
+        .map((decoration) => decoration.gradient)
+        .whereType<LinearGradient>();
+    final wash = gradients.single;
+    expect(wash.stops, [0, 0.18, 0.30, 0.56, 1]);
+    expect(wash.colors, const [
+      Color(0x00747b86),
+      Color(0x75747b86),
+      Color(0xd6747b86),
+      Color(0xf5747b86),
+      Color(0xff747b86),
+    ]);
+  });
+
   testWidgets('mock state is reflected without replacing widgets', (
     tester,
   ) async {
@@ -244,6 +367,28 @@ void main() {
 
     expect(find.text('연결 안 됨'), findsOneWidget);
     expect(find.text('9999명'), findsOneWidget);
+  });
+
+  testWidgets('unavailable P1 scanner is explicit and cannot be started', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final defaults = MockAppService();
+    final service = MockAppService(
+      initialState: defaults.state.value.copyWith(scanAvailable: false),
+    );
+    await defaults.dispose();
+    addTearDown(service.dispose);
+    await tester.pumpWidget(BAPlannerApp(service: service));
+
+    await tester.tap(find.byKey(const ValueKey('top-tab-scan')));
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, '스캐너 미연결'),
+    );
+    expect(button.onPressed, isNull);
   });
 
   testWidgets('development panel opens as an overlay in a narrow window', (

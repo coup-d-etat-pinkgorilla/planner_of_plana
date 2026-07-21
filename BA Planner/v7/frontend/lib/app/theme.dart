@@ -36,7 +36,7 @@ abstract final class BAPlannerTheme {
       brightness: Brightness.dark,
       colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.canvas,
-      fontFamily: 'Malgun Gothic',
+      fontFamily: 'GyeonggiTitle',
       dividerColor: AppColors.outline,
       cardTheme: const CardThemeData(
         color: AppColors.surface,

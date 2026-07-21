@@ -13,6 +13,7 @@ class MockAppService implements AppService, MockScenarioController {
               studentCount: 42,
               inventoryItemCount: 186,
               hasData: true,
+              scanAvailable: true,
               useLongNames: false,
               hasMissingMetadata: false,
             ),
@@ -48,6 +49,46 @@ class MockAppService implements AppService, MockScenarioController {
     _state.value = _state.value.copyWith(scanPhase: ScanPhase.scanning);
     await Future<void>.delayed(const Duration(milliseconds: 650));
     _state.value = _state.value.copyWith(scanPhase: ScanPhase.succeeded);
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getStudent(String studentId) async {
+    return null;
+  }
+
+  @override
+  Future<Map<String, dynamic>> validatePlan(Map<String, dynamic> plan) async {
+    return Map<String, dynamic>.from(plan);
+  }
+
+  @override
+  Future<Map<String, dynamic>> calculatePlan({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> plan,
+  }) async {
+    return const {
+      'credits': 0,
+      'level_exp': 0,
+      'equipment_exp': 0,
+      'weapon_exp': 0,
+      'star_materials': <String, int>{},
+      'equipment_materials': <String, int>{},
+      'level_exp_items': <String, int>{},
+      'equipment_exp_items': <String, int>{},
+      'weapon_exp_items': <String, int>{},
+      'skill_books': <String, int>{},
+      'ex_ooparts': <String, int>{},
+      'skill_ooparts': <String, int>{},
+      'favorite_item_materials': <String, int>{},
+      'stat_materials': <String, int>{},
+      'stat_levels': <String, int>{},
+      'warnings': <String>[],
+    };
+  }
+
+  @override
+  Future<void> dispose() async {
+    _state.dispose();
   }
 
   @override

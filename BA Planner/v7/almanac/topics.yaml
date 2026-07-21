@@ -11,4 +11,7 @@ topics:
     title: Data
     description: 현재 상태, 메타데이터, 목표, 계산 결과의 의미
     parents: [architecture]
-
+  - slug: workflow
+    title: Workflow
+    description: 마스터와 슬레이브 사이의 작업 명령 및 결과물 인계 계약
+    parents: [architecture]

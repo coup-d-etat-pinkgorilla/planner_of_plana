@@ -15,6 +15,7 @@ class AppServiceState {
     required this.studentCount,
     required this.inventoryItemCount,
     required this.hasData,
+    required this.scanAvailable,
     required this.useLongNames,
     required this.hasMissingMetadata,
   });
@@ -25,6 +26,7 @@ class AppServiceState {
   final int studentCount;
   final int inventoryItemCount;
   final bool hasData;
+  final bool scanAvailable;
   final bool useLongNames;
   final bool hasMissingMetadata;
 
@@ -35,6 +37,7 @@ class AppServiceState {
     int? studentCount,
     int? inventoryItemCount,
     bool? hasData,
+    bool? scanAvailable,
     bool? useLongNames,
     bool? hasMissingMetadata,
   }) {
@@ -45,6 +48,7 @@ class AppServiceState {
       studentCount: studentCount ?? this.studentCount,
       inventoryItemCount: inventoryItemCount ?? this.inventoryItemCount,
       hasData: hasData ?? this.hasData,
+      scanAvailable: scanAvailable ?? this.scanAvailable,
       useLongNames: useLongNames ?? this.useLongNames,
       hasMissingMetadata: hasMissingMetadata ?? this.hasMissingMetadata,
     );
@@ -53,7 +57,7 @@ class AppServiceState {
 
 /// UI가 사용하는 유일한 백엔드 경계입니다.
 ///
-/// 이후 V6ProcessAppService도 이 계약만 구현하며 Widget은 변경하지 않습니다.
+/// ProcessAppService도 이 계약만 구현하며 Widget은 변경하지 않습니다.
 abstract interface class AppService {
   ValueListenable<AppServiceState> get state;
 
@@ -62,6 +66,17 @@ abstract interface class AppService {
   Future<void> restartBackend();
 
   Future<void> startScan();
+
+  Future<Map<String, dynamic>?> getStudent(String studentId);
+
+  Future<Map<String, dynamic>> validatePlan(Map<String, dynamic> plan);
+
+  Future<Map<String, dynamic>> calculatePlan({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> plan,
+  });
+
+  Future<void> dispose();
 }
 
 abstract interface class MockScenarioController {

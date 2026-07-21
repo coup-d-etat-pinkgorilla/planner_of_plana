@@ -157,7 +157,6 @@ class _HomeMenuLayout extends StatelessWidget {
               child: _HomeMenuButtonContent(
                 data: cards[index],
                 imageLoadState: imageLoadState,
-                extendLeft: index > 0,
               ),
             ),
         ],
@@ -193,7 +192,6 @@ class _HomeMenuButtonContent extends StatelessWidget {
   const _HomeMenuButtonContent({
     required this.data,
     required this.imageLoadState,
-    required this.extendLeft,
   });
 
   static const _settingsTexture = BATriangleTextureConfig(
@@ -216,7 +214,6 @@ class _HomeMenuButtonContent extends StatelessWidget {
 
   final _HomeCardData data;
   final ImageLoadState imageLoadState;
-  final bool extendLeft;
 
   @override
   Widget build(BuildContext context) {
@@ -224,8 +221,18 @@ class _HomeMenuButtonContent extends StatelessWidget {
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
         final slant = diagonalSlant(size);
-        final safeLeft = (extendLeft ? slant : 0.0) + 12;
-        final safeRight = slant + 12;
+        final captionLeft = math
+            .max(10, constraints.maxHeight * 0.08)
+            .toDouble();
+        final captionRight = slant + math.max(8, constraints.maxHeight * 0.055);
+        final captionBottom = math
+            .max(7, constraints.maxHeight * 0.055)
+            .toDouble();
+        final captionTop = constraints.maxHeight * 0.65;
+        final captionFontSize = (constraints.maxHeight * 0.14)
+            .round()
+            .clamp(12, 24)
+            .toDouble();
 
         return Stack(
           fit: StackFit.expand,
@@ -235,27 +242,44 @@ class _HomeMenuButtonContent extends StatelessWidget {
             else
               _CardImage(fileName: data.fileName, loadState: imageLoadState),
             if (!data.triangleOnly)
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0x080d1723), Color(0xee0d1723)],
-                    stops: [0.42, 1],
+              Positioned(
+                left: 0,
+                top: captionTop,
+                right: 0,
+                bottom: 0,
+                child: const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0x00747b86),
+                        Color(0x75747b86),
+                        Color(0xd6747b86),
+                        Color(0xf5747b86),
+                        Color(0xff747b86),
+                      ],
+                      stops: [0, 0.18, 0.30, 0.56, 1],
+                    ),
                   ),
                 ),
               ),
             Positioned(
-              left: safeLeft,
-              right: safeRight,
-              bottom: math.max(8, constraints.maxHeight * 0.07).toDouble(),
-              child: Text(
-                data.caption,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: constraints.maxHeight < 105 ? 12 : 14,
-                  fontWeight: FontWeight.w800,
+              left: captionLeft,
+              top: captionTop,
+              right: captionRight,
+              bottom: captionBottom,
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Text(
+                  data.caption,
+                  softWrap: true,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'GyeonggiTitle',
+                    fontSize: captionFontSize,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),

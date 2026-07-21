@@ -1,0 +1,170 @@
+{
+  "protocol": 1,
+  "cases": [
+    {
+      "name": "student metadata request",
+      "valid": true,
+      "message": { "protocol": 1, "id": "student-1", "type": "request", "method": "planning.student.get", "payload": { "student_id": "ayane" } }
+    },
+    {
+      "name": "student metadata response",
+      "valid": true,
+      "message": { "protocol": 1, "id": "student-1", "type": "response", "method": "planning.student.get", "payload": { "student": { "student_id": "ayane", "display_name": "아야네", "template_name": "ayane.png", "group": "아야네", "variant": null, "school": "Abydos" } } }
+    },
+    {
+      "name": "missing student is a successful null lookup",
+      "valid": true,
+      "message": { "protocol": 1, "id": "student-2", "type": "response", "method": "planning.student.get", "payload": { "student": null } }
+    },
+    {
+      "name": "normal plan validation request",
+      "valid": true,
+      "message": { "protocol": 1, "id": "plan-1", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "goals": [{ "student_id": "ayane", "favorite": true, "target_level": 10, "target_ex_skill": 2, "notes": "first goal" }] } } }
+    },
+    {
+      "name": "normal canonical plan response",
+      "valid": true,
+      "message": { "protocol": 1, "id": "plan-1", "type": "response", "method": "planning.plan.validate", "payload": { "valid": true, "plan": { "version": 1, "goals": [{ "student_id": "ayane", "favorite": true, "target_level": 10, "target_ex_skill": 2, "notes": "first goal" }] } } }
+    },
+    {
+      "name": "unknown planning fields are accepted",
+      "valid": true,
+      "message": { "protocol": 1, "id": "plan-future", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "future_plan_field": "ignored", "goals": [{ "student_id": "ayane", "target_level": null, "future_goal_field": 7 }] } } }
+    },
+    {
+      "name": "unknown planning fields do not require a prefix",
+      "valid": true,
+      "message": { "protocol": 1, "id": "plan-extension", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "extension_data": { "source": "future" }, "goals": [{ "student_id": "ayane", "target_level": 10, "experimental_target": 12 }] } } }
+    },
+    {
+      "name": "normal cost request",
+      "valid": true,
+      "message": { "protocol": 1, "id": "calc-1", "type": "request", "method": "planning.plan.calculate", "payload": { "current_students": [{ "student_id": "ayane", "level": 1, "student_star": 1, "weapon_state": "weapon_locked", "weapon_star": 0, "weapon_level": 0, "ex_skill": 1, "skill1": 1, "skill2": 1, "skill3": 1, "equip1": "T1", "equip2": "T1", "equip3": "T1", "equip4": null, "equip1_level": 1, "equip2_level": 1, "equip3_level": 1, "stat_hp": 0, "stat_atk": 0, "stat_heal": 0 }], "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": 10 }] } } }
+    },
+    {
+      "name": "normal cost response",
+      "valid": true,
+      "message": { "protocol": 1, "id": "calc-1", "type": "response", "method": "planning.plan.calculate", "payload": { "totals": { "credits": 3780, "level_exp": 540, "equipment_exp": 0, "weapon_exp": 0, "star_materials": {}, "equipment_materials": {}, "level_exp_items": { "Item_Icon_ExpItem_0 T2": 1, "Item_Icon_ExpItem_0 T1": 1 }, "equipment_exp_items": {}, "weapon_exp_items": {}, "skill_books": {}, "ex_ooparts": {}, "skill_ooparts": {}, "favorite_item_materials": {}, "stat_materials": {}, "stat_levels": {}, "warnings": [] } } }
+    },
+    {
+      "name": "empty target keeps current value",
+      "valid": true,
+      "message": { "protocol": 1, "id": "calc-empty", "type": "request", "method": "planning.plan.calculate", "payload": { "current_students": [{ "student_id": "ayane", "level": 10 }], "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": null, "target_ex_skill": null }] } } }
+    },
+    {
+      "name": "empty target has zero additional cost",
+      "valid": true,
+      "message": { "protocol": 1, "id": "calc-empty", "type": "response", "method": "planning.plan.calculate", "payload": { "totals": { "credits": 0, "level_exp": 0, "equipment_exp": 0, "weapon_exp": 0, "star_materials": {}, "equipment_materials": {}, "level_exp_items": {}, "equipment_exp_items": {}, "weapon_exp_items": {}, "skill_books": {}, "ex_ooparts": {}, "skill_ooparts": {}, "favorite_item_materials": {}, "stat_materials": {}, "stat_levels": {}, "warnings": [] } } }
+    },
+    {
+      "name": "missing required plan version",
+      "valid": false,
+      "message": { "protocol": 1, "id": "bad-1", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "goals": [] } } }
+    },
+    {
+      "name": "wrong goal field type",
+      "valid": false,
+      "message": { "protocol": 1, "id": "bad-2", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": "ninety" }] } } }
+    },
+    {
+      "name": "unknown method request",
+      "valid": false,
+      "message": { "protocol": 1, "id": "unknown-1", "type": "request", "method": "planning.unknown", "payload": {} }
+    },
+    {
+      "name": "unknown method error",
+      "valid": true,
+      "message": { "protocol": 1, "id": "unknown-1", "type": "response", "method": "planning.unknown", "payload": { "error": { "code": "unknown_method", "message": "Unknown method: planning.unknown", "details": { "method": "planning.unknown" } } } }
+    },
+    {
+      "name": "protocol version mismatch",
+      "valid": false,
+      "message": { "protocol": 2, "id": "bad-version", "type": "request", "method": "planning.student.get", "payload": { "student_id": "ayane" } }
+    },
+    {
+      "name": "invalid payload error",
+      "valid": true,
+      "message": { "protocol": 1, "id": "bad-2", "type": "response", "method": "planning.plan.validate", "payload": { "error": { "code": "invalid_payload", "message": "target_level must be an integer or null", "details": { "path": "payload.plan.goals[0].target_level" } } } }
+    },
+    {
+      "name": "metadata lookup failure error",
+      "valid": true,
+      "message": { "protocol": 1, "id": "student-3", "type": "response", "method": "planning.student.get", "payload": { "error": { "code": "metadata_lookup_failed", "message": "Student metadata could not be loaded" } } }
+    },
+    {
+      "name": "calculation failure error",
+      "valid": true,
+      "message": { "protocol": 1, "id": "calc-2", "type": "response", "method": "planning.plan.calculate", "payload": { "error": { "code": "calculation_failed", "message": "Plan totals could not be calculated" } } }
+    },
+    {
+      "name": "student method rejects calculation failure",
+      "valid": false,
+      "message": { "protocol": 1, "id": "bad-error-1", "type": "response", "method": "planning.student.get", "payload": { "error": { "code": "calculation_failed", "message": "Wrong error for method" } } }
+    },
+    {
+      "name": "known method rejects unknown method error",
+      "valid": false,
+      "message": { "protocol": 1, "id": "bad-error-2", "type": "response", "method": "planning.plan.validate", "payload": { "error": { "code": "unknown_method", "message": "Wrong error for known method" } } }
+    },
+    {
+      "name": "unknown method rejects invalid payload error",
+      "valid": false,
+      "message": { "protocol": 1, "id": "bad-error-3", "type": "response", "method": "planning.future", "payload": { "error": { "code": "invalid_payload", "message": "Wrong error for unknown method" } } }
+    }
+  ],
+  "correlations": [
+    {
+      "name": "student request and response IDs match",
+      "matches": true,
+      "request": { "protocol": 1, "id": "same-student", "type": "request", "method": "planning.student.get", "payload": { "student_id": "ayane" } },
+      "response": { "protocol": 1, "id": "same-student", "type": "response", "method": "planning.student.get", "payload": { "student": null } }
+    },
+    {
+      "name": "calculation request and error IDs match",
+      "matches": true,
+      "request": { "protocol": 1, "id": "same-calc", "type": "request", "method": "planning.plan.calculate", "payload": { "current_students": [], "plan": { "version": 1, "goals": [] } } },
+      "response": { "protocol": 1, "id": "same-calc", "type": "response", "method": "planning.plan.calculate", "payload": { "error": { "code": "calculation_failed", "message": "Calculation failed" } } }
+    },
+    {
+      "name": "normal plan round-trip preserves known fields",
+      "matches": true,
+      "semantic": "canonical_plan",
+      "request": { "protocol": 1, "id": "round-trip", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "goals": [{ "student_id": "ayane", "favorite": true, "target_level": 10, "notes": "keep me" }] } } },
+      "response": { "protocol": 1, "id": "round-trip", "type": "response", "method": "planning.plan.validate", "payload": { "valid": true, "plan": { "version": 1, "goals": [{ "student_id": "ayane", "favorite": true, "target_level": 10, "notes": "keep me" }] } } }
+    },
+    {
+      "name": "future fields are accepted then removed canonically",
+      "matches": true,
+      "semantic": "canonical_plan",
+      "request": { "protocol": 1, "id": "round-trip-future", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "future_plan_field": "ignored", "goals": [{ "student_id": "ayane", "target_level": null, "future_goal_field": 7 }] } } },
+      "response": { "protocol": 1, "id": "round-trip-future", "type": "response", "method": "planning.plan.validate", "payload": { "valid": true, "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": null }] } } }
+    },
+    {
+      "name": "unprefixed unknown fields are removed canonically",
+      "matches": true,
+      "semantic": "canonical_plan",
+      "request": { "protocol": 1, "id": "round-trip-extension", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "extension_data": { "source": "future" }, "goals": [{ "student_id": "ayane", "target_level": 10, "experimental_target": 12 }] } } },
+      "response": { "protocol": 1, "id": "round-trip-extension", "type": "response", "method": "planning.plan.validate", "payload": { "valid": true, "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": 10 }] } } }
+    },
+    {
+      "name": "normal calculation result matches request",
+      "matches": true,
+      "semantic": "calculation",
+      "request": { "protocol": 1, "id": "calc-semantic", "type": "request", "method": "planning.plan.calculate", "payload": { "current_students": [{ "student_id": "ayane", "level": 1, "student_star": 1, "weapon_state": "weapon_locked", "weapon_star": 0, "weapon_level": 0, "ex_skill": 1, "skill1": 1, "skill2": 1, "skill3": 1, "equip1": "T1", "equip2": "T1", "equip3": "T1", "equip4": null, "equip1_level": 1, "equip2_level": 1, "equip3_level": 1, "stat_hp": 0, "stat_atk": 0, "stat_heal": 0 }], "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": 10 }] } } },
+      "response": { "protocol": 1, "id": "calc-semantic", "type": "response", "method": "planning.plan.calculate", "payload": { "totals": { "credits": 3780, "level_exp": 540, "equipment_exp": 0, "weapon_exp": 0, "star_materials": {}, "equipment_materials": {}, "level_exp_items": { "Item_Icon_ExpItem_0 T2": 1, "Item_Icon_ExpItem_0 T1": 1 }, "equipment_exp_items": {}, "weapon_exp_items": {}, "skill_books": {}, "ex_ooparts": {}, "skill_ooparts": {}, "favorite_item_materials": {}, "stat_materials": {}, "stat_levels": {}, "warnings": [] } } }
+    },
+    {
+      "name": "empty targets produce zero additional cost",
+      "matches": true,
+      "semantic": "calculation",
+      "request": { "protocol": 1, "id": "calc-empty-semantic", "type": "request", "method": "planning.plan.calculate", "payload": { "current_students": [{ "student_id": "ayane", "level": 10 }], "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": null, "target_ex_skill": null }] } } },
+      "response": { "protocol": 1, "id": "calc-empty-semantic", "type": "response", "method": "planning.plan.calculate", "payload": { "totals": { "credits": 0, "level_exp": 0, "equipment_exp": 0, "weapon_exp": 0, "star_materials": {}, "equipment_materials": {}, "level_exp_items": {}, "equipment_exp_items": {}, "weapon_exp_items": {}, "skill_books": {}, "ex_ooparts": {}, "skill_ooparts": {}, "favorite_item_materials": {}, "stat_materials": {}, "stat_levels": {}, "warnings": [] } } }
+    },
+    {
+      "name": "different IDs do not correlate",
+      "matches": false,
+      "request": { "protocol": 1, "id": "request-id", "type": "request", "method": "planning.student.get", "payload": { "student_id": "ayane" } },
+      "response": { "protocol": 1, "id": "response-id", "type": "response", "method": "planning.student.get", "payload": { "student": null } }
+    }
+  ]
+}

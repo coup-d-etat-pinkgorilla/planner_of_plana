@@ -38,12 +38,16 @@ class SectionPlaceholderPage extends StatelessWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: FilledButton.icon(
-                  onPressed: state.scanPhase == ScanPhase.scanning
+                  onPressed:
+                      !state.scanAvailable ||
+                          state.scanPhase == ScanPhase.scanning
                       ? null
                       : service.startScan,
                   icon: const Icon(Icons.document_scanner_outlined),
                   label: Text(
-                    state.scanPhase == ScanPhase.scanning
+                    !state.scanAvailable
+                        ? '스캐너 미연결'
+                        : state.scanPhase == ScanPhase.scanning
                         ? '스캔 진행 중'
                         : '목업 스캔 시작',
                   ),

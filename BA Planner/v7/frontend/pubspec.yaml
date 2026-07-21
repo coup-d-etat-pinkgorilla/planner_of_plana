@@ -60,6 +60,12 @@ flutter:
   assets:
     - assets/home_menu/
 
+  fonts:
+    - family: GyeonggiTitle
+      fonts:
+        - asset: assets/fonts/GyeonggiTitle-Medium.ttf
+          weight: 500
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

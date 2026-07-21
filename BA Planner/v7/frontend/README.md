@@ -1,13 +1,15 @@
 # BA Planner v7 Flutter frontend
 
-v7 프런트엔드는 Flutter for Windows로 작성하며 Python 백엔드와는 `AppService` 경계만 공유합니다. 현재는 `MockAppService`가 UI 상태를 제공하고, 이후 동일한 계약을 구현하는 `V6ProcessAppService`로 교체합니다.
+v7 프런트엔드는 Flutter for Windows로 작성하며 Python 백엔드와는 `AppService`
+경계만 공유합니다. 기본은 `MockAppService`이며 planning protocol v1의 실제 Python
+process가 필요할 때 `ProcessAppService`를 명시적으로 선택합니다.
 
 ```text
 Flutter UI
    ↓
 AppService
    ├─ MockAppService
-   └─ V6ProcessAppService (예정)
+   └─ ProcessAppService → JSONL Python process
 ```
 
 ## 실행
@@ -16,6 +18,25 @@ AppService
 cd frontend
 flutter run -d windows
 ```
+
+실제 backend를 사용하려면 다음 compile-time define을 지정합니다.
+
+```powershell
+flutter run -d windows `
+  --dart-define=BA_PLANNER_USE_REAL_BACKEND=true `
+  --dart-define="BA_PLANNER_BACKEND_DIR=C:\path\to\BA Planner\v7\backend"
+```
+
+Python 실행 파일이 기본 `py -3.11`과 다르면 `BA_PLANNER_PYTHON`도 지정합니다.
+process client는 요청별 고유 ID, 역순 응답 매칭, 10초 기본 timeout, 비정상 종료,
+graceful stop, restart와 dispose를 처리합니다. backend 경로 확인은 연결을 시도할 때
+수행하므로 경로가 잘못되어도 Flutter shell은 실행되고 연결 끊김 상태를 유지합니다.
+잘못된 response envelope, method, 오류 code 또는 성공 payload는 fatal protocol
+오류로 처리해 해당 process 연결을 끊습니다.
+
+P1에는 scanner protocol이 없습니다. 실제 backend를 선택한 경우 스캔 탭은
+`스캐너 미연결`을 표시하고 실행 버튼을 비활성화합니다. mock service에서만 목업
+스캔 시나리오를 사용할 수 있습니다.
 
 - 코드 저장 또는 `r`: Hot Reload
 - `R`: Hot Restart

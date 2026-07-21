@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/planning-types-v1.schema.json",
+  "title": "BA Planner planning protocol v1 shared types",
+  "$defs": {
+    "studentGoal": {
+      "type": "object",
+      "required": ["student_id"],
+      "properties": {
+        "student_id": { "type": "string", "minLength": 1 },
+        "favorite": { "type": "boolean" },
+        "target_level": { "$ref": "#/$defs/nullableLevel" },
+        "target_star": { "$ref": "#/$defs/nullableStar" },
+        "target_weapon_level": { "$ref": "#/$defs/nullableWeaponLevel" },
+        "target_weapon_star": { "$ref": "#/$defs/nullableWeaponStar" },
+        "target_ex_skill": { "$ref": "#/$defs/nullableExSkill" },
+        "target_skill1": { "$ref": "#/$defs/nullableSkill" },
+        "target_skill2": { "$ref": "#/$defs/nullableSkill" },
+        "target_skill3": { "$ref": "#/$defs/nullableSkill" },
+        "target_equip1_tier": { "$ref": "#/$defs/nullableEquipTier" },
+        "target_equip2_tier": { "$ref": "#/$defs/nullableEquipTier" },
+        "target_equip3_tier": { "$ref": "#/$defs/nullableEquipTier" },
+        "target_equip1_level": { "$ref": "#/$defs/nullableEquipLevel" },
+        "target_equip2_level": { "$ref": "#/$defs/nullableEquipLevel" },
+        "target_equip3_level": { "$ref": "#/$defs/nullableEquipLevel" },
+        "target_equip4_tier": { "$ref": "#/$defs/nullableEquip4Tier" },
+        "target_stat_hp": { "$ref": "#/$defs/nullableStat" },
+        "target_stat_atk": { "$ref": "#/$defs/nullableStat" },
+        "target_stat_heal": { "$ref": "#/$defs/nullableStat" },
+        "notes": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "growthPlan": {
+      "type": "object",
+      "required": ["version", "goals"],
+      "properties": {
+        "version": { "const": 1 },
+        "goals": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/studentGoal" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "currentStudent": {
+      "type": "object",
+      "required": ["student_id"],
+      "properties": {
+        "student_id": { "type": "string", "minLength": 1 },
+        "level": { "$ref": "#/$defs/nonNegativeInteger" },
+        "student_star": { "$ref": "#/$defs/nonNegativeInteger" },
+        "weapon_state": { "type": "string" },
+        "weapon_star": { "$ref": "#/$defs/nonNegativeInteger" },
+        "weapon_level": { "$ref": "#/$defs/nonNegativeInteger" },
+        "ex_skill": { "$ref": "#/$defs/nonNegativeInteger" },
+        "skill1": { "$ref": "#/$defs/nonNegativeInteger" },
+        "skill2": { "$ref": "#/$defs/nonNegativeInteger" },
+        "skill3": { "$ref": "#/$defs/nonNegativeInteger" },
+        "equip1": { "type": ["string", "null"] },
+        "equip2": { "type": ["string", "null"] },
+        "equip3": { "type": ["string", "null"] },
+        "equip4": { "type": ["string", "null"] },
+        "equip1_level": { "$ref": "#/$defs/nonNegativeInteger" },
+        "equip2_level": { "$ref": "#/$defs/nonNegativeInteger" },
+        "equip3_level": { "$ref": "#/$defs/nonNegativeInteger" },
+        "stat_hp": { "$ref": "#/$defs/nonNegativeInteger" },
+        "stat_atk": { "$ref": "#/$defs/nonNegativeInteger" },
+        "stat_heal": { "$ref": "#/$defs/nonNegativeInteger" }
+      },
+      "additionalProperties": false
+    },
+    "studentMeta": {
+      "type": "object",
+      "required": ["student_id", "display_name", "template_name", "group", "variant"],
+      "properties": {
+        "student_id": { "type": "string", "minLength": 1 },
+        "display_name": { "type": "string", "minLength": 1 },
+        "template_name": { "type": "string", "minLength": 1 },
+        "group": { "type": "string", "minLength": 1 },
+        "variant": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "planCostSummary": {
+      "type": "object",
+      "required": ["credits", "level_exp", "equipment_exp", "weapon_exp", "star_materials", "equipment_materials", "level_exp_items", "equipment_exp_items", "weapon_exp_items", "skill_books", "ex_ooparts", "skill_ooparts", "favorite_item_materials", "stat_materials", "stat_levels", "warnings"],
+      "properties": {
+        "credits": { "$ref": "#/$defs/nonNegativeInteger" },
+        "level_exp": { "$ref": "#/$defs/nonNegativeInteger" },
+        "equipment_exp": { "$ref": "#/$defs/nonNegativeInteger" },
+        "weapon_exp": { "$ref": "#/$defs/nonNegativeInteger" },
+        "star_materials": { "$ref": "#/$defs/countMap" },
+        "equipment_materials": { "$ref": "#/$defs/countMap" },
+        "level_exp_items": { "$ref": "#/$defs/countMap" },
+        "equipment_exp_items": { "$ref": "#/$defs/countMap" },
+        "weapon_exp_items": { "$ref": "#/$defs/countMap" },
+        "skill_books": { "$ref": "#/$defs/countMap" },
+        "ex_ooparts": { "$ref": "#/$defs/countMap" },
+        "skill_ooparts": { "$ref": "#/$defs/countMap" },
+        "favorite_item_materials": { "$ref": "#/$defs/countMap" },
+        "stat_materials": { "$ref": "#/$defs/countMap" },
+        "stat_levels": { "$ref": "#/$defs/countMap" },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "nonNegativeInteger": { "type": "integer", "minimum": 0 },
+    "countMap": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/nonNegativeInteger" }
+    },
+    "nullableLevel": { "type": ["integer", "null"], "minimum": 0, "maximum": 90 },
+    "nullableStar": { "type": ["integer", "null"], "minimum": 0, "maximum": 5 },
+    "nullableWeaponLevel": { "type": ["integer", "null"], "minimum": 0, "maximum": 60 },
+    "nullableWeaponStar": { "type": ["integer", "null"], "minimum": 0, "maximum": 4 },
+    "nullableExSkill": { "type": ["integer", "null"], "minimum": 0, "maximum": 5 },
+    "nullableSkill": { "type": ["integer", "null"], "minimum": 0, "maximum": 10 },
+    "nullableEquipTier": { "type": ["integer", "null"], "minimum": 0, "maximum": 10 },
+    "nullableEquipLevel": { "type": ["integer", "null"], "minimum": 0, "maximum": 70 },
+    "nullableEquip4Tier": { "type": ["integer", "null"], "minimum": 0, "maximum": 2 },
+    "nullableStat": { "type": ["integer", "null"], "minimum": 0, "maximum": 25 }
+  }
+}

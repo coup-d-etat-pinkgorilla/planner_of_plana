@@ -16,7 +16,7 @@ import 'widgets/diagonal_header.dart';
 import 'widgets/lifted_path_shadow.dart';
 
 const _sectionMotions = <SectionMotionSpec>[
-  SectionMotionSpec(intro: 80, outro: 260),
+  SectionMotionSpec(intro: 0, outro: 180),
   SectionMotionSpec(intro: 90, outro: 270),
   SectionMotionSpec(intro: 90, outro: 270),
   SectionMotionSpec(intro: 90, outro: 270),
@@ -33,6 +33,23 @@ const _tabGlassShadow = LiftedPathShadowSpec(
   inset: 3,
   layers: 4,
   maxAlpha: 0.22,
+);
+
+const _headerTriangleTexture = BATriangleTextureConfig(
+  baseColor: Color(0xff263747),
+  panelColor: AppColors.surfaceRaised,
+  softColor: Color(0xff8295a6),
+  accentColor: AppColors.primaryMuted,
+  triangleSize: 82,
+  tessellationContrast: 0.055,
+  randomSeed: 6197,
+  macroTriangleChance: 0.09,
+  macroTriangleScale: 2.6,
+  macroTriangleContrast: 0.035,
+  lightStrength: 0.12,
+  edgeVignetteStrength: 0.12,
+  fogDirectionDegrees: 12,
+  fogStrength: 0.07,
 );
 
 class AppShell extends StatefulWidget {
@@ -207,11 +224,10 @@ class _CompoundPageHeader extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final shelfWidth = math.min(760.0, constraints.maxWidth);
-
           return SizedBox(
+            key: const ValueKey('page-header-surface'),
             height: 170,
             child: Stack(
-              clipBehavior: Clip.none,
               children: [
                 Positioned.fill(
                   child: IgnorePointer(
@@ -226,6 +242,7 @@ class _CompoundPageHeader extends StatelessWidget {
                 ),
                 Positioned.fill(
                   child: ClipPath(
+                    key: const ValueKey('l-glass-header-background'),
                     clipper: _LGlassClipper(
                       shelfWidth: shelfWidth,
                       shelfHeight: 48,
@@ -251,22 +268,57 @@ class _CompoundPageHeader extends StatelessWidget {
                 ),
                 Positioned(
                   left: 4,
-                  top: 0,
+                  top: 4,
                   width: shelfWidth - 8,
-                  height: 54,
+                  height: 44,
                   child: _TopTabs(selected: section, onSelected: onSelected),
                 ),
                 Positioned(
-                  left: 8,
-                  top: 50,
+                  left: 4,
+                  top: 48,
+                  width: shelfWidth - 8,
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.outline.withValues(alpha: 0.55),
+                  ),
+                ),
+                Positioned(
+                  left: 5,
+                  top: 53,
                   right: 8,
                   bottom: 8,
                   child: DiagonalHeaderSurface(
-                    child: _AppHeader(
-                      section: section,
-                      service: service,
-                      developmentPanelVisible: developmentPanelVisible,
-                      onToggleDevelopmentPanel: onToggleDevelopmentPanel,
+                    key: const ValueKey('nested-page-header'),
+                    radius: 14,
+                    angleDegrees: 80,
+                    background: CustomPaint(
+                      key: const ValueKey('header-triangle-texture'),
+                      painter: BATriangleTexturePainter(_headerTriangleTexture),
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) {
+                        final slide = Tween<Offset>(
+                          begin: const Offset(0.025, 0),
+                          end: Offset.zero,
+                        ).animate(animation);
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(position: slide, child: child),
+                        );
+                      },
+                      child: KeyedSubtree(
+                        key: ValueKey('page-header-content-${section.name}'),
+                        child: _AppHeader(
+                          section: section,
+                          service: service,
+                          developmentPanelVisible: developmentPanelVisible,
+                          onToggleDevelopmentPanel: onToggleDevelopmentPanel,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -324,40 +376,63 @@ class _TopTab extends StatelessWidget {
     return Semantics(
       selected: selected,
       button: true,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 2),
-        child: Material(
-          color: selected
-              ? AppColors.surfaceRaised.withValues(alpha: 0.7)
-              : Colors.transparent,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            child: SizedBox(
-              height: selected ? 54 : 48,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      section.icon,
-                      size: 17,
-                      color: selected ? AppColors.primary : AppColors.textMuted,
+      child: SizedBox(
+        width: _topTabWidth(section),
+        child: Padding(
+          padding: const EdgeInsets.only(right: 2),
+          child: Material(
+            key: ValueKey('top-tab-${section.name}'),
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.primaryMuted.withValues(alpha: 0.34)
+                      : Colors.transparent,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: selected ? AppColors.primary : Colors.transparent,
+                      width: 2,
                     ),
-                    const SizedBox(width: 7),
-                    Text(
-                      section.label,
-                      style: TextStyle(
-                        color: selected ? AppColors.text : AppColors.textMuted,
-                        fontSize: 13,
-                        fontWeight: selected
-                            ? FontWeight.w800
-                            : FontWeight.w600,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        section.icon,
+                        size: 17,
+                        color: selected
+                            ? AppColors.primary
+                            : AppColors.textMuted,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 7),
+                      Flexible(
+                        child: Text(
+                          section.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: selected
+                                ? AppColors.text
+                                : AppColors.textMuted,
+                            fontSize: 13,
+                            fontWeight: selected
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -367,6 +442,17 @@ class _TopTab extends StatelessWidget {
     );
   }
 }
+
+double _topTabWidth(AppSection section) => switch (section) {
+  AppSection.home => 80,
+  AppSection.students => 100,
+  AppSection.plan => 84,
+  AppSection.inventory => 112,
+  AppSection.pvp => 112,
+  AppSection.statistics => 84,
+  AppSection.scan => 84,
+  AppSection.settings || AppSection.adaptiveSync => 84,
+};
 
 class _AppHeader extends StatelessWidget {
   const _AppHeader({
@@ -566,13 +652,16 @@ class _LGlassShadowPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = _buildLGlassPath(
-      size,
-      shelfWidth: shelfWidth,
-      shelfHeight: shelfHeight,
-      inset: shadow.inset,
+    paintLiftedPathShadow(
+      canvas,
+      _buildLGlassPath(
+        size,
+        shelfWidth: shelfWidth,
+        shelfHeight: shelfHeight,
+        inset: shadow.inset,
+      ),
+      shadow,
     );
-    paintLiftedPathShadow(canvas, path, shadow);
   }
 
   @override
