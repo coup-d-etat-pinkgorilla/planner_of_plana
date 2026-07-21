@@ -12,6 +12,15 @@ sources:
   - id: inspect-script
     type: file
     path: tools/inspect_cross_pc_handoff.ps1
+  - id: receive-script
+    type: file
+    path: tools/receive_cross_pc_handoff.py
+  - id: send-script
+    type: file
+    path: tools/send_cross_pc_handoff.ps1
+  - id: master-wrapper
+    type: file
+    path: tools/Receive-SlaveResult.ps1
 ---
 
 # Cross-PC Slave Handoff
@@ -55,10 +64,73 @@ cd "<SLAVE_REPOSITORY_ROOT>"
 승인된 클라우드로 마스터 PC의 inbox에 복사한다. 네 파일을 일부만 전달하면 인계가
 완료되지 않는다.
 
+## 같은 Wi-Fi/LAN 무선 전송
+
+두 PC가 신뢰할 수 있는 같은 사설 Wi-Fi 또는 LAN에 있으면 마스터가 일회용 수신기를
+열고 슬레이브가 네 파일을 직접 업로드할 수 있다. 수신기는 bearer token, 작업 ID,
+파일명과 최대 크기를 검사하고 한 패키지의 네 파일을 받은 뒤 ZIP 크기와 SHA-256을
+manifest 및 sidecar와 대조하여 자동 종료한다. HTTP 전송이므로 공용·게스트 Wi-Fi나
+인터넷에 직접 노출하지 않는다. [@receive-script] [@send-script]
+
+마스터 PC에서 먼저 실행한다.
+
+일반 사용자는 설치된 단일 실행 래퍼를 사용한다. 래퍼는 수신기를 시작하고, 수신이
+끝나면 ZIP을 staging에서 검사한 뒤 전달된 `MASTER_PROMPT.md`를 Windows 클립보드에
+복사한다. [@master-wrapper]
+
+```powershell
+& "$HOME\.codex\ba-planner-slave\Receive-SlaveResult.ps1"
+```
+
+성공하면 `SLAVE_RESULT_READY_FOR_MASTER`, `clipboard: COPIED`와 프롬프트 절대경로를
+출력한다. 사용자는 기존 마스터 Codex 작업에서 `Ctrl+V`를 누른다. 프롬프트는 다음
+master inbox에도 그대로 보존된다.
+
+```text
+<MASTER_REPOSITORY_ROOT>/docs/migration/handoffs/incoming/<task-id>/
+  <task-id>-<timestamp>-MASTER_PROMPT.md
+```
+
+세부 실행이나 다른 port가 필요할 때만 아래 원시 수신기 명령을 사용한다.
+
+```powershell
+cd "<MASTER_REPOSITORY_ROOT>"
+py -3.11 .\tools\receive_cross_pc_handoff.py `
+  --destination ".\docs\migration\handoffs\incoming\ba-planner-v7-p2-planning-screen" `
+  --task-id "ba-planner-v7-p2-planning-screen" `
+  --port 8765
+```
+
+수신기가 출력한 `upload_url`의 마스터 LAN IP, port와 일회용 token을 슬레이브에게
+전달한다. Windows 방화벽 확인이 표시되면 신뢰하는 개인 네트워크에만 허용한다.
+
+슬레이브는 패키징 후 다음을 실행한다.
+
+```powershell
+cd "<SLAVE_REPOSITORY_ROOT>"
+.\tools\send_cross_pc_handoff.ps1 `
+  -PackagePath "<SLAVE_OUTBOX>\<package>.zip" `
+  -MasterHost "<MASTER_LAN_IP>" `
+  -Port 8765 `
+  -Token "<ONE_TIME_TOKEN>"
+```
+
+마스터 수신기에 `WIRELESS_HANDOFF_RECEIVED`가 출력되어야 무선 전달이 끝난다. 토큰은
+일회용 비밀값으로 취급하고 저장소, `output.md`, 로그 결과물 또는 Almanac에 기록하지
+않는다. 전송 후에는 재사용하지 않는다. 연결할 수 없으면 수신기를 종료하고 수동
+전달 절차로 전환한다.
+
+이미 받은 최신 패키지의 검사와 클립보드 복사만 다시 실행하려면 다음을 사용한다.
+
+```powershell
+& "$HOME\.codex\ba-planner-slave\Receive-SlaveResult.ps1" -InspectExisting
+```
+
 ## 사용자 전달 절차
 
 1. 슬레이브가 보고한 ZIP 이름, 크기와 SHA-256을 기록한다.
-2. ZIP과 세 sidecar를 같은 전송 수단으로 마스터 PC에 옮긴다.
+2. 같은 사설 LAN에서는 위 무선 전송을 우선 사용한다. 사용할 수 없으면 ZIP과 세
+   sidecar를 USB, 파일 첨부 또는 승인된 동기화 폴더로 옮긴다.
 3. 마스터 PC의 고정 inbox인
    `<MASTER_REPOSITORY_ROOT>/docs/migration/handoffs/incoming/<task-id>/`에 네 파일을
    함께 둔다. 이 디렉터리는 전송용 local 상태이므로 Git에 포함하지 않는다.

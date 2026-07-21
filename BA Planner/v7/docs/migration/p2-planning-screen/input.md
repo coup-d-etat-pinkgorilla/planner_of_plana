@@ -252,6 +252,21 @@ cd "<SLAVE_REPOSITORY_ROOT>"
 같은 네 파일을 옮길 수 있게 정확한 경로를 보고한다. 슬레이브의 로컬 절대경로만
 보고하고 패키지 파일을 전달하지 않는 것은 완료가 아니다.
 
+마스터가 같은 신뢰 가능한 Wi-Fi/LAN의 수신기 주소, port와 일회용 token을 제공하면
+다음 명령으로 네 파일을 무선 전송한다. token은 결과물이나 로그에 기록하지 않는다.
+
+```powershell
+.\tools\send_cross_pc_handoff.ps1 `
+  -PackagePath "<생성된 ZIP 절대경로>" `
+  -MasterHost "<MASTER_LAN_IP>" `
+  -Port <PORT> `
+  -Token "<ONE_TIME_TOKEN>"
+```
+
+마스터 수신기의 `WIRELESS_HANDOFF_RECEIVED` 확인 전에는 무선 전달 완료로 보고하지
+않는다. 마스터가 무선 접속 정보를 제공하지 않았거나 사설 LAN 연결이 불가능하면 네
+파일을 사용자에게 첨부하거나 수동 이동할 수 있게 보고한다.
+
 ```text
 TASK_OUTPUT_READY
 task_id: ba-planner-v7-p2-planning-screen
@@ -263,6 +278,7 @@ handoff_package: <ZIP 절대경로>
 handoff_package_size: <바이트>
 handoff_package_sha256: <SHA-256>
 master_prompt: <-MASTER_PROMPT.md 절대경로>
+wireless_transfer: `RECEIVED`, `NOT_REQUESTED` 또는 `FAILED`
 ```
 
 완료할 수 없으면 다음 형식을 사용한다.

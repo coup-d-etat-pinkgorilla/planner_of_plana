@@ -75,32 +75,37 @@ try {
     $manifest | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding utf8
 
     $masterPrompt = @"
-P2 슬레이브 결과 인계 패키지를 검증하고 인수하십시오.
+Validate and accept the BA Planner v7 P2 slave-result handoff package.
 
-- 작업 ID: `$TaskId`
-- 패키지 파일: `$($packageItem.Name)`
-- 패키지 크기: `$($packageItem.Length)` bytes
-- 패키지 SHA-256: `$packageHash`
-- manifest: `$(Split-Path -Leaf $manifestPath)`
+- Task ID: $TaskId
+- Package file: $($packageItem.Name)
+- Package size: $($packageItem.Length) bytes
+- Package SHA-256: $packageHash
+- Manifest: $(Split-Path -Leaf $manifestPath)
 
-이 패키지는 다른 PC에서 전달되었습니다. 다음 순서로 처리하십시오.
+This package was transferred from another PC. Perform these steps in order:
 
-1. 패키지가 위치한 마스터 PC의 실제 절대경로를 확인하십시오.
-2. ZIP 크기와 SHA-256을 위 값 및 manifest와 직접 대조하십시오.
-3. 저장소에 바로 덮어쓰지 말고 고유한 staging 디렉터리에 압축을 푸십시오.
-4. output.md를 읽고 artifacts 아래 모든 파일의 존재 여부, 0보다 큰 크기와
-   output.md에 기록된 SHA-256을 직접 확인하십시오.
-5. p2-planning-screen.patch와 현재 작업 트리의 diff를 검토하십시오. 기존 사용자
-   변경과 겹치면 적용을 중단하고 충돌 내용을 보고하십시오.
-6. git apply --check를 먼저 실행하고 성공한 경우에만 패치를 적용하십시오.
-7. Python test, flutter analyze, flutter test, Windows release build,
-   codealmanac validate와 git diff --check를 직접 실행하십시오.
-8. P2 불변식과 실제 Python backend 및 MockAppService 흐름을 검증하십시오.
-9. 검증 중에는 P2 상태를 '검증 중'으로, 모든 조건을 직접 확인한 뒤에만 '완료'로
-   almanac/workflows/p0-p6-workflow-status.md를 갱신하십시오.
+1. Resolve the package's actual absolute path on the master PC.
+2. Independently compare the ZIP size and SHA-256 with the values above and the manifest.
+3. Extract only into a unique staging directory; do not overwrite the repository directly.
+4. Read output.md. Verify that every reported artifact exists, is non-empty, and matches
+   the size and SHA-256 recorded in output.md.
+5. Review p2-planning-screen.patch and the current worktree diff. Stop and report any
+   overlap with pre-existing user changes.
+6. Run git apply --check first. Apply the patch only if the check succeeds and the scope
+   is correct.
+7. Independently run the Python tests, flutter analyze, flutter test, Windows release
+   build, codealmanac validate, and git diff --check.
+8. Verify the P2 invariants and both the real Python backend and MockAppService flows.
+9. Record P2 as 'verifying' while checking. Mark it complete in
+   almanac/workflows/p0-p6-workflow-status.md only after every completion condition has
+   been independently confirmed.
 
-파일 누락이나 해시 불일치가 있으면 결과물을 직접 재생성하지 말고 기존 슬레이브에게
-동일 결과물의 재인계를 요청하십시오.
+For a wireless transfer, first confirm WIRELESS_HANDOFF_RECEIVED and its ZIP verification
+output. Wireless delivery transports files but does not replace any validation step.
+
+If a file is missing or a hash differs, do not recreate the result. Request re-delivery
+of the same existing artifact from the slave.
 "@
     Set-Content -LiteralPath $masterPromptPath -Encoding utf8 -Value $masterPrompt
 

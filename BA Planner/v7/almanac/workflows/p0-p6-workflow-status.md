@@ -74,6 +74,10 @@ Almanac 검증과 Windows release build가 통과했다. 변경은 아직 커밋
 - P1의 실제 backend에는 scanner capability가 없으며 스캔 버튼을 비활성화한다.
 - 슬레이브와 마스터가 다른 PC이면 로컬 절대경로를 인계로 인정하지 않고 ZIP,
   SHA-256, manifest와 마스터 실행 프롬프트 네 파일을 마스터 inbox로 옮긴다.
+- 같은 신뢰 가능한 사설 Wi-Fi/LAN에서는 일회용 token 수신기로 네 파일을 무선
+  전송하고 ZIP 검증 후 자동 종료한다. token은 결과물이나 장기 문서에 기록하지 않는다.
+- 마스터는 `$HOME/.codex/ba-planner-slave/Receive-SlaveResult.ps1` 단일 래퍼로 결과
+  수신·staging 검사·`MASTER_PROMPT.md` 클립보드 복사를 수행한다.
 
 ## 확인된 P0/P1 산출물
 
@@ -118,10 +122,10 @@ Almanac 검증과 Windows release build가 통과했다. 변경은 아직 커밋
 - 입력: `docs/migration/p2-planning-screen/input.md`
 - 출력 보고서: `docs/migration/p2-planning-screen/output.md` (인계 전)
 - 결과물: `docs/migration/p2-planning-screen/artifacts/` 및 cross-PC 전달 패키지 (인계 전)
-- 검증: 입력 프롬프트를 P0 schema와 인계 계약에 대조하고 cross-PC 패키징·검사 스크립트 왕복 테스트 통과
+- 검증: 패키징·staging 검사, localhost 무선 4파일 송수신·SHA-256 검증, 마스터 래퍼의 프롬프트 선택·클립보드 복사 통과
 - 결정 및 제약: 정확한 학생 ID 조회, in-memory 현재 상태, 부족량·저장·scanner 제외, 서로 다른 PC는 ZIP·SHA-256으로 인계
 - 차단 사항: 없음
-- 다음 행동: `slave-execution-prompt.md`와 필수 workflow/script를 슬레이브 PC에 전달하고 외부 패키지를 기다림
+- 다음 행동: 슬레이브에 필수 workflow/script를 전달하고 마스터 단일 래퍼로 결과 수신 시작
 - 최종 갱신: 2026-07-21
 
 최종 갱신: 2026-07-21
