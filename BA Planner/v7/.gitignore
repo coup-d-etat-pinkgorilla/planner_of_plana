@@ -7,6 +7,7 @@ profiles/
 config.json
 logs/
 scan_results/
+docs/migration/handoffs/
 release/
 /BA Planner v7.exe
 /BA Planner v7 DevTools Debug.exe

@@ -54,7 +54,7 @@ Almanac 검증과 Windows release build가 통과했다. 변경은 아직 커밋
 |---|---|---|---|---|
 | P0 | planning IPC 계약과 공용 fixture | `완료` | schema·fixture, Python/Dart contract 및 parity test 통과 | 계약 변경 시 양쪽 fixture test 유지 |
 | P1 | Python JSONL process와 Dart client | `완료` | lifecycle·오류·실제 세 method E2E 및 release build 통과 | P2가 `AppService` planning method만 사용하도록 유지 |
-| P2 | 실제 계획 화면 수직 슬라이스 | `대기` | planning 계산과 service method 준비 완료 | Slave Artifact Handoff 계약으로 `input.md` 작성 |
+| P2 | 실제 계획 화면 수직 슬라이스 | `대기` | cross-PC ZIP·해시·마스터 프롬프트를 요구하는 `input.md` 작성 완료 | 슬레이브에게 `input.md` 전달 후 외부 패키지 인계 대기 |
 | P3 | repository 특성화와 DTO 분리 | `대기` | migration baseline에 선행 조건 기록 | P2와 병렬 조사 범위를 결정하고 parity fixture부터 작성 |
 | P4 | 프로필과 repository 영구 저장 | `대기` | 없음 | P3 DTO·병합 fixture 인수 후 시작 |
 | P5 | scanner/matcher session protocol과 backend | `대기` | 없음 | P3/P4 경계 인수 후 event schema부터 작성 |
@@ -72,6 +72,8 @@ Almanac 검증과 Windows release build가 통과했다. 변경은 아직 커밋
 - timeout 후 늦은 response ID는 진단만 남기지만, malformed response·method mismatch,
   허용되지 않은 오류 code·성공 payload와 stdin 실패는 연결 전체를 종료한다.
 - P1의 실제 backend에는 scanner capability가 없으며 스캔 버튼을 비활성화한다.
+- 슬레이브와 마스터가 다른 PC이면 로컬 절대경로를 인계로 인정하지 않고 ZIP,
+  SHA-256, manifest와 마스터 실행 프롬프트 네 파일을 마스터 inbox로 옮긴다.
 
 ## 확인된 P0/P1 산출물
 
@@ -103,10 +105,24 @@ Almanac 검증과 Windows release build가 통과했다. 변경은 아직 커밋
 
 ## 다음 행동
 
-1. P2 계획 화면의 정확한 필드와 UX 완료 조건을 현재 planning contract에 매핑한다.
-2. P2 작업 디렉터리에 `input.md`를 작성하고 `output.md`·`artifacts/` 인계를 요구한다.
+1. 슬레이브에게 `docs/migration/p2-planning-screen/input.md`를 전달한다.
+2. `output.md`와 artifacts가 포함된 cross-PC ZIP 및 세 sidecar 인계를 기다린다.
 3. 계획 화면은 현재 상태, 사용자 목표와 총 필요량을 분리하고 부족량을 표시하지 않는다.
 4. P2 결과 수신 후 실제 Python backend와 mock 양쪽 Widget test를 검증한다.
+
+## P2 — 계획 화면 수직 슬라이스
+
+- 상태: `대기`
+- 목적: 계획 placeholder를 학생 목표 편집과 총 필요량 계산이 가능한 실제 화면으로 교체
+- 완료 조건: AppService planning method만 사용하는 학생별·전체 계산, 필수 상태와 Widget test, 전체 검증 통과
+- 입력: `docs/migration/p2-planning-screen/input.md`
+- 출력 보고서: `docs/migration/p2-planning-screen/output.md` (인계 전)
+- 결과물: `docs/migration/p2-planning-screen/artifacts/` 및 cross-PC 전달 패키지 (인계 전)
+- 검증: 입력 프롬프트를 P0 schema와 인계 계약에 대조하고 cross-PC 패키징·검사 스크립트 왕복 테스트 통과
+- 결정 및 제약: 정확한 학생 ID 조회, in-memory 현재 상태, 부족량·저장·scanner 제외, 서로 다른 PC는 ZIP·SHA-256으로 인계
+- 차단 사항: 없음
+- 다음 행동: `slave-execution-prompt.md`와 필수 workflow/script를 슬레이브 PC에 전달하고 외부 패키지를 기다림
+- 최종 갱신: 2026-07-21
 
 최종 갱신: 2026-07-21
 
