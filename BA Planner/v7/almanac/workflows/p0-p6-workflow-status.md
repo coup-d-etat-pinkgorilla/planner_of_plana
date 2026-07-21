@@ -45,8 +45,8 @@ sources:
 
 ## 현재 단계 현황
 
-2026-07-21 P0 계약, P1 process transport와 P2 실제 계획 화면을 현재 작업 트리에서
-마스터가 직접 워크플로 완료 조건과 대조해 보완하고 인수했다. Python test 17개,
+2026-07-22 P0 계약, P1 process transport, P2 실제 계획 화면과 P3 repository DTO·병합
+parity를 현재 작업 트리에서 마스터가 직접 워크플로 완료 조건과 대조해 보완하고 인수했다. Python test 27개,
 Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning method
 종단간 호출, MockAppService 계획 흐름, Almanac 검증과 Windows release build가
 통과했다. 변경은 아직 커밋되지 않았다.
@@ -56,8 +56,8 @@ Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning met
 | P0 | planning IPC 계약과 공용 fixture | `완료` | schema·fixture, Python/Dart contract 및 parity test 통과 | 계약 변경 시 양쪽 fixture test 유지 |
 | P1 | Python JSONL process와 Dart client | `완료` | lifecycle·오류·실제 세 method E2E 및 release build 통과 | P2가 `AppService` planning method만 사용하도록 유지 |
 | P2 | 실제 계획 화면 수직 슬라이스 | `완료` | 인계 patch 적용 후 마스터 보완, Widget test 8개와 전체 39개·실제 backend·Mock·release 통과 | P4/P6 전까지 in-memory·총 필요량 경계 유지 |
-| P3 | repository 특성화와 DTO 분리 | `대기` | `docs/migration/p3-repository-dto/input.md` 작업 지시 작성 | 슬레이브에게 P3 지시를 전달하고 인계 결과를 기다림 |
-| P4 | 프로필과 repository 영구 저장 | `대기` | 없음 | P3 DTO·병합 fixture 인수 후 시작 |
+| P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
+| P4 | 프로필과 repository 영구 저장 | `대기` | P3 승인 baseline과 `input.md`·슬레이브 실행 프롬프트 작성 | 지시를 슬레이브에 전달하고 P4 인계 대기 |
 | P5 | scanner/matcher session protocol과 backend | `대기` | 없음 | P3/P4 경계 인수 후 event schema부터 작성 |
 | P6 | 전 기본 탭 실제 데이터 통합 | `대기` | 현재 홈 골격과 placeholder 페이지 | P2·P4·P5 인수 후 P6-1 학생부터 진행 |
 
@@ -102,7 +102,8 @@ Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning met
 ## 현재 검증
 
 - `codealmanac validate`: 통과, 6 pages
-- `py -3.11 -m unittest discover -s tests -v`: 17 tests 통과
+- `py -3.11 -m unittest discover -s tests -v`: 27 tests 통과
+- P3 repository parity: 10 tests와 fixture 26 cases 통과; current/metadata field 교집합 없음, `display_name` confirmed/commit 유입 두 사례 거부
 - `flutter analyze`: 문제 없음
 - `flutter test`: 39 tests 통과
 - P2 Widget test: 8 tests 통과(조회·중복·삭제·오류·Mock·목표 의미·합산·stale·좁은 화면)
@@ -115,10 +116,52 @@ Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning met
 
 ## 다음 행동
 
-1. `docs/migration/p3-repository-dto/input.md`를 슬레이브에게 전달하고 P3 결과를 인계받는다.
+1. `docs/migration/p4-repository-persistence/slave-execution-prompt.md`를 슬레이브에게 전달한다.
 2. P4 전까지 P2 계획 상태는 in-memory이며 임시 현재 상태임을 유지한다.
 3. P6 전까지 P2 결과는 보유량 차감 전 총 필요량이며 부족량을 표시하지 않는다.
-4. P3는 실제 사용자 저장소를 쓰지 않고 v6 runtime import 없이 fixture부터 고정한다.
+4. 슬레이브는 P3 승인 baseline gate가 모두 통과한 경우에만 P4 구현을 시작한다.
+
+## 마스터 사용량 중단 시 슬레이브 작업 규칙
+
+마스터의 사용량이 중간에 끊기거나 마스터가 결과를 즉시 검사할 수 없을 때도 슬레이브는
+이미 전달받은 현재 단계의 `input.md` 범위 안에서 작업을 계속할 수 있다. 다만 슬레이브의
+`COMPLETED` 보고는 마스터의 수신·검증·적용을 대신하지 않으며, 마스터 검증 없이 다음 의존
+단계를 구현하지 않는다.
+
+### 공통으로 계속할 수 있는 작업
+
+1. 이미 지시받은 현재 단계의 구현, 테스트, 문서화와 자체 검증을 끝낸다.
+2. 최종 patch, fixture, 검증 로그 등 실제 결과물을 `artifacts/`에 저장한다.
+3. 각 결과물의 크기와 SHA-256을 기록한 `output.md`를 작성하고 인계 패키지를 준비한다.
+4. 실패·미검증·환경 제한과 마스터가 결정해야 할 사항을 `output.md`에 명시한다.
+5. 다음 단계에 필요한 v6 동작 조사, 현재 코드 경계 목록, 위험 목록과 테스트 사례를 읽기
+   전용 조사 산출물로 준비할 수 있다.
+6. 마스터가 복귀할 때까지 원래 결과물과 전송 패키지를 보존하며, 임의로 재생성하거나
+   다른 단계 결과와 합치지 않는다.
+
+### 마스터 검증 전 금지 작업
+
+- 슬레이브가 자신의 결과를 승인·적용된 것으로 간주하거나 이 상태 문서를 `완료`로 바꾸는 일
+- 현재 단계 결과를 전제로 다음 의존 단계의 production 구현을 시작하는 일
+- 아직 승인되지 않은 DTO, protocol, event schema 또는 repository 경계를 사실상 확정하는 일
+- 마스터 작업공간에 patch를 직접 적용하거나 여러 단계 patch를 하나로 합치는 일
+- `../v6` runtime import, 실제 사용자 프로필 변경 또는 명시되지 않은 migration 실행
+- 마스터 지시 없이 기존 결과물을 폐기·재생성하거나 파일명과 인계 경로를 바꾸는 일
+
+### 단계별 대기 작업
+
+| 마스터 중단 시점 | 슬레이브가 할 수 있는 작업 | 넘어가면 안 되는 경계 |
+|---|---|---|
+| P3 검증 전 | P3 follow-up 완료·자체 테스트·패키징, P4의 atomic write·손상·migration·revision 시험 항목 조사 | P4 영구 저장 구현 |
+| P4 지시 전 | v6 프로필 저장 동작과 오류 사례 조사, 저장 파일 소유권·migration 위험·contract test 표 초안 | 승인되지 않은 P3 DTO를 사용한 P4 코드 |
+| P4 작업 중 | 전달받은 P4 범위 구현·전체 검증·패키징 | 자신의 P4 결과를 전제로 한 P5 구현 |
+| P5 지시 전 | v6 scanner/capture/matcher 의존성 조사, event 종류·취소·stale·confidence fixture 후보와 recognition asset 목록 작성 | session protocol 확정, backend 연결, repository commit 구현 |
+| P5 작업 중 | 전달받은 P5 범위 구현·headless test·asset 검사·패키징 | 자신의 P5 결과를 전제로 한 P6 실제 연결 |
+| P6 지시 전 | 탭별 placeholder·공용 widget·필요 service 목록, loading/empty/error/disconnected 및 대용량 UI test matrix 작성 | 실제 repository/scanner client 연결 |
+| P6 작업 중 | 마스터가 지정한 단일 P6 하위 단계만 구현·검증·패키징 | 다음 P6 하위 단계나 미승인 service 계약으로 범위 확대 |
+
+P4, P5와 P6은 순차 의존하므로 마스터가 없는 동안 자동 연쇄 실행하지 않는다. 병렬 준비는
+선행 계약을 바꾸지 않는 조사, fixture 후보, 테스트 계획과 UI 현황 목록으로 제한한다.
 
 ## P2 — 계획 화면 수직 슬라이스
 
@@ -136,16 +179,54 @@ Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning met
 
 ## P3 — Repository 특성화와 DTO 분리
 
-- 상태: `대기`
+- 상태: `완료`
 - 목적: v6 repository의 scanner·storage 결합을 특성화하고 독립 DTO와 순수 병합 parity 경계를 확정
 - 완료 조건: scanner/matcher 없이 fixture 재생, 다섯 데이터 버킷 매핑 고정, v6 runtime import 없는 parity test, 실제 사용자 저장소 쓰기 없음
 - 입력: `docs/migration/p3-repository-dto/input.md`
-- 출력 보고서: 아직 없음
-- 결과물: 아직 없음
-- 검증: 작업 지시가 P3 고정 정의, migration baseline, 슬레이브 및 cross-PC 인계 계약과 대조됨
+- 추가 입력: `docs/migration/p3-repository-dto-followup-1/input.md`
+- 추가 입력 2: `docs/migration/p3-repository-dto-followup-2/input.md`
+- 출력 보고서: 원본 `docs/migration/handoffs/incoming/ba-planner-v7-p3-repository-dto/staging/20260722-004918-138dd469/output.md`; followup-1 `docs/migration/handoffs/incoming/ba-planner-v7-p3-repository-dto-followup-1/staging/20260722-012000-57ed5103/output.md`; followup-2 `docs/migration/handoffs/incoming/ba-planner-v7-p3-repository-dto-followup-2/staging/20260722-020150-bead4898/output.md`
+- 결과물: followup-2 staging의 `artifacts/p3-repository-dto-followup-2.patch`, `artifacts/verification.txt`; followup-2 ZIP SHA-256 `af07c2538b63cdb9cd03601a4bde8d28ce5324372f439884f052853e30823560`
+- 검증: 세 패키지의 ZIP·manifest·sidecar·artifact 해시와 단계별 baseline·무중첩 확인, 각 `git apply --check` 후 증분 적용; P3 10 tests·fixture 26 cases, Python 27, Flutter 39, analyze, Windows release, Almanac, diff, 실제 backend 세 method E2E와 Mock 계획 흐름 통과; current/metadata 교집합 `set()`, `display_name` confirmed/commit 유입 두 사례 모두 `RepositoryDTOError`
 - 결정 및 제약: P3는 DTO·순수 병합·fixture·문서·test만 구현하며 영구 저장은 P4, scanner session/backend는 P5에 남김
 - 차단 사항: 없음
-- 다음 행동: 슬레이브에게 P3 작업 지시를 전달하고 `output.md`, patch와 검증 기록을 인계받음
+- 다음 행동: P4가 아래 승인 baseline을 변경 전 gate로 재현하도록 유지
+- 최종 갱신: 2026-07-22
+
+### P3 승인 baseline
+
+P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불변 입력으로 승인한 것을
+뜻한다. P4 슬레이브는 구현 전에 이 baseline을 재현하며, 하나라도 다르면 P3를 임의로
+수정하지 않고 `BLOCKED`로 반환한다.
+
+- 승인 파일: `backend/core/repository_dto.py`, `backend/core/repository_merge.py`,
+  `backend/tests/test_repository_parity.py`, `contracts/fixtures/repository_v6_parity.json`,
+  `docs/migration/p3-repository-dto/repository-characterization.md`,
+  `docs/migration/p3-repository-dto/repository-protocol-draft.md`
+- fixture 기준: version 1, 26 cases(`student_merge` 6, `inventory_normalize` 3,
+  `inventory_merge` 2, `inventory_order` 1, `inventory_diff` 1, `resolve` 2,
+  `dto_error` 10, `bucket_mapping` 1)
+- test 기준: `tests.test_repository_parity` 10 tests, 변경 전 전체 Python 27 tests
+- field 기준: `CONFIRMED_STUDENT_VALUE_FIELDS`와 `StudentMeta.__annotations__` 교집합
+  `set()`; `display_name`의 confirmed-current 및 student commit 유입 모두 거부
+- 책임 기준: P3는 독립 DTO, 순수 병합, fixture와 특성화만 소유한다. filesystem/SQLite
+  I/O, profile catalog, atomic persistence와 migration은 P4가 소유한다.
+- 금지 기준: 실제 사용자 저장소 쓰기, `../v6`·scanner·GUI runtime import, 정적 metadata,
+  goal, 총 계산 결과 또는 shortage의 confirmed-current/inventory 유입 없음
+
+## P4 — Repository와 프로필 영구 저장
+
+- 상태: `대기`
+- 목적: Python backend가 프로필, 확정 현재 상태, 인벤토리와 사용자 목표의 안전한 저장·복원을 소유
+- 완료 조건: 재실행 복원, atomic failure 시 기존 데이터 보존, revision/idempotency 및 손상·병합 fixture, Python/Dart contract와 전체 검증 통과
+- 입력: `docs/migration/p4-repository-persistence/input.md`
+- 슬레이브 실행 프롬프트: `docs/migration/p4-repository-persistence/slave-execution-prompt.md`
+- 출력 보고서: 인계 전이므로 없음
+- 결과물: 인계 전이므로 없음
+- 검증: P3 승인 baseline을 P4 변경 전 필수 gate로 고정하고 P4 범위·금지 경계·인계 계약을 워크플로 정의와 대조함
+- 결정 및 제약: P4는 저장·profile·repository protocol과 최소 profile UI만 구현하며 scanner session/backend는 P5, 전 탭 통합은 P6에 남김
+- 차단 사항: 없음
+- 다음 행동: 슬레이브에 실행 프롬프트를 전달하고 `output.md`, P4 증분 patch와 검증 기록 인계 대기
 - 최종 갱신: 2026-07-22
 
 최종 갱신: 2026-07-22
