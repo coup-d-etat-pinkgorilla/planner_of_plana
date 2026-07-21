@@ -53,12 +53,34 @@ class MockAppService implements AppService, MockScenarioController {
 
   @override
   Future<Map<String, dynamic>?> getStudent(String studentId) async {
-    return null;
+    const students = <String, Map<String, dynamic>>{
+      'ayane': {
+        'student_id': 'ayane',
+        'display_name': '아야네',
+        'template_name': 'Ayane',
+        'group': 'Abydos',
+        'variant': null,
+      },
+      'aru': {
+        'student_id': 'aru',
+        'display_name': '아루',
+        'template_name': 'Aru',
+        'group': 'Gehenna',
+        'variant': null,
+      },
+    };
+    final student = students[studentId];
+    return student == null ? null : Map<String, dynamic>.from(student);
   }
 
   @override
   Future<Map<String, dynamic>> validatePlan(Map<String, dynamic> plan) async {
-    return Map<String, dynamic>.from(plan);
+    return {
+      'version': 1,
+      'goals': (plan['goals'] as List<dynamic>)
+          .map((goal) => Map<String, dynamic>.from(goal as Map))
+          .toList(),
+    };
   }
 
   @override
@@ -66,14 +88,28 @@ class MockAppService implements AppService, MockScenarioController {
     required List<Map<String, dynamic>> currentStudents,
     required Map<String, dynamic> plan,
   }) async {
-    return const {
-      'credits': 0,
-      'level_exp': 0,
-      'equipment_exp': 0,
-      'weapon_exp': 0,
-      'star_materials': <String, int>{},
+    final goals = (plan['goals'] as List<dynamic>? ?? const []);
+    final targetSum = goals.fold<int>(0, (sum, rawGoal) {
+      final goal = rawGoal as Map;
+      return sum +
+          goal.values.whereType<int>().fold<int>(
+            0,
+            (value, item) => value + item,
+          );
+    });
+    final studentCount = currentStudents.length;
+    return {
+      'credits': 1000 * studentCount + targetSum * 100,
+      'level_exp': targetSum * 10,
+      'equipment_exp': targetSum * 3,
+      'weapon_exp': targetSum * 2,
+      'star_materials': studentCount == 0
+          ? <String, int>{}
+          : {'mock_eleph': studentCount * 5},
       'equipment_materials': <String, int>{},
-      'level_exp_items': <String, int>{},
+      'level_exp_items': targetSum == 0
+          ? <String, int>{}
+          : {'activity_report': targetSum},
       'equipment_exp_items': <String, int>{},
       'weapon_exp_items': <String, int>{},
       'skill_books': <String, int>{},

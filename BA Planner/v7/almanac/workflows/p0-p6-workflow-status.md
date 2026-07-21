@@ -45,17 +45,18 @@ sources:
 
 ## 현재 단계 현황
 
-2026-07-21 P0 계약과 P1 process transport를 현재 작업 트리에서 마스터가 직접
-워크플로 완료 조건과 대조해 보완하고 인수했다. Python test 17개, Flutter test
-32개, `flutter analyze`, 실제 Python process의 세 planning method 종단간 호출,
-Almanac 검증과 Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
+2026-07-21 P0 계약, P1 process transport와 P2 실제 계획 화면을 현재 작업 트리에서
+마스터가 직접 워크플로 완료 조건과 대조해 보완하고 인수했다. Python test 17개,
+Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning method
+종단간 호출, MockAppService 계획 흐름, Almanac 검증과 Windows release build가
+통과했다. 변경은 아직 커밋되지 않았다.
 
 | 단계 | 목적 | 상태 | 근거 또는 산출물 | 다음 행동 |
 |---|---|---|---|---|
 | P0 | planning IPC 계약과 공용 fixture | `완료` | schema·fixture, Python/Dart contract 및 parity test 통과 | 계약 변경 시 양쪽 fixture test 유지 |
 | P1 | Python JSONL process와 Dart client | `완료` | lifecycle·오류·실제 세 method E2E 및 release build 통과 | P2가 `AppService` planning method만 사용하도록 유지 |
-| P2 | 실제 계획 화면 수직 슬라이스 | `대기` | cross-PC ZIP·해시·마스터 프롬프트를 요구하는 `input.md` 작성 완료 | 슬레이브에게 `input.md` 전달 후 외부 패키지 인계 대기 |
-| P3 | repository 특성화와 DTO 분리 | `대기` | migration baseline에 선행 조건 기록 | P2와 병렬 조사 범위를 결정하고 parity fixture부터 작성 |
+| P2 | 실제 계획 화면 수직 슬라이스 | `완료` | 인계 patch 적용 후 마스터 보완, Widget test 8개와 전체 39개·실제 backend·Mock·release 통과 | P4/P6 전까지 in-memory·총 필요량 경계 유지 |
+| P3 | repository 특성화와 DTO 분리 | `대기` | `docs/migration/p3-repository-dto/input.md` 작업 지시 작성 | 슬레이브에게 P3 지시를 전달하고 인계 결과를 기다림 |
 | P4 | 프로필과 repository 영구 저장 | `대기` | 없음 | P3 DTO·병합 fixture 인수 후 시작 |
 | P5 | scanner/matcher session protocol과 backend | `대기` | 없음 | P3/P4 경계 인수 후 event schema부터 작성 |
 | P6 | 전 기본 탭 실제 데이터 통합 | `대기` | 현재 홈 골격과 placeholder 페이지 | P2·P4·P5 인수 후 P6-1 학생부터 진행 |
@@ -100,10 +101,11 @@ Almanac 검증과 Windows release build가 통과했다. 변경은 아직 커밋
 
 ## 현재 검증
 
-- `codealmanac validate`: 통과, 5 pages
+- `codealmanac validate`: 통과, 6 pages
 - `py -3.11 -m unittest discover -s tests -v`: 17 tests 통과
 - `flutter analyze`: 문제 없음
-- `flutter test`: 32 tests 통과
+- `flutter test`: 39 tests 통과
+- P2 Widget test: 8 tests 통과(조회·중복·삭제·오류·Mock·목표 의미·합산·stale·좁은 화면)
 - 실제 Python process의 student lookup, plan validation, calculation: 통과
 - timeout, late response, malformed response, method mismatch, invalid error/success
   payload, stdin failure, unexpected exit, restart와 dispose: 통과
@@ -113,26 +115,40 @@ Almanac 검증과 Windows release build가 통과했다. 변경은 아직 커밋
 
 ## 다음 행동
 
-1. 슬레이브에게 `docs/migration/p2-planning-screen/input.md`를 전달한다.
-2. `output.md`와 artifacts가 포함된 cross-PC ZIP 및 세 sidecar 인계를 기다린다.
-3. 계획 화면은 현재 상태, 사용자 목표와 총 필요량을 분리하고 부족량을 표시하지 않는다.
-4. P2 결과 수신 후 실제 Python backend와 mock 양쪽 Widget test를 검증한다.
+1. `docs/migration/p3-repository-dto/input.md`를 슬레이브에게 전달하고 P3 결과를 인계받는다.
+2. P4 전까지 P2 계획 상태는 in-memory이며 임시 현재 상태임을 유지한다.
+3. P6 전까지 P2 결과는 보유량 차감 전 총 필요량이며 부족량을 표시하지 않는다.
+4. P3는 실제 사용자 저장소를 쓰지 않고 v6 runtime import 없이 fixture부터 고정한다.
 
 ## P2 — 계획 화면 수직 슬라이스
 
-- 상태: `대기`
+- 상태: `완료`
 - 목적: 계획 placeholder를 학생 목표 편집과 총 필요량 계산이 가능한 실제 화면으로 교체
 - 완료 조건: AppService planning method만 사용하는 학생별·전체 계산, 필수 상태와 Widget test, 전체 검증 통과
 - 입력: `docs/migration/p2-planning-screen/input.md`
-- 출력 보고서: `docs/migration/p2-planning-screen/output.md` (인계 전)
-- 결과물: `docs/migration/p2-planning-screen/artifacts/` 및 cross-PC 전달 패키지 (인계 전)
-- 검증: 패키징·UDP 자동 discovery·무선 4파일 송수신·SHA-256·마스터 클립보드 종단간 통과; connection-reset/no-receiver fallback 통과
-- 결정 및 제약: 정확한 학생 ID 조회, in-memory 현재 상태, 부족량·저장·scanner 제외, 서로 다른 PC는 ZIP·SHA-256으로 인계
+- 출력 보고서: `docs/migration/handoffs/incoming/ba-planner-v7-p2-planning-screen/staging/master-verify-20260722-000001-a8bb6fea/output.md`
+- 결과물: 같은 staging의 `artifacts/p2-planning-screen.patch`, `artifacts/verification.txt`; 수신 ZIP SHA-256 `16b833cde5201f3dd90e08d56ccbce223f5ee40d78c4f1257ea15daf063cdc87`
+- 검증: ZIP·manifest·산출물 크기/SHA-256 일치, 무중첩 확인, `git apply --check` 후 적용; Python 17, Flutter 39, analyze, 실제 Python process E2E, Mock flow, Windows release, Almanac와 diff 검사 통과
+- 결정 및 제약: 정확한 학생 ID 조회, in-memory 임시 현재 상태, AppService planning method만 사용, 부족량·저장·scanner 제외
 - 차단 사항: 없음
-- 다음 행동: 슬레이브 저장소에 송신 도구를 전달하고 설치 스크립트로 단일 래퍼를 설치한 뒤 결과 수신 시작
-- 최종 갱신: 2026-07-21
+- 다음 행동: 작성된 P3 작업 지시를 슬레이브에게 전달하고 DTO·병합 fixture 결과 인계 대기
+- 최종 갱신: 2026-07-22
 
-최종 갱신: 2026-07-21
+## P3 — Repository 특성화와 DTO 분리
+
+- 상태: `대기`
+- 목적: v6 repository의 scanner·storage 결합을 특성화하고 독립 DTO와 순수 병합 parity 경계를 확정
+- 완료 조건: scanner/matcher 없이 fixture 재생, 다섯 데이터 버킷 매핑 고정, v6 runtime import 없는 parity test, 실제 사용자 저장소 쓰기 없음
+- 입력: `docs/migration/p3-repository-dto/input.md`
+- 출력 보고서: 아직 없음
+- 결과물: 아직 없음
+- 검증: 작업 지시가 P3 고정 정의, migration baseline, 슬레이브 및 cross-PC 인계 계약과 대조됨
+- 결정 및 제약: P3는 DTO·순수 병합·fixture·문서·test만 구현하며 영구 저장은 P4, scanner session/backend는 P5에 남김
+- 차단 사항: 없음
+- 다음 행동: 슬레이브에게 P3 작업 지시를 전달하고 `output.md`, patch와 검증 기록을 인계받음
+- 최종 갱신: 2026-07-22
+
+최종 갱신: 2026-07-22
 
 ## 단계별 기록 양식
 

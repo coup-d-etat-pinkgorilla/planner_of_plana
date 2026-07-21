@@ -8,6 +8,7 @@ import '../services/app_service.dart';
 import 'app_section.dart';
 import 'pages/adaptive_sync_page.dart';
 import 'pages/home_page.dart';
+import 'pages/planning_page.dart';
 import 'pages/section_placeholder_page.dart';
 import 'widgets/animated_section_stack.dart';
 import 'widgets/ba_triangle_background.dart';
@@ -111,10 +112,7 @@ class _AppShellState extends State<AppShell> {
                                   section: AppSection.students,
                                   service: widget.service,
                                 ),
-                                SectionPlaceholderPage(
-                                  section: AppSection.plan,
-                                  service: widget.service,
-                                ),
+                                PlanningPage(service: widget.service),
                                 SectionPlaceholderPage(
                                   section: AppSection.inventory,
                                   service: widget.service,
