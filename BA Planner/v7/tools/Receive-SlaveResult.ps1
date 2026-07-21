@@ -7,6 +7,9 @@ param(
     [ValidateRange(1, 65535)]
     [int]$Port = 8765,
 
+    [ValidateRange(1, 65535)]
+    [int]$DiscoveryPort = 8766,
+
     [string]$InboxDirectory = '',
 
     [switch]$InspectExisting,
@@ -65,14 +68,16 @@ else {
     )
 
     Write-Host 'Starting the one-time BA Planner slave-result receiver.'
-    Write-Host 'Give the printed upload_url, port and token to the slave PC.'
+    Write-Host 'On the slave PC run: & "$HOME\.codex\ba-planner-slave\Send-SlaveResult.ps1"'
+    Write-Host 'The slave sender discovers this receiver automatically; no IP or token entry is needed.'
     Write-Host 'Allow Windows Firewall access only on a trusted private network.'
     Write-Host ''
 
     & py -3.11 $receiverScript `
         --destination $resolvedInbox `
         --task-id $TaskId `
-        --port $Port
+        --port $Port `
+        --discovery-port $DiscoveryPort
 
     if ($LASTEXITCODE -ne 0) {
         throw "The slave-result receiver exited with code $LASTEXITCODE"

@@ -10,7 +10,7 @@ from pathlib import Path
 import secrets
 import socket
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from threading import Thread
+from threading import Event, Thread
 from urllib.parse import urlparse
 
 
@@ -20,6 +20,7 @@ EXPECTED_SUFFIXES = (
     ".manifest.json",
     "-MASTER_PROMPT.md",
 )
+DISCOVERY_SERVICE = "BA_PLANNER_HANDOFF_DISCOVERY_V1"
 
 
 def _parse_args() -> argparse.Namespace:
@@ -31,6 +32,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--bind", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--token", default="")
+    parser.add_argument("--discovery-port", type=int, default=8766)
+    parser.add_argument("--no-discovery", action="store_true")
+    parser.add_argument("--show-token", action="store_true")
     parser.add_argument("--max-file-bytes", type=int, default=512 * 1024 * 1024)
     return parser.parse_args()
 
@@ -60,6 +64,49 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _serve_discovery(
+    discovery_socket: socket.socket,
+    stop_event: Event,
+    task_id: str,
+    token: str,
+    upload_urls: list[str],
+    http_port: int,
+) -> None:
+    discovery_socket.settimeout(0.5)
+    while not stop_event.is_set():
+        try:
+            data, address = discovery_socket.recvfrom(4096)
+        except socket.timeout:
+            continue
+        except OSError:
+            break
+        try:
+            request = json.loads(data.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if request.get("service") != DISCOVERY_SERVICE:
+            continue
+        if request.get("task_id") != task_id:
+            continue
+        nonce = request.get("nonce")
+        if not isinstance(nonce, str) or not 8 <= len(nonce) <= 128:
+            continue
+        response = {
+            "service": DISCOVERY_SERVICE,
+            "task_id": task_id,
+            "nonce": nonce,
+            "upload_urls": upload_urls,
+            "port": http_port,
+            "token": token,
+        }
+        try:
+            discovery_socket.sendto(
+                json.dumps(response).encode("utf-8"), address
+            )
+        except OSError:
+            break
 
 
 def _validate_complete(destination: Path, base_name: str) -> dict[str, object]:
@@ -95,6 +142,8 @@ def main() -> int:
     args = _parse_args()
     if not 1 <= args.port <= 65535:
         raise SystemExit("--port must be between 1 and 65535")
+    if not 1 <= args.discovery_port <= 65535:
+        raise SystemExit("--discovery-port must be between 1 and 65535")
     if args.max_file_bytes <= 0:
         raise SystemExit("--max-file-bytes must be positive")
     if any(character in args.task_id for character in "\\/:"):
@@ -104,6 +153,7 @@ def main() -> int:
     destination.mkdir(parents=True, exist_ok=True)
     token = args.token or secrets.token_urlsafe(32)
     state: dict[str, object] = {"base_name": None, "received": set()}
+    stop_event = Event()
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "BAPlannerHandoff/1"
@@ -180,6 +230,7 @@ def main() -> int:
                 self._reply(201, {"status": "HANDOFF_RECEIVED", **verification})
                 print("\nWIRELESS_HANDOFF_RECEIVED", flush=True)
                 print(json.dumps(verification, ensure_ascii=False, indent=2), flush=True)
+                stop_event.set()
                 Thread(target=self.server.shutdown, daemon=True).start()
                 return
 
@@ -197,16 +248,42 @@ def main() -> int:
             print(f"{self.client_address[0]} - {message_format % message_args}", flush=True)
 
     server = HTTPServer((args.bind, args.port), Handler)
+    addresses = _local_ipv4_addresses()
+    upload_urls = [f"http://{address}:{args.port}/upload" for address in addresses]
+    if not upload_urls:
+        upload_urls = [f"http://<MASTER_LAN_IP>:{args.port}/upload"]
+
+    discovery_socket: socket.socket | None = None
+    discovery_thread: Thread | None = None
+    if not args.no_discovery:
+        discovery_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        discovery_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        discovery_socket.bind(("0.0.0.0", args.discovery_port))
+        discovery_thread = Thread(
+            target=_serve_discovery,
+            args=(
+                discovery_socket,
+                stop_event,
+                args.task_id,
+                token,
+                upload_urls,
+                args.port,
+            ),
+            daemon=True,
+        )
+        discovery_thread.start()
+
     print("BA Planner cross-PC handoff receiver", flush=True)
     print(f"destination: {destination}", flush=True)
     print(f"task_id: {args.task_id}", flush=True)
     print(f"port: {args.port}", flush=True)
-    print(f"token: {token}", flush=True)
-    addresses = _local_ipv4_addresses()
-    for address in addresses:
-        print(f"upload_url: http://{address}:{args.port}/upload", flush=True)
-    if not addresses:
-        print(f"upload_url: http://<MASTER_LAN_IP>:{args.port}/upload", flush=True)
+    if args.show_token:
+        print(f"token: {token}", flush=True)
+    for upload_url in upload_urls:
+        print(f"upload_url: {upload_url}", flush=True)
+    if discovery_socket is not None:
+        print(f"discovery: UDP/{args.discovery_port} enabled", flush=True)
+        print("On the slave PC run Send-SlaveResult.ps1; no token entry is needed.", flush=True)
     print("Use only on a trusted private LAN. The receiver stops after one valid handoff.", flush=True)
 
     try:
@@ -214,6 +291,11 @@ def main() -> int:
     except KeyboardInterrupt:
         print("Receiver stopped by user.", flush=True)
     finally:
+        stop_event.set()
+        if discovery_socket is not None:
+            discovery_socket.close()
+        if discovery_thread is not None:
+            discovery_thread.join(timeout=1)
         server.server_close()
     return 0
 

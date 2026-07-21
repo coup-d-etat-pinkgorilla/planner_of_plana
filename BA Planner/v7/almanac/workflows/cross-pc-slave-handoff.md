@@ -64,13 +64,14 @@ cd "<SLAVE_REPOSITORY_ROOT>"
 승인된 클라우드로 마스터 PC의 inbox에 복사한다. 네 파일을 일부만 전달하면 인계가
 완료되지 않는다.
 
-## 같은 Wi-Fi/LAN 무선 전송
+## 같은 Wi-Fi/LAN 자동 무선 전송
 
 두 PC가 신뢰할 수 있는 같은 사설 Wi-Fi 또는 LAN에 있으면 마스터가 일회용 수신기를
-열고 슬레이브가 네 파일을 직접 업로드할 수 있다. 수신기는 bearer token, 작업 ID,
-파일명과 최대 크기를 검사하고 한 패키지의 네 파일을 받은 뒤 ZIP 크기와 SHA-256을
-manifest 및 sidecar와 대조하여 자동 종료한다. HTTP 전송이므로 공용·게스트 Wi-Fi나
-인터넷에 직접 노출하지 않는다. [@receive-script] [@send-script]
+열고 슬레이브가 UDP discovery로 이를 자동 발견해 네 파일을 직접 업로드한다. 사용자는
+IP, port 또는 token을 옮겨 적지 않는다. 수신기는 discovery nonce, 일회용 bearer
+token, 작업 ID, 파일명과 최대 크기를 검사하고 ZIP 크기와 SHA-256을 manifest 및
+sidecar와 대조하여 자동 종료한다. HTTP/UDP를 사용하므로 공용·게스트 Wi-Fi나 인터넷에
+직접 노출하지 않는다. [@receive-script] [@send-script]
 
 마스터 PC에서 먼저 실행한다.
 
@@ -101,23 +102,29 @@ py -3.11 .\tools\receive_cross_pc_handoff.py `
   --port 8765
 ```
 
-수신기가 출력한 `upload_url`의 마스터 LAN IP, port와 일회용 token을 슬레이브에게
-전달한다. Windows 방화벽 확인이 표시되면 신뢰하는 개인 네트워크에만 허용한다.
+Windows 방화벽 확인이 표시되면 신뢰하는 개인 네트워크에만 허용한다. token은 기본
+출력하지 않고 UDP discovery 응답의 메모리 안에서만 전달한다.
 
-슬레이브는 패키징 후 다음을 실행한다.
+슬레이브는 결과 준비 후 설치된 단일 송신 래퍼를 실행한다. 이 명령이 패키징, 마스터
+자동 발견과 네 파일 전송을 연속 수행한다.
+
+슬레이브 저장소에서 최초 한 번 설치한다.
 
 ```powershell
 cd "<SLAVE_REPOSITORY_ROOT>"
-.\tools\send_cross_pc_handoff.ps1 `
-  -PackagePath "<SLAVE_OUTBOX>\<package>.zip" `
-  -MasterHost "<MASTER_LAN_IP>" `
-  -Port 8765 `
-  -Token "<ONE_TIME_TOKEN>"
+.\tools\Install-SlaveResultSender.ps1
 ```
 
-마스터 수신기에 `WIRELESS_HANDOFF_RECEIVED`가 출력되어야 무선 전달이 끝난다. 토큰은
-일회용 비밀값으로 취급하고 저장소, `output.md`, 로그 결과물 또는 Almanac에 기록하지
-않는다. 전송 후에는 재사용하지 않는다. 연결할 수 없으면 수신기를 종료하고 수동
+그 뒤부터는 다음 단일 명령만 사용한다.
+
+```powershell
+& "$HOME\.codex\ba-planner-slave\Send-SlaveResult.ps1"
+```
+
+마스터 수신기에 `WIRELESS_HANDOFF_RECEIVED`가 출력되어야 무선 전달이 끝난다. token은
+일회용 비밀값으로 취급하고 화면, 저장소, `output.md`, 로그 결과물 또는 Almanac에
+기록하지 않는다. 전송 후에는 재사용하지 않는다. 자동 발견이 실패하면 같은 사설
+네트워크와 개인 네트워크 방화벽 허용 여부를 확인한 뒤 재시도하고, 계속 실패하면 수동
 전달 절차로 전환한다.
 
 이미 받은 최신 패키지의 검사와 클립보드 복사만 다시 실행하려면 다음을 사용한다.
