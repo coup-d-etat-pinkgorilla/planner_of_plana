@@ -5,10 +5,26 @@ import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../widgets/repository_profile_panel.dart';
 
+class PlanningStudentSeed {
+  PlanningStudentSeed({
+    required this.handoffId,
+    required this.studentId,
+    required Map<String, dynamic> metadata,
+    required Map<String, dynamic> currentValues,
+  }) : metadata = Map.unmodifiable(metadata),
+       currentValues = Map.unmodifiable(currentValues);
+
+  final String handoffId;
+  final String studentId;
+  final Map<String, dynamic> metadata;
+  final Map<String, dynamic> currentValues;
+}
+
 class PlanningPage extends StatefulWidget {
-  const PlanningPage({super.key, required this.service});
+  const PlanningPage({super.key, required this.service, this.initialSeed});
 
   final AppService service;
+  final PlanningStudentSeed? initialSeed;
 
   @override
   State<PlanningPage> createState() => _PlanningPageState();
@@ -26,6 +42,41 @@ class _PlanningPageState extends State<PlanningPage> {
   int _generation = 0;
   String? _profileId;
   int? _repositoryRevision;
+  String? _acceptedHandoffId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _acceptSeed(widget.initialSeed));
+  }
+
+  @override
+  void didUpdateWidget(covariant PlanningPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialSeed?.handoffId != widget.initialSeed?.handoffId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _acceptSeed(widget.initialSeed));
+    }
+  }
+
+  void _acceptSeed(PlanningStudentSeed? seed) {
+    if (!mounted || seed == null || seed.handoffId == _acceptedHandoffId) return;
+    _acceptedHandoffId = seed.handoffId;
+    if (_students.any((student) => student.id == seed.studentId)) {
+      setState(() => _lookupMessage = '${seed.studentId} is already in this plan draft.');
+      return;
+    }
+    final draft = _StudentPlanDraft(
+      id: seed.studentId,
+      metadata: Map<String, dynamic>.from(seed.metadata),
+      onChanged: _invalidateResults,
+    );
+    draft.restore(Map<String, dynamic>.from(seed.currentValues), null);
+    setState(() {
+      _students.add(draft);
+      _lookupMessage = '${draft.displayName} was added from the Students tab.';
+      _invalidateResults(notify: false);
+    });
+  }
 
   Future<void> _restoreProfile(RepositoryProfile profile) async {
     if (widget.service is! RepositoryService) return;
@@ -41,6 +92,16 @@ class _PlanningPageState extends State<PlanningPage> {
         final metadata = await widget.service.getStudent(id) ?? {'student_id': id, 'display_name': id};
         final draft = _StudentPlanDraft(id: id, metadata: metadata, onChanged: _invalidateResults);
         draft.restore(Map<String, dynamic>.from(student.values), goals[id]);
+        restored.add(draft);
+      }
+      final seed = widget.initialSeed;
+      if (seed != null && !restored.any((student) => student.id == seed.studentId)) {
+        final draft = _StudentPlanDraft(
+          id: seed.studentId,
+          metadata: Map<String, dynamic>.from(seed.metadata),
+          onChanged: _invalidateResults,
+        );
+        draft.restore(Map<String, dynamic>.from(seed.currentValues), null);
         restored.add(draft);
       }
       if (!mounted) return;

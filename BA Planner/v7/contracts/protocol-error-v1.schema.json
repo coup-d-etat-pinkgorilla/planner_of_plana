@@ -5,6 +5,7 @@
   "oneOf": [
     { "$ref": "#/$defs/unknownMethod" },
     { "$ref": "#/$defs/studentGet" },
+    { "$ref": "#/$defs/studentCatalog" },
     { "$ref": "#/$defs/planValidate" },
     { "$ref": "#/$defs/planCalculate" }
   ],
@@ -49,6 +50,7 @@
               "not": {
                 "enum": [
                   "planning.student.get",
+                  "planning.student.catalog",
                   "planning.plan.validate",
                   "planning.plan.calculate"
                 ]
@@ -69,6 +71,25 @@
         {
           "properties": {
             "method": { "const": "planning.student.get" },
+            "payload": {
+              "properties": {
+                "error": {
+                  "properties": {
+                    "code": { "enum": ["invalid_payload", "metadata_lookup_failed"] }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "studentCatalog": {
+      "allOf": [
+        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "properties": {
+            "method": { "const": "planning.student.catalog" },
             "payload": {
               "properties": {
                 "error": {

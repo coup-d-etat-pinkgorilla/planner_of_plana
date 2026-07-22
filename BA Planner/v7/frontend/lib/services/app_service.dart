@@ -7,6 +7,130 @@ enum ScanPhase { idle, scanning, succeeded, failed }
 enum ImageLoadState { loaded, loading, failed }
 
 @immutable
+class StudentCatalogEntry {
+  StudentCatalogEntry({
+    required this.studentId,
+    required this.displayName,
+    required this.templateName,
+    required this.group,
+    required this.variant,
+    required this.school,
+    required this.rarity,
+    required this.attackType,
+    required this.defenseType,
+    required this.combatClass,
+    required this.role,
+    required this.position,
+    required List<String> searchTags,
+    required List<String> krSearchTags,
+  }) : searchTags = List.unmodifiable(searchTags),
+       krSearchTags = List.unmodifiable(krSearchTags);
+
+  final String studentId;
+  final String displayName;
+  final String templateName;
+  final String group;
+  final String? variant;
+  final String? school;
+  final String? rarity;
+  final String? attackType;
+  final String? defenseType;
+  final String? combatClass;
+  final String? role;
+  final String? position;
+  final List<String> searchTags;
+  final List<String> krSearchTags;
+
+  factory StudentCatalogEntry.fromWire(Map<String, dynamic> value) {
+    const required = {
+      'student_id', 'display_name', 'template_name', 'group', 'variant',
+      'school', 'rarity', 'attack_type', 'defense_type', 'combat_class',
+      'role', 'position', 'search_tags', 'kr_search_tags',
+    };
+    if (value.keys.toSet().length != required.length ||
+        !value.keys.toSet().containsAll(required)) {
+      throw const FormatException('Invalid student catalog entry fields');
+    }
+    String text(String key) {
+      final item = value[key];
+      if (item is! String || item.isEmpty) {
+        throw FormatException('Invalid student catalog $key');
+      }
+      return item;
+    }
+    String? nullableText(String key) {
+      final item = value[key];
+      if (item != null && item is! String) {
+        throw FormatException('Invalid student catalog $key');
+      }
+      return item as String?;
+    }
+    List<String> tags(String key) {
+      final item = value[key];
+      if (item is! List || item.any((tag) => tag is! String)) {
+        throw FormatException('Invalid student catalog $key');
+      }
+      return item.cast<String>();
+    }
+    return StudentCatalogEntry(
+      studentId: text('student_id'),
+      displayName: text('display_name'),
+      templateName: text('template_name'),
+      group: text('group'),
+      variant: nullableText('variant'),
+      school: nullableText('school'),
+      rarity: nullableText('rarity'),
+      attackType: nullableText('attack_type'),
+      defenseType: nullableText('defense_type'),
+      combatClass: nullableText('combat_class'),
+      role: nullableText('role'),
+      position: nullableText('position'),
+      searchTags: tags('search_tags'),
+      krSearchTags: tags('kr_search_tags'),
+    );
+  }
+
+  factory StudentCatalogEntry.fallback(String studentId) => StudentCatalogEntry(
+    studentId: studentId,
+    displayName: studentId,
+    templateName: '$studentId.png',
+    group: studentId,
+    variant: null,
+    school: null,
+    rarity: null,
+    attackType: null,
+    defenseType: null,
+    combatClass: null,
+    role: null,
+    position: null,
+    searchTags: const [],
+    krSearchTags: const [],
+  );
+
+  Map<String, dynamic> get metadata => {
+    'student_id': studentId,
+    'display_name': displayName,
+    'template_name': templateName,
+    'group': group,
+    'variant': variant,
+    'school': school,
+    'rarity': rarity,
+    'attack_type': attackType,
+    'defense_type': defenseType,
+    'combat_class': combatClass,
+    'role': role,
+    'position': position,
+  };
+
+  bool matches(String query) {
+    final needle = query.trim().toLowerCase();
+    if (needle.isEmpty) return true;
+    return [studentId, displayName, group, ...searchTags, ...krSearchTags]
+        .any((value) => value.toLowerCase().contains(needle));
+  }
+}
+
+@immutable
 class AppServiceState {
   const AppServiceState({
     required this.connection,
@@ -68,6 +192,8 @@ abstract interface class AppService {
   Future<void> startScan();
 
   Future<Map<String, dynamic>?> getStudent(String studentId);
+
+  Future<List<StudentCatalogEntry>> listStudents();
 
   Future<Map<String, dynamic>> validatePlan(Map<String, dynamic> plan);
 

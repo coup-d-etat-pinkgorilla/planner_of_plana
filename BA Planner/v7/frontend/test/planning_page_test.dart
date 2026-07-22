@@ -10,11 +10,12 @@ void main() {
     WidgetTester tester,
     AppService service, {
     Size size = const Size(900, 900),
+    PlanningStudentSeed? seed,
   }) async {
     await tester.binding.setSurfaceSize(size);
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(body: PlanningPage(service: service)),
+        home: Scaffold(body: PlanningPage(service: service, initialSeed: seed)),
       ),
     );
   }
@@ -267,6 +268,24 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const ValueKey('total-cost-summary')), findsOneWidget);
   });
+
+  testWidgets('accepts a student tab handoff into the existing draft', (tester) async {
+    final service = _PlanningTestService();
+    addTearDown(service.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpPage(
+      tester,
+      service,
+      seed: PlanningStudentSeed(
+        handoffId: 'handoff-1',
+        studentId: 'aru',
+        metadata: const {'student_id': 'aru', 'display_name': 'Aru'},
+        currentValues: const {'level': 50, 'student_star': 3},
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(const ValueKey('student-card-aru')), findsOneWidget);
+  });
 }
 
 class _PlanningTestService implements AppService {
@@ -310,6 +329,9 @@ class _PlanningTestService implements AppService {
       'variant': null,
     };
   }
+
+  @override
+  Future<List<StudentCatalogEntry>> listStudents() async => const [];
 
   @override
   Future<Map<String, dynamic>> validatePlan(Map<String, dynamic> plan) async {

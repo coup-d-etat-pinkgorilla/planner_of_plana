@@ -20,6 +20,7 @@ CONTRACTS = Path(__file__).parents[2] / "contracts"
 FIXTURE = CONTRACTS / "fixtures" / "planning_protocol_v1.json"
 METHOD_SCHEMAS = {
     "planning.student.get": "planning-student-get-v1.schema.json",
+    "planning.student.catalog": "planning-student-catalog-v1.schema.json",
     "planning.plan.validate": "planning-plan-validate-v1.schema.json",
     "planning.plan.calculate": "planning-plan-calculate-v1.schema.json",
 }

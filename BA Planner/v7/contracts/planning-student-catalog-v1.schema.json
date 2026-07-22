@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/planning-student-catalog-v1.schema.json",
+  "title": "planning.student.catalog request and success response",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" }
+  ],
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "required": ["student_id", "display_name", "template_name", "group", "variant", "school", "rarity", "attack_type", "defense_type", "combat_class", "role", "position", "search_tags", "kr_search_tags"],
+      "properties": {
+        "student_id": { "type": "string", "minLength": 1 },
+        "display_name": { "type": "string", "minLength": 1 },
+        "template_name": { "type": "string", "minLength": 1 },
+        "group": { "type": "string", "minLength": 1 },
+        "variant": { "type": ["string", "null"] },
+        "school": { "type": ["string", "null"] },
+        "rarity": { "type": ["string", "null"] },
+        "attack_type": { "type": ["string", "null"] },
+        "defense_type": { "type": ["string", "null"] },
+        "combat_class": { "type": ["string", "null"] },
+        "role": { "type": ["string", "null"] },
+        "position": { "type": ["string", "null"] },
+        "search_tags": { "type": "array", "items": { "type": "string" } },
+        "kr_search_tags": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "request": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        { "properties": { "protocol": { "const": 1 }, "type": { "const": "request" }, "method": { "const": "planning.student.catalog" }, "payload": { "type": "object", "maxProperties": 0 } } }
+      ]
+    },
+    "response": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        { "properties": { "protocol": { "const": 1 }, "type": { "const": "response" }, "method": { "const": "planning.student.catalog" }, "payload": { "type": "object", "required": ["students", "sort"], "properties": { "students": { "type": "array", "items": { "$ref": "#/$defs/entry" } }, "sort": { "const": "display_name_then_id" } }, "additionalProperties": false } } }
+      ]
+    }
+  }
+}

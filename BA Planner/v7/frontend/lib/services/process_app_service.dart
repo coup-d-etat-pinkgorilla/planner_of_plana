@@ -75,6 +75,16 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
   }
 
   @override
+  Future<List<StudentCatalogEntry>> listStudents() async {
+    final payload = await _client.send('planning.student.catalog', {});
+    final students = payload['students'];
+    if (students is! List) throw const FormatException('Invalid student catalog');
+    return students
+        .map((item) => StudentCatalogEntry.fromWire(Map<String, dynamic>.from(item as Map)))
+        .toList(growable: false);
+  }
+
+  @override
   Future<Map<String, dynamic>> validatePlan(Map<String, dynamic> plan) async {
     final payload = await _client.send('planning.plan.validate', {
       'plan': plan,
@@ -126,6 +136,9 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
 
   @override
   Future<int> saveRepositoryGoals(String profileId, Map<String, dynamic> goals, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.goals.save', {'profile_id':profileId,'goals':goals,'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
+
+  @override
+  Future<int> saveRepositoryStudents(String profileId, List<ConfirmedStudentState> students, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.students.update', {'profile_id':profileId,'students':students.map((student) => student.toWire()).toList(growable:false),'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
 
   @override
   Future<void> reconnect() => _client.start();

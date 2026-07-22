@@ -189,7 +189,6 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('top-tab-students')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 60));
-    expect(find.text('학생 목록과 육성 상태 화면의 v7 골격입니다.'), findsOneWidget);
     final outgoing = tester.widget<Transform>(
       find.byKey(const ValueKey('animated-section-0')),
     );
@@ -203,6 +202,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('animated-section-0')), findsNothing);
     expect(find.byKey(const ValueKey('animated-section-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('student-page')), findsOneWidget);
 
     await tester.tap(find.text(AppSection.home.label).first);
     await tester.pump();

@@ -17,6 +17,21 @@
       "message": { "protocol": 1, "id": "student-2", "type": "response", "method": "planning.student.get", "payload": { "student": null } }
     },
     {
+      "name": "student catalog request",
+      "valid": true,
+      "message": { "protocol": 1, "id": "catalog-1", "type": "request", "method": "planning.student.catalog", "payload": {} }
+    },
+    {
+      "name": "student catalog response",
+      "valid": true,
+      "message": { "protocol": 1, "id": "catalog-1", "type": "response", "method": "planning.student.catalog", "payload": { "students": [{ "student_id": "aru", "display_name": "Aru", "template_name": "aru.png", "group": "aru", "variant": null, "school": "Gehenna", "rarity": "3", "attack_type": "Explosive", "defense_type": "Light", "combat_class": "Striker", "role": "Dealer", "position": "Back", "search_tags": ["aru"], "kr_search_tags": [] }], "sort": "display_name_then_id" } }
+    },
+    {
+      "name": "student catalog rejects paging",
+      "valid": false,
+      "message": { "protocol": 1, "id": "catalog-bad", "type": "request", "method": "planning.student.catalog", "payload": { "page": 1 } }
+    },
+    {
       "name": "normal plan validation request",
       "valid": true,
       "message": { "protocol": 1, "id": "plan-1", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "goals": [{ "student_id": "ayane", "favorite": true, "target_level": 10, "target_ex_skill": 2, "notes": "first goal" }] } } }

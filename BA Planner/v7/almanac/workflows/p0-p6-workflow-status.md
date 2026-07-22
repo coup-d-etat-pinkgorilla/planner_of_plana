@@ -59,7 +59,7 @@ Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
 | P4 | 프로필과 repository 영구 저장 | `완료` | nested schema·40-case Python/Dart contract, typed state, atomic persistence와 실제 Dart↔Python restart E2E; Python 40·Flutter 43·analyze·release 통과 | P5에서 repository 확정과 분리된 scanner session 경계 작성 |
 | P5 | scanner/matcher session protocol과 backend | `완료` | 40-path follow-up 인수와 마스터 보완; Python 59·Flutter 47·실제 process E2E·release asset gate 통과 | 2학생·2인벤토리 아이콘 제한 coverage를 유지하고 P6에서 scanner UI 연결 |
-| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1 학생 실제 데이터 통합 input과 슬레이브 실행 프롬프트 작성 | P6-1을 슬레이브에 전달하고 결과 artifact 인수·검증 |
+| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1 완료, P6-2 인벤토리 실제 데이터 통합 input과 슬레이브 실행 프롬프트 작성 | P6-2를 슬레이브에 전달하고 결과 artifact 인수·검증 |
 
 ## 현재 결정
 
@@ -353,21 +353,58 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 
 ## P6-1 — 학생 실제 데이터 통합
 
-- 상태: `대기`
+- 상태: `완료`
 - 목적: 학생 탭 placeholder를 실제 catalog·선택 프로필 repository state·scanner candidate와
   연결하고 검색·필터·정렬, 현재값 수정, 계획 탭 인계를 완성
 - 완료 조건: catalog protocol, typed repository 학생 저장, service-backed StudentPage,
   계획 인계와 candidate review 경계, Python·Flutter·release·Almanac 검증 통과
 - 입력: `docs/migration/p6-1-student-integration/input.md`
 - 슬레이브 실행 프롬프트: `docs/migration/p6-1-student-integration/slave-execution-prompt.md`
-- 출력 보고서: 아직 없음
-- 결과물: 아직 없음
-- 검증: 아직 실행하지 않음
+- 출력 보고서: `docs/migration/handoffs/incoming/ba-planner-v7-p6-1-student-integration/staging/manual-20260723-015330-774c2d1a/output.md` (`COMPLETED`, 마스터 검증·인수 완료)
+- 결과물: 같은 staging의 `artifacts/p6-1-student-integration.patch` 68,299 bytes,
+  SHA-256 `da25a312a5f50501024f0c67d15c889ee66e591d7a925a3f996d1af875a329bc`와
+  `artifacts/verification.txt` 1,934 bytes,
+  SHA-256 `a780f23311210a358b0bd4e19e30d1896e6570f093d855a03c3bbe7e670a0e77`
+- 수신 package: `ba-planner-v7-p6-1-student-integration-20260723-014628.zip` 18,347 bytes,
+  SHA-256 `8229c01db4e992f0885e95e58acf856df6c9f857d8dc9718e883e02e33a83ccc`;
+  사용자 제공값·manifest·sidecar와 일치하고 고유 staging에 독립 추출
+- 검증: baseline HEAD `8f4ffd4` 일치, 기존 변경과 patch 20경로 비중첩,
+  `git apply --check --verbose`와 clean 적용 통과. Python 61 tests, Windows release build,
+  실제 Dart↔Python catalog·학생 저장·restart 복원 임시 acceptance E2E, 계획 draft 인계,
+  candidate approve/hold, MockAppService 흐름, 1280×720·1440×900·1280×960 viewport,
+  `flutter analyze`, Flutter 전체 58 tests, `codealmanac validate`, `codealmanac health`,
+  `git diff --check`가 최종 통과했다. 임시 acceptance test는 실행 후 제거했다.
+- 마스터 보완: deprecated dropdown 초기화를 `initialValue`로 교체하고 expanded/ellipsis로
+  selection overflow를 제거했다. diagonal glass 내부에 투명 Material 경계를 추가하고,
+  catalog test를 method별 request correlation으로 수정했다. candidate·off-screen action test는
+  실제 scroll 동작을 사용하며 shell reachability test는 실제 StudentPage key를 확인한다.
 - 결정 및 제약: P6 전체가 아닌 첫 수직 슬라이스다. scanner session 시작·진행·취소 UI는
   P6-3이 소유하며, 승인되지 않은 계획 preset protocol과 최종 반응형 layout state를
   추측하지 않는다. 현재값·정적 metadata·goal·계산·inventory shortage 경계를 유지한다.
 - 차단 사항: 없음
-- 다음 행동: 프롬프트를 슬레이브에 전달하고 `output.md`와 artifact patch를 수신
+- 다음 행동: `docs/migration/p6-2-inventory-integration/slave-execution-prompt.md`를 슬레이브에 전달
+- 최종 갱신: 2026-07-23
+
+## P6-2 — 인벤토리 실제 데이터 통합
+
+- 상태: `대기`
+- 목적: 인벤토리 탭 placeholder를 실제 catalog·선택 프로필 snapshot·저장된 plan shortage와
+  scanner candidate에 연결하고 탐색·수정·부족 분석·검토 확정을 완성
+- 완료 조건: inventory order parity와 catalog protocol, typed repository inventory 저장,
+  gross totals와 분리된 shortage derivation, service-backed InventoryPage, candidate review 경계,
+  Python·Flutter·release·실제 process E2E·Almanac 검증 통과
+- 입력: `docs/migration/p6-2-inventory-integration/input.md`
+- 슬레이브 실행 프롬프트: `docs/migration/p6-2-inventory-integration/slave-execution-prompt.md`
+- 출력 보고서: 아직 없음
+- 결과물: 아직 없음
+- 검증: 아직 실행하지 않음
+- 결정 및 제약: 기본 진입은 보유량 목록이며 부족 분석은 선택 프로필의 저장된 plan만
+  대상으로 한다. snapshot 부재는 0이 아니라 unknown이고 명시적 zero-fill만 0이다.
+  scanner session 시작·진행·취소 UI는 P6-3이 소유하며 전체 육성 부족·장기 pressure·추천은
+  이 단계에서 구현하지 않는다.
+- 차단 사항: 없음. 단, 슬레이브가 마스터 승인 P6-1 보완본을 갖지 못했다면 승인 snapshot을
+  전달받기 전에는 구현을 시작하지 않는다.
+- 다음 행동: 프롬프트와 승인된 P6-1 baseline을 슬레이브에 전달하고 `output.md`와 artifact를 수신
 - 최종 갱신: 2026-07-23
 
 최종 갱신: 2026-07-23

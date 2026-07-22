@@ -9,6 +9,7 @@ import 'app_section.dart';
 import 'pages/adaptive_sync_page.dart';
 import 'pages/home_page.dart';
 import 'pages/planning_page.dart';
+import 'pages/student_page.dart';
 import 'pages/section_placeholder_page.dart';
 import 'widgets/animated_section_stack.dart';
 import 'widgets/ba_triangle_background.dart';
@@ -65,9 +66,17 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   AppSection _section = AppSection.home;
   bool _showDevelopmentPanel = false;
+  PlanningStudentSeed? _planningSeed;
 
   void _open(AppSection section) {
     setState(() => _section = section);
+  }
+
+  void _addStudentToPlan(PlanningStudentSeed seed) {
+    setState(() {
+      _planningSeed = seed;
+      _section = AppSection.plan;
+    });
   }
 
   @override
@@ -108,11 +117,11 @@ class _AppShellState extends State<AppShell> {
                                   service: widget.service,
                                   onOpen: _open,
                                 ),
-                                SectionPlaceholderPage(
-                                  section: AppSection.students,
+                                StudentPage(
                                   service: widget.service,
+                                  onAddToPlan: _addStudentToPlan,
                                 ),
-                                PlanningPage(service: widget.service),
+                                PlanningPage(service: widget.service, initialSeed: _planningSeed),
                                 SectionPlaceholderPage(
                                   section: AppSection.inventory,
                                   service: widget.service,

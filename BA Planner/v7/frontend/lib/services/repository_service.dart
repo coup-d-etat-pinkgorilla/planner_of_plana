@@ -51,6 +51,21 @@ class ConfirmedStudentState {
   final String studentId;
   final Map<String, dynamic> values;
 
+  factory ConfirmedStudentState.fromValues(
+    String studentId,
+    Map<String, dynamic> values,
+  ) => ConfirmedStudentState.fromWire({
+    'version': 1,
+    'student_id': studentId,
+    'values': values,
+  });
+
+  Map<String, dynamic> toWire() => {
+    'version': 1,
+    'student_id': studentId,
+    'values': Map<String, dynamic>.from(values),
+  };
+
   factory ConfirmedStudentState.fromWire(Map<String, dynamic> value) {
     const required = {'version', 'student_id', 'values'};
     const allowed = {'version', 'student_id', 'values', 'provenance'};
@@ -457,6 +472,12 @@ abstract interface class RepositoryService {
     String idempotencyKey,
   );
   Future<RepositoryState> loadRepositoryState(String profileId);
+  Future<int> saveRepositoryStudents(
+    String profileId,
+    List<ConfirmedStudentState> students,
+    int expectedRevision,
+    String idempotencyKey,
+  );
   Future<int> saveRepositoryGoals(
     String profileId,
     Map<String, dynamic> goals,

@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ba_planner_v7/services/app_service.dart';
 
 const _methods = {
   'planning.student.get',
+  'planning.student.catalog',
   'planning.plan.validate',
   'planning.plan.calculate',
 };
@@ -196,6 +198,8 @@ bool _validError(String method, Object? value) {
   return switch (method) {
     'planning.student.get' =>
       code == 'invalid_payload' || code == 'metadata_lookup_failed',
+    'planning.student.catalog' =>
+      code == 'invalid_payload' || code == 'metadata_lookup_failed',
     'planning.plan.validate' => code == 'invalid_payload',
     'planning.plan.calculate' =>
       code == 'invalid_payload' || code == 'calculation_failed',
@@ -256,6 +260,24 @@ bool validMessage(Object? value) {
     return student['variant'] == null || student['variant'] is String;
   }
 
+  if (message['method'] == 'planning.student.catalog') {
+    if (message['type'] == 'request') return payload.isEmpty;
+    final students = payload['students'];
+    if (!_exactKeys(payload, {'students', 'sort'}) ||
+        payload['sort'] != 'display_name_then_id' ||
+        students is! List) {
+      return false;
+    }
+    try {
+      for (final item in students) {
+        StudentCatalogEntry.fromWire(Map<String, dynamic>.from(item as Map));
+      }
+      return true;
+    } on Object {
+      return false;
+    }
+  }
+
   if (message['method'] == 'planning.plan.validate') {
     if (message['type'] == 'request') {
       return _exactKeys(payload, {'plan'}) && _validPlan(payload['plan']);
@@ -311,6 +333,7 @@ void main() {
       'planning-protocol-v1.schema.json',
       'protocol-error-v1.schema.json',
       'planning-student-get-v1.schema.json',
+      'planning-student-catalog-v1.schema.json',
       'planning-plan-validate-v1.schema.json',
       'planning-plan-calculate-v1.schema.json',
     };

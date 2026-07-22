@@ -95,7 +95,25 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
   Future<ScannerCandidate> reviewScannerCandidate(ScannerSession session, ScannerCandidate candidate, Map<String, dynamic> payload, {required bool approve, required String reason}) async => ScannerCandidate(id:candidate.id,sessionId:session.id,generation:session.generation,revision:candidate.revision+1,kind:session.kind,payload:payload,evidence:candidate.evidence,reviewRequired:candidate.reviewRequired,approved:approve);
 
   @override
-  Future<Map<String, dynamic>> commitScannerCandidate(ScannerSession session, ScannerCandidate candidate, {required String profileId, required int expectedRepositoryRevision, required String idempotencyKey}) async => {'candidate_id':candidate.id,'candidate_revision':candidate.revision,'profile_id':profileId,'revision':expectedRepositoryRevision+1};
+  Future<Map<String, dynamic>> commitScannerCandidate(ScannerSession session, ScannerCandidate candidate, {required String profileId, required int expectedRepositoryRevision, required String idempotencyKey}) async {
+    if (candidate.reviewRequired && !candidate.approved) {
+      throw StateError('review_required');
+    }
+    final current = _repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}};
+    if (current['revision'] != expectedRepositoryRevision) {
+      throw StateError('revision_conflict');
+    }
+    final payload = Map<String, dynamic>.from(candidate.payload);
+    final studentId = payload['student_id'];
+    final existing = List<dynamic>.from(current['students'] as List);
+    if (studentId is String) {
+      existing.removeWhere((item) => item is Map && item['student_id'] == studentId);
+      existing.add(payload);
+    }
+    final revision = expectedRepositoryRevision + 1;
+    _repositoryStates[profileId] = {...current, 'revision':revision, 'students':existing};
+    return {'candidate_id':candidate.id,'candidate_revision':candidate.revision,'profile_id':profileId,'revision':revision};
+  }
 
   @override
   Future<Map<String, dynamic>?> getStudent(String studentId) async {
@@ -117,6 +135,30 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
     };
     final student = students[studentId];
     return student == null ? null : Map<String, dynamic>.from(student);
+  }
+
+  @override
+  Future<List<StudentCatalogEntry>> listStudents() async {
+    final longName = _state.value.useLongNames
+        ? 'Aru with an intentionally long display name for responsive layout verification'
+        : 'Aru';
+    return [
+      StudentCatalogEntry(
+        studentId: 'aru', displayName: longName, templateName: 'Aru.png',
+        group: 'Problem Solver 68', variant: null, school: 'Gehenna',
+        rarity: '3', attackType: 'Explosive', defenseType: 'Light',
+        combatClass: 'Striker', role: 'Dealer', position: 'Back',
+        searchTags: const ['aru'], krSearchTags: const [],
+      ),
+      StudentCatalogEntry(
+        studentId: 'ayane', displayName: 'Ayane', templateName: 'Ayane.png',
+        group: 'Foreclosure Task Force', variant: null, school: 'Abydos',
+        rarity: '2', attackType: 'Piercing', defenseType: 'Light',
+        combatClass: 'Special', role: 'Healer', position: 'Back',
+        searchTags: const ['ayane'], krSearchTags: const [],
+      ),
+      if (_state.value.hasMissingMetadata) StudentCatalogEntry.fallback('missing-student'),
+    ];
   }
 
   @override
@@ -202,6 +244,13 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
   Future<int> saveRepositoryGoals(String profileId, Map<String, dynamic> goals, int expectedRevision, String idempotencyKey) async {
     final current = _repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}};
     _repositoryStates[profileId] = {...current, 'revision':expectedRevision + 1, 'goals':goals};
+    return expectedRevision + 1;
+  }
+
+  @override
+  Future<int> saveRepositoryStudents(String profileId, List<ConfirmedStudentState> students, int expectedRevision, String idempotencyKey) async {
+    final current = _repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}};
+    _repositoryStates[profileId] = {...current, 'revision':expectedRevision + 1, 'students':students.map((student) => student.toWire()).toList(growable:false)};
     return expectedRevision + 1;
   }
 

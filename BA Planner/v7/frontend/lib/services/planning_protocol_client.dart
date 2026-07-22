@@ -73,6 +73,7 @@ class PlanningProtocolClient {
 
   static const _methodErrorCodes = <String, Set<String>>{
     'planning.student.get': {'invalid_payload', 'metadata_lookup_failed'},
+    'planning.student.catalog': {'invalid_payload', 'metadata_lookup_failed'},
     'planning.plan.validate': {'invalid_payload'},
     'planning.plan.calculate': {'invalid_payload', 'calculation_failed'},
     'repository': {
@@ -339,6 +340,7 @@ class PlanningProtocolClient {
         payload.keys.toSet().length == 1 &&
             payload.containsKey('student') &&
             (payload['student'] == null || payload['student'] is Map),
+      'planning.student.catalog' => _validStudentCatalog(payload),
       'planning.plan.validate' =>
         payload.keys.toSet().length == 2 &&
             payload['valid'] == true &&
@@ -351,6 +353,22 @@ class PlanningProtocolClient {
         _validScannerSuccessPayload(method, payload),
       _ => false,
     };
+  }
+
+  bool _validStudentCatalog(Map<String, dynamic> payload) {
+    if (payload.keys.toSet().length != 2 ||
+        payload['sort'] != 'display_name_then_id' ||
+        payload['students'] is! List) {
+      return false;
+    }
+    try {
+      for (final item in payload['students'] as List) {
+        StudentCatalogEntry.fromWire(Map<String, dynamic>.from(item as Map));
+      }
+      return true;
+    } on Object {
+      return false;
+    }
   }
 
   Map<String, dynamic>? _validRemoteError(Object value, String method) {

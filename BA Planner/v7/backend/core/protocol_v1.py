@@ -25,10 +25,11 @@ from core.planning_calc import calculate_plan_totals
 
 PROTOCOL_VERSION = 1
 METHOD_STUDENT_GET = "planning.student.get"
+METHOD_STUDENT_CATALOG = "planning.student.catalog"
 METHOD_PLAN_VALIDATE = "planning.plan.validate"
 METHOD_PLAN_CALCULATE = "planning.plan.calculate"
 KNOWN_METHODS = frozenset(
-    {METHOD_STUDENT_GET, METHOD_PLAN_VALIDATE, METHOD_PLAN_CALCULATE}
+    {METHOD_STUDENT_GET, METHOD_STUDENT_CATALOG, METHOD_PLAN_VALIDATE, METHOD_PLAN_CALCULATE}
 )
 _ENVELOPE_KEYS = {"protocol", "id", "type", "method", "payload"}
 _GOAL_FIELDS = {item.name for item in fields(StudentGoal)}
@@ -178,10 +179,12 @@ class PlanningProtocolV1:
         self,
         *,
         student_lookup: Callable[[str], dict[str, Any] | None] = student_meta.get,
+        student_ids: Callable[[], list[str]] = student_meta.all_ids,
         calculator: Callable[[dict[str, object], GrowthPlan], object] = calculate_plan_totals,
         diagnostic: Callable[[str], None] | None = None,
     ) -> None:
         self._student_lookup = student_lookup
+        self._student_ids = student_ids
         self._calculator = calculator
         self._diagnostic = diagnostic or (lambda _message: None)
 
@@ -198,6 +201,8 @@ class PlanningProtocolV1:
         try:
             if request["method"] == METHOD_STUDENT_GET:
                 return self._student_get(request)
+            if request["method"] == METHOD_STUDENT_CATALOG:
+                return self._student_catalog(request)
             if request["method"] == METHOD_PLAN_VALIDATE:
                 return self._plan_validate(request)
             return self._plan_calculate(request)
@@ -236,6 +241,35 @@ class PlanningProtocolV1:
             )
         wire = None if metadata is None else {**metadata, "student_id": student_id}
         return _success(request, {"student": wire})
+
+    def _student_catalog(self, request: dict[str, Any]) -> dict[str, Any]:
+        if request["payload"]:
+            raise InvalidPayload("catalog payload must be empty")
+        try:
+            students = []
+            for student_id in self._student_ids():
+                metadata = self._student_lookup(student_id) or {}
+                students.append({
+                    "student_id": student_id,
+                    "display_name": str(metadata.get("display_name") or student_id),
+                    "template_name": str(metadata.get("template_name") or f"{student_id}.png"),
+                    "group": str(metadata.get("group") or student_id),
+                    "variant": metadata.get("variant") if isinstance(metadata.get("variant"), str) else None,
+                    "school": metadata.get("school") if isinstance(metadata.get("school"), str) else None,
+                    "rarity": metadata.get("rarity") if isinstance(metadata.get("rarity"), str) else None,
+                    "attack_type": metadata.get("attack_type") if isinstance(metadata.get("attack_type"), str) else None,
+                    "defense_type": metadata.get("defense_type") if isinstance(metadata.get("defense_type"), str) else None,
+                    "combat_class": metadata.get("combat_class") if isinstance(metadata.get("combat_class"), str) else None,
+                    "role": metadata.get("role") if isinstance(metadata.get("role"), str) else None,
+                    "position": metadata.get("position") if isinstance(metadata.get("position"), str) else None,
+                    "search_tags": [str(item) for item in metadata.get("search_tags", []) if str(item).strip()] if isinstance(metadata.get("search_tags", []), list) else [],
+                    "kr_search_tags": [str(item) for item in metadata.get("kr_search_tags", []) if str(item).strip()] if isinstance(metadata.get("kr_search_tags", []), list) else [],
+                })
+        except Exception:
+            self._diagnostic(traceback.format_exc())
+            return error_response(request, "metadata_lookup_failed", "Student catalog lookup failed")
+        students.sort(key=lambda item: (item["display_name"].casefold(), item["student_id"]))
+        return _success(request, {"students": students, "sort": "display_name_then_id"})
 
     @staticmethod
     def _plan_validate(request: dict[str, Any]) -> dict[str, Any]:

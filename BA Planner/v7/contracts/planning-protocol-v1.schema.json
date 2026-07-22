@@ -4,6 +4,7 @@
   "title": "BA Planner planning protocol v1 known messages",
   "oneOf": [
     { "$ref": "planning-student-get-v1.schema.json" },
+    { "$ref": "planning-student-catalog-v1.schema.json" },
     { "$ref": "planning-plan-validate-v1.schema.json" },
     { "$ref": "planning-plan-calculate-v1.schema.json" },
     { "$ref": "protocol-error-v1.schema.json" }
