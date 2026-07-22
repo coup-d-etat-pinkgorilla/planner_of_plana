@@ -50,8 +50,24 @@ class JsonRepository:
             raise RepositoryError("profile_not_found", f"{label} does not exist") from error
         except (OSError, json.JSONDecodeError, UnicodeError) as error:
             raise RepositoryError("corrupt_data", f"{label} cannot be read", details={"reason": type(error).__name__}) from error
-        if not isinstance(value, dict) or value.get("version") != STORE_VERSION:
+        if not isinstance(value, dict):
+            raise RepositoryError("corrupt_data", f"{label} must be an object")
+        if "version" not in value:
+            raise RepositoryError("corrupt_data", f"{label} is missing its format version")
+        if value.get("version") != STORE_VERSION or isinstance(value.get("version"), bool):
             raise RepositoryError("migration_required", f"{label} has an unsupported format version")
+        return value
+
+    @staticmethod
+    def _stored_revision(value: object, label: str) -> int:
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise RepositoryError("corrupt_data", f"{label} must be a non-negative integer")
+        return value
+
+    @staticmethod
+    def _stored_profile_id(value: object, label: str) -> str:
+        if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{24}", value) is None:
+            raise RepositoryError("corrupt_data", f"{label} must be a canonical profile ID")
         return value
 
     def _catalog(self, *, allow_missing: bool = True) -> dict[str, Any]:
@@ -60,18 +76,57 @@ class JsonRepository:
         value = self._read(self.catalog_path, "profile catalog")
         if set(value) != {"version", "selected_profile_id", "profiles"} or not isinstance(value["profiles"], list):
             raise RepositoryError("corrupt_data", "profile catalog has an invalid shape")
+        selected = value["selected_profile_id"]
+        if selected is not None:
+            self._stored_profile_id(selected, "profile catalog selected_profile_id")
+        ids: set[str] = set()
+        names: set[str] = set()
+        for item in value["profiles"]:
+            if not isinstance(item, dict) or set(item) != {"profile_id", "display_name", "revision"}:
+                raise RepositoryError("corrupt_data", "profile catalog contains an invalid summary")
+            profile_id = self._stored_profile_id(item["profile_id"], "profile summary profile_id")
+            display_name = item["display_name"]
+            if not isinstance(display_name, str) or not display_name.strip():
+                raise RepositoryError("corrupt_data", "profile summary display_name must be non-empty")
+            self._stored_revision(item["revision"], "profile summary revision")
+            folded = display_name.casefold()
+            if profile_id in ids or folded in names:
+                raise RepositoryError("corrupt_data", "profile catalog contains duplicate profiles")
+            ids.add(profile_id)
+            names.add(folded)
+        if selected is not None and selected not in ids:
+            raise RepositoryError("corrupt_data", "selected profile is absent from catalog")
         return value
 
     def _profile(self, profile_id: str) -> dict[str, Any]:
         value = self._read(self._profile_path(profile_id), "profile")
         required = {"version", "profile_id", "revision", "students", "inventory", "goals", "idempotency"}
-        if set(value) != required or value["profile_id"] != profile_id or not isinstance(value["revision"], int):
+        if set(value) != required or value["profile_id"] != profile_id:
             raise RepositoryError("corrupt_data", "profile has an invalid shape")
+        revision = self._stored_revision(value["revision"], "profile revision")
+        if not isinstance(value["students"], list):
+            raise RepositoryError("corrupt_data", "profile students must be an array")
+        goals = value["goals"]
+        if not isinstance(goals, dict) or set(goals) != {"version", "goals"} or goals.get("version") != 1 or isinstance(goals.get("version"), bool) or not isinstance(goals.get("goals"), list):
+            raise RepositoryError("corrupt_data", "profile goals must be a version 1 goal plan")
+        idempotency = value["idempotency"]
+        if not isinstance(idempotency, dict):
+            raise RepositoryError("corrupt_data", "profile idempotency must be an object")
+        for key, record in idempotency.items():
+            if not isinstance(key, str) or not key or not isinstance(record, dict) or set(record) != {"fingerprint", "response"}:
+                raise RepositoryError("corrupt_data", "profile contains an invalid idempotency record")
+            fingerprint = record["fingerprint"]
+            response = record["response"]
+            if not isinstance(fingerprint, str) or re.fullmatch(r"[0-9a-f]{64}", fingerprint) is None or not isinstance(response, dict) or set(response) != {"revision"}:
+                raise RepositoryError("corrupt_data", "profile contains an invalid idempotency record")
+            cached_revision = self._stored_revision(response["revision"], "idempotency response revision")
+            if cached_revision > revision:
+                raise RepositoryError("corrupt_data", "idempotency response revision exceeds profile revision")
         try:
             for student in value["students"]:
                 ConfirmedStudent.from_dict(student)
             InventorySnapshot.from_dict(value["inventory"])
-            for goal in value["goals"].get("goals", []):
+            for goal in goals["goals"]:
                 StudentGoalRecord.from_dict({"version": 1, "goal": goal})
         except (TypeError, ValueError, AttributeError, KeyError) as error:
             raise RepositoryError("corrupt_data", "profile contains invalid repository data") from error

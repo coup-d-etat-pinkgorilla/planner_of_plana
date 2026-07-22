@@ -118,6 +118,50 @@ class RepositoryPersistenceTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, "repository_busy")
         lock.unlink()
 
+    def test_catalog_corruption_is_structured_and_does_not_write(self) -> None:
+        original = self.repository.catalog_path.read_bytes()
+        base = json.loads(original)
+        corruptions = [
+            {**base, "profiles": [{}]},
+            {**base, "profiles": [{**base["profiles"][0], "revision": True}]},
+            {**base, "profiles": [{**base["profiles"][0], "revision": -1}]},
+            {**base, "profiles": base["profiles"] * 2},
+            {**base, "selected_profile_id": "0" * 24},
+        ]
+        for index, corrupted in enumerate(corruptions):
+            with self.subTest(index=index):
+                self.repository.catalog_path.write_text(json.dumps(corrupted), encoding="utf-8")
+                before = self.repository.catalog_path.read_bytes()
+                with self.assertRaises(RepositoryError) as raised:
+                    self.repository.list_profiles()
+                self.assertEqual(raised.exception.code, "corrupt_data")
+                self.assertEqual(self.repository.catalog_path.read_bytes(), before)
+        self.repository.catalog_path.write_bytes(original)
+
+    def test_profile_corruption_is_structured_at_protocol_boundary(self) -> None:
+        path = self.repository._profile_path(self.profile_id)
+        original = path.read_bytes()
+        base = json.loads(original)
+        corruptions = [
+            {**base, "revision": True},
+            {**base, "students": {}},
+            {**base, "inventory": {"version": 1}},
+            {**base, "goals": []},
+            {**base, "idempotency": []},
+            {**base, "idempotency": {"key": {"fingerprint": "bad", "response": {"revision": 0}}}},
+            {**base, "idempotency": {"key": {"fingerprint": "0" * 64, "response": {"revision": True}}}},
+        ]
+        protocol = ApplicationProtocolV1(storage_root=self.root)
+        request = {"protocol": 1, "id": "state", "type": "request", "method": "repository.state.get", "payload": {"profile_id": self.profile_id}}
+        for index, corrupted in enumerate(corruptions):
+            with self.subTest(index=index):
+                path.write_text(json.dumps(corrupted), encoding="utf-8")
+                before = path.read_bytes()
+                response = protocol.handle(request)
+                self.assertEqual(response["payload"]["error"]["code"], "corrupt_data")
+                self.assertEqual(path.read_bytes(), before)
+        path.write_bytes(original)
+
     def test_protocol_dispatch_errors_and_migration_boundary(self) -> None:
         protocol = ApplicationProtocolV1(storage_root=self.root)
         request = {"protocol":1,"id":"list","type":"request","method":"repository.profile.list","payload":{}}

@@ -51,13 +51,12 @@ class _RepositoryProfilePanelState extends State<RepositoryProfilePanel> {
   }
 
   Future<String?> _ask(String title, {String initial = ''}) async {
-    final controller = TextEditingController(text: initial);
+    var draft = initial;
     final value = await showDialog<String>(context: context, builder: (context) => AlertDialog(
       title: Text(title),
-      content: TextField(key: const ValueKey('profile-name-input'), controller: controller, autofocus: true),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')), FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('확인'))],
+      content: TextFormField(key: const ValueKey('profile-name-input'), initialValue: initial, onChanged: (value) => draft = value, autofocus: true),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')), FilledButton(onPressed: () => Navigator.pop(context, draft.trim()), child: const Text('확인'))],
     ));
-    controller.dispose();
     return value?.isEmpty == true ? null : value;
   }
 

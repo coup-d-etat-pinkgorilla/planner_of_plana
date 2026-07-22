@@ -57,7 +57,7 @@ Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning met
 | P1 | Python JSONL process와 Dart client | `완료` | lifecycle·오류·실제 세 method E2E 및 release build 통과 | P2가 `AppService` planning method만 사용하도록 유지 |
 | P2 | 실제 계획 화면 수직 슬라이스 | `완료` | 인계 patch 적용 후 마스터 보완, Widget test 8개와 전체 39개·실제 backend·Mock·release 통과 | P4/P6 전까지 in-memory·총 필요량 경계 유지 |
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
-| P4 | 프로필과 repository 영구 저장 | `차단됨` | 수정 patch 21개 적용, Python 37·analyze·release·Almanac 통과; Flutter 41개 중 profile UI 1개 실패와 corruption/contract 결함 확인 | P4 follow-up 보완 patch 인계 요청 |
+| P4 | 프로필과 repository 영구 저장 | `차단됨` | follow-up-1 적용 후 Python 39·Flutter 41·analyze·release·Almanac 통과, lifecycle/corruption 수정 확인; method별 contract·typed state·real Dart E2E 미구현 | 남은 contract 범위 P4 follow-up-2 요청 |
 | P5 | scanner/matcher session protocol과 backend | `대기` | 없음 | P3/P4 경계 인수 후 event schema부터 작성 |
 | P6 | 전 기본 탭 실제 데이터 통합 | `대기` | 현재 홈 골격과 placeholder 페이지 | P2·P4·P5 인수 후 P6-1 학생부터 진행 |
 
@@ -253,10 +253,16 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 - 결과물: 같은 staging의 `artifacts/p4-repository-persistence.patch`, `artifacts/verification.txt`; ZIP SHA-256 `f14f7d07f7908b71d87af136e3afbe027cf9c6c338c958a40eea52d73776143f`
 - 검증: ZIP 21,647 bytes와 SHA-256이 사용자 값·manifest·sidecar에 일치하고 내부 artifact 2개의 크기·해시도 `output.md`와 일치함. 21개 patch path가 모두 `BA Planner/v7/...`이고 기존 Almanac 변경과 중첩 없이 `git apply --check` 및 적용 통과. P3+P4 집중 Python 20, 전체 Python 37, `flutter analyze`, Windows release build, `codealmanac validate`, `git diff --check` 통과. Flutter 전체 41개 중 나머지 40개는 통과했으나 신규 profile panel test 1개가 disposed `TextEditingController` 재사용으로 실패. 수동 corruption probe에서 malformed catalog entry는 raw `KeyError`, malformed profile `idempotency`는 raw `AttributeError`를 발생시켜 구조화된 `corrupt_data` fail-closed 조건을 충족하지 못함. repository schema는 임의 success payload도 유효 판정하며 Dart fixture test는 case별 `valid`를 검증하지 않음
 - 결정 및 제약: P4는 저장·profile·repository protocol과 최소 profile UI만 구현하며 scanner session/backend는 P5, 전 탭 통합은 P6에 남김
-- 차단 사항: profile dialog controller lifecycle 오류로 Flutter test 실패; 손상 catalog/idempotency가 구조화된 오류 대신 raw 예외 누출; method별 success response schema와 Dart contract 검증이 비엄격함. 전달문이 P4 task를 P2 및 `p2-planning-screen.patch`로 부르는 복사 오류도 남아 있음
+- 원본 인계 차단 이력: profile dialog lifecycle과 손상 catalog/idempotency raw 예외는 follow-up-1에서 해결됨; method별 success response schema와 Dart contract 검증은 미해결
 - 보완 입력: `docs/migration/p4-repository-persistence-followup-1/input.md`
 - 보완 슬레이브 실행 프롬프트: `docs/migration/p4-repository-persistence-followup-1/slave-execution-prompt.md`
-- 다음 행동: P4 follow-up-1 실행 프롬프트를 슬레이브에 전달하고 증분 patch 인계 후 마스터가 전체 검증 재실행
+- 보완 출력 보고서: `docs/migration/handoffs/incoming/ba-planner-v7-p4-repository-persistence-followup-1/staging/20260722-141231-dda5ceb6/output.md`
+- 보완 결과물: 같은 staging의 `artifacts/p4-repository-persistence-followup-1.patch`, `artifacts/verification.txt`; ZIP SHA-256 `d1cc336970efcd1ae8dac08163452102af22b526f17f770072d854c2d04c33c9`
+- 보완 검증: ZIP 6,982 bytes와 SHA-256이 사용자 값·manifest·sidecar에 일치하고 내부 artifact 2개의 크기·해시도 `output.md`와 일치함. 4개 증분 path가 모두 `BA Planner/v7/...`이며 현재 상태 문서와 중첩 없이 apply-check·적용 통과. 집중 Python 22, 전체 Python 39, Flutter 41, analyze, Windows release, Almanac와 diff 검사 통과. profile create/select/rename/cancel/빈 입력 lifecycle test 통과; malformed catalog와 idempotency가 모두 `corrupt_data`로 fail-closed함. 반면 `{ "nonsense": true }` profile-list success가 schema에서 여전히 유효하며 method별 success schema, Dart valid/invalid validator와 runtime rejection, typed repository state 및 real Dart/Python restart E2E는 미구현임
+- 차단 사항: follow-up-1이 lifecycle과 corruption만 해결했으며 repository contract/client/E2E 필수 범위를 `BLOCKED`로 남김. 전달문이 P4 follow-up task를 P2 및 `p2-planning-screen.patch`로 부르는 복사 오류도 남아 있음
+- 보완 입력 2: `docs/migration/p4-repository-persistence-followup-2/input.md`
+- 보완 슬레이브 실행 프롬프트 2: `docs/migration/p4-repository-persistence-followup-2/slave-execution-prompt.md`
+- 다음 행동: P4 follow-up-2 실행 프롬프트를 슬레이브에 전달하고 contract/client/real process E2E 증분 인계 후 전체 검증 재실행
 - 최종 갱신: 2026-07-22
 
 최종 갱신: 2026-07-22
