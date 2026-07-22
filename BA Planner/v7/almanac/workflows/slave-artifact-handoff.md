@@ -46,6 +46,34 @@ sources:
 `output.md`는 인계 준비가 끝났음을 나타내는 마지막 파일로 작성한다. 결과물 생성이
 진행 중인 상태에서 먼저 작성하거나 완료를 보고하지 않는다.
 
+## 현재 BA Planner 슬레이브 환경 제한
+
+현재 슬레이브 PC는 저장 공간 제약 때문에 Flutter SDK와 Dart SDK를 설치·사용하지 않는다.
+또한 CodeAlmanac CLI는 슬레이브 환경에서 지원되지 않는다. 마스터가 별도로 환경 변경을
+승인하기 전까지 모든 슬레이브 작업 프롬프트는 이 제약을 고정 사실로 취급한다.
+
+- 슬레이브에게 `flutter`, `dart` 또는 `codealmanac` 설치를 요구하지 않는다.
+- SDK/CLI 부재만을 이유로 작업 전체를 `BLOCKED`로 보고하지 않는다.
+- 슬레이브는 Dart/Flutter source와 test를 작성할 수 있지만 실행·analyze·build 통과를
+  주장하지 않는다.
+- 슬레이브는 Almanac Markdown을 읽고 수정할 수 있지만 `codealmanac validate`와
+  `codealmanac health` 통과를 주장하지 않는다.
+- Python 3.11 test, JSON/schema/fixture 검사, 정적 `rg`, `git diff --check`, patch 생성,
+  파일 크기·SHA-256과 cross-PC 패키징은 슬레이브에서 가능한 범위까지 실행한다.
+- Flutter/Dart test, `flutter analyze`, Windows release build, 실제 Dart↔Python E2E와
+  CodeAlmanac 검증은 마스터가 인계 후 실행하는 필수 후속 gate다.
+- 저장 공간을 확보하려고 기존 SDK, cache, 사용자 파일 또는 저장소 데이터를 임의로
+  삭제하지 않는다.
+
+슬레이브의 `COMPLETED`는 지시된 구현과 산출물 인계가 완료됐다는 뜻이며 P0~P6 단계의
+최종 승인을 뜻하지 않는다. 마스터 전용 검증이 남아 있으면 `output.md`의 해당 요구사항을
+`NOT_VERIFIED`로 기록하고 근거 첫머리에 `MASTER_REQUIRED:`를 붙인다. `verification.txt`와
+전달되는 `MASTER_PROMPT.md`에도 마스터가 실행할 정확한 명령과 예상 검증 항목을 모아 둔다.
+
+반대로 Python 검증 실패, 필수 source/asset 누락, patch 생성 불가처럼 슬레이브가 해결해야
+하는 범위가 실제로 막혔으면 기존 규칙대로 `BLOCKED`로 보고한다. 도구 부재와 구현 실패를
+같은 사유로 취급하지 않는다.
+
 ## 필수 인계 규칙
 
 - 결과물을 대화, 도구 출력 또는 임시 위치에만 남기지 않는다.
@@ -91,6 +119,7 @@ sources:
 ## 검증 내용
 
 - 수행한 검증 명령과 결과
+- 마스터 전용 검증은 `MASTER_REQUIRED: <명령과 확인 항목>`으로 구분
 - 파일 존재 여부
 - 결과물 형식, 크기 또는 해상도 등의 기본 검사
 

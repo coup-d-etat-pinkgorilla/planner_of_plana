@@ -95,6 +95,12 @@ Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
   수신·staging 검사·`MASTER_PROMPT.md` 클립보드 복사를 수행한다.
 - 슬레이브는 `$HOME/.codex/ba-planner-slave/Send-SlaveResult.ps1` 단일 래퍼로
   패키징·UDP 마스터 자동 발견·무선 업로드를 수행하며 IP·port·token을 수동 입력하지 않는다.
+- 현재 슬레이브 PC는 저장 공간 제약으로 Flutter/Dart SDK를 설치·사용하지 않으며
+  CodeAlmanac CLI도 지원되지 않는다. 이는 작업 차단 사유가 아니라 검증 책임 분리 조건이다.
+  슬레이브는 Python·정적 검사·patch·패키징을 수행하고 Flutter/Dart/analyze/release,
+  실제 Dart↔Python E2E와 Almanac 검증은 `MASTER_REQUIRED`로 인계한다.
+- 슬레이브가 작성한 Flutter/Dart code와 test는 마스터 검증 전 통과로 간주하지 않으며,
+  슬레이브의 `COMPLETED`는 산출물 준비 완료일 뿐 단계 완료 승인이 아니다.
 - Windows UDP discovery는 도달 불가능한 가상 어댑터의 ICMP connection-reset을 개별
   probe 잡음으로 무시하고 nonce가 일치하는 수신기 응답을 계속 기다린다.
 
@@ -281,6 +287,9 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 - 보완 슬레이브 실행 프롬프트 4: `docs/migration/p4-repository-persistence-followup-4/slave-execution-prompt.md`
 - 마스터 직접 보완: 슬레이브 환경에 Flutter/Dart/CodeAlmanac이 없어 follow-up-4 실행이 불가능했으므로 마스터 작업트리에서 `BackendProcessConfig`의 immutable test environment override, 실제 repository process restart E2E, analyzer block 수정과 계약·저장·runtime 문서를 직접 완성함
 - 최종 검증: P3/P4 집중 Python 23, 전체 Python 40, repository fixture 40 cases(valid 14/invalid 26), Flutter 전체 43, `flutter analyze`, Windows release build, `codealmanac validate`, `git diff --check` 통과. 실제 E2E는 Dart가 시작한 서로 다른 Python child process 2개를 순차 종료·실행하고 같은 temporary `BA_PLANNER_STORAGE_ROOT`에서 profile ID, display name, revision 3과 canonical goal을 typed state로 복원했으며 두 process exit code 0과 temporary root 삭제를 확인함. 금지된 v6/Qt runtime import 0건
+- 슬레이브용 완료 선언: P4는 마스터 승인으로 최종 완료되었으며 follow-up-4는 재실행 대기
+  작업이 아닌 이력 문서다. P5 슬레이브는 현재 작업 트리를 승인 baseline으로 사용하고,
+  baseline이 다르면 P4를 수정하지 않고 `BLOCKED`로 보고한다.
 - 차단 사항: 없음
 - 다음 행동: P4 typed repository boundary를 유지한 채 P5 scanner/matcher session protocol을 시작
 - 최종 갱신: 2026-07-22
@@ -299,6 +308,9 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
   event는 session ID·generation·sequence·정확히 하나의 terminal을 가지며, 낮은 confidence는
   review 없이 commit할 수 없다. 실제 student/inventory adapter 중 하나라도 placeholder이면
   완료가 아니다. UI asset과 recognition asset은 별도 manifest/path를 사용한다.
+- 슬레이브 환경: Flutter/Dart SDK와 CodeAlmanac CLI 없음. Python test와 scanner backend,
+  fixture·schema·asset·patch 검증은 슬레이브가 수행하고 Dart/Flutter test·analyze·release,
+  실제 Dart↔Python event E2E와 Almanac 검증은 마스터 인계 후 필수 gate로 수행한다.
 - 차단 사항: 없음
 - 다음 행동: 실행 프롬프트를 슬레이브에게 전달하고 `output.md`, patch와 verification 인계 대기
 - 최종 갱신: 2026-07-22

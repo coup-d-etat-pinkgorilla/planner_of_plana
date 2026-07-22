@@ -14,6 +14,18 @@ P4 typed repository/process baseline 위에서 scanner candidate 생성, version
 검토·수정·명시적 commit, 실제 student/inventory adapter와 recognition asset 경계만 P5
 단일 증분으로 구현합니다.
 
+마스터 완료 선언: P4는 `almanac/workflows/p0-p6-workflow-status.md`에서 최종 `완료`로
+승인되었습니다. P4 follow-up-4 문서는 과거 보완 gate의 이력이며 실행 대기 작업이 아닙니다.
+현재 전달된 작업 트리를 P4 승인 baseline으로 사용하고 P4를 다시 구현하거나 follow-up-4를
+실행하지 마십시오. 아래 baseline gate는 전달 무결성 검사이며, 다르면 P4를 수정하지 말고
+`BLOCKED`로 보고하십시오.
+
+슬레이브 환경은 고정되어 있습니다. 저장 공간 제약 때문에 Flutter/Dart SDK를 설치하거나
+사용하지 않으며 CodeAlmanac CLI도 지원되지 않습니다. 이 도구들의 부재는 `BLOCKED` 사유가
+아닙니다. SDK 설치나 공간 확보를 위한 기존 파일 삭제를 시도하지 마십시오. Dart/Flutter
+source와 test는 작성하되 실행 통과를 주장하지 말고, 관련 검증을 `NOT_VERIFIED`와
+`MASTER_REQUIRED`로 마스터에게 인계하십시오.
+
 작업을 시작하기 전에 다음 파일이 존재하는지 확인하고 처음부터 끝까지 읽으십시오.
 
 - `docs/migration/p5-scanner-matcher/input.md`
@@ -33,12 +45,12 @@ P4 typed repository/process baseline 위에서 scanner candidate 생성, version
 요청하십시오. 상세 요구사항, 제한, 테스트와 완료 조건은 P5 `input.md`를 단일 기준으로
 사용하십시오.
 
-가장 먼저 `input.md`의 P4 승인 baseline gate를 실행하십시오. repository fixture 40
-cases(valid 14/invalid 26), P3/P4 집중 Python 23, 전체 Python 40, Flutter 43,
-`flutter analyze`, 실제 Dart-launched Python process restart E2E, Windows release,
-Almanac와 diff gate 중 하나라도 다르면 P4 코드를 억지로 고쳐 맞추거나 선행 patch를
-재구성하지 마십시오. 실제 차이를 기록하고 안전하게 계속할 수 없으면 `BLOCKED`로
-반환하십시오.
+가장 먼저 `input.md`의 슬레이브 실행 가능 P4 baseline gate를 실행하십시오. repository
+fixture 40 cases(valid 14/invalid 26), P3/P4 집중 Python 23, 전체 Python 40과
+`git diff --check`를 확인합니다. Flutter 43, analyze, 실제 Dart-launched Python restart E2E,
+Windows release와 Almanac은 마스터가 승인한 P4 근거이며 슬레이브에서 재실행하지 않습니다.
+Python gate가 다르면 P4 코드를 억지로 고쳐 맞추거나 선행 patch를 재구성하지 말고 실제
+차이를 기록해 `BLOCKED`로 반환하십시오.
 
 gate가 통과하면 다음 순서를 지키십시오.
 
@@ -52,20 +64,28 @@ gate가 통과하면 다음 순서를 지키십시오.
 7. recognition template/region을 UI asset과 분리하고 manifest/hash/release path 검증
 8. Python JSONL response/event multiplex와 Dart typed event client/service 구현
 9. 취소, stale/duplicate/out-of-order, 낮은 confidence, commit 보존과 restart/dispose를
-   headless 및 실제 Dart↔Python E2E로 검증
+   Python headless E2E로 검증하고 실제 Dart↔Python E2E test는 작성해 마스터에게 인계
 
 낮은 confidence candidate 자동 저장, scanner의 repository 파일 직접 접근, stdout/stderr
 문자열 파싱, generation/sequence 없는 callback, v6/Qt runtime import, student 또는 inventory
 fake/placeholder 잔존, test skip과 P6 production UI 구현은 금지합니다.
 
-필수 검증:
+슬레이브 필수 검증:
 
 ```powershell
 cd backend
 py -3.11 -m unittest tests.test_repository_parity tests.test_repository_persistence tests.test_repository_protocol_contract -v
 py -3.11 -m unittest discover -s tests -v
 
-cd ..\frontend
+cd ..
+git diff --check
+```
+
+마스터 전용 필수 검증은 `verification.txt`와 `output.md`에 아래 그대로
+`MASTER_REQUIRED`로 기록하십시오. 슬레이브에서 실행하거나 SDK를 설치하지 마십시오.
+
+```powershell
+cd frontend
 flutter analyze
 flutter test
 flutter build windows --release
@@ -76,11 +96,12 @@ codealmanac health
 git diff --check
 ```
 
-P5 scanner fixture와 Python/Dart contract test, headless student/inventory session E2E, 실제
-image matcher 회귀, 실제 Dart↔Python event E2E를 각각 단독 실행하십시오. 명령, exit code,
+P5 scanner fixture와 Python contract test, headless student/inventory session E2E와 실제 image
+matcher 회귀를 각각 단독 실행하십시오. Dart contract와 실제 Dart↔Python event E2E는 test를
+작성하되 실행 결과를 만들지 말고 마스터 실행 명령·test 이름·예상 trace를 기록하십시오.
 fixture/event/asset 수, cancel latency, stale event 차단, 낮은 confidence commit 거부 전후
 repository hash/revision과 cleanup 결과를 `verification.txt`에 기록하십시오. 실제 게임 창
-smoke를 실행하지 못했다면 통과로 쓰지 말고 `NOT_VERIFIED`로 기록하십시오.
+smoke도 실행하지 못하면 `NOT_VERIFIED`로 기록하십시오.
 
 결과물:
 
@@ -132,6 +153,9 @@ transfer_file_count: 4
 wireless_transfer: RECEIVED, NOT_REQUESTED 또는 FAILED
 ```
 
-필수 자동 검증 하나라도 실패하거나 실제 student/inventory adapter 중 하나가
-fake/placeholder로 남으면 `COMPLETED`로 보고하지 마십시오. 마스터가 ZIP, artifact, patch,
-P4 baseline 유지와 P5 전체 완료 조건을 직접 검증하기 전에는 P5를 완료로 판정하지 마십시오.
+슬레이브에서 실행 가능한 필수 검증이 실패하거나 실제 student/inventory adapter 중 하나가
+fake/placeholder로 남으면 `COMPLETED`로 보고하지 마십시오. Flutter/Dart/Almanac 미실행만으로
+인계를 `BLOCKED` 처리하지 않습니다. 이 항목들은 `MASTER_REQUIRED`로 남기고 구현·Python
+검증·패키징이 끝나면 산출물 준비 상태를 `COMPLETED`로 보고할 수 있습니다. 마스터가 ZIP,
+artifact, patch, P4 baseline 유지와 모든 마스터 gate를 직접 검증하기 전에는 P5 단계를
+완료로 판정하지 마십시오.

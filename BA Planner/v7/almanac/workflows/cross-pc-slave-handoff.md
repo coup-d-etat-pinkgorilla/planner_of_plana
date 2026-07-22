@@ -46,6 +46,12 @@ ZIP에는 `output.md`와 `artifacts/`만 들어간다. ZIP 바깥의 sidecar는 
 손상을 판별하고 마스터가 올바른 검증 프롬프트를 실행하도록 한다. 슬레이브 PC의
 절대경로는 진단 정보일 뿐 완료 결과를 대신하지 않는다.
 
+현재 BA Planner 슬레이브는 Flutter/Dart SDK와 CodeAlmanac CLI를 사용하지 않는다.
+따라서 해당 도구가 필요한 검증은 `output.md`와 `verification.txt`에서 `NOT_VERIFIED` 및
+`MASTER_REQUIRED`로 기록하고, 생성되는 `MASTER_PROMPT.md`에는 마스터가 실행할 정확한
+Flutter/Dart/analyze/release/Almanac 명령과 대상 test를 포함한다. 이 미실행 상태는
+패키징·전송 실패가 아니지만 마스터의 단계 완료 판정을 보류하는 필수 후속 gate다.
+
 ## 슬레이브 패키징
 
 슬레이브는 먼저 일반 인계 계약에 따라 `output.md`와 0바이트가 아닌 모든 결과물을
