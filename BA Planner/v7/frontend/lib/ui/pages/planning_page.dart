@@ -33,16 +33,14 @@ class _PlanningPageState extends State<PlanningPage> {
     try {
       final state = await (widget.service as RepositoryService).loadRepositoryState(profile.id);
       final goals = <String, Map<String, dynamic>>{
-        for (final raw in ((state['goals'] as Map?)?['goals'] as List<dynamic>? ?? const []))
-          (raw as Map)['student_id'] as String: Map<String, dynamic>.from(raw),
+        for (final goal in state.goals) goal.studentId: Map<String, dynamic>.from(goal.values),
       };
       final restored = <_StudentPlanDraft>[];
-      for (final raw in (state['students'] as List<dynamic>? ?? const [])) {
-        final wire = Map<String, dynamic>.from(raw as Map);
-        final id = wire['student_id'] as String;
+      for (final student in state.students) {
+        final id = student.studentId;
         final metadata = await widget.service.getStudent(id) ?? {'student_id': id, 'display_name': id};
         final draft = _StudentPlanDraft(id: id, metadata: metadata, onChanged: _invalidateResults);
-        draft.restore(Map<String, dynamic>.from(wire['values'] as Map), goals[id]);
+        draft.restore(Map<String, dynamic>.from(student.values), goals[id]);
         restored.add(draft);
       }
       if (!mounted) return;
@@ -50,7 +48,7 @@ class _PlanningPageState extends State<PlanningPage> {
         for (final old in _students) { old.dispose(); }
         _students..clear()..addAll(restored);
         _profileId = profile.id;
-        _repositoryRevision = state['revision'] as int;
+        _repositoryRevision = state.revision;
         _invalidateResults(notify: false);
       });
     } catch (error) {

@@ -117,7 +117,7 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
   Future<int> renameProfile(String profileId, String displayName, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.profile.rename', {'profile_id':profileId,'display_name':displayName,'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
 
   @override
-  Future<Map<String, dynamic>> loadRepositoryState(String profileId) => _client.send('repository.state.get', {'profile_id':profileId});
+  Future<RepositoryState> loadRepositoryState(String profileId) async => RepositoryState.fromWire(await _client.send('repository.state.get', {'profile_id':profileId}));
 
   @override
   Future<int> saveRepositoryGoals(String profileId, Map<String, dynamic> goals, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.goals.save', {'profile_id':profileId,'goals':goals,'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});

@@ -21,7 +21,7 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
       );
 
   final ValueNotifier<AppServiceState> _state;
-  final List<RepositoryProfile> _profiles = [const RepositoryProfile(id: 'mock-main', displayName: 'Main', revision: 0, selected: true)];
+  final List<RepositoryProfile> _profiles = [const RepositoryProfile(id: '000000000000000000000001', displayName: 'Main', revision: 0, selected: true)];
   final Map<String, Map<String, dynamic>> _repositoryStates = {};
 
   @override
@@ -130,7 +130,7 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
 
   @override
   Future<RepositoryProfile> createProfile(String displayName, String idempotencyKey) async {
-    final profile = RepositoryProfile(id: 'mock-${_profiles.length + 1}', displayName: displayName, revision: 0, selected: false);
+    final profile = RepositoryProfile(id: (_profiles.length + 1).toRadixString(16).padLeft(24, '0'), displayName: displayName, revision: 0, selected: false);
     _profiles.add(profile);
     return profile;
   }
@@ -153,11 +153,12 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
   }
 
   @override
-  Future<Map<String, dynamic>> loadRepositoryState(String profileId) async => Map<String, dynamic>.from(_repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}});
+  Future<RepositoryState> loadRepositoryState(String profileId) async => RepositoryState.fromWire(Map<String, dynamic>.from(_repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}}));
 
   @override
   Future<int> saveRepositoryGoals(String profileId, Map<String, dynamic> goals, int expectedRevision, String idempotencyKey) async {
-    _repositoryStates[profileId] = {...await loadRepositoryState(profileId), 'revision':expectedRevision + 1, 'goals':goals};
+    final current = _repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}};
+    _repositoryStates[profileId] = {...current, 'revision':expectedRevision + 1, 'goals':goals};
     return expectedRevision + 1;
   }
 

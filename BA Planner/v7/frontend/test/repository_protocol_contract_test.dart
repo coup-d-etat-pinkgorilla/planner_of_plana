@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ba_planner_v7/services/repository_service.dart';
 
 void main() {
-  test('shared repository protocol fixture keeps strict envelopes', () {
+  test('shared repository protocol fixture matches every expected validity', () {
     final fixture = jsonDecode(File('../contracts/fixtures/repository_protocol_v1.json').readAsStringSync()) as Map<String, dynamic>;
     expect(fixture['version'], 1);
     final cases = fixture['cases'] as List<dynamic>;
@@ -12,8 +13,7 @@ void main() {
     for (final raw in cases) {
       final testCase = Map<String, dynamic>.from(raw as Map);
       final message = Map<String, dynamic>.from(testCase['message'] as Map);
-      expect(message.keys.toSet(), {'protocol', 'id', 'type', 'method', 'payload'}, reason: testCase['id'] as String);
-      expect((message['method'] as String).startsWith('repository.'), isTrue);
+      expect(isValidRepositoryProtocolMessage(message), testCase['valid'], reason: testCase['id'] as String);
     }
   });
 }

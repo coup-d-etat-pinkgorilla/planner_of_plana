@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 
 import 'app_service.dart';
 import 'backend_process.dart';
+import 'repository_service.dart';
 
 class BackendProtocolException implements Exception {
   BackendProtocolException(this.message);
@@ -317,7 +318,8 @@ class PlanningProtocolClient {
             payload['plan'] is Map,
       'planning.plan.calculate' =>
         payload.keys.toSet().length == 1 && payload['totals'] is Map,
-      _ when method.startsWith('repository.') => true,
+      _ when method.startsWith('repository.') =>
+        isValidRepositorySuccessPayload(method, payload),
       _ => false,
     };
   }

@@ -157,6 +157,27 @@ void main() {
     await client.dispose();
   });
 
+  test('malformed repository success is fatal and restart remains available', () async {
+    final first = FakeBackendProcess();
+    final second = FakeBackendProcess();
+    var starts = 0;
+    final client = PlanningProtocolClient(() async => starts++ == 0 ? first : second);
+    await client.start();
+    final result = client.send('repository.profile.list', {});
+    final request = _decode(first.writes.single);
+    first.respond(request, {'nonsense': true});
+    await expectLater(result, throwsA(isA<BackendProtocolException>()));
+    expect(client.connection.value, BackendConnection.disconnected);
+
+    await client.restart();
+    final recovered = client.send('repository.profile.list', {});
+    final retried = _decode(second.writes.single);
+    second.respond(retried, {'profiles': <Object>[], 'selected_profile_id': null});
+    expect((await recovered)['profiles'], isEmpty);
+    expect(client.connection.value, BackendConnection.connected);
+    await client.dispose();
+  });
+
   test('stdin write failure disconnects and fails the request', () async {
     final process = FakeBackendProcess()..writeError = StateError('closed');
     final client = PlanningProtocolClient(() async => process);
