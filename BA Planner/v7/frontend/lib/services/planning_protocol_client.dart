@@ -58,6 +58,8 @@ class PlanningProtocolClient {
   );
   final StreamController<BackendProtocolException> _protocolErrors =
       StreamController<BackendProtocolException>.broadcast();
+  final StreamController<Map<String, dynamic>> _events =
+      StreamController<Map<String, dynamic>>.broadcast();
   final Map<String, _PendingRequest> _pending = {};
 
   BackendProcessHandle? _process;
@@ -79,9 +81,21 @@ class PlanningProtocolClient {
       'corrupt_data', 'migration_required', 'migration_not_supported',
       'persistence_failed', 'unknown_method',
     },
+    'scanner': {
+      'invalid_payload', 'target_not_found', 'target_provider_failed',
+      'scanner_busy', 'scanner_unavailable', 'session_not_found',
+      'stale_generation', 'candidate_not_found',
+      'candidate_revision_conflict', 'session_not_committable',
+      'review_required', 'invalid_candidate', 'capture_failed',
+      'capture_timeout', 'target_closed', 'target_minimized',
+      'matcher_failed', 'template_missing', 'region_missing',
+      'asset_manifest_invalid', 'asset_version_mismatch',
+      'unknown_method',
+    },
   };
 
   Stream<BackendProtocolException> get protocolErrors => _protocolErrors.stream;
+  Stream<Map<String, dynamic>> get events => _events.stream;
 
   Future<void> start() async {
     if (_disposed) {
@@ -241,6 +255,7 @@ class PlanningProtocolClient {
     await stop();
     connection.dispose();
     await _protocolErrors.close();
+    await _events.close();
   }
 
   void _handleLine(String line, int generation) {
@@ -254,7 +269,19 @@ class PlanningProtocolClient {
       _fatalProtocolError('Malformed JSON response from backend', generation);
       return;
     }
-    if (decoded is! Map<String, dynamic> || !_validEnvelope(decoded)) {
+    if (decoded is! Map<String, dynamic>) {
+      _fatalProtocolError('Invalid protocol response envelope', generation);
+      return;
+    }
+    if (decoded['type'] == 'event') {
+      if (!_validEventEnvelope(decoded)) {
+        _fatalProtocolError('Invalid protocol event envelope', generation);
+        return;
+      }
+      if (!_events.isClosed) _events.add(Map<String, dynamic>.from(decoded));
+      return;
+    }
+    if (!_validEnvelope(decoded)) {
       _fatalProtocolError('Invalid protocol response envelope', generation);
       return;
     }
@@ -320,6 +347,8 @@ class PlanningProtocolClient {
         payload.keys.toSet().length == 1 && payload['totals'] is Map,
       _ when method.startsWith('repository.') =>
         isValidRepositorySuccessPayload(method, payload),
+      _ when method.startsWith('scanner.') =>
+        _validScannerSuccessPayload(method, payload),
       _ => false,
     };
   }
@@ -334,7 +363,9 @@ class PlanningProtocolClient {
     final code = error['code'];
     final allowedCodes = method.startsWith('repository.')
         ? _methodErrorCodes['repository']!
-        : (_methodErrorCodes[method] ?? const {'unknown_method'});
+        : method.startsWith('scanner.')
+            ? _methodErrorCodes['scanner']!
+            : (_methodErrorCodes[method] ?? const {'unknown_method'});
     if (!error.keys.toSet().containsAll(requiredKeys) ||
         !allowedKeys.containsAll(error.keys) ||
         code is! String ||
@@ -359,6 +390,90 @@ class PlanningProtocolClient {
         message['method'] is String &&
         (message['method'] as String).isNotEmpty &&
         message['payload'] is Map;
+  }
+
+  bool _validEventEnvelope(Map<String, dynamic> message) {
+    const keys = {'protocol', 'type', 'method', 'payload'};
+    final payload = message['payload'];
+    if (!message.keys.toSet().containsAll(keys) ||
+        !keys.containsAll(message.keys) ||
+        message['protocol'] != 1 ||
+        message['type'] != 'event' ||
+        message['method'] != 'scanner.session.event' ||
+        payload is! Map) {
+      return false;
+    }
+    final value = Map<String, dynamic>.from(payload);
+    const baseKeys = {'session_id', 'generation', 'sequence', 'scan_kind', 'event_kind'};
+    final baseValid = value['session_id'] is String &&
+        (value['session_id'] as String).isNotEmpty &&
+        value['generation'] is int &&
+        (value['generation'] as int) > 0 &&
+        value['sequence'] is int &&
+        (value['sequence'] as int) > 0 &&
+        (value['scan_kind'] == 'student' || value['scan_kind'] == 'inventory') &&
+        const {'phase', 'progress', 'candidate', 'diagnostic', 'terminal'}
+            .contains(value['event_kind']);
+    if (!baseValid) return false;
+    return switch (value['event_kind']) {
+      'phase' => value.keys.toSet().difference({...baseKeys, 'phase'}).isEmpty &&
+          value['phase'] is String && (value['phase'] as String).isNotEmpty,
+      'progress' => value.keys.toSet().difference({...baseKeys, 'current', 'total', 'message_key'}).isEmpty &&
+          value['current'] is int &&
+          ((value['total'] is int && (value['total'] as int) >= 0) || value['total'] == null) &&
+          value['message_key'] is String && (value['message_key'] as String).isNotEmpty,
+      'candidate' => value.keys.toSet().difference({...baseKeys, 'candidate'}).isEmpty &&
+          _validScannerCandidate(value['candidate']),
+      'diagnostic' => value.keys.toSet().difference({...baseKeys, 'code', 'message'}).isEmpty &&
+          value['code'] is String && (value['code'] as String).isNotEmpty && value['message'] is String,
+      'terminal' => value.keys.toSet().difference({...baseKeys, 'outcome', 'error'}).isEmpty &&
+          const {'completed', 'cancelled', 'failed'}.contains(value['outcome']) &&
+          (!value.containsKey('error') || _validScannerTerminalError(value['error'])),
+      _ => false,
+    };
+  }
+
+  bool _validScannerTerminalError(Object? value) {
+    if (value is! Map) return false;
+    return value.keys.toSet().difference(const {'code', 'message'}).isEmpty &&
+        value.length == 2 &&
+        value['code'] is String &&
+        (value['code'] as String).isNotEmpty &&
+        value['message'] is String;
+  }
+
+  bool _validScannerSuccessPayload(String method, Map<String, dynamic> payload) {
+    return switch (method) {
+      'scanner.target.list' => payload.keys.toSet().containsAll({'targets'}) &&
+          payload['targets'] is List &&
+          (payload['targets'] as List).every((item) => item is Map && item['target_id'] is String && item['title'] is String && const {'ready','minimized','closed','unsupported'}.contains(item['status'])),
+      'scanner.recognition.status' => payload['ready'] is bool &&
+          payload['manifest_version'] is int && payload['missing'] is List,
+      'scanner.session.start' => payload['session_id'] is String &&
+          payload['generation'] is int && const {'student','inventory'}.contains(payload['scan_kind']),
+      'scanner.session.cancel' => payload['accepted'] is bool,
+      'scanner.session.snapshot' => payload['session_id'] is String &&
+          payload['generation'] is int && payload['events'] is List && payload['candidates'] is List,
+      'scanner.candidate.get' || 'scanner.candidate.review' =>
+          _validScannerCandidate(payload['candidate']),
+      'scanner.candidate.commit' => payload['candidate_id'] is String &&
+          payload['candidate_revision'] is int && payload['profile_id'] is String && payload['revision'] is int,
+      _ => false,
+    };
+  }
+
+  bool _validScannerCandidate(Object? value) {
+    if (value is! Map) return false;
+    return value['candidate_id'] is String &&
+        value['session_id'] is String &&
+        value['generation'] is int &&
+        value['revision'] is int &&
+        const {'student','inventory'}.contains(value['scan_kind']) &&
+        value['payload'] is Map &&
+        value['evidence'] is List &&
+        value['review_required'] is bool &&
+        value['approved'] is bool &&
+        value['audit'] is List;
   }
 
   void _fatalProtocolError(String message, int generation) {

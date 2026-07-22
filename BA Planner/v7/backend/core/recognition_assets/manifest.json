@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "source_version": "v6-2026-07-22",
+  "supported_resolutions": [[1280, 720], [1920, 1080], [2560, 1440]],
+  "assets": [
+    {"path":"regions/item_regions.json","scan_kind":"inventory","purpose":"grid-regions","required":true,"bytes":8427,"sha256":"301c154d00b601de169c066eb0e6f4cd788700ccda4948bc96f24c7c472bb778"},
+    {"path":"regions/student_normal_info_regions.json","scan_kind":"student","purpose":"student-regions","required":true,"bytes":39709,"sha256":"9dff521403601f68dbce41ac8aaf6c4208f0c278bcb67912f41188f17f7d3b88"},
+    {"path":"templates/inventory/Equipment_Icon_WeaponExpGrowthC_0.png","scan_kind":"inventory","purpose":"inventory-template","item_id":"Equipment_Icon_WeaponExpGrowthC_0","required":true,"bytes":20596,"sha256":"a92a935e3a79c106378eac4f894ced744fa670d5ee089891cd6ca32588b62b74"},
+    {"path":"templates/inventory/Item_Icon_Material_Mandragora_0.png","scan_kind":"inventory","purpose":"inventory-template","item_id":"Item_Icon_Material_Mandragora_0","required":true,"bytes":22215,"sha256":"b306ddef1ac00094e8739805555d282220b3fd49555e6ffc74bfb5518b732ced"},
+    {"path":"templates/inventory_count/0.png","scan_kind":"inventory","purpose":"inventory-count-template","digit":"0","required":true,"bytes":151,"sha256":"e1b5ed77d118b3432512cb16e704695eff20686b97cbcc1fc5f91d5fc93a3b0f"},
+    {"path":"templates/inventory_count/1.png","scan_kind":"inventory","purpose":"inventory-count-template","digit":"1","required":true,"bytes":129,"sha256":"a43539bc8e47533c4eace2ce3116683a812cec0de0877fe75ae63e95eebdf8a2"},
+    {"path":"templates/inventory_count/2.png","scan_kind":"inventory","purpose":"inventory-count-template","digit":"2","required":true,"bytes":134,"sha256":"ba28abb27898da232effe2c1eb6f58c52c001caaf68c0575ab40bb816af2c862"},
+    {"path":"templates/inventory_count/3.png","scan_kind":"inventory","purpose":"inventory-count-template","digit":"3","required":true,"bytes":150,"sha256":"18bd6c0b0b8be79b4252bbe47c4bac46fb7ea671e1e1b3948c40231572fbcee7"},
+    {"path":"templates/inventory_count/4.png","scan_kind":"inventory","purpose":"inventory-count-template","digit":"4","required":true,"bytes":139,"sha256":"0d6e16c277fd96d5f19c578ce114c287cfff37dfcf2728b059a838a110a75db0"},
+    {"path":"templates/inventory_count/5.png","scan_kind":"inventory","purpose":"inventory-count-template","digit":"5","required":true,"bytes":134,"sha256":"5563c7c0115024f3f7b039587ad9b1b0a08d4de5eadb5ecae041d0c8a7b883e7"},
+    {"path":"templates/inventory_count/6.png","scan_kind":"inventory","purpose":"inventory-count-template","digit":"6","required":true,"bytes":153,"sha256":"bc1374e8ea9a849fa48309d3a79d3a86daac2b086c146c72918d1041f96e8f57"},
+    {"path":"templates/inventory_count/7.png","scan_kind":"inventory","purpose":"inventory-count-template","digit":"7","required":true,"bytes":106,"sha256":"73e797102dcd1be0370cb63da254ca051742ec674d8d6bb664005b2daf4162a2"},
+    {"path":"templates/inventory_count/8.png","scan_kind":"inventory","purpose":"inventory-count-template","digit":"8","required":true,"bytes":164,"sha256":"06628d10706fa95eef0d49615eb81dff6c0befa768fcd4131f0ba60814799967"},
+    {"path":"templates/inventory_count/9.png","scan_kind":"inventory","purpose":"inventory-count-template","digit":"9","required":true,"bytes":151,"sha256":"064e58235bc36002f0e4f1d474cf61e8970ba8bd2252f57ef9dbd59800a4353c"},
+    {"path":"templates/students/airi.png","scan_kind":"student","purpose":"student-template","student_id":"airi","required":true,"bytes":237654,"sha256":"b2107fc0b467136c0006188ca4a045511c407afac9e8c60578b987004f7afc99"},
+    {"path":"templates/students/aru.png","scan_kind":"student","purpose":"student-template","student_id":"aru","required":true,"bytes":317231,"sha256":"ad0fe6cde45205b1fb4776218931d41b6b4d22cb23842b60eb4ffaed4df2af4d"}
+  ],
+  "adaptive_samples": {"path":"scanner-samples/{account_id}/{width}x{height}","packaged":false,"write_condition":"reviewed-confirmed-only"}
+}

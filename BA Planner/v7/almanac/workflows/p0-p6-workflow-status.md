@@ -58,8 +58,8 @@ Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
 | P2 | 실제 계획 화면 수직 슬라이스 | `완료` | 인계 patch 적용 후 마스터 보완, Widget test 8개와 전체 39개·실제 backend·Mock·release 통과 | P4/P6 전까지 in-memory·총 필요량 경계 유지 |
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
 | P4 | 프로필과 repository 영구 저장 | `완료` | nested schema·40-case Python/Dart contract, typed state, atomic persistence와 실제 Dart↔Python restart E2E; Python 40·Flutter 43·analyze·release 통과 | P5에서 repository 확정과 분리된 scanner session 경계 작성 |
-| P5 | scanner/matcher session protocol과 backend | `대기` | `BLOCKED` 부분 증분 10-path patch 인수·검증 후 follow-up-1 지시 작성 | 실제 adapter·asset manifest·JSONL event transport·Dart typed client 작업을 슬레이브에게 전달 |
-| P6 | 전 기본 탭 실제 데이터 통합 | `대기` | 현재 홈 골격과 placeholder 페이지 | P2·P4·P5 인수 후 P6-1 학생부터 진행 |
+| P5 | scanner/matcher session protocol과 backend | `완료` | 40-path follow-up 인수와 마스터 보완; Python 59·Flutter 47·실제 process E2E·release asset gate 통과 | 2학생·2인벤토리 아이콘 제한 coverage를 유지하고 P6에서 scanner UI 연결 |
+| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1 학생 실제 데이터 통합 input과 슬레이브 실행 프롬프트 작성 | P6-1을 슬레이브에 전달하고 결과 artifact 인수·검증 |
 
 ## 현재 결정
 
@@ -296,7 +296,7 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 
 ## P5 — Scanner/Matcher session protocol과 backend
 
-- 상태: `대기`
+- 상태: `완료`
 - 목적: v6 capture·scanner·matcher를 UI callback과 repository 저장에서 분리해 학생·인벤토리
   session, 구조화 event, 검토 가능한 candidate와 명시적 commit을 제공
 - 완료 조건: 공용 Python/Dart event fixture, headless student/inventory session test, 취소·stale·낮은
@@ -305,6 +305,9 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 - 슬레이브 실행 프롬프트: `docs/migration/p5-scanner-matcher/slave-execution-prompt.md`
 - 보완 입력: `docs/migration/p5-scanner-matcher-followup-1/input.md`
 - 보완 슬레이브 실행 프롬프트: `docs/migration/p5-scanner-matcher-followup-1/slave-execution-prompt.md`
+- 보완 수신 패키지: `docs/migration/handoffs/incoming/ba-planner-v7-p5-scanner-matcher-followup-1/ba-planner-v7-p5-scanner-matcher-followup-1-20260723-003156.zip`, 659,635 bytes, SHA-256 `dc3b04c7daae432c323e96adfdd8e5d526f3385a7da9697eb6fbef8feb59a920`
+- 보완 출력 보고서: 같은 incoming 아래 `staging/20260723-003914-39a9bda9/output.md` (`COMPLETED`)
+- 보완 결과물: 같은 staging의 `artifacts/p5-scanner-matcher-followup-1.patch` 924,250 bytes, SHA-256 `29faa865c125c52ca3485b98b26bb2cda3f0a10d06e50fc994e4edf7b312e005`; `artifacts/verification.txt` 4,322 bytes, SHA-256 `1438517ea731904d63fc5663aefb7ef719c55233ed1a5df923fa9fa3349e2012`
 - 수신 패키지: `docs/migration/handoffs/incoming/ba-planner-v7-p5-repository-persistence/ba-planner-v7-p5-repository-persistence-20260722-222844.zip`, 17,273 bytes, SHA-256 `5ee0b0492c264d6c4ff2f542cdd8fbbe0bd4de57ce019e2b078cbedd4201d22d`
 - 출력 보고서: 같은 incoming 아래 `staging/20260722-223045-00ae52e9/output.md` (`BLOCKED`)
 - 결과물: 같은 staging의 `artifacts/p5-scanner-matcher.patch` 59,809 bytes, SHA-256 `8ef763d5ad294e803bfb6a2cea7a6e8b56bf2d69efd8b85a084e66a37ae291c0`; `artifacts/verification.txt` 4,188 bytes, SHA-256 `8345024909aaafc3c1ce51f3eb243e7512951beda38c8298033dab8628155f80`
@@ -326,12 +329,48 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 - 인계 차단 이력: 원본 패키지는 실제 Windows student/inventory adapter, recognition asset
   manifest, JSONL event transport와 Dart typed client 미구현으로 `BLOCKED`였고 P5 완료 조건을
   충족하지 못했다. 부분 증분 자체는 마스터가 검증·인수했다.
-- 차단 사항: 없음. 남은 구현은 슬레이브가 수행 가능하며 Flutter/Dart/Almanac 실행만
-  마스터 인계 후 `MASTER_REQUIRED` gate로 수행한다.
-- 다음 행동: follow-up-1 실행 프롬프트를 슬레이브에게 전달하고 결과 인계 대기
-- 최종 갱신: 2026-07-22
+- follow-up-1 마스터 인수: ZIP 659,635 bytes와 SHA-256이 사용자 값·manifest·sidecar에
+  일치하고, unique staging의 artifact 2개도 `output.md`의 크기·SHA-256과 일치함. baseline
+  `9f533d8523dee54ca16f27c26d0b3af95668a66a`과 기존 변경 무중첩을 확인하고 40-path patch를
+  `git apply --check --verbose` 후 clean 적용함.
+- 마스터 직접 보완: 슬레이브가 작성한 Dart scanner source의 누락 import와 analyzer lint를
+  수정하고, 실제 OS Python child process 2개를 순차 실행하는 `ProcessAppService` scanner event
+  E2E 및 결정적 `MockAppService` scanner flow test를 추가함. E2E는 start response 뒤의
+  phase·progress·candidate·terminal 단조 sequence, restart 후 새 session, 두 process exit code 0,
+  dispose와 temporary storage 삭제를 확인함.
+- 최종 검증: scanner 집중 Python 19, 전체 Python 59, Flutter 전체 47, `flutter analyze`,
+  `flutter build windows --release`, `codealmanac validate`, `codealmanac health`,
+  `git diff --check` 통과. 격리 wheel은 recognition manifest 1개와 production asset 16개를
+  포함하고 설치된 runtime path에서 `ready=true`, missing/corrupt 0으로 해석됨. production
+  student/inventory adapter, manifest 크기·SHA-256, bounded JSONL progress coalescing과
+  candidate/terminal 보존을 독립 확인함.
+- 결정 및 제약: production catalog는 학생 2명(`airi`, `aru`)과 inventory icon 2개의 제한된
+  coverage이며 전체 catalog parity가 아니다. 실제 Blue Archive 게임 창 smoke scan은
+  `NOT_VERIFIED`로 남지만 명시된 P5 완료 차단 조건은 아니다.
+- 차단 사항: 없음. P5는 마스터 승인으로 완료되었고 슬레이브 follow-up 작업은 남아 있지 않다.
+- 다음 행동: `docs/migration/p6-1-student-integration/slave-execution-prompt.md`를 슬레이브에 전달하고 결과 artifact를 인수·검증
+- 최종 갱신: 2026-07-23
 
-최종 갱신: 2026-07-22
+## P6-1 — 학생 실제 데이터 통합
+
+- 상태: `대기`
+- 목적: 학생 탭 placeholder를 실제 catalog·선택 프로필 repository state·scanner candidate와
+  연결하고 검색·필터·정렬, 현재값 수정, 계획 탭 인계를 완성
+- 완료 조건: catalog protocol, typed repository 학생 저장, service-backed StudentPage,
+  계획 인계와 candidate review 경계, Python·Flutter·release·Almanac 검증 통과
+- 입력: `docs/migration/p6-1-student-integration/input.md`
+- 슬레이브 실행 프롬프트: `docs/migration/p6-1-student-integration/slave-execution-prompt.md`
+- 출력 보고서: 아직 없음
+- 결과물: 아직 없음
+- 검증: 아직 실행하지 않음
+- 결정 및 제약: P6 전체가 아닌 첫 수직 슬라이스다. scanner session 시작·진행·취소 UI는
+  P6-3이 소유하며, 승인되지 않은 계획 preset protocol과 최종 반응형 layout state를
+  추측하지 않는다. 현재값·정적 metadata·goal·계산·inventory shortage 경계를 유지한다.
+- 차단 사항: 없음
+- 다음 행동: 프롬프트를 슬레이브에 전달하고 `output.md`와 artifact patch를 수신
+- 최종 갱신: 2026-07-23
+
+최종 갱신: 2026-07-23
 
 ## 단계별 기록 양식
 

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import 'app_service.dart';
 import 'repository_service.dart';
+import 'scanner_service.dart';
 
-class MockAppService implements AppService, MockScenarioController, RepositoryService {
+class MockAppService implements AppService, MockScenarioController, RepositoryService, ScannerService {
   MockAppService({AppServiceState? initialState})
     : _state = ValueNotifier(
         initialState ??
@@ -23,6 +26,8 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
   final ValueNotifier<AppServiceState> _state;
   final List<RepositoryProfile> _profiles = [const RepositoryProfile(id: '000000000000000000000001', displayName: 'Main', revision: 0, selected: true)];
   final Map<String, Map<String, dynamic>> _repositoryStates = {};
+  final StreamController<ScannerEvent> _scannerEvents = StreamController.broadcast();
+  var _scannerGeneration = 0;
 
   @override
   ValueListenable<AppServiceState> get state => _state;
@@ -50,9 +55,47 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
   @override
   Future<void> startScan() async {
     _state.value = _state.value.copyWith(scanPhase: ScanPhase.scanning);
-    await Future<void>.delayed(const Duration(milliseconds: 650));
+    final session = await startScannerSession(ScannerKind.student, 'mock-window');
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    _scannerEvents.add(ScannerEvent(
+      sessionId: session.id,
+      generation: session.generation,
+      sequence: 1,
+      kind: ScannerKind.student,
+      eventKind: ScannerEventKind.terminal,
+      payload: {'outcome': 'completed'},
+    ));
     _state.value = _state.value.copyWith(scanPhase: ScanPhase.succeeded);
   }
+
+  @override
+  Stream<ScannerEvent> get scannerEvents => _scannerEvents.stream;
+
+  @override
+  Future<List<ScannerTarget>> listScannerTargets() async => const [
+    ScannerTarget(id: 'mock-window', title: 'Mock Blue Archive', status: ScannerTargetStatus.ready, foreground: true),
+  ];
+
+  @override
+  Future<Map<String, dynamic>> scannerReadiness() async => {'ready': true, 'manifest_version': 1, 'missing': <String>[], 'corrupt': <String>[]};
+
+  @override
+  Future<ScannerSession> startScannerSession(ScannerKind kind, String targetId) async => ScannerSession(id: 'mock-session-${++_scannerGeneration}', generation: _scannerGeneration, kind: kind);
+
+  @override
+  Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session) async => {'accepted': true, 'terminal': 'cancelled'};
+
+  @override
+  Future<Map<String, dynamic>> scannerSnapshot(ScannerSession session) async => {'session_id':session.id,'generation':session.generation,'scan_kind':session.kind.name,'last_sequence':0,'terminal':null,'events':<dynamic>[],'candidates':<dynamic>[]};
+
+  @override
+  Future<ScannerCandidate> getScannerCandidate(ScannerSession session, String candidateId) async => ScannerCandidate(id:candidateId,sessionId:session.id,generation:session.generation,revision:1,kind:session.kind,payload:const {'version':1,'student_id':'aru','values':<String,dynamic>{}},evidence:const [],reviewRequired:false,approved:false);
+
+  @override
+  Future<ScannerCandidate> reviewScannerCandidate(ScannerSession session, ScannerCandidate candidate, Map<String, dynamic> payload, {required bool approve, required String reason}) async => ScannerCandidate(id:candidate.id,sessionId:session.id,generation:session.generation,revision:candidate.revision+1,kind:session.kind,payload:payload,evidence:candidate.evidence,reviewRequired:candidate.reviewRequired,approved:approve);
+
+  @override
+  Future<Map<String, dynamic>> commitScannerCandidate(ScannerSession session, ScannerCandidate candidate, {required String profileId, required int expectedRepositoryRevision, required String idempotencyKey}) async => {'candidate_id':candidate.id,'candidate_revision':candidate.revision,'profile_id':profileId,'revision':expectedRepositoryRevision+1};
 
   @override
   Future<Map<String, dynamic>?> getStudent(String studentId) async {
@@ -164,6 +207,7 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
 
   @override
   Future<void> dispose() async {
+    await _scannerEvents.close();
     _state.dispose();
   }
 

@@ -214,3 +214,14 @@ evidence가 있는 후보는 review approval 없이는 commit할 수 없으며, 
 revision과 audit를 증가시킵니다. commit은 P4 repository expected revision과 idempotency
 key를 요구합니다. stale generation과 종료 뒤 이벤트는 무시하고, sequence gap은
 snapshot 재동기화를 요구합니다.
+
+P5 follow-up transport는 `JsonlMultiplexer` 한 곳에서 response와 event를 직렬화한다.
+session start의 response가 queue에 들어가기 전 발생한 event는 session별로 보류되며,
+bounded backpressure에서는 progress만 최신 값으로 합쳐진다. response, candidate와 terminal은
+drop하지 않는다. Dart `PlanningProtocolClient`는 response와 event envelope를 분리하고
+scanner method별 success shape를 검사하며, `ScannerProtocolClient`가 typed model과
+generation/sequence cursor, start-race buffer를 소유한다.
+
+Production recognition asset은 `backend/core/recognition_assets/manifest.json`에서 버전,
+source, scan kind, 용도, 크기와 SHA-256으로 고정한다. Flutter UI asset 또는 사용자 adaptive
+sample 경로를 recognition catalog로 사용하지 않는다.

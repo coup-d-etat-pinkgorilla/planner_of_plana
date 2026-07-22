@@ -119,6 +119,7 @@ class ScannerSessionTests(unittest.TestCase):
         retry = service.commit(session_id="s1", generation=1, candidate_id="c1", candidate_revision=2, profile_id="p1", expected_repository_revision=0, idempotency_key="commit-1")
         self.assertEqual(first, retry)
         self.assertEqual(1, first["revision"])
+        self.assertEqual("p1", first["profile_id"])
         service.close()
 
     def test_stale_generation_and_event_cursor_policy(self) -> None:

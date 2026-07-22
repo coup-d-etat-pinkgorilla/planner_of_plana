@@ -66,6 +66,10 @@ enter scanner candidate/current payloads.
 | debug crops, cache, profile samples | exclude from release assets |
 | Tk/Qt/PySide presentation orchestration | exclude from P5 backend |
 
-Actual Windows capture/matcher parity, asset selection and release packaging remain
-unfinished until the adapter/manifest work lands. Python headless tests do not claim
-that real image recognition has been verified.
+The follow-up ports the minimum production vertical slice with Win32 client capture,
+safe input messages, v6 ratio regions and selected real PNG templates. Fixture tests
+compose those production PNGs into 1280x720 captures and execute the same adapters used
+by the backend process. This verifies adapter mechanics and conservative review
+behavior, but it is not full v6 catalog/algorithm parity and is not a live-game smoke.
+The deliberately small supported catalog and absent inventory count OCR remain explicit
+follow-up risks.

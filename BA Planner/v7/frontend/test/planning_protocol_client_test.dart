@@ -258,16 +258,31 @@ void main() {
     await service.dispose();
   });
 
-  test('ProcessAppService exposes scanner as unavailable in P1', () async {
+  test('ProcessAppService enables scanner from readiness and consumes terminal event', () async {
     final process = FakeBackendProcess();
     final service = ProcessAppService(
       PlanningProtocolClient(() async => process),
     );
     await service.reconnect();
+    await Future<void>.delayed(Duration.zero);
+    process.respond(_decode(process.writes[0]), {'ready':true,'manifest_version':1,'missing':<String>[],'corrupt':<String>[]});
+    await Future<void>.delayed(Duration.zero);
+    process.respond(_decode(process.writes[1]), {'targets':[{'target_id':'w1','title':'BA','status':'ready'}]});
+    await Future<void>.delayed(Duration.zero);
+    expect(service.state.value.scanAvailable, isTrue);
 
-    expect(service.state.value.scanAvailable, isFalse);
-    await expectLater(service.startScan(), throwsA(isA<UnsupportedError>()));
-    expect(service.state.value.scanPhase, ScanPhase.failed);
+    final scan = service.startScan();
+    await Future<void>.delayed(Duration.zero);
+    process.respond(_decode(process.writes[2]), {'ready':true,'manifest_version':1,'missing':<String>[],'corrupt':<String>[]});
+    await Future<void>.delayed(Duration.zero);
+    process.respond(_decode(process.writes[3]), {'targets':[{'target_id':'w1','title':'BA','status':'ready'}]});
+    await Future<void>.delayed(Duration.zero);
+    process.respond(_decode(process.writes[4]), {'session_id':'s1','generation':1,'scan_kind':'student'});
+    await scan;
+    expect(service.state.value.scanPhase, ScanPhase.scanning);
+    process.event({'session_id':'s1','generation':1,'sequence':1,'scan_kind':'student','event_kind':'terminal','outcome':'completed'});
+    await Future<void>.delayed(Duration.zero);
+    expect(service.state.value.scanPhase, ScanPhase.succeeded);
     expect(await service.didRequestAppExit(), AppExitResponse.exit);
     expect(process.inputClosed, isTrue);
   });
@@ -390,6 +405,10 @@ class FakeBackendProcess implements BackendProcessHandle {
         'payload': payload,
       }),
     );
+  }
+
+  void event(Map<String, dynamic> payload) {
+    stdout.add(jsonEncode({'protocol':1,'type':'event','method':'scanner.session.event','payload':payload}));
   }
 
   void exit(int code) {

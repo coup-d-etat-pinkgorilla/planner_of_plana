@@ -118,6 +118,12 @@ class ScannerSessionService:
             raise ScannerError("asset_catalog_failed", "asset status must be an object")
         return deepcopy(value)
 
+    def set_event_sink(self, event_sink: EventSink) -> None:
+        with self._lock:
+            if self._active is not None and self._active.terminal is None:
+                raise ScannerError("scanner_busy", "cannot replace event sink during a session")
+            self._event_sink = event_sink
+
     def start(self, scan_kind: str, target_id: str) -> dict[str, Any]:
         if scan_kind not in self._matchers:
             raise ScannerError("invalid_payload", "scan_kind must be student or inventory")
@@ -236,7 +242,12 @@ class ScannerSessionService:
             result = self._repository.update_inventory(
                 profile_id, payload.to_dict(), expected_repository_revision, idempotency_key
             )
-        return {"candidate_id": candidate_id, "candidate_revision": candidate_revision, **result}
+        return {
+            "candidate_id": candidate_id,
+            "candidate_revision": candidate_revision,
+            "profile_id": profile_id,
+            **result,
+        }
 
     def wait(self, session_id: str, timeout: float = 5.0) -> None:
         session = self._sessions.get(session_id)
