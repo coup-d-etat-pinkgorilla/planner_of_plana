@@ -200,3 +200,17 @@ missing, method-mismatched 또는 malformed nested success는 fatal protocol err
 raw state map을 직접 읽지 않습니다. 실제 process test는 Dart가 실행한 Python child
 process를 종료한 뒤 같은 격리 storage root로 새 process를 시작해 profile, revision과 goal
 복원을 검증합니다.
+
+## scanner protocol v1
+
+P5 scanner 계약은 `scanner-protocol-v1.schema.json`과 공유 fixture
+`fixtures/scanner_protocol_v1.json`에서 시작합니다. 요청 method는 target 목록,
+recognition readiness, session start/cancel/snapshot, candidate get/review/commit입니다.
+이벤트에는 요청 ID가 없고 `scanner.session.event` method 아래 session ID, generation,
+strict sequence, scan kind와 phase/progress/candidate/diagnostic/terminal 종류를 가집니다.
+
+후보 생성과 repository commit은 별도 operation입니다. 불확실하거나 실패/region 누락
+evidence가 있는 후보는 review approval 없이는 commit할 수 없으며, review는 candidate
+revision과 audit를 증가시킵니다. commit은 P4 repository expected revision과 idempotency
+key를 요구합니다. stale generation과 종료 뒤 이벤트는 무시하고, sequence gap은
+snapshot 재동기화를 요구합니다.

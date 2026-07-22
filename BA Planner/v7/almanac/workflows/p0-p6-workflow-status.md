@@ -58,7 +58,7 @@ Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
 | P2 | 실제 계획 화면 수직 슬라이스 | `완료` | 인계 patch 적용 후 마스터 보완, Widget test 8개와 전체 39개·실제 backend·Mock·release 통과 | P4/P6 전까지 in-memory·총 필요량 경계 유지 |
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
 | P4 | 프로필과 repository 영구 저장 | `완료` | nested schema·40-case Python/Dart contract, typed state, atomic persistence와 실제 Dart↔Python restart E2E; Python 40·Flutter 43·analyze·release 통과 | P5에서 repository 확정과 분리된 scanner session 경계 작성 |
-| P5 | scanner/matcher session protocol과 backend | `대기` | `docs/migration/p5-scanner-matcher/input.md`, `slave-execution-prompt.md` 작성 | P4 baseline gate를 포함한 실행 프롬프트를 슬레이브에게 전달 |
+| P5 | scanner/matcher session protocol과 backend | `대기` | `BLOCKED` 부분 증분 10-path patch 인수·검증 후 follow-up-1 지시 작성 | 실제 adapter·asset manifest·JSONL event transport·Dart typed client 작업을 슬레이브에게 전달 |
 | P6 | 전 기본 탭 실제 데이터 통합 | `대기` | 현재 홈 골격과 placeholder 페이지 | P2·P4·P5 인수 후 P6-1 학생부터 진행 |
 
 ## 현재 결정
@@ -303,7 +303,19 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
   confidence 보존, 실제 adapter, recognition asset 분리와 전체 검증 통과
 - 입력: `docs/migration/p5-scanner-matcher/input.md`
 - 슬레이브 실행 프롬프트: `docs/migration/p5-scanner-matcher/slave-execution-prompt.md`
-- 결과물: 아직 없음
+- 보완 입력: `docs/migration/p5-scanner-matcher-followup-1/input.md`
+- 보완 슬레이브 실행 프롬프트: `docs/migration/p5-scanner-matcher-followup-1/slave-execution-prompt.md`
+- 수신 패키지: `docs/migration/handoffs/incoming/ba-planner-v7-p5-repository-persistence/ba-planner-v7-p5-repository-persistence-20260722-222844.zip`, 17,273 bytes, SHA-256 `5ee0b0492c264d6c4ff2f542cdd8fbbe0bd4de57ce019e2b078cbedd4201d22d`
+- 출력 보고서: 같은 incoming 아래 `staging/20260722-223045-00ae52e9/output.md` (`BLOCKED`)
+- 결과물: 같은 staging의 `artifacts/p5-scanner-matcher.patch` 59,809 bytes, SHA-256 `8ef763d5ad294e803bfb6a2cea7a6e8b56bf2d69efd8b85a084e66a37ae291c0`; `artifacts/verification.txt` 4,188 bytes, SHA-256 `8345024909aaafc3c1ce51f3eb243e7512951beda38c8298033dab8628155f80`
+- 인계 식별 오류: 외부 task ID는 `ba-planner-v7-p5-repository-persistence`, 동봉 master prompt는 P2와 `p2-planning-screen.patch`로 잘못 표기됐지만 내부 `output.md`와 artifact는 `ba-planner-v7-p5-scanner-matcher` 부분 증분이다.
+- 마스터 검증: ZIP 크기·SHA-256이 사용자 값·manifest·sidecar와 일치하고 artifact 2개의
+  크기·SHA-256도 `output.md`와 일치함. HEAD가 슬레이브 baseline `e0740be`와 같고 기존
+  worktree 변경과 10개 patch path의 중첩이 없었으며 `git apply --check --verbose` 후 patch를
+  clean 적용함. P5 집중 Python 8, 전체 Python 48, Flutter 전체 43, `flutter analyze`, Windows
+  release build, `codealmanac validate`, `codealmanac health`, `git diff --check` 통과. 계획 화면
+  Widget test 8개에서 current/goal 분리·빈 goal/숫자 0·총 필요량·MockAppService 흐름이
+  통과했고 실제 Python stdio 8 tests와 실제 `ProcessAppService` repository restart E2E도 통과함.
 - 결정 및 제약: P4 baseline을 선행 gate로 사용하고 candidate 생성과 repository 확정을 분리한다.
   event는 session ID·generation·sequence·정확히 하나의 terminal을 가지며, 낮은 confidence는
   review 없이 commit할 수 없다. 실제 student/inventory adapter 중 하나라도 placeholder이면
@@ -311,8 +323,12 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 - 슬레이브 환경: Flutter/Dart SDK와 CodeAlmanac CLI 없음. Python test와 scanner backend,
   fixture·schema·asset·patch 검증은 슬레이브가 수행하고 Dart/Flutter test·analyze·release,
   실제 Dart↔Python event E2E와 Almanac 검증은 마스터 인계 후 필수 gate로 수행한다.
-- 차단 사항: 없음
-- 다음 행동: 실행 프롬프트를 슬레이브에게 전달하고 `output.md`, patch와 verification 인계 대기
+- 인계 차단 이력: 원본 패키지는 실제 Windows student/inventory adapter, recognition asset
+  manifest, JSONL event transport와 Dart typed client 미구현으로 `BLOCKED`였고 P5 완료 조건을
+  충족하지 못했다. 부분 증분 자체는 마스터가 검증·인수했다.
+- 차단 사항: 없음. 남은 구현은 슬레이브가 수행 가능하며 Flutter/Dart/Almanac 실행만
+  마스터 인계 후 `MASTER_REQUIRED` gate로 수행한다.
+- 다음 행동: follow-up-1 실행 프롬프트를 슬레이브에게 전달하고 결과 인계 대기
 - 최종 갱신: 2026-07-22
 
 최종 갱신: 2026-07-22

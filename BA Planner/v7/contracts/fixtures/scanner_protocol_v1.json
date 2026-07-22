@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "cases": [
+    { "name": "target-list", "valid": true, "message": { "protocol": 1, "id": "r1", "type": "request", "method": "scanner.target.list", "payload": {} } },
+    { "name": "student-start", "valid": true, "message": { "protocol": 1, "id": "r2", "type": "request", "method": "scanner.session.start", "payload": { "scan_kind": "student", "target_id": "window-1" } } },
+    { "name": "start-response", "valid": true, "message": { "protocol": 1, "id": "r2", "type": "response", "method": "scanner.session.start", "payload": { "session_id": "s1", "generation": 1, "scan_kind": "student" } } },
+    { "name": "unknown-total-progress", "valid": true, "message": { "protocol": 1, "type": "event", "method": "scanner.session.event", "payload": { "session_id": "s1", "generation": 1, "sequence": 1, "scan_kind": "student", "event_kind": "progress", "current": 0, "total": null, "message_key": "scanner.student.identifying" } } },
+    { "name": "review-required-candidate", "valid": true, "message": { "protocol": 1, "type": "event", "method": "scanner.session.event", "payload": { "session_id": "s1", "generation": 1, "sequence": 2, "scan_kind": "student", "event_kind": "candidate", "candidate": { "candidate_id": "c1", "session_id": "s1", "generation": 1, "revision": 1, "scan_kind": "student", "payload": { "version": 1, "student_id": "shiroko", "values": { "level": 90 } }, "evidence": [{ "field": "level", "status": "uncertain", "source": "ocr", "confidence": 0.62 }], "review_required": true, "approved": false, "audit": [] } } } },
+    { "name": "completed-terminal", "valid": true, "message": { "protocol": 1, "type": "event", "method": "scanner.session.event", "payload": { "session_id": "s1", "generation": 1, "sequence": 3, "scan_kind": "student", "event_kind": "terminal", "outcome": "completed" } } },
+    { "name": "cancel-request", "valid": true, "message": { "protocol": 1, "id": "r3", "type": "request", "method": "scanner.session.cancel", "payload": { "session_id": "s2", "generation": 2 } } },
+    { "name": "cancelled-terminal", "valid": true, "message": { "protocol": 1, "type": "event", "method": "scanner.session.event", "payload": { "session_id": "s2", "generation": 2, "sequence": 2, "scan_kind": "inventory", "event_kind": "terminal", "outcome": "cancelled" } } },
+    { "name": "target-not-found-error", "valid": true, "message": { "protocol": 1, "id": "r4", "type": "response", "method": "scanner.session.start", "payload": { "error": { "code": "target_not_found", "message": "capture target was not found" } } } },
+    { "name": "missing-generation", "valid": false, "message": { "protocol": 1, "id": "bad1", "type": "request", "method": "scanner.session.cancel", "payload": { "session_id": "s1" } } },
+    { "name": "event-with-request-id", "valid": false, "message": { "protocol": 1, "id": "bad2", "type": "event", "method": "scanner.session.event", "payload": { "session_id": "s1", "generation": 1, "sequence": 4, "scan_kind": "student", "event_kind": "terminal", "outcome": "completed" } } },
+    { "name": "zero-sequence", "valid": false, "message": { "protocol": 1, "type": "event", "method": "scanner.session.event", "payload": { "session_id": "s1", "generation": 1, "sequence": 0, "scan_kind": "student", "event_kind": "phase", "phase": "capture" } } },
+    { "name": "candidate-unknown-field", "valid": false, "message": { "protocol": 1, "type": "event", "method": "scanner.session.event", "payload": { "session_id": "s1", "generation": 1, "sequence": 2, "scan_kind": "student", "event_kind": "candidate", "candidate": { "candidate_id": "c1", "session_id": "s1", "generation": 1, "revision": 1, "scan_kind": "student", "payload": {}, "evidence": [], "review_required": false, "approved": false, "audit": [], "extra": true } } } },
+    { "name": "unknown-method", "valid": false, "message": { "protocol": 1, "id": "bad3", "type": "request", "method": "scanner.magic", "payload": {} } },
+    { "name": "wrong-version", "valid": false, "message": { "protocol": 2, "id": "bad4", "type": "request", "method": "scanner.target.list", "payload": {} } }
+  ]
+}
