@@ -57,7 +57,7 @@ Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning met
 | P1 | Python JSONL process와 Dart client | `완료` | lifecycle·오류·실제 세 method E2E 및 release build 통과 | P2가 `AppService` planning method만 사용하도록 유지 |
 | P2 | 실제 계획 화면 수직 슬라이스 | `완료` | 인계 patch 적용 후 마스터 보완, Widget test 8개와 전체 39개·실제 backend·Mock·release 통과 | P4/P6 전까지 in-memory·총 필요량 경계 유지 |
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
-| P4 | 프로필과 repository 영구 저장 | `차단됨` | follow-up-1 적용 후 Python 39·Flutter 41·analyze·release·Almanac 통과, lifecycle/corruption 수정 확인; method별 contract·typed state·real Dart E2E 미구현 | 남은 contract 범위 P4 follow-up-2 요청 |
+| P4 | 프로필과 repository 영구 저장 | `차단됨` | follow-up-2 schema/fixture 부분 증분 적용, Python 39·Flutter 41·analyze·release 통과; Dart validator/runtime·typed state·real process E2E와 nested schema 미구현 | 같은 P4 follow-up-2의 미완료 범위 보완 요청 |
 | P5 | scanner/matcher session protocol과 backend | `대기` | 없음 | P3/P4 경계 인수 후 event schema부터 작성 |
 | P6 | 전 기본 탭 실제 데이터 통합 | `대기` | 현재 홈 골격과 placeholder 페이지 | P2·P4·P5 인수 후 P6-1 학생부터 진행 |
 
@@ -259,10 +259,15 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 - 보완 출력 보고서: `docs/migration/handoffs/incoming/ba-planner-v7-p4-repository-persistence-followup-1/staging/20260722-141231-dda5ceb6/output.md`
 - 보완 결과물: 같은 staging의 `artifacts/p4-repository-persistence-followup-1.patch`, `artifacts/verification.txt`; ZIP SHA-256 `d1cc336970efcd1ae8dac08163452102af22b526f17f770072d854c2d04c33c9`
 - 보완 검증: ZIP 6,982 bytes와 SHA-256이 사용자 값·manifest·sidecar에 일치하고 내부 artifact 2개의 크기·해시도 `output.md`와 일치함. 4개 증분 path가 모두 `BA Planner/v7/...`이며 현재 상태 문서와 중첩 없이 apply-check·적용 통과. 집중 Python 22, 전체 Python 39, Flutter 41, analyze, Windows release, Almanac와 diff 검사 통과. profile create/select/rename/cancel/빈 입력 lifecycle test 통과; malformed catalog와 idempotency가 모두 `corrupt_data`로 fail-closed함. 반면 `{ "nonsense": true }` profile-list success가 schema에서 여전히 유효하며 method별 success schema, Dart valid/invalid validator와 runtime rejection, typed repository state 및 real Dart/Python restart E2E는 미구현임
-- 차단 사항: follow-up-1이 lifecycle과 corruption만 해결했으며 repository contract/client/E2E 필수 범위를 `BLOCKED`로 남김. 전달문이 P4 follow-up task를 P2 및 `p2-planning-screen.patch`로 부르는 복사 오류도 남아 있음
+- 차단 사항: follow-up-1은 lifecycle/corruption을 해결했고 follow-up-2 부분 증분은 method별 top-level success schema만 해결함. Dart fixture validator, runtime malformed-success 차단, typed repository state, real Dart/Python restart E2E와 nested request/state schema가 미구현임. 전달문이 P4 follow-up task를 P2 및 `p2-planning-screen.patch`로 부르는 복사 오류도 남아 있음
 - 보완 입력 2: `docs/migration/p4-repository-persistence-followup-2/input.md`
 - 보완 슬레이브 실행 프롬프트 2: `docs/migration/p4-repository-persistence-followup-2/slave-execution-prompt.md`
-- 다음 행동: P4 follow-up-2 실행 프롬프트를 슬레이브에 전달하고 contract/client/real process E2E 증분 인계 후 전체 검증 재실행
+- 보완 출력 보고서 2: `docs/migration/handoffs/incoming/ba-planner-v7-p4-repository-persistence-followup-2/staging/20260722-150536-0faf9415/output.md`
+- 보완 결과물 2: 같은 staging의 `artifacts/p4-repository-persistence-followup-2.patch`, `artifacts/verification.txt`; ZIP SHA-256 `2d985e43867337843da811e08b02876cf4b340c575846f7028f03e717bb5085e`
+- 보완 검증 2: ZIP 5,539 bytes와 SHA-256이 사용자 값·manifest·sidecar에 일치하고 내부 artifact 2개의 크기·해시도 `output.md`와 일치함. schema·fixture 2개 증분 path가 `BA Planner/v7/...`이며 apply-check·적용 통과. repository fixture는 28 cases(valid 14/invalid 14), Python 집중 22·전체 39, Flutter 41, analyze와 Windows release 통과. 모든 repository method의 top-level nonsense success는 schema에서 거부됨. 그러나 confirmed current의 `display_name`/`shortages`와 goal `target_level: 999`가 포함된 state response, junk student update, 빈 inventory/goals update request가 여전히 schema에서 유효함. Dart test는 `valid`를 읽지 않고 runtime client는 `repository.*` success를 무조건 허용하며 service/UI는 raw state map을 사용함. 실제 Dart↔Python restart E2E 없음
+- 보완 입력 3: `docs/migration/p4-repository-persistence-followup-3/input.md`
+- 보완 슬레이브 실행 프롬프트 3: `docs/migration/p4-repository-persistence-followup-3/slave-execution-prompt.md`
+- 다음 행동: P4 follow-up-3 실행 프롬프트를 전달하고 nested contract, Dart typed/runtime와 real process E2E 증분 인계 후 전체 검증 재실행
 - 최종 갱신: 2026-07-22
 
 최종 갱신: 2026-07-22

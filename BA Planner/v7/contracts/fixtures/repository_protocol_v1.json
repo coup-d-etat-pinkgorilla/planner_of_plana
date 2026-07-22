@@ -17,6 +17,18 @@
     {"id":"mutation-unknown-field","valid":false,"message":{"protocol":1,"id":"13","type":"request","method":"repository.profile.select","payload":{"profile_id":"p1","expected_revision":0,"idempotency_key":"k","extra":1}}},
     {"id":"profile-list-response","valid":true,"message":{"protocol":1,"id":"1","type":"response","method":"repository.profile.list","payload":{"profiles":[],"selected_profile_id":null}}},
     {"id":"revision-conflict-response","valid":true,"message":{"protocol":1,"id":"14","type":"response","method":"repository.students.update","payload":{"error":{"code":"revision_conflict","message":"stale","retryable":false,"details":{"current_revision":2}}}}},
-    {"id":"error-missing-retryable","valid":false,"message":{"protocol":1,"id":"15","type":"response","method":"repository.students.update","payload":{"error":{"code":"revision_conflict","message":"stale"}}}}
+    {"id":"error-missing-retryable","valid":false,"message":{"protocol":1,"id":"15","type":"response","method":"repository.students.update","payload":{"error":{"code":"revision_conflict","message":"stale"}}}},
+    {"id":"profile-create-response","valid":true,"message":{"protocol":1,"id":"16","type":"response","method":"repository.profile.create","payload":{"profile":{"profile_id":"aaaaaaaaaaaaaaaaaaaaaaaa","display_name":"Main","revision":0,"selected":true},"revision":0}}},
+    {"id":"profile-current-null-response","valid":true,"message":{"protocol":1,"id":"17","type":"response","method":"repository.profile.current","payload":{"profile":null}}},
+    {"id":"profile-select-response","valid":true,"message":{"protocol":1,"id":"18","type":"response","method":"repository.profile.select","payload":{"revision":1}}},
+    {"id":"state-get-response","valid":true,"message":{"protocol":1,"id":"19","type":"response","method":"repository.state.get","payload":{"profile_id":"aaaaaaaaaaaaaaaaaaaaaaaa","revision":1,"students":[],"inventory":{"version":1,"entries":[]},"goals":{"version":1,"goals":[]}}}},
+    {"id":"nonsense-success-response","valid":false,"message":{"protocol":1,"id":"20","type":"response","method":"repository.profile.list","payload":{"nonsense":true}}},
+    {"id":"method-payload-mismatch-response","valid":false,"message":{"protocol":1,"id":"21","type":"response","method":"repository.state.get","payload":{"profiles":[],"selected_profile_id":null}}},
+    {"id":"revision-unknown-field-response","valid":false,"message":{"protocol":1,"id":"22","type":"response","method":"repository.profile.rename","payload":{"revision":2,"extra":true}}},
+    {"id":"revision-bool-response","valid":false,"message":{"protocol":1,"id":"23","type":"response","method":"repository.goals.save","payload":{"revision":true}}},
+    {"id":"revision-negative-response","valid":false,"message":{"protocol":1,"id":"24","type":"response","method":"repository.inventory.update","payload":{"revision":-1}}},
+    {"id":"state-malformed-inventory-response","valid":false,"message":{"protocol":1,"id":"25","type":"response","method":"repository.state.get","payload":{"profile_id":"aaaaaaaaaaaaaaaaaaaaaaaa","revision":1,"students":[],"inventory":{"version":1},"goals":{"version":1,"goals":[]}}}},
+    {"id":"mixed-success-error-response","valid":false,"message":{"protocol":1,"id":"26","type":"response","method":"repository.profile.select","payload":{"revision":1,"error":{"code":"revision_conflict","message":"stale","retryable":false}}}},
+    {"id":"unknown-error-code-response","valid":false,"message":{"protocol":1,"id":"27","type":"response","method":"repository.profile.list","payload":{"error":{"code":"anything","message":"bad","retryable":false}}}}
   ]
 }
