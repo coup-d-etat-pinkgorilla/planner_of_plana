@@ -1,0 +1,22 @@
+{
+  "format":"ba-planner-repository-protocol-v1",
+  "version":1,
+  "cases":[
+    {"id":"profile-list","valid":true,"message":{"protocol":1,"id":"1","type":"request","method":"repository.profile.list","payload":{}}},
+    {"id":"profile-create","valid":true,"message":{"protocol":1,"id":"2","type":"request","method":"repository.profile.create","payload":{"display_name":"Main","idempotency_key":"k1"}}},
+    {"id":"profile-select","valid":true,"message":{"protocol":1,"id":"3","type":"request","method":"repository.profile.select","payload":{"profile_id":"p1","expected_revision":0,"idempotency_key":"k2"}}},
+    {"id":"profile-rename","valid":true,"message":{"protocol":1,"id":"4","type":"request","method":"repository.profile.rename","payload":{"profile_id":"p1","expected_revision":1,"idempotency_key":"k3","display_name":"Renamed"}}},
+    {"id":"state-get","valid":true,"message":{"protocol":1,"id":"5","type":"request","method":"repository.state.get","payload":{"profile_id":"p1"}}},
+    {"id":"students-update","valid":true,"message":{"protocol":1,"id":"6","type":"request","method":"repository.students.update","payload":{"profile_id":"p1","expected_revision":2,"idempotency_key":"k4","students":[]}}},
+    {"id":"inventory-update","valid":true,"message":{"protocol":1,"id":"7","type":"request","method":"repository.inventory.update","payload":{"profile_id":"p1","expected_revision":3,"idempotency_key":"k5","inventory":{"version":1,"entries":[]}}}},
+    {"id":"goals-save","valid":true,"message":{"protocol":1,"id":"8","type":"request","method":"repository.goals.save","payload":{"profile_id":"p1","expected_revision":4,"idempotency_key":"k6","goals":{"version":1,"goals":[]}}}},
+    {"id":"unknown-version","valid":false,"message":{"protocol":2,"id":"9","type":"request","method":"repository.profile.list","payload":{}}},
+    {"id":"unknown-field","valid":false,"message":{"protocol":1,"id":"10","type":"request","method":"repository.profile.create","payload":{"display_name":"Main","idempotency_key":"k","extra":1}}},
+    {"id":"missing-idempotency","valid":false,"message":{"protocol":1,"id":"11","type":"request","method":"repository.profile.create","payload":{"display_name":"Main"}}},
+    {"id":"bad-revision-type","valid":false,"message":{"protocol":1,"id":"12","type":"request","method":"repository.profile.select","payload":{"profile_id":"p1","expected_revision":true,"idempotency_key":"k"}}},
+    {"id":"mutation-unknown-field","valid":false,"message":{"protocol":1,"id":"13","type":"request","method":"repository.profile.select","payload":{"profile_id":"p1","expected_revision":0,"idempotency_key":"k","extra":1}}},
+    {"id":"profile-list-response","valid":true,"message":{"protocol":1,"id":"1","type":"response","method":"repository.profile.list","payload":{"profiles":[],"selected_profile_id":null}}},
+    {"id":"revision-conflict-response","valid":true,"message":{"protocol":1,"id":"14","type":"response","method":"repository.students.update","payload":{"error":{"code":"revision_conflict","message":"stale","retryable":false,"details":{"current_revision":2}}}}},
+    {"id":"error-missing-retryable","valid":false,"message":{"protocol":1,"id":"15","type":"response","method":"repository.students.update","payload":{"error":{"code":"revision_conflict","message":"stale"}}}}
+  ]
+}

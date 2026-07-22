@@ -7,8 +7,9 @@ import 'package:flutter/widgets.dart';
 import 'app_service.dart';
 import 'backend_process.dart';
 import 'planning_protocol_client.dart';
+import 'repository_service.dart';
 
-class ProcessAppService with WidgetsBindingObserver implements AppService {
+class ProcessAppService with WidgetsBindingObserver implements AppService, RepositoryService {
   ProcessAppService(this._client)
     : _state = ValueNotifier(
         const AppServiceState(
@@ -87,6 +88,39 @@ class ProcessAppService with WidgetsBindingObserver implements AppService {
     });
     return Map<String, dynamic>.from(payload['totals'] as Map);
   }
+
+  @override
+  Future<List<RepositoryProfile>> listProfiles() async {
+    final payload = await _client.send('repository.profile.list', {});
+    final values = payload['profiles'];
+    if (values is! List) throw const FormatException('Invalid profile list');
+    return values.map((item) => RepositoryProfile.fromWire(Map<String, dynamic>.from(item as Map))).toList();
+  }
+
+  @override
+  Future<RepositoryProfile> createProfile(String displayName, String idempotencyKey) async {
+    final payload = await _client.send('repository.profile.create', {'display_name': displayName, 'idempotency_key': idempotencyKey});
+    return RepositoryProfile.fromWire(Map<String, dynamic>.from(payload['profile'] as Map));
+  }
+
+  Future<int> _revisionMutation(String method, Map<String, dynamic> payload) async {
+    final response = await _client.send(method, payload);
+    final revision = response['revision'];
+    if (revision is! int) throw const FormatException('Invalid repository revision');
+    return revision;
+  }
+
+  @override
+  Future<int> selectProfile(String profileId, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.profile.select', {'profile_id':profileId,'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
+
+  @override
+  Future<int> renameProfile(String profileId, String displayName, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.profile.rename', {'profile_id':profileId,'display_name':displayName,'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
+
+  @override
+  Future<Map<String, dynamic>> loadRepositoryState(String profileId) => _client.send('repository.state.get', {'profile_id':profileId});
+
+  @override
+  Future<int> saveRepositoryGoals(String profileId, Map<String, dynamic> goals, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.goals.save', {'profile_id':profileId,'goals':goals,'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
 
   @override
   Future<void> reconnect() => _client.start();

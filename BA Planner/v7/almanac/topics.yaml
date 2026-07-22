@@ -15,3 +15,7 @@ topics:
     title: Workflow
     description: 마스터와 슬레이브 사이의 작업 명령 및 결과물 인계 계약
     parents: [architecture]
+  - slug: design
+    title: Design
+    description: Flutter 화면의 시각 규칙과 기능별 사용자 행동 흐름
+    parents: [architecture]

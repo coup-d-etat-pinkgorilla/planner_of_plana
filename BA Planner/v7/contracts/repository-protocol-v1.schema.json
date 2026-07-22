@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/repository-protocol-v1.schema.json",
+  "title": "BA Planner repository protocol v1 requests",
+  "oneOf": [
+    {"$ref":"#/$defs/emptyRequest"},
+    {"$ref":"#/$defs/createRequest"},
+    {"$ref":"#/$defs/profileMutation"},
+    {"$ref":"#/$defs/renameRequest"},
+    {"$ref":"#/$defs/stateRequest"},
+    {"$ref":"#/$defs/studentsRequest"},
+    {"$ref":"#/$defs/inventoryRequest"},
+    {"$ref":"#/$defs/goalsRequest"},
+    {"$ref":"#/$defs/migrationRequest"},
+    {"$ref":"#/$defs/response"}
+  ],
+  "$defs": {
+    "base": {"type":"object","required":["protocol","id","type","method","payload"],"properties":{"protocol":{"const":1},"id":{"type":"string","minLength":1},"type":{"const":"request"},"method":{"type":"string"},"payload":{"type":"object"}},"additionalProperties":false},
+    "response": {"type":"object","required":["protocol","id","type","method","payload"],"properties":{"protocol":{"const":1},"id":{"type":"string","minLength":1},"type":{"const":"response"},"method":{"enum":["repository.profile.list","repository.profile.create","repository.profile.current","repository.profile.select","repository.profile.rename","repository.state.get","repository.students.update","repository.inventory.update","repository.goals.save","repository.migration.preview"]},"payload":{"oneOf":[{"type":"object","not":{"required":["error"]}},{"type":"object","required":["error"],"properties":{"error":{"$ref":"#/$defs/error"}},"additionalProperties":false}]}},"additionalProperties":false},
+    "error": {"type":"object","required":["code","message","retryable"],"properties":{"code":{"enum":["invalid_payload","profile_not_found","profile_name_conflict","revision_conflict","idempotency_conflict","repository_busy","corrupt_data","migration_required","migration_not_supported","persistence_failed","unknown_method"]},"message":{"type":"string","minLength":1},"retryable":{"type":"boolean"},"details":{"type":"object"}},"additionalProperties":false},
+    "emptyRequest": {"allOf":[{"$ref":"#/$defs/base"},{"properties":{"method":{"enum":["repository.profile.list","repository.profile.current"]},"payload":{"type":"object","maxProperties":0}}}]},
+    "createRequest": {"allOf":[{"$ref":"#/$defs/base"},{"properties":{"method":{"const":"repository.profile.create"},"payload":{"$ref":"#/$defs/create"}}}]},
+    "profileMutation": {"allOf":[{"$ref":"#/$defs/base"},{"properties":{"method":{"const":"repository.profile.select"},"payload":{"allOf":[{"$ref":"#/$defs/mutation"}],"unevaluatedProperties":false}}}]},
+    "renameRequest": {"allOf":[{"$ref":"#/$defs/base"},{"properties":{"method":{"const":"repository.profile.rename"},"payload":{"allOf":[{"$ref":"#/$defs/mutation"},{"required":["display_name"],"properties":{"display_name":{"type":"string","minLength":1}}}],"unevaluatedProperties":false}}}]},
+    "stateRequest": {"allOf":[{"$ref":"#/$defs/base"},{"properties":{"method":{"const":"repository.state.get"},"payload":{"type":"object","required":["profile_id"],"properties":{"profile_id":{"type":"string","minLength":1}},"additionalProperties":false}}}]},
+    "studentsRequest": {"allOf":[{"$ref":"#/$defs/base"},{"properties":{"method":{"const":"repository.students.update"},"payload":{"allOf":[{"$ref":"#/$defs/mutation"},{"required":["students"],"properties":{"students":{"type":"array"}}}],"unevaluatedProperties":false}}}]},
+    "inventoryRequest": {"allOf":[{"$ref":"#/$defs/base"},{"properties":{"method":{"const":"repository.inventory.update"},"payload":{"allOf":[{"$ref":"#/$defs/mutation"},{"required":["inventory"],"properties":{"inventory":{"type":"object"}}}],"unevaluatedProperties":false}}}]},
+    "goalsRequest": {"allOf":[{"$ref":"#/$defs/base"},{"properties":{"method":{"const":"repository.goals.save"},"payload":{"allOf":[{"$ref":"#/$defs/mutation"},{"required":["goals"],"properties":{"goals":{"type":"object"}}}],"unevaluatedProperties":false}}}]},
+    "migrationRequest": {"allOf":[{"$ref":"#/$defs/base"},{"properties":{"method":{"const":"repository.migration.preview"},"payload":{"type":"object","required":["source_path","profile_id"],"properties":{"source_path":{"type":"string","minLength":1},"profile_id":{"type":"string","minLength":1}},"additionalProperties":false}}}]},
+    "create": {"type":"object","required":["display_name","idempotency_key"],"properties":{"display_name":{"type":"string","minLength":1},"idempotency_key":{"type":"string","minLength":1}},"additionalProperties":false},
+    "mutation": {"type":"object","required":["profile_id","expected_revision","idempotency_key"],"properties":{"profile_id":{"type":"string","minLength":1},"expected_revision":{"type":"integer","minimum":0},"idempotency_key":{"type":"string","minLength":1}}}
+  }
+}

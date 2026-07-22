@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../../services/repository_service.dart';
+import '../widgets/repository_profile_panel.dart';
 
 class PlanningPage extends StatefulWidget {
   const PlanningPage({super.key, required this.service});
@@ -22,6 +24,39 @@ class _PlanningPageState extends State<PlanningPage> {
   Map<String, dynamic>? _totalCost;
   Map<String, Map<String, dynamic>> _studentCosts = {};
   int _generation = 0;
+  String? _profileId;
+  int? _repositoryRevision;
+
+  Future<void> _restoreProfile(RepositoryProfile profile) async {
+    if (widget.service is! RepositoryService) return;
+    if (_profileId == profile.id && _repositoryRevision == profile.revision) return;
+    try {
+      final state = await (widget.service as RepositoryService).loadRepositoryState(profile.id);
+      final goals = <String, Map<String, dynamic>>{
+        for (final raw in ((state['goals'] as Map?)?['goals'] as List<dynamic>? ?? const []))
+          (raw as Map)['student_id'] as String: Map<String, dynamic>.from(raw),
+      };
+      final restored = <_StudentPlanDraft>[];
+      for (final raw in (state['students'] as List<dynamic>? ?? const [])) {
+        final wire = Map<String, dynamic>.from(raw as Map);
+        final id = wire['student_id'] as String;
+        final metadata = await widget.service.getStudent(id) ?? {'student_id': id, 'display_name': id};
+        final draft = _StudentPlanDraft(id: id, metadata: metadata, onChanged: _invalidateResults);
+        draft.restore(Map<String, dynamic>.from(wire['values'] as Map), goals[id]);
+        restored.add(draft);
+      }
+      if (!mounted) return;
+      setState(() {
+        for (final old in _students) { old.dispose(); }
+        _students..clear()..addAll(restored);
+        _profileId = profile.id;
+        _repositoryRevision = state['revision'] as int;
+        _invalidateResults(notify: false);
+      });
+    } catch (error) {
+      if (mounted) setState(() => _calculationMessage = '프로필 복원 실패: $error');
+    }
+  }
 
   @override
   void dispose() {
@@ -140,6 +175,11 @@ class _PlanningPageState extends State<PlanningPage> {
         currentStudents: currentStudents,
         plan: canonicalPlan,
       );
+      if (widget.service is RepositoryService && _profileId != null && _repositoryRevision != null) {
+        _repositoryRevision = await (widget.service as RepositoryService).saveRepositoryGoals(
+          _profileId!, canonicalPlan, _repositoryRevision!, 'planning-save-$requestGeneration',
+        );
+      }
       if (!mounted || requestGeneration != _generation) return;
       setState(() {
         _studentCosts = Map.fromEntries(perStudent);
@@ -168,6 +208,8 @@ class _PlanningPageState extends State<PlanningPage> {
             key: const ValueKey('planning-page'),
             padding: const EdgeInsets.fromLTRB(18, 20, 18, 48),
             children: [
+              RepositoryProfilePanel(service: widget.service, onSelected: _restoreProfile),
+              const SizedBox(height: 12),
               _PlanningHeader(
                 connected: connected,
                 reconnecting: state.connection == BackendConnection.connecting,
@@ -241,6 +283,19 @@ class _StudentPlanDraft {
   bool get hasErrors => errors.isNotEmpty;
   String get displayName =>
       (metadata['display_name'] ?? metadata['name'] ?? id).toString();
+
+  void restore(Map<String, dynamic> values, Map<String, dynamic>? savedGoal) {
+    current.addAll(values);
+    if (savedGoal == null) return;
+    goal
+      ..clear()
+      ..addAll(savedGoal);
+    for (final field in _goalFields) {
+      final value = savedGoal[field.name];
+      controllers[field.name]?.text = value == null ? '' : value.toString();
+    }
+    controllers['notes']?.text = (savedGoal['notes'] ?? '').toString();
+  }
 
   void updateInteger(_GoalField field, String raw) {
     final valueText = raw.trim();

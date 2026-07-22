@@ -21,11 +21,13 @@ class BackendRemoteException implements Exception {
     required this.code,
     required this.message,
     this.details,
+    this.retryable = false,
   });
 
   final String code;
   final String message;
   final Map<String, dynamic>? details;
+  final bool retryable;
 
   @override
   String toString() => 'BackendRemoteException($code): $message';
@@ -70,6 +72,12 @@ class PlanningProtocolClient {
     'planning.student.get': {'invalid_payload', 'metadata_lookup_failed'},
     'planning.plan.validate': {'invalid_payload'},
     'planning.plan.calculate': {'invalid_payload', 'calculation_failed'},
+    'repository': {
+      'invalid_payload', 'profile_not_found', 'profile_name_conflict',
+      'revision_conflict', 'idempotency_conflict', 'repository_busy',
+      'corrupt_data', 'migration_required', 'migration_not_supported',
+      'persistence_failed', 'unknown_method',
+    },
   };
 
   Stream<BackendProtocolException> get protocolErrors => _protocolErrors.stream;
@@ -282,6 +290,7 @@ class PlanningProtocolClient {
           details: wireError['details'] is Map
               ? Map<String, dynamic>.from(wireError['details'] as Map)
               : null,
+          retryable: wireError['retryable'] == true,
         ),
       );
       return;
@@ -308,6 +317,7 @@ class PlanningProtocolClient {
             payload['plan'] is Map,
       'planning.plan.calculate' =>
         payload.keys.toSet().length == 1 && payload['totals'] is Map,
+      _ when method.startsWith('repository.') => true,
       _ => false,
     };
   }
@@ -318,16 +328,19 @@ class PlanningProtocolClient {
     }
     final error = Map<String, dynamic>.from(value);
     const requiredKeys = {'code', 'message'};
-    const allowedKeys = {'code', 'message', 'details'};
+    const allowedKeys = {'code', 'message', 'details', 'retryable'};
     final code = error['code'];
-    final allowedCodes = _methodErrorCodes[method] ?? const {'unknown_method'};
+    final allowedCodes = method.startsWith('repository.')
+        ? _methodErrorCodes['repository']!
+        : (_methodErrorCodes[method] ?? const {'unknown_method'});
     if (!error.keys.toSet().containsAll(requiredKeys) ||
         !allowedKeys.containsAll(error.keys) ||
         code is! String ||
         !allowedCodes.contains(code) ||
         error['message'] is! String ||
         (error['message'] as String).isEmpty ||
-        (error.containsKey('details') && error['details'] is! Map)) {
+        (error.containsKey('details') && error['details'] is! Map) ||
+        (error.containsKey('retryable') && error['retryable'] is! bool)) {
       return null;
     }
     return error;

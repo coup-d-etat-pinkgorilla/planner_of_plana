@@ -57,7 +57,7 @@ Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning met
 | P1 | Python JSONL process와 Dart client | `완료` | lifecycle·오류·실제 세 method E2E 및 release build 통과 | P2가 `AppService` planning method만 사용하도록 유지 |
 | P2 | 실제 계획 화면 수직 슬라이스 | `완료` | 인계 patch 적용 후 마스터 보완, Widget test 8개와 전체 39개·실제 backend·Mock·release 통과 | P4/P6 전까지 in-memory·총 필요량 경계 유지 |
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
-| P4 | 프로필과 repository 영구 저장 | `대기` | P3 승인 baseline과 `input.md`·슬레이브 실행 프롬프트 작성 | 지시를 슬레이브에 전달하고 P4 인계 대기 |
+| P4 | 프로필과 repository 영구 저장 | `차단됨` | 수정 patch 21개 적용, Python 37·analyze·release·Almanac 통과; Flutter 41개 중 profile UI 1개 실패와 corruption/contract 결함 확인 | P4 follow-up 보완 patch 인계 요청 |
 | P5 | scanner/matcher session protocol과 backend | `대기` | 없음 | P3/P4 경계 인수 후 event schema부터 작성 |
 | P6 | 전 기본 탭 실제 데이터 통합 | `대기` | 현재 홈 골격과 placeholder 페이지 | P2·P4·P5 인수 후 P6-1 학생부터 진행 |
 
@@ -69,6 +69,14 @@ Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning met
 - P5는 scanner 결과 생성과 repository 확정을 분리한다.
 - P6은 학생 → 인벤토리 → 스캔 → 홈 → 통계 → 전술대항전 → 설정 순서로 진행한다.
 - P6 완료는 정식 출시가 아니라 통합 베타 기준이다.
+- P6 화면 설계 전 입력으로 `almanac/design/frontend-section-direction-and-user-flows.md`를
+  사용한다. 이 문서는 사용자가 정한 80도 사선·글라스·부착면·전환 방향을 확정 규칙으로,
+  계획 외 탭의 기능별 행동 순서를 검수 전 가설로 구분한다.
+- 창 비율 대응은 `almanac/design/responsive-diagonal-layout-policy.md`의 제한된 레이아웃
+  상태 제안을 검수한 뒤 확정한다. 전체 캔버스 일괄 축소와 제약 없는 자동 재배치는
+  기본 전략으로 사용하지 않는다.
+- 기능 화면은 한 섹션에 많은 기능을 압축하기보다 사용자 목적 단위의 여러 부착 섹션으로
+  나눈다. 중앙에 독립적으로 떠 있는 섹션은 만들지 않는다.
 - backend launcher 설정은 연결 시점에 지연 해석해 잘못된 경로에서도 shell을 띄운다.
 - timeout 후 늦은 response ID는 진단만 남기지만, malformed response·method mismatch,
   허용되지 않은 오류 code·성공 payload와 stdin 실패는 연결 전체를 종료한다.
@@ -120,6 +128,26 @@ Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning met
 2. P4 전까지 P2 계획 상태는 in-memory이며 임시 현재 상태임을 유지한다.
 3. P6 전까지 P2 결과는 보유량 차감 전 총 필요량이며 부족량을 표시하지 않는다.
 4. 슬레이브는 P3 승인 baseline gate가 모두 통과한 경우에만 P4 구현을 시작한다.
+5. P6 하위 단계의 화면 구성을 확정하기 전에 탭별 흐름 가설의 `사용자 검수 포인트`를
+   사용자와 확인하고, 승인된 흐름만 실제 섹션 구성으로 변환한다.
+
+## P6 UX 선행 입력 — 섹션 방향과 탭별 사용자 흐름
+
+- 상태: `진행 중`
+- 목적: 실제 P6 화면 배치 전에 공통 섹션 규칙과 계획 외 탭의 기능별 행동 흐름을 고정
+- 입력: 사용자 제공 프론트엔드 디자인 방향, P6 탭별 기능, v6 사용자 흐름 감사
+- 출력 보고서: `almanac/design/frontend-section-direction-and-user-flows.md`,
+  `almanac/design/responsive-diagonal-layout-policy.md`
+- 결과물: 80도 사선·부착면·글라스·모션 계약, 탭별 기능 그룹·주 흐름·탭 간 인계·검수 질문,
+  창 비율별 제한된 레이아웃 상태와 사선 안전 폭 계약 제안
+- 검증: `AppSection.primary`, P6 탭별 기능과 v6 보존 흐름 대조; `codealmanac validate`와
+  `codealmanac health` 통과(8 pages, orphan·dead ref·broken link·citation 문제 없음)
+- 결정 및 제약: 계획 탭은 사용자가 이미 기획한 기준 사례로만 기록하며 재설계하지 않음;
+  나머지 탭의 흐름은 화면 배치가 아니라 검수 전 가설임
+- 차단 사항: 없음
+- 다음 행동: 사용자가 탭별 우선순위·흐름 분기점과 반응형 정책의 승인 항목을 검수한 뒤
+  실제 섹션 구성 및 지원 최소 창 크기를 별도 확정
+- 최종 갱신: 2026-07-22
 
 ## 마스터 사용량 중단 시 슬레이브 작업 규칙
 
@@ -216,17 +244,19 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 
 ## P4 — Repository와 프로필 영구 저장
 
-- 상태: `대기`
+- 상태: `차단됨`
 - 목적: Python backend가 프로필, 확정 현재 상태, 인벤토리와 사용자 목표의 안전한 저장·복원을 소유
 - 완료 조건: 재실행 복원, atomic failure 시 기존 데이터 보존, revision/idempotency 및 손상·병합 fixture, Python/Dart contract와 전체 검증 통과
 - 입력: `docs/migration/p4-repository-persistence/input.md`
 - 슬레이브 실행 프롬프트: `docs/migration/p4-repository-persistence/slave-execution-prompt.md`
-- 출력 보고서: 인계 전이므로 없음
-- 결과물: 인계 전이므로 없음
-- 검증: P3 승인 baseline을 P4 변경 전 필수 gate로 고정하고 P4 범위·금지 경계·인계 계약을 워크플로 정의와 대조함
+- 출력 보고서: `docs/migration/handoffs/incoming/ba-planner-v7-p4-repository-persistence/staging/20260722-124720-98185035/output.md`
+- 결과물: 같은 staging의 `artifacts/p4-repository-persistence.patch`, `artifacts/verification.txt`; ZIP SHA-256 `f14f7d07f7908b71d87af136e3afbe027cf9c6c338c958a40eea52d73776143f`
+- 검증: ZIP 21,647 bytes와 SHA-256이 사용자 값·manifest·sidecar에 일치하고 내부 artifact 2개의 크기·해시도 `output.md`와 일치함. 21개 patch path가 모두 `BA Planner/v7/...`이고 기존 Almanac 변경과 중첩 없이 `git apply --check` 및 적용 통과. P3+P4 집중 Python 20, 전체 Python 37, `flutter analyze`, Windows release build, `codealmanac validate`, `git diff --check` 통과. Flutter 전체 41개 중 나머지 40개는 통과했으나 신규 profile panel test 1개가 disposed `TextEditingController` 재사용으로 실패. 수동 corruption probe에서 malformed catalog entry는 raw `KeyError`, malformed profile `idempotency`는 raw `AttributeError`를 발생시켜 구조화된 `corrupt_data` fail-closed 조건을 충족하지 못함. repository schema는 임의 success payload도 유효 판정하며 Dart fixture test는 case별 `valid`를 검증하지 않음
 - 결정 및 제약: P4는 저장·profile·repository protocol과 최소 profile UI만 구현하며 scanner session/backend는 P5, 전 탭 통합은 P6에 남김
-- 차단 사항: 없음
-- 다음 행동: 슬레이브에 실행 프롬프트를 전달하고 `output.md`, P4 증분 patch와 검증 기록 인계 대기
+- 차단 사항: profile dialog controller lifecycle 오류로 Flutter test 실패; 손상 catalog/idempotency가 구조화된 오류 대신 raw 예외 누출; method별 success response schema와 Dart contract 검증이 비엄격함. 전달문이 P4 task를 P2 및 `p2-planning-screen.patch`로 부르는 복사 오류도 남아 있음
+- 보완 입력: `docs/migration/p4-repository-persistence-followup-1/input.md`
+- 보완 슬레이브 실행 프롬프트: `docs/migration/p4-repository-persistence-followup-1/slave-execution-prompt.md`
+- 다음 행동: P4 follow-up-1 실행 프롬프트를 슬레이브에 전달하고 증분 patch 인계 후 마스터가 전체 검증 재실행
 - 최종 갱신: 2026-07-22
 
 최종 갱신: 2026-07-22

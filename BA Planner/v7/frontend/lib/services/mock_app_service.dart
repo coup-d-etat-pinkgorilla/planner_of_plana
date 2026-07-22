@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 import 'app_service.dart';
+import 'repository_service.dart';
 
-class MockAppService implements AppService, MockScenarioController {
+class MockAppService implements AppService, MockScenarioController, RepositoryService {
   MockAppService({AppServiceState? initialState})
     : _state = ValueNotifier(
         initialState ??
@@ -20,6 +21,8 @@ class MockAppService implements AppService, MockScenarioController {
       );
 
   final ValueNotifier<AppServiceState> _state;
+  final List<RepositoryProfile> _profiles = [const RepositoryProfile(id: 'mock-main', displayName: 'Main', revision: 0, selected: true)];
+  final Map<String, Map<String, dynamic>> _repositoryStates = {};
 
   @override
   ValueListenable<AppServiceState> get state => _state;
@@ -120,6 +123,42 @@ class MockAppService implements AppService, MockScenarioController {
       'stat_levels': <String, int>{},
       'warnings': <String>[],
     };
+  }
+
+  @override
+  Future<List<RepositoryProfile>> listProfiles() async => List.unmodifiable(_profiles);
+
+  @override
+  Future<RepositoryProfile> createProfile(String displayName, String idempotencyKey) async {
+    final profile = RepositoryProfile(id: 'mock-${_profiles.length + 1}', displayName: displayName, revision: 0, selected: false);
+    _profiles.add(profile);
+    return profile;
+  }
+
+  @override
+  Future<int> selectProfile(String profileId, int expectedRevision, String idempotencyKey) async {
+    for (var index = 0; index < _profiles.length; index++) {
+      final profile = _profiles[index];
+      _profiles[index] = RepositoryProfile(id: profile.id, displayName: profile.displayName, revision: profile.id == profileId ? expectedRevision + 1 : profile.revision, selected: profile.id == profileId);
+    }
+    return expectedRevision + 1;
+  }
+
+  @override
+  Future<int> renameProfile(String profileId, String displayName, int expectedRevision, String idempotencyKey) async {
+    final index = _profiles.indexWhere((profile) => profile.id == profileId);
+    final profile = _profiles[index];
+    _profiles[index] = RepositoryProfile(id: profile.id, displayName: displayName, revision: expectedRevision + 1, selected: profile.selected);
+    return expectedRevision + 1;
+  }
+
+  @override
+  Future<Map<String, dynamic>> loadRepositoryState(String profileId) async => Map<String, dynamic>.from(_repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}});
+
+  @override
+  Future<int> saveRepositoryGoals(String profileId, Map<String, dynamic> goals, int expectedRevision, String idempotencyKey) async {
+    _repositoryStates[profileId] = {...await loadRepositoryState(profileId), 'revision':expectedRevision + 1, 'goals':goals};
+    return expectedRevision + 1;
   }
 
   @override

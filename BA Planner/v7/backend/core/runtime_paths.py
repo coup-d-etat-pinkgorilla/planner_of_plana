@@ -38,3 +38,16 @@ def resolve_planning_data_dir() -> Path:
 
 PLANNING_DATA_DIR = resolve_planning_data_dir()
 
+
+def resolve_repository_root() -> Path:
+    override = os.environ.get("BA_PLANNER_STORAGE_ROOT")
+    if override:
+        return Path(override).expanduser()
+    user_override = os.environ.get("BA_PLANNER_USER_DIR")
+    if user_override:
+        return Path(user_override).expanduser() / "repository"
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data:
+        return Path(local_app_data) / "BA Planner" / "repository"
+    return Path.home() / ".ba-planner" / "repository"
+

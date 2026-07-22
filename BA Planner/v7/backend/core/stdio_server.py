@@ -13,7 +13,7 @@ def serve(
     stdout: TextIO = sys.stdout,
     stderr: TextIO = sys.stderr,
     *,
-    protocol: PlanningProtocolV1 | None = None,
+    protocol: object | None = None,
 ) -> None:
     handler = protocol or PlanningProtocolV1(
         diagnostic=lambda message: print(message, file=stderr, end="", flush=True)
@@ -27,7 +27,7 @@ def serve(
             print("Ignoring malformed JSON protocol line", file=stderr, flush=True)
             continue
         try:
-            response = handler.handle(message)
+            response = handler.handle(message)  # type: ignore[attr-defined]
         except Exception:
             traceback.print_exc(file=stderr)
             continue
