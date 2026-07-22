@@ -26,6 +26,11 @@ P0~P6 작업을 새 대화에서 계속할 때는
 [P0-P6 Implementation Workflow](workflows/p0-p6-workflow)를 기준으로 합니다. 단계
 정의는 이 문서에, 현재 상태와 실제 산출물은 Workflow Status에 기록합니다.
 
+P6 완료 후 전술대항전 로비 스캔, 상대 방어 이력, 통계, 방어 변경 감지, 예상 방어덱과
+공유 분석을 P13까지 확장하는 순서는
+[P7-P13 Tactical Challenge Backend Workflow](workflows/p7-p13-tactical-backend-workflow)를
+기준으로 합니다. P7은 P6 완료 판정 뒤에만 활성화하며, 시작 시 별도 상태 문서를 만듭니다.
+
 프론트엔드의 80도 사선·글라스·부착면·전환 방향 규칙과 계획 외 기본 탭의 기능별
 사용 흐름은 [Frontend Section Direction and User Flows](design/frontend-section-direction-and-user-flows)를
 기준으로 합니다. 이 문서는 화면 배치를 확정하지 않고 사용자가 검수할 기능 단위와

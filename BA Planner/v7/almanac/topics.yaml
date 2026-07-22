@@ -19,3 +19,7 @@ topics:
     title: Design
     description: Flutter 화면의 시각 규칙과 기능별 사용자 행동 흐름
     parents: [architecture]
+  - slug: tactical
+    title: Tactical Challenge
+    description: 전술대항전 전적, 로비 관측, 상대 이력, 통계와 예상 방어덱 계약
+    parents: [data, workflow]

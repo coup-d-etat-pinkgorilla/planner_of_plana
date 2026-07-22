@@ -45,11 +45,11 @@ sources:
 
 ## 현재 단계 현황
 
-2026-07-22 P0 계약, P1 process transport, P2 실제 계획 화면과 P3 repository DTO·병합
-parity를 현재 작업 트리에서 마스터가 직접 워크플로 완료 조건과 대조해 보완하고 인수했다. Python test 27개,
-Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning method
-종단간 호출, MockAppService 계획 흐름, Almanac 검증과 Windows release build가
-통과했다. 변경은 아직 커밋되지 않았다.
+2026-07-22 P0 계약, P1 process transport, P2 실제 계획 화면, P3 repository DTO·병합
+parity와 P4 repository persistence를 현재 작업 트리에서 마스터가 직접 완료 조건과 대조해
+보완하고 인수했다. Python test 40개, Flutter test 43개, `flutter analyze`, 실제 Python
+process의 planning method와 repository restart E2E, MockAppService 흐름, Almanac 검증과
+Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
 
 | 단계 | 목적 | 상태 | 근거 또는 산출물 | 다음 행동 |
 |---|---|---|---|---|
@@ -57,8 +57,8 @@ Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning met
 | P1 | Python JSONL process와 Dart client | `완료` | lifecycle·오류·실제 세 method E2E 및 release build 통과 | P2가 `AppService` planning method만 사용하도록 유지 |
 | P2 | 실제 계획 화면 수직 슬라이스 | `완료` | 인계 patch 적용 후 마스터 보완, Widget test 8개와 전체 39개·실제 backend·Mock·release 통과 | P4/P6 전까지 in-memory·총 필요량 경계 유지 |
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
-| P4 | 프로필과 repository 영구 저장 | `차단됨` | follow-up-2 schema/fixture 부분 증분 적용, Python 39·Flutter 41·analyze·release 통과; Dart validator/runtime·typed state·real process E2E와 nested schema 미구현 | 같은 P4 follow-up-2의 미완료 범위 보완 요청 |
-| P5 | scanner/matcher session protocol과 backend | `대기` | 없음 | P3/P4 경계 인수 후 event schema부터 작성 |
+| P4 | 프로필과 repository 영구 저장 | `완료` | nested schema·40-case Python/Dart contract, typed state, atomic persistence와 실제 Dart↔Python restart E2E; Python 40·Flutter 43·analyze·release 통과 | P5에서 repository 확정과 분리된 scanner session 경계 작성 |
+| P5 | scanner/matcher session protocol과 backend | `대기` | `docs/migration/p5-scanner-matcher/input.md`, `slave-execution-prompt.md` 작성 | P4 baseline gate를 포함한 실행 프롬프트를 슬레이브에게 전달 |
 | P6 | 전 기본 탭 실제 데이터 통합 | `대기` | 현재 홈 골격과 placeholder 페이지 | P2·P4·P5 인수 후 P6-1 학생부터 진행 |
 
 ## 현재 결정
@@ -67,6 +67,12 @@ Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning met
 - P2에서 계획 탭을 먼저 실제화하고 P6에서는 repository·scanner 결과까지 통합한다.
 - P3는 실제 repository 쓰기보다 DTO와 v6 병합 parity를 먼저 완료한다.
 - P5는 scanner 결과 생성과 repository 확정을 분리한다.
+- P5 event는 session ID, generation과 단조 증가 sequence를 가지며 terminal 뒤 event와
+  이전 generation의 지연 event는 typed state와 repository를 바꾸지 않는다.
+- 낮은 confidence candidate는 자동 저장하지 않고 검토·수정과 expected repository
+  revision/idempotency key를 가진 별도 commit만 P4 경계를 호출한다.
+- recognition template·region·adaptive sample은 Flutter UI asset과 분리하며 manifest와
+  SHA-256으로 배포 경계를 검증한다.
 - P6은 학생 → 인벤토리 → 스캔 → 홈 → 통계 → 전술대항전 → 설정 순서로 진행한다.
 - P6 완료는 정식 출시가 아니라 통합 베타 기준이다.
 - P6 화면 설계 전 입력으로 `almanac/design/frontend-section-direction-and-user-flows.md`를
@@ -124,10 +130,10 @@ Flutter test 39개, `flutter analyze`, 실제 Python process의 세 planning met
 
 ## 다음 행동
 
-1. `docs/migration/p4-repository-persistence/slave-execution-prompt.md`를 슬레이브에게 전달한다.
-2. P4 전까지 P2 계획 상태는 in-memory이며 임시 현재 상태임을 유지한다.
-3. P6 전까지 P2 결과는 보유량 차감 전 총 필요량이며 부족량을 표시하지 않는다.
-4. 슬레이브는 P3 승인 baseline gate가 모두 통과한 경우에만 P4 구현을 시작한다.
+1. `docs/migration/p5-scanner-matcher/slave-execution-prompt.md`를 슬레이브에게 전달한다.
+2. 슬레이브는 P4 승인 baseline gate가 모두 통과한 경우에만 P5 구현을 시작한다.
+3. P5 인계 전까지 scanner capability와 스캔 버튼은 비활성 상태를 유지한다.
+4. P6 전까지 P2 결과는 보유량 차감 전 총 필요량이며 부족량을 표시하지 않는다.
 5. P6 하위 단계의 화면 구성을 확정하기 전에 탭별 흐름 가설의 `사용자 검수 포인트`를
    사용자와 확인하고, 승인된 흐름만 실제 섹션 구성으로 변환한다.
 
@@ -244,7 +250,7 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 
 ## P4 — Repository와 프로필 영구 저장
 
-- 상태: `차단됨`
+- 상태: `완료`
 - 목적: Python backend가 프로필, 확정 현재 상태, 인벤토리와 사용자 목표의 안전한 저장·복원을 소유
 - 완료 조건: 재실행 복원, atomic failure 시 기존 데이터 보존, revision/idempotency 및 손상·병합 fixture, Python/Dart contract와 전체 검증 통과
 - 입력: `docs/migration/p4-repository-persistence/input.md`
@@ -270,10 +276,31 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 - 보완 출력 보고서 3: `docs/migration/handoffs/incoming/ba-planner-v7-p4-repository-persistence-followup-3/staging/20260722-161431-fa2a3481/output.md` (`BLOCKED`)
 - 보완 결과물 3: 같은 staging의 `artifacts/p4-repository-persistence-followup-3.patch` 50,024 bytes, SHA-256 `79b403e7a44a175c58ad37cc95f8b503ab74c7e61a2999337710988285af4982`; `artifacts/verification.txt` 3,733 bytes, SHA-256 `14980ff4d86dd5141306ad80b527a0304777267407c4b342a890e94dfd410bed`; ZIP 12,769 bytes, SHA-256 `2d032d42a459e9e788ac7658bb45bd5f47ff61354c54035595e5d24dd2dda809`
 - 보완 검증 3: ZIP 크기·SHA-256이 사용자 값, manifest와 sidecar에 일치하고 내부 artifact 2개의 크기·해시도 `output.md`와 일치함. unique staging에만 해제했고 10개 patch path가 모두 `BA Planner/v7/...`이며 기존 상태 문서 변경과 중첩 없이 `git apply --check --verbose` 및 적용 통과. repository fixture는 40 cases(valid 14/invalid 26)이며 Dart가 모든 case의 `valid`를 비교하고 Python schema·DTO contract 집중 23 및 전체 Python 40 tests가 통과함. malformed repository success fatal/restart test, typed repository state, Mock profile flow, Python 자체 child-process 재시작 복원, Flutter 전체 42 tests, Windows release, Almanac와 diff 검사가 통과함. 그러나 `flutter analyze`는 `repository_service.dart` 82·181행의 `curly_braces_in_flow_control_structures` 2건으로 실패함
-- 차단 사항: follow-up-3 보고서 자체가 `BLOCKED`이고 필수 실제 Dart `ProcessAppService` ↔ Python child-process temporary-root 종료·재시작·복원 E2E가 구현되지 않음. `contracts/README.md`와 `docs/migration/p4-repository-persistence/repository-storage.md`의 nested strict contract·typed state·E2E 문서 갱신도 누락됨. 따라서 P4 완료 조건을 충족하지 않음
+- follow-up-3 차단 이력: 필수 실제 Dart `ProcessAppService` ↔ Python child-process temporary-root 종료·재시작·복원 E2E, analyzer 정리와 nested strict contract·typed state·E2E 문서 갱신이 누락됐음
 - 보완 입력 4: `docs/migration/p4-repository-persistence-followup-4/input.md`
 - 보완 슬레이브 실행 프롬프트 4: `docs/migration/p4-repository-persistence-followup-4/slave-execution-prompt.md`
-- 다음 행동: follow-up-4를 슬레이브에서 실행해 analyze lint, 실제 cross-language restart E2E와 계약·저장 문서 갱신의 최소 증분을 인계받은 뒤 P4 완료 여부를 재판정
+- 마스터 직접 보완: 슬레이브 환경에 Flutter/Dart/CodeAlmanac이 없어 follow-up-4 실행이 불가능했으므로 마스터 작업트리에서 `BackendProcessConfig`의 immutable test environment override, 실제 repository process restart E2E, analyzer block 수정과 계약·저장·runtime 문서를 직접 완성함
+- 최종 검증: P3/P4 집중 Python 23, 전체 Python 40, repository fixture 40 cases(valid 14/invalid 26), Flutter 전체 43, `flutter analyze`, Windows release build, `codealmanac validate`, `git diff --check` 통과. 실제 E2E는 Dart가 시작한 서로 다른 Python child process 2개를 순차 종료·실행하고 같은 temporary `BA_PLANNER_STORAGE_ROOT`에서 profile ID, display name, revision 3과 canonical goal을 typed state로 복원했으며 두 process exit code 0과 temporary root 삭제를 확인함. 금지된 v6/Qt runtime import 0건
+- 차단 사항: 없음
+- 다음 행동: P4 typed repository boundary를 유지한 채 P5 scanner/matcher session protocol을 시작
+- 최종 갱신: 2026-07-22
+
+## P5 — Scanner/Matcher session protocol과 backend
+
+- 상태: `대기`
+- 목적: v6 capture·scanner·matcher를 UI callback과 repository 저장에서 분리해 학생·인벤토리
+  session, 구조화 event, 검토 가능한 candidate와 명시적 commit을 제공
+- 완료 조건: 공용 Python/Dart event fixture, headless student/inventory session test, 취소·stale·낮은
+  confidence 보존, 실제 adapter, recognition asset 분리와 전체 검증 통과
+- 입력: `docs/migration/p5-scanner-matcher/input.md`
+- 슬레이브 실행 프롬프트: `docs/migration/p5-scanner-matcher/slave-execution-prompt.md`
+- 결과물: 아직 없음
+- 결정 및 제약: P4 baseline을 선행 gate로 사용하고 candidate 생성과 repository 확정을 분리한다.
+  event는 session ID·generation·sequence·정확히 하나의 terminal을 가지며, 낮은 confidence는
+  review 없이 commit할 수 없다. 실제 student/inventory adapter 중 하나라도 placeholder이면
+  완료가 아니다. UI asset과 recognition asset은 별도 manifest/path를 사용한다.
+- 차단 사항: 없음
+- 다음 행동: 실행 프롬프트를 슬레이브에게 전달하고 `output.md`, patch와 verification 인계 대기
 - 최종 갱신: 2026-07-22
 
 최종 갱신: 2026-07-22

@@ -3,19 +3,22 @@ import 'dart:convert';
 import 'dart:io';
 
 class BackendProcessConfig {
-  const BackendProcessConfig({
+  BackendProcessConfig({
     required this.executable,
     required this.arguments,
     required this.workingDirectory,
-  });
+    Map<String, String> environment = const {},
+  }) : environment = Map.unmodifiable(environment);
 
   final String executable;
   final List<String> arguments;
   final String workingDirectory;
+  final Map<String, String> environment;
 
   static BackendProcessConfig resolve({
     String pythonExecutable = '',
     String backendDirectory = '',
+    Map<String, String> environment = const {},
   }) {
     final directory = backendDirectory.isNotEmpty
         ? Directory(backendDirectory)
@@ -39,6 +42,7 @@ class BackendProcessConfig {
       executable: executable,
       arguments: arguments,
       workingDirectory: directory.absolute.path,
+      environment: environment,
     );
   }
 
@@ -86,6 +90,8 @@ Future<BackendProcessHandle> startBackendProcess(
     config.executable,
     config.arguments,
     workingDirectory: config.workingDirectory,
+    environment: config.environment,
+    includeParentEnvironment: true,
     runInShell: false,
   );
   return IoBackendProcessHandle(process);
