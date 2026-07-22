@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/planning-plan-shortages-v1.schema.json",
+  "title": "planning.plan.shortages request and success response",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" }
+  ],
+  "$defs": {
+    "request": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        { "properties": {
+          "protocol": { "const": 1 }, "id": { "type": "string", "minLength": 1 },
+          "type": { "const": "request" }, "method": { "const": "planning.plan.shortages" },
+          "payload": {
+            "type": "object", "required": ["current_students", "plan", "inventory"],
+            "properties": {
+              "current_students": { "type": "array", "items": { "$ref": "planning-types-v1.schema.json#/$defs/currentStudent" } },
+              "plan": { "$ref": "planning-types-v1.schema.json#/$defs/growthPlan" },
+              "inventory": { "$ref": "repository-protocol-v1.schema.json#/$defs/inventorySnapshot" }
+            },
+            "additionalProperties": false
+          }
+        } }
+      ]
+    },
+    "row": {
+      "type": "object",
+      "required": ["resource_key", "item_id", "display_name", "category", "required", "owned", "shortage", "affected_student_ids", "resolved"],
+      "properties": {
+        "resource_key": { "type": "string", "minLength": 1 },
+        "item_id": { "type": ["string", "null"], "minLength": 1 },
+        "display_name": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "required": { "type": "integer", "minimum": 0 },
+        "owned": { "type": ["integer", "null"], "minimum": 0 },
+        "shortage": { "type": ["integer", "null"], "minimum": 0 },
+        "affected_student_ids": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "resolved": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "response": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        { "properties": {
+          "protocol": { "const": 1 }, "id": { "type": "string", "minLength": 1 },
+          "type": { "const": "response" }, "method": { "const": "planning.plan.shortages" },
+          "payload": {
+            "type": "object", "required": ["rows", "warnings"],
+            "properties": {
+              "rows": { "type": "array", "items": { "$ref": "#/$defs/row" } },
+              "warnings": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": false
+          }
+        } }
+      ]
+    }
+  }
+}

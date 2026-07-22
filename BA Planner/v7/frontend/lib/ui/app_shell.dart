@@ -8,6 +8,7 @@ import '../services/app_service.dart';
 import 'app_section.dart';
 import 'pages/adaptive_sync_page.dart';
 import 'pages/home_page.dart';
+import 'pages/inventory_page.dart';
 import 'pages/planning_page.dart';
 import 'pages/student_page.dart';
 import 'pages/section_placeholder_page.dart';
@@ -122,10 +123,9 @@ class _AppShellState extends State<AppShell> {
                                   onAddToPlan: _addStudentToPlan,
                                 ),
                                 PlanningPage(service: widget.service, initialSeed: _planningSeed),
-                                SectionPlaceholderPage(
-                                  section: AppSection.inventory,
-                                  service: widget.service,
-                                ),
+                                InventoryPage(service:widget.service,
+                                  onOpenPlan:() => _open(AppSection.plan),
+                                  onOpenScan:() => _open(AppSection.scan)),
                                 SectionPlaceholderPage(
                                   section: AppSection.pvp,
                                   service: widget.service,

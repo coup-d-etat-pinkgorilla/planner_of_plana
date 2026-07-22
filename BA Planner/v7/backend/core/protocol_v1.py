@@ -21,6 +21,9 @@ from core.planning import (
     StudentGoal,
 )
 from core.planning_calc import calculate_plan_totals
+from core.inventory_catalog import catalog_payload
+from core.plan_shortages import derive_plan_shortages
+from core.repository_dto import InventorySnapshot, RepositoryDTOError
 
 
 PROTOCOL_VERSION = 1
@@ -28,8 +31,13 @@ METHOD_STUDENT_GET = "planning.student.get"
 METHOD_STUDENT_CATALOG = "planning.student.catalog"
 METHOD_PLAN_VALIDATE = "planning.plan.validate"
 METHOD_PLAN_CALCULATE = "planning.plan.calculate"
+METHOD_INVENTORY_CATALOG = "planning.inventory.catalog"
+METHOD_PLAN_SHORTAGES = "planning.plan.shortages"
 KNOWN_METHODS = frozenset(
-    {METHOD_STUDENT_GET, METHOD_STUDENT_CATALOG, METHOD_PLAN_VALIDATE, METHOD_PLAN_CALCULATE}
+    {
+        METHOD_STUDENT_GET, METHOD_STUDENT_CATALOG, METHOD_PLAN_VALIDATE,
+        METHOD_PLAN_CALCULATE, METHOD_INVENTORY_CATALOG, METHOD_PLAN_SHORTAGES,
+    }
 )
 _ENVELOPE_KEYS = {"protocol", "id", "type", "method", "payload"}
 _GOAL_FIELDS = {item.name for item in fields(StudentGoal)}
@@ -181,11 +189,17 @@ class PlanningProtocolV1:
         student_lookup: Callable[[str], dict[str, Any] | None] = student_meta.get,
         student_ids: Callable[[], list[str]] = student_meta.all_ids,
         calculator: Callable[[dict[str, object], GrowthPlan], object] = calculate_plan_totals,
+        inventory_catalog: Callable[[], list[dict[str, object]]] = catalog_payload,
+        shortage_deriver: Callable[
+            [dict[str, object], GrowthPlan, list[dict[str, Any]]], dict[str, object]
+        ] = derive_plan_shortages,
         diagnostic: Callable[[str], None] | None = None,
     ) -> None:
         self._student_lookup = student_lookup
         self._student_ids = student_ids
         self._calculator = calculator
+        self._inventory_catalog = inventory_catalog
+        self._shortage_deriver = shortage_deriver
         self._diagnostic = diagnostic or (lambda _message: None)
 
     def handle(self, message: object) -> dict[str, Any] | None:
@@ -205,7 +219,11 @@ class PlanningProtocolV1:
                 return self._student_catalog(request)
             if request["method"] == METHOD_PLAN_VALIDATE:
                 return self._plan_validate(request)
-            return self._plan_calculate(request)
+            if request["method"] == METHOD_PLAN_CALCULATE:
+                return self._plan_calculate(request)
+            if request["method"] == METHOD_INVENTORY_CATALOG:
+                return self._inventory_catalog_get(request)
+            return self._plan_shortages(request)
         except InvalidPayload as error:
             return error_response(request, "invalid_payload", str(error))
 
@@ -294,3 +312,40 @@ class PlanningProtocolV1:
                 request, "calculation_failed", "Plan calculation failed"
             )
         return _success(request, {"totals": wire_totals})
+
+    def _inventory_catalog_get(self, request: dict[str, Any]) -> dict[str, Any]:
+        if request["payload"]:
+            raise InvalidPayload("inventory catalog payload must be empty")
+        try:
+            items = self._inventory_catalog()
+        except Exception:
+            self._diagnostic(traceback.format_exc())
+            return error_response(
+                request, "inventory_catalog_failed", "Inventory catalog lookup failed"
+            )
+        return _success(request, {"items": items, "sort": "profile_order"})
+
+    def _plan_shortages(self, request: dict[str, Any]) -> dict[str, Any]:
+        payload = request["payload"]
+        if set(payload) != {"current_students", "plan", "inventory"}:
+            raise InvalidPayload(
+                "payload must contain current_students, plan, and inventory"
+            )
+        records = _current_students_from_wire(payload["current_students"])
+        plan = _plan_from_wire(payload["plan"])
+        try:
+            inventory = InventorySnapshot.from_dict(payload["inventory"])
+        except RepositoryDTOError as error:
+            raise InvalidPayload(str(error)) from error
+        try:
+            result = self._shortage_deriver(
+                records, plan, [entry.to_dict() for entry in inventory.entries]
+            )
+        except ValueError as error:
+            raise InvalidPayload(str(error)) from error
+        except Exception:
+            self._diagnostic(traceback.format_exc())
+            return error_response(
+                request, "shortage_calculation_failed", "Plan shortage calculation failed"
+            )
+        return _success(request, result)

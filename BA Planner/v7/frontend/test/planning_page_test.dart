@@ -334,6 +334,14 @@ class _PlanningTestService implements AppService {
   Future<List<StudentCatalogEntry>> listStudents() async => const [];
 
   @override
+  Future<List<InventoryCatalogEntry>> listInventoryItems() async => const [];
+
+  @override
+  Future<InventoryShortageResult> calculateShortages({required List<Map<String,dynamic>> currentStudents,
+    required Map<String,dynamic> plan,required Map<String,dynamic> inventory}) async =>
+      const InventoryShortageResult([], []);
+
+  @override
   Future<Map<String, dynamic>> validatePlan(Map<String, dynamic> plan) async {
     lastValidatedPlan = {
       'version': plan['version'],

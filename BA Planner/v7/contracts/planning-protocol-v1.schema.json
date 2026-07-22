@@ -7,6 +7,8 @@
     { "$ref": "planning-student-catalog-v1.schema.json" },
     { "$ref": "planning-plan-validate-v1.schema.json" },
     { "$ref": "planning-plan-calculate-v1.schema.json" },
+    { "$ref": "planning-inventory-catalog-v1.schema.json" },
+    { "$ref": "planning-plan-shortages-v1.schema.json" },
     { "$ref": "protocol-error-v1.schema.json" }
   ]
 }

@@ -72,6 +72,31 @@
       "message": { "protocol": 1, "id": "calc-empty", "type": "response", "method": "planning.plan.calculate", "payload": { "totals": { "credits": 0, "level_exp": 0, "equipment_exp": 0, "weapon_exp": 0, "star_materials": {}, "equipment_materials": {}, "level_exp_items": {}, "equipment_exp_items": {}, "weapon_exp_items": {}, "skill_books": {}, "ex_ooparts": {}, "skill_ooparts": {}, "favorite_item_materials": {}, "stat_materials": {}, "stat_levels": {}, "warnings": [] } } }
     },
     {
+      "name": "inventory catalog request",
+      "valid": true,
+      "message": { "protocol": 1, "id": "inventory-catalog", "type": "request", "method": "planning.inventory.catalog", "payload": {} }
+    },
+    {
+      "name": "inventory catalog response",
+      "valid": true,
+      "message": { "protocol": 1, "id": "inventory-catalog", "type": "response", "method": "planning.inventory.catalog", "payload": { "items": [{ "resource_key": "Item_Icon_ExpItem_0", "item_id": "Item_Icon_ExpItem_0", "display_name": "Basic activity report", "category": "activity_report", "profile_id": "activity_reports", "order_index": 0, "zero_fill_allowed": true }], "sort": "profile_order" } }
+    },
+    {
+      "name": "plan shortage request preserves explicit zero",
+      "valid": true,
+      "message": { "protocol": 1, "id": "shortage", "type": "request", "method": "planning.plan.shortages", "payload": { "current_students": [{ "student_id": "ayane", "level": 1 }], "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": 10 }] }, "inventory": { "version": 1, "entries": [{ "key": "Item_Icon_ExpItem_0", "quantity": "0", "item_id": "Item_Icon_ExpItem_0" }] } } }
+    },
+    {
+      "name": "plan shortage response separates unknown",
+      "valid": true,
+      "message": { "protocol": 1, "id": "shortage", "type": "response", "method": "planning.plan.shortages", "payload": { "rows": [{ "resource_key": "Item_Icon_ExpItem_0", "item_id": "Item_Icon_ExpItem_0", "display_name": "Basic activity report", "category": "activity_report", "required": 1, "owned": 0, "shortage": 1, "affected_student_ids": ["ayane"], "resolved": true }, { "resource_key": "Item_Icon_ExpItem_1", "item_id": "Item_Icon_ExpItem_1", "display_name": "Normal activity report", "category": "activity_report", "required": 1, "owned": null, "shortage": null, "affected_student_ids": ["ayane"], "resolved": true }], "warnings": [] } }
+    },
+    {
+      "name": "plan shortage rejects negative quantity",
+      "valid": false,
+      "message": { "protocol": 1, "id": "shortage-bad", "type": "request", "method": "planning.plan.shortages", "payload": { "current_students": [], "plan": { "version": 1, "goals": [] }, "inventory": { "version": 1, "entries": [{ "key": "x", "quantity": "-1" }] } } }
+    },
+    {
       "name": "missing required plan version",
       "valid": false,
       "message": { "protocol": 1, "id": "bad-1", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "goals": [] } } }

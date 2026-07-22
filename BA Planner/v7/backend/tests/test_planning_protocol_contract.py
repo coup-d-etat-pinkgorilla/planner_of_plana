@@ -23,6 +23,8 @@ METHOD_SCHEMAS = {
     "planning.student.catalog": "planning-student-catalog-v1.schema.json",
     "planning.plan.validate": "planning-plan-validate-v1.schema.json",
     "planning.plan.calculate": "planning-plan-calculate-v1.schema.json",
+    "planning.inventory.catalog": "planning-inventory-catalog-v1.schema.json",
+    "planning.plan.shortages": "planning-plan-shortages-v1.schema.json",
 }
 class PlanningProtocolContractTests(unittest.TestCase):
     @classmethod

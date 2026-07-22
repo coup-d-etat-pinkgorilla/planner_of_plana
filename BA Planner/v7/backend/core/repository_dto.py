@@ -59,6 +59,12 @@ def _version(data: dict[str, Any], label: str) -> None:
         raise RepositoryDTOError(f"{label}.version must be {DTO_VERSION}")
 
 
+def _canonical_quantity(value: str) -> bool:
+    return value == "0" or (
+        bool(value) and "1" <= value[0] <= "9" and all("0" <= char <= "9" for char in value)
+    )
+
+
 CONFIRMED_STUDENT_VALUE_FIELDS = (
     "level", "student_star", "weapon_state", "weapon_star",
     "weapon_level", "ex_skill", "skill1", "skill2", "skill3", "equip1",
@@ -179,6 +185,11 @@ class InventoryEntry:
         for name in ("quantity", "item_id", "name", "profile_id"):
             if data.get(name) is not None and not isinstance(data[name], str):
                 raise RepositoryDTOError(f"inventory_entry.{name} must be a string or null")
+        quantity = data["quantity"]
+        if quantity is not None and not _canonical_quantity(quantity):
+            raise RepositoryDTOError(
+                "inventory_entry.quantity must be null or a canonical non-negative integer string"
+            )
         index = _optional_int(data.get("index"), "inventory_entry.index")
         return cls(key=key, quantity=data["quantity"], item_id=data.get("item_id"), name=data.get("name"), index=index, profile_id=data.get("profile_id"))
 
@@ -198,7 +209,11 @@ class InventorySnapshot:
         _version(data, "inventory_snapshot")
         if not isinstance(data["entries"], list):
             raise RepositoryDTOError("inventory_snapshot.entries must be an array")
-        return cls(entries=tuple(InventoryEntry.from_dict(item) for item in data["entries"]))
+        entries = tuple(InventoryEntry.from_dict(item) for item in data["entries"])
+        identities = [entry.item_id or entry.key for entry in entries]
+        if len(identities) != len(set(identities)):
+            raise RepositoryDTOError("inventory_snapshot entries must have unique canonical identity")
+        return cls(entries=entries)
 
     def to_dict(self) -> dict[str, Any]:
         return {"version": self.version, "entries": [item.to_dict() for item in self.entries]}

@@ -59,7 +59,7 @@ Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
 | P4 | 프로필과 repository 영구 저장 | `완료` | nested schema·40-case Python/Dart contract, typed state, atomic persistence와 실제 Dart↔Python restart E2E; Python 40·Flutter 43·analyze·release 통과 | P5에서 repository 확정과 분리된 scanner session 경계 작성 |
 | P5 | scanner/matcher session protocol과 backend | `완료` | 40-path follow-up 인수와 마스터 보완; Python 59·Flutter 47·실제 process E2E·release asset gate 통과 | 2학생·2인벤토리 아이콘 제한 coverage를 유지하고 P6에서 scanner UI 연결 |
-| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1 완료, P6-2 인벤토리 실제 데이터 통합 input과 슬레이브 실행 프롬프트 작성 | P6-2를 슬레이브에 전달하고 결과 artifact 인수·검증 |
+| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1·P6-2 완료; P6-3 scanner UI input과 슬레이브 실행 프롬프트 작성 | 승인된 P6-2 snapshot과 P6-3 prompt를 슬레이브에 전달 |
 
 ## 현재 결정
 
@@ -387,7 +387,7 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 
 ## P6-2 — 인벤토리 실제 데이터 통합
 
-- 상태: `대기`
+- 상태: `완료`
 - 목적: 인벤토리 탭 placeholder를 실제 catalog·선택 프로필 snapshot·저장된 plan shortage와
   scanner candidate에 연결하고 탐색·수정·부족 분석·검토 확정을 완성
 - 완료 조건: inventory order parity와 catalog protocol, typed repository inventory 저장,
@@ -395,16 +395,56 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
   Python·Flutter·release·실제 process E2E·Almanac 검증 통과
 - 입력: `docs/migration/p6-2-inventory-integration/input.md`
 - 슬레이브 실행 프롬프트: `docs/migration/p6-2-inventory-integration/slave-execution-prompt.md`
-- 출력 보고서: 아직 없음
-- 결과물: 아직 없음
-- 검증: 아직 실행하지 않음
+- 출력 보고서: `docs/migration/handoffs/incoming/ba-planner-v7-p6-2-inventory-integration/staging/manual-20260723-031217-6a77d237/output.md`
+  (`COMPLETED`, 마스터 독립 검증 완료)
+- 결과물: 수신 패키지 `ba-planner-v7-p6-2-inventory-integration-20260723-031020.zip`
+  27,601 bytes, SHA-256 `480af0570516341daeebb05f210a78f8aec401da9888f9228acfc5b0d8ee328a`.
+  같은 staging의 `artifacts/p6-2-inventory-integration.patch` 105,961 bytes,
+  SHA-256 `86774247fc59593e5fc8d248bb7f98d64857043d73ec4f9fe5aa59c5e1275885`와
+  `artifacts/verification.txt` 3,498 bytes,
+  SHA-256 `bc9d476a1a8b4ae7143392e889fd23fc3669d350b181aa69e91d4e5560d87d9d`
+- 검증: ZIP 사용자 제공값·manifest·sidecar와 artifact `output.md` 크기·SHA-256 일치,
+  baseline HEAD `8d53673e8a0b9832725fb3cda9c9d3d415060856` 일치, 기존 사용자 변경 없음,
+  29-path `git apply --check --verbose`와 적용 통과. Python 72, Flutter 65,
+  `flutter analyze`, Windows release build, 실제 Dart↔Python catalog·shortage·inventory
+  save/restart restore, Mock hold·approve·stale conflict, P6-1/planning 회귀,
+  1280×720·1440×900·1280×960 layout, `codealmanac validate`, `codealmanac health`,
+  금지 GUI/v6 runtime 참조 0건, `git diff --check` 통과
 - 결정 및 제약: 기본 진입은 보유량 목록이며 부족 분석은 선택 프로필의 저장된 plan만
   대상으로 한다. snapshot 부재는 0이 아니라 unknown이고 명시적 zero-fill만 0이다.
   scanner session 시작·진행·취소 UI는 P6-3이 소유하며 전체 육성 부족·장기 pressure·추천은
   이 단계에서 구현하지 않는다.
-- 차단 사항: 없음. 단, 슬레이브가 마스터 승인 P6-1 보완본을 갖지 못했다면 승인 snapshot을
-  전달받기 전에는 구현을 시작하지 않는다.
-- 다음 행동: 프롬프트와 승인된 P6-1 baseline을 슬레이브에 전달하고 `output.md`와 artifact를 수신
+- 마스터 보완: analyzer 중괄호 lint를 수정하고 InventoryPage widget test에 실제 Scaffold와
+  lazy-list reveal을 적용했다. catalog 오류가 프로필 자동 선택에 지워지는 상태 경합을 분리했으며,
+  실제 Dart↔Python catalog·명시적 0/unknown shortage·affected student 검증을 restart E2E에 추가했다.
+- 전달 메모: 수신물의 `P2`/`p2-planning-screen.patch` 표기는 오래된 master prompt 문구였으나
+  Task ID·manifest·output·실제 patch 29경로는 모두 P6-2로 일치했다.
+  `WIRELESS_HANDOFF_RECEIVED`는 수신 디렉터리와 ZIP에 없으며 무선 전달이라는 별도 주장은 없었다.
+- 차단 사항: 없음
+- 다음 행동: P6-3 절의 승인된 범위와 실행 프롬프트를 사용해 슬레이브 작업 전달
+- 최종 갱신: 2026-07-23
+
+## P6-3 — 스캔 실제 UI 통합
+
+- 상태: `대기`
+- 목적: 스캔 탭 placeholder를 P5 typed scanner service에 연결하고 readiness·profile·target·kind,
+  session start·phase·progress·cancel·retry·terminal과 candidate handoff 흐름을 완성
+- 완료 조건: 단일 active session, cancel/terminal 분리, event gap snapshot 복구, bounded in-memory
+  recent result, student/inventory candidate의 data-owner 탭 전달과 성공 commit 뒤 context 정리,
+  Python·Flutter·release·실제 process E2E·Mock·viewport·Almanac 검증 통과
+- 입력: `docs/migration/p6-3-scan-integration/input.md`
+- 슬레이브 실행 프롬프트: `docs/migration/p6-3-scan-integration/slave-execution-prompt.md`
+- 출력 보고서: 아직 없음
+- 결과물: 아직 없음
+- 검증: input/prompt 필수 handoff marker와 송신 wrapper 확인, `git diff --check`,
+  `codealmanac validate`, `codealmanac health` 통과
+- 결정 및 제약: ScanPage는 session 실행과 candidate 요약·handoff만 소유하며 repository review/commit은
+  StudentPage/InventoryPage가 계속 소유한다. cancel acknowledgement만으로 terminal 처리하지 않고,
+  최근 결과는 backend에 없는 영구 history를 만들지 않은 현재 앱 실행 중 bounded memory로 제한한다.
+- baseline gate: P6-2 승인본은 현재 마스터 작업 트리의 미커밋 증분이므로 슬레이브가 정확한 accepted
+  snapshot을 받지 못했다면 P6-1/P6-2를 재구성하지 않고 `BLOCKED`로 동일 snapshot을 요청한다.
+- 차단 사항: 없음
+- 다음 행동: 승인된 P6-2 snapshot과 P6-3 실행 프롬프트를 슬레이브에 전달하고 artifact를 수신
 - 최종 갱신: 2026-07-23
 
 최종 갱신: 2026-07-23

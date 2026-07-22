@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:ba_planner_v7/services/backend_process.dart';
 import 'package:ba_planner_v7/services/planning_protocol_client.dart';
 import 'package:ba_planner_v7/services/process_app_service.dart';
+import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -41,6 +42,47 @@ void main() {
       try {
         firstService = newService();
         await firstService.reconnect();
+        final inventoryCatalog = await firstService.listInventoryItems();
+        expect(inventoryCatalog.length, greaterThan(100));
+        expect(
+          inventoryCatalog.any(
+            (item) => item.resourceKey == 'Item_Icon_ExpItem_0',
+          ),
+          isTrue,
+        );
+        final shortages = await firstService.calculateShortages(
+          currentStudents: const [
+            {'student_id': 'ayane', 'level': 1},
+          ],
+          plan: const {
+            'version': 1,
+            'goals': [
+              {'student_id': 'ayane', 'target_level': 10},
+            ],
+          },
+          inventory: const {
+            'version': 1,
+            'entries': [
+              {
+                'key': 'Item_Icon_ExpItem_0',
+                'item_id': 'Item_Icon_ExpItem_0',
+                'quantity': '0',
+              },
+            ],
+          },
+        );
+        final explicitZero = shortages.rows.singleWhere(
+          (row) => row.resourceKey == 'Item_Icon_ExpItem_0',
+        );
+        expect(explicitZero.owned, 0);
+        expect(explicitZero.shortage, 1);
+        expect(explicitZero.affectedStudentIds, ['ayane']);
+        final unknown = shortages.rows.singleWhere(
+          (row) => row.resourceKey == 'Item_Icon_ExpItem_1',
+        );
+        expect(unknown.owned, isNull);
+        expect(unknown.shortage, isNull);
+
         final created = await firstService.createProfile(
           'Restart E2E',
           'repository-e2e-create',
@@ -59,6 +101,14 @@ void main() {
           renamedRevision,
           'repository-e2e-select',
         );
+        final inventoryRevision = await firstService.saveRepositoryInventory(
+          created.id,
+          RepositoryInventoryState.fromEntries([
+            {'key':'Item_Icon_ExpItem_0','item_id':'Item_Icon_ExpItem_0','quantity':'0','name':'Basic activity report','index':0,'profile_id':'activity_reports'},
+          ]),
+          selectedRevision,
+          'repository-e2e-save-inventory',
+        );
         final savedRevision = await firstService.saveRepositoryGoals(
           created.id,
           {
@@ -72,7 +122,7 @@ void main() {
               },
             ],
           },
-          selectedRevision,
+          inventoryRevision,
           'repository-e2e-save-goals',
         );
         final beforeRestart = await firstService.loadRepositoryState(
@@ -108,7 +158,8 @@ void main() {
         expect(afterRestart.profileId, beforeRestart.profileId);
         expect(afterRestart.revision, beforeRestart.revision);
         expect(afterRestart.students, isEmpty);
-        expect(afterRestart.inventory.entries, isEmpty);
+        expect(afterRestart.inventory.entries, hasLength(1));
+        expect(afterRestart.inventory.entries.single['quantity'], '0');
         expect(afterRestart.goals, hasLength(1));
         expect(afterRestart.goals.single.studentId, 'ayane');
         expect(afterRestart.goals.single.values['target_level'], 12);

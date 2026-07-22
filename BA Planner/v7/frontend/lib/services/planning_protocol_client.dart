@@ -76,6 +76,8 @@ class PlanningProtocolClient {
     'planning.student.catalog': {'invalid_payload', 'metadata_lookup_failed'},
     'planning.plan.validate': {'invalid_payload'},
     'planning.plan.calculate': {'invalid_payload', 'calculation_failed'},
+    'planning.inventory.catalog': {'invalid_payload', 'inventory_catalog_failed'},
+    'planning.plan.shortages': {'invalid_payload', 'shortage_calculation_failed'},
     'repository': {
       'invalid_payload', 'profile_not_found', 'profile_name_conflict',
       'revision_conflict', 'idempotency_conflict', 'repository_busy',
@@ -347,6 +349,8 @@ class PlanningProtocolClient {
             payload['plan'] is Map,
       'planning.plan.calculate' =>
         payload.keys.toSet().length == 1 && payload['totals'] is Map,
+      'planning.inventory.catalog' => _validInventoryCatalog(payload),
+      'planning.plan.shortages' => _validInventoryShortages(payload),
       _ when method.startsWith('repository.') =>
         isValidRepositorySuccessPayload(method, payload),
       _ when method.startsWith('scanner.') =>
@@ -369,6 +373,21 @@ class PlanningProtocolClient {
     } on Object {
       return false;
     }
+  }
+
+  bool _validInventoryCatalog(Map<String,dynamic> payload) {
+    if (payload.keys.toSet().length != 2 || payload['sort'] != 'profile_order' || payload['items'] is! List) return false;
+    try {
+      for (final item in payload['items'] as List) {
+        InventoryCatalogEntry.fromWire(Map<String,dynamic>.from(item as Map));
+      }
+      return true;
+    } on Object { return false; }
+  }
+
+  bool _validInventoryShortages(Map<String,dynamic> payload) {
+    try { InventoryShortageResult.fromWire(payload); return true; }
+    on Object { return false; }
   }
 
   Map<String, dynamic>? _validRemoteError(Object value, String method) {

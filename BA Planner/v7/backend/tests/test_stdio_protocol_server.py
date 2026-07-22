@@ -115,6 +115,40 @@ class PlanningProtocolV1Tests(unittest.TestCase):
         self.assertEqual(failure["payload"]["error"]["code"], "calculation_failed")
         self.assertIn("RuntimeError: boom", diagnostics[0])
 
+    def test_inventory_catalog_and_shortages_are_typed_and_correlated(self) -> None:
+        handler = PlanningProtocolV1(
+            inventory_catalog=lambda: [{
+                "resource_key": "item", "item_id": "item", "display_name": "Item",
+                "category": "material", "profile_id": "materials", "order_index": 0,
+                "zero_fill_allowed": True,
+            }],
+            shortage_deriver=lambda _records, _plan, _entries: {"rows": [], "warnings": []},
+        )
+        catalog = handler.handle(request("catalog", "planning.inventory.catalog", {}))
+        shortage = handler.handle(request("shortage", "planning.plan.shortages", {
+            "current_students": [], "plan": {"version": 1, "goals": []},
+            "inventory": {"version": 1, "entries": [{"key": "item", "quantity": "0"}]},
+        }))
+        self.assertEqual(catalog["id"], "catalog")
+        self.assertEqual(catalog["payload"]["sort"], "profile_order")
+        self.assertEqual(shortage["id"], "shortage")
+        self.assertEqual(shortage["payload"], {"rows": [], "warnings": []})
+
+    def test_inventory_payload_and_internal_failures_are_structured(self) -> None:
+        invalid = PlanningProtocolV1().handle(request(
+            "bad", "planning.plan.shortages",
+            {"current_students": [], "plan": {"version": 1, "goals": []},
+             "inventory": {"version": 1, "entries": [{"key": "x", "quantity": "-1"}]}},
+        ))
+        diagnostics: list[str] = []
+        failed = PlanningProtocolV1(
+            inventory_catalog=lambda: (_ for _ in ()).throw(RuntimeError("catalog boom")),
+            diagnostic=diagnostics.append,
+        ).handle(request("failed", "planning.inventory.catalog", {}))
+        self.assertEqual(invalid["payload"]["error"]["code"], "invalid_payload")
+        self.assertEqual(failed["payload"]["error"]["code"], "inventory_catalog_failed")
+        self.assertIn("catalog boom", diagnostics[0])
+
 
 class StdioServerTests(unittest.TestCase):
     def test_malformed_json_is_diagnostic_and_next_line_is_processed(self) -> None:

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/planning-inventory-catalog-v1.schema.json",
+  "title": "planning.inventory.catalog request and success response",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" }
+  ],
+  "$defs": {
+    "request": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        { "properties": {
+          "protocol": { "const": 1 }, "id": { "type": "string", "minLength": 1 },
+          "type": { "const": "request" }, "method": { "const": "planning.inventory.catalog" },
+          "payload": { "type": "object", "maxProperties": 0 }
+        } }
+      ]
+    },
+    "item": {
+      "type": "object",
+      "required": ["resource_key", "item_id", "display_name", "category", "profile_id", "order_index", "zero_fill_allowed"],
+      "properties": {
+        "resource_key": { "type": "string", "minLength": 1 },
+        "item_id": { "type": ["string", "null"], "minLength": 1 },
+        "display_name": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "profile_id": { "type": "string", "minLength": 1 },
+        "order_index": { "type": "integer", "minimum": 0 },
+        "zero_fill_allowed": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "response": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        { "properties": {
+          "protocol": { "const": 1 }, "id": { "type": "string", "minLength": 1 },
+          "type": { "const": "response" }, "method": { "const": "planning.inventory.catalog" },
+          "payload": {
+            "type": "object", "required": ["items", "sort"],
+            "properties": {
+              "items": { "type": "array", "items": { "$ref": "#/$defs/item" } },
+              "sort": { "const": "profile_order" }
+            },
+            "additionalProperties": false
+          }
+        } }
+      ]
+    }
+  }
+}

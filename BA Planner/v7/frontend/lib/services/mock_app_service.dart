@@ -111,7 +111,9 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
       existing.add(payload);
     }
     final revision = expectedRepositoryRevision + 1;
-    _repositoryStates[profileId] = {...current, 'revision':revision, 'students':existing};
+    _repositoryStates[profileId] = candidate.kind == ScannerKind.inventory
+        ? {...current, 'revision':revision, 'inventory':payload}
+        : {...current, 'revision':revision, 'students':existing};
     return {'candidate_id':candidate.id,'candidate_revision':candidate.revision,'profile_id':profileId,'revision':revision};
   }
 
@@ -159,6 +161,34 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
       ),
       if (_state.value.hasMissingMetadata) StudentCatalogEntry.fallback('missing-student'),
     ];
+  }
+
+  @override
+  Future<List<InventoryCatalogEntry>> listInventoryItems() async => const [
+    InventoryCatalogEntry(resourceKey:'Item_Icon_ExpItem_0',itemId:'Item_Icon_ExpItem_0',
+      displayName:'Basic activity report',category:'activity_report',profileId:'activity_reports',orderIndex:0,zeroFillAllowed:true),
+    InventoryCatalogEntry(resourceKey:'Item_Icon_SkillBook_Gehenna_0',itemId:'Item_Icon_SkillBook_Gehenna_0',
+      displayName:'Gehenna Note T1',category:'tech_notes',profileId:'tech_notes',orderIndex:0,zeroFillAllowed:true),
+    InventoryCatalogEntry(resourceKey:'Item_Icon_Material_Nebra_0',itemId:'Item_Icon_Material_Nebra_0',
+      displayName:'Nebra Disk T1',category:'oopart',profileId:'ooparts',orderIndex:0,zeroFillAllowed:true),
+  ];
+
+  @override
+  Future<InventoryShortageResult> calculateShortages({required List<Map<String,dynamic>> currentStudents,
+    required Map<String,dynamic> plan, required Map<String,dynamic> inventory}) async {
+    final entries = <String,int?>{};
+    for (final raw in inventory['entries'] as List? ?? const []) {
+      final item = raw as Map;
+      final quantity = item['quantity'];
+      entries[(item['item_id'] ?? item['key']) as String] = quantity == null ? null : int.parse(quantity as String);
+    }
+    final affected = (plan['goals'] as List? ?? const []).map((item) => (item as Map)['student_id'] as String).toList();
+    const required = 12;
+    final owned = entries['Item_Icon_ExpItem_0'];
+    return InventoryShortageResult([InventoryShortageRow(resourceKey:'Item_Icon_ExpItem_0',
+      itemId:'Item_Icon_ExpItem_0',displayName:'Basic activity report',category:'activity_report',
+      requiredAmount:required,owned:owned,shortage:owned == null ? null : (owned >= required ? 0 : required-owned),
+      affectedStudentIds:affected,resolved:true)], const []);
   }
 
   @override
@@ -251,6 +281,14 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
   Future<int> saveRepositoryStudents(String profileId, List<ConfirmedStudentState> students, int expectedRevision, String idempotencyKey) async {
     final current = _repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}};
     _repositoryStates[profileId] = {...current, 'revision':expectedRevision + 1, 'students':students.map((student) => student.toWire()).toList(growable:false)};
+    return expectedRevision + 1;
+  }
+
+  @override
+  Future<int> saveRepositoryInventory(String profileId, RepositoryInventoryState inventory, int expectedRevision, String idempotencyKey) async {
+    final current = _repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}};
+    if (current['revision'] != expectedRevision) throw StateError('revision_conflict');
+    _repositoryStates[profileId] = {...current,'revision':expectedRevision+1,'inventory':inventory.toWire()};
     return expectedRevision + 1;
   }
 

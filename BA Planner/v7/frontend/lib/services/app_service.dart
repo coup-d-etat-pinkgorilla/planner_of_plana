@@ -131,6 +131,103 @@ class StudentCatalogEntry {
 }
 
 @immutable
+class InventoryCatalogEntry {
+  const InventoryCatalogEntry({
+    required this.resourceKey, required this.itemId, required this.displayName,
+    required this.category, required this.profileId, required this.orderIndex,
+    required this.zeroFillAllowed,
+  });
+
+  final String resourceKey;
+  final String? itemId;
+  final String displayName;
+  final String category;
+  final String profileId;
+  final int orderIndex;
+  final bool zeroFillAllowed;
+
+  factory InventoryCatalogEntry.fromWire(Map<String, dynamic> value) {
+    const fields = {'resource_key','item_id','display_name','category','profile_id','order_index','zero_fill_allowed'};
+    if (value.keys.toSet().length != fields.length || !value.keys.toSet().containsAll(fields) ||
+        value['resource_key'] is! String || (value['resource_key'] as String).isEmpty ||
+        (value['item_id'] != null && (value['item_id'] is! String || (value['item_id'] as String).isEmpty)) ||
+        value['display_name'] is! String || (value['display_name'] as String).isEmpty ||
+        value['category'] is! String || (value['category'] as String).isEmpty ||
+        value['profile_id'] is! String || (value['profile_id'] as String).isEmpty ||
+        value['order_index'] is! int || (value['order_index'] as int) < 0 ||
+        value['zero_fill_allowed'] is! bool) {
+      throw const FormatException('Invalid inventory catalog entry');
+    }
+    return InventoryCatalogEntry(
+      resourceKey:value['resource_key'] as String, itemId:value['item_id'] as String?,
+      displayName:value['display_name'] as String, category:value['category'] as String,
+      profileId:value['profile_id'] as String, orderIndex:value['order_index'] as int,
+      zeroFillAllowed:value['zero_fill_allowed'] as bool,
+    );
+  }
+
+  bool matches(String query) {
+    final needle = query.trim().toLowerCase();
+    return needle.isEmpty || resourceKey.toLowerCase().contains(needle) ||
+        displayName.toLowerCase().contains(needle) || (itemId?.toLowerCase().contains(needle) ?? false);
+  }
+}
+
+@immutable
+class InventoryShortageRow {
+  const InventoryShortageRow({required this.resourceKey, required this.itemId,
+    required this.displayName, required this.category, required this.requiredAmount,
+    required this.owned, required this.shortage, required this.affectedStudentIds,
+    required this.resolved});
+  final String resourceKey;
+  final String? itemId;
+  final String displayName;
+  final String category;
+  final int requiredAmount;
+  final int? owned;
+  final int? shortage;
+  final List<String> affectedStudentIds;
+  final bool resolved;
+
+  factory InventoryShortageRow.fromWire(Map<String,dynamic> value) {
+    const fields = {'resource_key','item_id','display_name','category','required','owned','shortage','affected_student_ids','resolved'};
+    final affected = value['affected_student_ids'];
+    if (value.keys.toSet().length != fields.length || !value.keys.toSet().containsAll(fields) ||
+        value['resource_key'] is! String || (value['resource_key'] as String).isEmpty ||
+        (value['item_id'] != null && (value['item_id'] is! String || (value['item_id'] as String).isEmpty)) ||
+        value['display_name'] is! String || (value['display_name'] as String).isEmpty ||
+        value['category'] is! String || (value['category'] as String).isEmpty ||
+        value['required'] is! int || (value['required'] as int) < 0 ||
+        (value['owned'] != null && (value['owned'] is! int || (value['owned'] as int) < 0)) ||
+        (value['shortage'] != null && (value['shortage'] is! int || (value['shortage'] as int) < 0)) ||
+        affected is! List || affected.any((item) => item is! String || item.isEmpty) ||
+        affected.toSet().length != affected.length || value['resolved'] is! bool) {
+      throw const FormatException('Invalid inventory shortage row');
+    }
+    return InventoryShortageRow(resourceKey:value['resource_key'] as String,itemId:value['item_id'] as String?,
+      displayName:value['display_name'] as String,category:value['category'] as String,
+      requiredAmount:value['required'] as int,owned:value['owned'] as int?,shortage:value['shortage'] as int?,
+      affectedStudentIds:List.unmodifiable(affected.cast<String>()),resolved:value['resolved'] as bool);
+  }
+}
+
+@immutable
+class InventoryShortageResult {
+  const InventoryShortageResult(this.rows, this.warnings);
+  final List<InventoryShortageRow> rows;
+  final List<String> warnings;
+  factory InventoryShortageResult.fromWire(Map<String,dynamic> value) {
+    if (value.keys.toSet().length != 2 || value['rows'] is! List || value['warnings'] is! List ||
+        (value['warnings'] as List).any((item) => item is! String)) {
+      throw const FormatException('Invalid inventory shortage response');
+    }
+    return InventoryShortageResult(
+      List.unmodifiable((value['rows'] as List).map((item) => InventoryShortageRow.fromWire(Map<String,dynamic>.from(item as Map)))),
+      List.unmodifiable((value['warnings'] as List).cast<String>()));
+  }
+}
+
+@immutable
 class AppServiceState {
   const AppServiceState({
     required this.connection,
@@ -194,6 +291,14 @@ abstract interface class AppService {
   Future<Map<String, dynamic>?> getStudent(String studentId);
 
   Future<List<StudentCatalogEntry>> listStudents();
+
+  Future<List<InventoryCatalogEntry>> listInventoryItems();
+
+  Future<InventoryShortageResult> calculateShortages({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> plan,
+    required Map<String, dynamic> inventory,
+  });
 
   Future<Map<String, dynamic>> validatePlan(Map<String, dynamic> plan);
 

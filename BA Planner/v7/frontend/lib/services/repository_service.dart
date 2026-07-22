@@ -196,6 +196,11 @@ class RepositoryInventoryState {
 
   final List<Map<String, dynamic>> entries;
 
+  factory RepositoryInventoryState.fromEntries(List<Map<String, dynamic>> entries) =>
+      RepositoryInventoryState.fromWire({'version': 1, 'entries': entries});
+
+  Map<String, dynamic> toWire() => {'version': 1, 'entries': entries};
+
   factory RepositoryInventoryState.fromWire(Map<String, dynamic> value) {
     if (!_exact(value, {'version', 'entries'}) ||
         value['version'] != 1 ||
@@ -218,7 +223,8 @@ class RepositoryInventoryState {
           !allowed.containsAll(item.keys) ||
           item['key'] is! String ||
           (item['key'] as String).isEmpty ||
-          (item['quantity'] != null && item['quantity'] is! String) ||
+          (item['quantity'] != null && (item['quantity'] is! String ||
+              !RegExp(r'^(0|[1-9][0-9]*)$').hasMatch(item['quantity'] as String))) ||
           (item['item_id'] != null && item['item_id'] is! String) ||
           (item['name'] != null && item['name'] is! String) ||
           (item['profile_id'] != null && item['profile_id'] is! String) ||
@@ -226,6 +232,10 @@ class RepositoryInventoryState {
         throw const FormatException('Invalid inventory entry');
       }
       entries.add(item);
+    }
+    final identities=entries.map((item) => item['item_id'] ?? item['key']).toList();
+    if (identities.toSet().length != identities.length) {
+      throw const FormatException('Duplicate inventory identity');
     }
     return RepositoryInventoryState._(entries);
   }
@@ -475,6 +485,12 @@ abstract interface class RepositoryService {
   Future<int> saveRepositoryStudents(
     String profileId,
     List<ConfirmedStudentState> students,
+    int expectedRevision,
+    String idempotencyKey,
+  );
+  Future<int> saveRepositoryInventory(
+    String profileId,
+    RepositoryInventoryState inventory,
     int expectedRevision,
     String idempotencyKey,
   );

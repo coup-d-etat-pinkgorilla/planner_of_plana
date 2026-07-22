@@ -7,7 +7,9 @@
     { "$ref": "#/$defs/studentGet" },
     { "$ref": "#/$defs/studentCatalog" },
     { "$ref": "#/$defs/planValidate" },
-    { "$ref": "#/$defs/planCalculate" }
+    { "$ref": "#/$defs/planCalculate" },
+    { "$ref": "#/$defs/inventoryCatalog" },
+    { "$ref": "#/$defs/planShortages" }
   ],
   "$defs": {
     "errorEnvelope": {
@@ -52,7 +54,9 @@
                   "planning.student.get",
                   "planning.student.catalog",
                   "planning.plan.validate",
-                  "planning.plan.calculate"
+                  "planning.plan.calculate",
+                  "planning.inventory.catalog",
+                  "planning.plan.shortages"
                 ]
               }
             },
@@ -135,6 +139,28 @@
             }
           }
         }
+      ]
+    },
+    "inventoryCatalog": {
+      "allOf": [
+        { "$ref": "#/$defs/errorEnvelope" },
+        { "properties": {
+          "method": { "const": "planning.inventory.catalog" },
+          "payload": { "properties": { "error": { "properties": {
+            "code": { "enum": ["invalid_payload", "inventory_catalog_failed"] }
+          } } } }
+        } }
+      ]
+    },
+    "planShortages": {
+      "allOf": [
+        { "$ref": "#/$defs/errorEnvelope" },
+        { "properties": {
+          "method": { "const": "planning.plan.shortages" },
+          "payload": { "properties": { "error": { "properties": {
+            "code": { "enum": ["invalid_payload", "shortage_calculation_failed"] }
+          } } } }
+        } }
       ]
     }
   }

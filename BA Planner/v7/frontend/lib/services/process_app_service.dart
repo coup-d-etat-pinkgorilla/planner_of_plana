@@ -85,6 +85,20 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
   }
 
   @override
+  Future<List<InventoryCatalogEntry>> listInventoryItems() async {
+    final payload = await _client.send('planning.inventory.catalog', {});
+    return (payload['items'] as List).map((item) => InventoryCatalogEntry.fromWire(
+      Map<String,dynamic>.from(item as Map))).toList(growable:false);
+  }
+
+  @override
+  Future<InventoryShortageResult> calculateShortages({required List<Map<String,dynamic>> currentStudents,
+    required Map<String,dynamic> plan, required Map<String,dynamic> inventory}) async =>
+      InventoryShortageResult.fromWire(await _client.send('planning.plan.shortages', {
+        'current_students':currentStudents,'plan':plan,'inventory':inventory,
+      }));
+
+  @override
   Future<Map<String, dynamic>> validatePlan(Map<String, dynamic> plan) async {
     final payload = await _client.send('planning.plan.validate', {
       'plan': plan,
@@ -139,6 +153,9 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
 
   @override
   Future<int> saveRepositoryStudents(String profileId, List<ConfirmedStudentState> students, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.students.update', {'profile_id':profileId,'students':students.map((student) => student.toWire()).toList(growable:false),'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
+
+  @override
+  Future<int> saveRepositoryInventory(String profileId, RepositoryInventoryState inventory, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.inventory.update', {'profile_id':profileId,'inventory':inventory.toWire(),'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
 
   @override
   Future<void> reconnect() => _client.start();
