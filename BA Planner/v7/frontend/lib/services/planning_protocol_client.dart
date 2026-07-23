@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'app_service.dart';
 import 'backend_process.dart';
 import 'repository_service.dart';
+import 'tactical_service.dart';
 
 class BackendProtocolException implements Exception {
   BackendProtocolException(this.message);
@@ -76,23 +77,61 @@ class PlanningProtocolClient {
     'planning.student.catalog': {'invalid_payload', 'metadata_lookup_failed'},
     'planning.plan.validate': {'invalid_payload'},
     'planning.plan.calculate': {'invalid_payload', 'calculation_failed'},
-    'planning.inventory.catalog': {'invalid_payload', 'inventory_catalog_failed'},
-    'planning.plan.shortages': {'invalid_payload', 'shortage_calculation_failed'},
+    'planning.inventory.catalog': {
+      'invalid_payload',
+      'inventory_catalog_failed',
+    },
+    'planning.plan.shortages': {
+      'invalid_payload',
+      'shortage_calculation_failed',
+    },
     'repository': {
-      'invalid_payload', 'profile_not_found', 'profile_name_conflict',
-      'revision_conflict', 'idempotency_conflict', 'repository_busy',
-      'corrupt_data', 'migration_required', 'migration_not_supported',
-      'persistence_failed', 'unknown_method',
+      'invalid_payload',
+      'profile_not_found',
+      'profile_name_conflict',
+      'revision_conflict',
+      'idempotency_conflict',
+      'repository_busy',
+      'corrupt_data',
+      'migration_required',
+      'migration_not_supported',
+      'persistence_failed',
+      'unknown_method',
+    },
+    'tactical': {
+      'invalid_payload',
+      'profile_not_found',
+      'revision_conflict',
+      'idempotency_conflict',
+      'repository_busy',
+      'record_not_found',
+      'corrupt_data',
+      'migration_required',
+      'persistence_failed',
+      'unknown_method',
     },
     'scanner': {
-      'invalid_payload', 'target_not_found', 'target_provider_failed',
-      'scanner_busy', 'scanner_unavailable', 'session_not_found',
-      'stale_generation', 'candidate_not_found',
-      'candidate_revision_conflict', 'session_not_committable',
-      'review_required', 'invalid_candidate', 'capture_failed',
-      'capture_timeout', 'target_closed', 'target_minimized',
-      'matcher_failed', 'template_missing', 'region_missing',
-      'asset_manifest_invalid', 'asset_version_mismatch',
+      'invalid_payload',
+      'target_not_found',
+      'target_provider_failed',
+      'scanner_busy',
+      'scanner_unavailable',
+      'session_not_found',
+      'stale_generation',
+      'candidate_not_found',
+      'candidate_revision_conflict',
+      'session_not_committable',
+      'review_required',
+      'invalid_candidate',
+      'capture_failed',
+      'capture_timeout',
+      'target_closed',
+      'target_minimized',
+      'matcher_failed',
+      'template_missing',
+      'region_missing',
+      'asset_manifest_invalid',
+      'asset_version_mismatch',
       'unknown_method',
     },
   };
@@ -353,8 +392,14 @@ class PlanningProtocolClient {
       'planning.plan.shortages' => _validInventoryShortages(payload),
       _ when method.startsWith('repository.') =>
         isValidRepositorySuccessPayload(method, payload),
-      _ when method.startsWith('scanner.') =>
-        _validScannerSuccessPayload(method, payload),
+      _ when method.startsWith('scanner.') => _validScannerSuccessPayload(
+        method,
+        payload,
+      ),
+      _ when method.startsWith('tactical.') => _validTacticalSuccessPayload(
+        method,
+        payload,
+      ),
       _ => false,
     };
   }
@@ -375,19 +420,46 @@ class PlanningProtocolClient {
     }
   }
 
-  bool _validInventoryCatalog(Map<String,dynamic> payload) {
-    if (payload.keys.toSet().length != 2 || payload['sort'] != 'profile_order' || payload['items'] is! List) return false;
+  bool _validInventoryCatalog(Map<String, dynamic> payload) {
+    if (payload.keys.toSet().length != 2 ||
+        payload['sort'] != 'profile_order' ||
+        payload['items'] is! List) {
+      return false;
+    }
     try {
       for (final item in payload['items'] as List) {
-        InventoryCatalogEntry.fromWire(Map<String,dynamic>.from(item as Map));
+        InventoryCatalogEntry.fromWire(Map<String, dynamic>.from(item as Map));
       }
       return true;
-    } on Object { return false; }
+    } on Object {
+      return false;
+    }
   }
 
-  bool _validInventoryShortages(Map<String,dynamic> payload) {
-    try { InventoryShortageResult.fromWire(payload); return true; }
-    on Object { return false; }
+  bool _validInventoryShortages(Map<String, dynamic> payload) {
+    try {
+      InventoryShortageResult.fromWire(payload);
+      return true;
+    } on Object {
+      return false;
+    }
+  }
+
+  bool _validTacticalSuccessPayload(
+    String method,
+    Map<String, dynamic> payload,
+  ) {
+    try {
+      if (method == 'tactical.state.get') {
+        TacticalState.fromWire(payload);
+        return true;
+      }
+      return payload.keys.length == 1 &&
+          payload['revision'] is int &&
+          (payload['revision'] as int) > 0;
+    } on Object {
+      return false;
+    }
   }
 
   Map<String, dynamic>? _validRemoteError(Object value, String method) {
@@ -401,8 +473,10 @@ class PlanningProtocolClient {
     final allowedCodes = method.startsWith('repository.')
         ? _methodErrorCodes['repository']!
         : method.startsWith('scanner.')
-            ? _methodErrorCodes['scanner']!
-            : (_methodErrorCodes[method] ?? const {'unknown_method'});
+        ? _methodErrorCodes['scanner']!
+        : method.startsWith('tactical.')
+        ? _methodErrorCodes['tactical']!
+        : (_methodErrorCodes[method] ?? const {'unknown_method'});
     if (!error.keys.toSet().containsAll(requiredKeys) ||
         !allowedKeys.containsAll(error.keys) ||
         code is! String ||
@@ -441,31 +515,72 @@ class PlanningProtocolClient {
       return false;
     }
     final value = Map<String, dynamic>.from(payload);
-    const baseKeys = {'session_id', 'generation', 'sequence', 'scan_kind', 'event_kind'};
-    final baseValid = value['session_id'] is String &&
+    const baseKeys = {
+      'session_id',
+      'generation',
+      'sequence',
+      'scan_kind',
+      'event_kind',
+    };
+    final baseValid =
+        value['session_id'] is String &&
         (value['session_id'] as String).isNotEmpty &&
         value['generation'] is int &&
         (value['generation'] as int) > 0 &&
         value['sequence'] is int &&
         (value['sequence'] as int) > 0 &&
-        (value['scan_kind'] == 'student' || value['scan_kind'] == 'inventory') &&
-        const {'phase', 'progress', 'candidate', 'diagnostic', 'terminal'}
-            .contains(value['event_kind']);
+        (value['scan_kind'] == 'student' ||
+            value['scan_kind'] == 'inventory') &&
+        const {
+          'phase',
+          'progress',
+          'candidate',
+          'diagnostic',
+          'terminal',
+        }.contains(value['event_kind']);
     if (!baseValid) return false;
     return switch (value['event_kind']) {
-      'phase' => value.keys.toSet().difference({...baseKeys, 'phase'}).isEmpty &&
-          value['phase'] is String && (value['phase'] as String).isNotEmpty,
-      'progress' => value.keys.toSet().difference({...baseKeys, 'current', 'total', 'message_key'}).isEmpty &&
-          value['current'] is int &&
-          ((value['total'] is int && (value['total'] as int) >= 0) || value['total'] == null) &&
-          value['message_key'] is String && (value['message_key'] as String).isNotEmpty,
-      'candidate' => value.keys.toSet().difference({...baseKeys, 'candidate'}).isEmpty &&
-          _validScannerCandidate(value['candidate']),
-      'diagnostic' => value.keys.toSet().difference({...baseKeys, 'code', 'message'}).isEmpty &&
-          value['code'] is String && (value['code'] as String).isNotEmpty && value['message'] is String,
-      'terminal' => value.keys.toSet().difference({...baseKeys, 'outcome', 'error'}).isEmpty &&
-          const {'completed', 'cancelled', 'failed'}.contains(value['outcome']) &&
-          (!value.containsKey('error') || _validScannerTerminalError(value['error'])),
+      'phase' =>
+        value.keys.toSet().difference({...baseKeys, 'phase'}).isEmpty &&
+            value['phase'] is String &&
+            (value['phase'] as String).isNotEmpty,
+      'progress' =>
+        value.keys.toSet().difference({
+              ...baseKeys,
+              'current',
+              'total',
+              'message_key',
+            }).isEmpty &&
+            value['current'] is int &&
+            ((value['total'] is int && (value['total'] as int) >= 0) ||
+                value['total'] == null) &&
+            value['message_key'] is String &&
+            (value['message_key'] as String).isNotEmpty,
+      'candidate' =>
+        value.keys.toSet().difference({...baseKeys, 'candidate'}).isEmpty &&
+            _validScannerCandidate(value['candidate']),
+      'diagnostic' =>
+        value.keys.toSet().difference({
+              ...baseKeys,
+              'code',
+              'message',
+            }).isEmpty &&
+            value['code'] is String &&
+            (value['code'] as String).isNotEmpty &&
+            value['message'] is String,
+      'terminal' =>
+        value.keys.toSet().difference({
+              ...baseKeys,
+              'outcome',
+              'error',
+            }).isEmpty &&
+            const {
+              'completed',
+              'cancelled',
+              'failed',
+            }.contains(value['outcome']) &&
+            (!value.containsKey('error') ||
+                _validScannerTerminalError(value['error'])),
       _ => false,
     };
   }
@@ -479,22 +594,47 @@ class PlanningProtocolClient {
         value['message'] is String;
   }
 
-  bool _validScannerSuccessPayload(String method, Map<String, dynamic> payload) {
+  bool _validScannerSuccessPayload(
+    String method,
+    Map<String, dynamic> payload,
+  ) {
     return switch (method) {
-      'scanner.target.list' => payload.keys.toSet().containsAll({'targets'}) &&
-          payload['targets'] is List &&
-          (payload['targets'] as List).every((item) => item is Map && item['target_id'] is String && item['title'] is String && const {'ready','minimized','closed','unsupported'}.contains(item['status'])),
-      'scanner.recognition.status' => payload['ready'] is bool &&
-          payload['manifest_version'] is int && payload['missing'] is List,
-      'scanner.session.start' => payload['session_id'] is String &&
-          payload['generation'] is int && const {'student','inventory'}.contains(payload['scan_kind']),
+      'scanner.target.list' =>
+        payload.keys.toSet().containsAll({'targets'}) &&
+            payload['targets'] is List &&
+            (payload['targets'] as List).every(
+              (item) =>
+                  item is Map &&
+                  item['target_id'] is String &&
+                  item['title'] is String &&
+                  const {
+                    'ready',
+                    'minimized',
+                    'closed',
+                    'unsupported',
+                  }.contains(item['status']),
+            ),
+      'scanner.recognition.status' =>
+        payload['ready'] is bool &&
+            payload['manifest_version'] is int &&
+            payload['missing'] is List,
+      'scanner.session.start' =>
+        payload['session_id'] is String &&
+            payload['generation'] is int &&
+            const {'student', 'inventory'}.contains(payload['scan_kind']),
       'scanner.session.cancel' => payload['accepted'] is bool,
-      'scanner.session.snapshot' => payload['session_id'] is String &&
-          payload['generation'] is int && payload['events'] is List && payload['candidates'] is List,
+      'scanner.session.snapshot' =>
+        payload['session_id'] is String &&
+            payload['generation'] is int &&
+            payload['events'] is List &&
+            payload['candidates'] is List,
       'scanner.candidate.get' || 'scanner.candidate.review' =>
-          _validScannerCandidate(payload['candidate']),
-      'scanner.candidate.commit' => payload['candidate_id'] is String &&
-          payload['candidate_revision'] is int && payload['profile_id'] is String && payload['revision'] is int,
+        _validScannerCandidate(payload['candidate']),
+      'scanner.candidate.commit' =>
+        payload['candidate_id'] is String &&
+            payload['candidate_revision'] is int &&
+            payload['profile_id'] is String &&
+            payload['revision'] is int,
       _ => false,
     };
   }
@@ -505,7 +645,7 @@ class PlanningProtocolClient {
         value['session_id'] is String &&
         value['generation'] is int &&
         value['revision'] is int &&
-        const {'student','inventory'}.contains(value['scan_kind']) &&
+        const {'student', 'inventory'}.contains(value['scan_kind']) &&
         value['payload'] is Map &&
         value['evidence'] is List &&
         value['review_required'] is bool &&

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ba-planner.local/contracts/tactical-protocol-v1.schema.json",
+  "title": "BA Planner tactical protocol v1",
+  "oneOf": [
+    {"$ref":"#/$defs/getRequest"},
+    {"$ref":"#/$defs/matchUpsertRequest"},
+    {"$ref":"#/$defs/matchDeleteRequest"},
+    {"$ref":"#/$defs/jokboUpsertRequest"},
+    {"$ref":"#/$defs/jokboDeleteRequest"},
+    {"$ref":"#/$defs/stateResponse"},
+    {"$ref":"#/$defs/revisionResponse"},
+    {"$ref":"#/$defs/errorResponse"}
+  ],
+  "$defs": {
+    "profileId":{"type":"string","pattern":"^[0-9a-f]{24}$"},
+    "recordId":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+    "deck":{"type":"object","required":["version","strikers","specials"],"properties":{
+      "version":{"const":1},
+      "strikers":{"type":"array","minItems":4,"maxItems":4,"items":{"type":["string","null"],"minLength":1}},
+      "specials":{"type":"array","minItems":2,"maxItems":2,"items":{"type":["string","null"],"minLength":1}}
+    },"additionalProperties":false},
+    "match":{"type":"object","required":["version","match_id","kind","occurred_on","season","opponent","result","attack_deck","defense_deck","notes"],"properties":{
+      "version":{"const":1},"match_id":{"$ref":"#/$defs/recordId"},"kind":{"enum":["attack","defense"]},
+      "occurred_on":{"oneOf":[{"type":"null"},{"type":"string","format":"date","pattern":"^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}]},
+      "season":{"type":"string"},"opponent":{"type":"string","minLength":1},"result":{"enum":["win","loss"]},
+      "attack_deck":{"$ref":"#/$defs/deck"},"defense_deck":{"$ref":"#/$defs/deck"},"notes":{"type":"string"}
+    },"additionalProperties":false},
+    "jokbo":{"type":"object","required":["version","jokbo_id","defense_deck","attack_deck","notes"],"properties":{
+      "version":{"const":1},"jokbo_id":{"$ref":"#/$defs/recordId"},"defense_deck":{"$ref":"#/$defs/deck"},
+      "attack_deck":{"$ref":"#/$defs/deck"},"notes":{"type":"string"}
+    },"additionalProperties":false},
+    "baseRequest":{"type":"object","required":["protocol","id","type","method","payload"],"properties":{
+      "protocol":{"const":1},"id":{"type":"string","minLength":1},"type":{"const":"request"},
+      "method":{"type":"string","pattern":"^tactical\\."},"payload":{"type":"object"}
+    },"additionalProperties":false},
+    "getRequest":{"allOf":[{"$ref":"#/$defs/baseRequest"},{"properties":{"method":{"const":"tactical.state.get"},"payload":{"type":"object","required":["profile_id"],"properties":{"profile_id":{"$ref":"#/$defs/profileId"}},"additionalProperties":false}}}]},
+    "mutationBase":{"type":"object","required":["profile_id","expected_revision","idempotency_key"],"properties":{
+      "profile_id":{"$ref":"#/$defs/profileId"},"expected_revision":{"type":"integer","minimum":0},"idempotency_key":{"type":"string","minLength":1}
+    }},
+    "matchUpsertRequest":{"allOf":[{"$ref":"#/$defs/baseRequest"},{"properties":{"method":{"const":"tactical.match.upsert"},"payload":{"allOf":[{"$ref":"#/$defs/mutationBase"}],"required":["profile_id","expected_revision","idempotency_key","match"],"properties":{"profile_id":{"$ref":"#/$defs/profileId"},"expected_revision":{"type":"integer","minimum":0},"idempotency_key":{"type":"string","minLength":1},"match":{"$ref":"#/$defs/match"}},"additionalProperties":false}}}]},
+    "matchDeleteRequest":{"allOf":[{"$ref":"#/$defs/baseRequest"},{"properties":{"method":{"const":"tactical.match.delete"},"payload":{"type":"object","required":["profile_id","expected_revision","idempotency_key","match_id"],"properties":{"profile_id":{"$ref":"#/$defs/profileId"},"expected_revision":{"type":"integer","minimum":0},"idempotency_key":{"type":"string","minLength":1},"match_id":{"$ref":"#/$defs/recordId"}},"additionalProperties":false}}}]},
+    "jokboUpsertRequest":{"allOf":[{"$ref":"#/$defs/baseRequest"},{"properties":{"method":{"const":"tactical.jokbo.upsert"},"payload":{"type":"object","required":["profile_id","expected_revision","idempotency_key","jokbo"],"properties":{"profile_id":{"$ref":"#/$defs/profileId"},"expected_revision":{"type":"integer","minimum":0},"idempotency_key":{"type":"string","minLength":1},"jokbo":{"$ref":"#/$defs/jokbo"}},"additionalProperties":false}}}]},
+    "jokboDeleteRequest":{"allOf":[{"$ref":"#/$defs/baseRequest"},{"properties":{"method":{"const":"tactical.jokbo.delete"},"payload":{"type":"object","required":["profile_id","expected_revision","idempotency_key","jokbo_id"],"properties":{"profile_id":{"$ref":"#/$defs/profileId"},"expected_revision":{"type":"integer","minimum":0},"idempotency_key":{"type":"string","minLength":1},"jokbo_id":{"$ref":"#/$defs/recordId"}},"additionalProperties":false}}}]},
+    "baseResponse":{"type":"object","required":["protocol","id","type","method","payload"],"properties":{"protocol":{"const":1},"id":{"type":"string","minLength":1},"type":{"const":"response"},"method":{"type":"string","pattern":"^tactical\\."},"payload":{"type":"object"}},"additionalProperties":false},
+    "stateResponse":{"allOf":[{"$ref":"#/$defs/baseResponse"},{"properties":{"method":{"const":"tactical.state.get"},"payload":{"type":"object","required":["version","profile_id","revision","matches","jokbo"],"properties":{"version":{"const":1},"profile_id":{"$ref":"#/$defs/profileId"},"revision":{"type":"integer","minimum":0},"matches":{"type":"array","items":{"$ref":"#/$defs/match"}},"jokbo":{"type":"array","items":{"$ref":"#/$defs/jokbo"}}},"additionalProperties":false}}}]},
+    "revisionResponse":{"allOf":[{"$ref":"#/$defs/baseResponse"},{"properties":{"method":{"enum":["tactical.match.upsert","tactical.match.delete","tactical.jokbo.upsert","tactical.jokbo.delete"]},"payload":{"type":"object","required":["revision"],"properties":{"revision":{"type":"integer","minimum":1}},"additionalProperties":false}}}]},
+    "errorResponse":{"allOf":[{"$ref":"#/$defs/baseResponse"},{"properties":{"payload":{"type":"object","required":["error"],"properties":{"error":{"type":"object","required":["code","message","retryable"],"properties":{"code":{"type":"string","minLength":1},"message":{"type":"string"},"retryable":{"type":"boolean"},"details":{"type":"object"}},"additionalProperties":false}},"additionalProperties":false}}}]}
+  }
+}

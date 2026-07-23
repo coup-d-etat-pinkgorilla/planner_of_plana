@@ -5,15 +5,17 @@ import 'package:flutter/foundation.dart';
 import 'app_service.dart';
 import 'repository_service.dart';
 import 'scanner_service.dart';
+import 'tactical_service.dart';
 
-enum MockScannerScenario {
-  completed,
-  failed,
-  reviewRequired,
-  inventoryUnknown,
-}
+enum MockScannerScenario { completed, failed, reviewRequired, inventoryUnknown }
 
-class MockAppService implements AppService, MockScenarioController, RepositoryService, ScannerService {
+class MockAppService
+    implements
+        AppService,
+        MockScenarioController,
+        RepositoryService,
+        ScannerService,
+        TacticalService {
   MockAppService({
     AppServiceState? initialState,
     this.scannerScenario = MockScannerScenario.completed,
@@ -40,28 +42,37 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
              },
        ),
        _state = ValueNotifier(
-        initialState ??
-            const AppServiceState(
-              connection: BackendConnection.connected,
-              scanPhase: ScanPhase.idle,
-              imageLoadState: ImageLoadState.loaded,
-              studentCount: 42,
-              inventoryItemCount: 186,
-              hasData: true,
-              scanAvailable: true,
-              useLongNames: false,
-              hasMissingMetadata: false,
-            ),
-      );
+         initialState ??
+             const AppServiceState(
+               connection: BackendConnection.connected,
+               scanPhase: ScanPhase.idle,
+               imageLoadState: ImageLoadState.loaded,
+               studentCount: 42,
+               inventoryItemCount: 186,
+               hasData: true,
+               scanAvailable: true,
+               useLongNames: false,
+               hasMissingMetadata: false,
+             ),
+       );
 
   final MockScannerScenario scannerScenario;
   final List<ScannerTarget> _scannerTargets;
   final Map<String, dynamic> _scannerReadiness;
 
   final ValueNotifier<AppServiceState> _state;
-  final List<RepositoryProfile> _profiles = [const RepositoryProfile(id: '000000000000000000000001', displayName: 'Main', revision: 0, selected: true)];
+  final List<RepositoryProfile> _profiles = [
+    const RepositoryProfile(
+      id: '000000000000000000000001',
+      displayName: 'Main',
+      revision: 0,
+      selected: true,
+    ),
+  ];
   final Map<String, Map<String, dynamic>> _repositoryStates = {};
-  final StreamController<ScannerEvent> _scannerEvents = StreamController.broadcast();
+  final Map<String, TacticalState> _tacticalStates = {};
+  final StreamController<ScannerEvent> _scannerEvents =
+      StreamController.broadcast();
   final Map<String, List<ScannerEvent>> _scannerHistory = {};
   final Map<String, ScannerCandidate> _scannerCandidates = {};
   final Map<String, String> _scannerTerminals = {};
@@ -127,23 +138,15 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
       kind: kind,
     );
     _scannerHistory[session.id] = [];
-    _emitScannerEvent(
-      session,
-      ScannerEventKind.phase,
-      {'phase': 'capturing'},
-    );
+    _emitScannerEvent(session, ScannerEventKind.phase, {'phase': 'capturing'});
     _scannerTimers.add(
       Timer(const Duration(milliseconds: 10), () {
         if (_scannerTerminals.containsKey(session.id)) return;
-        _emitScannerEvent(
-          session,
-          ScannerEventKind.progress,
-          {
-            'current': 1,
-            'total': kind == ScannerKind.student ? null : 2,
-            'message_key': 'scanner.${kind.name}.recognizing',
-          },
-        );
+        _emitScannerEvent(session, ScannerEventKind.progress, {
+          'current': 1,
+          'total': kind == ScannerKind.student ? null : 2,
+          'message_key': 'scanner.${kind.name}.recognizing',
+        });
       }),
     );
     _scannerTimers.add(
@@ -153,17 +156,18 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
           _emitTerminal(
             session,
             'failed',
-            error: const {'code': 'mock_failure', 'message': 'Mock scan failed'},
+            error: const {
+              'code': 'mock_failure',
+              'message': 'Mock scan failed',
+            },
           );
           return;
         }
         final candidate = _mockCandidate(session);
         _scannerCandidates['${session.id}:${candidate.id}'] = candidate;
-        _emitScannerEvent(
-          session,
-          ScannerEventKind.candidate,
-          {'candidate': _candidateWire(candidate)},
-        );
+        _emitScannerEvent(session, ScannerEventKind.candidate, {
+          'candidate': _candidateWire(candidate),
+        });
       }),
     );
     _scannerTimers.add(
@@ -177,7 +181,9 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
   }
 
   @override
-  Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session) async {
+  Future<Map<String, dynamic>> cancelScannerSession(
+    ScannerSession session,
+  ) async {
     final terminal = _scannerTerminals[session.id];
     if (terminal != null) return {'accepted': false, 'terminal': terminal};
     _scannerTimers.add(
@@ -215,14 +221,44 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
       (throw StateError('candidate_not_found'));
 
   @override
-  Future<ScannerCandidate> reviewScannerCandidate(ScannerSession session, ScannerCandidate candidate, Map<String, dynamic> payload, {required bool approve, required String reason}) async => ScannerCandidate(id:candidate.id,sessionId:session.id,generation:session.generation,revision:candidate.revision+1,kind:session.kind,payload:payload,evidence:candidate.evidence,reviewRequired:candidate.reviewRequired,approved:approve);
+  Future<ScannerCandidate> reviewScannerCandidate(
+    ScannerSession session,
+    ScannerCandidate candidate,
+    Map<String, dynamic> payload, {
+    required bool approve,
+    required String reason,
+  }) async => ScannerCandidate(
+    id: candidate.id,
+    sessionId: session.id,
+    generation: session.generation,
+    revision: candidate.revision + 1,
+    kind: session.kind,
+    payload: payload,
+    evidence: candidate.evidence,
+    reviewRequired: candidate.reviewRequired,
+    approved: approve,
+  );
 
   @override
-  Future<Map<String, dynamic>> commitScannerCandidate(ScannerSession session, ScannerCandidate candidate, {required String profileId, required int expectedRepositoryRevision, required String idempotencyKey}) async {
+  Future<Map<String, dynamic>> commitScannerCandidate(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    required String profileId,
+    required int expectedRepositoryRevision,
+    required String idempotencyKey,
+  }) async {
     if (candidate.reviewRequired && !candidate.approved) {
       throw StateError('review_required');
     }
-    final current = _repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}};
+    final current =
+        _repositoryStates[profileId] ??
+        {
+          'profile_id': profileId,
+          'revision': 0,
+          'students': <dynamic>[],
+          'inventory': {'version': 1, 'entries': <dynamic>[]},
+          'goals': {'version': 1, 'goals': <dynamic>[]},
+        };
     if (current['revision'] != expectedRepositoryRevision) {
       throw StateError('revision_conflict');
     }
@@ -230,19 +266,27 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
     final studentId = payload['student_id'];
     final existing = List<dynamic>.from(current['students'] as List);
     if (studentId is String) {
-      existing.removeWhere((item) => item is Map && item['student_id'] == studentId);
+      existing.removeWhere(
+        (item) => item is Map && item['student_id'] == studentId,
+      );
       existing.add(payload);
     }
     final revision = expectedRepositoryRevision + 1;
     _repositoryStates[profileId] = candidate.kind == ScannerKind.inventory
-        ? {...current, 'revision':revision, 'inventory':payload}
-        : {...current, 'revision':revision, 'students':existing};
-    return {'candidate_id':candidate.id,'candidate_revision':candidate.revision,'profile_id':profileId,'revision':revision};
+        ? {...current, 'revision': revision, 'inventory': payload}
+        : {...current, 'revision': revision, 'students': existing};
+    return {
+      'candidate_id': candidate.id,
+      'candidate_revision': candidate.revision,
+      'profile_id': profileId,
+      'revision': revision,
+    };
   }
 
   ScannerCandidate _mockCandidate(ScannerSession session) {
     final inventory = session.kind == ScannerKind.inventory;
-    final review = scannerScenario == MockScannerScenario.reviewRequired ||
+    final review =
+        scannerScenario == MockScannerScenario.reviewRequired ||
         scannerScenario == MockScannerScenario.inventoryUnknown;
     return ScannerCandidate(
       id: 'mock-candidate-${session.generation}',
@@ -256,7 +300,8 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
               'entries': [
                 {
                   'key': 'Item_Icon_ExpItem_0',
-                  'quantity': scannerScenario == MockScannerScenario.inventoryUnknown
+                  'quantity':
+                      scannerScenario == MockScannerScenario.inventoryUnknown
                       ? null
                       : '12',
                   'item_id': 'Item_Icon_ExpItem_0',
@@ -343,11 +388,7 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
     if (error != null) {
       payload['error'] = error;
     }
-    _emitScannerEvent(
-      session,
-      ScannerEventKind.terminal,
-      payload,
-    );
+    _emitScannerEvent(session, ScannerEventKind.terminal, payload);
     _scannerTerminals[session.id] = outcome;
   }
 
@@ -380,49 +421,107 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
         : 'Aru';
     return [
       StudentCatalogEntry(
-        studentId: 'aru', displayName: longName, templateName: 'Aru.png',
-        group: 'Problem Solver 68', variant: null, school: 'Gehenna',
-        rarity: '3', attackType: 'Explosive', defenseType: 'Light',
-        combatClass: 'Striker', role: 'Dealer', position: 'Back',
-        searchTags: const ['aru'], krSearchTags: const [],
+        studentId: 'aru',
+        displayName: longName,
+        templateName: 'Aru.png',
+        group: 'Problem Solver 68',
+        variant: null,
+        school: 'Gehenna',
+        rarity: '3',
+        attackType: 'Explosive',
+        defenseType: 'Light',
+        combatClass: 'Striker',
+        role: 'Dealer',
+        position: 'Back',
+        searchTags: const ['aru'],
+        krSearchTags: const [],
       ),
       StudentCatalogEntry(
-        studentId: 'ayane', displayName: 'Ayane', templateName: 'Ayane.png',
-        group: 'Foreclosure Task Force', variant: null, school: 'Abydos',
-        rarity: '2', attackType: 'Piercing', defenseType: 'Light',
-        combatClass: 'Special', role: 'Healer', position: 'Back',
-        searchTags: const ['ayane'], krSearchTags: const [],
+        studentId: 'ayane',
+        displayName: 'Ayane',
+        templateName: 'Ayane.png',
+        group: 'Foreclosure Task Force',
+        variant: null,
+        school: 'Abydos',
+        rarity: '2',
+        attackType: 'Piercing',
+        defenseType: 'Light',
+        combatClass: 'Special',
+        role: 'Healer',
+        position: 'Back',
+        searchTags: const ['ayane'],
+        krSearchTags: const [],
       ),
-      if (_state.value.hasMissingMetadata) StudentCatalogEntry.fallback('missing-student'),
+      if (_state.value.hasMissingMetadata)
+        StudentCatalogEntry.fallback('missing-student'),
     ];
   }
 
   @override
   Future<List<InventoryCatalogEntry>> listInventoryItems() async => const [
-    InventoryCatalogEntry(resourceKey:'Item_Icon_ExpItem_0',itemId:'Item_Icon_ExpItem_0',
-      displayName:'Basic activity report',category:'activity_report',profileId:'activity_reports',orderIndex:0,zeroFillAllowed:true),
-    InventoryCatalogEntry(resourceKey:'Item_Icon_SkillBook_Gehenna_0',itemId:'Item_Icon_SkillBook_Gehenna_0',
-      displayName:'Gehenna Note T1',category:'tech_notes',profileId:'tech_notes',orderIndex:0,zeroFillAllowed:true),
-    InventoryCatalogEntry(resourceKey:'Item_Icon_Material_Nebra_0',itemId:'Item_Icon_Material_Nebra_0',
-      displayName:'Nebra Disk T1',category:'oopart',profileId:'ooparts',orderIndex:0,zeroFillAllowed:true),
+    InventoryCatalogEntry(
+      resourceKey: 'Item_Icon_ExpItem_0',
+      itemId: 'Item_Icon_ExpItem_0',
+      displayName: 'Basic activity report',
+      category: 'activity_report',
+      profileId: 'activity_reports',
+      orderIndex: 0,
+      zeroFillAllowed: true,
+    ),
+    InventoryCatalogEntry(
+      resourceKey: 'Item_Icon_SkillBook_Gehenna_0',
+      itemId: 'Item_Icon_SkillBook_Gehenna_0',
+      displayName: 'Gehenna Note T1',
+      category: 'tech_notes',
+      profileId: 'tech_notes',
+      orderIndex: 0,
+      zeroFillAllowed: true,
+    ),
+    InventoryCatalogEntry(
+      resourceKey: 'Item_Icon_Material_Nebra_0',
+      itemId: 'Item_Icon_Material_Nebra_0',
+      displayName: 'Nebra Disk T1',
+      category: 'oopart',
+      profileId: 'ooparts',
+      orderIndex: 0,
+      zeroFillAllowed: true,
+    ),
   ];
 
   @override
-  Future<InventoryShortageResult> calculateShortages({required List<Map<String,dynamic>> currentStudents,
-    required Map<String,dynamic> plan, required Map<String,dynamic> inventory}) async {
-    final entries = <String,int?>{};
+  Future<InventoryShortageResult> calculateShortages({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> plan,
+    required Map<String, dynamic> inventory,
+  }) async {
+    final entries = <String, int?>{};
     for (final raw in inventory['entries'] as List? ?? const []) {
       final item = raw as Map;
       final quantity = item['quantity'];
-      entries[(item['item_id'] ?? item['key']) as String] = quantity == null ? null : int.parse(quantity as String);
+      entries[(item['item_id'] ?? item['key']) as String] = quantity == null
+          ? null
+          : int.parse(quantity as String);
     }
-    final affected = (plan['goals'] as List? ?? const []).map((item) => (item as Map)['student_id'] as String).toList();
+    final affected = (plan['goals'] as List? ?? const [])
+        .map((item) => (item as Map)['student_id'] as String)
+        .toList();
     const required = 12;
     final owned = entries['Item_Icon_ExpItem_0'];
-    return InventoryShortageResult([InventoryShortageRow(resourceKey:'Item_Icon_ExpItem_0',
-      itemId:'Item_Icon_ExpItem_0',displayName:'Basic activity report',category:'activity_report',
-      requiredAmount:required,owned:owned,shortage:owned == null ? null : (owned >= required ? 0 : required-owned),
-      affectedStudentIds:affected,resolved:true)], const []);
+    return InventoryShortageResult([
+      InventoryShortageRow(
+        resourceKey: 'Item_Icon_ExpItem_0',
+        itemId: 'Item_Icon_ExpItem_0',
+        displayName: 'Basic activity report',
+        category: 'activity_report',
+        requiredAmount: required,
+        owned: owned,
+        shortage: owned == null
+            ? null
+            : (owned >= required ? 0 : required - owned),
+        affectedStudentIds: affected,
+        resolved: true,
+      ),
+    ], const []);
   }
 
   @override
@@ -475,54 +574,240 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
   }
 
   @override
-  Future<List<RepositoryProfile>> listProfiles() async => List.unmodifiable(_profiles);
+  Future<List<RepositoryProfile>> listProfiles() async =>
+      List.unmodifiable(_profiles);
 
   @override
-  Future<RepositoryProfile> createProfile(String displayName, String idempotencyKey) async {
-    final profile = RepositoryProfile(id: (_profiles.length + 1).toRadixString(16).padLeft(24, '0'), displayName: displayName, revision: 0, selected: false);
+  Future<RepositoryProfile> createProfile(
+    String displayName,
+    String idempotencyKey,
+  ) async {
+    final profile = RepositoryProfile(
+      id: (_profiles.length + 1).toRadixString(16).padLeft(24, '0'),
+      displayName: displayName,
+      revision: 0,
+      selected: false,
+    );
     _profiles.add(profile);
     return profile;
   }
 
   @override
-  Future<int> selectProfile(String profileId, int expectedRevision, String idempotencyKey) async {
+  Future<int> selectProfile(
+    String profileId,
+    int expectedRevision,
+    String idempotencyKey,
+  ) async {
     for (var index = 0; index < _profiles.length; index++) {
       final profile = _profiles[index];
-      _profiles[index] = RepositoryProfile(id: profile.id, displayName: profile.displayName, revision: profile.id == profileId ? expectedRevision + 1 : profile.revision, selected: profile.id == profileId);
+      _profiles[index] = RepositoryProfile(
+        id: profile.id,
+        displayName: profile.displayName,
+        revision: profile.id == profileId
+            ? expectedRevision + 1
+            : profile.revision,
+        selected: profile.id == profileId,
+      );
     }
     return expectedRevision + 1;
   }
 
   @override
-  Future<int> renameProfile(String profileId, String displayName, int expectedRevision, String idempotencyKey) async {
+  Future<int> renameProfile(
+    String profileId,
+    String displayName,
+    int expectedRevision,
+    String idempotencyKey,
+  ) async {
     final index = _profiles.indexWhere((profile) => profile.id == profileId);
     final profile = _profiles[index];
-    _profiles[index] = RepositoryProfile(id: profile.id, displayName: displayName, revision: expectedRevision + 1, selected: profile.selected);
+    _profiles[index] = RepositoryProfile(
+      id: profile.id,
+      displayName: displayName,
+      revision: expectedRevision + 1,
+      selected: profile.selected,
+    );
     return expectedRevision + 1;
   }
 
   @override
-  Future<RepositoryState> loadRepositoryState(String profileId) async => RepositoryState.fromWire(Map<String, dynamic>.from(_repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}}));
+  Future<RepositoryState> loadRepositoryState(String profileId) async =>
+      RepositoryState.fromWire(
+        Map<String, dynamic>.from(
+          _repositoryStates[profileId] ??
+              {
+                'profile_id': profileId,
+                'revision': 0,
+                'students': <dynamic>[],
+                'inventory': {'version': 1, 'entries': <dynamic>[]},
+                'goals': {'version': 1, 'goals': <dynamic>[]},
+              },
+        ),
+      );
+
+  TacticalState _tactical(String profileId) =>
+      _tacticalStates[profileId] ??
+      TacticalState(
+        profileId: profileId,
+        revision: 0,
+        matches: const [],
+        jokbo: const [],
+      );
+  @override
+  Future<TacticalState> loadTacticalState(String profileId) async =>
+      _tactical(profileId);
+  int _tacticalRevision(String profileId, int expected) {
+    final state = _tactical(profileId);
+    if (state.revision != expected) throw StateError('revision_conflict');
+    return expected + 1;
+  }
 
   @override
-  Future<int> saveRepositoryGoals(String profileId, Map<String, dynamic> goals, int expectedRevision, String idempotencyKey) async {
-    final current = _repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}};
-    _repositoryStates[profileId] = {...current, 'revision':expectedRevision + 1, 'goals':goals};
+  Future<int> saveTacticalMatch(
+    String profileId,
+    TacticalMatch match,
+    int expectedRevision,
+    String idempotencyKey,
+  ) async {
+    final state = _tactical(profileId),
+        revision = _tacticalRevision(profileId, expectedRevision);
+    _tacticalStates[profileId] = TacticalState(
+      profileId: profileId,
+      revision: revision,
+      matches: [...state.matches.where((item) => item.id != match.id), match],
+      jokbo: state.jokbo,
+    );
+    return revision;
+  }
+
+  @override
+  Future<int> deleteTacticalMatch(
+    String profileId,
+    String matchId,
+    int expectedRevision,
+    String idempotencyKey,
+  ) async {
+    final state = _tactical(profileId),
+        revision = _tacticalRevision(profileId, expectedRevision);
+    _tacticalStates[profileId] = TacticalState(
+      profileId: profileId,
+      revision: revision,
+      matches: state.matches.where((item) => item.id != matchId).toList(),
+      jokbo: state.jokbo,
+    );
+    return revision;
+  }
+
+  @override
+  Future<int> saveTacticalJokbo(
+    String profileId,
+    TacticalJokbo jokbo,
+    int expectedRevision,
+    String idempotencyKey,
+  ) async {
+    final state = _tactical(profileId),
+        revision = _tacticalRevision(profileId, expectedRevision);
+    _tacticalStates[profileId] = TacticalState(
+      profileId: profileId,
+      revision: revision,
+      matches: state.matches,
+      jokbo: [...state.jokbo.where((item) => item.id != jokbo.id), jokbo],
+    );
+    return revision;
+  }
+
+  @override
+  Future<int> deleteTacticalJokbo(
+    String profileId,
+    String jokboId,
+    int expectedRevision,
+    String idempotencyKey,
+  ) async {
+    final state = _tactical(profileId),
+        revision = _tacticalRevision(profileId, expectedRevision);
+    _tacticalStates[profileId] = TacticalState(
+      profileId: profileId,
+      revision: revision,
+      matches: state.matches,
+      jokbo: state.jokbo.where((item) => item.id != jokboId).toList(),
+    );
+    return revision;
+  }
+
+  @override
+  Future<int> saveRepositoryGoals(
+    String profileId,
+    Map<String, dynamic> goals,
+    int expectedRevision,
+    String idempotencyKey,
+  ) async {
+    final current =
+        _repositoryStates[profileId] ??
+        {
+          'profile_id': profileId,
+          'revision': 0,
+          'students': <dynamic>[],
+          'inventory': {'version': 1, 'entries': <dynamic>[]},
+          'goals': {'version': 1, 'goals': <dynamic>[]},
+        };
+    _repositoryStates[profileId] = {
+      ...current,
+      'revision': expectedRevision + 1,
+      'goals': goals,
+    };
     return expectedRevision + 1;
   }
 
   @override
-  Future<int> saveRepositoryStudents(String profileId, List<ConfirmedStudentState> students, int expectedRevision, String idempotencyKey) async {
-    final current = _repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}};
-    _repositoryStates[profileId] = {...current, 'revision':expectedRevision + 1, 'students':students.map((student) => student.toWire()).toList(growable:false)};
+  Future<int> saveRepositoryStudents(
+    String profileId,
+    List<ConfirmedStudentState> students,
+    int expectedRevision,
+    String idempotencyKey,
+  ) async {
+    final current =
+        _repositoryStates[profileId] ??
+        {
+          'profile_id': profileId,
+          'revision': 0,
+          'students': <dynamic>[],
+          'inventory': {'version': 1, 'entries': <dynamic>[]},
+          'goals': {'version': 1, 'goals': <dynamic>[]},
+        };
+    _repositoryStates[profileId] = {
+      ...current,
+      'revision': expectedRevision + 1,
+      'students': students
+          .map((student) => student.toWire())
+          .toList(growable: false),
+    };
     return expectedRevision + 1;
   }
 
   @override
-  Future<int> saveRepositoryInventory(String profileId, RepositoryInventoryState inventory, int expectedRevision, String idempotencyKey) async {
-    final current = _repositoryStates[profileId] ?? {'profile_id':profileId,'revision':0,'students':<dynamic>[],'inventory':{'version':1,'entries':<dynamic>[]},'goals':{'version':1,'goals':<dynamic>[]}};
-    if (current['revision'] != expectedRevision) throw StateError('revision_conflict');
-    _repositoryStates[profileId] = {...current,'revision':expectedRevision+1,'inventory':inventory.toWire()};
+  Future<int> saveRepositoryInventory(
+    String profileId,
+    RepositoryInventoryState inventory,
+    int expectedRevision,
+    String idempotencyKey,
+  ) async {
+    final current =
+        _repositoryStates[profileId] ??
+        {
+          'profile_id': profileId,
+          'revision': 0,
+          'students': <dynamic>[],
+          'inventory': {'version': 1, 'entries': <dynamic>[]},
+          'goals': {'version': 1, 'goals': <dynamic>[]},
+        };
+    if (current['revision'] != expectedRevision) {
+      throw StateError('revision_conflict');
+    }
+    _repositoryStates[profileId] = {
+      ...current,
+      'revision': expectedRevision + 1,
+      'inventory': inventory.toWire(),
+    };
     return expectedRevision + 1;
   }
 

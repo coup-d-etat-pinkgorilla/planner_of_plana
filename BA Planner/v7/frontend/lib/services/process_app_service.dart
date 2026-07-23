@@ -9,8 +9,11 @@ import 'backend_process.dart';
 import 'planning_protocol_client.dart';
 import 'repository_service.dart';
 import 'scanner_service.dart';
+import 'tactical_service.dart';
 
-class ProcessAppService with WidgetsBindingObserver implements AppService, RepositoryService, ScannerService {
+class ProcessAppService
+    with WidgetsBindingObserver
+    implements AppService, RepositoryService, ScannerService, TacticalService {
   ProcessAppService(this._client)
     : _state = ValueNotifier(
         const AppServiceState(
@@ -78,25 +81,42 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
   Future<List<StudentCatalogEntry>> listStudents() async {
     final payload = await _client.send('planning.student.catalog', {});
     final students = payload['students'];
-    if (students is! List) throw const FormatException('Invalid student catalog');
+    if (students is! List) {
+      throw const FormatException('Invalid student catalog');
+    }
     return students
-        .map((item) => StudentCatalogEntry.fromWire(Map<String, dynamic>.from(item as Map)))
+        .map(
+          (item) => StudentCatalogEntry.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        )
         .toList(growable: false);
   }
 
   @override
   Future<List<InventoryCatalogEntry>> listInventoryItems() async {
     final payload = await _client.send('planning.inventory.catalog', {});
-    return (payload['items'] as List).map((item) => InventoryCatalogEntry.fromWire(
-      Map<String,dynamic>.from(item as Map))).toList(growable:false);
+    return (payload['items'] as List)
+        .map(
+          (item) => InventoryCatalogEntry.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        )
+        .toList(growable: false);
   }
 
   @override
-  Future<InventoryShortageResult> calculateShortages({required List<Map<String,dynamic>> currentStudents,
-    required Map<String,dynamic> plan, required Map<String,dynamic> inventory}) async =>
-      InventoryShortageResult.fromWire(await _client.send('planning.plan.shortages', {
-        'current_students':currentStudents,'plan':plan,'inventory':inventory,
-      }));
+  Future<InventoryShortageResult> calculateShortages({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> plan,
+    required Map<String, dynamic> inventory,
+  }) async => InventoryShortageResult.fromWire(
+    await _client.send('planning.plan.shortages', {
+      'current_students': currentStudents,
+      'plan': plan,
+      'inventory': inventory,
+    }),
+  );
 
   @override
   Future<Map<String, dynamic>> validatePlan(Map<String, dynamic> plan) async {
@@ -123,39 +143,165 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
     final payload = await _client.send('repository.profile.list', {});
     final values = payload['profiles'];
     if (values is! List) throw const FormatException('Invalid profile list');
-    return values.map((item) => RepositoryProfile.fromWire(Map<String, dynamic>.from(item as Map))).toList();
+    return values
+        .map(
+          (item) => RepositoryProfile.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        )
+        .toList();
   }
 
   @override
-  Future<RepositoryProfile> createProfile(String displayName, String idempotencyKey) async {
-    final payload = await _client.send('repository.profile.create', {'display_name': displayName, 'idempotency_key': idempotencyKey});
-    return RepositoryProfile.fromWire(Map<String, dynamic>.from(payload['profile'] as Map));
+  Future<RepositoryProfile> createProfile(
+    String displayName,
+    String idempotencyKey,
+  ) async {
+    final payload = await _client.send('repository.profile.create', {
+      'display_name': displayName,
+      'idempotency_key': idempotencyKey,
+    });
+    return RepositoryProfile.fromWire(
+      Map<String, dynamic>.from(payload['profile'] as Map),
+    );
   }
 
-  Future<int> _revisionMutation(String method, Map<String, dynamic> payload) async {
+  Future<int> _revisionMutation(
+    String method,
+    Map<String, dynamic> payload,
+  ) async {
     final response = await _client.send(method, payload);
     final revision = response['revision'];
-    if (revision is! int) throw const FormatException('Invalid repository revision');
+    if (revision is! int) {
+      throw const FormatException('Invalid repository revision');
+    }
     return revision;
   }
 
   @override
-  Future<int> selectProfile(String profileId, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.profile.select', {'profile_id':profileId,'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
+  Future<int> selectProfile(
+    String profileId,
+    int expectedRevision,
+    String idempotencyKey,
+  ) => _revisionMutation('repository.profile.select', {
+    'profile_id': profileId,
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  });
 
   @override
-  Future<int> renameProfile(String profileId, String displayName, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.profile.rename', {'profile_id':profileId,'display_name':displayName,'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
+  Future<int> renameProfile(
+    String profileId,
+    String displayName,
+    int expectedRevision,
+    String idempotencyKey,
+  ) => _revisionMutation('repository.profile.rename', {
+    'profile_id': profileId,
+    'display_name': displayName,
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  });
 
   @override
-  Future<RepositoryState> loadRepositoryState(String profileId) async => RepositoryState.fromWire(await _client.send('repository.state.get', {'profile_id':profileId}));
+  Future<RepositoryState> loadRepositoryState(String profileId) async =>
+      RepositoryState.fromWire(
+        await _client.send('repository.state.get', {'profile_id': profileId}),
+      );
 
   @override
-  Future<int> saveRepositoryGoals(String profileId, Map<String, dynamic> goals, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.goals.save', {'profile_id':profileId,'goals':goals,'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
+  Future<int> saveRepositoryGoals(
+    String profileId,
+    Map<String, dynamic> goals,
+    int expectedRevision,
+    String idempotencyKey,
+  ) => _revisionMutation('repository.goals.save', {
+    'profile_id': profileId,
+    'goals': goals,
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  });
 
   @override
-  Future<int> saveRepositoryStudents(String profileId, List<ConfirmedStudentState> students, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.students.update', {'profile_id':profileId,'students':students.map((student) => student.toWire()).toList(growable:false),'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
+  Future<int> saveRepositoryStudents(
+    String profileId,
+    List<ConfirmedStudentState> students,
+    int expectedRevision,
+    String idempotencyKey,
+  ) => _revisionMutation('repository.students.update', {
+    'profile_id': profileId,
+    'students': students
+        .map((student) => student.toWire())
+        .toList(growable: false),
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  });
 
   @override
-  Future<int> saveRepositoryInventory(String profileId, RepositoryInventoryState inventory, int expectedRevision, String idempotencyKey) => _revisionMutation('repository.inventory.update', {'profile_id':profileId,'inventory':inventory.toWire(),'expected_revision':expectedRevision,'idempotency_key':idempotencyKey});
+  Future<int> saveRepositoryInventory(
+    String profileId,
+    RepositoryInventoryState inventory,
+    int expectedRevision,
+    String idempotencyKey,
+  ) => _revisionMutation('repository.inventory.update', {
+    'profile_id': profileId,
+    'inventory': inventory.toWire(),
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  });
+
+  @override
+  Future<TacticalState> loadTacticalState(String profileId) async =>
+      TacticalState.fromWire(
+        await _client.send('tactical.state.get', {'profile_id': profileId}),
+      );
+  @override
+  Future<int> saveTacticalMatch(
+    String profileId,
+    TacticalMatch match,
+    int expectedRevision,
+    String idempotencyKey,
+  ) => _revisionMutation('tactical.match.upsert', {
+    'profile_id': profileId,
+    'match': match.toWire(),
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  });
+  @override
+  Future<int> deleteTacticalMatch(
+    String profileId,
+    String matchId,
+    int expectedRevision,
+    String idempotencyKey,
+  ) => _revisionMutation('tactical.match.delete', {
+    'profile_id': profileId,
+    'match_id': matchId,
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  });
+  @override
+  Future<int> saveTacticalJokbo(
+    String profileId,
+    TacticalJokbo jokbo,
+    int expectedRevision,
+    String idempotencyKey,
+  ) => _revisionMutation('tactical.jokbo.upsert', {
+    'profile_id': profileId,
+    'jokbo': jokbo.toWire(),
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  });
+  @override
+  Future<int> deleteTacticalJokbo(
+    String profileId,
+    String jokboId,
+    int expectedRevision,
+    String idempotencyKey,
+  ) => _revisionMutation('tactical.jokbo.delete', {
+    'profile_id': profileId,
+    'jokbo_id': jokboId,
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  });
 
   @override
   Future<void> reconnect() => _client.start();
@@ -176,10 +322,16 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
         }
       }
       if (readiness['ready'] != true || target == null) {
-        _state.value = _state.value.copyWith(scanPhase: ScanPhase.failed, scanAvailable: false);
+        _state.value = _state.value.copyWith(
+          scanPhase: ScanPhase.failed,
+          scanAvailable: false,
+        );
         return;
       }
-      _state.value = _state.value.copyWith(scanPhase: ScanPhase.scanning, scanAvailable: true);
+      _state.value = _state.value.copyWith(
+        scanPhase: ScanPhase.scanning,
+        scanAvailable: true,
+      );
       await startScannerSession(ScannerKind.student, target.id);
     } catch (_) {
       _state.value = _state.value.copyWith(scanPhase: ScanPhase.failed);
@@ -191,28 +343,62 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
   Stream<ScannerEvent> get scannerEvents => _scanner.scannerEvents;
 
   @override
-  Future<List<ScannerTarget>> listScannerTargets() => _scanner.listScannerTargets();
+  Future<List<ScannerTarget>> listScannerTargets() =>
+      _scanner.listScannerTargets();
 
   @override
-  Future<Map<String, dynamic>> scannerReadiness() => _scanner.scannerReadiness();
+  Future<Map<String, dynamic>> scannerReadiness() =>
+      _scanner.scannerReadiness();
 
   @override
-  Future<ScannerSession> startScannerSession(ScannerKind kind, String targetId) => _scanner.startScannerSession(kind, targetId);
+  Future<ScannerSession> startScannerSession(
+    ScannerKind kind,
+    String targetId,
+  ) => _scanner.startScannerSession(kind, targetId);
 
   @override
-  Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session) => _scanner.cancelScannerSession(session);
+  Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session) =>
+      _scanner.cancelScannerSession(session);
 
   @override
-  Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session) => _scanner.scannerSnapshot(session);
+  Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session) =>
+      _scanner.scannerSnapshot(session);
 
   @override
-  Future<ScannerCandidate> getScannerCandidate(ScannerSession session, String candidateId) => _scanner.getScannerCandidate(session, candidateId);
+  Future<ScannerCandidate> getScannerCandidate(
+    ScannerSession session,
+    String candidateId,
+  ) => _scanner.getScannerCandidate(session, candidateId);
 
   @override
-  Future<ScannerCandidate> reviewScannerCandidate(ScannerSession session, ScannerCandidate candidate, Map<String, dynamic> payload, {required bool approve, required String reason}) => _scanner.reviewScannerCandidate(session, candidate, payload, approve: approve, reason: reason);
+  Future<ScannerCandidate> reviewScannerCandidate(
+    ScannerSession session,
+    ScannerCandidate candidate,
+    Map<String, dynamic> payload, {
+    required bool approve,
+    required String reason,
+  }) => _scanner.reviewScannerCandidate(
+    session,
+    candidate,
+    payload,
+    approve: approve,
+    reason: reason,
+  );
 
   @override
-  Future<Map<String, dynamic>> commitScannerCandidate(ScannerSession session, ScannerCandidate candidate, {required String profileId, required int expectedRepositoryRevision, required String idempotencyKey}) => _scanner.commitScannerCandidate(session, candidate, profileId: profileId, expectedRepositoryRevision: expectedRepositoryRevision, idempotencyKey: idempotencyKey);
+  Future<Map<String, dynamic>> commitScannerCandidate(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    required String profileId,
+    required int expectedRepositoryRevision,
+    required String idempotencyKey,
+  }) => _scanner.commitScannerCandidate(
+    session,
+    candidate,
+    profileId: profileId,
+    expectedRepositoryRevision: expectedRepositoryRevision,
+    idempotencyKey: idempotencyKey,
+  );
 
   @override
   Future<AppExitResponse> didRequestAppExit() async {
@@ -238,7 +424,9 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
     if (!_disposed) {
       _state.value = _state.value.copyWith(
         connection: _client.connection.value,
-        scanAvailable: _client.connection.value == BackendConnection.connected ? _state.value.scanAvailable : false,
+        scanAvailable: _client.connection.value == BackendConnection.connected
+            ? _state.value.scanAvailable
+            : false,
       );
       if (_client.connection.value == BackendConnection.connected) {
         unawaited(_refreshScannerReadiness());
@@ -252,11 +440,15 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
       final targets = await listScannerTargets();
       if (!_disposed) {
         _state.value = _state.value.copyWith(
-          scanAvailable: readiness['ready'] == true && targets.any((item) => item.status == ScannerTargetStatus.ready),
+          scanAvailable:
+              readiness['ready'] == true &&
+              targets.any((item) => item.status == ScannerTargetStatus.ready),
         );
       }
     } catch (_) {
-      if (!_disposed) _state.value = _state.value.copyWith(scanAvailable: false);
+      if (!_disposed) {
+        _state.value = _state.value.copyWith(scanAvailable: false);
+      }
     }
   }
 
@@ -264,7 +456,9 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
     if (_disposed || event.eventKind != ScannerEventKind.terminal) return;
     final outcome = event.payload['outcome'];
     _state.value = _state.value.copyWith(
-      scanPhase: outcome == 'completed' ? ScanPhase.succeeded : ScanPhase.failed,
+      scanPhase: outcome == 'completed'
+          ? ScanPhase.succeeded
+          : ScanPhase.failed,
     );
   }
 }

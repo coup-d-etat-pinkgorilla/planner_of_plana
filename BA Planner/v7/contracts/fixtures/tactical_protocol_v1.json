@@ -1,0 +1,13 @@
+{
+  "version":1,
+  "cases":[
+    {"name":"get","valid":true,"message":{"protocol":1,"id":"1","type":"request","method":"tactical.state.get","payload":{"profile_id":"000000000000000000000001"}}},
+    {"name":"empty-state","valid":true,"message":{"protocol":1,"id":"1","type":"response","method":"tactical.state.get","payload":{"version":1,"profile_id":"000000000000000000000001","revision":0,"matches":[],"jokbo":[]}}},
+    {"name":"upsert-match","valid":true,"message":{"protocol":1,"id":"2","type":"request","method":"tactical.match.upsert","payload":{"profile_id":"000000000000000000000001","expected_revision":0,"idempotency_key":"save-1","match":{"version":1,"match_id":"m1","kind":"attack","occurred_on":null,"season":"S1","opponent":"Rival","result":"win","attack_deck":{"version":1,"strikers":["hoshino",null,null,null],"specials":["ayane",null]},"defense_deck":{"version":1,"strikers":["shiroko",null,null,null],"specials":["serika_new_year",null]},"notes":""}}}},
+    {"name":"revision","valid":true,"message":{"protocol":1,"id":"2","type":"response","method":"tactical.match.upsert","payload":{"revision":1}}},
+    {"name":"bad-slots","valid":false,"message":{"protocol":1,"id":"3","type":"request","method":"tactical.match.upsert","payload":{"profile_id":"000000000000000000000001","expected_revision":0,"idempotency_key":"bad","match":{"version":1,"match_id":"m1","kind":"attack","occurred_on":null,"season":"","opponent":"Rival","result":"win","attack_deck":{"version":1,"strikers":[],"specials":[]},"defense_deck":{"version":1,"strikers":[null,null,null,null],"specials":[null,null]},"notes":""}}}},
+    {"name":"bool-revision","valid":false,"message":{"protocol":1,"id":"4","type":"request","method":"tactical.match.delete","payload":{"profile_id":"000000000000000000000001","expected_revision":true,"idempotency_key":"bad","match_id":"m1"}}},
+    {"name":"unknown-field","valid":false,"message":{"protocol":1,"id":"5","type":"request","method":"tactical.state.get","payload":{"profile_id":"000000000000000000000001","extra":1}}},
+    {"name":"wrong-version","valid":false,"message":{"protocol":2,"id":"6","type":"request","method":"tactical.state.get","payload":{"profile_id":"000000000000000000000001"}}}
+  ]
+}

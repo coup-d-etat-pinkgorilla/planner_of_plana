@@ -59,7 +59,7 @@ Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
 | P4 | 프로필과 repository 영구 저장 | `완료` | nested schema·40-case Python/Dart contract, typed state, atomic persistence와 실제 Dart↔Python restart E2E; Python 40·Flutter 43·analyze·release 통과 | P5에서 repository 확정과 분리된 scanner session 경계 작성 |
 | P5 | scanner/matcher session protocol과 backend | `완료` | 40-path follow-up 인수와 마스터 보완; Python 59·Flutter 47·실제 process E2E·release asset gate 통과 | 2학생·2인벤토리 아이콘 제한 coverage를 유지하고 P6에서 scanner UI 연결 |
-| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1 학생·P6-2 인벤토리·P6-3 스캔·P6-4 홈·P6-5 통계 완료; P6-6 인계 준비, P6-7 미완료 | accepted P6-5 snapshot과 P6-6 input/prompt를 슬레이브에 전달 |
+| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1 학생·P6-2 인벤토리·P6-3 스캔·P6-4 홈·P6-5 통계·P6-6 전술대항전 완료; P6-7 인계 대기 | P6-7 설정 및 통합 오류 처리 프롬프트를 슬레이브에 전달 |
 
 ## 현재 결정
 
@@ -544,33 +544,63 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
   수신 디렉터리와 현재 작업 터미널에서 확인되지 않았고 무선 전달이라는 별도 주장은 없었다.
 - 선행 조건: P6-4 완료
 - 차단 사항: 없음
-- 다음 행동: accepted P6-5 snapshot과 P6-6 input/prompt를 슬레이브에 전달
+- 다음 행동: 승인된 P6-6 snapshot을 기준으로 P6-7 설정 및 통합 오류 처리 프롬프트 작성
 - 최종 갱신: 2026-07-23
 
 ## P6-6 — 전술대항전 실제 데이터 통합
 
-- 상태: `인계 대기`
+- 상태: `완료`
 - 목적: 실제 학생 ID 기반 4 Striker+2 Special 공격·방어 편성, 프로필별 전적·메모·수동
   족보 저장·복원과 검색·필터·재사용 통합
 - 완료 조건: strict tactical contract/fixture, profile-scoped atomic persistence와 revision/idempotency,
   실제 Dart↔Python restart E2E, Mock, P6-1~P6-5 회귀, 3 viewport, release와 Almanac 검증 통과
 - 입력: `docs/migration/p6-6-tactical-integration/input.md`
 - 슬레이브 실행 프롬프트: `docs/migration/p6-6-tactical-integration/slave-execution-prompt.md`
+- 출력 보고서: `docs/migration/handoffs/incoming/ba-planner-v7-p6-6-tactical-integration/staging/20260723-184006-136eea9c/output.md`
+  (`COMPLETED`, 마스터 독립 검증 완료)
+- 결과물: 수신 패키지 `ba-planner-v7-p6-6-tactical-integration-20260723-183844.zip`
+  (22,658 bytes, SHA-256 `4e3226cb73cf05b8eb17196b6306541567385388ea88f3cf9e541ab54a174492`),
+  같은 staging의 patch와 verification artifact
 - 결정 및 제약: P6-6은 수동 match/jokbo 기본 기능만 소유한다. 로비 scan, 상대 identity/history,
   provenance, 전술 통계, 변경 감지, 예상 방어덱·추천·공유는 P7~P13에 남긴다. canonical student ID와
   fixed 4+2 slot 순서를 저장하며 v6 Qt/QML/PySide/SQLite facade를 복사하거나 runtime import하지 않는다.
+- 마스터 검증: package/manifest/output artifact의 크기와 SHA-256을 독립 확인하고 고유 staging에서만
+  추출했다. accepted P6-5 `e58281e`와 clean worktree를 확인하고 17-path patch에 `git apply --check`를
+  선행한 뒤 적용했다. Python 79개, Flutter 전체 121개와 P6-6 집중 15개, `flutter analyze`, Windows
+  release build, 실제 Dart↔Python tactical save→restart→restore, Mock CRUD/revision, strict schema/fixture,
+  atomic failure·profile isolation·candidate Hold/Approve 회귀, 세 viewport의 empty/populated layout,
+  `codealmanac validate`·`health`, `git diff --check`를 통과했다.
+- 마스터 보정: 슬레이브 미실행 Dart source의 괄호/import 오류와 analyzer lint를 수정했다. Mock catalog의
+  combat class 대소문자 때문에 own-deck 후보가 사라지던 문제를 정규화하고, 족보 복사가 가짜 상대·승리
+  기록을 즉시 저장하지 않고 새 편집 draft를 열도록 수정했다. 날짜 범위 filter, profile/revision과 실제 덱
+  evidence 표시, canonical record/profile/error strict Dart 검증, Mock CRUD/revision 및 copy-before-save와
+  긴 데이터 세 viewport 회귀 test를 보강했다.
+- 전달 메모: 마스터 요청문의 `P2`/`p2-planning-screen.patch` 표기는 오래된 문구였으나 실제 Task ID,
+  manifest, `output.md`와 patch 17경로는 모두 P6-6으로 일치했다. 송신 보고서에는 wireless wrapper와
+  `CROSS_PC_HANDOFF_READY`가 있으나 master 측 `WIRELESS_HANDOFF_RECEIVED` 터미널 출력은 보존되지 않았다.
+  수신 ZIP은 master에서 사용자 값·manifest와 독립적으로 동일 byte/hash임을 확인했다.
 - 선행 조건: P6-5 완료
 - 차단 사항: 없음
-- 다음 행동: accepted P6-5 snapshot과 두 입력 문서를 슬레이브에 전달하고 결과 artifact 인수
+- 다음 행동: accepted P6-6 snapshot과 P6-7 설정 및 통합 오류 처리 프롬프트를 슬레이브에 전달
 - 최종 갱신: 2026-07-23
 
 ## P6-7 — 설정 및 통합 오류 처리
 
-- 상태: `대기`
-- 목적: 설정 탭과 전 탭 공통 오류·복구 흐름을 통합하고 P6 전체를 마감
-- 완료 조건: 모든 기본 탭과 스캔 → 현재 상태 검토 → 목표 설정 → 총 필요량 → 부족량 →
-  저장·복원 통합 흐름의 독립 검증 통과
-- 선행 조건: P6-4~P6-6 완료
+- 상태: `인계 대기`
+- 목적: 설정 탭을 실제 profile·backend·scanner·진단 source에 연결하고 전 탭 공통 오류·복구 흐름을
+  통합한 뒤 P6 전체 독립 검증을 준비
+- 완료 조건: profile 생성·선택·이름 변경, reconnect/restart, secret-safe diagnostics, Scan·Adaptive-Sync
+  진입, 전 탭 reload/stale 보호와 스캔 → 현재 상태 검토 → 목표 설정 → 총 필요량 → 부족량 → 저장·복원
+  통합 흐름이 실제 process·Mock·3 viewport·release·Almanac gate를 모두 통과
+- 입력: `docs/migration/p6-7-settings-error-integration/input.md`
+- 슬레이브 실행 프롬프트: `docs/migration/p6-7-settings-error-integration/slave-execution-prompt.md`
+- 결정 및 제한: profile 삭제·backup/import, 새 settings 저장소, 설정에서 scan 시작·target persistence,
+  P7+ 기능은 제외한다. reconnect/restart는 draft/candidate를 자동 commit·삭제하지 않으며 마스터 승인 전
+  workflow의 P6-7 또는 P6 전체를 `완료`로 바꾸지 않는다.
+- 선행 조건: P6-1~P6-6 완료 및 accepted P6-6 snapshot 확인. 현재 승인 P6-6은 HEAD `e58281e`만이
+  아니라 commit되지 않은 수정·신규 경로를 포함하므로 슬레이브가 HEAD만 기준으로 시작하면 안 된다.
+- 차단 사항: 없음
+- 다음 행동: accepted P6-6 snapshot과 실행 프롬프트를 슬레이브에 전달하고 artifact 인계 대기
 - 최종 갱신: 2026-07-23
 
 최종 갱신: 2026-07-23

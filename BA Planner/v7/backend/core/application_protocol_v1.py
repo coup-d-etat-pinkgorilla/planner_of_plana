@@ -8,6 +8,8 @@ from core.repository_protocol_v1 import METHODS, RepositoryProtocolV1
 from core.repository_store import JsonRepository
 from core.scanner_protocol_v1 import METHODS as SCANNER_METHODS, ScannerProtocolV1
 from core.scanner_session import EventSink, ScannerSessionService
+from core.tactical_protocol_v1 import METHODS as TACTICAL_METHODS, TacticalProtocolV1
+from core.tactical_store import TacticalStore
 
 
 class ApplicationProtocolV1:
@@ -16,7 +18,9 @@ class ApplicationProtocolV1:
         scanner_service: ScannerSessionService | None = None,
     ) -> None:
         self.planning = planning or PlanningProtocolV1()
-        self.repository = RepositoryProtocolV1(JsonRepository(storage_root))
+        repository = JsonRepository(storage_root)
+        self.repository = RepositoryProtocolV1(repository)
+        self.tactical = TacticalProtocolV1(TacticalStore(storage_root, repository))
         self.scanner_service = scanner_service
         self.scanner = ScannerProtocolV1(scanner_service) if scanner_service is not None else None
 
@@ -42,4 +46,7 @@ class ApplicationProtocolV1:
         if isinstance(message, dict) and message.get("method") in METHODS:
             trusted = PlanningProtocolV1._trusted_request(message)
             return None if trusted is None else self.repository.handle(trusted)
+        if isinstance(message, dict) and message.get("method") in TACTICAL_METHODS:
+            trusted = PlanningProtocolV1._trusted_request(message)
+            return None if trusted is None else self.tactical.handle(trusted)
         return self.planning.handle(message)

@@ -14,6 +14,7 @@ import 'pages/planning_page.dart';
 import 'pages/scan_page.dart';
 import 'pages/student_page.dart';
 import 'pages/statistics_page.dart';
+import 'pages/tactical_page.dart';
 import 'pages/section_placeholder_page.dart';
 import 'widgets/animated_section_stack.dart';
 import 'widgets/ba_triangle_background.dart';
@@ -76,11 +77,13 @@ class _AppShellState extends State<AppShell> {
   List<ScannerRecentSummary> _recentScans = const [];
   var _homeReloadToken = 0;
   var _statisticsReloadToken = 0;
+  var _tacticalReloadToken = 0;
 
   void _open(AppSection section) {
     setState(() {
       if (section == AppSection.home) _homeReloadToken += 1;
       if (section == AppSection.statistics) _statisticsReloadToken += 1;
+      if (section == AppSection.pvp) _tacticalReloadToken += 1;
       _section = section;
     });
   }
@@ -182,9 +185,9 @@ class _AppShellState extends State<AppShell> {
                                   onCandidateCommitted:
                                       _clearInventoryCandidate,
                                 ),
-                                SectionPlaceholderPage(
-                                  section: AppSection.pvp,
+                                TacticalPage(
                                   service: widget.service,
+                                  reloadToken: _tacticalReloadToken,
                                 ),
                                 StatisticsPage(
                                   service: widget.service,
