@@ -216,7 +216,8 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('top-tab-settings')));
     await tester.pumpAndSettle();
-    expect(find.text('Adaptive-Sync 진단'), findsWidgets);
+    expect(find.text('프로필과 연결'), findsOneWidget);
+    expect(find.text('Adaptive-Sync'), findsOneWidget);
   });
 
   testWidgets('home glass section keeps its fixed aspect ratio', (

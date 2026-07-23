@@ -12,15 +12,16 @@ import 'pages/home_page.dart';
 import 'pages/inventory_page.dart';
 import 'pages/planning_page.dart';
 import 'pages/scan_page.dart';
+import 'pages/settings_page.dart';
 import 'pages/student_page.dart';
 import 'pages/statistics_page.dart';
 import 'pages/tactical_page.dart';
-import 'pages/section_placeholder_page.dart';
 import 'widgets/animated_section_stack.dart';
 import 'widgets/ba_triangle_background.dart';
 import 'widgets/development_panel.dart';
 import 'widgets/diagonal_header.dart';
 import 'widgets/lifted_path_shadow.dart';
+import 'widgets/recovery_banner.dart';
 
 const _sectionMotions = <SectionMotionSpec>[
   SectionMotionSpec(intro: 0, outro: 180),
@@ -78,6 +79,7 @@ class _AppShellState extends State<AppShell> {
   var _homeReloadToken = 0;
   var _statisticsReloadToken = 0;
   var _tacticalReloadToken = 0;
+  var _profileGeneration = 0;
 
   void _open(AppSection section) {
     setState(() {
@@ -123,6 +125,27 @@ class _AppShellState extends State<AppShell> {
     setState(() => _inventoryCandidate = null);
   }
 
+  void _profileChanged() {
+    setState(() {
+      _profileGeneration += 1;
+      _homeReloadToken += 1;
+      _statisticsReloadToken += 1;
+      _tacticalReloadToken += 1;
+      _planningSeed = null;
+      _studentCandidate = null;
+      _inventoryCandidate = null;
+      _recentScans = const [];
+    });
+  }
+
+  void _recoveryCompleted() {
+    setState(() {
+      _homeReloadToken += 1;
+      _statisticsReloadToken += 1;
+      _tacticalReloadToken += 1;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,12 +175,18 @@ class _AppShellState extends State<AppShell> {
                               });
                             },
                           ),
+                          RecoveryBanner(
+                            service: widget.service,
+                            onOpenSettings: () => _open(AppSection.settings),
+                            onOpenScan: () => _open(AppSection.scan),
+                          ),
                           Expanded(
                             child: AnimatedSectionStack(
                               index: AppSection.values.indexOf(_section),
                               motions: _sectionMotions,
                               children: [
                                 HomePage(
+                                  key: ValueKey('home-$_profileGeneration'),
                                   service: widget.service,
                                   onOpen: _open,
                                   reloadToken: _homeReloadToken,
@@ -168,16 +197,21 @@ class _AppShellState extends State<AppShell> {
                                   recentScans: _recentScans,
                                 ),
                                 StudentPage(
+                                  key: ValueKey('students-$_profileGeneration'),
                                   service: widget.service,
                                   onAddToPlan: _addStudentToPlan,
                                   candidateContext: _studentCandidate,
                                   onCandidateCommitted: _clearStudentCandidate,
                                 ),
                                 PlanningPage(
+                                  key: ValueKey('plan-$_profileGeneration'),
                                   service: widget.service,
                                   initialSeed: _planningSeed,
                                 ),
                                 InventoryPage(
+                                  key: ValueKey(
+                                    'inventory-$_profileGeneration',
+                                  ),
                                   service: widget.service,
                                   onOpenPlan: () => _open(AppSection.plan),
                                   onOpenScan: () => _open(AppSection.scan),
@@ -186,26 +220,33 @@ class _AppShellState extends State<AppShell> {
                                       _clearInventoryCandidate,
                                 ),
                                 TacticalPage(
+                                  key: ValueKey('tactical-$_profileGeneration'),
                                   service: widget.service,
                                   reloadToken: _tacticalReloadToken,
                                 ),
                                 StatisticsPage(
+                                  key: ValueKey(
+                                    'statistics-$_profileGeneration',
+                                  ),
                                   service: widget.service,
                                   onOpen: _open,
                                   reloadToken: _statisticsReloadToken,
                                 ),
                                 ScanPage(
+                                  key: ValueKey('scan-$_profileGeneration'),
                                   service: widget.service,
                                   onCandidateHandoff: _handoffCandidate,
                                   onRecentChanged: (recent) {
                                     setState(() => _recentScans = recent);
                                   },
                                 ),
-                                SectionPlaceholderPage(
-                                  section: AppSection.settings,
+                                SettingsPage(
                                   service: widget.service,
+                                  onOpenScan: () => _open(AppSection.scan),
                                   onOpenDiagnostics: () =>
                                       _open(AppSection.adaptiveSync),
+                                  onProfileChanged: _profileChanged,
+                                  onRecoveryCompleted: _recoveryCompleted,
                                 ),
                                 const AdaptiveSyncPage(),
                               ],

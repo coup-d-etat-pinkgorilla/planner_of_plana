@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 
 import 'app_service.dart';
 import 'backend_process.dart';
+import 'diagnostics_service.dart';
 import 'repository_service.dart';
 import 'tactical_service.dart';
 
@@ -49,11 +50,24 @@ class PlanningProtocolClient {
     this._startProcess, {
     this.defaultTimeout = const Duration(seconds: 10),
     this.stopGracePeriod = const Duration(milliseconds: 750),
-  });
+    BackendLaunchInfo launchInfo = const BackendLaunchInfo.unresolved(),
+  }) : diagnostics = ValueNotifier(
+         BackendDiagnostics(
+           protocolVersion: 1,
+           connection: BackendConnection.disconnected,
+           processGeneration: 0,
+           launch: launchInfo.redacted(),
+           lifecycle: const [],
+           stderr: const [],
+         ),
+       ) {
+    connection.addListener(_syncDiagnosticsConnection);
+  }
 
   final BackendProcessStarter _startProcess;
   final Duration defaultTimeout;
   final Duration stopGracePeriod;
+  final ValueNotifier<BackendDiagnostics> diagnostics;
   final ValueNotifier<BackendConnection> connection = ValueNotifier(
     BackendConnection.disconnected,
   );
@@ -164,6 +178,7 @@ class PlanningProtocolClient {
   Future<void> _startNewProcess() async {
     connection.value = BackendConnection.connecting;
     final generation = ++_generation;
+    _recordLifecycle('start requested', generation: generation);
     try {
       final process = await _startProcess();
       if (_disposed || _stopping || generation != _generation) {
@@ -180,7 +195,9 @@ class PlanningProtocolClient {
         cancelOnError: true,
       );
       _stderrSubscription = process.stderrLines.listen((line) {
-        debugPrint('[backend] $line');
+        final safe = redactDiagnosticText(line);
+        _appendDiagnostic(stderr: safe);
+        debugPrint('[backend] $safe');
       });
       unawaited(
         process.exitCode.then(
@@ -191,10 +208,15 @@ class PlanningProtocolClient {
         ),
       );
       connection.value = BackendConnection.connected;
-    } catch (_) {
+      _recordLifecycle('process connected', generation: generation);
+    } catch (error) {
       _process = null;
       await _cancelSubscriptions();
       connection.value = BackendConnection.disconnected;
+      _recordLifecycle(
+        'start failed: ${redactDiagnosticText('$error')}',
+        generation: generation,
+      );
       rethrow;
     }
   }
@@ -241,11 +263,13 @@ class PlanningProtocolClient {
   }
 
   Future<void> restart() async {
+    _recordLifecycle('restart requested');
     await stop();
     await start();
   }
 
   Future<void> stop() async {
+    _recordLifecycle('stop requested');
     _stopping = true;
     _generation += 1;
     final activeStart = _starting;
@@ -295,7 +319,9 @@ class PlanningProtocolClient {
     }
     _disposed = true;
     await stop();
+    connection.removeListener(_syncDiagnosticsConnection);
     connection.dispose();
+    diagnostics.dispose();
     await _protocolErrors.close();
     await _events.close();
   }
@@ -662,6 +688,7 @@ class PlanningProtocolClient {
   }
 
   void _emitProtocolError(String message) {
+    _recordLifecycle('protocol error: ${redactDiagnosticText(message)}');
     if (!_protocolErrors.isClosed) {
       _protocolErrors.add(BackendProtocolException(message));
     }
@@ -675,6 +702,7 @@ class PlanningProtocolClient {
       'Backend process exited unexpectedly with code $code',
       generation,
     );
+    _recordLifecycle('process exited with code $code', generation: generation);
   }
 
   void _disconnect(String message, int generation) {
@@ -684,7 +712,51 @@ class PlanningProtocolClient {
     _process = null;
     _failPending(BackendDisconnectedException(message));
     connection.value = BackendConnection.disconnected;
+    _recordLifecycle(
+      'disconnected: ${redactDiagnosticText(message)}',
+      generation: generation,
+    );
     unawaited(_cancelSubscriptions());
+  }
+
+  void updateLaunchInfo(BackendLaunchInfo value) {
+    if (_disposed) return;
+    diagnostics.value = diagnostics.value.copyWith(launch: value.redacted());
+  }
+
+  void _syncDiagnosticsConnection() {
+    if (_disposed) return;
+    diagnostics.value = diagnostics.value.copyWith(
+      connection: connection.value,
+      processGeneration: _generation,
+    );
+  }
+
+  void _recordLifecycle(String value, {int? generation}) {
+    if (_disposed) return;
+    final item =
+        'g${generation ?? _generation}: ${redactDiagnosticText(value)}';
+    _appendDiagnostic(lifecycle: item, generation: generation);
+  }
+
+  void _appendDiagnostic({String? lifecycle, String? stderr, int? generation}) {
+    if (_disposed) return;
+    List<String> append(List<String> values, String? item, int maximum) {
+      if (item == null || item.isEmpty) return values;
+      final next = [
+        ...values,
+        item.length > 300 ? '${item.substring(0, 300)}…' : item,
+      ];
+      return List.unmodifiable(
+        next.length > maximum ? next.sublist(next.length - maximum) : next,
+      );
+    }
+
+    diagnostics.value = diagnostics.value.copyWith(
+      processGeneration: generation ?? _generation,
+      lifecycle: append(diagnostics.value.lifecycle, lifecycle, 30),
+      stderr: append(diagnostics.value.stderr, stderr, 50),
+    );
   }
 
   void _failPending(Object error) {

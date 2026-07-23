@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import 'app_service.dart';
+import 'diagnostics_service.dart';
 import 'repository_service.dart';
 import 'scanner_service.dart';
 import 'tactical_service.dart';
@@ -15,7 +16,8 @@ class MockAppService
         MockScenarioController,
         RepositoryService,
         ScannerService,
-        TacticalService {
+        TacticalService,
+        DiagnosticsService {
   MockAppService({
     AppServiceState? initialState,
     this.scannerScenario = MockScannerScenario.completed,
@@ -61,6 +63,22 @@ class MockAppService
   final Map<String, dynamic> _scannerReadiness;
 
   final ValueNotifier<AppServiceState> _state;
+  final ValueNotifier<BackendDiagnostics> _diagnostics = ValueNotifier(
+    const BackendDiagnostics(
+      protocolVersion: 1,
+      connection: BackendConnection.connected,
+      processGeneration: 1,
+      launch: BackendLaunchInfo(
+        configured: false,
+        resolved: true,
+        executable: 'mock-python',
+        arguments: ['-m', 'core.backend_process'],
+        workingDirectory: 'mock/backend',
+      ),
+      lifecycle: ['g1: mock process connected'],
+      stderr: [],
+    ),
+  );
   final List<RepositoryProfile> _profiles = [
     const RepositoryProfile(
       id: '000000000000000000000001',
@@ -78,28 +96,110 @@ class MockAppService
   final Map<String, String> _scannerTerminals = {};
   final List<Timer> _scannerTimers = [];
   var _scannerGeneration = 0;
+  bool failNextReconnect = false;
+  bool failNextRestart = false;
+  bool failNextProfileMutation = false;
+  Future<void>? _reconnectFlight;
+  Future<void>? _restartFlight;
 
   @override
   ValueListenable<AppServiceState> get state => _state;
 
   @override
-  Future<void> reconnect() async {
-    _state.value = _state.value.copyWith(
-      connection: BackendConnection.connecting,
-    );
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    _state.value = _state.value.copyWith(
-      connection: BackendConnection.connected,
-    );
+  Future<void> reconnect() => _reconnectFlight ??= _mockReconnect();
+
+  Future<void> _mockReconnect() async {
+    try {
+      _recordLifecycle('reconnect requested');
+      if (failNextReconnect) {
+        failNextReconnect = false;
+        _recordLifecycle('reconnect failed');
+        throw StateError('mock reconnect failed');
+      }
+      _state.value = _state.value.copyWith(
+        connection: BackendConnection.connecting,
+      );
+      _syncDiagnostics();
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+      _state.value = _state.value.copyWith(
+        connection: BackendConnection.connected,
+      );
+      _recordLifecycle('mock process connected');
+      _syncDiagnostics();
+    } finally {
+      _reconnectFlight = null;
+    }
   }
 
   @override
-  Future<void> restartBackend() async {
-    _state.value = _state.value.copyWith(
-      connection: BackendConnection.disconnected,
+  Future<void> restartBackend() => _restartFlight ??= _mockRestart();
+
+  Future<void> _mockRestart() async {
+    try {
+      _recordLifecycle('restart requested');
+      if (failNextRestart) {
+        failNextRestart = false;
+        _recordLifecycle('restart failed');
+        throw StateError('mock restart failed');
+      }
+      _state.value = _state.value.copyWith(
+        connection: BackendConnection.disconnected,
+      );
+      _diagnostics.value = _diagnostics.value.copyWith(
+        processGeneration: _diagnostics.value.processGeneration + 1,
+      );
+      _syncDiagnostics();
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await reconnect();
+    } finally {
+      _restartFlight = null;
+    }
+  }
+
+  @override
+  ValueListenable<BackendDiagnostics> get diagnostics => _diagnostics;
+
+  @override
+  String buildDiagnosticsReport({
+    required bool? scannerReady,
+    required int scannerTargetCount,
+  }) {
+    final value = _diagnostics.value;
+    return [
+      'BA Planner diagnostics v1',
+      'protocol=${value.protocolVersion}',
+      'connection=${value.connection.name}',
+      'process_generation=${value.processGeneration}',
+      'launcher_configured=${value.launch.configured}',
+      'launcher_resolved=${value.launch.resolved}',
+      'executable=${value.launch.executable}',
+      'arguments=${value.launch.arguments.join(' ')}',
+      'working_directory=${value.launch.workingDirectory}',
+      'scanner_ready=${scannerReady ?? 'unknown'}',
+      'scanner_target_count=$scannerTargetCount',
+      'lifecycle:',
+      ...value.lifecycle.map((item) => '- $item'),
+      'stderr:',
+      ...value.stderr.map((item) => '- $item'),
+    ].join('\n');
+  }
+
+  void _recordLifecycle(String item) {
+    final values = [
+      ..._diagnostics.value.lifecycle,
+      'g${_diagnostics.value.processGeneration}: $item',
+    ];
+    _diagnostics.value = _diagnostics.value.copyWith(
+      lifecycle: List.unmodifiable(
+        values.length > 30 ? values.sublist(values.length - 30) : values,
+      ),
     );
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    await reconnect();
+  }
+
+  void _syncDiagnostics() {
+    _diagnostics.value = _diagnostics.value.copyWith(
+      connection: _state.value.connection,
+    );
   }
 
   @override
@@ -582,6 +682,10 @@ class MockAppService
     String displayName,
     String idempotencyKey,
   ) async {
+    if (failNextProfileMutation) {
+      failNextProfileMutation = false;
+      throw StateError('revision_conflict');
+    }
     final profile = RepositoryProfile(
       id: (_profiles.length + 1).toRadixString(16).padLeft(24, '0'),
       displayName: displayName,
@@ -598,6 +702,14 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
+    if (failNextProfileMutation) {
+      failNextProfileMutation = false;
+      throw StateError('revision_conflict');
+    }
+    final target = _profiles.firstWhere((profile) => profile.id == profileId);
+    if (target.revision != expectedRevision) {
+      throw StateError('revision_conflict');
+    }
     for (var index = 0; index < _profiles.length; index++) {
       final profile = _profiles[index];
       _profiles[index] = RepositoryProfile(
@@ -621,6 +733,10 @@ class MockAppService
   ) async {
     final index = _profiles.indexWhere((profile) => profile.id == profileId);
     final profile = _profiles[index];
+    if (failNextProfileMutation || profile.revision != expectedRevision) {
+      failNextProfileMutation = false;
+      throw StateError('revision_conflict');
+    }
     _profiles[index] = RepositoryProfile(
       id: profile.id,
       displayName: displayName,
@@ -817,12 +933,15 @@ class MockAppService
       timer.cancel();
     }
     await _scannerEvents.close();
+    _diagnostics.dispose();
     _state.dispose();
   }
 
   @override
   void setConnection(BackendConnection value) {
     _state.value = _state.value.copyWith(connection: value);
+    _recordLifecycle('scenario connection=${value.name}');
+    _syncDiagnostics();
   }
 
   @override

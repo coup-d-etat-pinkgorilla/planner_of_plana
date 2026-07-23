@@ -45,11 +45,10 @@ sources:
 
 ## 현재 단계 현황
 
-2026-07-22 P0 계약, P1 process transport, P2 실제 계획 화면, P3 repository DTO·병합
-parity와 P4 repository persistence를 현재 작업 트리에서 마스터가 직접 완료 조건과 대조해
-보완하고 인수했다. Python test 40개, Flutter test 43개, `flutter analyze`, 실제 Python
-process의 planning method와 repository restart E2E, MockAppService 흐름, Almanac 검증과
-Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
+2026-07-23 P0 계약부터 P6 전 기본 탭 실제 데이터 통합까지 마스터가 완료 조건과 대조해 보완하고
+인수했다. 최종 P6 검증은 Python 79개, Flutter 136개, `flutter analyze`, 실제 Python process와
+MockAppService의 scan Hold/Approve → current → goal → gross → shortage → tactical → restart restore,
+세 viewport, Almanac과 Windows release build를 통과했다. P6-7 변경은 아직 커밋되지 않았다.
 
 | 단계 | 목적 | 상태 | 근거 또는 산출물 | 다음 행동 |
 |---|---|---|---|---|
@@ -59,7 +58,7 @@ Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
 | P4 | 프로필과 repository 영구 저장 | `완료` | nested schema·40-case Python/Dart contract, typed state, atomic persistence와 실제 Dart↔Python restart E2E; Python 40·Flutter 43·analyze·release 통과 | P5에서 repository 확정과 분리된 scanner session 경계 작성 |
 | P5 | scanner/matcher session protocol과 backend | `완료` | 40-path follow-up 인수와 마스터 보완; Python 59·Flutter 47·실제 process E2E·release asset gate 통과 | 2학생·2인벤토리 아이콘 제한 coverage를 유지하고 P6에서 scanner UI 연결 |
-| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1 학생·P6-2 인벤토리·P6-3 스캔·P6-4 홈·P6-5 통계·P6-6 전술대항전 완료; P6-7 인계 대기 | P6-7 설정 및 통합 오류 처리 프롬프트를 슬레이브에 전달 |
+| P6 | 전 기본 탭 실제 데이터 통합 | `완료` | P6-1~P6-7 완료; Python 79·Flutter 136·analyze·release·실제 process/Mock 최종 E2E·3 viewport·Almanac 통과 | P7은 별도 승인 전 시작하지 않음 |
 
 ## 현재 결정
 
@@ -586,7 +585,7 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 
 ## P6-7 — 설정 및 통합 오류 처리
 
-- 상태: `인계 대기`
+- 상태: `완료`
 - 목적: 설정 탭을 실제 profile·backend·scanner·진단 source에 연결하고 전 탭 공통 오류·복구 흐름을
   통합한 뒤 P6 전체 독립 검증을 준비
 - 완료 조건: profile 생성·선택·이름 변경, reconnect/restart, secret-safe diagnostics, Scan·Adaptive-Sync
@@ -594,13 +593,31 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
   통합 흐름이 실제 process·Mock·3 viewport·release·Almanac gate를 모두 통과
 - 입력: `docs/migration/p6-7-settings-error-integration/input.md`
 - 슬레이브 실행 프롬프트: `docs/migration/p6-7-settings-error-integration/slave-execution-prompt.md`
+- 출력 보고서: `docs/migration/handoffs/incoming/ba-planner-v7-p6-7-settings-error-integration/staging/master-verify-20260723-200655-009bf168/output.md`
+- 결과물: 같은 staging의 `artifacts/p6-7-settings-error-integration.patch`, `artifacts/verification.txt`
+- 수신 패키지: `ba-planner-v7-p6-7-settings-error-integration-20260723-200126.zip`, 17,803 bytes,
+  SHA-256 `1754b4a55ca8e9d7b7bce9995ba73d4016c9234d11595692fd74517ed81bc095`
+- 인계 검증: manifest·sidecar·사용자 제공 byte/hash가 일치하고 새 고유 staging에 독립 추출했다.
+  `output.md`의 patch 63,263 bytes/SHA-256 `ed090da2a33d59459f729d84db0e0f9afbf9871ccb1fa39bd09be424d5983370`,
+  verification 4,106 bytes/SHA-256 `27e50cc43180ac581651b1b21439b37d37647ac52e586da4a5f9a8d86fbdb7ee`가
+  실제 artifact와 일치했다. 보존된 `WIRELESS_HANDOFF_RECEIVED` 터미널 출력은 없지만 수신 ZIP을
+  마스터가 다시 검증했으며 무선 전송 자체를 구현 검증으로 간주하지 않았다.
+- patch 인수: baseline `4225ab3`, clean worktree와 11개 frontend path의 무중첩을 확인하고 저장소
+  루트에서 `git apply --check --verbose`를 통과한 뒤 적용했다. 요청문의 `P2`와
+  `p2-planning-screen.patch`는 오래된 템플릿 문구이며 Task ID·manifest·output·실제 patch는 P6-7로 일치했다.
+- 마스터 보완: callback 반환 누락과 화면 밖 deep-link test를 수정하고, 설정 primary-tab 회귀를 갱신했다.
+  launcher executable/args/working-directory까지 token/password/secret/authorization/Bearer를 제거하도록
+  진단 경계를 강화했다. 실제 scanner fixture를 사용한 최종 process E2E와 동일 Mock 흐름을 추가해 Hold
+  불변, Approve commit, current/inventory/goal/gross/shortage/tactical, profile 격리와 restart 복원을 검증했다.
+- 독립 검증: Python 79개, Flutter 136개, P6-7 변경 13경로 Dart format, `flutter analyze`,
+  `flutter build windows --release`, 1280×720·1440×900·1280×960 populated/disconnected/long-text layout,
+  `codealmanac validate`, `codealmanac health`, 금지 GUI/v6 runtime import 0건과 `git diff --check` 통과.
 - 결정 및 제한: profile 삭제·backup/import, 새 settings 저장소, 설정에서 scan 시작·target persistence,
-  P7+ 기능은 제외한다. reconnect/restart는 draft/candidate를 자동 commit·삭제하지 않으며 마스터 승인 전
-  workflow의 P6-7 또는 P6 전체를 `완료`로 바꾸지 않는다.
-- 선행 조건: P6-1~P6-6 완료 및 accepted P6-6 snapshot 확인. 현재 승인 P6-6은 HEAD `e58281e`만이
-  아니라 commit되지 않은 수정·신규 경로를 포함하므로 슬레이브가 HEAD만 기준으로 시작하면 안 된다.
+  P7+ 기능은 제외한다. reconnect/restart는 draft/candidate를 자동 commit·삭제하지 않는다. 실제 Blue
+  Archive 게임 창 smoke는 수행하지 않았고 fixture/Mock 결과를 실제 게임 검증으로 표현하지 않는다.
+- 선행 조건: accepted P6-1~P6-6이 포함된 baseline `4225ab3` 확인
 - 차단 사항: 없음
-- 다음 행동: accepted P6-6 snapshot과 실행 프롬프트를 슬레이브에 전달하고 artifact 인계 대기
+- 다음 행동: P0~P6 workflow 완료 상태를 유지하고 명시적 승인 전 P7을 시작하지 않음
 - 최종 갱신: 2026-07-23
 
 최종 갱신: 2026-07-23

@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 
 import 'app_service.dart';
 import 'backend_process.dart';
+import 'diagnostics_service.dart';
 import 'planning_protocol_client.dart';
 import 'repository_service.dart';
 import 'scanner_service.dart';
@@ -13,7 +14,12 @@ import 'tactical_service.dart';
 
 class ProcessAppService
     with WidgetsBindingObserver
-    implements AppService, RepositoryService, ScannerService, TacticalService {
+    implements
+        AppService,
+        RepositoryService,
+        ScannerService,
+        TacticalService,
+        DiagnosticsService {
   ProcessAppService(this._client)
     : _state = ValueNotifier(
         const AppServiceState(
@@ -36,7 +42,16 @@ class ProcessAppService
 
   factory ProcessAppService.fromConfig(BackendProcessConfig config) {
     return ProcessAppService(
-      PlanningProtocolClient(() => startBackendProcess(config)),
+      PlanningProtocolClient(
+        () => startBackendProcess(config),
+        launchInfo: BackendLaunchInfo(
+          configured: true,
+          resolved: true,
+          executable: config.executable,
+          arguments: List.unmodifiable(config.arguments),
+          workingDirectory: config.workingDirectory,
+        ),
+      ),
     );
   }
 
@@ -48,15 +63,36 @@ class ProcessAppService
     String pythonExecutable = '',
     String backendDirectory = '',
   }) {
-    return ProcessAppService(
-      PlanningProtocolClient(() {
+    late PlanningProtocolClient client;
+    client = PlanningProtocolClient(
+      () {
         final config = BackendProcessConfig.resolve(
           pythonExecutable: pythonExecutable,
           backendDirectory: backendDirectory,
         );
+        client.updateLaunchInfo(
+          BackendLaunchInfo(
+            configured:
+                pythonExecutable.isNotEmpty || backendDirectory.isNotEmpty,
+            resolved: true,
+            executable: config.executable,
+            arguments: List.unmodifiable(config.arguments),
+            workingDirectory: config.workingDirectory,
+          ),
+        );
         return startBackendProcess(config);
-      }),
+      },
+      launchInfo: BackendLaunchInfo.unresolved(
+        configured: pythonExecutable.isNotEmpty || backendDirectory.isNotEmpty,
+        executable: pythonExecutable.isEmpty
+            ? 'default Python launcher'
+            : pythonExecutable,
+        workingDirectory: backendDirectory.isEmpty
+            ? 'auto-detect on connect'
+            : backendDirectory,
+      ),
     );
+    return ProcessAppService(client);
   }
 
   final PlanningProtocolClient _client;
@@ -64,6 +100,8 @@ class ProcessAppService
   late final StreamSubscription<ScannerEvent> _scannerSubscription;
   final ValueNotifier<AppServiceState> _state;
   bool _disposed = false;
+  Future<void>? _reconnectFlight;
+  Future<void>? _restartFlight;
 
   @override
   ValueListenable<AppServiceState> get state => _state;
@@ -304,10 +342,60 @@ class ProcessAppService
   });
 
   @override
-  Future<void> reconnect() => _client.start();
+  Future<void> reconnect() {
+    final restart = _restartFlight;
+    if (restart != null) return restart;
+    return _reconnectFlight ??= _reconnectOnce();
+  }
+
+  Future<void> _reconnectOnce() async {
+    try {
+      await _client.start();
+    } finally {
+      _reconnectFlight = null;
+    }
+  }
 
   @override
-  Future<void> restartBackend() => _client.restart();
+  Future<void> restartBackend() => _restartFlight ??= _restartOnce();
+
+  Future<void> _restartOnce() async {
+    try {
+      final reconnect = _reconnectFlight;
+      if (reconnect != null) await reconnect;
+      await _client.restart();
+    } finally {
+      _restartFlight = null;
+    }
+  }
+
+  @override
+  ValueListenable<BackendDiagnostics> get diagnostics => _client.diagnostics;
+
+  @override
+  String buildDiagnosticsReport({
+    required bool? scannerReady,
+    required int scannerTargetCount,
+  }) {
+    final value = diagnostics.value;
+    return [
+      'BA Planner diagnostics v1',
+      'protocol=${value.protocolVersion}',
+      'connection=${value.connection.name}',
+      'process_generation=${value.processGeneration}',
+      'launcher_configured=${value.launch.configured}',
+      'launcher_resolved=${value.launch.resolved}',
+      'executable=${value.launch.executable}',
+      'arguments=${value.launch.arguments.join(' ')}',
+      'working_directory=${value.launch.workingDirectory}',
+      'scanner_ready=${scannerReady ?? 'unknown'}',
+      'scanner_target_count=$scannerTargetCount',
+      'lifecycle:',
+      ...value.lifecycle.map((item) => '- $item'),
+      'stderr:',
+      ...value.stderr.map((item) => '- $item'),
+    ].join('\n');
+  }
 
   @override
   Future<void> startScan() async {
