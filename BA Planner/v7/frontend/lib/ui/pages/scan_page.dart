@@ -16,11 +16,13 @@ class ScanPage extends StatefulWidget {
     super.key,
     required this.service,
     required this.onCandidateHandoff,
+    this.onRecentChanged,
   });
 
   final AppService service;
   final void Function(ScannerSession session, ScannerCandidate candidate)
   onCandidateHandoff;
+  final ValueChanged<List<ScannerRecentSummary>>? onRecentChanged;
 
   @override
   State<ScanPage> createState() => _ScanPageState();
@@ -58,7 +60,7 @@ class _ScanPageState extends State<ScanPage> {
   String? _outcome;
   Map<String, dynamic>? _terminalError;
   final Map<String, ScannerCandidate> _candidates = {};
-  final List<_RecentScan> _recent = [];
+  final List<ScannerRecentSummary> _recent = [];
 
   bool get _connected =>
       widget.service.state.value.connection == BackendConnection.connected;
@@ -344,10 +346,9 @@ class _ScanPageState extends State<ScanPage> {
     );
     _recent.insert(
       0,
-      _RecentScan(
+      ScannerRecentSummary(
         session: session,
         targetId: target?.id ?? _targetId ?? '',
-        kind: session.kind,
         targetTitle: target?.title ?? _targetId ?? 'Unknown target',
         outcome: _outcome ?? 'unknown',
         phase: _phase,
@@ -362,9 +363,12 @@ class _ScanPageState extends State<ScanPage> {
       ),
     );
     if (_recent.length > 8) _recent.removeRange(8, _recent.length);
+    widget.onRecentChanged?.call(
+      List<ScannerRecentSummary>.unmodifiable(_recent),
+    );
   }
 
-  void _openRecent(_RecentScan item) {
+  void _openRecent(ScannerRecentSummary item) {
     setState(() {
       _session = item.session;
       _kind = item.kind;
@@ -696,7 +700,6 @@ class _ScanPageState extends State<ScanPage> {
     ),
   );
 }
-
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.label, required this.ok});
   final String label;
@@ -769,40 +772,4 @@ class _CandidateSummary extends StatelessWidget {
       ),
     ],
   );
-}
-
-class _RecentScan {
-  const _RecentScan({
-    required this.session,
-    required this.targetId,
-    required this.kind,
-    required this.targetTitle,
-    required this.outcome,
-    required this.phase,
-    required this.diagnostic,
-    required this.candidateCount,
-    required this.reviewRequired,
-    required this.progressCurrent,
-    required this.progressTotal,
-    required this.messageKey,
-    required this.terminalError,
-    required this.candidates,
-  });
-  final ScannerSession session;
-  final String targetId;
-  final ScannerKind kind;
-  final String targetTitle;
-  final String outcome;
-  final String? phase;
-  final String? diagnostic;
-  final int candidateCount;
-  final bool reviewRequired;
-  final int? progressCurrent;
-  final int? progressTotal;
-  final String? messageKey;
-  final Map<String, dynamic>? terminalError;
-  final List<ScannerCandidate> candidates;
-
-  String get sessionId => session.id;
-  int get generation => session.generation;
 }

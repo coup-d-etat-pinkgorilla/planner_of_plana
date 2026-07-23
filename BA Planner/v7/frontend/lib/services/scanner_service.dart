@@ -54,6 +54,50 @@ class ScannerSession {
   );
 }
 
+/// Immutable, app-run-only projection of a terminal scanner session.
+///
+/// This is deliberately not a repository history record. It gives other UI
+/// sections a typed view of ScanPage's bounded recent-session projection
+/// without exposing ScanPage state or raw protocol maps.
+class ScannerRecentSummary {
+  ScannerRecentSummary({
+    required this.session,
+    required this.targetId,
+    required this.targetTitle,
+    required this.outcome,
+    required this.phase,
+    required this.diagnostic,
+    required this.candidateCount,
+    required this.reviewRequired,
+    required this.progressCurrent,
+    required this.progressTotal,
+    required this.messageKey,
+    required Map<String, dynamic>? terminalError,
+    required List<ScannerCandidate> candidates,
+  }) : terminalError = terminalError == null
+           ? null
+           : Map<String, dynamic>.unmodifiable(terminalError),
+       candidates = List<ScannerCandidate>.unmodifiable(candidates);
+
+  final ScannerSession session;
+  final String targetId;
+  final String targetTitle;
+  final String outcome;
+  final String? phase;
+  final String? diagnostic;
+  final int candidateCount;
+  final bool reviewRequired;
+  final int? progressCurrent;
+  final int? progressTotal;
+  final String? messageKey;
+  final Map<String, dynamic>? terminalError;
+  final List<ScannerCandidate> candidates;
+
+  String get sessionId => session.id;
+  int get generation => session.generation;
+  ScannerKind get kind => session.kind;
+}
+
 class ScannerFieldEvidence {
   const ScannerFieldEvidence({
     required this.field,

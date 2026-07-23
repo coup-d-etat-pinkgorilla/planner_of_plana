@@ -10,11 +10,13 @@ import 'package:flutter_test/flutter_test.dart';
 Widget _subject(
   MockAppService service, {
   void Function(ScannerSession, ScannerCandidate)? onHandoff,
+  ValueChanged<List<ScannerRecentSummary>>? onRecentChanged,
 }) => MaterialApp(
   home: Scaffold(
     body: ScanPage(
       service: service,
       onCandidateHandoff: onHandoff ?? (_, _) {},
+      onRecentChanged: onRecentChanged,
     ),
   ),
 );
@@ -133,6 +135,31 @@ void main() {
     await tester.tap(review);
     expect(handedOff?.kind, ScannerKind.student);
     expect(handedOff?.payload['student_id'], 'aru');
+  });
+
+  testWidgets('publishes an immutable typed terminal recent projection', (
+    tester,
+  ) async {
+    final service = MockAppService();
+    addTearDown(service.dispose);
+    List<ScannerRecentSummary>? recent;
+    await tester.pumpWidget(
+      _subject(service, onRecentChanged: (value) => recent = value),
+    );
+    await tester.pumpAndSettle();
+    await _selectTarget(tester, 'mock-window');
+    await tester.tap(find.byKey(const ValueKey('scan-start')));
+    await tester.pump(const Duration(milliseconds: 35));
+
+    expect(recent, isNotNull);
+    expect(recent, hasLength(1));
+    expect(recent!.single.kind, ScannerKind.student);
+    expect(recent!.single.outcome, 'completed');
+    expect(recent!.single.candidateCount, 1);
+    expect(
+      () => recent!.add(recent!.single),
+      throwsUnsupportedError,
+    );
   });
 
   testWidgets('cancel acknowledgement remains cancelling until terminal and retry is new', (

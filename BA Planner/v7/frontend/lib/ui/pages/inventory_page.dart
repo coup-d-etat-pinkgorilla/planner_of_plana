@@ -26,11 +26,6 @@ class InventoryPage extends StatefulWidget {
 }
 
 class _InventoryPageState extends State<InventoryPage> {
-  static const _planningCurrentFields = {
-    'level','student_star','weapon_state','weapon_star','weapon_level','ex_skill',
-    'skill1','skill2','skill3','equip1','equip2','equip3','equip4',
-    'equip1_level','equip2_level','equip3_level','stat_hp','stat_atk','stat_heal',
-  };
   final _search = TextEditingController();
   final Map<String,TextEditingController> _editors = {};
   final Set<String> _dirtyKeys = {};
@@ -160,11 +155,7 @@ class _InventoryPageState extends State<InventoryPage> {
     setState(() { _loading=true; _message=null; });
     try {
       final result = await widget.service.calculateShortages(
-        currentStudents:state.students.map((student) => {
-          'student_id':student.studentId,
-          for (final entry in student.values.entries)
-            if (_planningCurrentFields.contains(entry.key) && entry.value != null) entry.key:entry.value,
-        }).toList(),
+        currentStudents:state.students.map(confirmedStudentPlanningCurrent).toList(),
         plan:{'version':1,'goals':state.goals.map((goal) => Map<String,dynamic>.from(goal.values)).toList()},
         inventory:state.inventory.toWire());
       if (mounted) setState(() { _shortages=result; _showShortages=true; _loading=false; });

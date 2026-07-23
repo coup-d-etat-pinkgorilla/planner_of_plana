@@ -59,7 +59,7 @@ Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
 | P4 | 프로필과 repository 영구 저장 | `완료` | nested schema·40-case Python/Dart contract, typed state, atomic persistence와 실제 Dart↔Python restart E2E; Python 40·Flutter 43·analyze·release 통과 | P5에서 repository 확정과 분리된 scanner session 경계 작성 |
 | P5 | scanner/matcher session protocol과 backend | `완료` | 40-path follow-up 인수와 마스터 보완; Python 59·Flutter 47·실제 process E2E·release asset gate 통과 | 2학생·2인벤토리 아이콘 제한 coverage를 유지하고 P6에서 scanner UI 연결 |
-| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1 학생·P6-2 인벤토리·P6-3 스캔 완료; P6-4 prompt 준비; P6-5~P6-7 미완료 | 승인된 P6-3 snapshot과 P6-4 prompt를 슬레이브에 전달 |
+| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1 학생·P6-2 인벤토리·P6-3 스캔·P6-4 홈 완료; P6-5 prompt 준비; P6-6~P6-7 미완료 | 승인된 P6-4 snapshot과 P6-5 prompt를 슬레이브에 전달 |
 
 ## 현재 결정
 
@@ -471,7 +471,7 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 
 ## P6-4 — 홈 실제 데이터 통합
 
-- 상태: `인계 대기`
+- 상태: `완료`
 - 목적: 기존 80° 홈 이미지 메뉴를 보존하면서 선택 프로필·backend, 실제 repository count,
   저장된 계획·부족 재화, 최신 scan과 검토 대기 상태를 읽는 시작 대시보드로 통합
 - 완료 조건: 실제 typed source의 loading·empty·disconnected·partial error와 refresh/resume,
@@ -479,19 +479,55 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
   3개 viewport, Python·Flutter·release·실제 process E2E·Mock·Almanac 검증 통과
 - 입력: `docs/migration/p6-4-home-integration/input.md`
 - 슬레이브 실행 프롬프트: `docs/migration/p6-4-home-integration/slave-execution-prompt.md`
+- 출력 보고서: `docs/migration/handoffs/incoming/ba-planner-v7-p6-4-home-integration/staging/20260723-151610-cb9794de/output.md`
+  (`COMPLETED`, 마스터 검증·인수 완료)
+- 결과물: 수신 패키지 `ba-planner-v7-p6-4-home-integration-20260723-151510.zip`
+  (16,930 bytes, SHA-256 `c71c89e5b576551c6769b8216af085411d060461f605b2a46796a45401fa4283`),
+  같은 staging의 `artifacts/p6-4-home-integration.patch` (48,288 bytes,
+  SHA-256 `f243b7206ac45ca73db5859305a4b3116f72165c4e18078ddf7d6e7e90e352dc`)와
+  `artifacts/verification.txt` (7,145 bytes,
+  SHA-256 `2ae67543e492fb0e67dbc831f74674105553a5f4e5bdcbd28c7685aec691e365`)
+- 검증: ZIP·manifest·sidecar·`output.md`의 크기와 SHA-256을 독립 대조하고 고유 staging에
+  해제했다. HEAD `7fe68856`의 깨끗한 accepted P6-3 작업 트리와 patch 8경로의 비중첩을 확인하고
+  `git apply --check --verbose` 뒤 깨끗하게 적용했다. Python 3.11 전체 72 tests, Flutter 전체
+  91 tests와 홈·AppShell·scan·실제 process 집중 23 tests, `flutter analyze`, Windows release build,
+  실제 Dart ProcessAppService↔Python profile/repository 저장·restart 복원·shortage E2E,
+  Mock pending candidate Hold·commit 후 Home context 정리, typed recent scan handoff, refresh/race와
+  partial failure, 기존 742×1018·80° home geometry/navigation, 1280×720·1440×900·1280×960 layout,
+  `codealmanac validate`, `codealmanac health`, 금지 GUI/v6 runtime 참조 0건과 `git diff --check`를
+  마스터에서 통과했다.
+- 마스터 보정: 테스트의 Flutter foundation import와 fixture parameter를 정리하고, repository current
+  envelope를 shortage API에 잘못 전달하던 결함을 Inventory/Home 공용 planning-current 변환으로 수정했다.
+  실제 E2E에 confirmed student 저장을 추가했으며 홈 pending action key를 실제 button에 배치하고 lazy
+  scroll test를 안정화하고 변경된 P6-4 Dart source를 formatter로 정규화했다.
 - 결정 및 제약: 홈은 read model이며 repository save, plan mutation, candidate review/commit을 하지 않는다.
   inventory unknown을 0으로 만들지 않고 임시 planning draft를 저장된 plan으로 표현하지 않는다.
   최근 scan은 P6-3의 앱 실행 중 typed summary만 공유하며 backend에 없는 timestamp나 영구 history를
   만들지 않는다. P6-5~P6-7과 새 backend protocol은 범위 밖이다.
+- 전달 메모: 마스터 요청문의 `P2`/`p2-planning-screen.patch` 표기는 오래된 문구였으나 실제
+  Task ID·manifest·`output.md`·patch 8경로는 모두 P6-4로 일치했다. `WIRELESS_HANDOFF_RECEIVED`는
+  수신 디렉터리와 현재 작업 터미널에서 확인되지 않았고 무선 전달이라는 별도 주장은 없었다.
 - 차단 사항: 없음
-- 다음 행동: accepted P6-3 snapshot과 두 입력 문서를 슬레이브에 전달하고 결과 artifact 인수
+- 다음 행동: 승인된 P6-4 snapshot과 P6-5 통계 통합 프롬프트를 슬레이브에 전달
 - 최종 갱신: 2026-07-23
 
 ## P6-5 — 통계 실제 데이터 통합
 
-- 상태: `대기`
-- 목적: 통계 탭을 승인된 repository·계산 결과에 연결
+- 상태: `인계 대기`
+- 목적: 통계 탭을 선택 프로필 전체의 실제 student/inventory catalog, repository current·goals,
+  gross calculation과 shortage 결과에 연결하고 근거 detail에서 data-owner 탭으로 이동
+- 완료 조건: 학생·인벤토리·계획 3 mode, 고정 KPI/분포와 pure typed projection,
+  missing·unknown·zero·분모·gross/shortage 의미 보존, loading·empty·disconnected·partial error와
+  refresh/re-entry, Python·Flutter·release·실제 process E2E·Mock·3 viewport·Almanac 검증 통과
+- 입력: `docs/migration/p6-5-statistics-integration/input.md`
+- 슬레이브 실행 프롬프트: `docs/migration/p6-5-statistics-integration/slave-execution-prompt.md`
+- 결정 및 제약: v6 통계는 StudentPage filtered set을 사용했지만 v7에는 filter 공유 계약이 없으므로
+  P6-5 범위는 선택 프로필 전체로 고정한다. StudentPage filter handoff, 새 chart dependency,
+  statistics protocol/storage/history를 만들지 않는다. 통계는 read-only이며 학생 current·metadata·goal,
+  gross result와 inventory shortage bucket을 섞거나 mutation하지 않는다.
 - 선행 조건: P6-4 완료
+- 차단 사항: 없음
+- 다음 행동: accepted P6-4 snapshot과 두 입력 문서를 슬레이브에 전달하고 결과 artifact 인수
 - 최종 갱신: 2026-07-23
 
 ## P6-6 — 전술대항전 실제 데이터 통합

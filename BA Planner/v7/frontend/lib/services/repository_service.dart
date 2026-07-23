@@ -139,6 +139,37 @@ class ConfirmedStudentState {
   }
 }
 
+const planningCurrentFields = <String>{
+  'level',
+  'student_star',
+  'weapon_state',
+  'weapon_star',
+  'weapon_level',
+  'ex_skill',
+  'skill1',
+  'skill2',
+  'skill3',
+  'equip1',
+  'equip2',
+  'equip3',
+  'equip4',
+  'equip1_level',
+  'equip2_level',
+  'equip3_level',
+  'stat_hp',
+  'stat_atk',
+  'stat_heal',
+};
+
+Map<String, dynamic> confirmedStudentPlanningCurrent(
+  ConfirmedStudentState student,
+) => {
+  'student_id': student.studentId,
+  for (final entry in student.values.entries)
+    if (planningCurrentFields.contains(entry.key) && entry.value != null)
+      entry.key: entry.value,
+};
+
 class RepositoryGoalState {
   RepositoryGoalState._(this.studentId, Map<String, dynamic> values)
     : values = Map.unmodifiable(values);
@@ -196,8 +227,9 @@ class RepositoryInventoryState {
 
   final List<Map<String, dynamic>> entries;
 
-  factory RepositoryInventoryState.fromEntries(List<Map<String, dynamic>> entries) =>
-      RepositoryInventoryState.fromWire({'version': 1, 'entries': entries});
+  factory RepositoryInventoryState.fromEntries(
+    List<Map<String, dynamic>> entries,
+  ) => RepositoryInventoryState.fromWire({'version': 1, 'entries': entries});
 
   Map<String, dynamic> toWire() => {'version': 1, 'entries': entries};
 
@@ -223,8 +255,11 @@ class RepositoryInventoryState {
           !allowed.containsAll(item.keys) ||
           item['key'] is! String ||
           (item['key'] as String).isEmpty ||
-          (item['quantity'] != null && (item['quantity'] is! String ||
-              !RegExp(r'^(0|[1-9][0-9]*)$').hasMatch(item['quantity'] as String))) ||
+          (item['quantity'] != null &&
+              (item['quantity'] is! String ||
+                  !RegExp(
+                    r'^(0|[1-9][0-9]*)$',
+                  ).hasMatch(item['quantity'] as String))) ||
           (item['item_id'] != null && item['item_id'] is! String) ||
           (item['name'] != null && item['name'] is! String) ||
           (item['profile_id'] != null && item['profile_id'] is! String) ||
@@ -233,7 +268,9 @@ class RepositoryInventoryState {
       }
       entries.add(item);
     }
-    final identities=entries.map((item) => item['item_id'] ?? item['key']).toList();
+    final identities = entries
+        .map((item) => item['item_id'] ?? item['key'])
+        .toList();
     if (identities.toSet().length != identities.length) {
       throw const FormatException('Duplicate inventory identity');
     }

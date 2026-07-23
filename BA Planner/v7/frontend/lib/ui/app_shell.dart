@@ -72,9 +72,14 @@ class _AppShellState extends State<AppShell> {
   PlanningStudentSeed? _planningSeed;
   StudentCandidateContext? _studentCandidate;
   InventoryCandidateContext? _inventoryCandidate;
+  List<ScannerRecentSummary> _recentScans = const [];
+  var _homeReloadToken = 0;
 
   void _open(AppSection section) {
-    setState(() => _section = section);
+    setState(() {
+      if (section == AppSection.home) _homeReloadToken += 1;
+      _section = section;
+    });
   }
 
   void _addStudentToPlan(PlanningStudentSeed seed) {
@@ -149,6 +154,12 @@ class _AppShellState extends State<AppShell> {
                                 HomePage(
                                   service: widget.service,
                                   onOpen: _open,
+                                  reloadToken: _homeReloadToken,
+                                  studentCandidatePending:
+                                      _studentCandidate != null,
+                                  inventoryCandidatePending:
+                                      _inventoryCandidate != null,
+                                  recentScans: _recentScans,
                                 ),
                                 StudentPage(
                                   service: widget.service,
@@ -173,6 +184,9 @@ class _AppShellState extends State<AppShell> {
                                 ScanPage(
                                   service: widget.service,
                                   onCandidateHandoff: _handoffCandidate,
+                                  onRecentChanged: (recent) {
+                                    setState(() => _recentScans = recent);
+                                  },
                                 ),
                                 SectionPlaceholderPage(
                                   section: AppSection.settings,

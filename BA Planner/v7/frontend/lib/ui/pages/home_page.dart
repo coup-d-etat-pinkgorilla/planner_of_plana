@@ -4,17 +4,33 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../../services/repository_service.dart';
+import '../../services/scanner_service.dart';
 import '../app_section.dart';
 import '../widgets/ba_triangle_background.dart';
 import '../widgets/diagonal_menu.dart';
+import '../widgets/diagonal_section.dart';
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key, required this.service, required this.onOpen});
+class HomePage extends StatefulWidget {
+  const HomePage({
+    super.key,
+    required this.service,
+    required this.onOpen,
+    this.reloadToken = 0,
+    this.studentCandidatePending = false,
+    this.inventoryCandidatePending = false,
+    this.recentScans = const [],
+  });
 
   static const menuSectionMaxSize = Size(742, 1018);
+  static const shortageLimit = 5;
 
   final AppService service;
   final ValueChanged<AppSection> onOpen;
+  final int reloadToken;
+  final bool studentCandidatePending;
+  final bool inventoryCandidatePending;
+  final List<ScannerRecentSummary> recentScans;
 
   static const _featured = _HomeCardData(
     AppSection.scan,
@@ -38,33 +54,486 @@ class HomePage extends StatelessWidget {
   );
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  RepositoryProfile? _profile;
+  RepositoryState? _repositoryState;
+  InventoryShortageResult? _shortages;
+  bool _loading = true;
+  String? _profileError;
+  String? _stateError;
+  String? _shortageError;
+  var _loadGeneration = 0;
+
+  RepositoryService? get _repository => widget.service is RepositoryService
+      ? widget.service as RepositoryService
+      : null;
+
+  bool get _connected =>
+      widget.service.state.value.connection == BackendConnection.connected;
+
+  String get _connectionMessage =>
+      switch (widget.service.state.value.connection) {
+        BackendConnection.connecting => 'Backend connection in progress.',
+        BackendConnection.disconnected => 'Backend disconnected.',
+        BackendConnection.connected => '',
+      };
+
+  @override
+  void initState() {
+    super.initState();
+    widget.service.state.addListener(_serviceStateChanged);
+    _reload();
+  }
+
+  @override
+  void didUpdateWidget(HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.service != widget.service) {
+      oldWidget.service.state.removeListener(_serviceStateChanged);
+      widget.service.state.addListener(_serviceStateChanged);
+      _reload();
+    } else if (oldWidget.reloadToken != widget.reloadToken) {
+      _reload();
+    }
+  }
+
+  @override
+  void dispose() {
+    _loadGeneration += 1;
+    widget.service.state.removeListener(_serviceStateChanged);
+    super.dispose();
+  }
+
+  void _serviceStateChanged() {
+    if (!mounted) return;
+    if (_connected) {
+      _reload();
+    } else {
+      _loadGeneration += 1;
+      setState(() {
+        _loading = false;
+        _profileError = _connectionMessage;
+        _stateError = null;
+        _shortageError = null;
+      });
+    }
+  }
+
+  Future<void> _reload() async {
+    final generation = ++_loadGeneration;
+    setState(() {
+      _loading = true;
+      _profileError = null;
+      _stateError = null;
+      _shortageError = null;
+    });
+    final repository = _repository;
+    if (!_connected) {
+      if (mounted && generation == _loadGeneration) {
+        setState(() {
+          _loading = false;
+          _profileError = _connectionMessage;
+        });
+      }
+      return;
+    }
+    if (repository == null) {
+      if (mounted && generation == _loadGeneration) {
+        setState(() {
+          _loading = false;
+          _profileError = 'Repository service is unavailable.';
+        });
+      }
+      return;
+    }
+
+    RepositoryProfile? selected;
+    try {
+      final profiles = await repository.listProfiles();
+      for (final profile in profiles) {
+        if (profile.selected) {
+          selected = profile;
+          break;
+        }
+      }
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() {
+        _profile = selected;
+        _repositoryState = null;
+        _shortages = null;
+      });
+      if (selected == null) {
+        setState(() => _loading = false);
+        return;
+      }
+    } catch (error) {
+      if (mounted && generation == _loadGeneration) {
+        setState(() {
+          _loading = false;
+          _profileError = 'Profile loading failed: $error';
+        });
+      }
+      return;
+    }
+
+    late final RepositoryState repositoryState;
+    try {
+      repositoryState = await repository.loadRepositoryState(selected.id);
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() => _repositoryState = repositoryState);
+    } catch (error) {
+      if (mounted && generation == _loadGeneration) {
+        setState(() {
+          _loading = false;
+          _stateError = 'Repository state failed: $error';
+        });
+      }
+      return;
+    }
+
+    if (repositoryState.goals.isNotEmpty) {
+      try {
+        final shortages = await widget.service.calculateShortages(
+          currentStudents: repositoryState.students
+              .map(confirmedStudentPlanningCurrent)
+              .toList(growable: false),
+          plan: {
+            'version': 1,
+            'goals': repositoryState.goals
+                .map((goal) => Map<String, dynamic>.from(goal.values))
+                .toList(growable: false),
+          },
+          inventory: repositoryState.inventory.toWire(),
+        );
+        if (!mounted || generation != _loadGeneration) return;
+        setState(() => _shortages = shortages);
+      } catch (error) {
+        if (mounted && generation == _loadGeneration) {
+          setState(() => _shortageError = 'Shortage analysis failed: $error');
+        }
+      }
+    }
+    if (mounted && generation == _loadGeneration) {
+      setState(() => _loading = false);
+    }
+  }
+
+  List<InventoryShortageRow> get _topShortages {
+    final rows =
+        _shortages?.rows
+            .where((row) => row.shortage != null && row.shortage! > 0)
+            .toList(growable: false) ??
+        const <InventoryShortageRow>[];
+    final sorted = List<InventoryShortageRow>.from(rows)
+      ..sort((left, right) {
+        final amount = right.shortage!.compareTo(left.shortage!);
+        if (amount != 0) return amount;
+        return left.resourceKey.compareTo(right.resourceKey);
+      });
+    return sorted.take(HomePage.shortageLimit).toList(growable: false);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
-      valueListenable: service.state,
+      valueListenable: widget.service.state,
       builder: (context, state, _) {
-        return Padding(
-          padding: const EdgeInsets.all(18),
-          child: Align(
-            alignment: Alignment.topLeft,
-            child: FittedBox(
-              key: const ValueKey('home-menu-section'),
-              fit: BoxFit.contain,
-              alignment: Alignment.topLeft,
-              child: SizedBox.fromSize(
-                size: menuSectionMaxSize,
-                child: DiagonalTrapezoidSection(
-                  child: _HomeMenuLayout(
-                    imageLoadState: state.imageLoadState,
-                    onOpen: onOpen,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final menuHeight = math
+                .min(
+                  HomePage.menuSectionMaxSize.height,
+                  math.max(320, constraints.maxHeight - 36),
+                )
+                .toDouble();
+            return SingleChildScrollView(
+              key: const ValueKey('home-page'),
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildIssues(),
+                  const SizedBox(height: 12),
+                  _buildSummary(),
+                  const SizedBox(height: 12),
+                  _buildLaunchers(),
+                  if (widget.recentScans.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildRecentScans(),
+                  ],
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: menuHeight,
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: FittedBox(
+                        key: const ValueKey('home-menu-section'),
+                        fit: BoxFit.contain,
+                        alignment: Alignment.topLeft,
+                        child: SizedBox.fromSize(
+                          size: HomePage.menuSectionMaxSize,
+                          child: DiagonalTrapezoidSection(
+                            child: _HomeMenuLayout(
+                              imageLoadState: state.imageLoadState,
+                              onOpen: widget.onOpen,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
   }
+
+  Widget _buildIssues() {
+    final unresolved =
+        _shortages?.rows.where(
+          (row) => !row.resolved || row.shortage == null,
+        ) ??
+        const <InventoryShortageRow>[];
+    final warnings = _shortages?.warnings ?? const <String>[];
+    final issues = <Widget>[
+      if (_profileError != null) _IssueLine(_profileError!, isError: true),
+      if (_stateError != null) _IssueLine(_stateError!, isError: true),
+      if (_shortageError != null) _IssueLine(_shortageError!, isError: true),
+      if (widget.studentCandidatePending)
+        _IssueAction(
+          actionKey: const ValueKey('home-pending-student'),
+          label: 'Student scan is pending review',
+          onPressed: () => widget.onOpen(AppSection.students),
+        ),
+      if (widget.inventoryCandidatePending)
+        _IssueAction(
+          actionKey: const ValueKey('home-pending-inventory'),
+          label: 'Inventory scan is pending review',
+          onPressed: () => widget.onOpen(AppSection.inventory),
+        ),
+      if (unresolved.isNotEmpty)
+        _IssueLine('${unresolved.length} shortage rows are unresolved.'),
+      for (final warning in warnings) _IssueLine(warning),
+      for (final row in _topShortages)
+        _IssueLine(
+          '${row.displayName}: required ${row.requiredAmount}, '
+          'owned ${row.owned ?? 'unknown'}, shortage ${row.shortage}',
+        ),
+    ];
+    return DiagonalSection(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 28, 14),
+        child: Column(
+          key: const ValueKey('home-review-needed'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Review needed',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                IconButton(
+                  key: const ValueKey('home-refresh'),
+                  tooltip: 'Refresh home data',
+                  onPressed: _loading ? null : _reload,
+                  icon: const Icon(Icons.refresh),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_loading) const LinearProgressIndicator(),
+            if (!_loading && issues.isEmpty)
+              const Text('No pending review or known shortage issues.'),
+            ...issues,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummary() {
+    final repositoryState = _repositoryState;
+    final known =
+        repositoryState?.inventory.entries
+            .where((entry) => entry['quantity'] != null)
+            .length ??
+        0;
+    final unknown = repositoryState == null
+        ? 0
+        : repositoryState.inventory.entries.length - known;
+    return DiagonalSection(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 28, 14),
+        child: Column(
+          key: const ValueKey('home-profile-summary'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Profile and plan',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            if (_profile == null && !_loading && _profileError == null)
+              const Text('No selected profile. Open Settings to select one.'),
+            if (_profile != null)
+              Wrap(
+                spacing: 18,
+                runSpacing: 8,
+                children: [
+                  Text('${_profile!.displayName} · ${_profile!.id}'),
+                  Text(
+                    'revision ${repositoryState?.revision ?? _profile!.revision}',
+                  ),
+                  Text(
+                    'students ${repositoryState?.students.length ?? 'unknown'}',
+                  ),
+                  Text('inventory known $known · unknown $unknown'),
+                  Text(
+                    'saved goals ${repositoryState?.goals.length ?? 'unknown'}',
+                  ),
+                ],
+              ),
+            if (repositoryState != null && repositoryState.goals.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'No saved goals; shortage analysis was not requested.',
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLaunchers() => DiagonalSection(
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 28, 14),
+      child: Column(
+        key: const ValueKey('home-quick-launchers'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Quick launch', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _launcher(AppSection.settings, Icons.settings_outlined),
+              _launcher(AppSection.students, Icons.people_outline),
+              _launcher(AppSection.plan, Icons.route_outlined),
+              _launcher(AppSection.inventory, Icons.inventory_2_outlined),
+              _launcher(AppSection.scan, Icons.document_scanner_outlined),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _launcher(AppSection section, IconData icon) => OutlinedButton.icon(
+    key: ValueKey('home-quick-${section.name}'),
+    onPressed: () => widget.onOpen(section),
+    icon: Icon(icon),
+    label: Text(section.label),
+  );
+
+  Widget _buildRecentScans() {
+    final recent = widget.recentScans.take(3);
+    return DiagonalSection(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 28, 14),
+        child: Column(
+          key: const ValueKey('home-recent-scans'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Recent scans', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            for (final item in recent)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  '${item.kind.name} · ${item.targetTitle} · ${item.outcome}',
+                ),
+                subtitle: Text(
+                  'generation ${item.generation} · candidates '
+                  '${item.candidateCount}'
+                  '${item.reviewRequired ? ' · review required' : ''}'
+                  '${item.diagnostic == null ? '' : ' · ${item.diagnostic}'}',
+                ),
+                trailing: TextButton(
+                  key: ValueKey(
+                    'home-open-scan-${item.sessionId}-${item.generation}',
+                  ),
+                  onPressed: () => widget.onOpen(AppSection.scan),
+                  child: const Text('Open scan'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IssueLine extends StatelessWidget {
+  const _IssueLine(this.text, {this.isError = false});
+
+  final String text;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 6),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          isError ? Icons.error_outline : Icons.info_outline,
+          size: 18,
+          color: isError ? Theme.of(context).colorScheme.error : null,
+        ),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text)),
+      ],
+    ),
+  );
+}
+
+class _IssueAction extends StatelessWidget {
+  const _IssueAction({
+    required this.actionKey,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final Key actionKey;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 6),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        key: actionKey,
+        onPressed: onPressed,
+        icon: const Icon(Icons.rate_review_outlined),
+        label: Text(label),
+      ),
+    ),
+  );
 }
 
 class _HomeMenuLayout extends StatelessWidget {

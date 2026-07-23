@@ -101,12 +101,27 @@ void main() {
           renamedRevision,
           'repository-e2e-select',
         );
+        final studentRevision = await firstService.saveRepositoryStudents(
+          created.id,
+          [
+            ConfirmedStudentState.fromValues('ayane', {'level': 1}),
+          ],
+          selectedRevision,
+          'repository-e2e-save-student',
+        );
         final inventoryRevision = await firstService.saveRepositoryInventory(
           created.id,
           RepositoryInventoryState.fromEntries([
-            {'key':'Item_Icon_ExpItem_0','item_id':'Item_Icon_ExpItem_0','quantity':'0','name':'Basic activity report','index':0,'profile_id':'activity_reports'},
+            {
+              'key': 'Item_Icon_ExpItem_0',
+              'item_id': 'Item_Icon_ExpItem_0',
+              'quantity': '0',
+              'name': 'Basic activity report',
+              'index': 0,
+              'profile_id': 'activity_reports',
+            },
           ]),
-          selectedRevision,
+          studentRevision,
           'repository-e2e-save-inventory',
         );
         final savedRevision = await firstService.saveRepositoryGoals(
@@ -157,7 +172,9 @@ void main() {
         );
         expect(afterRestart.profileId, beforeRestart.profileId);
         expect(afterRestart.revision, beforeRestart.revision);
-        expect(afterRestart.students, isEmpty);
+        expect(afterRestart.students, hasLength(1));
+        expect(afterRestart.students.single.studentId, 'ayane');
+        expect(afterRestart.students.single.values['level'], 1);
         expect(afterRestart.inventory.entries, hasLength(1));
         expect(afterRestart.inventory.entries.single['quantity'], '0');
         expect(afterRestart.goals, hasLength(1));
@@ -167,6 +184,29 @@ void main() {
         expect(
           afterRestart.goals.single.values['notes'],
           'cross-language restart',
+        );
+        final homeShortages = await secondService.calculateShortages(
+          currentStudents: afterRestart.students
+              .map(confirmedStudentPlanningCurrent)
+              .toList(growable: false),
+          plan: {
+            'version': 1,
+            'goals': afterRestart.goals
+                .map((goal) => Map<String, dynamic>.from(goal.values))
+                .toList(growable: false),
+          },
+          inventory: afterRestart.inventory.toWire(),
+        );
+        expect(homeShortages.rows, isNotEmpty);
+        expect(
+          homeShortages.rows.any(
+            (row) =>
+                row.requiredAmount > 0 &&
+                row.owned == 0 &&
+                row.shortage != null &&
+                row.shortage! > 0,
+          ),
+          isTrue,
         );
 
         await secondService.dispose();
