@@ -88,6 +88,7 @@ void main() {
     'review-required candidate is unchanged on hold and committed after approval',
     (tester) async {
       final service = MockAppService();
+      var committed = false;
       addTearDown(service.dispose);
       final session = ScannerSession(
         id: 'session-1',
@@ -127,6 +128,7 @@ void main() {
                 session: session,
                 candidate: candidate,
               ),
+              onCandidateCommitted: (_) => committed = true,
             ),
           ),
         ),
@@ -149,6 +151,7 @@ void main() {
       );
       expect(state.students.single.studentId, 'aru');
       expect(state.students.single.values['level'], 20);
+      expect(committed, isTrue);
     },
   );
 

@@ -139,6 +139,10 @@ class ScannerEvent {
 
   factory ScannerEvent.fromEnvelope(Map<String, dynamic> envelope) {
     final wire = Map<String, dynamic>.from(envelope['payload'] as Map);
+    return ScannerEvent.fromPayload(wire);
+  }
+
+  factory ScannerEvent.fromPayload(Map<String, dynamic> wire) {
     return ScannerEvent(
       sessionId: wire['session_id'] as String,
       generation: wire['generation'] as int,
@@ -150,12 +154,104 @@ class ScannerEvent {
   }
 }
 
+class ScannerSessionSnapshot {
+  ScannerSessionSnapshot({
+    required this.sessionId,
+    required this.generation,
+    required this.kind,
+    required this.lastSequence,
+    required this.terminal,
+    required List<ScannerEvent> events,
+    required List<ScannerCandidate> candidates,
+  }) : events = List.unmodifiable(events),
+       candidates = List.unmodifiable(candidates);
+
+  final String sessionId;
+  final int generation;
+  final ScannerKind kind;
+  final int lastSequence;
+  final String? terminal;
+  final List<ScannerEvent> events;
+  final List<ScannerCandidate> candidates;
+
+  factory ScannerSessionSnapshot.fromWire(Map<String, dynamic> wire) {
+    final events = wire['events'];
+    final candidates = wire['candidates'];
+    final terminal = wire['terminal'];
+    if (wire['session_id'] is! String ||
+        wire['generation'] is! int ||
+        wire['scan_kind'] is! String ||
+        wire['last_sequence'] is! int ||
+        (terminal != null && terminal is! String) ||
+        events is! List ||
+        candidates is! List) {
+      throw const FormatException('Invalid scanner session snapshot');
+    }
+    final parsedEvents = events
+        .map((item) {
+          final event = Map<String, dynamic>.from(item as Map);
+          return event['payload'] is Map
+              ? ScannerEvent.fromEnvelope(event)
+              : ScannerEvent.fromPayload(event);
+        })
+        .toList(growable: false);
+    final parsedCandidates = candidates
+        .map(
+          (item) => ScannerCandidate.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        )
+        .toList(growable: false);
+    final sessionId = wire['session_id'] as String;
+    final generation = wire['generation'] as int;
+    final kind = ScannerKind.values.byName(wire['scan_kind'] as String);
+    final lastSequence = wire['last_sequence'] as int;
+    if (lastSequence < 0 ||
+        (terminal != null &&
+            terminal != 'completed' &&
+            terminal != 'cancelled' &&
+            terminal != 'failed') ||
+        parsedEvents.any(
+          (event) =>
+              event.sessionId != sessionId ||
+              event.generation != generation ||
+              event.kind != kind ||
+              event.sequence > lastSequence,
+        ) ||
+        parsedCandidates.any(
+          (candidate) =>
+              candidate.sessionId != sessionId ||
+              candidate.generation != generation ||
+              candidate.kind != kind,
+        )) {
+      throw const FormatException('Scanner snapshot content mismatch');
+    }
+    return ScannerSessionSnapshot(
+      sessionId: sessionId,
+      generation: generation,
+      kind: kind,
+      lastSequence: lastSequence,
+      terminal: terminal as String?,
+      events: parsedEvents,
+      candidates: parsedCandidates,
+    );
+  }
+}
+
 class ScannerEventCursor {
   ScannerEventCursor(this.sessionId, this.generation);
   final String sessionId;
   final int generation;
   int lastSequence = 0;
   bool terminal = false;
+
+  void reconcile({required int sequence, required bool isTerminal}) {
+    if (sequence < lastSequence) {
+      throw StateError('Scanner snapshot moved the sequence backwards');
+    }
+    lastSequence = sequence;
+    terminal = isTerminal;
+  }
 
   ScannerEventDecision consume(ScannerEvent event) {
     if (event.sessionId != sessionId || event.generation != generation) {
@@ -184,7 +280,7 @@ abstract interface class ScannerService {
   Future<Map<String, dynamic>> scannerReadiness();
   Future<ScannerSession> startScannerSession(ScannerKind kind, String targetId);
   Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session);
-  Future<Map<String, dynamic>> scannerSnapshot(ScannerSession session);
+  Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session);
   Future<ScannerCandidate> getScannerCandidate(
     ScannerSession session,
     String candidateId,
@@ -302,11 +398,24 @@ class ScannerProtocolClient implements ScannerService {
         'generation': session.generation,
       });
   @override
-  Future<Map<String, dynamic>> scannerSnapshot(ScannerSession session) =>
-      _client.send('scanner.session.snapshot', {
+  Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session) async {
+    final snapshot = ScannerSessionSnapshot.fromWire(
+      await _client.send('scanner.session.snapshot', {
         'session_id': session.id,
         'generation': session.generation,
-      });
+      }),
+    );
+    if (snapshot.sessionId != session.id ||
+        snapshot.generation != session.generation ||
+        snapshot.kind != session.kind) {
+      throw const FormatException('Scanner snapshot session mismatch');
+    }
+    _cursors[session.id]?.reconcile(
+      sequence: snapshot.lastSequence,
+      isTerminal: snapshot.terminal != null,
+    );
+    return snapshot;
+  }
   @override
   Future<ScannerCandidate> getScannerCandidate(
     ScannerSession session,

@@ -369,24 +369,21 @@ void main() {
     expect(find.text('9999명'), findsOneWidget);
   });
 
-  testWidgets('unavailable P1 scanner is explicit and cannot be started', (
+  testWidgets('scan tab is service-backed and requires an explicit target', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final defaults = MockAppService();
-    final service = MockAppService(
-      initialState: defaults.state.value.copyWith(scanAvailable: false),
-    );
-    await defaults.dispose();
+    final service = MockAppService();
     addTearDown(service.dispose);
     await tester.pumpWidget(BAPlannerApp(service: service));
 
     await tester.tap(find.byKey(const ValueKey('top-tab-scan')));
     await tester.pumpAndSettle();
 
+    expect(find.byKey(const ValueKey('scan-page')), findsOneWidget);
     final button = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, '스캐너 미연결'),
+      find.widgetWithText(FilledButton, 'Start scan'),
     );
     expect(button.onPressed, isNull);
   });

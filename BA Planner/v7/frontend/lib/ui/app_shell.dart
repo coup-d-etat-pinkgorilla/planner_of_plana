@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
 import '../services/app_service.dart';
+import '../services/scanner_service.dart';
 import 'app_section.dart';
 import 'pages/adaptive_sync_page.dart';
 import 'pages/home_page.dart';
 import 'pages/inventory_page.dart';
 import 'pages/planning_page.dart';
+import 'pages/scan_page.dart';
 import 'pages/student_page.dart';
 import 'pages/section_placeholder_page.dart';
 import 'widgets/animated_section_stack.dart';
@@ -68,6 +70,8 @@ class _AppShellState extends State<AppShell> {
   AppSection _section = AppSection.home;
   bool _showDevelopmentPanel = false;
   PlanningStudentSeed? _planningSeed;
+  StudentCandidateContext? _studentCandidate;
+  InventoryCandidateContext? _inventoryCandidate;
 
   void _open(AppSection section) {
     setState(() => _section = section);
@@ -78,6 +82,34 @@ class _AppShellState extends State<AppShell> {
       _planningSeed = seed;
       _section = AppSection.plan;
     });
+  }
+
+  void _handoffCandidate(ScannerSession session, ScannerCandidate candidate) {
+    setState(() {
+      if (candidate.kind == ScannerKind.student) {
+        _studentCandidate = StudentCandidateContext(
+          session: session,
+          candidate: candidate,
+        );
+        _section = AppSection.students;
+      } else {
+        _inventoryCandidate = InventoryCandidateContext(
+          session: session,
+          candidate: candidate,
+        );
+        _section = AppSection.inventory;
+      }
+    });
+  }
+
+  void _clearStudentCandidate(ScannerCandidate committed) {
+    if (_studentCandidate?.candidate.id != committed.id) return;
+    setState(() => _studentCandidate = null);
+  }
+
+  void _clearInventoryCandidate(ScannerCandidate committed) {
+    if (_inventoryCandidate?.candidate.id != committed.id) return;
+    setState(() => _inventoryCandidate = null);
   }
 
   @override
@@ -121,11 +153,15 @@ class _AppShellState extends State<AppShell> {
                                 StudentPage(
                                   service: widget.service,
                                   onAddToPlan: _addStudentToPlan,
+                                  candidateContext: _studentCandidate,
+                                  onCandidateCommitted: _clearStudentCandidate,
                                 ),
                                 PlanningPage(service: widget.service, initialSeed: _planningSeed),
                                 InventoryPage(service:widget.service,
                                   onOpenPlan:() => _open(AppSection.plan),
-                                  onOpenScan:() => _open(AppSection.scan)),
+                                  onOpenScan:() => _open(AppSection.scan),
+                                  candidateContext: _inventoryCandidate,
+                                  onCandidateCommitted: _clearInventoryCandidate),
                                 SectionPlaceholderPage(
                                   section: AppSection.pvp,
                                   service: widget.service,
@@ -134,9 +170,9 @@ class _AppShellState extends State<AppShell> {
                                   section: AppSection.statistics,
                                   service: widget.service,
                                 ),
-                                SectionPlaceholderPage(
-                                  section: AppSection.scan,
+                                ScanPage(
                                   service: widget.service,
+                                  onCandidateHandoff: _handoffCandidate,
                                 ),
                                 SectionPlaceholderPage(
                                   section: AppSection.settings,

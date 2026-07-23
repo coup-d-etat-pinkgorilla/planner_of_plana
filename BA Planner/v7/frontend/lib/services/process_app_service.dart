@@ -203,7 +203,7 @@ class ProcessAppService with WidgetsBindingObserver implements AppService, Repos
   Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session) => _scanner.cancelScannerSession(session);
 
   @override
-  Future<Map<String, dynamic>> scannerSnapshot(ScannerSession session) => _scanner.scannerSnapshot(session);
+  Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session) => _scanner.scannerSnapshot(session);
 
   @override
   Future<ScannerCandidate> getScannerCandidate(ScannerSession session, String candidateId) => _scanner.getScannerCandidate(session, candidateId);

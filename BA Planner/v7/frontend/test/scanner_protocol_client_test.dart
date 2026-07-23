@@ -8,6 +8,61 @@ import 'package:ba_planner_v7/services/scanner_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('typed scanner snapshot parses envelope history and reconciles cursor', () {
+    final snapshot = ScannerSessionSnapshot.fromWire({
+      'session_id': 's1',
+      'generation': 1,
+      'scan_kind': 'student',
+      'last_sequence': 2,
+      'terminal': 'completed',
+      'events': [
+        {
+          'protocol': 1,
+          'type': 'event',
+          'method': 'scanner.session.event',
+          'payload': {
+            'session_id': 's1',
+            'generation': 1,
+            'sequence': 1,
+            'scan_kind': 'student',
+            'event_kind': 'phase',
+            'phase': 'capturing',
+          },
+        },
+        {
+          'protocol': 1,
+          'type': 'event',
+          'method': 'scanner.session.event',
+          'payload': {
+            'session_id': 's1',
+            'generation': 1,
+            'sequence': 2,
+            'scan_kind': 'student',
+            'event_kind': 'terminal',
+            'outcome': 'completed',
+          },
+        },
+      ],
+      'candidates': <dynamic>[],
+    });
+    expect(snapshot.events.map((event) => event.sequence), [1, 2]);
+    final cursor = ScannerEventCursor('s1', 1)
+      ..reconcile(sequence: snapshot.lastSequence, isTerminal: true);
+    expect(
+      cursor.consume(
+        ScannerEvent(
+          sessionId: 's1',
+          generation: 1,
+          sequence: 3,
+          kind: ScannerKind.student,
+          eventKind: ScannerEventKind.progress,
+          payload: const {},
+        ),
+      ),
+      ScannerEventDecision.afterTerminal,
+    );
+  });
+
   test('typed scanner client buffers start race and filters duplicate stale gap', () async {
     final process = _ScannerFakeProcess();
     final transport = PlanningProtocolClient(() async => process);

@@ -10,6 +10,7 @@ Widget _subject(
   AppService service, {
   VoidCallback? onOpenPlan,
   VoidCallback? onOpenScan,
+  ValueChanged<ScannerCandidate>? onCandidateCommitted,
   InventoryCandidateContext? candidateContext,
 }) => MaterialApp(
   home: Scaffold(
@@ -18,6 +19,7 @@ Widget _subject(
       onOpenPlan: onOpenPlan ?? () {},
       onOpenScan: onOpenScan ?? () {},
       candidateContext: candidateContext,
+      onCandidateCommitted: onCandidateCommitted,
     ),
   ),
 );
@@ -70,13 +72,14 @@ void main() {
   });
 
   testWidgets('candidate hold does not mutate and approve commits the inventory snapshot', (tester) async {
-    final service=MockAppService();
+    final service=MockAppService(); var committed=false;
     const session=ScannerSession(id:'inventory-session',generation:1,kind:ScannerKind.inventory);
     final candidate=ScannerCandidate(id:'inventory-candidate',sessionId:session.id,generation:1,revision:1,
       kind:ScannerKind.inventory,payload:{'version':1,'entries':[{'key':'Item_Icon_ExpItem_0','item_id':'Item_Icon_ExpItem_0','quantity':'7'}]},
       evidence:const [],reviewRequired:true,approved:false);
     await tester.pumpWidget(_subject(service,
-      candidateContext:InventoryCandidateContext(session:session,candidate:candidate)));
+      candidateContext:InventoryCandidateContext(session:session,candidate:candidate),
+      onCandidateCommitted:(_){committed=true;}));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Hold')); await tester.pump();
     var state=await service.loadRepositoryState('000000000000000000000001');
@@ -84,6 +87,7 @@ void main() {
     await tester.tap(find.text('Review & approve')); await tester.pumpAndSettle();
     state=await service.loadRepositoryState('000000000000000000000001');
     expect(state.inventory.entries.single['quantity'],'7');
+    expect(committed,isTrue);
     await service.dispose();
   });
 

@@ -6,9 +6,40 @@ import 'app_service.dart';
 import 'repository_service.dart';
 import 'scanner_service.dart';
 
+enum MockScannerScenario {
+  completed,
+  failed,
+  reviewRequired,
+  inventoryUnknown,
+}
+
 class MockAppService implements AppService, MockScenarioController, RepositoryService, ScannerService {
-  MockAppService({AppServiceState? initialState})
-    : _state = ValueNotifier(
+  MockAppService({
+    AppServiceState? initialState,
+    this.scannerScenario = MockScannerScenario.completed,
+    List<ScannerTarget>? scannerTargets,
+    Map<String, dynamic>? scannerReadiness,
+  }) : _scannerTargets = List.unmodifiable(
+         scannerTargets ??
+             const [
+               ScannerTarget(
+                 id: 'mock-window',
+                 title: 'Mock Blue Archive',
+                 status: ScannerTargetStatus.ready,
+                 foreground: true,
+               ),
+             ],
+       ),
+       _scannerReadiness = Map.unmodifiable(
+         scannerReadiness ??
+             const {
+               'ready': true,
+               'manifest_version': 1,
+               'missing': <String>[],
+               'corrupt': <String>[],
+             },
+       ),
+       _state = ValueNotifier(
         initialState ??
             const AppServiceState(
               connection: BackendConnection.connected,
@@ -23,10 +54,18 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
             ),
       );
 
+  final MockScannerScenario scannerScenario;
+  final List<ScannerTarget> _scannerTargets;
+  final Map<String, dynamic> _scannerReadiness;
+
   final ValueNotifier<AppServiceState> _state;
   final List<RepositoryProfile> _profiles = [const RepositoryProfile(id: '000000000000000000000001', displayName: 'Main', revision: 0, selected: true)];
   final Map<String, Map<String, dynamic>> _repositoryStates = {};
   final StreamController<ScannerEvent> _scannerEvents = StreamController.broadcast();
+  final Map<String, List<ScannerEvent>> _scannerHistory = {};
+  final Map<String, ScannerCandidate> _scannerCandidates = {};
+  final Map<String, String> _scannerTerminals = {};
+  final List<Timer> _scannerTimers = [];
   var _scannerGeneration = 0;
 
   @override
@@ -55,41 +94,125 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
   @override
   Future<void> startScan() async {
     _state.value = _state.value.copyWith(scanPhase: ScanPhase.scanning);
-    final session = await startScannerSession(ScannerKind.student, 'mock-window');
-    await Future<void>.delayed(const Duration(milliseconds: 50));
-    _scannerEvents.add(ScannerEvent(
-      sessionId: session.id,
-      generation: session.generation,
-      sequence: 1,
-      kind: ScannerKind.student,
-      eventKind: ScannerEventKind.terminal,
-      payload: {'outcome': 'completed'},
-    ));
-    _state.value = _state.value.copyWith(scanPhase: ScanPhase.succeeded);
+    await startScannerSession(ScannerKind.student, 'mock-window');
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+    _state.value = _state.value.copyWith(
+      scanPhase: scannerScenario == MockScannerScenario.failed
+          ? ScanPhase.failed
+          : ScanPhase.succeeded,
+    );
   }
 
   @override
   Stream<ScannerEvent> get scannerEvents => _scannerEvents.stream;
 
   @override
-  Future<List<ScannerTarget>> listScannerTargets() async => const [
-    ScannerTarget(id: 'mock-window', title: 'Mock Blue Archive', status: ScannerTargetStatus.ready, foreground: true),
-  ];
+  Future<List<ScannerTarget>> listScannerTargets() async => _scannerTargets;
 
   @override
-  Future<Map<String, dynamic>> scannerReadiness() async => {'ready': true, 'manifest_version': 1, 'missing': <String>[], 'corrupt': <String>[]};
+  Future<Map<String, dynamic>> scannerReadiness() async => _scannerReadiness;
 
   @override
-  Future<ScannerSession> startScannerSession(ScannerKind kind, String targetId) async => ScannerSession(id: 'mock-session-${++_scannerGeneration}', generation: _scannerGeneration, kind: kind);
+  Future<ScannerSession> startScannerSession(
+    ScannerKind kind,
+    String targetId,
+  ) async {
+    final target = _scannerTargets.where((item) => item.id == targetId);
+    if (target.isEmpty || target.single.status != ScannerTargetStatus.ready) {
+      throw StateError('target_not_ready');
+    }
+    final session = ScannerSession(
+      id: 'mock-session-${++_scannerGeneration}',
+      generation: _scannerGeneration,
+      kind: kind,
+    );
+    _scannerHistory[session.id] = [];
+    _emitScannerEvent(
+      session,
+      ScannerEventKind.phase,
+      {'phase': 'capturing'},
+    );
+    _scannerTimers.add(
+      Timer(const Duration(milliseconds: 10), () {
+        if (_scannerTerminals.containsKey(session.id)) return;
+        _emitScannerEvent(
+          session,
+          ScannerEventKind.progress,
+          {
+            'current': 1,
+            'total': kind == ScannerKind.student ? null : 2,
+            'message_key': 'scanner.${kind.name}.recognizing',
+          },
+        );
+      }),
+    );
+    _scannerTimers.add(
+      Timer(const Duration(milliseconds: 20), () {
+        if (_scannerTerminals.containsKey(session.id)) return;
+        if (scannerScenario == MockScannerScenario.failed) {
+          _emitTerminal(
+            session,
+            'failed',
+            error: const {'code': 'mock_failure', 'message': 'Mock scan failed'},
+          );
+          return;
+        }
+        final candidate = _mockCandidate(session);
+        _scannerCandidates['${session.id}:${candidate.id}'] = candidate;
+        _emitScannerEvent(
+          session,
+          ScannerEventKind.candidate,
+          {'candidate': _candidateWire(candidate)},
+        );
+      }),
+    );
+    _scannerTimers.add(
+      Timer(const Duration(milliseconds: 30), () {
+        if (!_scannerTerminals.containsKey(session.id)) {
+          _emitTerminal(session, 'completed');
+        }
+      }),
+    );
+    return session;
+  }
 
   @override
-  Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session) async => {'accepted': true, 'terminal': 'cancelled'};
+  Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session) async {
+    final terminal = _scannerTerminals[session.id];
+    if (terminal != null) return {'accepted': false, 'terminal': terminal};
+    _scannerTimers.add(
+      Timer(
+        const Duration(milliseconds: 10),
+        () => _emitTerminal(session, 'cancelled'),
+      ),
+    );
+    return {'accepted': true, 'terminal': null};
+  }
 
   @override
-  Future<Map<String, dynamic>> scannerSnapshot(ScannerSession session) async => {'session_id':session.id,'generation':session.generation,'scan_kind':session.kind.name,'last_sequence':0,'terminal':null,'events':<dynamic>[],'candidates':<dynamic>[]};
+  Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session) async {
+    final events = _scannerHistory[session.id] ?? const <ScannerEvent>[];
+    return ScannerSessionSnapshot(
+      sessionId: session.id,
+      generation: session.generation,
+      kind: session.kind,
+      lastSequence: events.isEmpty ? 0 : events.last.sequence,
+      terminal: _scannerTerminals[session.id],
+      events: events,
+      candidates: _scannerCandidates.entries
+          .where((entry) => entry.key.startsWith('${session.id}:'))
+          .map((entry) => entry.value)
+          .toList(growable: false),
+    );
+  }
 
   @override
-  Future<ScannerCandidate> getScannerCandidate(ScannerSession session, String candidateId) async => ScannerCandidate(id:candidateId,sessionId:session.id,generation:session.generation,revision:1,kind:session.kind,payload:const {'version':1,'student_id':'aru','values':<String,dynamic>{}},evidence:const [],reviewRequired:false,approved:false);
+  Future<ScannerCandidate> getScannerCandidate(
+    ScannerSession session,
+    String candidateId,
+  ) async =>
+      _scannerCandidates['${session.id}:$candidateId'] ??
+      (throw StateError('candidate_not_found'));
 
   @override
   Future<ScannerCandidate> reviewScannerCandidate(ScannerSession session, ScannerCandidate candidate, Map<String, dynamic> payload, {required bool approve, required String reason}) async => ScannerCandidate(id:candidate.id,sessionId:session.id,generation:session.generation,revision:candidate.revision+1,kind:session.kind,payload:payload,evidence:candidate.evidence,reviewRequired:candidate.reviewRequired,approved:approve);
@@ -115,6 +238,117 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
         ? {...current, 'revision':revision, 'inventory':payload}
         : {...current, 'revision':revision, 'students':existing};
     return {'candidate_id':candidate.id,'candidate_revision':candidate.revision,'profile_id':profileId,'revision':revision};
+  }
+
+  ScannerCandidate _mockCandidate(ScannerSession session) {
+    final inventory = session.kind == ScannerKind.inventory;
+    final review = scannerScenario == MockScannerScenario.reviewRequired ||
+        scannerScenario == MockScannerScenario.inventoryUnknown;
+    return ScannerCandidate(
+      id: 'mock-candidate-${session.generation}',
+      sessionId: session.id,
+      generation: session.generation,
+      revision: 1,
+      kind: session.kind,
+      payload: inventory
+          ? {
+              'version': 1,
+              'entries': [
+                {
+                  'key': 'Item_Icon_ExpItem_0',
+                  'quantity': scannerScenario == MockScannerScenario.inventoryUnknown
+                      ? null
+                      : '12',
+                  'item_id': 'Item_Icon_ExpItem_0',
+                  'name': 'Basic activity report',
+                  'index': 0,
+                  'profile_id': 'activity_reports',
+                },
+              ],
+            }
+          : {
+              'version': 1,
+              'student_id': 'aru',
+              'values': {'level': 90},
+            },
+      evidence: [
+        ScannerFieldEvidence(
+          field: inventory ? 'quantity' : 'level',
+          status: review ? 'uncertain' : 'ok',
+          source: 'mock_fixture',
+          confidence: review ? 0.62 : 0.98,
+          note: review ? 'Manual review required' : '',
+        ),
+      ],
+      reviewRequired: review,
+      approved: false,
+    );
+  }
+
+  Map<String, dynamic> _candidateWire(ScannerCandidate candidate) => {
+    'candidate_id': candidate.id,
+    'session_id': candidate.sessionId,
+    'generation': candidate.generation,
+    'revision': candidate.revision,
+    'scan_kind': candidate.kind.name,
+    'payload': candidate.payload,
+    'evidence': [
+      for (final item in candidate.evidence)
+        {
+          'field': item.field,
+          'status': item.status,
+          'source': item.source,
+          'confidence': item.confidence,
+          'note': item.note,
+        },
+    ],
+    'review_required': candidate.reviewRequired,
+    'approved': candidate.approved,
+    'audit': <dynamic>[],
+  };
+
+  void _emitScannerEvent(
+    ScannerSession session,
+    ScannerEventKind kind,
+    Map<String, dynamic> payload,
+  ) {
+    final history = _scannerHistory[session.id];
+    if (history == null || _scannerTerminals.containsKey(session.id)) return;
+    final event = ScannerEvent(
+      sessionId: session.id,
+      generation: session.generation,
+      sequence: history.length + 1,
+      kind: session.kind,
+      eventKind: kind,
+      payload: {
+        'session_id': session.id,
+        'generation': session.generation,
+        'sequence': history.length + 1,
+        'scan_kind': session.kind.name,
+        'event_kind': kind.name,
+        ...payload,
+      },
+    );
+    history.add(event);
+    _scannerEvents.add(event);
+  }
+
+  void _emitTerminal(
+    ScannerSession session,
+    String outcome, {
+    Map<String, dynamic>? error,
+  }) {
+    if (_scannerTerminals.containsKey(session.id)) return;
+    final payload = <String, dynamic>{'outcome': outcome};
+    if (error != null) {
+      payload['error'] = error;
+    }
+    _emitScannerEvent(
+      session,
+      ScannerEventKind.terminal,
+      payload,
+    );
+    _scannerTerminals[session.id] = outcome;
   }
 
   @override
@@ -294,6 +528,9 @@ class MockAppService implements AppService, MockScenarioController, RepositorySe
 
   @override
   Future<void> dispose() async {
+    for (final timer in _scannerTimers) {
+      timer.cancel();
+    }
     await _scannerEvents.close();
     _state.dispose();
   }

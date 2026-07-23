@@ -84,6 +84,12 @@ void main() {
           ]),
         );
         expect(sessionEvents.last.payload['outcome'], 'completed');
+        final snapshot = await service.scannerSnapshot(session);
+        expect(snapshot.sessionId, session.id);
+        expect(snapshot.generation, session.generation);
+        expect(snapshot.terminal, 'completed');
+        expect(snapshot.lastSequence, sessionEvents.last.sequence);
+        expect(snapshot.candidates.single.id, 'scanner-e2e-candidate');
         return sessionEvents;
       }
 

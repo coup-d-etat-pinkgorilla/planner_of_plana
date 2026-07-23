@@ -59,7 +59,7 @@ Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
 | P4 | 프로필과 repository 영구 저장 | `완료` | nested schema·40-case Python/Dart contract, typed state, atomic persistence와 실제 Dart↔Python restart E2E; Python 40·Flutter 43·analyze·release 통과 | P5에서 repository 확정과 분리된 scanner session 경계 작성 |
 | P5 | scanner/matcher session protocol과 backend | `완료` | 40-path follow-up 인수와 마스터 보완; Python 59·Flutter 47·실제 process E2E·release asset gate 통과 | 2학생·2인벤토리 아이콘 제한 coverage를 유지하고 P6에서 scanner UI 연결 |
-| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1·P6-2 완료; P6-3 scanner UI input과 슬레이브 실행 프롬프트 작성 | 승인된 P6-2 snapshot과 P6-3 prompt를 슬레이브에 전달 |
+| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1 학생·P6-2 인벤토리·P6-3 스캔 완료; P6-4 prompt 준비; P6-5~P6-7 미완료 | 승인된 P6-3 snapshot과 P6-4 prompt를 슬레이브에 전달 |
 
 ## 현재 결정
 
@@ -73,8 +73,11 @@ Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
   revision/idempotency key를 가진 별도 commit만 P4 경계를 호출한다.
 - recognition template·region·adaptive sample은 Flutter UI asset과 분리하며 manifest와
   SHA-256으로 배포 경계를 검증한다.
-- P6은 학생 → 인벤토리 → 스캔 → 홈 → 통계 → 전술대항전 → 설정 순서로 진행한다.
-- P6 완료는 정식 출시가 아니라 통합 베타 기준이다.
+- P6은 총 7개 하위 단계다: P6-1 학생 → P6-2 인벤토리 → P6-3 스캔 → P6-4 홈 →
+  P6-5 통계 → P6-6 전술대항전 → P6-7 설정 및 통합 오류 처리.
+- P6 전체 완료는 P6-7까지 구현한 뒤 모든 기본 탭과 스캔 → 현재 상태 검토 → 목표 설정 →
+  총 필요량 → 부족량 → 저장·복원 통합 흐름을 검증한 경우에만 판정한다. 이는 정식 출시가
+  아니라 통합 베타 기준이다.
 - P6 화면 설계 전 입력으로 `almanac/design/frontend-section-direction-and-user-flows.md`를
   사용한다. 이 문서는 사용자가 정한 80도 사선·글라스·부착면·전환 방향을 확정 규칙으로,
   계획 외 탭의 기능별 행동 순서를 검수 전 가설로 구분한다.
@@ -426,7 +429,7 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 
 ## P6-3 — 스캔 실제 UI 통합
 
-- 상태: `대기`
+- 상태: `완료`
 - 목적: 스캔 탭 placeholder를 P5 typed scanner service에 연결하고 readiness·profile·target·kind,
   session start·phase·progress·cancel·retry·terminal과 candidate handoff 흐름을 완성
 - 완료 조건: 단일 active session, cancel/terminal 분리, event gap snapshot 복구, bounded in-memory
@@ -434,17 +437,77 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
   Python·Flutter·release·실제 process E2E·Mock·viewport·Almanac 검증 통과
 - 입력: `docs/migration/p6-3-scan-integration/input.md`
 - 슬레이브 실행 프롬프트: `docs/migration/p6-3-scan-integration/slave-execution-prompt.md`
-- 출력 보고서: 아직 없음
-- 결과물: 아직 없음
-- 검증: input/prompt 필수 handoff marker와 송신 wrapper 확인, `git diff --check`,
-  `codealmanac validate`, `codealmanac health` 통과
+- 출력 보고서: `docs/migration/handoffs/incoming/ba-planner-v7-p6-3-scan-integration/staging/manual-20260723-121648-35b503de/output.md`
+  (`COMPLETED`, 마스터 검증·인수 완료)
+- 결과물: 수신 패키지 `ba-planner-v7-p6-3-scan-integration-20260723-121532.zip`
+  (23,705 bytes, SHA-256 `2ba963e2f2b7a5ed1f816d3f3b53f8060b2064301ecb21e9f278dc2dee4d7e3b`),
+  같은 staging의 `artifacts/p6-3-scan-integration.patch` (80,805 bytes,
+  SHA-256 `e4bbd86b49ca9babbe8c41a29e7c5e040d68726cb1042760b28f4596b6eb4bcc`)와
+  `artifacts/verification.txt` (4,470 bytes,
+  SHA-256 `6f39b5373d140d90f78b1041d84b5893c312d14a60847a61d1d808e0e39fa744`)
+- 검증: ZIP·manifest·sidecar·`output.md`의 크기와 SHA-256을 독립 대조했고 고유 staging에만
+  해제했다. baseline `00b995d`의 깨끗한 작업 트리에서 기존 사용자 변경과 대상 경로 중첩이 없음을
+  확인하고 `git apply --check` 뒤 patch를 적용했다. Python 3.11 전체 72 tests, Flutter 전체 78 tests,
+  scanner 집중 16 tests, `flutter analyze`, Windows release build, 실제 Dart↔Python scanner process E2E,
+  typed snapshot·event gap·cancel/retry·terminal, MockAppService, student/inventory candidate handoff와
+  성공 commit 뒤 context 정리 및 hold 경계, 1280×720·1440×900·1280×960 Widget layout,
+  `codealmanac validate`, `codealmanac health`, 금지 GUI/v6 runtime 참조 0건과 `git diff --check`를
+  마스터에서 통과했다.
+- 마스터 보정: nullable terminal payload lint, StudentPage test callback 위치, Mock cancel terminal의
+  결정적 지연, offscreen/indeterminate progress Widget test와 retry timer 정리를 보정하고 실제 process
+  E2E에 typed snapshot 복구 assertion을 추가했다.
 - 결정 및 제약: ScanPage는 session 실행과 candidate 요약·handoff만 소유하며 repository review/commit은
   StudentPage/InventoryPage가 계속 소유한다. cancel acknowledgement만으로 terminal 처리하지 않고,
   최근 결과는 backend에 없는 영구 history를 만들지 않은 현재 앱 실행 중 bounded memory로 제한한다.
 - baseline gate: P6-2 승인본은 현재 마스터 작업 트리의 미커밋 증분이므로 슬레이브가 정확한 accepted
   snapshot을 받지 못했다면 P6-1/P6-2를 재구성하지 않고 `BLOCKED`로 동일 snapshot을 요청한다.
+- 인계 메모: 마스터 요청문의 P2·`p2-planning-screen.patch` 표기는 오래된 문구로 판단하고 실제
+  Task ID·manifest·`output.md`·patch의 일치된 P6-3 범위를 기준으로 검증했다.
+  `WIRELESS_HANDOFF_RECEIVED`는 수신 디렉터리·ZIP·현재 터미널 출력에 없었고 무선 전달이라는 별도
+  주장은 없었다. 무선 전달이었다면 해당 수신 표식은 별도 운송 증빙으로 재확인이 필요하다.
 - 차단 사항: 없음
-- 다음 행동: 승인된 P6-2 snapshot과 P6-3 실행 프롬프트를 슬레이브에 전달하고 artifact를 수신
+- 다음 행동: 승인된 P6-3 snapshot과 P6-4 홈 통합 프롬프트를 슬레이브에 전달
+- 최종 갱신: 2026-07-23
+
+## P6-4 — 홈 실제 데이터 통합
+
+- 상태: `인계 대기`
+- 목적: 기존 80° 홈 이미지 메뉴를 보존하면서 선택 프로필·backend, 실제 repository count,
+  저장된 계획·부족 재화, 최신 scan과 검토 대기 상태를 읽는 시작 대시보드로 통합
+- 완료 조건: 실제 typed source의 loading·empty·disconnected·partial error와 refresh/resume,
+  profile/repository/plan/shortage/scan read model, data-owner quick action, 기존 홈 geometry와
+  3개 viewport, Python·Flutter·release·실제 process E2E·Mock·Almanac 검증 통과
+- 입력: `docs/migration/p6-4-home-integration/input.md`
+- 슬레이브 실행 프롬프트: `docs/migration/p6-4-home-integration/slave-execution-prompt.md`
+- 결정 및 제약: 홈은 read model이며 repository save, plan mutation, candidate review/commit을 하지 않는다.
+  inventory unknown을 0으로 만들지 않고 임시 planning draft를 저장된 plan으로 표현하지 않는다.
+  최근 scan은 P6-3의 앱 실행 중 typed summary만 공유하며 backend에 없는 timestamp나 영구 history를
+  만들지 않는다. P6-5~P6-7과 새 backend protocol은 범위 밖이다.
+- 차단 사항: 없음
+- 다음 행동: accepted P6-3 snapshot과 두 입력 문서를 슬레이브에 전달하고 결과 artifact 인수
+- 최종 갱신: 2026-07-23
+
+## P6-5 — 통계 실제 데이터 통합
+
+- 상태: `대기`
+- 목적: 통계 탭을 승인된 repository·계산 결과에 연결
+- 선행 조건: P6-4 완료
+- 최종 갱신: 2026-07-23
+
+## P6-6 — 전술대항전 실제 데이터 통합
+
+- 상태: `대기`
+- 목적: 전술대항전 탭의 실제 데이터와 사용자 흐름 통합
+- 선행 조건: P6-5 완료
+- 최종 갱신: 2026-07-23
+
+## P6-7 — 설정 및 통합 오류 처리
+
+- 상태: `대기`
+- 목적: 설정 탭과 전 탭 공통 오류·복구 흐름을 통합하고 P6 전체를 마감
+- 완료 조건: 모든 기본 탭과 스캔 → 현재 상태 검토 → 목표 설정 → 총 필요량 → 부족량 →
+  저장·복원 통합 흐름의 독립 검증 통과
+- 선행 조건: P6-4~P6-6 완료
 - 최종 갱신: 2026-07-23
 
 최종 갱신: 2026-07-23

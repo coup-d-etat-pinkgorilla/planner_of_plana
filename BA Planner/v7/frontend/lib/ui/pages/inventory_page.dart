@@ -15,11 +15,12 @@ class InventoryCandidateContext {
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key, required this.service, required this.onOpenPlan,
-    required this.onOpenScan, this.candidateContext});
+    required this.onOpenScan, this.candidateContext, this.onCandidateCommitted});
   final AppService service;
   final VoidCallback onOpenPlan;
   final VoidCallback onOpenScan;
   final InventoryCandidateContext? candidateContext;
+  final ValueChanged<ScannerCandidate>? onCandidateCommitted;
 
   @override State<InventoryPage> createState() => _InventoryPageState();
 }
@@ -182,6 +183,7 @@ class _InventoryPageState extends State<InventoryPage> {
         expectedRepositoryRevision:state.revision,idempotencyKey:'inventory-candidate-${approved.id}-${approved.revision}');
       await _reload();
       if (mounted) setState(() => _message='Scanner candidate committed.');
+      widget.onCandidateCommitted?.call(context.candidate);
     } catch (error) { if (mounted) setState(() => _message='Candidate commit failed; comparison was kept: $error'); }
     finally { if (mounted) setState(() => _saving=false); }
   }

@@ -23,11 +23,13 @@ class StudentPage extends StatefulWidget {
     required this.service,
     required this.onAddToPlan,
     this.candidateContext,
+    this.onCandidateCommitted,
   });
 
   final AppService service;
   final ValueChanged<PlanningStudentSeed> onAddToPlan;
   final StudentCandidateContext? candidateContext;
+  final ValueChanged<ScannerCandidate>? onCandidateCommitted;
 
   @override
   State<StudentPage> createState() => _StudentPageState();
@@ -291,6 +293,7 @@ class _StudentPageState extends State<StudentPage> {
         _message = 'Candidate committed at revision ${committed['revision']}.';
       });
       _syncEditors();
+      widget.onCandidateCommitted?.call(context.candidate);
     } catch (error) {
       if (mounted) {
         setState(() => _message = 'Candidate was not committed: $error');
