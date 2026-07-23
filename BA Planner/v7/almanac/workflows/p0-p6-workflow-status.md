@@ -59,7 +59,7 @@ Windows release build가 통과했다. 변경은 아직 커밋되지 않았다.
 | P3 | repository 특성화와 DTO 분리 | `완료` | 원본과 followup 2건 적용, DTO·fixture·비중첩·전체 검증 통과 | P4에서 승인된 DTO·병합 계약 유지 |
 | P4 | 프로필과 repository 영구 저장 | `완료` | nested schema·40-case Python/Dart contract, typed state, atomic persistence와 실제 Dart↔Python restart E2E; Python 40·Flutter 43·analyze·release 통과 | P5에서 repository 확정과 분리된 scanner session 경계 작성 |
 | P5 | scanner/matcher session protocol과 backend | `완료` | 40-path follow-up 인수와 마스터 보완; Python 59·Flutter 47·실제 process E2E·release asset gate 통과 | 2학생·2인벤토리 아이콘 제한 coverage를 유지하고 P6에서 scanner UI 연결 |
-| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1 학생·P6-2 인벤토리·P6-3 스캔·P6-4 홈 완료; P6-5 prompt 준비; P6-6~P6-7 미완료 | 승인된 P6-4 snapshot과 P6-5 prompt를 슬레이브에 전달 |
+| P6 | 전 기본 탭 실제 데이터 통합 | `진행 중` | P6-1 학생·P6-2 인벤토리·P6-3 스캔·P6-4 홈·P6-5 통계 완료; P6-6 인계 준비, P6-7 미완료 | accepted P6-5 snapshot과 P6-6 input/prompt를 슬레이브에 전달 |
 
 ## 현재 결정
 
@@ -513,7 +513,7 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 
 ## P6-5 — 통계 실제 데이터 통합
 
-- 상태: `인계 대기`
+- 상태: `완료`
 - 목적: 통계 탭을 선택 프로필 전체의 실제 student/inventory catalog, repository current·goals,
   gross calculation과 shortage 결과에 연결하고 근거 detail에서 data-owner 탭으로 이동
 - 완료 조건: 학생·인벤토리·계획 3 mode, 고정 KPI/분포와 pure typed projection,
@@ -521,20 +521,47 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
   refresh/re-entry, Python·Flutter·release·실제 process E2E·Mock·3 viewport·Almanac 검증 통과
 - 입력: `docs/migration/p6-5-statistics-integration/input.md`
 - 슬레이브 실행 프롬프트: `docs/migration/p6-5-statistics-integration/slave-execution-prompt.md`
+- 출력 보고서: `docs/migration/handoffs/incoming/ba-planner-v7-p6-5-statistics-integration/staging/20260723-164735-0b236e6c/output.md`
+  (`COMPLETED`, 마스터 독립 검증 완료)
+- 결과물: 수신 패키지 `ba-planner-v7-p6-5-statistics-integration-20260723-164645.zip`
+  (16,888 bytes, SHA-256 `8c377b4d6e2f9ac935e0e7f4649ecf85a1fb1fc07ddd7d158790aa8022a772d5`),
+  같은 staging의 patch와 verification artifact
 - 결정 및 제약: v6 통계는 StudentPage filtered set을 사용했지만 v7에는 filter 공유 계약이 없으므로
   P6-5 범위는 선택 프로필 전체로 고정한다. StudentPage filter handoff, 새 chart dependency,
   statistics protocol/storage/history를 만들지 않는다. 통계는 read-only이며 학생 current·metadata·goal,
   gross result와 inventory shortage bucket을 섞거나 mutation하지 않는다.
+- 마스터 검증: package/manifest/output artifact의 크기와 SHA-256을 독립 확인하고 고유 staging에서만
+  추출했다. accepted P6-4 baseline과 clean worktree를 확인한 뒤 7-path patch에 `git apply --check`를
+  선행하고 적용했다. Python 72개, Flutter 전체 106개와 P6-5 집중 16개, `flutter analyze`, Windows
+  release build, 실제 Dart↔Python catalog/repository/gross/shortage process E2E, MockAppService,
+  1280×720·1440×900·1280×960 Widget layout, `codealmanac validate`·`health`, `git diff --check`를 통과했다.
+- 마스터 보정: Widget test의 `ValueListenable` import, private test helper, lazy-scroll navigation과
+  stable identity assertion을 정리했다. 인벤토리 snapshot 부재를 null 수량과 분리해 `absent`로
+  집계하고 category known coverage의 분모를 catalog로 고정했으며, 범위 밖 학생 level/star가
+  known-only 평균과 고정 bucket에 섞이지 않도록 pure projection과 회귀 test를 보강했다.
+- 전달 메모: 마스터 요청문의 `P2`/`p2-planning-screen.patch` 표기는 오래된 문구였으나 실제
+  Task ID·manifest·`output.md`·patch 7경로는 모두 P6-5로 일치했다. `WIRELESS_HANDOFF_RECEIVED`는
+  수신 디렉터리와 현재 작업 터미널에서 확인되지 않았고 무선 전달이라는 별도 주장은 없었다.
 - 선행 조건: P6-4 완료
 - 차단 사항: 없음
-- 다음 행동: accepted P6-4 snapshot과 두 입력 문서를 슬레이브에 전달하고 결과 artifact 인수
+- 다음 행동: accepted P6-5 snapshot과 P6-6 input/prompt를 슬레이브에 전달
 - 최종 갱신: 2026-07-23
 
 ## P6-6 — 전술대항전 실제 데이터 통합
 
-- 상태: `대기`
-- 목적: 전술대항전 탭의 실제 데이터와 사용자 흐름 통합
+- 상태: `인계 대기`
+- 목적: 실제 학생 ID 기반 4 Striker+2 Special 공격·방어 편성, 프로필별 전적·메모·수동
+  족보 저장·복원과 검색·필터·재사용 통합
+- 완료 조건: strict tactical contract/fixture, profile-scoped atomic persistence와 revision/idempotency,
+  실제 Dart↔Python restart E2E, Mock, P6-1~P6-5 회귀, 3 viewport, release와 Almanac 검증 통과
+- 입력: `docs/migration/p6-6-tactical-integration/input.md`
+- 슬레이브 실행 프롬프트: `docs/migration/p6-6-tactical-integration/slave-execution-prompt.md`
+- 결정 및 제약: P6-6은 수동 match/jokbo 기본 기능만 소유한다. 로비 scan, 상대 identity/history,
+  provenance, 전술 통계, 변경 감지, 예상 방어덱·추천·공유는 P7~P13에 남긴다. canonical student ID와
+  fixed 4+2 slot 순서를 저장하며 v6 Qt/QML/PySide/SQLite facade를 복사하거나 runtime import하지 않는다.
 - 선행 조건: P6-5 완료
+- 차단 사항: 없음
+- 다음 행동: accepted P6-5 snapshot과 두 입력 문서를 슬레이브에 전달하고 결과 artifact 인수
 - 최종 갱신: 2026-07-23
 
 ## P6-7 — 설정 및 통합 오류 처리

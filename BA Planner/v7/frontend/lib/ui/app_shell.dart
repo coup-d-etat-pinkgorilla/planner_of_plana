@@ -13,6 +13,7 @@ import 'pages/inventory_page.dart';
 import 'pages/planning_page.dart';
 import 'pages/scan_page.dart';
 import 'pages/student_page.dart';
+import 'pages/statistics_page.dart';
 import 'pages/section_placeholder_page.dart';
 import 'widgets/animated_section_stack.dart';
 import 'widgets/ba_triangle_background.dart';
@@ -74,10 +75,12 @@ class _AppShellState extends State<AppShell> {
   InventoryCandidateContext? _inventoryCandidate;
   List<ScannerRecentSummary> _recentScans = const [];
   var _homeReloadToken = 0;
+  var _statisticsReloadToken = 0;
 
   void _open(AppSection section) {
     setState(() {
       if (section == AppSection.home) _homeReloadToken += 1;
+      if (section == AppSection.statistics) _statisticsReloadToken += 1;
       _section = section;
     });
   }
@@ -167,19 +170,26 @@ class _AppShellState extends State<AppShell> {
                                   candidateContext: _studentCandidate,
                                   onCandidateCommitted: _clearStudentCandidate,
                                 ),
-                                PlanningPage(service: widget.service, initialSeed: _planningSeed),
-                                InventoryPage(service:widget.service,
-                                  onOpenPlan:() => _open(AppSection.plan),
-                                  onOpenScan:() => _open(AppSection.scan),
+                                PlanningPage(
+                                  service: widget.service,
+                                  initialSeed: _planningSeed,
+                                ),
+                                InventoryPage(
+                                  service: widget.service,
+                                  onOpenPlan: () => _open(AppSection.plan),
+                                  onOpenScan: () => _open(AppSection.scan),
                                   candidateContext: _inventoryCandidate,
-                                  onCandidateCommitted: _clearInventoryCandidate),
+                                  onCandidateCommitted:
+                                      _clearInventoryCandidate,
+                                ),
                                 SectionPlaceholderPage(
                                   section: AppSection.pvp,
                                   service: widget.service,
                                 ),
-                                SectionPlaceholderPage(
-                                  section: AppSection.statistics,
+                                StatisticsPage(
                                   service: widget.service,
+                                  onOpen: _open,
+                                  reloadToken: _statisticsReloadToken,
                                 ),
                                 ScanPage(
                                   service: widget.service,

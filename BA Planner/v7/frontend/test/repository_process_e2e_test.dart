@@ -208,6 +208,21 @@ void main() {
           ),
           isTrue,
         );
+        final statisticsGross = await secondService.calculatePlan(
+          currentStudents: afterRestart.students
+              .map(confirmedStudentPlanningCurrent)
+              .toList(growable: false),
+          plan: {
+            'version': 1,
+            'goals': afterRestart.goals
+                .map((goal) => Map<String, dynamic>.from(goal.values))
+                .toList(growable: false),
+          },
+        );
+        expect(statisticsGross['credits'], isA<int>());
+        expect(statisticsGross['level_exp'], isA<int>());
+        expect(statisticsGross['equipment_exp'], isA<int>());
+        expect(statisticsGross['weapon_exp'], isA<int>());
 
         await secondService.dispose();
         secondService = null;
