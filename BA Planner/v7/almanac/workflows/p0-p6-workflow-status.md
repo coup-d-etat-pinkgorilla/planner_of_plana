@@ -163,6 +163,57 @@ MockAppService의 scan Hold/Approve → current → goal → gross → shortage 
   실제 섹션 구성 및 지원 최소 창 크기를 별도 확정
 - 최종 갱신: 2026-07-22
 
+## P6 이후 섹션 템플릿 Studio
+
+- 상태: `초기 구현 완료`
+- 목적: 실제 탭 재디자인 전에 섹션 점유 공간·80도 형상·허용 조합을 개발 화면에서 검증
+- 산출물: `frontend/lib/ui/studio/section_template.dart`,
+  `frontend/lib/ui/pages/section_template_studio_page.dart`,
+  `frontend/lib/ui/widgets/section_template_surface.dart`,
+  `frontend/test/section_template_studio_test.dart`,
+  `almanac/design/section-template-studio.md`
+- 결정: 단일/조합 모드와 고정 조합 preset을 제거하고 사용자 정의 요소 목록 하나로 통합한다.
+  요소가 하나면 단일, 둘 이상이면 조합이며 사용자가 요소를 직접 추가·삭제·선택하고
+  X·Y·폭·높이를 편집한다. 48×48 논리 사선 격자에서 8칸마다 기존 1/6 major line을
+  유지하고 한 칸을 섹션 사이 기본 간격으로 사용한다. 모든 사선은
+  우측 위 `/` 방향 80도로 고정하고 반대 방향 및 상·하 방향 사선은 허용하지 않는다.
+  형상 입력은 삼각형·사다리꼴·평행사변형 모드, 붙는 면과 면 내부 48분할 범위로 구성하고
+  사다리꼴·평행사변형만 높이를 추가로 받는다. 채팅 전달용 요약 복사를 제공한다.
+  모든 요소는 별도 Positioned clip 영역 없이 하나의 콘텐츠 캔버스 Size·원점에서 절대
+  좌표 path로 함께 그린다. 따라서 사선이 요소 rect를 넘어도 공용 캔버스 안에서는 잘리지
+  않는다. 선택 요소의 본체 drag는 이동, 네 모서리 handle drag는 resize이며 두 조작 모두
+  실제 pointer delta를 정수 grid cell로 snap하고 최소 1칸과 48×48 캔버스 경계에서 clamp한다.
+  프리뷰 상단 고정 헤더는 1/48~24/48 비율을 선택하고 남은
+  콘텐츠 영역만 섹션 geometry에 사용한다. 모든 polygon 꼭짓점에 corner radius를 적용하며
+  예각은 직선 구간을 더 유지하는 36% 접점과 polygon winding 방향의 볼록한 원형 fillet로
+  더 깊게 잘라 둥글리며 반대 원 중심에서 생기는 오목한 패임을 허용하지 않는다.
+  구성 저장은 version 2 UTF-8 JSON(`*.ba-section-studio.json`)을 사용하고 version 1 read 호환을
+  유지하며 format/version,
+  48×48 grid, 우측 위 80° 사선 계약, workspace 표시 상태와 모든 요소 설정을 기록한다.
+  불러오기는 문서 전체의 타입·범위·중복 ID·선택 ID를 검증한 뒤에만 캔버스를 원자적으로
+  교체하며 손상·비호환 파일은 기존 상태를 보존한다. Windows 기본 파일 대화상자는 Flutter
+  공식 `file_selector`로 연결하고 service 주입 경계로 실제 파일 시스템 없이 회귀 test한다.
+  개발 상태 패널에서만 Studio에 진입하며 기존 실제 탭의 `DiagonalSection`은 아직 교체하지 않는다.
+- 검증: 사용자 요소 범위·중첩 validator, 공용 캔버스 rect 외 경로 보존과 hit test, 형상
+  geometry, 요소 추가·선택·편집, grid snap 이동·resize·경계 clamp, viewport 전환,
+  AppShell 개발 패널 진입과 전체 요소
+  채팅용 요약 복사, versioned JSON round-trip·schema 거부·저장·원자적 불러오기 Widget test;
+  `flutter analyze`, Flutter 전체 tests, `flutter build windows --release`, `git diff --check`,
+  `codealmanac validate`, `codealmanac health` 통과. 현재 host의 Windows 개발자 모드는 꺼져 있어
+  Flutter가 plugin symlink를 직접 만들 수 없으므로 ignored ephemeral 폴더에 같은 package target의
+  directory junction을 생성한 뒤 release를 검증했으며 시스템 설정은 변경하지 않음
+- 후속 레이어 확장: Section(공용 48×48) → Container(부모 로컬 96×96) → Feature(부모 로컬
+  96×96) 계층을 추가했다. Container와 shape Feature는 삼각형·사다리꼴·평행사변형 및 80° 계약을
+  공유하고 부모 path 안에서 렌더링·hit test·drag·resize한다. image Feature는 v7에 복사한
+  252×172 `square.png`를 사용하며 입력·handle resize 모두 원본 비율을 고정한다. 저장 문서는
+  계층·부모 ID·image metadata를 포함하는 version 2로 올리고 version 1 read 호환을 유지한다.
+  `저장 파일에서 섹션 추가`는 현재 workspace에 section을 append하며 모든 자식 ID와 parent 참조를
+  충돌 없는 새 ID로 remap한다. Flutter 전체 156 tests, `flutter analyze`, Windows release build,
+  `codealmanac validate`·`health`와 `git diff --check`를 후속 확장 기준으로 통과했다.
+- 다음 행동: 사용자가 3개 레이어·이미지 비율·추가 import를 수동 검수한 뒤 Dart spec export와 공용
+  `SectionGeometry` 승격 범위를 결정
+- 최종 갱신: 2026-07-24
+
 ## 마스터 사용량 중단 시 슬레이브 작업 규칙
 
 마스터의 사용량이 중간에 끊기거나 마스터가 결과를 즉시 검사할 수 없을 때도 슬레이브는

@@ -8,11 +8,13 @@ class DevelopmentPanel extends StatelessWidget {
     super.key,
     required this.service,
     required this.onOpenDiagnostics,
+    required this.onOpenSectionTemplateStudio,
     required this.onClose,
   });
 
   final AppService service;
   final VoidCallback onOpenDiagnostics;
+  final VoidCallback onOpenSectionTemplateStudio;
   final VoidCallback onClose;
 
   @override
@@ -100,6 +102,13 @@ class DevelopmentPanel extends StatelessWidget {
               const SizedBox(height: AppSpacing.md),
               _CountSummary(state: state),
               const SizedBox(height: AppSpacing.md),
+              FilledButton.tonalIcon(
+                key: const ValueKey('open-section-template-studio'),
+                onPressed: onOpenSectionTemplateStudio,
+                icon: const Icon(Icons.dashboard_customize_outlined),
+                label: const Text('Section Template Studio'),
+              ),
+              const SizedBox(height: AppSpacing.sm),
               FilledButton.tonalIcon(
                 onPressed: onOpenDiagnostics,
                 icon: const Icon(Icons.monitor_heart_outlined),

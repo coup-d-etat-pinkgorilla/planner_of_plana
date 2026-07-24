@@ -9,7 +9,12 @@ enum AppSection {
   statistics('통계', Icons.query_stats_outlined, '계정 성장 통계'),
   scan('스캔', Icons.document_scanner_outlined, '화면 스캔과 진행 상태'),
   settings('설정', Icons.settings_outlined, '앱 및 연결 설정'),
-  adaptiveSync('Adaptive-Sync 진단', Icons.monitor_heart_outlined, '그래픽 표시 진단');
+  adaptiveSync('Adaptive-Sync 진단', Icons.monitor_heart_outlined, '그래픽 표시 진단'),
+  sectionTemplateStudio(
+    'Section Template Studio',
+    Icons.dashboard_customize_outlined,
+    '섹션 점유 공간과 형상 조합 검증',
+  );
 
   const AppSection(this.label, this.icon, this.description);
 

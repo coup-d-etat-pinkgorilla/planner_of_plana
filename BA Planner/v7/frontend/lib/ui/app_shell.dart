@@ -12,6 +12,7 @@ import 'pages/home_page.dart';
 import 'pages/inventory_page.dart';
 import 'pages/planning_page.dart';
 import 'pages/scan_page.dart';
+import 'pages/section_template_studio_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/student_page.dart';
 import 'pages/statistics_page.dart';
@@ -25,6 +26,7 @@ import 'widgets/recovery_banner.dart';
 
 const _sectionMotions = <SectionMotionSpec>[
   SectionMotionSpec(intro: 0, outro: 180),
+  SectionMotionSpec(intro: 90, outro: 270),
   SectionMotionSpec(intro: 90, outro: 270),
   SectionMotionSpec(intro: 90, outro: 270),
   SectionMotionSpec(intro: 90, outro: 270),
@@ -249,6 +251,7 @@ class _AppShellState extends State<AppShell> {
                                   onRecoveryCompleted: _recoveryCompleted,
                                 ),
                                 const AdaptiveSyncPage(),
+                                const SectionTemplateStudioPage(),
                               ],
                             ),
                           ),
@@ -263,6 +266,8 @@ class _AppShellState extends State<AppShell> {
                           service: widget.service,
                           onOpenDiagnostics: () =>
                               _open(AppSection.adaptiveSync),
+                          onOpenSectionTemplateStudio: () =>
+                              _open(AppSection.sectionTemplateStudio),
                           onClose: () {
                             setState(() => _showDevelopmentPanel = false);
                           },
@@ -297,6 +302,8 @@ class _AppShellState extends State<AppShell> {
                           service: widget.service,
                           onOpenDiagnostics: () =>
                               _open(AppSection.adaptiveSync),
+                          onOpenSectionTemplateStudio: () =>
+                              _open(AppSection.sectionTemplateStudio),
                           onClose: () =>
                               setState(() => _showDevelopmentPanel = false),
                         ),
@@ -450,7 +457,9 @@ class _TopTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visibleSelection = selected == AppSection.adaptiveSync
+    final visibleSelection =
+        selected == AppSection.adaptiveSync ||
+            selected == AppSection.sectionTemplateStudio
         ? AppSection.settings
         : selected;
 
@@ -562,7 +571,9 @@ double _topTabWidth(AppSection section) => switch (section) {
   AppSection.pvp => 112,
   AppSection.statistics => 84,
   AppSection.scan => 84,
-  AppSection.settings || AppSection.adaptiveSync => 84,
+  AppSection.settings ||
+  AppSection.adaptiveSync ||
+  AppSection.sectionTemplateStudio => 84,
 };
 
 class _AppHeader extends StatelessWidget {
