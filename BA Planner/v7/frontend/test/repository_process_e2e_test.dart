@@ -86,15 +86,18 @@ void main() {
         final created = await firstService.createProfile(
           'Restart E2E',
           'repository-e2e-create',
+          avatarStudentId: 'aru',
         );
         expect(created.selected, isTrue);
         expect(created.revision, 0);
+        expect(created.avatarStudentId, 'aru');
 
-        final renamedRevision = await firstService.renameProfile(
+        final renamedRevision = await firstService.updateProfile(
           created.id,
           'Restart E2E restored',
+          'hasumi',
           created.revision,
-          'repository-e2e-rename',
+          'repository-e2e-update',
         );
         final selectedRevision = await firstService.selectProfile(
           created.id,
@@ -164,6 +167,7 @@ void main() {
         expect(restoredProfiles, hasLength(1));
         expect(restoredProfiles.single.id, created.id);
         expect(restoredProfiles.single.displayName, 'Restart E2E restored');
+        expect(restoredProfiles.single.avatarStudentId, 'hasumi');
         expect(restoredProfiles.single.selected, isTrue);
         expect(restoredProfiles.single.revision, savedRevision);
 
@@ -223,6 +227,18 @@ void main() {
         expect(statisticsGross['level_exp'], isA<int>());
         expect(statisticsGross['equipment_exp'], isA<int>());
         expect(statisticsGross['weapon_exp'], isA<int>());
+
+        final disposable = await secondService.createProfile(
+          'Delete E2E',
+          'repository-e2e-delete-create',
+          avatarStudentId: 'airi',
+        );
+        await secondService.deleteProfile(
+          disposable.id,
+          disposable.revision,
+          'repository-e2e-delete',
+        );
+        expect(await secondService.listProfiles(), hasLength(1));
 
         await secondService.dispose();
         secondService = null;

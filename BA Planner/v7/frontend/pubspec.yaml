@@ -60,7 +60,14 @@ flutter:
 
   assets:
     - assets/home_menu/
+    - assets/equipment_icons/
+    - assets/item_backgrounds/
+    - assets/item_icons/ooparts/
+    - assets/student_bond_backgrounds/
     - assets/studio_features/
+    - assets/studio_sections/
+    - assets/student_portraits/
+    - assets/student_catalog.json
 
   fonts:
     - family: GyeonggiTitle

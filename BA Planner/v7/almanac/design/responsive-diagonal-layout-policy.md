@@ -21,6 +21,12 @@ sources:
   - id: current-planning-tests
     type: file
     path: frontend/test/planning_page_test.dart
+  - id: account-section-cluster
+    type: file
+    path: frontend/lib/ui/widgets/account_section_cluster.dart
+  - id: account-section-tests
+    type: file
+    path: frontend/test/title_page_test.dart
   - id: v6-ui-scaling
     type: file
     path: ../v6/docs/design/ui-scaling.md
@@ -268,6 +274,28 @@ safeWidth = outerWidth
 각 탭이 임의의 `LayoutBuilder` breakpoint를 추가하지 못하게 하고, breakpoint와 geometry
 결정은 공용 scaffold와 section spec에 모은다. 탭은 승인된 variant별 내부 구성만 제공한다.
 
+### 9.1 사선 목록과 그리드의 기본 scroll 계약
+
+BA Planner의 Section 내부 list와 grid는 별도 명세가 없으면 수직선이 아니라 Section의 공용 80°
+축을 따라 움직이는 것을 기본 스타일로 한다. 이는 scroll physics 자체를 비스듬한 gesture로
+교체한다는 의미가 아니다. wheel·키보드·touch drag·접근성·scroll extent는 Flutter의 표준 수직
+`Scrollable`과 `ScrollController`가 소유하고, 렌더링 단계에서 각 가시 행의 Y에 대응하는 X를
+`1 / tan(80°)` 기울기로 함께 이동한다. 위쪽 진행은 80°, 반대 진행은 260°다.
+
+같은 목록의 row surface, 내부 이미지·text·divider, 선택 표시와 hit test는 동일한 translation을
+공유한다. scrollbar가 필요한 경우 track과 handle도 같은 직선 위에 놓고, handle drag를 실제
+ScrollController extent에 선형 매핑한다. painter와 hit test 또는 scrollbar가 별도 근사식을 쓰면
+보이는 위치와 상호작용 위치가 갈라지므로 trajectory 계산은 하나의 함수로 유지한다. scroll
+viewport의 cross-axis는 tight constraint로 고정해 CustomPainter 폭이 0으로 축소되지 않게 한다.
+[@account-section-cluster] [@account-section-tests]
+
+반복 목록 row는 Studio의 단일 Container를 데이터 기반 template로 해석한다. row의 polygon,
+자식 상대 rect와 내부 여백은 유지하면서 데이터 개수만큼 반복하고, 가시 행 전체가 부모 Section의
+사선 안전 영역과 중앙 기준을 따른다. 이미지가 포함된 grid cell이나 row는 asset의 layout box보다
+실제 fitted rect·alpha silhouette를 선택·clip·강조 기준으로 우선한다. 다른 scroll 각도나 완전한
+수직 목록은 해당 Section 명세가 명시적으로 요구할 때만 예외로 둔다.
+[@account-section-cluster] [@account-section-tests]
+
 ## 10. 현재 구현에서 확인된 출발점과 부족한 부분
 
 - 홈 메뉴는 742×1018 최대 크기의 고정 비율 캔버스를 `FittedBox`로 축소한다. 사선과 이미지
@@ -282,18 +310,19 @@ safeWidth = outerWidth
   확인한다. 4:3, 16:10과 울트라와이드 전 탭 회귀 기준은 아직 없다.
   [@current-widget-tests]
 - 개발용 `Section Template Studio`는 세로 track이 모두 우측 위 `/` 방향 80도로 기운
-  공용 48×48 논리 캔버스에 사용자가 요소를 직접 추가·삭제·배치한다. 단일과 조합은 요소
+  공용 96×96 논리 캔버스에 사용자가 Section을 직접 추가·삭제·배치한다. 단일과 조합은 요소
   수로 자연스럽게 결정하며 고정 조합 preset은 제공하지 않는다. Standard·Wide·Compact
-  비율에서 요소의 범위·중첩·부착면과 형상 적합성을 먼저 검증할 수 있다. 8칸마다 이전
-  1/6 major line을 유지하고 한 칸을 섹션 사이 기본 간격으로 사용한다. 도형은 삼각형·
-  사다리꼴·평행사변형 모드와 붙는 면, 면 내부 48분할 범위로 정의하며 사다리꼴·
-  평행사변형만 높이를 추가로 받는다. 모든 요소는 동일한 캔버스 좌표에서 그려지며 요소
-  점유 rect는 clipping viewport로 사용하지 않는다. 실제 탭의 `DiagonalSection` 승격과
-  사용자 구성 저장은 후속 경계다. 프리뷰의 고정 헤더는 1/48~24/48 높이를 선택할 수 있고
+  비율에서 요소의 범위·중첩·부착면과 형상 적합성을 먼저 검증할 수 있다. 8칸마다
+  12개 major division을 표시하고 한 칸을 섹션 사이 기본 간격으로 사용한다. 도형은 삼각형·
+  사다리꼴·평행사변형 모드와 붙는 면, 면 내부 96분할 범위로 정의하며 사다리꼴·
+  평행사변형만 높이를 추가로 받는다. Container와 Feature는 그리드가 아니라 부모 경계 상자의
+  비율 rect를 사용하고, 부모 테두리와 형제 아이템에 대해 사용자가 선택한 같은 간격으로 snap한다.
+  실제 탭의 `DiagonalSection` 승격과
+  사용자 구성 저장은 후속 경계다. 프리뷰의 고정 헤더는 1/96~48/96 높이를 선택할 수 있고
   섹션 그리드와 geometry는
   헤더를 제외한 남은 콘텐츠 rect만 기준으로 계산한다. 선택 요소는 본체 drag로 이동하고
-  네 모서리 handle로 resize하며, 위치와 크기는 viewport 픽셀 비율과 무관하게 48×48 정수
-  셀에 snap되고 캔버스 경계에서 clamp된다.
+  Section은 네 모서리 handle로 resize하며 96×96 정수 셀에 snap된다. 하위 요소의 drag와 resize는
+  부모 상대 비율을 유지하고 부모 경계에서 clamp된다.
 
 ## 11. 검증 매트릭스 제안
 

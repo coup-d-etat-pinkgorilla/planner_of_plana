@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
 
+const defaultLiftedSectionShadow = LiftedPathShadowSpec(
+  color: Color(0xff050911),
+  offset: Offset(2, 2),
+  inset: 3,
+  layers: 4,
+  maxAlpha: 0.22,
+);
+
 @immutable
 class LiftedPathShadowSpec {
   const LiftedPathShadowSpec({
@@ -49,4 +57,37 @@ void paintLiftedPathShadow(
     canvas.drawPath(path, paint);
     canvas.restore();
   }
+}
+
+class LiftedPathShadow extends StatelessWidget {
+  const LiftedPathShadow({
+    super.key,
+    required this.path,
+    this.spec = defaultLiftedSectionShadow,
+  });
+
+  final Path path;
+  final LiftedPathShadowSpec spec;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    child: SizedBox.expand(
+      child: CustomPaint(painter: _LiftedPathShadowPainter(path, spec)),
+    ),
+  );
+}
+
+class _LiftedPathShadowPainter extends CustomPainter {
+  const _LiftedPathShadowPainter(this.path, this.spec);
+
+  final Path path;
+  final LiftedPathShadowSpec spec;
+
+  @override
+  void paint(Canvas canvas, Size size) =>
+      paintLiftedPathShadow(canvas, path, spec);
+
+  @override
+  bool shouldRepaint(_LiftedPathShadowPainter oldDelegate) =>
+      oldDelegate.path != path || oldDelegate.spec != spec;
 }

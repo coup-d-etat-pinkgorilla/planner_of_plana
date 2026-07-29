@@ -64,6 +64,7 @@ void main() {
             'combat_class': 'Striker',
             'role': 'Dealer',
             'position': 'Back',
+            'jp_only': false,
             'search_tags': ['aru'],
             'kr_search_tags': <String>[],
           },
@@ -89,28 +90,75 @@ void main() {
     },
   );
 
-  test('inventory catalog, shortages, and save use typed wire boundaries', () async {
-    final process=FakeBackendProcess();
-    final service=ProcessAppService(PlanningProtocolClient(() async => process));
-    await service.reconnect();
-    final catalogFuture=service.listInventoryItems();
-    var request=_decode(process.writes.last);
-    process.respond(request, {'items':[{'resource_key':'item','item_id':'item','display_name':'Item','category':'material','profile_id':'materials','order_index':0,'zero_fill_allowed':true}],'sort':'profile_order'});
-    expect((await catalogFuture).single.resourceKey,'item');
+  test(
+    'inventory catalog, shortages, and save use typed wire boundaries',
+    () async {
+      final process = FakeBackendProcess();
+      final service = ProcessAppService(
+        PlanningProtocolClient(() async => process),
+      );
+      await service.reconnect();
+      final catalogFuture = service.listInventoryItems();
+      var request = _decode(process.writes.last);
+      process.respond(request, {
+        'items': [
+          {
+            'resource_key': 'item',
+            'item_id': 'item',
+            'display_name': 'Item',
+            'category': 'material',
+            'profile_id': 'materials',
+            'order_index': 0,
+            'zero_fill_allowed': true,
+          },
+        ],
+        'sort': 'profile_order',
+      });
+      expect((await catalogFuture).single.resourceKey, 'item');
 
-    final shortageFuture=service.calculateShortages(currentStudents:const [],plan:const {'version':1,'goals':[]},inventory:const {'version':1,'entries':[]});
-    request=_decode(process.writes.last);
-    process.respond(request, {'rows':[{'resource_key':'item','item_id':'item','display_name':'Item','category':'material','required':3,'owned':0,'shortage':3,'affected_student_ids':['aru'],'resolved':true}],'warnings':<String>[]});
-    expect((await shortageFuture).rows.single.shortage,3);
+      final shortageFuture = service.calculateShortages(
+        currentStudents: const [],
+        plan: const {'version': 1, 'goals': []},
+        inventory: const {'version': 1, 'entries': []},
+      );
+      request = _decode(process.writes.last);
+      process.respond(request, {
+        'rows': [
+          {
+            'resource_key': 'item',
+            'item_id': 'item',
+            'display_name': 'Item',
+            'category': 'material',
+            'required': 3,
+            'owned': 0,
+            'shortage': 3,
+            'affected_student_ids': ['aru'],
+            'resolved': true,
+          },
+        ],
+        'warnings': <String>[],
+      });
+      expect((await shortageFuture).rows.single.shortage, 3);
 
-    final saveFuture=service.saveRepositoryInventory('000000000000000000000000',RepositoryInventoryState.fromEntries([{'key':'item','item_id':'item','quantity':'0'}]),2,'save-inventory');
-    request=_decode(process.writes.last);
-    expect(request['method'],'repository.inventory.update');
-    expect(request['payload']['inventory']['entries'].single['quantity'],'0');
-    process.respond(request, {'revision':3});
-    expect(await saveFuture,3);
-    await service.dispose();
-  });
+      final saveFuture = service.saveRepositoryInventory(
+        '000000000000000000000000',
+        RepositoryInventoryState.fromEntries([
+          {'key': 'item', 'item_id': 'item', 'quantity': '0'},
+        ]),
+        2,
+        'save-inventory',
+      );
+      request = _decode(process.writes.last);
+      expect(request['method'], 'repository.inventory.update');
+      expect(
+        request['payload']['inventory']['entries'].single['quantity'],
+        '0',
+      );
+      process.respond(request, {'revision': 3});
+      expect(await saveFuture, 3);
+      await service.dispose();
+    },
+  );
 
   test(
     'times out and reports a late response id without reconnecting',

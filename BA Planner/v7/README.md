@@ -17,6 +17,7 @@ BA Planner v7은 Flutter for Windows 프론트엔드와 headless Python 백엔�
 - mock 기본값을 보존한 `ProcessAppService` 실제 backend 선택 경로
 - profile catalog, confirmed current, inventory와 goal의 atomic repository persistence
 - immutable Flutter repository state와 실제 Dart↔Python process restart 복원 E2E
+- Studio 좌표를 직접 투영한 Title 계정 생성·사진 선택·다중 계정 관리 섹션 클러스터
 
 저장소는 scanner DTO와 분리해 이전했습니다. 스캐너는 아직 이전하지 않았으며 v6
 `repository`가 scanner DTO를 직접 import하고 scanner가 캡처·입력·matcher·상태 callback에
@@ -100,6 +101,10 @@ Flutter의 Dart 코드와 asset은 `release/data/`에 포함되므로 UI만 변�
 네이티브 runner EXE의 바이트가 이전 빌드와 같을 수 있습니다. 동기화 스크립트는
 혼동을 줄이기 위해 EXE 표시 시각을 빌드 시각으로 맞추지만, 실제 최신성 판단은
 `release/.ba_planner_build.json`의 소스 지문을 기준으로 합니다.
+
+Section Template Studio에서 `release/` 루트에 저장한
+`*.ba-section-studio.json`은 릴리스 번들 교체 전에 새 staging 번들로 승계합니다.
+실행 파일과 `data/`는 생성물이지만 Studio 배치 문서는 릴리스 갱신 시 보존됩니다.
 
 ## v6 관계
 

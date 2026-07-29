@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../studio/section_template.dart';
+import 'ba_triangle_background.dart';
 
 class AttachedSectionTemplateSurface extends StatelessWidget {
   const AttachedSectionTemplateSurface({
@@ -400,6 +401,139 @@ Rect studioGridRectWithin(
   parent.height * rect.height / gridSize,
 );
 
+Rect studioPlacementRectWithin(Rect parent, StudioPlacementRect rect) =>
+    Rect.fromLTWH(
+      parent.left + parent.width * rect.left,
+      parent.top + parent.height * rect.top,
+      parent.width * rect.width,
+      parent.height * rect.height,
+    );
+
+class StudioPathSpacing {
+  const StudioPathSpacing(this.from, this.to, this.distance);
+
+  final Offset from;
+  final Offset to;
+  final double distance;
+}
+
+List<Offset> _samplePath(Path path, {double step = 3}) {
+  final samples = <Offset>[];
+  for (final metric in path.computeMetrics(forceClosed: true)) {
+    final count = math.max(1, (metric.length / step).ceil());
+    for (var index = 0; index < count; index++) {
+      final tangent = metric.getTangentForOffset(metric.length * index / count);
+      if (tangent != null) samples.add(tangent.position);
+    }
+  }
+  return samples;
+}
+
+StudioPathSpacing? measureStudioPathSpacing(Path first, Path second) {
+  final firstPoints = _samplePath(first);
+  final secondPoints = _samplePath(second);
+  if (firstPoints.isEmpty || secondPoints.isEmpty) return null;
+  var bestFrom = firstPoints.first;
+  var bestTo = secondPoints.first;
+  var bestSquared = double.infinity;
+  for (final from in firstPoints) {
+    for (final to in secondPoints) {
+      final delta = to - from;
+      final squared = delta.dx * delta.dx + delta.dy * delta.dy;
+      if (squared < bestSquared) {
+        bestSquared = squared;
+        bestFrom = from;
+        bestTo = to;
+      }
+    }
+  }
+  return StudioPathSpacing(bestFrom, bestTo, math.sqrt(bestSquared));
+}
+
+bool studioPathIsInside(Path child, Path parent) {
+  final samples = _samplePath(child, step: 2);
+  return samples.isNotEmpty && samples.every(parent.contains);
+}
+
+bool studioPathsOverlap(Path first, Path second) {
+  if (!first.getBounds().overlaps(second.getBounds())) return false;
+  final intersection = Path.combine(PathOperation.intersect, first, second);
+  return intersection.computeMetrics().any((metric) => metric.length > 0.5);
+}
+
+StudioPlacementRect snapStudioPathSpacing(
+  StudioPlacementRect rect, {
+  required Rect parentRect,
+  required Path parentPath,
+  required Path Function(StudioPlacementRect rect) buildItemPath,
+  required Iterable<Path> siblingPaths,
+  double gap = studioDefaultPlacementGap,
+  double tolerance = studioPlacementSnapTolerance,
+}) {
+  if (parentRect.shortestSide <= 0) return rect;
+  final targetDistance = gap * parentRect.shortestSide;
+  final toleranceDistance = tolerance * parentRect.shortestSide;
+
+  StudioPlacementRect applyCorrection(
+    StudioPlacementRect source,
+    StudioPathSpacing spacing,
+  ) {
+    if ((spacing.distance - targetDistance).abs() > toleranceDistance ||
+        spacing.distance <= 1e-6) {
+      return source;
+    }
+    final direction = (spacing.to - spacing.from) / spacing.distance;
+    final correction = direction * (targetDistance - spacing.distance);
+    return moveStudioPlacementRect(
+      source,
+      deltaX: correction.dx / parentRect.width,
+      deltaY: correction.dy / parentRect.height,
+    );
+  }
+
+  var result = rect;
+  var itemPath = buildItemPath(result);
+  if (!studioPathIsInside(itemPath, parentPath)) {
+    final towardCenter =
+        parentPath.getBounds().center - itemPath.getBounds().center;
+    if (towardCenter.distance > 1e-6) {
+      final unit = towardCenter / towardCenter.distance;
+      final step = math.max(0.75, parentRect.shortestSide / 300);
+      final attempts = (parentRect.longestSide / step).ceil();
+      for (var attempt = 0; attempt < attempts; attempt++) {
+        result = moveStudioPlacementRect(
+          result,
+          deltaX: unit.dx * step / parentRect.width,
+          deltaY: unit.dy * step / parentRect.height,
+        );
+        itemPath = buildItemPath(result);
+        if (studioPathIsInside(itemPath, parentPath)) break;
+      }
+    }
+  }
+  if (studioPathIsInside(itemPath, parentPath)) {
+    final parentSpacing = measureStudioPathSpacing(parentPath, itemPath);
+    if (parentSpacing != null) {
+      result = applyCorrection(result, parentSpacing);
+      itemPath = buildItemPath(result);
+    }
+  }
+
+  StudioPathSpacing? closestSibling;
+  for (final siblingPath in siblingPaths) {
+    if (studioPathsOverlap(itemPath, siblingPath)) continue;
+    final spacing = measureStudioPathSpacing(siblingPath, itemPath);
+    if (spacing != null &&
+        (closestSibling == null ||
+            spacing.distance < closestSibling.distance)) {
+      closestSibling = spacing;
+    }
+  }
+  return closestSibling == null
+      ? result
+      : applyCorrection(result, closestSibling);
+}
+
 SectionCanvasElement? _sectionById(
   List<SectionCanvasElement> sections,
   String id,
@@ -427,7 +561,7 @@ Rect? studioContainerRect(
 ) {
   final parent = _sectionById(sections, container.parentSectionId);
   if (parent == null) return null;
-  return studioGridRectWithin(
+  return studioPlacementRectWithin(
     sectionCanvasElementRect(size, parent),
     container.rect,
   );
@@ -439,18 +573,28 @@ Path? buildStudioContainerPath(
   StudioContainerElement container,
 ) {
   final parent = _sectionById(sections, container.parentSectionId);
+  final raw = buildStudioContainerRawPath(size, sections, container);
+  if (parent == null || raw == null) return null;
+  return Path.combine(
+    PathOperation.intersect,
+    raw,
+    buildSectionCanvasElementPath(size, parent),
+  );
+}
+
+Path? buildStudioContainerRawPath(
+  Size size,
+  List<SectionCanvasElement> sections,
+  StudioContainerElement container,
+) {
   final rect = studioContainerRect(size, sections, container);
-  if (parent == null || rect == null) return null;
+  if (rect == null) return null;
   final points = buildAttachedSectionPolygon(
     rect.size,
     container.spec,
     gridSize: sectionTemplateDetailGridSize,
   ).map((point) => point + rect.topLeft).toList(growable: false);
-  return Path.combine(
-    PathOperation.intersect,
-    buildRoundedSectionPolygon(points, radius: 10),
-    buildSectionCanvasElementPath(size, parent),
-  );
+  return buildRoundedSectionPolygon(points, radius: 10);
 }
 
 Rect? studioFeatureRect(
@@ -463,7 +607,7 @@ Rect? studioFeatureRect(
   if (parent == null) return null;
   final parentRect = studioContainerRect(size, sections, parent);
   if (parentRect == null) return null;
-  return studioGridRectWithin(parentRect, feature.rect);
+  return studioPlacementRectWithin(parentRect, feature.rect);
 }
 
 Path? buildStudioFeaturePath(
@@ -473,23 +617,167 @@ Path? buildStudioFeaturePath(
   StudioFeatureElement feature,
 ) {
   final parent = _containerById(containers, feature.parentContainerId);
-  final rect = studioFeatureRect(size, sections, containers, feature);
-  if (parent == null || rect == null) return null;
-  final raw = feature.kind == StudioFeatureKind.image
-      ? (Path()
-          ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(8))))
-      : buildRoundedSectionPolygon(
-          buildAttachedSectionPolygon(
-            rect.size,
-            feature.spec,
-            gridSize: sectionTemplateDetailGridSize,
-          ).map((point) => point + rect.topLeft).toList(growable: false),
-          radius: 8,
-        );
+  final raw = buildStudioFeatureRawPath(size, sections, containers, feature);
+  if (parent == null || raw == null) return null;
   final parentPath = buildStudioContainerPath(size, sections, parent);
   return parentPath == null
       ? null
       : Path.combine(PathOperation.intersect, raw, parentPath);
+}
+
+Path? buildStudioFeatureRawPath(
+  Size size,
+  List<SectionCanvasElement> sections,
+  List<StudioContainerElement> containers,
+  StudioFeatureElement feature,
+) {
+  final rect = studioFeatureRect(size, sections, containers, feature);
+  if (rect == null) return null;
+  return switch (feature.kind) {
+    StudioFeatureKind.shape => buildRoundedSectionPolygon(
+      buildAttachedSectionPolygon(
+        rect.size,
+        feature.spec,
+        gridSize: sectionTemplateDetailGridSize,
+      ).map((point) => point + rect.topLeft).toList(growable: false),
+      radius: 8,
+    ),
+    StudioFeatureKind.line => () {
+      final thickness = math.max(3.0, math.min(10.0, rect.shortestSide * 0.16));
+      final lineRect = Rect.fromCenter(
+        center: rect.center,
+        width: rect.width,
+        height: thickness,
+      );
+      return Path()..addRRect(
+        RRect.fromRectAndRadius(lineRect, Radius.circular(thickness / 2)),
+      );
+    }(),
+    StudioFeatureKind.image || StudioFeatureKind.text =>
+      Path()..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(8))),
+  };
+}
+
+List<String> validateStudioPathSpacing(
+  Size size,
+  List<SectionCanvasElement> sections,
+  List<StudioContainerElement> containers,
+  List<StudioFeatureElement> features, {
+  double gap = studioDefaultPlacementGap,
+}) {
+  final issues = <String>[];
+
+  for (final item in containers) {
+    final parent = _sectionById(sections, item.parentSectionId);
+    final raw = buildStudioContainerRawPath(size, sections, item);
+    if (parent == null || raw == null) continue;
+    final parentPath = buildSectionCanvasElementPath(size, parent);
+    final parentRect = sectionCanvasElementRect(size, parent);
+    _validatePathInset(
+      item.label,
+      raw,
+      parentPath,
+      gap * parentRect.shortestSide,
+      '부모 섹션',
+      issues,
+    );
+  }
+  for (final item in features) {
+    final parent = _containerById(containers, item.parentContainerId);
+    final raw = buildStudioFeatureRawPath(size, sections, containers, item);
+    if (parent == null || raw == null) continue;
+    final parentPath = buildStudioContainerPath(size, sections, parent);
+    final parentRect = studioContainerRect(size, sections, parent);
+    if (parentPath == null || parentRect == null) continue;
+    _validatePathInset(
+      item.label,
+      raw,
+      parentPath,
+      gap * parentRect.shortestSide,
+      '부모 컨테이너',
+      issues,
+    );
+  }
+  _validatePathSiblings<StudioContainerElement>(
+    containers,
+    parentId: (item) => item.parentSectionId,
+    label: (item) => item.label,
+    path: (item) => buildStudioContainerRawPath(size, sections, item),
+    targetGap: (item) {
+      final parent = _sectionById(sections, item.parentSectionId);
+      return parent == null
+          ? 0
+          : gap * sectionCanvasElementRect(size, parent).shortestSide;
+    },
+    issues: issues,
+  );
+  _validatePathSiblings<StudioFeatureElement>(
+    features,
+    parentId: (item) => item.parentContainerId,
+    label: (item) => item.label,
+    path: (item) => buildStudioFeatureRawPath(size, sections, containers, item),
+    targetGap: (item) {
+      final parent = _containerById(containers, item.parentContainerId);
+      final rect = parent == null
+          ? null
+          : studioContainerRect(size, sections, parent);
+      return rect == null ? 0 : gap * rect.shortestSide;
+    },
+    issues: issues,
+  );
+  return issues;
+}
+
+void _validatePathInset(
+  String label,
+  Path item,
+  Path parent,
+  double targetGap,
+  String parentLabel,
+  List<String> issues,
+) {
+  if (!studioPathIsInside(item, parent)) {
+    issues.add('$label: 실제 형상이 $parentLabel 경계를 벗어남');
+    return;
+  }
+  final spacing = measureStudioPathSpacing(parent, item);
+  if (spacing != null && spacing.distance + 0.5 < targetGap) {
+    issues.add('$label: $parentLabel 사선 테두리 간격보다 가까움');
+  }
+}
+
+void _validatePathSiblings<T>(
+  List<T> items, {
+  required String Function(T item) parentId,
+  required String Function(T item) label,
+  required Path? Function(T item) path,
+  required double Function(T item) targetGap,
+  required List<String> issues,
+}) {
+  for (var firstIndex = 0; firstIndex < items.length; firstIndex++) {
+    for (
+      var secondIndex = firstIndex + 1;
+      secondIndex < items.length;
+      secondIndex++
+    ) {
+      final first = items[firstIndex];
+      final second = items[secondIndex];
+      if (parentId(first) != parentId(second)) continue;
+      final firstPath = path(first);
+      final secondPath = path(second);
+      if (firstPath == null || secondPath == null) continue;
+      if (studioPathsOverlap(firstPath, secondPath)) {
+        issues.add('${label(first)} · ${label(second)}: 실제 형상 중첩');
+        continue;
+      }
+      final spacing = measureStudioPathSpacing(firstPath, secondPath);
+      if (spacing != null &&
+          spacing.distance + 0.5 <
+              math.max(targetGap(first), targetGap(second))) {
+        issues.add('${label(first)} · ${label(second)}: 실제 형상 간격보다 가까움');
+      }
+    }
+  }
 }
 
 Map<SectionResizeHandle, Offset> studioRectHandleCenters(Rect rect) => {
@@ -560,6 +848,7 @@ class LayeredStudioPainter extends CustomPainter {
     required this.showGrid,
     required this.showSafeArea,
     this.squareImage,
+    this.titleImage,
   });
 
   final List<SectionCanvasElement> sections;
@@ -572,6 +861,7 @@ class LayeredStudioPainter extends CustomPainter {
   final bool showGrid;
   final bool showSafeArea;
   final ui.Image? squareImage;
+  final ui.Image? titleImage;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -584,34 +874,30 @@ class LayeredStudioPainter extends CustomPainter {
       showSafeArea: showSafeArea,
     ).paint(canvas, size);
 
-    if (showGrid && activeLayer == StudioLayer.container) {
-      final section = _sectionById(sections, selectedSectionId);
-      if (section != null) {
-        _paintDetailGrid(canvas, sectionCanvasElementRect(size, section));
-      }
-    } else if (showGrid && activeLayer == StudioLayer.feature) {
-      final container = selectedContainerId == null
-          ? null
-          : _containerById(containers, selectedContainerId!);
-      if (container != null) {
-        final rect = studioContainerRect(size, sections, container);
-        if (rect != null) _paintDetailGrid(canvas, rect);
-      }
-    }
-
     for (final container in containers) {
       final path = buildStudioContainerPath(size, sections, container);
       if (path == null) continue;
+      final rect = studioContainerRect(size, sections, container);
       final selected =
           activeLayer == StudioLayer.container &&
           container.id == selectedContainerId;
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = selected
-              ? AppColors.success.withValues(alpha: 0.34)
-              : AppColors.surfaceRaised.withValues(alpha: 0.58),
-      );
+      if (container.triangleTexture && rect != null) {
+        _paintContainerTriangleTexture(canvas, path, rect);
+        if (selected) {
+          canvas.drawPath(
+            path,
+            Paint()..color = AppColors.success.withValues(alpha: 0.16),
+          );
+        }
+      } else {
+        canvas.drawPath(
+          path,
+          Paint()
+            ..color = selected
+                ? AppColors.success.withValues(alpha: 0.34)
+                : AppColors.surfaceRaised.withValues(alpha: 0.58),
+        );
+      }
       canvas.drawPath(
         path,
         Paint()
@@ -620,8 +906,21 @@ class LayeredStudioPainter extends CustomPainter {
           ..color = selected ? AppColors.success : AppColors.outline,
       );
       if (selected) {
-        final rect = studioContainerRect(size, sections, container);
-        if (rect != null) _paintLayerSelection(canvas, rect, AppColors.success);
+        final parent = _sectionById(sections, container.parentSectionId);
+        if (rect != null && parent != null) {
+          final rawPath = buildStudioContainerRawPath(
+            size,
+            sections,
+            container,
+          );
+          _paintPlacementGuides(
+            canvas,
+            buildSectionCanvasElementPath(size, parent),
+            rawPath,
+            AppColors.success,
+          );
+          _paintLayerSelection(canvas, rect, AppColors.success);
+        }
       }
     }
 
@@ -631,25 +930,21 @@ class LayeredStudioPainter extends CustomPainter {
       if (path == null || rect == null) continue;
       final selected =
           activeLayer == StudioLayer.feature && feature.id == selectedFeatureId;
-      if (feature.kind == StudioFeatureKind.image && squareImage != null) {
-        canvas.save();
-        canvas.clipPath(path);
-        paintImage(
-          canvas: canvas,
-          rect: rect,
-          image: squareImage!,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.high,
-        );
-        canvas.restore();
-      } else {
-        canvas.drawPath(
-          path,
-          Paint()
-            ..color = selected
-                ? AppColors.warning.withValues(alpha: 0.58)
-                : AppColors.primaryMuted.withValues(alpha: 0.66),
-        );
+      switch (feature.kind) {
+        case StudioFeatureKind.image:
+          _paintImageFeature(canvas, path, rect, feature);
+        case StudioFeatureKind.text:
+          _paintTextFeature(canvas, path, rect, feature.text ?? '텍스트');
+        case StudioFeatureKind.line:
+          _paintLineFeature(canvas, path, rect);
+        case StudioFeatureKind.shape:
+          canvas.drawPath(
+            path,
+            Paint()
+              ..color = selected
+                  ? AppColors.warning.withValues(alpha: 0.58)
+                  : AppColors.primaryMuted.withValues(alpha: 0.66),
+          );
       }
       canvas.drawPath(
         path,
@@ -658,20 +953,39 @@ class LayeredStudioPainter extends CustomPainter {
           ..strokeWidth = selected ? 2.2 : 1
           ..color = selected ? AppColors.warning : AppColors.primary,
       );
-      if (selected) _paintLayerSelection(canvas, rect, AppColors.warning);
+      if (selected) {
+        final parent = _containerById(containers, feature.parentContainerId);
+        final parentRect = parent == null
+            ? null
+            : studioContainerRect(size, sections, parent);
+        if (parentRect != null) {
+          _paintPlacementGuides(
+            canvas,
+            buildStudioContainerPath(size, sections, parent!),
+            buildStudioFeatureRawPath(size, sections, containers, feature),
+            AppColors.warning,
+          );
+        }
+        _paintLayerSelection(canvas, rect, AppColors.warning);
+      }
     }
   }
 
-  void _paintDetailGrid(Canvas canvas, Rect rect) {
+  void _paintPlacementGuides(
+    Canvas canvas,
+    Path? parent,
+    Path? item,
+    Color color,
+  ) {
+    if (parent == null || item == null) return;
+    final spacing = measureStudioPathSpacing(parent, item);
+    if (spacing == null) return;
     final paint = Paint()
-      ..color = AppColors.textMuted.withValues(alpha: 0.18)
-      ..strokeWidth = 0.45;
-    for (var index = 1; index < sectionTemplateDetailGridSize; index++) {
-      final x = rect.left + rect.width * index / sectionTemplateDetailGridSize;
-      final y = rect.top + rect.height * index / sectionTemplateDetailGridSize;
-      canvas.drawLine(Offset(x, rect.top), Offset(x, rect.bottom), paint);
-      canvas.drawLine(Offset(rect.left, y), Offset(rect.right, y), paint);
-    }
+      ..color = color.withValues(alpha: 0.7)
+      ..strokeWidth = 1;
+    canvas.drawLine(spacing.from, spacing.to, paint);
+    canvas.drawCircle(spacing.from, 2, paint);
+    canvas.drawCircle(spacing.to, 2, paint);
   }
 
   void _paintLayerSelection(Canvas canvas, Rect rect, Color color) {
@@ -707,7 +1021,116 @@ class LayeredStudioPainter extends CustomPainter {
       oldDelegate.selectedFeatureId != selectedFeatureId ||
       oldDelegate.showGrid != showGrid ||
       oldDelegate.showSafeArea != showSafeArea ||
-      oldDelegate.squareImage != squareImage;
+      oldDelegate.squareImage != squareImage ||
+      oldDelegate.titleImage != titleImage;
+
+  void _paintContainerTriangleTexture(Canvas canvas, Path path, Rect rect) {
+    final config = BATriangleTextureConfig(
+      baseColor: AppColors.surfaceRaised.withValues(alpha: 0.82),
+      panelColor: AppColors.surface,
+      softColor: AppColors.textMuted,
+      accentColor: AppColors.primary,
+      triangleSize: math.max(12, rect.shortestSide * 0.55),
+      tessellationContrast: 0.03,
+      randomSeed: 9127,
+      macroTriangleChance: 0.07,
+      macroTriangleScale: 2.7,
+      macroTriangleContrast: 0.018,
+      lightStrength: 0.08,
+      edgeVignetteStrength: 0.1,
+      fogStrength: 0.06,
+    );
+    canvas
+      ..save()
+      ..clipPath(path)
+      ..translate(rect.left, rect.top);
+    BATriangleTexturePainter(config).paint(canvas, rect.size);
+    canvas.restore();
+  }
+
+  void _paintImageFeature(
+    Canvas canvas,
+    Path path,
+    Rect rect,
+    StudioFeatureElement feature,
+  ) {
+    final image = switch (feature.imageAsset) {
+      studioTitleAssetPath => titleImage,
+      studioSquareAssetPath => squareImage,
+      _ => null,
+    };
+    canvas
+      ..save()
+      ..clipPath(path);
+    if (feature.imageAsset == studioRoundedArrowAssetId) {
+      _paintRoundedArrow(canvas, rect);
+    } else if (image != null) {
+      paintImage(
+        canvas: canvas,
+        rect: rect,
+        image: image,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+      );
+    }
+    canvas.restore();
+  }
+
+  void _paintRoundedArrow(Canvas canvas, Rect rect) {
+    final inset = rect.shortestSide * 0.18;
+    final left = Offset(rect.left + inset, rect.center.dy);
+    final right = Offset(rect.right - inset, rect.center.dy);
+    final wing = math.min(rect.width, rect.height) * 0.27;
+    final paint = Paint()
+      ..color = AppColors.text
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(3, rect.shortestSide * 0.13)
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(
+      Path()
+        ..moveTo(right.dx, right.dy)
+        ..lineTo(left.dx, left.dy)
+        ..moveTo(left.dx + wing, left.dy - wing)
+        ..lineTo(left.dx, left.dy)
+        ..lineTo(left.dx + wing, left.dy + wing),
+      paint,
+    );
+  }
+
+  void _paintTextFeature(Canvas canvas, Path path, Rect rect, String text) {
+    canvas
+      ..save()
+      ..clipPath(path);
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: AppColors.text,
+          fontSize: math.max(9, math.min(rect.height * 0.48, 42)),
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      maxLines: 2,
+      ellipsis: '…',
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: math.max(1, rect.width - 8));
+    painter.paint(canvas, rect.center - painter.size.center(Offset.zero));
+    canvas.restore();
+  }
+
+  void _paintLineFeature(Canvas canvas, Path path, Rect rect) {
+    final thickness = math.max(3.0, math.min(10.0, rect.shortestSide * 0.16));
+    canvas.drawLine(
+      Offset(rect.left + thickness / 2, rect.center.dy),
+      Offset(rect.right - thickness / 2, rect.center.dy),
+      Paint()
+        ..color = AppColors.text
+        ..strokeWidth = thickness
+        ..strokeCap = StrokeCap.round,
+    );
+  }
 }
 
 Path buildRoundedSectionPolygon(List<Offset> points, {double radius = 14}) {

@@ -1,9 +1,12 @@
-const sectionTemplateMajorDivisions = 6;
+const sectionTemplateMajorDivisions = 12;
 const sectionTemplateSubdivisionsPerMajor = 8;
 const sectionTemplateGridSize =
     sectionTemplateMajorDivisions * sectionTemplateSubdivisionsPerMajor;
 const sectionTemplateSectionGap = 1;
-const sectionTemplateDetailGridSize = 96;
+const sectionTemplateDetailGridSize = sectionTemplateGridSize;
+const studioDefaultPlacementGap = 0.02;
+const studioPlacementSnapTolerance = 0.012;
+const studioMinimumPlacementExtent = 0.01;
 
 enum StudioLayer {
   section('섹션', sectionTemplateGridSize),
@@ -17,7 +20,9 @@ enum StudioLayer {
 
 enum StudioFeatureKind {
   shape('도형'),
-  image('이미지');
+  image('이미지'),
+  text('텍스트'),
+  line('선');
 
   const StudioFeatureKind(this.label);
   final String label;
@@ -25,6 +30,27 @@ enum StudioFeatureKind {
 
 const studioSquareAssetPath = 'assets/studio_features/square.png';
 const studioSquareAspectRatio = 252 / 172;
+const studioTitleAssetPath = 'assets/studio_features/plan_a_title.png';
+const studioTitleAspectRatio = 863 / 250;
+const studioRoundedArrowAssetId = 'builtin:rounded-arrow-left';
+
+enum StudioImagePreset {
+  square('기본 이미지', studioSquareAssetPath, studioSquareAspectRatio),
+  title('Plan A 타이틀', studioTitleAssetPath, studioTitleAspectRatio),
+  roundedArrow('둥근 뒤로 화살표', studioRoundedArrowAssetId, 1);
+
+  const StudioImagePreset(this.label, this.asset, this.aspectRatio);
+
+  final String label;
+  final String asset;
+  final double aspectRatio;
+}
+
+StudioImagePreset studioImagePresetForAsset(String? asset) =>
+    StudioImagePreset.values.firstWhere(
+      (item) => item.asset == asset,
+      orElse: () => StudioImagePreset.square,
+    );
 
 enum SectionShapeMode {
   triangle('삼각형'),
@@ -136,6 +162,207 @@ class SectionGridRect {
 }
 
 enum SectionResizeHandle { topLeft, topRight, bottomLeft, bottomRight }
+
+class StudioPlacementRect {
+  const StudioPlacementRect(this.left, this.top, this.width, this.height);
+
+  final double left;
+  final double top;
+  final double width;
+  final double height;
+
+  double get right => left + width;
+  double get bottom => top + height;
+
+  bool overlaps(StudioPlacementRect other) =>
+      left < other.right &&
+      right > other.left &&
+      top < other.bottom &&
+      bottom > other.top;
+
+  StudioPlacementRect copyWith({
+    double? left,
+    double? top,
+    double? width,
+    double? height,
+  }) => copyPlacementRectWithin(
+    this,
+    left: left,
+    top: top,
+    width: width,
+    height: height,
+  );
+
+  factory StudioPlacementRect.fromGrid(SectionGridRect rect) =>
+      StudioPlacementRect(
+        rect.x / sectionTemplateDetailGridSize,
+        rect.y / sectionTemplateDetailGridSize,
+        rect.width / sectionTemplateDetailGridSize,
+        rect.height / sectionTemplateDetailGridSize,
+      );
+}
+
+StudioPlacementRect copyPlacementRectWithin(
+  StudioPlacementRect rect, {
+  double? left,
+  double? top,
+  double? width,
+  double? height,
+}) {
+  final nextLeft = (left ?? rect.left).clamp(
+    0.0,
+    1.0 - studioMinimumPlacementExtent,
+  );
+  final nextTop = (top ?? rect.top).clamp(
+    0.0,
+    1.0 - studioMinimumPlacementExtent,
+  );
+  return StudioPlacementRect(
+    nextLeft,
+    nextTop,
+    (width ?? rect.width).clamp(studioMinimumPlacementExtent, 1.0 - nextLeft),
+    (height ?? rect.height).clamp(studioMinimumPlacementExtent, 1.0 - nextTop),
+  );
+}
+
+StudioPlacementRect moveStudioPlacementRect(
+  StudioPlacementRect rect, {
+  required double deltaX,
+  required double deltaY,
+}) => StudioPlacementRect(
+  (rect.left + deltaX).clamp(0.0, 1.0 - rect.width),
+  (rect.top + deltaY).clamp(0.0, 1.0 - rect.height),
+  rect.width,
+  rect.height,
+);
+
+StudioPlacementRect resizeStudioPlacementRect(
+  StudioPlacementRect rect, {
+  required SectionResizeHandle handle,
+  required double deltaX,
+  required double deltaY,
+}) {
+  final moveLeft =
+      handle == SectionResizeHandle.topLeft ||
+      handle == SectionResizeHandle.bottomLeft;
+  final moveTop =
+      handle == SectionResizeHandle.topLeft ||
+      handle == SectionResizeHandle.topRight;
+  final moveRight =
+      handle == SectionResizeHandle.topRight ||
+      handle == SectionResizeHandle.bottomRight;
+  final moveBottom =
+      handle == SectionResizeHandle.bottomLeft ||
+      handle == SectionResizeHandle.bottomRight;
+  final nextLeft = moveLeft
+      ? (rect.left + deltaX).clamp(
+          0.0,
+          rect.right - studioMinimumPlacementExtent,
+        )
+      : rect.left;
+  final nextTop = moveTop
+      ? (rect.top + deltaY).clamp(
+          0.0,
+          rect.bottom - studioMinimumPlacementExtent,
+        )
+      : rect.top;
+  final nextRight = moveRight
+      ? (rect.right + deltaX).clamp(
+          rect.left + studioMinimumPlacementExtent,
+          1.0,
+        )
+      : rect.right;
+  final nextBottom = moveBottom
+      ? (rect.bottom + deltaY).clamp(
+          rect.top + studioMinimumPlacementExtent,
+          1.0,
+        )
+      : rect.bottom;
+  return StudioPlacementRect(
+    nextLeft,
+    nextTop,
+    nextRight - nextLeft,
+    nextBottom - nextTop,
+  );
+}
+
+StudioPlacementRect resizeAspectLockedPlacementRect(
+  StudioPlacementRect rect, {
+  required SectionResizeHandle handle,
+  required double deltaX,
+  required double deltaY,
+  required double aspectRatio,
+  required double parentAspectRatio,
+}) {
+  final candidate = resizeStudioPlacementRect(
+    rect,
+    handle: handle,
+    deltaX: deltaX,
+    deltaY: deltaY,
+  );
+  var width = candidate.width;
+  var height = width * parentAspectRatio / aspectRatio;
+  if ((height - candidate.height).abs() >
+      (width - candidate.height * aspectRatio / parentAspectRatio).abs()) {
+    height = candidate.height;
+    width = height * aspectRatio / parentAspectRatio;
+  }
+  width = width.clamp(studioMinimumPlacementExtent, 1.0);
+  height = height.clamp(studioMinimumPlacementExtent, 1.0);
+  final anchorRight =
+      handle == SectionResizeHandle.topLeft ||
+      handle == SectionResizeHandle.bottomLeft;
+  final anchorBottom =
+      handle == SectionResizeHandle.topLeft ||
+      handle == SectionResizeHandle.topRight;
+  final left = anchorRight ? rect.right - width : rect.left;
+  final top = anchorBottom ? rect.bottom - height : rect.top;
+  if (left < 0 || top < 0 || left + width > 1 || top + height > 1) {
+    return rect;
+  }
+  return StudioPlacementRect(left, top, width, height);
+}
+
+StudioPlacementRect snapStudioPlacementSpacing(
+  StudioPlacementRect rect, {
+  required Iterable<StudioPlacementRect> siblings,
+  double gap = studioDefaultPlacementGap,
+  double tolerance = studioPlacementSnapTolerance,
+}) {
+  final xTargets = <double>[gap, 1 - gap - rect.width];
+  final yTargets = <double>[gap, 1 - gap - rect.height];
+  for (final sibling in siblings) {
+    if (rect.top < sibling.bottom && rect.bottom > sibling.top) {
+      xTargets
+        ..add(sibling.right + gap)
+        ..add(sibling.left - gap - rect.width);
+    }
+    if (rect.left < sibling.right && rect.right > sibling.left) {
+      yTargets
+        ..add(sibling.bottom + gap)
+        ..add(sibling.top - gap - rect.height);
+    }
+  }
+  double nearest(double value, Iterable<double> targets) {
+    var result = value;
+    var distance = tolerance;
+    for (final target in targets) {
+      if (target < 0 || target > 1) continue;
+      final nextDistance = (value - target).abs();
+      if (nextDistance <= distance) {
+        result = target;
+        distance = nextDistance;
+      }
+    }
+    return result;
+  }
+
+  return moveStudioPlacementRect(
+    rect.copyWith(left: 0, top: 0),
+    deltaX: nearest(rect.left, xTargets),
+    deltaY: nearest(rect.top, yTargets),
+  );
+}
 
 SectionGridRect copyGridRectWithin(
   SectionGridRect rect, {
@@ -277,25 +504,29 @@ class StudioContainerElement {
     required this.parentSectionId,
     required this.rect,
     required this.spec,
+    this.triangleTexture = false,
   });
 
   final String id;
   final String label;
   final String parentSectionId;
-  final SectionGridRect rect;
+  final StudioPlacementRect rect;
   final AttachedSectionSpec spec;
+  final bool triangleTexture;
 
   StudioContainerElement copyWith({
     String? label,
     String? parentSectionId,
-    SectionGridRect? rect,
+    StudioPlacementRect? rect,
     AttachedSectionSpec? spec,
+    bool? triangleTexture,
   }) => StudioContainerElement(
     id: id,
     label: label ?? this.label,
     parentSectionId: parentSectionId ?? this.parentSectionId,
     rect: rect ?? this.rect,
     spec: spec ?? this.spec,
+    triangleTexture: triangleTexture ?? this.triangleTexture,
   );
 }
 
@@ -309,25 +540,28 @@ class StudioFeatureElement {
     required this.spec,
     this.imageAsset,
     this.aspectRatio,
+    this.text,
   });
 
   final String id;
   final String label;
   final String parentContainerId;
-  final SectionGridRect rect;
+  final StudioPlacementRect rect;
   final StudioFeatureKind kind;
   final AttachedSectionSpec spec;
   final String? imageAsset;
   final double? aspectRatio;
+  final String? text;
 
   StudioFeatureElement copyWith({
     String? label,
     String? parentContainerId,
-    SectionGridRect? rect,
+    StudioPlacementRect? rect,
     StudioFeatureKind? kind,
     AttachedSectionSpec? spec,
     String? imageAsset,
     double? aspectRatio,
+    String? text,
   }) => StudioFeatureElement(
     id: id,
     label: label ?? this.label,
@@ -337,6 +571,7 @@ class StudioFeatureElement {
     spec: spec ?? this.spec,
     imageAsset: imageAsset ?? this.imageAsset,
     aspectRatio: aspectRatio ?? this.aspectRatio,
+    text: text ?? this.text,
   );
 }
 
@@ -348,7 +583,7 @@ List<String> validateSectionCanvas(List<SectionCanvasElement> elements) {
         rect.y < 0 ||
         rect.right > sectionTemplateGridSize ||
         rect.bottom > sectionTemplateGridSize) {
-      issues.add('${element.label}: 48×48 공간을 벗어남');
+      issues.add('${element.label}: 작업화면의 96×96 공간을 벗어남');
     }
   }
   for (var i = 0; i < elements.length; i++) {
@@ -373,26 +608,30 @@ List<String> validateStudioLayers(
     if (!sectionIds.contains(item.parentSectionId)) {
       issues.add('${item.label}: 부모 섹션 없음');
     }
-    if (item.rect.x < 0 ||
-        item.rect.y < 0 ||
-        item.rect.right > sectionTemplateDetailGridSize ||
-        item.rect.bottom > sectionTemplateDetailGridSize) {
-      issues.add('${item.label}: 부모의 96×96 공간을 벗어남');
+    if (item.rect.left < 0 ||
+        item.rect.top < 0 ||
+        item.rect.right > 1 ||
+        item.rect.bottom > 1) {
+      issues.add('${item.label}: 부모 섹션의 배치 영역을 벗어남');
     }
   }
   for (final item in features) {
     if (!containerIds.contains(item.parentContainerId)) {
       issues.add('${item.label}: 부모 컨테이너 없음');
     }
-    if (item.rect.x < 0 ||
-        item.rect.y < 0 ||
-        item.rect.right > sectionTemplateDetailGridSize ||
-        item.rect.bottom > sectionTemplateDetailGridSize) {
-      issues.add('${item.label}: 부모의 96×96 공간을 벗어남');
+    if (item.rect.left < 0 ||
+        item.rect.top < 0 ||
+        item.rect.right > 1 ||
+        item.rect.bottom > 1) {
+      issues.add('${item.label}: 부모 컨테이너의 배치 영역을 벗어남');
     }
     if (item.kind == StudioFeatureKind.image &&
         (item.aspectRatio == null || item.aspectRatio! <= 0)) {
       issues.add('${item.label}: 이미지 비율 없음');
+    }
+    if (item.kind == StudioFeatureKind.text &&
+        (item.text == null || item.text!.trim().isEmpty)) {
+      issues.add('${item.label}: 텍스트 내용 없음');
     }
   }
   return issues;

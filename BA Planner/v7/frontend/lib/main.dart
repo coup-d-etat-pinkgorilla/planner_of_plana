@@ -21,9 +21,9 @@ void main() {
     );
     unawaited(_connect(service));
   } else {
-    service = MockAppService();
+    service = MockAppService(fullStudentCatalog: true);
   }
-  runApp(BAPlannerApp(service: service));
+  runApp(BAPlannerApp(service: service, showTitle: true));
 }
 
 Future<void> _connect(AppService service) async {

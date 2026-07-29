@@ -5,6 +5,14 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 
+abstract final class BATrianglePalette {
+  static const titleLogoPink = Color(0xffe08ee6);
+  static const softTitlePinkBase = Color(0x88e9b0ee);
+  static const softTitlePinkPanel = Color(0x80e5a0ea);
+  static const softTitlePinkSoft = Color(0x80f3d8f5);
+  static const softTitlePinkAccent = Color(0x90eab9ef);
+}
+
 @immutable
 class BATriangleTextureConfig {
   const BATriangleTextureConfig({

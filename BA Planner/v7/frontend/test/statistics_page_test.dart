@@ -7,6 +7,7 @@ import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/app_section.dart';
 import 'package:ba_planner_v7/ui/pages/statistics_page.dart';
+import 'package:ba_planner_v7/ui/widgets/bond_rank_portrait.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,7 +20,7 @@ RepositoryState repositoryState({bool goals = false}) =>
         {
           'version': 1,
           'student_id': 'aru',
-          'values': {'level': 50, 'student_star': 3},
+          'values': {'level': 50, 'bond_rank': 100, 'student_star': 3},
         },
       ],
       'inventory': {
@@ -146,10 +147,23 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('statistics-row-owned')));
     await tester.pump();
     expect(find.textContaining('· aru'), findsOneWidget);
+    expect(find.text('인연 100'), findsOneWidget);
+    final bondPortrait = tester.widget<BondRankPortrait>(
+      find.descendant(
+        of: find.byKey(const ValueKey('statistics-student-bond-aru')),
+        matching: find.byType(BondRankPortrait),
+      ),
+    );
+    expect(bondPortrait.bondRank, 100);
     await _tapVisible(
       tester,
       find.byKey(const ValueKey('statistics-open-students')),
     );
+    await tester.drag(
+      find.byKey(const ValueKey('statistics-page')),
+      const Offset(0, 600),
+    );
+    await tester.pump();
     await _tapVisible(tester, find.text('Inventory'));
     await _tapVisible(
       tester,

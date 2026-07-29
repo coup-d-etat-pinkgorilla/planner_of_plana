@@ -66,7 +66,7 @@ def _canonical_quantity(value: str) -> bool:
 
 
 CONFIRMED_STUDENT_VALUE_FIELDS = (
-    "level", "student_star", "weapon_state", "weapon_star",
+    "level", "bond_rank", "student_star", "weapon_state", "weapon_star",
     "weapon_level", "ex_skill", "skill1", "skill2", "skill3", "equip1",
     "equip2", "equip3", "equip4", "equip1_level", "equip2_level",
     "equip3_level", "combat_hp", "combat_atk", "combat_def", "combat_heal",
@@ -152,6 +152,10 @@ class ConfirmedStudent:
                     raise RepositoryDTOError("confirmed_student.values.form_combat_stats must be an object")
             else:
                 _optional_int(item, f"confirmed_student.values.{key}")
+                if key == "bond_rank" and item is not None and not 1 <= item <= 100:
+                    raise RepositoryDTOError(
+                        "confirmed_student.values.bond_rank must be an integer from 1 to 100"
+                    )
             canonical[key] = item
         provenance = data.get("provenance")
         if provenance is not None:

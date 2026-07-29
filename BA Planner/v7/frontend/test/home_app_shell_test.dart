@@ -22,63 +22,60 @@ Future<void> _reveal(
 }
 
 void main() {
-  testWidgets('AppShell keeps candidate on Hold and clears Home after commit', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(1440, 900));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final service = MockAppService(
-      scannerScenario: MockScannerScenario.reviewRequired,
-    );
-    addTearDown(service.dispose);
-    await tester.pumpWidget(BAPlannerApp(service: service));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'AppShell keeps a held candidate available from the student tab',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final service = MockAppService(
+        scannerScenario: MockScannerScenario.reviewRequired,
+      );
+      addTearDown(service.dispose);
+      await tester.pumpWidget(BAPlannerApp(service: service));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('top-tab-scan')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('scan-target')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.textContaining('mock-window').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('scan-start')));
-    await tester.pump(const Duration(milliseconds: 35));
-    final review = find.byKey(const ValueKey('scan-review-mock-candidate-1'));
-    await _reveal(tester, find.byKey(const ValueKey('scan-page')), review);
-    await tester.tap(review);
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('top-tab-scan')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('scan-target')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('mock-window').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('scan-start')));
+      await tester.pump(const Duration(milliseconds: 35));
+      final review = find.byKey(const ValueKey('scan-review-mock-candidate-1'));
+      await _reveal(tester, find.byKey(const ValueKey('scan-page')), review);
+      await tester.tap(review);
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('top-tab-home')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('home-pending-student')), findsOneWidget);
-    expect(find.byKey(const ValueKey('home-recent-scans')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('top-tab-home')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('home-menu-section')), findsOneWidget);
+      expect(find.byKey(const ValueKey('home-pending-student')), findsNothing);
 
-    var pending = find.byKey(const ValueKey('home-pending-student'));
-    await tester.ensureVisible(pending);
-    await tester.pump();
-    await tester.tap(pending);
-    await tester.pumpAndSettle();
-    expect(
-      tester.widget<StudentPage>(find.byType(StudentPage)).candidateContext,
-      isNotNull,
-    );
-    final hold = find.byKey(const ValueKey('candidate-hold'));
-    await _reveal(tester, find.byKey(const ValueKey('student-page')), hold);
-    await tester.tap(hold);
-    await tester.tap(find.byKey(const ValueKey('top-tab-home')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('home-pending-student')), findsOneWidget);
-
-    pending = find.byKey(const ValueKey('home-pending-student'));
-    await tester.ensureVisible(pending);
-    await tester.pump();
-    await tester.tap(pending);
-    await tester.pumpAndSettle();
-    final approve = find.byKey(const ValueKey('candidate-approve'));
-    await _reveal(tester, find.byKey(const ValueKey('student-page')), approve);
-    await tester.tap(approve);
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('top-tab-home')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('home-pending-student')), findsNothing);
-  });
+      await tester.tap(find.byKey(const ValueKey('top-tab-students')));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<StudentPage>(find.byType(StudentPage)).candidateContext,
+        isNotNull,
+      );
+      final hold = find.byKey(const ValueKey('candidate-hold'));
+      await _reveal(tester, find.byKey(const ValueKey('student-page')), hold);
+      await tester.tap(hold);
+      await tester.tap(find.byKey(const ValueKey('top-tab-home')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('top-tab-students')));
+      await tester.pumpAndSettle();
+      final approve = find.byKey(const ValueKey('candidate-approve'));
+      await _reveal(
+        tester,
+        find.byKey(const ValueKey('student-page')),
+        approve,
+      );
+      await tester.tap(approve);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('top-tab-home')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('home-pending-student')), findsNothing);
+    },
+  );
 }

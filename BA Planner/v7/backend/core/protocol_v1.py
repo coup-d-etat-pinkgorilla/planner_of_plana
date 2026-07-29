@@ -188,6 +188,7 @@ class PlanningProtocolV1:
         *,
         student_lookup: Callable[[str], dict[str, Any] | None] = student_meta.get,
         student_ids: Callable[[], list[str]] = student_meta.all_ids,
+        student_jp_only: Callable[[str], bool] = student_meta.is_jp_only,
         calculator: Callable[[dict[str, object], GrowthPlan], object] = calculate_plan_totals,
         inventory_catalog: Callable[[], list[dict[str, object]]] = catalog_payload,
         shortage_deriver: Callable[
@@ -197,6 +198,7 @@ class PlanningProtocolV1:
     ) -> None:
         self._student_lookup = student_lookup
         self._student_ids = student_ids
+        self._student_jp_only = student_jp_only
         self._calculator = calculator
         self._inventory_catalog = inventory_catalog
         self._shortage_deriver = shortage_deriver
@@ -280,6 +282,7 @@ class PlanningProtocolV1:
                     "combat_class": metadata.get("combat_class") if isinstance(metadata.get("combat_class"), str) else None,
                     "role": metadata.get("role") if isinstance(metadata.get("role"), str) else None,
                     "position": metadata.get("position") if isinstance(metadata.get("position"), str) else None,
+                    "jp_only": bool(self._student_jp_only(student_id)),
                     "search_tags": [str(item) for item in metadata.get("search_tags", []) if str(item).strip()] if isinstance(metadata.get("search_tags", []), list) else [],
                     "kr_search_tags": [str(item) for item in metadata.get("kr_search_tags", []) if str(item).strip()] if isinstance(metadata.get("kr_search_tags", []), list) else [],
                 })

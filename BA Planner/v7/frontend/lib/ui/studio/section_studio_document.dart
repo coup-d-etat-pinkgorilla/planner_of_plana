@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'section_template.dart';
 
 const sectionStudioDocumentFormat = 'ba-planner-section-studio';
-const sectionStudioDocumentVersion = 2;
+const sectionStudioDocumentVersion = 5;
 const sectionStudioDocumentExtension = 'ba-section-studio.json';
 const sectionStudioMaximumElements = 256;
 
@@ -18,6 +18,7 @@ class SectionStudioDocument {
     this.activeLayer = StudioLayer.section,
     this.selectedContainerId,
     this.selectedFeatureId,
+    this.placementGap = studioDefaultPlacementGap,
     List<StudioContainerElement> containers = const [],
     List<StudioFeatureElement> features = const [],
   }) : elements = List<SectionCanvasElement>.unmodifiable(elements),
@@ -33,6 +34,7 @@ class SectionStudioDocument {
   final StudioLayer activeLayer;
   final String? selectedContainerId;
   final String? selectedFeatureId;
+  final double placementGap;
   final List<StudioContainerElement> containers;
   final List<StudioFeatureElement> features;
 }
@@ -53,6 +55,8 @@ String encodeSectionStudioDocument(SectionStudioDocument document) {
       'activeLayer': document.activeLayer.name,
       'selectedContainerId': document.selectedContainerId,
       'selectedFeatureId': document.selectedFeatureId,
+      'placementMode': 'parent-relative-spacing',
+      'placementGap': document.placementGap,
     },
     'elements': [
       for (final element in document.elements)
@@ -80,8 +84,9 @@ String encodeSectionStudioDocument(SectionStudioDocument document) {
           'id': item.id,
           'label': item.label,
           'parentSectionId': item.parentSectionId,
-          'rect': _encodeRect(item.rect),
+          'rect': _encodePlacementRect(item.rect),
           'shape': _encodeShape(item.spec),
+          'triangleTexture': item.triangleTexture,
         },
     ],
     'features': [
@@ -91,10 +96,11 @@ String encodeSectionStudioDocument(SectionStudioDocument document) {
           'label': item.label,
           'parentContainerId': item.parentContainerId,
           'kind': item.kind.name,
-          'rect': _encodeRect(item.rect),
+          'rect': _encodePlacementRect(item.rect),
           'shape': _encodeShape(item.spec),
           'imageAsset': item.imageAsset,
           'aspectRatio': item.aspectRatio,
+          'text': item.text,
         },
     ],
   };
@@ -120,11 +126,11 @@ SectionStudioDocument decodeSectionStudioDocument(String source) {
     );
   }
   if (_integer(root, 'gridSize') != sectionTemplateGridSize) {
-    throw const FormatException('이 Studio는 48×48 그리드 문서만 불러올 수 있습니다.');
+    throw const FormatException('이 Studio는 Section 96×96 그리드 문서만 불러올 수 있습니다.');
   }
   if (version >= 2 &&
       _integer(root, 'detailGridSize') != sectionTemplateDetailGridSize) {
-    throw const FormatException('컨테이너와 feature는 96×96 그리드 문서여야 합니다.');
+    throw const FormatException('하위 도형의 세부 형상 단위는 96이어야 합니다.');
   }
   final diagonal = _map(root['diagonal'], 'diagonal');
   if (_string(diagonal, 'direction') != 'up-right' ||
@@ -136,7 +142,7 @@ SectionStudioDocument decodeSectionStudioDocument(String source) {
   final headerRows = _integerInRange(
     workspace,
     'headerRows',
-    1,
+    version >= 5 ? 0 : 1,
     sectionTemplateGridSize ~/ 2,
   );
   final viewport = _string(workspace, 'viewport');
@@ -159,6 +165,9 @@ SectionStudioDocument decodeSectionStudioDocument(String source) {
   final selectedFeatureId = version >= 2
       ? _nullableString(workspace, 'selectedFeatureId')
       : null;
+  final placementGap = version >= 4
+      ? _decodePlacementGap(workspace)
+      : studioDefaultPlacementGap;
 
   final rawElements = root['elements'];
   if (rawElements is! List || rawElements.isEmpty) {
@@ -282,16 +291,23 @@ SectionStudioDocument decodeSectionStudioDocument(String source) {
           id: id,
           label: _nonEmptyString(raw, 'label', path: path),
           parentSectionId: parentId,
-          rect: _decodeRect(
-            raw['rect'],
-            '$path.rect',
-            sectionTemplateDetailGridSize,
-          ),
+          rect: version >= 4
+              ? _decodePlacementRect(raw['rect'], '$path.rect')
+              : StudioPlacementRect.fromGrid(
+                  _decodeRect(
+                    raw['rect'],
+                    '$path.rect',
+                    sectionTemplateDetailGridSize,
+                  ),
+                ),
           spec: _decodeShape(
             raw['shape'],
             '$path.shape',
             sectionTemplateDetailGridSize,
           ),
+          triangleTexture: version >= 5
+              ? _boolean(raw, 'triangleTexture', path: path)
+              : false,
         ),
       );
     }
@@ -309,22 +325,35 @@ SectionStudioDocument decodeSectionStudioDocument(String source) {
         _string(raw, 'kind', path: path),
         '$path.kind',
       );
+      if (version < 5 &&
+          (kind == StudioFeatureKind.text || kind == StudioFeatureKind.line)) {
+        throw FormatException('$path feature 종류는 version 5부터 지원합니다.');
+      }
       final imageAsset = _nullableString(raw, 'imageAsset');
       final aspectRatio = _nullableNumber(raw, 'aspectRatio');
+      final text = version >= 5 ? _nullableString(raw, 'text') : null;
       if (kind == StudioFeatureKind.image &&
           (imageAsset == null || aspectRatio == null || aspectRatio <= 0)) {
         throw FormatException('$path 이미지 source와 양수 비율이 필요합니다.');
+      }
+      if (kind == StudioFeatureKind.text &&
+          (text == null || text.trim().isEmpty)) {
+        throw FormatException('$path 텍스트 내용이 필요합니다.');
       }
       features.add(
         StudioFeatureElement(
           id: id,
           label: _nonEmptyString(raw, 'label', path: path),
           parentContainerId: parentId,
-          rect: _decodeRect(
-            raw['rect'],
-            '$path.rect',
-            sectionTemplateDetailGridSize,
-          ),
+          rect: version >= 4
+              ? _decodePlacementRect(raw['rect'], '$path.rect')
+              : StudioPlacementRect.fromGrid(
+                  _decodeRect(
+                    raw['rect'],
+                    '$path.rect',
+                    sectionTemplateDetailGridSize,
+                  ),
+                ),
           kind: kind,
           spec: _decodeShape(
             raw['shape'],
@@ -333,6 +362,7 @@ SectionStudioDocument decodeSectionStudioDocument(String source) {
           ),
           imageAsset: imageAsset,
           aspectRatio: aspectRatio,
+          text: text,
         ),
       );
     }
@@ -370,17 +400,49 @@ SectionStudioDocument decodeSectionStudioDocument(String source) {
     activeLayer: activeLayer,
     selectedContainerId: selectedContainerId,
     selectedFeatureId: selectedFeatureId,
+    placementGap: placementGap,
     containers: containers,
     features: features,
   );
 }
 
-Map<String, Object> _encodeRect(SectionGridRect rect) => {
-  'x': rect.x,
-  'y': rect.y,
+Map<String, Object> _encodePlacementRect(StudioPlacementRect rect) => {
+  'left': rect.left,
+  'top': rect.top,
   'width': rect.width,
   'height': rect.height,
 };
+
+double _decodePlacementGap(Map<String, Object?> workspace) {
+  if (_string(workspace, 'placementMode') != 'parent-relative-spacing') {
+    throw const FormatException('지원하지 않는 Container/Feature 배치 방식입니다.');
+  }
+  return _numberInRange(workspace, 'placementGap', 0, 0.2);
+}
+
+StudioPlacementRect _decodePlacementRect(Object? value, String path) {
+  final raw = _map(value, path);
+  final left = _numberInRange(raw, 'left', 0, 1, path: path);
+  final top = _numberInRange(raw, 'top', 0, 1, path: path);
+  return StudioPlacementRect(
+    left,
+    top,
+    _numberInRange(
+      raw,
+      'width',
+      studioMinimumPlacementExtent,
+      1 - left,
+      path: path,
+    ),
+    _numberInRange(
+      raw,
+      'height',
+      studioMinimumPlacementExtent,
+      1 - top,
+      path: path,
+    ),
+  );
+}
 
 Map<String, Object> _encodeShape(AttachedSectionSpec spec) => {
   'mode': spec.mode.name,
@@ -466,6 +528,24 @@ double? _nullableNumber(Map<String, Object?> map, String key) {
     throw FormatException('문서.$key 값은 null 또는 숫자여야 합니다.');
   }
   return value.toDouble();
+}
+
+double _numberInRange(
+  Map<String, Object?> map,
+  String key,
+  double min,
+  double max, {
+  String? path,
+}) {
+  final value = map[key];
+  if (value is! num || !value.isFinite) {
+    throw FormatException('${path ?? '문서'}.$key 값은 숫자여야 합니다.');
+  }
+  final result = value.toDouble();
+  if (result < min || result > max) {
+    throw FormatException('${path ?? '문서'}.$key 값은 $min~$max 범위여야 합니다.');
+  }
+  return result;
 }
 
 int _integer(Map<String, Object?> map, String key, {String? path}) {

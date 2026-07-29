@@ -7,8 +7,10 @@ import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/ui/app_section.dart';
-import 'package:ba_planner_v7/ui/widgets/animated_section_stack.dart';
+import 'package:ba_planner_v7/ui/app_shell.dart';
 import 'package:ba_planner_v7/ui/widgets/ba_triangle_background.dart';
+import 'package:ba_planner_v7/ui/widgets/animated_section_stack.dart';
+import 'package:ba_planner_v7/ui/widgets/asset_image_grid.dart';
 import 'package:ba_planner_v7/ui/widgets/diagonal_header.dart';
 import 'package:ba_planner_v7/ui/widgets/diagonal_menu.dart';
 import 'package:ba_planner_v7/ui/widgets/lifted_path_shadow.dart';
@@ -178,6 +180,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(BAPlannerApp(service: MockAppService()));
+    await tester.pumpAndSettle();
 
     expect(
       find.byKey(const ValueKey('ba-triangle-background')),
@@ -197,7 +200,33 @@ void main() {
     );
     expect(outgoing.transform.getTranslation().x, greaterThan(0));
     expect(outgoing.transform.getTranslation().y, closeTo(0, 1e-6));
-    expect(incoming.transform.getTranslation().y, greaterThan(0));
+    expect(incoming.transform.getTranslation().x, closeTo(0, 1e-6));
+    expect(incoming.transform.getTranslation().y, closeTo(0, 1e-6));
+
+    await tester.pump(const Duration(milliseconds: 400));
+    Transform studentSectionTransform(String key) => tester.widget<Transform>(
+      find
+          .descendant(
+            of: find.byKey(ValueKey(key)),
+            matching: find.byType(Transform),
+          )
+          .first,
+    );
+    expect(
+      studentSectionTransform(
+        'student-section-1-motion',
+      ).transform.getTranslation().x,
+      lessThan(0),
+    );
+    for (final key in const [
+      'student-section-3-motion',
+      'student-section-4-motion',
+    ]) {
+      expect(
+        studentSectionTransform(key).transform.getTranslation().x,
+        greaterThan(0),
+      );
+    }
 
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('animated-section-0')), findsNothing);
@@ -207,6 +236,25 @@ void main() {
     await tester.tap(find.text(AppSection.home.label).first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 60));
+    final outgoingStudent = tester.widget<Transform>(
+      find.byKey(const ValueKey('animated-section-1')),
+    );
+    expect(outgoingStudent.transform.getTranslation().x, closeTo(0, 1e-6));
+    expect(
+      studentSectionTransform(
+        'student-section-1-motion',
+      ).transform.getTranslation().x,
+      lessThan(0),
+    );
+    for (final key in const [
+      'student-section-3-motion',
+      'student-section-4-motion',
+    ]) {
+      expect(
+        studentSectionTransform(key).transform.getTranslation().x,
+        greaterThan(0),
+      );
+    }
     final returningHome = tester.widget<Transform>(
       find.byKey(const ValueKey('animated-section-0')),
     );
@@ -260,6 +308,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(BAPlannerApp(service: MockAppService()));
+    await tester.pumpAndSettle();
 
     final header = tester.getRect(
       find.byKey(const ValueKey('page-header-surface')),
@@ -303,6 +352,100 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(AnimatedSwitcher), findsWidgets);
+  });
+
+  testWidgets('initial home header and menu enter from 270 and 0 degrees', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final service = MockAppService();
+    addTearDown(service.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(home: AppShell(service: service, animateHomeEntrance: true)),
+    );
+
+    final headerEntrance = tester.widget<DirectionalSectionEntrance>(
+      find.byKey(const ValueKey('home-header-entrance')),
+    );
+    final menuEntrance = tester.widget<DirectionalSectionEntrance>(
+      find.byKey(const ValueKey('home-menu-entrance')),
+    );
+    expect(headerEntrance.directionDegrees, 270);
+    expect(menuEntrance.directionDegrees, 0);
+
+    final headerTransform = tester.widget<Transform>(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('home-header-entrance')),
+            matching: find.byType(Transform),
+          )
+          .first,
+    );
+    final menuTransform = tester.widget<Transform>(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('home-menu-entrance')),
+            matching: find.byType(Transform),
+          )
+          .first,
+    );
+    expect(headerTransform.transform.getTranslation().y, lessThan(0));
+    expect(menuTransform.transform.getTranslation().x, lessThan(0));
+
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<Transform>(
+            find
+                .descendant(
+                  of: find.byKey(const ValueKey('home-header-entrance')),
+                  matching: find.byType(Transform),
+                )
+                .first,
+          )
+          .transform
+          .getTranslation()
+          .y,
+      closeTo(0, 1e-6),
+    );
+  });
+
+  testWidgets('selected account portrait is left of the student count', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final service = MockAppService(
+      initialState: const AppServiceState(
+        connection: BackendConnection.connected,
+        scanPhase: ScanPhase.idle,
+        imageLoadState: ImageLoadState.loaded,
+        studentCount: 42,
+        inventoryItemCount: 0,
+        hasData: true,
+        scanAvailable: true,
+        useLongNames: false,
+        hasMissingMetadata: false,
+      ),
+    );
+    addTearDown(service.dispose);
+
+    await tester.pumpWidget(BAPlannerApp(service: service));
+    await tester.pumpAndSettle();
+
+    final portraitFinder = find.byKey(
+      const ValueKey('home-header-profile-portrait'),
+    );
+    final portrait = tester.widget<AssetImageGrid>(portraitFinder);
+    expect(portrait.items.first.asset, 'assets/studio_features/square.png');
+    expect(portrait.items.last.asset, 'assets/student_portraits/hasumi.png');
+    expect(portrait.items.last.scale, 0.98);
+    expect(
+      tester.getRect(portraitFinder).right,
+      lessThan(tester.getRect(find.text('42명')).left),
+    );
   });
 
   testWidgets('home menu captions preserve the v6 wash and typography', (
@@ -378,6 +521,7 @@ void main() {
     final service = MockAppService();
     addTearDown(service.dispose);
     await tester.pumpWidget(BAPlannerApp(service: service));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('top-tab-scan')));
     await tester.pumpAndSettle();
@@ -396,6 +540,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(BAPlannerApp(service: MockAppService()));
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.developer_board_outlined));
     await tester.pump();
 

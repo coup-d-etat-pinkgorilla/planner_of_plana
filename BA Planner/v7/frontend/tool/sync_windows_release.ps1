@@ -185,6 +185,13 @@ Assert-ProjectChildDirectory $backupDirectory ".release-backup-"
 try {
     Copy-Item -LiteralPath $bundleSource -Destination $stageDirectory -Recurse
 
+    if (Test-Path -LiteralPath $bundleDestination) {
+        Get-ChildItem -LiteralPath $bundleDestination -File -Filter "*.ba-section-studio.json" |
+            ForEach-Object {
+                Copy-Item -LiteralPath $_.FullName -Destination $stageDirectory
+            }
+    }
+
     $builtAtUtc = [DateTime]::UtcNow
     $stagedExecutable = Join-Path $stageDirectory "ba_planner_v7.exe"
     (Get-Item -LiteralPath $stagedExecutable).LastWriteTimeUtc = $builtAtUtc

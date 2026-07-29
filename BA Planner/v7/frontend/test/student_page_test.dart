@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
@@ -6,6 +8,7 @@ import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/pages/student_page.dart';
+import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -35,44 +38,33 @@ Future<void> _reveal(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
-  testWidgets(
-    'catalog search, repository save, and plan handoff use services',
-    (tester) async {
-      final service = MockAppService();
-      PlanningStudentSeed? seed;
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() async {
-        await tester.binding.setSurfaceSize(null);
-        await service.dispose();
-      });
+  testWidgets('catalog search and plan handoff use services', (tester) async {
+    final service = MockAppService();
+    PlanningStudentSeed? seed;
+    await tester.binding.setSurfaceSize(const Size(1024, 768));
+    addTearDown(() async {
+      await tester.binding.setSurfaceSize(null);
+      await service.dispose();
+    });
 
-      await tester.pumpWidget(_subject(service, (value) => seed = value));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('student-page')), findsOneWidget);
+    await tester.pumpWidget(_subject(service, (value) => seed = value));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('student-page')), findsOneWidget);
 
-      await tester.enterText(
-        find.byKey(const ValueKey('student-search')),
-        'ayane',
-      );
-      await tester.pump();
-      expect(find.byKey(const ValueKey('student-ayane')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('student-ayane')));
-      await tester.pump();
+    await tester.enterText(
+      find.byKey(const ValueKey('student-search')),
+      'ayane',
+    );
+    await tester.pump();
+    expect(find.byKey(const ValueKey('student-ayane')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('student-ayane')));
+    await tester.pump();
 
-      await _reveal(tester, find.byKey(const ValueKey('student-save')));
-      await tester.tap(find.byKey(const ValueKey('student-save')));
-      await tester.pumpAndSettle();
-      expect(
-        find.textContaining('Saved at repository revision'),
-        findsOneWidget,
-      );
-
-      await _reveal(tester, find.byKey(const ValueKey('student-add-to-plan')));
-      await tester.tap(find.byKey(const ValueKey('student-add-to-plan')));
-      expect(seed?.studentId, 'ayane');
-      expect(tester.takeException(), isNull);
-    },
-  );
+    await _reveal(tester, find.byKey(const ValueKey('student-add-to-plan')));
+    await tester.tap(find.byKey(const ValueKey('student-add-to-plan')));
+    expect(seed?.studentId, 'ayane');
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('disconnected state is explicit and retryable', (tester) async {
     final service = MockAppService();
@@ -193,25 +185,18 @@ void main() {
     expect(find.textContaining('Could not load students'), findsOneWidget);
   });
 
-  testWidgets('revision conflict keeps the current editor draft', (
+  testWidgets('legacy repository editor section is not rendered below canvas', (
     tester,
   ) async {
     final service = _ConflictService();
     addTearDown(service.dispose);
     await tester.pumpWidget(_subject(service, (_) {}));
     await tester.pumpAndSettle();
-    final level = find.byKey(const ValueKey('student-field-level'));
-    await tester.ensureVisible(level);
-    await tester.enterText(level, '42');
-    await tester.ensureVisible(find.byKey(const ValueKey('student-save')));
-    await tester.tap(find.byKey(const ValueKey('student-save')));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('draft was kept'), findsOneWidget);
-    expect((tester.widget<TextField>(level).controller?.text), '42');
     expect(
-      find.byKey(const ValueKey('student-reload-profile')),
-      findsOneWidget,
+      find.byKey(const ValueKey('student-repository-editor')),
+      findsNothing,
     );
+    expect(find.byKey(const ValueKey('student-save')), findsNothing);
   });
 
   for (final size in const [
@@ -231,6 +216,10 @@ void main() {
         await tester.pumpWidget(_subject(service, (_) {}));
         await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('student-page')), findsOneWidget);
+        expect(
+          tester.getSize(find.byType(StudentSectionLayout)).height,
+          closeTo(math.max(590, size.height - AppSpacing.md * 2), 0.01),
+        );
         expect(tester.takeException(), isNull);
       },
     );

@@ -7,6 +7,7 @@ import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../statistics/statistics_projection.dart';
 import '../app_section.dart';
+import '../widgets/bond_rank_portrait.dart';
 import '../widgets/diagonal_section.dart';
 
 enum StatisticsMode { students, inventory, plan }
@@ -392,7 +393,28 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 const Divider(),
                 Text('Evidence: ${_studentDetail!.label}'),
                 for (final id in _studentDetail!.identities)
-                  Text('${stats.displayNames[id] ?? id} · $id'),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      key: ValueKey('statistics-student-bond-$id'),
+                      children: [
+                        SizedBox(
+                          width: 38,
+                          height: 38,
+                          child: BondRankPortrait(
+                            portraitAsset: 'assets/student_portraits/$id.png',
+                            bondRank: stats.bondRanks[id],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text('${stats.displayNames[id] ?? id} · $id'),
+                        ),
+                        if (stats.bondRanks[id] case final bond?)
+                          Text('인연 $bond'),
+                      ],
+                    ),
+                  ),
               ],
               Align(
                 alignment: Alignment.centerLeft,

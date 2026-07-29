@@ -241,9 +241,8 @@ class ScannerSessionSnapshot {
         .toList(growable: false);
     final parsedCandidates = candidates
         .map(
-          (item) => ScannerCandidate.fromWire(
-            Map<String, dynamic>.from(item as Map),
-          ),
+          (item) =>
+              ScannerCandidate.fromWire(Map<String, dynamic>.from(item as Map)),
         )
         .toList(growable: false);
     final sessionId = wire['session_id'] as String;
@@ -460,6 +459,7 @@ class ScannerProtocolClient implements ScannerService {
     );
     return snapshot;
   }
+
   @override
   Future<ScannerCandidate> getScannerCandidate(
     ScannerSession session,

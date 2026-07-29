@@ -40,7 +40,7 @@ void main() {
   test('versioned Studio JSON round-trips every editable value', () {
     final encoded = encodeSectionStudioDocument(
       SectionStudioDocument(
-        headerRows: 12,
+        headerRows: 0,
         viewport: 'wide',
         showGrid: false,
         showSafeArea: true,
@@ -51,11 +51,11 @@ void main() {
     final json = jsonDecode(encoded) as Map<String, dynamic>;
     expect(json['format'], sectionStudioDocumentFormat);
     expect(json['version'], sectionStudioDocumentVersion);
-    expect(json['gridSize'], 48);
+    expect(json['gridSize'], 96);
     expect(json['diagonal'], {'direction': 'up-right', 'angleDegrees': 80});
 
     final decoded = decodeSectionStudioDocument(encoded);
-    expect(decoded.headerRows, 12);
+    expect(decoded.headerRows, 0);
     expect(decoded.viewport, 'wide');
     expect(decoded.showGrid, isFalse);
     expect(decoded.showSafeArea, isTrue);
@@ -71,45 +71,103 @@ void main() {
     expect(decoded.elements.first.spec.height, 16);
   });
 
-  test('version 2 preserves container and feature parent relationships', () {
+  test(
+    'current version preserves container and feature parent relationships',
+    () {
+      const container = StudioContainerElement(
+        id: 'container-1',
+        label: '컨테이너 1',
+        parentSectionId: 'element-1',
+        rect: StudioPlacementRect(0.08, 0.08, 0.8, 0.8),
+        spec: defaultDetailedShapeSpec,
+        triangleTexture: true,
+      );
+      const feature = StudioFeatureElement(
+        id: 'feature-1',
+        label: '이미지 1',
+        parentContainerId: 'container-1',
+        rect: StudioPlacementRect(0.16, 0.24, 0.48, 0.33),
+        kind: StudioFeatureKind.image,
+        spec: defaultDetailedShapeSpec,
+        imageAsset: studioTitleAssetPath,
+        aspectRatio: studioTitleAspectRatio,
+      );
+      final encoded = encodeSectionStudioDocument(
+        SectionStudioDocument(
+          headerRows: 8,
+          viewport: 'standard',
+          showGrid: true,
+          showSafeArea: true,
+          selectedElementId: 'element-1',
+          elements: [elements[0]],
+          activeLayer: StudioLayer.feature,
+          selectedContainerId: container.id,
+          selectedFeatureId: feature.id,
+          containers: const [container],
+          features: const [feature],
+        ),
+      );
+      final decoded = decodeSectionStudioDocument(encoded);
+      expect(decoded.activeLayer, StudioLayer.feature);
+      expect(decoded.placementGap, studioDefaultPlacementGap);
+      expect(decoded.containers.single.parentSectionId, 'element-1');
+      expect(decoded.containers.single.rect.left, 0.08);
+      expect(decoded.containers.single.rect.width, 0.8);
+      expect(decoded.containers.single.triangleTexture, isTrue);
+      expect(decoded.features.single.parentContainerId, 'container-1');
+      expect(decoded.features.single.rect.top, 0.24);
+      expect(decoded.features.single.kind, StudioFeatureKind.image);
+      expect(decoded.features.single.imageAsset, studioTitleAssetPath);
+      expect(decoded.features.single.aspectRatio, studioTitleAspectRatio);
+    },
+  );
+
+  test('version 5 stores text and line features', () {
     const container = StudioContainerElement(
       id: 'container-1',
       label: '컨테이너 1',
       parentSectionId: 'element-1',
-      rect: SectionGridRect(8, 8, 80, 80),
+      rect: StudioPlacementRect(0.08, 0.08, 0.8, 0.8),
       spec: defaultDetailedShapeSpec,
     );
-    const feature = StudioFeatureElement(
-      id: 'feature-1',
-      label: '이미지 1',
+    const textFeature = StudioFeatureElement(
+      id: 'feature-text',
+      label: '타이틀 텍스트',
       parentContainerId: 'container-1',
-      rect: SectionGridRect(16, 24, 48, 33),
-      kind: StudioFeatureKind.image,
+      rect: StudioPlacementRect(0.1, 0.1, 0.5, 0.2),
+      kind: StudioFeatureKind.text,
       spec: defaultDetailedShapeSpec,
-      imageAsset: studioSquareAssetPath,
-      aspectRatio: studioSquareAspectRatio,
+      text: 'PLAN A',
     );
-    final encoded = encodeSectionStudioDocument(
-      SectionStudioDocument(
-        headerRows: 8,
-        viewport: 'standard',
-        showGrid: true,
-        showSafeArea: true,
-        selectedElementId: 'element-1',
-        elements: [elements[0]],
-        activeLayer: StudioLayer.feature,
-        selectedContainerId: container.id,
-        selectedFeatureId: feature.id,
-        containers: const [container],
-        features: const [feature],
+    const lineFeature = StudioFeatureElement(
+      id: 'feature-line',
+      label: '구분선',
+      parentContainerId: 'container-1',
+      rect: StudioPlacementRect(0.1, 0.4, 0.6, 0.08),
+      kind: StudioFeatureKind.line,
+      spec: defaultDetailedShapeSpec,
+    );
+    final decoded = decodeSectionStudioDocument(
+      encodeSectionStudioDocument(
+        SectionStudioDocument(
+          headerRows: 0,
+          viewport: 'standard',
+          showGrid: true,
+          showSafeArea: true,
+          selectedElementId: 'element-1',
+          elements: [elements[0]],
+          selectedContainerId: container.id,
+          containers: const [container],
+          features: const [textFeature, lineFeature],
+        ),
       ),
     );
-    final decoded = decodeSectionStudioDocument(encoded);
-    expect(decoded.activeLayer, StudioLayer.feature);
-    expect(decoded.containers.single.parentSectionId, 'element-1');
-    expect(decoded.features.single.parentContainerId, 'container-1');
-    expect(decoded.features.single.kind, StudioFeatureKind.image);
-    expect(decoded.features.single.aspectRatio, studioSquareAspectRatio);
+    expect(decoded.headerRows, 0);
+    expect(decoded.features.map((item) => item.kind), [
+      StudioFeatureKind.text,
+      StudioFeatureKind.line,
+    ]);
+    expect(decoded.features.first.text, 'PLAN A');
   });
 
   test('version 1 section-only files remain importable', () {
@@ -142,6 +200,82 @@ void main() {
     expect(decoded.containers, isEmpty);
     expect(decoded.features, isEmpty);
     expect(decoded.activeLayer, StudioLayer.section);
+  });
+
+  test('version 3 child grid rects migrate to parent-relative placement', () {
+    final legacy =
+        jsonDecode(
+              encodeSectionStudioDocument(
+                SectionStudioDocument(
+                  headerRows: 8,
+                  viewport: 'standard',
+                  showGrid: true,
+                  showSafeArea: true,
+                  selectedElementId: 'element-1',
+                  elements: [elements[0]],
+                  selectedContainerId: 'container-1',
+                  containers: const [
+                    StudioContainerElement(
+                      id: 'container-1',
+                      label: 'legacy container',
+                      parentSectionId: 'element-1',
+                      rect: StudioPlacementRect(0.08, 0.08, 0.8, 0.8),
+                      spec: defaultDetailedShapeSpec,
+                    ),
+                  ],
+                ),
+              ),
+            )
+            as Map<String, dynamic>;
+    legacy['version'] = 3;
+    final workspace = legacy['workspace'] as Map<String, dynamic>;
+    workspace
+      ..remove('placementMode')
+      ..remove('placementGap');
+    final container =
+        (legacy['containers'] as List).single as Map<String, dynamic>;
+    container['rect'] = {'x': 8, 'y': 12, 'width': 48, 'height': 36};
+
+    final decoded = decodeSectionStudioDocument(jsonEncode(legacy));
+    expect(decoded.containers.single.rect.left, closeTo(8 / 96, 1e-9));
+    expect(decoded.containers.single.rect.top, closeTo(12 / 96, 1e-9));
+    expect(decoded.containers.single.rect.width, closeTo(0.5, 1e-9));
+    expect(decoded.containers.single.rect.height, closeTo(0.375, 1e-9));
+    expect(decoded.placementGap, studioDefaultPlacementGap);
+  });
+
+  test('version 4 files default new decoration fields safely', () {
+    const container = StudioContainerElement(
+      id: 'container-1',
+      label: 'legacy container',
+      parentSectionId: 'element-1',
+      rect: StudioPlacementRect(0.08, 0.08, 0.8, 0.8),
+      spec: defaultDetailedShapeSpec,
+    );
+    final legacy =
+        jsonDecode(
+              encodeSectionStudioDocument(
+                SectionStudioDocument(
+                  headerRows: 8,
+                  viewport: 'standard',
+                  showGrid: true,
+                  showSafeArea: true,
+                  selectedElementId: 'element-1',
+                  elements: [elements[0]],
+                  selectedContainerId: container.id,
+                  containers: const [container],
+                ),
+              ),
+            )
+            as Map<String, dynamic>;
+    legacy['version'] = 4;
+    final rawContainer =
+        (legacy['containers'] as List).single as Map<String, dynamic>;
+    rawContainer.remove('triangleTexture');
+
+    final decoded = decodeSectionStudioDocument(jsonEncode(legacy));
+    expect(decoded.headerRows, 8);
+    expect(decoded.containers.single.triangleTexture, isFalse);
   });
 
   test('Studio JSON rejects incompatible or unsafe documents', () {
@@ -185,7 +319,7 @@ void main() {
 
     final outsideGrid = validJson();
     final element = (outsideGrid['elements'] as List).first;
-    (element['rect'] as Map<String, dynamic>)['width'] = 48;
+    (element['rect'] as Map<String, dynamic>)['width'] = 95;
     expect(
       () => decodeSectionStudioDocument(jsonEncode(outsideGrid)),
       throwsFormatException,
@@ -310,7 +444,7 @@ void main() {
                 id: 'container-1',
                 label: '가져온 컨테이너',
                 parentSectionId: 'element-1',
-                rect: SectionGridRect(8, 8, 80, 80),
+                rect: StudioPlacementRect(0.08, 0.08, 0.8, 0.8),
                 spec: defaultDetailedShapeSpec,
               ),
             ],

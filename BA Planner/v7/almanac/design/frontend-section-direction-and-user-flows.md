@@ -23,6 +23,20 @@ sources:
     path: docs/migration/v6-knowledge-baseline.md
 ---
 
+## 2026-07-26 home-entry refinement
+
+- The Home body begins directly with the diagonal menu. Review, profile summary,
+  quick-launch, and recent-scan panels no longer sit between the page header and
+  the menu.
+- After title/account login opens Home, the compound header enters on the 270
+  degree vector while the Home menu keeps its 0 degree entrance vector.
+- The title route itself has no Material route transition. The completed title
+  exit hands directly to the Home section motions so they remain fully visible
+  instead of running underneath a second route animation.
+- The Home header places the selected account portrait immediately left of the
+  student-count metric. The portrait is centered at 98 percent scale over
+  `assets/studio_features/square.png`, matching the account portrait editor.
+
 # Frontend Section Direction and User Flows
 
 이 문서는 두 종류의 결정을 분리해 기록한다.
@@ -113,14 +127,25 @@ Adaptive-Sync 진단은 설정에서 진입하는 보조 화면이다. [@app-sec
 
 ## 3. 계획 탭 — 사용자가 정한 기준 사례
 
-계획 탭의 상세 구성은 사용자가 별도로 기획한다. 이 문서에서는 다른 탭을 나누는 기준이
-되는 큰 사용처만 기록한다.
+계획 탭은 하나의 프로필 안에서 계획과 시나리오를 구분한다. 계획은 공통 페이즈와 순서가
+있는 학생별 성장 단계를 가지며 저장·계산 대상이다. 시나리오는 계획에 포함하지 않지만
+재화 소모량을 별도로 확인하고 싶을 때 선택하며 자체 페이즈를 가진다.
+
+학생별 단계의 목표는 절대 누계가 아니라 이전 단계에서 증가하는 목표다. 같은 학생의
+1·2·3단계는 반드시 그 순서를 지키고, 실행·인벤토리 차감 순서는 `페이즈 순서 → 페이즈 내부
+아이템 순서`다. 편집은 계획 홈의 표시 Section이 아니라 별도 편집 Section/overlay에서 한다.
 
 - **계획 통계**: 현재 시나리오, 저장된 계획, 미계획 학생 분석 등 계획 관련 통계를 본다.
 - **그룹별 빠른 계산**: 사용자가 정한 그룹을 범위로 선택해 필요량을 빠르게 계산한다.
 - **프리셋 설정**: 학생을 계획에 넣을 때 적용할 목표 프리셋을 만든다.
 - **계획 편집·결과**: 다중 학생의 현재와 목표를 비교하고 학생별·전체 총 필요량,
   인벤토리 기반 부족량을 확인하며 계획을 저장·복원한다. [@p6-workflow]
+- **계획 홈 Section 역할**: Section 1은 여러 작업 Section을 호출할 메뉴, Section 2는 공통
+  페이즈와 그 안의 순서 있는 학생 단계 표시, Section 3은 재화 결과 본문,
+  Section 4는 역할 확정 전의 빈 예약 영역, Section 5는 `페이즈별/전체/병목` 재화 헤더다.
+- **병목 기준**: 보유 재화를 페이즈 합계 단위가 아니라 각 학생 단계가 실행되는 순서대로
+  차감한다. 최초 부족과 이후 단계·페이즈에서 누적되는 추가 부족을 함께 표현하되 구체적인
+  시각화는 후속으로 정한다.
 
 나머지 탭은 계획 탭의 기능을 복제하지 않고, 필요한 대상이나 결과를 계획 탭으로
 넘겨주는 방향으로 흐름을 잡는다.

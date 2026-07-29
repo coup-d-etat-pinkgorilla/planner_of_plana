@@ -173,46 +173,152 @@ MockAppService의 scan Hold/Approve → current → goal → gross → shortage 
   `frontend/test/section_template_studio_test.dart`,
   `almanac/design/section-template-studio.md`
 - 결정: 단일/조합 모드와 고정 조합 preset을 제거하고 사용자 정의 요소 목록 하나로 통합한다.
-  요소가 하나면 단일, 둘 이상이면 조합이며 사용자가 요소를 직접 추가·삭제·선택하고
-  X·Y·폭·높이를 편집한다. 48×48 논리 사선 격자에서 8칸마다 기존 1/6 major line을
-  유지하고 한 칸을 섹션 사이 기본 간격으로 사용한다. 모든 사선은
+  Section이 하나면 단일, 둘 이상이면 조합이며 사용자가 Section을 직접 추가·삭제·선택하고
+  X·Y·폭·높이를 편집한다. 전역 96×96 논리 사선 격자에서 8칸마다 major line을
+  표시하고 한 칸을 섹션 사이 기본 간격으로 사용한다. 모든 사선은
   우측 위 `/` 방향 80도로 고정하고 반대 방향 및 상·하 방향 사선은 허용하지 않는다.
-  형상 입력은 삼각형·사다리꼴·평행사변형 모드, 붙는 면과 면 내부 48분할 범위로 구성하고
+  형상 입력은 삼각형·사다리꼴·평행사변형 모드, 붙는 면과 면 내부 96분할 범위로 구성하고
   사다리꼴·평행사변형만 높이를 추가로 받는다. 채팅 전달용 요약 복사를 제공한다.
   모든 요소는 별도 Positioned clip 영역 없이 하나의 콘텐츠 캔버스 Size·원점에서 절대
   좌표 path로 함께 그린다. 따라서 사선이 요소 rect를 넘어도 공용 캔버스 안에서는 잘리지
   않는다. 선택 요소의 본체 drag는 이동, 네 모서리 handle drag는 resize이며 두 조작 모두
-  실제 pointer delta를 정수 grid cell로 snap하고 최소 1칸과 48×48 캔버스 경계에서 clamp한다.
-  프리뷰 상단 고정 헤더는 1/48~24/48 비율을 선택하고 남은
+  실제 pointer delta를 정수 grid cell로 snap하고 최소 1칸과 96×96 캔버스 경계에서 clamp한다.
+  프리뷰 상단 고정 헤더는 0/96~48/96 비율을 선택하고 남은
   콘텐츠 영역만 섹션 geometry에 사용한다. 모든 polygon 꼭짓점에 corner radius를 적용하며
   예각은 직선 구간을 더 유지하는 36% 접점과 polygon winding 방향의 볼록한 원형 fillet로
   더 깊게 잘라 둥글리며 반대 원 중심에서 생기는 오목한 패임을 허용하지 않는다.
-  구성 저장은 version 2 UTF-8 JSON(`*.ba-section-studio.json`)을 사용하고 version 1 read 호환을
-  유지하며 format/version,
-  48×48 grid, 우측 위 80° 사선 계약, workspace 표시 상태와 모든 요소 설정을 기록한다.
+  구성 저장은 version 5 UTF-8 JSON(`*.ba-section-studio.json`)을 사용하고 version 1~4 read 호환을
+  유지하며 format/version, Section 96×96 grid, 하위 부모 상대 배치·공통 간격, 우측 위 80° 사선
+  계약, workspace 표시 상태와 모든 요소 설정을 기록한다.
   불러오기는 문서 전체의 타입·범위·중복 ID·선택 ID를 검증한 뒤에만 캔버스를 원자적으로
   교체하며 손상·비호환 파일은 기존 상태를 보존한다. Windows 기본 파일 대화상자는 Flutter
   공식 `file_selector`로 연결하고 service 주입 경계로 실제 파일 시스템 없이 회귀 test한다.
   개발 상태 패널에서만 Studio에 진입하며 기존 실제 탭의 `DiagonalSection`은 아직 교체하지 않는다.
-- 검증: 사용자 요소 범위·중첩 validator, 공용 캔버스 rect 외 경로 보존과 hit test, 형상
-  geometry, 요소 추가·선택·편집, grid snap 이동·resize·경계 clamp, viewport 전환,
+- 검증: Section 범위·중첩과 하위 부모 경계·아이템 간격 validator, 공용 캔버스 rect 외 경로
+  보존과 hit test, 형상 geometry, 요소 추가·선택·편집, Section grid snap과 하위 간격 snap,
+  resize·경계 clamp, viewport 전환,
   AppShell 개발 패널 진입과 전체 요소
   채팅용 요약 복사, versioned JSON round-trip·schema 거부·저장·원자적 불러오기 Widget test;
   `flutter analyze`, Flutter 전체 tests, `flutter build windows --release`, `git diff --check`,
   `codealmanac validate`, `codealmanac health` 통과. 현재 host의 Windows 개발자 모드는 꺼져 있어
   Flutter가 plugin symlink를 직접 만들 수 없으므로 ignored ephemeral 폴더에 같은 package target의
   directory junction을 생성한 뒤 release를 검증했으며 시스템 설정은 변경하지 않음
-- 후속 레이어 확장: Section(공용 48×48) → Container(부모 로컬 96×96) → Feature(부모 로컬
-  96×96) 계층을 추가했다. Container와 shape Feature는 삼각형·사다리꼴·평행사변형 및 80° 계약을
-  공유하고 부모 path 안에서 렌더링·hit test·drag·resize한다. image Feature는 v7에 복사한
-  252×172 `square.png`를 사용하며 입력·handle resize 모두 원본 비율을 고정한다. 저장 문서는
-  계층·부모 ID·image metadata를 포함하는 version 2로 올리고 version 1 read 호환을 유지한다.
+- 후속 레이어 확장: Section은 전역 96×96 좌표계를 유지하고 Container → Feature는 각 부모의
+  경계 상자에 대한 0~1 비율 rect를 사용하도록 정리했다. 하위 요소 drag는 부모 테두리와 형제
+  아이템 사이의 선택 간격에 snap하며 resize는 부모 경계에서 clamp된다. 2026-07-26 후속 보정으로
+  이 간격 계산을 rect의 네 변 비교에서 실제 둥근 polygon path 사이 최단거리로 교체했다.
+  부모의 짧은 변에 대한 비율을 pixel 거리로 환산하고 평행사변형 사선의 법선 방향 snap,
+  경계 밖 이동 복귀, 실제 path 중첩·간격 validator와 최단거리 guide를 같은 계산으로 통일했다.
+  Container와 shape
+  Feature는 삼각형·사다리꼴·평행사변형 및 80° 계약을 공유하고 부모 path 안에서 렌더링·hit
+  test한다. image Feature는 252×172 기본 이미지, 863×250 Plan A 타이틀과 둥근 화살표 preset을
+  사용하며 입력·handle resize 모두 선택 preset 비율을 고정한다. 저장 문서는
+  계층·부모 ID·image metadata·부모 상대 배치·공통 간격을 포함하는 version 4를 거쳐, 0% 헤더,
+  Container BA 삼각 무늬와 image preset·text·line Feature를 저장하는 version 5로 올렸다. v1~v4를
+  읽으며 v1~v3의
+  하위 96 좌표를 읽을 때 비율 rect로 변환한다.
+  Windows release 동기화는 기존 `release/` 루트의 `*.ba-section-studio.json`을 staging으로
+  승계한 뒤 번들을 교체해 사용자 배치 문서를 삭제하지 않는다.
   `저장 파일에서 섹션 추가`는 현재 workspace에 section을 append하며 모든 자식 ID와 parent 참조를
-  충돌 없는 새 ID로 remap한다. Flutter 전체 156 tests, `flutter analyze`, Windows release build,
+  충돌 없는 새 ID로 remap한다. 제공받은 863×250 Plan A 타이틀 PNG는 Studio asset으로 복사하고,
+  화살표 preset은 별도 bitmap 없이 둥근 stroke path로 렌더링한다. Container 삼각 무늬는 기존
+  `BATriangleTexturePainter`를 고정 seed·저대비 설정으로 재사용한다. Flutter 전체 161 tests,
+  `flutter analyze`, Windows release build,
   `codealmanac validate`·`health`와 `git diff --check`를 후속 확장 기준으로 통과했다.
-- 다음 행동: 사용자가 3개 레이어·이미지 비율·추가 import를 수동 검수한 뒤 Dart spec export와 공용
-  `SectionGeometry` 승격 범위를 결정
-- 최종 갱신: 2026-07-24
+- 2026-07-26 최신 Studio v5 빌드는 `flutter build windows --release`까지 통과했다. 현재 사용자가
+  `release/ba_planner_v7.exe`를 실행 중이어서 release 동기화의 실행 파일 교체만 Windows 파일 잠금으로
+  보류했다. 앱을 닫은 뒤 `frontend/tool/build_windows_release.ps1`을 다시 실행하면 기존 Studio JSON을
+  보존하면서 새 번들로 교체된다.
+- 2026-07-26 Title 계정 생성·관리 클러스터를
+  `release/section-account-create-manager.ba-section-studio.json`에서 typed projection했다. 재저장된
+  문서를 다시 확인해 이전 export에 없었던 Section 5·Container 11~16·18·19·Feature 5~8의 임시
+  runtime 배치를 폐기하고 저장 좌표와 polygon으로 교체했다. typed 문서 encode 결과와 저장 JSON
+  전체를 비교하는 회귀 test를 추가했으며 Container 15 목록 행, Container 16 portrait, Feature
+  5·6·7의 계정명·구분선·학생 수, Feature 8 입력 영역의 실제 배치도 검증한다. 부모 Section fill은
+  자식 입력·텍스처·목록 path를 차감해 반투명 표면이 중복 합성되지 않게 했다. 첫 계정은 Section 1만,
+  Title 설정은 Section 5만 진입하고 추가·수정은 Section 1,
+  사진 선택은 Section 4를 호출한다. 4열 portrait scroll grid는 asset manifest의 전체 portrait를
+  `AssetImageGrid`로 직접 paint하며 square→98% portrait, 내부 여백·간격·2% pink 선택 stroke를 같은
+  painter가 처리한다. profile summary에 `avatar_student_id`를 호환 추가하고 update/delete protocol,
+  Mock·Python atomic store와 실제 Dart↔Python restart E2E를 확장했다. 계정 삭제는 UI 확인 후에만
+  실행한다. Python 80개, Flutter 174개, `flutter analyze`, Windows release build,
+  `codealmanac validate`·`health`와 `git diff --check`가 통과했다.
+- 2026-07-26 계정 클러스터 후속 조정으로 Section 5 호출/퇴장을 0°/180°, Section 1·4를
+  80°/260°로 분리하고 비직교 벡터의 X·Y 성분과 진행 방향을 Widget test로 고정했다. Section 5의
+  Container 12·13·14·18·19는 동일 높이·세로 간격과 Container 11 사선까지의 동일 간격으로
+  재배치했다. Container 11에는 삼각 무늬를 그리지 않으며, Container 15·16을 내부 여백 안으로
+  옮기고 각 목록 행이 scroll offset에 따라 80° 경계를 따라 이동하도록 변경했다. 저장 Studio
+  JSON과 typed projection을 함께 갱신했다. Flutter 171개, `flutter analyze`, Windows release
+  build, `codealmanac validate`·`health`와 `git diff --check`를 검증 기준으로 사용한다.
+- 2026-07-26 재수정된 계정 Studio JSON의 Container 11~19와 Feature 5~7 좌표 및 workspace 선택을
+  typed projection에 다시 반영했다. Section 4 portrait grid는 행별 viewport 위치에 따라 위쪽
+  80°·아래쪽 역방향 260°가 되는 직선 scroll 궤적을 사용하고 painter와 hit test가 같은 X offset을
+  공유한다. 선택 stroke는 cell RRect 대신 `square.png` alpha silhouette를 확장·내부 제거해 그린다.
+  Flutter 172개와 `flutter analyze`가 통과했다.
+- 2026-07-26 Section 5·1·4를 독립 animation controller로 분리했다. 관리 화면의 추가·수정은 Section
+  5를 유지한 채 Section 1을 열고, Section 4 닫기·저장은 Section 4만 퇴장한다. Section 1 뒤로는
+  첫 계정 경로에서 Title로, 관리 경로에서는 Section 4와 Section 1만 퇴장해 Section 5로 돌아간다.
+  관리 버튼 폭은 매 viewport에서 Container 11 실제 polygon 경계를 기준으로 같은 간격이 되도록
+  재계산한다. Section 4에는 grid 궤적을 따르는 custom scrollbar track·handle과 drag mapping을
+  추가했다. Flutter 174개와 `flutter analyze`가 통과했다.
+- 2026-07-26 Section 4 portrait grid와 custom scrollbar의 위치별 곡선 보간을 제거하고, 전체
+  viewport에서 고정 80° 직선(역방향 260°) 하나를 공유하도록 수정했다. 행 painter·hit test와
+  scrollbar track·handle은 동일한 선형 X offset을 사용한다. Flutter 174개, `flutter analyze`,
+  Windows release build, `codealmanac validate`·`health`와 `git diff --check`가 통과했다.
+- 2026-07-26 Section 4 grid painter가 loose cross-axis constraint에서 폭 0으로 축소되던 경로를
+  `StackFit.expand`로 고쳐 Container 8 폭을 사용하게 했다. Section 5 계정 행은 Container 11의
+  중앙 80° 기준선에 맞추고 기존 사선 scroll translation을 유지한다. Title Space 단축키는 Title이
+  실제 활성 상태일 때만 시작 동작을 호출한다. Flutter 174개, `flutter analyze`, Windows release
+  build, `codealmanac validate`·`health`와 `git diff --check`가 통과했다.
+- 2026-07-26 계정명 입력의 별도 진한 표면·border·fill을 제거하고, 기존 이름 편집 시 selection을
+  문자열 끝으로 설정해 한글 IME cursor 위치를 고정했다. Container 3은 Container 4 square의 실제
+  path 폭과 80° 중심선을 공유한다. Section 5·1·4가 모두 열린 상태의 Section 1 뒤로는 세 Section을
+  모두 퇴장시켜 Title로 돌아가며, Container 11에는 행과 같은 80° custom scrollbar를 추가했다.
+  Flutter 174개, `flutter analyze`, Windows release build, `codealmanac validate`·`health`와
+  `git diff --check`가 통과했다.
+- 2026-07-26 후속 수정으로 계정명 controller가 각 Windows IME composing update의 selection을
+  `composing.end`로 정규화하도록 변경했다. Container 3 폭은 `square.png` 252×204 전체 캔버스가
+  아니라 중앙 정사각 이미지의 204px 한 변에 실제 contain 배율을 적용한 길이를 사용한다.
+  Flutter 174개, `flutter analyze`, Windows release build, `codealmanac validate`·`health`와
+  `git diff --check`가 통과했다.
+- 2026-07-26 위 selection 정규화가 Windows 한글 IME와 편집 상태를 왕복해 `ㄱ거거` 중복 입력을
+  일으키는 것을 실기기 재현으로 확인했다. 정규화 listener를 제거해 IME의 composing text·selection·
+  range를 그대로 보존하고, 조합 중에만 기본 cursor를 숨긴 뒤 commit 시 다시 표시하도록 교체했다.
+  Flutter 174개, `flutter analyze`, Windows release build, `codealmanac validate`·`health`와
+  `git diff --check`가 통과했다.
+- 2026-07-26 이번 계정 클러스터 적용의 시행착오를 `almanac/design/section-template-studio.md`의
+  `계정 클러스터 적용 시행착오와 재발 방지`에 통합했다. 저장 전후 Studio 좌표 불일치, polygon
+  경계 기반 동적 버튼 폭, 80° 직선 scroll의 painter·hit test·scrollbar 좌표 공유, loose constraint로
+  폭 0이 된 grid, square alpha silhouette 선택선, 중첩 Section 상태 전이, Title Space shortcut 범위,
+  Windows IME composing selection 강제 변경에 따른 중복 입력과 최종 cursor-only 대응을 원인·실패
+  방식·재발 방지 규칙으로 기록했다.
+- 2026-07-26 Section 1 editor, Section 4 asset picker, Section 5 manager를 요소 번호별 작업 스타일로
+  문서화했다. Container 3~16·18·19와 Feature 4~8의 표면·이미지·text·click·상태 전이 계약을
+  기록하고, 유사 위젯에는 별도 지시가 없으면 list/grid의 표준 수직 ScrollController를 유지하면서
+  row·자식·hit test·custom scrollbar를 같은 80° 직선으로 투영하는 기본 경향을 적용하기로 했다.
+  이 공통 scroll 계약은 `almanac/design/responsive-diagonal-layout-policy.md`에도 반영했다.
+- 2026-07-27 Title의 밝은 삼각 무늬 행동 버튼 팔레트를 하늘색에서 공용 핑크색 계열로 변경했다.
+  메인 시작·설정·종료와 계정 클러스터의 변경·뒤로·저장·닫기·전환·추가·수정·삭제가 같은
+  공용 action 색상군을 사용하며, 어두운 계정 row와 scrollbar는 범위에서
+  제외했다. 밝은 삼각 무늬 버튼은 핑크색 계열을 사용한다는 공통 스타일도 Almanac에 기록했다.
+  Title 집중 14개와 Flutter 전체 171개 test, `flutter analyze`, Windows release build가 통과했다.
+- 2026-07-27 후속 검수에서 첫 핑크 팔레트의 base·panel이 너무 진한 자주색으로 보이는 문제를
+  확인해, 테두리 강조색에 가까운 저채도 연핑크색으로 올렸다. texture geometry·seed·대비는
+  변경하지 않았으며 Almanac의 밝은 삼각 무늬 버튼 규칙도 진한 자주색을 사용하지 않도록 구체화했다.
+  연핑크 hue·명도 계약을 추가했고 Title 집중 15개, Flutter 전체 172개 test, `flutter analyze`,
+  Windows release build가 통과했다.
+- 2026-07-27 두 번째 연핑크 팔레트도 넓은 버튼 면에서 너무 튄다는 검수에 따라 Title 로고 PNG의
+  대표 핑크 `#E08EE6`을 직접 추출했다. 이를 흰색 쪽으로 옅게 섞고 base alpha를 약 53%로 낮춘
+  `BATrianglePalette.softTitlePink*`로 교체해 로고 hue는 공유하되 표면 대비는 낮췄다. Title 집중
+  15개와 Flutter 전체 172개 test, `flutter analyze`, Windows release build가 통과했다.
+- 2026-07-27 Title 패널의 기본 brand·primary·account Section과 계정 editor·picker·manager Section
+  모두에 공용 `paintLiftedPathShadow` 기반 그림자를 추가했다. 각 그림자는 차감 전 Section polygon을
+  사용하고 motion subtree 안에서 표면과 함께 이동하며 버튼·목록에는 중복 적용하지 않는다. Title
+  집중 15개와 Flutter 전체 172개 test, `flutter analyze`, Windows release build가 통과했다.
+- 다음 행동: 사용자가 0% 헤더, Container 삼각 무늬, 세 image preset과 text·line Feature를 수동
+  검수하고 Title 계정 클러스터를 수동 확인한 뒤 Dart spec export와 공용 `SectionGeometry` 승격
+  범위를 결정
+- 최종 갱신: 2026-07-27
 
 ## 마스터 사용량 중단 시 슬레이브 작업 규칙
 
@@ -701,3 +807,451 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
    포함한다.
 4. 결과를 받은 마스터는 `output.md`와 결과물을 직접 확인한다.
 5. 검증 결과, 새 결정과 다음 행동을 이 문서에 기록한 뒤 대화를 마친다.
+
+## P6 이후 학생 탭 Section 토대
+
+- 상태: `현행 계약 구현 및 검증 완료`
+- 목적: 학생 탭의 Studio Section 1~4, 행동 버튼, 사선 학생 grid, 선택 학생 indicator 토대를 실제 Flutter 화면에 적용
+- 산출물: `frontend/lib/ui/studio/student_studio_layout.dart`,
+  `frontend/lib/ui/widgets/student_section_layout.dart`, `frontend/lib/ui/pages/student_page.dart`,
+  `frontend/test/student_studio_layout_test.dart`
+- 결정 및 제약: Section 1 버튼 세 개는 Section inset·gap에서 같은 크기를 유도하고 기존 색의 삼각형
+  texture를 적용한다. Section 1·2의 80° 빗면 간격은 12 px로 고정한다. Section 1~4에는 shadow만 있고
+  Section outline은 없다. Section 2는 Container 12 하나 안의 8열 direct-painted portrait grid이며
+  265명 bundled catalog를 전부 표시한다. Section 3의 Container 1·3은 surface 없는 placeholder이고
+  portrait·성작·Container 5·6·7·9는 공통 좌측 80° rail, Container 5·6·7·9는 공통 우측 rail에 맞춘다.
+  Section 4 검색 높이는 Studio 제안의 절반으로 줄였다. 상단 repository profile selector는 제거하고
+  선택 profile을 service에서 자동 복원한다. Section 4의 표시·미보유·JP 전용 checkbox와 Section 5의
+  catalog filter는 구현됐으며, Section 3 세부 text와 Container 4~7·9·10의 실제 indicator 내용만
+  후속 범위다. 기존 repository 편집 Section은 제거하고 scanner candidate 검토 flow만 canvas 아래에
+  조건부로 유지한다.
+- 검증: `flutter analyze --no-pub` 통과, 학생 layout 7개·학생 페이지 9개 집중 test 통과,
+  전체 Flutter 189개 test 통과, Windows release build 통과, 265명 catalog generator 재실행 및
+  Python compile 통과, `codealmanac validate`, `codealmanac health`, `git diff --check` 통과
+- 2026-07-27 후속 보정: 학생 grid의 외곽 8 px inset은 유지하고 양축 cell gap을 4.8 px로 줄여
+  셀 이미지를 100%/98%로 확대했다. 80° custom scrollbar와 14 px 전용 폭을 grid 산식에 포함했고,
+  성작 bar·scroll track의 80°를 수치 검증한다. Container 5·6·7·9의 세로 gap과 Container 4까지의
+  법선 gap을 같은 값으로 맞추고, Section 1 버튼 폭은 오른쪽 80° 경계 inset에서 행별 역산한다.
+  검색 입력을 수직 중앙에 놓고 Section 4 윗변 inset을 0.18→0.09로 줄였으며 세 행동 버튼에만
+  연핑크 삼각 texture를 적용했다. 학생 layout 10개·학생 페이지 9개 집중 test와 analyze가 통과했다.
+- 2026-07-27 추가 보정: Section 4의 오른쪽 끝은 유지하고 왼쪽 길이를 조정해 Section 3 왼쪽과 같은
+  80° 직선에 맞췄다. Section 1 버튼의 빗면 법선 여백은 왼쪽 직선면 여백 이상이며 아이콘은 명시적
+  중앙 정렬을 사용한다. 네 Section의 기본 alpha는 0.76으로 검증하고 canvas 아래 legacy repository
+  editor Section을 제거했다. 학생 grid 행 gap은 4.8의 80%인 3.84 px, scrollbar handle은 pink로
+  변경했다. full mock catalog의 아루·아야네 영문 override를 제거해 한국어 이름 정렬에 포함했다.
+- 2026-07-27 motion/effect 보정: Section 1 아이콘은 사다리꼴 중간 Y의 실제 수평 선분 중앙에서
+  계산한다. Container 12·2·4는 5·6·7·9와 같은 status texture, Container 10은 Section 1과 같은 action
+  texture를 사용한다. Filter 버튼은 Section 2를 퇴장시킨 뒤 Section 5를 등장시키며
+  역전환도 지원한다. motion은 Section 1=0/180, Section 2·5=80/260, Section 3·4=180/0으로 고정했다.
+  분리된 foundation layer는 IgnorePointer로 grid hit test를 보존한다.
+- 2026-07-27 학생 card/filter 보정: Container 4의 action texture를 원래 status texture로 되돌리고
+  Container 10에 action texture를 적용했다. 학생 grid는 `square.png` alpha 내부의 하단 16%만
+  overlay로 사용하며, 상단 3%에 v6 공격/방어 색상 띠를 좌우로 나누고 남은 13% 회색 반투명 영역에
+  흰색 학생 이름을 표시한다. Section 4의 두 checkbox로 속성 띠와 이름을 각각 토글한다. Section 5는
+  높이와 왼쪽 80° rail을 유지하며 후속 보정에서 양쪽 수평변을 Section 2의 50%로 줄였다.
+- 2026-07-27 학생 card/filter 후속 보정: card 정보 영역을 하단 16%로 확대하고 상단 3% 속성 띠와
+  나머지 13% 이름 영역으로 나눴다. Filter→목록 복귀 시 행동 버튼 아이콘은 학생 탭의
+  `groups_2_outlined`로 전환한다. Section 5는 윗변·밑변을 모두 Section 2의 50%로 줄여 평행사변형을
+  유지하고 내부 Container도 축소 path에 맞췄다. Section 4에는 미보유 학생·일본 서버 전용 숨김
+  checkbox를 추가했으며, `jp_only`를 backend metadata, catalog protocol/schema/fixture, Flutter DTO와
+  265명 mock asset에 이관했다.
+- 2026-07-27 학생 Section 회고 문서화: 최초 토대·초기 해석과 반복 피드백 뒤 확정된 geometry,
+  texture, placeholder, grid, card overlay, filter, data, motion 계약의 차이를
+  `almanac/design/section-template-studio.md`에 비교표로 남겼다. 유사 Section을 새로 만들거나 기존
+  Section과 유사하다고 판단할 때 범위·형상·효과·반응형·데이터·상호작용을 확인할 22개 질문과
+  질문 순서·재질문 방지 원칙도 함께 기록했다.
+- 2026-07-27 Section 사전 협의 절차 보강: 독립 요구가 많은 Section 작업은 geometry, container,
+  effect, data/filter, motion 단위의 분리안을 먼저 제안하고 그 순서로 진행해도 되는지 사용자 승인을
+  받도록 했다. 유사 Section 후보가 있으면 추상적으로 유사 여부만 묻지 않고 기존 Section에서 그대로
+  참고할 속성, 다르게 만들 속성, 미정인 속성을 명시하는 질문 형식과 기존 widget 호출·형상 복제의
+  구분 질문을 `almanac/design/section-template-studio.md`에 추가했다.
+- 2026-07-27 학생 이름/정렬 보정: 학생 카드 이름 글꼴을 4~8px에서 6~12px로 1.5배 확대하고
+  이름 영역 높이의 80%를 목표값으로 유지했다. Section 1에는 검색 입력과 같은 실제 높이, action과
+  같은 inset·gap·80° 형상 계산을 쓰는 정렬 드롭다운을 추가했다. 닫힌 control은 투명 바탕에
+  1px 연핑크 사다리꼴 테두리·연핑크 축약 text·연핑크 하향 삼각형만 표시한다. 이름·LV·성작·인연
+  랭크의 오름/내림차순을 지원하며, 결측값은 방향과 관계없이 뒤로 보내고 이름순 tie-break를
+  적용한다. 인연 랭크는 protocol 미구현 동안 이름순 fallback이다. 학생 집중 26개와 Flutter 전체
+  198개 test, `flutter analyze`, Windows release build를 통과했다.
+- 2026-07-28 학생 정렬 control 위치 보정: Section 1의 정렬 드롭다운을 최상단으로 이동하고,
+  계획·스캔·필터 action을 그 아래 기존 순서로 배치했다. 검색 입력과 같은 높이, 공통 세로 gap,
+  Section 상대 inset과 오른쪽 80° 경계 역산 규칙은 유지한다.
+- 2026-07-28 학생 control text 보정: 정렬 드롭다운의 닫힌 label을 10→15px, 펼친 menu label을
+  12→18px로 확대했다. Section 4의 네 checkbox label도 11→16.5px로 1.5배 확대하되 기존 control
+  높이·간격과 한 줄 ellipsis는 유지한다.
+- 2026-07-28 학생 motion 실행 계약 보정: Section 1은 0° intro/180° outro, Section 3·4는
+  180° intro/0° outro의 독립 `SectionMotionSpec`을 사용한다. 공용 motion widget이 intro 값만으로
+  reverse 궤적을 추론하지 않고 forward에는 intro, reverse에는 outro 벡터를 직접 적용하도록 했다.
+  학생 집중 28개와 Flutter 전체 200개 test, `flutter analyze`, Windows release build를 통과했다.
+- 2026-07-28 학생 탭 호출 lifecycle 보정: AppShell의 공용 90°/270° 페이지 translation이 학생
+  Section별 motion과 합성되던 것이 일괄 호출처럼 보이던 원인이었다. 학생 페이지 index는 공용
+  translation에서 제외하고, 이전 탭 퇴장 완료 callback에서 `StudentPage.active`를 켜 Section 1~4를
+  각자의 intro로 호출한다. 학생 탭을 떠날 때는 `active`를 먼저 끄고 각 controller를 reverse하여
+  독립 outro를 실행한다. 페이지 instance와 학생 선택·filter 상태의 기존 보존 방식은 유지한다.
+  관련 집중 44개와 Flutter 전체 200개 test, `flutter analyze`, Windows release build를 통과했다.
+- 2026-07-28 almanac 정합성 정리: 날짜별 이력보다 design 문서의 현행 계약과 runtime·회귀 test를
+  우선하도록 판정 순서를 명시했다. 초기 요약에 남아 있던 Section 4·5 filter 미구현 표기와
+  repository 편집 Section 유지 표기를 현재 구현에 맞게 정정하고, 페이지 전체 motion과 내부
+  Section motion을 분리하는 탭 호출 lifecycle을 회고 비교표에도 추가했다.
+- 다음 행동: Section 3의 텍스트·세부 상태 indicator와 Container 4~7·9·10의 실제 데이터를
+  사용자 승인 디자인으로 채운다. 계획 버튼의 최종 계획 탭 연결 범위는 별도로 확정한다.
+- 최종 갱신: 2026-07-28
+
+## P6 이후 학생 Section 5 필터와 Section 2 viewport 후속 보정
+
+- 상태: `완료`
+- 목적: 학생 Section 5에 실제 v6 계열 filter group/list/check box를 배치하고 Section 2·5의
+  scroll content가 container 크기를 바꾸지 않도록 고정 viewport와 상하 fog를 적용한다.
+- 산출물: `frontend/lib/ui/widgets/student_section_layout.dart`,
+  `frontend/test/student_studio_layout_test.dart`, `almanac/design/section-template-studio.md`
+- 결정 및 제약: 현재 v7 catalog protocol에 존재하는 학교·초기 성급·공격/방어 타입·편성·역할·
+  포지션만 v6 명칭과 값 mapping으로 노출한다. 선택은 같은 group OR/서로 다른 group AND이며
+  Section 2 복귀 후에도 유지하고 별도 초기화 action으로만 제거한다. 성장·스킬 metadata는
+  protocol 확장 전까지 표시하지 않는다.
+- 검증: Flutter 전체 199개, 학생 layout 집중 test 27개, 학생 page test 9개,
+  `flutter analyze --no-pub`, Windows release build 통과.
+  1280x720·1440x900·1280x960 overflow 검증과 filter 유지·초기화·경계·fog test를 포함한다.
+- 차단 사항: 없음
+- 다음 행동: 전체 Flutter test와 Almanac/diff gate를 유지한다.
+- 최종 갱신: 2026-07-28
+- 2026-07-27 실화면 재검수: container를 부모 path와 강제 교차해 외부를 숨기던 계산을 제거하고,
+  부모 Section의 위·아래 실제 80도 경계에서 10px 안쪽 polygon을 직접 계산했다. filter group은
+  중심 Y와 자체 사선 깊이의 이중 이동을 밑변 Y 기반 단일 이동으로 바꾸고, 전체 사선 깊이를
+  포함한 좌우 content-safe inset을 적용했다. Windows 1280x720과 최대화 화면에서 최초·중간 scroll
+  위치를 직접 검수했으며 잘린 `학교` 제목, clipped corner와 행 궤적을 확인·보정했다.
+## 2026-07-27 학생 Section viewport 실화면 재검수
+
+- 첨부 화면에서 `StudentPage`가 상하 16px padding을 적용하면서도 내부
+  `StudentSectionLayout` 높이에 차감 전 `constraints.maxHeight`를 사용해 Section 2·5 하단과
+  필터 초기화 버튼이 viewport 아래로 총 32px 밀리는 원인을 확인했다.
+- canvas 높이를 `max(590, maxHeight - padding.vertical)`로 고치고
+  1280x720·1440x900·1280x960 page test에서 실제 `StudentSectionLayout` 높이를 검증한다.
+- 추가 크기 역추적에서 필터 전용 paint 분기 이후의 공통 runtime container loop가 기존
+  `container-12`를 원래 Section 2 크기로 다시 칠하는 것을 확인했다. 필터 모드에서는
+  `element-2`의 legacy container/feature를 제외하고, 새 Section 5 container와 reset surface만
+  그리도록 수정했다. 최대화 Windows release에서 중복 면·윤곽 제거를 직접 확인했다.
+- Section 2·5의 고정 상·하 fog를 공통 `_StudentDiagonalScrollbar`의 `ScrollPosition` 기반
+  overlay로 교체했다. scroll range가 없으면 양쪽을 숨기고, 최상단은 위쪽, 최하단은 아래쪽을
+  숨기며 중간에서만 양쪽을 표시한다. 최대화 Windows release의 Section 2 최상단에서 위 fog
+  제거를 확인하고, 무스크롤·최상단·중간·최하단 네 상태를 집중 test로 고정했다.
+- 2026-07-28 Section 5의 높이가 서로 다른 filter group row에 같은 폭을 적용해 우측 사선
+  끝점이 어긋나던 문제를 수정했다. row 높이에 따른 자체 사선 깊이를 폭 산식에 포함하여
+  위·아래 우측 끝점이 하나의 80도 rail에 놓이게 했고, scroll offset이 있는 경우까지 수치
+  test로 고정했다. Flutter 전체 199개와 학생 layout 27개·page 9개 집중 test,
+  `flutter analyze --no-pub`, Windows release build를 통과했다.
+
+## P6 이후 계획 탭 본문 초기화
+
+- 상태: `완료`
+- 목적: 계획 탭의 새 구성을 시작할 수 있도록 기존 헤더 아래의 학생 조회·빈 상태·학생 카드·
+  계산·결과 섹션을 모두 제거한다.
+- 산출물: `frontend/lib/ui/pages/planning_page.dart`,
+  `frontend/test/planning_page_test.dart`
+- 결정 및 제약: 여기서 헤더는 `AppShell`이 제공하는 상위 탭 헤더를 뜻한다. 계획 페이지
+  내부에 있던 공용 프로필 패널과 `성장 계획` 카드도 하위 섹션으로 보아 함께 제거하고,
+  본문은 빈 canvas만 유지한다. 학생 탭이 사용하는 `PlanningStudentSeed` 전달 계약은
+  유지하되, 새 계획 본문이 정해지기 전까지 계획 탭에서 seed를 표시하거나 처리하지 않는다.
+  기존 planning backend와 repository 계약은 변경하지 않는다.
+- 검증: `flutter analyze --no-pub`, 계획 탭 집중 Widget test와 Flutter 전체 192개,
+  `git diff --check` 통과.
+- 차단 사항: 없음
+- 다음 행동: 사용자 기획에 맞춰 계획 헤더 아래의 새 섹션을 순서대로 구성한다.
+- 최종 갱신: 2026-07-28
+
+## P6 이후 계획 탭 Section 1~4 초기 배치
+
+- 상태: `초기 구현 완료`
+- 목적: `release/section-plan-main.ba-section-studio.json`을 시작점으로 계획 탭에 내용이
+  비어 있는 Section 4개를 배치하고, 사용자 실화면 검수 전에 motion과 shadow 계약을 고정한다.
+- 산출물: `frontend/lib/ui/studio/plan_studio_layout.dart`,
+  `frontend/lib/ui/widgets/plan_section_layout.dart`,
+  `frontend/lib/ui/pages/planning_page.dart`, `frontend/lib/ui/app_shell.dart`,
+  `frontend/test/planning_page_test.dart`, `almanac/design/section-template-studio.md`
+- 결정 및 제약: JSON의 96×96 좌표와 shape를 그대로 초기 투영한다. Section 1은
+  `0°/180°`, Section 2·3은 `80°/260°`, Section 4는 `180°/0°`의 intro/outro를 사용한다.
+  네 Section 모두 최종 path에 공용 lifted shadow를 한 번씩 적용하고, 아직 내부 콘텐츠는
+  추가하지 않는다. 계획 탭은 페이지 전체 motion 대신 Section별 motion을 사용한다.
+- 검증: `flutter analyze --no-pub`, 계획 탭 집중 test 3개, Flutter 전체 194개,
+  Windows release build 통과.
+- 차단 사항: 없음
+- 다음 행동: 사용자가 갱신된 Windows release에서 초기 배치를 확인한 뒤 Section별 크기를
+  세부 조절한다.
+- 최종 갱신: 2026-07-28
+- 2026-07-28 밝기 보정: 실화면 비교에서 계획 페이지 전용 `AppColors.canvas` 72% fill이
+  AppShell 공용 BA 배경과 Section surface 사이에 추가 합성되어 탭 전체를 어둡게 만드는 것을
+  확인했다. 전용 fill을 제거하고 투명 host로 교체했으며 Section 색·alpha·그림자·motion은
+  유지했다. 집중 test 3개와 Flutter 전체 194개, `flutter analyze --no-pub`를 통과했고
+  실행 중 release를 종료한 뒤 Windows release bundle을 갱신했다.
+- 2026-07-28 Section 2 페이즈 표시 토대: 계획은 공통 페이즈, 시나리오는 계산에서 분리된
+  개별 페이즈를 가진다는 경계를 기록했다. Section 2 안에 80° 내부 texture Container,
+  80° 궤적을 따르는 페이즈 카드와 scrollbar를 추가하고, 페이즈 내부 순서를 가진 학생 단계
+  더미를 배치했다. 시로코 1·2·3단계가 페이즈 1·2·3에 순서대로 나타나며 기존 v6 이관 portrait
+  asset을 사용한다. 편집 기능과 Section 1 메뉴·Section 3 재화 탭은 후속 Studio 배치 이후로
+  남긴다. 계획 탭 집중 test 5개, Flutter 전체 196개, `flutter analyze --no-pub`, Windows
+  release build를 통과했고 1280×720 실화면에서 초기·scroll 위치의 clipping과 80° rail을
+  검수했다.
+## 2026-07-28 계획 단계 공용 DiagonalMediaListItem
+
+- 상태: `구현 및 전체 검증 완료`
+- 목적: Studio JSON으로 만든 단계 아이템을 계획·스캔 결과에서 재사용 가능한
+  중립 컴포넌트로 만들고 계획 탭의 기존 간이 타일을 즉시 교체한다.
+- 산출물: `release/component-diagonal-media-list-item1.ba-section-studio.json`,
+  `frontend/lib/ui/widgets/diagonal_media_list_item.dart`,
+  `frontend/lib/ui/widgets/plan_section_layout.dart`,
+  `frontend/assets/equipment_icons/`,
+  `frontend/test/diagonal_media_list_item_test.dart`
+- 결정 및 제약: 도형 4와 17은 배치 앵커로만 유지하며 각각 5+4 성작 표시와
+  1~100 하트 랭크로 렌더링한다. 값 변화는 `5(▲2)`/`5(▼2)` 형식과
+  초록/빨강을 사용한다. v6 장비 이미지는 scanner template을 runtime에서
+  참조하지 않고 필요한 세 파일만 v7 UI asset으로 분리 복제했다.
+- 검증: 세 중심선 그룹의 정규화 좌표, delta 색상, 하트·성작 semantics,
+  계획 단계 전체 교체와 기존 사선 스크롤 집중 Widget test 통과.
+  `flutter analyze --no-pub`, 전체 Flutter 198개 test, Windows release build,
+  release bundle 동기화, `codealmanac validate`, `codealmanac health`,
+  `git diff --check`를 통과했다.
+- 다음 행동: 다시 실행한 최신 release 화면을 기준으로 섹션별 크기를 세부 조절한다.
+- 최종 갱신: 2026-07-28
+
+### 2026-07-28 아이템 높이·인연 배경·페이즈 흐름 후속 조정
+
+- 상태: `구현 및 전체 검증 완료`
+- 변경: 계획 아이템을 54px로 높이고 58px 행 단위로 배치했다. 각 행은 페이즈
+  평행사변형의 현재 Y 좌우 경계를 직접 계산해 부모 사선과 평행하게 맞춘다.
+  성작 바 높이 비율 0.22는 유지하고 장비 아이콘과 하트 높이·폭을 확대했다.
+- 이미지: 학생 portrait 앞에는 98% 크기를 적용하고 뒤에는 인연 랭크별
+  `square.png`를 둔다. 1~19 기본, 20~49 파랑, 50~99 노랑, 100 보라 규칙을
+  학생 목록·포커스, 계획 아이템, 통계 학생 근거 행에서 공유한다.
+- 데이터: confirmed student repository DTO와 schema에 1~100 `bond_rank`를
+  추가하되 planning 계산 입력에는 전달하지 않아 기존 계산 계약을 유지한다.
+- 흐름: 페이즈 사이 20px 간격에 아래 방향 삼각형을 배치한다.
+- 검증: 관련 Flutter 46개 집중 test와 전체 Flutter 200개 test,
+  `flutter analyze --no-pub`, 전체 Python 80개 test, Windows release build 및
+  release bundle 동기화를 통과했다. 최신 Windows release에서 학생 이미지 무잘림,
+  행/부모 사선 정렬, 페이즈 화살표, 하트 비율을 직접 확인했다.
+- 다음 행동: 사용자 화면 검수 결과에 따라 세부 크기만 추가 조절한다.
+
+### 2026-07-28 계획 아이템 밀도 및 인연 하트 후속 조정
+
+- 상태: `구현 및 실화면 검증 완료`
+- 변경: 계획 페이즈 아이템 높이를 54px에서 65px로 약 20% 확대하고, 행 간격을
+  유지하도록 item extent를 69px로 조정했다. Studio 원본 섹션 높이도 20에서
+  24로 맞췄다.
+- 장비: 세 장비 아이콘 모두 `square.png`를 배경으로 사용하고 실제 장비 이미지는
+  배경의 98% 크기로 겹쳐 그린다.
+- 인연 하트: 참고 이미지의 넓은 연분홍 하트, 진분홍 외곽선, 짙은 숫자 스타일을
+  반영했다. 하트 자체는 1.28:1 비율로 고정해 부모 폭에 따라 납작해지지 않으며,
+  delta가 없어도 동일한 배치 공간을 유지한다.
+- 검증: 관련 Widget test 11개, `flutter analyze --no-pub`, Windows release
+  build를 통과했다. 최신 Windows 빌드의 계획 탭에서 사선 행 정렬, 장비 배경,
+  하트 숫자와 페이즈 사이 흐름 표시를 확인했다.
+- 다음 행동: 사용자의 실화면 판단에 따라 개별 텍스트와 아이콘 간격을 세부
+  조정한다.
+
+### 2026-07-28 계획 아이템 정보 열 재배치
+
+- 상태: `구현 및 실화면 검증 완료`
+- 인연: 하트를 아이템 우측 끝으로 이동하고 인연 상승치를 하트 바로 아래에
+  독립된 줄로 배치했다.
+- 하단 정보: 애장품 영역 폭을 확대해 `T2(▲1)`처럼 상승치가 포함되어도 본문이
+  과도하게 축소되지 않게 했다. 각 장비 `square.png`와 티어 텍스트 사이에는
+  0.008 이상의 정규화 간격을 둔다.
+- 강조: 스킬은 학생 레벨과 첫 장비 사이에 유지하면서 기본 9.5px의 1.5배인
+  14.25px로 키웠다.
+- 성작: indicator 높이를 0.22에서 0.154로 30% 줄이고 기존 중심선을 유지했다.
+- 검증: 관련 Widget test 11개와 `flutter analyze --no-pub`, Windows release
+  build 및 실화면 검수를 통과했다. 정식 release bundle을 동기화했다.
+
+### 2026-07-28 다중 값 변동 행 및 장비 레벨 추가
+
+- 상태: `구현 및 실화면 검증 완료`
+- 인연: 하트를 우측 끝에서 정보 영역 중앙 쪽으로 되돌리고 상승치는 하단 행에
+  유지했다. 하트 내부 숫자는 10.5px에서 15.75px로 1.5배 확대해 100도 배지
+  경계를 약간 사용할 수 있게 했다.
+- 장비 데이터: 각 장비가 티어와 장비 레벨을 별도로 갖도록
+  `DiagonalMediaEquipment`를 확장했다. 더미 데이터도 `T5 Lv.25` 형태와 각각의
+  변동값을 제공한다.
+- 다중 변동: 스킬·장비·추가 능력치는 본문을 위쪽에, 대응 변동값을 아래쪽에
+  배치한다. 값이 변하지 않는 칸은 `-`, 변동 칸은 `▲n` 또는 `▼n`으로 표시하고
+  `/`로 구분한다.
+- 검증: 관련 Widget test 11개, `flutter analyze --no-pub`, Windows release
+  build와 확대 실화면 검수를 통과했다. 정식 release bundle을 동기화했다.
+
+### 2026-07-28 인연 열 고정 및 무변동 행 생략
+
+- 상태: `구현 및 실화면 검증 완료`
+- 인연: 하트가 기존 정보 열 위치로 되돌아가지 않도록 우측 전용 열
+  (`center x = 0.95`) 안에 중앙 정렬했다. 상승치는 하트 아래에 유지한다.
+- 변동 행: 스킬·장비·추가 능력치의 구성값이 모두 무변동이면 하단 행 자체를
+  렌더링하지 않고 본문을 세로 중앙에 둔다. 하나라도 변동하면 기존처럼 무변동
+  구성값은 `-`로 남겨 대응 관계를 보존한다.
+- 스킬: EX 최대 5, 나머지 스킬 최대 10을 기준으로 최대값을 `M`으로 표시한다.
+  실화면에서 3단계 시로코가 `M/6/6/6`으로 표시됨을 확인했다.
+- 검증: 관련 Widget test 12개, `flutter analyze --no-pub`, Windows release
+  build와 확대 실화면 검수를 통과했다. 정식 release bundle을 동기화했다.
+
+### 2026-07-28 인연 하트 수직 정렬 및 페이즈 개수 제거
+
+- 상태: `구현 및 코드 검증 완료, 사용자 육안 검수 대기`
+- 정렬: 인연 하트의 실제 렌더링 영역 중심 Y를 장비 `square.png` 중심 Y와
+  동일한 `0.67614347305232`로 맞췄다. 하단 인연 변화량 공간은 유지한다.
+- 페이즈: 각 페이즈 컨테이너 우측 상단에 표시하던 내부 아이템 개수 텍스트를
+  제거했다.
+- 검증: 관련 Widget test 12개와 `flutter analyze --no-pub`를 통과했다.
+  요청에 따라 자동 육안 검수는 수행하지 않고 release bundle만 동기화했다.
+
+### 2026-07-28 최대화 화면 기준 인연 하트 중심 재정렬
+
+- 상태: `구현·코드 검증·최대화 실화면 검증 완료`
+- 원인: 이전 검증은 작은 장비 아이콘 뒤의 `square.png`를 비교 대상으로 삼아,
+  사용자가 지칭한 학생 portrait 뒤의 큰 `square.png`보다 하트가 아래에 남았다.
+- 변경: 하트의 실제 렌더링 영역 중심 Y를 학생 portrait 영역 중심 Y와 정확히
+  일치시켰다. Studio 원본의 `feature-17` 위치와 Widget test도 같은 학생 portrait
+  기준으로 변경했다.
+- 검증: 관련 Widget test와 `flutter analyze --no-pub`, Windows release build 및
+  release bundle 동기화를 통과했다. 최신 release를 현재 모니터의 2560×1392
+  최대화 창으로 실행하여 학생 `square.png`와 하트 중심선이 일치하는 것을 확인했다.
+
+### 2026-07-29 인연 변화량 중앙 정렬 및 작업 이력 문서화
+
+- 상태: `구현·코드 검증·최대화 실화면 검증 완료`
+- 변경: 인연 변화량을 하트 아래에 유지하면서 실제 텍스트 중심 X가 하트 중심 X와
+  일치하도록 `_DeltaLabel`에 호출부별 alignment와 실제 콘텐츠 검증 key를 추가했다.
+  공용 기본 정렬은 기존 `centerLeft`로 유지해 다른 값 열에는 영향을 주지 않는다.
+- 문서: 계획·스캔 공용 `DiagonalMediaListItem`의 표시 계약, 단계별 조정 이력,
+  학생/장비 `square.png` 혼동, 작은 창 검증, slot과 실제 render bounds 차이,
+  중첩 `Align` 때문에 바깥 `Center`가 무효였던 원인과 향후 검증 규칙을
+  `almanac/design/diagonal-media-list-item.md`에 기록했다.
+- 검증: 집중 Widget test 5개, `flutter analyze --no-pub`,
+  `codealmanac validate`, `codealmanac health`, Windows release build와 bundle
+  동기화를 통과했다. 최신 release를 현재 모니터의 2560×1392 최대화 창에서
+  확대 확인해 각 행의 인연 변화량이 하트 바로 아래에서 같은 중심 X를 사용하는
+  것을 확인했다.
+
+### 2026-07-29 계획 스크롤·인연 경계 더미 확장
+
+- 상태: `구현·코드 검증·release 동기화 완료, 사용자 실행 검수 대기`
+- 데이터: 4개 페이즈의 더미 학생 단계를 11개에서 16개로 늘려 기준 화면에서도
+  충분한 세로 scroll extent가 생기게 했다. 인연 50은 유우카·히나, 인연 100은
+  아즈사·아코 행에 배치했으며 100은 최대치이므로 추가 상승치를 생략한다.
+- 테스트: 총 행 수와 50·100 존재 여부, 실제 `BondRankPortrait` 투영값과
+  파랑·보라 배경 경계를 검증한다. 스크롤은 `maxScrollExtent`가 viewport보다
+  큰지 확인하고 drag 뒤 offset, 중간 페이즈와 마지막 아코 행의 Y 이동을 함께
+  검증하도록 강화했다.
+- 검증: 계획·공용 아이템 집중 test 12개, `flutter analyze --no-pub`와 Windows
+  release build 및 bundle 동기화를 통과했다. 실행·육안 검증은 사용자 요청에
+  따라 수행하지 않았다.
+- 다음 행동: 사용자가 최신 release를 실행해 추가 행, 인연 50·100 배경과
+  scrollbar 이동을 확인한다.
+
+### 2026-07-29 인연 50 배경 경계 수정
+
+- 상태: `구현·코드 검증·release 동기화 완료, 사용자 실행 검수 대기`
+- 원인: 노랑 배경 조건이 `bondRank > 50`이어서 정확히 50인 더미 행이 파랑
+  `square_blue.png`로 분류됐다.
+- 변경: 노랑 시작 조건을 `bondRank >= 50`으로 고쳐 1~20 기본, 21~49 파랑,
+  50~99 노랑, 100 보라 경계를 적용했다.
+- 검증: 49·50·99·100 경계값과 계획 탭의 인연 50·100 투영을 포함한 집중 test
+  12개, `flutter analyze --no-pub`, Windows release build와 bundle 동기화를
+  통과했다. 실행 검증은 사용자에게 맡긴다.
+
+### 2026-07-29 계획 페이즈 스크롤 상·하단 안개 적용
+
+- 상태: `구현·코드 검증·release 동기화 완료, 사용자 실행 검수 대기`
+- 공용화: 학생 탭 Section 2의 안개 색상, 36px gradient와 scroll endpoint 판정을
+  `ScrollViewportFog`와 `scrollViewportFogVisibility`로 분리했다. 학생 탭의 기존
+  `StudentViewportFog` API와 key는 wrapper로 유지했다.
+- 계획: 페이즈 목록 시작에서는 아래쪽, 중간에서는 위·아래, 끝에서는 위쪽 안개만
+  표시한다. 최초 build에 `ScrollController`가 아직 연결되지 않은 경우에도 알려진
+  content extent와 viewport로 초기 아래 안개를 계산한다.
+- 검증: 계획 탭 test 7개, 학생 탭 test 28개, `flutter analyze --no-pub`,
+  Windows release build와 bundle 동기화를 통과했다. 실행 검증은 사용자에게
+  맡긴다.
+
+### 2026-07-29 인연 20 파랑 배경 경계 수정
+
+- 상태: `구현·코드 검증·release 동기화 완료, 사용자 실행 검수 대기`
+- 원인: 파랑 배경 조건이 `bondRank > 20`이어서 정확히 20인 학생이 기본
+  `square.png`로 분류됐다.
+- 변경: 파랑 시작 조건을 `bondRank >= 20`으로 고쳐 1~19 기본, 20~49 파랑,
+  50~99 노랑, 100 보라 경계를 적용했다.
+- 검증: 19·20·49·50·99·100 경계와 계획 탭 투영을 포함한 집중 test 12개,
+  `flutter analyze --no-pub`, Windows release build와 bundle 동기화를 통과했다.
+  실행 검증은 사용자에게 맡긴다.
+
+### 2026-07-29 계획 Section 3 재화 헤더
+
+- 상태: `헤더 구현·코드 검증·최대화 실화면 검증 완료`
+- 범위: Section 3 본문과 실제 부족 데이터 연결은 만들지 않고 헤더 부분만 구현했다.
+- 구조: Section 3 평행사변형을 공용 compound header의 바깥 glass에 대응시키고,
+  상단 `페이즈별 / 전체 / 병목` 탭 선반, divider와 중첩 재화 헤더를 추가했다.
+  탭 선택 배경·primary 하단선·icon·label과 title 전환은 AppShell 헤더 문법을 따른다.
+- 사선 적합: 탭 선반과 중첩 헤더의 좌우 끝을 각 Y의 Section 3 80° 경계에서 계산한다.
+  title·subtitle도 위쪽 왼쪽과 아래쪽 오른쪽 경계가 만드는 공통 안전 폭 안에 둔다.
+- 검증: 계획 탭 집중 test 9개, Flutter 전체 205 tests, `flutter analyze`, Windows
+  debug·release build, `codealmanac validate`·`health`와 `git diff --check`를 통과했다.
+  최신 debug 앱을 2560×1440 최대화 화면에서 열어 Section 2·4 침범 없음, 세 탭의 안전 폭,
+  활성 탭 표현, 양쪽 80° 중첩 표면과 삼각 texture를 확인했다.
+- 다음 행동: 사용자 검수 뒤 Section 3의 선택 탭별 본문 토대와 실제 부족 데이터 계약을
+  별도 단계로 구현한다.
+
+### 2026-07-29 계획 재화 Section 3·5 분리
+
+- 상태: `구현·집중 검증·최대화 실화면 검증 완료`
+- 입력: 갱신된 `release/section-plan-main.ba-section-studio.json`의 Section 3
+  bottom 깊이 80과 신규 Section 5 `(53,1,42,14)`, top 깊이 96을 runtime projection에 반영했다.
+- 역할: 기존 Section 3의 재화 헤더를 Section 5로 옮기고 Section 3은 탭별 결과 본문 자리로
+  남겼다. Section 5는 독립 foundation에서 alpha 0.76 glass fill과 lifted shadow를 가진다.
+- motion: Section 5는 사용자 지정 `intro 260° / outro 80°`를 독립 controller로 실행한다.
+  Section 3은 기존 `80° / 260°`를 유지한다.
+- 반응형: Section 5 높이에 따라 탭 선반과 중첩 헤더를 축소한다. 두 줄 copy가 넘치는
+  낮은 viewport에서는 title만 유지하며 1280×720 Widget test에서도 overflow가 없다.
+- 정렬·간격: Section 5를 x=53으로 옮겨 Section 3과 같은 80° rail에 맞췄다. y=1로
+  내려 공용 헤더와 거리를 늘리고 Section 3과의 간격은 약 2.33 grid로 줄여 Section 3
+  하단의 2 grid 바닥 여백과 유사하게 했다.
+- 검증: 계획 탭 집중 test 9개, 전체 Flutter test 205개, `flutter analyze`,
+  Windows debug/release build, `codealmanac validate`, `codealmanac health`,
+  `git diff --check`를 통과했다. 최신 Windows debug 앱을 최대화 화면과
+  1265×711 작은 창에서 열어 Section 5와 Section 3의 분리, 이어지는 80° rail,
+  Section 5 외곽 glass·shadow와 내부 texture 및 세로 overflow가 없음을 확인했다.
+- 다음 행동: 탭별 스위칭 시 Section 3 본문 교체 motion과 각 재화 보기의 내부 토대를 정한다.
+
+### 2026-07-29 Section 5 병목 탭 우선 구현
+
+- 상태: `구현·집중 검증·최대화 실화면 검증 완료`
+- 탭 순서: `병목 / 페이즈별 / 전체`로 변경하고 병목을 초기 선택으로 지정했다.
+- 병목 요약: Section 5의 기존 제목·설명 copy를 제거하고, 좌측에
+  v6의 네브라 디스크 T3 아이콘과 tier index 2의 `square_yellow.png` 배경을
+  런타임 UI 자산으로 분리 복사해 배치했다. 아이콘은 content 높이의 85%를 차지한다.
+- 3행 정보: `가장 심한 병목 요소`, `보유량 : 42 / 필요량 : 60`,
+  `확보 시 학생 3명의 목표 단계가 가능해집니다` 순서로 표시한다.
+- 연동: 병목 아이템을 누르면 Section 2에서 네브라 T3 소모 학생으로 지정한
+  아즈사·노노미·하루카의 모든 단계 행에 1.2px 핑크 테두리가 표시된다.
+  병목 외 탭으로 전환하면 강조를 해제한다.
+- 데이터: 실제 inventory-derived shortage 연결 전까지 수량 42/60과 영향 학생 3명은
+  typed sample constants로 유지한다. 나머지 두 탭은 기존 placeholder copy를 복원하지 않는다.
+- 반응형: 낮은 Section 5에서는 아이콘, 글꼴, 간격과 line height를 함께 축소해
+  3행 정보를 유지하면서 세로 overflow를 방지한다.
+- 검증: 계획·공용 행 집중 test 15개, 전체 Flutter test 206개, `flutter analyze`,
+  Windows debug/release build를 통과했다. 최신 Windows debug 앱의 1265×711 및
+  2560×1440 화면에서 아이콘 크기, 3행 copy, 하루카·노노미 2단계·아즈사의
+  얇은 핑크 테두리와 비대상 행 유지 상태를 확인했다.
+- 다음 행동: 실제 inventory-derived shortage DTO를 연결하고 병목 우선순위 산식을 정한다.
+
+### 2026-07-29 Section 5 병목 가시성 조정
+
+- 상태: `구현·Windows 실화면 검증 완료`
+- Section 2 연동 강조선은 `1.2px → 1.8px`로 1.5배 확대했다.
+- Section 5의 3행 copy 간격은 일반 화면 `3/4px → 4.5/6px`, compact 화면
+  `1/1px → 1.5/1.5px`로 각각 1.5배 확대했다.
+- 검증: 사용자 요청에 따라 자동 테스트는 생략했다. 최신 Windows debug 앱의
+  2560×1440 계획 화면에서 3행 copy 간격과 선택된 하루카·노노미·아즈사 행의
+  1.8px 핑크 테두리 가시성을 확인했다.
+
+### 2026-07-29 Section 5 페이즈별 요약
+
+- 상태: `구현 완료·사용자 검증 대기`
+- 공용화: 병목과 페이즈별 탭이 동일한 `PlanResourceItemSummary` 표현 구조를 사용한다.
+  병목의 클릭 강조 동작은 기존 wrapper에만 유지한다.
+- 페이즈별 copy: `가장 부족한 재화`, `보유량 : 42 / 필요량 : 60`,
+  `3단계에서 4명 중 1명만 완료 가능`을 3행으로 표시한다.
+- 아이콘: 병목 탭과 동일한 네브라 디스크 T3 및 노란 등급 배경을 사용한다.
+- 검증: 사용자 요청에 따라 자동 테스트와 실화면 검증을 수행하지 않았다.

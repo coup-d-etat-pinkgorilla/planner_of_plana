@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -5,8 +7,8 @@ import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
 import 'planning_page.dart';
-import '../widgets/repository_profile_panel.dart';
 import '../widgets/diagonal_section.dart';
+import '../widgets/student_section_layout.dart';
 
 class StudentCandidateContext {
   const StudentCandidateContext({
@@ -22,14 +24,18 @@ class StudentPage extends StatefulWidget {
     super.key,
     required this.service,
     required this.onAddToPlan,
+    this.onOpenScan,
     this.candidateContext,
     this.onCandidateCommitted,
+    this.active = true,
   });
 
   final AppService service;
   final ValueChanged<PlanningStudentSeed> onAddToPlan;
+  final VoidCallback? onOpenScan;
   final StudentCandidateContext? candidateContext;
   final ValueChanged<ScannerCandidate>? onCandidateCommitted;
+  final bool active;
 
   @override
   State<StudentPage> createState() => _StudentPageState();
@@ -42,12 +48,9 @@ class _StudentPageState extends State<StudentPage> {
   RepositoryState? _repositoryState;
   RepositoryProfile? _profile;
   String? _selectedId;
-  String? _school;
-  String _sort = 'name';
   String? _message;
   bool _loading = true;
   bool _saving = false;
-  bool _ownedOnly = false;
   int _handoffSequence = 0;
 
   RepositoryService? get _repository => widget.service is RepositoryService
@@ -107,6 +110,7 @@ class _StudentPageState extends State<StudentPage> {
         _loading = false;
       });
       _syncEditors();
+      await _loadSelectedProfile();
     } catch (error) {
       if (mounted) {
         setState(() {
@@ -115,6 +119,18 @@ class _StudentPageState extends State<StudentPage> {
         });
       }
     }
+  }
+
+  Future<void> _loadSelectedProfile() async {
+    final repository = _repository;
+    if (repository == null) return;
+    final profiles = await repository.listProfiles();
+    if (!mounted || profiles.isEmpty) return;
+    final profile = profiles.firstWhere(
+      (item) => item.selected,
+      orElse: () => profiles.first,
+    );
+    await _selectProfile(profile);
   }
 
   Future<void> _selectProfile(RepositoryProfile profile) async {
@@ -188,54 +204,6 @@ class _StudentPageState extends State<StudentPage> {
       values[field.name] = value;
     }
     return values;
-  }
-
-  Future<void> _save() async {
-    final repository = _repository;
-    final profile = _profile;
-    final state = _repositoryState;
-    final id = _selectedId;
-    final values = _draftValues();
-    if (repository == null ||
-        profile == null ||
-        state == null ||
-        id == null ||
-        values == null) {
-      if (mounted && profile == null) {
-        setState(() => _message = 'Select a repository profile first.');
-      }
-      return;
-    }
-    setState(() {
-      _saving = true;
-      _message = null;
-    });
-    try {
-      final students = [
-        for (final student in state.students)
-          if (student.studentId != id) student,
-        ConfirmedStudentState.fromValues(id, values),
-      ];
-      final revision = await repository.saveRepositoryStudents(
-        profile.id,
-        students,
-        state.revision,
-        'student-save-${DateTime.now().microsecondsSinceEpoch}',
-      );
-      if (!mounted) return;
-      final reloaded = await repository.loadRepositoryState(profile.id);
-      if (!mounted) return;
-      setState(() {
-        _repositoryState = reloaded;
-        _message = 'Saved at repository revision $revision.';
-      });
-    } catch (error) {
-      if (mounted) {
-        setState(() => _message = 'Save failed; your draft was kept: $error');
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
   }
 
   void _addToPlan() {
@@ -322,332 +290,130 @@ class _StudentPageState extends State<StudentPage> {
         (_repositoryState?.students ?? const <ConfirmedStudentState>[])
             .map((student) => student.studentId)
             .toSet();
-    final schools =
-        _catalog
-            .map((student) => student.school)
-            .whereType<String>()
-            .toSet()
-            .toList()
-          ..sort();
     final visible = _catalog
-        .where(
-          (student) =>
-              student.matches(_search.text) &&
-              (_school == null || student.school == _school) &&
-              (!_ownedOnly || owned.contains(student.studentId)),
-        )
-        .toList();
-    int currentLevel(StudentCatalogEntry student) {
-      for (final state
-          in _repositoryState?.students ?? const <ConfirmedStudentState>[]) {
-        if (state.studentId == student.studentId) {
-          return state.values['level'] as int? ?? 0;
-        }
-      }
-      return 0;
-    }
-
-    visible.sort(
-      (left, right) => switch (_sort) {
-        'id' => left.studentId.compareTo(right.studentId),
-        'level' => currentLevel(right).compareTo(currentLevel(left)),
-        _ => left.displayName.toLowerCase().compareTo(
-          right.displayName.toLowerCase(),
-        ),
-      },
-    );
-    final selected = _selectedEntry;
+        .where((student) => student.matches(_search.text))
+        .toList(growable: false);
+    final studentValuesById = {
+      for (final student
+          in _repositoryState?.students ?? const <ConfirmedStudentState>[])
+        student.studentId: student.values,
+    };
     final candidate = widget.candidateContext;
 
-    return ListView(
-      key: const ValueKey('student-page'),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      children: [
-        RepositoryProfilePanel(
-          service: widget.service,
-          onSelected: _selectProfile,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        DiagonalSection(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Students',
-                  style: Theme.of(context).textTheme.headlineSmall,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const pagePadding = EdgeInsets.all(AppSpacing.md);
+        final availableCanvasHeight = constraints.maxHeight.isFinite
+            ? constraints.maxHeight - pagePadding.vertical
+            : 590.0;
+        return SingleChildScrollView(
+          key: const ValueKey('student-page'),
+          padding: pagePadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                height: math.max(590, availableCanvasHeight),
+                child: StudentSectionLayout(
+                  students: visible,
+                  ownedIds: owned,
+                  selectedId: _selectedId,
+                  selectedValues: _selectedState?.values,
+                  studentValuesById: studentValuesById,
+                  active: widget.active,
+                  searchController: _search,
+                  onSearchChanged: (_) => setState(() {}),
+                  onStudentSelected: (studentId) {
+                    setState(() => _selectedId = studentId);
+                    _syncEditors();
+                  },
+                  onAddToPlan: _addToPlan,
+                  onOpenScan: widget.onOpenScan,
+                  onOpenFilter: () {},
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
-                  children: [
-                    SizedBox(
-                      width: 320,
-                      child: TextField(
-                        key: const ValueKey('student-search'),
-                        controller: _search,
-                        decoration: const InputDecoration(
-                          labelText: 'Search ID, name, or tag',
-                          prefixIcon: Icon(Icons.search),
+              ),
+              if (visible.any((student) => student.school == null))
+                const Text(
+                  'metadata unavailable',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                ),
+              if (candidate != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                DiagonalSection(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Delivered scan candidate',
+                          style: Theme.of(context).textTheme.titleLarge,
                         ),
-                        onChanged: (_) => setState(() {}),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 220,
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _school ?? '',
-                        isExpanded: true,
-                        decoration: const InputDecoration(labelText: 'School'),
-                        items: [
-                          const DropdownMenuItem<String>(
-                            value: '',
-                            child: Text(
-                              'All schools',
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                        Text(
+                          'Candidate ${candidate.candidate.id} · revision ${candidate.candidate.revision}',
+                        ),
+                        Text(
+                          'Confirmed: ${_selectedState?.values ?? const <String, dynamic>{}}',
+                        ),
+                        Text(
+                          'Candidate: ${candidate.candidate.payload['values'] ?? candidate.candidate.payload}',
+                        ),
+                        Text(
+                          'Review required: ${candidate.candidate.reviewRequired}',
+                        ),
+                        ...candidate.candidate.evidence.map(
+                          (evidence) => Text(
+                            '${evidence.field}: ${evidence.status} (${evidence.source}, confidence ${evidence.confidence?.toStringAsFixed(2) ?? 'n/a'})',
                           ),
-                          ...schools.map(
-                            (school) => DropdownMenuItem<String>(
-                              value: school,
-                              child: Text(
-                                school,
-                                overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          children: [
+                            FilledButton(
+                              key: const ValueKey('candidate-approve'),
+                              onPressed: _saving ? null : _approveCandidate,
+                              child: const Text('Approve and commit'),
+                            ),
+                            OutlinedButton(
+                              key: const ValueKey('candidate-hold'),
+                              onPressed: () => setState(
+                                () => _message =
+                                    'Candidate kept for later review; repository unchanged.',
                               ),
+                              child: const Text('Hold'),
                             ),
-                          ),
-                        ],
-                        onChanged: (value) => setState(
-                          () => _school = value == null || value.isEmpty
-                              ? null
-                              : value,
+                          ],
                         ),
-                      ),
+                      ],
                     ),
-                    SizedBox(
-                      width: 220,
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _sort,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Sort source',
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'name',
-                            child: Text(
-                              'Metadata: name',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          DropdownMenuItem(
-                            value: 'id',
-                            child: Text(
-                              'Metadata: ID',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          DropdownMenuItem(
-                            value: 'level',
-                            child: Text(
-                              'Current state: level',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) setState(() => _sort = value);
-                        },
-                      ),
-                    ),
-                    FilterChip(
-                      label: const Text('Owned only'),
-                      selected: _ownedOnly,
-                      onSelected: (value) => setState(() => _ownedOnly = value),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  '${visible.length} results',
-                  style: const TextStyle(color: AppColors.textMuted),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                SizedBox(
-                  height: 220,
-                  child: ListView.builder(
-                    itemCount: visible.length,
-                    itemBuilder: (context, index) {
-                      final student = visible[index];
-                      return ListTile(
-                        key: ValueKey('student-${student.studentId}'),
-                        selected: student.studentId == _selectedId,
-                        title: Text(
-                          student.displayName,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          '${student.studentId} · ${student.school ?? 'metadata unavailable'}',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: owned.contains(student.studentId)
-                            ? const Icon(
-                                Icons.check_circle,
-                                color: AppColors.success,
-                              )
-                            : null,
-                        onTap: () {
-                          setState(() => _selectedId = student.studentId);
-                          _syncEditors();
-                        },
-                      );
-                    },
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        if (selected != null)
-          DiagonalSection(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    selected.displayName,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  Text(
-                    'Static metadata · ${selected.studentId} · ${selected.school ?? 'unavailable'} · ${selected.role ?? 'role unavailable'}',
-                    style: const TextStyle(color: AppColors.textMuted),
-                  ),
-                  const Divider(height: AppSpacing.lg),
-                  Text(
-                    'Confirmed repository values',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
+              if (_message != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.md),
+                  child: Row(
                     children: [
-                      for (final field in _studentFields)
-                        SizedBox(
-                          width: 170,
-                          child: TextField(
-                            key: ValueKey('student-field-${field.name}'),
-                            controller: _editors[field.name],
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: field.label,
-                              helperText: '${field.minimum}-${field.maximum}',
-                            ),
-                          ),
+                      Expanded(
+                        child: Text(
+                          _message!,
+                          key: const ValueKey('student-message'),
+                        ),
+                      ),
+                      if (_profile != null)
+                        TextButton(
+                          key: const ValueKey('student-reload-profile'),
+                          onPressed: _saving ? null : _reloadProfile,
+                          child: const Text('Reload profile'),
                         ),
                     ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    children: [
-                      FilledButton.icon(
-                        key: const ValueKey('student-save'),
-                        onPressed: _saving ? null : _save,
-                        icon: const Icon(Icons.save_outlined),
-                        label: const Text('Save confirmed values'),
-                      ),
-                      OutlinedButton.icon(
-                        key: const ValueKey('student-add-to-plan'),
-                        onPressed: _addToPlan,
-                        icon: const Icon(Icons.playlist_add),
-                        label: const Text('Add to plan draft'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        if (candidate != null) ...[
-          const SizedBox(height: AppSpacing.md),
-          DiagonalSection(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Delivered scan candidate',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  Text(
-                    'Candidate ${candidate.candidate.id} · revision ${candidate.candidate.revision}',
-                  ),
-                  Text(
-                    'Confirmed: ${_selectedState?.values ?? const <String, dynamic>{}}',
-                  ),
-                  Text(
-                    'Candidate: ${candidate.candidate.payload['values'] ?? candidate.candidate.payload}',
-                  ),
-                  Text(
-                    'Review required: ${candidate.candidate.reviewRequired}',
-                  ),
-                  ...candidate.candidate.evidence.map(
-                    (evidence) => Text(
-                      '${evidence.field}: ${evidence.status} (${evidence.source}, confidence ${evidence.confidence?.toStringAsFixed(2) ?? 'n/a'})',
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    children: [
-                      FilledButton(
-                        key: const ValueKey('candidate-approve'),
-                        onPressed: _saving ? null : _approveCandidate,
-                        child: const Text('Approve and commit'),
-                      ),
-                      OutlinedButton(
-                        key: const ValueKey('candidate-hold'),
-                        onPressed: () => setState(
-                          () => _message =
-                              'Candidate kept for later review; repository unchanged.',
-                        ),
-                        child: const Text('Hold'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-        if (_message != null)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.md),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _message!,
-                    key: const ValueKey('student-message'),
                   ),
                 ),
-                if (_profile != null)
-                  TextButton(
-                    key: const ValueKey('student-reload-profile'),
-                    onPressed: _saving ? null : _reloadProfile,
-                    child: const Text('Reload profile'),
-                  ),
-              ],
-            ),
+            ],
           ),
-      ],
+        );
+      },
     );
   }
 }
@@ -679,6 +445,7 @@ class _StudentField {
 
 const _studentFields = <_StudentField>[
   _StudentField('level', 'Level', 1, 90),
+  _StudentField('bond_rank', 'Bond rank', 1, 100),
   _StudentField('student_star', 'Stars', 1, 5),
   _StudentField('weapon_level', 'Weapon level', 0, 60),
   _StudentField('weapon_star', 'Weapon stars', 0, 4),
@@ -696,6 +463,7 @@ const _studentFields = <_StudentField>[
 
 const _defaultValues = <String, dynamic>{
   'level': 1,
+  'bond_rank': 1,
   'student_star': 1,
   'weapon_state': 'weapon_locked',
   'weapon_star': 0,

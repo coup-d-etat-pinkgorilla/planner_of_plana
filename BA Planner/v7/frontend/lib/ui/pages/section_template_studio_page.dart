@@ -52,29 +52,45 @@ class _SectionTemplateStudioPageState extends State<SectionTemplateStudioPage> {
   bool _showSafeArea = true;
   bool _fileOperationInProgress = false;
   int _headerRows = sectionTemplateSubdivisionsPerMajor;
+  double _placementGap = studioDefaultPlacementGap;
   ui.Image? _squareImage;
+  ui.Image? _titleImage;
 
   @override
   void initState() {
     super.initState();
-    _loadSquareImage();
+    _loadStudioImages();
   }
 
-  Future<void> _loadSquareImage() async {
-    final data = await rootBundle.load(studioSquareAssetPath);
+  Future<ui.Image> _loadStudioImage(String asset) async {
+    final data = await rootBundle.load(asset);
     final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     final frame = await codec.getNextFrame();
     codec.dispose();
+    return frame.image;
+  }
+
+  Future<void> _loadStudioImages() async {
+    final images = await Future.wait([
+      _loadStudioImage(studioSquareAssetPath),
+      _loadStudioImage(studioTitleAssetPath),
+    ]);
     if (!mounted) {
-      frame.image.dispose();
+      for (final image in images) {
+        image.dispose();
+      }
       return;
     }
-    setState(() => _squareImage = frame.image);
+    setState(() {
+      _squareImage = images[0];
+      _titleImage = images[1];
+    });
   }
 
   @override
   void dispose() {
     _squareImage?.dispose();
+    _titleImage?.dispose();
     super.dispose();
   }
 
@@ -190,11 +206,14 @@ class _SectionTemplateStudioPageState extends State<SectionTemplateStudioPage> {
 
   void _addContainer() {
     final number = _nextContainerNumber++;
+    final siblings = _containers
+        .where((item) => item.parentSectionId == _selectedElementId)
+        .map((item) => item.rect);
     final container = StudioContainerElement(
       id: 'container-$number',
       label: '컨테이너 $number',
       parentSectionId: _selectedElementId,
-      rect: const SectionGridRect(8, 8, 80, 80),
+      rect: _findFreePlacement(siblings),
       spec: defaultDetailedShapeSpec,
     );
     setState(() {
@@ -228,15 +247,30 @@ class _SectionTemplateStudioPageState extends State<SectionTemplateStudioPage> {
     final parentId = _selectedContainerId;
     if (parentId == null) return;
     final number = _nextFeatureNumber++;
+    final parent = _containers.firstWhere((item) => item.id == parentId);
+    final siblings = _features
+        .where((item) => item.parentContainerId == parentId)
+        .map((item) => item.rect);
+    var placement = _findFreePlacement(siblings);
+    if (kind == StudioFeatureKind.image) {
+      placement = copyPlacementRectWithin(
+        placement,
+        height:
+            placement.width *
+            _containerAspectRatio(parent) /
+            studioSquareAspectRatio,
+      );
+    }
     final feature = StudioFeatureElement(
       id: 'feature-$number',
-      label: kind == StudioFeatureKind.image
-          ? '이미지 $number'
-          : 'Feature $number',
+      label: switch (kind) {
+        StudioFeatureKind.shape => '도형 $number',
+        StudioFeatureKind.image => '이미지 $number',
+        StudioFeatureKind.text => '텍스트 $number',
+        StudioFeatureKind.line => '선 $number',
+      },
       parentContainerId: parentId,
-      rect: kind == StudioFeatureKind.image
-          ? const SectionGridRect(16, 24, 48, 33)
-          : const SectionGridRect(16, 16, 64, 64),
+      rect: placement,
       kind: kind,
       spec: defaultDetailedShapeSpec,
       imageAsset: kind == StudioFeatureKind.image
@@ -245,6 +279,7 @@ class _SectionTemplateStudioPageState extends State<SectionTemplateStudioPage> {
       aspectRatio: kind == StudioFeatureKind.image
           ? studioSquareAspectRatio
           : null,
+      text: kind == StudioFeatureKind.text ? '텍스트' : null,
     );
     setState(() {
       _features.add(feature);
@@ -253,10 +288,72 @@ class _SectionTemplateStudioPageState extends State<SectionTemplateStudioPage> {
     });
   }
 
+  double _containerAspectRatio(StudioContainerElement container) {
+    final section = _elements.firstWhere(
+      (item) => item.id == container.parentSectionId,
+    );
+    final contentHeight =
+        _viewport.size.height *
+        (sectionTemplateGridSize - _headerRows) /
+        sectionTemplateGridSize;
+    final sectionAspect =
+        (_viewport.size.width * section.rect.width / sectionTemplateGridSize) /
+        (contentHeight * section.rect.height / sectionTemplateGridSize);
+    return sectionAspect * container.rect.width / container.rect.height;
+  }
+
+  StudioPlacementRect _findFreePlacement(
+    Iterable<StudioPlacementRect> existing,
+  ) {
+    final siblings = existing.toList(growable: false);
+    const width = 0.28;
+    const height = 0.22;
+    final xCandidates = <double>[_placementGap];
+    final yCandidates = <double>[_placementGap];
+    for (final item in siblings) {
+      xCandidates.add(item.right + _placementGap);
+      yCandidates.add(item.bottom + _placementGap);
+    }
+    for (final y in yCandidates) {
+      for (final x in xCandidates) {
+        final candidate = StudioPlacementRect(x, y, width, height);
+        if (candidate.right <= 1 - _placementGap &&
+            candidate.bottom <= 1 - _placementGap &&
+            siblings.every((item) => !item.overlaps(candidate))) {
+          return candidate;
+        }
+      }
+    }
+    return StudioPlacementRect(_placementGap, _placementGap, width, height);
+  }
+
   void _replaceFeature(StudioFeatureElement value) {
     setState(() {
       final index = _features.indexWhere((item) => item.id == value.id);
-      if (index >= 0) _features[index] = value;
+      if (index < 0) return;
+      final previous = _features[index];
+      if (value.kind == StudioFeatureKind.image &&
+          value.aspectRatio != null &&
+          value.aspectRatio != previous.aspectRatio) {
+        final parent = _containers.firstWhere(
+          (item) => item.id == value.parentContainerId,
+        );
+        final parentAspect = _containerAspectRatio(parent);
+        var width = value.rect.width;
+        var height = width * parentAspect / value.aspectRatio!;
+        if (height > 1 - value.rect.top) {
+          height = 1 - value.rect.top;
+          width = height * value.aspectRatio! / parentAspect;
+        }
+        value = value.copyWith(
+          rect: copyPlacementRectWithin(
+            value.rect,
+            width: width,
+            height: height,
+          ),
+        );
+      }
+      _features[index] = value;
     });
   }
 
@@ -280,6 +377,7 @@ class _SectionTemplateStudioPageState extends State<SectionTemplateStudioPage> {
     activeLayer: _activeLayer,
     selectedContainerId: _selectedContainerId,
     selectedFeatureId: _selectedFeatureId,
+    placementGap: _placementGap,
     containers: _containers,
     features: _features,
   );
@@ -328,6 +426,7 @@ class _SectionTemplateStudioPageState extends State<SectionTemplateStudioPage> {
         _viewport = _StudioViewport.values.byName(document.viewport);
         _showGrid = document.showGrid;
         _showSafeArea = document.showSafeArea;
+        _placementGap = document.placementGap;
         _nextElementNumber = _nextAvailableElementNumber();
         _nextContainerNumber = _nextAvailableNumber(
           'container-',
@@ -408,6 +507,7 @@ class _SectionTemplateStudioPageState extends State<SectionTemplateStudioPage> {
             parentSectionId: sectionIds[item.parentSectionId]!,
             rect: item.rect,
             spec: item.spec,
+            triangleTexture: item.triangleTexture,
           ),
         );
       }
@@ -428,6 +528,7 @@ class _SectionTemplateStudioPageState extends State<SectionTemplateStudioPage> {
             spec: item.spec,
             imageAsset: item.imageAsset,
             aspectRatio: item.aspectRatio,
+            text: item.text,
           ),
         );
       }
@@ -476,6 +577,7 @@ class _SectionTemplateStudioPageState extends State<SectionTemplateStudioPage> {
             selectedContainerId: _selectedContainerId,
             selectedFeatureId: _selectedFeatureId,
             headerRows: _headerRows,
+            placementGap: _placementGap,
             showGrid: _showGrid,
             showSafeArea: _showSafeArea,
             onViewportChanged: (value) => setState(() => _viewport = value),
@@ -501,6 +603,8 @@ class _SectionTemplateStudioPageState extends State<SectionTemplateStudioPage> {
             onImport: _importDocument,
             fileOperationInProgress: _fileOperationInProgress,
             onHeaderRowsChanged: (value) => setState(() => _headerRows = value),
+            onPlacementGapChanged: (value) =>
+                setState(() => _placementGap = value),
             onShowGridChanged: (value) => setState(() => _showGrid = value),
             onShowSafeAreaChanged: (value) =>
                 setState(() => _showSafeArea = value),
@@ -515,9 +619,11 @@ class _SectionTemplateStudioPageState extends State<SectionTemplateStudioPage> {
             selectedContainerId: _selectedContainerId,
             selectedFeatureId: _selectedFeatureId,
             squareImage: _squareImage,
+            titleImage: _titleImage,
             headerRows: _headerRows,
             showGrid: _showGrid,
             showSafeArea: _showSafeArea,
+            placementGap: _placementGap,
             onElementSelected: (id) {
               final section = _elements.firstWhere((item) => item.id == id);
               _selectSection(section);
@@ -572,6 +678,7 @@ class _StudioControls extends StatelessWidget {
     required this.selectedContainerId,
     required this.selectedFeatureId,
     required this.headerRows,
+    required this.placementGap,
     required this.showGrid,
     required this.showSafeArea,
     required this.onViewportChanged,
@@ -593,6 +700,7 @@ class _StudioControls extends StatelessWidget {
     required this.onImport,
     required this.fileOperationInProgress,
     required this.onHeaderRowsChanged,
+    required this.onPlacementGapChanged,
     required this.onShowGridChanged,
     required this.onShowSafeAreaChanged,
   });
@@ -606,6 +714,7 @@ class _StudioControls extends StatelessWidget {
   final String? selectedContainerId;
   final String? selectedFeatureId;
   final int headerRows;
+  final double placementGap;
   final bool showGrid;
   final bool showSafeArea;
   final ValueChanged<_StudioViewport> onViewportChanged;
@@ -627,6 +736,7 @@ class _StudioControls extends StatelessWidget {
   final Future<void> Function() onImport;
   final bool fileOperationInProgress;
   final ValueChanged<int> onHeaderRowsChanged;
+  final ValueChanged<double> onPlacementGapChanged;
   final ValueChanged<bool> onShowGridChanged;
   final ValueChanged<bool> onShowSafeAreaChanged;
 
@@ -654,7 +764,22 @@ class _StudioControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final issues = validateStudioLayers(elements, containers, features);
+    final contentSize = Size(
+      viewport.size.width,
+      viewport.size.height *
+          (sectionTemplateGridSize - headerRows) /
+          sectionTemplateGridSize,
+    );
+    final issues = [
+      ...validateStudioLayers(elements, containers, features),
+      ...validateStudioPathSpacing(
+        contentSize,
+        elements,
+        containers,
+        features,
+        gap: placementGap,
+      ),
+    ];
     return Material(
       color: AppColors.navigation.withValues(alpha: 0.94),
       shape: RoundedRectangleBorder(
@@ -672,7 +797,7 @@ class _StudioControls extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const Text(
-            '공용 48×48 그리드에 요소를 직접 추가하고 편집합니다.',
+            '섹션은 96×96, 하위 요소는 부모 경계와 아이템 간격으로 배치합니다.',
             style: TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -685,6 +810,26 @@ class _StudioControls extends StatelessWidget {
             selected: {activeLayer},
             onSelectionChanged: (value) => onLayerChanged(value.single),
           ),
+          if (activeLayer != StudioLayer.section) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '실제 형상 테두리·아이템 간격 ${(placementGap * 100).round()}%',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+            Slider(
+              key: const ValueKey('studio-placement-gap'),
+              value: placementGap,
+              min: 0,
+              max: 0.2,
+              divisions: 20,
+              label: '${(placementGap * 100).round()}%',
+              onChanged: onPlacementGapChanged,
+            ),
+            const Text(
+              '부모의 짧은 변을 기준으로 사선까지 포함한 최단거리를 맞춥니다.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+            ),
+          ],
           const SizedBox(height: AppSpacing.sm),
           if (activeLayer == StudioLayer.container)
             _ContainerLayerControls(
@@ -713,7 +858,7 @@ class _StudioControls extends StatelessWidget {
             isExpanded: true,
             decoration: const InputDecoration(labelText: '고정 헤더 높이'),
             items: [
-              for (var rows = 1; rows <= sectionTemplateGridSize ~/ 2; rows++)
+              for (var rows = 0; rows <= sectionTemplateGridSize ~/ 2; rows++)
                 DropdownMenuItem(
                   value: rows,
                   child: Text(
@@ -956,7 +1101,7 @@ class _StudioControls extends StatelessWidget {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             dense: true,
-            title: const Text('48×48 사선 그리드'),
+            title: const Text('96×96 사선 그리드'),
             value: showGrid,
             onChanged: onShowGridChanged,
           ),
@@ -1004,14 +1149,16 @@ class _StudioControls extends StatelessWidget {
   Future<void> _copySummary(BuildContext context) async {
     final buffer = StringBuffer()
       ..writeln('[BA Planner Section Canvas]')
-      ..writeln('- 공용 그리드: 48×48')
+      ..writeln('- 공용 그리드: 96×96')
       ..writeln(
         '- 고정 헤더: $headerRows/$sectionTemplateGridSize (${(headerRows / sectionTemplateGridSize * 100).toStringAsFixed(1)}%)',
       )
       ..writeln('- 섹션 수: ${elements.length}')
-      ..writeln('- 컨테이너 수: ${containers.length} (부모 로컬 96×96)')
-      ..writeln('- Feature 수: ${features.length} (부모 로컬 96×96)')
-      ..writeln('- 렌더링: 모든 요소가 동일한 콘텐츠 캔버스 좌표계를 공유');
+      ..writeln('- 컨테이너 수: ${containers.length} (부모 상대 자유 배치)')
+      ..writeln('- Feature 수: ${features.length} (부모 상대 자유 배치)')
+      ..writeln(
+        '- 실제 형상 최단 간격: ${(placementGap * 100).toStringAsFixed(1)}% (부모의 짧은 변 기준)',
+      );
     for (var index = 0; index < elements.length; index++) {
       final element = elements[index];
       final elementSpec = element.spec;
@@ -1037,10 +1184,9 @@ class _StudioControls extends StatelessWidget {
         ..writeln()
         ..writeln('[컨테이너] ${container.label}')
         ..writeln('- 부모 섹션 ID: ${container.parentSectionId}')
-        ..writeln(
-          '- 점유(96): x ${container.rect.x}, y ${container.rect.y}, 폭 ${container.rect.width}, 높이 ${container.rect.height}',
-        )
-        ..writeln('- 도형: ${container.spec.mode.label}');
+        ..writeln('- 부모 상대 배치: ${_placementSummary(container.rect)}')
+        ..writeln('- 도형: ${container.spec.mode.label}')
+        ..writeln('- BA 삼각 무늬: ${container.triangleTexture ? '사용' : '미사용'}');
     }
     for (final feature in features) {
       buffer
@@ -1048,13 +1194,20 @@ class _StudioControls extends StatelessWidget {
         ..writeln('[Feature] ${feature.label}')
         ..writeln('- 부모 컨테이너 ID: ${feature.parentContainerId}')
         ..writeln('- 종류: ${feature.kind.label}')
-        ..writeln(
-          '- 점유(96): x ${feature.rect.x}, y ${feature.rect.y}, 폭 ${feature.rect.width}, 높이 ${feature.rect.height}',
-        );
-      if (feature.kind == StudioFeatureKind.image) {
-        buffer.writeln('- 이미지 비율: ${feature.aspectRatio}');
-      } else {
-        buffer.writeln('- 도형: ${feature.spec.mode.label}');
+        ..writeln('- 부모 상대 배치: ${_placementSummary(feature.rect)}');
+      switch (feature.kind) {
+        case StudioFeatureKind.image:
+          buffer
+            ..writeln(
+              '- 이미지: ${studioImagePresetForAsset(feature.imageAsset).label}',
+            )
+            ..writeln('- 이미지 비율: ${feature.aspectRatio}');
+        case StudioFeatureKind.text:
+          buffer.writeln('- 내용: ${feature.text}');
+        case StudioFeatureKind.line:
+          buffer.writeln('- 선: 둥근 수평선');
+        case StudioFeatureKind.shape:
+          buffer.writeln('- 도형: ${feature.spec.mode.label}');
       }
     }
     buffer.writeln('\n- 사선: 우측 위 방향 /, 80° 고정');
@@ -1064,6 +1217,12 @@ class _StudioControls extends StatelessWidget {
       context,
     ).showSnackBar(const SnackBar(content: Text('채팅용 섹션 요약을 복사했습니다.')));
   }
+
+  String _placementSummary(StudioPlacementRect rect) =>
+      '왼쪽 ${(rect.left * 100).toStringAsFixed(1)}%, '
+      '위쪽 ${(rect.top * 100).toStringAsFixed(1)}%, '
+      '폭 ${(rect.width * 100).toStringAsFixed(1)}%, '
+      '높이 ${(rect.height * 100).toStringAsFixed(1)}%';
 }
 
 class _ContainerLayerControls extends StatelessWidget {
@@ -1121,6 +1280,17 @@ class _ContainerLayerControls extends StatelessWidget {
           },
         ),
         const SizedBox(height: AppSpacing.sm),
+        CheckboxListTile(
+          key: ValueKey('studio-container-triangle-texture-${selected!.id}'),
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          title: const Text('BA 삼각 무늬'),
+          subtitle: const Text('컨테이너 내부에 저대비 삼각 텍스처 표시'),
+          value: selected!.triangleTexture,
+          onChanged: (value) =>
+              onChanged(selected!.copyWith(triangleTexture: value ?? false)),
+        ),
+        const SizedBox(height: AppSpacing.sm),
         _DetailedElementControls(
           id: selected!.id,
           rect: selected!.rect,
@@ -1163,36 +1333,68 @@ class _FeatureLayerControls extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Row(
-        children: [
-          Expanded(
-            child: FilledButton.tonalIcon(
-              key: const ValueKey('studio-add-shape-feature'),
-              onPressed: hasParent
-                  ? () => onAdd(StudioFeatureKind.shape)
-                  : null,
-              icon: const Icon(Icons.change_history_outlined),
-              label: const Text('도형'),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: FilledButton.tonalIcon(
-              key: const ValueKey('studio-add-image-feature'),
-              onPressed: hasParent
-                  ? () => onAdd(StudioFeatureKind.image)
-                  : null,
-              icon: const Icon(Icons.image_outlined),
-              label: const Text('이미지'),
-            ),
-          ),
-          const SizedBox(width: 6),
-          IconButton.outlined(
-            key: const ValueKey('studio-remove-feature'),
-            onPressed: selected == null ? null : onRemove,
-            icon: const Icon(Icons.delete_outline),
-          ),
-        ],
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final buttonWidth = (constraints.maxWidth - 6) / 2;
+          return Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              SizedBox(
+                width: buttonWidth,
+                child: FilledButton.tonalIcon(
+                  key: const ValueKey('studio-add-shape-feature'),
+                  onPressed: hasParent
+                      ? () => onAdd(StudioFeatureKind.shape)
+                      : null,
+                  icon: const Icon(Icons.change_history_outlined),
+                  label: const Text('도형'),
+                ),
+              ),
+              SizedBox(
+                width: buttonWidth,
+                child: FilledButton.tonalIcon(
+                  key: const ValueKey('studio-add-image-feature'),
+                  onPressed: hasParent
+                      ? () => onAdd(StudioFeatureKind.image)
+                      : null,
+                  icon: const Icon(Icons.image_outlined),
+                  label: const Text('이미지'),
+                ),
+              ),
+              SizedBox(
+                width: buttonWidth,
+                child: FilledButton.tonalIcon(
+                  key: const ValueKey('studio-add-text-feature'),
+                  onPressed: hasParent
+                      ? () => onAdd(StudioFeatureKind.text)
+                      : null,
+                  icon: const Icon(Icons.text_fields_rounded),
+                  label: const Text('텍스트'),
+                ),
+              ),
+              SizedBox(
+                width: buttonWidth,
+                child: FilledButton.tonalIcon(
+                  key: const ValueKey('studio-add-line-feature'),
+                  onPressed: hasParent
+                      ? () => onAdd(StudioFeatureKind.line)
+                      : null,
+                  icon: const Icon(Icons.horizontal_rule_rounded),
+                  label: const Text('선'),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+      Align(
+        alignment: Alignment.centerRight,
+        child: IconButton.outlined(
+          key: const ValueKey('studio-remove-feature'),
+          onPressed: selected == null ? null : onRemove,
+          icon: const Icon(Icons.delete_outline),
+        ),
       ),
       if (!hasParent)
         const Padding(
@@ -1221,6 +1423,39 @@ class _FeatureLayerControls extends StatelessWidget {
           },
         ),
         const SizedBox(height: AppSpacing.sm),
+        if (selected!.kind == StudioFeatureKind.image) ...[
+          DropdownButtonFormField<StudioImagePreset>(
+            key: ValueKey('studio-image-preset-${selected!.id}'),
+            initialValue: studioImagePresetForAsset(selected!.imageAsset),
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: '이미지 종류'),
+            items: [
+              for (final preset in StudioImagePreset.values)
+                DropdownMenuItem(value: preset, child: Text(preset.label)),
+            ],
+            onChanged: (preset) {
+              if (preset != null) {
+                onChanged(
+                  selected!.copyWith(
+                    imageAsset: preset.asset,
+                    aspectRatio: preset.aspectRatio,
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        if (selected!.kind == StudioFeatureKind.text) ...[
+          TextFormField(
+            key: ValueKey('studio-feature-text-${selected!.id}'),
+            initialValue: selected!.text ?? '텍스트',
+            decoration: const InputDecoration(labelText: '텍스트 내용'),
+            maxLength: 120,
+            onChanged: (value) => onChanged(selected!.copyWith(text: value)),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
         _DetailedElementControls(
           id: selected!.id,
           rect: selected!.rect,
@@ -1228,6 +1463,7 @@ class _FeatureLayerControls extends StatelessWidget {
           imageAspectRatio: selected!.kind == StudioFeatureKind.image
               ? selected!.aspectRatio
               : null,
+          showShapeControls: selected!.kind == StudioFeatureKind.shape,
           onRectChanged: (rect) => onChanged(selected!.copyWith(rect: rect)),
           onSpecChanged: (spec) => onChanged(selected!.copyWith(spec: spec)),
         ),
@@ -1244,35 +1480,35 @@ class _DetailedElementControls extends StatelessWidget {
     required this.onRectChanged,
     required this.onSpecChanged,
     this.imageAspectRatio,
+    this.showShapeControls = true,
   });
 
   final String id;
-  final SectionGridRect rect;
+  final StudioPlacementRect rect;
   final AttachedSectionSpec spec;
-  final ValueChanged<SectionGridRect> onRectChanged;
+  final ValueChanged<StudioPlacementRect> onRectChanged;
   final ValueChanged<AttachedSectionSpec> onSpecChanged;
   final double? imageAspectRatio;
+  final bool showShapeControls;
 
   @override
   Widget build(BuildContext context) => Column(
     children: [
       Row(
         children: [
-          for (final entry in [('X', rect.x), ('Y', rect.y)]) ...[
-            if (entry.$1 == 'Y') const SizedBox(width: AppSpacing.sm),
+          for (final entry in [('왼쪽', rect.left), ('위쪽', rect.top)]) ...[
+            if (entry.$1 == '위쪽') const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: _GridValueDropdown(
-                key: ValueKey('studio-detail-${entry.$1.toLowerCase()}-$id'),
+              child: _PercentValueDropdown(
+                key: ValueKey('studio-detail-${entry.$1}-$id'),
                 label: entry.$1,
                 value: entry.$2,
-                max: sectionTemplateDetailGridSize - 1,
-                gridSize: sectionTemplateDetailGridSize,
+                max: entry.$1 == '왼쪽' ? 1 - rect.width : 1 - rect.height,
                 onChanged: (value) => onRectChanged(
-                  copyGridRectWithin(
+                  copyPlacementRectWithin(
                     rect,
-                    x: entry.$1 == 'X' ? value : null,
-                    y: entry.$1 == 'Y' ? value : null,
-                    gridSize: sectionTemplateDetailGridSize,
+                    left: entry.$1 == '왼쪽' ? value : null,
+                    top: entry.$1 == '위쪽' ? value : null,
                   ),
                 ),
               ),
@@ -1284,38 +1520,28 @@ class _DetailedElementControls extends StatelessWidget {
       Row(
         children: [
           Expanded(
-            child: _GridValueDropdown(
+            child: _PercentValueDropdown(
               label: '폭',
               value: rect.width,
-              min: 1,
-              max: sectionTemplateDetailGridSize - rect.x,
-              gridSize: sectionTemplateDetailGridSize,
+              min: studioMinimumPlacementExtent,
+              max: 1 - rect.left,
               onChanged: (value) => onRectChanged(
                 imageAspectRatio == null
-                    ? copyGridRectWithin(
-                        rect,
-                        width: value,
-                        gridSize: sectionTemplateDetailGridSize,
-                      )
+                    ? copyPlacementRectWithin(rect, width: value)
                     : _aspectRect(rect, width: value),
               ),
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: _GridValueDropdown(
+            child: _PercentValueDropdown(
               label: '높이',
               value: rect.height,
-              min: 1,
-              max: sectionTemplateDetailGridSize - rect.y,
-              gridSize: sectionTemplateDetailGridSize,
+              min: studioMinimumPlacementExtent,
+              max: 1 - rect.top,
               onChanged: (value) => onRectChanged(
                 imageAspectRatio == null
-                    ? copyGridRectWithin(
-                        rect,
-                        height: value,
-                        gridSize: sectionTemplateDetailGridSize,
-                      )
+                    ? copyPlacementRectWithin(rect, height: value)
                     : _aspectRect(rect, height: value),
               ),
             ),
@@ -1330,7 +1556,7 @@ class _DetailedElementControls extends StatelessWidget {
             style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
           ),
         )
-      else ...[
+      else if (showShapeControls) ...[
         const SizedBox(height: AppSpacing.sm),
         DropdownButtonFormField<SectionShapeMode>(
           initialValue: spec.mode,
@@ -1425,28 +1651,64 @@ class _DetailedElementControls extends StatelessWidget {
     ],
   );
 
-  SectionGridRect _aspectRect(
-    SectionGridRect source, {
-    int? width,
-    int? height,
+  StudioPlacementRect _aspectRect(
+    StudioPlacementRect source, {
+    double? width,
+    double? height,
   }) {
     final ratio = imageAspectRatio!;
-    var nextWidth = width ?? (height! * ratio).round();
-    var nextHeight = height ?? (width! / ratio).round();
-    nextWidth = nextWidth.clamp(1, sectionTemplateDetailGridSize - source.x);
-    nextHeight = nextHeight.clamp(1, sectionTemplateDetailGridSize - source.y);
+    var nextWidth = width ?? height! * ratio;
+    var nextHeight = height ?? width! / ratio;
+    nextWidth = nextWidth.clamp(studioMinimumPlacementExtent, 1 - source.left);
+    nextHeight = nextHeight.clamp(studioMinimumPlacementExtent, 1 - source.top);
     if (nextWidth / nextHeight > ratio) {
-      nextWidth = (nextHeight * ratio).round().clamp(
-        1,
-        sectionTemplateDetailGridSize - source.x,
+      nextWidth = (nextHeight * ratio).clamp(
+        studioMinimumPlacementExtent,
+        1 - source.left,
       );
     } else {
-      nextHeight = (nextWidth / ratio).round().clamp(
-        1,
-        sectionTemplateDetailGridSize - source.y,
+      nextHeight = (nextWidth / ratio).clamp(
+        studioMinimumPlacementExtent,
+        1 - source.top,
       );
     }
-    return SectionGridRect(source.x, source.y, nextWidth, nextHeight);
+    return StudioPlacementRect(source.left, source.top, nextWidth, nextHeight);
+  }
+}
+
+class _PercentValueDropdown extends StatelessWidget {
+  const _PercentValueDropdown({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.max,
+    required this.onChanged,
+    this.min = 0,
+  });
+
+  final String label;
+  final double value;
+  final double min;
+  final double max;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final minPercent = (min * 100).ceil();
+    final maxPercent = (max * 100).floor().clamp(minPercent, 100);
+    final valuePercent = (value * 100).round().clamp(minPercent, maxPercent);
+    return DropdownButtonFormField<int>(
+      initialValue: valuePercent,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: label),
+      items: [
+        for (var item = minPercent; item <= maxPercent; item++)
+          DropdownMenuItem(value: item, child: Text('$item%')),
+      ],
+      onChanged: (next) {
+        if (next != null) onChanged(next / 100);
+      },
+    );
   }
 }
 
@@ -1565,6 +1827,7 @@ class _StudioPreview extends StatefulWidget {
     required this.selectedContainerId,
     required this.selectedFeatureId,
     required this.squareImage,
+    required this.titleImage,
     required this.headerRows,
     required this.showGrid,
     required this.showSafeArea,
@@ -1574,6 +1837,7 @@ class _StudioPreview extends StatefulWidget {
     required this.onContainerRectChanged,
     required this.onFeatureSelected,
     required this.onFeatureRectChanged,
+    required this.placementGap,
   });
 
   final _StudioViewport viewport;
@@ -1585,15 +1849,18 @@ class _StudioPreview extends StatefulWidget {
   final String? selectedContainerId;
   final String? selectedFeatureId;
   final ui.Image? squareImage;
+  final ui.Image? titleImage;
   final int headerRows;
   final bool showGrid;
   final bool showSafeArea;
+  final double placementGap;
   final ValueChanged<String> onElementSelected;
   final void Function(String id, SectionGridRect rect) onElementRectChanged;
   final ValueChanged<String> onContainerSelected;
-  final void Function(String id, SectionGridRect rect) onContainerRectChanged;
+  final void Function(String id, StudioPlacementRect rect)
+  onContainerRectChanged;
   final ValueChanged<String> onFeatureSelected;
-  final void Function(String id, SectionGridRect rect) onFeatureRectChanged;
+  final void Function(String id, StudioPlacementRect rect) onFeatureRectChanged;
 
   @override
   State<_StudioPreview> createState() => _StudioPreviewState();
@@ -1601,10 +1868,10 @@ class _StudioPreview extends StatefulWidget {
 
 class _StudioPreviewState extends State<_StudioPreview> {
   String? _dragElementId;
-  SectionGridRect? _dragStartRect;
+  Object? _dragStartRect;
   Offset? _dragStartPosition;
   SectionResizeHandle? _resizeHandle;
-  SectionGridRect? _lastDragRect;
+  Object? _lastDragRect;
   SectionResizeHandle? _hoveredHandle;
   bool _hoveringElement = false;
 
@@ -1669,31 +1936,59 @@ class _StudioPreviewState extends State<_StudioPreview> {
     final startPosition = _dragStartPosition;
     if (id == null || startRect == null || startPosition == null) return;
     final delta = details.localPosition - startPosition;
-    final parentRect = _activeParentRect(size, id);
-    if (parentRect == null || parentRect.width <= 0 || parentRect.height <= 0) {
-      return;
-    }
-    final gridSize = widget.activeLayer.gridSize;
-    final deltaX = (delta.dx * gridSize / parentRect.width).round();
-    final deltaY = (delta.dy * gridSize / parentRect.height).round();
     final handle = _resizeHandle;
-    final nextRect = handle == null
-        ? moveSectionGridRect(
-            startRect,
-            deltaX: deltaX,
-            deltaY: deltaY,
-            gridSize: gridSize,
-          )
-        : _resizeActiveRect(startRect, handle, deltaX, deltaY, gridSize, id);
-    if (_sameGridRect(nextRect, _lastDragRect)) return;
+    final Object nextRect;
+    if (widget.activeLayer == StudioLayer.section) {
+      final sectionRect = startRect as SectionGridRect;
+      final deltaX = (delta.dx * sectionTemplateGridSize / size.width).round();
+      final deltaY = (delta.dy * sectionTemplateGridSize / size.height).round();
+      nextRect = handle == null
+          ? moveSectionGridRect(sectionRect, deltaX: deltaX, deltaY: deltaY)
+          : resizeSectionGridRect(
+              sectionRect,
+              handle: handle,
+              deltaX: deltaX,
+              deltaY: deltaY,
+            );
+    } else {
+      final placementRect = startRect as StudioPlacementRect;
+      final parentRect = _activeParentPhysicalRect(size, id);
+      if (parentRect == null ||
+          parentRect.width <= 0 ||
+          parentRect.height <= 0) {
+        return;
+      }
+      final deltaX = delta.dx / parentRect.width;
+      final deltaY = delta.dy / parentRect.height;
+      nextRect = handle == null
+          ? _snapPlacementRect(
+              moveStudioPlacementRect(
+                placementRect,
+                deltaX: deltaX,
+                deltaY: deltaY,
+              ),
+              id,
+              size,
+              parentRect,
+            )
+          : _resizePlacementRect(
+              placementRect,
+              handle,
+              deltaX,
+              deltaY,
+              id,
+              parentRect,
+            );
+    }
+    if (_sameRect(nextRect, _lastDragRect)) return;
     _lastDragRect = nextRect;
     switch (widget.activeLayer) {
       case StudioLayer.section:
-        widget.onElementRectChanged(id, nextRect);
+        widget.onElementRectChanged(id, nextRect as SectionGridRect);
       case StudioLayer.container:
-        widget.onContainerRectChanged(id, nextRect);
+        widget.onContainerRectChanged(id, nextRect as StudioPlacementRect);
       case StudioLayer.feature:
-        widget.onFeatureRectChanged(id, nextRect);
+        widget.onFeatureRectChanged(id, nextRect as StudioPlacementRect);
     }
   }
 
@@ -1703,7 +1998,7 @@ class _StudioPreviewState extends State<_StudioPreview> {
     StudioLayer.feature => widget.selectedFeatureId,
   };
 
-  SectionGridRect? _activeRectById(String id) => switch (widget.activeLayer) {
+  Object? _activeRectById(String id) => switch (widget.activeLayer) {
     StudioLayer.section => _elementById(id)?.rect,
     StudioLayer.container => _containerById(id)?.rect,
     StudioLayer.feature => _featureById(id)?.rect,
@@ -1772,54 +2067,122 @@ class _StudioPreviewState extends State<_StudioPreview> {
     }
   }
 
-  Rect? _activeParentRect(Size size, String id) {
+  Rect? _activeParentPhysicalRect(Size size, String id) {
     switch (widget.activeLayer) {
       case StudioLayer.section:
         return Offset.zero & size;
       case StudioLayer.container:
-        final item = _containerById(id);
-        final section = item == null
+        final container = _containerById(id);
+        final parent = container == null
             ? null
-            : _elementById(item.parentSectionId);
-        return section == null ? null : sectionCanvasElementRect(size, section);
+            : _elementById(container.parentSectionId);
+        return parent == null ? null : sectionCanvasElementRect(size, parent);
       case StudioLayer.feature:
-        final item = _featureById(id);
-        final container = item == null
+        final feature = _featureById(id);
+        final parent = feature == null
             ? null
-            : _containerById(item.parentContainerId);
-        return container == null
+            : _containerById(feature.parentContainerId);
+        return parent == null
             ? null
-            : studioContainerRect(size, elements, container);
+            : studioContainerRect(size, elements, parent);
     }
   }
 
-  SectionGridRect _resizeActiveRect(
-    SectionGridRect rect,
-    SectionResizeHandle handle,
-    int deltaX,
-    int deltaY,
-    int gridSize,
+  StudioPlacementRect _snapPlacementRect(
+    StudioPlacementRect rect,
     String id,
+    Size size,
+    Rect parentRect,
+  ) {
+    switch (widget.activeLayer) {
+      case StudioLayer.section:
+        return rect;
+      case StudioLayer.container:
+        final item = _containerById(id);
+        final parent = item == null ? null : _elementById(item.parentSectionId);
+        if (item == null || parent == null) return rect;
+        return snapStudioPathSpacing(
+          rect,
+          parentRect: parentRect,
+          parentPath: buildSectionCanvasElementPath(size, parent),
+          buildItemPath: (candidate) => buildStudioContainerRawPath(
+            size,
+            elements,
+            item.copyWith(rect: candidate),
+          )!,
+          siblingPaths: _containersForActiveSection
+              .where((sibling) => sibling.id != id)
+              .map(
+                (sibling) =>
+                    buildStudioContainerRawPath(size, elements, sibling)!,
+              ),
+          gap: widget.placementGap,
+        );
+      case StudioLayer.feature:
+        final item = _featureById(id);
+        final parent = item == null
+            ? null
+            : _containerById(item.parentContainerId);
+        if (item == null || parent == null) return rect;
+        final parentPath = buildStudioContainerPath(size, elements, parent);
+        if (parentPath == null) return rect;
+        return snapStudioPathSpacing(
+          rect,
+          parentRect: parentRect,
+          parentPath: parentPath,
+          buildItemPath: (candidate) => buildStudioFeatureRawPath(
+            size,
+            elements,
+            containers,
+            item.copyWith(rect: candidate),
+          )!,
+          siblingPaths: _featuresForActiveContainer
+              .where((sibling) => sibling.id != id)
+              .map(
+                (sibling) => buildStudioFeatureRawPath(
+                  size,
+                  elements,
+                  containers,
+                  sibling,
+                )!,
+              ),
+          gap: widget.placementGap,
+        );
+    }
+  }
+
+  Iterable<StudioContainerElement> get _containersForActiveSection =>
+      containers.where((item) => item.parentSectionId == selectedElementId);
+
+  Iterable<StudioFeatureElement> get _featuresForActiveContainer => features
+      .where((item) => item.parentContainerId == widget.selectedContainerId);
+
+  StudioPlacementRect _resizePlacementRect(
+    StudioPlacementRect rect,
+    SectionResizeHandle handle,
+    double deltaX,
+    double deltaY,
+    String id,
+    Rect parentRect,
   ) {
     final feature = widget.activeLayer == StudioLayer.feature
         ? _featureById(id)
         : null;
     if (feature?.kind == StudioFeatureKind.image) {
-      return resizeAspectLockedGridRect(
+      return resizeAspectLockedPlacementRect(
         rect,
         handle: handle,
         deltaX: deltaX,
         deltaY: deltaY,
         aspectRatio: feature!.aspectRatio ?? studioSquareAspectRatio,
-        gridSize: gridSize,
+        parentAspectRatio: parentRect.width / parentRect.height,
       );
     }
-    return resizeSectionGridRect(
+    return resizeStudioPlacementRect(
       rect,
       handle: handle,
       deltaX: deltaX,
       deltaY: deltaY,
-      gridSize: gridSize,
     );
   }
 
@@ -1831,12 +2194,21 @@ class _StudioPreviewState extends State<_StudioPreview> {
     _lastDragRect = null;
   }
 
-  bool _sameGridRect(SectionGridRect value, SectionGridRect? other) =>
-      other != null &&
-      value.x == other.x &&
-      value.y == other.y &&
-      value.width == other.width &&
-      value.height == other.height;
+  bool _sameRect(Object value, Object? other) {
+    if (value is SectionGridRect && other is SectionGridRect) {
+      return value.x == other.x &&
+          value.y == other.y &&
+          value.width == other.width &&
+          value.height == other.height;
+    }
+    if (value is StudioPlacementRect && other is StudioPlacementRect) {
+      return (value.left - other.left).abs() < 0.0001 &&
+          (value.top - other.top).abs() < 0.0001 &&
+          (value.width - other.width).abs() < 0.0001 &&
+          (value.height - other.height).abs() < 0.0001;
+    }
+    return false;
+  }
 
   void _updateHover(PointerHoverEvent event, Size size) {
     final selectedRect = _selectedPhysicalRect(size);
@@ -1892,7 +2264,9 @@ class _StudioPreviewState extends State<_StudioPreview> {
                     SizedBox(
                       key: const ValueKey('studio-preview-header'),
                       height: headerHeight,
-                      child: _StudioPreviewHeader(headerRows: headerRows),
+                      child: headerRows == 0
+                          ? null
+                          : _StudioPreviewHeader(headerRows: headerRows),
                     ),
                     Expanded(
                       key: const ValueKey('studio-preview-content'),
@@ -1944,6 +2318,7 @@ class _StudioPreviewState extends State<_StudioPreview> {
                                   showGrid: showGrid,
                                   showSafeArea: showSafeArea,
                                   squareImage: widget.squareImage,
+                                  titleImage: widget.titleImage,
                                 ),
                                 child: const SizedBox.expand(),
                               ),

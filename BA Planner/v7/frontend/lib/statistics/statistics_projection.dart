@@ -43,15 +43,18 @@ class StudentStatistics {
     required Map<String, List<StatisticsRow>> distributions,
     required List<String> missingCatalogIds,
     required Map<String, String> displayNames,
+    required Map<String, int?> bondRanks,
   }) : distributions = Map.unmodifiable(distributions),
        missingCatalogIds = List.unmodifiable(missingCatalogIds),
-       displayNames = Map.unmodifiable(displayNames);
+       displayNames = Map.unmodifiable(displayNames),
+       bondRanks = Map.unmodifiable(bondRanks);
   final int catalogCount, confirmedCount, goalCount, orphanGoalCount;
   final double? averageLevel, averageStar;
   final int knownLevelCount, knownStarCount;
   final Map<String, List<StatisticsRow>> distributions;
   final List<String> missingCatalogIds;
   final Map<String, String> displayNames;
+  final Map<String, int?> bondRanks;
 }
 
 StudentStatistics buildStudentStatistics(
@@ -157,6 +160,10 @@ StudentStatistics buildStudentStatistics(
     missingCatalogIds: missing,
     displayNames: {
       for (final item in catalogById.values) item.studentId: item.displayName,
+    },
+    bondRanks: {
+      for (final item in currentById.values)
+        item.studentId: item.values['bond_rank'] as int?,
     },
     distributions: {
       'ownership': [

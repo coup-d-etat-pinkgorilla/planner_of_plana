@@ -8,7 +8,7 @@ from core.repository_store import JsonRepository, RepositoryError
 
 METHODS = frozenset({
     "repository.profile.list", "repository.profile.create", "repository.profile.current",
-    "repository.profile.select", "repository.profile.rename", "repository.state.get",
+    "repository.profile.select", "repository.profile.rename", "repository.profile.update", "repository.profile.delete", "repository.state.get",
     "repository.students.update", "repository.inventory.update", "repository.goals.save",
     "repository.migration.preview",
 })
@@ -64,14 +64,21 @@ class RepositoryProtocolV1:
             _require(payload, set())
             return self.repository.current_profile()
         if method == "repository.profile.create":
-            data = _require(payload, {"display_name", "idempotency_key"})
-            return self.repository.create_profile(_text(data["display_name"], "display_name"), _text(data["idempotency_key"], "idempotency_key"))
+            if not isinstance(payload, dict) or not {"display_name", "idempotency_key"}.issubset(payload) or not set(payload).issubset({"display_name", "idempotency_key", "avatar_student_id"}):
+                raise RepositoryError("invalid_payload", "profile create payload has an invalid shape")
+            return self.repository.create_profile(_text(payload["display_name"], "display_name"), _text(payload["idempotency_key"], "idempotency_key"), _text(payload.get("avatar_student_id", "hasumi"), "avatar_student_id"))
         if method == "repository.profile.select":
             data, profile_id, revision, key = self._mutation(payload, set())
             return self.repository.select_profile(profile_id, revision, key)
         if method == "repository.profile.rename":
             data, profile_id, revision, key = self._mutation(payload, {"display_name"})
             return self.repository.rename_profile(profile_id, _text(data["display_name"], "display_name"), revision, key)
+        if method == "repository.profile.update":
+            data, profile_id, revision, key = self._mutation(payload, {"display_name", "avatar_student_id"})
+            return self.repository.update_profile(profile_id, _text(data["display_name"], "display_name"), _text(data["avatar_student_id"], "avatar_student_id"), revision, key)
+        if method == "repository.profile.delete":
+            _data, profile_id, revision, key = self._mutation(payload, set())
+            return self.repository.delete_profile(profile_id, revision, key)
         if method == "repository.state.get":
             data = _require(payload, {"profile_id"})
             return self.repository.get_state(_text(data["profile_id"], "profile_id"))

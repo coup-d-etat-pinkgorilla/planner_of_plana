@@ -199,9 +199,7 @@ class _ScanPageState extends State<ScanPage> {
   Future<void> _cancel() async {
     final scanner = _scanner;
     final session = _session;
-    if (scanner == null ||
-        session == null ||
-        _stage != _SessionStage.running) {
+    if (scanner == null || session == null || _stage != _SessionStage.running) {
       return;
     }
     setState(() {
@@ -261,7 +259,9 @@ class _ScanPageState extends State<ScanPage> {
 
   void _handleStreamError(Object error, StackTrace stackTrace) {
     if (!mounted || _session == null) return;
-    setState(() => _sessionError = 'Scanner event stream needs recovery: $error');
+    setState(
+      () => _sessionError = 'Scanner event stream needs recovery: $error',
+    );
     unawaited(_recoverSnapshot());
   }
 
@@ -294,9 +294,10 @@ class _ScanPageState extends State<ScanPage> {
       case ScannerEventKind.diagnostic:
         final code = event.payload['code'];
         final message = event.payload['message'];
-        _diagnostic = [code, message]
-            .where((item) => item is String && item.isNotEmpty)
-            .join(': ');
+        _diagnostic = [
+          code,
+          message,
+        ].where((item) => item is String && item.isNotEmpty).join(': ');
         break;
       case ScannerEventKind.candidate:
         final raw = event.payload['candidate'];
@@ -309,9 +310,7 @@ class _ScanPageState extends State<ScanPage> {
       case ScannerEventKind.terminal:
         _outcome = event.payload['outcome'] as String?;
         final error = event.payload['error'];
-        _terminalError = error is Map
-            ? Map<String, dynamic>.from(error)
-            : null;
+        _terminalError = error is Map ? Map<String, dynamic>.from(error) : null;
         _stage = _SessionStage.terminal;
         if (recordRecent) _recordRecent();
         break;
@@ -417,10 +416,8 @@ class _ScanPageState extends State<ScanPage> {
   Widget build(BuildContext context) {
     final scannerMissing = _scanner == null;
     final repositoryMissing = _repository == null;
-    final readinessMissing =
-        (_readiness?['missing'] as List?)?.length ?? 0;
-    final readinessCorrupt =
-        (_readiness?['corrupt'] as List?)?.length ?? 0;
+    final readinessMissing = (_readiness?['missing'] as List?)?.length ?? 0;
+    final readinessCorrupt = (_readiness?['corrupt'] as List?)?.length ?? 0;
     final selectedTarget = _selectedTarget;
     final total = _progressTotal;
     final progress = total == null || total <= 0 || _progressCurrent == null
@@ -449,10 +446,15 @@ class _ScanPageState extends State<ScanPage> {
                   children: [
                     const Text(
                       'Scan preparation',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     _StatusChip(
-                      label: _connected ? 'Backend connected' : 'Backend disconnected',
+                      label: _connected
+                          ? 'Backend connected'
+                          : 'Backend disconnected',
                       ok: _connected,
                     ),
                     _StatusChip(
@@ -490,11 +492,19 @@ class _ScanPageState extends State<ScanPage> {
                 if (repositoryMissing)
                   const Text('Repository service is unavailable.'),
                 if (_readinessError != null)
-                  Text(_readinessError!, style: const TextStyle(color: AppColors.danger)),
+                  Text(
+                    _readinessError!,
+                    style: const TextStyle(color: AppColors.danger),
+                  ),
                 if (_targetError != null)
-                  Text(_targetError!, style: const TextStyle(color: AppColors.danger)),
+                  Text(
+                    _targetError!,
+                    style: const TextStyle(color: AppColors.danger),
+                  ),
                 if (!_targetsLoading && _targets.isEmpty)
-                  const Text('No game windows were found. Open Blue Archive and refresh.'),
+                  const Text(
+                    'No game windows were found. Open Blue Archive and refresh.',
+                  ),
               ],
             ),
           ),
@@ -514,7 +524,9 @@ class _ScanPageState extends State<ScanPage> {
                     key: const ValueKey('scan-target'),
                     initialValue: _targetId,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Game window target'),
+                    decoration: const InputDecoration(
+                      labelText: 'Game window target',
+                    ),
                     items: [
                       for (final target in _targets)
                         DropdownMenuItem(
@@ -526,7 +538,8 @@ class _ScanPageState extends State<ScanPage> {
                           ),
                         ),
                     ],
-                    onChanged: _stage == _SessionStage.running ||
+                    onChanged:
+                        _stage == _SessionStage.running ||
                             _stage == _SessionStage.cancelling ||
                             _stage == _SessionStage.starting
                         ? null
@@ -548,7 +561,8 @@ class _ScanPageState extends State<ScanPage> {
                     ),
                   ],
                   selected: {_kind},
-                  onSelectionChanged: _stage == _SessionStage.running ||
+                  onSelectionChanged:
+                      _stage == _SessionStage.running ||
                           _stage == _SessionStage.cancelling ||
                           _stage == _SessionStage.starting
                       ? null
@@ -596,7 +610,10 @@ class _ScanPageState extends State<ScanPage> {
               Text(
                 'Session ${_session?.id ?? 'starting'} · generation ${_session?.generation ?? '-'}',
                 key: const ValueKey('scan-session'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               Chip(label: Text(_stage.name)),
               if (_phase != null) Chip(label: Text('Phase: $_phase')),
@@ -644,8 +661,7 @@ class _ScanPageState extends State<ScanPage> {
             key: const ValueKey('scan-progress'),
           ),
           if (_messageKey != null) Text('Message: $_messageKey'),
-          if (_diagnostic != null)
-            SelectableText('Diagnostic: $_diagnostic'),
+          if (_diagnostic != null) SelectableText('Diagnostic: $_diagnostic'),
           if (_terminalError != null)
             SelectableText(
               'Terminal error: ${_terminalError!['code']} · ${_terminalError!['message']}',
@@ -658,7 +674,10 @@ class _ScanPageState extends State<ScanPage> {
             ),
           for (final candidate in _candidates.values) ...[
             const Divider(),
-            _CandidateSummary(candidate: candidate, onHandoff: () => _handoff(candidate)),
+            _CandidateSummary(
+              candidate: candidate,
+              onHandoff: () => _handoff(candidate),
+            ),
           ],
         ],
       ),
@@ -700,6 +719,7 @@ class _ScanPageState extends State<ScanPage> {
     ),
   );
 }
+
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.label, required this.ok});
   final String label;
@@ -725,7 +745,9 @@ class _CandidateSummary extends StatelessWidget {
     }
     final entries = candidate.payload['entries'];
     final unknown = entries is List
-        ? entries.where((item) => item is Map && item['quantity'] == null).length
+        ? entries
+              .where((item) => item is Map && item['quantity'] == null)
+              .length
         : 0;
     return 'Inventory · ${entries is List ? entries.length : 0} entry(s) · '
         '$unknown unknown quantity';
@@ -745,7 +767,8 @@ class _CandidateSummary extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           Chip(label: Text(candidate.kind.name)),
-          if (candidate.reviewRequired) const Chip(label: Text('Review required')),
+          if (candidate.reviewRequired)
+            const Chip(label: Text('Review required')),
           if (candidate.approved) const Chip(label: Text('Approved')),
         ],
       ),

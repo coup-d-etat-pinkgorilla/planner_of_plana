@@ -1,409 +1,508 @@
+import 'dart:math' as math;
+
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
-import 'package:flutter/foundation.dart';
+import 'package:ba_planner_v7/ui/studio/plan_studio_layout.dart';
+import 'package:ba_planner_v7/ui/studio/section_template.dart';
+import 'package:ba_planner_v7/ui/widgets/bond_rank_portrait.dart';
+import 'package:ba_planner_v7/ui/widgets/diagonal_media_list_item.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_section_layout.dart';
+import 'package:ba_planner_v7/ui/widgets/scroll_viewport_fog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('plan phase items use the expanded readable height', () {
+    expect(planPhaseItemHeight, 65);
+    expect(planPhaseItemExtent, 69);
+  });
+
   Future<void> pumpPage(
     WidgetTester tester,
     AppService service, {
     Size size = const Size(900, 900),
-    PlanningStudentSeed? seed,
   }) async {
     await tester.binding.setSurfaceSize(size);
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(body: PlanningPage(service: service, initialSeed: seed)),
+        home: Scaffold(body: PlanningPage(service: service)),
       ),
     );
   }
 
-  Future<void> addStudent(WidgetTester tester, String id) async {
-    await tester.enterText(find.byKey(const ValueKey('student-id-input')), id);
-    await tester.tap(find.byKey(const ValueKey('add-student-button')));
-    await tester.pumpAndSettle();
-  }
-
-  Future<void> reveal(
-    WidgetTester tester,
-    Finder finder, {
-    double delta = 300,
-  }) async {
-    final page = find.byKey(const ValueKey('planning-page'));
-    for (
-      var attempt = 0;
-      finder.evaluate().isEmpty && attempt < 30;
-      attempt++
-    ) {
-      await tester.drag(page, Offset(0, -delta));
-      await tester.pump();
-    }
-    expect(finder, findsOneWidget);
-    await tester.ensureVisible(finder);
-    await tester.pump();
-  }
-
-  testWidgets(
-    'student lookup keeps current state separate from editable goal',
-    (tester) async {
-      final service = _PlanningTestService();
-      addTearDown(service.dispose);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      await pumpPage(tester, service);
-
-      expect(
-        find.byKey(const ValueKey('planning-empty-state')),
-        findsOneWidget,
-      );
-      await addStudent(tester, 'ayane');
-
-      expect(find.text('아야네'), findsOneWidget);
-      expect(find.textContaining('임시 현재 상태'), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey('goal-ayane-target_level')),
-        findsOneWidget,
-      );
-      expect(service.lookups, ['ayane']);
-      expect(service.lastValidatedPlan, isNull);
-    },
-  );
-
-  testWidgets('duplicate lookup, removal, and metadata errors are explicit', (
-    tester,
-  ) async {
-    final service = _PlanningTestService();
-    addTearDown(service.dispose);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await pumpPage(tester, service);
-    await addStudent(tester, 'ayane');
-
-    final input = find.byKey(const ValueKey('student-id-input'));
-    await reveal(tester, input, delta: -300);
-    await tester.enterText(input, 'ayane');
-    await tester.tap(find.byKey(const ValueKey('add-student-button')));
-    await tester.pump();
-    expect(find.textContaining('이미 계획에 추가'), findsOneWidget);
-    expect(service.lookups, ['ayane']);
-
-    await tester.tap(find.byKey(const ValueKey('remove-student-ayane')));
-    await tester.pump();
-    expect(find.byKey(const ValueKey('planning-empty-state')), findsOneWidget);
-
-    service.throwOnLookup = true;
-    await tester.enterText(input, 'aru');
-    await tester.tap(find.byKey(const ValueKey('add-student-button')));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('학생 조회 중 오류'), findsOneWidget);
+  test('projects the five sections from the plan Studio document', () {
+    expect(
+      planStudioDocument.elements
+          .map(
+            (element) => (
+              element.rect.x,
+              element.rect.y,
+              element.rect.width,
+              element.rect.height,
+            ),
+          )
+          .toList(),
+      const [
+        (0, 2, 37, 92),
+        (12, 2, 29, 94),
+        (45, 2, 42, 92),
+        (89, 14, 7, 80),
+        (53, 1, 42, 14),
+      ],
+    );
+    final section3 = planStudioDocument.elements.singleWhere(
+      (element) => element.id == 'element-3',
+    );
+    final section5 = planStudioDocument.elements.singleWhere(
+      (element) => element.id == 'element-5',
+    );
+    expect(section3.spec.face, SectionAttachmentFace.bottom);
+    expect(section3.spec.height, 80);
+    expect(section5.spec.face, SectionAttachmentFace.top);
+    expect(section5.spec.height, 96);
+    final section3VisualTop =
+        section3.rect.bottom - section3.rect.height * section3.spec.height / 96;
+    final sectionGap = section3VisualTop - section5.rect.bottom;
+    expect(sectionGap, closeTo(2.3333333333, 1e-9));
   });
 
-  testWidgets('MockAppService provides a non-zero planning flow', (
+  test('uses the requested per-section intro and outro directions', () {
+    expect(planSection1Motion.intro, 0);
+    expect(planSection1Motion.outro, 180);
+    expect(planSection2Motion.intro, 80);
+    expect(planSection2Motion.outro, 260);
+    expect(planSection3Motion.intro, 80);
+    expect(planSection3Motion.outro, 260);
+    expect(planSection4Motion.intro, 180);
+    expect(planSection4Motion.outro, 0);
+    expect(planSection5Motion.intro, 260);
+    expect(planSection5Motion.outro, 80);
+  });
+
+  test('dummy phases keep student steps in execution order', () {
+    final shirokoSteps = [
+      for (final phase in dummyPlanPhases)
+        for (final step in phase.steps)
+          if (step.studentId == 'shiroko') step.step,
+    ];
+    expect(shirokoSteps, [1, 2, 3]);
+    expect(dummyPlanPhases.map((phase) => phase.id).toList(), [
+      'phase-1',
+      'phase-2',
+      'phase-3',
+      'phase-4',
+    ]);
+    expect(
+      dummyPlanPhases.fold<int>(
+        0,
+        (total, phase) => total + phase.steps.length,
+      ),
+      16,
+    );
+    expect([
+      for (final phase in dummyPlanPhases)
+        for (final step in phase.steps)
+          if (step.bondRank != null) step.bondRank,
+    ], containsAll(<int>[50, 100]));
+  });
+
+  test('phase items follow the parent parallelogram edges', () {
+    const size = Size(320, 224);
+    final rect = planPhaseItemRect(size, 1);
+    final itemDepth = planPhaseItemHeight / math.tan(80 * math.pi / 180);
+    expect(rect.height, planPhaseItemHeight);
+    expect(
+      rect.left,
+      closeTo(planPhaseLeftBoundary(size, rect.bottom) + 9, 1e-9),
+    );
+    expect(
+      rect.left + itemDepth,
+      closeTo(planPhaseLeftBoundary(size, rect.top) + 9, 1e-9),
+    );
+    expect(
+      rect.right - itemDepth,
+      closeTo(planPhaseRightBoundary(size, rect.bottom) - 9, 1e-9),
+    );
+  });
+
+  test('resource header follows the section 5 parallelogram safe interval', () {
+    const size = Size(1280, 720);
+    final section = planSectionPath(size, 'element-5');
+    final tabs = planResourceTabShelfRect(size);
+    final header = planResourceHeaderPath(size);
+    final content = planResourceHeaderContentRect(size);
+
+    for (final point in [
+      tabs.topLeft,
+      tabs.topRight,
+      tabs.bottomLeft,
+      tabs.bottomRight,
+      content.centerLeft,
+      content.centerRight,
+    ]) {
+      expect(section.contains(point), isTrue);
+    }
+    expect(header.contains(content.center), isTrue);
+    expect(tabs.bottom, lessThan(header.getBounds().top));
+    expect(
+      header.getBounds().height,
+      lessThanOrEqualTo(planResourceHeaderHeight),
+    );
+  });
+
+  testWidgets('places five sections and a diagonal phase preview', (
     tester,
   ) async {
     final service = MockAppService();
     addTearDown(service.dispose);
     addTearDown(() => tester.binding.setSurfaceSize(null));
+
     await pumpPage(tester, service);
-    await addStudent(tester, 'ayane');
 
-    final level = find.byKey(const ValueKey('goal-ayane-target_level'));
-    await tester.enterText(level, '10');
-    final calculate = find.byKey(const ValueKey('calculate-plan-button'));
-    await reveal(tester, calculate);
-    await tester.tap(calculate);
-    await tester.pumpAndSettle();
-    await reveal(tester, find.byKey(const ValueKey('total-cost-summary')));
-
-    expect(find.text('전체 총 필요량'), findsOneWidget);
-    expect(find.text('크레딧: 2000'), findsWidgets);
-  });
-
-  testWidgets('blank goal is omitted while numeric zero survives validation', (
-    tester,
-  ) async {
-    final service = _PlanningTestService();
-    addTearDown(service.dispose);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await pumpPage(tester, service);
-    await addStudent(tester, 'ayane');
-
-    final level = find.byKey(const ValueKey('goal-ayane-target_level'));
-    await tester.enterText(level, '100');
-    await tester.pump();
-    expect(find.text('0~90 정수를 입력하세요.'), findsOneWidget);
-    final calculate = find.byKey(const ValueKey('calculate-plan-button'));
-    await reveal(tester, calculate);
-    expect(tester.widget<FilledButton>(calculate).onPressed, isNotNull);
-    await tester.tap(calculate);
-    await tester.pump();
-    expect(find.byKey(const ValueKey('calculation-message')), findsOneWidget);
-
-    await reveal(tester, level, delta: -300);
-    await tester.enterText(level, '0');
-    await reveal(tester, calculate);
-    await tester.tap(calculate);
-    await tester.pumpAndSettle();
-
-    final goal = (service.lastValidatedPlan!['goals'] as List).single as Map;
-    expect(goal['target_level'], 0);
-    expect(goal.containsKey('target_star'), isFalse);
-    await reveal(tester, find.byKey(const ValueKey('total-cost-summary')));
-    expect(find.text('전체 총 필요량'), findsOneWidget);
-    expect(find.textContaining('부족량'), findsNothing);
-  });
-
-  testWidgets('multiple students show per-student and aggregate requirements', (
-    tester,
-  ) async {
-    final service = _PlanningTestService();
-    addTearDown(service.dispose);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await pumpPage(tester, service);
-    await addStudent(tester, 'ayane');
-    await addStudent(tester, 'aru');
-
-    await tester.enterText(
-      find.byKey(const ValueKey('goal-ayane-target_level')),
-      '20',
-    );
-    final aruLevel = find.byKey(const ValueKey('goal-aru-target_level'));
-    await reveal(tester, aruLevel);
-    await tester.enterText(aruLevel, '30');
-    final calculate = find.byKey(const ValueKey('calculate-plan-button'));
-    await reveal(tester, calculate);
-    await tester.tap(calculate);
-    await tester.pumpAndSettle();
-
-    await reveal(
-      tester,
-      find.byKey(const ValueKey('student-cost-ayane')),
-      delta: -300,
-    );
-    expect(find.text('아야네 총 필요량'), findsOneWidget);
-    await reveal(tester, find.byKey(const ValueKey('student-cost-aru')));
-    expect(find.text('아루 총 필요량'), findsOneWidget);
-    await reveal(tester, find.byKey(const ValueKey('total-cost-summary')));
-    expect(find.text('전체 총 필요량'), findsOneWidget);
-    expect(service.calculations, 3);
-  });
-
-  testWidgets('not-found, disconnected, and calculation errors are explicit', (
-    tester,
-  ) async {
-    final service = _PlanningTestService();
-    addTearDown(service.dispose);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await pumpPage(tester, service);
-    await addStudent(tester, 'missing');
-    expect(find.textContaining('찾지 못했습니다'), findsOneWidget);
-
-    service.stateNotifier.value = service.stateNotifier.value.copyWith(
-      connection: BackendConnection.disconnected,
-    );
-    await tester.pump();
+    final page = find.byKey(const ValueKey('planning-page'));
+    expect(page, findsOneWidget);
     expect(
-      tester
-          .widget<FilledButton>(
-            find.byKey(const ValueKey('add-student-button')),
-          )
-          .onPressed,
-      isNull,
+      find.descendant(of: page, matching: find.byType(ColoredBox)),
+      findsNothing,
     );
-    expect(find.byKey(const ValueKey('planning-reconnect')), findsOneWidget);
-
-    service.stateNotifier.value = service.stateNotifier.value.copyWith(
-      connection: BackendConnection.connected,
-    );
-    service.throwOnCalculate = true;
-    await tester.pump();
-    await addStudent(tester, 'ayane');
-    final calculate = find.byKey(const ValueKey('calculate-plan-button'));
-    await reveal(tester, calculate);
-    await tester.tap(calculate);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('계산 중 오류'), findsOneWidget);
-  });
-
-  testWidgets('late calculation cannot overwrite the newest edited plan', (
-    tester,
-  ) async {
-    final service = _PlanningTestService(useTargetDelay: true);
-    addTearDown(service.dispose);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await pumpPage(tester, service);
-    await addStudent(tester, 'ayane');
-    final level = find.byKey(const ValueKey('goal-ayane-target_level'));
-
-    await tester.enterText(level, '10');
-    final calculate = find.byKey(const ValueKey('calculate-plan-button'));
-    await reveal(tester, calculate);
-    await tester.tap(calculate);
-    await tester.pump(const Duration(milliseconds: 5));
-    await reveal(tester, level, delta: -300);
-    await tester.enterText(level, '20');
-    await reveal(tester, calculate);
-    await tester.tap(calculate);
-    await tester.pump(const Duration(milliseconds: 100));
-
-    await reveal(tester, find.byKey(const ValueKey('total-cost-summary')));
-    expect(find.text('크레딧: 20'), findsWidgets);
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('크레딧: 20'), findsWidgets);
-    expect(find.text('크레딧: 10'), findsNothing);
-  });
-
-  testWidgets('narrow planning layout has no render overflow', (tester) async {
-    final service = _PlanningTestService();
-    addTearDown(service.dispose);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await pumpPage(tester, service, size: const Size(360, 700));
-    await addStudent(tester, 'ayane');
-    final calculate = find.byKey(const ValueKey('calculate-plan-button'));
-    await reveal(tester, calculate);
-    await tester.tap(calculate);
-    await tester.pumpAndSettle();
-
-    await reveal(tester, find.byKey(const ValueKey('total-cost-summary')));
-    expect(tester.takeException(), isNull);
-    expect(find.byKey(const ValueKey('total-cost-summary')), findsOneWidget);
-  });
-
-  testWidgets('accepts a student tab handoff into the existing draft', (tester) async {
-    final service = _PlanningTestService();
-    addTearDown(service.dispose);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await pumpPage(
-      tester,
-      service,
-      seed: PlanningStudentSeed(
-        handoffId: 'handoff-1',
-        studentId: 'aru',
-        metadata: const {'student_id': 'aru', 'display_name': 'Aru'},
-        currentValues: const {'level': 50, 'student_star': 3},
-      ),
-    );
-    await tester.pump();
-    expect(find.byKey(const ValueKey('student-card-aru')), findsOneWidget);
-  });
-}
-
-class _PlanningTestService implements AppService {
-  _PlanningTestService({this.useTargetDelay = false});
-
-  final bool useTargetDelay;
-  final stateNotifier = ValueNotifier(
-    const AppServiceState(
-      connection: BackendConnection.connected,
-      scanPhase: ScanPhase.idle,
-      imageLoadState: ImageLoadState.loaded,
-      studentCount: 2,
-      inventoryItemCount: 0,
-      hasData: true,
-      scanAvailable: false,
-      useLongNames: false,
-      hasMissingMetadata: false,
-    ),
-  );
-  final List<String> lookups = [];
-  Map<String, dynamic>? lastValidatedPlan;
-  int calculations = 0;
-  bool throwOnCalculate = false;
-  bool throwOnLookup = false;
-
-  @override
-  ValueListenable<AppServiceState> get state => stateNotifier;
-
-  @override
-  Future<Map<String, dynamic>?> getStudent(String studentId) async {
-    lookups.add(studentId);
-    if (throwOnLookup) throw StateError('lookup failure');
-    const names = {'ayane': '아야네', 'aru': '아루'};
-    final name = names[studentId];
-    if (name == null) return null;
-    return {
-      'student_id': studentId,
-      'display_name': name,
-      'template_name': studentId,
-      'group': 'test',
-      'variant': null,
-    };
-  }
-
-  @override
-  Future<List<StudentCatalogEntry>> listStudents() async => const [];
-
-  @override
-  Future<List<InventoryCatalogEntry>> listInventoryItems() async => const [];
-
-  @override
-  Future<InventoryShortageResult> calculateShortages({required List<Map<String,dynamic>> currentStudents,
-    required Map<String,dynamic> plan,required Map<String,dynamic> inventory}) async =>
-      const InventoryShortageResult([], []);
-
-  @override
-  Future<Map<String, dynamic>> validatePlan(Map<String, dynamic> plan) async {
-    lastValidatedPlan = {
-      'version': plan['version'],
-      'goals': (plan['goals'] as List)
-          .map((goal) => Map<String, dynamic>.from(goal as Map))
-          .toList(),
-    };
-    return lastValidatedPlan!;
-  }
-
-  @override
-  Future<Map<String, dynamic>> calculatePlan({
-    required List<Map<String, dynamic>> currentStudents,
-    required Map<String, dynamic> plan,
-  }) async {
-    calculations += 1;
-    if (throwOnCalculate) throw StateError('test failure');
-    final goals = plan['goals'] as List;
-    final target = goals.fold<int>(0, (sum, raw) {
-      final goal = raw as Map;
-      return sum + (goal['target_level'] as int? ?? 0);
-    });
-    if (useTargetDelay) {
-      await Future<void>.delayed(
-        Duration(milliseconds: target == 10 ? 250 : 20),
+    expect(find.byType(PlanSectionMotion), findsNWidgets(5));
+    for (final id in const [
+      'element-1',
+      'element-2',
+      'element-3',
+      'element-4',
+      'element-5',
+    ]) {
+      expect(find.byKey(ValueKey('plan-$id-motion')), findsOneWidget);
+      final paint = tester.widget<CustomPaint>(
+        find.byKey(ValueKey('plan-$id-foundation')),
+      );
+      expect(
+        paint.painter,
+        isA<PlanSectionFoundationPainter>().having(
+          (painter) => painter.sectionId,
+          'sectionId',
+          id,
+        ),
       );
     }
-    return _cost(target);
-  }
-
-  Map<String, dynamic> _cost(int credits) => {
-    'credits': credits,
-    'level_exp': credits * 2,
-    'equipment_exp': 0,
-    'weapon_exp': 0,
-    'star_materials': <String, int>{},
-    'equipment_materials': <String, int>{},
-    'level_exp_items': <String, int>{},
-    'equipment_exp_items': <String, int>{},
-    'weapon_exp_items': <String, int>{},
-    'skill_books': <String, int>{},
-    'ex_ooparts': <String, int>{},
-    'skill_ooparts': <String, int>{},
-    'favorite_item_materials': <String, int>{},
-    'stat_materials': <String, int>{},
-    'stat_levels': <String, int>{},
-    'warnings': <String>[],
-  };
-
-  @override
-  Future<void> reconnect() async {
-    stateNotifier.value = stateNotifier.value.copyWith(
-      connection: BackendConnection.connected,
+    expect(
+      find.byKey(const ValueKey('plan-phase-container-foundation')),
+      findsOneWidget,
     );
-  }
+    expect(find.byType(PlanResourceHeader), findsOneWidget);
+    expect(find.byKey(const ValueKey('plan-resource-header')), findsOneWidget);
+    expect(find.byKey(const ValueKey('plan-resource-tabs')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('plan-resource-header-surface')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-resource-header-content-bottleneck')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-primary-bottleneck-summary')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-primary-bottleneck-square')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-primary-bottleneck-icon')),
+      findsOneWidget,
+    );
+    expect(find.text('가장 심한 병목 요소'), findsOneWidget);
+    expect(
+      find.text(
+        '보유량 : $planPrimaryBottleneckOwned / '
+        '필요량 : $planPrimaryBottleneckRequired',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        '확보 시 학생 $planPrimaryBottleneckStudentCount명의 '
+        '목표 단계가 가능해집니다',
+      ),
+      findsOneWidget,
+    );
+    final bottleneckImages = tester
+        .widgetList<Image>(
+          find.descendant(
+            of: find.byKey(const ValueKey('plan-primary-bottleneck-summary')),
+            matching: find.byType(Image),
+          ),
+        )
+        .map((image) => image.image)
+        .toList();
+    expect(
+      bottleneckImages,
+      contains(const AssetImage(planPrimaryBottleneckBackgroundAsset)),
+    );
+    expect(
+      bottleneckImages,
+      contains(const AssetImage(planPrimaryBottleneckIconAsset)),
+    );
+    expect(
+      tester
+              .getSize(
+                find.byKey(const ValueKey('plan-primary-bottleneck-square')),
+              )
+              .height /
+          tester
+              .getSize(
+                find.byKey(const ValueKey('plan-primary-bottleneck-summary')),
+              )
+              .height,
+      closeTo(0.85, 0.01),
+    );
+    expect(find.text('페이즈별 재화'), findsNothing);
+    expect(find.text('전체 필요 재화'), findsNothing);
+    expect(find.text('병목 재화'), findsNothing);
+    for (final view in PlanResourceView.values) {
+      expect(
+        find.byKey(ValueKey('plan-resource-tab-${view.name}')),
+        findsOneWidget,
+      );
+    }
+    expect(find.byKey(const ValueKey('plan-phase-scroll')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('plan-phase-diagonal-scrollbar')),
+      findsOneWidget,
+    );
+    final initialFog = tester.widget<ScrollViewportFog>(
+      find.byKey(const ValueKey('plan-phase-fog')),
+    );
+    expect(initialFog.showTop, isFalse);
+    expect(initialFog.showBottom, isTrue);
+    expect(
+      find.byKey(const ValueKey('plan-phase-viewport-fog-top')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-phase-viewport-fog-bottom')),
+      findsOneWidget,
+    );
+    for (final phase in dummyPlanPhases) {
+      expect(find.byKey(ValueKey('plan-phase-${phase.id}')), findsOneWidget);
+    }
+    expect(
+      find.byKey(const ValueKey('plan-phase-flow-triangle')),
+      findsNWidgets(3),
+    );
+    expect(
+      find.byKey(const ValueKey('plan-step-phase-1-shiroko-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-step-phase-2-shiroko-2')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-step-phase-3-shiroko-3')),
+      findsOneWidget,
+    );
+    final bond50 = tester.widget<BondRankPortrait>(
+      find.descendant(
+        of: find.byKey(const ValueKey('plan-step-phase-2-yuuka-2')),
+        matching: find.byType(BondRankPortrait),
+      ),
+    );
+    final bond100 = tester.widget<BondRankPortrait>(
+      find.descendant(
+        of: find.byKey(const ValueKey('plan-step-phase-3-azusa-3')),
+        matching: find.byType(BondRankPortrait),
+      ),
+    );
+    expect(bond50.bondRank, 50);
+    expect(bond100.bondRank, 100);
+    expect(
+      bondRankPortraitBackgroundAsset(bond50.bondRank),
+      yellowStudentPortraitBackgroundAsset,
+    );
+    expect(
+      bondRankPortraitBackgroundAsset(bond100.bondRank),
+      purpleStudentPortraitBackgroundAsset,
+    );
+    expect(
+      find.byType(DiagonalMediaListItem),
+      findsNWidgets(
+        dummyPlanPhases.fold(0, (total, phase) => total + phase.steps.length),
+      ),
+    );
+    final shirokoImages = tester
+        .widgetList<Image>(
+          find.descendant(
+            of: find.byKey(const ValueKey('plan-step-phase-1-shiroko-1')),
+            matching: find.byType(Image),
+          ),
+        )
+        .map((image) => image.image)
+        .toList();
+    expect(
+      shirokoImages,
+      contains(const AssetImage('assets/student_portraits/shiroko.png')),
+    );
+    expect(find.byType(Card), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
-  @override
-  Future<void> restartBackend() => reconnect();
+  testWidgets('bottleneck is the first tab and other tabs clear its summary', (
+    tester,
+  ) async {
+    final service = MockAppService();
+    addTearDown(service.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
 
-  @override
-  Future<void> startScan() async {}
+    await pumpPage(tester, service, size: const Size(1280, 500));
+    await tester.pumpAndSettle();
 
-  @override
-  Future<void> dispose() async => stateNotifier.dispose();
+    expect(
+      find.byKey(const ValueKey('plan-resource-header-content-bottleneck')),
+      findsOneWidget,
+    );
+    final bottleneckLeft = tester
+        .getTopLeft(find.byKey(const ValueKey('plan-resource-tab-bottleneck')))
+        .dx;
+    final byPhaseLeft = tester
+        .getTopLeft(find.byKey(const ValueKey('plan-resource-tab-byPhase')))
+        .dx;
+    final overallLeft = tester
+        .getTopLeft(find.byKey(const ValueKey('plan-resource-tab-overall')))
+        .dx;
+    expect(bottleneckLeft, lessThan(byPhaseLeft));
+    expect(byPhaseLeft, lessThan(overallLeft));
+
+    await tester.tap(find.byKey(const ValueKey('plan-resource-tab-overall')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('plan-resource-header-content-overall')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-primary-bottleneck-summary')),
+      findsNothing,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('plan-resource-tab-bottleneck')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('plan-primary-bottleneck-summary')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('bottleneck item highlights every affected student row', (
+    tester,
+  ) async {
+    final service = MockAppService();
+    addTearDown(service.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpPage(tester, service, size: const Size(1280, 720));
+    await tester.pumpAndSettle();
+
+    DiagonalMediaListItem item(String key) =>
+        tester.widget<DiagonalMediaListItem>(
+          find.descendant(
+            of: find.byKey(ValueKey(key)),
+            matching: find.byType(DiagonalMediaListItem),
+          ),
+        );
+
+    const affectedRows = [
+      'plan-step-phase-1-haruka-1',
+      'plan-step-phase-2-nonomi-1',
+      'plan-step-phase-3-nonomi-2',
+      'plan-step-phase-3-azusa-3',
+    ];
+    for (final key in affectedRows) {
+      expect(item(key).highlighted, isFalse);
+    }
+    expect(item('plan-step-phase-1-shiroko-1').highlighted, isFalse);
+
+    await tester.tap(
+      find.byKey(const ValueKey('plan-primary-bottleneck-action')),
+    );
+    await tester.pumpAndSettle();
+
+    for (final key in affectedRows) {
+      expect(item(key).highlighted, isTrue);
+    }
+    expect(item('plan-step-phase-1-shiroko-1').highlighted, isFalse);
+
+    await tester.tap(find.byKey(const ValueKey('plan-resource-tab-overall')));
+    await tester.pumpAndSettle();
+    for (final key in affectedRows) {
+      expect(item(key).highlighted, isFalse);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('phase list scrolls while preserving its diagonal container', (
+    tester,
+  ) async {
+    final service = MockAppService();
+    addTearDown(service.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpPage(tester, service, size: const Size(1280, 720));
+    await tester.pumpAndSettle();
+
+    final scroll = find.byKey(const ValueKey('plan-phase-scroll'));
+    final scrollable = find.descendant(
+      of: scroll,
+      matching: find.byType(Scrollable),
+    );
+    final position = tester.state<ScrollableState>(scrollable).position;
+    expect(position.maxScrollExtent, greaterThan(position.viewportDimension));
+    final before = tester.getTopLeft(
+      find.byKey(const ValueKey('plan-phase-phase-2')),
+    );
+    final lastBefore = tester.getTopLeft(
+      find.byKey(const ValueKey('plan-step-phase-4-ako-3')),
+    );
+    await tester.drag(scroll, const Offset(0, -240));
+    await tester.pumpAndSettle();
+    final after = tester.getTopLeft(
+      find.byKey(const ValueKey('plan-phase-phase-2')),
+    );
+    final lastAfter = tester.getTopLeft(
+      find.byKey(const ValueKey('plan-step-phase-4-ako-3')),
+    );
+
+    expect(after.dy, lessThan(before.dy));
+    expect(lastAfter.dy, lessThan(lastBefore.dy));
+    expect(position.pixels, greaterThan(0));
+    final middleFog = tester.widget<ScrollViewportFog>(
+      find.byKey(const ValueKey('plan-phase-fog')),
+    );
+    expect(middleFog.showTop, isTrue);
+    expect(middleFog.showBottom, isTrue);
+
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pump();
+    final bottomFog = tester.widget<ScrollViewportFog>(
+      find.byKey(const ValueKey('plan-phase-fog')),
+    );
+    expect(bottomFog.showTop, isTrue);
+    expect(bottomFog.showBottom, isFalse);
+    expect(
+      find.byKey(const ValueKey('plan-phase-viewport-fog-top')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-phase-viewport-fog-bottom')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-phase-container-foundation')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
 }

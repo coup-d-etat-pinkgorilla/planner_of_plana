@@ -16,12 +16,18 @@ class StudentCatalogTests(unittest.TestCase):
             "missing": {},
             "a": {"display_name": "가나다", "school": "Abydos"},
         }
-        handler = PlanningProtocolV1(student_ids=lambda: ["z", "missing", "a"], student_lookup=source.get)
+        handler = PlanningProtocolV1(
+            student_ids=lambda: ["z", "missing", "a"],
+            student_lookup=source.get,
+            student_jp_only=lambda student_id: student_id == "z",
+        )
         response = handler.handle({"protocol":1,"id":"catalog","type":"request","method":"planning.student.catalog","payload":{}})
         self.assertEqual(["missing", "a", "z"], [item["student_id"] for item in response["payload"]["students"]])
         fallback = response["payload"]["students"][0]
         self.assertEqual("missing", fallback["display_name"])
         self.assertEqual("missing.png", fallback["template_name"])
+        self.assertFalse(fallback["jp_only"])
+        self.assertTrue(response["payload"]["students"][-1]["jp_only"])
         self.assertNotIn("raw_skill_material", fallback)
 
     def test_catalog_rejects_payload_and_real_process_serves_list(self) -> None:

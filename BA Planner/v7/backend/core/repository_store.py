@@ -16,6 +16,7 @@ from core.repository_merge import resolve_inventory_snapshot
 
 
 STORE_VERSION = 1
+DEFAULT_PROFILE_AVATAR = "hasumi"
 
 
 class RepositoryError(RuntimeError):
@@ -82,12 +83,15 @@ class JsonRepository:
         ids: set[str] = set()
         names: set[str] = set()
         for item in value["profiles"]:
-            if not isinstance(item, dict) or set(item) != {"profile_id", "display_name", "revision"}:
+            if not isinstance(item, dict) or not set(item).issubset({"profile_id", "display_name", "revision", "avatar_student_id"}) or not {"profile_id", "display_name", "revision"}.issubset(item):
                 raise RepositoryError("corrupt_data", "profile catalog contains an invalid summary")
             profile_id = self._stored_profile_id(item["profile_id"], "profile summary profile_id")
             display_name = item["display_name"]
             if not isinstance(display_name, str) or not display_name.strip():
                 raise RepositoryError("corrupt_data", "profile summary display_name must be non-empty")
+            avatar = item.get("avatar_student_id", DEFAULT_PROFILE_AVATAR)
+            if not isinstance(avatar, str) or not avatar.strip():
+                raise RepositoryError("corrupt_data", "profile summary avatar_student_id must be non-empty")
             self._stored_revision(item["revision"], "profile summary revision")
             folded = display_name.casefold()
             if profile_id in ids or folded in names:
@@ -170,21 +174,23 @@ class JsonRepository:
 
     @staticmethod
     def _profile_summary(profile: dict[str, Any], selected: str | None) -> dict[str, Any]:
-        return {"profile_id": profile["profile_id"], "display_name": profile["display_name"], "revision": profile["revision"], "selected": profile["profile_id"] == selected}
+        return {"profile_id": profile["profile_id"], "display_name": profile["display_name"], "avatar_student_id": profile.get("avatar_student_id", DEFAULT_PROFILE_AVATAR), "revision": profile["revision"], "selected": profile["profile_id"] == selected}
 
     def list_profiles(self) -> dict[str, Any]:
         catalog = self._catalog()
         profiles = [
-            {**item, "selected": item["profile_id"] == catalog["selected_profile_id"]}
+            {**item, "avatar_student_id": item.get("avatar_student_id", DEFAULT_PROFILE_AVATAR), "selected": item["profile_id"] == catalog["selected_profile_id"]}
             for item in catalog["profiles"]
         ]
         return {"profiles": sorted(profiles, key=lambda item: item["profile_id"]), "selected_profile_id": catalog["selected_profile_id"]}
 
-    def create_profile(self, display_name: str, idempotency_key: str) -> dict[str, Any]:
+    def create_profile(self, display_name: str, idempotency_key: str, avatar_student_id: str = DEFAULT_PROFILE_AVATAR) -> dict[str, Any]:
         if not isinstance(display_name, str) or not display_name.strip():
             raise RepositoryError("invalid_payload", "display_name must be non-empty")
         if not isinstance(idempotency_key, str) or not idempotency_key:
             raise RepositoryError("invalid_payload", "idempotency_key must be non-empty")
+        if not isinstance(avatar_student_id, str) or not avatar_student_id.strip():
+            raise RepositoryError("invalid_payload", "avatar_student_id must be non-empty")
         descriptor = self._lock()
         try:
             catalog = self._catalog()
@@ -193,14 +199,16 @@ class JsonRepository:
             if existing is not None:
                 if existing["display_name"] != display_name.strip():
                     raise RepositoryError("idempotency_conflict", "idempotency key was used for another profile")
-                return {"profile": {**existing, "selected": catalog["selected_profile_id"] == profile_id}, "revision": existing["revision"]}
+                if existing.get("avatar_student_id", DEFAULT_PROFILE_AVATAR) != avatar_student_id:
+                    raise RepositoryError("idempotency_conflict", "idempotency key was used for another profile")
+                return {"profile": {**existing, "avatar_student_id": existing.get("avatar_student_id", DEFAULT_PROFILE_AVATAR), "selected": catalog["selected_profile_id"] == profile_id}, "revision": existing["revision"]}
             if any(item["display_name"].casefold() == display_name.strip().casefold() for item in catalog["profiles"]):
                 raise RepositoryError("profile_name_conflict", "profile display name already exists")
             profile = {"version": 1, "profile_id": profile_id, "revision": 0, "students": [], "inventory": {"version": 1, "entries": []}, "goals": {"version": 1, "goals": []}, "idempotency": {}}
-            summary = {"profile_id": profile_id, "display_name": display_name.strip(), "revision": 0, "selected": catalog["selected_profile_id"] is None}
+            summary = {"profile_id": profile_id, "display_name": display_name.strip(), "avatar_student_id": avatar_student_id, "revision": 0, "selected": catalog["selected_profile_id"] is None}
             if catalog["selected_profile_id"] is None:
                 catalog["selected_profile_id"] = profile_id
-            catalog["profiles"].append({key: summary[key] for key in ("profile_id", "display_name", "revision")})
+            catalog["profiles"].append({key: summary[key] for key in ("profile_id", "display_name", "avatar_student_id", "revision")})
             self._atomic_write(self._profile_path(profile_id), profile)
             try:
                 self._atomic_write(self.catalog_path, catalog)
@@ -220,7 +228,7 @@ class JsonRepository:
         summary = next((item for item in catalog["profiles"] if item["profile_id"] == selected), None)
         if summary is None:
             raise RepositoryError("corrupt_data", "selected profile is absent from catalog")
-        return {"profile": {**summary, "selected": True}}
+        return {"profile": {**summary, "avatar_student_id": summary.get("avatar_student_id", DEFAULT_PROFILE_AVATAR), "selected": True}}
 
     def _catalog_mutation(self, profile_id: str, expected_revision: int, idempotency_key: str, operation: str, mutate: Callable[[dict[str, Any], dict[str, Any]], None]) -> dict[str, Any]:
         if not isinstance(idempotency_key, str) or not idempotency_key:
@@ -283,6 +291,51 @@ class JsonRepository:
             for item in catalog["profiles"]:
                 if item["profile_id"] == profile_id: item["display_name"] = name
         return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"rename:{name}", mutate)
+
+    def update_profile(self, profile_id: str, display_name: str, avatar_student_id: str, expected_revision: int, idempotency_key: str) -> dict[str, Any]:
+        name = display_name.strip() if isinstance(display_name, str) else ""
+        avatar = avatar_student_id.strip() if isinstance(avatar_student_id, str) else ""
+        if not name or not avatar:
+            raise RepositoryError("invalid_payload", "display_name and avatar_student_id must be non-empty")
+        def mutate(catalog: dict[str, Any], _profile: dict[str, Any]) -> None:
+            if any(item["profile_id"] != profile_id and item["display_name"].casefold() == name.casefold() for item in catalog["profiles"]):
+                raise RepositoryError("profile_name_conflict", "profile display name already exists")
+            for item in catalog["profiles"]:
+                if item["profile_id"] == profile_id:
+                    item["display_name"] = name
+                    item["avatar_student_id"] = avatar
+        return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"update:{name}:{avatar}", mutate)
+
+    def delete_profile(self, profile_id: str, expected_revision: int, _idempotency_key: str) -> dict[str, Any]:
+        descriptor = self._lock()
+        try:
+            catalog, profile = self._catalog(allow_missing=False), self._profile(profile_id)
+            if profile["revision"] != expected_revision:
+                raise RepositoryError("revision_conflict", "expected revision is stale", details={"current_revision": profile["revision"]})
+            catalog_before = self.catalog_path.read_bytes()
+            profile_path = self._profile_path(profile_id)
+            profile_before = profile_path.read_bytes()
+            tactical_path = self.root / "tactical" / f"{profile_id}.json"
+            tactical_before = tactical_path.read_bytes() if tactical_path.exists() else None
+            catalog["profiles"] = [item for item in catalog["profiles"] if item["profile_id"] != profile_id]
+            if catalog["selected_profile_id"] == profile_id:
+                catalog["selected_profile_id"] = catalog["profiles"][0]["profile_id"] if catalog["profiles"] else None
+            try:
+                self._atomic_write(self.catalog_path, catalog)
+                profile_path.unlink()
+                if tactical_before is not None:
+                    tactical_path.unlink()
+            except Exception as error:
+                self._restore(self.catalog_path, catalog_before)
+                self._restore(profile_path, profile_before)
+                if tactical_before is not None:
+                    self._restore(tactical_path, tactical_before)
+                if isinstance(error, RepositoryError):
+                    raise
+                raise RepositoryError("persistence_failed", "profile deletion failed", retryable=True) from error
+            return {"revision": expected_revision + 1}
+        finally:
+            self._unlock(descriptor)
 
     def get_state(self, profile_id: str) -> dict[str, Any]:
         profile = self._profile(profile_id)

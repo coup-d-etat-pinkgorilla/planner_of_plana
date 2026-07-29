@@ -193,11 +193,13 @@ class ProcessAppService
   @override
   Future<RepositoryProfile> createProfile(
     String displayName,
-    String idempotencyKey,
-  ) async {
+    String idempotencyKey, {
+    String avatarStudentId = 'hasumi',
+  }) async {
     final payload = await _client.send('repository.profile.create', {
       'display_name': displayName,
       'idempotency_key': idempotencyKey,
+      'avatar_student_id': avatarStudentId,
     });
     return RepositoryProfile.fromWire(
       Map<String, dynamic>.from(payload['profile'] as Map),
@@ -236,6 +238,32 @@ class ProcessAppService
   ) => _revisionMutation('repository.profile.rename', {
     'profile_id': profileId,
     'display_name': displayName,
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  });
+
+  @override
+  Future<int> updateProfile(
+    String profileId,
+    String displayName,
+    String avatarStudentId,
+    int expectedRevision,
+    String idempotencyKey,
+  ) => _revisionMutation('repository.profile.update', {
+    'profile_id': profileId,
+    'display_name': displayName,
+    'avatar_student_id': avatarStudentId,
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  });
+
+  @override
+  Future<int> deleteProfile(
+    String profileId,
+    int expectedRevision,
+    String idempotencyKey,
+  ) => _revisionMutation('repository.profile.delete', {
+    'profile_id': profileId,
     'expected_revision': expectedRevision,
     'idempotency_key': idempotencyKey,
   });

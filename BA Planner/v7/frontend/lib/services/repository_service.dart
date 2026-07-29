@@ -2,12 +2,14 @@ class RepositoryProfile {
   const RepositoryProfile({
     required this.id,
     required this.displayName,
+    this.avatarStudentId = 'hasumi',
     required this.revision,
     required this.selected,
   });
 
   final String id;
   final String displayName;
+  final String avatarStudentId;
   final int revision;
   final bool selected;
 
@@ -16,10 +18,13 @@ class RepositoryProfile {
     final name = value['display_name'];
     final revision = value['revision'];
     final selected = value['selected'];
+    final avatarStudentId = value['avatar_student_id'] ?? 'hasumi';
     if (id is! String ||
         !RegExp(r'^[0-9a-f]{24}$').hasMatch(id) ||
         name is! String ||
         name.isEmpty ||
+        avatarStudentId is! String ||
+        avatarStudentId.isEmpty ||
         revision is! int ||
         revision < 0 ||
         selected is! bool) {
@@ -28,6 +33,7 @@ class RepositoryProfile {
     return RepositoryProfile(
       id: id,
       displayName: name,
+      avatarStudentId: avatarStudentId,
       revision: revision,
       selected: selected,
     );
@@ -79,6 +85,7 @@ class ConfirmedStudentState {
     final values = _wireMap(value['values'], 'confirmed student values');
     const integerFields = {
       'level',
+      'bond_rank',
       'student_star',
       'weapon_star',
       'weapon_level',
@@ -117,6 +124,11 @@ class ConfirmedStudentState {
           entry.value != null &&
           entry.value is! int) {
         throw const FormatException('Invalid confirmed integer');
+      }
+      if (entry.key == 'bond_rank' &&
+          entry.value != null &&
+          ((entry.value as int) < 1 || (entry.value as int) > 100)) {
+        throw const FormatException('Invalid confirmed bond rank');
       }
       if (stringFields.contains(entry.key) &&
           entry.value != null &&
@@ -368,6 +380,8 @@ bool isValidRepositorySuccessPayload(
         return true;
       case 'repository.profile.select':
       case 'repository.profile.rename':
+      case 'repository.profile.update':
+      case 'repository.profile.delete':
       case 'repository.students.update':
       case 'repository.inventory.update':
       case 'repository.goals.save':
@@ -446,9 +460,20 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
       case 'repository.profile.current':
         return payload.isEmpty;
       case 'repository.profile.create':
-        return _exact(payload, {'display_name', 'idempotency_key'}) &&
+        return payload.keys.toSet().containsAll({
+              'display_name',
+              'idempotency_key',
+            }) &&
+            {
+              'display_name',
+              'idempotency_key',
+              'avatar_student_id',
+            }.containsAll(payload.keys) &&
             payload['display_name'] is String &&
             (payload['display_name'] as String).isNotEmpty &&
+            (!payload.containsKey('avatar_student_id') ||
+                payload['avatar_student_id'] is String &&
+                    (payload['avatar_student_id'] as String).isNotEmpty) &&
             payload['idempotency_key'] is String &&
             (payload['idempotency_key'] as String).isNotEmpty;
       case 'repository.profile.select':
@@ -457,6 +482,14 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         return mutation({'display_name'}) &&
             payload['display_name'] is String &&
             (payload['display_name'] as String).isNotEmpty;
+      case 'repository.profile.update':
+        return mutation({'display_name', 'avatar_student_id'}) &&
+            payload['display_name'] is String &&
+            (payload['display_name'] as String).isNotEmpty &&
+            payload['avatar_student_id'] is String &&
+            (payload['avatar_student_id'] as String).isNotEmpty;
+      case 'repository.profile.delete':
+        return mutation({});
       case 'repository.state.get':
         return _exact(payload, {'profile_id'}) &&
             payload['profile_id'] is String &&
@@ -505,8 +538,9 @@ abstract interface class RepositoryService {
   Future<List<RepositoryProfile>> listProfiles();
   Future<RepositoryProfile> createProfile(
     String displayName,
-    String idempotencyKey,
-  );
+    String idempotencyKey, {
+    String avatarStudentId = 'hasumi',
+  });
   Future<int> selectProfile(
     String profileId,
     int expectedRevision,
@@ -515,6 +549,18 @@ abstract interface class RepositoryService {
   Future<int> renameProfile(
     String profileId,
     String displayName,
+    int expectedRevision,
+    String idempotencyKey,
+  );
+  Future<int> updateProfile(
+    String profileId,
+    String displayName,
+    String avatarStudentId,
+    int expectedRevision,
+    String idempotencyKey,
+  );
+  Future<int> deleteProfile(
+    String profileId,
     int expectedRevision,
     String idempotencyKey,
   );

@@ -21,6 +21,7 @@ class StudentCatalogEntry {
     required this.combatClass,
     required this.role,
     required this.position,
+    this.jpOnly = false,
     required List<String> searchTags,
     required List<String> krSearchTags,
   }) : searchTags = List.unmodifiable(searchTags),
@@ -38,14 +39,27 @@ class StudentCatalogEntry {
   final String? combatClass;
   final String? role;
   final String? position;
+  final bool jpOnly;
   final List<String> searchTags;
   final List<String> krSearchTags;
 
   factory StudentCatalogEntry.fromWire(Map<String, dynamic> value) {
     const required = {
-      'student_id', 'display_name', 'template_name', 'group', 'variant',
-      'school', 'rarity', 'attack_type', 'defense_type', 'combat_class',
-      'role', 'position', 'search_tags', 'kr_search_tags',
+      'student_id',
+      'display_name',
+      'template_name',
+      'group',
+      'variant',
+      'school',
+      'rarity',
+      'attack_type',
+      'defense_type',
+      'combat_class',
+      'role',
+      'position',
+      'jp_only',
+      'search_tags',
+      'kr_search_tags',
     };
     if (value.keys.toSet().length != required.length ||
         !value.keys.toSet().containsAll(required)) {
@@ -58,6 +72,7 @@ class StudentCatalogEntry {
       }
       return item;
     }
+
     String? nullableText(String key) {
       final item = value[key];
       if (item != null && item is! String) {
@@ -65,6 +80,7 @@ class StudentCatalogEntry {
       }
       return item as String?;
     }
+
     List<String> tags(String key) {
       final item = value[key];
       if (item is! List || item.any((tag) => tag is! String)) {
@@ -72,6 +88,7 @@ class StudentCatalogEntry {
       }
       return item.cast<String>();
     }
+
     return StudentCatalogEntry(
       studentId: text('student_id'),
       displayName: text('display_name'),
@@ -85,6 +102,9 @@ class StudentCatalogEntry {
       combatClass: nullableText('combat_class'),
       role: nullableText('role'),
       position: nullableText('position'),
+      jpOnly: value['jp_only'] is bool
+          ? value['jp_only'] as bool
+          : throw const FormatException('Invalid student catalog jp_only'),
       searchTags: tags('search_tags'),
       krSearchTags: tags('kr_search_tags'),
     );
@@ -103,6 +123,7 @@ class StudentCatalogEntry {
     combatClass: null,
     role: null,
     position: null,
+    jpOnly: false,
     searchTags: const [],
     krSearchTags: const [],
   );
@@ -120,21 +141,31 @@ class StudentCatalogEntry {
     'combat_class': combatClass,
     'role': role,
     'position': position,
+    'jp_only': jpOnly,
   };
 
   bool matches(String query) {
     final needle = query.trim().toLowerCase();
     if (needle.isEmpty) return true;
-    return [studentId, displayName, group, ...searchTags, ...krSearchTags]
-        .any((value) => value.toLowerCase().contains(needle));
+    return [
+      studentId,
+      displayName,
+      group,
+      ...searchTags,
+      ...krSearchTags,
+    ].any((value) => value.toLowerCase().contains(needle));
   }
 }
 
 @immutable
 class InventoryCatalogEntry {
   const InventoryCatalogEntry({
-    required this.resourceKey, required this.itemId, required this.displayName,
-    required this.category, required this.profileId, required this.orderIndex,
+    required this.resourceKey,
+    required this.itemId,
+    required this.displayName,
+    required this.category,
+    required this.profileId,
+    required this.orderIndex,
     required this.zeroFillAllowed,
   });
 
@@ -147,38 +178,66 @@ class InventoryCatalogEntry {
   final bool zeroFillAllowed;
 
   factory InventoryCatalogEntry.fromWire(Map<String, dynamic> value) {
-    const fields = {'resource_key','item_id','display_name','category','profile_id','order_index','zero_fill_allowed'};
-    if (value.keys.toSet().length != fields.length || !value.keys.toSet().containsAll(fields) ||
-        value['resource_key'] is! String || (value['resource_key'] as String).isEmpty ||
-        (value['item_id'] != null && (value['item_id'] is! String || (value['item_id'] as String).isEmpty)) ||
-        value['display_name'] is! String || (value['display_name'] as String).isEmpty ||
-        value['category'] is! String || (value['category'] as String).isEmpty ||
-        value['profile_id'] is! String || (value['profile_id'] as String).isEmpty ||
-        value['order_index'] is! int || (value['order_index'] as int) < 0 ||
+    const fields = {
+      'resource_key',
+      'item_id',
+      'display_name',
+      'category',
+      'profile_id',
+      'order_index',
+      'zero_fill_allowed',
+    };
+    if (value.keys.toSet().length != fields.length ||
+        !value.keys.toSet().containsAll(fields) ||
+        value['resource_key'] is! String ||
+        (value['resource_key'] as String).isEmpty ||
+        (value['item_id'] != null &&
+            (value['item_id'] is! String ||
+                (value['item_id'] as String).isEmpty)) ||
+        value['display_name'] is! String ||
+        (value['display_name'] as String).isEmpty ||
+        value['category'] is! String ||
+        (value['category'] as String).isEmpty ||
+        value['profile_id'] is! String ||
+        (value['profile_id'] as String).isEmpty ||
+        value['order_index'] is! int ||
+        (value['order_index'] as int) < 0 ||
         value['zero_fill_allowed'] is! bool) {
       throw const FormatException('Invalid inventory catalog entry');
     }
     return InventoryCatalogEntry(
-      resourceKey:value['resource_key'] as String, itemId:value['item_id'] as String?,
-      displayName:value['display_name'] as String, category:value['category'] as String,
-      profileId:value['profile_id'] as String, orderIndex:value['order_index'] as int,
-      zeroFillAllowed:value['zero_fill_allowed'] as bool,
+      resourceKey: value['resource_key'] as String,
+      itemId: value['item_id'] as String?,
+      displayName: value['display_name'] as String,
+      category: value['category'] as String,
+      profileId: value['profile_id'] as String,
+      orderIndex: value['order_index'] as int,
+      zeroFillAllowed: value['zero_fill_allowed'] as bool,
     );
   }
 
   bool matches(String query) {
     final needle = query.trim().toLowerCase();
-    return needle.isEmpty || resourceKey.toLowerCase().contains(needle) ||
-        displayName.toLowerCase().contains(needle) || (itemId?.toLowerCase().contains(needle) ?? false);
+    return needle.isEmpty ||
+        resourceKey.toLowerCase().contains(needle) ||
+        displayName.toLowerCase().contains(needle) ||
+        (itemId?.toLowerCase().contains(needle) ?? false);
   }
 }
 
 @immutable
 class InventoryShortageRow {
-  const InventoryShortageRow({required this.resourceKey, required this.itemId,
-    required this.displayName, required this.category, required this.requiredAmount,
-    required this.owned, required this.shortage, required this.affectedStudentIds,
-    required this.resolved});
+  const InventoryShortageRow({
+    required this.resourceKey,
+    required this.itemId,
+    required this.displayName,
+    required this.category,
+    required this.requiredAmount,
+    required this.owned,
+    required this.shortage,
+    required this.affectedStudentIds,
+    required this.resolved,
+  });
   final String resourceKey;
   final String? itemId;
   final String displayName;
@@ -189,25 +248,53 @@ class InventoryShortageRow {
   final List<String> affectedStudentIds;
   final bool resolved;
 
-  factory InventoryShortageRow.fromWire(Map<String,dynamic> value) {
-    const fields = {'resource_key','item_id','display_name','category','required','owned','shortage','affected_student_ids','resolved'};
+  factory InventoryShortageRow.fromWire(Map<String, dynamic> value) {
+    const fields = {
+      'resource_key',
+      'item_id',
+      'display_name',
+      'category',
+      'required',
+      'owned',
+      'shortage',
+      'affected_student_ids',
+      'resolved',
+    };
     final affected = value['affected_student_ids'];
-    if (value.keys.toSet().length != fields.length || !value.keys.toSet().containsAll(fields) ||
-        value['resource_key'] is! String || (value['resource_key'] as String).isEmpty ||
-        (value['item_id'] != null && (value['item_id'] is! String || (value['item_id'] as String).isEmpty)) ||
-        value['display_name'] is! String || (value['display_name'] as String).isEmpty ||
-        value['category'] is! String || (value['category'] as String).isEmpty ||
-        value['required'] is! int || (value['required'] as int) < 0 ||
-        (value['owned'] != null && (value['owned'] is! int || (value['owned'] as int) < 0)) ||
-        (value['shortage'] != null && (value['shortage'] is! int || (value['shortage'] as int) < 0)) ||
-        affected is! List || affected.any((item) => item is! String || item.isEmpty) ||
-        affected.toSet().length != affected.length || value['resolved'] is! bool) {
+    if (value.keys.toSet().length != fields.length ||
+        !value.keys.toSet().containsAll(fields) ||
+        value['resource_key'] is! String ||
+        (value['resource_key'] as String).isEmpty ||
+        (value['item_id'] != null &&
+            (value['item_id'] is! String ||
+                (value['item_id'] as String).isEmpty)) ||
+        value['display_name'] is! String ||
+        (value['display_name'] as String).isEmpty ||
+        value['category'] is! String ||
+        (value['category'] as String).isEmpty ||
+        value['required'] is! int ||
+        (value['required'] as int) < 0 ||
+        (value['owned'] != null &&
+            (value['owned'] is! int || (value['owned'] as int) < 0)) ||
+        (value['shortage'] != null &&
+            (value['shortage'] is! int || (value['shortage'] as int) < 0)) ||
+        affected is! List ||
+        affected.any((item) => item is! String || item.isEmpty) ||
+        affected.toSet().length != affected.length ||
+        value['resolved'] is! bool) {
       throw const FormatException('Invalid inventory shortage row');
     }
-    return InventoryShortageRow(resourceKey:value['resource_key'] as String,itemId:value['item_id'] as String?,
-      displayName:value['display_name'] as String,category:value['category'] as String,
-      requiredAmount:value['required'] as int,owned:value['owned'] as int?,shortage:value['shortage'] as int?,
-      affectedStudentIds:List.unmodifiable(affected.cast<String>()),resolved:value['resolved'] as bool);
+    return InventoryShortageRow(
+      resourceKey: value['resource_key'] as String,
+      itemId: value['item_id'] as String?,
+      displayName: value['display_name'] as String,
+      category: value['category'] as String,
+      requiredAmount: value['required'] as int,
+      owned: value['owned'] as int?,
+      shortage: value['shortage'] as int?,
+      affectedStudentIds: List.unmodifiable(affected.cast<String>()),
+      resolved: value['resolved'] as bool,
+    );
   }
 }
 
@@ -216,14 +303,23 @@ class InventoryShortageResult {
   const InventoryShortageResult(this.rows, this.warnings);
   final List<InventoryShortageRow> rows;
   final List<String> warnings;
-  factory InventoryShortageResult.fromWire(Map<String,dynamic> value) {
-    if (value.keys.toSet().length != 2 || value['rows'] is! List || value['warnings'] is! List ||
+  factory InventoryShortageResult.fromWire(Map<String, dynamic> value) {
+    if (value.keys.toSet().length != 2 ||
+        value['rows'] is! List ||
+        value['warnings'] is! List ||
         (value['warnings'] as List).any((item) => item is! String)) {
       throw const FormatException('Invalid inventory shortage response');
     }
     return InventoryShortageResult(
-      List.unmodifiable((value['rows'] as List).map((item) => InventoryShortageRow.fromWire(Map<String,dynamic>.from(item as Map)))),
-      List.unmodifiable((value['warnings'] as List).cast<String>()));
+      List.unmodifiable(
+        (value['rows'] as List).map(
+          (item) => InventoryShortageRow.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        ),
+      ),
+      List.unmodifiable((value['warnings'] as List).cast<String>()),
+    );
   }
 }
 

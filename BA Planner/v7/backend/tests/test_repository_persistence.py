@@ -42,6 +42,24 @@ class RepositoryPersistenceTests(unittest.TestCase):
         with self.assertRaisesRegex(RepositoryError, "already exists"):
             self.repository.rename_profile(second_id, "Main", 2, "rename-conflict")
 
+    def test_profile_avatar_update_and_confirmed_delete(self) -> None:
+        second = self.repository.create_profile("Second", "create-second", "aru")
+        second_id = second["profile"]["profile_id"]
+        self.assertEqual(second["profile"]["avatar_student_id"], "aru")
+        updated = self.repository.update_profile(second_id, "Second renamed", "hasumi", 0, "update-second")
+        self.assertEqual(updated["revision"], 1)
+        summary = next(item for item in self.repository.list_profiles()["profiles"] if item["profile_id"] == second_id)
+        self.assertEqual(summary["display_name"], "Second renamed")
+        self.assertEqual(summary["avatar_student_id"], "hasumi")
+        tactical_path = self.root / "tactical" / f"{second_id}.json"
+        tactical_path.parent.mkdir(parents=True)
+        tactical_path.write_text('{"version":1}', encoding="utf-8")
+        deleted = self.repository.delete_profile(second_id, 1, "delete-second")
+        self.assertEqual(deleted["revision"], 2)
+        self.assertFalse(self.repository._profile_path(second_id).exists())
+        self.assertFalse(tactical_path.exists())
+        self.assertNotIn(second_id, {item["profile_id"] for item in self.repository.list_profiles()["profiles"]})
+
     def test_current_inventory_goals_restore_in_new_instance(self) -> None:
         result = self.repository.update_students(self.profile_id, [student()], 0, "students")
         result = self.repository.update_inventory(self.profile_id, {"version":1,"entries":[{"key":"a","quantity":"0"}]}, result["revision"], "inventory")

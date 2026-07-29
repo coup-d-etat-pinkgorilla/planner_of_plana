@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
 import '../services/app_service.dart';
+import '../services/repository_service.dart';
 import '../services/scanner_service.dart';
 import 'app_section.dart';
 import 'pages/adaptive_sync_page.dart';
@@ -18,6 +19,7 @@ import 'pages/student_page.dart';
 import 'pages/statistics_page.dart';
 import 'pages/tactical_page.dart';
 import 'widgets/animated_section_stack.dart';
+import 'widgets/asset_image_grid.dart';
 import 'widgets/ba_triangle_background.dart';
 import 'widgets/development_panel.dart';
 import 'widgets/diagonal_header.dart';
@@ -63,16 +65,27 @@ const _headerTriangleTexture = BATriangleTextureConfig(
 );
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.service});
+  const AppShell({
+    super.key,
+    required this.service,
+    this.initialSection = AppSection.home,
+    this.animateHomeEntrance = false,
+  });
 
   final AppService service;
+  final AppSection initialSection;
+  final bool animateHomeEntrance;
 
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
-  AppSection _section = AppSection.home;
+class _AppShellState extends State<AppShell>
+    with SingleTickerProviderStateMixin {
+  late AppSection _section;
+  late final AnimationController _homeEntranceController;
+  RepositoryProfile? _selectedProfile;
+  var _profileLoadGeneration = 0;
   bool _showDevelopmentPanel = false;
   PlanningStudentSeed? _planningSeed;
   StudentCandidateContext? _studentCandidate;
@@ -82,12 +95,70 @@ class _AppShellState extends State<AppShell> {
   var _statisticsReloadToken = 0;
   var _tacticalReloadToken = 0;
   var _profileGeneration = 0;
+  late bool _studentTabActive;
+  late bool _planTabActive;
+
+  @override
+  void initState() {
+    super.initState();
+    _section = widget.initialSection;
+    _studentTabActive = _section == AppSection.students;
+    _planTabActive = _section == AppSection.plan;
+    _homeEntranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 460),
+      value:
+          widget.animateHomeEntrance && widget.initialSection == AppSection.home
+          ? 0
+          : 1,
+    );
+    if (widget.animateHomeEntrance &&
+        widget.initialSection == AppSection.home) {
+      _homeEntranceController.forward();
+    }
+    _loadSelectedProfile();
+  }
+
+  @override
+  void dispose() {
+    _profileLoadGeneration += 1;
+    _homeEntranceController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSelectedProfile() async {
+    final generation = ++_profileLoadGeneration;
+    final service = widget.service;
+    if (service is! RepositoryService) return;
+    final repository = service as RepositoryService;
+    try {
+      final profiles = await repository.listProfiles();
+      if (!mounted || generation != _profileLoadGeneration) return;
+      setState(() {
+        _selectedProfile = profiles
+            .where((profile) => profile.selected)
+            .firstOrNull;
+      });
+    } catch (_) {
+      if (!mounted || generation != _profileLoadGeneration) return;
+      setState(() => _selectedProfile = null);
+    }
+  }
 
   void _open(AppSection section) {
     setState(() {
+      final changingSection = section != _section;
       if (section == AppSection.home) _homeReloadToken += 1;
       if (section == AppSection.statistics) _statisticsReloadToken += 1;
       if (section == AppSection.pvp) _tacticalReloadToken += 1;
+      if (changingSection &&
+          (_section == AppSection.students || section == AppSection.students)) {
+        _studentTabActive = false;
+      }
+      if (changingSection &&
+          (_section == AppSection.plan || section == AppSection.plan)) {
+        _planTabActive = false;
+      }
       _section = section;
     });
   }
@@ -95,6 +166,8 @@ class _AppShellState extends State<AppShell> {
   void _addStudentToPlan(PlanningStudentSeed seed) {
     setState(() {
       _planningSeed = seed;
+      _studentTabActive = false;
+      _planTabActive = false;
       _section = AppSection.plan;
     });
   }
@@ -106,6 +179,8 @@ class _AppShellState extends State<AppShell> {
           session: session,
           candidate: candidate,
         );
+        if (_section != AppSection.students) _studentTabActive = false;
+        if (_section == AppSection.plan) _planTabActive = false;
         _section = AppSection.students;
       } else {
         _inventoryCandidate = InventoryCandidateContext(
@@ -138,6 +213,7 @@ class _AppShellState extends State<AppShell> {
       _inventoryCandidate = null;
       _recentScans = const [];
     });
+    _loadSelectedProfile();
   }
 
   void _recoveryCompleted() {
@@ -166,16 +242,23 @@ class _AppShellState extends State<AppShell> {
                     Expanded(
                       child: Column(
                         children: [
-                          _CompoundPageHeader(
-                            section: _section,
-                            service: widget.service,
-                            developmentPanelVisible: _showDevelopmentPanel,
-                            onSelected: _open,
-                            onToggleDevelopmentPanel: () {
-                              setState(() {
-                                _showDevelopmentPanel = !_showDevelopmentPanel;
-                              });
-                            },
+                          DirectionalSectionEntrance(
+                            key: const ValueKey('home-header-entrance'),
+                            animation: _homeEntranceController,
+                            directionDegrees: 270,
+                            child: _CompoundPageHeader(
+                              section: _section,
+                              service: widget.service,
+                              profile: _selectedProfile,
+                              developmentPanelVisible: _showDevelopmentPanel,
+                              onSelected: _open,
+                              onToggleDevelopmentPanel: () {
+                                setState(() {
+                                  _showDevelopmentPanel =
+                                      !_showDevelopmentPanel;
+                                });
+                              },
+                            ),
                           ),
                           RecoveryBanner(
                             service: widget.service,
@@ -186,6 +269,21 @@ class _AppShellState extends State<AppShell> {
                             child: AnimatedSectionStack(
                               index: AppSection.values.indexOf(_section),
                               motions: _sectionMotions,
+                              independentMotionIndices: {
+                                AppSection.values.indexOf(AppSection.students),
+                                AppSection.values.indexOf(AppSection.plan),
+                              },
+                              onIncomingReady: (index) {
+                                switch (AppSection.values[index]) {
+                                  case AppSection.students
+                                      when !_studentTabActive:
+                                    setState(() => _studentTabActive = true);
+                                  case AppSection.plan when !_planTabActive:
+                                    setState(() => _planTabActive = true);
+                                  default:
+                                    return;
+                                }
+                              },
                               children: [
                                 HomePage(
                                   key: ValueKey('home-$_profileGeneration'),
@@ -197,18 +295,22 @@ class _AppShellState extends State<AppShell> {
                                   inventoryCandidatePending:
                                       _inventoryCandidate != null,
                                   recentScans: _recentScans,
+                                  entranceAnimation: _homeEntranceController,
                                 ),
                                 StudentPage(
                                   key: ValueKey('students-$_profileGeneration'),
                                   service: widget.service,
                                   onAddToPlan: _addStudentToPlan,
+                                  onOpenScan: () => _open(AppSection.scan),
                                   candidateContext: _studentCandidate,
                                   onCandidateCommitted: _clearStudentCandidate,
+                                  active: _studentTabActive,
                                 ),
                                 PlanningPage(
                                   key: ValueKey('plan-$_profileGeneration'),
                                   service: widget.service,
                                   initialSeed: _planningSeed,
+                                  active: _planTabActive,
                                 ),
                                 InventoryPage(
                                   key: ValueKey(
@@ -324,6 +426,7 @@ class _CompoundPageHeader extends StatelessWidget {
   const _CompoundPageHeader({
     required this.section,
     required this.service,
+    required this.profile,
     required this.developmentPanelVisible,
     required this.onSelected,
     required this.onToggleDevelopmentPanel,
@@ -331,6 +434,7 @@ class _CompoundPageHeader extends StatelessWidget {
 
   final AppSection section;
   final AppService service;
+  final RepositoryProfile? profile;
   final bool developmentPanelVisible;
   final ValueChanged<AppSection> onSelected;
   final VoidCallback onToggleDevelopmentPanel;
@@ -433,6 +537,7 @@ class _CompoundPageHeader extends StatelessWidget {
                         child: _AppHeader(
                           section: section,
                           service: service,
+                          profile: profile,
                           developmentPanelVisible: developmentPanelVisible,
                           onToggleDevelopmentPanel: onToggleDevelopmentPanel,
                         ),
@@ -580,12 +685,14 @@ class _AppHeader extends StatelessWidget {
   const _AppHeader({
     required this.section,
     required this.service,
+    required this.profile,
     required this.developmentPanelVisible,
     required this.onToggleDevelopmentPanel,
   });
 
   final AppSection section;
   final AppService service;
+  final RepositoryProfile? profile;
   final bool developmentPanelVisible;
   final VoidCallback onToggleDevelopmentPanel;
 
@@ -640,6 +747,30 @@ class _AppHeader extends StatelessWidget {
                   ),
                 ),
                 if (showMetrics) ...[
+                  if (profile != null) ...[
+                    SizedBox.square(
+                      dimension: 62,
+                      child: AssetImageGrid(
+                        key: const ValueKey('home-header-profile-portrait'),
+                        items: [
+                          const AssetImageGridItem(
+                            asset: 'assets/studio_features/square.png',
+                            column: 0,
+                            row: 0,
+                          ),
+                          AssetImageGridItem(
+                            asset:
+                                'assets/student_portraits/${profile!.avatarStudentId}.png',
+                            column: 0,
+                            row: 0,
+                            scale: 0.98,
+                            clipRadiusFraction: 0.12,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
                   _HeaderMetric(label: '학생', value: '${state.studentCount}명'),
                   const SizedBox(width: AppSpacing.md),
                   _HeaderMetric(

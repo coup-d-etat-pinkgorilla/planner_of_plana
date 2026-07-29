@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import 'app_service.dart';
 import 'diagnostics_service.dart';
@@ -21,8 +23,10 @@ class MockAppService
   MockAppService({
     AppServiceState? initialState,
     this.scannerScenario = MockScannerScenario.completed,
+    this.fullStudentCatalog = false,
     List<ScannerTarget>? scannerTargets,
     Map<String, dynamic>? scannerReadiness,
+    List<RepositoryProfile>? profiles,
   }) : _scannerTargets = List.unmodifiable(
          scannerTargets ??
              const [
@@ -43,6 +47,17 @@ class MockAppService
                'corrupt': <String>[],
              },
        ),
+       _profiles = List.of(
+         profiles ??
+             const [
+               RepositoryProfile(
+                 id: '000000000000000000000001',
+                 displayName: 'Main',
+                 revision: 0,
+                 selected: true,
+               ),
+             ],
+       ),
        _state = ValueNotifier(
          initialState ??
              const AppServiceState(
@@ -58,7 +73,10 @@ class MockAppService
              ),
        );
 
+  List<StudentCatalogEntry>? _studentCatalog;
+
   final MockScannerScenario scannerScenario;
+  final bool fullStudentCatalog;
   final List<ScannerTarget> _scannerTargets;
   final Map<String, dynamic> _scannerReadiness;
 
@@ -79,14 +97,7 @@ class MockAppService
       stderr: [],
     ),
   );
-  final List<RepositoryProfile> _profiles = [
-    const RepositoryProfile(
-      id: '000000000000000000000001',
-      displayName: 'Main',
-      revision: 0,
-      selected: true,
-    ),
-  ];
+  final List<RepositoryProfile> _profiles;
   final Map<String, Map<String, dynamic>> _repositoryStates = {};
   final Map<String, TacticalState> _tacticalStates = {};
   final StreamController<ScannerEvent> _scannerEvents =
@@ -494,68 +505,82 @@ class MockAppService
 
   @override
   Future<Map<String, dynamic>?> getStudent(String studentId) async {
-    const students = <String, Map<String, dynamic>>{
-      'ayane': {
-        'student_id': 'ayane',
-        'display_name': '아야네',
-        'template_name': 'Ayane',
-        'group': 'Abydos',
-        'variant': null,
-      },
-      'aru': {
-        'student_id': 'aru',
-        'display_name': '아루',
-        'template_name': 'Aru',
-        'group': 'Gehenna',
-        'variant': null,
-      },
-    };
-    final student = students[studentId];
-    return student == null ? null : Map<String, dynamic>.from(student);
+    for (final student in await _loadStudentCatalog()) {
+      if (student.studentId == studentId) return student.metadata;
+    }
+    return null;
   }
 
   @override
   Future<List<StudentCatalogEntry>> listStudents() async {
+    final catalog = await _loadStudentCatalog();
+    final visibleCatalog = fullStudentCatalog
+        ? catalog
+        : catalog
+              .where(
+                (student) => const {'aru', 'ayane'}.contains(student.studentId),
+              )
+              .toList(growable: false);
     final longName = _state.value.useLongNames
         ? 'Aru with an intentionally long display name for responsive layout verification'
-        : 'Aru';
+        : null;
     return [
-      StudentCatalogEntry(
-        studentId: 'aru',
-        displayName: longName,
-        templateName: 'Aru.png',
-        group: 'Problem Solver 68',
-        variant: null,
-        school: 'Gehenna',
-        rarity: '3',
-        attackType: 'Explosive',
-        defenseType: 'Light',
-        combatClass: 'Striker',
-        role: 'Dealer',
-        position: 'Back',
-        searchTags: const ['aru'],
-        krSearchTags: const [],
-      ),
-      StudentCatalogEntry(
-        studentId: 'ayane',
-        displayName: 'Ayane',
-        templateName: 'Ayane.png',
-        group: 'Foreclosure Task Force',
-        variant: null,
-        school: 'Abydos',
-        rarity: '2',
-        attackType: 'Piercing',
-        defenseType: 'Light',
-        combatClass: 'Special',
-        role: 'Healer',
-        position: 'Back',
-        searchTags: const ['ayane'],
-        krSearchTags: const [],
-      ),
+      for (final student in visibleCatalog)
+        if (student.studentId == 'aru' &&
+            (!fullStudentCatalog || longName != null))
+          StudentCatalogEntry.fromWire({
+            ..._studentCatalogWire(student),
+            'display_name': longName ?? 'Aru',
+          })
+        else if (student.studentId == 'ayane' && !fullStudentCatalog)
+          StudentCatalogEntry.fromWire({
+            ..._studentCatalogWire(student),
+            'display_name': 'Ayane',
+          })
+        else
+          student,
       if (_state.value.hasMissingMetadata)
         StudentCatalogEntry.fallback('missing-student'),
     ];
   }
+
+  Future<List<StudentCatalogEntry>> _loadStudentCatalog() async {
+    final cached = _studentCatalog;
+    if (cached != null) return cached;
+    final data = await rootBundle.load('assets/student_catalog.json');
+    final source = utf8.decode(data.buffer.asUint8List());
+    final decoded = jsonDecode(source);
+    if (decoded is! List) {
+      throw const FormatException('Invalid bundled student catalog');
+    }
+    final result = List<StudentCatalogEntry>.unmodifiable(
+      decoded.map(
+        (item) => StudentCatalogEntry.fromWire(
+          Map<String, dynamic>.from(item as Map),
+        ),
+      ),
+    );
+    _studentCatalog = result;
+    return result;
+  }
+
+  Map<String, dynamic> _studentCatalogWire(StudentCatalogEntry student) => {
+    'student_id': student.studentId,
+    'display_name': student.displayName,
+    'template_name': student.templateName,
+    'group': student.group,
+    'variant': student.variant,
+    'school': student.school,
+    'rarity': student.rarity,
+    'attack_type': student.attackType,
+    'defense_type': student.defenseType,
+    'combat_class': student.combatClass,
+    'role': student.role,
+    'position': student.position,
+    'jp_only': student.jpOnly,
+    'search_tags': student.searchTags,
+    'kr_search_tags': student.krSearchTags,
+  };
 
   @override
   Future<List<InventoryCatalogEntry>> listInventoryItems() async => const [
@@ -680,8 +705,9 @@ class MockAppService
   @override
   Future<RepositoryProfile> createProfile(
     String displayName,
-    String idempotencyKey,
-  ) async {
+    String idempotencyKey, {
+    String avatarStudentId = 'hasumi',
+  }) async {
     if (failNextProfileMutation) {
       failNextProfileMutation = false;
       throw StateError('revision_conflict');
@@ -689,6 +715,7 @@ class MockAppService
     final profile = RepositoryProfile(
       id: (_profiles.length + 1).toRadixString(16).padLeft(24, '0'),
       displayName: displayName,
+      avatarStudentId: avatarStudentId,
       revision: 0,
       selected: false,
     );
@@ -715,6 +742,7 @@ class MockAppService
       _profiles[index] = RepositoryProfile(
         id: profile.id,
         displayName: profile.displayName,
+        avatarStudentId: profile.avatarStudentId,
         revision: profile.id == profileId
             ? expectedRevision + 1
             : profile.revision,
@@ -740,9 +768,62 @@ class MockAppService
     _profiles[index] = RepositoryProfile(
       id: profile.id,
       displayName: displayName,
+      avatarStudentId: profile.avatarStudentId,
       revision: expectedRevision + 1,
       selected: profile.selected,
     );
+    return expectedRevision + 1;
+  }
+
+  @override
+  Future<int> updateProfile(
+    String profileId,
+    String displayName,
+    String avatarStudentId,
+    int expectedRevision,
+    String idempotencyKey,
+  ) async {
+    final index = _profiles.indexWhere((profile) => profile.id == profileId);
+    final profile = _profiles[index];
+    if (failNextProfileMutation || profile.revision != expectedRevision) {
+      failNextProfileMutation = false;
+      throw StateError('revision_conflict');
+    }
+    _profiles[index] = RepositoryProfile(
+      id: profile.id,
+      displayName: displayName,
+      avatarStudentId: avatarStudentId,
+      revision: expectedRevision + 1,
+      selected: profile.selected,
+    );
+    return expectedRevision + 1;
+  }
+
+  @override
+  Future<int> deleteProfile(
+    String profileId,
+    int expectedRevision,
+    String idempotencyKey,
+  ) async {
+    final index = _profiles.indexWhere((profile) => profile.id == profileId);
+    final profile = _profiles[index];
+    if (failNextProfileMutation || profile.revision != expectedRevision) {
+      failNextProfileMutation = false;
+      throw StateError('revision_conflict');
+    }
+    final wasSelected = profile.selected;
+    _profiles.removeAt(index);
+    _repositoryStates.remove(profileId);
+    if (wasSelected && _profiles.isNotEmpty) {
+      final first = _profiles.first;
+      _profiles[0] = RepositoryProfile(
+        id: first.id,
+        displayName: first.displayName,
+        avatarStudentId: first.avatarStudentId,
+        revision: first.revision,
+        selected: true,
+      );
+    }
     return expectedRevision + 1;
   }
 

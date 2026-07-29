@@ -11,7 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('user elements validate against the shared 48x48 board', () {
+  test('user elements validate against the shared 96x96 board', () {
     const elements = [
       SectionCanvasElement(
         id: 'left',
@@ -27,7 +27,7 @@ void main() {
       ),
     ];
 
-    expect(sectionTemplateGridSize, 48);
+    expect(sectionTemplateGridSize, 96);
     expect(validateSectionCanvas(elements), isEmpty);
     expect(
       validateSectionCanvas([
@@ -65,22 +65,22 @@ void main() {
     const triangle = AttachedSectionSpec(
       mode: SectionShapeMode.triangle,
       face: SectionAttachmentFace.left,
-      faceStart: 8,
-      faceSpan: 24,
+      faceStart: 16,
+      faceSpan: 48,
     );
     const trapezoid = AttachedSectionSpec(
       mode: SectionShapeMode.trapezoid,
       face: SectionAttachmentFace.top,
-      faceStart: 8,
-      faceSpan: 32,
-      height: 16,
+      faceStart: 16,
+      faceSpan: 64,
+      height: 32,
     );
     const parallelogram = AttachedSectionSpec(
       mode: SectionShapeMode.parallelogram,
       face: SectionAttachmentFace.bottom,
-      faceStart: 8,
-      faceSpan: 32,
-      height: 16,
+      faceStart: 16,
+      faceSpan: 64,
+      height: 32,
     );
 
     expect(
@@ -145,13 +145,13 @@ void main() {
     const element = SectionCanvasElement(
       id: 'shared',
       label: '공용',
-      rect: SectionGridRect(16, 16, 16, 16),
+      rect: SectionGridRect(32, 32, 32, 32),
       spec: AttachedSectionSpec(
         mode: SectionShapeMode.parallelogram,
         face: SectionAttachmentFace.left,
-        faceStart: 24,
-        faceSpan: 24,
-        height: 12,
+        faceStart: 48,
+        faceSpan: 48,
+        height: 24,
       ),
     );
     final footprint = sectionCanvasElementRect(canvasSize, element);
@@ -167,11 +167,11 @@ void main() {
     );
   });
 
-  test('move and resize operations snap and clamp to the 48x48 grid', () {
+  test('move and resize operations snap and clamp to the 96x96 grid', () {
     const rect = SectionGridRect(10, 10, 12, 14);
 
     final moved = moveSectionGridRect(rect, deltaX: 100, deltaY: -100);
-    expect(moved.x, 36);
+    expect(moved.x, 84);
     expect(moved.y, 0);
     expect(moved.width, 12);
     expect(moved.height, 14);
@@ -214,7 +214,68 @@ void main() {
     );
   });
 
-  test('nested layers use 96-grid parents and image resize keeps ratio', () {
+  test('child placement snaps to parent inset and sibling gap', () {
+    final edgeSnapped = snapStudioPlacementSpacing(
+      const StudioPlacementRect(0.027, 0.014, 0.2, 0.2),
+      siblings: const [],
+      gap: 0.02,
+    );
+    expect(edgeSnapped.left, closeTo(0.02, 1e-9));
+    expect(edgeSnapped.top, closeTo(0.02, 1e-9));
+
+    final siblingSnapped = snapStudioPlacementSpacing(
+      const StudioPlacementRect(0.235, 0.02, 0.2, 0.2),
+      siblings: const [StudioPlacementRect(0.02, 0.02, 0.2, 0.2)],
+      gap: 0.02,
+    );
+    expect(siblingSnapped.left, closeTo(0.24, 1e-9));
+    expect(siblingSnapped.left - 0.22, closeTo(0.02, 1e-9));
+  });
+
+  test('child placement measures inset from a slanted parent edge', () {
+    final parent = Path()
+      ..addPolygon(const [
+        Offset(0, 0),
+        Offset(200, 0),
+        Offset(160, 100),
+        Offset(-40, 100),
+      ], true);
+    const parentRect = Rect.fromLTWH(0, 0, 200, 100);
+    const candidate = StudioPlacementRect(0.675, 0.3, 0.2, 0.2);
+    Path itemPath(StudioPlacementRect value) =>
+        Path()..addRect(studioPlacementRectWithin(parentRect, value));
+
+    final before = measureStudioPathSpacing(parent, itemPath(candidate))!;
+    final snapped = snapStudioPathSpacing(
+      candidate,
+      parentRect: parentRect,
+      parentPath: parent,
+      buildItemPath: itemPath,
+      siblingPaths: const [],
+      gap: 0.05,
+      tolerance: 0.04,
+    );
+    final after = measureStudioPathSpacing(parent, itemPath(snapped))!;
+
+    expect(before.distance, isNot(closeTo(5, 0.2)));
+    expect(after.distance, closeTo(5, 0.6));
+    expect(snapped.left, isNot(closeTo(candidate.left, 1e-9)));
+    expect(snapped.top, isNot(closeTo(candidate.top, 1e-9)));
+
+    const outside = StudioPlacementRect(0.72, 0.3, 0.2, 0.2);
+    final fitted = snapStudioPathSpacing(
+      outside,
+      parentRect: parentRect,
+      parentPath: parent,
+      buildItemPath: itemPath,
+      siblingPaths: const [],
+      gap: 0.05,
+      tolerance: 0.04,
+    );
+    expect(studioPathIsInside(itemPath(fitted), parent), isTrue);
+  });
+
+  test('nested layers use parent-relative placement and keep image ratio', () {
     const section = SectionCanvasElement(
       id: 'section',
       label: 'section',
@@ -225,14 +286,14 @@ void main() {
       id: 'container',
       label: 'container',
       parentSectionId: 'section',
-      rect: SectionGridRect(0, 0, 96, 96),
+      rect: StudioPlacementRect(0, 0, 1, 1),
       spec: defaultDetailedShapeSpec,
     );
     const feature = StudioFeatureElement(
       id: 'image',
       label: 'image',
       parentContainerId: 'container',
-      rect: SectionGridRect(12, 12, 48, 33),
+      rect: StudioPlacementRect(0.12, 0.12, 0.48, 0.33),
       kind: StudioFeatureKind.image,
       spec: defaultDetailedShapeSpec,
       imageAsset: studioSquareAssetPath,
@@ -258,19 +319,22 @@ void main() {
       lessThanOrEqualTo(sectionBounds.right),
     );
 
-    final resized = resizeAspectLockedGridRect(
+    final resized = resizeAspectLockedPlacementRect(
       feature.rect,
       handle: SectionResizeHandle.bottomRight,
-      deltaX: 20,
-      deltaY: 20,
+      deltaX: 0.2,
+      deltaY: 0.2,
       aspectRatio: studioSquareAspectRatio,
+      parentAspectRatio: sectionBounds.width / sectionBounds.height,
     );
     expect(
-      resized.width / resized.height,
+      resized.width /
+          resized.height *
+          (sectionBounds.width / sectionBounds.height),
       closeTo(studioSquareAspectRatio, 0.03),
     );
-    expect(resized.right, lessThanOrEqualTo(96));
-    expect(resized.bottom, lessThanOrEqualTo(96));
+    expect(resized.right, lessThanOrEqualTo(1));
+    expect(resized.bottom, lessThanOrEqualTo(1));
   });
 
   testWidgets('container and feature layers add nested shapes and images', (
@@ -289,11 +353,42 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('studio-add-container')));
     await tester.pumpAndSettle();
+    final textureToggle = find.byKey(
+      const ValueKey('studio-container-triangle-texture-container-1'),
+    );
+    await tester.ensureVisible(textureToggle);
+    await tester.tap(textureToggle);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, 1000));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Feature').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('studio-add-shape-feature')));
+    final addShape = find.byKey(const ValueKey('studio-add-shape-feature'));
+    await tester.ensureVisible(addShape);
+    await tester.tap(addShape);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('studio-add-image-feature')));
+    final addImage = find.byKey(const ValueKey('studio-add-image-feature'));
+    await tester.ensureVisible(addImage);
+    await tester.tap(addImage);
+    await tester.pumpAndSettle();
+    final imagePreset = find.byKey(
+      const ValueKey('studio-image-preset-feature-2'),
+    );
+    await tester.ensureVisible(imagePreset);
+    await tester.tap(imagePreset);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Plan A 타이틀').last);
+    await tester.pumpAndSettle();
+    final addText = find.byKey(const ValueKey('studio-add-text-feature'));
+    tester.widget<FilledButton>(addText).onPressed!();
+    await tester.pumpAndSettle();
+    final textField = find.byKey(
+      const ValueKey('studio-feature-text-feature-3'),
+    );
+    tester.widget<TextFormField>(textField).onChanged!('새 타이틀');
+    await tester.pumpAndSettle();
+    final addLine = find.byKey(const ValueKey('studio-add-line-feature'));
+    tester.widget<FilledButton>(addLine).onPressed!();
     await tester.pumpAndSettle();
 
     final paint = find.descendant(
@@ -309,9 +404,20 @@ void main() {
             as LayeredStudioPainter;
     expect(painter.activeLayer, StudioLayer.feature);
     expect(painter.containers.single.parentSectionId, 'element-1');
-    expect(painter.features, hasLength(2));
-    expect(painter.features.last.kind, StudioFeatureKind.image);
-    expect(painter.features.last.aspectRatio, studioSquareAspectRatio);
+    expect(painter.containers.single.triangleTexture, isTrue);
+    expect(painter.features, hasLength(4));
+    final image = painter.features.firstWhere(
+      (item) => item.kind == StudioFeatureKind.image,
+    );
+    expect(image.imageAsset, studioTitleAssetPath);
+    expect(image.aspectRatio, studioTitleAspectRatio);
+    expect(
+      painter.features
+          .firstWhere((item) => item.kind == StudioFeatureKind.text)
+          .text,
+      '새 타이틀',
+    );
+    expect(painter.features.last.kind, StudioFeatureKind.line);
 
     final canvasFinder = find.byKey(const ValueKey('studio-shared-canvas'));
     final canvasRect = tester.getRect(canvasFinder);
@@ -319,7 +425,7 @@ void main() {
       canvasRect.size,
       painter.sections,
       painter.containers,
-      painter.features.last,
+      image,
     )!.shift(canvasRect.topLeft);
     final resize = await tester.startGesture(
       imageRect.bottomRight - const Offset(2, 2),
@@ -338,13 +444,21 @@ void main() {
     final updated =
         tester.widget<CustomPaint>(updatedPaint).foregroundPainter!
             as LayeredStudioPainter;
-    final image = updated.features.last;
-    expect(
-      image.rect.width / image.rect.height,
-      closeTo(studioSquareAspectRatio, 0.04),
+    final updatedImage = updated.features.firstWhere(
+      (item) => item.kind == StudioFeatureKind.image,
     );
-    expect(image.rect.right, lessThanOrEqualTo(sectionTemplateDetailGridSize));
-    expect(image.rect.bottom, lessThanOrEqualTo(sectionTemplateDetailGridSize));
+    final updatedImageRect = studioFeatureRect(
+      canvasRect.size,
+      updated.sections,
+      updated.containers,
+      updatedImage,
+    )!;
+    expect(
+      updatedImageRect.width / updatedImageRect.height,
+      closeTo(studioTitleAspectRatio, 0.04),
+    );
+    expect(updatedImage.rect.right, lessThanOrEqualTo(1));
+    expect(updatedImage.rect.bottom, lessThanOrEqualTo(1));
   });
 
   test('rendered section polygons round every original corner', () {
@@ -373,7 +487,7 @@ void main() {
     expect(acuteTriangle.contains(const Offset(10, 80)), isTrue);
   });
 
-  testWidgets('studio adds and edits elements on one shared 48x48 canvas', (
+  testWidgets('studio adds and edits elements on one shared 96x96 canvas', (
     tester,
   ) async {
     String? copiedText;
@@ -401,7 +515,7 @@ void main() {
     expect(find.byKey(const ValueKey('studio-mode')), findsNothing);
     expect(find.byKey(const ValueKey('studio-composition')), findsNothing);
     expect(find.byKey(const ValueKey('studio-shared-canvas')), findsOneWidget);
-    expect(find.textContaining('공용 48×48 그리드'), findsOneWidget);
+    expect(find.textContaining('섹션은 96×96'), findsOneWidget);
     final initialCanvas = tester.getSize(
       find.byKey(const ValueKey('studio-preview-canvas')),
     );
@@ -423,7 +537,21 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('studio-header-rows')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('16/48 · 33.3%').last);
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, 500));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('0/96 · 0.0%').last);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('studio-preview-header')))
+          .height,
+      0,
+    );
+    await tester.tap(find.byKey(const ValueKey('studio-header-rows')));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -700));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('16/96 · 16.7%').last);
     await tester.pumpAndSettle();
     final resizedHeader = tester.getRect(
       find.byKey(const ValueKey('studio-preview-header')),
@@ -467,9 +595,9 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('studio-copy-summary')));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(copiedText, contains('- 공용 그리드: 48×48'));
+    expect(copiedText, contains('- 공용 그리드: 96×96'));
     expect(copiedText, contains('- 섹션 수: 2'));
-    expect(copiedText, contains('- 고정 헤더: 16/48 (33.3%)'));
+    expect(copiedText, contains('- 고정 헤더: 16/96 (16.7%)'));
     expect(copiedText, contains('[섹션 2] 섹션 2'));
     expect(copiedText, contains('- 도형: 삼각형'));
     expect(copiedText, contains('- 높이: 자동 계산'));

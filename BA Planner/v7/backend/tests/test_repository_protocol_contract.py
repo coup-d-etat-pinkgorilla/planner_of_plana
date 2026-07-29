@@ -44,7 +44,7 @@ class RepositoryProtocolContractTests(unittest.TestCase):
             }
 
         cases = [
-            ("confirmed-valid", request("repository.students.update", "students", [{"version": 1, "student_id": "s1", "values": {"level": 80}}]), lambda: ConfirmedStudent.from_dict({"version": 1, "student_id": "s1", "values": {"level": 80}}), True),
+            ("confirmed-valid", request("repository.students.update", "students", [{"version": 1, "student_id": "s1", "values": {"level": 80, "bond_rank": 100}}]), lambda: ConfirmedStudent.from_dict({"version": 1, "student_id": "s1", "values": {"level": 80, "bond_rank": 100}}), True),
             ("confirmed-forbidden", request("repository.students.update", "students", [{"version": 1, "student_id": "s1", "values": {"display_name": "Bad"}}]), lambda: ConfirmedStudent.from_dict({"version": 1, "student_id": "s1", "values": {"display_name": "Bad"}}), False),
             ("confirmed-bool", request("repository.students.update", "students", [{"version": 1, "student_id": "s1", "values": {"level": True}}]), lambda: ConfirmedStudent.from_dict({"version": 1, "student_id": "s1", "values": {"level": True}}), False),
             ("inventory-valid", request("repository.inventory.update", "inventory", {"version": 1, "entries": []}), lambda: InventorySnapshot.from_dict({"version": 1, "entries": []}), True),

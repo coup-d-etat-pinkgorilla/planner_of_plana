@@ -10,6 +10,47 @@ class SectionMotionSpec {
   final double outro;
 }
 
+class DirectionalSectionEntrance extends StatelessWidget {
+  const DirectionalSectionEntrance({
+    super.key,
+    required this.animation,
+    required this.directionDegrees,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final double directionDegrees;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final viewport = MediaQuery.sizeOf(context);
+      final hostSize = Size(
+        constraints.hasBoundedWidth && constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : viewport.width,
+        constraints.hasBoundedHeight && constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : viewport.height,
+      );
+      final fullOffset = sectionMotionOffset(hostSize, directionDegrees);
+      return AnimatedBuilder(
+        animation: animation,
+        child: child,
+        builder: (context, child) {
+          final progress = Curves.easeOutCubic.transform(animation.value);
+          return Transform.translate(
+            key: key == null ? null : ValueKey('$key-transform'),
+            offset: Offset.lerp(-fullOffset, Offset.zero, progress)!,
+            child: child,
+          );
+        },
+      );
+    },
+  );
+}
+
 Offset sectionMotionOffset(
   Size hostSize,
   double angleDegrees, {
@@ -37,11 +78,15 @@ class AnimatedSectionStack extends StatefulWidget {
     required this.index,
     required this.children,
     required this.motions,
+    this.independentMotionIndices = const {},
+    this.onIncomingReady,
   }) : assert(children.length == motions.length);
 
   final int index;
   final List<Widget> children;
   final List<SectionMotionSpec> motions;
+  final Set<int> independentMotionIndices;
+  final ValueChanged<int>? onIncomingReady;
 
   @override
   State<AnimatedSectionStack> createState() => _AnimatedSectionStackState();
@@ -58,6 +103,11 @@ class _AnimatedSectionStackState extends State<AnimatedSectionStack>
   late int _settledIndex;
   late int _fromIndex;
   late int _toIndex;
+  bool _incomingReadyNotified = false;
+
+  double get _exitEnd =>
+      (_pullDuration + _exitDuration).inMilliseconds /
+      _totalDuration.inMilliseconds;
 
   @override
   void initState() {
@@ -66,6 +116,14 @@ class _AnimatedSectionStackState extends State<AnimatedSectionStack>
     _fromIndex = widget.index;
     _toIndex = widget.index;
     _controller = AnimationController(vsync: this, duration: _totalDuration)
+      ..addListener(() {
+        if (!_incomingReadyNotified &&
+            _controller.isAnimating &&
+            _controller.value >= _exitEnd) {
+          _incomingReadyNotified = true;
+          widget.onIncomingReady?.call(_toIndex);
+        }
+      })
       ..addStatusListener((status) {
         if (status == AnimationStatus.completed && mounted) {
           setState(() {
@@ -84,6 +142,7 @@ class _AnimatedSectionStackState extends State<AnimatedSectionStack>
     }
     _fromIndex = _controller.isAnimating ? _toIndex : _settledIndex;
     _toIndex = widget.index;
+    _incomingReadyNotified = false;
     _controller.forward(from: 0);
   }
 
@@ -121,7 +180,9 @@ class _AnimatedSectionStackState extends State<AnimatedSectionStack>
     final participating =
         animating && (index == _fromIndex || index == _toIndex);
     final visible = participating || (!animating && index == _settledIndex);
-    final offset = !animating
+    final offset = widget.independentMotionIndices.contains(index)
+        ? Offset.zero
+        : !animating
         ? Offset.zero
         : index == _fromIndex
         ? _outgoingOffset(size, _controller.value)
@@ -154,9 +215,7 @@ class _AnimatedSectionStackState extends State<AnimatedSectionStack>
   Offset _outgoingOffset(Size size, double progress) {
     final pullEnd =
         _pullDuration.inMilliseconds / _totalDuration.inMilliseconds;
-    final exitEnd =
-        (_pullDuration + _exitDuration).inMilliseconds /
-        _totalDuration.inMilliseconds;
+    final exitEnd = _exitEnd;
     final full = sectionMotionOffset(size, widget.motions[_fromIndex].outro);
     final pull = -full * 0.055;
 
