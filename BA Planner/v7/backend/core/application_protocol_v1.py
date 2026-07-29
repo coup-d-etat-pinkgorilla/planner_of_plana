@@ -10,6 +10,7 @@ from core.scanner_protocol_v1 import METHODS as SCANNER_METHODS, ScannerProtocol
 from core.scanner_session import EventSink, ScannerSessionService
 from core.tactical_protocol_v1 import METHODS as TACTICAL_METHODS, TacticalProtocolV1
 from core.tactical_store import TacticalStore
+from core.tactical_v2 import METHODS as TACTICAL_V2_METHODS, TacticalProtocolV2, TacticalV2Store
 
 
 class ApplicationProtocolV1:
@@ -21,6 +22,7 @@ class ApplicationProtocolV1:
         repository = JsonRepository(storage_root)
         self.repository = RepositoryProtocolV1(repository)
         self.tactical = TacticalProtocolV1(TacticalStore(storage_root, repository))
+        self.tactical_v2 = TacticalProtocolV2(TacticalV2Store(storage_root, repository))
         self.scanner_service = scanner_service
         self.scanner = ScannerProtocolV1(scanner_service) if scanner_service is not None else None
 
@@ -49,4 +51,7 @@ class ApplicationProtocolV1:
         if isinstance(message, dict) and message.get("method") in TACTICAL_METHODS:
             trusted = PlanningProtocolV1._trusted_request(message)
             return None if trusted is None else self.tactical.handle(trusted)
+        if isinstance(message, dict) and message.get("method") in TACTICAL_V2_METHODS:
+            trusted = PlanningProtocolV1._trusted_request(message)
+            return None if trusted is None else self.tactical_v2.handle(trusted)
         return self.planning.handle(message)

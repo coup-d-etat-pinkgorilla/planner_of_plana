@@ -409,6 +409,10 @@ class _ScanPageState extends State<ScanPage> {
         candidate.payload['student_id'] is String &&
             candidate.payload['values'] is Map,
       ScannerKind.inventory => candidate.payload['entries'] is List,
+      ScannerKind.tacticalLobby =>
+        candidate.payload['current_rank'] is Map &&
+            candidate.payload['rows'] is List &&
+            (candidate.payload['rows'] as List).length == 3,
     };
   }
 
@@ -743,6 +747,15 @@ class _CandidateSummary extends StatelessWidget {
       return 'Student ${candidate.payload['student_id']} · '
           '${values is Map ? values.length : 0} observed field(s)';
     }
+    if (candidate.kind == ScannerKind.tacticalLobby) {
+      final rank = candidate.payload['current_rank'];
+      final rows = candidate.payload['rows'];
+      final current = rank is Map
+          ? rank['value'] ?? rank['proposed_value']
+          : '?';
+      return 'Tactical lobby 쨌 current rank $current 쨌 '
+          '${rows is List ? rows.length : 0} opponent row(s)';
+    }
     final entries = candidate.payload['entries'];
     final unknown = entries is List
         ? entries
@@ -787,11 +800,11 @@ class _CandidateSummary extends StatelessWidget {
         key: ValueKey('scan-review-${candidate.id}'),
         onPressed: onHandoff,
         icon: const Icon(Icons.rate_review_outlined),
-        label: Text(
-          candidate.kind == ScannerKind.student
-              ? 'Review in Students'
-              : 'Review in Inventory',
-        ),
+        label: Text(switch (candidate.kind) {
+          ScannerKind.student => 'Review in Students',
+          ScannerKind.inventory => 'Review in Inventory',
+          ScannerKind.tacticalLobby => 'Review tactical capture',
+        }),
       ),
     ],
   );

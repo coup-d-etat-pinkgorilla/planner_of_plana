@@ -11,6 +11,7 @@ import 'planning_protocol_client.dart';
 import 'repository_service.dart';
 import 'scanner_service.dart';
 import 'tactical_service.dart';
+import 'tactical_v2_service.dart';
 
 class ProcessAppService
     with WidgetsBindingObserver
@@ -19,6 +20,7 @@ class ProcessAppService
         RepositoryService,
         ScannerService,
         TacticalService,
+        TacticalEvidenceService,
         DiagnosticsService {
   ProcessAppService(this._client)
     : _state = ValueNotifier(
@@ -368,6 +370,204 @@ class ProcessAppService
     'expected_revision': expectedRevision,
     'idempotency_key': idempotencyKey,
   });
+
+  @override
+  Future<TacticalEvidenceState> loadTacticalEvidenceState(
+    String profileId,
+  ) async => TacticalEvidenceState.fromWire(
+    await _client.send('tactical.v2.state.get', {'profile_id': profileId}),
+  );
+
+  @override
+  Future<TacticalImportPreview> previewTacticalV6Import(
+    String profileId,
+    String sourcePath,
+    String importBatchId,
+  ) async => TacticalImportPreview.fromWire(
+    await _client.send('tactical.v2.import.preview', {
+      'profile_id': profileId,
+      'source_path': sourcePath,
+      'import_batch_id': importBatchId,
+    }),
+  );
+
+  @override
+  Future<TacticalImportCommitResult> commitTacticalV6Import({
+    required String profileId,
+    required String sourcePath,
+    required String importBatchId,
+    required String expectedFingerprint,
+    required List<String> acceptedIssueIds,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalImportCommitResult.fromWire(
+    await _client.send('tactical.v2.import.commit', {
+      'profile_id': profileId,
+      'source_path': sourcePath,
+      'import_batch_id': importBatchId,
+      'expected_fingerprint': expectedFingerprint,
+      'accepted_issue_ids': acceptedIssueIds,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+    }),
+  );
+
+  @override
+  Future<TacticalLobbyCommitResult> commitTacticalLobby({
+    required String profileId,
+    required Map<String, dynamic> candidatePayload,
+    required String season,
+    required String map,
+    required Map<int, String> identityBindings,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalLobbyCommitResult.fromWire(
+    await _client.send('tactical.v2.lobby.commit', {
+      'profile_id': profileId,
+      'candidate_payload': candidatePayload,
+      'season': season,
+      'map': map,
+      'identity_bindings': identityBindings.entries
+          .map(
+            (entry) => {
+              'display_index': entry.key,
+              'opponent_identity_id': entry.value,
+            },
+          )
+          .toList(growable: false),
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+    }),
+  );
+
+  @override
+  Future<int> selectTacticalLobbyCandidate({
+    required String profileId,
+    required String candidateId,
+    required String selectedAt,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async =>
+      (await _client.send('tactical.v2.candidate.select', {
+            'profile_id': profileId,
+            'candidate_id': candidateId,
+            'selected_at': selectedAt,
+            'expected_revision': expectedRevision,
+            'idempotency_key': idempotencyKey,
+          }))['revision']
+          as int;
+
+  @override
+  Future<TacticalLinkResult> linkTacticalMatch({
+    required String profileId,
+    required String matchId,
+    required String? candidateId,
+    required String mode,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalLinkResult.fromWire(
+    await _client.send('tactical.v2.match.link', {
+      'profile_id': profileId,
+      'match_id': matchId,
+      'candidate_id': candidateId,
+      'mode': mode,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+    }),
+  );
+
+  @override
+  Future<int> deleteTacticalLobby({
+    required String profileId,
+    required String scanId,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async =>
+      (await _client.send('tactical.v2.lobby.delete', {
+            'profile_id': profileId,
+            'scan_id': scanId,
+            'expected_revision': expectedRevision,
+            'idempotency_key': idempotencyKey,
+          }))['revision']
+          as int;
+
+  @override
+  Future<int> aliasTacticalOpponent({
+    required String profileId,
+    required String opponentIdentityId,
+    required String displayName,
+    required String? nameTemplateId,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async =>
+      (await _client.send('tactical.v2.opponent.alias', {
+            'profile_id': profileId,
+            'opponent_identity_id': opponentIdentityId,
+            'display_name': displayName,
+            'name_template_id': nameTemplateId,
+            'expected_revision': expectedRevision,
+            'idempotency_key': idempotencyKey,
+          }))['revision']
+          as int;
+
+  @override
+  Future<TacticalStatisticsResult> queryTacticalStatistics(
+    String profileId,
+    TacticalStatsFilters filters,
+  ) async => TacticalStatisticsResult.fromWire(
+    await _client.send('tactical.v2.stats.query', {
+      'profile_id': profileId,
+      'filters': filters.toWire(),
+    }),
+  );
+
+  @override
+  Future<TacticalTrendsResult> queryTacticalTrends(
+    String profileId,
+    TacticalTrendFilters filters,
+  ) async => TacticalTrendsResult.fromWire(
+    await _client.send('tactical.v2.trends.query', {
+      'profile_id': profileId,
+      'filters': filters.toWire(),
+    }),
+  );
+
+  @override
+  Future<TacticalRecommendationResult> queryTacticalRecommendations(
+    String profileId,
+    TacticalRecommendationFilters filters,
+  ) async => TacticalRecommendationResult.fromWire(
+    await _client.send('tactical.v2.recommend.query', {
+      'profile_id': profileId,
+      'filters': filters.toWire(),
+    }),
+  );
+
+  @override
+  Future<TacticalPredictionSaveResult> saveTacticalRecommendation({
+    required String profileId,
+    required TacticalRecommendationFilters filters,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalPredictionSaveResult.fromWire(
+    await _client.send('tactical.v2.recommend.save', {
+      'profile_id': profileId,
+      'filters': filters.toWire(),
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+    }),
+  );
+
+  @override
+  Future<TacticalSavedPrediction> getTacticalRecommendation(
+    String profileId,
+    String predictionId,
+  ) async => TacticalSavedPrediction.fromWire(
+    await _client.send('tactical.v2.recommend.get', {
+      'profile_id': profileId,
+      'prediction_id': predictionId,
+    }),
+  );
 
   @override
   Future<void> reconnect() {

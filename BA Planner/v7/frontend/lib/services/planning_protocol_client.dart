@@ -9,6 +9,7 @@ import 'backend_process.dart';
 import 'diagnostics_service.dart';
 import 'repository_service.dart';
 import 'tactical_service.dart';
+import 'tactical_v2_service.dart';
 
 class BackendProtocolException implements Exception {
   BackendProtocolException(this.message);
@@ -110,6 +111,12 @@ class PlanningProtocolClient {
       'migration_required',
       'migration_not_supported',
       'persistence_failed',
+      'import_source_unreadable',
+      'import_source_invalid',
+      'import_source_corrupt',
+      'import_source_changed',
+      'import_review_required',
+      'import_batch_conflict',
       'unknown_method',
     },
     'tactical': {
@@ -119,6 +126,13 @@ class PlanningProtocolClient {
       'idempotency_conflict',
       'repository_busy',
       'record_not_found',
+      'candidate_not_found',
+      'match_not_found',
+      'opponent_not_found',
+      'identity_ambiguous',
+      'link_review_required',
+      'link_conflict',
+      'review_required',
       'corrupt_data',
       'migration_required',
       'persistence_failed',
@@ -476,6 +490,16 @@ class PlanningProtocolClient {
     Map<String, dynamic> payload,
   ) {
     try {
+      if (method.startsWith('tactical.v2.')) {
+        final message = {
+          'protocol': 1,
+          'id': 'validation',
+          'type': 'response',
+          'method': method,
+          'payload': payload,
+        };
+        return isValidTacticalV2ProtocolMessage(message);
+      }
       if (method == 'tactical.state.get') {
         TacticalState.fromWire(payload);
         return true;
@@ -556,7 +580,8 @@ class PlanningProtocolClient {
         value['sequence'] is int &&
         (value['sequence'] as int) > 0 &&
         (value['scan_kind'] == 'student' ||
-            value['scan_kind'] == 'inventory') &&
+            value['scan_kind'] == 'inventory' ||
+            value['scan_kind'] == 'tactical_lobby') &&
         const {
           'phase',
           'progress',
@@ -647,7 +672,11 @@ class PlanningProtocolClient {
       'scanner.session.start' =>
         payload['session_id'] is String &&
             payload['generation'] is int &&
-            const {'student', 'inventory'}.contains(payload['scan_kind']),
+            const {
+              'student',
+              'inventory',
+              'tactical_lobby',
+            }.contains(payload['scan_kind']),
       'scanner.session.cancel' => payload['accepted'] is bool,
       'scanner.session.snapshot' =>
         payload['session_id'] is String &&
@@ -671,7 +700,11 @@ class PlanningProtocolClient {
         value['session_id'] is String &&
         value['generation'] is int &&
         value['revision'] is int &&
-        const {'student', 'inventory'}.contains(value['scan_kind']) &&
+        const {
+          'student',
+          'inventory',
+          'tactical_lobby',
+        }.contains(value['scan_kind']) &&
         value['payload'] is Map &&
         value['evidence'] is List &&
         value['review_required'] is bool &&

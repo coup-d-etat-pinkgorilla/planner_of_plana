@@ -944,11 +944,10 @@ Section 2·5의 viewport fog는 고정 장식이 아니라 실제 `ScrollPositio
   `보유량 : 42 / 필요량 : 60`, and
   `확보 시 학생 3명의 목표 단계가 가능해집니다`.
 - The sample values remain typed constants until the inventory-derived shortage
-  contract is connected. Selecting the other two tabs leaves the Section 5
-  content region empty instead of restoring the removed placeholder copy.
+  contract is connected.
 - Clicking the bottleneck media toggles a `1.8px` `#f2b3ef` outline on every
   Section 2 row for Azusa, Nonomi, and Haruka. Multiple plan steps for the same
-  student are all highlighted; switching away from the bottleneck tab clears it.
+  student are all highlighted; switching tabs clears the prior selection.
 - The two gaps between the three bottleneck copy rows are 1.5 times their
   original values: `4.5px / 6px` normally and `1.5px / 1.5px` when compact.
 - Compact heights use explicit one-line text metrics so the three-line bottleneck
@@ -957,10 +956,82 @@ Section 2·5의 viewport fog는 고정 장식이 아니라 실제 `ScrollPositio
 ## Plan phase resource header (2026-07-29)
 
 - The `페이즈별` tab reuses the exact Section 5 item-summary structure from the
-  bottleneck tab: the same 85%-height Nebra T3 media, typography, three rows,
+  bottleneck tab: the same 85%-height media slot, typography, three rows,
   spacing, compact behavior, and diagonal safe interval.
+- Its representative resource is Antikythera T4. The runtime uses
+  `Item_Icon_Material_Antikythera_3.png` with the tier-index-3
+  `square_purple.png` background copied from the v6 reference.
 - Its sample copy is `가장 부족한 재화`, `보유량 : 42 / 필요량 : 60`, and
-  `3단계에서 4명 중 1명만 완료 가능`.
-- The common `PlanResourceItemSummary` owns presentation only. The bottleneck
-  wrapper retains its clickable student-highlight action, while the phase
-  wrapper remains informational.
+  `2단계에서 4명 중 1명만 완료 가능`.
+- Clicking the phase resource toggles the common Section 2 highlight contract
+  for Yuuka, the Antikythera consumer in the current phase-2 sample.
+
+## Plan overall resource header (2026-07-29)
+
+- The `전체` tab has no resource icon and displays exactly two visible lines:
+  `전체 요구량의 72% 확보` and `14종 부족 · 6명의 성장 계획에 영향`.
+- It has a dedicated two-line responsive type scale instead of inheriting the
+  smaller three-row item-summary typography, so both lines use the available
+  diagonal header height.
+- The whole summary is clickable. It toggles the same Section 2 row-highlight
+  contract for the six sample affected students: Shiroko, Hoshino, Serika,
+  Haruka, Nonomi, and Azusa.
+- Bottleneck, phase, and overall views therefore own separate affected-student
+  sets. Switching tabs clears the previous set; clicking the current summary
+  toggles its set without changing the common `1.8px` pink row treatment.
+
+## Plan Section 3 tab views and first bottleneck detail (2026-07-29)
+
+- Section 5 owns the selected resource view and drives three keyed Section 3
+  bodies: `3-1 병목`, `3-2 페이즈`, and `3-3 전체`. The phase and overall
+  bodies are reserved placeholders until their detail designs are implemented.
+- Section 3-1 projects the container geometry from
+  `release/section-plan-main-1.ba-section-studio.json`, then applies the runtime
+  fit correction requested after visual review: width and height are 95% of
+  Section 3, it is horizontally centered, its top margin is 2.5%, and the path
+  is clipped to the parent Section 3 polygon.
+- The container reuses the Section 2 diagonal list behavior. Each bottleneck
+  detail is its own parallelogram card; vertical scroll offset is converted to
+  horizontal offset along the 80° rail.
+- The first sample card displays `병목 1` and
+  Hoshino phase 2. `병목 1` occupies the original upper-left position. The
+  space below it reuses the exact 65px `PlanStudentStepTile` used by Section 2
+  instead of maintaining a separate portrait-and-label composition.
+- The reused step tile accepts presentation-only bottleneck color overrides.
+  The first tactical-BD sample paints its skill value pink; equipment samples
+  paint the affected equipment value, and the credit sample paints the stage
+  title. All other geometry and data presentation remain the Section 2 item.
+- Credit is not rendered as a resource tile. When credit is a bottleneck, a
+  dedicated long row between the reused stage item and the resource grid shows
+  the v6 `Currency_Icon_Gold.png`, `remaining / required`, and shortage in that
+  order. The icon box is `58.5×73.8px`, 60% of the former natural resource icon
+  box, and has no `square.png` background.
+- The resource grid has two equal slots per row. Its first entry uses the v6
+  Abydos tier-index-0 tactical BD icon with the default `square.png` background
+  and shows `단계 진입 잔량 4 / 단계 필요량 12`, followed by `8개 부족`.
+- Resource icon and text metrics use 1.5 times the prior natural size
+  (`97.5×123` media, `16.5 / 12 / 18px` copy). Narrow layouts proportionally
+  scale that natural presentation down to prevent overflow.
+- The active primary monitor is `2560×1440` at Windows DPI 96 (100%), so the
+  supplied screenshot's physical pixels equal Flutter logical pixels. In that
+  capture the old card fill is 132px high, the bright icon/text group spans
+  78px, and the top and bottom gaps are 27px each. Resource tiles are therefore
+  107px tall with 2px vertical padding, targeting approximately 13.5px visible
+  gaps on that monitor.
+- Equipment resource names append their explicit tier, for example
+  `헤어핀 (T10)`.
+- `이 병목으로 지연되는 단계` is an action button. It toggles the common
+  1.8px pink Section 2 highlight only on the exact phase/student/step keys
+  listed by that bottleneck, rather than every row belonging to those students.
+- The action uses the same 80° parallelogram silhouette while preserving its
+  previous width and 38px height. Delayed-stage child rows are not duplicated
+  in Section 3-1 because Section 2 is the result display.
+- Resource-summary actions and delayed-stage actions are mutually exclusive:
+  selecting a resource clears the exact-stage focus before applying the
+  resource's affected-student highlight set.
+- Four sample bottlenecks (BD, credit, T10 equipment, and ooparts) make the
+  Section 3-1 diagonal scroll trajectory directly testable. The credit sample
+  additionally carries Antikythera T4 and Nebra T3 as two ordinary resource
+  tiles in one row, covering the multiple-resource case.
+- v6 images are copied into dedicated v7 runtime UI asset directories; v7 does
+  not import v6 paths at runtime.

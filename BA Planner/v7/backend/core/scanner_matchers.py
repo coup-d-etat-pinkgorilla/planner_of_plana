@@ -68,10 +68,14 @@ class TemplateMatcher:
         return image.crop((round(image.width * trim), round(image.height * trim), round(image.width * (1 - trim)), round(image.height * (1 - trim))))
 
     def match(self, image: Image.Image, *, center_trim: float = 0.0) -> Match:
-        ranked = sorted(
-            ((identity, image_similarity(self._center(image, center_trim), self._center(template, center_trim))) for identity, template in self.templates),
-            key=lambda item: item[1], reverse=True,
-        )
+        best_by_identity: dict[str, float] = {}
+        for identity, template in self.templates:
+            score = image_similarity(
+                self._center(image, center_trim),
+                self._center(template, center_trim),
+            )
+            best_by_identity[identity] = max(score, best_by_identity.get(identity, 0.0))
+        ranked = sorted(best_by_identity.items(), key=lambda item: item[1], reverse=True)
         best_id, best_score = ranked[0]
         second = ranked[1][1] if len(ranked) > 1 else 0.0
         return Match(best_id, best_score, best_score - second)

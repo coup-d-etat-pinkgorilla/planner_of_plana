@@ -53,6 +53,23 @@
       },
       "additionalProperties": false
     },
+    "tacticalLobbyPayload": {
+      "type": "object",
+      "required": ["version", "roi_profile_id", "observed_at", "screen_hash", "refresh_generation", "frame_complete", "current_rank", "rows", "overall_confidence", "review_status"],
+      "properties": {
+        "version": { "const": 1 },
+        "roi_profile_id": { "type": "string", "minLength": 1 },
+        "observed_at": { "type": "string", "format": "date-time" },
+        "screen_hash": { "type": "string", "minLength": 1 },
+        "refresh_generation": { "type": "string", "pattern": "^refresh-[0-9a-f]{24}$" },
+        "frame_complete": { "type": "boolean" },
+        "current_rank": { "type": "object", "required": ["value", "proposed_value", "confidence", "margin", "review_status"], "properties": { "value": { "type": ["integer", "null"], "minimum": 1 }, "proposed_value": { "type": "integer", "minimum": 1 }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "margin": { "type": "number", "minimum": 0, "maximum": 1 }, "review_status": { "enum": ["confirmed", "review_required"] } }, "additionalProperties": false },
+        "rows": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "object", "required": ["index", "rank", "opponent", "public_defense", "confidence", "review_status"] } },
+        "overall_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "review_status": { "enum": ["confirmed", "review_required"] }
+      },
+      "additionalProperties": false
+    },
     "candidate": {
       "type": "object",
       "required": ["candidate_id", "session_id", "generation", "revision", "scan_kind", "payload", "evidence", "review_required", "approved", "audit"],
@@ -61,14 +78,17 @@
         "session_id": { "type": "string", "minLength": 1 },
         "generation": { "type": "integer", "minimum": 1 },
         "revision": { "type": "integer", "minimum": 1 },
-        "scan_kind": { "enum": ["student", "inventory"] },
+        "scan_kind": { "enum": ["student", "inventory", "tactical_lobby"] },
         "payload": { "type": "object" },
         "evidence": { "type": "array", "items": { "$ref": "#/$defs/fieldEvidence" } },
         "review_required": { "type": "boolean" },
         "approved": { "type": "boolean" },
         "audit": { "type": "array", "items": { "type": "object" } }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        { "if": { "properties": { "scan_kind": { "const": "tactical_lobby" } } }, "then": { "properties": { "payload": { "$ref": "#/$defs/tacticalLobbyPayload" } } } }
+      ]
     },
     "errorPayload": {
       "type": "object",
@@ -94,7 +114,7 @@
           "oneOf": [
             { "properties": { "method": { "const": "scanner.target.list" }, "payload": { "type": "object", "maxProperties": 0 } } },
             { "properties": { "method": { "const": "scanner.recognition.status" }, "payload": { "type": "object", "maxProperties": 0 } } },
-            { "properties": { "method": { "const": "scanner.session.start" }, "payload": { "type": "object", "required": ["scan_kind", "target_id"], "properties": { "scan_kind": { "enum": ["student", "inventory"] }, "target_id": { "type": "string", "minLength": 1 } }, "additionalProperties": false } } },
+            { "properties": { "method": { "const": "scanner.session.start" }, "payload": { "type": "object", "required": ["scan_kind", "target_id"], "properties": { "scan_kind": { "enum": ["student", "inventory", "tactical_lobby"] }, "target_id": { "type": "string", "minLength": 1 } }, "additionalProperties": false } } },
             { "properties": { "method": { "const": "scanner.session.cancel" }, "payload": { "$ref": "#/$defs/sessionRef" } } },
             { "properties": { "method": { "const": "scanner.session.snapshot" }, "payload": { "$ref": "#/$defs/sessionRef" } } },
             { "properties": { "method": { "const": "scanner.candidate.get" }, "payload": { "type": "object", "required": ["session_id", "generation", "candidate_id"], "properties": { "session_id": { "type": "string", "minLength": 1 }, "generation": { "type": "integer", "minimum": 1 }, "candidate_id": { "type": "string", "minLength": 1 } }, "additionalProperties": false } } },
@@ -136,7 +156,7 @@
               }
             },
             { "properties": { "method": { "const": "scanner.recognition.status" }, "payload": { "not": { "required": ["error"] } } } },
-            { "properties": { "method": { "const": "scanner.session.start" }, "payload": { "type": "object", "required": ["session_id", "generation", "scan_kind"], "properties": { "session_id": { "type": "string", "minLength": 1 }, "generation": { "type": "integer", "minimum": 1 }, "scan_kind": { "enum": ["student", "inventory"] } }, "additionalProperties": false } } },
+            { "properties": { "method": { "const": "scanner.session.start" }, "payload": { "type": "object", "required": ["session_id", "generation", "scan_kind"], "properties": { "session_id": { "type": "string", "minLength": 1 }, "generation": { "type": "integer", "minimum": 1 }, "scan_kind": { "enum": ["student", "inventory", "tactical_lobby"] } }, "additionalProperties": false } } },
             { "properties": { "method": { "const": "scanner.session.cancel" }, "payload": { "not": { "required": ["error"] } } } },
             { "properties": { "method": { "const": "scanner.session.snapshot" }, "payload": { "not": { "required": ["error"] } } } },
             { "properties": { "method": { "const": "scanner.candidate.get" }, "payload": { "type": "object", "required": ["candidate"], "properties": { "candidate": { "$ref": "#/$defs/candidate" } }, "additionalProperties": false } } },
@@ -160,7 +180,7 @@
             "session_id": { "type": "string", "minLength": 1 },
             "generation": { "type": "integer", "minimum": 1 },
             "sequence": { "type": "integer", "minimum": 1 },
-            "scan_kind": { "enum": ["student", "inventory"] },
+            "scan_kind": { "enum": ["student", "inventory", "tactical_lobby"] },
             "event_kind": { "enum": ["phase", "progress", "candidate", "diagnostic", "terminal"] },
             "phase": { "type": "string", "minLength": 1 },
             "current": { "type": "integer", "minimum": 0 },

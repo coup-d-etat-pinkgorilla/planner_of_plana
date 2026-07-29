@@ -151,6 +151,32 @@ void main() {
     );
   });
 
+  test(
+    'bottleneck container is inset to 95 percent with a small top margin',
+    () {
+      const size = Size(1280, 720);
+      final sectionBounds = planSectionPath(size, 'element-3').getBounds();
+      final containerBounds = planBottleneckContainerPath(size).getBounds();
+
+      expect(
+        containerBounds.width / sectionBounds.width,
+        closeTo(planBottleneckContainerScale, 0.01),
+      );
+      expect(
+        containerBounds.height / sectionBounds.height,
+        closeTo(planBottleneckContainerScale, 0.01),
+      );
+      expect(
+        containerBounds.top,
+        closeTo(
+          sectionBounds.top +
+              sectionBounds.height * planBottleneckContainerTopRatio,
+          0.01,
+        ),
+      );
+    },
+  );
+
   testWidgets('places five sections and a diagonal phase preview', (
     tester,
   ) async {
@@ -205,6 +231,136 @@ void main() {
     expect(
       find.byKey(const ValueKey('plan-primary-bottleneck-summary')),
       findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-section-3-1-bottleneck')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-bottleneck-container-foundation')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-bottleneck-scroll')),
+      findsOneWidget,
+    );
+    expect(find.text('병목 1'), findsOneWidget);
+    final focusItem = find.byKey(
+      const ValueKey('plan-bottleneck-bottleneck-1-focus-item'),
+    );
+    expect(focusItem, findsOneWidget);
+    final focusTile = tester.widget<PlanStudentStepTile>(focusItem);
+    expect(focusTile.step.studentId, 'hoshino');
+    expect(focusTile.step.step, 2);
+    expect(focusTile.bottleneckField, PlanBottleneckFocusField.skills);
+    expect(
+      find.descendant(
+        of: focusItem,
+        matching: find.byType(DiagonalMediaListItem),
+      ),
+      findsOneWidget,
+    );
+    final pinkFocusTexts = tester
+        .widgetList<Text>(
+          find.descendant(of: focusItem, matching: find.byType(Text)),
+        )
+        .where((text) => text.style?.color == diagonalMediaHighlightColor);
+    expect(pinkFocusTexts, isNotEmpty);
+    expect(tester.getSize(focusItem).height, planPhaseItemHeight);
+    expect(find.text('기초 전술교육 BD'), findsOneWidget);
+    expect(find.text('단계 진입 잔량 4 / 단계 필요량 12'), findsOneWidget);
+    expect(find.text('8개 부족'), findsOneWidget);
+    expect(
+      find.text('이 병목으로 지연되는 단계'),
+      findsNWidgets(dummyPlanBottleneckDetails.length),
+    );
+    expect(find.text('호시노 2단계'), findsNothing);
+    expect(find.text('노노미 2단계'), findsNothing);
+    expect(find.text('아코 3단계'), findsNothing);
+    expect(find.text('크레딧'), findsNothing);
+    expect(find.text('120,000 / 850,000'), findsOneWidget);
+    expect(find.text('730,000 부족'), findsOneWidget);
+    expect(find.text('헤어핀 (T10)'), findsOneWidget);
+    final creditImages = tester
+        .widgetList<Image>(
+          find.descendant(
+            of: find.byKey(const ValueKey('plan-bottleneck-credit-shortage')),
+            matching: find.byType(Image),
+          ),
+        )
+        .map((image) => image.image)
+        .toList();
+    expect(creditImages, [const AssetImage(planCreditIconAsset)]);
+    expect(
+      tester.getSize(
+        find.byKey(const ValueKey('plan-bottleneck-credit-shortage-icon')),
+      ),
+      const Size(58.5, 73.8),
+    );
+    expect(
+      find.byKey(const ValueKey('plan-bottleneck-resource-credits-square')),
+      findsNothing,
+    );
+    final multiResourceGrid = find.byKey(
+      const ValueKey('plan-bottleneck-bottleneck-2-resource-grid'),
+    );
+    expect(
+      find.descendant(
+        of: multiResourceGrid,
+        matching: find.byType(PlanBottleneckResourceTile),
+      ),
+      findsNWidgets(2),
+    );
+    final multiResourceImages = tester
+        .widgetList<Image>(
+          find.descendant(of: multiResourceGrid, matching: find.byType(Image)),
+        )
+        .map((image) => image.image)
+        .toList();
+    expect(
+      multiResourceImages,
+      isNot(contains(const AssetImage(planCreditIconAsset))),
+    );
+    expect(
+      multiResourceImages,
+      contains(const AssetImage(planPhaseShortageIconAsset)),
+    );
+    expect(
+      multiResourceImages,
+      contains(const AssetImage(planPrimaryBottleneckIconAsset)),
+    );
+    final bdImages = tester
+        .widgetList<Image>(
+          find.descendant(
+            of: find.byKey(
+              const ValueKey('plan-bottleneck-bottleneck-1-resource-grid'),
+            ),
+            matching: find.byType(Image),
+          ),
+        )
+        .map((image) => image.image)
+        .toList();
+    expect(bdImages, contains(const AssetImage(planBasicTacticalBdIconAsset)));
+    expect(
+      bdImages,
+      contains(const AssetImage(planDefaultItemBackgroundAsset)),
+    );
+    expect(
+      tester
+          .getSize(
+            find
+                .descendant(
+                  of: find.byKey(
+                    const ValueKey(
+                      'plan-bottleneck-bottleneck-1-resource-grid',
+                    ),
+                  ),
+                  matching: find.byType(PlanBottleneckResourceTile),
+                )
+                .first,
+          )
+          .height,
+      107,
     );
     expect(
       find.byKey(const ValueKey('plan-primary-bottleneck-square')),
@@ -330,7 +486,8 @@ void main() {
     expect(
       find.byType(DiagonalMediaListItem),
       findsNWidgets(
-        dummyPlanPhases.fold(0, (total, phase) => total + phase.steps.length),
+        dummyPlanPhases.fold(0, (total, phase) => total + phase.steps.length) +
+            dummyPlanBottleneckDetails.length,
       ),
     );
     final shirokoImages = tester
@@ -350,99 +507,246 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('bottleneck is the first tab and other tabs clear its summary', (
-    tester,
-  ) async {
-    final service = MockAppService();
-    addTearDown(service.dispose);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+  testWidgets(
+    'bottleneck is first and overall uses its dedicated two-line summary',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await pumpPage(tester, service, size: const Size(1280, 500));
-    await tester.pumpAndSettle();
+      await pumpPage(tester, service, size: const Size(1280, 500));
+      await tester.pumpAndSettle();
 
-    expect(
-      find.byKey(const ValueKey('plan-resource-header-content-bottleneck')),
-      findsOneWidget,
-    );
-    final bottleneckLeft = tester
-        .getTopLeft(find.byKey(const ValueKey('plan-resource-tab-bottleneck')))
-        .dx;
-    final byPhaseLeft = tester
-        .getTopLeft(find.byKey(const ValueKey('plan-resource-tab-byPhase')))
-        .dx;
-    final overallLeft = tester
-        .getTopLeft(find.byKey(const ValueKey('plan-resource-tab-overall')))
-        .dx;
-    expect(bottleneckLeft, lessThan(byPhaseLeft));
-    expect(byPhaseLeft, lessThan(overallLeft));
+      expect(
+        find.byKey(const ValueKey('plan-resource-header-content-bottleneck')),
+        findsOneWidget,
+      );
+      final bottleneckLeft = tester
+          .getTopLeft(
+            find.byKey(const ValueKey('plan-resource-tab-bottleneck')),
+          )
+          .dx;
+      final byPhaseLeft = tester
+          .getTopLeft(find.byKey(const ValueKey('plan-resource-tab-byPhase')))
+          .dx;
+      final overallLeft = tester
+          .getTopLeft(find.byKey(const ValueKey('plan-resource-tab-overall')))
+          .dx;
+      expect(bottleneckLeft, lessThan(byPhaseLeft));
+      expect(byPhaseLeft, lessThan(overallLeft));
 
-    await tester.tap(find.byKey(const ValueKey('plan-resource-tab-overall')));
-    await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('plan-resource-header-content-overall')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('plan-primary-bottleneck-summary')),
-      findsNothing,
-    );
+      await tester.tap(find.byKey(const ValueKey('plan-resource-tab-overall')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('plan-resource-header-content-overall')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('plan-section-3-3-overall')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('plan-section-3-1-bottleneck')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('plan-primary-bottleneck-summary')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('plan-overall-summary')),
+        findsOneWidget,
+      );
+      expect(find.text('전체 요구량의 72% 확보'), findsOneWidget);
+      expect(find.text('14종 부족 · 6명의 성장 계획에 영향'), findsOneWidget);
 
-    await tester.tap(
-      find.byKey(const ValueKey('plan-resource-tab-bottleneck')),
-    );
-    await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('plan-primary-bottleneck-summary')),
-      findsOneWidget,
-    );
-    expect(tester.takeException(), isNull);
-  });
+      await tester.tap(
+        find.byKey(const ValueKey('plan-resource-tab-bottleneck')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('plan-primary-bottleneck-summary')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('plan-section-3-1-bottleneck')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('bottleneck item highlights every affected student row', (
-    tester,
-  ) async {
-    final service = MockAppService();
-    addTearDown(service.dispose);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await pumpPage(tester, service, size: const Size(1280, 720));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'resource summaries highlight their affected students in every tab',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpPage(tester, service, size: const Size(1280, 720));
+      await tester.pumpAndSettle();
 
-    DiagonalMediaListItem item(String key) =>
-        tester.widget<DiagonalMediaListItem>(
-          find.descendant(
-            of: find.byKey(ValueKey(key)),
-            matching: find.byType(DiagonalMediaListItem),
-          ),
-        );
+      DiagonalMediaListItem item(String key) =>
+          tester.widget<DiagonalMediaListItem>(
+            find.descendant(
+              of: find.byKey(ValueKey(key)),
+              matching: find.byType(DiagonalMediaListItem),
+            ),
+          );
 
-    const affectedRows = [
-      'plan-step-phase-1-haruka-1',
-      'plan-step-phase-2-nonomi-1',
-      'plan-step-phase-3-nonomi-2',
-      'plan-step-phase-3-azusa-3',
-    ];
-    for (final key in affectedRows) {
-      expect(item(key).highlighted, isFalse);
-    }
-    expect(item('plan-step-phase-1-shiroko-1').highlighted, isFalse);
+      const affectedRows = [
+        'plan-step-phase-1-haruka-1',
+        'plan-step-phase-2-nonomi-1',
+        'plan-step-phase-3-nonomi-2',
+        'plan-step-phase-3-azusa-3',
+      ];
+      for (final key in affectedRows) {
+        expect(item(key).highlighted, isFalse);
+      }
+      expect(item('plan-step-phase-1-shiroko-1').highlighted, isFalse);
 
-    await tester.tap(
-      find.byKey(const ValueKey('plan-primary-bottleneck-action')),
-    );
-    await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-primary-bottleneck-action')),
+      );
+      await tester.pumpAndSettle();
 
-    for (final key in affectedRows) {
-      expect(item(key).highlighted, isTrue);
-    }
-    expect(item('plan-step-phase-1-shiroko-1').highlighted, isFalse);
+      for (final key in affectedRows) {
+        expect(item(key).highlighted, isTrue);
+      }
+      expect(item('plan-step-phase-1-shiroko-1').highlighted, isFalse);
 
-    await tester.tap(find.byKey(const ValueKey('plan-resource-tab-overall')));
-    await tester.pumpAndSettle();
-    for (final key in affectedRows) {
-      expect(item(key).highlighted, isFalse);
-    }
-    expect(tester.takeException(), isNull);
-  });
+      await tester.tap(find.byKey(const ValueKey('plan-resource-tab-overall')));
+      await tester.pumpAndSettle();
+      for (final key in affectedRows) {
+        expect(item(key).highlighted, isFalse);
+      }
+
+      await tester.tap(find.byKey(const ValueKey('plan-overall-action')));
+      await tester.pumpAndSettle();
+      const overallRows = [
+        'plan-step-phase-1-shiroko-1',
+        'plan-step-phase-1-hoshino-1',
+        'plan-step-phase-1-serika-1',
+        'plan-step-phase-1-haruka-1',
+        'plan-step-phase-2-nonomi-1',
+        'plan-step-phase-3-azusa-3',
+      ];
+      for (final key in overallRows) {
+        expect(item(key).highlighted, isTrue);
+      }
+      expect(item('plan-step-phase-2-yuuka-2').highlighted, isFalse);
+
+      await tester.tap(find.byKey(const ValueKey('plan-resource-tab-byPhase')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('plan-section-3-2-phase')),
+        findsOneWidget,
+      );
+      for (final key in overallRows) {
+        expect(item(key).highlighted, isFalse);
+      }
+      expect(find.text('2단계에서 4명 중 1명만 완료 가능'), findsOneWidget);
+      final phaseImages = tester
+          .widgetList<Image>(
+            find.descendant(
+              of: find.byKey(const ValueKey('plan-phase-shortage-summary')),
+              matching: find.byType(Image),
+            ),
+          )
+          .map((image) => image.image);
+      expect(
+        phaseImages,
+        contains(const AssetImage(planPhaseShortageIconAsset)),
+      );
+      expect(
+        phaseImages,
+        contains(const AssetImage(planPhaseShortageBackgroundAsset)),
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-phase-shortage-action')),
+      );
+      await tester.pumpAndSettle();
+      expect(item('plan-step-phase-2-yuuka-2').highlighted, isTrue);
+      expect(item('plan-step-phase-1-shiroko-1').highlighted, isFalse);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'bottleneck delayed-stage button highlights exact rows and list scrolls',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpPage(tester, service, size: const Size(1280, 720));
+      await tester.pumpAndSettle();
+
+      DiagonalMediaListItem item(String key) =>
+          tester.widget<DiagonalMediaListItem>(
+            find.descendant(
+              of: find.byKey(ValueKey(key)),
+              matching: find.byType(DiagonalMediaListItem),
+            ),
+          );
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey('plan-bottleneck-bottleneck-1-delayed-action'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final key in const [
+        'plan-step-phase-2-hoshino-2',
+        'plan-step-phase-3-nonomi-2',
+        'plan-step-phase-4-ako-3',
+      ]) {
+        expect(item(key).highlighted, isTrue);
+      }
+      for (final key in const [
+        'plan-step-phase-1-hoshino-1',
+        'plan-step-phase-2-nonomi-1',
+        'plan-step-phase-3-azusa-3',
+      ]) {
+        expect(item(key).highlighted, isFalse);
+      }
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-primary-bottleneck-action')),
+      );
+      await tester.pumpAndSettle();
+      expect(item('plan-step-phase-2-hoshino-2').highlighted, isFalse);
+      expect(item('plan-step-phase-4-ako-3').highlighted, isFalse);
+      for (final key in const [
+        'plan-step-phase-1-haruka-1',
+        'plan-step-phase-2-nonomi-1',
+        'plan-step-phase-3-nonomi-2',
+        'plan-step-phase-3-azusa-3',
+      ]) {
+        expect(item(key).highlighted, isTrue);
+      }
+
+      final scroll = find.byKey(const ValueKey('plan-bottleneck-scroll'));
+      final scrollable = find.descendant(
+        of: scroll,
+        matching: find.byType(Scrollable),
+      );
+      final position = tester.state<ScrollableState>(scrollable).position;
+      expect(position.maxScrollExtent, greaterThan(position.viewportDimension));
+      final before = tester.getTopLeft(
+        find.byKey(const ValueKey('plan-bottleneck-card-2')),
+      );
+      await tester.drag(scroll, const Offset(0, -320));
+      await tester.pumpAndSettle();
+      final after = tester.getTopLeft(
+        find.byKey(const ValueKey('plan-bottleneck-card-2')),
+      );
+      expect(after.dy, lessThan(before.dy));
+      expect(after.dx, greaterThan(before.dx));
+      expect(position.pixels, greaterThan(0));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('phase list scrolls while preserving its diagonal container', (
     tester,

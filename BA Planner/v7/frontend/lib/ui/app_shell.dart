@@ -182,12 +182,14 @@ class _AppShellState extends State<AppShell>
         if (_section != AppSection.students) _studentTabActive = false;
         if (_section == AppSection.plan) _planTabActive = false;
         _section = AppSection.students;
-      } else {
+      } else if (candidate.kind == ScannerKind.inventory) {
         _inventoryCandidate = InventoryCandidateContext(
           session: session,
           candidate: candidate,
         );
         _section = AppSection.inventory;
+      } else {
+        _section = AppSection.pvp;
       }
     });
   }

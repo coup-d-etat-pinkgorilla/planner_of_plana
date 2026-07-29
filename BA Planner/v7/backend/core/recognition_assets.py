@@ -78,7 +78,10 @@ class RecognitionAssetCatalog:
         for raw in manifest["assets"]:
             if raw.get("scan_kind") != scan_kind or raw.get("purpose") != purpose:
                 continue
-            identity = raw.get("student_id") or raw.get("item_id") or raw.get("digit")
+            identity = (
+                raw.get("student_id") or raw.get("item_id") or raw.get("digit")
+                or raw.get("opponent_name") or raw.get("rank")
+            )
             result.append(RecognitionAsset(
                 path=raw["path"], scan_kind=scan_kind, purpose=purpose,
                 required=bool(raw.get("required")), bytes=raw["bytes"],
@@ -87,7 +90,12 @@ class RecognitionAssetCatalog:
         return result
 
     def region(self, scan_kind: str) -> dict[str, Any]:
-        assets = self.assets(scan_kind, f"{scan_kind}-regions" if scan_kind == "student" else "grid-regions")
+        purpose = {
+            "student": "student-regions",
+            "inventory": "grid-regions",
+            "tactical_lobby": "tactical-lobby-regions",
+        }.get(scan_kind, f"{scan_kind}-regions")
+        assets = self.assets(scan_kind, purpose)
         if len(assets) != 1:
             raise ScannerError("region_missing", f"{scan_kind} region asset is missing")
         try:

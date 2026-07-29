@@ -46,9 +46,277 @@ const planPrimaryBottleneckBackgroundAsset =
 const planPrimaryBottleneckStudentIds = {'azusa', 'nonomi', 'haruka'};
 const planPhaseShortageOwned = 42;
 const planPhaseShortageRequired = 60;
-const planPhaseShortageNumber = 3;
+const planPhaseShortageNumber = 2;
 const planPhaseShortageStudentCount = 4;
 const planPhaseShortageCompletableCount = 1;
+const planPhaseShortageItemName = '안티키테라 T4';
+const planPhaseShortageIconAsset =
+    'assets/item_icons/ooparts/Item_Icon_Material_Antikythera_3.png';
+const planPhaseShortageBackgroundAsset =
+    'assets/item_backgrounds/square_purple.png';
+const planPhaseShortageStudentIds = {'yuuka'};
+const planOverallProgressPercent = 72;
+const planOverallShortageKindCount = 14;
+const planOverallAffectedPlanCount = 6;
+const planOverallAffectedStudentIds = {
+  'shiroko',
+  'hoshino',
+  'serika',
+  'haruka',
+  'nonomi',
+  'azusa',
+};
+const planBottleneckContainerScale = 0.95;
+const planBottleneckContainerTopRatio = 0.025;
+const planCreditIconAsset = 'assets/item_icons/currency/Currency_Icon_Gold.png';
+const planBasicTacticalBdIconAsset =
+    'assets/item_icons/tactical_bd/Item_Icon_Material_ExSkill_Abydos_0.png';
+const planDefaultItemBackgroundAsset = 'assets/item_backgrounds/square.png';
+
+@immutable
+class PlanBottleneckResourcePreview {
+  const PlanBottleneckResourcePreview({
+    required this.id,
+    required this.name,
+    required this.remainingAtEntry,
+    required this.requiredAtEntry,
+    required this.shortage,
+    required this.iconAsset,
+    this.backgroundAsset,
+    this.equipmentTier,
+  });
+
+  final String id;
+  final String name;
+  final int remainingAtEntry;
+  final int requiredAtEntry;
+  final int shortage;
+  final String iconAsset;
+  final String? backgroundAsset;
+  final int? equipmentTier;
+
+  String get displayName =>
+      equipmentTier == null ? name : '$name (T$equipmentTier)';
+}
+
+@immutable
+class PlanDelayedStagePreview {
+  const PlanDelayedStagePreview({
+    required this.phaseId,
+    required this.studentId,
+    required this.step,
+    required this.label,
+  });
+
+  final String phaseId;
+  final String studentId;
+  final int step;
+  final String label;
+
+  String get key => planStudentStageKey(phaseId, studentId, step);
+}
+
+enum PlanBottleneckFocusField { title, skills, equipment1 }
+
+@immutable
+class PlanBottleneckDetailPreview {
+  const PlanBottleneckDetailPreview({
+    required this.id,
+    required this.rankLabel,
+    required this.phaseNumber,
+    required this.focusPhaseId,
+    required this.focusStudentId,
+    required this.focusStep,
+    required this.focusStage,
+    required this.focusField,
+    required this.resources,
+    required this.delayedStages,
+    this.focusBondRank,
+  });
+
+  final String id;
+  final String rankLabel;
+  final int phaseNumber;
+  final String focusPhaseId;
+  final String focusStudentId;
+  final int focusStep;
+  final String focusStage;
+  final PlanBottleneckFocusField focusField;
+  final List<PlanBottleneckResourcePreview> resources;
+  final List<PlanDelayedStagePreview> delayedStages;
+  final int? focusBondRank;
+}
+
+const dummyPlanBottleneckDetails = <PlanBottleneckDetailPreview>[
+  PlanBottleneckDetailPreview(
+    id: 'bottleneck-1',
+    rankLabel: '병목 1',
+    phaseNumber: 2,
+    focusPhaseId: 'phase-2',
+    focusStudentId: 'hoshino',
+    focusStep: 2,
+    focusStage: '호시노 2단계',
+    focusField: PlanBottleneckFocusField.skills,
+    resources: [
+      PlanBottleneckResourcePreview(
+        id: 'basic-tactical-bd',
+        name: '기초 전술교육 BD',
+        remainingAtEntry: 4,
+        requiredAtEntry: 12,
+        shortage: 8,
+        iconAsset: planBasicTacticalBdIconAsset,
+        backgroundAsset: planDefaultItemBackgroundAsset,
+      ),
+    ],
+    delayedStages: [
+      PlanDelayedStagePreview(
+        phaseId: 'phase-2',
+        studentId: 'hoshino',
+        step: 2,
+        label: '호시노 2단계',
+      ),
+      PlanDelayedStagePreview(
+        phaseId: 'phase-3',
+        studentId: 'nonomi',
+        step: 2,
+        label: '노노미 2단계',
+      ),
+      PlanDelayedStagePreview(
+        phaseId: 'phase-4',
+        studentId: 'ako',
+        step: 3,
+        label: '아코 3단계',
+      ),
+    ],
+  ),
+  PlanBottleneckDetailPreview(
+    id: 'bottleneck-2',
+    rankLabel: '병목 2',
+    phaseNumber: 2,
+    focusPhaseId: 'phase-2',
+    focusStudentId: 'nonomi',
+    focusStep: 1,
+    focusStage: '노노미 1단계',
+    focusField: PlanBottleneckFocusField.title,
+    resources: [
+      PlanBottleneckResourcePreview(
+        id: 'credits',
+        name: '크레딧',
+        remainingAtEntry: 120000,
+        requiredAtEntry: 850000,
+        shortage: 730000,
+        iconAsset: planCreditIconAsset,
+      ),
+      PlanBottleneckResourcePreview(
+        id: 'antikythera-t4',
+        name: planPhaseShortageItemName,
+        remainingAtEntry: 1,
+        requiredAtEntry: 5,
+        shortage: 4,
+        iconAsset: planPhaseShortageIconAsset,
+        backgroundAsset: planPhaseShortageBackgroundAsset,
+      ),
+      PlanBottleneckResourcePreview(
+        id: 'nebra-t3-secondary',
+        name: planPrimaryBottleneckItemName,
+        remainingAtEntry: 3,
+        requiredAtEntry: 7,
+        shortage: 4,
+        iconAsset: planPrimaryBottleneckIconAsset,
+        backgroundAsset: planPrimaryBottleneckBackgroundAsset,
+      ),
+    ],
+    delayedStages: [
+      PlanDelayedStagePreview(
+        phaseId: 'phase-2',
+        studentId: 'nonomi',
+        step: 1,
+        label: '노노미 1단계',
+      ),
+      PlanDelayedStagePreview(
+        phaseId: 'phase-3',
+        studentId: 'azusa',
+        step: 3,
+        label: '아즈사 3단계',
+      ),
+    ],
+  ),
+  PlanBottleneckDetailPreview(
+    id: 'bottleneck-3',
+    rankLabel: '병목 3',
+    phaseNumber: 3,
+    focusPhaseId: 'phase-3',
+    focusStudentId: 'azusa',
+    focusStep: 3,
+    focusStage: '아즈사 3단계',
+    focusField: PlanBottleneckFocusField.equipment1,
+    focusBondRank: 100,
+    resources: [
+      PlanBottleneckResourcePreview(
+        id: 'hairpin-t10',
+        name: '헤어핀',
+        remainingAtEntry: 1,
+        requiredAtEntry: 3,
+        shortage: 2,
+        iconAsset: 'assets/equipment_icons/hairpin_t10.png',
+        backgroundAsset: planPhaseShortageBackgroundAsset,
+        equipmentTier: 10,
+      ),
+    ],
+    delayedStages: [
+      PlanDelayedStagePreview(
+        phaseId: 'phase-3',
+        studentId: 'azusa',
+        step: 3,
+        label: '아즈사 3단계',
+      ),
+      PlanDelayedStagePreview(
+        phaseId: 'phase-4',
+        studentId: 'ako',
+        step: 3,
+        label: '아코 3단계',
+      ),
+    ],
+  ),
+  PlanBottleneckDetailPreview(
+    id: 'bottleneck-4',
+    rankLabel: '병목 4',
+    phaseNumber: 1,
+    focusPhaseId: 'phase-1',
+    focusStudentId: 'haruka',
+    focusStep: 1,
+    focusStage: '하루카 1단계',
+    focusField: PlanBottleneckFocusField.skills,
+    resources: [
+      PlanBottleneckResourcePreview(
+        id: 'nebra-t3',
+        name: planPrimaryBottleneckItemName,
+        remainingAtEntry: 2,
+        requiredAtEntry: 9,
+        shortage: 7,
+        iconAsset: planPrimaryBottleneckIconAsset,
+        backgroundAsset: planPrimaryBottleneckBackgroundAsset,
+      ),
+    ],
+    delayedStages: [
+      PlanDelayedStagePreview(
+        phaseId: 'phase-1',
+        studentId: 'haruka',
+        step: 1,
+        label: '하루카 1단계',
+      ),
+      PlanDelayedStagePreview(
+        phaseId: 'phase-2',
+        studentId: 'nonomi',
+        step: 1,
+        label: '노노미 1단계',
+      ),
+    ],
+  ),
+];
+
+String planStudentStageKey(String phaseId, String studentId, int step) =>
+    '$phaseId:$studentId:$step';
 
 @immutable
 class PlanStudentStepPreview {
@@ -208,6 +476,26 @@ const dummyPlanPhases = <PlanPhasePreview>[
   ),
 ];
 
+(PlanStudentStepPreview, int) planBottleneckFocusStep(
+  PlanBottleneckDetailPreview detail,
+) {
+  final phase = dummyPlanPhases.firstWhere(
+    (candidate) => candidate.id == detail.focusPhaseId,
+  );
+  final index = phase.steps.indexWhere(
+    (step) =>
+        step.studentId == detail.focusStudentId &&
+        step.step == detail.focusStep,
+  );
+  if (index < 0) {
+    throw StateError(
+      'Missing bottleneck focus step: '
+      '${detail.focusPhaseId}/${detail.focusStudentId}/${detail.focusStep}',
+    );
+  }
+  return (phase.steps[index], index + 1);
+}
+
 Path planSectionPath(Size size, String id) {
   final section = planStudioDocument.elements.firstWhere(
     (element) => element.id == id,
@@ -294,6 +582,27 @@ Path planPhaseContainerPath(Size size) {
   return Path.combine(PathOperation.intersect, raw, sectionPath);
 }
 
+Path planBottleneckContainerPath(Size size) {
+  final sectionPath = planSectionPath(size, 'element-3');
+  final sectionBounds = sectionPath.getBounds();
+  final width = sectionBounds.width * planBottleneckContainerScale;
+  final height = sectionBounds.height * planBottleneckContainerScale;
+  final rect = Rect.fromLTWH(
+    sectionBounds.center.dx - width / 2,
+    sectionBounds.top + sectionBounds.height * planBottleneckContainerTopRatio,
+    width,
+    height,
+  );
+  final depth = rect.height / math.tan(80 * math.pi / 180);
+  final raw = buildRoundedSectionPolygon([
+    Offset(rect.left + depth, rect.top),
+    rect.topRight,
+    Offset(rect.right - depth, rect.bottom),
+    rect.bottomLeft,
+  ], radius: 10);
+  return Path.combine(PathOperation.intersect, raw, sectionPath);
+}
+
 double planPhaseRowHorizontalOffset({
   required double viewportHeight,
   required double rowTop,
@@ -332,7 +641,9 @@ class PlanSectionLayout extends StatefulWidget {
 class _PlanSectionLayoutState extends State<PlanSectionLayout>
     with TickerProviderStateMixin {
   static const _motionDuration = Duration(milliseconds: 360);
-  bool _highlightBottleneckStudents = false;
+  Set<String> _highlightedStudentIds = const {};
+  Set<String> _highlightedStageKeys = const {};
+  PlanResourceView _selectedResourceView = PlanResourceView.bottleneck;
   late final Map<String, AnimationController> _controllers = {
     for (final id in planSectionMotions.keys)
       id: AnimationController(
@@ -364,6 +675,35 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     }
   }
 
+  void _toggleHighlightedStudents(Set<String> studentIds) {
+    final sameSelection =
+        _highlightedStudentIds.length == studentIds.length &&
+        _highlightedStudentIds.every(studentIds.contains);
+    setState(() {
+      _highlightedStudentIds = sameSelection ? const {} : studentIds;
+      _highlightedStageKeys = const {};
+    });
+  }
+
+  void _toggleHighlightedStages(Set<String> stageKeys) {
+    final sameSelection =
+        _highlightedStageKeys.length == stageKeys.length &&
+        _highlightedStageKeys.every(stageKeys.contains);
+    setState(() {
+      _highlightedStudentIds = const {};
+      _highlightedStageKeys = sameSelection ? const {} : stageKeys;
+    });
+  }
+
+  void _selectResourceView(PlanResourceView view) {
+    if (_selectedResourceView == view) return;
+    setState(() {
+      _selectedResourceView = view;
+      _highlightedStudentIds = const {};
+      _highlightedStageKeys = const {};
+    });
+  }
+
   @override
   void dispose() {
     for (final controller in _controllers.values) {
@@ -391,9 +731,64 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                 ),
               ),
               PlanResourceHeader(
-                bottleneckHighlighted: _highlightBottleneckStudents,
-                onBottleneckHighlightChanged: (highlighted) =>
-                    setState(() => _highlightBottleneckStudents = highlighted),
+                selected: _selectedResourceView,
+                onSelected: _selectResourceView,
+                highlightedStudentIds: _highlightedStudentIds,
+                onHighlightStudents: _toggleHighlightedStudents,
+              ),
+            ],
+          );
+        }
+        if (id == 'element-3') {
+          final containerPath = planBottleneckContainerPath(size);
+          final containerBounds = containerPath.getBounds();
+          final localPath = containerPath.shift(-containerBounds.topLeft);
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              IgnorePointer(
+                child: CustomPaint(
+                  key: ValueKey('plan-$id-foundation'),
+                  painter: PlanSectionFoundationPainter(id),
+                ),
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: switch (_selectedResourceView) {
+                  PlanResourceView.bottleneck => Stack(
+                    key: const ValueKey('plan-section-3-1-bottleneck'),
+                    fit: StackFit.expand,
+                    children: [
+                      IgnorePointer(
+                        child: CustomPaint(
+                          key: const ValueKey(
+                            'plan-bottleneck-container-foundation',
+                          ),
+                          painter: PlanPhaseContainerPainter(containerPath),
+                        ),
+                      ),
+                      Positioned.fromRect(
+                        rect: containerBounds,
+                        child: ClipPath(
+                          clipper: _PlanLocalPathClipper(localPath),
+                          child: PlanBottleneckDiagonalList(
+                            bottlenecks: dummyPlanBottleneckDetails,
+                            highlightedStageKeys: _highlightedStageKeys,
+                            onHighlightStages: _toggleHighlightedStages,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  PlanResourceView.byPhase => const SizedBox.expand(
+                    key: ValueKey('plan-section-3-2-phase'),
+                  ),
+                  PlanResourceView.overall => const SizedBox.expand(
+                    key: ValueKey('plan-section-3-3-overall'),
+                  ),
+                },
               ),
             ],
           );
@@ -430,7 +825,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                 clipper: _PlanLocalPathClipper(localPath),
                 child: PlanPhaseDiagonalList(
                   phases: dummyPlanPhases,
-                  highlightBottleneckStudents: _highlightBottleneckStudents,
+                  highlightedStudentIds: _highlightedStudentIds,
+                  highlightedStageKeys: _highlightedStageKeys,
                 ),
               ),
             ),
@@ -486,19 +882,29 @@ const _planResourceHeaderTexture = BATriangleTextureConfig(
 class PlanResourceHeader extends StatefulWidget {
   const PlanResourceHeader({
     super.key,
-    required this.bottleneckHighlighted,
-    required this.onBottleneckHighlightChanged,
+    required this.selected,
+    required this.onSelected,
+    required this.highlightedStudentIds,
+    required this.onHighlightStudents,
   });
 
-  final bool bottleneckHighlighted;
-  final ValueChanged<bool> onBottleneckHighlightChanged;
+  final PlanResourceView selected;
+  final ValueChanged<PlanResourceView> onSelected;
+  final Set<String> highlightedStudentIds;
+  final ValueChanged<Set<String>> onHighlightStudents;
 
   @override
   State<PlanResourceHeader> createState() => _PlanResourceHeaderState();
 }
 
 class _PlanResourceHeaderState extends State<PlanResourceHeader> {
-  PlanResourceView _selected = PlanResourceView.bottleneck;
+  bool _isHighlighted(Set<String> studentIds) =>
+      widget.highlightedStudentIds.length == studentIds.length &&
+      widget.highlightedStudentIds.every(studentIds.contains);
+
+  void _toggle(Set<String> studentIds) => widget.onHighlightStudents(
+    _isHighlighted(studentIds) ? const {} : studentIds,
+  );
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -515,13 +921,8 @@ class _PlanResourceHeaderState extends State<PlanResourceHeader> {
           Positioned.fromRect(
             rect: tabs,
             child: _PlanResourceTabs(
-              selected: _selected,
-              onSelected: (value) {
-                setState(() => _selected = value);
-                if (value != PlanResourceView.bottleneck) {
-                  widget.onBottleneckHighlightChanged(false);
-                }
-              },
+              selected: widget.selected,
+              onSelected: widget.onSelected,
             ),
           ),
           Positioned(
@@ -561,16 +962,24 @@ class _PlanResourceHeaderState extends State<PlanResourceHeader> {
                 ),
               ),
               child: KeyedSubtree(
-                key: ValueKey('plan-resource-header-content-${_selected.name}'),
-                child: switch (_selected) {
+                key: ValueKey(
+                  'plan-resource-header-content-${widget.selected.name}',
+                ),
+                child: switch (widget.selected) {
                   PlanResourceView.bottleneck => PlanPrimaryBottleneckSummary(
-                    highlighted: widget.bottleneckHighlighted,
-                    onTap: () => widget.onBottleneckHighlightChanged(
-                      !widget.bottleneckHighlighted,
+                    highlighted: _isHighlighted(
+                      planPrimaryBottleneckStudentIds,
                     ),
+                    onTap: () => _toggle(planPrimaryBottleneckStudentIds),
                   ),
-                  PlanResourceView.byPhase => const PlanPhaseResourceSummary(),
-                  PlanResourceView.overall => const SizedBox.shrink(),
+                  PlanResourceView.byPhase => PlanPhaseResourceSummary(
+                    highlighted: _isHighlighted(planPhaseShortageStudentIds),
+                    onTap: () => _toggle(planPhaseShortageStudentIds),
+                  ),
+                  PlanResourceView.overall => PlanOverallResourceSummary(
+                    highlighted: _isHighlighted(planOverallAffectedStudentIds),
+                    onTap: () => _toggle(planOverallAffectedStudentIds),
+                  ),
                 },
               ),
             ),
@@ -710,12 +1119,19 @@ class PlanPrimaryBottleneckSummary extends StatelessWidget {
 }
 
 class PlanPhaseResourceSummary extends StatelessWidget {
-  const PlanPhaseResourceSummary({super.key});
+  const PlanPhaseResourceSummary({
+    super.key,
+    required this.highlighted,
+    required this.onTap,
+  });
+
+  final bool highlighted;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => const PlanResourceItemSummary(
+  Widget build(BuildContext context) => PlanResourceItemSummary(
     keyPrefix: 'plan-phase-shortage',
-    semanticsLabel: '가장 부족한 재화, $planPrimaryBottleneckItemName',
+    semanticsLabel: '가장 부족한 재화, $planPhaseShortageItemName',
     kicker: '가장 부족한 재화',
     quantity:
         '보유량 : $planPhaseShortageOwned / '
@@ -724,8 +1140,81 @@ class PlanPhaseResourceSummary extends StatelessWidget {
         '$planPhaseShortageNumber단계에서 '
         '$planPhaseShortageStudentCount명 중 '
         '$planPhaseShortageCompletableCount명만 완료 가능',
-    backgroundAsset: planPrimaryBottleneckBackgroundAsset,
-    iconAsset: planPrimaryBottleneckIconAsset,
+    backgroundAsset: planPhaseShortageBackgroundAsset,
+    iconAsset: planPhaseShortageIconAsset,
+    highlighted: highlighted,
+    onTap: onTap,
+  );
+}
+
+class PlanOverallResourceSummary extends StatelessWidget {
+  const PlanOverallResourceSummary({
+    super.key,
+    required this.highlighted,
+    required this.onTap,
+  });
+
+  final bool highlighted;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final compact = constraints.maxHeight < 52;
+      return Semantics(
+        label:
+            '전체 요구량의 $planOverallProgressPercent% 확보, '
+            '$planOverallShortageKindCount종 부족, '
+            '$planOverallAffectedPlanCount명의 성장 계획에 영향',
+        button: true,
+        selected: highlighted,
+        child: Material(
+          key: const ValueKey('plan-overall-summary'),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            key: const ValueKey('plan-overall-action'),
+            onTap: onTap,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: compact ? 4 : 8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '전체 요구량의 $planOverallProgressPercent% 확보',
+                    key: const ValueKey('plan-overall-progress'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.text,
+                      fontSize: compact ? 13 : 24,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: compact ? 3 : 10),
+                  Text(
+                    '$planOverallShortageKindCount종 부족 · '
+                    '$planOverallAffectedPlanCount명의 성장 계획에 영향',
+                    key: const ValueKey('plan-overall-impact'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: diagonalMediaHighlightColor,
+                      fontSize: compact ? 8.5 : 15,
+                      height: 1,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    },
   );
 }
 
@@ -1008,15 +1497,569 @@ class PlanPhaseContainerPainter extends CustomPainter {
       oldDelegate.path != path;
 }
 
+String formatPlanAmount(int value) {
+  final digits = value.toString();
+  final buffer = StringBuffer();
+  for (var index = 0; index < digits.length; index++) {
+    if (index > 0 && (digits.length - index) % 3 == 0) buffer.write(',');
+    buffer.write(digits[index]);
+  }
+  return buffer.toString();
+}
+
+bool planBottleneckResourceIsCredit(PlanBottleneckResourcePreview resource) =>
+    resource.id == 'credits';
+
+double planBottleneckCardHeight(PlanBottleneckDetailPreview detail) =>
+    detail.resources.any(planBottleneckResourceIsCredit) ? 389 : 305;
+
+class PlanBottleneckDiagonalList extends StatefulWidget {
+  const PlanBottleneckDiagonalList({
+    super.key,
+    required this.bottlenecks,
+    required this.highlightedStageKeys,
+    required this.onHighlightStages,
+  });
+
+  final List<PlanBottleneckDetailPreview> bottlenecks;
+  final Set<String> highlightedStageKeys;
+  final ValueChanged<Set<String>> onHighlightStages;
+
+  @override
+  State<PlanBottleneckDiagonalList> createState() =>
+      _PlanBottleneckDiagonalListState();
+}
+
+class _PlanBottleneckDiagonalListState
+    extends State<PlanBottleneckDiagonalList> {
+  static const _inset = 8.0;
+  static const _cardGap = 18.0;
+  final ScrollController _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final heights = [
+        for (final detail in widget.bottlenecks)
+          planBottleneckCardHeight(detail),
+      ];
+      final contentHeight =
+          _inset * 2 +
+          heights.fold<double>(0, (sum, height) => sum + height) +
+          math.max(0, widget.bottlenecks.length - 1) * _cardGap;
+      return PlanDiagonalScrollbar(
+        keyPrefix: 'plan-bottleneck',
+        controller: _controller,
+        contentExtent: contentHeight,
+        child: SingleChildScrollView(
+          key: const ValueKey('plan-bottleneck-scroll'),
+          controller: _controller,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              final scroll = _controller.hasClients ? _controller.offset : 0.0;
+              var top = _inset;
+              final children = <Widget>[];
+              for (var index = 0; index < widget.bottlenecks.length; index++) {
+                final height = heights[index];
+                final offset = planPhaseRowHorizontalOffset(
+                  viewportHeight: constraints.maxHeight,
+                  rowTop: top,
+                  rowHeight: height,
+                  scrollOffset: scroll,
+                );
+                final width = planPhaseRowWidth(
+                  viewportWidth: constraints.maxWidth,
+                  viewportHeight: constraints.maxHeight,
+                  rowHeight: height,
+                );
+                children.add(
+                  Positioned(
+                    key: ValueKey('plan-bottleneck-card-${index + 1}'),
+                    left: _inset + offset,
+                    top: top,
+                    width: width,
+                    height: height,
+                    child: PlanBottleneckDetailCard(
+                      detail: widget.bottlenecks[index],
+                      delayedStagesHighlighted:
+                          widget.bottlenecks[index].delayedStages.isNotEmpty &&
+                          widget.bottlenecks[index].delayedStages.every(
+                            (stage) =>
+                                widget.highlightedStageKeys.contains(stage.key),
+                          ),
+                      onToggleDelayedStages: () => widget.onHighlightStages({
+                        for (final stage
+                            in widget.bottlenecks[index].delayedStages)
+                          stage.key,
+                      }),
+                    ),
+                  ),
+                );
+                top += height + _cardGap;
+              }
+              return SizedBox(
+                width: constraints.maxWidth,
+                height: contentHeight,
+                child: Stack(clipBehavior: Clip.none, children: children),
+              );
+            },
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class PlanBottleneckDetailCard extends StatelessWidget {
+  const PlanBottleneckDetailCard({
+    super.key,
+    required this.detail,
+    required this.delayedStagesHighlighted,
+    required this.onToggleDelayedStages,
+  });
+
+  final PlanBottleneckDetailPreview detail;
+  final bool delayedStagesHighlighted;
+  final VoidCallback onToggleDelayedStages;
+
+  Rect _safeRect(Size size, double top, double bottom, {double inset = 12}) {
+    final left = planPhaseLeftBoundary(size, top) + inset;
+    final right = planPhaseRightBoundary(size, bottom) - inset;
+    return Rect.fromLTRB(left, top, math.max(left + 1, right), bottom);
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final size = constraints.biggest;
+      final (focusStep, focusOrder) = planBottleneckFocusStep(detail);
+      PlanBottleneckResourcePreview? credit;
+      final cardResources = <PlanBottleneckResourcePreview>[];
+      for (final resource in detail.resources) {
+        if (planBottleneckResourceIsCredit(resource)) {
+          credit = resource;
+        } else {
+          cardResources.add(resource);
+        }
+      }
+      final resourceTop = credit == null ? 126.0 : 210.0;
+      final buttonTop = resourceTop + 125;
+      return CustomPaint(
+        painter: const _PlanBottleneckCardPainter(),
+        child: Stack(
+          children: [
+            Positioned.fromRect(
+              rect: _safeRect(size, 16, 42, inset: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  detail.rankLabel,
+                  key: ValueKey('plan-bottleneck-${detail.id}-rank'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: diagonalMediaHighlightColor,
+                    fontSize: 20,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+            Positioned.fromRect(
+              rect: _safeRect(size, 48, 113),
+              child: PlanStudentStepTile(
+                key: ValueKey('plan-bottleneck-${detail.id}-focus-item'),
+                order: focusOrder,
+                step: focusStep,
+                bottleneckField: detail.focusField,
+              ),
+            ),
+            if (credit != null)
+              Positioned.fromRect(
+                rect: _safeRect(size, 122, 196, inset: 16),
+                child: PlanBottleneckCreditShortage(resource: credit),
+              ),
+            Positioned.fromRect(
+              rect: _safeRect(size, resourceTop, resourceTop + 107),
+              child: LayoutBuilder(
+                builder: (context, resourceConstraints) {
+                  const gap = 8.0;
+                  final tileWidth = math.max(
+                    1.0,
+                    (resourceConstraints.maxWidth - gap) / 2,
+                  );
+                  return Wrap(
+                    key: ValueKey('plan-bottleneck-${detail.id}-resource-grid'),
+                    spacing: gap,
+                    runSpacing: 8,
+                    children: [
+                      for (final resource in cardResources)
+                        SizedBox(
+                          width: tileWidth,
+                          height: 107,
+                          child: PlanBottleneckResourceTile(resource: resource),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            Positioned.fromRect(
+              rect: _safeRect(size, buttonTop, buttonTop + 38, inset: 16),
+              child: CustomPaint(
+                painter: _PlanBottleneckActionPainter(
+                  selected: delayedStagesHighlighted,
+                ),
+                child: ClipPath(
+                  clipper: const _PlanBottleneckActionClipper(),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      key: ValueKey(
+                        'plan-bottleneck-${detail.id}-delayed-action',
+                      ),
+                      onTap: onToggleDelayedStages,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.filter_center_focus_rounded,
+                              size: 17,
+                              color: delayedStagesHighlighted
+                                  ? diagonalMediaHighlightColor
+                                  : AppColors.textMuted,
+                            ),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                '이 병목으로 지연되는 단계',
+                                style: TextStyle(
+                                  color: AppColors.text,
+                                  fontSize: 12,
+                                  height: 1,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${detail.delayedStages.length}',
+                              style: const TextStyle(
+                                color: diagonalMediaHighlightColor,
+                                fontSize: 12,
+                                height: 1,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class PlanBottleneckCreditShortage extends StatelessWidget {
+  const PlanBottleneckCreditShortage({super.key, required this.resource});
+
+  final PlanBottleneckResourcePreview resource;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label:
+        '크레딧, ${formatPlanAmount(resource.remainingAtEntry)} / '
+        '${formatPlanAmount(resource.requiredAtEntry)}, '
+        '${formatPlanAmount(resource.shortage)} 부족',
+    child: Row(
+      key: const ValueKey('plan-bottleneck-credit-shortage'),
+      children: [
+        SizedBox(
+          width: 58.5,
+          height: 73.8,
+          child: Image.asset(
+            resource.iconAsset,
+            key: const ValueKey('plan-bottleneck-credit-shortage-icon'),
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.medium,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            '${formatPlanAmount(resource.remainingAtEntry)} / '
+            '${formatPlanAmount(resource.requiredAtEntry)}',
+            key: const ValueKey('plan-bottleneck-credit-shortage-quantity'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.text,
+              fontSize: 15,
+              height: 1,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            '${formatPlanAmount(resource.shortage)} 부족',
+            key: const ValueKey('plan-bottleneck-credit-shortage-value'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: diagonalMediaHighlightColor,
+              fontSize: 16,
+              height: 1,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class PlanBottleneckResourceTile extends StatelessWidget {
+  const PlanBottleneckResourceTile({super.key, required this.resource});
+
+  final PlanBottleneckResourcePreview resource;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    painter: const _PlanBottleneckResourceTilePainter(),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final scale = (constraints.maxWidth / 230).clamp(0.65, 1.0);
+          final iconWidth = math.min(97.5, constraints.maxWidth * 0.42);
+          final iconHeight = math.min(123.0, iconWidth * 123 / 97.5);
+          final gap = math.min(13.5, constraints.maxWidth * 0.06);
+          return Row(
+            children: [
+              SizedBox(
+                width: iconWidth,
+                height: iconHeight,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (resource.backgroundAsset != null)
+                      Positioned.fill(
+                        child: Image.asset(
+                          resource.backgroundAsset!,
+                          key: ValueKey(
+                            'plan-bottleneck-resource-${resource.id}-square',
+                          ),
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.medium,
+                        ),
+                      ),
+                    FractionallySizedBox(
+                      widthFactor: 0.92,
+                      heightFactor: 0.92,
+                      child: Image.asset(
+                        resource.iconAsset,
+                        key: ValueKey(
+                          'plan-bottleneck-resource-${resource.id}-icon',
+                        ),
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.medium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      resource.displayName,
+                      key: ValueKey(
+                        'plan-bottleneck-resource-${resource.id}-name',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.text,
+                        fontSize: 16.5 * scale,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 10.5 * scale),
+                    Text(
+                      '단계 진입 잔량 '
+                      '${formatPlanAmount(resource.remainingAtEntry)} / '
+                      '단계 필요량 '
+                      '${formatPlanAmount(resource.requiredAtEntry)}',
+                      key: ValueKey(
+                        'plan-bottleneck-resource-${resource.id}-quantity',
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12 * scale,
+                        height: 1.15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 10.5 * scale),
+                    Text(
+                      '${formatPlanAmount(resource.shortage)}개 부족',
+                      key: ValueKey(
+                        'plan-bottleneck-resource-${resource.id}-shortage',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: diagonalMediaHighlightColor,
+                        fontSize: 18 * scale,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    ),
+  );
+}
+
+class _PlanBottleneckActionClipper extends CustomClipper<Path> {
+  const _PlanBottleneckActionClipper();
+
+  @override
+  Path getClip(Size size) {
+    final depth = size.height / math.tan(80 * math.pi / 180);
+    return buildRoundedSectionPolygon([
+      Offset(depth, 0),
+      Offset(size.width, 0),
+      Offset(size.width - depth, size.height),
+      Offset(0, size.height),
+    ], radius: 7);
+  }
+
+  @override
+  bool shouldReclip(_PlanBottleneckActionClipper oldClipper) => false;
+}
+
+class _PlanBottleneckActionPainter extends CustomPainter {
+  const _PlanBottleneckActionPainter({required this.selected});
+
+  final bool selected;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = const _PlanBottleneckActionClipper().getClip(size);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = selected
+            ? diagonalMediaHighlightColor.withValues(alpha: 0.12)
+            : const Color(0x7a20394e),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = selected
+            ? diagonalMediaHighlightColor
+            : AppColors.outline.withValues(alpha: 0.54)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = selected ? 1.5 : 0.8,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_PlanBottleneckActionPainter oldDelegate) =>
+      oldDelegate.selected != selected;
+}
+
+class _PlanBottleneckCardPainter extends CustomPainter {
+  const _PlanBottleneckCardPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final depth = size.height / math.tan(80 * math.pi / 180);
+    final path = buildRoundedSectionPolygon([
+      Offset(depth, 0),
+      Offset(size.width, 0),
+      Offset(size.width - depth, size.height),
+      Offset(0, size.height),
+    ], radius: 9);
+    canvas.drawPath(path, Paint()..color = const Color(0xd635526b));
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.outline.withValues(alpha: 0.62)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.9,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_PlanBottleneckCardPainter oldDelegate) => false;
+}
+
+class _PlanBottleneckResourceTilePainter extends CustomPainter {
+  const _PlanBottleneckResourceTilePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final depth = size.height / math.tan(80 * math.pi / 180);
+    final path = buildRoundedSectionPolygon([
+      Offset(depth, 0),
+      Offset(size.width, 0),
+      Offset(size.width - depth, size.height),
+      Offset(0, size.height),
+    ], radius: 7);
+    canvas.drawPath(path, Paint()..color = const Color(0xb7213c52));
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.outline.withValues(alpha: 0.56)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.8,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_PlanBottleneckResourceTilePainter oldDelegate) => false;
+}
+
 class PlanPhaseDiagonalList extends StatefulWidget {
   const PlanPhaseDiagonalList({
     super.key,
     required this.phases,
-    required this.highlightBottleneckStudents,
+    required this.highlightedStudentIds,
+    required this.highlightedStageKeys,
   });
 
   final List<PlanPhasePreview> phases;
-  final bool highlightBottleneckStudents;
+  final Set<String> highlightedStudentIds;
+  final Set<String> highlightedStageKeys;
 
   @override
   State<PlanPhaseDiagonalList> createState() => _PlanPhaseDiagonalListState();
@@ -1077,10 +2120,11 @@ class _PlanPhaseDiagonalListState extends State<PlanPhaseDiagonalList> {
                     width: width,
                     height: height,
                     child: PlanPhaseCard(
+                      phaseId: phase.id,
                       number: index + 1,
                       phase: phase,
-                      highlightBottleneckStudents:
-                          widget.highlightBottleneckStudents,
+                      highlightedStudentIds: widget.highlightedStudentIds,
+                      highlightedStageKeys: widget.highlightedStageKeys,
                     ),
                   ),
                 );
@@ -1114,14 +2158,18 @@ class _PlanPhaseDiagonalListState extends State<PlanPhaseDiagonalList> {
 class PlanPhaseCard extends StatelessWidget {
   const PlanPhaseCard({
     super.key,
+    required this.phaseId,
     required this.number,
     required this.phase,
-    required this.highlightBottleneckStudents,
+    required this.highlightedStudentIds,
+    required this.highlightedStageKeys,
   });
 
+  final String phaseId;
   final int number;
   final PlanPhasePreview phase;
-  final bool highlightBottleneckStudents;
+  final Set<String> highlightedStudentIds;
+  final Set<String> highlightedStageKeys;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -1175,9 +2223,15 @@ class PlanPhaseCard extends StatelessWidget {
                   order: index + 1,
                   step: phase.steps[index],
                   highlighted:
-                      highlightBottleneckStudents &&
-                      planPrimaryBottleneckStudentIds.contains(
+                      highlightedStudentIds.contains(
                         phase.steps[index].studentId,
+                      ) ||
+                      highlightedStageKeys.contains(
+                        planStudentStageKey(
+                          phaseId,
+                          phase.steps[index].studentId,
+                          phase.steps[index].step,
+                        ),
                       ),
                 ),
               ),
@@ -1245,11 +2299,13 @@ class PlanStudentStepTile extends StatelessWidget {
     required this.order,
     required this.step,
     this.highlighted = false,
+    this.bottleneckField,
   });
 
   final int order;
   final PlanStudentStepPreview step;
   final bool highlighted;
+  final PlanBottleneckFocusField? bottleneckField;
 
   @override
   Widget build(BuildContext context) {
@@ -1321,6 +2377,17 @@ class PlanStudentStepTile extends StatelessWidget {
           '${20 + stage * 5}/${18 + stage * 4}/${15 + stage * 3}',
           componentDeltas: [null, stage, stage * 2],
         ),
+        titleColor: bottleneckField == PlanBottleneckFocusField.title
+            ? diagonalMediaHighlightColor
+            : null,
+        skillsColor: bottleneckField == PlanBottleneckFocusField.skills
+            ? diagonalMediaHighlightColor
+            : null,
+        equipmentValueColors: [
+          bottleneckField == PlanBottleneckFocusField.equipment1
+              ? diagonalMediaHighlightColor
+              : null,
+        ],
       ),
     );
   }
@@ -1355,11 +2422,13 @@ class _PlanPhaseCardPainter extends CustomPainter {
 class PlanDiagonalScrollbar extends StatelessWidget {
   const PlanDiagonalScrollbar({
     super.key,
+    this.keyPrefix = 'plan-phase',
     required this.controller,
     required this.contentExtent,
     required this.child,
   });
 
+  final String keyPrefix;
   final ScrollController controller;
   final double contentExtent;
   final Widget child;
@@ -1407,8 +2476,8 @@ class PlanDiagonalScrollbar extends StatelessWidget {
             child,
             Positioned.fill(
               child: ScrollViewportFog(
-                key: const ValueKey('plan-phase-fog'),
-                keyPrefix: 'plan-phase-viewport-fog',
+                key: ValueKey('$keyPrefix-fog'),
+                keyPrefix: '$keyPrefix-viewport-fog',
                 showTop: fogVisibility.showTop,
                 showBottom: fogVisibility.showBottom,
               ),
@@ -1416,7 +2485,7 @@ class PlanDiagonalScrollbar extends StatelessWidget {
             Positioned.fill(
               child: IgnorePointer(
                 child: CustomPaint(
-                  key: const ValueKey('plan-phase-diagonal-scrollbar'),
+                  key: ValueKey('$keyPrefix-diagonal-scrollbar'),
                   painter: _PlanDiagonalScrollbarPainter(
                     offset: offset,
                     maxScrollExtent: maxScroll,
@@ -1427,7 +2496,7 @@ class PlanDiagonalScrollbar extends StatelessWidget {
               ),
             ),
             Positioned(
-              key: const ValueKey('plan-phase-scrollbar-handle-center'),
+              key: ValueKey('$keyPrefix-scrollbar-handle-center'),
               left: handleCenter.dx - 0.5,
               top: handleCenter.dy - 0.5,
               width: 1,
@@ -1441,7 +2510,7 @@ class PlanDiagonalScrollbar extends StatelessWidget {
                 top: 0,
                 bottom: 0,
                 child: GestureDetector(
-                  key: const ValueKey('plan-phase-scrollbar-drag'),
+                  key: ValueKey('$keyPrefix-scrollbar-drag'),
                   behavior: HitTestBehavior.translucent,
                   onVerticalDragUpdate: (details) {
                     controller.jumpTo(

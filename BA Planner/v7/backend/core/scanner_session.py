@@ -34,6 +34,7 @@ class RepositoryCommitPort(Protocol):
 
 Matcher = Callable[[dict[str, Any], Event, Callable[[int, int | None, str], None]], list[dict[str, Any]]]
 EventSink = Callable[[dict[str, Any]], None]
+TacticalLobbyCommitter = Callable[[str, dict[str, Any], int, str], dict[str, Any]]
 
 
 @dataclass(slots=True)
@@ -87,6 +88,8 @@ class ScannerSessionService:
         target_provider: Callable[[], list[dict[str, Any]]],
         student_matcher: Matcher,
         inventory_matcher: Matcher,
+        tactical_lobby_matcher: Matcher | None = None,
+        tactical_lobby_committer: TacticalLobbyCommitter | None = None,
         repository: RepositoryCommitPort,
         asset_status: Callable[[], dict[str, Any]],
         event_sink: EventSink | None = None,
@@ -95,7 +98,10 @@ class ScannerSessionService:
     ) -> None:
         self._target_provider = target_provider
         self._matchers = {"student": student_matcher, "inventory": inventory_matcher}
+        if tactical_lobby_matcher is not None:
+            self._matchers["tactical_lobby"] = tactical_lobby_matcher
         self._repository = repository
+        self._tactical_lobby_committer = tactical_lobby_committer
         self._asset_status = asset_status
         self._event_sink = event_sink or (lambda _event: None)
         self._id_factory = id_factory or (lambda: uuid4().hex)
@@ -126,7 +132,7 @@ class ScannerSessionService:
 
     def start(self, scan_kind: str, target_id: str) -> dict[str, Any]:
         if scan_kind not in self._matchers:
-            raise ScannerError("invalid_payload", "scan_kind must be student or inventory")
+            raise ScannerError("invalid_payload", "scan_kind must be student, inventory, or tactical_lobby")
         target = next((item for item in self.targets() if item.get("target_id") == target_id), None)
         if target is None:
             raise ScannerError("target_not_found", "capture target was not found")
@@ -238,9 +244,18 @@ class ScannerSessionService:
             result = self._repository.update_students(
                 profile_id, students, expected_repository_revision, idempotency_key
             )
-        else:
+        elif item.scan_kind == "inventory":
             result = self._repository.update_inventory(
                 profile_id, payload.to_dict(), expected_repository_revision, idempotency_key
+            )
+        else:
+            if self._tactical_lobby_committer is None:
+                raise ScannerError(
+                    "persistence_deferred",
+                    "tactical lobby persistence is not configured",
+                )
+            result = self._tactical_lobby_committer(
+                profile_id, payload, expected_repository_revision, idempotency_key
             )
         return {
             "candidate_id": candidate_id,
@@ -274,7 +289,10 @@ class ScannerSessionService:
             return session
 
     @staticmethod
-    def _validated_payload(scan_kind: str, payload: object) -> ConfirmedStudent | InventorySnapshot:
+    def _validated_payload(scan_kind: str, payload: object) -> ConfirmedStudent | InventorySnapshot | dict[str, Any]:
+        if scan_kind == "tactical_lobby":
+            from core.tactical_lobby_scanner import canonical_tactical_lobby_candidate
+            return canonical_tactical_lobby_candidate(payload)
         try:
             return (
                 ConfirmedStudent.from_dict(payload)

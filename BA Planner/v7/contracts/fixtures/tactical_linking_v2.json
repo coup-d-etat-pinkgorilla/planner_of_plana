@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "cases": [
+    {"name":"automatic-link","expected_status":"automatic","candidate_count":1},
+    {"name":"ambiguous-link","expected_status":"ambiguous","candidate_count":2},
+    {"name":"manual-relink","expected_status":"manual","candidate_count":1},
+    {"name":"unlink","expected_status":"unlinked","candidate_count":0},
+    {"name":"delete-scan","expected_deleted":true,"preserve_match":true}
+  ]
+}

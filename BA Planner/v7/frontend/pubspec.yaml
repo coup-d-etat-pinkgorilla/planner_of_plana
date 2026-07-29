@@ -62,7 +62,9 @@ flutter:
     - assets/home_menu/
     - assets/equipment_icons/
     - assets/item_backgrounds/
+    - assets/item_icons/currency/
     - assets/item_icons/ooparts/
+    - assets/item_icons/tactical_bd/
     - assets/student_bond_backgrounds/
     - assets/studio_features/
     - assets/studio_sections/

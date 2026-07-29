@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "expected": {
+    "selected_stage": 1,
+    "included_snapshot_count": 3,
+    "scenario_total": 2,
+    "recommendation_total": 2,
+    "public_known_slot_count": 2,
+    "confidence_grade": "medium",
+    "variant_defense_possible": true,
+    "calibration_gate_passed": false,
+    "fallback_stage": 3,
+    "fallback_contributed_snapshot_count": 1
+  },
+  "cases": [
+    {"name":"observed-decks-only","expected":true},
+    {"name":"time-ordered-holdout","expected":true},
+    {"name":"no-evidence-no-fallback-probability","expected":true},
+    {"name":"ownership-is-request-context","expected":true}
+  ]
+}

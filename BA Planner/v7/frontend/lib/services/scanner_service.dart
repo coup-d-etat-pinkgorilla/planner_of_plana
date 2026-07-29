@@ -5,7 +5,22 @@ import 'planning_protocol_client.dart';
 
 enum ScannerTargetStatus { ready, minimized, closed, unsupported }
 
-enum ScannerKind { student, inventory }
+enum ScannerKind { student, inventory, tacticalLobby }
+
+extension ScannerKindWire on ScannerKind {
+  String get wireName => switch (this) {
+    ScannerKind.student => 'student',
+    ScannerKind.inventory => 'inventory',
+    ScannerKind.tacticalLobby => 'tactical_lobby',
+  };
+
+  static ScannerKind fromWire(String value) => switch (value) {
+    'student' => ScannerKind.student,
+    'inventory' => ScannerKind.inventory,
+    'tactical_lobby' => ScannerKind.tacticalLobby,
+    _ => throw FormatException('Unknown scanner kind: $value'),
+  };
+}
 
 enum ScannerEventKind { phase, progress, candidate, diagnostic, terminal }
 
@@ -50,7 +65,7 @@ class ScannerSession {
   factory ScannerSession.fromWire(Map<String, dynamic> wire) => ScannerSession(
     id: wire['session_id'] as String,
     generation: wire['generation'] as int,
-    kind: ScannerKind.values.byName(wire['scan_kind'] as String),
+    kind: ScannerKindWire.fromWire(wire['scan_kind'] as String),
   );
 }
 
@@ -151,7 +166,7 @@ class ScannerCandidate {
         sessionId: wire['session_id'] as String,
         generation: wire['generation'] as int,
         revision: wire['revision'] as int,
-        kind: ScannerKind.values.byName(wire['scan_kind'] as String),
+        kind: ScannerKindWire.fromWire(wire['scan_kind'] as String),
         payload: Map<String, dynamic>.from(wire['payload'] as Map),
         evidence: (wire['evidence'] as List)
             .map(
@@ -191,7 +206,7 @@ class ScannerEvent {
       sessionId: wire['session_id'] as String,
       generation: wire['generation'] as int,
       sequence: wire['sequence'] as int,
-      kind: ScannerKind.values.byName(wire['scan_kind'] as String),
+      kind: ScannerKindWire.fromWire(wire['scan_kind'] as String),
       eventKind: ScannerEventKind.values.byName(wire['event_kind'] as String),
       payload: wire,
     );
@@ -247,7 +262,7 @@ class ScannerSessionSnapshot {
         .toList(growable: false);
     final sessionId = wire['session_id'] as String;
     final generation = wire['generation'] as int;
-    final kind = ScannerKind.values.byName(wire['scan_kind'] as String);
+    final kind = ScannerKindWire.fromWire(wire['scan_kind'] as String);
     final lastSequence = wire['last_sequence'] as int;
     if (lastSequence < 0 ||
         (terminal != null &&
@@ -416,7 +431,7 @@ class ScannerProtocolClient implements ScannerService {
     late final Map<String, dynamic> wire;
     try {
       wire = await _client.send('scanner.session.start', {
-        'scan_kind': kind.name,
+        'scan_kind': kind.wireName,
         'target_id': targetId,
       });
     } finally {

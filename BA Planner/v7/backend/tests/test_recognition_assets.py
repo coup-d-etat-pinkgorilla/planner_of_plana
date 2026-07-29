@@ -18,7 +18,7 @@ class RecognitionAssetTests(unittest.TestCase):
         catalog = RecognitionAssetCatalog(ASSETS)
         status = catalog.verify()
         self.assertTrue(status["ready"])
-        self.assertEqual(16, status["asset_count"])
+        self.assertEqual(33, status["asset_count"])
         self.assertEqual(2, len(catalog.assets("student", "student-template")))
         self.assertEqual(2, len(catalog.assets("inventory", "inventory-template")))
         self.assertEqual(10, len(catalog.assets("inventory", "inventory-count-template")))

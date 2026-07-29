@@ -54,6 +54,9 @@ class DiagonalMediaListItemData {
     required this.stats,
     this.studentStarDelta,
     this.weaponStarDelta,
+    this.titleColor,
+    this.skillsColor,
+    this.equipmentValueColors = const [],
   });
 
   final int order;
@@ -70,6 +73,9 @@ class DiagonalMediaListItemData {
   final DiagonalMediaValue favoriteItem;
   final DiagonalMediaValue bondRank;
   final DiagonalMediaValue stats;
+  final Color? titleColor;
+  final Color? skillsColor;
+  final List<Color?> equipmentValueColors;
 }
 
 abstract final class DiagonalMediaListItemLayout {
@@ -257,7 +263,7 @@ class DiagonalMediaListItem extends StatelessWidget {
             DiagonalMediaListItemLayout.title,
             _FittedLabel(
               data.title,
-              color: AppColors.text,
+              color: data.titleColor ?? AppColors.text,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -292,6 +298,7 @@ class DiagonalMediaListItem extends StatelessWidget {
               ),
               key: const ValueKey('diagonal-media-skills'),
               fontSize: 14.25,
+              valueColor: data.skillsColor,
             ),
           ),
           for (var index = 0; index < 3; index++) ...[
@@ -307,6 +314,9 @@ class DiagonalMediaListItem extends StatelessWidget {
               _EquipmentValueLabel(
                 key: ValueKey('diagonal-media-equipment-value-$index'),
                 equipment: data.equipment[index],
+                valueColor: index < data.equipmentValueColors.length
+                    ? data.equipmentValueColors[index]
+                    : null,
               ),
             ),
           ],
@@ -428,10 +438,16 @@ class _DeltaLabel extends StatelessWidget {
 }
 
 class _StackedDeltaLabel extends StatelessWidget {
-  const _StackedDeltaLabel(this.value, {super.key, required this.fontSize});
+  const _StackedDeltaLabel(
+    this.value, {
+    super.key,
+    required this.fontSize,
+    this.valueColor,
+  });
 
   final DiagonalMediaValue value;
   final double fontSize;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -442,7 +458,11 @@ class _StackedDeltaLabel extends StatelessWidget {
     if (!hasDelta) {
       return Align(
         alignment: Alignment.centerLeft,
-        child: _FittedValueText(value.value, fontSize: fontSize),
+        child: _FittedValueText(
+          value.value,
+          fontSize: fontSize,
+          color: valueColor,
+        ),
       );
     }
     return Column(
@@ -452,7 +472,11 @@ class _StackedDeltaLabel extends StatelessWidget {
           flex: 6,
           child: Align(
             alignment: Alignment.bottomLeft,
-            child: _FittedValueText(value.value, fontSize: fontSize),
+            child: _FittedValueText(
+              value.value,
+              fontSize: fontSize,
+              color: valueColor,
+            ),
           ),
         ),
         Expanded(
@@ -468,9 +492,14 @@ class _StackedDeltaLabel extends StatelessWidget {
 }
 
 class _EquipmentValueLabel extends StatelessWidget {
-  const _EquipmentValueLabel({super.key, required this.equipment});
+  const _EquipmentValueLabel({
+    super.key,
+    required this.equipment,
+    this.valueColor,
+  });
 
   final DiagonalMediaEquipment equipment;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) => _StackedDeltaLabel(
@@ -479,14 +508,16 @@ class _EquipmentValueLabel extends StatelessWidget {
       componentDeltas: [equipment.tier.delta, equipment.level.delta],
     ),
     fontSize: 8.5,
+    valueColor: valueColor,
   );
 }
 
 class _FittedValueText extends StatelessWidget {
-  const _FittedValueText(this.value, {required this.fontSize});
+  const _FittedValueText(this.value, {required this.fontSize, this.color});
 
   final String value;
   final double fontSize;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) => FittedBox(
@@ -496,7 +527,7 @@ class _FittedValueText extends StatelessWidget {
       value,
       maxLines: 1,
       style: TextStyle(
-        color: AppColors.textMuted,
+        color: color ?? AppColors.textMuted,
         fontFamily: 'GyeonggiTitle',
         fontSize: fontSize,
         fontWeight: FontWeight.w700,

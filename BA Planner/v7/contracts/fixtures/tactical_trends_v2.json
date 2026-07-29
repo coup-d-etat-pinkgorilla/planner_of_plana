@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "expected": {
+    "refresh_count": 4,
+    "exposure_count": 12,
+    "selection_count": 2,
+    "battle_count": 2,
+    "result_count": 2,
+    "wins": 1,
+    "losses": 1,
+    "observed_win_rate": 0.5,
+    "public_signature_change_count": 2,
+    "public_run_count": 5,
+    "public_reuse_count": 1,
+    "stable_public_full_defense_change_count": 1,
+    "eligible_transition_count": 9,
+    "retained_transition_count": 9,
+    "retention_rate": 1.0
+  },
+  "cases": [
+    {"name": "same-refresh-generation-does-not-increase-exposure", "expected": true},
+    {"name": "as-of-excludes-future-observations", "expected": true},
+    {"name": "undated-record-excluded-from-freshness", "expected": true},
+    {"name": "change-is-an-observation-interval", "expected": true}
+  ]
+}

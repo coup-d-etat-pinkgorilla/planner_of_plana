@@ -225,3 +225,59 @@ generation/sequence cursor, start-race buffer를 소유한다.
 Production recognition asset은 `backend/core/recognition_assets/manifest.json`에서 버전,
 source, scan kind, 용도, 크기와 SHA-256으로 고정한다. Flutter UI asset 또는 사용자 adaptive
 sample 경로를 recognition catalog로 사용하지 않는다.
+
+P8은 `tactical_lobby` scan kind를 추가한다. 16:9 로비의 ratio ROI에서 현재 순위와 세 상대의
+순위·등록 이름·공개 striker 1명·special 2명을 template matching하고, 안정 프레임 하나를
+review 가능한 후보 하나로 만든다. 확정값과 제안값을 분리하며 낮은 score/margin, 가림 또는
+미등록 이름은 자동 확정하지 않는다. 의미가 같은 비율 축소 화면은 동일한
+`refresh_generation`을 가지며 원본 픽셀 근거는 `screen_hash`로 별도 보존한다.
+
+P9은 확정된 P8 후보를 `tactical.v2.lobby.commit`으로 scan·candidate·공개 snapshot에
+저장한다. `candidate.select`는 선택 시각을, `match.link`는 자동·수동·해제 연결을,
+`lobby.delete`는 scan 범위 삭제를, `opponent.alias`는 이름·template 이력을 소유한다.
+자동 연결은 상대 identity, 6시간 범위, season과 공개 3슬롯이 일치하는 후보가 유일할 때만
+성공한다. 모호한 후보는 저장된 원본을 바꾸지 않고 review 상태로 남는다.
+
+## tactical evidence protocol v2
+
+P7은 P6 UI가 사용하는 `tactical.*` v1 CRUD를 변경하지 않고 `tactical.v2.*` namespace를
+추가합니다. 공통 JSONL envelope의 `protocol`은 여전히 1이며, tactical evidence payload의
+도메인 version만 2입니다.
+
+- `tactical.v2.state.get`: provenance를 가진 match, jokbo, opponent identity, defense
+  snapshot과 import batch를 조회합니다.
+- `tactical.v2.import.preview`: v6 SQLite를 read-only로 특성화하고 fingerprint, 개수와
+  review issue를 반환합니다.
+- `tactical.v2.import.commit`: preview fingerprint와 issue 승인 집합을 다시 검증한 뒤
+  atomic하게 import합니다.
+
+슬롯은 `unknown`과 실제 `empty`를 분리하며 공개 로비, 전투 후 확인, 수동 입력과 커뮤니티
+제보를 서로 다른 state로 보존합니다. 학생은 canonical ID로만 저장하고 wildcard는 null
+학생과 별도 boolean으로 유지합니다. 같은 import batch/source record는 중복 생성하지 않으며
+preview 이후 원본 DB가 바뀌면 commit을 거부합니다.
+
+공용 fixture `fixtures/tactical_protocol_v2.json`은 Python JSON Schema와 Dart 구조 검사가
+같은 valid/invalid 판정을 내리는 기준입니다. `fixtures/tactical_v6_import_v2.json`은 날짜
+없음, 방향별 빈 덱, wildcard와 검토가 필요한 중복 슬롯을 포함하는 비식별 v6 parity
+fixture입니다.
+
+P10은 같은 v2 namespace에 읽기 전용 `tactical.v2.stats.query`를 추가합니다. 요청은 season,
+source, opponent identity, 공개 signature, 기간과 결과 제한을 모두 명시하는 strict filter를
+사용합니다. 응답은 필터가 적용된 모집단, 공개 signature·상대·공격덱 패턴, 표본 품질과
+`observed_win_rate` 용어 경고를 반환합니다. 공격과 방어 결과는 섞지 않으며 prediction은
+관측 결과에서 제외합니다. `fixtures/tactical_statistics_v2.json`은 P7 import와 P9 lobby
+연결을 이은 결정론적 기준값입니다.
+
+P11은 `tactical.v2.trends.query` 읽기 전용 경계를 추가합니다. 요청의 필수 `as_of`와
+`stale_after_hours`가 신선도 감쇠를 재현 가능하게 만들며 rank difference 범위를 포함한
+strict filter를 사용합니다. 응답은 노출→선택→전투→결과 funnel, 상대·공개 signature·순위
+차이별 관측률, 연속 refresh 잔류, 공개/완전 방어 변경 구간, 과거 공개 덱 재사용과 공격 근거
+신선도를 분리합니다. `fixtures/tactical_trends_v2.json`은 네 번의 반복 관측과 두 번의
+공개 변경을 고정한 독립 기준값입니다.
+
+P12는 `tactical.v2.recommend.query`에 6단계 완전 방어 근거 탐색과 설명 가능한 공격 추천을
+추가합니다. 결과의 `evidence_weight_share`는 calibration 전 확률이 아니며, 관측된 완전 덱
+시나리오만 반환합니다. `recommend.save/get`은 파생 예측을 `snapshots`와 분리된
+`predictions` 컬렉션에 state revision·filter·근거 결과와 함께 보존합니다. 공용
+`fixtures/tactical_recommendation_v2.json`은 좁은 상대 근거를 더 넓은 실제 관측으로
+보정하는 경우와 시간순 holdout gate를 고정합니다.

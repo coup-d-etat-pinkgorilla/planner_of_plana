@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "scenario": "p7-import-plus-one-p9-lobby-link",
+  "expected": {
+    "population": {
+      "refresh_count": 1,
+      "exposure_count": 3,
+      "selected_count": 1,
+      "linked_match_count": 1,
+      "match_count": 2,
+      "attack_match_count": 1,
+      "defense_match_count": 1,
+      "opponent_count": 4
+    },
+    "public_signature": "shiroko|serina|?",
+    "signature_exposure_count": 1,
+    "signature_linked_match_count": 1,
+    "signature_wins": 1,
+    "signature_losses": 0,
+    "dated_match_count": 1,
+    "undated_match_count": 1,
+    "date_coverage": 0.5
+  },
+  "filter_cases": [
+    {"name":"rival-public-signature","expected_exposures":1,"expected_matches":1,"expected_opponents":1},
+    {"name":"dated-window","expected_matches":1,"expected_undated":0},
+    {"name":"v6-import-source","expected_refreshes":0,"expected_exposures":0,"expected_matches":2},
+    {"name":"lobby-source","expected_refreshes":1,"expected_exposures":3,"expected_matches":0}
+  ]
+}

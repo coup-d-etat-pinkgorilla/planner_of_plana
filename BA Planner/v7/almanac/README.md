@@ -30,6 +30,9 @@ P6 완료 후 전술대항전 로비 스캔, 상대 방어 이력, 통계, 방�
 공유 분석을 P13까지 확장하는 순서는
 [P7-P13 Tactical Challenge Backend Workflow](workflows/p7-p13-tactical-backend-workflow)를
 기준으로 합니다. P7은 P6 완료 판정 뒤에만 활성화하며, 시작 시 별도 상태 문서를 만듭니다.
+현재 실행 결과와 다음 단계는
+[P7-P13 Tactical Challenge Backend Workflow Status](workflows/p7-p13-tactical-backend-workflow-status)에
+기록합니다.
 
 프론트엔드의 80도 사선·글라스·부착면·전환 방향 규칙과 계획 외 기본 탭의 기능별
 사용 흐름은 [Frontend Section Direction and User Flows](design/frontend-section-direction-and-user-flows)를
