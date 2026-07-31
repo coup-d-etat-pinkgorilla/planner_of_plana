@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/ui/studio/section_template.dart';
 import 'package:ba_planner_v7/ui/studio/student_studio_layout.dart';
 import 'package:ba_planner_v7/ui/widgets/animated_section_stack.dart';
 import 'package:ba_planner_v7/ui/widgets/asset_image_grid.dart';
@@ -330,11 +331,23 @@ void main() {
       'container-6',
       'container-7',
       'container-9',
+      'container-10',
       'container-12',
     ]) {
       expect(role(id), StudentContainerTextureRole.status);
     }
-    expect(role('container-10'), StudentContainerTextureRole.action);
+  });
+
+  test('student school names resolve to bundled logo assets', () {
+    expect(
+      studentSchoolLogoAsset('Gehenna'),
+      'assets/item_icons/school_logo/School_Icon_GEHENNA.png',
+    );
+    expect(
+      studentSchoolLogoAsset('Red Winter'),
+      'assets/item_icons/school_logo/School_Icon_REDWINTER.png',
+    );
+    expect(studentSchoolLogoAsset(null), isNull);
   });
 
   test('Section 5 keeps the left rail and halves both horizontal edges', () {
@@ -814,6 +827,8 @@ void main() {
       find.byKey(const ValueKey('student-grid-diagonal-scrollbar')),
       findsOneWidget,
     );
+    expect(find.byType(Scrollbar), findsNothing);
+    expect(find.byType(RawScrollbar), findsNothing);
   });
 
   testWidgets('Section 1 dropdown changes the Section 2 student order', (
@@ -890,6 +905,430 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('right detail indicators render the confirmed student state', (
+    tester,
+  ) async {
+    final search = TextEditingController();
+    addTearDown(search.dispose);
+    await tester.binding.setSurfaceSize(const Size(1100, 720));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final student = StudentCatalogEntry(
+      studentId: 'aru',
+      displayName: '아루',
+      templateName: 'aru.png',
+      group: '아루',
+      variant: null,
+      school: 'Gehenna',
+      rarity: '3',
+      attackType: 'Explosive',
+      defenseType: 'Light',
+      combatClass: 'striker',
+      role: 'dealer',
+      position: 'back',
+      equipmentSlot1: 'Hat',
+      equipmentSlot2: 'Hairpin',
+      equipmentSlot3: 'Watch',
+      searchTags: const [],
+      krSearchTags: const [],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StudentSectionLayout(
+            students: [student],
+            ownedIds: const {'aru'},
+            selectedId: 'aru',
+            selectedStudent: student,
+            selectedValues: const {
+              'level': 90,
+              'bond_rank': 100,
+              'student_star': 5,
+              'weapon_state': 'weapon_equipped',
+              'weapon_star': 4,
+              'weapon_level': 60,
+              'ex_skill': 5,
+              'skill1': 10,
+              'skill2': 7,
+              'skill3': 10,
+              'equip1': 'T7',
+              'equip2': 'T6',
+              'equip3': 'T5',
+              'equip4': 'love_locked',
+              'equip1_level': 70,
+              'equip2_level': 63,
+              'equip3_level': 55,
+              'combat_hp': 999999,
+              'combat_atk': 123456,
+              'combat_def': 654321,
+              'combat_heal': 100000,
+              'stat_hp': 25,
+              'stat_atk': null,
+              'stat_heal': 25,
+            },
+            studentValuesById: const {
+              'aru': {'level': 90, 'student_star': 5, 'bond_rank': 100},
+            },
+            searchController: search,
+            onSearchChanged: (_) {},
+            onStudentSelected: (_) {},
+            onAddToPlan: () {},
+            onOpenScan: null,
+            onOpenFilter: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lv. 90'), findsOneWidget);
+    expect(find.text('LEVEL'), findsOneWidget);
+    expect(find.text('SKILL SUMMARY'), findsOneWidget);
+    expect(find.text('EQUIPMENT'), findsOneWidget);
+    expect(find.text('STATS'), findsOneWidget);
+    expect(find.text('Position'), findsOneWidget);
+    expect(find.text('Class'), findsOneWidget);
+    expect(find.text('Weapon'), findsOneWidget);
+    expect(find.text('Back'), findsOneWidget);
+    expect(find.text('Striker'), findsOneWidget);
+    expect(find.text('Lv. 60'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('student-detail-weapon-icon')),
+      findsNothing,
+    );
+    expect(find.text('Weapon Lv. 60'), findsNothing);
+    expect(find.text('장착'), findsNothing);
+    expect(find.text('★ 4'), findsNothing);
+    expect(find.text('EX'), findsOneWidget);
+    expect(find.text('Normal'), findsOneWidget);
+    expect(find.text('Passive'), findsOneWidget);
+    expect(find.text('Sub-skill'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('student-detail-skill-0')),
+      findsOneWidget,
+    );
+    final firstSkillColumn = tester.widget<FittedBox>(
+      find.byKey(const ValueKey('student-detail-skill-column-0')),
+    );
+    expect(firstSkillColumn.alignment, const Alignment(0, -0.5));
+    final firstSkillLevel = tester.widget<Text>(
+      find.byKey(const ValueKey('student-detail-skill-0')),
+    );
+    expect(firstSkillLevel.style?.fontSize, 31.5);
+    for (var index = 0; index < 4; index++) {
+      expect(
+        find.byKey(ValueKey('student-detail-skill-icon-$index')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(ValueKey('student-detail-skill-progress-$index')),
+        findsNothing,
+      );
+    }
+    expect(
+      find.byKey(const ValueKey('student-detail-section-header-line')),
+      findsNWidgets(3),
+    );
+    expect(
+      find.byKey(const ValueKey('student-detail-stats-header-line')),
+      findsNothing,
+    );
+    for (var index = 1; index <= 3; index++) {
+      expect(
+        find.byKey(ValueKey('student-detail-skill-divider-$index')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(ValueKey('student-detail-equipment-divider-$index')),
+        findsOneWidget,
+      );
+    }
+    for (var index = 0; index < 3; index++) {
+      expect(
+        find.byKey(ValueKey('student-detail-stat-row-divider-$index')),
+        findsOneWidget,
+      );
+    }
+    for (final stat in const ['hp', 'atk', 'def', 'heal']) {
+      expect(
+        find.byKey(ValueKey('student-detail-combat-icon-$stat')),
+        findsOneWidget,
+      );
+    }
+    expect(find.text('M'), findsNWidgets(3));
+    expect(
+      find.byKey(const ValueKey('student-detail-favorite-locked')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('student-detail-potential-locked')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('student-detail-potential-overlay')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('student-detail-level-split')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('student-detail-school-logo')),
+      findsOneWidget,
+    );
+    expect(find.text('심상개화'), findsOneWidget);
+    expect(find.text('999999'), findsOneWidget);
+    expect(find.text('123456'), findsOneWidget);
+    expect(find.text('654321'), findsOneWidget);
+    expect(find.text('100000'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('student-detail-ability')),
+      findsOneWidget,
+    );
+    expect(find.text('Ability Release'), findsOneWidget);
+    expect(find.textContaining('HP 25'), findsOneWidget);
+    final abilityValuesRegion = find.byKey(
+      const ValueKey('student-detail-ability-values-region'),
+    );
+    expect(
+      tester
+          .getCenter(
+            find.byKey(const ValueKey('student-detail-ability-values')),
+          )
+          .dx,
+      closeTo(tester.getCenter(abilityValuesRegion).dx, 0.01),
+    );
+    final abilityBounds = studentContainerPath(
+      const Size(1100, 720),
+      'container-7',
+    )!.getBounds();
+    expect(
+      tester
+          .getTopLeft(find.byKey(const ValueKey('student-detail-ability')))
+          .dx,
+      lessThan(abilityBounds.center.dx),
+    );
+    final metadataValueXs = [
+      for (final label in const ['Position', 'Class', 'Weapon'])
+        tester
+            .getTopLeft(
+              find.byKey(ValueKey('student-detail-metadata-value-$label')),
+            )
+            .dx,
+    ];
+    expect(metadataValueXs[0], closeTo(metadataValueXs[1], 0.01));
+    expect(metadataValueXs[1], closeTo(metadataValueXs[2], 0.01));
+    expect(
+      find.byKey(const ValueKey('student-detail-bond-rank')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('student-detail-bond-gauge')),
+      findsOneWidget,
+    );
+    expect(find.text('100'), findsOneWidget);
+    final bondText = tester.widget<Text>(
+      find.byKey(const ValueKey('student-detail-bond-rank')),
+    );
+    expect(bondText.style?.fontSize, 43.2);
+    final bondBounds = studentContainerPath(
+      const Size(1100, 720),
+      'container-10',
+    )!.getBounds();
+    final expectedBondCenter =
+        bondBounds.topLeft + studentBondRankRect(bondBounds.size).center;
+    expect(
+      (tester.getCenter(
+                find.byKey(const ValueKey('student-detail-bond-rank')),
+              ) -
+              expectedBondCenter)
+          .distance,
+      lessThan(1),
+    );
+    expect(find.text('인연'), findsNothing);
+    for (final label in const ['HP', 'ATK', 'DEF', 'HEAL']) {
+      expect(find.text(label), findsNothing);
+    }
+    expect(
+      find.byKey(const ValueKey('student-detail-bond-heart')),
+      findsNothing,
+    );
+
+    final firstEquipmentImages = tester.widgetList<Image>(
+      find.descendant(
+        of: find.byKey(const ValueKey('student-detail-equipment-0')),
+        matching: find.byType(Image),
+      ),
+    );
+    expect(
+      firstEquipmentImages
+          .map((image) => image.image)
+          .whereType<AssetImage>()
+          .map((image) => image.assetName),
+      contains('assets/item_icons/equipment/Equipment_Icon_Hat_Tier7.png'),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('locked weapon leaves the weapon status area empty', (
+    tester,
+  ) async {
+    final search = TextEditingController();
+    addTearDown(search.dispose);
+    await tester.binding.setSurfaceSize(const Size(1100, 720));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StudentSectionLayout(
+            students: [StudentCatalogEntry.fallback('aru')],
+            ownedIds: const {'aru'},
+            selectedId: 'aru',
+            selectedValues: const {
+              'level': 30,
+              'student_star': 3,
+              'weapon_state': 'weapon_locked',
+              'weapon_star': 0,
+              'weapon_level': 0,
+            },
+            searchController: search,
+            onSearchChanged: (_) {},
+            onStudentSelected: (_) {},
+            onAddToPlan: () {},
+            onOpenScan: null,
+            onOpenFilter: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lv. --'), findsOneWidget);
+    expect(find.text('Weapon Lv. --'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('student-detail-weapon-icon')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('student-detail-weapon-state')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('student-detail-weapon-star')),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  test('combat stat rows follow the 80 degree parallelogram rail', () {
+    final offsets = [
+      for (var index = 0; index < 4; index++)
+        studentCombatRowOffset(height: 320, index: index),
+    ];
+
+    expect(offsets[0], greaterThan(offsets[1]));
+    expect(offsets[1], greaterThan(offsets[2]));
+    expect(offsets[2], greaterThan(offsets[3]));
+    expect(offsets.every((offset) => offset < 0), isTrue);
+    expect(offsets[0] - offsets[1], closeTo(offsets[1] - offsets[2], 0.001));
+    expect(offsets[1] - offsets[2], closeTo(offsets[2] - offsets[3], 0.001));
+  });
+
+  test('combat stat dividers follow the 80 degree parallelogram rail', () {
+    const height = 320.0;
+    final offsets = [
+      for (var index = 0; index < 3; index++)
+        studentCombatDividerOffset(height: height, index: index),
+    ];
+    final expectedStep = height / math.tan(80 * math.pi / 180) / 4;
+
+    expect(offsets[0], closeTo(-expectedStep, 0.001));
+    expect(offsets[1], closeTo(-expectedStep * 2, 0.001));
+    expect(offsets[2], closeTo(-expectedStep * 3, 0.001));
+  });
+
+  test('skill and equipment separators follow an exact 80 degree line', () {
+    const size = Size(32, 120);
+    final endpoints = studentDiagonalDividerEndpoints(size);
+    final delta = endpoints[1] - endpoints[0];
+    final angle = math.atan2(delta.dy.abs(), delta.dx.abs()) * 180 / math.pi;
+    expect(angle, closeTo(80, 0.001));
+  });
+
+  test('bond rank returns to the remaining right triangle', () {
+    const size = Size(320, 260);
+    final source = studentStudioDocument.containers.firstWhere(
+      (item) => item.id == 'container-10',
+    );
+    expect(source.spec.mode, SectionShapeMode.triangle);
+    expect(source.spec.face, SectionAttachmentFace.right);
+    final rankRect = studentBondRankRect(size);
+    final outerPath = buildRoundedSectionPolygon(
+      studentBondOuterTrianglePoints(size),
+      radius: 10,
+    );
+    final gaugeBounds = studentBondGaugeHostPath(size, outerPath).getBounds();
+    expect(rankRect.center.dx, greaterThan(size.width / 2));
+    final outerBottomPoints = studentBondOuterTrianglePoints(size)
+        .where((point) => (point.dy - size.height).abs() < 0.001)
+        .toList(growable: false);
+    final unshiftedRankCenter =
+        (outerBottomPoints[0].dx + outerBottomPoints[1].dx) / 2;
+    expect(
+      rankRect.center.dx,
+      closeTo(unshiftedRankCenter - studentBondRankLeftShift(size), 0.001),
+    );
+    expect(rankRect.bottom, lessThan(size.height));
+    expect(size.height - rankRect.bottom, greaterThanOrEqualTo(7));
+    expect(gaugeBounds.bottom, lessThan(rankRect.top));
+    expect(gaugeBounds.right, closeTo(outerPath.getBounds().right, 0.001));
+  });
+
+  test('bond gauge derives its host from the actual rounded outer path', () {
+    const size = Size(100, 320);
+    final outerPath = buildRoundedSectionPolygon(
+      studentBondOuterTrianglePoints(size),
+      radius: 10,
+    );
+    final host = studentBondGaugeHostPath(size, outerPath);
+    final outerBounds = outerPath.getBounds();
+    final hostBounds = host.getBounds();
+
+    expect(hostBounds.top, closeTo(outerBounds.top, 0.001));
+    expect(hostBounds.right, closeTo(outerBounds.right, 0.001));
+    expect(studentBondGaugeEdgeGap(size), 6.0);
+    expect(studentBondGaugeBottomRadius(size), 16.5);
+    expect(
+      studentBondGaugeBottomRadius(size) -
+          (studentBondGaugeEdgeGap(size) + 0.5),
+      10.0,
+    );
+    expect(
+      hostBounds.bottom,
+      closeTo(
+        studentBondRankRect(size).top - studentBondGaugeRankGap(size),
+        0.001,
+      ),
+    );
+    expect(
+      hostBounds.bottom - studentBondGaugeEdgeGap(size),
+      greaterThan(
+        studentBondRankRect(size).top - math.max(7.0, size.height * 0.035),
+      ),
+    );
+    expect(
+      host.contains(Offset(hostBounds.left + 0.25, hostBounds.bottom - 0.25)),
+      isFalse,
+    );
+    expect(
+      host.contains(Offset(hostBounds.right - 0.25, hostBounds.bottom - 0.25)),
+      isFalse,
+    );
+  });
+
+  test('student triangle texture uses the requested stronger contrast', () {
+    expect(studentTextureTessellationContrast, 0.030);
+  });
+
   testWidgets('Section 4 toggles student attribute and name overlays', (
     tester,
   ) async {
@@ -917,6 +1356,9 @@ void main() {
                 'combat_class': null,
                 'role': null,
                 'position': null,
+                'equipment_slot_1': null,
+                'equipment_slot_2': null,
+                'equipment_slot_3': null,
                 'jp_only': true,
                 'search_tags': <String>[],
                 'kr_search_tags': <String>[],

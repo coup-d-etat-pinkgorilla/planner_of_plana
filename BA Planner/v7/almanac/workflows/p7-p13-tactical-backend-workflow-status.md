@@ -23,7 +23,7 @@ sources:
 
 ## 현재 현황
 
-2026-07-29 P7~P12를 완료했다. 지정한
+2026-07-29 P7~P12를 완료했고 사용자가 P13 구현 시작을 승인했다. 지정한
 `Pictures/Screenshots/스크린샷 2026-07-07 201820.png`를 P8의 2560×1440 전술대항전
 상대 선택 기준 fixture를 P9의 identity·snapshot 연결 fixture로 이어서 사용한다.
 
@@ -35,7 +35,7 @@ sources:
 | P10 | `완료` | 읽기 전용 결정론 통계·strict filter·Wilson 구간·Python/Dart E2E | 계약 회귀 유지 |
 | P11 | `완료` | 변경 구간·신선도 감쇠·노출 funnel·Python/Dart E2E | 계약 회귀 유지 |
 | P12 | `완료` | 6단계 관측 시나리오·추천 근거·prediction 분리 저장·시간순 backtest | 계약 회귀 유지 |
-| P13 | `대기` | P12 완료 필요 | opt-in 공유와 고급 분석 |
+| P13 | `완료` | opt-in redaction·분리 저장·철회·독립 재현성 분석·Python/Dart E2E | 계약 동결 유지 |
 
 ## P7 결정과 조사 결과
 
@@ -236,3 +236,25 @@ P11 완료 조건을 검증했다. P12는 관측 snapshot을 우선하는 예상
 2026-07-29 관측 덱 전용 시나리오, 명시적 fallback, 근거 분해 추천, prediction 분리 저장과
 시간 누수 없는 baseline backtest를 확인해 P12를 완료 처리했다. P13은 opt-in 공유와 익명화,
 독립 사용자 재현성 단계이며 별도 승인 전에는 로컬 이름·ROI·prediction을 외부로 보내지 않는다.
+
+## P13 구현 결과
+
+- `tactical.v2.share.state.get/prepare/import/withdraw/analytics.query` 계약을 추가했다.
+- 공유 자료를 관측·예측 state와 물리적으로 분리하고 opt-in consent, 원본 매체 배제, 범위·시즌 제한 익명 ID를 적용했다.
+- 같은 source의 중복 수집을 차단하고 철회 tombstone과 aggregate cache를 한 atomic mutation에서 갱신한다.
+- match 수와 독립 contributor/opponent 수를 분리하며, 두 최소 표본 조건을 모두 통과한 그룹만 반환한다.
+- attempt session별 첫 시도, 첫 성공까지 시도 수, 누적 성공, discoverer 대 이후 contributor, 출처 집중도와 관측 수명을 집계한다.
+- 최소 표본을 통과한 동일 방어덱의 one-slot 공격덱 비교와 방어 변경 후 재검증 건수를 반환한다.
+- 원본 상대 이름·local identity·name ROI·screen hash·screenshot·note·prediction은 공유 payload에 포함하지 않는다.
+
+## P13 검증 기록
+
+- Python 전체 118 tests 통과.
+- Flutter 전체 217 tests와 `flutter analyze` 통과.
+- 실제 Dart→Python process에서 prepare → import → analytics → withdraw → restore E2E 통과.
+- `flutter build windows --release`, `codealmanac validate`, `codealmanac health`, `git diff --check` 통과.
+- 의미 규칙과 결과는 `docs/migration/p13-tactical-sharing-analysis/artifacts/sharing-analysis-semantics.md`와 `output.md`에 기록했다.
+
+## P13 완료 판정
+
+2026-07-29 개인정보 redaction, 독립 표본 집계, 시도 fixture, 중복·철회·캐시 일관성, Python/Dart 계약과 실제 process E2E를 직접 확인하여 P13을 완료 처리한다. 머신러닝과 외부 전송은 완료 조건에서 제외하고 명시적으로 비구현 상태를 유지한다.

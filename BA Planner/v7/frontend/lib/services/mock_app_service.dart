@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import 'app_service.dart';
 import 'diagnostics_service.dart';
+import 'mock_student_fixture.dart';
 import 'repository_service.dart';
 import 'scanner_service.dart';
 import 'tactical_service.dart';
@@ -71,7 +72,21 @@ class MockAppService
                useLongNames: false,
                hasMissingMetadata: false,
              ),
-       );
+       ) {
+    if (fullStudentCatalog && _profiles.isNotEmpty) {
+      final profile = _profiles.firstWhere(
+        (item) => item.selected,
+        orElse: () => _profiles.first,
+      );
+      _repositoryStates[profile.id] = {
+        'profile_id': profile.id,
+        'revision': 0,
+        'students': buildMockOwnedStudents(),
+        'inventory': {'version': 1, 'entries': <dynamic>[]},
+        'goals': {'version': 1, 'goals': <dynamic>[]},
+      };
+    }
+  }
 
   List<StudentCatalogEntry>? _studentCatalog;
 
@@ -577,6 +592,9 @@ class MockAppService
     'combat_class': student.combatClass,
     'role': student.role,
     'position': student.position,
+    'equipment_slot_1': student.equipmentSlot1,
+    'equipment_slot_2': student.equipmentSlot2,
+    'equipment_slot_3': student.equipmentSlot3,
     'jp_only': student.jpOnly,
     'search_tags': student.searchTags,
     'kr_search_tags': student.krSearchTags,

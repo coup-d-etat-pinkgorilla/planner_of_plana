@@ -9,6 +9,7 @@ from pathlib import Path
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 V7_DIR = BACKEND_DIR.parent
 PACKAGED_PLANNING_DATA_DIR = BACKEND_DIR / "data" / "planning"
+PACKAGED_RECOGNITION_ASSET_DIR = BACKEND_DIR / "assets" / "recognition" / "v1"
 
 
 def _external_asset_dir() -> Path:
@@ -37,6 +38,13 @@ def resolve_planning_data_dir() -> Path:
 
 
 PLANNING_DATA_DIR = resolve_planning_data_dir()
+
+
+def resolve_recognition_asset_dir() -> Path:
+    override = os.environ.get("BA_PLANNER_RECOGNITION_ASSET_DIR")
+    if override:
+        return Path(override).expanduser()
+    return PACKAGED_RECOGNITION_ASSET_DIR
 
 
 def resolve_repository_root() -> Path:

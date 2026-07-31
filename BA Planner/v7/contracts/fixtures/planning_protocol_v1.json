@@ -24,7 +24,7 @@
     {
       "name": "student catalog response",
       "valid": true,
-      "message": { "protocol": 1, "id": "catalog-1", "type": "response", "method": "planning.student.catalog", "payload": { "students": [{ "student_id": "aru", "display_name": "Aru", "template_name": "aru.png", "group": "aru", "variant": null, "school": "Gehenna", "rarity": "3", "attack_type": "Explosive", "defense_type": "Light", "combat_class": "Striker", "role": "Dealer", "position": "Back", "jp_only": false, "search_tags": ["aru"], "kr_search_tags": [] }], "sort": "display_name_then_id" } }
+      "message": { "protocol": 1, "id": "catalog-1", "type": "response", "method": "planning.student.catalog", "payload": { "students": [{ "student_id": "aru", "display_name": "Aru", "template_name": "aru.png", "group": "aru", "variant": null, "school": "Gehenna", "rarity": "3", "attack_type": "Explosive", "defense_type": "Light", "combat_class": "Striker", "role": "Dealer", "position": "Back", "equipment_slot_1": "Hat", "equipment_slot_2": "Hairpin", "equipment_slot_3": "Watch", "jp_only": false, "search_tags": ["aru"], "kr_search_tags": [] }], "sort": "display_name_then_id" } }
     },
     {
       "name": "student catalog rejects paging",

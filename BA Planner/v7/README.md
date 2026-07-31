@@ -106,6 +106,20 @@ Section Template Studio에서 `release/` 루트에 저장한
 `*.ba-section-studio.json`은 릴리스 번들 교체 전에 새 staging 번들로 승계합니다.
 실행 파일과 `data/`는 생성물이지만 Studio 배치 문서는 릴리스 갱신 시 보존됩니다.
 
+## 독립 개발 도구
+
+v6의 학생 메타데이터 편집기, 학생 템플릿 추출기, 인벤토리 그리드 매치 검사기는
+Qt/Tk 코드를 반입하지 않고 v7 Flutter/Python 경계로 마이그레이션했습니다. 다음 실행기는
+각 도구를 별도 Windows 프로세스로 엽니다.
+
+```powershell
+.\run_student_metadata_editor.cmd
+.\run_student_template_extractor.cmd
+.\run_inventory_grid_match_inspector.cmd
+```
+
+배포용 공용 도구 번들은 `frontend/tool/build_windows_developer_tools.ps1`로 갱신합니다.
+
 ## v6 관계
 
 v6는 안정판과 회귀 기준으로 남습니다. v7은 `../v6`를 런타임에서 import하지

@@ -48,6 +48,19 @@ sources:
 > 화면을 비율마다 새로 디자인하지 않고, 각 탭이 미리 승인받은 소수의 레이아웃 상태 중
 > 현재 사선 안전 영역을 만족하는 상태 하나만 선택한다.
 
+### 1.1 기본 작업·검수 viewport
+
+- 별도 크기 지시가 없는 UI 설계, 배치 조정과 실화면 검수는 앱 창을 **현재 모니터의
+  작업 영역까지 최대화한 상태**를 canonical viewport로 삼는다. 작업 영역은 Windows
+  작업 표시줄 등 예약 영역을 제외한 최대화 client area다.
+- pixel 또는 비율 보정값을 기록할 때는 최대화 여부와 함께 모니터 해상도, 작업 영역,
+  Windows 배율(DPI)을 기록한다. 창 모드나 임의의 1280×720 창을 기준으로 산출한 값을
+  최대화 기준값처럼 확정하지 않는다.
+- Compact·Constrained 회귀 검증은 계속 수행하지만 이는 canonical 디자인 기준을
+  대체하지 않는 별도 반응형 검증이다.
+- Windows 앱은 첫 Flutter frame을 표시할 때 현재 창이 속한 모니터의 작업 영역으로
+  최대화해 연다. 사용자는 이후 일반 창으로 복원하거나 크기를 변경할 수 있다.
+
 기존 확정 규칙은 [Frontend Section Direction and User Flows](frontend-section-direction-and-user-flows)를
 따른다. 이 문서는 기존 규칙을 완화하는 예외가 아니다. [@section-direction]
 

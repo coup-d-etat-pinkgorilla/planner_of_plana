@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from core.runtime_paths import resolve_recognition_asset_dir
 from core.scanner_session import ScannerError
 
 
@@ -24,7 +25,7 @@ class RecognitionAssetCatalog:
     VERSION = 1
 
     def __init__(self, root: Path | None = None) -> None:
-        self.root = root or Path(__file__).with_name("recognition_assets")
+        self.root = root or resolve_recognition_asset_dir()
         self.manifest_path = self.root / "manifest.json"
         self._manifest: dict[str, Any] | None = None
 

@@ -10,6 +10,182 @@ sources:
 
 # P0-P6 Workflow Status
 
+### 2026-07-31 student detail status indicators
+
+- Status: `complete`
+- Added explicit `LEVEL`, `SKILL SUMMARY`, `EQUIPMENT`, and `STATS`
+  headings. The skill summary is split into four icon-bearing columns with
+  dividers and compact progress bars, while HP/ATK/DEF/HEAL use a dedicated
+  icon-bearing vertical panel.
+- Split the level card into a blue parallelogram and trapezoid, with the
+  selected student's bundled school mark recolored white. The metadata rows now
+  use pink `Position`, `Class`, and `Weapon` labels without numeric prefixes.
+- Reworked bond rank as a standalone pink vertical gauge while retaining only
+  the 1.8x numeric rank at the triangle's geometric centroid.
+- Strengthened the translucent `심상개화` lock treatment and enlarged its
+  label. All triangle-textured regions below the star bar now derive from the
+  same blue palette as the level region.
+- Follow-up detail tuning aligns the white school mark with the level value,
+  moves diagonal-edge headings into their safe intervals, and gives
+  Position/Class/Weapon values one shared canvas-space start line. Skill icons
+  and micro progress bars were removed; skill and equipment headings now use a
+  divider-line header treatment.
+- Equipment tier/level labels are 1.5x larger and offset along the panel rail.
+  The ability row now labels `능력개방  Ability Release`. Combat labels, icons,
+  and six-digit values follow one 80-degree trajectory, use value-sized icons,
+  and render ATK with a custom sword glyph.
+- Replaced the bond triangle with a narrow independent parallelogram gauge,
+  using a bordered dark track, pink proportional fill, and the numeric rank
+  centered within the filled portion.
+- Follow-up rail correction renders only `Ability Release` with the shared
+  section-title treatment. STATS rows now use each row center's actual 80-degree
+  boundary position, so the title marker and all four stat icons share one
+  trajectory. The stats panel's unused right width was reclaimed to give the
+  bond panel an independent in-section gap; its outer and inner rails now use
+  the same `height / tan(80°)` slope.
+- Latest indicator refinement uses 80-degree separators between all four skill
+  columns and all four equipment/favorite-item columns. `Ability Release` is
+  left-aligned to the same safe rail as the other section headers, and `STATS`
+  now has both a full header divider and horizontal dividers between stat rows.
+- The bond container now shortens its bottom edge to exactly 80 percent of the
+  top edge. Its dark inner trapezoid contains a separately clipped pink
+  proportional fill, while the rank number remains centered on the dark inner
+  container independently of the fill level.
+- The upper-right level metadata surfaces use the darker potential-lock-panel
+  family. The shared triangle palette remains unchanged; a proposed next-pass
+  texture tuning is to increase face size and luminance contrast without
+  changing hue, pending visual approval.
+- Latest follow-up removes the temporary standalone bond gauge and restores
+  container 4 (STATS) to its original width. The bond rank is again numeric-only
+  inside the remaining right-side triangle. STATS no longer renders the
+  HP/ATK/DEF/HEAL labels, retaining only the four icons and values.
+- Skill and equipment separators now derive their complete painted endpoints
+  from an exact 80-degree line instead of clamping the horizontal run to the
+  layout slot. `Ability Release` remains left-aligned while its HP/ATK/HEAL
+  value group is centered within the region remaining after the title.
+- The STATS title now uses the same horizontal divider treatment as `SKILL
+  SUMMARY` and `EQUIPMENT`. The bond triangle contains a rounded inner
+  triangular track whose pink fill rises bottom-to-top according to rank/100;
+  the numeric rank is fixed in a separate bottom band with visible gaps from
+  both the gauge and the outer triangle base.
+- The rounded inner bond gauge now uses one geometric inset for both the
+  vertical side and the hypotenuse normal, with a responsive 2-4 pixel gap and
+  a smaller corner radius so the usable triangular gauge is visibly larger.
+  Shared student-detail triangle texture contrast increased from `0.024` to
+  `0.030` without changing its palette or deterministic seed.
+- Skill labels now sit halfway between their former centered position and the
+  header divider, reducing the visible header gap by half. Skill-level values
+  are 1.5x larger (`21` to `31.5` logical pixels).
+- STATS row dividers now use the same height-derived 80-degree rail offset as
+  their corresponding combat rows. Their two endpoints progress leftward at
+  each row boundary instead of forming fixed vertical endpoint rails that spill
+  outside the parallelogram.
+- The bond gauge host now extends closer to the rank band and receives the
+  container's actual local outer path after rounded corners and parent-section
+  intersection. Its visible inset is produced by clearing one uniform stroke
+  from that exact path instead of reconstructing a second ideal triangle, so
+  vertical, bottom, curved-corner, and hypotenuse gaps share the same rendered
+  normal distance and are no longer pinned by the outer `ClipPath`.
+- The uniform bond-gauge edge inset is now doubled from the responsive
+  `1.5-3px` range to `3-6px`. The rank-side cutoff uses a rounded-bottom mask at
+  both the slanted and vertical intersections, and the numeric rank region is
+  shifted left by a responsive `3-8px` so it is optically centered in the
+  remaining lower triangle.
+- The rounded-bottom host radius now compensates for the subsequent cleared
+  inset: it uses `10px + inset + 0.5px` (`13.5-16.5px`) so the final visible
+  lower corners retain approximately the same `10px` radius as the outer
+  triangle instead of collapsing toward a sharp corner.
+- Follow-up layout correction: container 5 now owns the four skills, container
+  6 owns the three equipment slots and favorite item, and the bottom container
+  9 is a locked potential-release (`심상개화`) placeholder.
+- Position and combat class use title case (`Back`, `Striker`, `Special`).
+  Weapon level now uses only `Lv. N`; the temporary firearm silhouette and the
+  `Weapon` label were both removed.
+- Combat-stat rows follow the 80-degree parallelogram rail with progressive
+  horizontal offsets. The bond triangle now renders only the numeric rank.
+- Bond-rank text is 1.8x larger (24 to 43.2 logical pixels) and centered on the
+  right triangle's geometric centroid rather than a hand-tuned alignment.
+- Filled the read-only student detail regions with level/position/role/weapon
+  level, unique-weapon state and stars, four skills with `M` maxima, three
+  equipment icons with tiers and levels, favorite-item state, scanned
+  HP/ATK/DEF/HEAL values, ability-release values, and bond rank.
+- Kept the unique-weapon region empty when the system is not unlocked. Unowned
+  and multi-state presentation remains intentionally deferred.
+- Extended the planning student-catalog contract with the three static
+  equipment slot types so the Flutter surface can resolve the correct tiered
+  assets without importing v6 runtime code. Regenerated
+  `frontend/assets/student_catalog.json` from the v7 generated metadata.
+- Expanded the deterministic 42-student mock roster with six-digit combat
+  stats and favorite-item states while retaining evenly distributed
+  progression.
+- Verification: Python 123 tests passed; Flutter 263 tests passed before the
+  final skill-label spacing and type-size adjustment;
+  `flutter analyze` passed; Windows release build passed; the current release
+  executable was visually checked with an owned student at 2560x1392, including
+  the exact 80-degree separators, restored STATS width, centered ability values,
+  label-free six-digit stats, the diagonal STATS header, and the bottom-up
+  rounded-triangle bond gauge with a separated bottom rank. Final visual
+  verification is intentionally left to the user as requested. After the
+  latest STATS-divider correction, the focused student layout suite passed 38
+  tests and `flutter analyze` reported no issues. The enlarged equal-inset bond
+  gauge and horizontal STATS header retained the same 38-test and analyze pass.
+  The actual-path bond inset replacement also passed the focused 38-test suite
+  and `flutter analyze`. The doubled inset, rounded gauge base, and optical
+  rank shift retained the same focused-suite and analyze pass.
+  The compensated outer-radius bottom corners retained the 38-test and analyze
+  pass.
+- Artifacts: `frontend/lib/services/mock_student_fixture.dart`,
+  `frontend/lib/ui/widgets/student_section_layout.dart`,
+  `frontend/test/mock_student_fixture_test.dart`, and
+  `frontend/test/student_studio_layout_test.dart`.
+
+### 2026-07-31 학생 탭 표시용 Mock 보유 학생 fixture
+
+- 상태: `구현·집중 검증 완료`
+- 기본 앱의 `MockAppService(fullStudentCatalog: true)`가 선택 프로필에 canonical 학생
+  42명의 confirmed current를 주입한다. 축약형 테스트 Mock은 기존처럼 빈 repository를
+  유지한다.
+- 레벨은 1~90 전 구간에 분산하고 1~5성은 각 8~9명으로 균등 배치했다. 5성 학생은
+  전용무기 1~4성을 모두 포함하며 인연, 스킬, 장비, 능력치도 서로 다른 순열로 분산해
+  학생 탭의 표시·정렬 밑작업 fixture로 사용한다.
+- 산출물: `frontend/lib/services/mock_student_fixture.dart`,
+  `frontend/test/mock_student_fixture_test.dart`.
+- 검증: fixture 분포·범위·고유 canonical ID와 portrait catalog 연결, 선택 프로필 주입,
+  축약 Mock 비영향, `flutter analyze` 및 학생 화면·Studio 집중 40 tests 통과.
+
+### 2026-07-30 standalone v6 developer tools migration
+
+- Status: `complete`
+- Migrated the student metadata editor, student template extractor, and
+  inventory grid match inspector without copying Qt, QML, QWidget, Tkinter, or
+  PySide6 presentation code.
+- Added a short-lived protocol-v1 Python boundary at
+  `backend/tools/developer_tools.py` and a dedicated Flutter Windows entry at
+  `frontend/lib/developer_tools_main.dart`.
+- Metadata edits atomically replace only generated declarations. Template
+  extraction writes RGBA crops, extraction metadata, and updated recognition
+  manifest integrity. Grid inspection uses the production v7 matcher and
+  packaged regions without mutating scanner state.
+- Artifacts: `docs/migration/developer-tools-migration.md`, three root `.cmd`
+  launchers, `frontend/tool/build_windows_developer_tools.ps1`, and
+  `release/developer_tools/`.
+- Verification: Python 123 tests passed; Flutter 228 tests passed;
+  `flutter analyze` passed; Windows release build passed; CodeAlmanac validate
+  and health passed; all three tool modes remained alive as distinct launched
+  OS processes.
+- Next action: retain the three launchers as the supported entry points and
+  rebuild the shared developer-tools bundle after Flutter tool UI changes.
+
+#### Metadata editor Windows UTF-8 transport fix
+
+- Fixed `FormatException: Unexpected extension byte` when Korean metadata was
+  returned through a Windows pipe.
+- Dart now launches Python with `PYTHONUTF8=1` and
+  `PYTHONIOENCODING=utf-8`; the Python tool also reconfigures stdin, stdout, and
+  stderr to UTF-8 as a transport-level invariant.
+- Added a real Dart-to-Python process test that queries `hoshino` and verifies
+  the decoded Korean display name.
+
 이 문서는 P0~P6 워크플로가 모두 완료될 때까지 유지하는 활성 작업 기록이다. 새
 대화에서 관련 작업을 시작할 때 가장 먼저 읽고, 단계의 상태·결정·산출물·다음 행동이
 바뀐 작업이 끝날 때마다 갱신한다. [@agent-instructions]
@@ -1365,3 +1541,330 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
   줄여 목표 여백을 각각 약 13.5px로 잡았다.
 - 카드 축소량 27px만큼 지연 단계 버튼과 다음 병목 카드 시작 위치도 함께 당겨
   사선 스크롤 간격을 유지한다.
+
+### 2026-07-29 v6 이미지·인식 템플릿 이관 및 backend 연결
+
+- 상태: `첫 수직 슬라이스 구현·자동 검증 완료`
+- 사용자 승인을 받아 표시용 이미지는 기존 Flutter 역할별 경로를 유지하고, 인식
+  자산은 Python 소스와 분리한 `backend/assets/recognition/v1/`로 이동했다.
+- Flutter 표시용 v6 원본 1,045개와 backend recognition entry 780개의 크기·SHA-256을
+  manifest로 검증했다. 학생 인식 254종과 inventory fast icon 497종이 실제
+  `RecognitionAssetCatalog`와 scanner matcher에 연결된다.
+- backend packaged root가 기본이며 `BA_PLANNER_RECOGNITION_ASSET_DIR`로 완전한 v1
+  catalog를 교체할 수 있다. adaptive sample은 사용자 데이터로 계속 분리한다.
+- `inventory_detail`, name template, raw count 학습 sample은 matcher parity가 아직 없어
+  이번 slice에서 제외했으며 후속 수직 이관 대상으로 유지한다.
+- 검증: Python 119 tests, Flutter 217 tests, `flutter analyze`, Windows release build와
+  `tools/verify_v6_asset_migration.ps1` 통과.
+- 상세 범위와 manifest는 `docs/migration/v6-asset-backend-connection/`에 기록했다.
+
+### 2026-07-29 Section 3-1 크레딧 독립 가로 행
+
+- 상태: `구현·집중 검증 완료·사용자 실화면 확인 대기`
+- 크레딧 부족 표시는 일반 재화의 1행 2열 그리드에서 완전히 분리해 단계 아이템 바로 아래에 둔다.
+- 크레딧 행은 `이 병목으로 지연되는 단계` 액션과 같은 안전 폭과 `38px` 높이를 쓰는 긴 평행사변형이다.
+- 내부에는 배경 `square.png` 없이 `30×30px` 크레딧 아이콘, `m / n`, 부족량을 가로로 배치한다.
+- 크레딧 행 축소분만큼 일반 재화 그리드와 카드 하단 액션을 위로 이동하고, 크레딧 사례 카드 높이를 `353px`로 줄였다.
+
+### 2026-07-29 Section 3-1 병목 의미 확인 및 장비 배경 규칙 복원
+
+- 상태: `장비 배경 수정·집중 검증 완료`
+- 현재 병목 목록은 저장 계획과 인벤토리에서 계산한 결과가 아니라 typed UI preview 상수다. 따라서 아직 `최초 부족 지점 → 이후 누적 추가 부족` 산식을 구현한 상태가 아니다.
+- v6의 일반 장비 `Equipment_Icon_*_TierN`은 숫자 tier와 관계없이 기본 `square.png`를 사용한다. BD·노트·오파츠 등의 0~3 품질 suffix 배경 규칙과 분리한다.
+- `equipmentTier`가 있는 병목 재화는 잘못된 명시 배경이 들어와도 기본 장비 배경으로 정규화하며, T1~T10과 실제 T10 샘플 렌더링을 테스트한다.
+
+### 2026-07-29 Section 3-2 페이즈 소모량 및 Section 3-3 전체 소모량
+
+- 상태: `구현·집중 검증 완료·사용자 실화면 확인 대기`
+- 3-2는 3-1의 외부 컨테이너, 카드 surface, 80° 사선 스크롤, 독립 크레딧 행, 2열 재화 카드와 107px 타일을 재사용한다.
+- 3-2 카드에서는 Section 2의 65px 단계 아이템과 `이 병목으로 지연되는 단계` 버튼을 제거하고 `페이즈 N`과 해당 페이즈 소모량만 표시한다.
+- 3-3은 동일 구조를 `전체 계획` 단일 카드로 단순화했으며, 각 전체 수량은 3-2의 같은 재화 페이즈 수량 합계와 정확히 일치한다.
+- 크레딧은 두 탭 모두 일반 2열 grid 밖의 38px 독립 행을 유지하고, 일반 재화는 이름·소모량 label·수량의 3행 구조를 사용한다.
+- 현재 수량은 typed UI preview다. 실제 저장 계획의 gross total 연결은 후속 데이터 작업으로 남긴다.
+
+### 2026-07-30 Section 3-n 방향 전환·사선 grid·소모량 문구 보정
+
+- 상태: `구현·집중 검증 완료·사용자 실화면 확인 대기`
+- 3-1·3-2·3-3 본문 전환을 단순 fade switch에서 공용 순차 section motion으로 교체했다. 세 본문 모두 `intro 80° / outro 260°`이며 이전 본문 퇴장 뒤 새 본문이 진입한다.
+- 3-n 재화 2열 배치는 rectangular `Wrap`을 제거하고 각 행의 top/bottom에서 부모 카드의 80° 좌우 rail을 다시 계산한다. 다음 행은 같은 x에 직각으로 쌓이지 않고 사선을 따라 왼쪽으로 이동한다.
+- 3-2 일반 재화는 이름 아래 `진입 n │ 필요 m │ 종료 n-m`, 그 아래 `부족 k` 또는 `충족`을 표시한다. 독립 크레딧만 두 값을 한 가로 행에 표시한다. 3-3은 이름 아래 `보유 n / 필요 m`, 커스텀 확보율 bar와 백분율, `부족 k` 또는 `충족`의 3행을 표시한다. `페이즈 소모량`, `전체 소모량` label은 제거한 상태를 유지한다.
+- 부족 여부는 하단의 `부족 k` 또는 `충족`이 전담하므로 재화 이름의 ` - 병목` suffix는 표시하지 않는다. 독립 크레딧 행은 자명한 `크레딧` 이름도 생략한다.
+- 학교별 BD는 `기초 전술교육 BD : 아비도스`처럼 학교명을 붙인다. 오파츠·BD 등 비장비 이름에서는 tier를 제거하고 장비만 `(T10)` suffix를 유지한다.
+- 후속 보정: Section 3의 반투명 glass foundation을 3-n 전환기 바깥의 고정 layer에서 제거하고 각 3-1·3-2·3-3 body 내부로 옮겼다. 따라서 glass 외곽과 내부 container가 같은 `260°` 퇴장·`80°` 진입 transform을 공유한다.
+
+### 2026-07-30 Section 3-n 재화별 소비 계획 포커스
+
+- 상태: `구현·집중 검증 완료·사용자 실화면 확인 대기`
+- 3-1·3-2·3-3의 일반 재화 카드와 독립 크레딧 행을 모두 평행사변형 hit target으로 변경했다.
+- 재화 선택 시 해당 재화를 소모하는 정확한 `phase/student/step`만 Section 2의 공용 핑크 테두리로 강조하고, 선택 재화 자체에는 1.5px 핑크 outline을 표시한다.
+- 같은 재화를 다시 누르면 해제한다. 다른 재화, 지연 단계 action, Section 5 요약 또는 다른 3-n tab을 선택하면 기존 재화 포커스를 먼저 지워 강조가 겹치지 않게 한다.
+- 전체 탭의 재화별 소비 단계 집합은 페이즈별 같은 재화 집합의 합집합이며, 표시되는 모든 sample 재화와 크레딧은 비어 있지 않은 소비 단계 집합을 가진다.
+
+### 2026-07-30 Section 3-n 오파츠·장비 정식 이름 복원
+
+- 상태: `구현·집중 검증 완료·사용자 실화면 확인 대기`
+- v6 `core/oparts.py`의 icon suffix별 tier name과 `core/equipment_items.py`의 장비 tier name을 근거로 Section 3-n sample 명칭을 교정했다.
+- T3 네브라는 `마모된 네브라 디스크`, T4 안티키테라는 `온전한 안티키테라 장치`, T10 장비는 `전자파 차단 헤어핀`·`게이밍 헬멧`·`스크린 워치`로 표시한다. 장비만 `(T10)` 표기를 유지한다.
+
+### 2026-07-30 Section 3-2 수지·Section 3-3 확보율 표기
+
+- 상태: `구현·집중 검증 완료·사용자 실화면 확인 대기`
+- 3-2는 페이즈 진입 보유량, 필요량, 차감 후 종료량과 정확한 부족량 또는 `충족`을 같은 가로 행에 표시한다.
+- 3-3은 보유량/전체 필요량, `보유 ÷ 필요` 기반 커스텀 확보율 bar와 반올림 백분율, 부족량 또는 `충족`의 3행 상세 구조를 사용한다. bar fill은 100%로 제한하지만 수량 계산은 제한하지 않는다.
+- 독립 크레딧 행도 같은 수량 규칙을 사용하지만 `크레딧` 이름은 생략한다. 3-2는 가로 단일 행으로 돌아가 38px, 3-3은 58px 높이를 사용한다.
+
+### 2026-07-30 Section 3-2 가로 수지 및 Section 3-3 bar 가시성 보정
+
+- 상태: `구현·집중 검증 완료·사용자 실화면 확인 대기`
+- 3-2의 독립 크레딧 수지 문자열과 `부족/충족`을 한 Row에 배치하고, 3-2·3-3 재화 이름의 중복 ` - 병목` suffix를 제거했다. 일반 재화는 후속 요청에 따라 상태를 수지 아래 행으로 원복했다.
+- 3-2·3-3 독립 크레딧 행에서는 `크레딧` 이름을 렌더링하지 않고 수량 정보부터 표시한다.
+- 확보율 `CustomPaint`에 실제 높이를 강제해 bar track과 fill이 그려지게 했으며, 퍼센트 오른쪽에 compact 10px·일반 14px 배율 여백을 적용했다.
+
+### 2026-07-30 Section 3-2 일반 재화 상태 원복 및 bar 높이 조정
+
+- 상태: `구현·집중 검증 완료·사용자 실화면 확인 대기`
+- 3-2 일반 재화는 `진입│필요│종료` 아래에 `부족/충족`을 다시 배치하고, 크레딧만 긴 독립 행 안에서 가로 배치를 유지한다.
+- 3-3 확보율 bar는 일반 12px→10.8px, compact 8px→7.2px로 정확히 10% 낮췄다.
+
+### 2026-07-30 최대화 창 작업 기준 및 시작 상태
+
+- 상태: `구현·전체 자동 검증·Windows release 빌드 완료·사용자 실화면 확인 대기`
+- 별도 지시가 없는 UI 작업과 실화면 검수는 현재 모니터의 작업 표시줄 제외 작업 영역까지 최대화한 창을 canonical viewport로 사용하도록 반응형 정책에 명시했다.
+- Windows runner의 첫-frame `ShowWindow` 명령을 `SW_SHOWNORMAL`에서 `SW_MAXIMIZE`로 변경해 프로그램이 작은 복원 창을 먼저 보이지 않고 최대화 상태로 시작하게 했다.
+- 검증: Flutter 전체 test 222개, `flutter analyze`, Windows release build를 통과했다.
+
+### 2026-07-30 Section 3-3 확보율 bar 높이 재적용
+
+- 상태: `구현·집중 검증 완료·사용자 최대화 실화면 확인 대기`
+- 이전처럼 확보율 행 전체를 줄이지 않고, 행은 일반 12px·compact 8px를 유지해 퍼센트 정렬을 보존한다.
+- 실제 `CustomPaint` track/fill만 행 중앙에서 일반 10.8px·compact 7.2px로 그려 원래 bar 대비 정확히 10% 얇게 보이도록 수정했다.
+- 계획 화면 Widget test에서 일반·compact 각각 outer row와 painted bar 높이를 분리 검증한다.
+
+### 2026-07-30 계획 Section 4 제어 및 Section 6 재화 유형 필터
+
+- 상태: `구현·전체 자동 검증 완료·사용자 최대화 실화면 확인 대기`
+- Section 4의 학생 탭형 삼각형 안에 위에서부터 재화 유형 필터 버튼, 충족 재화
+  숨기기 버튼, 재화 정렬 드롭다운을 배치했다. 두 버튼은 아이콘만 유지하고 hover
+  tooltip으로 라벨을 제공한다. 정렬은 학생 Section 1의 투명·1px 핑크 outline·
+  compact label·도형 화살표 커스텀 드롭다운 구조로 통일했다.
+- 세 control의 실제 surface 사이 간격을 기존의 80%로 줄이고 남는 높이를 surface에
+  균등 배분해 버튼 면적을 넓혔다. 최대화 geometry test에서 간격 비율과 높이 증가를
+  수치로 검증했다.
+- 재화 유형 필터를 누르면 Section 5와 동일한 외곽 glass·shadow·path를 쓰는
+  Section 6으로 순차 전환한다. Section 6은 단일 4열·3행 checkbox 군과 초기화 버튼을
+  가지며 `전체`와 10개 고유 재화 유형을 제공한다. 중복 요청된 강화석은 한 항목으로
+  정규화했다.
+- 4열 전환으로 모든 항목이 한 화면에 들어가므로 중간 외곽 painter, clip,
+  `SingleChildScrollView`를 제거했다. Section 6은 필터 container와 초기화 버튼의
+  두 요소만 가지며, Widget test에서 scroll 부재와 첫 행 4개 정렬을 검증한다.
+- 필터 제목은 18px, checkbox label은 15.75px로 기존 대비 1.5배 확대했으며,
+  최대화 geometry test에서 두 font size와 4열 첫 행을 함께 검증한다.
+- 유형 필터, 충족 숨김, 기본/부족량/필요량/보유량/이름 정렬을 Section 3-n의 병목,
+  페이즈별, 전체 preview에 공통 연결했다. 제어 변경 시 숨겨진 재화의 학생 계획
+  강조가 남지 않도록 기존 포커스를 해제한다.
+- 검증: `flutter analyze`, 계획 화면 20 tests, Flutter 전체 225 tests를 통과했다.
+  Section 5·6 bounds 일치와 Section 4 control center의 삼각형 내부 배치를
+  `2560×1392` canonical 최대화 viewport에서 검증했다.
+
+### 2026-07-30 Section 3-n 2열 재화 rail 및 정렬 label 보정
+
+- 상태: `구현·집중 검증 완료·사용자 최대화 실화면 확인 대기`
+- 3-1·3-2·3-3 공용 2열 grid에서 카드 크기는 유지하고 왼쪽 열을 10.70px 오른쪽,
+  오른쪽 열을 10.70px 왼쪽으로 이동했다. 두 외곽 painted rail은 부모 rail 기준
+  약 22.70px inset이 되어 38px 크레딧 행·지연 단계 버튼과 일치하고, 65px 단계
+  아이템과의 차이는 1px 미만이다.
+- 정렬 드롭다운의 compact label 왼쪽 inset을 11px에서 26px로 늘려 한 글자 폭만큼
+  오른쪽으로 이동했다. 좁은 control에서는 폭의 24%로 반응형 제한한다.
+- 검증: `flutter analyze` 및 계획 화면 21 tests 통과. geometry test에서 기존
+  107px 높이와 열 너비가 유지되는 동시에 네 외곽 rail 지점이 기준 inset에
+  일치하는지 확인했다.
+
+### 2026-07-30 계획 탭 UI 세션 시행착오 및 다음 세션 인계
+
+- 상태: `현 세션 UI 구현·집중 검증 완료·실데이터 연결 다음 세션 대기`
+- 시행착오와 재발 방지는
+  `almanac/design/section-template-studio.md`의
+  `2026-07-30 계획 탭 Section 3~6 작업 시행착오와 재발 방지`에 기록했다.
+- 다음 세션용 source-of-truth handoff는
+  `docs/migration/p2-planning-screen/next-session-handoff-2026-07-30.md`다.
+- 현재 `PlanningPage`는 `AppService`와 학생 탭 `initialSeed`를 전달받지만 사용하지
+  않으며, Section 1은 foundation만 있고 Section 2~6의 데이터는 typed preview
+  상수다. 다음 세션은 이를 실제 repository goal/current/inventory 및 planning
+  계산 결과에 연결하는 vertical slice를 시작해야 한다.
+- 현 최신 검증 기준은 `flutter analyze`, 계획 화면 집중 21 tests,
+  `codealmanac validate`, `git diff --check`다. 최신 Section 6·rail 보정 이후 Flutter
+  전체 suite와 Windows release build는 다시 실행하지 않았으므로 다음 세션의
+  마감 gate로 남긴다.
+
+### 2026-07-30 계획 탭 인메모리 페이즈 편집 화면
+
+- 상태: `목록 재배치 구현·집중 검증 완료 / 버튼 재배치 대기`
+- 계획-메인 Section 1에 임시 호출 action을 추가하고, 더미 계획 요소를 페이즈로
+  배정하는 4-Section 편집 화면을 추가했다.
+- 페이즈 생성·제거·inline 이름 수정, 상세 항목 drag 이동, 제거 시 미배정 복귀,
+  미배정 0개 전 완료 잠금, 완료 시 편집 Section 4를 메인 Section 2 위치로 이동한
+  뒤 메인 화면이 인메모리 구성을 이어받는 흐름을 구현했다. 현재는 양쪽 compact
+  목록의 기준 위치를 먼저 확정하기 위해 뒤로/생성/제거/완료 버튼 렌더링을
+  임시 제거했으며, 관련 상태 변경 로직은 다음 버튼 배치 작업을 위해 유지한다.
+- Section 1·2·3과 Section 4는 scroll Y를 80° rail X 이동으로 변환하며 전용 사선
+  track과 handle을 사용한다. Section 2·4는 메인 Section 2와 동일한 `29×94`
+  크기를 사용한다.
+- 후속 보정으로 Section 1↔2와 Section 4↔3의 facing edge에 최소 12px seam을
+  정의했다. 양쪽 compact 목록(코드 `element-1`, `element-3`)은 각 사다리꼴의
+  짧은 수평 변에서 양쪽 12px 법선 간격에 해당하는 수평 inset을 차감한 길이를
+  목록 평행사변형의 수평 변 길이로 사용한다. 목록 bounds는 Section 중심에 두어
+  좌우 수평 마진을 같게 하고, 위·아래는 각각 10px inset한다. Section seam과
+  목록-사다리꼴 사선 간격은 모두 80° 선의 법선 거리로 계산한다.
+- Section 2·4 최외곽 container를 10px inset 양면 평행사변형으로 교체했다.
+  모든 사선 목록에서 platform 수직 scrollbar를 끄고 전용 80° rail만 남겼다.
+- 후속 실화면에서 평행사변형 원본을 bounds로 재교차하며 한쪽 사선이 잘리는 회귀를
+  확인했다. Section 1·3 목록, Section 2·4 최외곽과 반복 item을 기존 bounds 안에서
+  좌상단·우하단을 대칭 절단하는 단일 bilateral path로 교체해 크기와 양쪽 80°
+  사선을 함께 보존했다.
+- Section 1의 편집 초기 폭은 96칸 정수 그리드에서 15% 축소에 가장 가까운
+  18칸으로 줄였다. Section 4는 편집 중부터 완료 전환까지 Section 2 및
+  계획-메인 Section 2와 같은 29칸 폭을 유지한다.
+- 후속 정밀 대조에서 상세 container 기준을 계획-메인 Section 2와 같은
+  `sectionPath.getBounds().deflate(10)`으로 통일했다. 상세 행은 메인과 같은
+  65px 높이·69px extent, phase header 38px, phase 간격 20px을 사용한다.
+  양쪽 compact 사선 목록은 Studio JSON의 형태만 참고하고, 현재 배치 크기는 위의
+  짧은 변·대칭 마진 규칙으로 계산한다. Section 4 배정 스크롤은 별도 축소 wrapper
+  없이 29칸 Section의 10px inset 내부 컨테이너 전체를 사용한다.
+- Section 1 portrait에 `square.png` 배경을 추가하고 label을 `학생 · N단계`로
+  통일했다. Section 4는 항목 앞·사이·뒤 drop target, hover 삽입선, 같은 phase
+  내부 재정렬을 지원한다.
+- 산출물: `frontend/lib/ui/widgets/plan_phase_editor.dart`,
+  `frontend/lib/ui/widgets/plan_section_layout.dart`,
+  `frontend/test/planning_page_test.dart`.
+- 데이터 영구 저장과 이전 계획 요소 생성 화면 연결은 포함하지 않는다.
+- 현재 목록 재배치 검증: `flutter analyze`, 계획 화면 34 tests, Flutter 전체
+  242 tests(`--concurrency=1`), Python 123 tests, Windows release build 통과.
+  기본 병렬 Flutter suite에서는 실제 Python 프로세스 테스트 2개가 경합으로
+  실패했지만 두 파일 단독 실행과 단일 동시성 전체 suite에서는 모두 통과했다.
+  이번 버튼 제거·목록 재배치 상태의 최대화 실화면 확인은 아직 수행하지 않았다.
+- 2026-07-30 간격 후속 보정은 `1280×720`, `1920×1080`, `2560×1392`에서
+  Section facing seam, compact
+  목록의 평행 사선 법선 간격, 반대쪽 직선 옆면 최소 간격이 모두 12px 이상임을
+  수치로 검증한다.
+- 2026-07-30 상세 배정 후속 작업에서 Section 2의 각 미배정 행을 65px item,
+  6px seam, `65×65` 빠른 이동 버튼으로 분리했다. 버튼은 선택된 phase의 마지막
+  index에 즉시 삽입한다. Section 3의 선택 ID를 Section 4 phase card 강조와
+  빠른 이동 대상이 함께 사용한다.
+- Section 4 결과 item은 계획-메인 Section 2처럼 phase card의 양쪽 80° 경계에서
+  계산한 가용 폭 전체를 사용하며 오른쪽에 별도 버튼용 빈 폭을 남기지 않는다.
+  drag feedback의 고정 250px 폭을 제거하고 각 원본 item의 실제 폭·65px 높이와
+  0.72 opacity를 그대로 사용한다.
+- 빠른 이동 버튼과 Section 3·4 선택 강조는 계획-메인의 공용
+  `diagonalMediaHighlightColor`(`#F2B3EF`)를 사용한다. 버튼의 hover·pressed ink는
+  평행사변형 `ClipPath` 안쪽 Material에서 그려져 사각형 모서리로 번지지 않는다.
+  겹치는 사선 Section의 투명 bounds가 아래쪽 컨트롤을 가로채지 않도록 장식
+  painter도 pointer hit test에서 제외했다.
+- Section 1 compact 목록의 `square.png`는 원본 252×204 비율을 36×36
+  `BoxFit.cover`로 잘라 쓰던 구성을 제거했다. 44×36 `BoxFit.contain` 배경과
+  중앙 32×32 portrait 안전 영역으로 분리해 배경의 좌우 모서리를 보존한다.
+
+### 2026-07-30 계획 페이즈 편집기 측면 버튼 배치
+
+- 상태: `구현·전체 자동 검증 완료·사용자 실화면 확인 대기`
+- Section 1과 Section 3의 확정된 평행사변형 스크롤 목록은 그대로 유지하고, 각
+  사다리꼴에 남은 측면 영역에만 버튼을 복원했다.
+- 공통 12px 간격을 버튼 사이, 섹션 직선면, 80° 목록 빗면에 적용한다. 사선 간격은
+  수평 차이가 아니라 법선 거리로 환산하며, 버튼 높이는 섹션 높이에 반응하는 동일
+  44~72px 범위를 사용한다.
+- Section 1은 돌아가기·전체 배치·전체 되돌리기, Section 3은 페이즈 위/아래 이동,
+  생성·제거, 완료를 제공한다. 전체 배치와 제거/되돌리기의 데이터 이동 및 원래 순서
+  복원도 함께 구현했다.
+- 완료는 미배정 요소가 남으면 어두운 잠금 overlay와
+  `계획 요소를 전부 배치하세요` tooltip을 표시한다. 같은 비활성 처리를 일괄 동작에도
+  재사용한다. hover·pressed ink와 잠금 overlay는 각각의 사다리꼴·평행사변형
+  경로로 clip된다.
+- 후속 보정에서 Section 1의 `전부 되돌리기`와 Section 3의 `위로 조정`도 이웃 버튼과
+  같은 좌/우 face 사다리꼴로 바꿨다. Section 1~4 공통 사선 목록에는 scroll range 기반
+  위·아래 안개를 추가했다.
+- 80°/260° motion은 화면 수학 좌표를 Flutter 좌표로 변환할 때 Y를 반전한다. 따라서
+  Section 2·4의 260° 퇴장은 실제 좌하단이며, 완료 전환의 Section 4는 controller
+  reverse 없이 계획-메인 Section 2 위치로 왼쪽 이동하는 기존 경로를 유지한다.
+- Section 4 phase 번호와 계획-메인 Section 2 번호는 공용
+  `AppTextStyles.planPhaseNumber`를 사용한다.
+- 학생 탭의 필터·학생 grid와 타이틀의 portrait·profile 사선 목록 wrapper는 플랫폼
+  기본 scrollbar painting을 끄고 전용 80° scrollbar만 표시한다.
+- 최종 검증: `flutter analyze`, Flutter 전체 243 tests(`--concurrency=1`),
+  Windows release build, `codealmanac validate`, `git diff --check` 통과.
+
+### 2026-07-30 계획 메인 우측 컨트롤 및 페이즈 이름 편집 후속 보정
+
+- 상태: `구현·전체 자동 검증 완료·사용자 실화면 확인 대기`
+- 계획 메인 최우측 삼각형 Section 4의 세 컨트롤은 기존 반응형 대간격을 제거하고 페이즈 편집기 Section 3과 동일한 12px 경계 간격을 사용한다. 버튼 높이와 기존 사다리꼴 경로는 유지한다.
+- 페이즈 편집기 Section 3 이름 입력은 바깥 클릭으로 포커스를 잃을 때도 저장·종료된다. 완료 루틴은 중복 포커스 이벤트에 안전하며, 편집 외부의 이름 변경도 입력 컨트롤러에 동기화한다.
+- 회귀 검증은 12px 컨트롤 간격과 바깥 클릭 이름 커밋을 포함한다.
+- 검증: `flutter analyze`, 계획 화면 집중 35 tests, Flutter 전체 243 tests(`--concurrency=1`), Windows release build 통과.
+
+### 2026-07-31 계획 페이즈 편집 시행착오 및 프리셋 제조 세션 인계
+
+- 상태: `문서화 완료·프리셋 제품 계약 확정 대기`
+- 페이즈 편집기 구현 중 확인한 사선 법선 간격, 자식 bounds 기반 bilateral path,
+  pointer/scrollbar 중복, 실제 drag geometry, 재정렬 index, Flutter Y 좌표,
+  focus-loss 커밋, 테스트 프로세스 경쟁 문제를
+  `almanac/design/plan-phase-editor-lessons-2026-07-31.md`에 기록했다.
+- 다음 세션의 활성 handoff는
+  `docs/migration/p2-planning-screen/preset-builder-next-session-handoff-2026-07-31.md`다.
+  기존 `next-session-handoff-2026-07-30.md`는 페이즈 편집기 구현 전의 역사 기록으로
+  유지한다.
+- 현재 코드에는 계획 프리셋 DTO, versioned protocol, repository 저장 계약이 없다.
+  프리셋의 절대/상대 의미, 포함 필드, 미지정 필드, 기본 적용, 전역/프로필 scope,
+  이번 구현의 영속화 범위를 사용자에게 먼저 확인한다.
+- 다음 작업은 계약 확정 → 전용 Studio JSON → 별도 인메모리 draft →
+  계획 탭 연결 → 학생 탭 적용 → 승인된 protocol/repository 순서로 진행한다.
+- 이번 변경은 문서만 수정했으며 제품 코드와 기존 검증 기준선
+  (`flutter analyze`, 계획 35 tests, 전체 243 tests `--concurrency=1`,
+  Windows release build)은 변경하지 않았다.
+
+### 2026-07-31 계획-페이즈 상위 탭 전환 퇴장 보정
+
+- 상태: `구현·자동 검증 완료·사용자 실화면 확인 대기`
+- 계획-페이즈 편집 화면에서 학생 탭 등 다른 상위 탭으로 이동할 때
+  `PlanSectionLayout.active`가 `PlanPhaseEditor.active`까지 전달된다.
+- 편집기는 상위 비활성화 시 네 section controller를 각각 1에서 reverse하여
+  기존 180°·260°·0° outro 방향과 360ms duration을 그대로 재생한다. 상위
+  `AnimatedSectionStack`가 outgoing 계획 페이지를 유지하는 동안 퇴장이 완료되고,
+  incoming 독립 탭 section은 기존 `onIncomingReady` 시점부터 진입한다.
+- 자체 취소·완료 전환 중에는 상위 active 변경이 편집기 controller를 재시작하지
+  않도록 보호했다.
+- 회귀 테스트는 상위 active가 꺼진 중간 프레임에서 네 편집 section의 실제
+  translation 방향을 확인한다.
+- 검증: 계획 화면 집중 36 tests, Flutter 전체 244 tests
+  (`--concurrency=1`), `flutter analyze`, Windows release build 통과.
+
+### 2026-07-31 계획 요소 제작 제품 계약 확정
+
+- 상태: `첫 vertical slice 구현·전체 자동 검증 완료·사용자 실화면 확인 대기`
+- 계획 요소 제작 화면은 `section-plan-starter.ba-section-studio.json`의 Section
+  3·5·6·7을 각각 학생 현재 상태, 프리셋 불러오기, 누적 목표 단계 제작, 미배정
+  계획 요소 목록으로 사용한다.
+- `section-preset-element.ba-section-studio.json` 전체가 한 단계 카드이며 단계가
+  늘어나면 카드가 하나씩 추가된다. 단계는 누적 목표 snapshot이고 상위 단계 값을
+  올리면 순서를 위반하는 이후 값을 자동으로 올린다. 값을 낮출 때 이후 단계는
+  낮추지 않는다.
+- 같은 학생의 여러 단계는 페이즈 및 페이즈 내부 순서 전체에서 엄격한 순서를
+  유지한다. 잘못된 drop은 거부하며 목표 의미가 바뀌면 해당 학생의 모든 단계를
+  다시 미배정한다. 이름만 바뀌면 기존 배정을 유지한다.
+- 미보유 학생은 정적 메타데이터에서 유도한 명시적인 가상 시작점을 사용한다.
+  인연 랭크 목표는 포함하되 아이템 메타데이터 연결 전 비용은 미지원으로 표시하고,
+  심상개화는 잠금 상태로 둔다.
+- 첫 vertical slice는 학생 탭의 `PlanningStudentSeed`, 인메모리 프리셋 fixture,
+  제작·미배정·페이즈 연결까지만 포함한다. 프리셋 영속화와 계획 탭 직접 학생
+  선택은 후속 범위다.
+- 계약 문서:
+  `docs/migration/p2-planning-screen/plan-element-builder-contract-2026-07-31.md`
+- 학생 탭의 보유·미보유 `PlanningStudentSeed`를 Section 3에 연결하고, Section 5
+  프리셋 덮어쓰기, Section 6 누적 단계 카드 제작, Section 7 미배정 목록과 이름
+  편집, 페이즈 편집기 연결을 구현했다.
+- 단계 추가는 선택된 snapshot을 복제하고, 중간 삭제는 나머지 ID와 값을 보존한다.
+  이전 단계를 올릴 때 이후 단계의 충돌 값만 자동 보정하며, 페이즈 편집기는 학생별
+  전역 단계 순서를 위반하는 배치를 거부한다.
+- 목표 확정 시 같은 학생의 기존 페이즈 배정을 모두 해제하고 달성 완료 단계는
+  미배정 목록에서 생략한다. 모든 미배정 요소가 페이즈에 들어가기 전에는 완료할 수
+  없다.
+- 검증: `flutter analyze`, 계획 요소 전용 8 tests, Flutter 전체 252 tests
+  (`--concurrency=1`), Windows release build 통과. 프리셋 영속화, 계획 탭 직접
+  학생 선택, 인연 비용 메타데이터 연결은 계약대로 후속 범위다.

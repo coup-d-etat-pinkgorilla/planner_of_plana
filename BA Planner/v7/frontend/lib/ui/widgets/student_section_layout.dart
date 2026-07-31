@@ -15,19 +15,20 @@ import 'lifted_path_shadow.dart';
 import 'scroll_viewport_fog.dart';
 import 'section_template_surface.dart';
 
+const studentTextureTessellationContrast = 0.030;
 const _studentTexture = BATriangleTextureConfig(
-  baseColor: Color(0x6b263d52),
-  panelColor: Color(0x6b31516d),
-  softColor: Color(0x6b426983),
-  accentColor: Color(0x735d8aaa),
-  triangleSize: 112,
-  tessellationContrast: 0.026,
-  randomSeed: 2718,
-  macroTriangleChance: 0.06,
-  macroTriangleContrast: 0.018,
-  lightStrength: 0.12,
-  edgeVignetteStrength: 0.13,
-  fogStrength: 0.08,
+  baseColor: Color(0xff30485f),
+  panelColor: Color(0xff36556f),
+  softColor: Color(0xff3d607b),
+  accentColor: Color(0xff71c7f4),
+  triangleSize: 96,
+  tessellationContrast: studentTextureTessellationContrast,
+  randomSeed: 4187,
+  macroTriangleChance: 0.055,
+  macroTriangleContrast: 0.016,
+  lightStrength: 0.1,
+  edgeVignetteStrength: 0.12,
+  fogStrength: 0.07,
 );
 
 const _studentActionTexture = BATriangleTextureConfig(
@@ -627,12 +628,13 @@ Path? studentContainerPath(Size size, String id) {
   final container = containers.firstWhere((item) => item.id == id);
   final parentRect = studentSectionRect(size, container.parentSectionId);
   final rect = studioPlacementRectWithin(parentRect, container.rect);
+  final localPoints = buildAttachedSectionPolygon(
+    rect.size,
+    container.spec,
+    gridSize: sectionTemplateDetailGridSize,
+  );
   final raw = buildRoundedSectionPolygon(
-    buildAttachedSectionPolygon(
-      rect.size,
-      container.spec,
-      gridSize: sectionTemplateDetailGridSize,
-    ).map((point) => point + rect.topLeft).toList(growable: false),
+    localPoints.map((point) => point + rect.topLeft).toList(growable: false),
     radius: 10,
   );
   return Path.combine(
@@ -664,6 +666,7 @@ class StudentSectionLayout extends StatefulWidget {
     required this.students,
     required this.ownedIds,
     required this.selectedId,
+    this.selectedStudent,
     required this.selectedValues,
     this.studentValuesById = const {},
     required this.searchController,
@@ -678,6 +681,7 @@ class StudentSectionLayout extends StatefulWidget {
   final List<StudentCatalogEntry> students;
   final Set<String> ownedIds;
   final String? selectedId;
+  final StudentCatalogEntry? selectedStudent;
   final Map<String, dynamic>? selectedValues;
   final Map<String, Map<String, dynamic>> studentValuesById;
   final TextEditingController searchController;
@@ -1067,6 +1071,19 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                         ),
                       ),
                     ),
+                    _StudentStatusIndicators(
+                      canvasSize: size,
+                      student:
+                          widget.selectedStudent ??
+                          widget.students
+                              .cast<StudentCatalogEntry?>()
+                              .firstWhere(
+                                (student) =>
+                                    student?.studentId == widget.selectedId,
+                                orElse: () => null,
+                              ),
+                      values: widget.selectedValues,
+                    ),
                   ],
                 ),
               ),
@@ -1425,8 +1442,7 @@ enum StudentContainerTextureRole { none, status, action }
 StudentContainerTextureRole studentContainerTextureRole(
   StudioContainerElement container,
 ) {
-  if (container.parentSectionId == 'element-1' ||
-      container.id == 'container-10') {
+  if (container.parentSectionId == 'element-1') {
     return StudentContainerTextureRole.action;
   }
   if (container.triangleTexture ||
@@ -1435,6 +1451,1321 @@ StudentContainerTextureRole studentContainerTextureRole(
     return StudentContainerTextureRole.status;
   }
   return StudentContainerTextureRole.none;
+}
+
+class _StudentStatusIndicators extends StatelessWidget {
+  const _StudentStatusIndicators({
+    required this.canvasSize,
+    required this.student,
+    required this.values,
+  });
+
+  final Size canvasSize;
+  final StudentCatalogEntry? student;
+  final Map<String, dynamic>? values;
+
+  int? _integer(String key) => values?[key] as int?;
+  String? _text(String key) => values?[key] as String?;
+
+  Widget _containerWithPath(String id, Widget Function(Path) childBuilder) {
+    final path = studentContainerPath(canvasSize, id)!;
+    final bounds = path.getBounds();
+    final localPath = path.shift(-bounds.topLeft);
+    return Positioned.fromRect(
+      rect: bounds,
+      child: ClipPath(
+        clipper: _LocalPathClipper(localPath),
+        child: childBuilder(localPath),
+      ),
+    );
+  }
+
+  Widget _container(String id, Widget child) =>
+      _containerWithPath(id, (_) => child);
+
+  Widget _feature(String id, Widget child) {
+    final path = studentFeaturePath(canvasSize, id)!;
+    final bounds = path.getBounds();
+    return Positioned.fromRect(
+      rect: bounds,
+      child: ClipPath(
+        clipper: _LocalPathClipper(path.shift(-bounds.topLeft)),
+        child: child,
+      ),
+    );
+  }
+
+  bool get _hasWeapon {
+    final state = _text('weapon_state');
+    if (state == null ||
+        const {
+          'weapon_locked',
+          'no_system',
+          'locked',
+          'none',
+        }.contains(state)) {
+      return false;
+    }
+    return (_integer('weapon_star') ?? 0) > 0 ||
+        (_integer('weapon_level') ?? 0) > 0 ||
+        const {
+          'weapon_unlocked',
+          'weapon_unlocked_not_equipped',
+          'weapon_equipped',
+          'equipped',
+        }.contains(state);
+  }
+
+  String _skillValue(String key, int maximum) {
+    final value = _integer(key);
+    if (value == null) return '-';
+    return value >= maximum ? 'M' : '$value';
+  }
+
+  String _favoriteItemValue() => switch (_text('equip4')) {
+    'T1' => 'T1',
+    'T2' => 'T2',
+    null || '' || 'empty' || 'unknown' || 'none' || 'no_system' => '-',
+    _ => '',
+  };
+
+  bool get _favoriteItemLocked =>
+      const {'love_locked', 'level_locked', 'locked'}.contains(_text('equip4'));
+
+  @override
+  Widget build(BuildContext context) {
+    final level = _integer('level');
+    final weaponLevel = _integer('weapon_level');
+    final bondRank = _integer('bond_rank');
+    final metadataBounds = [
+      for (final id in const ['feature-3', 'feature-4', 'feature-5'])
+        studentFeaturePath(canvasSize, id)!.getBounds(),
+    ];
+    final metadataValueLeft = metadataBounds
+        .map((bounds) => bounds.left + bounds.width * 0.58)
+        .reduce(math.max);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        _feature(
+          'feature-2',
+          _StudentLevelStatus(
+            level: level,
+            schoolLogoAsset: studentSchoolLogoAsset(student?.school),
+          ),
+        ),
+        _feature(
+          'feature-3',
+          _StudentMetadataValue(
+            key: const ValueKey('student-detail-position'),
+            label: 'Position',
+            value: _titleCase(student?.position),
+            valueLeftInset: metadataValueLeft - metadataBounds[0].left,
+          ),
+        ),
+        _feature(
+          'feature-4',
+          _StudentMetadataValue(
+            key: const ValueKey('student-detail-combat-class'),
+            label: 'Class',
+            value: _titleCase(student?.combatClass),
+            valueLeftInset: metadataValueLeft - metadataBounds[1].left,
+          ),
+        ),
+        _feature(
+          'feature-5',
+          _StudentMetadataValue(
+            key: const ValueKey('student-detail-weapon-level'),
+            label: 'Weapon',
+            value: 'Lv. ${_hasWeapon ? weaponLevel ?? '--' : '--'}',
+            valueLeftInset: metadataValueLeft - metadataBounds[2].left,
+          ),
+        ),
+        _container(
+          'container-5',
+          _StudentSkillStatus(
+            values: [
+              _skillValue('ex_skill', 5),
+              _skillValue('skill1', 10),
+              _skillValue('skill2', 10),
+              _skillValue('skill3', 10),
+            ],
+          ),
+        ),
+        _container(
+          'container-6',
+          _StudentEquipmentStatus(
+            student: student,
+            tiers: [_text('equip1'), _text('equip2'), _text('equip3')],
+            levels: [
+              _integer('equip1_level'),
+              _integer('equip2_level'),
+              _integer('equip3_level'),
+            ],
+            favoriteItem: _favoriteItemValue(),
+            favoriteItemLocked: _favoriteItemLocked,
+          ),
+        ),
+        _container(
+          'container-7',
+          _StudentAbilityStatus(
+            hp: _integer('stat_hp'),
+            atk: _integer('stat_atk'),
+            heal: _integer('stat_heal'),
+          ),
+        ),
+        _container('container-9', const _StudentPotentialStatus()),
+        _container(
+          'container-4',
+          _StudentCombatStatus(
+            values: {
+              'HP': _integer('combat_hp'),
+              'ATK': _integer('combat_atk'),
+              'DEF': _integer('combat_def'),
+              'HEAL': _integer('combat_heal'),
+            },
+          ),
+        ),
+        _containerWithPath(
+          'container-10',
+          (outerPath) =>
+              _StudentBondStatus(bondRank: bondRank, outerPath: outerPath),
+        ),
+      ],
+    );
+  }
+
+  String _titleCase(String? value) {
+    if (value == null || value.isEmpty) return '-';
+    return '${value[0].toUpperCase()}${value.substring(1).toLowerCase()}';
+  }
+}
+
+String? studentSchoolLogoAsset(String? school) {
+  final assetName = switch (school?.trim().toLowerCase()) {
+    'abydos' => 'ABYDOS',
+    'arius' => 'Arius',
+    'gehenna' => 'GEHENNA',
+    'highlander' => 'HIGHLANDER',
+    'hyakkiyako' => 'HYAKKIYAKO',
+    'millennium' => 'MILLENNIUM',
+    'red winter' => 'REDWINTER',
+    'sakugawa' => 'SAKUGAWA',
+    'shanhaijing' => 'SHANHAIJING',
+    'srt' => 'SRT',
+    'tokiwadai' => 'Tokiwadai',
+    'trinity' => 'TRINITY',
+    'valkyrie' => 'VALKYRIE',
+    'wild hunt' => 'WILDHUNT',
+    'etc' => 'ETC',
+    _ => null,
+  };
+  return assetName == null
+      ? null
+      : 'assets/item_icons/school_logo/School_Icon_$assetName.png';
+}
+
+class _StudentLevelStatus extends StatelessWidget {
+  const _StudentLevelStatus({
+    required this.level,
+    required this.schoolLogoAsset,
+  });
+
+  final int? level;
+  final String? schoolLogoAsset;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final railInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      return CustomPaint(
+        key: const ValueKey('student-detail-level-split'),
+        painter: const _StudentLevelSplitPainter(),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 7,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(railInset + 12, 6, 5, 3),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'LEVEL',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontFamily: 'GyeonggiTitle',
+                        fontSize: 8,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                      ),
+                    ),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Lv. ${level ?? '--'}',
+                          key: const ValueKey('student-detail-level'),
+                          style: const TextStyle(
+                            color: AppColors.text,
+                            fontFamily: 'GyeonggiTitle',
+                            fontSize: 31,
+                            fontWeight: FontWeight.w800,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Transform.translate(
+                offset: const Offset(0, 5),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(5, 8, 7, 2),
+                  child: schoolLogoAsset == null
+                      ? const SizedBox.shrink()
+                      : ColorFiltered(
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
+                          child: Image.asset(
+                            schoolLogoAsset!,
+                            key: const ValueKey('student-detail-school-logo'),
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.medium,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _StudentLevelSplitPainter extends CustomPainter {
+  const _StudentLevelSplitPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final splitTop = size.width * 0.73;
+    final splitBottom = size.width * 0.67;
+    final left = Path()
+      ..moveTo(0, 0)
+      ..lineTo(splitTop, 0)
+      ..lineTo(splitBottom, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    final school = Path()
+      ..moveTo(splitTop, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(splitBottom, size.height)
+      ..close();
+    canvas.drawPath(left, Paint()..color = const Color(0xff203243));
+    canvas.drawPath(school, Paint()..color = const Color(0xff28445a));
+    canvas.drawLine(
+      Offset(splitTop, 0),
+      Offset(splitBottom, size.height),
+      Paint()
+        ..color = AppColors.primary.withValues(alpha: 0.55)
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_StudentLevelSplitPainter oldDelegate) => false;
+}
+
+class _StudentMetadataValue extends StatelessWidget {
+  const _StudentMetadataValue({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.valueLeftInset,
+  });
+
+  final String label;
+  final String value;
+  final double valueLeftInset;
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: [
+      Positioned(
+        left: 9,
+        top: 2,
+        bottom: 2,
+        width: math.max(1, valueLeftInset - 16),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: studentSortAccentColor,
+              fontFamily: 'GyeonggiTitle',
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              height: 1,
+            ),
+          ),
+        ),
+      ),
+      Positioned(
+        left: valueLeftInset,
+        right: 9,
+        top: 2,
+        bottom: 2,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            maxLines: 1,
+            key: ValueKey('student-detail-metadata-value-$label'),
+            style: const TextStyle(
+              color: AppColors.text,
+              fontFamily: 'GyeonggiTitle',
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              height: 1,
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+class _StudentSkillStatus extends StatelessWidget {
+  const _StudentSkillStatus({required this.values});
+
+  static const _labels = ['EX', 'Normal', 'Passive', 'Sub-skill'];
+  final List<String> values;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => Padding(
+      padding: EdgeInsets.fromLTRB(
+        constraints.maxHeight / math.tan(80 * math.pi / 180) + 9,
+        7,
+        constraints.maxHeight / math.tan(80 * math.pi / 180) + 9,
+        4,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _StudentSectionHeader(
+            key: ValueKey('student-detail-skills-title'),
+            text: 'SKILL SUMMARY',
+          ),
+          const SizedBox(height: 4),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var index = 0; index < _labels.length; index++) ...[
+                  if (index > 0)
+                    _StudentDiagonalDivider(
+                      key: ValueKey('student-detail-skill-divider-$index'),
+                    ),
+                  Expanded(
+                    child: _StudentSkillColumn(
+                      label: _labels[index],
+                      value: values[index],
+                      index: index,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _StudentSectionTitle extends StatelessWidget {
+  const _StudentSectionTitle({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => FittedBox(
+    fit: BoxFit.scaleDown,
+    alignment: Alignment.centerLeft,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 5,
+          height: 5,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(1),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: const TextStyle(
+            color: AppColors.text,
+            fontFamily: 'GyeonggiTitle',
+            fontSize: 8,
+            fontWeight: FontWeight.w800,
+            height: 1,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _StudentSectionHeader extends StatelessWidget {
+  const _StudentSectionHeader({super.key, required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      _StudentSectionTitle(text: text),
+      const SizedBox(height: 3),
+      Container(
+        key: const ValueKey('student-detail-section-header-line'),
+        width: double.infinity,
+        height: 1,
+        color: AppColors.primary.withValues(alpha: 0.42),
+      ),
+    ],
+  );
+}
+
+class _StudentSkillColumn extends StatelessWidget {
+  const _StudentSkillColumn({
+    required this.label,
+    required this.value,
+    required this.index,
+  });
+
+  final String label;
+  final String value;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 4),
+    child: FittedBox(
+      key: ValueKey('student-detail-skill-column-$index'),
+      fit: BoxFit.scaleDown,
+      alignment: const Alignment(0, -0.5),
+      child: SizedBox(
+        width: 74,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontFamily: 'GyeonggiTitle',
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  height: 1,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              key: ValueKey('student-detail-skill-$index'),
+              style: const TextStyle(
+                color: AppColors.text,
+                fontFamily: 'GyeonggiTitle',
+                fontSize: 31.5,
+                fontWeight: FontWeight.w800,
+                height: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _StudentDiagonalDivider extends StatelessWidget {
+  const _StudentDiagonalDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(
+    width: 16,
+    child: OverflowBox(
+      minWidth: 32,
+      maxWidth: 32,
+      child: CustomPaint(painter: _StudentDiagonalDividerPainter()),
+    ),
+  );
+}
+
+List<Offset> studentDiagonalDividerEndpoints(Size size) {
+  final top = math.min(2.0, size.height);
+  final bottom = math.max(top, size.height - 2);
+  final run = (bottom - top) / math.tan(80 * math.pi / 180);
+  return [
+    Offset((size.width + run) / 2, top),
+    Offset((size.width - run) / 2, bottom),
+  ];
+}
+
+class _StudentDiagonalDividerPainter extends CustomPainter {
+  const _StudentDiagonalDividerPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final endpoints = studentDiagonalDividerEndpoints(size);
+    canvas.drawLine(
+      endpoints[0],
+      endpoints[1],
+      Paint()
+        ..color = AppColors.primary.withValues(alpha: 0.3)
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_StudentDiagonalDividerPainter oldDelegate) => false;
+}
+
+class _StudentAbilityStatus extends StatelessWidget {
+  const _StudentAbilityStatus({
+    required this.hp,
+    required this.atk,
+    required this.heal,
+  });
+
+  final int? hp;
+  final int? atk;
+  final int? heal;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final railInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final contentWidth = math.max(0.0, constraints.maxWidth - railInset - 18);
+      final titleWidth = math.min(90.0, contentWidth * 0.36);
+      final titleGap = math.min(12.0, contentWidth * 0.06);
+      return Padding(
+        padding: EdgeInsets.fromLTRB(railInset + 9, 0, 9, 0),
+        child: Row(
+          key: const ValueKey('student-detail-ability'),
+          children: [
+            SizedBox(
+              width: titleWidth,
+              child: const _StudentSectionTitle(text: 'Ability Release'),
+            ),
+            SizedBox(width: titleGap),
+            Expanded(
+              key: const ValueKey('student-detail-ability-values-region'),
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'HP ${hp ?? '-'}  |  ATK ${atk ?? '-'}  |  '
+                    'HEAL ${heal ?? '-'}',
+                    key: const ValueKey('student-detail-ability-values'),
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: AppColors.text,
+                      fontFamily: 'GyeonggiTitle',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      height: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _StudentEquipmentStatus extends StatelessWidget {
+  const _StudentEquipmentStatus({
+    required this.student,
+    required this.tiers,
+    required this.levels,
+    required this.favoriteItem,
+    required this.favoriteItemLocked,
+  });
+
+  final StudentCatalogEntry? student;
+  final List<String?> tiers;
+  final List<int?> levels;
+  final String favoriteItem;
+  final bool favoriteItemLocked;
+
+  String? _assetPath(int index) {
+    final equipmentType = switch (index) {
+      0 => student?.equipmentSlot1,
+      1 => student?.equipmentSlot2,
+      _ => student?.equipmentSlot3,
+    };
+    final match = RegExp(r'^T(\d+)$').firstMatch(tiers[index] ?? '');
+    final tier = int.tryParse(match?.group(1) ?? '');
+    if (equipmentType == null || tier == null || tier < 1 || tier > 10) {
+      return null;
+    }
+    return 'assets/item_icons/equipment/'
+        'Equipment_Icon_${equipmentType}_Tier$tier.png';
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final railInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      return Padding(
+        padding: EdgeInsets.fromLTRB(railInset + 9, 7, railInset + 9, 3),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _StudentSectionHeader(
+              key: ValueKey('student-detail-equipment-title'),
+              text: 'EQUIPMENT',
+            ),
+            const SizedBox(height: 4),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var index = 0; index < 3; index++) ...[
+                    if (index > 0)
+                      _StudentDiagonalDivider(
+                        key: ValueKey(
+                          'student-detail-equipment-divider-$index',
+                        ),
+                      ),
+                    Expanded(
+                      child: _StudentEquipmentSlot(
+                        key: ValueKey('student-detail-equipment-$index'),
+                        tier: tiers[index] ?? '-',
+                        level: levels[index],
+                        assetPath: _assetPath(index),
+                        edgeShift: railInset * 0.22,
+                      ),
+                    ),
+                  ],
+                  const _StudentDiagonalDivider(
+                    key: ValueKey('student-detail-equipment-divider-3'),
+                  ),
+                  Expanded(
+                    child: _StudentFavoriteItemSlot(
+                      value: favoriteItem,
+                      locked: favoriteItemLocked,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _StudentEquipmentSlot extends StatelessWidget {
+  const _StudentEquipmentSlot({
+    super.key,
+    required this.tier,
+    required this.level,
+    required this.assetPath,
+    required this.edgeShift,
+  });
+
+  final String tier;
+  final int? level;
+  final String? assetPath;
+  final double edgeShift;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Expanded(
+        flex: 2,
+        child: Transform.translate(
+          offset: Offset(edgeShift, 0),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              tier,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontFamily: 'GyeonggiTitle',
+                fontSize: 13.5,
+                height: 1,
+              ),
+            ),
+          ),
+        ),
+      ),
+      Expanded(
+        flex: 6,
+        child: Stack(
+          fit: StackFit.expand,
+          alignment: Alignment.center,
+          children: [
+            Image.asset(
+              defaultStudentPortraitBackgroundAsset,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
+            ),
+            if (assetPath != null)
+              FractionallySizedBox(
+                widthFactor: 0.96,
+                heightFactor: 0.96,
+                child: Image.asset(
+                  assetPath!,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.medium,
+                ),
+              ),
+          ],
+        ),
+      ),
+      Expanded(
+        flex: 2,
+        child: Transform.translate(
+          offset: Offset(-edgeShift, 0),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              level == null ? '-' : 'Lv. $level',
+              style: const TextStyle(
+                color: AppColors.text,
+                fontFamily: 'GyeonggiTitle',
+                fontSize: 13.5,
+                height: 1,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+class _StudentFavoriteItemSlot extends StatelessWidget {
+  const _StudentFavoriteItemSlot({required this.value, required this.locked});
+
+  final String value;
+  final bool locked;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      const FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          '애장품',
+          style: TextStyle(
+            color: AppColors.textMuted,
+            fontFamily: 'GyeonggiTitle',
+            fontSize: 8,
+            height: 1,
+          ),
+        ),
+      ),
+      const SizedBox(height: 2),
+      if (locked)
+        const Icon(
+          Icons.lock_rounded,
+          key: ValueKey('student-detail-favorite-locked'),
+          color: AppColors.textMuted,
+          size: 17,
+        )
+      else
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            key: const ValueKey('student-detail-favorite-value'),
+            style: const TextStyle(
+              color: AppColors.text,
+              fontFamily: 'GyeonggiTitle',
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+              height: 1,
+            ),
+          ),
+        ),
+    ],
+  );
+}
+
+class _StudentPotentialStatus extends StatelessWidget {
+  const _StudentPotentialStatus();
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: [
+      ColoredBox(
+        key: const ValueKey('student-detail-potential-overlay'),
+        color: Colors.black.withValues(alpha: 0.38),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.canvas.withValues(alpha: 0.72),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.textMuted.withValues(alpha: 0.55),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.lock_rounded,
+                  key: ValueKey('student-detail-potential-locked'),
+                  color: AppColors.text,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 9),
+              const Text(
+                '심상개화',
+                style: TextStyle(
+                  color: AppColors.text,
+                  fontFamily: 'GyeonggiTitle',
+                  fontSize: 18.5,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+double studentCombatRowOffset({
+  required double height,
+  required int index,
+  int itemCount = 4,
+}) {
+  if (height <= 0 || itemCount <= 0) return 0;
+  final railRun = height / math.tan(80 * math.pi / 180);
+  final normalizedCenter = (index + 0.5) / itemCount;
+  return -railRun * normalizedCenter;
+}
+
+double studentCombatDividerOffset({
+  required double height,
+  required int index,
+  int itemCount = 4,
+}) {
+  if (height <= 0 || itemCount <= 0) return 0;
+  final railRun = height / math.tan(80 * math.pi / 180);
+  final normalizedBoundary = (index + 1) / itemCount;
+  return -railRun * normalizedBoundary;
+}
+
+class _StudentCombatStatus extends StatelessWidget {
+  const _StudentCombatStatus({required this.values});
+
+  final Map<String, int?> values;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final entries = values.entries.toList(growable: false);
+      final railRun = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      return Padding(
+        padding: EdgeInsets.fromLTRB(railRun + 9, 9, 9, 9),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _StudentSectionHeader(
+              key: ValueKey('student-detail-stats-title'),
+              text: 'STATS',
+            ),
+            const SizedBox(height: 4),
+            for (var index = 0; index < entries.length; index++) ...[
+              Expanded(
+                child: Transform.translate(
+                  key: ValueKey('student-detail-combat-row-$index'),
+                  offset: Offset(
+                    studentCombatRowOffset(
+                      height: constraints.maxHeight,
+                      index: index,
+                      itemCount: entries.length,
+                    ),
+                    0,
+                  ),
+                  child: _StudentCombatValue(entry: entries[index]),
+                ),
+              ),
+              if (index < entries.length - 1)
+                Transform.translate(
+                  key: ValueKey('student-detail-stat-row-divider-$index'),
+                  offset: Offset(
+                    studentCombatDividerOffset(
+                      height: constraints.maxHeight,
+                      index: index,
+                      itemCount: entries.length,
+                    ),
+                    0,
+                  ),
+                  child: Container(
+                    height: 1,
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _StudentCombatValue extends StatelessWidget {
+  const _StudentCombatValue({required this.entry});
+
+  final MapEntry<String, int?> entry;
+
+  @override
+  Widget build(BuildContext context) => FittedBox(
+    fit: BoxFit.scaleDown,
+    alignment: Alignment.centerLeft,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _StudentCombatIcon(stat: entry.key),
+        const SizedBox(width: 5),
+        Text(
+          entry.value?.toString() ?? '-',
+          key: ValueKey('student-detail-combat-${entry.key.toLowerCase()}'),
+          maxLines: 1,
+          style: const TextStyle(
+            color: AppColors.text,
+            fontFamily: 'GyeonggiTitle',
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+            height: 1,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _StudentCombatIcon extends StatelessWidget {
+  const _StudentCombatIcon({required this.stat});
+
+  final String stat;
+
+  @override
+  Widget build(BuildContext context) {
+    final key = ValueKey('student-detail-combat-icon-${stat.toLowerCase()}');
+    if (stat == 'ATK') {
+      return SizedBox(
+        key: key,
+        width: 19,
+        height: 19,
+        child: const CustomPaint(painter: _StudentSwordPainter()),
+      );
+    }
+    final icon = switch (stat) {
+      'HP' => Icons.favorite_border_rounded,
+      'DEF' => Icons.shield_outlined,
+      _ => Icons.healing_rounded,
+    };
+    return Icon(icon, key: key, color: AppColors.primary, size: 19);
+  }
+}
+
+class _StudentSwordPainter extends CustomPainter {
+  const _StudentSwordPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.primary
+      ..strokeWidth = 1.8
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+    final blade = Path()
+      ..moveTo(size.width * 0.27, size.height * 0.73)
+      ..lineTo(size.width * 0.72, size.height * 0.28)
+      ..lineTo(size.width * 0.82, size.height * 0.18)
+      ..lineTo(size.width * 0.73, size.height * 0.36)
+      ..lineTo(size.width * 0.36, size.height * 0.73);
+    canvas.drawPath(blade, paint);
+    canvas.drawLine(
+      Offset(size.width * 0.22, size.height * 0.58),
+      Offset(size.width * 0.43, size.height * 0.79),
+      paint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.22, size.height * 0.78),
+      size.shortestSide * 0.055,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_StudentSwordPainter oldDelegate) => false;
+}
+
+class _StudentBondStatus extends StatelessWidget {
+  const _StudentBondStatus({required this.bondRank, required this.outerPath});
+
+  final int? bondRank;
+  final Path outerPath;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final size = Size(constraints.maxWidth, constraints.maxHeight);
+      final rankRect = studentBondRankRect(size);
+      return Stack(
+        children: [
+          CustomPaint(
+            key: const ValueKey('student-detail-bond-gauge'),
+            size: size,
+            painter: _StudentTriangleBondGaugePainter(
+              rank: bondRank,
+              outerPath: outerPath,
+            ),
+          ),
+          Positioned.fromRect(
+            rect: rankRect,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '${bondRank ?? '-'}',
+                key: const ValueKey('student-detail-bond-rank'),
+                style: const TextStyle(
+                  color: AppColors.text,
+                  fontFamily: 'GyeonggiTitle',
+                  fontSize: 43.2,
+                  fontWeight: FontWeight.w900,
+                  height: 1,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+List<Offset> studentBondOuterTrianglePoints(Size size) {
+  final source = studentStudioDocument.containers.firstWhere(
+    (item) => item.id == 'container-10',
+  );
+  return buildAttachedSectionPolygon(
+    size,
+    source.spec,
+    gridSize: sectionTemplateDetailGridSize,
+  );
+}
+
+Rect studentBondRankRect(Size size) {
+  final points = studentBondOuterTrianglePoints(size);
+  final bottomY = points.map((point) => point.dy).reduce(math.max);
+  final bottomPoints = points
+      .where((point) => (point.dy - bottomY).abs() < 0.001)
+      .toList(growable: false);
+  final left = bottomPoints.map((point) => point.dx).reduce(math.min);
+  final right = bottomPoints.map((point) => point.dx).reduce(math.max);
+  final bottomGap = math.max(7.0, size.height * 0.035);
+  final height = math.min(46.0, size.height * 0.16);
+  final horizontalInset = math.min(8.0, (right - left) * 0.12);
+  final leftShift = studentBondRankLeftShift(size);
+  return Rect.fromLTWH(
+    left + horizontalInset - leftShift,
+    bottomY - bottomGap - height,
+    math.max(1, right - left - horizontalInset * 2),
+    height,
+  );
+}
+
+double studentBondRankLeftShift(Size size) =>
+    math.max(3.0, math.min(8.0, size.width * 0.10));
+
+double studentBondGaugeEdgeGap(Size size) =>
+    math.max(3.0, math.min(6.0, size.width * 0.06));
+
+double studentBondGaugeRankGap(Size size) =>
+    math.max(3.0, math.min(4.0, size.height * 0.015));
+
+double studentBondGaugeBottomRadius(Size size) =>
+    10.0 + studentBondGaugeEdgeGap(size) + 0.5;
+
+({double left, double right}) _studentPathHorizontalSpan(Path path, double y) {
+  final bounds = path.getBounds();
+  const sampleCount = 128;
+  final sampleY = y.clamp(bounds.top + 0.001, bounds.bottom - 0.001);
+  var firstInside = -1;
+  var lastInside = -1;
+  for (var index = 0; index <= sampleCount; index++) {
+    final x = bounds.left + bounds.width * index / sampleCount;
+    if (path.contains(Offset(x, sampleY))) {
+      firstInside = firstInside < 0 ? index : firstInside;
+      lastInside = index;
+    }
+  }
+  if (firstInside < 0) return (left: bounds.left, right: bounds.right);
+
+  double refine(int outsideIndex, int insideIndex) {
+    var outside = bounds.left + bounds.width * outsideIndex / sampleCount;
+    var inside = bounds.left + bounds.width * insideIndex / sampleCount;
+    for (var iteration = 0; iteration < 16; iteration++) {
+      final middle = (outside + inside) / 2;
+      final isInside = path.contains(Offset(middle, sampleY));
+      if (isInside) {
+        inside = middle;
+      } else {
+        outside = middle;
+      }
+    }
+    return inside;
+  }
+
+  final left = firstInside == 0
+      ? bounds.left
+      : refine(firstInside - 1, firstInside);
+  final right = lastInside == sampleCount
+      ? bounds.right
+      : refine(lastInside + 1, lastInside);
+  return (left: left, right: right);
+}
+
+Path studentBondGaugeHostPath(Size size, Path outerPath) {
+  final bottom = studentBondRankRect(size).top - studentBondGaugeRankGap(size);
+  final outerBounds = outerPath.getBounds();
+  final span = _studentPathHorizontalSpan(outerPath, bottom - 0.01);
+  final radius = math.min(
+    studentBondGaugeBottomRadius(size),
+    math.max(0.0, (span.right - span.left) / 2),
+  );
+  final roundedBottomMask = Path()
+    ..addRRect(
+      RRect.fromRectAndCorners(
+        Rect.fromLTRB(span.left, outerBounds.top, span.right, bottom),
+        bottomLeft: Radius.circular(radius),
+        bottomRight: Radius.circular(radius),
+      ),
+    );
+  return Path.combine(PathOperation.intersect, outerPath, roundedBottomMask);
+}
+
+class _StudentTriangleBondGaugePainter extends CustomPainter {
+  const _StudentTriangleBondGaugePainter({
+    required this.rank,
+    required this.outerPath,
+  });
+
+  final int? rank;
+  final Path outerPath;
+
+  void _drawInsetPath(
+    Canvas canvas,
+    Size size,
+    Path path,
+    Color color,
+    double inset,
+  ) {
+    canvas.saveLayer(Offset.zero & size, Paint());
+    canvas.drawPath(path, Paint()..color = color);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..blendMode = BlendMode.clear
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = inset * 2
+        ..strokeJoin = StrokeJoin.round,
+    );
+    canvas.restore();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gauge = studentBondGaugeHostPath(size, outerPath);
+    final bounds = gauge.getBounds();
+    final inset = studentBondGaugeEdgeGap(size);
+    _drawInsetPath(
+      canvas,
+      size,
+      gauge,
+      AppColors.outline.withValues(alpha: 0.78),
+      math.max(0, inset - 0.5),
+    );
+    _drawInsetPath(
+      canvas,
+      size,
+      gauge,
+      const Color(0xff111f2c).withValues(alpha: 0.94),
+      inset + 0.5,
+    );
+    final progress = ((rank ?? 0) / 100).clamp(0.0, 1.0);
+    if (progress > 0) {
+      canvas.save();
+      canvas.clipRect(
+        Rect.fromLTRB(
+          bounds.left,
+          bounds.bottom - bounds.height * progress,
+          bounds.right,
+          bounds.bottom,
+        ),
+      );
+      _drawInsetPath(
+        canvas,
+        size,
+        gauge,
+        studentSortAccentColor.withValues(alpha: 0.78),
+        inset + 0.5,
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(_StudentTriangleBondGaugePainter oldDelegate) =>
+      oldDelegate.rank != rank || oldDelegate.outerPath != outerPath;
 }
 
 class _StudentSectionFoundationPainter extends CustomPainter {
@@ -1575,7 +2906,7 @@ class _StudentSectionFoundationPainter extends CustomPainter {
       if (path == null) continue;
       canvas.drawPath(
         path,
-        Paint()..color = const Color(0xff30485f).withValues(alpha: 0.96),
+        Paint()..color = const Color(0xff203243).withValues(alpha: 0.98),
       );
     }
 
@@ -2363,95 +3694,98 @@ class _StudentDiagonalScrollbar extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) => AnimatedBuilder(
-      animation: controller,
-      builder: (context, _) {
-        final size = constraints.biggest;
-        final hasClients = controller.hasClients;
-        final maxScroll = hasClients
-            ? controller.position.maxScrollExtent
-            : 0.0;
-        final viewport = hasClients
-            ? controller.position.viewportDimension
-            : size.height;
-        final offset = hasClients ? controller.offset : 0.0;
-        final fogVisibility = hasClients
-            ? studentViewportFogVisibility(
-                minScrollExtent: controller.position.minScrollExtent,
-                maxScrollExtent: controller.position.maxScrollExtent,
-                pixels: controller.position.pixels,
-              )
-            : (showTop: false, showBottom: false);
-        const trackInset = 10.0;
-        final trackHeight = math.max(1.0, size.height - trackInset * 2);
-        final handleHeight = maxScroll <= 0
-            ? trackHeight
-            : math.max(28.0, trackHeight * viewport / (viewport + maxScroll));
-        final travel = math.max(1.0, trackHeight - handleHeight);
-        final trajectoryDepth = size.height / math.tan(80 * math.pi / 180);
-        final handleTop =
-            trackInset +
-            travel *
-                (maxScroll <= 0 ? 0 : (offset / maxScroll).clamp(0.0, 1.0));
-        final handleCenter = studentScrollbarTrackPoint(
-          size,
-          handleTop + handleHeight / 2,
-          trackInset: trackInset,
-        );
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            child,
-            Positioned.fill(
-              child: StudentViewportFog(
-                key: ValueKey('$keyPrefix-fog'),
-                showTop: fogVisibility.showTop,
-                showBottom: fogVisibility.showBottom,
+  Widget build(BuildContext context) => ScrollConfiguration(
+    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+    child: LayoutBuilder(
+      builder: (context, constraints) => AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) {
+          final size = constraints.biggest;
+          final hasClients = controller.hasClients;
+          final maxScroll = hasClients
+              ? controller.position.maxScrollExtent
+              : 0.0;
+          final viewport = hasClients
+              ? controller.position.viewportDimension
+              : size.height;
+          final offset = hasClients ? controller.offset : 0.0;
+          final fogVisibility = hasClients
+              ? studentViewportFogVisibility(
+                  minScrollExtent: controller.position.minScrollExtent,
+                  maxScrollExtent: controller.position.maxScrollExtent,
+                  pixels: controller.position.pixels,
+                )
+              : (showTop: false, showBottom: false);
+          const trackInset = 10.0;
+          final trackHeight = math.max(1.0, size.height - trackInset * 2);
+          final handleHeight = maxScroll <= 0
+              ? trackHeight
+              : math.max(28.0, trackHeight * viewport / (viewport + maxScroll));
+          final travel = math.max(1.0, trackHeight - handleHeight);
+          final trajectoryDepth = size.height / math.tan(80 * math.pi / 180);
+          final handleTop =
+              trackInset +
+              travel *
+                  (maxScroll <= 0 ? 0 : (offset / maxScroll).clamp(0.0, 1.0));
+          final handleCenter = studentScrollbarTrackPoint(
+            size,
+            handleTop + handleHeight / 2,
+            trackInset: trackInset,
+          );
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              child,
+              Positioned.fill(
+                child: StudentViewportFog(
+                  key: ValueKey('$keyPrefix-fog'),
+                  showTop: fogVisibility.showTop,
+                  showBottom: fogVisibility.showBottom,
+                ),
               ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(
-                  key: ValueKey('$keyPrefix-diagonal-scrollbar'),
-                  painter: _StudentDiagonalScrollbarPainter(
-                    offset: offset,
-                    maxScrollExtent: maxScroll,
-                    handleHeight: handleHeight,
-                    trackInset: trackInset,
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    key: ValueKey('$keyPrefix-diagonal-scrollbar'),
+                    painter: _StudentDiagonalScrollbarPainter(
+                      offset: offset,
+                      maxScrollExtent: maxScroll,
+                      handleHeight: handleHeight,
+                      trackInset: trackInset,
+                    ),
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              key: ValueKey('$keyPrefix-scrollbar-handle-center'),
-              left: handleCenter.dx - 0.5,
-              top: handleCenter.dy - 0.5,
-              width: 1,
-              height: 1,
-              child: const IgnorePointer(),
-            ),
-            if (maxScroll > 0)
               Positioned(
-                left: math.max(0, size.width - trajectoryDepth - 24),
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: GestureDetector(
-                  key: ValueKey('$keyPrefix-diagonal-scrollbar-drag'),
-                  behavior: HitTestBehavior.translucent,
-                  onVerticalDragUpdate: (details) {
-                    controller.jumpTo(
-                      (controller.offset +
-                              details.delta.dy * maxScroll / travel)
-                          .clamp(0.0, maxScroll),
-                    );
-                  },
-                ),
+                key: ValueKey('$keyPrefix-scrollbar-handle-center'),
+                left: handleCenter.dx - 0.5,
+                top: handleCenter.dy - 0.5,
+                width: 1,
+                height: 1,
+                child: const IgnorePointer(),
               ),
-          ],
-        );
-      },
+              if (maxScroll > 0)
+                Positioned(
+                  left: math.max(0, size.width - trajectoryDepth - 24),
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: GestureDetector(
+                    key: ValueKey('$keyPrefix-diagonal-scrollbar-drag'),
+                    behavior: HitTestBehavior.translucent,
+                    onVerticalDragUpdate: (details) {
+                      controller.jumpTo(
+                        (controller.offset +
+                                details.delta.dy * maxScroll / travel)
+                            .clamp(0.0, maxScroll),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     ),
   );
 }

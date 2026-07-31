@@ -23,6 +23,14 @@ abstract final class AppSpacing {
   static const xl = 32.0;
 }
 
+abstract final class AppTextStyles {
+  static const planPhaseNumber = TextStyle(
+    color: Color(0xfff2b3ef),
+    fontSize: 17,
+    fontWeight: FontWeight.w900,
+  );
+}
+
 abstract final class BAPlannerTheme {
   static ThemeData dark() {
     final scheme = ColorScheme.fromSeed(

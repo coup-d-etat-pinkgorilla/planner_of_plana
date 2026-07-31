@@ -570,6 +570,84 @@ class ProcessAppService
   );
 
   @override
+  Future<TacticalShareState> loadTacticalShareState(String profileId) async =>
+      TacticalShareState.fromWire(
+        await _client.send('tactical.v2.share.state.get', {
+          'profile_id': profileId,
+        }),
+      );
+
+  @override
+  Future<TacticalSharePrepareResult> prepareTacticalShare({
+    required String profileId,
+    required String matchId,
+    required String scopeId,
+    required String contributorId,
+    required TacticalShareConsent consent,
+    required String attemptSessionId,
+    required int attemptIndex,
+    required String sharedAt,
+    required String patch,
+  }) async => TacticalSharePrepareResult.fromWire(
+    await _client.send('tactical.v2.share.prepare', {
+      'profile_id': profileId,
+      'match_id': matchId,
+      'scope_id': scopeId,
+      'contributor_id': contributorId,
+      'consent': consent.toWire(),
+      'attempt_session_id': attemptSessionId,
+      'attempt_index': attemptIndex,
+      'shared_at': sharedAt,
+      'patch': patch,
+    }),
+  );
+
+  @override
+  Future<TacticalShareMutationResult> importTacticalShares({
+    required String profileId,
+    required List<TacticalSharePayload> shares,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalShareMutationResult.fromWire(
+    await _client.send('tactical.v2.share.import', {
+      'profile_id': profileId,
+      'shares': shares.map((item) => item.toWire()).toList(),
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+    }),
+  );
+
+  @override
+  Future<TacticalShareMutationResult> withdrawTacticalShares({
+    required String profileId,
+    required List<String> shareIds,
+    required String withdrawnAt,
+    required String reason,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalShareMutationResult.fromWire(
+    await _client.send('tactical.v2.share.withdraw', {
+      'profile_id': profileId,
+      'share_ids': shareIds,
+      'withdrawn_at': withdrawnAt,
+      'reason': reason,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+    }),
+  );
+
+  @override
+  Future<TacticalShareAnalyticsResult> queryTacticalShareAnalytics(
+    String profileId,
+    TacticalShareAnalyticsFilters filters,
+  ) async => TacticalShareAnalyticsResult.fromWire(
+    await _client.send('tactical.v2.share.analytics.query', {
+      'profile_id': profileId,
+      'filters': filters.toWire(),
+    }),
+  );
+
+  @override
   Future<void> reconnect() {
     final restart = _restartFlight;
     if (restart != null) return restart;

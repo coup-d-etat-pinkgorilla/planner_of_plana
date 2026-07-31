@@ -800,6 +800,8 @@ void main() {
       final scrollbarBefore = tester.getRect(
         find.byKey(const ValueKey('account-portrait-scrollbar-handle-center')),
       );
+      expect(find.byType(Scrollbar), findsNothing);
+      expect(find.byType(RawScrollbar), findsNothing);
       await tester.drag(
         find.byKey(const ValueKey('account-portrait-diagonal-scrollbar-drag')),
         const Offset(0, 80),
@@ -869,6 +871,8 @@ void main() {
       find.byKey(const ValueKey('account-profile-diagonal-scrollbar')),
       findsOneWidget,
     );
+    expect(find.byType(Scrollbar), findsNothing);
+    expect(find.byType(RawScrollbar), findsNothing);
     final listPath = buildStudioContainerPath(
       const Size(1440, 900),
       accountStudioDocument.elements,

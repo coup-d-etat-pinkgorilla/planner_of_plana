@@ -63,9 +63,15 @@ flutter:
     - assets/equipment_icons/
     - assets/item_backgrounds/
     - assets/item_icons/currency/
+    - assets/item_icons/equipment/
     - assets/item_icons/ooparts/
+    - assets/item_icons/presents/
+    - assets/item_icons/school_logo/
+    - assets/item_icons/skill_book/
+    - assets/item_icons/skill_db/
     - assets/item_icons/tactical_bd/
     - assets/student_bond_backgrounds/
+    - assets/student_elephs/
     - assets/studio_features/
     - assets/studio_sections/
     - assets/student_portraits/

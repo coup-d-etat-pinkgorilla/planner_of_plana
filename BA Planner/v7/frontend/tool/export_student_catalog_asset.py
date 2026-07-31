@@ -55,6 +55,15 @@ def main() -> None:
                 "position": metadata.get("position")
                 if isinstance(metadata.get("position"), str)
                 else None,
+                "equipment_slot_1": metadata.get("equipment_slot_1")
+                if isinstance(metadata.get("equipment_slot_1"), str)
+                else None,
+                "equipment_slot_2": metadata.get("equipment_slot_2")
+                if isinstance(metadata.get("equipment_slot_2"), str)
+                else None,
+                "equipment_slot_3": metadata.get("equipment_slot_3")
+                if isinstance(metadata.get("equipment_slot_3"), str)
+                else None,
                 "jp_only": is_jp_only(student_id),
                 "search_tags": [
                     str(item)

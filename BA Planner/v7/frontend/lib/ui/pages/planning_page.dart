@@ -1,22 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../services/app_service.dart';
+import '../models/planning_models.dart';
 import '../widgets/plan_section_layout.dart';
 
-class PlanningStudentSeed {
-  PlanningStudentSeed({
-    required this.handoffId,
-    required this.studentId,
-    required Map<String, dynamic> metadata,
-    required Map<String, dynamic> currentValues,
-  }) : metadata = Map.unmodifiable(metadata),
-       currentValues = Map.unmodifiable(currentValues);
-
-  final String handoffId;
-  final String studentId;
-  final Map<String, dynamic> metadata;
-  final Map<String, dynamic> currentValues;
-}
+export '../models/planning_models.dart' show PlanningStudentSeed;
 
 class PlanningPage extends StatelessWidget {
   const PlanningPage({
@@ -36,7 +24,7 @@ class PlanningPage extends StatelessWidget {
       key: const ValueKey('planning-page'),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: PlanSectionLayout(active: active),
+        child: PlanSectionLayout(active: active, initialSeed: initialSeed),
       ),
     );
   }

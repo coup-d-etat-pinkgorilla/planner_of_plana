@@ -150,7 +150,10 @@ bool Win32Window::Create(const std::wstring& title,
 }
 
 bool Win32Window::Show() {
-  return ShowWindow(window_handle_, SW_SHOWNORMAL);
+  // The planner's canonical design and visual-verification viewport is the
+  // current monitor's maximized work area. This runs from the first-frame
+  // callback, so a smaller restored window is never flashed before maximize.
+  return ShowWindow(window_handle_, SW_MAXIMIZE);
 }
 
 // static

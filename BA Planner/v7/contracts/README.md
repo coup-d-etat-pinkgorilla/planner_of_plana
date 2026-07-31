@@ -222,7 +222,7 @@ drop하지 않는다. Dart `PlanningProtocolClient`는 response와 event envelop
 scanner method별 success shape를 검사하며, `ScannerProtocolClient`가 typed model과
 generation/sequence cursor, start-race buffer를 소유한다.
 
-Production recognition asset은 `backend/core/recognition_assets/manifest.json`에서 버전,
+Production recognition asset은 `backend/assets/recognition/v1/manifest.json`에서 버전,
 source, scan kind, 용도, 크기와 SHA-256으로 고정한다. Flutter UI asset 또는 사용자 adaptive
 sample 경로를 recognition catalog로 사용하지 않는다.
 

@@ -1,0 +1,36 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://ba-planner.local/contracts/tactical-share-v1.schema.json",
+  "title":"BA Planner opt-in tactical sharing protocol v1",
+  "oneOf":[
+    {"$ref":"#/$defs/stateRequest"},{"$ref":"#/$defs/prepareRequest"},{"$ref":"#/$defs/importRequest"},
+    {"$ref":"#/$defs/withdrawRequest"},{"$ref":"#/$defs/analyticsRequest"},{"$ref":"#/$defs/successResponse"},{"$ref":"#/$defs/errorResponse"}
+  ],
+  "$defs":{
+    "profileId":{"type":"string","pattern":"^[0-9a-f]{24}$"},
+    "id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+    "timestamp":{"type":"string","format":"date-time"},
+    "nullableString":{"type":["string","null"]},
+    "share":{"type":"object","required":["version","share_id","scope_id","contributor_id","consent_scope","consented_at","shared_at","occurred_at","attempt_session_id","attempt_index","defense_snapshot_id","anonymous_opponent_id","season","patch","map","rank_difference","public_signature","defense_signature","attack_signature","result","source_identity","source_type"],"properties":{
+      "version":{"const":1},"share_id":{"$ref":"#/$defs/id"},"scope_id":{"$ref":"#/$defs/id"},"contributor_id":{"$ref":"#/$defs/id"},"consent_scope":{"$ref":"#/$defs/id"},
+      "consented_at":{"$ref":"#/$defs/timestamp"},"shared_at":{"$ref":"#/$defs/timestamp"},"occurred_at":{"$ref":"#/$defs/timestamp"},
+      "attempt_session_id":{"$ref":"#/$defs/id"},"attempt_index":{"type":"integer","minimum":1},"defense_snapshot_id":{"$ref":"#/$defs/id"},"anonymous_opponent_id":{"$ref":"#/$defs/id"},
+      "season":{"type":"string","minLength":1},"patch":{"type":"string","minLength":1},"map":{"type":"string","minLength":1},"rank_difference":{"type":"integer"},
+      "public_signature":{"type":"string","pattern":"^[^|]+\\|[^|]+\\|[^|]+$"},"defense_signature":{"type":"string","pattern":"^[^|]+\\|[^|]+$"},"attack_signature":{"type":"string","pattern":"^[^|]+\\|[^|]+$"},
+      "result":{"enum":["win","loss"]},"source_identity":{"$ref":"#/$defs/id"},"source_type":{"enum":["v6_import","manual","battle_result","community_report"]}
+    },"additionalProperties":false},
+    "filters":{"type":"object","required":["scope_id","season","patch","map","public_signature","defense_signature","rank_difference_min","rank_difference_max","as_of","min_independent_contributors","min_independent_opponents","limit"],"properties":{
+      "scope_id":{"$ref":"#/$defs/id"},"season":{"$ref":"#/$defs/nullableString"},"patch":{"$ref":"#/$defs/nullableString"},"map":{"$ref":"#/$defs/nullableString"},"public_signature":{"$ref":"#/$defs/nullableString"},"defense_signature":{"$ref":"#/$defs/nullableString"},
+      "rank_difference_min":{"type":["integer","null"]},"rank_difference_max":{"type":["integer","null"]},"as_of":{"$ref":"#/$defs/timestamp"},
+      "min_independent_contributors":{"type":"integer","minimum":1,"maximum":100},"min_independent_opponents":{"type":"integer","minimum":1,"maximum":100},"limit":{"type":"integer","minimum":1,"maximum":100}
+    },"additionalProperties":false},
+    "request":{"type":"object","required":["protocol","id","type","method","payload"],"properties":{"protocol":{"const":1},"id":{"type":"string","minLength":1},"type":{"const":"request"},"method":{"type":"string"},"payload":{"type":"object"}},"additionalProperties":false},
+    "stateRequest":{"allOf":[{"$ref":"#/$defs/request"},{"properties":{"method":{"const":"tactical.v2.share.state.get"},"payload":{"type":"object","required":["profile_id"],"properties":{"profile_id":{"$ref":"#/$defs/profileId"}},"additionalProperties":false}}}]},
+    "prepareRequest":{"allOf":[{"$ref":"#/$defs/request"},{"properties":{"method":{"const":"tactical.v2.share.prepare"},"payload":{"type":"object","required":["profile_id","match_id","scope_id","contributor_id","consent","attempt_session_id","attempt_index","shared_at","patch"],"properties":{"profile_id":{"$ref":"#/$defs/profileId"},"match_id":{"$ref":"#/$defs/id"},"scope_id":{"$ref":"#/$defs/id"},"contributor_id":{"$ref":"#/$defs/id"},"consent":{"type":"object","required":["enabled","scope_id","contributor_id","consented_at","include_original_media"],"properties":{"enabled":{"const":true},"scope_id":{"$ref":"#/$defs/id"},"contributor_id":{"$ref":"#/$defs/id"},"consented_at":{"$ref":"#/$defs/timestamp"},"include_original_media":{"const":false}},"additionalProperties":false},"attempt_session_id":{"$ref":"#/$defs/id"},"attempt_index":{"type":"integer","minimum":1},"shared_at":{"$ref":"#/$defs/timestamp"},"patch":{"type":"string","minLength":1}},"additionalProperties":false}}}]},
+    "importRequest":{"allOf":[{"$ref":"#/$defs/request"},{"properties":{"method":{"const":"tactical.v2.share.import"},"payload":{"type":"object","required":["profile_id","shares","expected_revision","idempotency_key"],"properties":{"profile_id":{"$ref":"#/$defs/profileId"},"shares":{"type":"array","minItems":1,"maxItems":100,"items":{"$ref":"#/$defs/share"}},"expected_revision":{"type":"integer","minimum":0},"idempotency_key":{"type":"string","minLength":1}},"additionalProperties":false}}}]},
+    "withdrawRequest":{"allOf":[{"$ref":"#/$defs/request"},{"properties":{"method":{"const":"tactical.v2.share.withdraw"},"payload":{"type":"object","required":["profile_id","share_ids","withdrawn_at","reason","expected_revision","idempotency_key"],"properties":{"profile_id":{"$ref":"#/$defs/profileId"},"share_ids":{"type":"array","minItems":1,"uniqueItems":true,"items":{"$ref":"#/$defs/id"}},"withdrawn_at":{"$ref":"#/$defs/timestamp"},"reason":{"type":"string","minLength":1},"expected_revision":{"type":"integer","minimum":0},"idempotency_key":{"type":"string","minLength":1}},"additionalProperties":false}}}]},
+    "analyticsRequest":{"allOf":[{"$ref":"#/$defs/request"},{"properties":{"method":{"const":"tactical.v2.share.analytics.query"},"payload":{"type":"object","required":["profile_id","filters"],"properties":{"profile_id":{"$ref":"#/$defs/profileId"},"filters":{"$ref":"#/$defs/filters"}},"additionalProperties":false}}}]},
+    "successResponse":{"type":"object","required":["protocol","id","type","method","payload"],"properties":{"protocol":{"const":1},"id":{"type":"string","minLength":1},"type":{"const":"response"},"method":{"enum":["tactical.v2.share.state.get","tactical.v2.share.prepare","tactical.v2.share.import","tactical.v2.share.withdraw","tactical.v2.share.analytics.query"]},"payload":{"type":"object","not":{"required":["error"]}}},"additionalProperties":false},
+    "errorResponse":{"type":"object","required":["protocol","id","type","method","payload"],"properties":{"protocol":{"const":1},"id":{"type":"string","minLength":1},"type":{"const":"response"},"method":{"type":"string","pattern":"^tactical\\.v2\\.share\\."},"payload":{"type":"object","required":["error"],"properties":{"error":{"type":"object","required":["code","message","retryable"],"properties":{"code":{"type":"string","minLength":1},"message":{"type":"string"},"retryable":{"type":"boolean"},"details":{"type":"object"}},"additionalProperties":false}},"additionalProperties":false}},"additionalProperties":false}
+  }
+}

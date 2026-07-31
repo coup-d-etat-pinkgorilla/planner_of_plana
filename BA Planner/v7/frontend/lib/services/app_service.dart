@@ -21,6 +21,9 @@ class StudentCatalogEntry {
     required this.combatClass,
     required this.role,
     required this.position,
+    this.equipmentSlot1,
+    this.equipmentSlot2,
+    this.equipmentSlot3,
     this.jpOnly = false,
     required List<String> searchTags,
     required List<String> krSearchTags,
@@ -39,6 +42,9 @@ class StudentCatalogEntry {
   final String? combatClass;
   final String? role;
   final String? position;
+  final String? equipmentSlot1;
+  final String? equipmentSlot2;
+  final String? equipmentSlot3;
   final bool jpOnly;
   final List<String> searchTags;
   final List<String> krSearchTags;
@@ -57,6 +63,9 @@ class StudentCatalogEntry {
       'combat_class',
       'role',
       'position',
+      'equipment_slot_1',
+      'equipment_slot_2',
+      'equipment_slot_3',
       'jp_only',
       'search_tags',
       'kr_search_tags',
@@ -102,6 +111,9 @@ class StudentCatalogEntry {
       combatClass: nullableText('combat_class'),
       role: nullableText('role'),
       position: nullableText('position'),
+      equipmentSlot1: nullableText('equipment_slot_1'),
+      equipmentSlot2: nullableText('equipment_slot_2'),
+      equipmentSlot3: nullableText('equipment_slot_3'),
       jpOnly: value['jp_only'] is bool
           ? value['jp_only'] as bool
           : throw const FormatException('Invalid student catalog jp_only'),
@@ -123,6 +135,9 @@ class StudentCatalogEntry {
     combatClass: null,
     role: null,
     position: null,
+    equipmentSlot1: null,
+    equipmentSlot2: null,
+    equipmentSlot3: null,
     jpOnly: false,
     searchTags: const [],
     krSearchTags: const [],
@@ -141,6 +156,9 @@ class StudentCatalogEntry {
     'combat_class': combatClass,
     'role': role,
     'position': position,
+    'equipment_slot_1': equipmentSlot1,
+    'equipment_slot_2': equipmentSlot2,
+    'equipment_slot_3': equipmentSlot3,
     'jp_only': jpOnly,
   };
 

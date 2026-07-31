@@ -217,6 +217,7 @@ class _StudentPageState extends State<StudentPage> {
         studentId: entry.studentId,
         metadata: entry.metadata,
         currentValues: values,
+        owned: _selectedState != null,
       ),
     );
   }
@@ -318,6 +319,7 @@ class _StudentPageState extends State<StudentPage> {
                   students: visible,
                   ownedIds: owned,
                   selectedId: _selectedId,
+                  selectedStudent: _selectedEntry,
                   selectedValues: _selectedState?.values,
                   studentValuesById: studentValuesById,
                   active: widget.active,

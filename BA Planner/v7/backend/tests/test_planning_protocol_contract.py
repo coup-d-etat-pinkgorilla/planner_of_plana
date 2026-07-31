@@ -68,6 +68,7 @@ class PlanningProtocolContractTests(unittest.TestCase):
             "planning-protocol-v1.schema.json", "protocol-error-v1.schema.json",
             "repository-protocol-v1.schema.json", "scanner-protocol-v1.schema.json",
             "tactical-protocol-v1.schema.json", "tactical-protocol-v2.schema.json",
+            "tactical-share-v1.schema.json",
             *METHOD_SCHEMAS.values(),
         }
         self.assertEqual(set(self.schemas), expected)

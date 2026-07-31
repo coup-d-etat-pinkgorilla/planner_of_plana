@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from threading import Event
 from typing import Any, Callable, Protocol
 
@@ -43,6 +44,14 @@ def image_similarity(left: Image.Image, right: Image.Image) -> float:
     return max(0.0, min(1.0, 1.0 - mean))
 
 
+def image_has_visible_content(image: Image.Image) -> bool:
+    """Reject capture padding before a large template catalog can guess an identity."""
+    luminance = image.convert("L")
+    histogram = luminance.histogram()
+    visible = sum(histogram[13:])
+    return visible / max(1, luminance.width * luminance.height) >= 0.12
+
+
 @dataclass(frozen=True, slots=True)
 class Match:
     identity: str
@@ -51,15 +60,22 @@ class Match:
 
 
 class TemplateMatcher:
+    _MATCH_SIZE = (96, 96)
+
     def __init__(self, catalog: RecognitionAssetCatalog, scan_kind: str, purpose: str) -> None:
         self.catalog = catalog
         self.templates = [
-            (asset.identity, Image.open(catalog.resolve(asset.path)).convert("RGB"))
+            (asset.identity, self._load_template(catalog.resolve(asset.path)))
             for asset in catalog.assets(scan_kind, purpose)
             if asset.identity is not None
         ]
         if not self.templates:
             raise ScannerError("template_missing", f"no {scan_kind} templates")
+
+    @classmethod
+    def _load_template(cls, path: Path) -> Image.Image:
+        with Image.open(path) as image:
+            return image.convert("RGB").resize(cls._MATCH_SIZE, Image.Resampling.BILINEAR)
 
     @staticmethod
     def _center(image: Image.Image, trim: float) -> Image.Image:
@@ -221,6 +237,8 @@ class InventoryMatcherAdapter:
                 if cancel.is_set():
                     return []
                 crop = ratio_crop(frame, region)
+                if not image_has_visible_content(crop):
+                    continue
                 fast = self.matcher.match(crop, center_trim=0.15)
                 fast_confident = fast.score >= self.threshold and fast.margin >= self.margin
                 match = fast if fast_confident else self.matcher.match(crop)

@@ -13,7 +13,7 @@ from core.scanner_session import ScannerError
 from core.windows_scanner_adapter import WindowsCaptureInputAdapter
 
 
-ASSETS = Path(__file__).parents[1] / "core" / "recognition_assets"
+ASSETS = Path(__file__).parents[1] / "assets" / "recognition" / "v1"
 
 
 class ScriptedCapture:
@@ -98,7 +98,7 @@ class ScannerProductionAdapterTests(unittest.TestCase):
     def test_inventory_adapter_matches_real_icon_and_count_glyphs(self) -> None:
         frame = Image.new("RGB", (1280, 720), "black")
         slot = self.catalog.region("inventory")["item"]["grid_slots"][0]
-        template = Image.open(ASSETS / "templates/inventory/Item_Icon_Material_Mandragora_0.png")
+        template = Image.open(ASSETS / "templates/inventory/ooparts/Item_Icon_Material_Mandragora_0.png")
         slot_box = (
             round(frame.width * slot["x1"]), round(frame.height * slot["y1"]),
             round(frame.width * slot["x2"]), round(frame.height * slot["y2"]),
@@ -119,7 +119,7 @@ class ScannerProductionAdapterTests(unittest.TestCase):
     def test_inventory_adapter_never_zero_fills_missing_count(self) -> None:
         frame = Image.new("RGB", (1280, 720), "black")
         slot = self.catalog.region("inventory")["item"]["grid_slots"][0]
-        template = Image.open(ASSETS / "templates/inventory/Item_Icon_Material_Mandragora_0.png")
+        template = Image.open(ASSETS / "templates/inventory/ooparts/Item_Icon_Material_Mandragora_0.png")
         paste_ratio(frame, template, slot)
         result = InventoryMatcherAdapter(ScriptedCapture(frame), self.catalog)({"target_id": "fixture"}, Event(), lambda *_args: None)[0]
         self.assertIsNone(result["payload"]["entries"][0]["quantity"])
@@ -128,7 +128,7 @@ class ScannerProductionAdapterTests(unittest.TestCase):
     def test_inventory_low_margin_uses_detail_fallback(self) -> None:
         frame = Image.new("RGB", (1280, 720), "black")
         slot = self.catalog.region("inventory")["item"]["grid_slots"][0]
-        template = Image.open(ASSETS / "templates/inventory/Item_Icon_Material_Mandragora_0.png")
+        template = Image.open(ASSETS / "templates/inventory/ooparts/Item_Icon_Material_Mandragora_0.png")
         paste_ratio(frame, template, slot)
         result = InventoryMatcherAdapter(ScriptedCapture(frame), self.catalog, threshold=1.1)({"target_id": "fixture"}, Event(), lambda *_args: None)[0]
         item_evidence = next(item for item in result["evidence"] if item["field"].endswith(".item_id"))

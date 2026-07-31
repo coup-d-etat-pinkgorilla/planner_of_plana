@@ -9,7 +9,7 @@
   "$defs": {
     "entry": {
       "type": "object",
-      "required": ["student_id", "display_name", "template_name", "group", "variant", "school", "rarity", "attack_type", "defense_type", "combat_class", "role", "position", "jp_only", "search_tags", "kr_search_tags"],
+      "required": ["student_id", "display_name", "template_name", "group", "variant", "school", "rarity", "attack_type", "defense_type", "combat_class", "role", "position", "equipment_slot_1", "equipment_slot_2", "equipment_slot_3", "jp_only", "search_tags", "kr_search_tags"],
       "properties": {
         "student_id": { "type": "string", "minLength": 1 },
         "display_name": { "type": "string", "minLength": 1 },
@@ -23,6 +23,9 @@
         "combat_class": { "type": ["string", "null"] },
         "role": { "type": ["string", "null"] },
         "position": { "type": ["string", "null"] },
+        "equipment_slot_1": { "type": ["string", "null"] },
+        "equipment_slot_2": { "type": ["string", "null"] },
+        "equipment_slot_3": { "type": ["string", "null"] },
         "jp_only": { "type": "boolean" },
         "search_tags": { "type": "array", "items": { "type": "string" } },
         "kr_search_tags": { "type": "array", "items": { "type": "string" } }

@@ -303,6 +303,63 @@ connection.close()
           stateWithPrediction.snapshots,
           hasLength(history.snapshots.length),
         );
+        final emptyShareState = await service.loadTacticalShareState(
+          profile.id,
+        );
+        expect(emptyShareState.revision, 0);
+        final prepared = await service.prepareTacticalShare(
+          profileId: profile.id,
+          matchId: attack.id,
+          scopeId: 'scope-season-10',
+          contributorId: 'install-anonymous-e2e',
+          consent: const TacticalShareConsent(
+            scopeId: 'scope-season-10',
+            contributorId: 'install-anonymous-e2e',
+            consentedAt: '2026-03-23T00:00:00+09:00',
+          ),
+          attemptSessionId: 'attempt-session-e2e',
+          attemptIndex: 1,
+          sharedAt: '2026-07-29T12:00:00+00:00',
+          patch: '2026.07',
+        );
+        expect(prepared.redaction.values, everyElement(isFalse));
+        expect(prepared.share.wire, isNot(contains('opponent_display_name')));
+        final shared = await service.importTacticalShares(
+          profileId: profile.id,
+          shares: [prepared.share],
+          expectedRevision: emptyShareState.revision,
+          idempotencyKey: 'dart-e2e-share-import',
+        );
+        expect(shared.imported, 1);
+        expect(shared.activeRecordCount, 1);
+        final analysis = await service.queryTacticalShareAnalytics(
+          profile.id,
+          const TacticalShareAnalyticsFilters(
+            scopeId: 'scope-season-10',
+            season: '10',
+            patch: '2026.07',
+            map: 'urban',
+            asOf: '2026-07-29T23:00:00+00:00',
+            minIndependentContributors: 1,
+            minIndependentOpponents: 1,
+          ),
+        );
+        expect(analysis.population['match_count'], 1);
+        expect(analysis.groups, hasLength(1));
+        expect(analysis.mlImplemented, isFalse);
+        final withdrawn = await service.withdrawTacticalShares(
+          profileId: profile.id,
+          shareIds: [prepared.share.id],
+          withdrawnAt: '2026-07-29T13:00:00+00:00',
+          reason: 'e2e_user_request',
+          expectedRevision: shared.revision,
+          idempotencyKey: 'dart-e2e-share-withdraw',
+        );
+        expect(withdrawn.withdrawn, 1);
+        expect(withdrawn.activeRecordCount, 0);
+        final withdrawnState = await service.loadTacticalShareState(profile.id);
+        expect(withdrawnState.records, isEmpty);
+        expect(withdrawnState.tombstoneCount, 1);
       } finally {
         await service.dispose();
         if (storage.existsSync()) await storage.delete(recursive: true);

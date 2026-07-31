@@ -77,6 +77,63 @@ bool _validRecommendationFiltersV2(Object? raw) {
   }
 }
 
+bool _validSharePayloadV1(Object? raw) {
+  if (raw is! Map) return false;
+  try {
+    TacticalSharePayload.fromWire(Map<String, dynamic>.from(raw));
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+bool _validShareFiltersV1(Object? raw) {
+  if (raw is! Map) return false;
+  final value = Map<String, dynamic>.from(raw);
+  const fields = {
+    'scope_id',
+    'season',
+    'patch',
+    'map',
+    'public_signature',
+    'defense_signature',
+    'rank_difference_min',
+    'rank_difference_max',
+    'as_of',
+    'min_independent_contributors',
+    'min_independent_opponents',
+    'limit',
+  };
+  try {
+    final min = value['rank_difference_min'];
+    final max = value['rank_difference_max'];
+    return _exactV2(value, fields) &&
+        _recordIdV2(value['scope_id']) &&
+        [
+          'season',
+          'patch',
+          'map',
+          'public_signature',
+          'defense_signature',
+        ].every((key) => value[key] == null || value[key] is String) &&
+        (min == null || min is int) &&
+        (max == null || max is int) &&
+        (min == null || max == null || min <= max) &&
+        _timestampV2(value['as_of'], nullable: false) != null &&
+        value['min_independent_contributors'] is int &&
+        value['min_independent_contributors'] >= 1 &&
+        value['min_independent_contributors'] <= 100 &&
+        value['min_independent_opponents'] is int &&
+        value['min_independent_opponents'] >= 1 &&
+        value['min_independent_opponents'] <= 100 &&
+        value['limit'] is int &&
+        value['limit'] >= 1 &&
+        value['limit'] <= 100;
+  } catch (_) {
+    return false;
+  }
+}
+
 const _reviewStatusesV2 = {
   'unreviewed',
   'review_required',
@@ -1777,6 +1834,312 @@ class TacticalPredictionSaveResult {
   }
 }
 
+@immutable
+class TacticalShareConsent {
+  const TacticalShareConsent({
+    required this.scopeId,
+    required this.contributorId,
+    required this.consentedAt,
+  });
+  final String scopeId, contributorId, consentedAt;
+
+  Map<String, dynamic> toWire() => {
+    'enabled': true,
+    'scope_id': scopeId,
+    'contributor_id': contributorId,
+    'consented_at': consentedAt,
+    'include_original_media': false,
+  };
+}
+
+@immutable
+class TacticalSharePayload {
+  const TacticalSharePayload(this.wire);
+  final Map<String, dynamic> wire;
+  String get id => wire['share_id'] as String;
+  String get scopeId => wire['scope_id'] as String;
+  String get contributorId => wire['contributor_id'] as String;
+  int get attemptIndex => wire['attempt_index'] as int;
+
+  factory TacticalSharePayload.fromWire(Map<String, dynamic> value) {
+    const fields = {
+      'version',
+      'share_id',
+      'scope_id',
+      'contributor_id',
+      'consent_scope',
+      'consented_at',
+      'shared_at',
+      'occurred_at',
+      'attempt_session_id',
+      'attempt_index',
+      'defense_snapshot_id',
+      'anonymous_opponent_id',
+      'season',
+      'patch',
+      'map',
+      'rank_difference',
+      'public_signature',
+      'defense_signature',
+      'attack_signature',
+      'result',
+      'source_identity',
+      'source_type',
+    };
+    if (!_exactV2(value, fields) ||
+        value['version'] != 1 ||
+        ![
+          'share_id',
+          'scope_id',
+          'contributor_id',
+          'consent_scope',
+          'attempt_session_id',
+          'defense_snapshot_id',
+          'anonymous_opponent_id',
+          'source_identity',
+        ].every((key) => _recordIdV2(value[key])) ||
+        value['scope_id'] != value['consent_scope'] ||
+        ![
+          'consented_at',
+          'shared_at',
+          'occurred_at',
+        ].every((key) => _timestampV2(value[key], nullable: false) != null) ||
+        value['attempt_index'] is! int ||
+        value['attempt_index'] < 1 ||
+        value['rank_difference'] is! int ||
+        ![
+          'season',
+          'patch',
+          'map',
+          'public_signature',
+          'defense_signature',
+          'attack_signature',
+        ].every(
+          (key) => value[key] is String && (value[key] as String).isNotEmpty,
+        ) ||
+        !{'win', 'loss'}.contains(value['result']) ||
+        !{
+          'v6_import',
+          'manual',
+          'battle_result',
+          'community_report',
+        }.contains(value['source_type'])) {
+      throw const FormatException('Invalid tactical share payload');
+    }
+    return TacticalSharePayload(Map.unmodifiable(value));
+  }
+
+  Map<String, dynamic> toWire() => Map<String, dynamic>.from(wire);
+}
+
+@immutable
+class TacticalSharePrepareResult {
+  const TacticalSharePrepareResult({
+    required this.share,
+    required this.redaction,
+  });
+  final TacticalSharePayload share;
+  final Map<String, dynamic> redaction;
+
+  factory TacticalSharePrepareResult.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, {'share', 'redaction'}) ||
+        value['share'] is! Map ||
+        value['redaction'] is! Map) {
+      throw const FormatException('Invalid tactical share prepare result');
+    }
+    final redaction = Map<String, dynamic>.from(value['redaction'] as Map);
+    const fields = {
+      'original_media_included',
+      'local_identity_included',
+      'name_or_roi_included',
+      'prediction_included',
+    };
+    if (!_exactV2(redaction, fields) ||
+        redaction.values.any((item) => item is! bool || item)) {
+      throw const FormatException('Tactical share redaction boundary failed');
+    }
+    return TacticalSharePrepareResult(
+      share: TacticalSharePayload.fromWire(
+        Map<String, dynamic>.from(value['share'] as Map),
+      ),
+      redaction: Map.unmodifiable(redaction),
+    );
+  }
+}
+
+@immutable
+class TacticalShareState {
+  const TacticalShareState({
+    required this.revision,
+    required this.records,
+    required this.tombstoneCount,
+    required this.aggregateCache,
+  });
+  final int revision, tombstoneCount;
+  final List<TacticalSharePayload> records;
+  final Map<String, dynamic> aggregateCache;
+
+  factory TacticalShareState.fromWire(Map<String, dynamic> value) {
+    const fields = {
+      'version',
+      'profile_id',
+      'revision',
+      'records',
+      'tombstones',
+      'aggregate_cache',
+    };
+    if (!_exactV2(value, fields) ||
+        value['version'] != 1 ||
+        value['revision'] is! int ||
+        value['revision'] < 0 ||
+        value['records'] is! List ||
+        value['tombstones'] is! List ||
+        value['aggregate_cache'] is! Map) {
+      throw const FormatException('Invalid tactical share state');
+    }
+    return TacticalShareState(
+      revision: value['revision'] as int,
+      records: List.unmodifiable(
+        (value['records'] as List).map(
+          (item) => TacticalSharePayload.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        ),
+      ),
+      tombstoneCount: (value['tombstones'] as List).length,
+      aggregateCache: Map.unmodifiable(
+        Map<String, dynamic>.from(value['aggregate_cache'] as Map),
+      ),
+    );
+  }
+}
+
+@immutable
+class TacticalShareMutationResult {
+  const TacticalShareMutationResult(this.wire);
+  final Map<String, dynamic> wire;
+  int get revision => wire['revision'] as int;
+  int get imported => wire['imported'] as int? ?? 0;
+  int get withdrawn => wire['withdrawn'] as int? ?? 0;
+  int get activeRecordCount =>
+      (wire['aggregate_cache'] as Map)['active_record_count'] as int;
+
+  factory TacticalShareMutationResult.fromWire(Map<String, dynamic> value) {
+    if (value['revision'] is! int ||
+        value['revision'] < 0 ||
+        value['aggregate_cache'] is! Map) {
+      throw const FormatException('Invalid tactical share mutation result');
+    }
+    return TacticalShareMutationResult(Map.unmodifiable(value));
+  }
+}
+
+@immutable
+class TacticalShareAnalyticsFilters {
+  const TacticalShareAnalyticsFilters({
+    required this.scopeId,
+    required this.asOf,
+    this.season,
+    this.patch,
+    this.map,
+    this.publicSignature,
+    this.defenseSignature,
+    this.rankDifferenceMin,
+    this.rankDifferenceMax,
+    this.minIndependentContributors = 2,
+    this.minIndependentOpponents = 2,
+    this.limit = 20,
+  });
+  final String scopeId, asOf;
+  final String? season, patch, map, publicSignature, defenseSignature;
+  final int? rankDifferenceMin, rankDifferenceMax;
+  final int minIndependentContributors, minIndependentOpponents, limit;
+
+  Map<String, dynamic> toWire() => {
+    'scope_id': scopeId,
+    'season': season,
+    'patch': patch,
+    'map': map,
+    'public_signature': publicSignature,
+    'defense_signature': defenseSignature,
+    'rank_difference_min': rankDifferenceMin,
+    'rank_difference_max': rankDifferenceMax,
+    'as_of': asOf,
+    'min_independent_contributors': minIndependentContributors,
+    'min_independent_opponents': minIndependentOpponents,
+    'limit': limit,
+  };
+}
+
+@immutable
+class TacticalShareAnalyticsResult {
+  const TacticalShareAnalyticsResult({
+    required this.population,
+    required this.privacy,
+    required this.groups,
+    required this.substitutions,
+    required this.mlImplemented,
+    required this.warning,
+  });
+  final Map<String, dynamic> population, privacy;
+  final List<Map<String, dynamic>> groups, substitutions;
+  final bool mlImplemented;
+  final String warning;
+
+  factory TacticalShareAnalyticsResult.fromWire(Map<String, dynamic> value) {
+    const fields = {
+      'version',
+      'filters',
+      'population',
+      'privacy',
+      'groups',
+      'one_slot_substitutions',
+      'revalidation',
+      'terminology',
+      'ml',
+    };
+    if (!_exactV2(value, fields) ||
+        value['version'] != 1 ||
+        value['population'] is! Map ||
+        value['privacy'] is! Map ||
+        value['groups'] is! List ||
+        value['one_slot_substitutions'] is! List ||
+        value['ml'] is! Map ||
+        value['terminology'] is! Map) {
+      throw const FormatException('Invalid tactical share analytics');
+    }
+    final ml = Map<String, dynamic>.from(value['ml'] as Map);
+    final terminology = Map<String, dynamic>.from(value['terminology'] as Map);
+    if (ml['implemented'] is! bool || terminology['warning'] is! String) {
+      throw const FormatException('Invalid tactical share analytics semantics');
+    }
+    return TacticalShareAnalyticsResult(
+      population: Map.unmodifiable(
+        Map<String, dynamic>.from(value['population'] as Map),
+      ),
+      privacy: Map.unmodifiable(
+        Map<String, dynamic>.from(value['privacy'] as Map),
+      ),
+      groups: List.unmodifiable(
+        (value['groups'] as List).map(
+          (item) => Map<String, dynamic>.unmodifiable(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        ),
+      ),
+      substitutions: List.unmodifiable(
+        (value['one_slot_substitutions'] as List).map(
+          (item) => Map<String, dynamic>.unmodifiable(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        ),
+      ),
+      mlImplemented: ml['implemented'] as bool,
+      warning: terminology['warning'] as String,
+    );
+  }
+}
+
 abstract interface class TacticalEvidenceService {
   Future<TacticalEvidenceState> loadTacticalEvidenceState(String profileId);
   Future<TacticalImportPreview> previewTacticalV6Import(
@@ -1852,6 +2215,36 @@ abstract interface class TacticalEvidenceService {
   Future<TacticalSavedPrediction> getTacticalRecommendation(
     String profileId,
     String predictionId,
+  );
+  Future<TacticalShareState> loadTacticalShareState(String profileId);
+  Future<TacticalSharePrepareResult> prepareTacticalShare({
+    required String profileId,
+    required String matchId,
+    required String scopeId,
+    required String contributorId,
+    required TacticalShareConsent consent,
+    required String attemptSessionId,
+    required int attemptIndex,
+    required String sharedAt,
+    required String patch,
+  });
+  Future<TacticalShareMutationResult> importTacticalShares({
+    required String profileId,
+    required List<TacticalSharePayload> shares,
+    required int expectedRevision,
+    required String idempotencyKey,
+  });
+  Future<TacticalShareMutationResult> withdrawTacticalShares({
+    required String profileId,
+    required List<String> shareIds,
+    required String withdrawnAt,
+    required String reason,
+    required int expectedRevision,
+    required String idempotencyKey,
+  });
+  Future<TacticalShareAnalyticsResult> queryTacticalShareAnalytics(
+    String profileId,
+    TacticalShareAnalyticsFilters filters,
   );
 }
 
@@ -2076,6 +2469,95 @@ bool isValidTacticalV2ProtocolMessage(Object? input) {
             profile(payload['profile_id']) &&
             _recordIdV2(payload['prediction_id']);
       }
+      if (method == 'tactical.v2.share.state.get') {
+        return _exactV2(payload, {'profile_id'}) &&
+            profile(payload['profile_id']);
+      }
+      if (method == 'tactical.v2.share.prepare') {
+        const fields = {
+          'profile_id',
+          'match_id',
+          'scope_id',
+          'contributor_id',
+          'consent',
+          'attempt_session_id',
+          'attempt_index',
+          'shared_at',
+          'patch',
+        };
+        if (!_exactV2(payload, fields) || payload['consent'] is! Map) {
+          return false;
+        }
+        final consent = Map<String, dynamic>.from(payload['consent'] as Map);
+        return profile(payload['profile_id']) &&
+            _recordIdV2(payload['match_id']) &&
+            _recordIdV2(payload['scope_id']) &&
+            _recordIdV2(payload['contributor_id']) &&
+            _exactV2(consent, {
+              'enabled',
+              'scope_id',
+              'contributor_id',
+              'consented_at',
+              'include_original_media',
+            }) &&
+            consent['enabled'] == true &&
+            consent['include_original_media'] == false &&
+            consent['scope_id'] == payload['scope_id'] &&
+            consent['contributor_id'] == payload['contributor_id'] &&
+            _timestampV2(consent['consented_at'], nullable: false) != null &&
+            _recordIdV2(payload['attempt_session_id']) &&
+            payload['attempt_index'] is int &&
+            payload['attempt_index'] >= 1 &&
+            _timestampV2(payload['shared_at'], nullable: false) != null &&
+            payload['patch'] is String &&
+            (payload['patch'] as String).isNotEmpty;
+      }
+      if (method == 'tactical.v2.share.import') {
+        final shares = payload['shares'];
+        return _exactV2(payload, {
+              'profile_id',
+              'shares',
+              'expected_revision',
+              'idempotency_key',
+            }) &&
+            profile(payload['profile_id']) &&
+            shares is List &&
+            shares.isNotEmpty &&
+            shares.length <= 100 &&
+            shares.every(_validSharePayloadV1) &&
+            payload['expected_revision'] is int &&
+            payload['expected_revision'] >= 0 &&
+            payload['idempotency_key'] is String &&
+            (payload['idempotency_key'] as String).isNotEmpty;
+      }
+      if (method == 'tactical.v2.share.withdraw') {
+        final ids = payload['share_ids'];
+        return _exactV2(payload, {
+              'profile_id',
+              'share_ids',
+              'withdrawn_at',
+              'reason',
+              'expected_revision',
+              'idempotency_key',
+            }) &&
+            profile(payload['profile_id']) &&
+            ids is List &&
+            ids.isNotEmpty &&
+            ids.every(_recordIdV2) &&
+            ids.toSet().length == ids.length &&
+            _timestampV2(payload['withdrawn_at'], nullable: false) != null &&
+            payload['reason'] is String &&
+            (payload['reason'] as String).isNotEmpty &&
+            payload['expected_revision'] is int &&
+            payload['expected_revision'] >= 0 &&
+            payload['idempotency_key'] is String &&
+            (payload['idempotency_key'] as String).isNotEmpty;
+      }
+      if (method == 'tactical.v2.share.analytics.query') {
+        return _exactV2(payload, {'profile_id', 'filters'}) &&
+            profile(payload['profile_id']) &&
+            _validShareFiltersV1(payload['filters']);
+      }
       return false;
     }
     if (payload.containsKey('error')) {
@@ -2167,6 +2649,23 @@ bool isValidTacticalV2ProtocolMessage(Object? input) {
     }
     if (method == 'tactical.v2.recommend.get') {
       TacticalSavedPrediction.fromWire(payload);
+      return true;
+    }
+    if (method == 'tactical.v2.share.state.get') {
+      TacticalShareState.fromWire(payload);
+      return true;
+    }
+    if (method == 'tactical.v2.share.prepare') {
+      TacticalSharePrepareResult.fromWire(payload);
+      return true;
+    }
+    if (method == 'tactical.v2.share.import' ||
+        method == 'tactical.v2.share.withdraw') {
+      TacticalShareMutationResult.fromWire(payload);
+      return true;
+    }
+    if (method == 'tactical.v2.share.analytics.query') {
+      TacticalShareAnalyticsResult.fromWire(payload);
       return true;
     }
     return false;

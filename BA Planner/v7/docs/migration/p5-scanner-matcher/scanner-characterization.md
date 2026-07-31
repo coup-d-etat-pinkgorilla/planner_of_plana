@@ -66,10 +66,11 @@ enter scanner candidate/current payloads.
 | debug crops, cache, profile samples | exclude from release assets |
 | Tk/Qt/PySide presentation orchestration | exclude from P5 backend |
 
-The follow-up ports the minimum production vertical slice with Win32 client capture,
+The first follow-up ports the minimum production vertical slice with Win32 client capture,
 safe input messages, v6 ratio regions and selected real PNG templates. Fixture tests
 compose those production PNGs into 1280x720 captures and execute the same adapters used
 by the backend process. This verifies adapter mechanics and conservative review
-behavior, but it is not full v6 catalog/algorithm parity and is not a live-game smoke.
-The deliberately small supported catalog and absent inventory count OCR remain explicit
-follow-up risks.
+behavior, but it is not full v6 algorithm parity and is not a live-game smoke. The asset
+migration follow-up expands the manifest-backed identity catalog to 254 student and 497
+inventory fast-icon templates without claiming detail/name matcher parity. The normalized
+0-9 count glyph set stays packaged; the 242 raw v6 learning samples remain excluded.

@@ -16,8 +16,8 @@
 
 - `artifacts/tactical_lobby_2560x1440.png`: 승인된 실제 기준 프레임
 - `artifacts/roi-characterization.md`: 픽셀 ROI와 ratio 투영 근거
-- `backend/core/recognition_assets/regions/tactical_lobby_regions.json`: runtime ROI profile
-- `backend/core/recognition_assets/templates/tactical_lobby/`: rank/name/portrait template
+- `backend/assets/recognition/v1/regions/tactical_lobby_regions.json`: runtime ROI profile
+- `backend/assets/recognition/v1/templates/tactical_lobby/`: rank/name/portrait template
 - `backend/core/tactical_lobby_scanner.py`: matcher와 strict review DTO
 - `frontend/lib/services/tactical_lobby_scanner_service.dart`: typed Dart 경계
 - `contracts/scanner-protocol-v1.schema.json`: `tactical_lobby` session/candidate 계약

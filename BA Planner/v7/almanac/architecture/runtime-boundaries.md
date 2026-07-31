@@ -44,7 +44,11 @@ process 진단은 stderr로 분리하며 Flutter는 Python 모듈이나 reposito
 않습니다. [@frontend-process-service] [@backend-process]
 
 표시용 asset은 Flutter package에 포함하고 scanner template/region은 Python backend의
-인식 contract로 별도 배포합니다. 계획 기준표는 backend package 기본값을 사용하되,
+인식 contract로 별도 배포합니다. 표시용 v6 원본은 `frontend/assets/` 아래 역할별 경로를
+유지하고, 인식 자산은 Python 소스와 분리된 `backend/assets/recognition/v1/`의 versioned
+manifest로 관리합니다. 배포 환경은 완전한 같은 버전 catalog에 한해
+`BA_PLANNER_RECOGNITION_ASSET_DIR`로 packaged root를 교체할 수 있습니다. 계획 기준표는
+backend package 기본값을 사용하되,
 명시적인 runtime asset override가 있을 때만 외부 버전을 채택합니다. [@backend-paths]
 
 v6는 회귀 기준이지 v7 runtime dependency가 아닙니다. 수직 이전마다 v6 결과 fixture와

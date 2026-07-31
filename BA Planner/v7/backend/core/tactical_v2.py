@@ -30,6 +30,11 @@ METHODS = frozenset({
     "tactical.v2.recommend.query",
     "tactical.v2.recommend.save",
     "tactical.v2.recommend.get",
+    "tactical.v2.share.state.get",
+    "tactical.v2.share.prepare",
+    "tactical.v2.share.import",
+    "tactical.v2.share.withdraw",
+    "tactical.v2.share.analytics.query",
 })
 _PROFILE_ID = re.compile(r"^[0-9a-f]{24}$")
 _RECORD_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
@@ -826,6 +831,33 @@ class TacticalV2Store:
             raise RepositoryError("prediction_not_found", "saved tactical prediction was not found")
         return deepcopy(record)
 
+    def _share_store(self):
+        from core.tactical_share_v1 import TacticalShareV1Store
+
+        return TacticalShareV1Store(self.root, self.repository, self)
+
+    def share_state(self, profile_id: str) -> dict[str, Any]:
+        return self._share_store().state(profile_id)
+
+    def prepare_share(self, profile_id: str, request: object) -> dict[str, Any]:
+        return self._share_store().prepare(profile_id, request)
+
+    def import_shares(
+        self, profile_id: str, shares: object, expected_revision: object, idempotency_key: object,
+    ) -> dict[str, Any]:
+        return self._share_store().import_records(profile_id, shares, expected_revision, idempotency_key)
+
+    def withdraw_shares(
+        self, profile_id: str, share_ids: object, withdrawn_at: object, reason: object,
+        expected_revision: object, idempotency_key: object,
+    ) -> dict[str, Any]:
+        return self._share_store().withdraw(
+            profile_id, share_ids, withdrawn_at, reason, expected_revision, idempotency_key,
+        )
+
+    def share_analytics(self, profile_id: str, filters: object) -> dict[str, Any]:
+        return self._share_store().analytics(profile_id, filters)
+
     def commit(
         self,
         profile_id: str,
@@ -1034,5 +1066,36 @@ class TacticalProtocolV2:
             data = _exact(payload, {"profile_id", "prediction_id"}, "payload")
             return self.store.get_recommendation(
                 _text(data["profile_id"], "profile_id", required=True), data["prediction_id"],
+            )
+        if method == "tactical.v2.share.state.get":
+            data = _exact(payload, {"profile_id"}, "payload")
+            return self.store.share_state(_text(data["profile_id"], "profile_id", required=True))
+        if method == "tactical.v2.share.prepare":
+            data = _exact(payload, {
+                "profile_id", "match_id", "scope_id", "contributor_id", "consent",
+                "attempt_session_id", "attempt_index", "shared_at", "patch",
+            }, "payload")
+            return self.store.prepare_share(
+                _text(data["profile_id"], "profile_id", required=True),
+                {key: data[key] for key in data if key != "profile_id"},
+            )
+        if method == "tactical.v2.share.import":
+            data = _exact(payload, {"profile_id", "shares", "expected_revision", "idempotency_key"}, "payload")
+            return self.store.import_shares(
+                _text(data["profile_id"], "profile_id", required=True), data["shares"],
+                data["expected_revision"], data["idempotency_key"],
+            )
+        if method == "tactical.v2.share.withdraw":
+            data = _exact(payload, {
+                "profile_id", "share_ids", "withdrawn_at", "reason", "expected_revision", "idempotency_key",
+            }, "payload")
+            return self.store.withdraw_shares(
+                _text(data["profile_id"], "profile_id", required=True), data["share_ids"],
+                data["withdrawn_at"], data["reason"], data["expected_revision"], data["idempotency_key"],
+            )
+        if method == "tactical.v2.share.analytics.query":
+            data = _exact(payload, {"profile_id", "filters"}, "payload")
+            return self.store.share_analytics(
+                _text(data["profile_id"], "profile_id", required=True), data["filters"],
             )
         raise RepositoryError("unknown_method", f"Unknown tactical v2 method: {method}")

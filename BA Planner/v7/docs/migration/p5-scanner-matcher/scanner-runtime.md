@@ -42,16 +42,21 @@ use client-coordinate Win32 messages. Importing the module does not enumerate wi
 capture, inject input or access user storage.
 
 `StudentMatcherAdapter` uses the v6 student portrait ROI and manifest-selected
-production portrait templates. `InventoryMatcherAdapter` uses the v6 5x4 grid ROI,
+production portrait templates. The packaged v1 catalog now contains all 254 v6
+student recognition templates. `InventoryMatcherAdapter` uses the v6 5x4 grid ROI,
 center icon fast comparison, full-slot detail fallback, manifest-backed v6 count
 glyph matching and stable-frame overlap for
 tail/no-motion detection. The initial production catalog intentionally contains two
-student portraits and two inventory icons; unsupported identities remain a documented
-coverage risk rather than being silently guessed. Missing or low-margin quantity
+student portraits and two inventory icons; the asset migration follow-up expands this
+to the 497 uniquely named v6 fast-icon templates from the equipment, ooparts, presents,
+skill-book and skill-DB catalogs. Detail/name templates remain outside the packaged
+runtime until their matcher parity slice is implemented. Missing or low-margin quantity
 glyphs remain `uncertain` and force review; they are never silently zero-filled.
 
-Recognition assets live under `backend/core/recognition_assets`, separate from Flutter
-UI assets. `manifest.json` records source version, purpose, scan kind, size and SHA-256.
+Recognition assets live under `backend/assets/recognition/v1`, separate from Flutter
+UI assets and Python source. `manifest.json` records v6 source path, source version,
+purpose, scan kind, size and SHA-256. The packaged root is the default; a deployment can
+select another complete v1 catalog with `BA_PLANNER_RECOGNITION_ASSET_DIR`.
 Readiness fails on missing, corrupt or version-mismatched assets. Account/resolution
 adaptive samples are writable local state and are explicitly excluded from packaging.
 

@@ -1151,81 +1151,84 @@ class _DiagonalScrollbar extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) => AnimatedBuilder(
-      animation: controller,
-      builder: (context, _) {
-        final size = constraints.biggest;
-        final hasClients = controller.hasClients;
-        final maxScroll = hasClients
-            ? controller.position.maxScrollExtent
-            : 0.0;
-        final viewport = hasClients
-            ? controller.position.viewportDimension
-            : size.height;
-        final offset = hasClients ? controller.offset : 0.0;
-        const trackInset = 10.0;
-        final trackHeight = math.max(1.0, size.height - trackInset * 2);
-        final handleHeight = maxScroll <= 0
-            ? trackHeight
-            : math.max(28.0, trackHeight * viewport / (viewport + maxScroll));
-        final travel = math.max(1.0, trackHeight - handleHeight);
-        final trajectoryDepth = portraitGridTrajectoryOffset(0, size.height);
-        final handleTop =
-            trackInset +
-            travel *
-                (maxScroll <= 0 ? 0 : (offset / maxScroll).clamp(0.0, 1.0));
-        final handleCenter = portraitScrollbarTrackPoint(
-          size,
-          handleTop + handleHeight / 2,
-          trackInset: trackInset,
-        );
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            child,
-            Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(
-                  key: ValueKey('$keyPrefix-diagonal-scrollbar'),
-                  painter: _DiagonalScrollbarPainter(
-                    offset: offset,
-                    maxScrollExtent: maxScroll,
-                    handleHeight: handleHeight,
-                    trackInset: trackInset,
+  Widget build(BuildContext context) => ScrollConfiguration(
+    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+    child: LayoutBuilder(
+      builder: (context, constraints) => AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) {
+          final size = constraints.biggest;
+          final hasClients = controller.hasClients;
+          final maxScroll = hasClients
+              ? controller.position.maxScrollExtent
+              : 0.0;
+          final viewport = hasClients
+              ? controller.position.viewportDimension
+              : size.height;
+          final offset = hasClients ? controller.offset : 0.0;
+          const trackInset = 10.0;
+          final trackHeight = math.max(1.0, size.height - trackInset * 2);
+          final handleHeight = maxScroll <= 0
+              ? trackHeight
+              : math.max(28.0, trackHeight * viewport / (viewport + maxScroll));
+          final travel = math.max(1.0, trackHeight - handleHeight);
+          final trajectoryDepth = portraitGridTrajectoryOffset(0, size.height);
+          final handleTop =
+              trackInset +
+              travel *
+                  (maxScroll <= 0 ? 0 : (offset / maxScroll).clamp(0.0, 1.0));
+          final handleCenter = portraitScrollbarTrackPoint(
+            size,
+            handleTop + handleHeight / 2,
+            trackInset: trackInset,
+          );
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              child,
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    key: ValueKey('$keyPrefix-diagonal-scrollbar'),
+                    painter: _DiagonalScrollbarPainter(
+                      offset: offset,
+                      maxScrollExtent: maxScroll,
+                      handleHeight: handleHeight,
+                      trackInset: trackInset,
+                    ),
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              key: ValueKey('$keyPrefix-scrollbar-handle-center'),
-              left: handleCenter.dx - 0.5,
-              top: handleCenter.dy - 0.5,
-              width: 1,
-              height: 1,
-              child: const IgnorePointer(),
-            ),
-            if (maxScroll > 0)
               Positioned(
-                left: math.max(0, size.width - trajectoryDepth - 24),
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: GestureDetector(
-                  key: ValueKey('$keyPrefix-diagonal-scrollbar-drag'),
-                  behavior: HitTestBehavior.translucent,
-                  onVerticalDragUpdate: (details) {
-                    controller.jumpTo(
-                      (controller.offset +
-                              details.delta.dy * maxScroll / travel)
-                          .clamp(0.0, maxScroll),
-                    );
-                  },
-                ),
+                key: ValueKey('$keyPrefix-scrollbar-handle-center'),
+                left: handleCenter.dx - 0.5,
+                top: handleCenter.dy - 0.5,
+                width: 1,
+                height: 1,
+                child: const IgnorePointer(),
               ),
-          ],
-        );
-      },
+              if (maxScroll > 0)
+                Positioned(
+                  left: math.max(0, size.width - trajectoryDepth - 24),
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: GestureDetector(
+                    key: ValueKey('$keyPrefix-diagonal-scrollbar-drag'),
+                    behavior: HitTestBehavior.translucent,
+                    onVerticalDragUpdate: (details) {
+                      controller.jumpTo(
+                        (controller.offset +
+                                details.delta.dy * maxScroll / travel)
+                            .clamp(0.0, maxScroll),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     ),
   );
 }

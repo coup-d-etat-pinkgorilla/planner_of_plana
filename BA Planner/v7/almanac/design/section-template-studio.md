@@ -983,8 +983,7 @@ Section 2·5의 viewport fog는 고정 장식이 아니라 실제 `ScrollPositio
 ## Plan Section 3 tab views and first bottleneck detail (2026-07-29)
 
 - Section 5 owns the selected resource view and drives three keyed Section 3
-  bodies: `3-1 병목`, `3-2 페이즈`, and `3-3 전체`. The phase and overall
-  bodies are reserved placeholders until their detail designs are implemented.
+  bodies: `3-1 병목`, `3-2 페이즈`, and `3-3 전체`.
 - Section 3-1 projects the container geometry from
   `release/section-plan-main-1.ba-section-studio.json`, then applies the runtime
   fit correction requested after visual review: width and height are 95% of
@@ -1002,10 +1001,12 @@ Section 2·5의 viewport fog는 고정 장식이 아니라 실제 `ScrollPositio
   paint the affected equipment value, and the credit sample paints the stage
   title. All other geometry and data presentation remain the Section 2 item.
 - Credit is not rendered as a resource tile. When credit is a bottleneck, a
-  dedicated long row between the reused stage item and the resource grid shows
-  the v6 `Currency_Icon_Gold.png`, `remaining / required`, and shortage in that
-  order. The icon box is `58.5×73.8px`, 60% of the former natural resource icon
-  box, and has no `square.png` background.
+  dedicated long, thin parallelogram row between the reused stage item and the
+  resource grid shows the v6 `Currency_Icon_Gold.png`, `remaining / required`,
+  and shortage in that order. This row is outside the ordinary two-column grid
+  and uses the same safe width and `38px` height as the delayed-stage action.
+  Its icon is constrained to `30×30px` to fit that row and has no `square.png`
+  background.
 - The resource grid has two equal slots per row. Its first entry uses the v6
   Abydos tier-index-0 tactical BD icon with the default `square.png` background
   and shows `단계 진입 잔량 4 / 단계 필요량 12`, followed by `8개 부족`.
@@ -1020,6 +1021,10 @@ Section 2·5의 viewport fog는 고정 장식이 아니라 실제 `ScrollPositio
   gaps on that monitor.
 - Equipment resource names append their explicit tier, for example
   `헤어핀 (T10)`.
+- Regular equipment icons (`Equipment_Icon_*_TierN`) follow the v6 equipment
+  family rule and always use the default `square.png`. Their numeric equipment
+  tier must not be interpreted as the 0–3 material-quality suffix used by BD,
+  notes, ooparts, reports, or enhancement materials.
 - `이 병목으로 지연되는 단계` is an action button. It toggles the common
   1.8px pink Section 2 highlight only on the exact phase/student/step keys
   listed by that bottleneck, rather than every row belonging to those students.
@@ -1033,5 +1038,197 @@ Section 2·5의 viewport fog는 고정 장식이 아니라 실제 `ScrollPositio
   Section 3-1 diagonal scroll trajectory directly testable. The credit sample
   additionally carries Antikythera T4 and Nebra T3 as two ordinary resource
   tiles in one row, covering the multiple-resource case.
+- These four bottlenecks are still typed UI preview constants. Section 3-1 does
+  not yet derive the first shortage point or cumulative downstream shortage
+  from the saved plan and inventory buckets.
+- Section 3-2 reuses the Section 3-1 container, card painter, 80° scroll rail,
+  38px credit row, two-column resource grid, and 107px resource tiles. It omits
+  the 65px Section 2 step item and the delayed-stage action. Each card is headed
+  only by `페이즈 N`.
+- Section 3-3 is the same consumption composition reduced to one `전체 계획`
+  card. Every resource amount is the exact sum of its Section 3-2 phase amounts,
+  including the independent credit row. It retains vertical-to-horizontal
+  diagonal scrolling when the single aggregate card is taller than the viewport.
+- Section 3-2 ordinary resource tiles place `부족 k` or `충족` below
+  `진입 n │ 필요 m │ 종료 n-m`; only the independent credit row keeps both
+  values side by side. Section 3-3
+  uses three aggregate rows below the name: `보유 n / 필요 m`, a painted
+  `n / m` coverage bar with its rounded percentage, and `부족 k` or `충족`.
+  The bar fill clamps at 100%, while the numeric balance remains exact. The
+  redundant `페이즈 소모량`, `전체 소모량`, and name suffix ` - 병목` remain
+  absent. Credit follows the same per-tab data presentation in its independent
+  row but omits the visually self-evident `크레딧` name.
+  The coverage row retains its original 12px ordinary / 8px compact layout
+  height so percentage alignment does not move. Only the centered painted
+  track and fill use 90% of that height (10.8px ordinary and 7.2px compact
+  before responsive scaling).
+- Non-equipment names do not append a tier. School-specific training material
+  names include the school, for example `기초 전술교육 BD : 아비도스`.
+  Equipment alone retains an explicit suffix such as `헤어핀 (T10)`.
+- The two-column grid does not use rectangular `Wrap` rows. Every row resolves
+  its own left boundary at the row bottom and right boundary at the row top, so
+  successive rows shift along the same 80° rails as the parent card and scroll.
+  The 107px tile width and height remain unchanged, but the left column moves
+  `10.70px` right and the right column moves `10.70px` left. Their outer painted
+  rails therefore sit about `22.70px` inside the parent rail, matching the
+  38px credit row and delayed-stage action; the 65px stage item differs by less
+  than 1px. This shared placement applies to Section 3-1, 3-2, and 3-3.
+- Switching among Section 3-1, 3-2, and 3-3 uses the sequential section motion
+  stack. Every body exits at `260°` before the next body enters at `80°`. The
+  translucent Section 3 glass foundation belongs to each animated body rather
+  than sitting outside the switcher, so the outer glass and nested content move
+  as one surface during both exit and entry.
+- The current Section 3-2 and 3-3 amounts are typed UI preview data. They preserve
+  the intended per-phase-to-overall aggregation invariant but are not yet wired
+  to saved planning gross totals.
+- Every resource surface in Section 3-1, 3-2, and 3-3 is an action, including
+  the independent credit rows. Selecting one applies the common Section 2 pink
+  outline only to the exact `phase/student/step` rows that consume that resource.
+  The selected resource surface receives its own 1.5px pink outline; selecting
+  another resource, a delayed-stage action, a Section 5 summary, or another tab
+  clears the previous resource focus. Selecting the same resource again toggles
+  it off.
+- Section 3-3 consumer sets are exact unions of the matching Section 3-2 resource
+  consumer sets, just as their amounts are sums. Every preview resource has a
+  non-empty consumer set so no visible item is a dead control.
+- Section 3-n preview names use the canonical item-id mappings in v6
+  `core/oparts.py` and `core/equipment_items.py`. Thus Nebra index 2 is
+  `마모된 네브라 디스크`, Antikythera index 3 is `온전한 안티키테라 장치`,
+  and the T10 Hairpin, Hat, and Watch assets are `전자파 차단 헤어핀`,
+  `게이밍 헬멧`, and `스크린 워치`. Only equipment keeps the explicit `(T10)`
+  suffix; ooparts use their full tier-specific names without an added tier.
 - v6 images are copied into dedicated v7 runtime UI asset directories; v7 does
   not import v6 paths at runtime.
+
+### 계획 탭 Section 4 재화 제어와 Section 6 유형 필터
+
+- Section 4는 학생 탭의 오른쪽 삼각형 제어 섹션 문법을 재사용한다. 위에서부터
+  `재화 유형 필터`, `충족 재화 숨기기`, `재화별 정렬방식`을 배치하며, 각 hit
+  surface는 자신의 중심 Y에서 Section 4의 80° 왼쪽 rail을 다시 계산한다.
+- 두 action 버튼은 viewport 폭과 무관하게 아이콘만 표시하고, 라벨은 hover
+  tooltip과 semantics로 제공한다. 정렬 control은 학생 Section 1의 커스텀
+  드롭다운처럼 투명 surface, 1px 핑크 사다리꼴 outline, compact 선택값과 직접
+  그린 하향 삼각형을 사용하며 펼친 menu label은 18px로 표시한다.
+- 닫힌 정렬 드롭다운의 compact label은 기존 11px inset에서 한 글자 폭인 15px를
+  더한 26px inset을 사용한다. 좁은 폭에서는 24% 비율 상한으로 축소한다.
+- 세 control의 기존 edge-to-edge 세로 gap을 정확히 80%로 줄이고, 확보한 높이는
+  세 surface에 균등 분배한다. 전체 점유 범위와 중앙 기준선은 유지하므로 삼각형
+  내부 순서와 80° rail 정렬은 바뀌지 않는다.
+- 재화 유형 필터를 열면 Section 5가 `outro 80°`로 완전히 퇴장한 뒤, Section 5와
+  정확히 같은 외곽 path·glass·shadow를 가진 Section 6이 `intro 260°`로 진입한다.
+  닫을 때도 같은 순차 교체 규칙을 역으로 적용한다.
+- Section 6은 학생 필터의 사선 내부 그룹 구조를 한 군만 사용한다. `전체`,
+  `전술 교육 BD`, `기술 노트`, `오파츠`, `장비`, `무기 부품`, `강화석`,
+  `크레딧`, `보고서`, `엘레프`, `선물`을 4열·3행 checkbox로 표시한다. 요청 목록에
+  중복 기재된 `강화석`은 하나의 category로 정규화한다.
+- 4열 배치가 Section 6 높이 안에 전부 들어가므로 별도 외곽 container, clip,
+  scroll viewport를 두지 않는다. Section 6 foundation 위에는 필터 group container와
+  초기화 버튼만 직접 배치하며, 작은 viewport에서는 행 높이와 글꼴만 가용 높이에
+  맞춰 축소한다.
+- 필터 group title은 12px에서 18px, 각 checkbox label은 10.5px에서 15.75px로
+  정확히 1.5배 확대한다. 최대화 viewport에서는 원래 배율을 유지하고 작은
+  viewport에서만 행 높이에 비례해 축소한다.
+- `전체`는 전부 선택/해제하며 부분 선택 상태에서는 indeterminate를 표시한다.
+  초기화 버튼은 모든 유형을 다시 선택한다. 선택 유형, 충족 숨김, 정렬은
+  Section 3-1·3-2·3-3의 현재 재화 데이터에 공통 적용한다.
+- 정렬 선택지는 기본 순서, 부족량 많은 순, 필요량 많은 순, 보유량 적은 순,
+  이름순이다. 필터·정렬 변경 시 기존 재화/단계 포커스를 지워 숨겨진 항목의
+  강조가 Section 2에 잔존하지 않게 한다.
+
+## 2026-07-30 계획 탭 Section 3~6 작업 시행착오와 재발 방지
+
+이번 세션은 Section 3-n 결과 UI, Section 4 제어, Section 5·6 교체 필터를 반복
+보정했다. 다음 계획 탭 작업에서는 아래 실패 원인과 해결 규칙을 먼저 적용한다.
+
+1. **스크린샷 여백을 padding 하나로 환원하지 않는다.** 재화 카드의 위·아래
+   공백은 카드 높이, media 자연 크기, 내부 padding이 함께 만든 결과였다. 현재
+   모니터의 최대화 작업 영역과 실제 crop pixel을 먼저 기록하고, visible group
+   높이와 card fill 높이를 분리해 계산해야 한다.
+2. **사선 정렬은 bounding box가 아니라 painted edge를 비교한다.** 3-n 2열 카드가
+   부모 rail 계산을 사용한다는 이유만으로 크레딧·단계·지연 버튼과 시각적으로
+   정렬됐다고 판단한 것이 잘못이었다. 각 child clip의 `height / tan(80°)` 깊이와
+   inset을 합산한 visible rail을 비교해야 한다. 현재 기준은 약 22.70px이며 카드
+   크기를 바꾸지 않고 좌우 열의 X만 각각 10.70px 안쪽으로 옮긴다.
+3. **전환하는 glass foundation은 body와 같은 animation child에 둔다.** Section
+   3-1·3-2·3-3의 foundation을 switcher 밖에 두면 내부만 움직이고 최하단 glass가
+   고정된다. Section 5↔6도 같은 이유로 각 child가 foundation을 소유하고 이전
+   child의 퇴장이 끝난 뒤 다음 child가 진입해야 한다.
+4. **선택 강조 상태는 하나의 배타적 상태 기계로 관리한다.** 지연 단계, Section 5
+   요약, 3-n 재화 선택이 별도 set을 남기면 Section 2 핑크 테두리가 겹친다. 새
+   선택을 적용하기 전에 학생 ID, exact stage key, selected resource key를 함께
+   정리하고 같은 항목 재선택만 toggle-off로 처리한다.
+5. **v6 명칭과 배경 규칙은 별개로 이관한다.** 오파츠 suffix는 품질별 정식 이름과
+   배경을 결정하지만 일반 장비의 `TierN`은 같은 규칙이 아니다. 장비는 기본
+   `square.png`를 사용하고 이름에만 `(T10)` 같은 tier를 붙인다. 크레딧은 배경이
+   없는 독립 행이다. 문자열 추정만으로 새 실데이터를 분류하지 않는다.
+6. **항목 수로 행·열을 먼저 계산하고 scroll을 추가한다.** Section 6을 처음 2열로
+   만들면서 불필요한 외곽 container와 scroll을 도입했고, 이후 3열, 최종 4열·3행으로
+   바꾸며 제거했다. 고정 항목 11개는 4열·3행으로 Section 6에 들어가므로 filter
+   container와 초기화 버튼만 필요하다.
+7. **기존 컴포넌트 “재사용”은 구조와 paint 계약까지 포함한다.** 학생 정렬
+   드롭다운을 참고하면서 일반 filled action surface를 먼저 사용한 것은 불완전한
+   재사용이었다. 현행 계획 정렬은 학생 control과 같은 투명 surface, 1px 핑크
+   outline, compact label, 직접 그린 하향 삼각형을 사용한다.
+8. **테스트는 Flutter geometry의 부동소수점 오차를 허용한다.** 계산 결과가 화면상
+   같아도 `Size` 직접 동등 비교는 실패했다. 사선 좌표와 크기는 `closeTo`를 사용하고,
+   존재하지 않는 `WidgetTester.getLeft` 대신 `getTopLeft(...).dx`를 사용한다.
+9. **ancestor 검색 순서를 상태 근거로 사용하지 않는다.** `Semantics` ancestor의
+   `.first`가 실제 selected semantics가 아니어서 `null`을 반환했다. 후보 전체에서
+   원하는 property를 찾거나 안정적인 key를 부여한다.
+10. **구조 단순화 직후에는 format보다 parse/analyze를 먼저 의식한다.** Section 6의
+    scroll wrapper를 제거할 때 `super.key`와 닫는 괄호를 누락했다. 작은 구조 변경도
+    즉시 `dart format`, `flutter analyze`, 집중 Widget test 순서로 확인한다.
+11. **Almanac은 UTF-8로 읽고 최신 문맥에 patch한다.** PowerShell 기본 출력에서 한글이
+    깨졌고 오래된 문장을 patch context로 사용해 갱신이 한 번 실패했다.
+    `Get-Content -Encoding utf8`로 최신 tail을 확인한 뒤 수정한다.
+12. **자동 geometry test는 실화면 미감의 대체물이 아니다.** 최대화 `2560×1392`
+    viewport의 rail·font·overflow를 수치로 고정하되 최종 밀도, 여백, 대비는 사용자
+    실화면 확인을 완료 조건으로 남긴다.
+
+## 계획 탭 페이즈 편집 화면 (2026-07-30)
+
+- 계획-메인 Section 1의 임시 `페이즈 만들기` action이 인메모리 편집 화면을 연다.
+  메인 Section들이 각자의 outro 방향으로 퇴장한 뒤 편집 Section 1~4가 진입한다.
+- 편집 배치는 `release/section-plan-phase.ba-section-studio.json`을 출발점으로 삼되
+  Section 2와 Section 4를 계획-메인 Section 2와 같은 `29×94` grid 크기로 고정했다.
+  완료 시 Section 4는 편집 위치 `(43,2)`에서 메인 Section 2 위치 `(12,2)`로 이동한다.
+- motion은 Section 1 `0°/180°`, Section 2·4 `80°/260°`, Section 3 `180°/0°`다.
+  네 Section 모두 alpha 0.76 surface와 lifted shadow를 한 번 적용한다.
+- Section 1은 전체 계획 요소의 portrait와 `호시노.1단계` 형식 label만 표시하고
+  뒤로 가기 action을 가진다. Section 2는 같은 요소의 상세 단계를 페이즈 구분 없이
+  한 container에 표시한다.
+- Section 3은 페이즈 이름 목록, Studio의 도형 1·2에 대응하는 생성·제거 action,
+  완료 action을 가진다. 이름을 누르면 inline 편집하며 마지막 페이즈를 제거해도 새
+  빈 페이즈 하나를 유지한다.
+- Section 2의 항목은 desktop drag로 Section 4의 페이즈 container에 이동한다.
+  페이즈를 제거하면 그 항목은 미배정 목록으로 돌아간다. Section 4의 배정 항목을
+  유효한 다른 페이즈가 아닌 곳에 놓아도 미배정 목록으로 돌아간다.
+- Section 1·2의 행, Section 3의 이름 행과 Section 4의 페이즈 카드는 기존 계획 목록처럼 scroll Y를
+  80° rail의 X 이동으로 변환한다. 전용 track과 handle도 같은 사선을 따른다.
+- 편집 Section 1↔2와 Section 4↔3의 facing 80° edge는 canonical 최대화
+  viewport에서 최소 12px seam을 유지한다. Section 3은 Studio 원본의 `(73,2,23,92)`
+  위치를 사용하고 Section 4는 `(43,2,29,94)`를 유지한다.
+- Section 1·3은 10px 내부 gap과 68% 목록 비율을 먼저 배정하고 남은 폭을 버튼이
+  반응형으로 사용한다. Section 1은 잔여 영역 전체가 뒤로 가기이고, Section 3은
+  잔여 영역을 생성·제거·완료가 세로로 균등 분할한다. 각 fill·border·clip·hit
+  area는 동일한 bounded path를 공유해 목록과 버튼이 겹치지 않는다.
+- Section 1의 compact 행, Section 3의 이름 행, Section 4의 phase drop card는 모두
+  높이에서 `tan(80°)` 깊이를 계산하는 양면 평행사변형이다. 네 목록의 scrollbar도
+  계획-메인의 `width - inset - y / tan(80°)` rail 방향과 일치시킨다.
+- Section 2·4의 최외곽 내부 container도 10px inset의 양면 평행사변형 path를
+  fill·border·texture clip에 공용한다. 모든 `PlanDiagonalScrollbar`와 편집 목록은
+  platform scrollbar 생성을 끄고 전용 사선 track/handle만 남긴다.
+- 평행사변형을 `AttachedSectionSpec.bottom` 원본과 사각 bounds의 교집합으로 만들면
+  우측 돌출점이 잘려 사다리꼴로 퇴화한다. 편집 Section 1·3 목록, Section 2·4
+  최외곽 container와 반복 item은 각각의 기존 bounds 안에서 좌상단과 우하단을
+  `height / tan(80°)`만큼 대칭 절단하는 공용 bilateral path를 사용한다.
+- Section 1 portrait는 `assets/item_backgrounds/square.png` 위에 학생 이미지를
+  겹치며 label은 `시로코 · 3단계` 형식이다.
+- Section 4 phase card는 항목 앞·사이·뒤의 insertion index마다 `DragTarget`을
+  만들고 hover 위치에 4px 핑크 선을 표시한다. 같은 phase 내부 재정렬도 원래
+  index를 제거한 뒤 목표 index를 보정해 지원한다.
+- 완료는 Section 2의 미배정 항목이 0개일 때만 활성화된다. 완료 과정에서 Section
+  1~3이 퇴장하고 Section 4가 메인 Section 2 위치로 이동한 다음, 해당 인메모리
+  페이즈 구성을 메인 Section 2가 이어받고 나머지 메인 Section들이 진입한다.
+- 현재 범위는 더미 데이터와 인메모리 상태뿐이다. repository 저장, 계획 요소
+  생성 화면과의 연결, 재시작 복원은 후속 범위다.
