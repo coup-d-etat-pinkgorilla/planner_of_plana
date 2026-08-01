@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import 'bond_rank_portrait.dart';
 import 'section_template_surface.dart';
+import 'student_portrait_status_overlay.dart';
 
 const diagonalMediaIncreaseColor = AppColors.success;
 const diagonalMediaDecreaseColor = AppColors.danger;
@@ -57,6 +58,9 @@ class DiagonalMediaListItemData {
     this.titleColor,
     this.skillsColor,
     this.equipmentValueColors = const [],
+    this.owned = true,
+    this.planned = false,
+    this.jpOnly = false,
   });
 
   final int order;
@@ -76,6 +80,9 @@ class DiagonalMediaListItemData {
   final Color? titleColor;
   final Color? skillsColor;
   final List<Color?> equipmentValueColors;
+  final bool owned;
+  final bool planned;
+  final bool jpOnly;
 }
 
 abstract final class DiagonalMediaListItemLayout {
@@ -157,6 +164,51 @@ Path diagonalMediaListItemPath(Size size) {
   ], radius: math.min(7, size.height * 0.16));
 }
 
+List<Rect> diagonalMediaStatusBadgeRects(Size size) {
+  final itemPath = diagonalMediaListItemPath(size);
+  final badgeHeight = math.min(18.0, size.height * 0.16);
+  final verticalGap = math.max(2.0, (size.height - badgeHeight * 3) / 4);
+  final sideGap = math.max(2.0, size.width * 0.0015);
+  final badgeWidth = (size.width * 0.045).clamp(42.0, 58.0);
+  return [
+    for (var index = 0; index < 3; index++)
+      () {
+        final top = verticalGap + index * (badgeHeight + verticalGap);
+        final bottom = top + badgeHeight;
+        final topSpan = _diagonalMediaPathHorizontalSpan(itemPath, top + 0.001);
+        final bottomSpan = _diagonalMediaPathHorizontalSpan(
+          itemPath,
+          bottom - 0.001,
+        );
+        final left = math.max(topSpan.left, bottomSpan.left) + sideGap;
+        return Rect.fromLTWH(left, top, badgeWidth, badgeHeight);
+      }(),
+  ];
+}
+
+({double left, double right}) _diagonalMediaPathHorizontalSpan(
+  Path path,
+  double y,
+) {
+  final bounds = path.getBounds();
+  final sampleY = y.clamp(bounds.top + 0.001, bounds.bottom - 0.001);
+  const samples = 128;
+  var first = -1;
+  var last = -1;
+  for (var index = 0; index <= samples; index++) {
+    final x = bounds.left + bounds.width * index / samples;
+    if (path.contains(Offset(x, sampleY))) {
+      first = first < 0 ? index : first;
+      last = index;
+    }
+  }
+  if (first < 0) return (left: bounds.left, right: bounds.right);
+  return (
+    left: bounds.left + bounds.width * first / samples,
+    right: bounds.left + bounds.width * last / samples,
+  );
+}
+
 Path relationshipRankHeartPath(Size size) => Path()
   ..moveTo(size.width * 0.51, size.height * 0.96)
   ..cubicTo(
@@ -215,11 +267,13 @@ class DiagonalMediaListItem extends StatelessWidget {
     required this.data,
     this.onTap,
     this.highlighted = false,
+    this.currentStudentState = false,
   });
 
   final DiagonalMediaListItemData data;
   final VoidCallback? onTap;
   final bool highlighted;
+  final bool currentStudentState;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -234,7 +288,18 @@ class DiagonalMediaListItem extends StatelessWidget {
         ),
         child: child,
       );
+      Widget pixelSlot(Rect rect, Widget child) =>
+          Positioned.fromRect(rect: rect, child: child);
 
+      const currentStateTextScale = 1.5;
+      final textScale = currentStudentState ? currentStateTextScale : 1.0;
+      final statusBadgeRects = diagonalMediaStatusBadgeRects(size);
+      final portrait = BondRankPortrait(
+        key: const ValueKey('diagonal-media-portrait'),
+        portraitAsset: data.mediaAssetPath,
+        bondRank: int.tryParse(data.bondRank.value),
+        clipRadius: 0,
+      );
       final content = Stack(
         clipBehavior: Clip.none,
         children: [
@@ -242,29 +307,74 @@ class DiagonalMediaListItem extends StatelessWidget {
             DiagonalMediaListItemLayout.portrait,
             ClipPath(
               clipper: const _PortraitClipper(),
-              child: BondRankPortrait(
-                key: const ValueKey('diagonal-media-portrait'),
-                portraitAsset: data.mediaAssetPath,
-                bondRank: int.tryParse(data.bondRank.value),
-                clipRadius: 0,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (currentStudentState && !data.owned)
+                    ColorFiltered(
+                      key: const ValueKey(
+                        'diagonal-media-unowned-portrait-darkening',
+                      ),
+                      colorFilter: const ColorFilter.mode(
+                        Color.fromRGBO(6, 8, 14, 0.46),
+                        BlendMode.srcATop,
+                      ),
+                      child: portrait,
+                    )
+                  else
+                    portrait,
+                  if (!currentStudentState)
+                    StudentPortraitStatusOverlay(
+                      key: const ValueKey('diagonal-media-portrait-status'),
+                      owned: data.owned,
+                    ),
+                ],
               ),
             ),
           ),
-          slot(
-            DiagonalMediaListItemLayout.order,
-            _FittedLabel(
-              '${data.order}',
-              color: AppColors.text,
-              fontWeight: FontWeight.w900,
-              alignment: Alignment.center,
+          if (currentStudentState && !data.owned)
+            pixelSlot(
+              statusBadgeRects[0],
+              const _CatalogStatusBadge(
+                key: ValueKey('diagonal-media-list-unowned-badge'),
+                label: 'UNOWNED',
+              ),
             ),
-          ),
+          if (currentStudentState && data.planned)
+            pixelSlot(
+              statusBadgeRects[1],
+              const _CatalogStatusBadge(
+                key: ValueKey('diagonal-media-list-plan-badge'),
+                label: 'PLAN',
+              ),
+            ),
+          if (currentStudentState && data.jpOnly)
+            pixelSlot(
+              statusBadgeRects[2],
+              const _CatalogStatusBadge(
+                key: ValueKey('diagonal-media-list-jp-badge'),
+                label: 'JP',
+              ),
+            ),
+          if (!currentStudentState)
+            slot(
+              DiagonalMediaListItemLayout.order,
+              _FittedLabel(
+                '${data.order}',
+                key: const ValueKey('diagonal-media-order'),
+                color: AppColors.text,
+                fontWeight: FontWeight.w900,
+                alignment: Alignment.center,
+              ),
+            ),
           slot(
             DiagonalMediaListItemLayout.title,
             _FittedLabel(
               data.title,
+              key: const ValueKey('diagonal-media-title'),
               color: data.titleColor ?? AppColors.text,
               fontWeight: FontWeight.w800,
+              fontSize: 11 * textScale,
             ),
           ),
           slot(
@@ -278,15 +388,23 @@ class DiagonalMediaListItem extends StatelessWidget {
           ),
           slot(
             DiagonalMediaListItemLayout.weaponLevel,
-            _DeltaLabel(data.weaponLevel),
+            _DeltaLabel(
+              data.weaponLevel,
+              key: const ValueKey('diagonal-media-weapon-level'),
+              fontSize: 9.5 * textScale,
+            ),
           ),
           slot(
             DiagonalMediaListItemLayout.bondWithDelta,
-            _BondRank(value: data.bondRank),
+            _BondRank(value: data.bondRank, showDelta: !currentStudentState),
           ),
           slot(
             DiagonalMediaListItemLayout.studentLevel,
-            _DeltaLabel(data.studentLevel),
+            _DeltaLabel(
+              data.studentLevel,
+              key: const ValueKey('diagonal-media-student-level'),
+              fontSize: 9.5 * textScale,
+            ),
           ),
           slot(
             DiagonalMediaListItemLayout.skills,
@@ -297,7 +415,7 @@ class DiagonalMediaListItem extends StatelessWidget {
                 componentDeltas: data.skills.componentDeltas,
               ),
               key: const ValueKey('diagonal-media-skills'),
-              fontSize: 14.25,
+              fontSize: 14.25 * textScale,
               valueColor: data.skillsColor,
             ),
           ),
@@ -307,6 +425,7 @@ class DiagonalMediaListItem extends StatelessWidget {
               _EquipmentIcon(
                 key: ValueKey('diagonal-media-equipment-$index'),
                 assetPath: data.equipment[index].assetPath,
+                scale: currentStudentState ? 1.15 : 1,
               ),
             ),
             slot(
@@ -317,6 +436,7 @@ class DiagonalMediaListItem extends StatelessWidget {
                 valueColor: index < data.equipmentValueColors.length
                     ? data.equipmentValueColors[index]
                     : null,
+                fontSize: 8.5 * textScale,
               ),
             ),
           ],
@@ -325,6 +445,7 @@ class DiagonalMediaListItem extends StatelessWidget {
             _DeltaLabel(
               data.favoriteItem,
               key: const ValueKey('diagonal-media-favorite-item'),
+              fontSize: 9.5 * textScale,
             ),
           ),
           slot(
@@ -332,7 +453,7 @@ class DiagonalMediaListItem extends StatelessWidget {
             _StackedDeltaLabel(
               data.stats,
               key: const ValueKey('diagonal-media-stats'),
-              fontSize: 9.5,
+              fontSize: 9.5 * textScale,
             ),
           ),
         ],
@@ -352,18 +473,79 @@ class DiagonalMediaListItem extends StatelessWidget {
   );
 }
 
+class _CatalogStatusBadge extends StatelessWidget {
+  const _CatalogStatusBadge({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    painter: const _CatalogStatusBadgePainter(),
+    child: Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            maxLines: 1,
+            style: const TextStyle(
+              color: Color(0xfff2f2f2),
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              height: 1,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _CatalogStatusBadgePainter extends CustomPainter {
+  const _CatalogStatusBadgePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final depth = math.min(
+      size.width * 0.18,
+      size.height / math.tan(80 * math.pi / 180),
+    );
+    final path = buildRoundedSectionPolygon([
+      Offset(depth, 0),
+      Offset(size.width, 0),
+      Offset(size.width - depth, size.height),
+      Offset(0, size.height),
+    ], radius: math.min(4, size.height * 0.22));
+    canvas.drawPath(path, Paint()..color = const Color(0xde06080e));
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = const Color(0x42ffffff)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.8,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CatalogStatusBadgePainter oldDelegate) => false;
+}
+
 class _FittedLabel extends StatelessWidget {
   const _FittedLabel(
     this.text, {
+    super.key,
     required this.color,
     this.fontWeight = FontWeight.w700,
     this.alignment = Alignment.centerLeft,
+    this.fontSize = 11,
   });
 
   final String text;
   final Color color;
   final FontWeight fontWeight;
   final Alignment alignment;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) => Align(
@@ -376,7 +558,7 @@ class _FittedLabel extends StatelessWidget {
         maxLines: 1,
         style: TextStyle(
           color: color,
-          fontSize: 11,
+          fontSize: fontSize,
           fontWeight: fontWeight,
           height: 1,
         ),
@@ -496,10 +678,12 @@ class _EquipmentValueLabel extends StatelessWidget {
     super.key,
     required this.equipment,
     this.valueColor,
+    this.fontSize = 8.5,
   });
 
   final DiagonalMediaEquipment equipment;
   final Color? valueColor;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) => _StackedDeltaLabel(
@@ -507,7 +691,7 @@ class _EquipmentValueLabel extends StatelessWidget {
       '${equipment.tier.value} ${equipment.level.value}',
       componentDeltas: [equipment.tier.delta, equipment.level.delta],
     ),
-    fontSize: 8.5,
+    fontSize: fontSize,
     valueColor: valueColor,
   );
 }
@@ -594,36 +778,40 @@ String formatDiagonalMediaSkillLevels(String value) {
 }
 
 class _BondRank extends StatelessWidget {
-  const _BondRank({required this.value});
+  const _BondRank({required this.value, this.showDelta = true});
 
   final DiagonalMediaValue value;
+  final bool showDelta;
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Expanded(
-        flex: 3,
-        child: Center(
-          child: AspectRatio(
-            key: const ValueKey('diagonal-media-heart'),
-            aspectRatio: 1.28,
-            child: CustomPaint(
-              painter: const _HeartPainter(),
-              child: Align(
-                alignment: const Alignment(0, -0.04),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    value.value,
-                    style: const TextStyle(
-                      color: Color(0xff27465a),
-                      fontSize: 15.75,
-                      fontWeight: FontWeight.w900,
-                      height: 1,
-                      shadows: [
-                        Shadow(color: Colors.white, blurRadius: 1.2),
-                        Shadow(color: Colors.white, offset: Offset(0, 0.5)),
-                      ],
+  Widget build(BuildContext context) {
+    final delta = showDelta ? value.delta : null;
+    return Column(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Center(
+            child: AspectRatio(
+              key: const ValueKey('diagonal-media-heart'),
+              aspectRatio: 1.28,
+              child: CustomPaint(
+                painter: const _HeartPainter(),
+                child: Align(
+                  alignment: const Alignment(0, -0.04),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      value.value,
+                      style: const TextStyle(
+                        color: Color(0xff27465a),
+                        fontSize: 15.75,
+                        fontWeight: FontWeight.w900,
+                        height: 1,
+                        shadows: [
+                          Shadow(color: Colors.white, blurRadius: 1.2),
+                          Shadow(color: Colors.white, offset: Offset(0, 0.5)),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -631,50 +819,54 @@ class _BondRank extends StatelessWidget {
             ),
           ),
         ),
-      ),
-      if (value.delta case final delta? when delta != 0)
-        Expanded(
-          flex: 1,
-          child: Center(
-            child: _DeltaLabel(
-              DiagonalMediaValue('', delta: delta),
-              fontSize: 8.5,
-              alignment: Alignment.center,
-              contentKey: const ValueKey('diagonal-media-bond-delta'),
+        if (delta != null && delta != 0)
+          Expanded(
+            flex: 1,
+            child: Center(
+              child: _DeltaLabel(
+                DiagonalMediaValue('', delta: delta),
+                fontSize: 8.5,
+                alignment: Alignment.center,
+                contentKey: const ValueKey('diagonal-media-bond-delta'),
+              ),
             ),
-          ),
-        )
-      else
-        const Spacer(),
-    ],
-  );
+          )
+        else
+          const Spacer(),
+      ],
+    );
+  }
 }
 
 class _EquipmentIcon extends StatelessWidget {
-  const _EquipmentIcon({super.key, required this.assetPath});
+  const _EquipmentIcon({super.key, required this.assetPath, this.scale = 1});
 
   final String assetPath;
+  final double scale;
 
   @override
-  Widget build(BuildContext context) => Stack(
-    fit: StackFit.expand,
-    alignment: Alignment.center,
-    children: [
-      Image.asset(
-        defaultStudentPortraitBackgroundAsset,
-        fit: BoxFit.contain,
-        filterQuality: FilterQuality.medium,
-      ),
-      FractionallySizedBox(
-        widthFactor: 0.98,
-        heightFactor: 0.98,
-        child: Image.asset(
-          assetPath,
+  Widget build(BuildContext context) => Transform.scale(
+    scale: scale,
+    child: Stack(
+      fit: StackFit.expand,
+      alignment: Alignment.center,
+      children: [
+        Image.asset(
+          defaultStudentPortraitBackgroundAsset,
           fit: BoxFit.contain,
           filterQuality: FilterQuality.medium,
         ),
-      ),
-    ],
+        FractionallySizedBox(
+          widthFactor: 0.98,
+          heightFactor: 0.98,
+          child: Image.asset(
+            assetPath,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.medium,
+          ),
+        ),
+      ],
+    ),
   );
 }
 

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
@@ -6,13 +7,86 @@ import 'package:ba_planner_v7/ui/studio/section_template.dart';
 import 'package:ba_planner_v7/ui/studio/student_studio_layout.dart';
 import 'package:ba_planner_v7/ui/widgets/animated_section_stack.dart';
 import 'package:ba_planner_v7/ui/widgets/asset_image_grid.dart';
+import 'package:ba_planner_v7/ui/widgets/diagonal_media_list_item.dart';
 import 'package:ba_planner_v7/ui/widgets/lifted_path_shadow.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_student_step_tile.dart';
 import 'package:ba_planner_v7/ui/widgets/section_template_surface.dart';
+import 'package:ba_planner_v7/ui/widgets/student_portrait_status_overlay.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'student image compositing layer stays outside the visible asset rect',
+    () {
+      const card = Rect.fromLTWH(10, 20, 120, 96);
+      expect(
+        assetImageCompositingLayerBounds(card),
+        const Rect.fromLTWH(8, 18, 124, 100),
+      );
+    },
+  );
+
+  test('student grid card path cuts both bottom canvas corners', () {
+    const card = Rect.fromLTWH(10, 20, 252, 204);
+    final path = studentGridCardPath(card);
+
+    expect(path.contains(const Offset(11, 223)), isFalse);
+    expect(path.contains(const Offset(261, 223)), isFalse);
+    expect(path.contains(const Offset(100, 223)), isTrue);
+  });
+
+  test('student grid active rows include one buffer and clamp to bounds', () {
+    expect(
+      studentGridActiveRowRange(
+        rowCount: 40,
+        scrollOffset: 0,
+        viewportHeight: 250,
+        cellHeight: 100,
+        rowGap: 4,
+        contentTop: 8,
+      ),
+      (start: 0, end: 4),
+    );
+    expect(
+      studentGridActiveRowRange(
+        rowCount: 40,
+        scrollOffset: 520,
+        viewportHeight: 250,
+        cellHeight: 100,
+        rowGap: 4,
+        contentTop: 8,
+      ),
+      (start: 3, end: 9),
+    );
+    expect(
+      studentGridActiveRowRange(
+        rowCount: 4,
+        scrollOffset: 1000,
+        viewportHeight: 250,
+        cellHeight: 100,
+        rowGap: 4,
+        contentTop: 8,
+      ),
+      (start: 4, end: 4),
+    );
+  });
+
+  test('student grid badges follow both top corners and the left rail', () {
+    const card = Rect.fromLTWH(10, 20, 252, 204);
+    final badges = studentGridStatusBadgeRects(card);
+    final expectedGap = card.shortestSide * 0.01;
+    final expectedDepth = card.height / math.tan(80 * math.pi / 180);
+
+    expect(badges.unowned.top, badges.jp.top);
+    expect(badges.unowned.left, closeTo(card.left + expectedDepth, 1e-9));
+    expect(badges.jp.right, lessThan(card.right));
+    expect(badges.jp.right, greaterThan(card.right - 6));
+    expect(badges.plan.top - badges.unowned.bottom, closeTo(expectedGap, 1e-9));
+    expect(badges.plan.left, lessThan(badges.unowned.left));
+  });
+
   test('student Studio action containers use one size and cadence', () {
     for (final size in const [Size(960, 590), Size(1280, 720)]) {
       final section = sectionCanvasElementRect(
@@ -48,6 +122,10 @@ void main() {
   test('Section 1 sort dropdown follows action cadence and search height', () {
     for (final size in const [Size(960, 590), Size(1280, 720)]) {
       final dropdown = studentSortDropdownPath(size).getBounds();
+      final viewButtons = studentViewTogglePaths(
+        size,
+      ).map((path) => path.getBounds()).toList(growable: false);
+      final viewPolygons = studentViewTogglePolygons(size);
       final search = studentContainerPath(size, 'container-14')!.getBounds();
       final filterButton = studentContainerPath(
         size,
@@ -63,7 +141,27 @@ void main() {
       )!.getBounds();
 
       expect(dropdown.height, closeTo(search.height, 0.25));
-      expect(dropdown.top, lessThan(planButton.top));
+      expect(viewButtons, hasLength(2));
+      expect(viewButtons[0].top, closeTo(viewButtons[1].top, 0.01));
+      expect(viewButtons[0].height, closeTo(viewButtons[1].height, 0.01));
+      expect(viewButtons[0].right, lessThan(viewButtons[1].left));
+      final listButton = viewPolygons[0];
+      final gridButton = viewPolygons[1];
+      expect(listButton[0].dx, closeTo(listButton[3].dx, 0.01));
+      expect(listButton[1].dx - listButton[2].dx, greaterThan(0));
+      expect(
+        gridButton[1].dx - gridButton[2].dx,
+        closeTo(listButton[1].dx - listButton[2].dx, 0.01),
+      );
+      expect(
+        gridButton[0].dx - listButton[1].dx,
+        closeTo(gridButton[3].dx - listButton[2].dx, 0.01),
+      );
+      expect(viewButtons.first.top, lessThan(dropdown.top));
+      expect(
+        dropdown.top - viewButtons.first.bottom,
+        closeTo(planButton.top - dropdown.bottom, 0.25),
+      );
       expect(
         planButton.top - dropdown.bottom,
         closeTo(scanButton.top - planButton.bottom, 0.25),
@@ -76,6 +174,12 @@ void main() {
         studentSectionPath(size, 'element-1').contains(dropdown.center),
         isTrue,
       );
+      for (final button in viewButtons) {
+        expect(
+          studentSectionPath(size, 'element-1').contains(button.center),
+          isTrue,
+        );
+      }
     }
   });
 
@@ -332,10 +436,21 @@ void main() {
       'container-7',
       'container-9',
       'container-10',
-      'container-12',
     ]) {
       expect(role(id), StudentContainerTextureRole.status);
     }
+    final section2Container = containers.firstWhere(
+      (container) => container.id == 'container-12',
+    );
+    expect(
+      studentContainerTextureRole(section2Container),
+      StudentContainerTextureRole.section2Background,
+    );
+    expect(studentContainerShowsOutline(section2Container), isTrue);
+    expect(
+      studentSection2ContainerColor.computeLuminance(),
+      lessThan(const Color(0xff30485f).computeLuminance()),
+    );
   });
 
   test('student school names resolve to bundled logo assets', () {
@@ -542,6 +657,72 @@ void main() {
     expect(studentDefenseTypeColor('Special'), const Color(0xff226f9b));
     expect(studentDefenseTypeColor('Elastic'), const Color(0xff9945a8));
   });
+
+  test(
+    'unowned portrait API preserves the v6 overlay and badge contract',
+    () async {
+      const style = StudentPortraitStatusStyle();
+      expect(style.unownedLabel, 'UNOWNED');
+      expect(style.unownedOverlay, const Color.fromRGBO(6, 8, 14, 0.46));
+      expect(style.badgeColor, const Color.fromRGBO(6, 8, 14, 0.87));
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      paintUnownedStudentPortraitStatus(
+        canvas,
+        const Rect.fromLTWH(0, 0, 120, 100),
+      );
+      final image = await recorder.endRecording().toImage(120, 100);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      expect(bytes, isNotNull);
+      final overlayPixel = (50 * 120 + 100) * 4;
+      // rawRgba is premultiplied on this test backend.
+      expect(bytes!.getUint8(overlayPixel), closeTo(3, 1));
+      expect(bytes.getUint8(overlayPixel + 1), closeTo(4, 1));
+      expect(bytes.getUint8(overlayPixel + 2), closeTo(6, 1));
+      expect(bytes.getUint8(overlayPixel + 3), closeTo(117, 1));
+      image.dispose();
+    },
+  );
+
+  testWidgets(
+    'focused portrait exposes ownership through the shared overlay API',
+    (tester) async {
+      final search = TextEditingController();
+      addTearDown(search.dispose);
+      await tester.binding.setSurfaceSize(const Size(1100, 720));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      Widget layout(Set<String> ownedIds) => MaterialApp(
+        home: Scaffold(
+          body: StudentSectionLayout(
+            students: [StudentCatalogEntry.fallback('aru')],
+            ownedIds: ownedIds,
+            selectedId: 'aru',
+            selectedValues: null,
+            searchController: search,
+            onSearchChanged: (_) {},
+            onStudentSelected: (_) {},
+            onAddToPlan: null,
+            onOpenScan: null,
+            onOpenFilter: () {},
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(layout(const {}));
+      await tester.pumpAndSettle();
+      StudentPortraitStatusOverlay overlay() => tester.widget(
+        find.byKey(const ValueKey('student-focused-portrait-status')),
+      );
+      expect(overlay().owned, isFalse);
+
+      await tester.pumpWidget(layout(const {'aru'}));
+      await tester.pump();
+      expect(overlay().owned, isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('Section 1 scan action keeps its runtime handoff', (
     tester,
@@ -791,6 +972,7 @@ void main() {
           child: StudentDiagonalGrid(
             students: students,
             ownedIds: const {},
+            plannedIds: const {'student_0'},
             studentValuesById: const {
               'student_0': {'bond_rank': 100},
             },
@@ -810,11 +992,15 @@ void main() {
     expect(grid.rowGap, 3.84);
     expect(grid.items, hasLength(34));
     expect(grid.items.first.scale, 1);
+    expect(grid.items.first.edgeCropFraction, 0.11);
+    expect(grid.items.first.alphaThreshold, 0);
+    expect(grid.items.first.clipPathBuilder, studentGridCardPath);
     expect(
       grid.items.first.asset,
       'assets/student_bond_backgrounds/square_purple.png',
     );
     expect(grid.items[1].scale, 0.98);
+    expect(grid.items[1].alphaThreshold, 0.04);
     expect(grid.contentPadding.right, greaterThan(grid.contentPadding.left));
     final overlay = tester.widget<CustomPaint>(
       find.byKey(const ValueKey('student-card-overlay-grid')),
@@ -822,13 +1008,79 @@ void main() {
     final overlayPainter = overlay.painter as StudentGridCardOverlayPainter;
     expect(overlayPainter.showAttributes, isTrue);
     expect(overlayPainter.showNames, isTrue);
+    expect(overlayPainter.outlineColor, Colors.white);
+    expect(overlayPainter.outlineWidthFraction, 0.01);
+    expect(overlayPainter.selectionWidthFraction, 0.02);
+    expect(
+      overlayPainter.outlineWidthFraction,
+      lessThan(overlayPainter.selectionWidthFraction),
+    );
     expect(overlayPainter.students, hasLength(17));
+    expect(overlayPainter.ownedIds, isEmpty);
+    expect(overlayPainter.plannedIds, const {'student_0'});
     expect(
       find.byKey(const ValueKey('student-grid-diagonal-scrollbar')),
       findsOneWidget,
     );
     expect(find.byType(Scrollbar), findsNothing);
     expect(find.byType(RawScrollbar), findsNothing);
+  });
+
+  testWidgets('student grid only builds the visible rows and one-row buffer', (
+    tester,
+  ) async {
+    final students = List.generate(
+      80,
+      (index) => StudentCatalogEntry.fallback('student_$index'),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 900,
+          height: 240,
+          child: StudentDiagonalGrid(
+            students: students,
+            ownedIds: const {},
+            studentValuesById: const {},
+            selectedId: null,
+            onSelected: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    AssetImageGrid grid() => tester.widget<AssetImageGrid>(
+      find.byKey(const ValueKey('student-image-grid')),
+    );
+    StudentGridCardOverlayPainter overlay() =>
+        tester
+                .widget<CustomPaint>(
+                  find.byKey(const ValueKey('student-card-overlay-grid')),
+                )
+                .painter
+            as StudentGridCardOverlayPainter;
+
+    expect(grid().items.length, lessThan(students.length * 2));
+    expect(grid().items.every((item) => item.row < overlay().lastRow!), isTrue);
+    expect(find.byKey(const ValueKey('student-student_0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('student-student_79')), findsNothing);
+
+    await tester.drag(
+      find.byKey(const ValueKey('student-diagonal-grid-scroll')),
+      const Offset(0, -500),
+    );
+    await tester.pump();
+
+    expect(overlay().firstRow, greaterThan(0));
+    expect(
+      grid().items.every(
+        (item) =>
+            item.row >= overlay().firstRow && item.row < overlay().lastRow!,
+      ),
+      isTrue,
+    );
+    expect(find.byKey(const ValueKey('student-student_0')), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Section 1 dropdown changes the Section 2 student order', (
@@ -904,6 +1156,129 @@ void main() {
     ]);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'Section 1 view buttons switch Section 2 to reusable student rows',
+    (tester) async {
+      final search = TextEditingController();
+      addTearDown(search.dispose);
+      await tester.binding.setSurfaceSize(const Size(1100, 720));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      String? selected;
+      final students = [
+        StudentCatalogEntry.fallback('aru'),
+        StudentCatalogEntry.fallback('azusa'),
+        StudentCatalogEntry.fallback('yuuka'),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StudentSectionLayout(
+              students: students,
+              ownedIds: const {'aru', 'azusa'},
+              selectedId: 'aru',
+              selectedValues: const {'level': 20},
+              studentValuesById: const {
+                'aru': {'level': 20, 'bond_rank': 10},
+                'azusa': {'level': 80, 'bond_rank': 50},
+              },
+              searchController: search,
+              onSearchChanged: (_) {},
+              onStudentSelected: (studentId) => selected = studentId,
+              onAddToPlan: () {},
+              onOpenScan: null,
+              onOpenFilter: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('student-section-2-grid-view')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('student-section-2-list-view')),
+        findsNothing,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('student-list-view-button')));
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('student-section-2-grid-view')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('student-section-2-list-view')),
+        findsNothing,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('student-section-2-list-view')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('student-section-2-grid-view')),
+        findsNothing,
+      );
+      final tiles = tester
+          .widgetList<PlanStudentStepTile>(find.byType(PlanStudentStepTile))
+          .toList(growable: false);
+      expect(tiles.map((tile) => tile.step.studentId), [
+        'aru',
+        'azusa',
+        'yuuka',
+      ]);
+      expect(tiles.first.highlighted, isTrue);
+      expect(tiles.last.owned, isFalse);
+      expect(tiles.every((tile) => tile.currentStudentState), isTrue);
+      expect(tiles.last.step.target, '현재 상태');
+      final currentItems = tester
+          .widgetList<DiagonalMediaListItem>(find.byType(DiagonalMediaListItem))
+          .toList(growable: false);
+      expect(
+        currentItems.map((item) => item.data.title),
+        students.map((student) => student.displayName),
+      );
+      expect(currentItems.every((item) => item.currentStudentState), isTrue);
+      expect(
+        find.byKey(const ValueKey('diagonal-media-unowned-portrait-darkening')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('diagonal-media-list-unowned-badge')),
+        findsOneWidget,
+      );
+      expect(
+        tester.getSize(find.byKey(const ValueKey('student-list-aru'))).height,
+        studentListItemHeight,
+      );
+      expect(studentListItemHeight, 97.5);
+      expect(studentListItemExtent - studentListItemHeight, 4);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('student-list-yuuka')),
+          matching: find.byKey(
+            const ValueKey('diagonal-media-list-unowned-badge'),
+          ),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('student-list-azusa')));
+      expect(selected, 'azusa');
+
+      await tester.tap(find.byKey(const ValueKey('student-grid-view-button')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('student-section-2-grid-view')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('right detail indicators render the confirmed student state', (
     tester,
@@ -1130,12 +1505,17 @@ void main() {
       find.byKey(const ValueKey('student-detail-bond-rank')),
     );
     expect(bondText.style?.fontSize, 43.2);
-    final bondBounds = studentContainerPath(
+    final bondPath = studentContainerPath(
       const Size(1100, 720),
       'container-10',
-    )!.getBounds();
+    )!;
+    final bondBounds = bondPath.getBounds();
     final expectedBondCenter =
-        bondBounds.topLeft + studentBondRankRect(bondBounds.size).center;
+        bondBounds.topLeft +
+        studentBondRankRect(
+          bondBounds.size,
+          outerPath: bondPath.shift(-bondBounds.topLeft),
+        ).center;
     expect(
       (tester.getCenter(
                 find.byKey(const ValueKey('student-detail-bond-rank')),
@@ -1305,14 +1685,16 @@ void main() {
     expect(
       hostBounds.bottom,
       closeTo(
-        studentBondRankRect(size).top - studentBondGaugeRankGap(size),
+        studentBondRankRect(size, outerPath: outerPath).top -
+            studentBondGaugeRankGap(size),
         0.001,
       ),
     );
     expect(
       hostBounds.bottom - studentBondGaugeEdgeGap(size),
       greaterThan(
-        studentBondRankRect(size).top - math.max(7.0, size.height * 0.035),
+        studentBondRankRect(size, outerPath: outerPath).top -
+            math.max(7.0, size.height * 0.035),
       ),
     );
     expect(

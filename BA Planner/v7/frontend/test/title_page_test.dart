@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:ba_planner_v7/app/app.dart';
+import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/studio/section_studio_document.dart';
@@ -14,6 +15,8 @@ import 'package:ba_planner_v7/ui/widgets/asset_image_grid.dart';
 import 'package:ba_planner_v7/ui/widgets/ba_triangle_background.dart';
 import 'package:ba_planner_v7/ui/widgets/lifted_path_shadow.dart';
 import 'package:ba_planner_v7/ui/widgets/section_template_surface.dart';
+import 'package:ba_planner_v7/ui/widgets/student_grid_warmup.dart';
+import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,6 +42,68 @@ Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  test(
+    'student grid warmup follows the initial name sort and viewport cap',
+    () {
+      final catalog = List.generate(
+        70,
+        (index) => StudentCatalogEntry.fallback(
+          'student_${(69 - index).toString().padLeft(2, '0')}',
+        ),
+      );
+
+      final students = studentGridWarmupStudents(catalog);
+      final assets = studentGridWarmupAssetPaths(catalog);
+
+      expect(students, hasLength(studentGridWarmupStudentLimit));
+      expect(students.first.studentId, 'student_00');
+      expect(students.last.studentId, 'student_63');
+      expect(
+        assets.where((asset) => asset.contains('/student_portraits/')),
+        hasLength(studentGridWarmupStudentLimit),
+      );
+      expect(
+        assets.where((asset) => asset.contains('/student_bond_backgrounds/')),
+        hasLength(3),
+      );
+    },
+  );
+
+  testWidgets('student paint warmup uses the production grid painters', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StudentGridPaintWarmup(
+          student: StudentCatalogEntry.fallback('aru'),
+        ),
+      ),
+    );
+
+    final grid = tester.widget<AssetImageGrid>(find.byType(AssetImageGrid));
+    expect(grid.items, hasLength(2));
+    expect(grid.items.first.clipPathBuilder, studentGridCardPath);
+    expect(
+      tester
+          .widget<Opacity>(
+            find.descendant(
+              of: find.byType(StudentGridPaintWarmup),
+              matching: find.byType(Opacity),
+            ),
+          )
+          .opacity,
+      1 / 255,
+    );
+    final overlay = tester
+        .widgetList<CustomPaint>(find.byType(CustomPaint))
+        .map((paint) => paint.painter)
+        .whereType<StudentGridCardOverlayPainter>()
+        .single;
+    expect(overlay.students.single.studentId, 'aru');
+    expect(overlay.selectedIndex, 0);
+    expect(tester.takeException(), isNull);
+  });
+
   test('typed title layout combines the base and revised Studio documents', () {
     final base =
         jsonDecode(
@@ -240,12 +305,17 @@ void main() {
       reason: 'section 2 must not paint a second translucent base surface',
     );
     final primaryTexture = find.byKey(const ValueKey('title-primary-texture'));
+    final primaryBackground = find.descendant(
+      of: primaryTexture,
+      matching: find.byType(BATriangleBackground),
+    );
+    expect(primaryBackground, findsOneWidget);
     expect(
-      find.descendant(
-        of: primaryTexture,
-        matching: find.byType(BATriangleBackground),
-      ),
-      findsOneWidget,
+      tester
+          .widget<BATriangleBackground>(primaryBackground)
+          .config
+          .triangleSize,
+      105,
     );
     expect(
       find.descendant(
@@ -466,6 +536,11 @@ void main() {
         .where((texture) => texture.config.randomSeed == 2077);
     expect(titleActions, hasLength(3));
     expectPink(titleActions);
+    expect(
+      titleActions.map((texture) => texture.config.triangleSize).toList()
+        ..sort(),
+      [42, 42, 105],
+    );
 
     await tester.tap(find.byKey(const ValueKey('title-settings')));
     await _pumpUntilFound(

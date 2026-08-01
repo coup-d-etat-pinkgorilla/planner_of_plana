@@ -2,6 +2,10 @@
 
 ## Start Here
 
+- Unless the user has explicitly decided an ambiguous requirement, keep asking
+  focused follow-up questions until the requested behavior, scope, and acceptance
+  criteria are all clear. Do not begin modifying files while a material ambiguity
+  remains.
 - Read `README.md` and the relevant page under `almanac/` before changing a subsystem.
 - Read `docs/migration/v6-knowledge-baseline.md` before copying or adapting v6 code.
 - Treat `../v6` as a behavioral reference, not as an importable runtime dependency.

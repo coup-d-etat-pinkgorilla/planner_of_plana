@@ -1,6 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -12,8 +10,10 @@ import 'asset_image_grid.dart';
 import 'ba_triangle_background.dart';
 import 'bond_rank_portrait.dart';
 import 'lifted_path_shadow.dart';
+import 'plan_student_step_tile.dart';
 import 'scroll_viewport_fog.dart';
 import 'section_template_surface.dart';
+import 'student_portrait_status_overlay.dart';
 
 const studentTextureTessellationContrast = 0.030;
 const _studentTexture = BATriangleTextureConfig(
@@ -54,6 +54,10 @@ const studentSortAccentColor = Color(0xffe9b0ee);
 const studentSortCompactFontSize = 15.0;
 const studentSortMenuFontSize = 18.0;
 const studentGridDisplayToggleFontSize = 16.5;
+const studentSection2ContainerColor = Color(0xff162431);
+const _studentSection1ControlInset = 0.06;
+const _studentSection1ControlGap = 0.05;
+const _studentSection1ControlLeft = 0.12;
 const studentSection1Motion = SectionMotionSpec(intro: 0, outro: 180);
 const studentSection3Motion = SectionMotionSpec(intro: 180, outro: 0);
 const studentSection4Motion = SectionMotionSpec(intro: 180, outro: 0);
@@ -72,6 +76,71 @@ enum StudentGridSort {
 
   final String compactLabel;
   final String menuLabel;
+}
+
+enum StudentSection2View { list, grid }
+
+Map<String, int> studentListTargetValues(
+  StudentCatalogEntry student,
+  Map<String, dynamic> currentValues, {
+  required bool owned,
+}) {
+  int value(String key, int fallback) {
+    final raw = currentValues[key];
+    return raw is int ? raw : fallback;
+  }
+
+  int equipmentTier(String key) {
+    final raw = currentValues[key];
+    if (raw is int) return raw;
+    final match = RegExp(r'(\d+)').firstMatch(raw?.toString() ?? '');
+    return match == null ? 0 : int.parse(match.group(1)!);
+  }
+
+  int initialStar() {
+    final match = RegExp(r'(\d+)').firstMatch(student.rarity ?? '');
+    return match == null ? 1 : int.parse(match.group(1)!).clamp(1, 5);
+  }
+
+  return {
+    'level': owned ? value('level', 1) : 1,
+    'bond_rank': owned ? value('bond_rank', 1) : 1,
+    'student_star': owned
+        ? value('student_star', initialStar())
+        : initialStar(),
+    'weapon_level': owned ? value('weapon_level', 0) : 0,
+    'weapon_star': owned ? value('weapon_star', 0) : 0,
+    'ex_skill': owned ? value('ex_skill', 1) : 1,
+    'skill1': owned ? value('skill1', 1) : 1,
+    'skill2': owned ? value('skill2', 1) : 1,
+    'skill3': owned ? value('skill3', 1) : 1,
+    'equip1_tier': owned ? equipmentTier('equip1') : 0,
+    'equip2_tier': owned ? equipmentTier('equip2') : 0,
+    'equip3_tier': owned ? equipmentTier('equip3') : 0,
+    'equip1_level': owned ? value('equip1_level', 0) : 0,
+    'equip2_level': owned ? value('equip2_level', 0) : 0,
+    'equip3_level': owned ? value('equip3_level', 0) : 0,
+    'equip4_tier': owned ? equipmentTier('equip4') : 0,
+    'stat_hp': owned ? value('stat_hp', 0) : 0,
+    'stat_atk': owned ? value('stat_atk', 0) : 0,
+    'stat_heal': owned ? value('stat_heal', 0) : 0,
+  };
+}
+
+PlanStudentStepPreview studentListStepPreview(
+  StudentCatalogEntry student,
+  Map<String, dynamic> currentValues, {
+  required bool owned,
+}) {
+  final targets = studentListTargetValues(student, currentValues, owned: owned);
+  return PlanStudentStepPreview(
+    studentId: student.studentId,
+    displayName: student.displayName,
+    step: 1,
+    target: '현재 상태',
+    bondRank: targets['bond_rank'],
+    targetValues: targets,
+  );
 }
 
 List<StudentCatalogEntry> sortStudentGridEntries(
@@ -484,9 +553,9 @@ List<StudioContainerElement> studentRuntimeContainers(Size size) {
     width: c4Source.right - c4Left,
   );
 
-  const actionInset = 0.06;
-  const actionGap = 0.07;
-  const actionLeft = 0.12;
+  const actionInset = _studentSection1ControlInset;
+  const actionGap = _studentSection1ControlGap;
+  const actionLeft = _studentSection1ControlLeft;
   final actionRightInset = actionLeft / math.sin(80 * math.pi / 180);
   const actionIds = ['container-16', 'container-13', 'container-11'];
   final actionSection = studentStudioDocument.elements.firstWhere(
@@ -506,7 +575,8 @@ List<StudioContainerElement> studentRuntimeContainers(Size size) {
       searchRect.height / actionSectionRect.height,
     ),
   );
-  final actionHeight = (1 - actionInset * 2 - actionGap * 3 - sortHeight) / 3;
+  final actionHeight =
+      (1 - actionInset * 2 - actionGap * 4 - sortHeight * 2) / 3;
 
   return [
     for (final container in source)
@@ -514,6 +584,8 @@ List<StudioContainerElement> studentRuntimeContainers(Size size) {
         () {
           final top =
               actionInset +
+              sortHeight +
+              actionGap +
               sortHeight +
               actionGap +
               actionIds.indexOf(container.id) * (actionHeight + actionGap);
@@ -558,9 +630,8 @@ List<StudioContainerElement> studentRuntimeContainers(Size size) {
   ];
 }
 
-StudioPlacementRect studentSortDropdownPlacement(Size size) {
-  const actionInset = 0.06;
-  const actionLeft = 0.12;
+StudioPlacementRect _studentSection1ControlRowPlacement(Size size, double top) {
+  const actionLeft = _studentSection1ControlLeft;
   final tangent = math.tan(80 * math.pi / 180);
   final actionSection = studentStudioDocument.elements.firstWhere(
     (item) => item.id == 'element-1',
@@ -581,7 +652,6 @@ StudioPlacementRect studentSortDropdownPlacement(Size size) {
       searchRect.height / sectionRect.height,
     ),
   );
-  final top = actionInset;
   final rightInset = actionLeft / math.sin(80 * math.pi / 180);
   final sectionAspect = sectionRect.height / sectionRect.width;
   final rightEdgeAtTop = 1 - top * sectionAspect / tangent;
@@ -594,6 +664,77 @@ StudioPlacementRect studentSortDropdownPlacement(Size size) {
     ),
     height,
   );
+}
+
+StudioPlacementRect studentSortDropdownPlacement(Size size) {
+  final firstRow = _studentSection1ControlRowPlacement(
+    size,
+    _studentSection1ControlInset,
+  );
+  return _studentSection1ControlRowPlacement(
+    size,
+    firstRow.bottom + _studentSection1ControlGap,
+  );
+}
+
+StudioPlacementRect studentViewTogglePlacement(Size size) {
+  return _studentSection1ControlRowPlacement(
+    size,
+    _studentSection1ControlInset,
+  );
+}
+
+List<Path> studentViewTogglePaths(Size size) {
+  return [
+    for (final polygon in studentViewTogglePolygons(size))
+      buildRoundedSectionPolygon(
+        polygon,
+        radius: math.min(5, (polygon[3].dy - polygon[0].dy) * 0.18),
+      ),
+  ];
+}
+
+List<List<Offset>> studentViewTogglePolygons(Size size) {
+  final actionSection = studentStudioDocument.elements.firstWhere(
+    (item) => item.id == 'element-1',
+  );
+  final sectionRect = sectionCanvasElementRect(size, actionSection);
+  final rowRect = studioPlacementRectWithin(
+    sectionRect,
+    studentViewTogglePlacement(size),
+  );
+  final sectionPath = studentSectionPath(size, 'element-1');
+  final topSpan = _studentPathHorizontalSpan(sectionPath, rowRect.top + 0.001);
+  final bottomSpan = _studentPathHorizontalSpan(
+    sectionPath,
+    rowRect.bottom - 0.001,
+  );
+  final rightInset =
+      _studentSection1ControlLeft /
+      math.sin(80 * math.pi / 180) *
+      sectionRect.width;
+  final rightTop = topSpan.right - rightInset;
+  final rightBottom = bottomSpan.right - rightInset;
+  final railShift = rightTop - rightBottom;
+  final gap = math.min(6.0, (rightBottom - rowRect.left) * 0.12);
+  final splitTop = rowRect.left + (rightTop - rowRect.left - gap) / 2;
+  final splitBottom = splitTop - railShift;
+  final gridLeftTop = splitTop + gap;
+  final gridLeftBottom = splitBottom + gap;
+  return [
+    [
+      rowRect.topLeft,
+      Offset(splitTop, rowRect.top),
+      Offset(splitBottom, rowRect.bottom),
+      rowRect.bottomLeft,
+    ],
+    [
+      Offset(gridLeftTop, rowRect.top),
+      Offset(rightTop, rowRect.top),
+      Offset(rightBottom, rowRect.bottom),
+      Offset(gridLeftBottom, rowRect.bottom),
+    ],
+  ];
 }
 
 Path studentSortDropdownPath(Size size) {
@@ -669,6 +810,7 @@ class StudentSectionLayout extends StatefulWidget {
     this.selectedStudent,
     required this.selectedValues,
     this.studentValuesById = const {},
+    this.plannedIds = const {},
     required this.searchController,
     required this.onSearchChanged,
     required this.onStudentSelected,
@@ -684,6 +826,7 @@ class StudentSectionLayout extends StatefulWidget {
   final StudentCatalogEntry? selectedStudent;
   final Map<String, dynamic>? selectedValues;
   final Map<String, Map<String, dynamic>> studentValuesById;
+  final Set<String> plannedIds;
   final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onStudentSelected;
@@ -709,6 +852,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
   bool _showStudentNames = true;
   bool _hideUnownedStudents = false;
   bool _hideJpOnlyStudents = false;
+  StudentSection2View _section2View = StudentSection2View.grid;
   StudentGridSort _gridSort = StudentGridSort.nameAscending;
   final Map<String, Set<String>> _selectedCatalogFilters = {
     for (final definition in studentFilterDefinitions)
@@ -772,6 +916,21 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
       setState(() => _showFilters = !_showFilters);
       await _listController.forward();
       widget.onOpenFilter?.call();
+    } on TickerCanceled {
+      return;
+    } finally {
+      if (mounted) setState(() => _switchingListSection = false);
+    }
+  }
+
+  Future<void> _switchSection2View(StudentSection2View nextView) async {
+    if (_switchingListSection || nextView == _section2View) return;
+    setState(() => _switchingListSection = true);
+    try {
+      await _listController.reverse();
+      if (!mounted) return;
+      setState(() => _section2View = nextView);
+      await _listController.forward();
     } on TickerCanceled {
       return;
     } finally {
@@ -917,15 +1076,31 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              StudentDiagonalGrid(
-                                students: gridStudents,
-                                ownedIds: widget.ownedIds,
-                                studentValuesById: widget.studentValuesById,
-                                selectedId: widget.selectedId,
-                                showAttributes: _showStudentAttributes,
-                                showNames: _showStudentNames,
-                                onSelected: widget.onStudentSelected,
-                              ),
+                              if (_section2View == StudentSection2View.grid)
+                                StudentDiagonalGrid(
+                                  key: const ValueKey(
+                                    'student-section-2-grid-view',
+                                  ),
+                                  students: gridStudents,
+                                  ownedIds: widget.ownedIds,
+                                  studentValuesById: widget.studentValuesById,
+                                  plannedIds: widget.plannedIds,
+                                  selectedId: widget.selectedId,
+                                  showAttributes: _showStudentAttributes,
+                                  showNames: _showStudentNames,
+                                  onSelected: widget.onStudentSelected,
+                                )
+                              else
+                                StudentDiagonalList(
+                                  key: const ValueKey(
+                                    'student-section-2-list-view',
+                                  ),
+                                  students: gridStudents,
+                                  ownedIds: widget.ownedIds,
+                                  studentValuesById: widget.studentValuesById,
+                                  selectedId: widget.selectedId,
+                                  onSelected: widget.onStudentSelected,
+                                ),
                             ],
                           ),
                         ),
@@ -1048,25 +1223,40 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                       rect: portraitBounds,
                       child: ClipPath(
                         clipper: _ContainerBoundsClipper('container-1', size),
-                        child: AssetImageGrid(
-                          key: const ValueKey('student-focused-portrait'),
-                          items: [
-                            AssetImageGridItem(
-                              asset: bondRankPortraitBackgroundAsset(
-                                widget.selectedValues?['bond_rank'] as int?,
-                              ),
-                              column: 0,
-                              row: 0,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            AssetImageGrid(
+                              key: const ValueKey('student-focused-portrait'),
+                              items: [
+                                AssetImageGridItem(
+                                  asset: bondRankPortraitBackgroundAsset(
+                                    widget.selectedValues?['bond_rank'] as int?,
+                                  ),
+                                  column: 0,
+                                  row: 0,
+                                ),
+                                if (widget.selectedId != null)
+                                  AssetImageGridItem(
+                                    asset:
+                                        'assets/student_portraits/${widget.selectedId}.png',
+                                    column: 0,
+                                    row: 0,
+                                    scale: 0.98,
+                                    clipRadiusFraction: 0.08,
+                                  ),
+                              ],
                             ),
-                            if (widget.selectedId != null)
-                              AssetImageGridItem(
-                                asset:
-                                    'assets/student_portraits/${widget.selectedId}.png',
-                                column: 0,
-                                row: 0,
-                                scale: 0.98,
-                                clipRadiusFraction: 0.08,
+                            Positioned.fill(
+                              child: StudentPortraitStatusOverlay(
+                                key: const ValueKey(
+                                  'student-focused-portrait-status',
+                                ),
+                                owned:
+                                    widget.selectedId == null ||
+                                    widget.ownedIds.contains(widget.selectedId),
                               ),
+                            ),
                           ],
                         ),
                       ),
@@ -1140,6 +1330,11 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                       canvasSize: size,
                       value: _gridSort,
                       onChanged: (value) => setState(() => _gridSort = value),
+                    ),
+                    _StudentViewModeButtons(
+                      canvasSize: size,
+                      value: _section2View,
+                      onChanged: _switchSection2View,
                     ),
                   ],
                 ),
@@ -1430,6 +1625,130 @@ class _StudentSortDropdownBorderPainter extends CustomPainter {
       oldDelegate.path.getBounds() != path.getBounds();
 }
 
+class _StudentViewModeButtons extends StatelessWidget {
+  const _StudentViewModeButtons({
+    required this.canvasSize,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final Size canvasSize;
+  final StudentSection2View value;
+  final ValueChanged<StudentSection2View> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final paths = studentViewTogglePaths(canvasSize);
+    return Stack(
+      children: [
+        _StudentViewModeButton(
+          path: paths[0],
+          buttonKey: const ValueKey('student-list-view-button'),
+          tooltip: '리스트 보기',
+          icon: Icons.view_agenda_outlined,
+          selected: value == StudentSection2View.list,
+          onTap: () => onChanged(StudentSection2View.list),
+        ),
+        _StudentViewModeButton(
+          path: paths[1],
+          buttonKey: const ValueKey('student-grid-view-button'),
+          tooltip: '그리드 보기',
+          icon: Icons.grid_view_rounded,
+          selected: value == StudentSection2View.grid,
+          onTap: () => onChanged(StudentSection2View.grid),
+        ),
+      ],
+    );
+  }
+}
+
+class _StudentViewModeButton extends StatelessWidget {
+  const _StudentViewModeButton({
+    required this.path,
+    required this.buttonKey,
+    required this.tooltip,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Path path;
+  final Key buttonKey;
+  final String tooltip;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bounds = path.getBounds();
+    final localPath = path.shift(-bounds.topLeft);
+    return Positioned.fromRect(
+      rect: bounds,
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: tooltip,
+        child: Tooltip(
+          message: tooltip,
+          child: CustomPaint(
+            painter: _StudentViewModeButtonPainter(localPath, selected),
+            child: ClipPath(
+              clipper: _LocalPathClipper(localPath),
+              child: Material(
+                key: buttonKey,
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onTap,
+                  child: Icon(
+                    icon,
+                    size: math.min(18, bounds.shortestSide * 0.52),
+                    color: selected ? studentSortAccentColor : AppColors.text,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StudentViewModeButtonPainter extends CustomPainter {
+  const _StudentViewModeButtonPainter(this.path, this.selected);
+
+  final Path path;
+  final bool selected;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.clipPath(path, doAntiAlias: true);
+    BATriangleTexturePainter(_studentActionTexture).paint(canvas, size);
+    if (selected) {
+      canvas.drawPath(
+        path,
+        Paint()..color = studentSortAccentColor.withValues(alpha: 0.13),
+      );
+    }
+    canvas.restore();
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = selected
+            ? studentSortAccentColor
+            : AppColors.outline.withValues(alpha: 0.72)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = selected ? 1.4 : 0.8,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_StudentViewModeButtonPainter oldDelegate) =>
+      oldDelegate.path != path || oldDelegate.selected != selected;
+}
+
 Offset studentActionIconCenter(Rect bounds) {
   final y = bounds.height / 2;
   final cutAtY = y / math.tan(80 * math.pi / 180);
@@ -1437,21 +1756,24 @@ Offset studentActionIconCenter(Rect bounds) {
   return Offset(horizontalLength / 2, y);
 }
 
-enum StudentContainerTextureRole { none, status, action }
+enum StudentContainerTextureRole { none, status, action, section2Background }
 
 StudentContainerTextureRole studentContainerTextureRole(
   StudioContainerElement container,
 ) {
+  if (container.id == 'container-12') {
+    return StudentContainerTextureRole.section2Background;
+  }
   if (container.parentSectionId == 'element-1') {
     return StudentContainerTextureRole.action;
   }
-  if (container.triangleTexture ||
-      container.id == 'container-2' ||
-      container.id == 'container-12') {
+  if (container.triangleTexture || container.id == 'container-2') {
     return StudentContainerTextureRole.status;
   }
   return StudentContainerTextureRole.none;
 }
+
+bool studentContainerShowsOutline(StudioContainerElement container) => true;
 
 class _StudentStatusIndicators extends StatelessWidget {
   const _StudentStatusIndicators({
@@ -1549,7 +1871,7 @@ class _StudentStatusIndicators extends StatelessWidget {
       children: [
         _feature(
           'feature-2',
-          _StudentLevelStatus(
+          StudentLevelStatus(
             level: level,
             schoolLogoAsset: studentSchoolLogoAsset(student?.school),
           ),
@@ -1583,7 +1905,7 @@ class _StudentStatusIndicators extends StatelessWidget {
         ),
         _container(
           'container-5',
-          _StudentSkillStatus(
+          StudentSkillStatus(
             values: [
               _skillValue('ex_skill', 5),
               _skillValue('skill1', 10),
@@ -1594,7 +1916,7 @@ class _StudentStatusIndicators extends StatelessWidget {
         ),
         _container(
           'container-6',
-          _StudentEquipmentStatus(
+          StudentEquipmentStatus(
             student: student,
             tiers: [_text('equip1'), _text('equip2'), _text('equip3')],
             levels: [
@@ -1608,13 +1930,13 @@ class _StudentStatusIndicators extends StatelessWidget {
         ),
         _container(
           'container-7',
-          _StudentAbilityStatus(
+          StudentAbilityStatus(
             hp: _integer('stat_hp'),
             atk: _integer('stat_atk'),
             heal: _integer('stat_heal'),
           ),
         ),
-        _container('container-9', const _StudentPotentialStatus()),
+        _container('container-9', const StudentPotentialStatus()),
         _container(
           'container-4',
           _StudentCombatStatus(
@@ -1629,7 +1951,7 @@ class _StudentStatusIndicators extends StatelessWidget {
         _containerWithPath(
           'container-10',
           (outerPath) =>
-              _StudentBondStatus(bondRank: bondRank, outerPath: outerPath),
+              StudentBondStatus(bondRank: bondRank, outerPath: outerPath),
         ),
       ],
     );
@@ -1665,8 +1987,9 @@ String? studentSchoolLogoAsset(String? school) {
       : 'assets/item_icons/school_logo/School_Icon_$assetName.png';
 }
 
-class _StudentLevelStatus extends StatelessWidget {
-  const _StudentLevelStatus({
+class StudentLevelStatus extends StatelessWidget {
+  const StudentLevelStatus({
+    super.key,
     required this.level,
     required this.schoolLogoAsset,
   });
@@ -1847,8 +2170,8 @@ class _StudentMetadataValue extends StatelessWidget {
   );
 }
 
-class _StudentSkillStatus extends StatelessWidget {
-  const _StudentSkillStatus({required this.values});
+class StudentSkillStatus extends StatelessWidget {
+  const StudentSkillStatus({super.key, required this.values});
 
   static const _labels = ['EX', 'Normal', 'Passive', 'Sub-skill'];
   final List<String> values;
@@ -2052,8 +2375,9 @@ class _StudentDiagonalDividerPainter extends CustomPainter {
   bool shouldRepaint(_StudentDiagonalDividerPainter oldDelegate) => false;
 }
 
-class _StudentAbilityStatus extends StatelessWidget {
-  const _StudentAbilityStatus({
+class StudentAbilityStatus extends StatelessWidget {
+  const StudentAbilityStatus({
+    super.key,
     required this.hp,
     required this.atk,
     required this.heal,
@@ -2108,13 +2432,15 @@ class _StudentAbilityStatus extends StatelessWidget {
   );
 }
 
-class _StudentEquipmentStatus extends StatelessWidget {
-  const _StudentEquipmentStatus({
+class StudentEquipmentStatus extends StatelessWidget {
+  const StudentEquipmentStatus({
+    super.key,
     required this.student,
     required this.tiers,
     required this.levels,
     required this.favoriteItem,
     required this.favoriteItemLocked,
+    this.equipmentTypes,
   });
 
   final StudentCatalogEntry? student;
@@ -2122,13 +2448,17 @@ class _StudentEquipmentStatus extends StatelessWidget {
   final List<int?> levels;
   final String favoriteItem;
   final bool favoriteItemLocked;
+  final List<String?>? equipmentTypes;
 
   String? _assetPath(int index) {
-    final equipmentType = switch (index) {
-      0 => student?.equipmentSlot1,
-      1 => student?.equipmentSlot2,
-      _ => student?.equipmentSlot3,
-    };
+    final equipmentType =
+        equipmentTypes != null && index < equipmentTypes!.length
+        ? equipmentTypes![index]
+        : switch (index) {
+            0 => student?.equipmentSlot1,
+            1 => student?.equipmentSlot2,
+            _ => student?.equipmentSlot3,
+          };
     final match = RegExp(r'^T(\d+)$').firstMatch(tiers[index] ?? '');
     final tier = int.tryParse(match?.group(1) ?? '');
     if (equipmentType == null || tier == null || tier < 1 || tier > 10) {
@@ -2322,8 +2652,8 @@ class _StudentFavoriteItemSlot extends StatelessWidget {
   );
 }
 
-class _StudentPotentialStatus extends StatelessWidget {
-  const _StudentPotentialStatus();
+class StudentPotentialStatus extends StatelessWidget {
+  const StudentPotentialStatus({super.key});
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -2548,8 +2878,12 @@ class _StudentSwordPainter extends CustomPainter {
   bool shouldRepaint(_StudentSwordPainter oldDelegate) => false;
 }
 
-class _StudentBondStatus extends StatelessWidget {
-  const _StudentBondStatus({required this.bondRank, required this.outerPath});
+class StudentBondStatus extends StatelessWidget {
+  const StudentBondStatus({
+    super.key,
+    required this.bondRank,
+    required this.outerPath,
+  });
 
   final int? bondRank;
   final Path outerPath;
@@ -2558,7 +2892,7 @@ class _StudentBondStatus extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final size = Size(constraints.maxWidth, constraints.maxHeight);
-      final rankRect = studentBondRankRect(size);
+      final rankRect = studentBondRankRect(size, outerPath: outerPath);
       return Stack(
         children: [
           CustomPaint(
@@ -2603,16 +2937,25 @@ List<Offset> studentBondOuterTrianglePoints(Size size) {
   );
 }
 
-Rect studentBondRankRect(Size size) {
-  final points = studentBondOuterTrianglePoints(size);
-  final bottomY = points.map((point) => point.dy).reduce(math.max);
-  final bottomPoints = points
-      .where((point) => (point.dy - bottomY).abs() < 0.001)
-      .toList(growable: false);
-  final left = bottomPoints.map((point) => point.dx).reduce(math.min);
-  final right = bottomPoints.map((point) => point.dx).reduce(math.max);
+Rect studentBondRankRect(Size size, {Path? outerPath}) {
+  final bottomY = outerPath?.getBounds().bottom ?? size.height;
   final bottomGap = math.max(7.0, size.height * 0.035);
   final height = math.min(46.0, size.height * 0.16);
+  final span = outerPath == null
+      ? () {
+          final points = studentBondOuterTrianglePoints(size);
+          final pointsBottom = points.map((point) => point.dy).reduce(math.max);
+          final bottomPoints = points
+              .where((point) => (point.dy - pointsBottom).abs() < 0.001)
+              .toList(growable: false);
+          return (
+            left: bottomPoints.map((point) => point.dx).reduce(math.min),
+            right: bottomPoints.map((point) => point.dx).reduce(math.max),
+          );
+        }()
+      : _studentPathHorizontalSpan(outerPath, bottomY - bottomGap - height / 2);
+  final left = span.left;
+  final right = span.right;
   final horizontalInset = math.min(8.0, (right - left) * 0.12);
   final leftShift = studentBondRankLeftShift(size);
   return Rect.fromLTWH(
@@ -2675,7 +3018,9 @@ double studentBondGaugeBottomRadius(Size size) =>
 }
 
 Path studentBondGaugeHostPath(Size size, Path outerPath) {
-  final bottom = studentBondRankRect(size).top - studentBondGaugeRankGap(size);
+  final bottom =
+      studentBondRankRect(size, outerPath: outerPath).top -
+      studentBondGaugeRankGap(size);
   final outerBounds = outerPath.getBounds();
   final span = _studentPathHorizontalSpan(outerPath, bottom - 0.01);
   final radius = math.min(
@@ -2866,7 +3211,9 @@ class _StudentSectionFoundationPainter extends CustomPainter {
       final path = studentContainerPath(size, container.id);
       if (path == null) continue;
       final textureRole = studentContainerTextureRole(container);
-      if (textureRole != StudentContainerTextureRole.none) {
+      if (textureRole == StudentContainerTextureRole.section2Background) {
+        canvas.drawPath(path, Paint()..color = studentSection2ContainerColor);
+      } else if (textureRole != StudentContainerTextureRole.none) {
         canvas.save();
         canvas.clipPath(path, doAntiAlias: true);
         BATriangleTexturePainter(
@@ -2881,13 +3228,15 @@ class _StudentSectionFoundationPainter extends CustomPainter {
           Paint()..color = AppColors.surfaceRaised.withValues(alpha: 0.9),
         );
       }
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = AppColors.outline.withValues(alpha: 0.75)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.9,
-      );
+      if (studentContainerShowsOutline(container)) {
+        canvas.drawPath(
+          path,
+          Paint()
+            ..color = AppColors.outline.withValues(alpha: 0.75)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 0.9,
+        );
+      }
     }
 
     // Container 2's four internal features intentionally stay flat-color.
@@ -3233,12 +3582,140 @@ class _StudentFilterGroupPainter extends CustomPainter {
   bool shouldRepaint(_StudentFilterGroupPainter oldDelegate) => false;
 }
 
+const studentListItemHeight = 97.5;
+const studentListItemExtent = 101.5;
+
+class StudentDiagonalList extends StatefulWidget {
+  const StudentDiagonalList({
+    super.key,
+    required this.students,
+    required this.ownedIds,
+    required this.studentValuesById,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final List<StudentCatalogEntry> students;
+  final Set<String> ownedIds;
+  final Map<String, Map<String, dynamic>> studentValuesById;
+  final String? selectedId;
+  final ValueChanged<String> onSelected;
+
+  @override
+  State<StudentDiagonalList> createState() => _StudentDiagonalListState();
+}
+
+class _StudentDiagonalListState extends State<StudentDiagonalList> {
+  static const _inset = 8.0;
+  static const _scrollbarReserve = 14.0;
+  final ScrollController _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      if (widget.students.isEmpty) {
+        return const Center(
+          child: Text(
+            '표시할 학생이 없습니다.',
+            style: TextStyle(color: AppColors.textMuted),
+          ),
+        );
+      }
+      final tangent = math.tan(80 * math.pi / 180);
+      final trajectoryDepth = constraints.maxHeight / tangent;
+      final rowWidth = math.max(
+        116.0,
+        constraints.maxWidth -
+            _inset * 2 -
+            _scrollbarReserve -
+            (constraints.maxHeight - studentListItemHeight) / tangent,
+      );
+      final contentHeight =
+          _inset * 2 +
+          studentListItemHeight +
+          studentListItemExtent * math.max(0, widget.students.length - 1);
+      return _StudentDiagonalScrollbar(
+        controller: _controller,
+        keyPrefix: 'student-list',
+        child: SingleChildScrollView(
+          key: const ValueKey('student-diagonal-list-scroll'),
+          controller: _controller,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              final scroll = _controller.hasClients ? _controller.offset : 0.0;
+              return SizedBox(
+                width: constraints.maxWidth,
+                height: contentHeight,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    for (var index = 0; index < widget.students.length; index++)
+                      () {
+                        final student = widget.students[index];
+                        final owned = widget.ownedIds.contains(
+                          student.studentId,
+                        );
+                        final top = _inset + index * studentListItemExtent;
+                        final bottomViewportY =
+                            top + studentListItemHeight - scroll;
+                        final offset =
+                            (constraints.maxHeight - bottomViewportY) / tangent;
+                        return Positioned(
+                          left: _inset + offset,
+                          top: top,
+                          width: math.max(
+                            1.0,
+                            math.min(
+                              rowWidth,
+                              constraints.maxWidth -
+                                  _inset -
+                                  offset -
+                                  trajectoryDepth * 0.02,
+                            ),
+                          ),
+                          height: studentListItemHeight,
+                          child: PlanStudentStepTile(
+                            key: ValueKey('student-list-${student.studentId}'),
+                            order: index + 1,
+                            step: studentListStepPreview(
+                              student,
+                              widget.studentValuesById[student.studentId] ??
+                                  const {},
+                              owned: owned,
+                            ),
+                            owned: owned,
+                            currentStudentState: true,
+                            jpOnly: student.jpOnly,
+                            highlighted: student.studentId == widget.selectedId,
+                            onTap: () => widget.onSelected(student.studentId),
+                          ),
+                        );
+                      }(),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    },
+  );
+}
+
 class StudentDiagonalGrid extends StatefulWidget {
   const StudentDiagonalGrid({
     super.key,
     required this.students,
     required this.ownedIds,
     required this.studentValuesById,
+    this.plannedIds = const {},
     required this.selectedId,
     required this.onSelected,
     this.showAttributes = true,
@@ -3248,6 +3725,7 @@ class StudentDiagonalGrid extends StatefulWidget {
   final List<StudentCatalogEntry> students;
   final Set<String> ownedIds;
   final Map<String, Map<String, dynamic>> studentValuesById;
+  final Set<String> plannedIds;
   final String? selectedId;
   final ValueChanged<String> onSelected;
   final bool showAttributes;
@@ -3259,42 +3737,15 @@ class StudentDiagonalGrid extends StatefulWidget {
 
 class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
   static const _columns = 8;
+  static const _rowBuffer = 1;
   static const _gridGap = 4.8;
   static const _rowGap = 3.84;
   static const _gridInset = 8.0;
   static const _scrollbarReserve = 14.0;
   final ScrollController _controller = ScrollController();
-  ImageStream? _squareStream;
-  ImageStreamListener? _squareListener;
-  ui.Image? _squareImage;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_squareStream != null) return;
-    final stream = const AssetImage(
-      'assets/studio_features/square.png',
-    ).resolve(createLocalImageConfiguration(context));
-    late final ImageStreamListener listener;
-    listener = ImageStreamListener(
-      (info, _) {
-        if (mounted) setState(() => _squareImage = info.image);
-      },
-      onError: (_, _) {
-        if (mounted && _squareImage != null) {
-          setState(() => _squareImage = null);
-        }
-      },
-    );
-    _squareStream = stream;
-    _squareListener = listener;
-    stream.addListener(listener);
-  }
 
   @override
   void dispose() {
-    final listener = _squareListener;
-    if (listener != null) _squareStream?.removeListener(listener);
     _controller.dispose();
     super.dispose();
   }
@@ -3326,6 +3777,20 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
             animation: _controller,
             builder: (context, _) {
               final scroll = _controller.hasClients ? _controller.offset : 0.0;
+              final activeRows = studentGridActiveRowRange(
+                rowCount: rows,
+                scrollOffset: scroll,
+                viewportHeight: constraints.maxHeight,
+                cellHeight: cellSize,
+                rowGap: _rowGap,
+                contentTop: _gridInset,
+                bufferRows: _rowBuffer,
+              );
+              final firstStudentIndex = activeRows.start * _columns;
+              final lastStudentIndex = math.min(
+                widget.students.length,
+                activeRows.end * _columns,
+              );
               final offsets = List<double>.generate(rows, (row) {
                 final centerY =
                     _gridInset +
@@ -3349,8 +3814,8 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                         key: const ValueKey('student-image-grid'),
                         items: [
                           for (
-                            var index = 0;
-                            index < widget.students.length;
+                            var index = firstStudentIndex;
+                            index < lastStudentIndex;
                             index++
                           ) ...[
                             AssetImageGridItem(
@@ -3363,6 +3828,8 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                               column: index % _columns,
                               row: index ~/ _columns,
                               scale: 1,
+                              edgeCropFraction: 0.11,
+                              clipPathBuilder: studentGridCardPath,
                             ),
                             AssetImageGridItem(
                               asset:
@@ -3371,6 +3838,7 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                               row: index ~/ _columns,
                               scale: 0.98,
                               clipRadiusFraction: 0.12,
+                              alphaThreshold: 0.04,
                             ),
                           ],
                         ],
@@ -3380,13 +3848,6 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                         rowGap: _rowGap,
                         rowHorizontalOffsets: offsets,
                         contentPadding: padding,
-                        selectedCell: widget.selectedId == null
-                            ? null
-                            : widget.students.indexWhere(
-                                (item) => item.studentId == widget.selectedId,
-                              ),
-                        selectionShapeAsset:
-                            'assets/studio_features/square.png',
                         onCellTap: (index) {
                           if (index < widget.students.length) {
                             widget.onSelected(widget.students[index].studentId);
@@ -3400,7 +3861,7 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                           key: const ValueKey('student-card-overlay-grid'),
                           painter: StudentGridCardOverlayPainter(
                             students: widget.students,
-                            squareImage: _squareImage,
+                            ownedIds: widget.ownedIds,
                             columns: _columns,
                             rows: rows,
                             columnGap: _gridGap,
@@ -3409,6 +3870,15 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                             contentPadding: padding,
                             showAttributes: widget.showAttributes,
                             showNames: widget.showNames,
+                            plannedIds: widget.plannedIds,
+                            firstRow: activeRows.start,
+                            lastRow: activeRows.end,
+                            selectedIndex: widget.selectedId == null
+                                ? null
+                                : widget.students.indexWhere(
+                                    (item) =>
+                                        item.studentId == widget.selectedId,
+                                  ),
                           ),
                         ),
                       ),
@@ -3422,6 +3892,8 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                       _rowGap,
                       padding,
                       offsets,
+                      activeRows.start,
+                      activeRows.end,
                     ),
                   ],
                 ),
@@ -3442,13 +3914,19 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
     double rowGap,
     EdgeInsets padding,
     List<double> offsets,
+    int firstRow,
+    int lastRow,
   ) {
     final contentWidth = width - padding.horizontal;
     final cellWidth = (contentWidth - columnGap * (columns - 1)) / columns;
     final cellHeight =
         (height - padding.vertical - rowGap * math.max(0, rows - 1)) / rows;
     return [
-      for (var index = 0; index < widget.students.length; index++)
+      for (
+        var index = firstRow * columns;
+        index < math.min(widget.students.length, lastRow * columns);
+        index++
+      )
         Positioned(
           key: ValueKey('student-${widget.students[index].studentId}'),
           left:
@@ -3472,8 +3950,80 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
   }
 }
 
+({int start, int end}) studentGridActiveRowRange({
+  required int rowCount,
+  required double scrollOffset,
+  required double viewportHeight,
+  required double cellHeight,
+  required double rowGap,
+  required double contentTop,
+  int bufferRows = 1,
+}) {
+  if (rowCount <= 0) return (start: 0, end: 0);
+  final stride = math.max(1.0, cellHeight + rowGap);
+  final buffer = math.max(0, bufferRows);
+  final firstVisible = ((scrollOffset - contentTop) / stride).floor();
+  final lastVisible = ((scrollOffset + viewportHeight - contentTop) / stride)
+      .floor();
+  return (
+    start: math.min(rowCount, math.max(0, firstVisible - buffer)),
+    end: math.min(rowCount, math.max(0, lastVisible + buffer + 1)),
+  );
+}
+
 const studentCardInfoAreaFraction = 0.16;
 const studentCardAttributeAreaFraction = 0.03;
+const studentGridCardSourceSize = Size(252, 204);
+const studentGridCardOutlineColor = Colors.white;
+const studentGridCardSelectionColor = Color(0xffff72b6);
+const studentGridCardOutlineWidthFraction = 0.01;
+const studentGridCardSelectionWidthFraction = 0.02;
+
+({Rect unowned, Rect plan, Rect jp}) studentGridStatusBadgeRects(Rect card) {
+  final badgeHeight = (card.height * 0.14).clamp(14.0, 28.0);
+  final unownedWidth = (card.width * 0.42).clamp(32.0, 92.0);
+  final planWidth = (card.width * 0.28).clamp(28.0, 64.0);
+  final jpWidth = (card.width * 0.18).clamp(24.0, 44.0);
+  final depth = math.min(
+    card.width * 0.25,
+    card.height / math.tan(80 * math.pi / 180),
+  );
+  final cornerRadius = math.min(12.0, card.shortestSide * 0.1);
+  final outlineGap = card.shortestSide * studentGridCardOutlineWidthFraction;
+  final top = card.top + outlineGap * 0.5;
+  final unowned = Rect.fromLTWH(
+    card.left + depth,
+    top,
+    unownedWidth,
+    badgeHeight,
+  );
+  final jp = Rect.fromLTWH(
+    card.right - cornerRadius * 0.35 - jpWidth,
+    top,
+    jpWidth,
+    badgeHeight,
+  );
+  final plan = Rect.fromLTWH(
+    unowned.left - (badgeHeight + outlineGap) / math.tan(80 * math.pi / 180),
+    unowned.bottom + outlineGap,
+    planWidth,
+    badgeHeight,
+  );
+  return (unowned: unowned, plan: plan, jp: jp);
+}
+
+Path studentGridCardPath(Rect rect) {
+  final depth = math.min(
+    rect.width * 0.25,
+    rect.height / math.tan(80 * math.pi / 180),
+  );
+  return buildRoundedSectionPolygon([
+    Offset(rect.left + depth, rect.top),
+    Offset(rect.right, rect.top),
+    Offset(rect.right - depth, rect.bottom),
+    Offset(rect.left, rect.bottom),
+  ], radius: math.min(12, rect.shortestSide * 0.1));
+}
 
 Color studentAttackTypeColor(String? attackType) => switch (attackType) {
   'Explosive' => const Color(0xff920008),
@@ -3499,7 +4049,7 @@ Color studentDefenseTypeColor(String? defenseType) => switch (defenseType) {
 class StudentGridCardOverlayPainter extends CustomPainter {
   const StudentGridCardOverlayPainter({
     required this.students,
-    required this.squareImage,
+    required this.ownedIds,
     required this.columns,
     required this.rows,
     required this.columnGap,
@@ -3508,10 +4058,18 @@ class StudentGridCardOverlayPainter extends CustomPainter {
     required this.contentPadding,
     required this.showAttributes,
     required this.showNames,
+    required this.selectedIndex,
+    required this.plannedIds,
+    this.firstRow = 0,
+    this.lastRow,
+    this.outlineColor = studentGridCardOutlineColor,
+    this.selectionColor = studentGridCardSelectionColor,
+    this.outlineWidthFraction = studentGridCardOutlineWidthFraction,
+    this.selectionWidthFraction = studentGridCardSelectionWidthFraction,
   });
 
   final List<StudentCatalogEntry> students;
-  final ui.Image? squareImage;
+  final Set<String> ownedIds;
   final int columns;
   final int rows;
   final double columnGap;
@@ -3520,23 +4078,29 @@ class StudentGridCardOverlayPainter extends CustomPainter {
   final EdgeInsets contentPadding;
   final bool showAttributes;
   final bool showNames;
+  final int? selectedIndex;
+  final Set<String> plannedIds;
+  final int firstRow;
+  final int? lastRow;
+  final Color outlineColor;
+  final Color selectionColor;
+  final double outlineWidthFraction;
+  final double selectionWidthFraction;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final mask = squareImage;
-    if (mask == null || size.isEmpty || (!showAttributes && !showNames)) {
-      return;
-    }
+    if (size.isEmpty) return;
     final content = contentPadding.deflateRect(Offset.zero & size);
     final cellWidth = (content.width - columnGap * (columns - 1)) / columns;
     final cellHeight = (content.height - rowGap * (rows - 1)) / rows;
-    final source = Rect.fromLTWH(
-      0,
-      0,
-      mask.width.toDouble(),
-      mask.height.toDouble(),
+    final cards = <int, Rect>{};
+    final visibleLastRow = math.min(rows, lastRow ?? rows);
+    final firstIndex = math.min(
+      students.length,
+      math.max(0, firstRow) * columns,
     );
-    for (var index = 0; index < students.length; index++) {
+    final lastIndex = math.min(students.length, visibleLastRow * columns);
+    for (var index = firstIndex; index < lastIndex; index++) {
       final column = index % columns;
       final row = index ~/ columns;
       if (row >= rows) break;
@@ -3549,12 +4113,56 @@ class StudentGridCardOverlayPainter extends CustomPainter {
       final fitted = Alignment.center.inscribe(
         applyBoxFit(
           BoxFit.contain,
-          Size(mask.width.toDouble(), mask.height.toDouble()),
+          studentGridCardSourceSize,
           cell.size,
         ).destination,
         cell,
       );
-      _paintCardOverlay(canvas, source, fitted, mask, students[index]);
+      cards[index] = fitted;
+      _paintCardOverlay(canvas, fitted, students[index]);
+    }
+    final outlineWidth = math.max(
+      1.0,
+      math.min(cellWidth, cellHeight) * outlineWidthFraction,
+    );
+    final outlinePaint = Paint()
+      ..isAntiAlias = true
+      ..style = PaintingStyle.stroke
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = outlineWidth
+      ..color = outlineColor;
+    for (final card in cards.values) {
+      canvas.drawPath(studentGridCardPath(card), outlinePaint);
+    }
+    final selected = selectedIndex;
+    final selectedCard = selected == null ? null : cards[selected];
+    if (selectedCard != null) {
+      canvas.drawPath(
+        studentGridCardPath(selectedCard),
+        Paint()
+          ..isAntiAlias = true
+          ..style = PaintingStyle.stroke
+          ..strokeJoin = StrokeJoin.round
+          ..strokeWidth = math.max(
+            1.0,
+            math.min(cellWidth, cellHeight) * selectionWidthFraction,
+          )
+          ..color = selectionColor,
+      );
+    }
+    for (final entry in cards.entries) {
+      final index = entry.key;
+      final student = students[index];
+      final badges = studentGridStatusBadgeRects(entry.value);
+      if (!ownedIds.contains(student.studentId)) {
+        paintStudentPortraitStatusBadge(canvas, badges.unowned, 'UNOWNED');
+      }
+      if (student.jpOnly) {
+        paintStudentPortraitStatusBadge(canvas, badges.jp, 'JP');
+      }
+      if (plannedIds.contains(student.studentId)) {
+        paintStudentPortraitStatusBadge(canvas, badges.plan, 'PLAN');
+      }
     }
   }
 
@@ -3563,15 +4171,14 @@ class StudentGridCardOverlayPainter extends CustomPainter {
 
   void _paintCardOverlay(
     Canvas canvas,
-    Rect source,
     Rect card,
-    ui.Image mask,
     StudentCatalogEntry student,
   ) {
     final infoTop = card.bottom - card.height * studentCardInfoAreaFraction;
     final attributeBottom =
         infoTop + card.height * studentCardAttributeAreaFraction;
-    canvas.saveLayer(card, Paint());
+    canvas.save();
+    canvas.clipPath(studentGridCardPath(card), doAntiAlias: true);
 
     if (showNames) {
       canvas.drawRect(
@@ -3608,16 +4215,10 @@ class StudentGridCardOverlayPainter extends CustomPainter {
     if (showNames) {
       _paintName(canvas, card, attributeBottom, student.displayName);
     }
+    if (!ownedIds.contains(student.studentId)) {
+      paintUnownedStudentPortraitStatus(canvas, card, showBadge: false);
+    }
 
-    canvas.drawImageRect(
-      mask,
-      source,
-      card,
-      Paint()
-        ..isAntiAlias = true
-        ..filterQuality = FilterQuality.high
-        ..blendMode = BlendMode.dstIn,
-    );
     canvas.restore();
   }
 
@@ -3668,7 +4269,7 @@ class StudentGridCardOverlayPainter extends CustomPainter {
   @override
   bool shouldRepaint(StudentGridCardOverlayPainter oldDelegate) =>
       oldDelegate.students != students ||
-      oldDelegate.squareImage != squareImage ||
+      oldDelegate.ownedIds != ownedIds ||
       oldDelegate.columns != columns ||
       oldDelegate.rows != rows ||
       oldDelegate.columnGap != columnGap ||
@@ -3676,7 +4277,15 @@ class StudentGridCardOverlayPainter extends CustomPainter {
       oldDelegate.rowHorizontalOffsets != rowHorizontalOffsets ||
       oldDelegate.contentPadding != contentPadding ||
       oldDelegate.showAttributes != showAttributes ||
-      oldDelegate.showNames != showNames;
+      oldDelegate.showNames != showNames ||
+      oldDelegate.selectedIndex != selectedIndex ||
+      oldDelegate.plannedIds != plannedIds ||
+      oldDelegate.firstRow != firstRow ||
+      oldDelegate.lastRow != lastRow ||
+      oldDelegate.outlineColor != outlineColor ||
+      oldDelegate.selectionColor != selectionColor ||
+      oldDelegate.outlineWidthFraction != outlineWidthFraction ||
+      oldDelegate.selectionWidthFraction != selectionWidthFraction;
 }
 
 double studentCardNameFontSize(double nameAreaHeight) =>

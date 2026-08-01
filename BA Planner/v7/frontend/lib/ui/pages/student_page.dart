@@ -8,6 +8,7 @@ import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
 import 'planning_page.dart';
 import '../widgets/diagonal_section.dart';
+import '../widgets/student_grid_warmup.dart';
 import '../widgets/student_section_layout.dart';
 
 class StudentCandidateContext {
@@ -52,6 +53,7 @@ class _StudentPageState extends State<StudentPage> {
   bool _loading = true;
   bool _saving = false;
   int _handoffSequence = 0;
+  int _warmupRequest = 0;
 
   RepositoryService? get _repository => widget.service is RepositoryService
       ? widget.service as RepositoryService
@@ -69,6 +71,7 @@ class _StudentPageState extends State<StudentPage> {
 
   @override
   void dispose() {
+    _warmupRequest += 1;
     widget.service.state.removeListener(_connectionChanged);
     _search.dispose();
     for (final editor in _editors.values) {
@@ -110,6 +113,7 @@ class _StudentPageState extends State<StudentPage> {
         _loading = false;
       });
       _syncEditors();
+      if (!widget.active) _scheduleGridWarmup(catalog);
       await _loadSelectedProfile();
     } catch (error) {
       if (mounted) {
@@ -119,6 +123,14 @@ class _StudentPageState extends State<StudentPage> {
         });
       }
     }
+  }
+
+  void _scheduleGridWarmup(List<StudentCatalogEntry> catalog) {
+    final request = ++_warmupRequest;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || request != _warmupRequest || widget.active) return;
+      await StudentGridImageWarmup.shared.warm(context, catalog);
+    });
   }
 
   Future<void> _loadSelectedProfile() async {
@@ -322,6 +334,10 @@ class _StudentPageState extends State<StudentPage> {
                   selectedStudent: _selectedEntry,
                   selectedValues: _selectedState?.values,
                   studentValuesById: studentValuesById,
+                  plannedIds:
+                      (_repositoryState?.goals ?? const <RepositoryGoalState>[])
+                          .map((goal) => goal.studentId)
+                          .toSet(),
                   active: widget.active,
                   searchController: _search,
                   onSearchChanged: (_) => setState(() {}),

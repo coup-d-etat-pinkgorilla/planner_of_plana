@@ -25,6 +25,28 @@ sources:
 
 # Diagonal Media List Item
 
+## 2026-08-01 student-catalog current-state presentation
+
+- The shared row keeps its original planning presentation by default. Student
+  Section 2 opts into `currentStudentState`, so other plan call sites retain
+  their order number, target suffix, type scale, bond delta, and icon size.
+- In the student-catalog presentation the title contains only the student name.
+  Title, level, weapon level, skills, equipment values, favorite item, and
+  ability-release/stat values use a 1.5 scale factor.
+- The left order number is omitted. An unowned row places the `UNOWNED` badge
+  in that vacated slot and suppresses the portrait-local badge.
+- The vacated status rail has three fixed top-to-bottom slots: `UNOWNED`,
+  `PLAN`, and `JP`. Each slot samples the final rounded item path at its own top
+  and bottom Y positions, keeps a side inset from the 80-degree edge and the
+  portrait, and shares equal vertical spacing. Missing statuses leave their
+  reserved slot empty instead of moving the remaining badges.
+- The unowned darkening is a `ColorFiltered` operation on the composited
+  `BondRankPortrait`, preserving its alpha instead of painting a rectangular
+  overlay across the portrait slot. The same final portrait clip still owns the
+  image and filter.
+- Bond-rank delta text is hidden and equipment icon surfaces are scaled to
+  1.15 only in this presentation.
+
 ## 1. 목적과 재사용 경계
 
 `DiagonalMediaListItem`은 학생 한 명의 현재 상태와 목표 단계, 그리고 각 값의

@@ -2,6 +2,42 @@ import 'dart:ui' as ui;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+
+typedef AssetImageClipPathBuilder = Path Function(Rect rect);
+
+const assetImageCompositingLayerPadding = 2.0;
+
+Rect assetImageCompositingLayerBounds(Rect contentBounds) =>
+    contentBounds.inflate(assetImageCompositingLayerPadding);
+
+ColorFilter? assetImageAlphaThresholdFilter(double threshold) {
+  if (threshold <= 0) return null;
+  final scale = 1 / (1 - threshold);
+  final offset = -255 * threshold * scale;
+  return ColorFilter.matrix([
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    scale,
+    offset,
+  ]);
+}
 
 @immutable
 class AssetImageGridItem {
@@ -15,12 +51,20 @@ class AssetImageGridItem {
     this.fit = BoxFit.contain,
     this.alignment = Alignment.center,
     this.clipRadiusFraction = 0,
+    this.edgeCropFraction = 0,
+    this.alphaThreshold = 0,
+    this.clipPathBuilder,
+    this.outlineColor,
+    this.outlineWidthFraction = 0,
   }) : assert(column >= 0),
        assert(row >= 0),
        assert(columnSpan > 0),
        assert(rowSpan > 0),
        assert(scale > 0 && scale <= 1),
-       assert(clipRadiusFraction >= 0 && clipRadiusFraction <= 0.5);
+       assert(clipRadiusFraction >= 0 && clipRadiusFraction <= 0.5),
+       assert(edgeCropFraction >= 0 && edgeCropFraction < 0.5),
+       assert(alphaThreshold >= 0 && alphaThreshold < 1),
+       assert(outlineWidthFraction >= 0);
 
   final String asset;
   final int column;
@@ -31,6 +75,23 @@ class AssetImageGridItem {
   final BoxFit fit;
   final Alignment alignment;
   final double clipRadiusFraction;
+
+  /// Removes a border baked into an asset while retaining its original alpha
+  /// silhouette. The cropped interior is stretched back into the fitted rect.
+  final double edgeCropFraction;
+
+  /// Discards low-alpha canvas noise that would otherwise reveal an asset's
+  /// rectangular source bounds after scaling or color treatment.
+  final double alphaThreshold;
+
+  /// Uses geometry rather than the source bitmap's alpha canvas as the
+  /// visible silhouette. The rect is the fitted image destination.
+  final AssetImageClipPathBuilder? clipPathBuilder;
+
+  /// Optional always-visible outline painted after all grid images. This is
+  /// intentionally separate from the thicker selected-cell highlight.
+  final Color? outlineColor;
+  final double outlineWidthFraction;
 }
 
 /// Paints asset images directly into calculated grid cells.
@@ -78,7 +139,10 @@ class AssetImageGrid extends StatefulWidget {
 class _AssetImageGridState extends State<AssetImageGrid> {
   final Map<String, ImageStream> _streams = {};
   final Map<String, ImageStreamListener> _listeners = {};
+  final Map<String, ui.Image> _pendingImages = {};
+  final Set<String> _pendingImageRemovals = {};
   Map<String, ui.Image> _images = const {};
+  bool _imageFlushScheduled = false;
 
   @override
   void didChangeDependencies() {
@@ -109,6 +173,8 @@ class _AssetImageGridState extends State<AssetImageGrid> {
     for (final asset in _streams.keys.toList()) {
       if (assets.contains(asset)) continue;
       _streams.remove(asset)?.removeListener(_listeners.remove(asset)!);
+      _pendingImages.remove(asset);
+      _pendingImageRemovals.remove(asset);
       _images = Map.of(_images)..remove(asset);
     }
     for (final asset in assets) {
@@ -119,14 +185,16 @@ class _AssetImageGridState extends State<AssetImageGrid> {
       late final ImageStreamListener listener;
       listener = ImageStreamListener(
         (info, _) {
-          if (!mounted) return;
-          setState(
-            () => _images = Map.unmodifiable({..._images, asset: info.image}),
-          );
+          if (!mounted || _streams[asset] != stream) return;
+          _pendingImageRemovals.remove(asset);
+          _pendingImages[asset] = info.image;
+          _scheduleImageFlush();
         },
         onError: (_, _) {
-          if (!mounted || !_images.containsKey(asset)) return;
-          setState(() => _images = Map.of(_images)..remove(asset));
+          if (!mounted || _streams[asset] != stream) return;
+          _pendingImages.remove(asset);
+          _pendingImageRemovals.add(asset);
+          _scheduleImageFlush();
         },
       );
       _streams[asset] = stream;
@@ -135,11 +203,47 @@ class _AssetImageGridState extends State<AssetImageGrid> {
     }
   }
 
+  void _scheduleImageFlush() {
+    if (_imageFlushScheduled) return;
+    _imageFlushScheduled = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _flushPendingImages();
+    });
+    SchedulerBinding.instance.ensureVisualUpdate();
+  }
+
+  void _flushPendingImages() {
+    _imageFlushScheduled = false;
+    if (!mounted) {
+      _pendingImages.clear();
+      _pendingImageRemovals.clear();
+      return;
+    }
+    if (_pendingImages.isEmpty && _pendingImageRemovals.isEmpty) return;
+
+    final additions = Map<String, ui.Image>.of(_pendingImages);
+    final removals = Set<String>.of(_pendingImageRemovals);
+    _pendingImages.clear();
+    _pendingImageRemovals.clear();
+    setState(() {
+      final next = Map<String, ui.Image>.of(_images);
+      next.removeWhere((asset, _) => removals.contains(asset));
+      for (final entry in additions.entries) {
+        if (_streams.containsKey(entry.key)) {
+          next[entry.key] = entry.value;
+        }
+      }
+      _images = Map.unmodifiable(next);
+    });
+  }
+
   @override
   void dispose() {
     for (final entry in _streams.entries) {
       entry.value.removeListener(_listeners[entry.key]!);
     }
+    _pendingImages.clear();
+    _pendingImageRemovals.clear();
     super.dispose();
   }
 
@@ -261,29 +365,64 @@ class _AssetImageGridPainter extends CustomPainter {
         width: cell.width * item.scale,
         height: cell.height * item.scale,
       );
+      final fitted = _fittedImageRect(image, target, item.fit, item.alignment);
       canvas.save();
-      if (item.clipRadiusFraction > 0) {
-        final fitted = _fittedImageRect(
-          image,
-          target,
-          item.fit,
-          item.alignment,
-        );
+      final clipPathBuilder = item.clipPathBuilder;
+      if (clipPathBuilder != null) {
+        canvas.clipPath(clipPathBuilder(fitted), doAntiAlias: true);
+      } else if (item.clipRadiusFraction > 0) {
         final radius = fitted.shortestSide * item.clipRadiusFraction;
         canvas.clipRRect(
           RRect.fromRectAndRadius(fitted, Radius.circular(radius)),
           doAntiAlias: true,
         );
       }
-      paintImage(
-        canvas: canvas,
-        rect: target,
-        image: image,
-        fit: item.fit,
-        alignment: item.alignment,
-        filterQuality: FilterQuality.high,
-      );
+      if (item.edgeCropFraction > 0) {
+        _paintEdgeCroppedImage(canvas, image, target, item);
+      } else if (item.alphaThreshold > 0) {
+        _paintAlphaThresholdedImage(canvas, image, target, item);
+      } else {
+        paintImage(
+          canvas: canvas,
+          rect: target,
+          image: image,
+          fit: item.fit,
+          alignment: item.alignment,
+          filterQuality: FilterQuality.high,
+        );
+      }
       canvas.restore();
+    }
+    for (final item in items) {
+      final outlineColor = item.outlineColor;
+      final clipPathBuilder = item.clipPathBuilder;
+      final image = images[item.asset];
+      if (outlineColor == null ||
+          item.outlineWidthFraction <= 0 ||
+          clipPathBuilder == null ||
+          image == null ||
+          item.column + item.columnSpan > columns ||
+          item.row + item.rowSpan > rows) {
+        continue;
+      }
+      final cell = _itemCell(item, content, cellWidth, cellHeight);
+      final target = Rect.fromCenter(
+        center: cell.center,
+        width: cell.width * item.scale,
+        height: cell.height * item.scale,
+      );
+      final fitted = _fittedImageRect(image, target, item.fit, item.alignment);
+      canvas.drawPath(
+        clipPathBuilder(fitted),
+        Paint()
+          ..isAntiAlias = true
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = math.max(
+            0.75,
+            fitted.shortestSide * item.outlineWidthFraction,
+          )
+          ..color = outlineColor,
+      );
     }
     final selected = selectedCell;
     if (selected != null && selected >= 0 && selected < columns * rows) {
@@ -302,9 +441,10 @@ class _AssetImageGridPainter extends CustomPainter {
           : items
                 .where(
                   (item) =>
-                      item.asset == shapeAsset &&
                       item.column == column &&
-                      item.row == row,
+                      item.row == row &&
+                      (item.clipPathBuilder != null ||
+                          item.asset == shapeAsset),
                 )
                 .firstOrNull;
       final shapeImage = shapeItem == null ? null : images[shapeItem.asset];
@@ -320,13 +460,26 @@ class _AssetImageGridPainter extends CustomPainter {
           shapeItem.fit,
           shapeItem.alignment,
         );
-        _paintImageSilhouetteOutline(
-          canvas,
-          shapeImage,
-          fitted,
-          stroke,
-          selectionColor,
-        );
+        final clipPathBuilder = shapeItem.clipPathBuilder;
+        if (clipPathBuilder != null) {
+          canvas.drawPath(
+            clipPathBuilder(fitted),
+            Paint()
+              ..isAntiAlias = true
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = stroke
+              ..color = selectionColor,
+          );
+        } else {
+          _paintImageSilhouetteOutline(
+            canvas,
+            shapeImage,
+            fitted,
+            stroke,
+            selectionColor,
+            shapeItem.alphaThreshold,
+          );
+        }
       } else if (shapeAsset == null) {
         canvas.drawRRect(
           RRect.fromRectAndRadius(
@@ -345,12 +498,25 @@ class _AssetImageGridPainter extends CustomPainter {
   double _rowOffset(int row) =>
       row < rowHorizontalOffsets.length ? rowHorizontalOffsets[row] : 0;
 
+  Rect _itemCell(
+    AssetImageGridItem item,
+    Rect content,
+    double cellWidth,
+    double cellHeight,
+  ) => Rect.fromLTWH(
+    content.left + _rowOffset(item.row) + item.column * (cellWidth + columnGap),
+    content.top + item.row * (cellHeight + rowGap),
+    cellWidth * item.columnSpan + columnGap * (item.columnSpan - 1),
+    cellHeight * item.rowSpan + rowGap * (item.rowSpan - 1),
+  );
+
   void _paintImageSilhouetteOutline(
     Canvas canvas,
     ui.Image image,
     Rect fitted,
     double stroke,
     Color color,
+    double alphaThreshold,
   ) {
     final source = Rect.fromLTWH(
       0,
@@ -359,7 +525,7 @@ class _AssetImageGridPainter extends CustomPainter {
       image.height.toDouble(),
     );
     final expanded = fitted.inflate(stroke);
-    canvas.saveLayer(expanded, Paint());
+    canvas.saveLayer(assetImageCompositingLayerBounds(expanded), Paint());
     canvas.drawImageRect(
       image,
       source,
@@ -367,7 +533,13 @@ class _AssetImageGridPainter extends CustomPainter {
       Paint()
         ..isAntiAlias = true
         ..filterQuality = FilterQuality.high
-        ..colorFilter = ColorFilter.mode(color, BlendMode.srcIn),
+        ..colorFilter = assetImageAlphaThresholdFilter(alphaThreshold),
+    );
+    canvas.drawRect(
+      expanded,
+      Paint()
+        ..color = color
+        ..blendMode = BlendMode.srcIn,
     );
     canvas.drawImageRect(
       image,
@@ -376,6 +548,7 @@ class _AssetImageGridPainter extends CustomPainter {
       Paint()
         ..isAntiAlias = true
         ..filterQuality = FilterQuality.high
+        ..colorFilter = assetImageAlphaThresholdFilter(alphaThreshold)
         ..blendMode = BlendMode.dstOut,
     );
     canvas.restore();
@@ -393,6 +566,90 @@ class _AssetImageGridPainter extends CustomPainter {
       outputRect.size,
     );
     return alignment.inscribe(fitted.destination, outputRect);
+  }
+
+  void _paintEdgeCroppedImage(
+    Canvas canvas,
+    ui.Image image,
+    Rect target,
+    AssetImageGridItem item,
+  ) {
+    final fitted = _fittedImageRect(image, target, item.fit, item.alignment);
+    final fullSource = Rect.fromLTWH(
+      0,
+      0,
+      image.width.toDouble(),
+      image.height.toDouble(),
+    );
+    final croppedSource = fullSource.deflate(
+      fullSource.shortestSide * item.edgeCropFraction,
+    );
+    if (item.clipPathBuilder != null) {
+      canvas.drawImageRect(
+        image,
+        croppedSource,
+        fitted,
+        Paint()
+          ..isAntiAlias = true
+          ..filterQuality = FilterQuality.high,
+      );
+      return;
+    }
+    canvas.saveLayer(assetImageCompositingLayerBounds(fitted), Paint());
+    canvas.drawImageRect(
+      image,
+      croppedSource,
+      fitted,
+      Paint()
+        ..isAntiAlias = true
+        ..filterQuality = FilterQuality.high,
+    );
+    canvas.drawImageRect(
+      image,
+      fullSource,
+      fitted,
+      Paint()
+        ..isAntiAlias = true
+        ..filterQuality = FilterQuality.high
+        ..colorFilter = assetImageAlphaThresholdFilter(item.alphaThreshold)
+        ..blendMode = BlendMode.dstIn,
+    );
+    canvas.restore();
+  }
+
+  void _paintAlphaThresholdedImage(
+    Canvas canvas,
+    ui.Image image,
+    Rect target,
+    AssetImageGridItem item,
+  ) {
+    final fitted = _fittedImageRect(image, target, item.fit, item.alignment);
+    final source = Rect.fromLTWH(
+      0,
+      0,
+      image.width.toDouble(),
+      image.height.toDouble(),
+    );
+    canvas.saveLayer(assetImageCompositingLayerBounds(fitted), Paint());
+    canvas.drawImageRect(
+      image,
+      source,
+      fitted,
+      Paint()
+        ..isAntiAlias = true
+        ..filterQuality = FilterQuality.high,
+    );
+    canvas.drawImageRect(
+      image,
+      source,
+      fitted,
+      Paint()
+        ..isAntiAlias = true
+        ..filterQuality = FilterQuality.high
+        ..colorFilter = assetImageAlphaThresholdFilter(item.alphaThreshold)
+        ..blendMode = BlendMode.dstIn,
+    );
+    canvas.restore();
   }
 
   @override

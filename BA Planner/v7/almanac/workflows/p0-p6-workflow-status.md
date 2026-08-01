@@ -10,9 +10,124 @@ sources:
 
 # P0-P6 Workflow Status
 
+### 2026-08-01 student Section 2 grid/list views
+
+- Status: `implemented · full automated verification complete · user visual review pending`
+- Student Section 2 now defaults to its existing eight-column grid and can be
+  switched to a diagonal student-information list built with the extracted
+  `PlanStudentStepTile` constructor. Both views receive the same searched,
+  filtered, hidden, and sorted student sequence and use the same selection
+  callback.
+- Section 1 now follows the vertical order `one-row list/grid buttons → sort
+  dropdown → add to plan → scan → filter`. Moving the split view row to the
+  wider top position avoids shrinking either icon button. The dropdown, view row,
+  three actions, and four equal gaps are recalculated together so the added row
+  remains inside the left attached section without overlapping controls.
+- The list toggle is now an attached trapezoid. Its right bevel, the grid
+  toggle's two bevels, and Section 1's right rail use the same 80-degree depth;
+  the grid toggle retains the same right-rail inset as the action controls.
+  Following the bond-gauge correction, the toggle rail is no longer rebuilt
+  only from an ideal 80-degree polygon: its top and bottom endpoints are sampled
+  from the actual rounded Section 1 path and inset from that rendered boundary.
+- Extended the reusable plan-student tile with source-compatible optional
+  `owned` and `onTap` inputs. Ownership reaches the shared diagonal media
+  portrait, where the existing clipped `UNOWNED` overlay is painted, while plan
+  call sites retain the default owned and non-interactive behavior.
+- Container 12, the outer Section 2 content container, now uses an opaque
+  darker `#162431` fill instead of the shared blue triangle texture while
+  retaining its own outline. The faint rectangles belonged to the baked edge
+  pixels of each bond-rank grid background; only those edge pixels are cropped
+  and the original alpha silhouette reapplied, preserving the interior pattern
+  and bond-rank color.
+- Student list rows are 97.5px high (1.5 times the original 65px) while their
+  inter-row gap remains 4px.
+- Follow-up visual correction increases bond-background edge cropping from
+  3.5% to 11% after pixel inspection showed the baked bright rim continuing
+  roughly 14-20 source pixels inward. The original alpha silhouette is still
+  reapplied after cropping.
+- A second source-canvas investigation found that `square.png`, bond-color
+  backgrounds, and student portraits all report non-zero alpha bounds across
+  their complete 252x204 canvases. Roughly 1,200 square-background pixels use
+  alpha 1-31; stretching the cropped interior and reapplying every non-zero
+  alpha value exposed those bounds as a faint rectangle. Grid backgrounds now
+  discard alpha below 12.5%, portraits below 4%, and the selected silhouette
+  outline receives the same per-item threshold.
+- Student-list current-state rows now omit the left order and title target
+  suffix, move the unowned badge into the vacated order slot, alpha-preserve
+  portrait darkening with `ColorFiltered`, hide bond delta text, scale the
+  requested text families by 1.5, and scale equipment icons by 1.15. The
+  default shared plan-row presentation remains source- and visually compatible.
+- The left status rail now reserves three stable, path-derived badge slots in
+  `UNOWNED / PLAN / JP` order. Their bounds keep independent gaps from the
+  rounded 80-degree item edge, the portrait, and neighboring badges.
+- Grid/list switching now reverses the existing Section 2 motion completely,
+  swaps the child only after the outro, and then forwards the same controller
+  for re-entry. Repeated view/filter requests are ignored during the cycle.
+- Verification: 48 focused student-layout, diagonal-media, and reusable-tile
+  tests passed; the full Flutter suite passed 277 tests with `--concurrency=1`,
+  `flutter analyze` reported no issues,
+  the Windows Release build completed, and `codealmanac validate` passed. User
+  visual review remains pending.
+- Artifacts: `frontend/lib/ui/widgets/diagonal_media_list_item.dart`,
+  `frontend/lib/ui/widgets/asset_image_grid.dart`,
+  `frontend/lib/ui/widgets/plan_student_step_tile.dart`,
+  `frontend/lib/ui/widgets/student_section_layout.dart`,
+  `frontend/test/plan_student_step_tile_test.dart`, and
+  `frontend/test/student_studio_layout_test.dart`.
+
+### 2026-08-01 reusable plan student step tile boundary
+
+- Status: `implemented · focused verification complete`
+- Extracted `PlanStudentStepPreview`, `PlanBottleneckFocusField`, and
+  `PlanStudentStepTile` from the full plan-section layout into the dedicated
+  `frontend/lib/ui/widgets/plan_student_step_tile.dart` library.
+- Other tabs can now import the dedicated library and construct the same tile
+  API without depending on the complete plan main-section implementation.
+- `plan_section_layout.dart` imports and re-exports the dedicated library, so
+  existing plan call sites and consumers of the former library boundary remain
+  source-compatible. No new usage was added outside the plan tab in this pass.
+- Added a standalone widget test that imports only the reusable tile boundary
+  and verifies its data, portrait, target, highlight, and progress projection.
+- Verification: the standalone tile test and existing planning page suite
+  passed 37 focused tests; the full Flutter suite passed 274 tests,
+  `flutter analyze` reported no issues, and CodeAlmanac validation passed.
+- Artifacts: `frontend/lib/ui/widgets/plan_student_step_tile.dart`,
+  `frontend/lib/ui/widgets/plan_section_layout.dart`, and
+  `frontend/test/plan_student_step_tile_test.dart`.
+
+### 2026-08-01 student portrait unowned status overlay
+
+- Status: `implemented · full automated verification complete · user visual review pending`
+- Adapted the v6 student-card ownership treatment without copying Qt code: a
+  `rgba(6, 8, 14, 0.46)` dark portrait overlay and an `UNOWNED` pill with a
+  dark surface, subtle white border, shadow, and white bold label.
+- Ownership remains a relation between the catalog and the confirmed repository
+  ID set. Missing current values alone do not redefine an owned student as
+  unowned.
+- Added the layout-neutral `StudentPortraitStatusOverlay` widget API and the
+  batched-painter entry point `paintUnownedStudentPortraitStatus`. Both ignore
+  pointer input and rely on the host portrait's existing clip or alpha mask, so
+  other portrait surfaces can opt in without changing surrounding geometry.
+- Applied the API to both student-tab surfaces requested by the user: every
+  unowned portrait in the eight-column student grid and the selected student's
+  large focused portrait. The grid continues to use its existing square alpha
+  mask, while the focused portrait reuses Container 1's actual clip path.
+- Updated `AGENTS.md` to require focused follow-up questions until behavior,
+  scope, and acceptance criteria are clear whenever the user has not explicitly
+  decided a material ambiguity.
+- Verification: student layout suite 39 tests passed, the full Flutter suite
+  passed 273 tests with `--concurrency=1`, `flutter analyze` reported no issues,
+  and the Windows release build completed. User visual review remains pending.
+- Artifacts: `frontend/lib/ui/widgets/student_portrait_status_overlay.dart`,
+  `frontend/lib/ui/widgets/student_section_layout.dart`,
+  `frontend/test/student_studio_layout_test.dart`, and `AGENTS.md`.
+
 ### 2026-07-31 student detail status indicators
 
 - Status: `complete`
+- Detailed implementation history, user feedback, rejected approaches, and the
+  current rounded-path rendering contract are recorded in
+  [Student Detail Indicator Iteration Lessons](../design/student-detail-indicator-lessons-2026-08-01.md).
 - Added explicit `LEVEL`, `SKILL SUMMARY`, `EQUIPMENT`, and `STATS`
   headings. The skill summary is split into four icon-bearing columns with
   dividers and compact progress bars, while HP/ATK/DEF/HEAL use a dedicated
@@ -137,7 +252,8 @@ sources:
 - Artifacts: `frontend/lib/services/mock_student_fixture.dart`,
   `frontend/lib/ui/widgets/student_section_layout.dart`,
   `frontend/test/mock_student_fixture_test.dart`, and
-  `frontend/test/student_studio_layout_test.dart`.
+  `frontend/test/student_studio_layout_test.dart`. Lessons and handoff:
+  `almanac/design/student-detail-indicator-lessons-2026-08-01.md`.
 
 ### 2026-07-31 학생 탭 표시용 Mock 보유 학생 fixture
 
@@ -1868,3 +1984,101 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 - 검증: `flutter analyze`, 계획 요소 전용 8 tests, Flutter 전체 252 tests
   (`--concurrency=1`), Windows release build 통과. 프리셋 영속화, 계획 탭 직접
   학생 선택, 인연 비용 메타데이터 연결은 계약대로 후속 범위다.
+
+### 2026-08-01 계획 요소 제작 Section 3 Studio 내부 구성 보정
+
+- 상태: `구현·전체 자동 검증 완료·사용자 실화면 확인 대기`
+- 기존 구현은 `section-plan-starter.ba-section-studio.json`에서 Section 3 외곽만
+  투영하고 내부를 단일 Column으로 재구성해 Studio 문서와 일치하지 않았다.
+- 최신 Studio JSON의 Container 1·2·3·5·6·7·8·9와 Feature 2·5를 typed
+  projection 및 런타임에 반영했다. Container 10은 잘못된 데이터로 판정되어 최신
+  JSON과 런타임 모두에서 제거됐다.
+- Feature 2는 학생 탭의 레벨·소속 학원 인디케이터, Feature 5는 전용무기 레벨,
+  Container 8은 초상 위에 표시되는 인연 랭크 인디케이터다. 인연 비용 메타데이터
+  미연결 안내는 Feature 2의 헤더에 표시한다.
+- 학생 탭의 스킬·장비·추가 능력치·심상개화 위젯을 공용화해 Container 5·6·7·9에
+  재사용한다. 미보유 배지는 후속 작업에서 초상 이미지 위쪽에 추가한다.
+- 저장된 Studio JSON과 typed projection의 전체 JSON 일치, Section 3 내부 ID와
+  Container 10 부재, 각 상태 인디케이터 렌더링을 계획 요소 전용 10 tests로
+  검증했다. 학생·계획 집중 82 tests, Flutter 전체 266 tests(`--concurrency=1`),
+  `flutter analyze`, Windows release build, `codealmanac validate`가 통과했다.
+- 최신 빌드의 Windows UI 자동 캡처는 앱 실행 승인이 시간 초과되어 수행하지
+  못했으므로 실제 화면의 글자 밀도와 Container 8/초상 중첩은 사용자 확인 대기다.
+- 2026-08-01 almanac 자체 리뷰에서 Container 1에 `BondRankPortrait`를 넣어 인연을
+  중복 표시하고, Container 8에는 학생 탭 최종형과 다른 하트·`인연` 문구를 표시한
+  오류를 확인했다. Container 1은 순수 초상으로 교체하고 Container 8은 실제 rounded
+  local path를 받는 공용 `StudentBondStatus`의 숫자-only gauge로 교체했다.
+- `studentBondRankRect`와 gauge host도 optional actual outer path를 공유하도록 보정해,
+  테스트와 런타임 모두 rounded·parent-intersected 경로에서 rank band를 계산한다.
+
+### 2026-08-01 계획 요소 Section 6 preset-element 카드 투영
+
+- Status: `구현·전체 자동 검증 완료·사용자 실화면 확인 대기`
+- Section 6 단계 카드를 `section-preset-element.ba-section-studio.json`의 아홉
+  element 좌표와 24:43 합집합 캔버스로 교체했다. Element 5는 내부 배경으로만
+  사용하고 전체 카드를 자르지 않으며, element 2·3·4의 우측 돌출을 보존한다.
+- 각 element는 동일한 반응형 80도 path를 독립적으로 채움·테두리·clip에 사용하고,
+  카드 선택과 ink는 모든 element의 합집합 path를 사용한다. 단계명은 제거하고
+  element 5 좌측 여백에 단계 번호만 표시한다.
+- Element 4는 학생 5칸과 전용무기 4칸의 클릭 가능한 성작 스트립이다. 나머지
+  구현 영역은 기존 감소·값·증가 제어를 유지하며 element 9는 잠금 상태다.
+- 2026-08-01 자체 리뷰에서 typed JSON과 런타임 path가 분리돼 있음을 확인했다.
+  수동 `_bilateralPath` 재구성을 제거하고 각 element의 저장된 `shape spec`을 공용
+  polygon builder에 전달한 실제 path를 fill·border·clip·test가 공유하도록 고쳤다.
+  시각 캡처에서 조작 면적이 작았던 성작 strip은 28px hit overlay를 추가했고,
+  증감 아이콘은 `18×22px` 입력 면적을 갖도록 보정했다.
+- Added typed Studio source `frontend/lib/ui/studio/preset_element_studio_layout.dart`
+  and focused JSON parity, protrusion, ratio, nine-surface, star-input tests.
+- Verification: 계획 요소 15 tests와 학생 레이아웃을 합친 집중 52 tests, Flutter
+  전체 271 tests (`--concurrency=1`), `flutter analyze`, Windows release build
+  통과. 2560×1392 widget raster probe에서 카드 외곽, 아홉 surface, 우측 돌출,
+  성작 strip과 Container 8 숫자-only gauge를 확인한 뒤 임시 probe artifact는 제거했다.
+- Next action: 사용자가 최신 Windows 빌드에서 카드 밀도, 단계 번호 위치, 얇은
+  성작 스트립의 클릭성을 시각 확인한다. 인연 비용 메타데이터와 심상개화는 기존
+  계약대로 후속 범위다.
+
+### 2026-08-02 학생 Section 2 그리드 마스크·상태 배지 보정
+
+- 상태: `구현·집중 자동 검증 완료·사용자 실화면 확인 대기`
+- 학생 카드의 마지막 이름·속성·미보유 overlay 마스크에도 배경과 같은 `0.125`
+  alpha cutoff를 적용했다. 배경 및 초상 painter 수정 뒤에도 남아 있던
+  `square.png` 원본 캔버스 크기의 희미한 직사각형을 이 마지막 합성 단계에서 제거한다.
+- 원본 PNG를 편집기에서 확인한 결과와 확대 스크린샷을 대조해, 남은 축 정렬 1px 선은
+  PNG 알파 테두리가 아니라 `saveLayer`가 이미지의 정확한 `fitted/card` 사각 bounds와
+  맞닿은 상태에서 필터링되는 합성 경계로 재분류했다. 배경·초상·선택 외곽선·overlay의
+  offscreen layer bounds를 실제 콘텐츠 rect보다 2px 확장해 visible silhouette와 layer
+  allocation 경계를 분리했다.
+- 후속 실화면에서도 하단선이 유지되어 layer-bound 가설을 폐기했다. 최신 캡처에서 선은
+  `square.png` 마지막 알파 행의 유효 폭과 일치했고, 카드 배경보다 이름 overlay mask가
+  좌우로 길게 남는 형상 불일치로 확정했다. 학생 그리드는 이제 bitmap alpha를 형상으로
+  사용하지 않고 `studentGridCardPath`의 80도 rounded parallelogram을 배경 clip, overlay clip,
+  선택 stroke가 공유한다. `square*.png`는 edge-cropped 색상 소스로만 사용한다.
+- 현재 상태 리스트의 세 배지는 80도 외곽선과 초상 슬롯 사이의 상단 협소 폭을
+  그대로 사용하지 않는다. path에서 계산한 좌측 여백은 유지하되 공통 최소 폭을
+  확보해 위 `UNOWNED`, 중앙 `PLAN`, 아래 `JP`의 글자가 과도하게 축소되지 않게 했다.
+- 이미지 알파 마스크 제거 뒤에도 기존 카드 테두리의 시각 역할은 유지한다. 카드 콘텐츠와
+  이름·속성 overlay를 모두 그린 뒤 foreground 단계에서 `studentGridCardPath`를 따라 흰색
+  기본 stroke를 그려 clip 가장자리의 계단 현상을 덮는다. 기본선과 선택선은 모두 기존
+  강조선 비율인 `0.02`이며, 선택된 카드는 분홍 강조 stroke를 가장 마지막에 같은 경로로 그린다.
+- 후속 조정으로 흰 기본선은 `0.01`, 선택 강조선은 기존 `0.02`를 사용한다. 그리드 배지는
+  card clip 밖의 foreground에서 그려 잘리지 않는다. `UNOWNED`는 상단 좌측 rounded corner,
+  `JP`는 상단 우측 rounded corner에 접하고, `PLAN`은 `UNOWNED` 아래에서 카드 짧은 변의
+  `0.01`만큼 간격을 둔 뒤 80도 rail 진행량만큼 왼쪽으로 이동한다. `JP`는 catalog의
+  `jpOnly`, `PLAN`은 repository goal의 student ID 집합과 연결된다.
+- `UNOWNED`의 좌측 위치에서 corner-radius 추가 inset을 제거해, 80도 상단 좌측 꼭짓점의
+  rounded corner 시작 위치에 직접 붙도록 후속 조정했다.
+- Section 2 그리드 로딩 병목 후속 작업으로 전체 스크롤 extent는 유지하면서 현재 viewport와
+  위·아래 1개 buffer row에 속한 학생만 이미지 item, overlay, hit target으로 구성하도록
+  row virtualization을 적용했다. 스크롤할 때 active row 범위가 바뀌면 벗어난 image stream
+  listener를 해제하고 새 범위의 asset만 resolve한다.
+- `AssetImageGrid`는 각 image stream 완료 시 즉시 `setState`와 전체 map 복사를 수행하지 않는다.
+  같은 frame 동안 도착한 성공·실패 결과를 pending collection에 모은 뒤 post-frame callback
+  한 번에서 immutable image map을 갱신해 연속 rebuild와 painter 실행을 병합한다.
+- 첫 학생 탭 진입의 cold decode·paint 비용을 타이틀과 홈 체류 시간으로 분산한다. 타이틀이 이미
+  로드한 catalog를 기본 이름 오름차순으로 정렬해 첫 64명과 bond background 3종을 선정하고,
+  첫 frame 뒤부터 8 assets씩 `precacheImage`한 다음 매 batch 사이 한 frame을 양보한다.
+  사용자가 타이틀을 빠르게 통과하면 offstage 상태의 StudentPage가 shared warmup controller로
+  남은 asset을 이어받는다. 타이틀에는 `1/255` opacity의 실제 1-card grid painter를 잠시 그려
+  clip, alpha layer, outline, badge, text 합성 경로도 미리 실행한다.
+- 후속 검증: 타이틀·학생 집중 71 tests, Flutter 전체 284 tests (`--concurrency=1`),
+  `flutter analyze`, Windows release build, `codealmanac validate`, `git diff --check` 통과.

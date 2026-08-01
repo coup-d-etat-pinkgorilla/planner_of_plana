@@ -16,9 +16,53 @@
 - Section 7: 아직 페이즈에 배정되지 않은 계획 요소만 표시한다. 배정된 요소는
   페이즈 편집기에서만 표시한다.
 
+### Section 3 내부 구성
+
+Section 3은 `section-plan-starter.ba-section-studio.json`의 내부 컨테이너 좌표와
+형상을 그대로 투영하고 학생 탭의 상태 인디케이터 표현을 재사용한다.
+
+- Container 1: 학생 초상
+- Container 2 / Feature 2: 학생 이름, 학생 레벨, 소속 학원과 인연 비용 메타데이터 경고
+- Container 2 / Feature 5: 전용무기 레벨
+- Container 3: 학생·전용무기 성작 게이지
+- Container 5: 스킬
+- Container 6: 장비와 애장품
+- Container 7: 추가 능력치
+- Container 8: 인연 랭크 인디케이터. 초상보다 앞에 표시한다.
+- Container 9: 잠긴 심상개화
+
+Container 10은 잘못된 Studio 데이터이므로 사용하지 않는다. 미보유 표시는 이번
+범위에서 추가하지 않으며 후속 작업에서 초상 이미지 위쪽 배지로 구현한다.
+Container 1은 인연 배지가 없는 순수 학생 초상만 표시한다. Container 8은 학생 탭의
+최종 인연 인디케이터를 재사용해 하트와 `인연` 문구 없이 숫자, 어두운 track, 아래에서
+위로 차는 핑크 gauge만 표시하며, 재구성한 이상 경로가 아니라 Container 8의 실제
+rounded local path를 직접 입력받는다.
+
 ## 단계 카드
 
 하나의 카드는 학생 한 명의 한 단계에 대한 누적 목표 snapshot이다.
+
+카드 외곽 캔버스는 Studio 문서의 전체 사각 범위 `(19, 9, 24, 43)`을
+정규화해 사용한다. `element-5`는 `(22×43)` 배경 카드일 뿐 전체 clip이 아니며,
+우측으로 더 나가는 `element-2`, `element-3`, `element-4`를 포함한 아홉 개
+element의 합집합이 카드 선택·hover·ink 영역이다. 각 element는 저장된 Studio
+`shape spec`을 공용 path builder에 전달해 선언 rect 안에 맞는 반응형 80도 path를
+만들고, 그 실제 path 하나를 채움, 테두리, clip과 geometry test에 공통 사용한다.
+
+- Element 1: 학생 레벨
+- Element 2: 전용무기 레벨
+- Element 3: 인연 랭크와 메타데이터 미연결 표시
+- Element 4: 클릭 가능한 학생 5칸·전용무기 4칸 성작 스트립
+- Element 5: 전체 배경과 좌측 단계 번호
+- Element 6: 네 종류 스킬 레벨
+- Element 7: 장비 티어·레벨과 애장품
+- Element 8: HP·공격력·치유력 추가 능력치
+- Element 9: 잠긴 심상개화
+
+단계명은 카드에 중복 표시하지 않고 Section 7에서만 편집한다. 카드 선택 상태는
+아홉 surface 전체의 tint와 합집합 외곽선으로 표시한다.
+얇은 Element 4의 시각 높이는 Studio 값을 보존하되 입력 hit 영역은 최소 28px로
+확장한다. 감소·증가 버튼도 아이콘 크기와 별개로 최소 `18×22px` 입력 면적을 갖는다.
 
 - 학생 레벨
 - 전용무기 레벨

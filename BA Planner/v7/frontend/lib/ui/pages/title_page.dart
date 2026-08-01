@@ -19,6 +19,7 @@ import '../widgets/account_section_cluster.dart';
 import '../widgets/ba_triangle_background.dart';
 import '../widgets/lifted_path_shadow.dart';
 import '../widgets/section_template_surface.dart';
+import '../widgets/student_grid_warmup.dart';
 
 const _titleTexture = BATriangleTextureConfig(
   baseColor: Color(0xb81c2b3b),
@@ -52,6 +53,22 @@ const _actionTexture = BATriangleTextureConfig(
   fogStrength: 0.08,
 );
 
+const _primaryActionTexture = BATriangleTextureConfig(
+  baseColor: BATrianglePalette.softTitlePinkBase,
+  panelColor: BATrianglePalette.softTitlePinkPanel,
+  softColor: BATrianglePalette.softTitlePinkSoft,
+  accentColor: BATrianglePalette.softTitlePinkAccent,
+  triangleSize: 105,
+  tessellationContrast: 0.09,
+  randomSeed: 2077,
+  macroTriangleChance: 0.14,
+  macroTriangleScale: 2.2,
+  macroTriangleContrast: 0.06,
+  lightStrength: 0.22,
+  edgeVignetteStrength: 0.12,
+  fogStrength: 0.08,
+);
+
 class TitlePage extends StatefulWidget {
   const TitlePage({super.key, required this.service, this.onExitRequested});
 
@@ -75,6 +92,9 @@ class _TitlePageState extends State<TitlePage>
   var _transitioning = false;
   String? _error;
   AccountClusterEntry? _accountClusterEntry;
+  StudentCatalogEntry? _studentGridWarmupPreview;
+  bool _studentGridWarmupActive = false;
+  int _studentGridWarmupRequest = 0;
 
   RepositoryService? get _repository => widget.service is RepositoryService
       ? widget.service as RepositoryService
@@ -92,6 +112,7 @@ class _TitlePageState extends State<TitlePage>
 
   @override
   void dispose() {
+    _studentGridWarmupRequest += 1;
     _exitController.dispose();
     _keyboardFocus.dispose();
     super.dispose();
@@ -142,6 +163,7 @@ class _TitlePageState extends State<TitlePage>
         _loading = false;
         _error = null;
       });
+      _scheduleStudentGridWarmup(catalog);
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -149,6 +171,22 @@ class _TitlePageState extends State<TitlePage>
         _error = '$error';
       });
     }
+  }
+
+  void _scheduleStudentGridWarmup(List<StudentCatalogEntry> catalog) {
+    final students = studentGridWarmupStudents(catalog);
+    if (students.isEmpty) return;
+    final request = ++_studentGridWarmupRequest;
+    setState(() {
+      _studentGridWarmupPreview = students.first;
+      _studentGridWarmupActive = true;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || request != _studentGridWarmupRequest) return;
+      await StudentGridImageWarmup.shared.warm(context, students);
+      if (!mounted || request != _studentGridWarmupRequest) return;
+      setState(() => _studentGridWarmupActive = false);
+    });
   }
 
   void _openShell(AppSection section) {
@@ -308,6 +346,15 @@ class _TitlePageState extends State<TitlePage>
                     },
               ),
             ),
+            if (_studentGridWarmupActive && _studentGridWarmupPreview != null)
+              Positioned(
+                key: const ValueKey('student-grid-paint-warmup'),
+                right: 2,
+                bottom: 2,
+                child: StudentGridPaintWarmup(
+                  student: _studentGridWarmupPreview!,
+                ),
+              ),
             if (_accountClusterEntry != null)
               Positioned.fill(
                 child: AccountSectionCluster(
@@ -870,7 +917,7 @@ class _StudioTitleCanvas extends StatelessWidget {
                   _StudioPathSurface(
                     key: const ValueKey('title-primary-texture'),
                     path: primaryContainerPath,
-                    texture: _actionTexture,
+                    texture: _primaryActionTexture,
                   ),
                   _positionedMarker('title-primary-position', primaryRect),
                   _positionedPathAction(

@@ -6,9 +6,12 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../models/planning_models.dart';
 import '../studio/plan_starter_studio_layout.dart';
+import '../studio/preset_element_studio_layout.dart';
+import '../studio/section_template.dart';
 import 'ba_triangle_background.dart';
 import 'lifted_path_shadow.dart';
 import 'section_template_surface.dart';
+import 'student_section_layout.dart';
 
 const planElementBuilderSectionOpacity = 0.76;
 const planElementBuilderGap = 12.0;
@@ -219,6 +222,74 @@ Rect planStarterSectionRect(Size size, String id) {
     (element) => element.id == id,
   );
   return sectionCanvasElementRect(size, section);
+}
+
+StudioContainerElement planStarterContainer(String id) =>
+    planStarterStudioDocument.containers.firstWhere(
+      (container) => container.id == id,
+    );
+
+Path planStarterContainerPath(Size size, String id) => buildStudioContainerPath(
+  size,
+  planStarterStudioDocument.elements,
+  planStarterContainer(id),
+)!;
+
+StudioFeatureElement planStarterFeature(String id) => planStarterStudioDocument
+    .features
+    .firstWhere((feature) => feature.id == id);
+
+Path planStarterFeaturePath(Size size, String id) => buildStudioFeaturePath(
+  size,
+  planStarterStudioDocument.elements,
+  planStarterStudioDocument.containers,
+  planStarterFeature(id),
+)!;
+
+SectionCanvasElement planPresetElement(String id) => presetElementStudioDocument
+    .elements
+    .firstWhere((element) => element.id == id);
+
+Rect planPresetElementRect(Size size, String id) {
+  final rect = planPresetElement(id).rect;
+  final bounds = presetElementReferenceBounds;
+  return Rect.fromLTWH(
+    (rect.x - bounds.x) * size.width / bounds.width,
+    (rect.y - bounds.y) * size.height / bounds.height,
+    rect.width * size.width / bounds.width,
+    rect.height * size.height / bounds.height,
+  );
+}
+
+Path planPresetElementLocalPath(Size size, String id) {
+  final element = planPresetElement(id);
+  assert(element.spec.mode == SectionShapeMode.parallelogram);
+  assert(element.spec.face == SectionAttachmentFace.bottom);
+  final requestedDepth =
+      size.height * element.spec.height / sectionTemplateGridSize;
+  final cut = sectionTemplateCutDepth(requestedDepth);
+  final sourceSize = Size(math.max(1, size.width - cut), size.height);
+  return buildRoundedSectionPolygon(
+    buildAttachedSectionPolygon(sourceSize, element.spec),
+    radius: math.min(9, size.shortestSide * 0.22),
+  );
+}
+
+Path planPresetElementPath(Size size, String id) {
+  final rect = planPresetElementRect(size, id);
+  return planPresetElementLocalPath(rect.size, id).shift(rect.topLeft);
+}
+
+Path planPresetElementUnionPath(Size size) {
+  var union = Path();
+  for (final element in presetElementStudioDocument.elements) {
+    union = Path.combine(
+      PathOperation.union,
+      union,
+      planPresetElementPath(size, element.id),
+    );
+  }
+  return union;
 }
 
 class PlanElementBuilder extends StatefulWidget {
@@ -517,115 +588,172 @@ class _PlanElementBuilderState extends State<PlanElementBuilder> {
         widget.seed.metadata['display_name']?.toString() ??
         widget.seed.studentId;
     final current = _current;
-    final bounds = planStarterSectionRect(canvasSize, 'element-3');
     return Stack(
+      fit: StackFit.expand,
       children: [
-        Positioned.fromRect(
-          rect: bounds,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 50, 18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 92,
-                      height: 76,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.asset(
-                            'assets/item_backgrounds/square.png',
-                            fit: BoxFit.contain,
-                          ),
-                          Center(
-                            child: Image.asset(
-                              'assets/student_portraits/${widget.seed.studentId}.png',
-                              width: 68,
-                              height: 68,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) =>
-                                  const Icon(Icons.person_outline, size: 54),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            displayName,
-                            key: const ValueKey('plan-starter-student-name'),
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.seed.owned ? '확정된 현재 상태' : '미보유 가상 시작점',
-                            key: const ValueKey('plan-starter-owned-state'),
-                            style: TextStyle(
-                              color: widget.seed.owned
-                                  ? AppColors.textMuted
-                                  : AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                _StatusLine(
-                  label: '기본 성장',
-                  value:
-                      'Lv.${current['level']} · 인연 ${current['bond_rank']} · ★${current['student_star']}',
-                ),
-                _StatusLine(
-                  label: '전용무기',
-                  value:
-                      '★${current['weapon_star']} · Lv.${current['weapon_level']}',
-                ),
-                _StatusLine(
-                  label: '스킬',
-                  value:
-                      '${current['ex_skill']} / ${current['skill1']} / ${current['skill2']} / ${current['skill3']}',
-                ),
-                _StatusLine(
-                  label: '장비',
-                  value:
-                      'T${current['equip1_tier']} / T${current['equip2_tier']} / T${current['equip3_tier']}',
-                ),
-                const Spacer(),
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: AppColors.textMuted,
-                    ),
-                    SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        '인연 랭크 비용 메타데이터 미연결',
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+        IgnorePointer(
+          child: CustomPaint(
+            key: const ValueKey('plan-starter-student-status-foundation'),
+            painter: _PlanStudentStatusFoundationPainter(
+              canvasSize: canvasSize,
+              studentStars: current['student_star'] ?? 0,
+              weaponStars: current['weapon_star'] ?? 0,
             ),
           ),
         ),
+        _statusContainer(
+          canvasSize,
+          'container-1',
+          _PlanStudentPortrait(
+            portraitAsset:
+                'assets/student_portraits/${widget.seed.studentId}.png',
+          ),
+        ),
+        _statusFeature(
+          canvasSize,
+          'feature-2',
+          _PlanStudentLevelHeader(
+            displayName: displayName,
+            level: current['level'],
+            schoolLogoAsset: studentSchoolLogoAsset(
+              widget.seed.metadata['school']?.toString(),
+            ),
+          ),
+        ),
+        _statusFeature(
+          canvasSize,
+          'feature-5',
+          _PlanWeaponLevelStatus(
+            level: current['weapon_level'],
+            unlocked: (current['weapon_star'] ?? 0) > 0,
+          ),
+        ),
+        _statusContainer(
+          canvasSize,
+          'container-5',
+          StudentSkillStatus(
+            values: [
+              _skillDisplay(current['ex_skill'], 5),
+              _skillDisplay(current['skill1'], 10),
+              _skillDisplay(current['skill2'], 10),
+              _skillDisplay(current['skill3'], 10),
+            ],
+          ),
+        ),
+        _statusContainer(
+          canvasSize,
+          'container-6',
+          StudentEquipmentStatus(
+            student: null,
+            equipmentTypes: [
+              widget.seed.metadata['equipment_slot_1']?.toString(),
+              widget.seed.metadata['equipment_slot_2']?.toString(),
+              widget.seed.metadata['equipment_slot_3']?.toString(),
+            ],
+            tiers: [
+              _equipmentTierDisplay(current['equip1_tier']),
+              _equipmentTierDisplay(current['equip2_tier']),
+              _equipmentTierDisplay(current['equip3_tier']),
+            ],
+            levels: [
+              current['equip1_level'],
+              current['equip2_level'],
+              current['equip3_level'],
+            ],
+            favoriteItem: _equipmentTierDisplay(current['equip4_tier']),
+            favoriteItemLocked: (current['equip4_tier'] ?? 0) == 0,
+          ),
+        ),
+        _statusContainer(
+          canvasSize,
+          'container-7',
+          StudentAbilityStatus(
+            hp: current['stat_hp'],
+            atk: current['stat_atk'],
+            heal: current['stat_heal'],
+          ),
+        ),
+        _statusContainer(
+          canvasSize,
+          'container-9',
+          const StudentPotentialStatus(),
+        ),
+        _statusBondContainer(canvasSize, 'container-8', current['bond_rank']),
       ],
     );
   }
+
+  Widget _statusContainer(
+    Size canvasSize,
+    String id,
+    Widget child, {
+    bool foreground = false,
+  }) {
+    final path = planStarterContainerPath(canvasSize, id);
+    final bounds = path.getBounds();
+    final localPath = path.shift(-bounds.topLeft);
+    return Positioned.fromRect(
+      key: ValueKey('plan-starter-status-$id'),
+      rect: bounds,
+      child: ClipPath(
+        clipper: _FixedPathClipper(localPath),
+        child: ColoredBox(
+          color: foreground
+              ? AppColors.surfaceRaised.withValues(alpha: 0.96)
+              : Colors.transparent,
+          child: CustomPaint(
+            foregroundPainter: _LocalPathBorderPainter(localPath),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _statusFeature(Size canvasSize, String id, Widget child) {
+    final path = planStarterFeaturePath(canvasSize, id);
+    final bounds = path.getBounds();
+    final localPath = path.shift(-bounds.topLeft);
+    return Positioned.fromRect(
+      key: ValueKey('plan-starter-status-$id'),
+      rect: bounds,
+      child: ClipPath(
+        clipper: _FixedPathClipper(localPath),
+        child: CustomPaint(
+          foregroundPainter: _LocalPathBorderPainter(localPath),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  Widget _statusBondContainer(Size canvasSize, String id, int? rank) {
+    final path = planStarterContainerPath(canvasSize, id);
+    final bounds = path.getBounds();
+    final localPath = path.shift(-bounds.topLeft);
+    return Positioned.fromRect(
+      key: ValueKey('plan-starter-status-$id'),
+      rect: bounds,
+      child: ClipPath(
+        clipper: _FixedPathClipper(localPath),
+        child: ColoredBox(
+          color: AppColors.surfaceRaised.withValues(alpha: 0.96),
+          child: CustomPaint(
+            foregroundPainter: _LocalPathBorderPainter(localPath),
+            child: StudentBondStatus(bondRank: rank, outerPath: localPath),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _skillDisplay(int? value, int maximum) {
+    if (value == null) return '-';
+    return value >= maximum ? 'M' : '$value';
+  }
+
+  String _equipmentTierDisplay(int? value) =>
+      value == null || value <= 0 ? '-' : 'T$value';
 
   Widget _buildPresetPanel(Size canvasSize) {
     final bounds = planStarterSectionRect(canvasSize, 'element-5');
@@ -834,33 +962,252 @@ class _PlanElementBuilderState extends State<PlanElementBuilder> {
   }
 }
 
-class _StatusLine extends StatelessWidget {
-  const _StatusLine({required this.label, required this.value});
+class _PlanStudentLevelHeader extends StatelessWidget {
+  const _PlanStudentLevelHeader({
+    required this.displayName,
+    required this.level,
+    required this.schoolLogoAsset,
+  });
 
-  final String label;
-  final String value;
+  final String displayName;
+  final int? level;
+  final String? schoolLogoAsset;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 5),
-    child: Row(
-      children: [
-        SizedBox(
-          width: 74,
-          child: Text(
-            label,
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final headerHeight = (constraints.maxHeight * 0.24).clamp(15.0, 23.0);
+      return Column(
+        children: [
+          SizedBox(
+            height: headerHeight,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 2, 8, 1),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      displayName,
+                      key: const ValueKey('plan-starter-student-name'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.text,
+                        fontFamily: 'GyeonggiTitle',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Tooltip(
+                    message: '인연 랭크 필요 아이템 메타데이터 미연결',
+                    child: Row(
+                      key: ValueKey('plan-starter-bond-metadata-header'),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          size: 12,
+                          color: AppColors.textMuted,
+                        ),
+                        SizedBox(width: 2),
+                        Text(
+                          '인연 비용 미연결',
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w700),
+          Expanded(
+            child: StudentLevelStatus(
+              level: level,
+              schoolLogoAsset: schoolLogoAsset,
+            ),
           ),
-        ),
-      ],
-    ),
+        ],
+      );
+    },
   );
+}
+
+class _PlanWeaponLevelStatus extends StatelessWidget {
+  const _PlanWeaponLevelStatus({required this.level, required this.unlocked});
+
+  final int? level;
+  final bool unlocked;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final railInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      return Padding(
+        padding: EdgeInsets.fromLTRB(railInset + 8, 2, railInset + 8, 2),
+        child: Row(
+          children: [
+            const Text(
+              'WEAPON',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontFamily: 'GyeonggiTitle',
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const Spacer(),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                unlocked ? 'Lv. ${level ?? '--'}' : 'Lv. --',
+                key: const ValueKey('plan-starter-weapon-level'),
+                style: const TextStyle(
+                  color: AppColors.text,
+                  fontFamily: 'GyeonggiTitle',
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _PlanStudentPortrait extends StatelessWidget {
+  const _PlanStudentPortrait({required this.portraitAsset});
+
+  final String portraitAsset;
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: [
+      Image.asset('assets/item_backgrounds/square.png', fit: BoxFit.cover),
+      Padding(
+        padding: const EdgeInsets.all(3),
+        child: Image.asset(
+          portraitAsset,
+          key: const ValueKey('plan-starter-student-portrait'),
+          fit: BoxFit.contain,
+          errorBuilder: (_, _, _) => const Icon(Icons.person_outline, size: 54),
+        ),
+      ),
+    ],
+  );
+}
+
+class _PlanStudentStatusFoundationPainter extends CustomPainter {
+  const _PlanStudentStatusFoundationPainter({
+    required this.canvasSize,
+    required this.studentStars,
+    required this.weaponStars,
+  });
+
+  final Size canvasSize;
+  final int studentStars;
+  final int weaponStars;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final containers = planStarterStudioDocument.containers.where(
+      (container) => container.parentSectionId == 'element-3',
+    );
+    for (final container in containers) {
+      final path = planStarterContainerPath(canvasSize, container.id);
+      if (container.triangleTexture) {
+        canvas.save();
+        canvas.clipPath(path, doAntiAlias: true);
+        BATriangleTexturePainter(_planElementTexture).paint(canvas, size);
+        canvas.restore();
+      } else {
+        canvas.drawPath(
+          path,
+          Paint()
+            ..color = AppColors.surfaceRaised.withValues(alpha: 0.9)
+            ..style = PaintingStyle.fill,
+        );
+      }
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = AppColors.outline.withValues(alpha: 0.74)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.9,
+      );
+    }
+    for (final feature in planStarterStudioDocument.features) {
+      if (feature.parentContainerId != 'container-2') continue;
+      final path = planStarterFeaturePath(canvasSize, feature.id);
+      canvas.drawPath(
+        path,
+        Paint()..color = const Color(0xff203243).withValues(alpha: 0.98),
+      );
+    }
+    _paintStarIndicator(canvas);
+  }
+
+  void _paintStarIndicator(Canvas canvas) {
+    final bounds = planStarterContainerPath(
+      canvasSize,
+      'container-3',
+    ).getBounds();
+    final gap = math.max(1.2, bounds.width * 0.006);
+    final segmentWidth = (bounds.width - gap * 8) / 9;
+    for (var index = 0; index < 9; index++) {
+      final rect = Rect.fromLTWH(
+        bounds.left + index * (segmentWidth + gap),
+        bounds.top,
+        segmentWidth,
+        bounds.height,
+      );
+      final active = index < 5 ? index < studentStars : index - 5 < weaponStars;
+      canvas.drawPath(
+        studentStarSegmentPath(rect),
+        Paint()
+          ..color = active
+              ? (index < 5 ? const Color(0xfff3c96b) : AppColors.primary)
+                    .withValues(alpha: 0.86)
+              : AppColors.outline.withValues(alpha: 0.48),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PlanStudentStatusFoundationPainter oldDelegate) =>
+      oldDelegate.canvasSize != canvasSize ||
+      oldDelegate.studentStars != studentStars ||
+      oldDelegate.weaponStars != weaponStars;
+}
+
+class _LocalPathBorderPainter extends CustomPainter {
+  const _LocalPathBorderPainter(this.path);
+
+  final Path path;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.outline.withValues(alpha: 0.74)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.9,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_LocalPathBorderPainter oldDelegate) =>
+      oldDelegate.path != path;
 }
 
 class _PlanStarterSection extends StatelessWidget {
@@ -926,65 +1273,86 @@ class _PlanPresetElementCard extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final width = constraints.maxWidth;
-      final height = (width * 1.25).clamp(440.0, 680.0);
-      final safeInset = height / math.tan(80 * math.pi / 180) + 10;
-      final path = _bilateralPath(Size(width, height), radius: 11);
+      final height =
+          width *
+          presetElementReferenceBounds.height /
+          presetElementReferenceBounds.width;
+      final size = Size(width, height);
+      final unionPath = planPresetElementUnionPath(size);
       return SizedBox(
         height: height,
         child: ClipPath(
-          clipper: _FixedPathClipper(path),
+          clipper: _FixedPathClipper(unionPath),
           child: Material(
-            color: selected
-                ? AppColors.surfaceRaised.withValues(alpha: 0.98)
-                : AppColors.surfaceRaised.withValues(alpha: 0.88),
+            type: MaterialType.transparency,
             child: InkWell(
               onTap: onSelected,
               child: CustomPaint(
-                foregroundPainter: _CardBorderPainter(path, selected: selected),
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(safeInset, 14, safeInset, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            '$stageNumber',
-                            style: AppTextStyles.planPhaseNumber,
-                          ),
-                          const SizedBox(width: 9),
-                          Expanded(
-                            child: Text(
-                              stage.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
+                foregroundPainter: _CardBorderPainter(
+                  unionPath,
+                  selected: selected,
+                ),
+                child: Stack(
+                  children: [
+                    _surface(
+                      size,
+                      'element-5',
+                      color: selected
+                          ? AppColors.surfaceRaised.withValues(alpha: 0.98)
+                          : AppColors.surfaceRaised.withValues(alpha: 0.88),
+                      child: Align(
+                        alignment: const Alignment(-0.82, -0.92),
+                        child: Text(
+                          '$stageNumber',
+                          key: ValueKey('plan-stage-$stageNumber-number'),
+                          style: AppTextStyles.planPhaseNumber,
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      _TargetRegion(
+                    ),
+                    _surface(
+                      size,
+                      'element-1',
+                      child: _PresetRegionContent(
                         title: '학생 레벨',
-                        children: [_stepper('레벨', 'level')],
+                        children: [_stepper('Lv', 'level')],
                       ),
-                      _TargetRegion(
-                        title: '전용무기 · 인연',
+                    ),
+                    _surface(
+                      size,
+                      'element-2',
+                      child: _PresetRegionContent(
+                        title: '전용무기 레벨',
+                        children: [_stepper('Lv', 'weapon_level')],
+                      ),
+                    ),
+                    _surface(
+                      size,
+                      'element-3',
+                      child: _PresetRegionContent(
+                        title: '인연 랭크',
+                        compact: true,
                         children: [
-                          _stepper('무기', 'weapon_level'),
-                          _stepper('인연', 'bond_rank', unsupported: true),
+                          _stepper('R', 'bond_rank', unsupported: true),
                         ],
                       ),
-                      _TargetRegion(
-                        title: '성작 상태',
-                        children: [
-                          _stepper('학생 ★', 'student_star'),
-                          _stepper('전무 ★', 'weapon_star'),
-                        ],
+                    ),
+                    _surface(
+                      size,
+                      'element-4',
+                      child: _StarTargetStrip(
+                        stageNumber: stageNumber,
+                        studentStar: _target('student_star'),
+                        weaponStar: _target('weapon_star'),
+                        studentPropagated: _propagated('student_star'),
+                        weaponPropagated: _propagated('weapon_star'),
+                        onChanged: onChanged,
+                        interactive: false,
                       ),
-                      _TargetRegion(
+                    ),
+                    _surface(
+                      size,
+                      'element-6',
+                      child: _PresetRegionContent(
                         title: '스킬 레벨',
                         children: [
                           _stepper('EX', 'ex_skill'),
@@ -993,7 +1361,11 @@ class _PlanPresetElementCard extends StatelessWidget {
                           _stepper('서브', 'skill3'),
                         ],
                       ),
-                      _TargetRegion(
+                    ),
+                    _surface(
+                      size,
+                      'element-7',
+                      child: _PresetRegionContent(
                         title: '장비 상태',
                         children: [
                           _stepper('1T', 'equip1_tier'),
@@ -1005,17 +1377,28 @@ class _PlanPresetElementCard extends StatelessWidget {
                           _stepper('애장품', 'equip4_tier'),
                         ],
                       ),
-                      _TargetRegion(
+                    ),
+                    _surface(
+                      size,
+                      'element-8',
+                      child: _PresetRegionContent(
                         title: '추가 능력치',
+                        compact: true,
                         children: [
                           _stepper('HP', 'stat_hp'),
                           _stepper('공격', 'stat_atk'),
                           _stepper('치유', 'stat_heal'),
                         ],
                       ),
-                      const _LockedTargetRegion(),
-                    ],
-                  ),
+                    ),
+                    _surface(
+                      size,
+                      'element-9',
+                      color: Colors.black.withValues(alpha: 0.34),
+                      child: const _LockedTargetRegion(),
+                    ),
+                    _starHitSurface(size),
+                  ],
                 ),
               ),
             ),
@@ -1024,6 +1407,59 @@ class _PlanPresetElementCard extends StatelessWidget {
       );
     },
   );
+
+  int _target(String key) =>
+      stage.targets[key] ?? planElementTargetMinimums[key] ?? 0;
+
+  bool _propagated(String key) => propagatedFields.contains('${stage.id}:$key');
+
+  Widget _surface(Size size, String id, {required Widget child, Color? color}) {
+    final rect = planPresetElementRect(size, id);
+    final localPath = planPresetElementLocalPath(rect.size, id);
+    return Positioned.fromRect(
+      rect: rect,
+      child: KeyedSubtree(
+        key: ValueKey('plan-preset-element-$stageNumber-$id'),
+        child: ClipPath(
+          clipper: _FixedPathClipper(localPath),
+          child: ColoredBox(
+            color:
+                color ??
+                const Color(
+                  0xff30485f,
+                ).withValues(alpha: selected ? 0.82 : 0.68),
+            child: CustomPaint(
+              foregroundPainter: _CardBorderPainter(localPath, selected: false),
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _starHitSurface(Size size) {
+    final visibleRect = planPresetElementRect(size, 'element-4');
+    final hitHeight = math.max(28.0, visibleRect.height);
+    final rect = Rect.fromCenter(
+      center: visibleRect.center,
+      width: visibleRect.width,
+      height: hitHeight,
+    );
+    return Positioned.fromRect(
+      rect: rect,
+      child: _StarTargetStrip(
+        stageNumber: stageNumber,
+        studentStar: _target('student_star'),
+        weaponStar: _target('weapon_star'),
+        studentPropagated: _propagated('student_star'),
+        weaponPropagated: _propagated('weapon_star'),
+        onChanged: onChanged,
+        interactive: true,
+        cutReferenceHeight: visibleRect.height,
+      ),
+    );
+  }
 
   Widget _stepper(String label, String key, {bool unsupported = false}) =>
       _CompactTargetStepper(
@@ -1038,63 +1474,178 @@ class _PlanPresetElementCard extends StatelessWidget {
       );
 }
 
-class _TargetRegion extends StatelessWidget {
-  const _TargetRegion({required this.title, required this.children});
+class _PresetRegionContent extends StatelessWidget {
+  const _PresetRegionContent({
+    required this.title,
+    required this.children,
+    this.compact = false,
+  });
 
   final String title;
   final List<Widget> children;
+  final bool compact;
 
   @override
-  Widget build(BuildContext context) => Expanded(
-    child: Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xff30485f).withValues(alpha: 0.46),
-          borderRadius: BorderRadius.circular(7),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final cutInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      return Padding(
+        padding: EdgeInsets.fromLTRB(
+          cutInset + 1.5,
+          compact ? 2 : 6,
+          cutInset + 1.5,
+          compact ? 2 : 5,
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(title, style: _titleStyle),
+            SizedBox(height: compact ? 1 : 4),
+            Expanded(
+              child: Wrap(
+                spacing: compact ? 4 : 7,
+                runSpacing: compact ? 1 : 5,
+                alignment: compact
+                    ? WrapAlignment.end
+                    : WrapAlignment.spaceBetween,
+                children: children,
               ),
-              const SizedBox(height: 3),
-              Expanded(
-                child: Wrap(
-                  spacing: 5,
-                  runSpacing: 3,
-                  alignment: WrapAlignment.spaceBetween,
-                  children: children,
-                ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+
+  static const _titleStyle = TextStyle(
+    color: AppColors.textMuted,
+    fontSize: 10,
+    fontWeight: FontWeight.w700,
+  );
+}
+
+class _StarTargetStrip extends StatelessWidget {
+  const _StarTargetStrip({
+    required this.stageNumber,
+    required this.studentStar,
+    required this.weaponStar,
+    required this.studentPropagated,
+    required this.weaponPropagated,
+    required this.onChanged,
+    required this.interactive,
+    this.cutReferenceHeight,
+  });
+
+  final int stageNumber;
+  final int studentStar;
+  final int weaponStar;
+  final bool studentPropagated;
+  final bool weaponPropagated;
+  final void Function(String key, int value) onChanged;
+  final bool interactive;
+  final double? cutReferenceHeight;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final cutInset =
+          (cutReferenceHeight ?? constraints.maxHeight) /
+          math.tan(80 * math.pi / 180);
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: cutInset + 3),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 5,
+              child: _segments(
+                keyPrefix: 'plan-stage-$stageNumber-student-star',
+                count: 5,
+                value: studentStar,
+                propagated: studentPropagated,
+                onSelected: (value) => onChanged('student_star', value),
               ),
-            ],
+            ),
+            const SizedBox(width: 5),
+            Expanded(
+              flex: 4,
+              child: _segments(
+                keyPrefix: 'plan-stage-$stageNumber-weapon-star',
+                count: 4,
+                value: weaponStar,
+                propagated: weaponPropagated,
+                onSelected: (value) => onChanged('weapon_star', value),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+
+  Widget _segments({
+    required String keyPrefix,
+    required int count,
+    required int value,
+    required bool propagated,
+    required ValueChanged<int> onSelected,
+  }) => Row(
+    children: [
+      for (var index = 1; index <= count; index++)
+        Expanded(
+          child: _segment(
+            index,
+            count,
+            value,
+            propagated,
+            keyPrefix,
+            onSelected,
           ),
         ),
-      ),
-    ),
+    ],
   );
+
+  Widget _segment(
+    int index,
+    int count,
+    int value,
+    bool propagated,
+    String keyPrefix,
+    ValueChanged<int> onSelected,
+  ) {
+    final visible = Container(
+      margin: const EdgeInsets.symmetric(horizontal: 1),
+      color: interactive
+          ? Colors.transparent
+          : propagated
+          ? AppColors.primary.withValues(alpha: 0.30)
+          : index <= value
+          ? AppColors.primary.withValues(alpha: 0.78)
+          : AppColors.outline.withValues(alpha: 0.22),
+    );
+    if (!interactive) return visible;
+    return Semantics(
+      button: true,
+      selected: index == value,
+      label: '${count == 5 ? '학생' : '전용무기'} 성급 $index',
+      child: InkResponse(
+        key: ValueKey('$keyPrefix-$index'),
+        onTap: () => onSelected(index),
+        radius: 14,
+        child: visible,
+      ),
+    );
+  }
 }
 
 class _LockedTargetRegion extends StatelessWidget {
   const _LockedTargetRegion();
 
   @override
-  Widget build(BuildContext context) => Expanded(
-    child: Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.28),
-          borderRadius: BorderRadius.circular(7),
-        ),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final cutInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: cutInset + 6),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1106,8 +1657,8 @@ class _LockedTargetRegion extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    ),
+      );
+    },
   );
 }
 
@@ -1150,20 +1701,28 @@ class _CompactTargetStepper extends StatelessWidget {
           InkResponse(
             key: ValueKey('$controlKey-decrease'),
             onTap: value > minimum ? () => onChanged(value - 1) : null,
-            radius: 13,
-            child: const Icon(Icons.remove, size: 14),
+            radius: 11,
+            child: const SizedBox(
+              width: 18,
+              height: 22,
+              child: Icon(Icons.remove, size: 11),
+            ),
           ),
-          const SizedBox(width: 2),
+          const SizedBox(width: 1),
           Text(
             '$label $value${unsupported ? '*' : ''}',
-            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700),
+            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700),
           ),
-          const SizedBox(width: 2),
+          const SizedBox(width: 1),
           InkResponse(
             key: ValueKey('$controlKey-increase'),
             onTap: value < maximum ? () => onChanged(value + 1) : null,
-            radius: 13,
-            child: const Icon(Icons.add, size: 14),
+            radius: 11,
+            child: const SizedBox(
+              width: 18,
+              height: 22,
+              child: Icon(Icons.add, size: 11),
+            ),
           ),
         ],
       ),
