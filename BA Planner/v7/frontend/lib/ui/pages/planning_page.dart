@@ -11,11 +11,13 @@ class PlanningPage extends StatelessWidget {
     super.key,
     required this.service,
     this.initialSeed,
+    this.initialPresets = const [],
     this.active = true,
   });
 
   final AppService service;
   final PlanningStudentSeed? initialSeed;
+  final List<PlanElementPreset> initialPresets;
   final bool active;
 
   @override
@@ -24,7 +26,12 @@ class PlanningPage extends StatelessWidget {
       key: const ValueKey('planning-page'),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: PlanSectionLayout(active: active, initialSeed: initialSeed),
+        child: PlanSectionLayout(
+          service: service,
+          active: active,
+          initialSeed: initialSeed,
+          initialPresets: initialPresets,
+        ),
       ),
     );
   }

@@ -9,6 +9,7 @@ import '../../services/scanner_service.dart';
 import 'planning_page.dart';
 import '../widgets/diagonal_section.dart';
 import '../widgets/student_grid_warmup.dart';
+import '../widgets/student_range_condition_section.dart';
 import '../widgets/student_section_layout.dart';
 
 class StudentCandidateContext {
@@ -54,6 +55,7 @@ class _StudentPageState extends State<StudentPage> {
   bool _saving = false;
   int _handoffSequence = 0;
   int _warmupRequest = 0;
+  StudentRangeConditions _rangeConditions = StudentRangeConditions.initial();
 
   RepositoryService? get _repository => widget.service is RepositoryService
       ? widget.service as RepositoryService
@@ -348,6 +350,27 @@ class _StudentPageState extends State<StudentPage> {
                   onAddToPlan: _addToPlan,
                   onOpenScan: widget.onOpenScan,
                   onOpenFilter: () {},
+                  onFilterVisibilityChanged: (visible) {
+                    if (!visible) {
+                      setState(
+                        () =>
+                            _rangeConditions = StudentRangeConditions.initial(),
+                      );
+                    }
+                  },
+                  filterCompanion: StudentRangeConditionSection(
+                    key: const ValueKey('student-range-condition-section'),
+                    keyPrefix: 'student-range-condition',
+                    conditions: _rangeConditions,
+                    onChanged: (conditions) =>
+                        setState(() => _rangeConditions = conditions),
+                  ),
+                  rangeConditionMatches: (student, currentValues) =>
+                      _rangeConditions.matchesStudent(
+                        student: student,
+                        currentValues: currentValues ?? const {},
+                        owned: owned.contains(student.studentId),
+                      ),
                 ),
               ),
               if (visible.any((student) => student.school == null))

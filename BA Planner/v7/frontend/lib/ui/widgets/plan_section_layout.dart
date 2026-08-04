@@ -3,14 +3,18 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../../services/app_service.dart';
 import '../models/planning_models.dart';
 import '../studio/plan_studio_layout.dart';
 import 'animated_section_stack.dart';
 import 'ba_triangle_background.dart';
+import 'diagonal_flow_indicator.dart';
 import 'diagonal_media_list_item.dart';
 import 'lifted_path_shadow.dart';
 import 'plan_element_builder.dart';
 import 'plan_phase_editor.dart';
+import 'plan_preset_manager.dart';
+import 'plan_student_selector.dart';
 import 'plan_student_step_tile.dart';
 import 'scroll_viewport_fog.dart';
 import 'section_template_surface.dart';
@@ -1025,6 +1029,26 @@ Path planSectionPath(Size size, String id) {
   return buildSectionCanvasElementPath(size, section);
 }
 
+double planStudentSelectorSection1RightAtReference(Size size) {
+  final section = planStudioDocument.elements.firstWhere(
+    (element) => element.id == 'element-1',
+  );
+  final rect = sectionCanvasElementRect(size, section);
+  final points = buildAttachedSectionPolygon(
+    rect.size,
+    section.spec,
+  ).map((point) => point + rect.topLeft).toList(growable: false);
+  final topRight = points[1];
+  final bottomRight = points[2];
+  final referenceY = planStudentSelectorReferenceY(
+    planSectionPath(size, 'element-1').getBounds(),
+  );
+  final progress = ((referenceY - topRight.dy) / (bottomRight.dy - topRight.dy))
+      .clamp(0.0, 1.0)
+      .toDouble();
+  return topRight.dx + (bottomRight.dx - topRight.dx) * progress;
+}
+
 (double, double) planResourceHorizontalInterval(Size size, double y) {
   final bounds = planSectionPath(size, 'element-5').getBounds();
   final localY = (y - bounds.top).clamp(0.0, bounds.height).toDouble();
@@ -1231,10 +1255,18 @@ double planPhaseRowWidth({
 }
 
 class PlanSectionLayout extends StatefulWidget {
-  const PlanSectionLayout({super.key, this.active = true, this.initialSeed});
+  const PlanSectionLayout({
+    super.key,
+    this.service,
+    this.active = true,
+    this.initialSeed,
+    this.initialPresets = const [],
+  });
 
+  final AppService? service;
   final bool active;
   final PlanningStudentSeed? initialSeed;
+  final List<PlanElementPreset> initialPresets;
 
   @override
   State<PlanSectionLayout> createState() => _PlanSectionLayoutState();
@@ -1252,11 +1284,15 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   PlanResourceSort _resourceSort = PlanResourceSort.defaultOrder;
   bool _showPhaseEditor = false;
   bool _showElementBuilder = false;
+  bool _showPresetManager = false;
+  bool _showStudentSelector = false;
+  bool _switchingStudentSelector = false;
   bool _usingLivePlanElements = false;
   String? _consumedHandoffId;
   PlanningStudentSeed? _builderSeed;
   final Map<String, List<PlanElementStageDraft>> _draftsByStudent = {};
   List<PlanStudentStepPreview> _planElements = const [];
+  late List<PlanElementPreset> _presets;
   Set<String> _unassignedPlanElementIds = const {};
   List<PlanPhasePreview> _planPhases = dummyPlanPhases;
   Set<PlanResourceCategory> _selectedResourceCategories = {
@@ -1274,6 +1310,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   @override
   void initState() {
     super.initState();
+    _presets = List.unmodifiable(widget.initialPresets);
     _consumeInitialSeed();
     if (widget.active) _setActive(true);
   }
@@ -1294,9 +1331,25 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     _builderSeed = seed;
     _showElementBuilder = true;
     _showPhaseEditor = false;
+    _showPresetManager = false;
+    _showStudentSelector = false;
   }
 
   void _setActive(bool active) {
+    if (_showStudentSelector) {
+      for (final entry in _controllers.entries) {
+        if (entry.key == 'element-1') {
+          if (active) {
+            entry.value.forward(from: 0);
+          } else {
+            entry.value.reverse(from: 1);
+          }
+        } else {
+          entry.value.value = 0;
+        }
+      }
+      return;
+    }
     for (final controller in _controllers.values) {
       if (active) {
         controller.forward(from: 0);
@@ -1414,6 +1467,91 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     setState(() => _showPhaseEditor = true);
   }
 
+  Future<void> _openPresetManager() async {
+    if (_showPresetManager || _showPhaseEditor || _showElementBuilder) return;
+    await Future.wait([
+      for (final controller in _controllers.values) controller.reverse(),
+    ]);
+    if (!mounted) return;
+    setState(() => _showPresetManager = true);
+  }
+
+  void _closePresetManager() {
+    if (!_showPresetManager) return;
+    setState(() => _showPresetManager = false);
+    for (final controller in _controllers.values) {
+      controller.forward(from: 0);
+    }
+  }
+
+  void _replacePresets(List<PlanElementPreset> presets) {
+    setState(() => _presets = List.unmodifiable(presets));
+  }
+
+  Future<void> _openStudentSelector() async {
+    if (_showStudentSelector ||
+        _switchingStudentSelector ||
+        widget.service == null) {
+      return;
+    }
+    setState(() => _switchingStudentSelector = true);
+    try {
+      await Future.wait([
+        for (final entry in _controllers.entries)
+          if (entry.key != 'element-1') entry.value.reverse(),
+      ]);
+      if (!mounted) return;
+      setState(() => _showStudentSelector = true);
+    } on TickerCanceled {
+      return;
+    } finally {
+      if (mounted) setState(() => _switchingStudentSelector = false);
+    }
+  }
+
+  Future<void> _closeStudentSelector() async {
+    if (!_showStudentSelector || _switchingStudentSelector) return;
+    setState(() => _switchingStudentSelector = true);
+    try {
+      await Future<void>.delayed(planStudentSelectorMotionDuration);
+      if (!mounted) return;
+      setState(() => _showStudentSelector = false);
+      await Future.wait([
+        for (final entry in _controllers.entries)
+          if (entry.key != 'element-1') entry.value.forward(from: 0),
+      ]);
+    } on TickerCanceled {
+      return;
+    } finally {
+      if (mounted) setState(() => _switchingStudentSelector = false);
+    }
+  }
+
+  Future<void> _selectPlanStudent(PlanningStudentSeed seed) async {
+    if (!_showStudentSelector || _switchingStudentSelector) return;
+    setState(() => _switchingStudentSelector = true);
+    await Future<void>.delayed(planStudentSelectorMotionDuration);
+    if (!mounted) return;
+    setState(() {
+      _builderSeed = seed;
+      _showStudentSelector = false;
+      _showElementBuilder = true;
+      _showPhaseEditor = false;
+      _switchingStudentSelector = false;
+    });
+  }
+
+  void _closeElementBuilder() {
+    if (!_showElementBuilder) return;
+    setState(() {
+      _showElementBuilder = false;
+      _builderSeed = null;
+    });
+    for (final entry in _controllers.entries) {
+      if (entry.value.value < 1) entry.value.forward(from: entry.value.value);
+    }
+  }
+
   void _closePhaseEditor() {
     if (!_showPhaseEditor) return;
     setState(() => _showPhaseEditor = false);
@@ -1501,6 +1639,48 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     });
   }
 
+  void _deleteUnassignedPlanElement(String id) {
+    final removed = _planElements.cast<PlanStudentStepPreview?>().firstWhere(
+      (element) => element?.stageId == id,
+      orElse: () => null,
+    );
+    if (removed == null || !_unassignedPlanElementIds.contains(id)) return;
+    setState(() {
+      _planElements = [
+        for (final element in _planElements)
+          if (element.stageId != id) element,
+      ];
+      _unassignedPlanElementIds = {
+        for (final elementId in _unassignedPlanElementIds)
+          if (elementId != id) elementId,
+      };
+      final drafts = _draftsByStudent[removed.studentId];
+      if (drafts != null) {
+        final remaining = [
+          for (final draft in drafts)
+            if (draft.id != id) draft,
+        ];
+        if (remaining.isEmpty) {
+          _draftsByStudent.remove(removed.studentId);
+        } else {
+          _draftsByStudent[removed.studentId] = List.unmodifiable(remaining);
+        }
+      }
+      _planPhases = [
+        for (final phase in _planPhases)
+          PlanPhasePreview(
+            id: phase.id,
+            name: phase.name,
+            steps: [
+              for (final step in phase.steps)
+                if (step.stageId != id) step,
+            ],
+          ),
+      ];
+      _usingLivePlanElements = _planElements.isNotEmpty;
+    });
+  }
+
   void _completePhaseEditor(
     List<PlanPhaseEditorGroup<PlanStudentStepPreview>> groups,
   ) {
@@ -1516,10 +1696,12 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       ];
       _unassignedPlanElementIds = const {};
       _showPhaseEditor = false;
+      _showElementBuilder = false;
+      _builderSeed = null;
     });
-    if (!_showElementBuilder) {
-      for (final entry in _controllers.entries) {
-        if (entry.key != 'element-2') entry.value.forward(from: 0);
+    for (final entry in _controllers.entries) {
+      if (entry.key != 'element-2' && entry.value.value < 1) {
+        entry.value.forward(from: entry.value.value);
       }
     }
   }
@@ -1637,18 +1819,67 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
               Positioned(
                 key: const ValueKey('plan-phase-editor-launch-position'),
                 left: bounds.left + 18,
-                top: bounds.top + bounds.height * 0.34,
+                top: bounds.top + bounds.height * 0.24,
                 width: math.max(120, bounds.width * 0.54),
-                height: 58,
-                child: FilledButton.tonalIcon(
-                  key: const ValueKey('plan-phase-editor-launch'),
-                  onPressed: _openPhaseEditor,
-                  icon: const Icon(Icons.account_tree_outlined),
-                  label: const Text(
-                    '페이즈 만들기',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                height: 204,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        key: const ValueKey('plan-phase-editor-launch'),
+                        onPressed:
+                            _showStudentSelector || _switchingStudentSelector
+                            ? null
+                            : _openPhaseEditor,
+                        icon: const Icon(Icons.account_tree_outlined),
+                        label: const Text(
+                          '페이즈 만들기',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        key: const ValueKey('plan-student-selector-launch'),
+                        onPressed: _switchingStudentSelector
+                            ? null
+                            : _showStudentSelector
+                            ? _closeStudentSelector
+                            : widget.service == null
+                            ? null
+                            : _openStudentSelector,
+                        icon: Icon(
+                          _showStudentSelector
+                              ? Icons.arrow_back
+                              : Icons.person_add_alt_1,
+                        ),
+                        label: Text(
+                          _showStudentSelector ? '선택 취소' : '학생 추가',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        key: const ValueKey('plan-preset-manager-launch'),
+                        onPressed:
+                            _showStudentSelector || _switchingStudentSelector
+                            ? null
+                            : _openPresetManager,
+                        icon: const Icon(Icons.tune_rounded),
+                        label: const Text(
+                          '프리셋 생성·관리',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1839,7 +2070,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            if (!_showPhaseEditor && !_showElementBuilder)
+            if (!_showPhaseEditor &&
+                !_showElementBuilder &&
+                !_showPresetManager)
               for (final id in const [
                 'element-2',
                 'element-3',
@@ -1867,9 +2100,33 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                       _draftsByStudent[builderSeed.studentId] ?? const [],
                   unassignedItems: unassignedBuilderItems,
                   hasPlanElements: _planElements.isNotEmpty,
+                  active: widget.active,
+                  presets: _presets,
                   onConfirm: _confirmPlanElementStages,
                   onRenameUnassigned: _renameUnassignedPlanElement,
+                  onDeleteUnassigned: _deleteUnassignedPlanElement,
+                  onExitToPlan: _closeElementBuilder,
                   onOpenPhaseEditor: _openPhaseEditor,
+                ),
+              ),
+            if (!_showPhaseEditor &&
+                !_showElementBuilder &&
+                !_showPresetManager &&
+                _showStudentSelector &&
+                widget.service != null)
+              Positioned.fill(
+                child: PlanStudentSelector(
+                  key: const ValueKey('plan-student-selector-view'),
+                  service: widget.service!,
+                  plannedIds: _draftsByStudent.keys.toSet(),
+                  onSelected: _selectPlanStudent,
+                  section1Bounds: planSectionPath(
+                    size,
+                    'element-1',
+                  ).getBounds(),
+                  section1RightAtReference:
+                      planStudentSelectorSection1RightAtReference(size),
+                  active: widget.active && !_switchingStudentSelector,
                 ),
               ),
             if (_showPhaseEditor)
@@ -1883,6 +2140,16 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                       PlanStudentStepTile(order: order, step: item.data),
                   onCancel: _closePhaseEditor,
                   onComplete: _completePhaseEditor,
+                ),
+              ),
+            if (_showPresetManager)
+              Positioned.fill(
+                child: PlanPresetManager(
+                  key: const ValueKey('plan-preset-manager'),
+                  presets: _presets,
+                  active: widget.active,
+                  onPresetsChanged: _replacePresets,
+                  onExit: _closePresetManager,
                 ),
               ),
           ],
@@ -4411,7 +4678,10 @@ class _PlanPhaseDiagonalListState extends State<PlanPhaseDiagonalList> {
                       top: top + height + 2,
                       width: width,
                       height: planPhaseFlowGap - 4,
-                      child: const _PlanPhaseFlowIndicator(),
+                      child: DiagonalFlowIndicator(
+                        parallelogramHeight: height,
+                        paintKey: const ValueKey('plan-phase-flow-triangle'),
+                      ),
                     ),
                   );
                 }
@@ -4527,38 +4797,6 @@ Rect planPhaseItemRect(Size size, int index) {
   final left = planPhaseLeftBoundary(size, bottom) + inset;
   final right = planPhaseRightBoundary(size, top) - inset;
   return Rect.fromLTRB(left, top, math.max(left + 1, right), bottom);
-}
-
-class _PlanPhaseFlowIndicator extends StatelessWidget {
-  const _PlanPhaseFlowIndicator();
-
-  @override
-  Widget build(BuildContext context) => const Center(
-    child: CustomPaint(
-      key: ValueKey('plan-phase-flow-triangle'),
-      size: Size(16, 10),
-      painter: _PlanPhaseFlowIndicatorPainter(),
-    ),
-  );
-}
-
-class _PlanPhaseFlowIndicatorPainter extends CustomPainter {
-  const _PlanPhaseFlowIndicatorPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawPath(
-      Path()
-        ..moveTo(0, 0)
-        ..lineTo(size.width, 0)
-        ..lineTo(size.width / 2, size.height)
-        ..close(),
-      Paint()..color = const Color(0xfff2b3ef).withValues(alpha: 0.88),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_PlanPhaseFlowIndicatorPainter oldDelegate) => false;
 }
 
 class _PlanPhaseCardPainter extends CustomPainter {

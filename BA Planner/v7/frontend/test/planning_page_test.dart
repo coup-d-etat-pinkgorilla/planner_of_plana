@@ -3,17 +3,31 @@ import 'dart:math' as math;
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/studio/plan_studio_layout.dart';
 import 'package:ba_planner_v7/ui/studio/section_template.dart';
 import 'package:ba_planner_v7/ui/widgets/bond_rank_portrait.dart';
 import 'package:ba_planner_v7/ui/widgets/diagonal_media_list_item.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_phase_editor.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_section_layout.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_student_selector.dart';
 import 'package:ba_planner_v7/ui/widgets/scroll_viewport_fog.dart';
 import 'package:ba_planner_v7/ui/widgets/section_template_surface.dart';
+import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
+import 'package:ba_planner_v7/ui/widgets/student_range_condition_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+PlanElementPreset _planningTestPreset() => PlanElementPreset(
+  id: 'balanced-growth',
+  name: '테스트 프리셋',
+  isDefault: false,
+  stages: const [
+    {'level': 30},
+  ],
+);
 
 void main() {
   test('plan phase items use the expanded readable height', () {
@@ -28,6 +42,11 @@ void main() {
   test('all section 3 tab bodies use intro 80 and outro 260', () {
     expect(planSection3TabMotion.intro, 80);
     expect(planSection3TabMotion.outro, 260);
+  });
+
+  test('all plan student selector panels use intro 80 and outro 260', () {
+    expect(planStudentSelectorMotion.intro, 80);
+    expect(planStudentSelectorMotion.outro, 260);
   });
 
   test(
@@ -527,11 +546,14 @@ void main() {
     WidgetTester tester,
     AppService service, {
     Size size = const Size(900, 900),
+    List<PlanElementPreset> presets = const [],
   }) async {
     await tester.binding.setSurfaceSize(size);
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(body: PlanningPage(service: service)),
+        home: Scaffold(
+          body: PlanningPage(service: service, initialPresets: presets),
+        ),
       ),
     );
   }
@@ -1066,6 +1088,22 @@ void main() {
     expect(
       find.byKey(const ValueKey('plan-phase-flow-triangle')),
       findsNWidgets(3),
+    );
+    final firstPhase = tester.getRect(
+      find.byKey(ValueKey('plan-phase-${dummyPlanPhases.first.id}')),
+    );
+    final firstFlowTriangle = tester.getRect(
+      find.byKey(const ValueKey('plan-phase-flow-triangle')).first,
+    );
+    expect(
+      firstFlowTriangle.center.dx,
+      closeTo(
+        firstPhase.left +
+            (firstPhase.width -
+                    firstPhase.height / math.tan(80 * math.pi / 180)) /
+                2,
+        0.5,
+      ),
     );
     expect(
       find.byKey(const ValueKey('plan-step-phase-1-shiroko-1')),
@@ -2619,6 +2657,480 @@ void main() {
       expect(section3.dy.abs(), lessThan(0.01));
       expect(section4.dx, lessThan(0));
       expect(section4.dy, greaterThan(0));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'student selector keeps section 1 and resets search and filters on exit',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpPage(tester, service, size: const Size(2560, 1392));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-student-selector-launch')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PlanStudentSelector), findsOneWidget);
+      expect(find.text('보유 상태'), findsOneWidget);
+      expect(find.text('계획 상태'), findsOneWidget);
+      final gridSection = find.byKey(
+        const ValueKey('plan-student-selector-grid-section'),
+      );
+      final filterSection = find.byKey(
+        const ValueKey('plan-student-selector-filter-section'),
+      );
+      final conditionSection = find.byKey(
+        const ValueKey('plan-range-condition-section'),
+      );
+      final selectorRect = tester.getRect(
+        find.byKey(const ValueKey('plan-student-selector-view')),
+      );
+      final gridSectionRect = tester.getRect(gridSection);
+      final filterSectionRect = tester.getRect(filterSection);
+      final conditionSectionRect = tester.getRect(conditionSection);
+      for (final section in [gridSection, filterSection]) {
+        expect(
+          find.descendant(
+            of: section,
+            matching: find.byType(SectionTemplateSurface),
+          ),
+          findsNothing,
+        );
+        final foundations = tester
+            .widgetList<CustomPaint>(
+              find.descendant(of: section, matching: find.byType(CustomPaint)),
+            )
+            .where(
+              (paint) => paint.painter is PlanStudentSelectorSectionPainter,
+            )
+            .toList();
+        expect(foundations, hasLength(1));
+      }
+      for (final key in const [
+        'plan-student-selector-grid-motion',
+        'plan-student-selector-filter-motion',
+        'plan-student-selector-condition-motion',
+      ]) {
+        final motion = tester.widget<PlanStudentSelectorMotion>(
+          find.byKey(ValueKey(key)),
+        );
+        expect(motion.introDegrees, 80);
+        expect(motion.outroDegrees, 260);
+      }
+      final section1Bounds = planSectionPath(
+        selectorRect.size,
+        'element-1',
+      ).getBounds();
+      final section1Right = planStudentSelectorSection1RightAtReference(
+        selectorRect.size,
+      );
+      final selectorDepth = sectionTemplateCutDepth(gridSectionRect.height);
+      final gridLeftAtReference =
+          gridSectionRect.left - selectorRect.left + selectorDepth / 2;
+      expect(
+        gridLeftAtReference - section1Right,
+        closeTo(planStudentSelectorSectionGap, 0.01),
+      );
+      expect(
+        filterSectionRect.left +
+            selectorDepth / 2 -
+            (gridSectionRect.right - selectorDepth / 2),
+        closeTo(planStudentSelectorSectionGap, 0.01),
+      );
+      expect(
+        conditionSectionRect.left +
+            selectorDepth / 2 -
+            (filterSectionRect.right - selectorDepth / 2),
+        closeTo(studentRangeConditionSectionGap, 0.01),
+      );
+      final localFilterLeft = filterSectionRect.left - selectorRect.left;
+      final previousFilterWidth = selectorRect.width * 0.985 - localFilterLeft;
+      expect(
+        filterSectionRect.width,
+        closeTo(
+          previousFilterWidth * planStudentSelectorFilterWidthScale,
+          0.01,
+        ),
+      );
+      expect(gridSectionRect.top, closeTo(section1Bounds.top, 0.01));
+      expect(gridSectionRect.bottom, closeTo(section1Bounds.bottom, 0.01));
+      expect(filterSectionRect.top, closeTo(section1Bounds.top, 0.01));
+      expect(filterSectionRect.bottom, closeTo(section1Bounds.bottom, 0.01));
+      expect(conditionSectionRect.top, closeTo(section1Bounds.top, 0.01));
+      expect(conditionSectionRect.bottom, closeTo(section1Bounds.bottom, 0.01));
+      expect(
+        find.descendant(
+          of: conditionSection,
+          matching: find.byType(PlanPresetElementCard),
+        ),
+        findsNWidgets(2),
+      );
+      final gridContainer = find.byKey(
+        const ValueKey('plan-student-selector-grid-container'),
+      );
+      final filterContainer = find.byKey(
+        const ValueKey('plan-student-selector-filter-container'),
+      );
+      expect(
+        find.descendant(of: gridContainer, matching: find.byType(ClipPath)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: filterContainer, matching: find.byType(ClipPath)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: filterContainer,
+          matching: find.byKey(const ValueKey('plan-student-selector-search')),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: filterContainer,
+          matching: find.byKey(
+            const ValueKey('plan-student-selector-filter-reset'),
+          ),
+        ),
+        findsNothing,
+      );
+      final filterOuterPath = buildSectionTemplatePath(
+        filterSectionRect.size,
+        SectionShape.bilateral,
+      );
+      Rect localControlRect(String key) => tester
+          .getRect(find.byKey(ValueKey(key)))
+          .shift(-filterSectionRect.topLeft)
+          .deflate(1);
+      for (final control in [
+        localControlRect('plan-student-selector-search'),
+        localControlRect('plan-student-selector-filter-reset'),
+      ]) {
+        expect(filterOuterPath.contains(control.topLeft), isTrue);
+        expect(filterOuterPath.contains(control.topRight), isTrue);
+        expect(filterOuterPath.contains(control.bottomLeft), isTrue);
+        expect(filterOuterPath.contains(control.bottomRight), isTrue);
+      }
+      expect(
+        tester.getRect(gridContainer).top - gridSectionRect.top,
+        closeTo(planStudentSelectorInnerInset, 0.01),
+      );
+      final filterContainerRect = tester.getRect(filterContainer);
+      final filterListRect = tester.getRect(
+        find.byKey(const ValueKey('plan-student-selector-filter-list')),
+      );
+      expect(
+        filterContainerRect.right - filterListRect.right,
+        closeTo(planStudentSelectorFilterContentInset, 0.01),
+      );
+      expect(
+        filterListRect.left - filterContainerRect.left,
+        closeTo(planStudentSelectorFilterContentInset, 0.01),
+      );
+      expect(
+        tester
+            .widget<StudentViewportFog>(
+              find.byKey(const ValueKey('student-filter-fog')),
+            )
+            .color,
+        studentSection2ContainerColor,
+      );
+      expect(
+        tester
+            .widget<StudentDiagonalGrid>(
+              find.byKey(const ValueKey('plan-student-selector-grid')),
+            )
+            .columns,
+        planStudentSelectorGridColumns,
+      );
+      expect(
+        tester
+            .getRect(find.byKey(const ValueKey('plan-student-selector-search')))
+            .top,
+        lessThan(
+          tester
+              .getRect(
+                find.byKey(const ValueKey('plan-student-selector-filter-list')),
+              )
+              .top,
+        ),
+      );
+
+      Offset sectionMotionOffset(String id) {
+        final transform = find.descendant(
+          of: find.byKey(ValueKey('plan-$id-motion')),
+          matching: find.byType(Transform),
+        );
+        final translation = tester
+            .widget<Transform>(transform.first)
+            .transform
+            .getTranslation();
+        return Offset(translation.x, translation.y);
+      }
+
+      expect(sectionMotionOffset('element-1'), Offset.zero);
+      expect(sectionMotionOffset('element-2'), isNot(Offset.zero));
+
+      await tester.enterText(
+        find.byKey(const ValueKey('plan-student-selector-search')),
+        '아루',
+      );
+      final filterList = tester.widget<StudentDiagonalFilterList>(
+        find.byKey(const ValueKey('plan-student-selector-filter-list')),
+      );
+      expect(
+        filterList.definitions!.map((definition) => definition.key),
+        containsAll(const ['ownership', 'plan_status']),
+      );
+      filterList.onToggle('ownership', 'owned');
+      await tester.pump();
+      expect(filterList.selected['ownership'], contains('owned'));
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey('plan-range-condition-lower-enabled-control'),
+        ),
+      );
+      await tester.pump();
+      expect(
+        tester
+            .widget<Checkbox>(
+              find.descendant(
+                of: find.byKey(
+                  const ValueKey('plan-range-condition-lower-enabled-control'),
+                ),
+                matching: find.byType(Checkbox),
+              ),
+            )
+            .value,
+        isTrue,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-student-selector-launch')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(PlanStudentSelector), findsNothing);
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-student-selector-launch')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(
+              find.byKey(const ValueKey('plan-student-selector-search')),
+            )
+            .controller!
+            .text,
+        isEmpty,
+      );
+      expect(
+        tester
+            .widget<Checkbox>(
+              find.descendant(
+                of: find.byKey(
+                  const ValueKey('plan-range-condition-lower-enabled-control'),
+                ),
+                matching: find.byType(Checkbox),
+              ),
+            )
+            .value,
+        isFalse,
+      );
+      expect(
+        tester
+            .widget<StudentDiagonalFilterList>(
+              find.byKey(const ValueKey('plan-student-selector-filter-list')),
+            )
+            .selected['ownership'],
+        isEmpty,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'student selector panels play outro when the plan tab deactivates',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+
+      var active = true;
+      late StateSetter setHostState;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              setHostState = setState;
+              return Scaffold(
+                body: PlanningPage(service: service, active: active),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-student-selector-launch')),
+      );
+      await tester.pumpAndSettle();
+
+      Offset selectorMotionOffset(String panel) {
+        final transform = find.descendant(
+          of: find.byKey(ValueKey('plan-student-selector-$panel-motion')),
+          matching: find.byType(Transform),
+        );
+        final translation = tester
+            .widget<Transform>(transform.first)
+            .transform
+            .getTranslation();
+        return Offset(translation.x, translation.y);
+      }
+
+      for (final panel in const ['grid', 'filter', 'condition']) {
+        expect(selectorMotionOffset(panel), Offset.zero);
+      }
+
+      setHostState(() => active = false);
+      await tester.pump();
+      await tester.pump(
+        Duration(
+          milliseconds: planStudentSelectorMotionDuration.inMilliseconds ~/ 2,
+        ),
+      );
+
+      for (final panel in const ['grid', 'filter', 'condition']) {
+        final offset = selectorMotionOffset(panel);
+        expect(offset.dx, lessThan(0));
+        expect(offset.dy, greaterThan(0));
+      }
+      expect(find.byType(PlanStudentSelector), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      setHostState(() => active = true);
+      await tester.pumpAndSettle();
+
+      for (final panel in const ['grid', 'filter', 'condition']) {
+        expect(selectorMotionOffset(panel), Offset.zero);
+      }
+      Offset planMotionOffset(String id) {
+        final transform = find.descendant(
+          of: find.byKey(ValueKey('plan-$id-motion')),
+          matching: find.byType(Transform),
+        );
+        final translation = tester
+            .widget<Transform>(transform.first)
+            .transform
+            .getTranslation();
+        return Offset(translation.x, translation.y);
+      }
+
+      expect(planMotionOffset('element-1'), Offset.zero);
+      for (final id in const [
+        'element-2',
+        'element-3',
+        'element-4',
+        'element-5',
+      ]) {
+        expect(planMotionOffset(id), isNot(Offset.zero));
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'student selection exits both panels before opening and reopening the builder',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpPage(
+        tester,
+        service,
+        size: const Size(2560, 1392),
+        presets: [_planningTestPreset()],
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-student-selector-launch')),
+      );
+      await tester.pumpAndSettle();
+      final firstSelectionGrid = tester.widget<StudentDiagonalGrid>(
+        find.byKey(const ValueKey('plan-student-selector-grid')),
+      );
+      final selectedStudentId = firstSelectionGrid.students.first.studentId;
+      await tester.tap(find.byKey(ValueKey('student-$selectedStudentId')));
+      await tester.pump();
+      await tester.pump(
+        Duration(
+          milliseconds: planStudentSelectorMotionDuration.inMilliseconds ~/ 2,
+        ),
+      );
+
+      expect(find.byType(PlanStudentSelector), findsOneWidget);
+      expect(find.byType(PlanElementBuilder), findsNothing);
+      for (final panel in const ['grid', 'filter', 'condition']) {
+        final transform = find.descendant(
+          of: find.byKey(ValueKey('plan-student-selector-$panel-motion')),
+          matching: find.byType(Transform),
+        );
+        final translation = tester
+            .widget<Transform>(transform.first)
+            .transform
+            .getTranslation();
+        expect(translation.x, lessThan(0));
+        expect(translation.y, greaterThan(0));
+      }
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PlanStudentSelector), findsNothing);
+      expect(find.byType(PlanElementBuilder), findsOneWidget);
+      expect(
+        tester
+            .widget<PlanElementBuilder>(find.byType(PlanElementBuilder))
+            .seed
+            .studentId,
+        selectedStudentId,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-starter-preset-balanced-growth')),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-starter-return-to-plan')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-student-selector-launch')),
+      );
+      await tester.pumpAndSettle();
+      final planFilterList = tester.widget<StudentDiagonalFilterList>(
+        find.byKey(const ValueKey('plan-student-selector-filter-list')),
+      );
+      planFilterList.onToggle('plan_status', 'planned');
+      await tester.pump();
+      await tester.tap(find.byKey(ValueKey('student-$selectedStudentId')));
+      await tester.pumpAndSettle();
+
+      final reopened = tester.widget<PlanElementBuilder>(
+        find.byType(PlanElementBuilder),
+      );
+      expect(reopened.seed.studentId, selectedStudentId);
+      expect(reopened.initialStages, isNotEmpty);
       expect(tester.takeException(), isNull);
     },
   );

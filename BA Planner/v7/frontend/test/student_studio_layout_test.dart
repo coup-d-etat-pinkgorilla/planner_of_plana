@@ -465,13 +465,13 @@ void main() {
     expect(studentSchoolLogoAsset(null), isNull);
   });
 
-  test('Section 5 keeps the left rail and halves both horizontal edges', () {
+  test('Section 5 keeps the left rail and halves its previous width', () {
     const size = Size(1280, 720);
     final polygon = studentFilterSectionPolygon(size);
     final topLength = polygon[1].dx - polygon[0].dx;
     final bottomLength = polygon[2].dx - polygon[3].dx;
 
-    expect(topLength, closeTo(studentListSectionEdgeLength(size) / 2, 0.001));
+    expect(topLength, closeTo(studentListSectionEdgeLength(size) / 4, 0.001));
     expect(bottomLength, closeTo(topLength, 0.001));
     expect(
       studentFilterSectionPath(size).getBounds().height,
@@ -686,20 +686,39 @@ void main() {
   );
 
   testWidgets(
-    'focused portrait exposes ownership through the shared overlay API',
+    'focused portrait uses the grid rendering and three-badge contract',
     (tester) async {
       final search = TextEditingController();
       addTearDown(search.dispose);
       await tester.binding.setSurfaceSize(const Size(1100, 720));
       addTearDown(() => tester.binding.setSurfaceSize(null));
+      final student = StudentCatalogEntry(
+        studentId: 'aru',
+        displayName: 'Aru',
+        templateName: 'aru.png',
+        group: 'aru',
+        variant: null,
+        school: null,
+        rarity: null,
+        attackType: null,
+        defenseType: null,
+        combatClass: null,
+        role: null,
+        position: null,
+        jpOnly: true,
+        searchTags: const [],
+        krSearchTags: const [],
+      );
 
       Widget layout(Set<String> ownedIds) => MaterialApp(
         home: Scaffold(
           body: StudentSectionLayout(
-            students: [StudentCatalogEntry.fallback('aru')],
+            students: [student],
             ownedIds: ownedIds,
             selectedId: 'aru',
+            selectedStudent: student,
             selectedValues: null,
+            plannedIds: const {'aru'},
             searchController: search,
             onSearchChanged: (_) {},
             onStudentSelected: (_) {},
@@ -712,14 +731,53 @@ void main() {
 
       await tester.pumpWidget(layout(const {}));
       await tester.pumpAndSettle();
-      StudentPortraitStatusOverlay overlay() => tester.widget(
-        find.byKey(const ValueKey('student-focused-portrait-status')),
+      StudentGridCardOverlayPainter overlay() =>
+          tester
+                  .widget<CustomPaint>(
+                    find.byKey(
+                      const ValueKey('student-focused-portrait-status'),
+                    ),
+                  )
+                  .painter
+              as StudentGridCardOverlayPainter;
+      expect(overlay().students.single.jpOnly, isTrue);
+      expect(overlay().ownedIds, isEmpty);
+      expect(overlay().plannedIds, const {'aru'});
+      expect(overlay().showAttributes, isFalse);
+      expect(overlay().showNames, isFalse);
+      expect(overlay().selectedIndex, isNull);
+      expect(overlay().outlineWidthFraction, 0.01);
+      final portraitGrid = tester.widget<AssetImageGrid>(
+        find.byKey(const ValueKey('student-focused-portrait')),
       );
-      expect(overlay().owned, isFalse);
+      final portraitSlotSize = tester.getSize(
+        find.byKey(const ValueKey('student-focused-portrait')),
+      );
+      final fittedPortraitCard = Alignment.center.inscribe(
+        applyBoxFit(
+          BoxFit.contain,
+          studentGridCardSourceSize,
+          portraitSlotSize,
+        ).destination,
+        Offset.zero & portraitSlotSize,
+      );
+      expect(
+        fittedPortraitCard.size.aspectRatio,
+        closeTo(studentGridCardSourceSize.aspectRatio, 0.001),
+      );
+      expect(
+        fittedPortraitCard.width < portraitSlotSize.width ||
+            fittedPortraitCard.height < portraitSlotSize.height,
+        isTrue,
+      );
+      expect(portraitGrid.items.first.edgeCropFraction, 0.11);
+      expect(portraitGrid.items.first.clipPathBuilder, studentGridCardPath);
+      expect(portraitGrid.items.last.alphaThreshold, 0.04);
+      expect(portraitGrid.items.last.clipRadiusFraction, 0.12);
 
       await tester.pumpWidget(layout(const {'aru'}));
       await tester.pump();
-      expect(overlay().owned, isTrue);
+      expect(overlay().ownedIds, const {'aru'});
       expect(tester.takeException(), isNull);
     },
   );
@@ -1634,7 +1692,7 @@ void main() {
     expect(angle, closeTo(80, 0.001));
   });
 
-  test('bond rank returns to the remaining right triangle', () {
+  test('bond rank is centered in the remaining right triangle', () {
     const size = Size(320, 260);
     final source = studentStudioDocument.containers.firstWhere(
       (item) => item.id == 'container-10',
@@ -1651,12 +1709,9 @@ void main() {
     final outerBottomPoints = studentBondOuterTrianglePoints(size)
         .where((point) => (point.dy - size.height).abs() < 0.001)
         .toList(growable: false);
-    final unshiftedRankCenter =
+    final availableRankCenter =
         (outerBottomPoints[0].dx + outerBottomPoints[1].dx) / 2;
-    expect(
-      rankRect.center.dx,
-      closeTo(unshiftedRankCenter - studentBondRankLeftShift(size), 0.001),
-    );
+    expect(rankRect.center.dx, closeTo(availableRankCenter, 0.001));
     expect(rankRect.bottom, lessThan(size.height));
     expect(size.height - rankRect.bottom, greaterThanOrEqualTo(7));
     expect(gaugeBounds.bottom, lessThan(rankRect.top));
@@ -1704,6 +1759,40 @@ void main() {
     expect(
       host.contains(Offset(hostBounds.right - 0.25, hostBounds.bottom - 0.25)),
       isFalse,
+    );
+  });
+
+  test('inverted bond rank follows the actual left triangle top span', () {
+    const size = Size(180, 260);
+    final source = studentStudioDocument.containers.firstWhere(
+      (item) => item.id == 'container-10',
+    );
+    final leftSpec = source.spec.copyWith(face: SectionAttachmentFace.left);
+    final outerPath = buildRoundedSectionPolygon(
+      buildAttachedSectionPolygon(
+        size,
+        leftSpec,
+        gridSize: sectionTemplateDetailGridSize,
+      ),
+      radius: 10,
+    );
+    final inverted = studentBondRankRect(
+      size,
+      outerPath: outerPath,
+      inverted: true,
+    );
+    final gauge = studentBondGaugeHostPath(size, outerPath, inverted: true);
+
+    expect(inverted.top, greaterThanOrEqualTo(outerPath.getBounds().top + 7));
+    expect(inverted.center.dy, lessThan(size.height / 2));
+    expect(inverted.center.dx, lessThan(outerPath.getBounds().right));
+    expect(
+      gauge.getBounds().top,
+      closeTo(inverted.bottom + studentBondGaugeRankGap(size), 0.001),
+    );
+    expect(
+      gauge.getBounds().bottom,
+      closeTo(outerPath.getBounds().bottom, 0.001),
     );
   });
 

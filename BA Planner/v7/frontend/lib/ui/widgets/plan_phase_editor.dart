@@ -642,7 +642,7 @@ class _PlanPhaseEditorState<T> extends State<PlanPhaseEditor<T>>
     final bounds = path.getBounds();
     return Positioned.fromRect(
       rect: bounds,
-      child: _PhaseEditorPathButton(
+      child: PhaseEditorPathButton(
         key: key,
         path: path.shift(-bounds.topLeft),
         onPressed: onPressed,
@@ -1212,7 +1212,7 @@ class _PhaseEditorPathSurface extends StatelessWidget {
       ClipPath(
         clipper: _PhaseEditorPathClipper(path),
         child: CustomPaint(
-          painter: BATriangleTexturePainter(_phaseEditorTexture),
+          painter: BATriangleTexturePainter(phaseEditorPathSurfaceTexture),
           child: child,
         ),
       ),
@@ -1242,8 +1242,8 @@ class _PhaseEditorPathSurfacePainter extends CustomPainter {
       oldDelegate.path != path;
 }
 
-class _PhaseEditorPathButton extends StatelessWidget {
-  const _PhaseEditorPathButton({
+class PhaseEditorPathButton extends StatelessWidget {
+  const PhaseEditorPathButton({
     super.key,
     required this.path,
     required this.onPressed,
@@ -1379,7 +1379,7 @@ class _PhaseEditorButtonPainter extends CustomPainter {
       oldDelegate.emphasized != emphasized;
 }
 
-const _phaseEditorTexture = BATriangleTextureConfig(
+const phaseEditorPathSurfaceTexture = BATriangleTextureConfig(
   baseColor: Color(0x8a29435b),
   panelColor: Color(0x8a355a75),
   softColor: Color(0x8a47738d),
@@ -1661,7 +1661,7 @@ class _PhaseQuickAssignButton extends StatelessWidget {
       return Semantics(
         button: true,
         label: '선택한 페이즈 맨 아래로 이동',
-        child: _PhaseEditorPathButton(
+        child: PhaseEditorPathButton(
           path: path,
           onPressed: onPressed,
           icon: Icons.arrow_forward_rounded,

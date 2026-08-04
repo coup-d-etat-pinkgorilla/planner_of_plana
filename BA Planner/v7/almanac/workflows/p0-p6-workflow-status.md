@@ -10,9 +10,73 @@ sources:
 
 # P0-P6 Workflow Status
 
+### 2026-08-04 plan-main student selector without an incoming seed
+
+- Status: `implemented · full automated verification complete · user visual review pending`
+- Plan Section 1 now keeps its existing phase-editor action and adds `학생 추가`.
+  Opening it leaves Section 1 in place while Sections 2-5 complete their own
+  outro motions, then presents a dedicated student-selection workspace in the
+  vacated center/right area.
+- The selector uses a four-column `StudentDiagonalGrid` at one half of the
+  student tab's grid-section width and a separate bilateral filter surface with
+  an explicit responsive gap. The filter surface places search at the top,
+  followed by the reused student-tab metadata filters plus the planning-only
+  `보유 상태` and `계획 상태` groups.
+- Selecting a card immediately builds a `PlanningStudentSeed` from the active
+  profile's confirmed state and opens `PlanElementBuilder`. Students already
+  represented in the current plan session keep their `PLAN` badge and reopen
+  the saved stage drafts for editing instead of starting over.
+- `선택 취소` restores Sections 2-5. Removing the selector also disposes its
+  search controller and filter selections, so every subsequent entry starts
+  with an empty search and no active filters.
+- The shared student grid now accepts a source-compatible optional column count;
+  the student tab retains its eight-column default while the plan selector sets
+  four columns. The shared diagonal filter list similarly accepts optional
+  definitions while retaining the original student-tab defaults.
+- Screenshot-driven follow-up adds a student-tab-style opaque inner bilateral
+  container to both selector sections. Grid scroll/fog/scrollbar effects are
+  clipped to the grid container. A second screenshot review found that placing
+  the selector's rectangular bounds 12px after Section 1 still added the
+  selector's complete left-cut depth to the visible gap. Placement now compares
+  the two actual 80-degree edges at one shared reference Y and preserves a true
+  12px visual gap. The grid title row was removed so its inner container starts
+  10px below the outer section rather than leaving a large unused top band.
+- The filter now follows `search control → clipped filter-scroll container →
+  reset button`: search and reset are direct children of the outer section and
+  use opposite diagonal-safe insets, while only the scrolling filter list sits
+  inside the opaque inner container. A further 12px inset separates every
+  filter row from that container's border.
+- Latest visual follow-up gives both selector sections the exact top and bottom
+  bounds of Plan Section 1. Their internal surfaces resize with them and retain
+  their existing border insets. Both visible edge gaps are now 24px at the same
+  reference Y: `Section 1 ↔ grid` and `grid ↔ filter`; the latter subtracts both
+  sections' cut depth instead of treating their rectangular bounds as visible
+  edges.
+- The central filter-scroll path is now derived from the outer filter section's
+  complete 80-degree trajectory at its actual top and bottom, retaining a 10px
+  parallel border gap even though the search and reset controls consume height.
+  Its rows retain an additional 12px content inset. The reusable viewport fog
+  accepts a surface color, and the plan filter uses its inner container's opaque
+  `#162431` rather than the student-tab default fog color.
+- Verification: `flutter analyze` reported no issues; all 316 Flutter tests
+  passed, including 38 planning page tests and 46 student-layout tests; the
+  Windows release build completed; and `codealmanac validate` passed. Added coverage verifies the
+  non-zero grid/filter gap, four-column contract, Section 1 persistence,
+  Sections 2-5 exit, search/filter reset, immediate builder entry, plan-state
+  filtering, and reopening existing stage drafts.
+- Artifacts: `frontend/lib/ui/widgets/plan_student_selector.dart`,
+  `frontend/lib/ui/widgets/plan_section_layout.dart`,
+  `frontend/lib/ui/widgets/student_section_layout.dart`,
+  `frontend/lib/ui/pages/planning_page.dart`, and
+  `frontend/test/planning_page_test.dart`.
+
 ### 2026-08-01 student Section 2 grid/list views
 
 - Status: `implemented · full automated verification complete · user visual review pending`
+- 구현 결과, 사용자 재지적, 폐기한 원인 가설, 최종 그리드·목록·Section 3 렌더링 계약과
+  성능 개선 이력은
+  [학생 카드 그리드·목록·초상 반복 개선 기록](../design/student-card-rendering-lessons-2026-08-02.md)에
+  상세히 기록했다.
 - Student Section 2 now defaults to its existing eight-column grid and can be
   switched to a diagonal student-information list built with the extracted
   `PlanStudentStepTile` constructor. Both views receive the same searched,
@@ -2040,6 +2104,9 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 ### 2026-08-02 학생 Section 2 그리드 마스크·상태 배지 보정
 
 - 상태: `구현·집중 자동 검증 완료·사용자 실화면 확인 대기`
+- 이 항목의 전체 시행착오와 재발 방지 기준은
+  [학생 카드 그리드·목록·초상 반복 개선 기록](../design/student-card-rendering-lessons-2026-08-02.md)을
+  따른다.
 - 학생 카드의 마지막 이름·속성·미보유 overlay 마스크에도 배경과 같은 `0.125`
   alpha cutoff를 적용했다. 배경 및 초상 painter 수정 뒤에도 남아 있던
   `square.png` 원본 캔버스 크기의 희미한 직사각형을 이 마지막 합성 단계에서 제거한다.
@@ -2080,5 +2147,582 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
   사용자가 타이틀을 빠르게 통과하면 offstage 상태의 StudentPage가 shared warmup controller로
   남은 asset을 이어받는다. 타이틀에는 `1/255` opacity의 실제 1-card grid painter를 잠시 그려
   clip, alpha layer, outline, badge, text 합성 경로도 미리 실행한다.
+- Student Section 3의 `container-1`은 선택 학생 초상의 layout slot으로만 사용하고, 실제 visible
+  card는 grid와 동일하게 `252×204` source가 `BoxFit.contain`으로 배치된 fitted rect에서 만든
+  `studentGridCardPath`가 소유한다. 이미지 비율을 보존하므로 slot과 비율이 다르면 좌우 또는
+  상하 여백이 생긴다. background는 `0.11` edge crop과 geometry clip, portrait는 grid와 같은
+  `scale 0.98`·`clipRadiusFraction 0.12`·`alphaThreshold 0.04`를 사용한다.
+- 전용 Section 3 overlay painter를 제거하고 `StudentGridCardOverlayPainter`를 1×1, name/attribute
+  off, selection null로 직접 재사용한다. 따라서 미보유 dark overlay, `0.01` 흰 outline,
+  `UNOWNED`·`PLAN`·`JP` 배지까지 배경과 동일한 fitted card path를 공유한다. PLAN은 repository
+  goal, JP는 catalog `jpOnly`를 따른다.
 - 후속 검증: 타이틀·학생 집중 71 tests, Flutter 전체 284 tests (`--concurrency=1`),
   `flutter analyze`, Windows release build, `codealmanac validate`, `git diff --check` 통과.
+
+### 2026-08-02 학생 상세 인연 랭크 숫자 중앙 정렬
+
+- 상태: `구현·집중 자동 검증 완료·사용자 실화면 확인 대기`
+- Section 3 인연 랭크 숫자 영역에 남아 있던 폭 기반 `3~8px` 좌측 optical shift를 제거했다.
+  숫자 영역은 실제 rounded·parent-intersected 삼각형 경로에서 측정한 하단 수평 span에
+  좌우 동일 inset을 적용하므로, `FittedBox`의 중앙 정렬이 그 span의 정확한 중앙을 사용한다.
+- 게이지 host, 하단 간격, 숫자 크기와 삼각형 외곽 형상은 변경하지 않았다.
+- 검증: 학생 레이아웃 집중 46 tests, Flutter 전체 290 tests (`--concurrency=1`),
+  `flutter analyze`, Windows release build, `codealmanac validate`, `git diff --check` 통과.
+
+### 2026-08-02 계획 요소 외곽·초상·성작·인연 표시 통일
+
+- 상태: `구현·전체 자동 검증 완료·사용자 실화면 확인 대기`
+- 계획 요소 화면의 Section 3·5·6·7 외곽 foundation에서 삼각형 무늬를 제거하고
+  `planElementBuilderSectionOpacity`를 사용하는 반투명 단색으로 교체했다. Section 3 내부
+  컨테이너의 Studio `triangleTexture` 설정은 변경하지 않았다.
+- Section 3 Feature 2는 학생 탭의 `StudentLevelStatus`를 직접 사용하며 학생 이름과
+  인연 비용 미연결 헤더 문구를 제거했다.
+- Container 1 초상은 학생 탭과 같은 `AssetImageGrid` 계약으로 교체했다. 인연 배경의
+  `0.11` edge crop과 `studentGridCardPath`, 초상의 `0.98` scale·`0.12` clip radius·
+  `0.04` alpha cutoff를 공유하며, 미보유·PLAN·JP 배지는 기존 결정대로 이번 범위에서
+  추가하지 않았다.
+- 학생 탭과 계획 탭의 성작 표시는 공용 `paintStudentStarStatus`와
+  `StudentStarStatus`를 사용한다. Section 6 Element 4는 직전 snapshot을 현재 채움으로,
+  해당 단계 목표를 학생 금색·전용무기 청색 테두리로 표시하며 기존 아홉 칸 click
+  hit target과 목표 갱신 동작을 유지한다.
+- 계획 Container 8은 공용 `StudentBondStatus`의 `inverted` 변형을 사용한다. 게이지
+  그림만 180도 반전하고 rank band는 위쪽으로 mirror하며 숫자 glyph는 정방향을 유지한다.
+- 계약 문서 `docs/migration/p2-planning-screen/plan-element-builder-contract-2026-07-31.md`를
+  같은 시각·상태 표현으로 갱신했다.
+- 검증: 계획 요소·학생 집중 62 tests, Flutter 전체 286 tests (`--concurrency=1`),
+  `flutter analyze`, Windows release build 통과. 2560×1392 widget raster probe에서 외곽
+  단색, 내부 texture 보존, 학생 탭 방식 초상, 현재 채움·목표 테두리 성작, 180도 반전
+  인연 인디케이터를 확인한 뒤 임시 probe와 캡처 artifact를 제거했다.
+- 다음 작업: 사용자가 최신 Windows build에서 Container 8의 위쪽 숫자 여백과 Section 6
+  성작 테두리 굵기·색 대비를 최종 시각 확인한다.
+
+### 2026-08-02 계획 Section 3 외곽·내부 rail 재정렬
+
+- 상태: `구현·전체 자동 검증 완료·사용자 실화면 확인 대기`
+- 계획 Container 3은 학생 탭과 같이 foundation의 fill·outline 대상에서 제외하고 성작
+  아홉 세그먼트만 그린다.
+- Container 8은 기존 좌측 face 사다리꼴에서 좌측 face 삼각형으로 바꾸고, 초상 패널과
+  상단 12px·하단 약 10px의 평행 간격이 남도록 오른쪽으로 이동했다. 내부 인연 게이지의
+  180도 반전과 정방향 숫자 계약은 유지한다.
+- 상단 Container 8·1·2의 기존 픽셀 크기와 세로 위치를 기준으로 Section 3 폭을 Studio
+  28칸에서 27칸으로 줄였다. Container 3·5·6·7·9는 기존 y·height·세로 간격을 보존하고
+  새 Section 3의 우측 80도 rail에서 12px 안쪽에 오도록 x·width를 다시 계산했다.
+- 저장된 `section-plan-starter.ba-section-studio.json`과 typed projection을 함께 갱신했다.
+  2560×1392 widget raster probe에서 Container 3 외곽선 제거, 삼각형 Container 8,
+  상단 패널 묶음에 맞춘 외곽 폭과 하단 패널의 점진적 우측 inset을 확인한 뒤 임시
+  probe와 캡처 artifact를 제거했다.
+- 검증: 계획 요소·학생 집중 63 tests, Flutter 전체 287 tests (`--concurrency=1`),
+  `flutter analyze`, Windows release build 통과. Studio JSON parity, Section 3의 27칸 폭,
+  Container 8의 좌측 face triangle, Container 3 foundation 제외, 하단 다섯 패널의
+  12px rail gap을 집중 회귀 테스트로 고정했다.
+- 다음 작업: 사용자가 최신 Windows build에서 삼각형 Container 8의 숫자 크기와 초상
+  사이 여백, 하단 패널 우측 끝의 시각적 평행성을 최종 확인한다.
+
+### 2026-08-02 계획 Section 3 독립 초상·배지·애장품 메타데이터 분기
+
+- 상태: `구현·전체 자동 검증 완료·사용자 실화면 확인 대기`
+- 계획 Section 3의 Container 1을 Studio JSON과 typed projection에서 제거했다. 초상은
+  Section 3 기준 독립 placement에 직접 배치하며 `AssetImageGrid`의 fitted card path와
+  `StudentGridCardOverlayPainter`만 visible surface·흰 외곽선·상태 배지를 소유한다.
+- 계획 초상에도 학생 탭과 같은 `UNOWNED / PLAN / JP` 배지를 연결했다. 각각 seed 보유
+  상태, 기존 계획 요소 존재 여부, `jp_only` 메타데이터를 사용하며 미보유 암전도 같은
+  overlay painter에서 처리한다.
+- 초상과 인연 Container 8을 오른쪽으로 재배치하고 Container 8의 세로 범위를 초상 slot과
+  맞춰, Section 3 좌측 rail에 잘리는 삼각형 면적을 줄이면서 두 visible path의 비중첩을
+  유지했다.
+- 애장품은 `has_favorite_item_kr` 또는 `has_favorite_item` 메타데이터가 없으면 잠금 아이콘
+  대신 `-`를 표시한다. 메타데이터가 존재하고 현재 티어가 0인 경우에만 잠금 아이콘을
+  표시한다. catalog DTO 연결은 학생 메타데이터 편집기 갱신 뒤의 후속 범위다.
+- 검증: 계획 요소·학생 집중 65 tests, Flutter 전체 289 tests (`--concurrency=1`),
+  `flutter analyze`, Windows release build 통과. 2560×1392 widget raster probe에서 Container 1
+  surface 제거, 초상 우측 이동, 인연 삼각형과 초상 사선의 간격, 세 배지 합성을 확인하고
+  임시 probe test를 제거했다.
+- 다음 작업: 사용자가 최신 Windows build에서 세 배지의 실제 텍스트 크기, 초상·인연
+  삼각형 간격, 애장품 `-` 표시를 최종 확인한다.
+
+### 2026-08-02 계획 Section 3 상단 패널 높이·간격 후속 조정
+
+- 상태: `구현·전체 자동 검증 완료·사용자 실화면 확인 대기`
+- 독립 초상 rect는 Container 2의 실제 clipped path 높이를 사용해 계산한다. 학생 카드의
+  `252:204` 비율을 유지하면서 초상 상·하단과 Container 2 상·하단을 일치시켰다.
+- Container 2는 기존 우측 rail 위치를 유지하고 좌측 경계만 오른쪽으로 이동해 폭을
+  줄였다. 확보한 공간으로 초상을 오른쪽 방향으로 확대했고 두 평행 사선의 기준 간격을
+  약 48px에서 24px로 절반 축소했다.
+- Container 8 placement 높이를 직전 값의 정확히 1.3배로 늘렸다. 2560×1392 raster에서
+  rounded triangle의 visible 높이는 약 186px에서 256px로 37% 증가했고 성작 스트립과
+  겹치지 않았다.
+- `StudentLevelStatus`의 레벨/학교 문양 구분선은 기존 `width * 0.06` run을 제거하고
+  `height / tan(80°)`를 사용하도록 교정했다. 집중 geometry test가 계산 각도 80도를 고정한다.
+- 검증: 계획 요소·학생 집중 66 tests, Flutter 전체 290 tests (`--concurrency=1`),
+  `flutter analyze`, Windows release build 통과. 2560×1392 widget raster에서 초상·Container 2
+  높이 일치, 24px 사선 간격, 확장된 삼각형과 성작 스트립의 비중첩을 확인했다.
+- 다음 작업: 전체 자동 검증 후 사용자가 최신 Windows build에서 좁아진 학교 문양 영역과
+  확장된 인연 삼각형의 숫자 여백을 확인한다.
+
+### 2026-08-02 계획 인연 삼각형 좌측 rail·게이지 합성 통일
+
+- 상태: `구현·전체 자동 검증·Windows release 빌드 완료·사용자 실화면 확인 대기`
+- Container 8의 폭·높이는 유지하고 left placement만 Container 3의 left와 같은 값으로
+  옮겼다. 따라서 삼각형의 왼쪽 수직 변이 바로 아래 성작 패널의 좌측 시작점과 연결된다.
+- Container 8의 `triangleTexture`를 활성화해 학생 탭 Container 10처럼 Section foundation이
+  texture와 outline을 소유하도록 했다. 계획 탭의 별도 `ColoredBox`와 foreground border
+  painter를 제거하고 clipped child에는 공용 `StudentBondStatus(inverted: true)`만 둔다.
+- geometry/widget test가 Container 8·3의 left 일치, 삼각형 크기 보존, texture 활성화,
+  bond host 내부의 단일 gauge `CustomPaint`와 추가 `ColoredBox` 부재를 고정한다.
+- 검증: 계획 요소 20 tests, 계획 요소·학생 집중 66 tests, Flutter 전체 290 tests
+  (`--concurrency=1`), `flutter analyze`, Windows release build 통과. 2560×1392 widget raster에서 좌측 rail 연결,
+  학생 탭 방식 texture·track·progress gauge 합성, 성작 패널과의 비중첩을 확인했다.
+- 다음 작업: 사용자가 최신 Windows build에서 좌측 rail 연결과 학생 탭 방식의 내부 게이지를
+  실화면 확인한다.
+
+### 2026-08-02 계획 인연 삼각형 스킬 rail·좌향 게이지 보정
+
+- 상태: `구현·전체 자동 검증·Windows release 빌드 완료·사용자 실화면 확인 대기`
+- Container 8의 폭·높이는 유지하고 left placement만 Container 5 스킬 패널과 같은 값으로
+  옮겼다. 이전 Container 3 기준은 사용자 실화면 검수에 따라 폐기했다.
+- 학생 탭의 우향 삼각형용 gauge painter 전체를 180도 회전하던 합성을 제거했다. 계획 화면은
+  Studio spec 자체가 이미 좌향이므로 실제 rounded outer path의 상단 span에서 숫자 영역을,
+  그 아래 남은 영역에서 gauge host를 직접 계산한다. 진행량은 회전 결과와 같은 위→아래
+  방향으로 채운다.
+- 검증: 계획 요소·학생 집중 66 tests, Flutter 전체 290 tests (`--concurrency=1`),
+  `flutter analyze`, Windows release build 통과. geometry test가 Container 8·5의 실제 왼쪽
+  변 일치, 좌향 path 기반 상단 rank와 하단 gauge 분리를 고정한다.
+- 다음 작업: 사용자가 최신 Windows build에서 스킬 패널 좌측 정렬과 내부 게이지를 실화면 확인한다.
+
+### 2026-08-02 계획 Container 2 반간격 확장·학원 로고 안전 영역
+
+- 상태: `구현·전체 자동 검증·Windows release 빌드 완료·사용자 실화면 확인 대기`
+- Container 2의 우측 rail은 유지하고 좌측 경계를 Studio projection 기준 12px 왼쪽으로
+  확장해, 2560×1392에서 초상과의 평행 사선 간격을 24px에서 정확히 12px로 줄였다.
+- `StudentLevelStatus`의 70:30 Row를 실제 80도 split path 기반 두 안전 영역으로 교체했다.
+  레벨 영역은 구분선 하단 교점까지, 학원 영역은 상단 교점부터 시작하므로 두 content가
+  사선을 침범하지 않는다. 학원 로고의 5px 하향 transform은 13px top padding으로 흡수해
+  하단 clip을 없애고 `BoxFit.contain`을 유지했다. 좁은 학생 탭 indicator에서는 `LEVEL`
+  label도 한 줄 `FittedBox(scaleDown)`으로 축소해 안전 영역 축소에 따른 세로 overflow를 막았다.
+- 검증: 계획 요소·학생 집중 66 tests, 학생 page 포함 관련 75 tests, Flutter 전체 290 tests
+  (`--concurrency=1`), `flutter analyze`, Windows release build 통과. geometry/widget test가
+  12px 사선 간격, 80도 split, 두 안전 영역의 비중첩, 학원 로고 bounds의 학원 영역 내부
+  포함과 좁은 viewport의 overflow 부재를 고정한다.
+- 다음 작업: 사용자가 최신 Windows build에서 넓어진 Container 2와 학원 로고를 실화면 확인한다.
+
+### 2026-08-02 계획 Feature 2 학원 영역 제거
+
+- 상태: `구현·전체 자동 검증·Windows release 빌드 완료·사용자 실화면 확인 대기`
+- 계획 화면의 `StudentLevelStatus`에만 `showSchool: false`를 적용했다. Feature 2와 Container 2의
+  위치·폭·높이는 유지하고, 내부 학원 배경·80도 구분선·학원 로고는 모두 렌더링하지 않는다.
+  레벨 배경과 content가 기존 Feature 2 전체 영역을 사용한다.
+- 공용 위젯의 기본값은 `showSchool: true`라서 학생 탭의 레벨/학원 인디케이터와 학교 로고는
+  그대로 유지한다.
+- 검증: 계획 요소·학생 Studio·학생 page 관련 75 tests, Flutter 전체 290 tests
+  (`--concurrency=1`), `flutter analyze`, Windows release build 통과. 계획 화면의 level-only
+  surface, split·school region·logo 부재와 학생 탭의 기존 split·logo 존재를 함께 고정한다.
+- 다음 작업: 사용자가 최신 Windows build에서 Feature 2가 레벨 전용 패널로 보이는지 확인한다.
+
+### 2026-08-02 계획 요소 제작 화면 기록·프리셋 관리 인계
+
+- 상태: `문서화·다음 세션 인계 완료`
+- 계획 요소 제작 화면의 Section 3·5·6·7 역할, 단계·프리셋 적용 계약, 학생 상태 카드의 최종
+  geometry와 painter ownership, Container 2·8 보정, 공용 학생 위젯 회귀, Studio parity와
+  raster probe 시행착오를
+  [`plan-element-builder-lessons-2026-08-02.md`](../design/plan-element-builder-lessons-2026-08-02.md)에
+  장기 기록했다.
+- 다음 프리셋 관리 탭 세션의 source of truth, 현재 인메모리 `PlanElementPreset` 경계,
+  Section 5 loader semantics, 확정된 제품 결정, 미결정 scope·lifecycle 질문, 권장 vertical
+  slice와 검증 gate를
+  [`preset-management-next-session-handoff-2026-08-02.md`](../../docs/migration/p2-planning-screen/preset-management-next-session-handoff-2026-08-02.md)에
+  기록했다. 2026-07-31 handoff는 새 문서로 승계 표시했다.
+- 현재 구현 기준선은 관련 75 tests, Flutter 전체 290 tests (`--concurrency=1`),
+  `flutter analyze`, Windows release build, `codealmanac validate`, `git diff --check` 통과다.
+- 다음 행동: 새 세션에서 관리 탭의 위치, 첫 slice 범위, preset scope, 내장 preset 정책,
+  관리 action과 dirty 이동 정책을 사용자에게 확인한 뒤 구현을 시작한다.
+
+### 2026-08-03 계획 단계 카드 편집 표시·MAX·장비 구조 수정
+
+- 상태: `구현·전체 자동 검증·Windows release 빌드 완료·사용자 실화면 확인 대기`
+- 학생·전용무기·인연·스킬 숫자를 인디케이터 스킬 숫자의 80%(25.2px)로 키우고
+  불필요한 `Lv`, `R`, 스킬 prefix를 제거했다. `−`/`+`는 16.5px 텍스트로 바꾸고 각
+  편집기에 계약 상한을 즉시 적용하는 `MAX` 배지를 추가했다.
+- 장비 영역은 티어·아이콘·레벨·MAX의 4열 인디케이터형 편집기로 교체했다.
+  아이콘은 인디케이터 비율의 70%(0.672), 레벨 텍스트는 120%(16.2px)를 사용하며
+  슬롯 `MAX`는 티어와 레벨을 둘 다 상한으로 올린다.
+- 추가 능력치는 `HP/ATK/HEAL`, 13.5px로 통일했다. 스킬·능력치는 단일 행 균등
+  배치로 바꿔 wrap 클립을 막았다.
+- 첫 clip 보정의 49-row 카드는 실화면에서 빈 세로 공간이 과도했다. 제목 padding,
+  제목-컨트롤 gap, ± hit box, MAX 배지 padding을 축소하고 최종 외곽을 34-row로
+  줄였다. 레벨·전용무기·인연·스킬은 4-row, 장비는 7-row, 능력치·심상개화는
+  3-row를 사용한다. typed Studio projection과 release JSON을 같이 갱신했다.
+- 모든 패널을 감싸기 위해 잠시 사용한 convex hull 외곽은 불규칙한 다각형이 되므로
+  제거했다. 패널을 공통 80도 rail 안으로 재배치하고 최외곽을 하나의 정확한 80도
+  평행사변형으로 구성했다. Section 6 내부 폭도 고정 `520px` 높이 추정을 제거하고
+  Studio `width`를 수평 rail 길이로 해석한다. Section 높이의 사선 이동량을 중복
+  차감하지 않고 카드 종횡비로 bounding box를 역산해, 실제 우측 사선까지 좌우
+  rail에 8px만 남기는 최대 폭을 사용한다.
+- Section 6 단계 목록을 사선 스크롤 구조로 교체했다. 각 카드는 scroll offset과
+  viewport Y에 따라 80도 rail을 따라 수평 이동하며, 기본 scrollbar 대신 우측 사선
+  track·handle과 scroll range 기반 상하 fog를 표시한다.
+- 계획-메인의 페이즈 표시 Section을 기준으로 Section 6 안에 별도 80도 외곽 컨테이너를
+  추가했다. 양쪽 80도 rail을 법선 거리 12px만큼 안쪽으로 이동하고 Section path와
+  교차하며, 같은 삼각 텍스처와 0.9px outline을 사용한다. 목록·fog·scrollbar만 새
+  컨테이너 안에 넣고 하단 버튼은 밖에 유지하며, 버튼 영역 62px와 컨테이너-버튼
+  12px 간격을 보존한다. 컨테이너와 프리셋 카드 사이도 법선 12px를 유지하고
+  scrollbar reserve 14px를 별도로 둔다.
+- 프리셋 카드는 높이를 유지한 채 가로만 95%로 줄였다. 상단 학생·전용무기·인연을
+  1행 3열로 바꾸고 인연의 `*`를 제거했으며, 성작은 host fill·outline을 투명화해
+  내부 segment만 표시한다. 상단 3열 사이와 모든 행의 좌우 80도 rail, 상·하단 및
+  `상단 3열 → 성작 → 스킬 → 장비 → 추가 능력치 → 심상개화` 행 사이는 24px을
+  유지한다. 현재 높이는 기존 4:1:4:7:3:3 비율로 남은 공간을 채우는 중간 계약이며
+  후속 단계에서 패널 높이 조정 후 카드 content wrapping을 적용할 예정이다.
+- 검증: `plan_element_builder_test.dart` 27 tests, Flutter 전체 297 tests
+  (`--concurrency=1`), `flutter analyze`, Windows release build, `codealmanac validate`,
+  `git diff --check` 통과. 숫자·라벨·배지·장비 아이콘 비율, MAX 상한 적용,
+  각 편집 배지의 element bounds 내 포함, 외곽의 패널 containment·정확한 80도 평행사변형,
+  Section 6 좌우 8px rail과 최대 카드 폭, scroll offset에 따른 80도 수평 이동과
+  사선 scrollbar·fog 존재, 새 외곽 컨테이너와 프리셋 카드의 좌우 법선 12px,
+  Section path containment·84px 하단 버튼 영역 분리, 카드 95% 가로 scaling·상단
+  1행 3열·내부 24px 간격·성작 surface 투명·인연 `*` 제거를 새 회귀 test로 고정했다.
+- 다음 행동: 사용자가 최신 실화면에서 숫자 체감 크기, 장비 아이콘, 배지 클립
+  부재를 확인한다.
+
+### 2026-08-03 preset panel height and card-centering pass
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- The top level/weapon/bond row now uses 50% of its previous runtime height. Skill
+  and equipment use 60%, additional stats use 80%, while the star and mind-growth
+  rows remain unchanged. Exact 24px inter-panel spacing is retained.
+- The three top-row steppers share a centered control area beneath their titles.
+- The 95%-width preset card is centered within the diagonal content rail after the
+  scrollbar reserve is removed, giving equal horizontal residual margins.
+- The outer card height remains unchanged by design; the newly freed vertical space
+  is reserved for the later wrapping pass requested by the user.
+- Focused `plan_element_builder_test.dart`: 28 tests passed, including row-scale,
+  24px-gap, rail-centering, and top-stepper-centering regressions.
+- Full Flutter suite: 298 tests passed with `--concurrency=1`. `flutter analyze`,
+  Windows release build, `codealmanac validate`, and `git diff --check` passed.
+### 2026-08-03 preset diagonal-scroll deletion correction
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- Reproduced the add-stage, scroll-to-bottom, delete-selected-stage sequence. During
+  the first shortened-list rebuild, the old controller offset exceeded the new
+  content extent and incorrectly added excess X displacement to the 80-degree card
+  rail.
+- Card geometry now clamps the raw offset against the newly calculated content
+  extent immediately. A guarded post-frame correction then synchronizes the actual
+  controller position to its updated scroll metrics.
+- Focused `plan_element_builder_test.dart`: 30 tests passed, including pure stale
+  offset clamping and the complete add/scroll/delete first-card-rail regression.
+- Full Flutter suite: 300 tests passed with `--concurrency=1`. `flutter analyze`,
+  Windows release build, `codealmanac validate`, and `git diff --check` passed.
+### 2026-08-03 equipment clearance and preset wrapping pass
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- Equipment height now uses 0.63 of the original source row, exactly 105% of the
+  previous 0.60 result. This adds clearance between its MAX badges and lower edge.
+- The preset envelope is no longer held at the former 36-grid height. It wraps the
+  preserved inner row heights and leaves exactly 24px between the mind-growth panel
+  and the card bottom, matching the other normal panel gaps.
+- The saved Studio projection uses a 28x27 wrapped outer element while retaining the
+  28x36 pre-wrap reference solely for established inner sizing.
+- Diagonal card-width solving now accounts for the wrapped height, preserving equal
+  horizontal rail margins and the scrollbar reserve.
+- Focused `plan_element_builder_test.dart`: 30 tests passed. Geometry regressions
+  cover the equipment 105% ratio, exact bottom 24px gap, envelope containment, and
+  the shortened-card 3-to-2-to-1 deletion scroll correction.
+- Full Flutter suite: 300 tests passed with `--concurrency=1`. `flutter analyze`,
+  Windows release build, `codealmanac validate`, and `git diff --check` passed.
+### 2026-08-03 equipment MAX explicit bottom clearance
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- Each of the three regular equipment slots now reserves an explicit 6px spacer
+  below its MAX badge. The inset is independent of the flexible icon region and
+  therefore survives panel-height and content changes.
+- Focused `plan_element_builder_test.dart`: 31 tests passed. A rendered-geometry
+  regression requires every regular equipment MAX badge to remain at least 6px
+  above the equipment panel's lower edge.
+- Full Flutter suite: 301 tests passed with `--concurrency=1`. `flutter analyze`,
+  Windows release build, `codealmanac validate`, and `git diff --check` passed.
+### 2026-08-03 preset flow triangles, right-list expansion, and motion
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- Preset cards now render the same pink downward flow triangle used between
+  plan-main phase items. Triangle hosts share the diagonal card rail and scroll
+  offset, with exactly one indicator per adjacent card pair.
+- The right section's phase-editor launch button is temporarily absent. Its list now
+  spans the section between 14px left/right insets instead of retaining the former
+  64% button-reserved width.
+- Section motion contracts are student indicator 0/180, preset selection 0/180,
+  preset-card editor 80/260, and right section 180/0. A synchronized 360ms entrance
+  controller replays on activation and reverses on parent deactivation.
+- Focused `plan_element_builder_test.dart`: 33 tests passed, covering motion
+  directions and hosts, two flow triangles for three cards, full-width right-list
+  geometry, hidden launch action, and prior scroll/card regressions.
+- Full Flutter suite: 303 tests passed with `--concurrency=1`. `flutter analyze`,
+  Windows release build, `codealmanac validate`, and `git diff --check` passed.
+### 2026-08-03 flow bottom-center, compact gaps, right diagonal viewport
+
+- Status: implementation and full automated validation complete; visual confirmation pending.
+- Plan-main phase and preset flow triangles now target the preceding
+  parallelogram's bottom-edge midpoint rather than its bounding-box center.
+- Preset vertical row gaps are 12px. The card top/bottom edge clearances and the
+  three-column horizontal gaps remain 24px; established panel heights are unchanged.
+- Right `container-15` expands from 61.12% to 90% parent width and owns a clipped
+  parallelogram viewport. Unassigned rows use a 66px/10px diagonal scroll stack,
+  80-degree X displacement, viewport fog, and a matching diagonal scrollbar.
+- Focused validation: 34 plan-element tests and 36 planning-page tests passed.
+  Regressions cover both flow centers, half vertical gaps with preserved edge/column
+  gaps, saved Studio parity, right-row rail displacement, and visible row/name
+  centers inside the new container path.
+- Full validation: all 304 Flutter tests passed with `--concurrency=1`.
+  `flutter analyze`, Windows release build, `codealmanac validate`, and
+  `git diff --check` passed.
+
+### 2026-08-03 phase-editor-shaped preset right panel
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- Replaced the right panel's Studio-container-derived viewport with responsive
+  list/action paths derived from the actual right trapezoid, matching the phase
+  editor's right-side structure and 80-degree rail.
+- Removed the visible right-list header/count row. Restored only the bottom-right
+  phase-editor launch button, preserving its disabled-until-elements-exist state.
+- Unassigned items now render a square-backed student portrait followed by the
+  student display name and editable stage name. Rename-on-submit/focus-loss remains.
+- Focused validation: 35 plan-element tests and 36 planning-page tests passed.
+  Regressions cover list/button path containment, no header, media/name containment,
+  rename commits, disabled/enabled launch behavior, and the existing scroll rail.
+- Full validation: all 305 Flutter tests passed with `--concurrency=1`.
+  `flutter analyze`, Windows release build, `codealmanac validate`, and
+  `git diff --check` passed.
+
+### 2026-08-03 preset blocked reason and control/row visual correction
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- Shortened the preset list viewport by 36px and inserted a dedicated 30px reason
+  strip above the controls. Confirmation is disabled while no target exceeds the
+  current state, and the reason is displayed in that strip.
+- Replaced all four rectangular bottom buttons with responsive rounded 80-degree
+  parallelogram controls using shared paint, clip, ink, semantics, and hit geometry.
+- Repainted the phase-editor launch action with a muted purple BA triangle texture;
+  its disabled lock state retains the texture with only a light darkening layer.
+- Rebuilt unassigned row silhouettes from each row's actual size, removing the
+  non-uniformly scaled fixed path. Row and container colors now match the existing
+  phase-editor source-list reference.
+- Focused `plan_element_builder_test.dart`: 38 tests passed. Regressions cover the
+  reserved message strip, disabled/enabled confirmation, four control surfaces,
+  exact 80-degree row/button paths, and blue/purple texture palette contracts.
+- Full validation: all 308 Flutter tests passed with `--concurrency=1`.
+  `flutter analyze`, Windows release build, `codealmanac validate`, and
+  `git diff --check` passed.
+
+### 2026-08-03 preset right-list color parity and phase completion route
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- Set the preset right-list container to the plan-main phase container's exact blue
+  triangle-texture contract, including deterministic seed `404`.
+- Phase completion now closes the phase editor and element builder together, clears
+  the stale selected-student seed, and reveals plan main rather than reopening the
+  student element configuration surface.
+- Focused `plan_element_builder_test.dart`: 39 tests passed. The new end-to-end widget
+  regression confirms preset creation, phase assignment, completion, builder exit,
+  and the restored plan-main phase list.
+- Full validation: all 309 Flutter tests passed with `--concurrency=1`.
+  `flutter analyze`, Windows release build, `codealmanac validate`, and
+  `git diff --check` passed.
+
+### 2026-08-03 builder exit motion and unassigned-stage actions
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- Phase-editor launch and plan-menu return now wait for the element builder's complete
+  360ms four-section outro before changing the parent route.
+- Added three stacked, section-clipped 80-degree buttons to the right panel: selected
+  stage deletion, plan-menu return, and phase-editor launch. Unassigned rows now have
+  single selection with a visible highlight; deletion is disabled without selection.
+- Deletion removes only the selected unassigned plan element and its matching draft.
+  Returning closes the builder while preserving all remaining confirmed elements.
+- Focused regressions cover action-path containment/order, delayed exit callbacks,
+  selection-gated deletion, and end-to-end preservation of remaining elements after
+  returning to plan main.
+- Full validation: all 313 Flutter tests passed with `--concurrency=1`.
+  `flutter analyze`, Windows release build, `codealmanac validate`, and
+  `git diff --check` passed.
+
+### 2026-08-04 preset-builder right-list texture and width
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- The right list uses the phase-editor source container's exact blue triangle texture,
+  including deterministic seed `8404` and the 1px outline contract.
+- Section 7 remains right-aligned but changes from grid `x=68, width=28` to
+  `x=76, width=20`. Its responsive list is 70% of the former canonical width.
+- All three right action buttons retain their previous width, height, vertical gaps,
+  and right-edge alignment. Geometry regressions compare them against the legacy
+  section while list-row containment and editing remain covered.
+- Focused `plan_element_builder_test.dart`: 44 tests passed.
+- Full validation: all 314 Flutter tests passed with `--concurrency=1`.
+  `flutter analyze`, Windows release build, `codealmanac validate`, and
+  `git diff --check` passed.
+
+### 2026-08-04 preset-builder right-list texture visibility correction
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- Corrected the right-list foundation from a full-section paint canvas to the list
+  path's local bounds, so the shared texture's lighting, vignette, and triangle grid
+  are evaluated inside the visible container.
+- Added the phase-editor reference's translucent blue base layer before the clipped
+  triangle texture. The shared local path still owns fill, texture clip, and outline.
+- The widget regression now requires the foundation and clipped list viewport to
+  occupy exactly the same rendered rectangle.
+- Focused `plan_element_builder_test.dart`: 44 tests passed. Full validation: all
+  314 Flutter tests passed with `--concurrency=1`; `flutter analyze`, Windows release
+  build, `codealmanac validate`, and `git diff --check` passed.
+
+### 2026-08-04 preset-builder session retrospective
+
+- Status: documentation complete; implementation status is unchanged.
+- Consolidated the session's repeated layout, scroll, texture, animation, routing,
+  identity, and validation failures into the plan-element-builder design almanac.
+- Each entry records the visible symptom, rejected or insufficient approach, root
+  cause, final invariant, and required regression coverage so future work does not
+  repeat the same pixel-only corrections.
+- Artifact: `almanac/design/plan-element-builder-lessons-2026-08-02.md`, section
+  `2026-08-04 session retrospective: failed approaches and durable rules`.
+
+### 2026-08-04 plan student-selector panel surfaces and motion
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- Replaced the grid and filter panels' outlined template surfaces with the same
+  outline-free translucent fill and lifted path shadow contract used by plan Section
+  1. Their nested grid/filter component outlines remain intact.
+- Gave the grid and filter panels independent 360ms directional controllers. Both
+  enter at 80 degrees and exit on the opposite 260-degree trajectory.
+- Propagated the plan tab's active state into the selector so both panels reverse
+  while the tab changes. Closing the selector now keeps it mounted for the complete
+  outro before restoring the other plan sections.
+- Focused `planning_page_test.dart`: 40 tests passed. Regressions cover the
+  outline-free shadow surface, both motion specifications, and non-zero 260-degree
+  exit movement after plan-tab deactivation.
+- Full validation: all 318 Flutter tests passed with `--concurrency=1`.
+  `flutter analyze`, Windows release build, `codealmanac validate`, and
+  `git diff --check` passed.
+
+### 2026-08-04 selector-card exit handoff and builder bond fill direction
+
+- Status: implementation and full automated validation complete; user visual
+  confirmation pending.
+- Selecting a student portrait no longer unmounts the selector immediately. It marks
+  the selector inactive, lets both grid and filter panels complete their 360ms
+  260-degree outro, and only then mounts the plan-element builder with the selected
+  seed. Repeated portrait callbacks are ignored during the handoff.
+- Separated the bond gauge's triangle-layout inversion from its fill direction.
+  `StudentBondStatus` now exposes `fillFromBottom`; the plan-element builder keeps its
+  inverted triangle placement while explicitly filling the gauge from bottom to top.
+- Focused planning and element-builder suites passed 84 tests. Regressions verify
+  that both selector panels remain mounted and move left/down at half outro, the
+  builder is absent until exit completion, and 40% bond progress occupies the bottom
+  40% of the gauge bounds.
+- Full validation: all 318 Flutter tests passed with `--concurrency=1`.
+  `flutter analyze`, Windows release build, `codealmanac validate`, and
+  `git diff --check` passed.
+- The complete requirement decisions, screenshot feedback, insufficient approaches,
+  root causes, final invariants, and regression rules for this selector iteration are
+  consolidated in
+  `almanac/design/plan-student-selector-lessons-2026-08-04.md`.
+
+### 2026-08-04 plan selector filter width reduction
+
+- Status: implementation and full automated verification complete; user visual
+  confirmation pending.
+- Reduced only the plan selector filter panel's width to 50% of its previous
+  available span. Its left edge remains fixed, preserving the exact 24px visible gap
+  from the student grid; height and internal vertical structure are unchanged.
+- The planning-page regression preserves the left-edge gap and verifies that the
+  rendered filter width is exactly half of the former `left -> 98.5% viewport` span.
+- Full validation: all 318 Flutter tests passed with `--concurrency=1`.
+  `flutter analyze`, Windows release build, `codealmanac validate`, and
+  `git diff --check` passed.
+
+### 2026-08-04 selector tab-return isolation and reusable editable preset card
+
+- Status: implementation and full automated verification complete; user visual
+  confirmation pending.
+- Plan-tab reactivation is now route-aware. While the student selector is open,
+  Section 1 and the selector panels re-enter, but plan-main Sections 2-5 remain at
+  controller value 0 and cannot overlap the selector.
+- Promoted the center diagonal stage-list item from private
+  `_PlanPresetElementCard` to public `PlanPresetElementCard`. External hosts can
+  supply stage/current values and retain the complete selection and edit callback
+  contract without mounting the builder or its scroll list.
+- Focused planning and element-builder suites passed 85 tests. Coverage performs a
+  complete selector tab-away/tab-return cycle and directly hosts the public editable
+  card outside `PlanElementBuilder`.
+- Full validation: all 319 Flutter tests passed with `--concurrency=1`.
+  `flutter analyze`, Windows release build, `codealmanac validate`, and
+  `git diff --check` passed.
+
+### 2026-08-04 student range-condition companion sections
+
+- Status: implementation and full automated verification complete; user visual confirmation pending.
+- Student and plan filters now open with an adjacent same-height condition section. It contains two reusable editable `PlanPresetElementCard` widgets, representing inclusive lower and upper bounds, separated by a vertical swap icon.
+- Each card has a top-left enable checkbox and a small top-right value reset. Closing and reopening the student filter resets both conditions; closing and reopening the plan selector recreates initial condition state.
+- Preserved the 24px visible diagonal-edge gap. The plan selector's condition panel shares the filter controller, so grid, filter, and condition all use intro 80 / outro 260 and exit together during tab changes and student-selection handoff.
+- A direct-width compression attempt caused internal card row overflow. The final layout renders each card at a stable 680px design width and proportionally fits it into one of two non-scrolling slots. Header controls use path-derived safe insets so they remain visible and hit-testable inside the diagonal clip.
+- New focused coverage verifies inclusive range semantics, two-card/no-scroll layout, editing and per-card reset, 24px companion geometry, student-filter close/reopen reset, plan-selector reopen reset, and three-panel outro behavior.
+- Full validation: all 323 Flutter tests passed with `--concurrency=1`; `flutter analyze`, Windows release build, `codealmanac validate`, and `git diff --check` passed.
+- Screenshot follow-up replaced the condition cards' header overlay geometry with a dedicated diagonal projection. It reserves 40px above the first value row and recovers that space by reducing the skill and additional-stat rows by 20px each, preserving the card's total height, gaps, and 80-degree rails. Focused 50-test verification and the full 324-test Flutter suite passed; `flutter analyze` and the Windows release build also passed.
+- A second screenshot showed that internal row geometry was fixed while both card hosts still used rectangular slot centers. The host geometry now derives each card's uniform scale and X position from the parent bilateral path at that card's actual top and bottom; the lower card advances left by `ΔY / tan(80°)`, and the center arrow uses its own Y-specific path interval. A reusable parent/child diagonal-layout guide records boundary, normal-gap, scaling, clipping, hit-test, rounded-corner, and responsive-test requirements. Focused 45-test verification and the full 325-test Flutter suite passed; `flutter analyze` and the Windows release build also passed.
+- Documentation follow-up adds a mandatory pre-implementation procedure for future diagonal sections: identify the failing hierarchy, write the parent/child geometry contract, select rectangular reflow or parallel-child fitting, unify paint/clip/hit paths, add pure and rendered regressions, and reject clip-only completion criteria.
+- The condition section's painted foundation now wraps the two cards' parallel rail envelope instead of filling the full companion host. It preserves 12px top/bottom and normal rail margins, the card-to-arrow gaps, and the existing full-height left-rail anchor that owns the 24px filter seam. The outer host remains unchanged for sibling layout and transition contracts; only the visible foundation and clip shrink. Focused condition/planning verification passed 46 tests. Full validation passed all 326 Flutter tests, `flutter analyze`, Windows release build, `codealmanac validate`, and `git diff --check`.
+- The student-tab filter section now keeps its existing left rail and height while reducing its current horizontal edge length by another 50%, from one half to one quarter of the original Section 2 edge. Its inner container and reset control remain inside the narrower path, and the range-condition companion continues to derive its 24px seam from the filter's new visible right rail. Focused student/condition verification passed 52 tests. Full validation passed all 326 Flutter tests, `flutter analyze`, Windows release build, `codealmanac validate`, and `git diff --check`.
+
+### 2026-08-05 plan preset-management in-memory vertical slice
+
+- Status: implementation and full automated verification complete; user visual
+  confirmation pending.
+- Added `프리셋 생성·관리` to plan-main Section 1. It exits the main sections and
+  opens a dedicated preset-management screen, then restores the plan-main sections
+  after its own outro completes.
+- The left list/CRUD trapezoid uses intro 0 / outro 180. The adjacent multi-stage
+  editor parallelogram uses intro 80 / outro 260 and reuses the public editable
+  `PlanPresetElementCard` plus the diagonal card-list rail.
+- Presets are student-independent ordered absolute targets. One preset can contain
+  multiple goal cards; add, remove, reset, create, overwrite-edit, save, select, and
+  delete operate in memory only. Saved presets are passed directly to the
+  plan-element builder loader during the same plan-page lifetime.
+- Removed the two built-in preset fixtures. v7 now starts with an empty preset list;
+  repository/protocol persistence remains deferred until the v6 user-data migration.
+- Returning with an unsaved draft opens a low confirmation parallelogram beside the
+  editor. It uses intro 80 / outro 260 and exits only after explicit confirmation.
+- Added a dedicated typed Studio projection and matching
+  `section-preset-management.ba-section-studio.json`. Geometry regressions cover the
+  sibling placement, compact confirmation height, requested motions, and 1280x720
+  usability.
+- Focused preset-management coverage passed 4 tests; planning and element-builder
+  coverage passed 86 tests. Full validation passed all 330 Flutter tests with
+  `--concurrency=1`; `flutter analyze`, Windows release build, and `git diff --check`
+  passed.
+- Screenshot follow-up aligned the editor to the exact plan-settings section geometry
+  (`element-6`: x 21, y 2, width 21, height 92) and promoted/reused its four-button
+  `PlanBuilderControls` path structure instead of a generic control row.
+- The preset-name header now follows the student-selector filter treatment with a
+  compact outlined field and prefix icon. The inner list derives its bilateral
+  80-degree parallelogram from the actual Studio section path, while goal cards render
+  at a stable design width and scale down inside narrow viewports.
+- The unsaved-return copy is fixed to `저장하지 않은 변경사항을 버리고\n돌아갈까요?`,
+  placing the requested line break immediately after `버리고`.
+- The next preset-management visual pass now derives the editor's runtime X offset
+  from the two facing 80-degree rails, preserving an exact 24 px normal gap between
+  the left CRUD trapezoid and right editor at both 1280x720 and 2560x1392.
+- The left panel now mirrors the phase-editor composition: a bilateral
+  parallelogram scroll container occupies the main rail and back/create/edit/delete
+  path buttons follow the remaining left wedge. Preset rows recompute their X/width
+  from viewport Y while scrolling, and all overlapping rectangular hosts use
+  path-aware hit testing so transparent wedges do not intercept adjacent controls.

@@ -16,7 +16,7 @@ final SectionStudioDocument planStarterStudioDocument = SectionStudioDocument(
     SectionCanvasElement(
       id: 'element-3',
       label: '섹션 3',
-      rect: SectionGridRect(0, 2, 28, 62),
+      rect: SectionGridRect(0, 2, 27, 62),
       spec: AttachedSectionSpec(
         mode: SectionShapeMode.trapezoid,
         face: SectionAttachmentFace.left,
@@ -49,7 +49,7 @@ final SectionStudioDocument planStarterStudioDocument = SectionStudioDocument(
     SectionCanvasElement(
       id: 'element-7',
       label: '섹션 7',
-      rect: SectionGridRect(68, 3, 28, 90),
+      rect: SectionGridRect(76, 3, 20, 90),
       spec: AttachedSectionSpec(
         mode: SectionShapeMode.trapezoid,
         face: SectionAttachmentFace.right,
@@ -60,30 +60,13 @@ final SectionStudioDocument planStarterStudioDocument = SectionStudioDocument(
   ],
   containers: const [
     StudioContainerElement(
-      id: 'container-1',
-      label: '컨테이너 1',
-      parentSectionId: 'element-3',
-      rect: StudioPlacementRect(
-        0.09321802059583603,
-        0.015612665034448038,
-        0.3817654768329349,
-        0.3075401951251054,
-      ),
-      spec: AttachedSectionSpec(
-        mode: SectionShapeMode.parallelogram,
-        face: SectionAttachmentFace.bottom,
-        faceSpan: 96,
-        height: 96,
-      ),
-    ),
-    StudioContainerElement(
       id: 'container-2',
       label: '컨테이너 2',
       parentSectionId: 'element-3',
       rect: StudioPlacementRect(
-        0.4995875566270124,
+        0.5602870942110612,
         0.015574440478219076,
-        0.3762146326420477,
+        0.3479522131790751,
         0.31072347494783653,
       ),
       spec: AttachedSectionSpec(
@@ -99,9 +82,9 @@ final SectionStudioDocument planStarterStudioDocument = SectionStudioDocument(
       label: '컨테이너 3',
       parentSectionId: 'element-3',
       rect: StudioPlacementRect(
-        0.07343356223193037,
+        0.07615332379607594,
         0.33721021809920154,
-        0.7758754143859379,
+        0.8251513733194804,
         0.03536977028159588,
       ),
       spec: AttachedSectionSpec(
@@ -116,9 +99,9 @@ final SectionStudioDocument planStarterStudioDocument = SectionStudioDocument(
       label: '컨테이너 5',
       parentSectionId: 'element-3',
       rect: StudioPlacementRect(
-        0.05843697562971645,
+        0.06060130806044668,
         0.3897061252980548,
-        0.7703245701950505,
+        0.8369328332045209,
         0.12290996540670118,
       ),
       spec: AttachedSectionSpec(
@@ -134,9 +117,9 @@ final SectionStudioDocument planStarterStudioDocument = SectionStudioDocument(
       label: '컨테이너 6',
       parentSectionId: 'element-3',
       rect: StudioPlacementRect(
-        0.058981164496450904,
+        0.061165652070393525,
         0.5298152872141333,
-        0.7388697864466889,
+        0.8055215198671579,
         0.21522508026590337,
       ),
       spec: AttachedSectionSpec(
@@ -152,9 +135,9 @@ final SectionStudioDocument planStarterStudioDocument = SectionStudioDocument(
       label: '컨테이너 7',
       parentSectionId: 'element-3',
       rect: StudioPlacementRect(
-        0.06207498193835133,
+        0.06437405534347546,
         0.7701688074013426,
-        0.6741099375530029,
+        0.7493959656843281,
         0.035369770281595825,
       ),
       spec: AttachedSectionSpec(
@@ -170,26 +153,27 @@ final SectionStudioDocument planStarterStudioDocument = SectionStudioDocument(
       label: '컨테이너 8',
       parentSectionId: 'element-3',
       rect: StudioPlacementRect(
-        0.029251406984812274,
-        0.02,
-        0.20228818132757695,
-        0.2948070758341809,
+        0.06060130806044668,
+        0.015612665034448038,
+        0.20978033619156128,
+        0.399802253662637,
       ),
       spec: AttachedSectionSpec(
-        mode: SectionShapeMode.trapezoid,
+        mode: SectionShapeMode.triangle,
         face: SectionAttachmentFace.left,
         faceSpan: 96,
         height: 48,
       ),
+      triangleTexture: true,
     ),
     StudioContainerElement(
       id: 'container-9',
       label: '컨테이너 9',
       parentSectionId: 'element-3',
       rect: StudioPlacementRect(
-        0.06995759771798629,
+        0.07254861985568949,
         0.8253697951509696,
-        0.6426551538046412,
+        0.7290681404383461,
         0.11654340576123912,
       ),
       spec: AttachedSectionSpec(
@@ -207,7 +191,7 @@ final SectionStudioDocument planStarterStudioDocument = SectionStudioDocument(
       rect: StudioPlacementRect(
         0.04255647213013646,
         0.046051448102176616,
-        0.6112003700562795,
+        0.9000000000000000,
         0.933797445583738,
       ),
       spec: AttachedSectionSpec(

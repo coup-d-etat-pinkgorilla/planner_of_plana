@@ -21,12 +21,14 @@ class ScrollViewportFog extends StatelessWidget {
     required this.keyPrefix,
     required this.showTop,
     required this.showBottom,
+    this.color = _fogColor,
   });
 
   static const _fogColor = Color(0xff263d52);
   final String keyPrefix;
   final bool showTop;
   final bool showBottom;
+  final Color color;
 
   @override
   Widget build(BuildContext context) => IgnorePointer(
@@ -39,11 +41,11 @@ class ScrollViewportFog extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: Container(
               height: scrollViewportFogExtent,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [_fogColor, Color(0x00263d52)],
+                  colors: [color, color.withValues(alpha: 0)],
                 ),
               ),
             ),
@@ -54,11 +56,11 @@ class ScrollViewportFog extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             child: Container(
               height: scrollViewportFogExtent,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0x00263d52), _fogColor],
+                  colors: [color.withValues(alpha: 0), color],
                 ),
               ),
             ),
