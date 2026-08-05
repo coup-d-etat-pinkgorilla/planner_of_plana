@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/planning-document-calculate-v1.schema.json",
+  "title": "planning.document.calculate request and success response",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" }
+  ],
+  "$defs": {
+    "targets": {
+      "type": "object",
+      "required": ["level", "bond_rank", "student_star", "weapon_level", "weapon_star", "ex_skill", "skill1", "skill2", "skill3", "equip1_tier", "equip2_tier", "equip3_tier", "equip1_level", "equip2_level", "equip3_level", "equip4_tier", "stat_hp", "stat_atk", "stat_heal"],
+      "properties": {
+        "level": { "type": "integer", "minimum": 0, "maximum": 90 },
+        "bond_rank": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "student_star": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "weapon_level": { "type": "integer", "minimum": 0, "maximum": 60 },
+        "weapon_star": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "ex_skill": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "skill1": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "skill2": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "skill3": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "equip1_tier": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "equip2_tier": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "equip3_tier": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "equip1_level": { "type": "integer", "minimum": 0, "maximum": 70 },
+        "equip2_level": { "type": "integer", "minimum": 0, "maximum": 70 },
+        "equip3_level": { "type": "integer", "minimum": 0, "maximum": 70 },
+        "equip4_tier": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "stat_hp": { "type": "integer", "minimum": 0, "maximum": 25 },
+        "stat_atk": { "type": "integer", "minimum": 0, "maximum": 25 },
+        "stat_heal": { "type": "integer", "minimum": 0, "maximum": 25 }
+      },
+      "additionalProperties": false
+    },
+    "stage": {
+      "type": "object",
+      "required": ["stage_id", "student_id", "name", "targets"],
+      "properties": {
+        "stage_id": { "type": "string", "minLength": 1 },
+        "student_id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "targets": { "$ref": "#/$defs/targets" }
+      },
+      "additionalProperties": false
+    },
+    "phase": {
+      "type": "object",
+      "required": ["phase_id", "name", "stages"],
+      "properties": {
+        "phase_id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "stages": { "type": "array", "items": { "$ref": "#/$defs/stage" } }
+      },
+      "additionalProperties": false
+    },
+    "document": {
+      "type": "object",
+      "required": ["version", "document_id", "name", "kind", "phases"],
+      "properties": {
+        "version": { "const": 1 },
+        "document_id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["plan", "scenario"] },
+        "phases": { "type": "array", "items": { "$ref": "#/$defs/phase" } }
+      },
+      "additionalProperties": false
+    },
+    "projection": {
+      "type": "object",
+      "required": ["document_id", "kind", "stage_results", "phase_results", "overall", "bottlenecks", "warnings"],
+      "properties": {
+        "document_id": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["plan", "scenario"] },
+        "stage_results": { "type": "array", "items": { "type": "object" } },
+        "phase_results": { "type": "array", "items": { "type": "object" } },
+        "overall": { "type": "object" },
+        "bottlenecks": { "type": "array", "items": { "type": "object" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "request": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        { "properties": {
+          "protocol": { "const": 1 }, "id": { "type": "string", "minLength": 1 },
+          "type": { "const": "request" }, "method": { "const": "planning.document.calculate" },
+          "payload": {
+            "type": "object", "required": ["current_students", "inventory", "document"],
+            "properties": {
+              "current_students": { "type": "array", "items": { "$ref": "planning-types-v1.schema.json#/$defs/currentStudent" } },
+              "inventory": { "$ref": "repository-protocol-v1.schema.json#/$defs/inventorySnapshot" },
+              "document": { "$ref": "#/$defs/document" }
+            },
+            "additionalProperties": false
+          }
+        } }
+      ]
+    },
+    "response": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        { "properties": {
+          "protocol": { "const": 1 }, "id": { "type": "string", "minLength": 1 },
+          "type": { "const": "response" }, "method": { "const": "planning.document.calculate" },
+          "payload": {
+            "type": "object", "required": ["projection"],
+            "properties": { "projection": { "$ref": "#/$defs/projection" } },
+            "additionalProperties": false
+          }
+        } }
+      ]
+    }
+  }
+}

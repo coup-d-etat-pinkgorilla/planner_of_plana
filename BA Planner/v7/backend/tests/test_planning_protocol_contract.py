@@ -25,6 +25,8 @@ METHOD_SCHEMAS = {
     "planning.plan.calculate": "planning-plan-calculate-v1.schema.json",
     "planning.inventory.catalog": "planning-inventory-catalog-v1.schema.json",
     "planning.plan.shortages": "planning-plan-shortages-v1.schema.json",
+    "planning.document.calculate": "planning-document-calculate-v1.schema.json",
+    "planning.scenario.compare": "planning-scenario-compare-v1.schema.json",
 }
 class PlanningProtocolContractTests(unittest.TestCase):
     @classmethod
@@ -67,6 +69,7 @@ class PlanningProtocolContractTests(unittest.TestCase):
             "protocol-envelope-v1.schema.json", "planning-types-v1.schema.json",
             "planning-protocol-v1.schema.json", "protocol-error-v1.schema.json",
             "repository-protocol-v1.schema.json", "scanner-protocol-v1.schema.json",
+            "scenario-protocol-v1.schema.json",
             "tactical-protocol-v1.schema.json", "tactical-protocol-v2.schema.json",
             "tactical-share-v1.schema.json",
             *METHOD_SCHEMAS.values(),

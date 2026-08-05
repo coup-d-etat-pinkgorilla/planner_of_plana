@@ -12,6 +12,8 @@ const _methods = {
   'planning.plan.calculate',
   'planning.inventory.catalog',
   'planning.plan.shortages',
+  'planning.document.calculate',
+  'planning.scenario.compare',
 };
 const _errorCodes = {
   'unknown_method',
@@ -208,6 +210,8 @@ bool _validError(String method, Object? value) {
     'planning.plan.validate' => code == 'invalid_payload',
     'planning.plan.calculate' =>
       code == 'invalid_payload' || code == 'calculation_failed',
+    'planning.scenario.compare' =>
+      code == 'invalid_payload' || code == 'calculation_failed',
     'planning.inventory.catalog' =>
       code == 'invalid_payload' || code == 'inventory_catalog_failed',
     'planning.plan.shortages' =>
@@ -298,22 +302,46 @@ bool validMessage(Object? value) {
 
   if (message['method'] == 'planning.inventory.catalog') {
     if (message['type'] == 'request') return payload.isEmpty;
-    if (!_exactKeys(payload, {'items','sort'}) || payload['sort'] != 'profile_order' || payload['items'] is! List) return false;
-    try { for (final item in payload['items'] as List) { InventoryCatalogEntry.fromWire(Map<String,dynamic>.from(item as Map)); } return true; }
-    on Object { return false; }
+    if (!_exactKeys(payload, {'items', 'sort'}) ||
+        payload['sort'] != 'profile_order' ||
+        payload['items'] is! List) {
+      return false;
+    }
+    try {
+      for (final item in payload['items'] as List) {
+        InventoryCatalogEntry.fromWire(Map<String, dynamic>.from(item as Map));
+      }
+      return true;
+    } on Object {
+      return false;
+    }
   }
 
   if (message['method'] == 'planning.plan.shortages') {
     if (message['type'] == 'response') {
-      try { InventoryShortageResult.fromWire(payload); return true; } on Object { return false; }
+      try {
+        InventoryShortageResult.fromWire(payload);
+        return true;
+      } on Object {
+        return false;
+      }
     }
-    final students=payload['current_students'];
-    if (!_exactKeys(payload, {'current_students','plan','inventory'}) || students is! List ||
-        !students.every(_validCurrentStudent) || !_validPlan(payload['plan']) || payload['inventory'] is! Map) {
+    final students = payload['current_students'];
+    if (!_exactKeys(payload, {'current_students', 'plan', 'inventory'}) ||
+        students is! List ||
+        !students.every(_validCurrentStudent) ||
+        !_validPlan(payload['plan']) ||
+        payload['inventory'] is! Map) {
       return false;
     }
-    try { RepositoryInventoryState.fromWire(Map<String,dynamic>.from(payload['inventory'] as Map)); return true; }
-    on Object { return false; }
+    try {
+      RepositoryInventoryState.fromWire(
+        Map<String, dynamic>.from(payload['inventory'] as Map),
+      );
+      return true;
+    } on Object {
+      return false;
+    }
   }
 
   if (message['type'] == 'request') {
@@ -367,6 +395,8 @@ void main() {
       'planning-plan-calculate-v1.schema.json',
       'planning-inventory-catalog-v1.schema.json',
       'planning-plan-shortages-v1.schema.json',
+      'planning-document-calculate-v1.schema.json',
+      'planning-scenario-compare-v1.schema.json',
     };
     for (final name in schemaNames) {
       final schemaFile = File(

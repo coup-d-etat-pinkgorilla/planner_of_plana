@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/planning-scenario-compare-v1.schema.json",
+  "title": "planning.scenario.compare request and success response",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" }
+  ],
+  "$defs": {
+    "request": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        { "properties": {
+          "protocol": { "const": 1 },
+          "id": { "type": "string", "minLength": 1 },
+          "type": { "const": "request" },
+          "method": { "const": "planning.scenario.compare" },
+          "payload": {
+            "type": "object",
+            "required": ["current_students", "inventory", "document_a", "document_b"],
+            "properties": {
+              "current_students": { "type": "array", "items": { "$ref": "planning-types-v1.schema.json#/$defs/currentStudent" } },
+              "inventory": { "$ref": "repository-protocol-v1.schema.json#/$defs/inventorySnapshot" },
+              "document_a": { "$ref": "planning-document-calculate-v1.schema.json#/$defs/document" },
+              "document_b": { "$ref": "planning-document-calculate-v1.schema.json#/$defs/document" }
+            },
+            "additionalProperties": false
+          }
+        } }
+      ]
+    },
+    "comparison": {
+      "type": "object",
+      "required": ["credits_a", "credits_b", "credits_delta_b_minus_a", "resource_type_count_a", "resource_type_count_b", "known_shortage_type_count_a", "known_shortage_type_count_b", "students", "resources", "bottlenecks"],
+      "properties": {
+        "credits_a": { "type": "integer", "minimum": 0 },
+        "credits_b": { "type": "integer", "minimum": 0 },
+        "credits_delta_b_minus_a": { "type": "integer" },
+        "resource_type_count_a": { "type": "integer", "minimum": 0 },
+        "resource_type_count_b": { "type": "integer", "minimum": 0 },
+        "known_shortage_type_count_a": { "type": "integer", "minimum": 0 },
+        "known_shortage_type_count_b": { "type": "integer", "minimum": 0 },
+        "students": { "type": "array", "items": { "type": "object" } },
+        "resources": { "type": "array", "items": { "type": "object" } },
+        "bottlenecks": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": false
+    },
+    "response": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        { "properties": {
+          "protocol": { "const": 1 },
+          "id": { "type": "string", "minLength": 1 },
+          "type": { "const": "response" },
+          "method": { "const": "planning.scenario.compare" },
+          "payload": {
+            "type": "object",
+            "required": ["projection_a", "projection_b", "comparison"],
+            "properties": {
+              "projection_a": { "$ref": "planning-document-calculate-v1.schema.json#/$defs/projection" },
+              "projection_b": { "$ref": "planning-document-calculate-v1.schema.json#/$defs/projection" },
+              "comparison": { "$ref": "#/$defs/comparison" }
+            },
+            "additionalProperties": false
+          }
+        } }
+      ]
+    }
+  }
+}

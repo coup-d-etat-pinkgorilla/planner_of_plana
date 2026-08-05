@@ -181,13 +181,14 @@ class RepositoryPersistenceTests(unittest.TestCase):
         path.write_bytes(original)
 
     def test_protocol_dispatch_errors_and_migration_boundary(self) -> None:
-        protocol = ApplicationProtocolV1(storage_root=self.root)
+        v6_root = self.root / "v6-missing"
+        protocol = ApplicationProtocolV1(storage_root=self.root, v6_root=v6_root)
         request = {"protocol":1,"id":"list","type":"request","method":"repository.profile.list","payload":{}}
         response = protocol.handle(request)
         self.assertEqual(response["id"], "list")
         self.assertEqual(response["payload"]["selected_profile_id"], self.profile_id)
-        migration = protocol.handle({**request,"id":"migration","method":"repository.migration.preview","payload":{"source_path":"C:/v6","profile_id":self.profile_id}})
-        self.assertEqual(migration["payload"]["error"]["code"], "migration_not_supported")
+        migration = protocol.handle({**request,"id":"migration","method":"repository.migration.preview","payload":{}})
+        self.assertEqual(migration["payload"]["error"]["code"], "migration_source_invalid")
         invalid = protocol.handle({**request,"id":"invalid","method":"repository.profile.list","payload":{"extra":1}})
         self.assertEqual(invalid["payload"]["error"]["code"], "invalid_payload")
 

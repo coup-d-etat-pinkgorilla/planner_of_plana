@@ -4,11 +4,14 @@ import 'dart:ui' show AppExitResponse;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import '../ui/models/planning_models.dart';
+
 import 'app_service.dart';
 import 'backend_process.dart';
 import 'diagnostics_service.dart';
 import 'planning_protocol_client.dart';
 import 'repository_service.dart';
+import 'scenario_service.dart';
 import 'scanner_service.dart';
 import 'tactical_service.dart';
 import 'tactical_v2_service.dart';
@@ -17,6 +20,9 @@ class ProcessAppService
     with WidgetsBindingObserver
     implements
         AppService,
+        PlanningDocumentService,
+        PlanningScenarioRepositoryService,
+        PlanningScenarioComparisonService,
         RepositoryService,
         ScannerService,
         TacticalService,
@@ -179,6 +185,153 @@ class ProcessAppService
   }
 
   @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async {
+    final payload = await _client.send('planning.document.calculate', {
+      'current_students': currentStudents,
+      'inventory': inventory,
+      'document': document,
+    });
+    final projection = payload['projection'];
+    if (projection is! Map) {
+      throw const FormatException('Invalid planning document projection');
+    }
+    return Map<String, dynamic>.from(projection);
+  }
+
+  @override
+  Future<PlanningScenarioComparisonResult> compareScenarios({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required PlanningDocument documentA,
+    required PlanningDocument documentB,
+  }) async => PlanningScenarioComparisonResult.fromWire(
+    await _client.send('planning.scenario.compare', {
+      'current_students': currentStudents,
+      'inventory': inventory,
+      'document_a': documentA.toWire(),
+      'document_b': documentB.toWire(),
+    }),
+  );
+
+  @override
+  Future<PlanningScenarioListResult> listScenarios(String profileId) async =>
+      PlanningScenarioListResult.fromWire(
+        await _client.send('repository.scenario.list', {
+          'profile_id': profileId,
+        }),
+      );
+
+  @override
+  Future<PlanningScenarioGetResult> getScenario(
+    String profileId,
+    String scenarioId,
+  ) async => PlanningScenarioGetResult.fromWire(
+    await _client.send('repository.scenario.get', {
+      'profile_id': profileId,
+      'scenario_id': scenarioId,
+    }),
+  );
+
+  @override
+  Future<PlanningScenarioMutationResult> createScenario({
+    required String profileId,
+    required int expectedRevision,
+    required String idempotencyKey,
+    required String name,
+    required String description,
+    required int baseProfileRevision,
+    required PlanningDocument document,
+  }) async => PlanningScenarioMutationResult.fromWire(
+    await _client.send('repository.scenario.create', {
+      'profile_id': profileId,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+      'name': name,
+      'description': description,
+      'base_profile_revision': baseProfileRevision,
+      'document': document.toWire(),
+    }),
+  );
+
+  @override
+  Future<PlanningScenarioMutationResult> updateScenario({
+    required String profileId,
+    required String scenarioId,
+    required int expectedRevision,
+    required int expectedScenarioRevision,
+    required String idempotencyKey,
+    required String name,
+    required String description,
+    required int baseProfileRevision,
+    required PlanningDocument document,
+  }) async => PlanningScenarioMutationResult.fromWire(
+    await _client.send('repository.scenario.update', {
+      'profile_id': profileId,
+      'scenario_id': scenarioId,
+      'expected_revision': expectedRevision,
+      'expected_scenario_revision': expectedScenarioRevision,
+      'idempotency_key': idempotencyKey,
+      'name': name,
+      'description': description,
+      'base_profile_revision': baseProfileRevision,
+      'document': document.toWire(),
+    }),
+  );
+
+  Future<PlanningScenarioMutationResult> _scenarioIdentityMutation(
+    String method, {
+    required String profileId,
+    required String scenarioId,
+    required int expectedRevision,
+    required int expectedScenarioRevision,
+    required String idempotencyKey,
+  }) async => PlanningScenarioMutationResult.fromWire(
+    await _client.send(method, {
+      'profile_id': profileId,
+      'scenario_id': scenarioId,
+      'expected_revision': expectedRevision,
+      'expected_scenario_revision': expectedScenarioRevision,
+      'idempotency_key': idempotencyKey,
+    }),
+  );
+
+  @override
+  Future<PlanningScenarioMutationResult> deleteScenario({
+    required String profileId,
+    required String scenarioId,
+    required int expectedRevision,
+    required int expectedScenarioRevision,
+    required String idempotencyKey,
+  }) => _scenarioIdentityMutation(
+    'repository.scenario.delete',
+    profileId: profileId,
+    scenarioId: scenarioId,
+    expectedRevision: expectedRevision,
+    expectedScenarioRevision: expectedScenarioRevision,
+    idempotencyKey: idempotencyKey,
+  );
+
+  @override
+  Future<PlanningScenarioMutationResult> duplicateScenario({
+    required String profileId,
+    required String scenarioId,
+    required int expectedRevision,
+    required int expectedScenarioRevision,
+    required String idempotencyKey,
+  }) => _scenarioIdentityMutation(
+    'repository.scenario.duplicate',
+    profileId: profileId,
+    scenarioId: scenarioId,
+    expectedRevision: expectedRevision,
+    expectedScenarioRevision: expectedScenarioRevision,
+    idempotencyKey: idempotencyKey,
+  );
+
+  @override
   Future<List<RepositoryProfile>> listProfiles() async {
     final payload = await _client.send('repository.profile.list', {});
     final values = payload['profiles'];
@@ -316,6 +469,31 @@ class ProcessAppService
     'expected_revision': expectedRevision,
     'idempotency_key': idempotencyKey,
   });
+
+  @override
+  Future<List<RepositoryV6AccountPreview>> previewV6Accounts() async {
+    final payload = await _client.send('repository.migration.preview', {});
+    final accounts = payload['accounts'];
+    if (accounts is! List) {
+      throw const FormatException('Invalid v6 account preview payload');
+    }
+    return List.unmodifiable(
+      accounts.map(
+        (item) => RepositoryV6AccountPreview.fromWire(
+          Map<String, dynamic>.from(item as Map),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<RepositoryV6ImportResult> importV6Account(
+    String sourceProfileKey,
+  ) async => RepositoryV6ImportResult.fromWire(
+    await _client.send('repository.migration.import', {
+      'source_profile_key': sourceProfileKey,
+    }),
+  );
 
   @override
   Future<TacticalState> loadTacticalState(String profileId) async =>

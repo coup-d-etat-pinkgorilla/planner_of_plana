@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../../services/repository_service.dart';
+import '../../services/scenario_service.dart';
 import '../models/planning_models.dart';
 import '../studio/plan_studio_layout.dart';
 import 'animated_section_stack.dart';
 import 'ba_triangle_background.dart';
+import 'diagonal_menu.dart' show roundedPolygonPath;
 import 'diagonal_flow_indicator.dart';
 import 'diagonal_media_list_item.dart';
 import 'lifted_path_shadow.dart';
@@ -34,6 +37,7 @@ const planSection3Motion = SectionMotionSpec(intro: 80, outro: 260);
 const planSection4Motion = SectionMotionSpec(intro: 180, outro: 0);
 const planSection5Motion = SectionMotionSpec(intro: 260, outro: 80);
 const planSection3TabMotion = SectionMotionSpec(intro: 80, outro: 260);
+const planScenarioListMotion = SectionMotionSpec(intro: 80, outro: 260);
 
 const Map<String, SectionMotionSpec> planSectionMotions = {
   'element-1': planSection1Motion,
@@ -186,6 +190,7 @@ class PlanBottleneckDetailPreview {
     required this.resources,
     required this.delayedStages,
     this.focusBondRank,
+    this.focusStepData,
   });
 
   final String id;
@@ -199,6 +204,7 @@ class PlanBottleneckDetailPreview {
   final List<PlanBottleneckResourcePreview> resources;
   final List<PlanDelayedStagePreview> delayedStages;
   final int? focusBondRank;
+  final PlanStudentStepPreview? focusStepData;
 }
 
 const dummyPlanBottleneckDetails = <PlanBottleneckDetailPreview>[
@@ -388,6 +394,7 @@ class PlanConsumptionResourcePreview {
     required this.owned,
     required this.iconAsset,
     required this.affectedStageKeys,
+    this.inventoryKnown = true,
     this.backgroundAsset,
     this.equipmentTier,
   });
@@ -398,24 +405,37 @@ class PlanConsumptionResourcePreview {
   final int owned;
   final String iconAsset;
   final Set<String> affectedStageKeys;
+  final bool inventoryKnown;
   final String? backgroundAsset;
   final int? equipmentTier;
 
   String get displayName =>
       equipmentTier == null ? name : '$name (T$equipmentTier)';
 
-  bool get isBottleneck => amount > owned;
+  bool get isBottleneck => inventoryKnown && amount > owned;
 
   int get endingAmount => owned - amount;
 
   int get shortageAmount => math.max(0, -endingAmount);
 
-  double get coverageRatio => amount <= 0 ? 1 : (owned / amount).clamp(0, 1);
+  double get coverageRatio => !inventoryKnown
+      ? 0
+      : amount <= 0
+      ? 1
+      : (owned / amount).clamp(0, 1);
 
   int get coveragePercent => (coverageRatio * 100).round();
 
-  String get balanceDisplay =>
+  String get ownedDisplay => inventoryKnown ? formatPlanAmount(owned) : '미확인';
+
+  String get endingDisplay =>
+      inventoryKnown ? formatPlanAmount(endingAmount) : '미확인';
+
+  String get _knownBalanceDisplay =>
       isBottleneck ? '부족 ${formatPlanAmount(shortageAmount)}' : '충족';
+
+  String get balanceDisplay =>
+      inventoryKnown ? _knownBalanceDisplay : '보유량 미확인';
 
   String? get effectiveBackgroundAsset =>
       equipmentTier == null ? backgroundAsset : planDefaultItemBackgroundAsset;
@@ -1005,6 +1025,7 @@ const dummyPlanPhases = <PlanPhasePreview>[
 (PlanStudentStepPreview, int) planBottleneckFocusStep(
   PlanBottleneckDetailPreview detail,
 ) {
+  if (detail.focusStepData != null) return (detail.focusStepData!, 1);
   final phase = dummyPlanPhases.firstWhere(
     (candidate) => candidate.id == detail.focusPhaseId,
   );
@@ -1261,12 +1282,14 @@ class PlanSectionLayout extends StatefulWidget {
     this.active = true,
     this.initialSeed,
     this.initialPresets = const [],
+    this.loadRepositoryPlan = false,
   });
 
   final AppService? service;
   final bool active;
   final PlanningStudentSeed? initialSeed;
   final List<PlanElementPreset> initialPresets;
+  final bool loadRepositoryPlan;
 
   @override
   State<PlanSectionLayout> createState() => _PlanSectionLayoutState();
@@ -1287,6 +1310,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   bool _showPresetManager = false;
   bool _showStudentSelector = false;
   bool _switchingStudentSelector = false;
+  bool _showScenarioList = false;
+  bool _switchingScenarioWorkspace = false;
+  bool _creatingScenario = false;
   bool _usingLivePlanElements = false;
   String? _consumedHandoffId;
   PlanningStudentSeed? _builderSeed;
@@ -1295,6 +1321,15 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   late List<PlanElementPreset> _presets;
   Set<String> _unassignedPlanElementIds = const {};
   List<PlanPhasePreview> _planPhases = dummyPlanPhases;
+  List<PlanBottleneckDetailPreview> _bottleneckDetails =
+      dummyPlanBottleneckDetails;
+  List<PlanConsumptionGroupPreview> _phaseConsumptions =
+      dummyPlanPhaseConsumptions;
+  PlanConsumptionGroupPreview _overallConsumption = dummyPlanOverallConsumption;
+  RepositoryState? _repositoryState;
+  PlanningDocument? _document;
+  String? _calculationError;
+  int _calculationGeneration = 0;
   Set<PlanResourceCategory> _selectedResourceCategories = {
     ...PlanResourceCategory.values,
   };
@@ -1306,13 +1341,357 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         reverseDuration: _motionDuration,
       ),
   };
+  late final AnimationController _scenarioListController = AnimationController(
+    vsync: this,
+    duration: _motionDuration,
+    reverseDuration: _motionDuration,
+  );
 
   @override
   void initState() {
     super.initState();
     _presets = List.unmodifiable(widget.initialPresets);
     _consumeInitialSeed();
+    if (widget.loadRepositoryPlan) _loadRepositoryPlan();
     if (widget.active) _setActive(true);
+  }
+
+  Future<void> _loadRepositoryPlan() async {
+    final service = widget.service;
+    final RepositoryService? repository = service is RepositoryService
+        ? service as RepositoryService
+        : null;
+    if (repository == null) return;
+    try {
+      final profiles = await repository.listProfiles();
+      final selected = profiles.cast<RepositoryProfile?>().firstWhere(
+        (profile) => profile?.selected == true,
+        orElse: () => null,
+      );
+      if (selected == null) {
+        if (mounted) {
+          setState(() {
+            _usingLivePlanElements = true;
+            _planElements = const [];
+            _planPhases = const [];
+            _bottleneckDetails = const [];
+            _phaseConsumptions = const [];
+            _overallConsumption = const PlanConsumptionGroupPreview(
+              id: 'overall',
+              label: '전체 계획',
+              resources: [],
+            );
+          });
+        }
+        return;
+      }
+      final results = await Future.wait([
+        repository.loadRepositoryState(selected.id),
+        widget.service!.listStudents(),
+      ]);
+      final state = results[0] as RepositoryState;
+      final catalog = results[1] as List<StudentCatalogEntry>;
+      final catalogById = {for (final item in catalog) item.studentId: item};
+      final currentById = {
+        for (final item in state.students) item.studentId: item,
+      };
+      final drafts = <String, List<PlanElementStageDraft>>{};
+      final elements = <PlanStudentStepPreview>[];
+      final documentStages = <PlanningDocumentStage>[];
+      for (var index = 0; index < state.goals.length; index++) {
+        final goal = state.goals[index];
+        final current = currentById[goal.studentId];
+        final targets = planningDocumentTargets(
+          current: current?.values ?? const {},
+          goal: goal.values,
+        );
+        final stageId = 'v6-${goal.studentId}-1';
+        final stageName =
+            goal.values['notes']?.toString().trim().isNotEmpty == true
+            ? goal.values['notes'].toString().trim()
+            : 'v6 목표';
+        final displayName =
+            catalogById[goal.studentId]?.displayName ?? goal.studentId;
+        drafts[goal.studentId] = [
+          PlanElementStageDraft(id: stageId, name: stageName, targets: targets),
+        ];
+        elements.add(
+          PlanStudentStepPreview(
+            studentId: goal.studentId,
+            displayName: displayName,
+            step: 1,
+            target: stageName,
+            bondRank: targets['bond_rank'],
+            stageId: stageId,
+            targetValues: targets,
+          ),
+        );
+        documentStages.add(
+          PlanningDocumentStage(
+            id: stageId,
+            studentId: goal.studentId,
+            name: stageName,
+            targets: targets,
+          ),
+        );
+      }
+      final document = PlanningDocument(
+        id: 'active-plan',
+        name: 'v6 가져온 계획',
+        kind: PlanningDocumentKind.plan,
+        phases: documentStages.isEmpty
+            ? const []
+            : [
+                PlanningDocumentPhase(
+                  id: 'v6-imported-plan',
+                  name: 'v6 가져온 계획',
+                  stages: documentStages,
+                ),
+              ],
+      );
+      if (!mounted) return;
+      setState(() {
+        _repositoryState = state;
+        _document = document;
+        _usingLivePlanElements = true;
+        _draftsByStudent
+          ..clear()
+          ..addAll(drafts);
+        _planElements = List.unmodifiable(elements);
+        _unassignedPlanElementIds = const {};
+        _planPhases = documentStages.isEmpty
+            ? const []
+            : [
+                PlanPhasePreview(
+                  id: 'v6-imported-plan',
+                  name: 'v6 가져온 계획',
+                  steps: elements,
+                ),
+              ];
+        _bottleneckDetails = const [];
+        _phaseConsumptions = const [];
+        _overallConsumption = const PlanConsumptionGroupPreview(
+          id: 'overall',
+          label: '전체 계획',
+          resources: [],
+        );
+      });
+      await _calculateDocument();
+    } catch (error) {
+      if (mounted) setState(() => _calculationError = error.toString());
+    }
+  }
+
+  Map<String, String> _stageKeysById() {
+    final result = <String, String>{};
+    for (final phase in _planPhases) {
+      for (var index = 0; index < phase.steps.length; index++) {
+        final step = phase.steps[index];
+        if (step.stageId != null) {
+          result[step.stageId!] = planStudentStageKey(
+            phase.id,
+            step.studentId,
+            step.step,
+          );
+        }
+      }
+    }
+    return result;
+  }
+
+  String _resourceIcon(String? itemId, String category) {
+    if (itemId == null || category == 'credits') return planCreditIconAsset;
+    final folder = switch (category) {
+      'oopart' || 'workbook' => 'ooparts',
+      'tactical_bd' => 'tactical_bd',
+      'tech_notes' => 'skill_db',
+      'equipment' => 'equipment',
+      _ => null,
+    };
+    return folder == null
+        ? planCreditIconAsset
+        : 'assets/item_icons/$folder/$itemId.png';
+  }
+
+  PlanConsumptionResourcePreview _consumptionResource(
+    Map<String, dynamic> raw,
+    Map<String, String> stageKeys,
+  ) {
+    final required = raw['required'] as int? ?? 0;
+    final owned = raw['owned'] as int?;
+    final category = raw['category']?.toString() ?? 'unresolved';
+    final itemId = raw['item_id']?.toString();
+    return PlanConsumptionResourcePreview(
+      id: raw['resource_key']?.toString() ?? raw['display_name'].toString(),
+      name: raw['display_name']?.toString() ?? itemId ?? '알 수 없는 재화',
+      amount: required,
+      owned: owned ?? 0,
+      inventoryKnown: owned != null,
+      iconAsset: _resourceIcon(itemId, category),
+      backgroundAsset: itemId == null ? null : planDefaultItemBackgroundAsset,
+      affectedStageKeys: {
+        for (final id
+            in (raw['affected_stage_ids'] as List<dynamic>? ?? const []))
+          if (stageKeys[id.toString()] != null) stageKeys[id.toString()]!,
+      },
+    );
+  }
+
+  Future<void> _calculateDocument() async {
+    final service = widget.service;
+    final PlanningDocumentService? calculator =
+        service is PlanningDocumentService
+        ? service as PlanningDocumentService
+        : null;
+    final state = _repositoryState;
+    final document = _document;
+    if (calculator == null || state == null || document == null) {
+      return;
+    }
+    final generation = ++_calculationGeneration;
+    try {
+      final projection = await calculator.calculatePlanningDocument(
+        currentStudents: [
+          for (final student in state.students)
+            confirmedStudentPlanningCurrent(student),
+        ],
+        inventory: state.inventory.toWire(),
+        document: document.toWire(),
+      );
+      if (!mounted || generation != _calculationGeneration) return;
+      final stageKeys = _stageKeysById();
+      final phaseResults =
+          (projection['phase_results'] as List<dynamic>? ?? const []);
+      final nextPhaseConsumptions = <PlanConsumptionGroupPreview>[
+        for (final raw in phaseResults)
+          () {
+            final phase = Map<String, dynamic>.from(raw as Map);
+            return PlanConsumptionGroupPreview(
+              id: phase['phase_id'].toString(),
+              label: phase['name'].toString(),
+              resources: [
+                for (final item
+                    in phase['resources'] as List<dynamic>? ?? const [])
+                  _consumptionResource(
+                    Map<String, dynamic>.from(item as Map),
+                    stageKeys,
+                  ),
+              ],
+            );
+          }(),
+      ];
+      final overall = Map<String, dynamic>.from(projection['overall'] as Map);
+      final nextOverall = PlanConsumptionGroupPreview(
+        id: 'overall',
+        label: '전체 계획',
+        resources: [
+          for (final item in overall['resources'] as List<dynamic>? ?? const [])
+            _consumptionResource(
+              Map<String, dynamic>.from(item as Map),
+              stageKeys,
+            ),
+        ],
+      );
+      final stepById = {
+        for (final phase in _planPhases)
+          for (final step in phase.steps)
+            if (step.stageId != null) step.stageId!: (phase, step),
+      };
+      final nextBottlenecks = <PlanBottleneckDetailPreview>[];
+      for (final raw
+          in projection['bottlenecks'] as List<dynamic>? ?? const []) {
+        final item = Map<String, dynamic>.from(raw as Map);
+        final focused = stepById[item['stage_id']?.toString()];
+        if (focused == null) continue;
+        final affectedIds =
+            (item['affected_stage_ids'] as List<dynamic>? ?? const [])
+                .map((id) => id.toString())
+                .toList(growable: false);
+        final affectedKeys = {
+          for (final id in affectedIds)
+            if (stageKeys[id] != null) stageKeys[id]!,
+        };
+        final category = item['category']?.toString() ?? 'unresolved';
+        final itemId = item['item_id']?.toString();
+        nextBottlenecks.add(
+          PlanBottleneckDetailPreview(
+            id: 'bottleneck-${nextBottlenecks.length + 1}',
+            rankLabel: '병목 ${nextBottlenecks.length + 1}',
+            phaseNumber: item['phase_number'] as int? ?? 1,
+            focusPhaseId: focused.$1.id,
+            focusStudentId: focused.$2.studentId,
+            focusStep: focused.$2.step,
+            focusStage: focused.$2.target,
+            focusField: PlanBottleneckFocusField.title,
+            focusBondRank: focused.$2.bondRank,
+            focusStepData: focused.$2,
+            resources: [
+              PlanBottleneckResourcePreview(
+                id: item['resource_key'].toString(),
+                name: item['display_name'].toString(),
+                remainingAtEntry: item['remaining_at_entry'] as int? ?? 0,
+                requiredAtEntry: item['required_at_entry'] as int? ?? 0,
+                shortage: item['shortage'] as int? ?? 0,
+                iconAsset: _resourceIcon(itemId, category),
+                backgroundAsset: itemId == null
+                    ? null
+                    : planDefaultItemBackgroundAsset,
+                affectedStageKeys: affectedKeys,
+              ),
+            ],
+            delayedStages: [
+              for (final id in affectedIds)
+                if (stepById[id] case final affected?)
+                  PlanDelayedStagePreview(
+                    phaseId: affected.$1.id,
+                    studentId: affected.$2.studentId,
+                    step: affected.$2.step,
+                    label: '${affected.$2.displayName} · ${affected.$2.target}',
+                  ),
+            ],
+          ),
+        );
+      }
+      setState(() {
+        _phaseConsumptions = List.unmodifiable(nextPhaseConsumptions);
+        _overallConsumption = nextOverall;
+        _bottleneckDetails = List.unmodifiable(nextBottlenecks);
+        _calculationError = null;
+      });
+    } catch (error) {
+      if (mounted && generation == _calculationGeneration) {
+        setState(() => _calculationError = error.toString());
+      }
+    }
+  }
+
+  void _rebuildDocumentFromPhases() {
+    if (_repositoryState == null) return;
+    _document = PlanningDocument(
+      id: _creatingScenario ? _document?.id ?? 'scenario-draft' : 'active-plan',
+      name: _document?.name ?? (_creatingScenario ? '새 시나리오' : '계획'),
+      kind: _creatingScenario
+          ? PlanningDocumentKind.scenario
+          : PlanningDocumentKind.plan,
+      phases: [
+        for (final phase in _planPhases)
+          PlanningDocumentPhase(
+            id: phase.id,
+            name: phase.name,
+            stages: [
+              for (final step in phase.steps)
+                if (step.stageId != null)
+                  PlanningDocumentStage(
+                    id: step.stageId!,
+                    studentId: step.studentId,
+                    name: step.target,
+                    targets: step.targetValues,
+                  ),
+            ],
+          ),
+      ],
+    );
+    _calculateDocument();
   }
 
   @override
@@ -1333,9 +1712,24 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     _showPhaseEditor = false;
     _showPresetManager = false;
     _showStudentSelector = false;
+    _showScenarioList = false;
+    _creatingScenario = false;
   }
 
   void _setActive(bool active) {
+    if (_showScenarioList) {
+      for (final entry in _controllers.entries) {
+        if (entry.key == 'element-1') {
+          active ? entry.value.forward(from: 0) : entry.value.reverse(from: 1);
+        } else {
+          entry.value.value = 0;
+        }
+      }
+      active
+          ? _scenarioListController.forward(from: 0)
+          : _scenarioListController.reverse(from: 1);
+      return;
+    }
     if (_showStudentSelector) {
       for (final entry in _controllers.entries) {
         if (entry.key == 'element-1') {
@@ -1456,6 +1850,214 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     });
   }
 
+  Future<RepositoryState?> _ensureRepositoryContext() async {
+    if (_repositoryState case final state?) return state;
+    final service = widget.service;
+    if (service is! RepositoryService) return null;
+    final repository = service as RepositoryService;
+    final profiles = await repository.listProfiles();
+    final selected = profiles.cast<RepositoryProfile?>().firstWhere(
+      (profile) => profile?.selected == true,
+      orElse: () => null,
+    );
+    if (selected == null) return null;
+    final state = await repository.loadRepositoryState(selected.id);
+    if (mounted) setState(() => _repositoryState = state);
+    return state;
+  }
+
+  Future<void> _openScenarioList() async {
+    if (_showScenarioList ||
+        _switchingScenarioWorkspace ||
+        widget.service is! PlanningScenarioRepositoryService) {
+      return;
+    }
+    setState(() => _switchingScenarioWorkspace = true);
+    try {
+      final state = await _ensureRepositoryContext();
+      if (state == null || !mounted) return;
+      await Future.wait([
+        for (final entry in _controllers.entries)
+          if (entry.key != 'element-1') entry.value.reverse(),
+      ]);
+      if (!mounted) return;
+      setState(() => _showScenarioList = true);
+      await _scenarioListController.forward(from: 0);
+    } on TickerCanceled {
+      return;
+    } finally {
+      if (mounted) setState(() => _switchingScenarioWorkspace = false);
+    }
+  }
+
+  Future<void> _closeScenarioList() async {
+    if (!_showScenarioList || _switchingScenarioWorkspace) return;
+    setState(() => _switchingScenarioWorkspace = true);
+    try {
+      await _scenarioListController.reverse(from: 1);
+      if (!mounted) return;
+      setState(() => _showScenarioList = false);
+      await Future.wait([
+        for (final entry in _controllers.entries)
+          if (entry.key != 'element-1') entry.value.forward(from: 0),
+      ]);
+    } on TickerCanceled {
+      return;
+    } finally {
+      if (mounted) setState(() => _switchingScenarioWorkspace = false);
+    }
+  }
+
+  Future<void> _openScenarioCreation() async {
+    if (_creatingScenario ||
+        _showScenarioList ||
+        _switchingScenarioWorkspace ||
+        widget.service is! PlanningScenarioRepositoryService) {
+      return;
+    }
+    final state = await _ensureRepositoryContext();
+    if (state == null || !mounted) return;
+    final draftId = 'scenario-draft-${DateTime.now().microsecondsSinceEpoch}';
+    setState(() {
+      _creatingScenario = true;
+      _usingLivePlanElements = true;
+      _draftsByStudent.clear();
+      _planElements = const [];
+      _unassignedPlanElementIds = const {};
+      _planPhases = const [];
+      _bottleneckDetails = const [];
+      _phaseConsumptions = const [];
+      _overallConsumption = const PlanConsumptionGroupPreview(
+        id: 'overall',
+        label: '전체 시나리오',
+        resources: [],
+      );
+      _document = PlanningDocument(
+        id: draftId,
+        name: '새 시나리오',
+        kind: PlanningDocumentKind.scenario,
+        phases: const [],
+      );
+    });
+    await _openStudentSelector();
+  }
+
+  Future<void> _restorePlanAfterScenarioCreation() async {
+    if (!mounted) return;
+    setState(() {
+      _creatingScenario = false;
+      _showElementBuilder = false;
+      _showPhaseEditor = false;
+      _showStudentSelector = false;
+      _builderSeed = null;
+    });
+    await _loadRepositoryPlan();
+    if (!mounted) return;
+    for (final controller in _controllers.values) {
+      controller.forward(from: controller.value);
+    }
+  }
+
+  Future<void> _saveScenarioDraft() async {
+    final service = widget.service;
+    final state = _repositoryState;
+    final document = _document;
+    if (!_creatingScenario ||
+        service is! PlanningScenarioRepositoryService ||
+        state == null ||
+        document == null ||
+        document.phases.isEmpty) {
+      return;
+    }
+    final scenarioRepository = service as PlanningScenarioRepositoryService;
+    try {
+      final list = await scenarioRepository.listScenarios(state.profileId);
+      if (!mounted) return;
+      var scenarioName = '새 시나리오 ${list.scenarios.length + 1}';
+      var scenarioDescription = '';
+      final result = await showDialog<(String, String)>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          key: const ValueKey('plan-scenario-save-dialog'),
+          title: const Text('시나리오 저장'),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  key: const ValueKey('plan-scenario-name-field'),
+                  initialValue: scenarioName,
+                  onChanged: (value) => scenarioName = value,
+                  autofocus: true,
+                  decoration: const InputDecoration(labelText: '이름'),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  key: const ValueKey('plan-scenario-description-field'),
+                  initialValue: scenarioDescription,
+                  onChanged: (value) => scenarioDescription = value,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: '설명'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              key: const ValueKey('plan-scenario-save-confirm'),
+              onPressed: () {
+                final name = scenarioName.trim();
+                if (name.isNotEmpty) {
+                  Navigator.pop(dialogContext, (
+                    name,
+                    scenarioDescription.trim(),
+                  ));
+                }
+              },
+              child: const Text('저장'),
+            ),
+          ],
+        ),
+      );
+      if (result == null) {
+        await _restorePlanAfterScenarioCreation();
+        return;
+      }
+      final savedDocument = PlanningDocument(
+        id: document.id,
+        name: result.$1,
+        kind: PlanningDocumentKind.scenario,
+        phases: document.phases,
+      );
+      await scenarioRepository.createScenario(
+        profileId: state.profileId,
+        expectedRevision: list.revision,
+        idempotencyKey:
+            'scenario-create-${DateTime.now().microsecondsSinceEpoch}',
+        name: result.$1,
+        description: result.$2,
+        baseProfileRevision: state.revision,
+        document: savedDocument,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${result.$1} 시나리오를 저장했습니다.')));
+      await _restorePlanAfterScenarioCreation();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('시나리오 저장 실패: $error')));
+    }
+  }
+
   Future<void> _openPhaseEditor() async {
     if (_showPhaseEditor) return;
     if (!_showElementBuilder) {
@@ -1516,6 +2118,10 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       await Future<void>.delayed(planStudentSelectorMotionDuration);
       if (!mounted) return;
       setState(() => _showStudentSelector = false);
+      if (_creatingScenario) {
+        await _restorePlanAfterScenarioCreation();
+        return;
+      }
       await Future.wait([
         for (final entry in _controllers.entries)
           if (entry.key != 'element-1') entry.value.forward(from: 0),
@@ -1543,6 +2149,18 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
 
   void _closeElementBuilder() {
     if (!_showElementBuilder) return;
+    if (_creatingScenario) {
+      if (_planElements.isEmpty) {
+        _restorePlanAfterScenarioCreation();
+      } else {
+        setState(() {
+          _showElementBuilder = false;
+          _builderSeed = null;
+        });
+        _openStudentSelector();
+      }
+      return;
+    }
     setState(() {
       _showElementBuilder = false;
       _builderSeed = null;
@@ -1611,6 +2229,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           ),
       ];
     });
+    _rebuildDocumentFromPhases();
   }
 
   void _renameUnassignedPlanElement(String id, String name) {
@@ -1704,6 +2323,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         entry.value.forward(from: entry.value.value);
       }
     }
+    _rebuildDocumentFromPhases();
+    if (_creatingScenario) _saveScenarioDraft();
   }
 
   @override
@@ -1711,6 +2332,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     for (final controller in _controllers.values) {
       controller.dispose();
     }
+    _scenarioListController.dispose();
     super.dispose();
   }
 
@@ -1722,18 +2344,18 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         constraints.maxHeight.isFinite ? constraints.maxHeight : 660,
       );
       final bottlenecks = filterPlanBottleneckDetails(
-        dummyPlanBottleneckDetails,
+        _bottleneckDetails,
         categories: _selectedResourceCategories,
         sort: _resourceSort,
       );
       final phaseConsumptions = filterPlanConsumptionGroups(
-        dummyPlanPhaseConsumptions,
+        _phaseConsumptions,
         categories: _selectedResourceCategories,
         hideSatisfied: _hideSatisfiedResources,
         sort: _resourceSort,
       );
       final overallConsumptions = filterPlanConsumptionGroups(
-        const [dummyPlanOverallConsumption],
+        [_overallConsumption],
         categories: _selectedResourceCategories,
         hideSatisfied: _hideSatisfiedResources,
         sort: _resourceSort,
@@ -1819,9 +2441,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
               Positioned(
                 key: const ValueKey('plan-phase-editor-launch-position'),
                 left: bounds.left + 18,
-                top: bounds.top + bounds.height * 0.24,
+                top: bounds.top + bounds.height * 0.12,
                 width: math.max(120, bounds.width * 0.54),
-                height: 204,
+                height: math.min(420, bounds.height * 0.76),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -1829,7 +2451,10 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                       child: FilledButton.tonalIcon(
                         key: const ValueKey('plan-phase-editor-launch'),
                         onPressed:
-                            _showStudentSelector || _switchingStudentSelector
+                            _showStudentSelector ||
+                                _switchingStudentSelector ||
+                                _showScenarioList ||
+                                _switchingScenarioWorkspace
                             ? null
                             : _openPhaseEditor,
                         icon: const Icon(Icons.account_tree_outlined),
@@ -1844,7 +2469,10 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                     Expanded(
                       child: FilledButton.tonalIcon(
                         key: const ValueKey('plan-student-selector-launch'),
-                        onPressed: _switchingStudentSelector
+                        onPressed:
+                            _switchingStudentSelector ||
+                                _showScenarioList ||
+                                _switchingScenarioWorkspace
                             ? null
                             : _showStudentSelector
                             ? _closeStudentSelector
@@ -1868,12 +2496,71 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                       child: FilledButton.tonalIcon(
                         key: const ValueKey('plan-preset-manager-launch'),
                         onPressed:
-                            _showStudentSelector || _switchingStudentSelector
+                            _showStudentSelector ||
+                                _switchingStudentSelector ||
+                                _showScenarioList ||
+                                _switchingScenarioWorkspace
                             ? null
                             : _openPresetManager,
                         icon: const Icon(Icons.tune_rounded),
                         label: const Text(
                           '프리셋 생성·관리',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        key: const ValueKey('plan-scenario-compare-launch'),
+                        onPressed: null,
+                        icon: const Icon(Icons.compare_arrows_rounded),
+                        label: const Text(
+                          '시나리오 비교',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        key: const ValueKey('plan-scenario-create-launch'),
+                        onPressed:
+                            _showScenarioList ||
+                                _switchingScenarioWorkspace ||
+                                widget.service
+                                    is! PlanningScenarioRepositoryService
+                            ? null
+                            : _openScenarioCreation,
+                        icon: const Icon(Icons.add_chart_rounded),
+                        label: const Text(
+                          '시나리오 생성',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        key: const ValueKey('plan-scenario-list-launch'),
+                        onPressed:
+                            _switchingScenarioWorkspace ||
+                                widget.service
+                                    is! PlanningScenarioRepositoryService
+                            ? null
+                            : _showScenarioList
+                            ? _closeScenarioList
+                            : _openScenarioList,
+                        icon: Icon(
+                          _showScenarioList
+                              ? Icons.arrow_back_rounded
+                              : Icons.view_list_rounded,
+                        ),
+                        label: Text(
+                          _showScenarioList ? '목록 닫기' : '시나리오 리스트',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1968,6 +2655,29 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                     onToggleResource: _toggleSection3Resource,
                   ),
                 ],
+              ),
+            ],
+          );
+        }
+        if (id == 'element-4' && _calculationError != null) {
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              IgnorePointer(
+                child: CustomPaint(
+                  key: ValueKey('plan-$id-foundation'),
+                  painter: PlanSectionFoundationPainter(id),
+                ),
+              ),
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    '계산 오류\n$_calculationError',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.redAccent),
+                  ),
+                ),
               ),
             ],
           );
@@ -2089,6 +2799,28 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                     child: sectionLayer(id),
                   ),
                 ),
+            if (_showScenarioList &&
+                widget.service is PlanningScenarioRepositoryService &&
+                _repositoryState != null)
+              Positioned.fill(
+                child: PlanSectionMotion(
+                  key: const ValueKey('plan-scenario-list-motion'),
+                  animation: _scenarioListController,
+                  introDegrees: planScenarioListMotion.intro,
+                  outroDegrees: planScenarioListMotion.outro,
+                  child: PlanScenarioListSection(
+                    service:
+                        widget.service! as PlanningScenarioRepositoryService,
+                    profileId: _repositoryState!.profileId,
+                    currentProfileRevision: _repositoryState!.revision,
+                    section1Bounds: planSectionPath(
+                      size,
+                      'element-1',
+                    ).getBounds(),
+                    active: widget.active && !_switchingScenarioWorkspace,
+                  ),
+                ),
+              ),
             if (!_showPhaseEditor && _showElementBuilder && builderSeed != null)
               Positioned.fill(
                 child: PlanElementBuilder(
@@ -2157,6 +2889,379 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       );
     },
   );
+}
+
+Rect planScenarioListSectionRect(Size size, Rect section1Bounds) {
+  const gap = 24.0;
+  const outerInset = 16.0;
+  final right = size.width - outerInset;
+  final preferredLeft = section1Bounds.right + gap;
+  final left = math.min(preferredLeft, right - 280);
+  return Rect.fromLTRB(
+    math.max(outerInset, left),
+    section1Bounds.top,
+    right,
+    section1Bounds.bottom,
+  );
+}
+
+Path planScenarioListSectionPath(Size size, Rect section1Bounds) {
+  final rect = planScenarioListSectionRect(size, section1Bounds);
+  final depth = rect.height / math.tan(80 * math.pi / 180);
+  return roundedPolygonPath([
+    Offset(rect.left + depth, rect.top),
+    Offset(rect.right, rect.top),
+    Offset(rect.right - depth, rect.bottom),
+    Offset(rect.left, rect.bottom),
+  ], 12);
+}
+
+class PlanScenarioListSection extends StatefulWidget {
+  const PlanScenarioListSection({
+    super.key,
+    required this.service,
+    required this.profileId,
+    required this.currentProfileRevision,
+    required this.section1Bounds,
+    required this.active,
+  });
+
+  final PlanningScenarioRepositoryService service;
+  final String profileId;
+  final int currentProfileRevision;
+  final Rect section1Bounds;
+  final bool active;
+
+  @override
+  State<PlanScenarioListSection> createState() =>
+      _PlanScenarioListSectionState();
+}
+
+class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
+  final ScrollController _controller = ScrollController();
+  PlanningScenarioListResult? _result;
+  Object? _error;
+  String? _selectedScenarioId;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(PlanScenarioListSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.profileId != widget.profileId) _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final result = await widget.service.listScenarios(widget.profileId);
+      if (!mounted) return;
+      setState(() {
+        _result = result;
+        _error = null;
+        if (!result.scenarios.any(
+          (scenario) => scenario.id == _selectedScenarioId,
+        )) {
+          _selectedScenarioId = null;
+        }
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final size = constraints.biggest;
+      final path = planScenarioListSectionPath(size, widget.section1Bounds);
+      final bounds = path.getBounds();
+      final localPath = path.shift(-bounds.topLeft);
+      return Stack(
+        children: [
+          IgnorePointer(
+            child: CustomPaint(
+              key: const ValueKey('plan-scenario-list-foundation'),
+              size: size,
+              painter: _PlanScenarioListSectionPainter(path),
+            ),
+          ),
+          Positioned.fromRect(
+            rect: bounds,
+            child: ClipPath(
+              clipper: _PlanLocalPathClipper(localPath),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.view_list_rounded),
+                        const SizedBox(width: 10),
+                        Text(
+                          '시나리오 리스트',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          key: const ValueKey('plan-scenario-list-refresh'),
+                          onPressed: widget.active ? _load : null,
+                          icon: const Icon(Icons.refresh_rounded),
+                          tooltip: '새로고침',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Expanded(child: _buildContent()),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  Widget _buildContent() {
+    if (_error case final error?) {
+      return Center(
+        child: TextButton.icon(
+          key: const ValueKey('plan-scenario-list-retry'),
+          onPressed: _load,
+          icon: const Icon(Icons.refresh_rounded),
+          label: Text('목록을 불러오지 못했습니다.\n$error'),
+        ),
+      );
+    }
+    final result = _result;
+    if (result == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (result.scenarios.isEmpty) {
+      return const Center(
+        child: Text(
+          '저장된 시나리오가 없습니다.\n섹션 1의 시나리오 생성 버튼으로 시작할 수 있습니다.',
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const rowHeight = 78.0;
+        const rowGap = 10.0;
+        const inset = 8.0;
+        final contentHeight =
+            inset * 2 + result.scenarios.length * (rowHeight + rowGap) - rowGap;
+        return PlanDiagonalScrollbar(
+          controller: _controller,
+          contentExtent: contentHeight,
+          child: SingleChildScrollView(
+            key: const ValueKey('plan-scenario-diagonal-scroll'),
+            controller: _controller,
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) {
+                final scroll = _controller.hasClients
+                    ? _controller.offset
+                    : 0.0;
+                return SizedBox(
+                  height: contentHeight,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      for (
+                        var index = 0;
+                        index < result.scenarios.length;
+                        index++
+                      )
+                        () {
+                          final scenario = result.scenarios[index];
+                          final top = inset + index * (rowHeight + rowGap);
+                          final offset = planPhaseRowHorizontalOffset(
+                            viewportHeight: constraints.maxHeight,
+                            rowTop: top,
+                            rowHeight: rowHeight,
+                            scrollOffset: scroll,
+                          );
+                          final width = planPhaseRowWidth(
+                            viewportWidth: constraints.maxWidth,
+                            viewportHeight: constraints.maxHeight,
+                            rowHeight: rowHeight,
+                          );
+                          return Positioned(
+                            key: ValueKey('plan-scenario-row-${scenario.id}'),
+                            left: inset + offset,
+                            top: top,
+                            width: width,
+                            height: rowHeight,
+                            child: PlanScenarioListCard(
+                              scenario: scenario,
+                              stale:
+                                  scenario.baseProfileRevision !=
+                                  result.currentProfileRevision,
+                              selected: scenario.id == _selectedScenarioId,
+                              onTap: widget.active
+                                  ? () => setState(
+                                      () => _selectedScenarioId = scenario.id,
+                                    )
+                                  : null,
+                            ),
+                          );
+                        }(),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class PlanScenarioListCard extends StatelessWidget {
+  const PlanScenarioListCard({
+    super.key,
+    required this.scenario,
+    required this.stale,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final PlanningScenarioSummary scenario;
+  final bool stale;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    painter: _PlanScenarioListCardPainter(selected),
+    child: ClipPath(
+      clipper: const _PlanScenarioListCardClipper(),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+            child: Row(
+              children: [
+                Icon(
+                  selected ? Icons.check_circle : Icons.analytics_outlined,
+                  color: selected ? AppColors.primary : Colors.white70,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        scenario.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '학생 ${scenario.studentCount} · 페이즈 ${scenario.phaseCount} · 요소 ${scenario.stageCount}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                if (stale)
+                  const Tooltip(
+                    message: '현재 계정 데이터가 저장 시점과 다릅니다.',
+                    child: Icon(
+                      Icons.history_rounded,
+                      color: Colors.amberAccent,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _PlanScenarioListSectionPainter extends CustomPainter {
+  const _PlanScenarioListSectionPainter(this.path);
+  final Path path;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(path, Paint()..color = const Color(0xf01a2c3b));
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.outline.withValues(alpha: 0.72)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_PlanScenarioListSectionPainter oldDelegate) =>
+      oldDelegate.path.getBounds() != path.getBounds();
+}
+
+class _PlanScenarioListCardClipper extends CustomClipper<Path> {
+  const _PlanScenarioListCardClipper();
+
+  @override
+  Path getClip(Size size) => roundedPolygonPath([
+    Offset(14, 0),
+    Offset(size.width, 0),
+    Offset(size.width - 14, size.height),
+    Offset(0, size.height),
+  ], 8);
+
+  @override
+  bool shouldReclip(_PlanScenarioListCardClipper oldClipper) => false;
+}
+
+class _PlanScenarioListCardPainter extends CustomPainter {
+  const _PlanScenarioListCardPainter(this.selected);
+  final bool selected;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = const _PlanScenarioListCardClipper().getClip(size);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = selected
+            ? AppColors.primary.withValues(alpha: 0.22)
+            : const Color(0xd9264359),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = selected
+            ? AppColors.primary
+            : AppColors.outline.withValues(alpha: 0.58)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = selected ? 1.5 : 0.8,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_PlanScenarioListCardPainter oldDelegate) =>
+      oldDelegate.selected != selected;
 }
 
 const _planResourceHeaderTexture = BATriangleTextureConfig(
@@ -3640,12 +4745,12 @@ class PlanConsumptionCreditRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     label: isOverall
-        ? '보유 ${formatPlanAmount(resource.owned)}, '
+        ? '보유 ${resource.ownedDisplay}, '
               '필요 ${formatPlanAmount(resource.amount)}, ${resource.coveragePercent}%, '
               '${resource.balanceDisplay}'
-        : '진입 ${formatPlanAmount(resource.owned)}, '
+        : '진입 ${resource.ownedDisplay}, '
               '필요 ${formatPlanAmount(resource.amount)}, '
-              '종료 ${formatPlanAmount(resource.endingAmount)}, ${resource.balanceDisplay}',
+              '종료 ${resource.endingDisplay}, ${resource.balanceDisplay}',
     button: true,
     selected: selected,
     child: CustomPaint(
@@ -3680,7 +4785,7 @@ class PlanConsumptionCreditRow extends StatelessWidget {
                       children: [
                         if (isOverall) ...[
                           Text(
-                            '보유 ${formatPlanAmount(resource.owned)} / '
+                            '보유 ${resource.ownedDisplay} / '
                             '필요 ${formatPlanAmount(resource.amount)}',
                             key: ValueKey('$keyPrefix-${resource.id}-amount'),
                             maxLines: 1,
@@ -3697,6 +4802,7 @@ class PlanConsumptionCreditRow extends StatelessWidget {
                             key: ValueKey('$keyPrefix-${resource.id}-progress'),
                             ratio: resource.coverageRatio,
                             percent: resource.coveragePercent,
+                            known: resource.inventoryKnown,
                             compact: true,
                           ),
                           const SizedBox(height: 3),
@@ -3719,9 +4825,9 @@ class PlanConsumptionCreditRow extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: Text(
-                                  '진입 ${formatPlanAmount(resource.owned)}  │ '
+                                  '진입 ${resource.ownedDisplay}  │ '
                                   '필요 ${formatPlanAmount(resource.amount)} │ '
-                                  '종료 ${formatPlanAmount(resource.endingAmount)}',
+                                  '종료 ${resource.endingDisplay}',
                                   key: ValueKey(
                                     '$keyPrefix-${resource.id}-amount',
                                   ),
@@ -4240,7 +5346,7 @@ class PlanConsumptionResourceTile extends StatelessWidget {
       SizedBox(height: (isOverall ? 7 : 10.5) * scale),
       if (isOverall) ...[
         Text(
-          '보유 ${formatPlanAmount(resource.owned)} / '
+          '보유 ${resource.ownedDisplay} / '
           '필요 ${formatPlanAmount(resource.amount)}',
           key: ValueKey('$keyPrefix-${resource.id}-amount'),
           maxLines: 1,
@@ -4257,14 +5363,15 @@ class PlanConsumptionResourceTile extends StatelessWidget {
           key: ValueKey('$keyPrefix-${resource.id}-progress'),
           ratio: resource.coverageRatio,
           percent: resource.coveragePercent,
+          known: resource.inventoryKnown,
           scale: scale,
         ),
         SizedBox(height: 6 * scale),
       ] else ...[
         Text(
-          '진입 ${formatPlanAmount(resource.owned)}  │ '
+          '진입 ${resource.ownedDisplay}  │ '
           '필요 ${formatPlanAmount(resource.amount)} │ '
-          '종료 ${formatPlanAmount(resource.endingAmount)}',
+          '종료 ${resource.endingDisplay}',
           key: ValueKey('$keyPrefix-${resource.id}-amount'),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -4315,18 +5422,20 @@ class PlanInventoryCoverageBar extends StatelessWidget {
     super.key,
     required this.ratio,
     required this.percent,
+    this.known = true,
     this.scale = 1,
     this.compact = false,
   });
 
   final double ratio;
   final int percent;
+  final bool known;
   final double scale;
   final bool compact;
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: '확보율 $percent%',
+    label: known ? '확보율 $percent%' : '보유량 미확인',
     child: Padding(
       padding: EdgeInsets.only(right: (compact ? 10 : 14) * scale),
       child: SizedBox(
@@ -4348,7 +5457,7 @@ class PlanInventoryCoverageBar extends StatelessWidget {
             ),
             SizedBox(width: (compact ? 5 : 7) * scale),
             Text(
-              '$percent%',
+              known ? '$percent%' : '—',
               style: TextStyle(
                 color: AppColors.textMuted,
                 fontSize: (compact ? 8.5 : 11) * scale,

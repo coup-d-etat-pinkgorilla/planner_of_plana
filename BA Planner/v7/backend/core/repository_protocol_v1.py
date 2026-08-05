@@ -4,13 +4,14 @@ from pathlib import Path
 from typing import Any
 
 from core.repository_store import JsonRepository, RepositoryError
+from core.runtime_paths import resolve_v6_root
 
 
 METHODS = frozenset({
     "repository.profile.list", "repository.profile.create", "repository.profile.current",
     "repository.profile.select", "repository.profile.rename", "repository.profile.update", "repository.profile.delete", "repository.state.get",
     "repository.students.update", "repository.inventory.update", "repository.goals.save",
-    "repository.migration.preview",
+    "repository.migration.preview", "repository.migration.import",
 })
 
 
@@ -37,8 +38,9 @@ def _revision(value: object) -> int:
 
 
 class RepositoryProtocolV1:
-    def __init__(self, repository: JsonRepository) -> None:
+    def __init__(self, repository: JsonRepository, *, v6_root: Path | None = None) -> None:
         self.repository = repository
+        self.v6_root = Path(v6_root) if v6_root is not None else resolve_v6_root()
 
     def handle(self, request: dict[str, Any]) -> dict[str, Any]:
         try:
@@ -93,6 +95,12 @@ class RepositoryProtocolV1:
             data, profile_id, revision, key = self._mutation(payload, {"goals"})
             return self.repository.save_goals(profile_id, data["goals"], revision, key)
         if method == "repository.migration.preview":
-            data = _require(payload, {"source_path", "profile_id"})
-            return self.repository.migration_preview(_text(data["source_path"], "source_path"), _text(data["profile_id"], "profile_id"))
+            _require(payload, set())
+            return self.repository.migration_preview(str(self.v6_root))
+        if method == "repository.migration.import":
+            data = _require(payload, {"source_profile_key"})
+            return self.repository.import_v6_profile(
+                str(self.v6_root),
+                _text(data["source_profile_key"], "source_profile_key"),
+            )
         raise RepositoryError("unknown_method", f"Unknown repository method: {method}")

@@ -23,6 +23,12 @@ from core.planning import (
 from core.planning_calc import calculate_plan_totals
 from core.inventory_catalog import catalog_payload
 from core.plan_shortages import derive_plan_shortages
+from core.planning_document import (
+    PlanningDocumentError,
+    calculate_document_projection,
+    compare_document_projections,
+    planning_document_from_wire,
+)
 from core.repository_dto import InventorySnapshot, RepositoryDTOError
 
 
@@ -33,10 +39,13 @@ METHOD_PLAN_VALIDATE = "planning.plan.validate"
 METHOD_PLAN_CALCULATE = "planning.plan.calculate"
 METHOD_INVENTORY_CATALOG = "planning.inventory.catalog"
 METHOD_PLAN_SHORTAGES = "planning.plan.shortages"
+METHOD_DOCUMENT_CALCULATE = "planning.document.calculate"
+METHOD_SCENARIO_COMPARE = "planning.scenario.compare"
 KNOWN_METHODS = frozenset(
     {
         METHOD_STUDENT_GET, METHOD_STUDENT_CATALOG, METHOD_PLAN_VALIDATE,
         METHOD_PLAN_CALCULATE, METHOD_INVENTORY_CATALOG, METHOD_PLAN_SHORTAGES,
+        METHOD_DOCUMENT_CALCULATE, METHOD_SCENARIO_COMPARE,
     }
 )
 _ENVELOPE_KEYS = {"protocol", "id", "type", "method", "payload"}
@@ -225,8 +234,12 @@ class PlanningProtocolV1:
                 return self._plan_calculate(request)
             if request["method"] == METHOD_INVENTORY_CATALOG:
                 return self._inventory_catalog_get(request)
+            if request["method"] == METHOD_DOCUMENT_CALCULATE:
+                return self._document_calculate(request)
+            if request["method"] == METHOD_SCENARIO_COMPARE:
+                return self._scenario_compare(request)
             return self._plan_shortages(request)
-        except InvalidPayload as error:
+        except (InvalidPayload, PlanningDocumentError) as error:
             return error_response(request, "invalid_payload", str(error))
 
     @staticmethod
@@ -355,3 +368,50 @@ class PlanningProtocolV1:
                 request, "shortage_calculation_failed", "Plan shortage calculation failed"
             )
         return _success(request, result)
+
+    def _document_calculate(self, request: dict[str, Any]) -> dict[str, Any]:
+        payload = request["payload"]
+        if set(payload) != {"current_students", "inventory", "document"}:
+            raise InvalidPayload("payload must contain current_students, inventory, and document")
+        records = _current_students_from_wire(payload["current_students"])
+        document = planning_document_from_wire(payload["document"])
+        try:
+            inventory = InventorySnapshot.from_dict(payload["inventory"])
+        except RepositoryDTOError as error:
+            raise InvalidPayload(str(error)) from error
+        try:
+            projection = calculate_document_projection(records, document, inventory)
+        except Exception:
+            self._diagnostic(traceback.format_exc())
+            return error_response(request, "calculation_failed", "Planning document calculation failed")
+        return _success(request, {"projection": projection})
+
+    def _scenario_compare(self, request: dict[str, Any]) -> dict[str, Any]:
+        payload = request["payload"]
+        if set(payload) != {"current_students", "inventory", "document_a", "document_b"}:
+            raise InvalidPayload("payload must contain current_students, inventory, document_a, and document_b")
+        records = _current_students_from_wire(payload["current_students"])
+        document_a = planning_document_from_wire(payload["document_a"])
+        document_b = planning_document_from_wire(payload["document_b"])
+        if document_a.kind != "scenario" or document_b.kind != "scenario":
+            raise InvalidPayload("scenario comparison requires two scenario documents")
+        if document_a.document_id == document_b.document_id:
+            raise InvalidPayload("scenario comparison requires two different documents")
+        try:
+            inventory = InventorySnapshot.from_dict(payload["inventory"])
+        except RepositoryDTOError as error:
+            raise InvalidPayload(str(error)) from error
+        try:
+            projection_a = calculate_document_projection(records, document_a, inventory)
+            projection_b = calculate_document_projection(records, document_b, inventory)
+            comparison = compare_document_projections(
+                document_a, projection_a, document_b, projection_b,
+            )
+        except Exception:
+            self._diagnostic(traceback.format_exc())
+            return error_response(request, "calculation_failed", "Scenario comparison failed")
+        return _success(request, {
+            "projection_a": projection_a,
+            "projection_b": projection_b,
+            "comparison": comparison,
+        })

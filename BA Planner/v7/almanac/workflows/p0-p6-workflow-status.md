@@ -2726,3 +2726,105 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
   path buttons follow the remaining left wedge. Preset rows recompute their X/width
   from viewport Y while scrolling, and all overlapping rectangular hosts use
   path-aware hit testing so transparent wedges do not intercept adjacent controls.
+- The plan-element builder's Section 5 preset loader now also owns a dedicated
+  bilateral 80-degree container below its title. Loader rows preserve vertical
+  scrolling while recomputing X from viewport Y, and reuse the diagonal scrollbar
+  and top/bottom fog contract from the stage editor. Geometry coverage verifies that
+  the container remains inside Section 5 and both row rails satisfy
+  `deltaX = -deltaY / tan(80 degrees)` during scrolling.
+- Focused element-builder validation passed all 48 tests. Full validation passed all
+  332 Flutter tests with `--concurrency=1`; `flutter analyze` and the Windows release
+  build passed.
+
+### 2026-08-05 shared planning document and v6 account import vertical slice
+
+- Status: items 1-4 implementation and automated verification complete; scenario
+  persistence and the scenario-specific tab controls remain the next slice.
+- Added one versioned `PlanningDocument` model for both `plan` and `scenario` kinds.
+  Documents contain ordered phases and ordered student stages with a complete target
+  snapshot. The backend rejects duplicate IDs, invalid ranges, and later stages that
+  regress the same student.
+- Added `planning.document.calculate`. It advances a virtual student state after each
+  stage, reports stage/phase/overall cost and consumption, rolls inventory forward
+  between phases, and identifies each resource's first bottleneck plus affected stage
+  IDs. Unknown inventory remains explicitly unknown in the result UI.
+- The production plan page now loads the selected repository profile instead of dummy
+  results. Saved goals become one stage per student, in saved order, under one
+  `v6 가져온 계획` phase; builder/phase edits recalculate the same document model.
+- Added a read-only v6 account preview/import boundary. It copies account name/avatar,
+  confirmed student state, inventory, and growth goals into an independent v7 profile.
+  It does not import scanner candidates, tactical data, or logs and never writes to v6.
+  A name collision creates `계정명 (v6 가져오기)` and then a numbered variant.
+- Verification: all 127 Python tests and all 333 Flutter tests passed.
+  `flutter analyze` and the Windows release build passed.
+
+### 2026-08-05 scenario pre-GUI persistence and comparison slice
+
+- Status: all work that does not require the scenario screen design is implemented;
+  plan-main buttons, scenario screen geometry, transitions, multi-select controls, and
+  bulk-apply panel remain pending GUI design.
+- Added a profile-scoped scenario repository under `scenarios/{profile_id}.json`.
+  It has an independent collection revision, per-scenario revision, strict
+  idempotency, atomic writes, create/get/list/update/delete/duplicate operations, and
+  profile-deletion cleanup. Scenario mutations do not alter the active plan file or
+  profile revision.
+- Scenario records persist name, description, base profile revision, timestamps, and
+  a canonical `PlanningDocument` whose kind must be `scenario`. A future profile
+  revision is rejected while an older revision remains representable as stale.
+- Added `planning.scenario.compare`. Both documents are recalculated against the same
+  current-student and inventory inputs. The response contains both normal projections
+  plus neutral trade-off data for credits, resource requirements and shortages,
+  student target differences, and first bottlenecks; it never declares a winner.
+- Added versioned scenario repository and comparison JSON Schemas, Python application
+  dispatch, typed Flutter records/results/services, strict wire validation, and a real
+  Dart-to-Python lifecycle/comparison E2E test.
+- Verification: all 135 Python tests and all 335 Flutter tests passed.
+  `flutter analyze`, the Windows release build, and `git diff --check` passed.
+
+### 2026-08-05 scenario temporary entry, list, and creation UI slice
+
+- Status: temporary entry controls, scenario list workspace, and non-bulk
+  creation flow are implemented and fully verified. Bulk apply, comparison UI,
+  and final button styling remain pending by explicit user decision.
+- Added three temporary controls below the existing Plan Section 1 actions.
+  Scenario list and scenario creation are active; scenario comparison remains
+  visibly disabled until its screen is implemented.
+- Opening the scenario list keeps Section 1 in place, sends Sections 2-5 through
+  their existing outros, and introduces one bilateral 80-degree parallelogram
+  workspace with intro 80 / outro 260. Its rows recompute their horizontal
+  position from viewport Y and scroll offset and reuse the plan diagonal
+  scrollbar contract. Empty, loading, retry, stale-profile, selection, and
+  refresh states are explicit.
+- Scenario creation reuses the existing student selector, element builder, and
+  phase editor without a bulk-apply panel. Completing phases opens a temporary
+  standard name/description dialog, persists a scenario-kind planning document,
+  and restores the active repository plan without mutating it.
+- MockAppService now implements the scenario repository boundary so the default
+  development UI and widget tests exercise the same typed CRUD interface as the
+  real Python process.
+- Verification: all 337 Flutter tests passed; the focused planning/builder/
+  scenario suite passed 91 tests; `flutter analyze`, the Windows release build,
+  and `git diff --check` passed.
+
+### 2026-08-05 v6 student-growth rule parity
+
+- Status: implementation and automated verification complete.
+- Centralized the v6 equipment tier level caps (`T0=0`, `T1=10`, `T2=20`,
+  `T3=30`, `T4=40`, `T5=45`, `T6=50`, `T7=55`, `T8=60`, `T9=65`,
+  `T10=70`) and unique-weapon star level caps (`0=0`, `1=30`, `2=40`,
+  `3=50`, `4=60`) as shared frontend rules with an equivalent backend
+  semantic validator.
+- Plan element editing, preset editing/loading/saving, reopened drafts, current
+  student baselines, and legacy goal-to-document projection now normalize coupled
+  values. A level-only change raises the required tier/star; an explicitly selected
+  tier/star clamps its dependent level. Any weapon target also raises the student
+  target to 5 stars, and favorite equipment remains disabled for unsupported
+  students.
+- Planning-document decoding validates the same coupled rules in both Dart and
+  Python, so malformed persisted or external scenario/plan documents cannot reach
+  calculation even if they bypass the UI.
+- Regression coverage includes the reported `T9 / level 70` case, sparse versus
+  explicit presets, weapon/student-star coupling, favorite-equipment support, exact
+  boundaries, legacy goal projection, and backend rejection.
+- Verification: all 138 Python tests and all 348 Flutter tests passed;
+  `flutter analyze` and the Windows release build passed.

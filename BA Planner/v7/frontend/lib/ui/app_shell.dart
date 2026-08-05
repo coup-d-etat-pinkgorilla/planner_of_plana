@@ -313,6 +313,7 @@ class _AppShellState extends State<AppShell>
                                   service: widget.service,
                                   initialSeed: _planningSeed,
                                   active: _planTabActive,
+                                  loadRepositoryPlan: true,
                                 ),
                                 InventoryPage(
                                   key: ValueKey(

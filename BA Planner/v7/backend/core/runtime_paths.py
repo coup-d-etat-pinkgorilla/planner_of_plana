@@ -59,3 +59,10 @@ def resolve_repository_root() -> Path:
         return Path(local_app_data) / "BA Planner" / "repository"
     return Path.home() / ".ba-planner" / "repository"
 
+
+def resolve_v6_root() -> Path:
+    override = os.environ.get("BA_PLANNER_V6_DIR")
+    if override:
+        return Path(override).expanduser()
+    return V7_DIR.parent / "v6"
+

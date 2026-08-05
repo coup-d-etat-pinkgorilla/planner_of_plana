@@ -13,6 +13,7 @@ import uuid
 from core.planning import GrowthPlan, StudentGoal
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, StudentGoalRecord, canonical_json
 from core.repository_merge import resolve_inventory_snapshot
+from core.v6_migration import V6MigrationError, load_v6_accounts
 
 
 STORE_VERSION = 1
@@ -317,6 +318,8 @@ class JsonRepository:
             profile_before = profile_path.read_bytes()
             tactical_path = self.root / "tactical" / f"{profile_id}.json"
             tactical_before = tactical_path.read_bytes() if tactical_path.exists() else None
+            scenario_path = self.root / "scenarios" / f"{profile_id}.json"
+            scenario_before = scenario_path.read_bytes() if scenario_path.exists() else None
             catalog["profiles"] = [item for item in catalog["profiles"] if item["profile_id"] != profile_id]
             if catalog["selected_profile_id"] == profile_id:
                 catalog["selected_profile_id"] = catalog["profiles"][0]["profile_id"] if catalog["profiles"] else None
@@ -325,11 +328,15 @@ class JsonRepository:
                 profile_path.unlink()
                 if tactical_before is not None:
                     tactical_path.unlink()
+                if scenario_before is not None:
+                    scenario_path.unlink()
             except Exception as error:
                 self._restore(self.catalog_path, catalog_before)
                 self._restore(profile_path, profile_before)
                 if tactical_before is not None:
                     self._restore(tactical_path, tactical_before)
+                if scenario_before is not None:
+                    self._restore(scenario_path, scenario_before)
                 if isinstance(error, RepositoryError):
                     raise
                 raise RepositoryError("persistence_failed", "profile deletion failed", retryable=True) from error
@@ -357,8 +364,91 @@ class JsonRepository:
         return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"goals:{canonical_json(canonical)}", lambda _c, p: p.__setitem__("goals", canonical))
 
     @staticmethod
-    def migration_preview(_source_path: str, _profile_id: str) -> dict[str, Any]:
-        raise RepositoryError("migration_not_supported", "v6 migration is not supported in P4")
+    def migration_preview(source_path: str) -> dict[str, Any]:
+        try:
+            accounts = load_v6_accounts(Path(source_path))
+        except V6MigrationError as error:
+            raise RepositoryError("migration_source_invalid", str(error)) from error
+        return {"accounts": [account.preview() for account in accounts]}
+
+    def import_v6_profile(self, source_path: str, source_profile_key: str) -> dict[str, Any]:
+        try:
+            accounts = load_v6_accounts(Path(source_path))
+        except V6MigrationError as error:
+            raise RepositoryError("migration_source_invalid", str(error)) from error
+        account = next((item for item in accounts if item.profile_key == source_profile_key), None)
+        if account is None:
+            raise RepositoryError("migration_source_invalid", "v6 profile was not found")
+
+        descriptor = self._lock()
+        profile_path: Path | None = None
+        catalog_before: bytes | None = None
+        try:
+            catalog = self._catalog()
+            catalog_before = self.catalog_path.read_bytes() if self.catalog_path.exists() else None
+            existing_names = {str(item["display_name"]).casefold() for item in catalog["profiles"]}
+            base_name = account.display_name
+            display_name = base_name
+            if display_name.casefold() in existing_names:
+                display_name = f"{base_name} (v6 가져오기)"
+                suffix = 2
+                while display_name.casefold() in existing_names:
+                    display_name = f"{base_name} (v6 가져오기 {suffix})"
+                    suffix += 1
+            existing_ids = {str(item["profile_id"]) for item in catalog["profiles"]}
+            profile_id = ""
+            for _attempt in range(16):
+                candidate = self._id_factory()[:24].lower()
+                if re.fullmatch(r"[0-9a-f]{24}", candidate) is None:
+                    raise RepositoryError("persistence_failed", "profile ID factory returned an invalid ID")
+                if candidate not in existing_ids and not self._profile_path(candidate).exists():
+                    profile_id = candidate
+                    break
+            if not profile_id:
+                raise RepositoryError("persistence_failed", "could not allocate a unique profile ID")
+            profile = {
+                "version": STORE_VERSION,
+                "profile_id": profile_id,
+                "revision": 0,
+                "students": list(account.students),
+                "inventory": account.inventory,
+                "goals": account.goals,
+                "idempotency": {},
+            }
+            summary = {
+                "profile_id": profile_id,
+                "display_name": display_name,
+                "avatar_student_id": account.avatar_student_id,
+                "revision": 0,
+            }
+            catalog["profiles"].append(summary)
+            catalog["selected_profile_id"] = profile_id
+            profile_path = self._profile_path(profile_id)
+            self._atomic_write(profile_path, profile)
+            try:
+                self._atomic_write(self.catalog_path, catalog)
+            except Exception:
+                profile_path.unlink(missing_ok=True)
+                raise
+            return {
+                "profile": {**summary, "selected": True},
+                "student_count": len(account.students),
+                "inventory_count": len(account.inventory["entries"]),
+                "goal_count": len(account.goals["goals"]),
+                "warnings": list(account.warnings),
+            }
+        except Exception as error:
+            if catalog_before is not None:
+                self.catalog_path.write_bytes(catalog_before)
+            elif self.catalog_path.exists():
+                self.catalog_path.unlink(missing_ok=True)
+            if profile_path is not None:
+                profile_path.unlink(missing_ok=True)
+            if isinstance(error, RepositoryError):
+                raise
+            raise RepositoryError("persistence_failed", "v6 profile import failed", details={"reason": type(error).__name__}) from error
+        finally:
+            self._unlock(descriptor)
 
     @staticmethod
     def resolve_inventory_input(sqlite_rows: list[dict[str, Any]] | None, json_snapshot: dict[str, dict[str, Any]] | list[dict[str, Any]] | None, *, sqlite_error: str | None = None) -> dict[str, Any]:

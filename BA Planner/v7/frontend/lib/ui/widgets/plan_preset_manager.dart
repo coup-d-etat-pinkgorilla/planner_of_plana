@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
 import '../studio/preset_management_studio_layout.dart';
 import '../studio/section_template.dart';
@@ -208,7 +209,11 @@ class _PlanPresetManagerState extends State<PlanPresetManager>
     var previous = _baseline;
     final stages = <PlanElementStageDraft>[];
     for (var index = 0; index < preset.stages.length; index++) {
-      final targets = {...previous, ...preset.stages[index]};
+      final targets = normalizePlanningGrowthTargets(
+        {...previous, ...preset.stages[index]},
+        changedKeys: preset.stages[index].keys.toSet(),
+        hasFavoriteItem: false,
+      );
       stages.add(
         PlanElementStageDraft(
           id: _newStageId(),
@@ -289,14 +294,34 @@ class _PlanPresetManagerState extends State<PlanPresetManager>
         .clamp(math.max(contractMinimum, previous), maximum)
         .toInt();
     setState(() {
-      final selected = Map<String, int>.from(_stages[stageIndex].targets)
-        ..[key] = value;
+      final before = _stages[stageIndex].targets;
+      final selected = normalizePlanningGrowthTargets(
+        Map<String, int>.from(before)..[key] = value,
+        changedKeys: {key},
+        hasFavoriteItem: false,
+      );
+      final affectedKeys = {
+        for (final entry in selected.entries)
+          if (entry.value != before[entry.key]) entry.key,
+      };
       _stages[stageIndex] = _stages[stageIndex].copyWith(targets: selected);
       for (var index = stageIndex + 1; index < _stages.length; index++) {
-        if ((_stages[index].targets[key] ?? contractMinimum) >= value) continue;
-        final targets = Map<String, int>.from(_stages[index].targets)
-          ..[key] = value;
-        _stages[index] = _stages[index].copyWith(targets: targets);
+        final targets = Map<String, int>.from(_stages[index].targets);
+        var changed = false;
+        for (final affectedKey in affectedKeys) {
+          final required = selected[affectedKey]!;
+          if ((targets[affectedKey] ?? required) >= required) continue;
+          targets[affectedKey] = required;
+          changed = true;
+        }
+        if (!changed) continue;
+        _stages[index] = _stages[index].copyWith(
+          targets: normalizePlanningGrowthTargets(
+            targets,
+            changedKeys: affectedKeys,
+            hasFavoriteItem: false,
+          ),
+        );
       }
       _dirty = true;
     });
@@ -327,7 +352,10 @@ class _PlanPresetManagerState extends State<PlanPresetManager>
       id: id,
       name: name,
       isDefault: false,
-      stages: [for (final stage in _stages) stage.targets],
+      stages: [
+        for (final stage in _stages)
+          normalizePlanningGrowthTargets(stage.targets, hasFavoriteItem: false),
+      ],
     );
     final next = <PlanElementPreset>[];
     var replaced = false;

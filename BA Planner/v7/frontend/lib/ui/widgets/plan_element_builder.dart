@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
 import '../studio/plan_starter_studio_layout.dart';
 import '../studio/preset_element_studio_layout.dart';
@@ -19,6 +20,9 @@ import 'plan_phase_editor.dart' show phaseEditorPathSurfaceTexture;
 import 'scroll_viewport_fog.dart';
 import 'section_template_surface.dart';
 import 'student_section_layout.dart';
+
+export '../models/planning_growth_rules.dart'
+    show planElementTargetMaximums, planElementTargetMinimums;
 
 const planElementBuilderSectionOpacity = 0.76;
 const planElementBuilderGap = 12.0;
@@ -52,50 +56,6 @@ const planElementBuilderSectionMotions = <String, SectionMotionSpec>{
 
 const planStarterPortraitLeftFraction = 0.13277;
 
-const planElementTargetMaximums = <String, int>{
-  'level': 90,
-  'bond_rank': 100,
-  'student_star': 5,
-  'weapon_level': 60,
-  'weapon_star': 4,
-  'ex_skill': 5,
-  'skill1': 10,
-  'skill2': 10,
-  'skill3': 10,
-  'equip1_tier': 10,
-  'equip2_tier': 10,
-  'equip3_tier': 10,
-  'equip1_level': 70,
-  'equip2_level': 70,
-  'equip3_level': 70,
-  'equip4_tier': 2,
-  'stat_hp': 25,
-  'stat_atk': 25,
-  'stat_heal': 25,
-};
-
-const planElementTargetMinimums = <String, int>{
-  'level': 1,
-  'bond_rank': 1,
-  'student_star': 1,
-  'weapon_level': 0,
-  'weapon_star': 0,
-  'ex_skill': 1,
-  'skill1': 1,
-  'skill2': 1,
-  'skill3': 1,
-  'equip1_tier': 0,
-  'equip2_tier': 0,
-  'equip3_tier': 0,
-  'equip1_level': 0,
-  'equip2_level': 0,
-  'equip3_level': 0,
-  'equip4_tier': 0,
-  'stat_hp': 0,
-  'stat_atk': 0,
-  'stat_heal': 0,
-};
-
 /// Presets are user-created in the in-memory preset manager.
 ///
 /// v7 intentionally ships without built-in presets. Persistence is deferred
@@ -122,7 +82,7 @@ Map<String, int> planElementCurrentTargets(PlanningStudentSeed seed) {
   }
 
   if (!seed.owned) {
-    return {
+    return normalizePlanningGrowthTargets({
       'level': 1,
       'bond_rank': 1,
       'student_star': initialStar(),
@@ -142,9 +102,9 @@ Map<String, int> planElementCurrentTargets(PlanningStudentSeed seed) {
       'stat_hp': 0,
       'stat_atk': 0,
       'stat_heal': 0,
-    };
+    }, hasFavoriteItem: planStudentHasFavoriteItemMetadata(seed.metadata));
   }
-  return {
+  return normalizePlanningGrowthTargets({
     'level': value('level', 1),
     'bond_rank': value('bond_rank', 1),
     'student_star': value('student_star', 1),
@@ -164,7 +124,7 @@ Map<String, int> planElementCurrentTargets(PlanningStudentSeed seed) {
     'stat_hp': value('stat_hp', 0),
     'stat_atk': value('stat_atk', 0),
     'stat_heal': value('stat_heal', 0),
-  };
+  }, hasFavoriteItem: planStudentHasFavoriteItemMetadata(seed.metadata));
 }
 
 String planElementTargetSummary(Map<String, int> target) {
@@ -221,6 +181,37 @@ Path planPresetListContainerPath(Size canvasSize) {
     radius: 10,
   );
   return Path.combine(PathOperation.intersect, raw, sectionPath);
+}
+
+Path planPresetLoaderContainerPath(Size canvasSize) {
+  final sectionPath = planStarterSectionPath(canvasSize, 'element-5');
+  final raw = buildRoundedSectionPolygon(
+    planPresetLoaderContainerVertices(canvasSize),
+    radius: 10,
+  );
+  return Path.combine(PathOperation.intersect, raw, sectionPath);
+}
+
+List<Offset> planPresetLoaderContainerVertices(Size canvasSize) {
+  const normalGap = planElementBuilderGap;
+  const headerHeight = 48.0;
+  final sectionBounds = planStarterSectionPath(
+    canvasSize,
+    'element-5',
+  ).getBounds();
+  final tangent = math.tan(80 * math.pi / 180);
+  final railInset = normalGap / math.sin(80 * math.pi / 180);
+  final top = sectionBounds.top + headerHeight;
+  final bottom = sectionBounds.bottom - normalGap;
+  final leftRail = sectionBounds.left + railInset + bottom / tangent;
+  final rightRail =
+      sectionBounds.right + sectionBounds.top / tangent - railInset;
+  return [
+    Offset(leftRail - top / tangent, top),
+    Offset(rightRail - top / tangent, top),
+    Offset(rightRail - bottom / tangent, bottom),
+    Offset(leftRail - bottom / tangent, bottom),
+  ];
 }
 
 List<Offset> planPresetListContainerVertices(Size canvasSize) {
@@ -765,6 +756,8 @@ class _PlanElementBuilderState extends State<PlanElementBuilder>
   );
 
   Map<String, int> get _current => planElementCurrentTargets(widget.seed);
+  bool get _hasFavoriteItem =>
+      planStudentHasFavoriteItemMetadata(widget.seed.metadata);
   List<PlanElementPreset> get _presets =>
       widget.presets ?? defaultPlanElementPresets;
 
@@ -843,7 +836,12 @@ class _PlanElementBuilderState extends State<PlanElementBuilder>
           ]
         : [
             for (final stage in widget.initialStages)
-              stage.copyWith(targets: Map<String, int>.from(stage.targets)),
+              stage.copyWith(
+                targets: normalizePlanningGrowthTargets(
+                  stage.targets,
+                  hasFavoriteItem: _hasFavoriteItem,
+                ),
+              ),
           ];
     final usedStageIds = _stages.map((stage) => stage.id).toSet();
     while (usedStageIds.contains(
@@ -924,10 +922,15 @@ class _PlanElementBuilderState extends State<PlanElementBuilder>
           entry.value,
         );
       }
-      final effective = {
+      final effectiveRaw = {
         for (final entry in expanded.entries)
           entry.key: math.max(entry.value, _current[entry.key] ?? entry.value),
       };
+      final effective = normalizePlanningGrowthTargets(
+        effectiveRaw,
+        changedKeys: sparse.keys.toSet(),
+        hasFavoriteItem: _hasFavoriteItem,
+      );
       if (_hasIncreaseOver(effective, previous)) {
         next.add(
           PlanElementStageDraft(
@@ -973,15 +976,34 @@ class _PlanElementBuilderState extends State<PlanElementBuilder>
         _stages[stageIndex].targets,
       );
       selectedTargets[key] = value;
-      _stages[stageIndex] = _stages[stageIndex].copyWith(
-        targets: selectedTargets,
+      final normalized = normalizePlanningGrowthTargets(
+        selectedTargets,
+        changedKeys: {key},
+        hasFavoriteItem: _hasFavoriteItem,
       );
+      final affectedKeys = {
+        for (final entry in normalized.entries)
+          if (entry.value != _stages[stageIndex].targets[entry.key]) entry.key,
+      };
+      _stages[stageIndex] = _stages[stageIndex].copyWith(targets: normalized);
       for (var index = stageIndex + 1; index < _stages.length; index++) {
-        if ((_stages[index].targets[key] ?? minimum) >= value) continue;
         final targets = Map<String, int>.from(_stages[index].targets);
-        targets[key] = value;
-        _stages[index] = _stages[index].copyWith(targets: targets);
-        propagated.add('${_stages[index].id}:$key');
+        var changed = false;
+        for (final affectedKey in affectedKeys) {
+          final required = normalized[affectedKey]!;
+          if ((targets[affectedKey] ?? required) >= required) continue;
+          targets[affectedKey] = required;
+          propagated.add('${_stages[index].id}:$affectedKey');
+          changed = true;
+        }
+        if (!changed) continue;
+        _stages[index] = _stages[index].copyWith(
+          targets: normalizePlanningGrowthTargets(
+            targets,
+            changedKeys: affectedKeys,
+            hasFavoriteItem: _hasFavoriteItem,
+          ),
+        );
       }
       _propagatedFields
         ..clear()
@@ -1238,54 +1260,46 @@ class _PlanElementBuilderState extends State<PlanElementBuilder>
 
   Widget _buildPresetPanel(Size canvasSize) {
     final bounds = planStarterSectionRect(canvasSize, 'element-5');
+    final containerPath = planPresetLoaderContainerPath(canvasSize);
+    final viewportRect = containerPath.getBounds();
+    final localContainerPath = containerPath.shift(-viewportRect.topLeft);
     return Stack(
       children: [
+        Positioned(
+          left: bounds.left + 16,
+          top: bounds.top + 13,
+          child: Text(
+            '프리셋 불러오기',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+        IgnorePointer(
+          child: CustomPaint(
+            key: const ValueKey('plan-starter-preset-container-foundation'),
+            painter: _PlanPresetListContainerPainter(containerPath),
+          ),
+        ),
         Positioned.fromRect(
-          rect: bounds,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 44, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  '프리셋 불러오기',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 10),
-                for (final preset in _presets)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 7),
-                    child: OutlinedButton(
-                      key: ValueKey('plan-starter-preset-${preset.id}'),
-                      onPressed: () => _loadPreset(preset),
-                      style: OutlinedButton.styleFrom(
-                        alignment: Alignment.centerLeft,
-                        foregroundColor: _selectedPresetId == preset.id
-                            ? AppColors.primary
-                            : AppColors.text,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(child: Text(preset.name)),
-                          if (preset.isDefault)
-                            const Text(
-                              '기본',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 11,
-                              ),
-                            ),
-                        ],
+          key: const ValueKey('plan-starter-preset-list-host'),
+          rect: viewportRect,
+          child: ClipPath(
+            clipper: _FixedPathClipper(localContainerPath),
+            child: _presets.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text(
+                        '저장된 프리셋이 없습니다.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppColors.textMuted),
                       ),
                     ),
+                  )
+                : _PlanPresetLoaderDiagonalList(
+                    presets: _presets,
+                    selectedPresetId: _selectedPresetId,
+                    onSelected: _loadPreset,
                   ),
-                if (_presets.isEmpty)
-                  const Text(
-                    '저장된 프리셋이 없습니다.',
-                    style: TextStyle(color: AppColors.textMuted),
-                  ),
-              ],
-            ),
           ),
         ),
       ],
@@ -1989,6 +2003,289 @@ class _PlanStarterSideActionPainter extends CustomPainter {
   @override
   bool shouldRepaint(_PlanStarterSideActionPainter oldDelegate) =>
       oldDelegate.path != path || oldDelegate.enabled != enabled;
+}
+
+class _PlanPresetLoaderDiagonalList extends StatefulWidget {
+  const _PlanPresetLoaderDiagonalList({
+    required this.presets,
+    required this.selectedPresetId,
+    required this.onSelected,
+  });
+
+  final List<PlanElementPreset> presets;
+  final String? selectedPresetId;
+  final ValueChanged<PlanElementPreset> onSelected;
+
+  @override
+  State<_PlanPresetLoaderDiagonalList> createState() =>
+      _PlanPresetLoaderDiagonalListState();
+}
+
+class _PlanPresetLoaderDiagonalListState
+    extends State<_PlanPresetLoaderDiagonalList> {
+  static const _verticalInset = 8.0;
+  static const _normalGap = 10.0;
+  static const _scrollbarReserve = 14.0;
+  static const _rowHeight = 46.0;
+  static const _rowGap = 8.0;
+  final ScrollController _controller = ScrollController();
+  bool _scrollCorrectionScheduled = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _scheduleScrollCorrection() {
+    if (_scrollCorrectionScheduled) return;
+    _scrollCorrectionScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollCorrectionScheduled = false;
+      if (!mounted || !_controller.hasClients) return;
+      final position = _controller.position;
+      final corrected = _controller.offset
+          .clamp(position.minScrollExtent, position.maxScrollExtent)
+          .toDouble();
+      if ((_controller.offset - corrected).abs() > 0.01) {
+        _controller.jumpTo(corrected);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final contentHeight =
+          _verticalInset * 2 +
+          widget.presets.length * _rowHeight +
+          math.max(0, widget.presets.length - 1) * _rowGap;
+      return AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          final rawScroll = _controller.hasClients ? _controller.offset : 0.0;
+          final scroll = planStageEffectiveScrollOffset(
+            rawOffset: rawScroll,
+            contentHeight: contentHeight,
+            viewportHeight: constraints.maxHeight,
+          );
+          if ((rawScroll - scroll).abs() > 0.01) {
+            _scheduleScrollCorrection();
+          }
+          final maxScroll = math.max(
+            0.0,
+            contentHeight - constraints.maxHeight,
+          );
+          final fogVisibility = scrollViewportFogVisibility(
+            minScrollExtent: 0,
+            maxScrollExtent: maxScroll,
+            pixels: scroll,
+          );
+          final tangent = math.tan(80 * math.pi / 180);
+          final horizontalGap = _normalGap / math.sin(80 * math.pi / 180);
+          final rowWidth = math.max(
+            1.0,
+            constraints.maxWidth -
+                (constraints.maxHeight + _rowHeight) / tangent -
+                horizontalGap * 2 -
+                _scrollbarReserve,
+          );
+          final rows = <Widget>[];
+          var top = _verticalInset;
+          for (final preset in widget.presets) {
+            final viewportTop = top - scroll;
+            final left =
+                horizontalGap + (constraints.maxHeight - viewportTop) / tangent;
+            rows.add(
+              Positioned(
+                left: left,
+                top: top,
+                width: rowWidth,
+                height: _rowHeight,
+                child: _PlanPresetLoaderRow(
+                  key: ValueKey('plan-starter-preset-${preset.id}'),
+                  preset: preset,
+                  selected: widget.selectedPresetId == preset.id,
+                  onPressed: () => widget.onSelected(preset),
+                ),
+              ),
+            );
+            top += _rowHeight + _rowGap;
+          }
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              ScrollConfiguration(
+                behavior: ScrollConfiguration.of(
+                  context,
+                ).copyWith(scrollbars: false),
+                child: SingleChildScrollView(
+                  key: const ValueKey('plan-starter-preset-scroll'),
+                  controller: _controller,
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    height: contentHeight,
+                    child: Stack(clipBehavior: Clip.none, children: rows),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: ScrollViewportFog(
+                  key: const ValueKey('plan-starter-preset-fog'),
+                  keyPrefix: 'plan-starter-preset-viewport-fog',
+                  showTop: fogVisibility.showTop,
+                  showBottom: fogVisibility.showBottom,
+                ),
+              ),
+              IgnorePointer(
+                child: CustomPaint(
+                  key: const ValueKey('plan-starter-preset-diagonal-scrollbar'),
+                  painter: _PlanPresetDiagonalScrollbarPainter(
+                    offset: scroll,
+                    contentExtent: contentHeight,
+                  ),
+                ),
+              ),
+              if (maxScroll > 0)
+                Positioned(
+                  left: math.max(
+                    0,
+                    constraints.maxWidth - constraints.maxHeight / tangent - 24,
+                  ),
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: GestureDetector(
+                    key: const ValueKey('plan-starter-preset-scrollbar-drag'),
+                    behavior: HitTestBehavior.translucent,
+                    onVerticalDragUpdate: (details) {
+                      const trackInset = 10.0;
+                      final trackHeight = math.max(
+                        1.0,
+                        constraints.maxHeight - trackInset * 2,
+                      );
+                      final handleHeight = math.max(
+                        28.0,
+                        trackHeight * constraints.maxHeight / contentHeight,
+                      );
+                      final travel = math.max(1.0, trackHeight - handleHeight);
+                      _controller.jumpTo(
+                        (_controller.offset +
+                                details.delta.dy * maxScroll / travel)
+                            .clamp(0.0, maxScroll),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+class _PlanPresetLoaderRow extends StatelessWidget {
+  const _PlanPresetLoaderRow({
+    super.key,
+    required this.preset,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final PlanElementPreset preset;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final path = _bilateralPath(constraints.biggest, radius: 8);
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          CustomPaint(
+            painter: _PlanPresetLoaderRowPainter(
+              path: path,
+              selected: selected,
+            ),
+          ),
+          ClipPath(
+            clipper: _FixedPathClipper(path),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onPressed,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          preset.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: selected
+                                ? AppColors.primary
+                                : AppColors.text,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      if (preset.isDefault)
+                        const Text(
+                          '기본',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 11,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+class _PlanPresetLoaderRowPainter extends CustomPainter {
+  const _PlanPresetLoaderRowPainter({
+    required this.path,
+    required this.selected,
+  });
+
+  final Path path;
+  final bool selected;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = selected
+            ? AppColors.primaryMuted.withValues(alpha: 0.76)
+            : AppColors.surfaceRaised.withValues(alpha: 0.76),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = selected ? AppColors.primary : AppColors.outline
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = selected ? 1.5 : 1,
+    );
+  }
+
+  @override
+  bool? hitTest(Offset position) => path.contains(position);
+
+  @override
+  bool shouldRepaint(_PlanPresetLoaderRowPainter oldDelegate) =>
+      oldDelegate.path != path || oldDelegate.selected != selected;
 }
 
 class _PlanPresetListContainerPainter extends CustomPainter {

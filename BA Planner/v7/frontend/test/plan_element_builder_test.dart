@@ -79,6 +79,7 @@ Future<void> _pumpBuilder(
   List<PlanElementStageDraft> initialStages = const [],
   ValueChanged<List<PlanElementStageDraft>>? onConfirm,
   PlanningStudentSeed? seed,
+  List<PlanElementPreset>? presets,
   bool hasPlanElements = false,
   List<PlanElementUnassignedItem> unassignedItems = const [],
   void Function(String id, String name)? onRenameUnassigned,
@@ -95,6 +96,7 @@ Future<void> _pumpBuilder(
         body: PlanElementBuilder(
           seed: seed ?? _seed(),
           initialStages: initialStages,
+          presets: presets,
           unassignedItems: unassignedItems,
           hasPlanElements: hasPlanElements,
           onConfirm: onConfirm ?? (_) {},
@@ -352,6 +354,30 @@ void main() {
     );
   });
 
+  test('preset loader owns a bilateral container inside Section 5', () {
+    const canvasSize = Size(2560, 1392);
+    final sectionPath = planStarterSectionPath(canvasSize, 'element-5');
+    final containerPath = planPresetLoaderContainerPath(canvasSize);
+    final vertices = planPresetLoaderContainerVertices(canvasSize);
+    final tangent = math.tan(80 * math.pi / 180);
+    final outside = Path.combine(
+      PathOperation.difference,
+      containerPath,
+      sectionPath,
+    );
+
+    expect(outside.computeMetrics(), isEmpty);
+    expect(vertices, hasLength(4));
+    expect(
+      vertices.first.dx - vertices.last.dx,
+      closeTo((vertices.last.dy - vertices.first.dy) / tangent, 0.001),
+    );
+    expect(
+      vertices[1].dx - vertices[2].dx,
+      closeTo((vertices[2].dy - vertices[1].dy) / tangent, 0.001),
+    );
+  });
+
   test('stage cards follow the 80 degree rail while scrolling', () {
     const viewportHeight = 900.0;
     const itemTop = 180.0;
@@ -373,6 +399,49 @@ void main() {
 
     expect(after - before, closeTo(120 / math.tan(80 * math.pi / 180), 0.001));
   });
+
+  testWidgets(
+    'preset loader rows follow their 80 degree rail while scrolling',
+    (tester) async {
+      final presets = [
+        for (var index = 0; index < 10; index++)
+          PlanElementPreset(
+            id: 'loader-$index',
+            name: '프리셋 $index',
+            isDefault: false,
+            stages: const [
+              {'level': 30},
+            ],
+          ),
+      ];
+      await _pumpBuilder(tester, presets: presets);
+
+      expect(
+        find.byKey(const ValueKey('plan-starter-preset-container-foundation')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('plan-starter-preset-diagonal-scrollbar')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('plan-starter-preset-fog')),
+        findsOneWidget,
+      );
+
+      const firstKey = ValueKey('plan-starter-preset-loader-0');
+      final before = tester.getTopLeft(find.byKey(firstKey));
+      await tester.drag(
+        find.byKey(const ValueKey('plan-starter-preset-scroll')),
+        const Offset(0, -120),
+      );
+      await tester.pumpAndSettle();
+      final after = tester.getTopLeft(find.byKey(firstKey));
+      final delta = after - before;
+      expect(delta.dy, lessThan(0));
+      expect(delta.dx, closeTo(-delta.dy / math.tan(80 * math.pi / 180), 1));
+    },
+  );
 
   test('unassigned rows follow the same 80 degree scroll rail', () {
     final before = planUnassignedRowLeft(
@@ -1571,7 +1640,7 @@ void main() {
     final status = tester.widget<StudentStarStatus>(
       find.descendant(of: secondCard, matching: find.byType(StudentStarStatus)),
     );
-    expect(status.studentStars, 4);
+    expect(status.studentStars, 5);
     expect(status.weaponStars, 1);
     expect(status.targetStudentStars, 5);
     expect(status.targetWeaponStars, 3);
@@ -1756,6 +1825,66 @@ void main() {
       );
     },
   );
+
+  testWidgets('preset clamps an explicit T9 equipment level to the v6 cap', (
+    tester,
+  ) async {
+    List<PlanElementStageDraft>? confirmed;
+    await _pumpBuilder(
+      tester,
+      presets: [
+        PlanElementPreset(
+          id: 'invalid-equipment-pair',
+          name: 'Invalid equipment pair',
+          isDefault: false,
+          stages: const [
+            {'equip1_tier': 9, 'equip1_level': 70},
+          ],
+        ),
+      ],
+      onConfirm: (value) => confirmed = value,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('plan-starter-preset-invalid-equipment-pair')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
+    await tester.pump();
+
+    expect(confirmed?.single.targets['equip1_tier'], 9);
+    expect(confirmed?.single.targets['equip1_level'], 65);
+  });
+
+  testWidgets('level-only preset raises equipment tier to the required tier', (
+    tester,
+  ) async {
+    List<PlanElementStageDraft>? confirmed;
+    await _pumpBuilder(
+      tester,
+      presets: [
+        PlanElementPreset(
+          id: 'equipment-level-only',
+          name: 'Equipment level only',
+          isDefault: false,
+          stages: const [
+            {'equip1_level': 70},
+          ],
+        ),
+      ],
+      onConfirm: (value) => confirmed = value,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('plan-starter-preset-equipment-level-only')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
+    await tester.pump();
+
+    expect(confirmed?.single.targets['equip1_tier'], 10);
+    expect(confirmed?.single.targets['equip1_level'], 70);
+  });
 
   testWidgets(
     'builder deletes only the selected unassigned stage and return preserves the rest',

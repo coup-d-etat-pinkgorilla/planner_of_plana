@@ -40,6 +40,46 @@ class RepositoryProfile {
   }
 }
 
+class RepositoryV6AccountPreview {
+  RepositoryV6AccountPreview.fromWire(Map<String, dynamic> value)
+    : sourceProfileKey = value['source_profile_key'] as String,
+      displayName = value['display_name'] as String,
+      avatarStudentId = value['avatar_student_id'] as String,
+      studentCount = value['student_count'] as int,
+      inventoryCount = value['inventory_count'] as int,
+      goalCount = value['goal_count'] as int,
+      warnings = List<String>.unmodifiable(
+        (value['warnings'] as List).cast<String>(),
+      );
+
+  final String sourceProfileKey;
+  final String displayName;
+  final String avatarStudentId;
+  final int studentCount;
+  final int inventoryCount;
+  final int goalCount;
+  final List<String> warnings;
+}
+
+class RepositoryV6ImportResult {
+  RepositoryV6ImportResult.fromWire(Map<String, dynamic> value)
+    : profile = RepositoryProfile.fromWire(
+        Map<String, dynamic>.from(value['profile'] as Map),
+      ),
+      studentCount = value['student_count'] as int,
+      inventoryCount = value['inventory_count'] as int,
+      goalCount = value['goal_count'] as int,
+      warnings = List<String>.unmodifiable(
+        (value['warnings'] as List).cast<String>(),
+      );
+
+  final RepositoryProfile profile;
+  final int studentCount;
+  final int inventoryCount;
+  final int goalCount;
+  final List<String> warnings;
+}
+
 bool _exact(Map<String, dynamic> value, Set<String> keys) =>
     value.keys.toSet().containsAll(keys) && keys.containsAll(value.keys);
 
@@ -389,10 +429,23 @@ bool isValidRepositorySuccessPayload(
       case 'repository.state.get':
         RepositoryState.fromWire(payload);
         return true;
+      case 'repository.migration.preview':
+        if (!_exact(payload, {'accounts'}) || payload['accounts'] is! List) {
+          return false;
+        }
+        for (final item in payload['accounts'] as List) {
+          RepositoryV6AccountPreview.fromWire(
+            _wireMap(item, 'v6 account preview'),
+          );
+        }
+        return true;
+      case 'repository.migration.import':
+        RepositoryV6ImportResult.fromWire(payload);
+        return true;
       default:
         return false;
     }
-  } on FormatException {
+  } on Object {
     return false;
   }
 }
@@ -425,6 +478,7 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         'corrupt_data',
         'migration_required',
         'migration_not_supported',
+        'migration_source_invalid',
         'persistence_failed',
         'unknown_method',
       };
@@ -521,15 +575,15 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         }
         return true;
       case 'repository.migration.preview':
-        return _exact(payload, {'source_path', 'profile_id'}) &&
-            payload['source_path'] is String &&
-            (payload['source_path'] as String).isNotEmpty &&
-            payload['profile_id'] is String &&
-            RegExp(r'^[0-9a-f]{24}$').hasMatch(payload['profile_id'] as String);
+        return payload.isEmpty;
+      case 'repository.migration.import':
+        return _exact(payload, {'source_profile_key'}) &&
+            payload['source_profile_key'] is String &&
+            (payload['source_profile_key'] as String).isNotEmpty;
       default:
         return false;
     }
-  } on FormatException {
+  } on Object {
     return false;
   }
 }
@@ -583,4 +637,6 @@ abstract interface class RepositoryService {
     int expectedRevision,
     String idempotencyKey,
   );
+  Future<List<RepositoryV6AccountPreview>> previewV6Accounts();
+  Future<RepositoryV6ImportResult> importV6Account(String sourceProfileKey);
 }

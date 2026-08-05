@@ -13,12 +13,14 @@ class PlanningPage extends StatelessWidget {
     this.initialSeed,
     this.initialPresets = const [],
     this.active = true,
+    this.loadRepositoryPlan = false,
   });
 
   final AppService service;
   final PlanningStudentSeed? initialSeed;
   final List<PlanElementPreset> initialPresets;
   final bool active;
+  final bool loadRepositoryPlan;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +33,7 @@ class PlanningPage extends StatelessWidget {
           active: active,
           initialSeed: initialSeed,
           initialPresets: initialPresets,
+          loadRepositoryPlan: loadRepositoryPlan,
         ),
       ),
     );

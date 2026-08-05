@@ -8,6 +8,7 @@ import 'app_service.dart';
 import 'backend_process.dart';
 import 'diagnostics_service.dart';
 import 'repository_service.dart';
+import 'scenario_service.dart';
 import 'tactical_service.dart';
 import 'tactical_v2_service.dart';
 
@@ -92,6 +93,8 @@ class PlanningProtocolClient {
     'planning.student.catalog': {'invalid_payload', 'metadata_lookup_failed'},
     'planning.plan.validate': {'invalid_payload'},
     'planning.plan.calculate': {'invalid_payload', 'calculation_failed'},
+    'planning.document.calculate': {'invalid_payload', 'calculation_failed'},
+    'planning.scenario.compare': {'invalid_payload', 'calculation_failed'},
     'planning.inventory.catalog': {
       'invalid_payload',
       'inventory_catalog_failed',
@@ -110,6 +113,8 @@ class PlanningProtocolClient {
       'corrupt_data',
       'migration_required',
       'migration_not_supported',
+      'migration_source_invalid',
+      'scenario_not_found',
       'persistence_failed',
       'import_source_unreadable',
       'import_source_invalid',
@@ -428,6 +433,11 @@ class PlanningProtocolClient {
             payload['plan'] is Map,
       'planning.plan.calculate' =>
         payload.keys.toSet().length == 1 && payload['totals'] is Map,
+      'planning.document.calculate' =>
+        payload.keys.toSet().length == 1 && payload['projection'] is Map,
+      'planning.scenario.compare' => _validScenarioComparison(payload),
+      _ when method.startsWith('repository.scenario.') =>
+        isValidScenarioSuccessPayload(method, payload),
       'planning.inventory.catalog' => _validInventoryCatalog(payload),
       'planning.plan.shortages' => _validInventoryShortages(payload),
       _ when method.startsWith('repository.') =>
@@ -442,6 +452,15 @@ class PlanningProtocolClient {
       ),
       _ => false,
     };
+  }
+
+  bool _validScenarioComparison(Map<String, dynamic> payload) {
+    try {
+      PlanningScenarioComparisonResult.fromWire(payload);
+      return true;
+    } on Object {
+      return false;
+    }
   }
 
   bool _validStudentCatalog(Map<String, dynamic> payload) {

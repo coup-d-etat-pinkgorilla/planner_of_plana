@@ -131,6 +131,69 @@ class _RepositoryProfilePanelState extends State<RepositoryProfilePanel> {
     }
   }
 
+  Future<void> _importV6() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final accounts = await _repository!.previewV6Accounts();
+      if (!mounted) return;
+      if (accounts.isEmpty) {
+        throw StateError('가져올 수 있는 v6 계정을 찾지 못했습니다.');
+      }
+      final selected = accounts.length == 1
+          ? accounts.single
+          : await showDialog<RepositoryV6AccountPreview>(
+              context: context,
+              builder: (context) => SimpleDialog(
+                title: const Text('v6 계정 가져오기'),
+                children: [
+                  for (final account in accounts)
+                    SimpleDialogOption(
+                      onPressed: () => Navigator.pop(context, account),
+                      child: Text(
+                        '${account.displayName} · 학생 ${account.studentCount} · '
+                        '인벤토리 ${account.inventoryCount} · 목표 ${account.goalCount}',
+                      ),
+                    ),
+                ],
+              ),
+            );
+      if (selected == null || !mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('v6 계정 복사'),
+          content: Text(
+            '${selected.displayName}\n\n'
+            '학생 ${selected.studentCount}명, 인벤토리 ${selected.inventoryCount}개, '
+            '계획 목표 ${selected.goalCount}개를 v7의 새 계정으로 복사합니다. '
+            'v6 원본은 변경하지 않습니다.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              key: const ValueKey('profile-v6-import-confirm'),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('복사'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+      await _repository!.importV6Account(selected.sourceProfileKey);
+      await _reload();
+    } catch (error) {
+      if (mounted) setState(() => _error = error.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_repository == null) return const SizedBox.shrink();
@@ -180,6 +243,12 @@ class _RepositoryProfilePanelState extends State<RepositoryProfilePanel> {
               tooltip: '프로필 만들기',
               onPressed: _loading ? null : _create,
               icon: const Icon(Icons.add),
+            ),
+            IconButton(
+              key: const ValueKey('profile-v6-import'),
+              tooltip: 'v6 계정 가져오기',
+              onPressed: _loading ? null : _importV6,
+              icon: const Icon(Icons.drive_file_move_outline),
             ),
             IconButton(
               key: const ValueKey('profile-rename'),

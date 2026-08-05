@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/scenario-protocol-v1.schema.json",
+  "title": "Profile-scoped scenario repository protocol v1",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" }
+  ],
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[0-9a-f]{24}$" },
+    "mutation": {
+      "type": "object",
+      "required": ["profile_id", "expected_revision", "idempotency_key"],
+      "properties": {
+        "profile_id": { "$ref": "#/$defs/id" },
+        "expected_revision": { "type": "integer", "minimum": 0 },
+        "idempotency_key": { "type": "string", "minLength": 1 }
+      }
+    },
+    "scenarioSummary": {
+      "type": "object",
+      "required": ["scenario_id", "revision", "name", "description", "base_profile_revision", "phase_count", "stage_count", "student_count", "created_at", "updated_at"],
+      "properties": {
+        "scenario_id": { "$ref": "#/$defs/id" },
+        "revision": { "type": "integer", "minimum": 0 },
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "base_profile_revision": { "type": "integer", "minimum": 0 },
+        "phase_count": { "type": "integer", "minimum": 0 },
+        "stage_count": { "type": "integer", "minimum": 0 },
+        "student_count": { "type": "integer", "minimum": 0 },
+        "created_at": { "type": "string", "minLength": 1 },
+        "updated_at": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "scenarioRecord": {
+      "type": "object",
+      "required": ["version", "scenario_id", "revision", "profile_id", "name", "description", "base_profile_revision", "document", "created_at", "updated_at"],
+      "properties": {
+        "version": { "const": 1 },
+        "scenario_id": { "$ref": "#/$defs/id" },
+        "revision": { "type": "integer", "minimum": 0 },
+        "profile_id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "base_profile_revision": { "type": "integer", "minimum": 0 },
+        "document": { "$ref": "planning-document-calculate-v1.schema.json#/$defs/document" },
+        "created_at": { "type": "string", "minLength": 1 },
+        "updated_at": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "request": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        {
+          "properties": {
+            "protocol": { "const": 1 },
+            "type": { "const": "request" },
+            "method": { "enum": ["repository.scenario.list", "repository.scenario.get", "repository.scenario.create", "repository.scenario.update", "repository.scenario.delete", "repository.scenario.duplicate"] }
+          }
+        },
+        {
+          "oneOf": [
+            { "properties": { "method": { "const": "repository.scenario.list" }, "payload": { "type": "object", "required": ["profile_id"], "properties": { "profile_id": { "$ref": "#/$defs/id" } }, "additionalProperties": false } } },
+            { "properties": { "method": { "const": "repository.scenario.get" }, "payload": { "type": "object", "required": ["profile_id", "scenario_id"], "properties": { "profile_id": { "$ref": "#/$defs/id" }, "scenario_id": { "$ref": "#/$defs/id" } }, "additionalProperties": false } } },
+            { "properties": { "method": { "const": "repository.scenario.create" }, "payload": { "allOf": [{ "$ref": "#/$defs/mutation" }, { "required": ["name", "description", "base_profile_revision", "document"], "properties": { "name": { "type": "string", "minLength": 1 }, "description": { "type": "string" }, "base_profile_revision": { "type": "integer", "minimum": 0 }, "document": { "$ref": "planning-document-calculate-v1.schema.json#/$defs/document" } } }], "unevaluatedProperties": false } } },
+            { "properties": { "method": { "const": "repository.scenario.update" }, "payload": { "allOf": [{ "$ref": "#/$defs/mutation" }, { "required": ["scenario_id", "expected_scenario_revision", "name", "description", "base_profile_revision", "document"], "properties": { "scenario_id": { "$ref": "#/$defs/id" }, "expected_scenario_revision": { "type": "integer", "minimum": 0 }, "name": { "type": "string", "minLength": 1 }, "description": { "type": "string" }, "base_profile_revision": { "type": "integer", "minimum": 0 }, "document": { "$ref": "planning-document-calculate-v1.schema.json#/$defs/document" } } }], "unevaluatedProperties": false } } },
+            { "properties": { "method": { "enum": ["repository.scenario.delete", "repository.scenario.duplicate"] }, "payload": { "allOf": [{ "$ref": "#/$defs/mutation" }, { "required": ["scenario_id", "expected_scenario_revision"], "properties": { "scenario_id": { "$ref": "#/$defs/id" }, "expected_scenario_revision": { "type": "integer", "minimum": 0 } } }], "unevaluatedProperties": false } } }
+          ]
+        }
+      ]
+    },
+    "error": {
+      "type": "object",
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": ["code", "message", "retryable"],
+          "properties": {
+            "code": { "enum": ["invalid_payload", "profile_not_found", "scenario_not_found", "revision_conflict", "idempotency_conflict", "repository_busy", "corrupt_data", "migration_required", "persistence_failed", "unknown_method"] },
+            "message": { "type": "string", "minLength": 1 },
+            "retryable": { "type": "boolean" },
+            "details": { "type": "object" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "response": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        {
+          "properties": {
+            "protocol": { "const": 1 },
+            "type": { "const": "response" },
+            "method": { "enum": ["repository.scenario.list", "repository.scenario.get", "repository.scenario.create", "repository.scenario.update", "repository.scenario.delete", "repository.scenario.duplicate"] }
+          }
+        },
+        {
+          "oneOf": [
+            { "properties": { "payload": { "$ref": "#/$defs/error" } } },
+            { "properties": { "method": { "const": "repository.scenario.list" }, "payload": { "type": "object", "required": ["profile_id", "revision", "current_profile_revision", "scenarios"], "properties": { "profile_id": { "$ref": "#/$defs/id" }, "revision": { "type": "integer", "minimum": 0 }, "current_profile_revision": { "type": "integer", "minimum": 0 }, "scenarios": { "type": "array", "items": { "$ref": "#/$defs/scenarioSummary" } } }, "additionalProperties": false } } },
+            { "properties": { "method": { "const": "repository.scenario.get" }, "payload": { "type": "object", "required": ["profile_id", "revision", "current_profile_revision", "scenario"], "properties": { "profile_id": { "$ref": "#/$defs/id" }, "revision": { "type": "integer", "minimum": 0 }, "current_profile_revision": { "type": "integer", "minimum": 0 }, "scenario": { "$ref": "#/$defs/scenarioRecord" } }, "additionalProperties": false } } },
+            { "properties": { "method": { "enum": ["repository.scenario.create", "repository.scenario.update", "repository.scenario.delete", "repository.scenario.duplicate"] }, "payload": { "type": "object", "required": ["revision", "scenario_id"], "properties": { "revision": { "type": "integer", "minimum": 1 }, "scenario_id": { "$ref": "#/$defs/id" } }, "additionalProperties": false } } }
+          ]
+        }
+      ]
+    }
+  }
+}

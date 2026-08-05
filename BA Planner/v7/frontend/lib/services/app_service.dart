@@ -424,6 +424,14 @@ abstract interface class AppService {
   Future<void> dispose();
 }
 
+abstract interface class PlanningDocumentService {
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  });
+}
+
 abstract interface class MockScenarioController {
   void setConnection(BackendConnection value);
 

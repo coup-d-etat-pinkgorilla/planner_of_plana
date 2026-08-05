@@ -8,6 +8,8 @@
     { "$ref": "#/$defs/studentCatalog" },
     { "$ref": "#/$defs/planValidate" },
     { "$ref": "#/$defs/planCalculate" },
+    { "$ref": "#/$defs/documentCalculate" },
+    { "$ref": "#/$defs/scenarioCompare" },
     { "$ref": "#/$defs/inventoryCatalog" },
     { "$ref": "#/$defs/planShortages" }
   ],
@@ -55,6 +57,8 @@
                   "planning.student.catalog",
                   "planning.plan.validate",
                   "planning.plan.calculate",
+                  "planning.document.calculate",
+                  "planning.scenario.compare",
                   "planning.inventory.catalog",
                   "planning.plan.shortages"
                 ]
@@ -152,6 +156,19 @@
         } }
       ]
     },
+    "documentCalculate": {
+      "allOf": [
+        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "properties": {
+            "method": { "const": "planning.document.calculate" },
+            "payload": { "properties": { "error": { "properties": {
+              "code": { "enum": ["invalid_payload", "calculation_failed"] }
+            } } } }
+          }
+        }
+      ]
+    },
     "planShortages": {
       "allOf": [
         { "$ref": "#/$defs/errorEnvelope" },
@@ -161,6 +178,19 @@
             "code": { "enum": ["invalid_payload", "shortage_calculation_failed"] }
           } } } }
         } }
+      ]
+    },
+    "scenarioCompare": {
+      "allOf": [
+        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "properties": {
+            "method": { "const": "planning.scenario.compare" },
+            "payload": { "properties": { "error": { "properties": {
+              "code": { "enum": ["invalid_payload", "calculation_failed"] }
+            } } } }
+          }
+        }
       ]
     }
   }

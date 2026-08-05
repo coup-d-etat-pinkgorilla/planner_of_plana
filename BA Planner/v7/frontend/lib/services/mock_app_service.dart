@@ -4,11 +4,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../ui/models/planning_models.dart';
 import 'app_service.dart';
 import 'diagnostics_service.dart';
 import 'mock_student_fixture.dart';
 import 'repository_service.dart';
 import 'scanner_service.dart';
+import 'scenario_service.dart';
 import 'tactical_service.dart';
 
 enum MockScannerScenario { completed, failed, reviewRequired, inventoryUnknown }
@@ -16,6 +18,8 @@ enum MockScannerScenario { completed, failed, reviewRequired, inventoryUnknown }
 class MockAppService
     implements
         AppService,
+        PlanningDocumentService,
+        PlanningScenarioRepositoryService,
         MockScenarioController,
         RepositoryService,
         ScannerService,
@@ -89,6 +93,10 @@ class MockAppService
   }
 
   List<StudentCatalogEntry>? _studentCatalog;
+
+  final Map<String, List<PlanningScenarioRecord>> _planningScenarios = {};
+  final Map<String, int> _planningScenarioRevisions = {};
+  int _nextPlanningScenarioId = 1;
 
   final MockScannerScenario scannerScenario;
   final bool fullStudentCatalog;
@@ -717,6 +725,246 @@ class MockAppService
   }
 
   @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async {
+    final phases = (document['phases'] as List<dynamic>? ?? const []);
+    final stageResults = <Map<String, dynamic>>[];
+    final phaseResults = <Map<String, dynamic>>[];
+    for (final rawPhase in phases) {
+      final phase = Map<String, dynamic>.from(rawPhase as Map);
+      final stages = (phase['stages'] as List<dynamic>? ?? const []);
+      final stageIds = <String>[];
+      for (final rawStage in stages) {
+        final stage = Map<String, dynamic>.from(rawStage as Map);
+        stageIds.add(stage['stage_id'] as String);
+        stageResults.add({
+          'stage_id': stage['stage_id'],
+          'phase_id': phase['phase_id'],
+          'student_id': stage['student_id'],
+          'name': stage['name'],
+          'cost': <String, dynamic>{},
+          'resources': <dynamic>[],
+        });
+      }
+      phaseResults.add({
+        'phase_id': phase['phase_id'],
+        'name': phase['name'],
+        'stage_ids': stageIds,
+        'cost': <String, dynamic>{},
+        'resources': <dynamic>[],
+      });
+    }
+    return {
+      'document_id': document['document_id'],
+      'kind': document['kind'],
+      'stage_results': stageResults,
+      'phase_results': phaseResults,
+      'overall': {'cost': <String, dynamic>{}, 'resources': <dynamic>[]},
+      'bottlenecks': <dynamic>[],
+      'warnings': <dynamic>[],
+    };
+  }
+
+  int _scenarioCollectionRevision(String profileId) =>
+      _planningScenarioRevisions[profileId] ?? 0;
+
+  int _profileRevision(String profileId) =>
+      _profiles.firstWhere((profile) => profile.id == profileId).revision;
+
+  PlanningScenarioSummary _scenarioSummary(PlanningScenarioRecord record) {
+    final studentIds = <String>{};
+    var stageCount = 0;
+    for (final phase in record.document.phases) {
+      stageCount += phase.stages.length;
+      studentIds.addAll(phase.stages.map((stage) => stage.studentId));
+    }
+    return PlanningScenarioSummary(
+      id: record.id,
+      revision: record.revision,
+      name: record.name,
+      description: record.description,
+      baseProfileRevision: record.baseProfileRevision,
+      phaseCount: record.document.phases.length,
+      stageCount: stageCount,
+      studentCount: studentIds.length,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    );
+  }
+
+  void _requireScenarioRevision(String profileId, int expectedRevision) {
+    if (_scenarioCollectionRevision(profileId) != expectedRevision) {
+      throw StateError('revision_conflict');
+    }
+  }
+
+  @override
+  Future<PlanningScenarioListResult> listScenarios(String profileId) async {
+    final scenarios = _planningScenarios[profileId] ?? const [];
+    return PlanningScenarioListResult(
+      profileId: profileId,
+      revision: _scenarioCollectionRevision(profileId),
+      currentProfileRevision: _profileRevision(profileId),
+      scenarios: List.unmodifiable(scenarios.map(_scenarioSummary)),
+    );
+  }
+
+  @override
+  Future<PlanningScenarioGetResult> getScenario(
+    String profileId,
+    String scenarioId,
+  ) async {
+    final scenario = (_planningScenarios[profileId] ?? const []).firstWhere(
+      (item) => item.id == scenarioId,
+    );
+    return PlanningScenarioGetResult(
+      profileId: profileId,
+      revision: _scenarioCollectionRevision(profileId),
+      currentProfileRevision: _profileRevision(profileId),
+      scenario: scenario,
+    );
+  }
+
+  @override
+  Future<PlanningScenarioMutationResult> createScenario({
+    required String profileId,
+    required int expectedRevision,
+    required String idempotencyKey,
+    required String name,
+    required String description,
+    required int baseProfileRevision,
+    required PlanningDocument document,
+  }) async {
+    _requireScenarioRevision(profileId, expectedRevision);
+    if (document.kind != PlanningDocumentKind.scenario) {
+      throw StateError('invalid_payload');
+    }
+    final now = DateTime.now().toUtc().toIso8601String();
+    final scenarioId = (_nextPlanningScenarioId++)
+        .toRadixString(16)
+        .padLeft(24, '0');
+    final record = PlanningScenarioRecord(
+      id: scenarioId,
+      revision: 0,
+      profileId: profileId,
+      name: name,
+      description: description,
+      baseProfileRevision: baseProfileRevision,
+      document: document,
+      createdAt: now,
+      updatedAt: now,
+    );
+    _planningScenarios[profileId] = <PlanningScenarioRecord>[
+      ...(_planningScenarios[profileId] ?? const <PlanningScenarioRecord>[]),
+      record,
+    ];
+    final revision = expectedRevision + 1;
+    _planningScenarioRevisions[profileId] = revision;
+    return PlanningScenarioMutationResult(
+      revision: revision,
+      scenarioId: scenarioId,
+    );
+  }
+
+  @override
+  Future<PlanningScenarioMutationResult> updateScenario({
+    required String profileId,
+    required String scenarioId,
+    required int expectedRevision,
+    required int expectedScenarioRevision,
+    required String idempotencyKey,
+    required String name,
+    required String description,
+    required int baseProfileRevision,
+    required PlanningDocument document,
+  }) async {
+    _requireScenarioRevision(profileId, expectedRevision);
+    final scenarios = <PlanningScenarioRecord>[
+      ...(_planningScenarios[profileId] ?? const <PlanningScenarioRecord>[]),
+    ];
+    final index = scenarios.indexWhere((item) => item.id == scenarioId);
+    final previous = scenarios[index];
+    if (previous.revision != expectedScenarioRevision) {
+      throw StateError('revision_conflict');
+    }
+    scenarios[index] = PlanningScenarioRecord(
+      id: scenarioId,
+      revision: expectedScenarioRevision + 1,
+      profileId: profileId,
+      name: name,
+      description: description,
+      baseProfileRevision: baseProfileRevision,
+      document: document,
+      createdAt: previous.createdAt,
+      updatedAt: DateTime.now().toUtc().toIso8601String(),
+    );
+    _planningScenarios[profileId] = scenarios;
+    final revision = expectedRevision + 1;
+    _planningScenarioRevisions[profileId] = revision;
+    return PlanningScenarioMutationResult(
+      revision: revision,
+      scenarioId: scenarioId,
+    );
+  }
+
+  @override
+  Future<PlanningScenarioMutationResult> deleteScenario({
+    required String profileId,
+    required String scenarioId,
+    required int expectedRevision,
+    required int expectedScenarioRevision,
+    required String idempotencyKey,
+  }) async {
+    _requireScenarioRevision(profileId, expectedRevision);
+    final scenarios = <PlanningScenarioRecord>[
+      ...(_planningScenarios[profileId] ?? const <PlanningScenarioRecord>[]),
+    ];
+    final index = scenarios.indexWhere((item) => item.id == scenarioId);
+    if (scenarios[index].revision != expectedScenarioRevision) {
+      throw StateError('revision_conflict');
+    }
+    scenarios.removeAt(index);
+    _planningScenarios[profileId] = scenarios;
+    final revision = expectedRevision + 1;
+    _planningScenarioRevisions[profileId] = revision;
+    return PlanningScenarioMutationResult(
+      revision: revision,
+      scenarioId: scenarioId,
+    );
+  }
+
+  @override
+  Future<PlanningScenarioMutationResult> duplicateScenario({
+    required String profileId,
+    required String scenarioId,
+    required int expectedRevision,
+    required int expectedScenarioRevision,
+    required String idempotencyKey,
+  }) async {
+    final source = (await getScenario(profileId, scenarioId)).scenario;
+    if (source.revision != expectedScenarioRevision) {
+      throw StateError('revision_conflict');
+    }
+    return createScenario(
+      profileId: profileId,
+      expectedRevision: expectedRevision,
+      idempotencyKey: idempotencyKey,
+      name: '${source.name} (복사본)',
+      description: source.description,
+      baseProfileRevision: source.baseProfileRevision,
+      document: PlanningDocument(
+        id: '${source.document.id}-copy',
+        name: '${source.document.name} (복사본)',
+        kind: PlanningDocumentKind.scenario,
+        phases: source.document.phases,
+      ),
+    );
+  }
+
+  @override
   Future<List<RepositoryProfile>> listProfiles() async =>
       List.unmodifiable(_profiles);
 
@@ -832,6 +1080,8 @@ class MockAppService
     final wasSelected = profile.selected;
     _profiles.removeAt(index);
     _repositoryStates.remove(profileId);
+    _planningScenarios.remove(profileId);
+    _planningScenarioRevisions.remove(profileId);
     if (wasSelected && _profiles.isNotEmpty) {
       final first = _profiles.first;
       _profiles[0] = RepositoryProfile(
@@ -1025,6 +1275,14 @@ class MockAppService
     };
     return expectedRevision + 1;
   }
+
+  @override
+  Future<List<RepositoryV6AccountPreview>> previewV6Accounts() async =>
+      const [];
+
+  @override
+  Future<RepositoryV6ImportResult> importV6Account(String sourceProfileKey) =>
+      throw UnsupportedError('Mock v6 migration is unavailable');
 
   @override
   Future<void> dispose() async {

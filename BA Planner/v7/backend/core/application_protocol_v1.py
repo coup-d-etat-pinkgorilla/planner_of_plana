@@ -6,6 +6,8 @@ from typing import Any
 from core.protocol_v1 import PlanningProtocolV1
 from core.repository_protocol_v1 import METHODS, RepositoryProtocolV1
 from core.repository_store import JsonRepository
+from core.scenario_protocol_v1 import METHODS as SCENARIO_METHODS, ScenarioProtocolV1
+from core.scenario_store import ScenarioStore
 from core.scanner_protocol_v1 import METHODS as SCANNER_METHODS, ScannerProtocolV1
 from core.scanner_session import EventSink, ScannerSessionService
 from core.tactical_protocol_v1 import METHODS as TACTICAL_METHODS, TacticalProtocolV1
@@ -17,10 +19,15 @@ class ApplicationProtocolV1:
     def __init__(
         self, *, storage_root: Path, planning: PlanningProtocolV1 | None = None,
         scanner_service: ScannerSessionService | None = None,
+        v6_root: Path | None = None,
     ) -> None:
         self.planning = planning or PlanningProtocolV1()
         repository = JsonRepository(storage_root)
-        self.repository = RepositoryProtocolV1(repository)
+        self.repository = RepositoryProtocolV1(repository, v6_root=v6_root)
+        self.scenarios = ScenarioProtocolV1(ScenarioStore(
+            storage_root,
+            profile_revision=lambda profile_id: repository.get_state(profile_id)["revision"],
+        ))
         self.tactical = TacticalProtocolV1(TacticalStore(storage_root, repository))
         self.tactical_v2 = TacticalProtocolV2(TacticalV2Store(storage_root, repository))
         self.scanner_service = scanner_service
@@ -48,6 +55,9 @@ class ApplicationProtocolV1:
         if isinstance(message, dict) and message.get("method") in METHODS:
             trusted = PlanningProtocolV1._trusted_request(message)
             return None if trusted is None else self.repository.handle(trusted)
+        if isinstance(message, dict) and message.get("method") in SCENARIO_METHODS:
+            trusted = PlanningProtocolV1._trusted_request(message)
+            return None if trusted is None else self.scenarios.handle(trusted)
         if isinstance(message, dict) and message.get("method") in TACTICAL_METHODS:
             trusted = PlanningProtocolV1._trusted_request(message)
             return None if trusted is None else self.tactical.handle(trusted)

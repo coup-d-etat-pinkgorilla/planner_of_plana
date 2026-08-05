@@ -3134,4 +3134,134 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'scenario list keeps section 1 and uses the 80 to 260 diagonal workspace',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpPage(tester, service, size: const Size(2560, 1392));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const ValueKey('plan-scenario-compare-launch')),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(find.byKey(const ValueKey('plan-scenario-list-launch')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PlanScenarioListSection), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('plan-element-1-foundation')),
+        findsOneWidget,
+      );
+      expect(
+        find.text('저장된 시나리오가 없습니다.\n섹션 1의 시나리오 생성 버튼으로 시작할 수 있습니다.'),
+        findsOneWidget,
+      );
+      final motion = tester.widget<PlanSectionMotion>(
+        find.byKey(const ValueKey('plan-scenario-list-motion')),
+      );
+      expect(motion.introDegrees, 80);
+      expect(motion.outroDegrees, 260);
+      expect(
+        find.byKey(const ValueKey('plan-scenario-list-foundation')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('plan-scenario-list-launch')));
+      await tester.pumpAndSettle();
+      expect(find.byType(PlanScenarioListSection), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'scenario creation reuses student builder and phase editor without bulk apply',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpPage(
+        tester,
+        service,
+        size: const Size(2560, 1392),
+        presets: [_planningTestPreset()],
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-scenario-create-launch')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(PlanStudentSelector), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('plan-scenario-bulk-apply')),
+        findsNothing,
+      );
+
+      final grid = tester.widget<StudentDiagonalGrid>(
+        find.byKey(const ValueKey('plan-student-selector-grid')),
+      );
+      await tester.tap(
+        find.byKey(ValueKey('student-${grid.students.first.studentId}')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(PlanElementBuilder), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-starter-preset-balanced-growth')),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-starter-open-phase-editor')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-phase-editor-assign-all')),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-phase-editor-complete')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('plan-scenario-save-dialog')),
+        findsOneWidget,
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('plan-scenario-name-field')),
+        '빠른 성장 후보',
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('plan-scenario-save-confirm')),
+      );
+      await tester.pumpAndSettle();
+
+      final list = await service.listScenarios('000000000000000000000001');
+      expect(list.scenarios, hasLength(1));
+      expect(list.scenarios.single.name, '빠른 성장 후보');
+      expect(list.scenarios.single.phaseCount, 1);
+      expect(
+        find.byKey(const ValueKey('plan-scenario-create-launch')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('plan-scenario-list-launch')));
+      await tester.pumpAndSettle();
+      expect(find.text('빠른 성장 후보'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('plan-scenario-diagonal-scroll')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
