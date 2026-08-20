@@ -863,6 +863,7 @@ List<PlanBottleneckDetailPreview> filterPlanBottleneckDetails(
         resources: resources,
         delayedStages: detail.delayedStages,
         focusBondRank: detail.focusBondRank,
+        focusStepData: detail.focusStepData,
       ),
     );
   }
@@ -1275,6 +1276,28 @@ double planPhaseRowWidth({
   );
 }
 
+class _PlanWorkspaceSnapshot {
+  const _PlanWorkspaceSnapshot({
+    required this.document,
+    required this.elements,
+    required this.phases,
+    required this.drafts,
+    required this.unassignedIds,
+    required this.bottlenecks,
+    required this.phaseConsumptions,
+    required this.overallConsumption,
+  });
+
+  final PlanningDocument? document;
+  final List<PlanStudentStepPreview> elements;
+  final List<PlanPhasePreview> phases;
+  final Map<String, List<PlanElementStageDraft>> drafts;
+  final Set<String> unassignedIds;
+  final List<PlanBottleneckDetailPreview> bottlenecks;
+  final List<PlanConsumptionGroupPreview> phaseConsumptions;
+  final PlanConsumptionGroupPreview overallConsumption;
+}
+
 class PlanSectionLayout extends StatefulWidget {
   const PlanSectionLayout({
     super.key,
@@ -1311,11 +1334,18 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   bool _showStudentSelector = false;
   bool _switchingStudentSelector = false;
   bool _showScenarioList = false;
+  bool _showScenarioComparison = false;
   bool _switchingScenarioWorkspace = false;
   bool _creatingScenario = false;
+  PlanningScenarioRecord? _editingScenario;
+  int? _editingScenarioCollectionRevision;
+  _PlanWorkspaceSnapshot? _scenarioPlanSnapshot;
   bool _usingLivePlanElements = false;
   String? _consumedHandoffId;
   PlanningStudentSeed? _builderSeed;
+  List<PlanningStudentSeed> _builderStudentQueue = const [];
+  int _builderStudentQueueIndex = 0;
+  final Map<String, PlanningStudentSeed> _studentSeedsById = {};
   final Map<String, List<PlanElementStageDraft>> _draftsByStudent = {};
   List<PlanStudentStepPreview> _planElements = const [];
   late List<PlanElementPreset> _presets;
@@ -1395,6 +1425,16 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       final currentById = {
         for (final item in state.students) item.studentId: item,
       };
+      final seedsById = {
+        for (final student in catalog)
+          student.studentId: PlanningStudentSeed(
+            handoffId: 'repository-plan-${student.studentId}',
+            studentId: student.studentId,
+            metadata: student.metadata,
+            currentValues: currentById[student.studentId]?.values ?? const {},
+            owned: currentById.containsKey(student.studentId),
+          ),
+      };
       final drafts = <String, List<PlanElementStageDraft>>{};
       final elements = <PlanStudentStepPreview>[];
       final documentStages = <PlanningDocumentStage>[];
@@ -1452,6 +1492,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       if (!mounted) return;
       setState(() {
         _repositoryState = state;
+        _studentSeedsById
+          ..clear()
+          ..addAll(seedsById);
         _document = document;
         _usingLivePlanElements = true;
         _draftsByStudent
@@ -1708,16 +1751,20 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     if (seed == null || seed.handoffId == _consumedHandoffId) return;
     _consumedHandoffId = seed.handoffId;
     _builderSeed = seed;
+    _studentSeedsById[seed.studentId] = seed;
+    _builderStudentQueue = [seed];
+    _builderStudentQueueIndex = 0;
     _showElementBuilder = true;
     _showPhaseEditor = false;
     _showPresetManager = false;
     _showStudentSelector = false;
     _showScenarioList = false;
+    _showScenarioComparison = false;
     _creatingScenario = false;
   }
 
   void _setActive(bool active) {
-    if (_showScenarioList) {
+    if (_showScenarioList || _showScenarioComparison) {
       for (final entry in _controllers.entries) {
         if (entry.key == 'element-1') {
           active ? entry.value.forward(from: 0) : entry.value.reverse(from: 1);
@@ -1867,13 +1914,40 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   }
 
   Future<void> _openScenarioList() async {
+    await _openScenarioWorkspace(comparison: false);
+  }
+
+  Future<void> _openScenarioComparison() async {
+    await _openScenarioWorkspace(comparison: true);
+  }
+
+  Future<void> _openScenarioWorkspace({required bool comparison}) async {
     if (_showScenarioList ||
+        _showScenarioComparison ||
         _switchingScenarioWorkspace ||
-        widget.service is! PlanningScenarioRepositoryService) {
+        _switchingStudentSelector ||
+        widget.service is! PlanningScenarioRepositoryService ||
+        (comparison && widget.service is! PlanningScenarioComparisonService)) {
       return;
     }
-    setState(() => _switchingScenarioWorkspace = true);
+    final leavingStudentSelector = _showStudentSelector;
+    setState(() {
+      _switchingScenarioWorkspace = true;
+      if (leavingStudentSelector) _switchingStudentSelector = true;
+    });
     try {
+      if (leavingStudentSelector) {
+        await Future<void>.delayed(planStudentSelectorMotionDuration);
+        if (!mounted) return;
+        setState(() {
+          _showStudentSelector = false;
+          _switchingStudentSelector = false;
+        });
+        if (_creatingScenario) {
+          await _restorePlanAfterScenarioCreation(revealPlanSections: false);
+          if (!mounted) return;
+        }
+      }
       final state = await _ensureRepositoryContext();
       if (state == null || !mounted) return;
       await Future.wait([
@@ -1881,22 +1955,36 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           if (entry.key != 'element-1') entry.value.reverse(),
       ]);
       if (!mounted) return;
-      setState(() => _showScenarioList = true);
+      setState(() {
+        _showScenarioList = !comparison;
+        _showScenarioComparison = comparison;
+      });
       await _scenarioListController.forward(from: 0);
     } on TickerCanceled {
       return;
     } finally {
-      if (mounted) setState(() => _switchingScenarioWorkspace = false);
+      if (mounted) {
+        setState(() {
+          _switchingScenarioWorkspace = false;
+          _switchingStudentSelector = false;
+        });
+      }
     }
   }
 
   Future<void> _closeScenarioList() async {
-    if (!_showScenarioList || _switchingScenarioWorkspace) return;
+    if ((!_showScenarioList && !_showScenarioComparison) ||
+        _switchingScenarioWorkspace) {
+      return;
+    }
     setState(() => _switchingScenarioWorkspace = true);
     try {
       await _scenarioListController.reverse(from: 1);
       if (!mounted) return;
-      setState(() => _showScenarioList = false);
+      setState(() {
+        _showScenarioList = false;
+        _showScenarioComparison = false;
+      });
       await Future.wait([
         for (final entry in _controllers.entries)
           if (entry.key != 'element-1') entry.value.forward(from: 0),
@@ -1911,6 +1999,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   Future<void> _openScenarioCreation() async {
     if (_creatingScenario ||
         _showScenarioList ||
+        _showScenarioComparison ||
         _switchingScenarioWorkspace ||
         widget.service is! PlanningScenarioRepositoryService) {
       return;
@@ -1918,8 +2007,11 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     final state = await _ensureRepositoryContext();
     if (state == null || !mounted) return;
     final draftId = 'scenario-draft-${DateTime.now().microsecondsSinceEpoch}';
+    _captureScenarioPlanSnapshot();
     setState(() {
       _creatingScenario = true;
+      _builderStudentQueue = const [];
+      _builderStudentQueueIndex = 0;
       _usingLivePlanElements = true;
       _draftsByStudent.clear();
       _planElements = const [];
@@ -1942,20 +2034,244 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     await _openStudentSelector();
   }
 
-  Future<void> _restorePlanAfterScenarioCreation() async {
+  Future<void> _restorePlanAfterScenarioCreation({
+    bool revealPlanSections = true,
+  }) async {
     if (!mounted) return;
+    final snapshot = _scenarioPlanSnapshot;
     setState(() {
       _creatingScenario = false;
+      _editingScenario = null;
+      _editingScenarioCollectionRevision = null;
       _showElementBuilder = false;
       _showPhaseEditor = false;
       _showStudentSelector = false;
       _builderSeed = null;
+      _builderStudentQueue = const [];
+      _builderStudentQueueIndex = 0;
+      if (snapshot != null) {
+        _document = snapshot.document;
+        _planElements = snapshot.elements;
+        _planPhases = snapshot.phases;
+        _draftsByStudent
+          ..clear()
+          ..addAll(snapshot.drafts);
+        _unassignedPlanElementIds = snapshot.unassignedIds;
+        _bottleneckDetails = snapshot.bottlenecks;
+        _phaseConsumptions = snapshot.phaseConsumptions;
+        _overallConsumption = snapshot.overallConsumption;
+        _usingLivePlanElements = snapshot.elements.isNotEmpty;
+      }
+      _scenarioPlanSnapshot = null;
     });
-    await _loadRepositoryPlan();
-    if (!mounted) return;
+    if (snapshot == null) await _loadRepositoryPlan();
+    if (!mounted || !revealPlanSections) return;
     for (final controller in _controllers.values) {
       controller.forward(from: controller.value);
     }
+  }
+
+  void _captureScenarioPlanSnapshot() {
+    _scenarioPlanSnapshot ??= _PlanWorkspaceSnapshot(
+      document: _document,
+      elements: List.unmodifiable(_planElements),
+      phases: List.unmodifiable(_planPhases),
+      drafts: Map.unmodifiable({
+        for (final entry in _draftsByStudent.entries)
+          entry.key: List.unmodifiable(entry.value),
+      }),
+      unassignedIds: Set.unmodifiable(_unassignedPlanElementIds),
+      bottlenecks: List.unmodifiable(_bottleneckDetails),
+      phaseConsumptions: List.unmodifiable(_phaseConsumptions),
+      overallConsumption: _overallConsumption,
+    );
+  }
+
+  Future<void> _editScenarioFromComparison(
+    PlanningScenarioRecord scenario,
+    int collectionRevision,
+  ) async {
+    if (_switchingScenarioWorkspace) return;
+    setState(() => _switchingScenarioWorkspace = true);
+    try {
+      await _scenarioListController.reverse(from: 1);
+      if (!mounted) return;
+      _captureScenarioPlanSnapshot();
+      final steps = <PlanStudentStepPreview>[];
+      final drafts = <String, List<PlanElementStageDraft>>{};
+      final phases = <PlanPhasePreview>[];
+      final stepByStudent = <String, int>{};
+      for (final phase in scenario.document.phases) {
+        final phaseSteps = <PlanStudentStepPreview>[];
+        for (final stage in phase.stages) {
+          final step = (stepByStudent[stage.studentId] ?? 0) + 1;
+          stepByStudent[stage.studentId] = step;
+          final displayName =
+              _studentSeedsById[stage.studentId]?.metadata['display_name']
+                  ?.toString() ??
+              stage.studentId;
+          final preview = PlanStudentStepPreview(
+            studentId: stage.studentId,
+            displayName: displayName,
+            step: step,
+            target: stage.name,
+            bondRank: stage.targets['bond_rank'],
+            stageId: stage.id,
+            targetValues: stage.targets,
+          );
+          steps.add(preview);
+          phaseSteps.add(preview);
+          drafts
+              .putIfAbsent(stage.studentId, () => [])
+              .add(
+                PlanElementStageDraft(
+                  id: stage.id,
+                  name: stage.name,
+                  targets: stage.targets,
+                ),
+              );
+        }
+        phases.add(
+          PlanPhasePreview(id: phase.id, name: phase.name, steps: phaseSteps),
+        );
+      }
+      setState(() {
+        _showScenarioComparison = false;
+        _creatingScenario = true;
+        _editingScenario = scenario;
+        _editingScenarioCollectionRevision = collectionRevision;
+        _document = scenario.document;
+        _usingLivePlanElements = true;
+        _planElements = List.unmodifiable(steps);
+        _planPhases = List.unmodifiable(phases);
+        _draftsByStudent
+          ..clear()
+          ..addEntries(
+            drafts.entries.map(
+              (entry) => MapEntry(entry.key, List.unmodifiable(entry.value)),
+            ),
+          );
+        _unassignedPlanElementIds = const {};
+        _showPhaseEditor = true;
+      });
+    } on TickerCanceled {
+      return;
+    } finally {
+      if (mounted) setState(() => _switchingScenarioWorkspace = false);
+    }
+  }
+
+  bool _targetsAtLeast(Map<String, int> candidate, Map<String, int> floor) =>
+      planningDocumentTargetKeys.every(
+        (key) => (candidate[key] ?? 0) >= (floor[key] ?? 0),
+      );
+
+  Future<void> _incorporateScenario(PlanningScenarioRecord scenario) async {
+    final document = _document;
+    if (document == null || document.kind != PlanningDocumentKind.plan) return;
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    final targetFloor = <String, Map<String, int>>{};
+    final stepByStudent = <String, int>{};
+    for (final stage in document.stages) {
+      targetFloor[stage.studentId] = stage.targets;
+      stepByStudent[stage.studentId] =
+          (stepByStudent[stage.studentId] ?? 0) + 1;
+    }
+    final importedElements = <PlanStudentStepPreview>[];
+    final importedPhases = <PlanPhasePreview>[];
+    final importedDrafts = <String, List<PlanElementStageDraft>>{};
+    var skipped = 0;
+    for (
+      var phaseIndex = 0;
+      phaseIndex < scenario.document.phases.length;
+      phaseIndex++
+    ) {
+      final sourcePhase = scenario.document.phases[phaseIndex];
+      final phaseSteps = <PlanStudentStepPreview>[];
+      for (
+        var stageIndex = 0;
+        stageIndex < sourcePhase.stages.length;
+        stageIndex++
+      ) {
+        final source = sourcePhase.stages[stageIndex];
+        final floor = targetFloor[source.studentId];
+        if (floor != null && !_targetsAtLeast(source.targets, floor)) {
+          skipped++;
+          continue;
+        }
+        targetFloor[source.studentId] = source.targets;
+        final step = (stepByStudent[source.studentId] ?? 0) + 1;
+        stepByStudent[source.studentId] = step;
+        final id = 'import-$stamp-$phaseIndex-$stageIndex';
+        final displayName =
+            _studentSeedsById[source.studentId]?.metadata['display_name']
+                ?.toString() ??
+            source.studentId;
+        final preview = PlanStudentStepPreview(
+          studentId: source.studentId,
+          displayName: displayName,
+          step: step,
+          target: source.name,
+          bondRank: source.targets['bond_rank'],
+          stageId: id,
+          targetValues: source.targets,
+        );
+        importedElements.add(preview);
+        phaseSteps.add(preview);
+        importedDrafts
+            .putIfAbsent(source.studentId, () => [])
+            .add(
+              PlanElementStageDraft(
+                id: id,
+                name: source.name,
+                targets: source.targets,
+              ),
+            );
+      }
+      if (phaseSteps.isNotEmpty) {
+        importedPhases.add(
+          PlanPhasePreview(
+            id: 'import-$stamp-phase-$phaseIndex',
+            name: '${scenario.name} · ${sourcePhase.name}',
+            steps: phaseSteps,
+          ),
+        );
+      }
+    }
+    if (importedElements.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('현재 계획 뒤에 이어질 수 있는 성장 단계가 없습니다.')),
+        );
+      }
+      return;
+    }
+    setState(() {
+      _planElements = List.unmodifiable([
+        ..._planElements,
+        ...importedElements,
+      ]);
+      _planPhases = List.unmodifiable([..._planPhases, ...importedPhases]);
+      for (final entry in importedDrafts.entries) {
+        _draftsByStudent[entry.key] = List.unmodifiable([
+          ...?_draftsByStudent[entry.key],
+          ...entry.value,
+        ]);
+      }
+      _usingLivePlanElements = true;
+    });
+    _rebuildDocumentFromPhases();
+    await _closeScenarioList();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          skipped == 0
+              ? '"${scenario.name}" 시나리오를 현재 계획에 편입했습니다.'
+              : '"${scenario.name}" 시나리오를 편입했습니다. 퇴행하는 $skipped개 단계는 제외했습니다.',
+        ),
+      ),
+    );
   }
 
   Future<void> _saveScenarioDraft() async {
@@ -1973,14 +2289,15 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     try {
       final list = await scenarioRepository.listScenarios(state.profileId);
       if (!mounted) return;
-      var scenarioName = '새 시나리오 ${list.scenarios.length + 1}';
-      var scenarioDescription = '';
+      var scenarioName =
+          _editingScenario?.name ?? '새 시나리오 ${list.scenarios.length + 1}';
+      var scenarioDescription = _editingScenario?.description ?? '';
       final result = await showDialog<(String, String)>(
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
           key: const ValueKey('plan-scenario-save-dialog'),
-          title: const Text('시나리오 저장'),
+          title: Text(_editingScenario == null ? '시나리오 저장' : '시나리오 편집 저장'),
           content: SizedBox(
             width: 420,
             child: Column(
@@ -2035,16 +2352,37 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         kind: PlanningDocumentKind.scenario,
         phases: document.phases,
       );
-      await scenarioRepository.createScenario(
-        profileId: state.profileId,
-        expectedRevision: list.revision,
-        idempotencyKey:
-            'scenario-create-${DateTime.now().microsecondsSinceEpoch}',
-        name: result.$1,
-        description: result.$2,
-        baseProfileRevision: state.revision,
-        document: savedDocument,
-      );
+      final editing = _editingScenario;
+      if (editing == null) {
+        await scenarioRepository.createScenario(
+          profileId: state.profileId,
+          expectedRevision: list.revision,
+          idempotencyKey:
+              'scenario-create-${DateTime.now().microsecondsSinceEpoch}',
+          name: result.$1,
+          description: result.$2,
+          baseProfileRevision: state.revision,
+          document: savedDocument,
+        );
+      } else {
+        await scenarioRepository.updateScenario(
+          profileId: state.profileId,
+          scenarioId: editing.id,
+          expectedRevision: _editingScenarioCollectionRevision ?? list.revision,
+          expectedScenarioRevision: editing.revision,
+          idempotencyKey:
+              'scenario-update-${DateTime.now().microsecondsSinceEpoch}',
+          name: result.$1,
+          description: result.$2,
+          baseProfileRevision: state.revision,
+          document: PlanningDocument(
+            id: editing.document.id,
+            name: result.$1,
+            kind: PlanningDocumentKind.scenario,
+            phases: savedDocument.phases,
+          ),
+        );
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -2133,13 +2471,20 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     }
   }
 
-  Future<void> _selectPlanStudent(PlanningStudentSeed seed) async {
-    if (!_showStudentSelector || _switchingStudentSelector) return;
+  Future<void> _selectPlanStudents(List<PlanningStudentSeed> seeds) async {
+    if (!_showStudentSelector || _switchingStudentSelector || seeds.isEmpty) {
+      return;
+    }
     setState(() => _switchingStudentSelector = true);
     await Future<void>.delayed(planStudentSelectorMotionDuration);
     if (!mounted) return;
     setState(() {
-      _builderSeed = seed;
+      _builderStudentQueue = List.unmodifiable(seeds);
+      _builderStudentQueueIndex = 0;
+      for (final seed in seeds) {
+        _studentSeedsById[seed.studentId] = seed;
+      }
+      _builderSeed = seeds.first;
       _showStudentSelector = false;
       _showElementBuilder = true;
       _showPhaseEditor = false;
@@ -2156,6 +2501,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         setState(() {
           _showElementBuilder = false;
           _builderSeed = null;
+          _builderStudentQueue = const [];
+          _builderStudentQueueIndex = 0;
         });
         _openStudentSelector();
       }
@@ -2164,6 +2511,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     setState(() {
       _showElementBuilder = false;
       _builderSeed = null;
+      _builderStudentQueue = const [];
+      _builderStudentQueueIndex = 0;
     });
     for (final entry in _controllers.entries) {
       if (entry.value.value < 1) entry.value.forward(from: entry.value.value);
@@ -2172,6 +2521,10 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
 
   void _closePhaseEditor() {
     if (!_showPhaseEditor) return;
+    if (_creatingScenario) {
+      _restorePlanAfterScenarioCreation();
+      return;
+    }
     setState(() => _showPhaseEditor = false);
     if (!_showElementBuilder) {
       for (final controller in _controllers.values) {
@@ -2230,6 +2583,31 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       ];
     });
     _rebuildDocumentFromPhases();
+    final nextIndex = _builderStudentQueueIndex + 1;
+    if (nextIndex < _builderStudentQueue.length && mounted) {
+      setState(() {
+        _builderStudentQueueIndex = nextIndex;
+        _builderSeed = _builderStudentQueue[nextIndex];
+      });
+    }
+  }
+
+  void _editPlanStudent(String studentId) {
+    final source = _studentSeedsById[studentId];
+    if (source == null) return;
+    final seed = PlanningStudentSeed(
+      handoffId:
+          'plan-edit-$studentId-${DateTime.now().microsecondsSinceEpoch}',
+      studentId: source.studentId,
+      metadata: source.metadata,
+      currentValues: source.currentValues,
+      owned: source.owned,
+    );
+    setState(() {
+      _builderStudentQueue = [seed];
+      _builderStudentQueueIndex = 0;
+      _builderSeed = seed;
+    });
   }
 
   void _renameUnassignedPlanElement(String id, String name) {
@@ -2317,6 +2695,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       _showPhaseEditor = false;
       _showElementBuilder = false;
       _builderSeed = null;
+      _builderStudentQueue = const [];
+      _builderStudentQueueIndex = 0;
     });
     for (final entry in _controllers.entries) {
       if (entry.key != 'element-2' && entry.value.value < 1) {
@@ -2454,6 +2834,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                             _showStudentSelector ||
                                 _switchingStudentSelector ||
                                 _showScenarioList ||
+                                _showScenarioComparison ||
                                 _switchingScenarioWorkspace
                             ? null
                             : _openPhaseEditor,
@@ -2472,6 +2853,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                         onPressed:
                             _switchingStudentSelector ||
                                 _showScenarioList ||
+                                _showScenarioComparison ||
                                 _switchingScenarioWorkspace
                             ? null
                             : _showStudentSelector
@@ -2499,6 +2881,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                             _showStudentSelector ||
                                 _switchingStudentSelector ||
                                 _showScenarioList ||
+                                _showScenarioComparison ||
                                 _switchingScenarioWorkspace
                             ? null
                             : _openPresetManager,
@@ -2514,7 +2897,19 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                     Expanded(
                       child: FilledButton.tonalIcon(
                         key: const ValueKey('plan-scenario-compare-launch'),
-                        onPressed: null,
+                        onPressed:
+                            _showStudentSelector ||
+                                _switchingStudentSelector ||
+                                _showScenarioList ||
+                                _showScenarioComparison ||
+                                _switchingScenarioWorkspace ||
+                                widget.service
+                                    is! PlanningScenarioRepositoryService ||
+                                widget.service
+                                    is! PlanningScenarioComparisonService ||
+                                _document == null
+                            ? null
+                            : _openScenarioComparison,
                         icon: const Icon(Icons.compare_arrows_rounded),
                         label: const Text(
                           '시나리오 비교',
@@ -2528,7 +2923,10 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                       child: FilledButton.tonalIcon(
                         key: const ValueKey('plan-scenario-create-launch'),
                         onPressed:
-                            _showScenarioList ||
+                            _showStudentSelector ||
+                                _switchingStudentSelector ||
+                                _showScenarioList ||
+                                _showScenarioComparison ||
                                 _switchingScenarioWorkspace ||
                                 widget.service
                                     is! PlanningScenarioRepositoryService
@@ -2548,6 +2946,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                         key: const ValueKey('plan-scenario-list-launch'),
                         onPressed:
                             _switchingScenarioWorkspace ||
+                                _showScenarioComparison ||
                                 widget.service
                                     is! PlanningScenarioRepositoryService
                             ? null
@@ -2821,6 +3220,31 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                   ),
                 ),
               ),
+            if (_showScenarioComparison &&
+                widget.service is PlanningScenarioRepositoryService &&
+                widget.service is PlanningScenarioComparisonService &&
+                _repositoryState != null &&
+                _document != null)
+              Positioned.fill(
+                child: PlanSectionMotion(
+                  key: const ValueKey('plan-scenario-comparison-motion'),
+                  animation: _scenarioListController,
+                  introDegrees: planScenarioListMotion.intro,
+                  outroDegrees: planScenarioListMotion.outro,
+                  child: PlanScenarioComparisonSection(
+                    service: widget.service!,
+                    repositoryState: _repositoryState!,
+                    activePlan: _document!,
+                    section1Bounds: planSectionPath(
+                      size,
+                      'element-1',
+                    ).getBounds(),
+                    active: widget.active && !_switchingScenarioWorkspace,
+                    onEdit: _editScenarioFromComparison,
+                    onIncorporate: _incorporateScenario,
+                  ),
+                ),
+              ),
             if (!_showPhaseEditor && _showElementBuilder && builderSeed != null)
               Positioned.fill(
                 child: PlanElementBuilder(
@@ -2837,6 +3261,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                   onConfirm: _confirmPlanElementStages,
                   onRenameUnassigned: _renameUnassignedPlanElement,
                   onDeleteUnassigned: _deleteUnassignedPlanElement,
+                  onEditStudent: _editPlanStudent,
                   onExitToPlan: _closeElementBuilder,
                   onOpenPhaseEditor: _openPhaseEditor,
                 ),
@@ -2851,7 +3276,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                   key: const ValueKey('plan-student-selector-view'),
                   service: widget.service!,
                   plannedIds: _draftsByStudent.keys.toSet(),
-                  onSelected: _selectPlanStudent,
+                  onConfirmed: _selectPlanStudents,
                   section1Bounds: planSectionPath(
                     size,
                     'element-1',
@@ -2914,6 +3339,1187 @@ Path planScenarioListSectionPath(Size size, Rect section1Bounds) {
     Offset(rect.right - depth, rect.bottom),
     Offset(rect.left, rect.bottom),
   ], 12);
+}
+
+Rect planScenarioComparisonSafeRect(
+  Size size, {
+  required double top,
+  required double bottom,
+  double inset = 12,
+}) {
+  final safeTop = top.clamp(0.0, size.height).toDouble();
+  final safeBottom = bottom.clamp(safeTop, size.height).toDouble();
+  if (size.height <= 0) {
+    return Rect.fromLTRB(
+      inset,
+      safeTop,
+      math.max(inset, size.width - inset),
+      safeBottom,
+    );
+  }
+  final depth = planScenarioParallelogramDepth(size.height);
+  final leftBoundary = depth * (1 - safeTop / size.height);
+  final rightBoundary = size.width - depth * safeBottom / size.height;
+  return Rect.fromLTRB(
+    leftBoundary + inset,
+    safeTop,
+    math.max(leftBoundary + inset, rightBoundary - inset),
+    safeBottom,
+  );
+}
+
+Rect planScenarioComparisonRailBandRect(
+  Size size, {
+  required double top,
+  required double bottom,
+  double inset = 12,
+}) {
+  final bandTop = top.clamp(0.0, size.height).toDouble();
+  final bandBottom = bottom.clamp(bandTop, size.height).toDouble();
+  final left = planPhaseLeftBoundary(size, bandBottom) + inset;
+  final right = planPhaseRightBoundary(size, bandTop) - inset;
+  return Rect.fromLTRB(left, bandTop, math.max(left + 1, right), bandBottom);
+}
+
+class _PlanComparisonTarget {
+  const _PlanComparisonTarget({
+    required this.id,
+    required this.name,
+    required this.document,
+    this.scenario,
+  });
+
+  final String id;
+  final String name;
+  final PlanningDocument document;
+  final PlanningScenarioRecord? scenario;
+
+  bool get isActivePlan => scenario == null;
+}
+
+class PlanScenarioComparisonSection extends StatefulWidget {
+  const PlanScenarioComparisonSection({
+    super.key,
+    required this.service,
+    required this.repositoryState,
+    required this.activePlan,
+    required this.section1Bounds,
+    required this.active,
+    required this.onEdit,
+    required this.onIncorporate,
+  });
+
+  final Object service;
+  final RepositoryState repositoryState;
+  final PlanningDocument activePlan;
+  final Rect section1Bounds;
+  final bool active;
+  final Future<void> Function(PlanningScenarioRecord, int) onEdit;
+  final Future<void> Function(PlanningScenarioRecord) onIncorporate;
+
+  @override
+  State<PlanScenarioComparisonSection> createState() =>
+      _PlanScenarioComparisonSectionState();
+}
+
+class _PlanScenarioComparisonSectionState
+    extends State<PlanScenarioComparisonSection> {
+  PlanningScenarioListResult? _list;
+  Object? _error;
+  final List<String> _selectedIds = [];
+  _PlanComparisonTarget? _targetA;
+  _PlanComparisonTarget? _targetB;
+  PlanningScenarioComparisonResult? _comparison;
+  bool _working = false;
+
+  PlanningScenarioRepositoryService get _repository =>
+      widget.service as PlanningScenarioRepositoryService;
+  PlanningScenarioComparisonService get _calculator =>
+      widget.service as PlanningScenarioComparisonService;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final result = await _repository.listScenarios(
+        widget.repositoryState.profileId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _list = result;
+        _error = null;
+        _selectedIds.removeWhere(
+          (id) =>
+              id != 'active-plan' &&
+              !result.scenarios.any((scenario) => scenario.id == id),
+        );
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    }
+  }
+
+  void _toggle(String id) {
+    if (!widget.active || _working) return;
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else if (_selectedIds.length < 2) {
+        _selectedIds.add(id);
+      } else {
+        _selectedIds
+          ..removeAt(0)
+          ..add(id);
+      }
+    });
+  }
+
+  Future<_PlanComparisonTarget> _resolve(String id) async {
+    if (id == 'active-plan') {
+      return _PlanComparisonTarget(
+        id: id,
+        name: '활성 계획',
+        document: widget.activePlan,
+      );
+    }
+    final loaded = await _repository.getScenario(
+      widget.repositoryState.profileId,
+      id,
+    );
+    return _PlanComparisonTarget(
+      id: id,
+      name: loaded.scenario.name,
+      document: loaded.scenario.document,
+      scenario: loaded.scenario,
+    );
+  }
+
+  Future<void> _compare() async {
+    if (_selectedIds.length != 2 || _working) return;
+    setState(() {
+      _working = true;
+      _error = null;
+    });
+    try {
+      final targets = await Future.wait([
+        _resolve(_selectedIds[0]),
+        _resolve(_selectedIds[1]),
+      ]);
+      final result = await _calculator.compareScenarios(
+        currentStudents: [
+          for (final student in widget.repositoryState.students)
+            confirmedStudentPlanningCurrent(student),
+        ],
+        inventory: widget.repositoryState.inventory.toWire(),
+        documentA: targets[0].document,
+        documentB: targets[1].document,
+      );
+      if (!mounted) return;
+      setState(() {
+        _targetA = targets[0];
+        _targetB = targets[1];
+        _comparison = result;
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    } finally {
+      if (mounted) setState(() => _working = false);
+    }
+  }
+
+  Future<void> _duplicate(_PlanComparisonTarget target) async {
+    final scenario = target.scenario;
+    final list = _list;
+    if (scenario == null || list == null || _working) return;
+    setState(() => _working = true);
+    try {
+      await _repository.duplicateScenario(
+        profileId: widget.repositoryState.profileId,
+        scenarioId: scenario.id,
+        expectedRevision: list.revision,
+        expectedScenarioRevision: scenario.revision,
+        idempotencyKey:
+            'scenario-duplicate-${DateTime.now().microsecondsSinceEpoch}',
+      );
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${scenario.name}을 복제했습니다.')));
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    } finally {
+      if (mounted) setState(() => _working = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final size = constraints.biggest;
+      final path = planScenarioListSectionPath(size, widget.section1Bounds);
+      final bounds = path.getBounds();
+      final localPath = path.shift(-bounds.topLeft);
+      return Stack(
+        children: [
+          IgnorePointer(
+            child: CustomPaint(
+              key: const ValueKey('plan-scenario-comparison-foundation'),
+              size: size,
+              painter: _PlanScenarioListSectionPainter(path),
+            ),
+          ),
+          Positioned.fromRect(
+            rect: bounds,
+            child: ClipPath(
+              clipper: _PlanLocalPathClipper(localPath),
+              child: _comparison == null ? _buildSelection() : _buildResult(),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  Widget _buildSelection() {
+    final list = _list;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.biggest;
+        final errorHeight = _error == null ? 0.0 : 34.0;
+        final header = planScenarioComparisonSafeRect(
+          size,
+          top: 12,
+          bottom: 62 + errorHeight,
+          inset: 16,
+        );
+        final footer = planScenarioComparisonRailBandRect(
+          size,
+          top: size.height - 62,
+          bottom: size.height - 12,
+          inset: 16,
+        );
+        final body = planScenarioComparisonRailBandRect(
+          size,
+          top: header.bottom + 10,
+          bottom: footer.top - 10,
+          inset: 16,
+        );
+        return Stack(
+          children: [
+            Positioned.fromRect(
+              rect: header,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: 50,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.compare_arrows_rounded),
+                        const SizedBox(width: 10),
+                        Text(
+                          '시나리오 비교',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const Spacer(),
+                        Text('${_selectedIds.length}/2 선택'),
+                        const SizedBox(width: 12),
+                        IconButton(
+                          key: const ValueKey('plan-scenario-compare-refresh'),
+                          onPressed: widget.active && !_working ? _load : null,
+                          icon: const Icon(Icons.refresh_rounded),
+                          tooltip: '새로고침',
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_error case final error?)
+                    Text(
+                      '비교 준비 실패: $error',
+                      key: const ValueKey('plan-scenario-compare-error'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.redAccent),
+                    ),
+                ],
+              ),
+            ),
+            Positioned.fromRect(
+              rect: body,
+              child: list == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : _ComparisonCandidateDiagonalList(
+                      key: const ValueKey('plan-scenario-compare-candidates'),
+                      cards: [
+                        _ComparisonCandidateCard(
+                          key: const ValueKey(
+                            'plan-compare-candidate-active-plan',
+                          ),
+                          label: '활성 계획',
+                          detail:
+                              '페이즈 ${widget.activePlan.phases.length} · 성장 단계 ${widget.activePlan.stages.length}',
+                          selectedIndex: _selectedIds.indexOf('active-plan'),
+                          onTap: () => _toggle('active-plan'),
+                        ),
+                        for (final scenario in list.scenarios)
+                          _ComparisonCandidateCard(
+                            key: ValueKey(
+                              'plan-compare-candidate-${scenario.id}',
+                            ),
+                            label: scenario.name,
+                            detail:
+                                '학생 ${scenario.studentCount} · 페이즈 ${scenario.phaseCount} · 성장 단계 ${scenario.stageCount}',
+                            stale:
+                                scenario.baseProfileRevision <
+                                list.currentProfileRevision,
+                            selectedIndex: _selectedIds.indexOf(scenario.id),
+                            onTap: () => _toggle(scenario.id),
+                          ),
+                      ],
+                    ),
+            ),
+            Positioned.fromRect(
+              rect: footer,
+              child: CustomPaint(
+                painter: const _PlanScenarioListCardPainter(false),
+                child: ClipPath(
+                  clipper: const PlanScenarioParallelogramClipper(),
+                  child: FilledButton.icon(
+                    key: const ValueKey('plan-scenario-compare-confirm'),
+                    style: FilledButton.styleFrom(
+                      shape: const RoundedRectangleBorder(),
+                    ),
+                    onPressed:
+                        widget.active && _selectedIds.length == 2 && !_working
+                        ? _compare
+                        : null,
+                    icon: _working
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.compare_arrows_rounded),
+                    label: const Text('두 계획 나란히 보기'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildResult() {
+    final targetA = _targetA!;
+    final targetB = _targetB!;
+    final result = _comparison!;
+    return DefaultTabController(
+      length: 4,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final size = constraints.biggest;
+          final stale = [targetA, targetB].any(
+            (target) =>
+                target.scenario != null &&
+                target.scenario!.baseProfileRevision <
+                    widget.repositoryState.revision,
+          );
+          final header = planScenarioComparisonSafeRect(
+            size,
+            top: 10,
+            bottom: stale ? 76 : 58,
+            inset: 16,
+          );
+          final tabs = planScenarioComparisonRailBandRect(
+            size,
+            top: header.bottom + 4,
+            bottom: header.bottom + 50,
+            inset: 16,
+          );
+          final actions = planScenarioComparisonRailBandRect(
+            size,
+            top: size.height - 66,
+            bottom: size.height - 10,
+            inset: 16,
+          );
+          final body = planScenarioComparisonRailBandRect(
+            size,
+            top: tabs.bottom + 10,
+            bottom: actions.top - 10,
+            inset: 16,
+          );
+          return Stack(
+            children: [
+              Positioned.fromRect(
+                rect: header,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      height: 48,
+                      child: Row(
+                        children: [
+                          IconButton(
+                            key: const ValueKey(
+                              'plan-scenario-comparison-back',
+                            ),
+                            onPressed: _working
+                                ? null
+                                : () => setState(() {
+                                    _comparison = null;
+                                    _targetA = null;
+                                    _targetB = null;
+                                  }),
+                            icon: const Icon(Icons.arrow_back_rounded),
+                            tooltip: '선택 목록으로 이동',
+                          ),
+                          Expanded(
+                            child: Text(
+                              '${targetA.name}  ↔  ${targetB.name}',
+                              key: const ValueKey(
+                                'plan-scenario-comparison-title',
+                              ),
+                              style: Theme.of(context).textTheme.titleLarge,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (stale)
+                      const Text(
+                        '오래된 시나리오가 포함되어 있습니다. 현재 학생·인벤토리 데이터로 다시 계산한 결과입니다.',
+                        key: ValueKey('plan-scenario-comparison-stale-warning'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.amberAccent),
+                      ),
+                  ],
+                ),
+              ),
+              Positioned.fromRect(
+                rect: tabs,
+                child: CustomPaint(
+                  painter: const _PlanScenarioListCardPainter(false),
+                  child: ClipPath(
+                    clipper: const PlanScenarioParallelogramClipper(),
+                    child: const TabBar(
+                      tabs: [
+                        Tab(text: '전체 결과'),
+                        Tab(text: '학생 목표'),
+                        Tab(text: '재화·부족'),
+                        Tab(text: '병목'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fromRect(
+                rect: body,
+                child: TabBarView(
+                  children: [
+                    _ComparisonSideBySide(
+                      left: _ComparisonSummaryPane(
+                        side: 'a',
+                        target: targetA,
+                        result: result,
+                      ),
+                      right: _ComparisonSummaryPane(
+                        side: 'b',
+                        target: targetB,
+                        result: result,
+                      ),
+                    ),
+                    _ComparisonSideBySide(
+                      left: _ComparisonStudentPane(
+                        side: 'a',
+                        target: targetA,
+                        comparison: result.comparison,
+                      ),
+                      right: _ComparisonStudentPane(
+                        side: 'b',
+                        target: targetB,
+                        comparison: result.comparison,
+                      ),
+                    ),
+                    _ComparisonSideBySide(
+                      left: _ComparisonResourcePane(
+                        side: 'a',
+                        target: targetA,
+                        comparison: result.comparison,
+                      ),
+                      right: _ComparisonResourcePane(
+                        side: 'b',
+                        target: targetB,
+                        comparison: result.comparison,
+                      ),
+                    ),
+                    _ComparisonSideBySide(
+                      left: _ComparisonBottleneckPane(
+                        side: 'a',
+                        target: targetA,
+                        comparison: result.comparison,
+                      ),
+                      right: _ComparisonBottleneckPane(
+                        side: 'b',
+                        target: targetB,
+                        comparison: result.comparison,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned.fromRect(
+                rect: actions,
+                child: Row(
+                  children: [
+                    Expanded(child: _actionsFor(targetA, 'a')),
+                    const SizedBox(width: 12),
+                    Expanded(child: _actionsFor(targetB, 'b')),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _actionsFor(_PlanComparisonTarget target, String side) {
+    final scenario = target.scenario;
+    return CustomPaint(
+      painter: const _PlanScenarioListCardPainter(false),
+      child: ClipPath(
+        clipper: const PlanScenarioParallelogramClipper(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton.icon(
+                  key: ValueKey('plan-scenario-$side-edit'),
+                  onPressed: scenario == null || _working || _list == null
+                      ? null
+                      : () => widget.onEdit(scenario, _list!.revision),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('편집'),
+                ),
+                TextButton.icon(
+                  key: ValueKey('plan-scenario-$side-duplicate'),
+                  onPressed: scenario == null || _working
+                      ? null
+                      : () => _duplicate(target),
+                  icon: const Icon(Icons.copy_rounded),
+                  label: const Text('복제'),
+                ),
+                TextButton.icon(
+                  key: ValueKey('plan-scenario-$side-incorporate'),
+                  onPressed: scenario == null || _working
+                      ? null
+                      : () => widget.onIncorporate(scenario),
+                  icon: const Icon(Icons.playlist_add_rounded),
+                  label: const Text('계획에 편입'),
+                ),
+                TextButton.icon(
+                  key: ValueKey('plan-scenario-$side-move'),
+                  onPressed: _working
+                      ? null
+                      : () => setState(() {
+                          _comparison = null;
+                          _targetA = null;
+                          _targetB = null;
+                        }),
+                  icon: const Icon(Icons.view_list_rounded),
+                  label: const Text('목록으로 이동'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ComparisonCandidateCard extends StatelessWidget {
+  const _ComparisonCandidateCard({
+    super.key,
+    required this.label,
+    required this.detail,
+    required this.selectedIndex,
+    required this.onTap,
+    this.stale = false,
+  });
+
+  final String label;
+  final String detail;
+  final int selectedIndex;
+  final VoidCallback onTap;
+  final bool stale;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    painter: _PlanScenarioListCardPainter(selectedIndex >= 0),
+    child: ClipPath(
+      clipper: const PlanScenarioParallelogramClipper(),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 15,
+                  backgroundColor: selectedIndex >= 0
+                      ? AppColors.primary
+                      : Colors.white12,
+                  child: Text(selectedIndex < 0 ? '–' : '${selectedIndex + 1}'),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      Text(
+                        detail,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                if (stale)
+                  const Tooltip(
+                    message: '저장 후 프로필 데이터가 변경되었습니다.',
+                    child: Icon(
+                      Icons.history_rounded,
+                      color: Colors.amberAccent,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _ComparisonCandidateDiagonalList extends StatefulWidget {
+  const _ComparisonCandidateDiagonalList({super.key, required this.cards});
+
+  final List<Widget> cards;
+
+  @override
+  State<_ComparisonCandidateDiagonalList> createState() =>
+      _ComparisonCandidateDiagonalListState();
+}
+
+class _ComparisonCandidateDiagonalListState
+    extends State<_ComparisonCandidateDiagonalList> {
+  static const _inset = 8.0;
+  static const _rowHeight = 72.0;
+  static const _rowGap = 10.0;
+  final ScrollController _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final contentHeight =
+          _inset * 2 +
+          widget.cards.length * _rowHeight +
+          math.max(0, widget.cards.length - 1) * _rowGap;
+      return PlanDiagonalScrollbar(
+        keyPrefix: 'plan-scenario-compare',
+        controller: _controller,
+        contentExtent: contentHeight,
+        fogClipper: const PlanScenarioParallelogramClipper(),
+        child: SingleChildScrollView(
+          controller: _controller,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              final scroll = _controller.hasClients ? _controller.offset : 0.0;
+              return SizedBox(
+                width: constraints.maxWidth,
+                height: contentHeight,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    for (var index = 0; index < widget.cards.length; index++)
+                      () {
+                        final top = _inset + index * (_rowHeight + _rowGap);
+                        final offset = planPhaseRowHorizontalOffset(
+                          viewportHeight: constraints.maxHeight,
+                          rowTop: top,
+                          rowHeight: _rowHeight,
+                          scrollOffset: scroll,
+                        );
+                        final width = planPhaseRowWidth(
+                          viewportWidth: constraints.maxWidth,
+                          viewportHeight: constraints.maxHeight,
+                          rowHeight: _rowHeight,
+                        );
+                        return Positioned(
+                          left: _inset + offset,
+                          top: top,
+                          width: width,
+                          height: _rowHeight,
+                          child: widget.cards[index],
+                        );
+                      }(),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _ComparisonSideBySide extends StatelessWidget {
+  const _ComparisonSideBySide({required this.left, required this.right});
+  final Widget left;
+  final Widget right;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Expanded(child: left),
+      const SizedBox(width: planResourceControlGap),
+      Expanded(child: right),
+    ],
+  );
+}
+
+List<Map<String, dynamic>> _comparisonRows(Object? value) => [
+  for (final item in value is List ? value : const [])
+    if (item is Map) Map<String, dynamic>.from(item),
+];
+
+class _ComparisonPaneShell extends StatelessWidget {
+  const _ComparisonPaneShell({
+    required this.keyPrefix,
+    required this.title,
+    required this.entries,
+  });
+  final String keyPrefix;
+  final String title;
+  final List<_ComparisonPaneEntry> entries;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final size = constraints.biggest;
+      final header = planScenarioComparisonSafeRect(
+        size,
+        top: 12,
+        bottom: 44,
+        inset: 14,
+      );
+      final listBand = planScenarioComparisonRailBandRect(
+        size,
+        top: 50,
+        bottom: size.height - 12,
+        inset: 12,
+      );
+      return CustomPaint(
+        key: ValueKey('$keyPrefix-pane'),
+        painter: const _PlanScenarioListCardPainter(false),
+        child: ClipPath(
+          clipper: const PlanScenarioParallelogramClipper(),
+          child: Stack(
+            children: [
+              Positioned.fromRect(
+                rect: header,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ),
+              Positioned.fromRect(
+                rect: listBand,
+                child: ClipPath(
+                  clipper: const PlanScenarioParallelogramClipper(),
+                  child: _ComparisonPaneDiagonalList(
+                    keyPrefix: keyPrefix,
+                    entries: entries,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _ComparisonPaneEntry {
+  const _ComparisonPaneEntry(this.height, this.child);
+
+  final double height;
+  final Widget child;
+}
+
+class _ComparisonPaneDiagonalList extends StatefulWidget {
+  const _ComparisonPaneDiagonalList({
+    required this.keyPrefix,
+    required this.entries,
+  });
+
+  final String keyPrefix;
+  final List<_ComparisonPaneEntry> entries;
+
+  @override
+  State<_ComparisonPaneDiagonalList> createState() =>
+      _ComparisonPaneDiagonalListState();
+}
+
+class _ComparisonPaneDiagonalListState
+    extends State<_ComparisonPaneDiagonalList> {
+  static const _inset = 8.0;
+  static const _gap = 8.0;
+  final ScrollController _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final contentHeight =
+          _inset * 2 +
+          widget.entries.fold<double>(0, (sum, entry) => sum + entry.height) +
+          math.max(0, widget.entries.length - 1) * _gap;
+      return PlanDiagonalScrollbar(
+        keyPrefix: widget.keyPrefix,
+        controller: _controller,
+        contentExtent: contentHeight,
+        fogClipper: const PlanScenarioParallelogramClipper(),
+        child: SingleChildScrollView(
+          controller: _controller,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              final scroll = _controller.hasClients ? _controller.offset : 0.0;
+              var top = _inset;
+              final rows = <Widget>[];
+              for (var index = 0; index < widget.entries.length; index++) {
+                final entry = widget.entries[index];
+                final offset = planPhaseRowHorizontalOffset(
+                  viewportHeight: constraints.maxHeight,
+                  rowTop: top,
+                  rowHeight: entry.height,
+                  scrollOffset: scroll,
+                );
+                final width = planPhaseRowWidth(
+                  viewportWidth: constraints.maxWidth,
+                  viewportHeight: constraints.maxHeight,
+                  rowHeight: entry.height,
+                );
+                rows.add(
+                  Positioned(
+                    key: ValueKey('${widget.keyPrefix}-row-$index'),
+                    left: _inset + offset,
+                    top: top,
+                    width: width,
+                    height: entry.height,
+                    child: _ComparisonPaneRailRow(child: entry.child),
+                  ),
+                );
+                top += entry.height + _gap;
+              }
+              return SizedBox(
+                width: constraints.maxWidth,
+                height: contentHeight,
+                child: Stack(clipBehavior: Clip.none, children: rows),
+              );
+            },
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _ComparisonPaneRailRow extends StatelessWidget {
+  const _ComparisonPaneRailRow({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final depth = planScenarioParallelogramDepth(constraints.maxHeight);
+      return CustomPaint(
+        painter: const _ComparisonPaneRailRowPainter(),
+        child: ClipPath(
+          clipper: const PlanScenarioParallelogramClipper(),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(depth + 12, 6, depth + 12, 6),
+            child: child,
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _ComparisonPaneRailRowPainter extends CustomPainter {
+  const _ComparisonPaneRailRowPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = planScenarioParallelogramPath(size);
+    canvas.drawPath(path, Paint()..color = const Color(0xc9264359));
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.outline.withValues(alpha: 0.48)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.8,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ComparisonPaneRailRowPainter oldDelegate) => false;
+}
+
+class _ComparisonSummaryPane extends StatelessWidget {
+  const _ComparisonSummaryPane({
+    required this.side,
+    required this.target,
+    required this.result,
+  });
+  final String side;
+  final _PlanComparisonTarget target;
+  final PlanningScenarioComparisonResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final comparison = result.comparison;
+    final projection = side == 'a' ? result.projectionA : result.projectionB;
+    final phases = _comparisonRows(projection['phase_results']);
+    return _ComparisonPaneShell(
+      keyPrefix: 'plan-comparison-$side-summary',
+      title: target.name,
+      entries: [
+        _ComparisonPaneEntry(
+          104,
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('크레딧 ${comparison['credits_$side'] ?? 0}'),
+              Text('필요 재화 ${comparison['resource_type_count_$side'] ?? 0}종'),
+              Text(
+                '부족 재화 ${comparison['known_shortage_type_count_$side'] ?? 0}종',
+              ),
+              const Divider(height: 12),
+              Text('페이즈 ${phases.length}개'),
+            ],
+          ),
+        ),
+        for (var index = 0; index < phases.length; index++)
+          _ComparisonPaneEntry(
+            64,
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(radius: 12, child: Text('${index + 1}')),
+              title: Text(phases[index]['name']?.toString() ?? '페이즈'),
+              subtitle: Text(
+                '성장 단계 ${(phases[index]['stage_ids'] as List?)?.length ?? 0}개',
+              ),
+            ),
+          ),
+        if (phases.isEmpty)
+          const _ComparisonPaneEntry(
+            52,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('구성된 페이즈가 없습니다.'),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ComparisonStudentPane extends StatelessWidget {
+  const _ComparisonStudentPane({
+    required this.side,
+    required this.target,
+    required this.comparison,
+  });
+  final String side;
+  final _PlanComparisonTarget target;
+  final Map<String, dynamic> comparison;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = _comparisonRows(comparison['students']);
+    return _ComparisonPaneShell(
+      keyPrefix: 'plan-comparison-$side-students',
+      title: target.name,
+      entries: [
+        for (final row in rows)
+          _ComparisonPaneEntry(
+            76,
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(
+                backgroundImage: AssetImage(
+                  'assets/student_portraits/${row['student_id']}.png',
+                ),
+              ),
+              title: Text(row['student_id']?.toString() ?? '학생'),
+              subtitle: Text(
+                [
+                  for (final entry in Map<String, dynamic>.from(
+                    row['target_differences'] as Map? ?? const {},
+                  ).entries)
+                    '${entry.key}: ${Map<String, dynamic>.from(entry.value as Map)[side] ?? '–'}',
+                ].join(' · '),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        if (rows.isEmpty)
+          const _ComparisonPaneEntry(
+            52,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('학생 최종 목표가 같습니다.'),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ComparisonResourcePane extends StatelessWidget {
+  const _ComparisonResourcePane({
+    required this.side,
+    required this.target,
+    required this.comparison,
+  });
+  final String side;
+  final _PlanComparisonTarget target;
+  final Map<String, dynamic> comparison;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = _comparisonRows(comparison['resources']);
+    return _ComparisonPaneShell(
+      keyPrefix: 'plan-comparison-$side-resources',
+      title: target.name,
+      entries: [
+        for (final row in rows)
+          _ComparisonPaneEntry(
+            64,
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.inventory_2_outlined),
+              title: Text(row['display_name']?.toString() ?? '재화'),
+              subtitle: Text(
+                '필요 ${row['required_$side'] ?? 0} · 보유 ${row['owned'] ?? '미확인'} · 부족 ${row['shortage_$side'] ?? '미확인'}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        if (rows.isEmpty)
+          const _ComparisonPaneEntry(
+            52,
+            Align(alignment: Alignment.centerLeft, child: Text('필요 재화가 없습니다.')),
+          ),
+      ],
+    );
+  }
+}
+
+class _ComparisonBottleneckPane extends StatelessWidget {
+  const _ComparisonBottleneckPane({
+    required this.side,
+    required this.target,
+    required this.comparison,
+  });
+  final String side;
+  final _PlanComparisonTarget target;
+  final Map<String, dynamic> comparison;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = _comparisonRows(
+      comparison['bottlenecks'],
+    ).where((row) => (row['shortage_$side'] as int? ?? 0) > 0).toList();
+    return _ComparisonPaneShell(
+      keyPrefix: 'plan-comparison-$side-bottlenecks',
+      title: target.name,
+      entries: [
+        for (final row in rows)
+          _ComparisonPaneEntry(
+            64,
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.warning_amber_rounded),
+              title: Text(row['resource_key']?.toString() ?? '재화'),
+              subtitle: Text(
+                '최초 페이즈 ${row['first_phase_$side'] ?? '–'} · 부족 ${row['shortage_$side'] ?? 0}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        if (rows.isEmpty)
+          const _ComparisonPaneEntry(
+            52,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('확인된 병목이 없습니다.'),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class PlanScenarioListSection extends StatefulWidget {
@@ -3058,14 +4664,16 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        const rowHeight = 78.0;
+        const rowHeight = 142.0;
         const rowGap = 10.0;
         const inset = 8.0;
         final contentHeight =
             inset * 2 + result.scenarios.length * (rowHeight + rowGap) - rowGap;
         return PlanDiagonalScrollbar(
+          keyPrefix: 'plan-scenario',
           controller: _controller,
           contentExtent: contentHeight,
+          fogClipper: const PlanScenarioParallelogramClipper(),
           child: SingleChildScrollView(
             key: const ValueKey('plan-scenario-diagonal-scroll'),
             controller: _controller,
@@ -3108,7 +4716,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
                             child: PlanScenarioListCard(
                               scenario: scenario,
                               stale:
-                                  scenario.baseProfileRevision !=
+                                  scenario.baseProfileRevision <
                                   result.currentProfileRevision,
                               selected: scenario.id == _selectedScenarioId,
                               onTap: widget.active
@@ -3145,11 +4753,61 @@ class PlanScenarioListCard extends StatelessWidget {
   final bool selected;
   final VoidCallback? onTap;
 
+  String _updatedLabel() {
+    final parsed = DateTime.tryParse(scenario.updatedAt);
+    if (parsed == null) return '수정 시각 미상';
+    final local = parsed.toLocal();
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+    return '수정 ${local.year}.${twoDigits(local.month)}.${twoDigits(local.day)} '
+        '${twoDigits(local.hour)}:${twoDigits(local.minute)}';
+  }
+
+  String _compactAmount(int value) {
+    if (value >= 1000000000) {
+      return '${(value / 1000000000).toStringAsFixed(value % 1000000000 == 0 ? 0 : 1)}B';
+    }
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(value % 1000000 == 0 ? 0 : 1)}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(value % 1000 == 0 ? 0 : 1)}K';
+    }
+    return value.toString();
+  }
+
+  String _calculationLabel() {
+    final calculation = scenario.calculation;
+    if (calculation == null) return '계산 요약 없음';
+    final shortage = calculation.inventoryComplete
+        ? '부족 ${calculation.knownShortageTypeCount}종'
+        : '부족 ${calculation.knownShortageTypeCount}종 · 일부 재고 미확인';
+    final bottleneck = calculation.firstBottleneckPhaseNumber == null
+        ? '병목 없음'
+        : '최초 병목 페이즈 ${calculation.firstBottleneckPhaseNumber}';
+    return '크레딧 ${_compactAmount(calculation.credits)} · $shortage · $bottleneck';
+  }
+
+  String? _shortageIconAsset(PlanningScenarioRepresentativeShortage shortage) {
+    final itemId = shortage.itemId;
+    if (itemId == null || shortage.category == 'credits') {
+      return shortage.category == 'credits' ? planCreditIconAsset : null;
+    }
+    final folder = switch (shortage.category) {
+      'oopart' || 'workbook' => 'ooparts',
+      'tactical_bd' => 'tactical_bd',
+      'tech_notes' => 'skill_db',
+      'equipment' => 'equipment',
+      _ => null,
+    };
+    return folder == null ? null : 'assets/item_icons/$folder/$itemId.png';
+  }
+
   @override
   Widget build(BuildContext context) => CustomPaint(
     painter: _PlanScenarioListCardPainter(selected),
     child: ClipPath(
-      clipper: const _PlanScenarioListCardClipper(),
+      key: ValueKey('plan-scenario-card-clip-${scenario.id}'),
+      clipper: const PlanScenarioParallelogramClipper(),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -3162,7 +4820,12 @@ class PlanScenarioListCard extends StatelessWidget {
                   selected ? Icons.check_circle : Icons.analytics_outlined,
                   color: selected ? AppColors.primary : Colors.white70,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
+                _ScenarioStudentPortraits(
+                  scenarioId: scenario.id,
+                  studentIds: scenario.studentIds,
+                ),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3172,23 +4835,141 @@ class PlanScenarioListCard extends StatelessWidget {
                         scenario.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall,
                       ),
-                      const SizedBox(height: 4),
+                      if (scenario.description.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          scenario.description,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.white70),
+                        ),
+                      ],
+                      const SizedBox(height: 3),
                       Text(
-                        '학생 ${scenario.studentCount} · 페이즈 ${scenario.phaseCount} · 요소 ${scenario.stageCount}',
+                        '학생 ${scenario.studentCount} · 페이즈 ${scenario.phaseCount} · 성장 단계 ${scenario.stageCount}',
                         style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _calculationLabel(),
+                        key: ValueKey(
+                          'plan-scenario-calculation-${scenario.id}',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color:
+                              scenario.calculation?.inventoryComplete == false
+                              ? Colors.amberAccent
+                              : AppColors.primary,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                if (stale)
-                  const Tooltip(
-                    message: '현재 계정 데이터가 저장 시점과 다릅니다.',
-                    child: Icon(
-                      Icons.history_rounded,
-                      color: Colors.amberAccent,
+                const SizedBox(width: 12),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Tooltip(
+                      message: stale
+                          ? '저장 시점보다 프로필이 변경되었습니다. 요약은 현재 데이터로 다시 계산되었습니다.'
+                          : '현재 계정 데이터를 기준으로 저장되었습니다.',
+                      child: Container(
+                        key: ValueKey('plan-scenario-status-${scenario.id}'),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: stale
+                              ? Colors.amber.withValues(alpha: 0.16)
+                              : AppColors.primary.withValues(alpha: 0.16),
+                          border: Border.all(
+                            color: stale
+                                ? Colors.amberAccent
+                                : AppColors.primary,
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              stale
+                                  ? Icons.history_rounded
+                                  : Icons.check_rounded,
+                              size: 14,
+                              color: stale
+                                  ? Colors.amberAccent
+                                  : AppColors.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              stale ? '저장 시점과 다름' : '현재 데이터 기준',
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 7),
+                    if (scenario.calculation?.representativeShortage
+                        case final shortage?) ...[
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_shortageIconAsset(shortage) case final asset?)
+                            Image.asset(
+                              asset,
+                              key: ValueKey(
+                                'plan-scenario-shortage-icon-${scenario.id}',
+                              ),
+                              width: 22,
+                              height: 22,
+                              errorBuilder: (_, _, _) => const Icon(
+                                Icons.inventory_2_outlined,
+                                size: 18,
+                                color: Colors.amberAccent,
+                              ),
+                            )
+                          else
+                            const Icon(
+                              Icons.inventory_2_outlined,
+                              size: 18,
+                              color: Colors.amberAccent,
+                            ),
+                          const SizedBox(width: 5),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 160),
+                            child: Text(
+                              '${shortage.displayName} −${_compactAmount(shortage.shortage)}',
+                              key: ValueKey(
+                                'plan-scenario-shortage-${scenario.id}',
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(color: Colors.amberAccent),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                    ],
+                    Text(
+                      _updatedLabel(),
+                      key: ValueKey('plan-scenario-updated-${scenario.id}'),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelSmall?.copyWith(color: Colors.white60),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -3196,6 +4977,80 @@ class PlanScenarioListCard extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _ScenarioStudentPortraits extends StatelessWidget {
+  const _ScenarioStudentPortraits({
+    required this.scenarioId,
+    required this.studentIds,
+  });
+
+  final String scenarioId;
+  final List<String> studentIds;
+
+  @override
+  Widget build(BuildContext context) {
+    const diameter = 38.0;
+    const overlap = 10.0;
+    final visible = studentIds.take(4).toList(growable: false);
+    final hidden = studentIds.length - visible.length;
+    final itemCount = visible.length + (hidden > 0 ? 1 : 0);
+    final width = itemCount == 0
+        ? 0.0
+        : diameter + (itemCount - 1) * (diameter - overlap);
+    return SizedBox(
+      key: ValueKey('plan-scenario-portraits-$scenarioId'),
+      width: width,
+      height: diameter,
+      child: Stack(
+        children: [
+          for (var index = 0; index < visible.length; index++)
+            Positioned(
+              left: index * (diameter - overlap),
+              child: Container(
+                width: diameter,
+                height: diameter,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.outline, width: 1.5),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Image.asset(
+                  'assets/student_portraits/${visible[index]}.png',
+                  key: ValueKey(
+                    'plan-scenario-portrait-$scenarioId-${visible[index]}',
+                  ),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const ColoredBox(
+                    color: Color(0xff23394a),
+                    child: Icon(Icons.person_outline, size: 22),
+                  ),
+                ),
+              ),
+            ),
+          if (hidden > 0)
+            Positioned(
+              left: visible.length * (diameter - overlap),
+              child: Container(
+                width: diameter,
+                height: diameter,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xff23394a),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.outline, width: 1.5),
+                ),
+                child: Text(
+                  '+$hidden',
+                  key: ValueKey('plan-scenario-portrait-overflow-$scenarioId'),
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _PlanScenarioListSectionPainter extends CustomPainter {
@@ -3219,19 +5074,27 @@ class _PlanScenarioListSectionPainter extends CustomPainter {
       oldDelegate.path.getBounds() != path.getBounds();
 }
 
-class _PlanScenarioListCardClipper extends CustomClipper<Path> {
-  const _PlanScenarioListCardClipper();
+double planScenarioParallelogramDepth(double height) =>
+    height / math.tan(80 * math.pi / 180);
 
-  @override
-  Path getClip(Size size) => roundedPolygonPath([
-    Offset(14, 0),
+Path planScenarioParallelogramPath(Size size) {
+  final depth = planScenarioParallelogramDepth(size.height);
+  return roundedPolygonPath([
+    Offset(depth, 0),
     Offset(size.width, 0),
-    Offset(size.width - 14, size.height),
+    Offset(size.width - depth, size.height),
     Offset(0, size.height),
   ], 8);
+}
+
+class PlanScenarioParallelogramClipper extends CustomClipper<Path> {
+  const PlanScenarioParallelogramClipper();
 
   @override
-  bool shouldReclip(_PlanScenarioListCardClipper oldClipper) => false;
+  Path getClip(Size size) => planScenarioParallelogramPath(size);
+
+  @override
+  bool shouldReclip(PlanScenarioParallelogramClipper oldClipper) => false;
 }
 
 class _PlanScenarioListCardPainter extends CustomPainter {
@@ -3240,7 +5103,7 @@ class _PlanScenarioListCardPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = const _PlanScenarioListCardClipper().getClip(size);
+    final path = planScenarioParallelogramPath(size);
     canvas.drawPath(
       path,
       Paint()
@@ -4484,6 +6347,23 @@ class _PlanConsumptionDiagonalListState
   static const _inset = 8.0;
   static const _cardGap = 18.0;
   final ScrollController _controller = ScrollController();
+  bool _scrollCorrectionScheduled = false;
+
+  void _scheduleScrollCorrection() {
+    if (_scrollCorrectionScheduled) return;
+    _scrollCorrectionScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollCorrectionScheduled = false;
+      if (!mounted || !_controller.hasClients) return;
+      final position = _controller.position;
+      final corrected = _controller.offset
+          .clamp(position.minScrollExtent, position.maxScrollExtent)
+          .toDouble();
+      if ((_controller.offset - corrected).abs() > 0.01) {
+        _controller.jumpTo(corrected);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -4511,7 +6391,17 @@ class _PlanConsumptionDiagonalListState
           child: AnimatedBuilder(
             animation: _controller,
             builder: (context, _) {
-              final scroll = _controller.hasClients ? _controller.offset : 0.0;
+              final rawScroll = _controller.hasClients
+                  ? _controller.offset
+                  : 0.0;
+              final scroll = planStageEffectiveScrollOffset(
+                rawOffset: rawScroll,
+                contentHeight: contentHeight,
+                viewportHeight: constraints.maxHeight,
+              );
+              if ((rawScroll - scroll).abs() > 0.01) {
+                _scheduleScrollCorrection();
+              }
               var top = _inset;
               final children = <Widget>[];
               for (var index = 0; index < widget.groups.length; index++) {
@@ -4904,6 +6794,23 @@ class _PlanBottleneckDiagonalListState
   static const _inset = 8.0;
   static const _cardGap = 18.0;
   final ScrollController _controller = ScrollController();
+  bool _scrollCorrectionScheduled = false;
+
+  void _scheduleScrollCorrection() {
+    if (_scrollCorrectionScheduled) return;
+    _scrollCorrectionScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollCorrectionScheduled = false;
+      if (!mounted || !_controller.hasClients) return;
+      final position = _controller.position;
+      final corrected = _controller.offset
+          .clamp(position.minScrollExtent, position.maxScrollExtent)
+          .toDouble();
+      if ((_controller.offset - corrected).abs() > 0.01) {
+        _controller.jumpTo(corrected);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -4932,7 +6839,17 @@ class _PlanBottleneckDiagonalListState
           child: AnimatedBuilder(
             animation: _controller,
             builder: (context, _) {
-              final scroll = _controller.hasClients ? _controller.offset : 0.0;
+              final rawScroll = _controller.hasClients
+                  ? _controller.offset
+                  : 0.0;
+              final scroll = planStageEffectiveScrollOffset(
+                rawOffset: rawScroll,
+                contentHeight: contentHeight,
+                viewportHeight: constraints.maxHeight,
+              );
+              if ((rawScroll - scroll).abs() > 0.01) {
+                _scheduleScrollCorrection();
+              }
               var top = _inset;
               final children = <Widget>[];
               for (var index = 0; index < widget.bottlenecks.length; index++) {
@@ -5941,12 +7858,14 @@ class PlanDiagonalScrollbar extends StatelessWidget {
     required this.controller,
     required this.contentExtent,
     required this.child,
+    this.fogClipper,
   });
 
   final String keyPrefix;
   final ScrollController controller;
   final double contentExtent;
   final Widget child;
+  final CustomClipper<Path>? fogClipper;
 
   @override
   Widget build(BuildContext context) => ScrollConfiguration(
@@ -5992,12 +7911,23 @@ class PlanDiagonalScrollbar extends StatelessWidget {
             children: [
               child,
               Positioned.fill(
-                child: ScrollViewportFog(
-                  key: ValueKey('$keyPrefix-fog'),
-                  keyPrefix: '$keyPrefix-viewport-fog',
-                  showTop: fogVisibility.showTop,
-                  showBottom: fogVisibility.showBottom,
-                ),
+                child: fogClipper == null
+                    ? ScrollViewportFog(
+                        key: ValueKey('$keyPrefix-fog'),
+                        keyPrefix: '$keyPrefix-viewport-fog',
+                        showTop: fogVisibility.showTop,
+                        showBottom: fogVisibility.showBottom,
+                      )
+                    : ClipPath(
+                        key: ValueKey('$keyPrefix-fog-clip'),
+                        clipper: fogClipper,
+                        child: ScrollViewportFog(
+                          key: ValueKey('$keyPrefix-fog'),
+                          keyPrefix: '$keyPrefix-viewport-fog',
+                          showTop: fogVisibility.showTop,
+                          showBottom: fogVisibility.showBottom,
+                        ),
+                      ),
               ),
               Positioned.fill(
                 child: IgnorePointer(

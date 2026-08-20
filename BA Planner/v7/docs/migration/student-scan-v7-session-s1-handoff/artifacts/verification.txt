@@ -1,0 +1,67 @@
+S1 verification record
+======================
+
+Focused Python
+--------------
+Command:
+  cd backend
+  py -3.11 -m unittest tests.test_student_stats -v
+Result:
+  PASS - 9 tests, 0 failures, 0 errors
+
+Full backend regression
+-----------------------
+Command:
+  cd backend
+  $env:BA_PLANNER_ASSET_DIR=(Resolve-Path .).Path
+  .venv\Scripts\python.exe -m unittest discover -s tests -v
+Result:
+  PASS - 166 tests, 0 failures, 0 errors
+
+Catalog coverage smoke
+----------------------
+Result:
+  PASS - all 272 generated student records calculated a complete level-90,
+  5-star, Tier-10 build with explicit unowned alternate outfits.
+
+Catalog generation and storage
+------------------------------
+Command:
+  python backend/tools/sync_student_stats_from_schaledb.py
+Result:
+  PASS - 272 students, 90 equipment rows, 154008 bytes
+  Repeated generation produced identical size and SHA-256:
+  6b583668c4fee8de6d4ceeeacab6210094741829d81545bb9af08820a8f76e4e
+
+Source sizes and hashes:
+  students.min.json: 1630926 bytes
+  SHA-256: 95306342116426fd26262f153d02bc662783ffc9b2bcfcc632960594065c1963
+  equipment.min.json: 78798 bytes
+  SHA-256: 3782c1d6f0ad8e92640500ccf509d52485aad14859266ea3df623ac48413903b
+  Combined source: 1709724 bytes
+  Compact catalog ratio: 9.01%
+
+Static checks
+-------------
+  PASS - python -m py_compile for the three core modules and sync tool
+  PASS - git diff --check for every S1 source/data/test/status path
+  PASS - codealmanac validate
+  PASS - codealmanac health (0 orphan/dead/broken/unused/duplicate findings)
+
+Scope checks
+------------
+  PASS - no scanner capture/input/matcher file changed
+  PASS - no scanner protocol or candidate/evidence contract changed
+  PASS - no Flutter file changed for S1
+  PASS - no ../v6 runtime import added
+  PASS - backend/core/student_meta_data.py was not edited by S1
+  PASS - S2 through S5 were not implemented
+
+Environment note
+----------------
+The first full-suite attempt with system `py -3.11` failed before meaningful
+regression execution because that interpreter lacked Pillow/jsonschema and the
+sandbox denied the installed LocalAppData asset path. Re-running with the
+repository `.venv` and the documented workspace asset override passed all 166
+tests. This is an environment-selection issue, not an S1 test failure.
+

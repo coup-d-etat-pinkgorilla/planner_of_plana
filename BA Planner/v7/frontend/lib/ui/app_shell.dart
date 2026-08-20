@@ -86,6 +86,7 @@ class _AppShellState extends State<AppShell>
   late final AnimationController _homeEntranceController;
   RepositoryProfile? _selectedProfile;
   var _profileLoadGeneration = 0;
+  late BackendConnection _lastConnection;
   bool _showDevelopmentPanel = false;
   PlanningStudentSeed? _planningSeed;
   StudentCandidateContext? _studentCandidate;
@@ -116,20 +117,47 @@ class _AppShellState extends State<AppShell>
         widget.initialSection == AppSection.home) {
       _homeEntranceController.forward();
     }
+    _lastConnection = widget.service.state.value.connection;
+    widget.service.state.addListener(_handleConnectionChanged);
+    _loadSelectedProfile();
+  }
+
+  @override
+  void didUpdateWidget(covariant AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (identical(oldWidget.service, widget.service)) return;
+    oldWidget.service.state.removeListener(_handleConnectionChanged);
+    _lastConnection = widget.service.state.value.connection;
+    widget.service.state.addListener(_handleConnectionChanged);
     _loadSelectedProfile();
   }
 
   @override
   void dispose() {
     _profileLoadGeneration += 1;
+    widget.service.state.removeListener(_handleConnectionChanged);
     _homeEntranceController.dispose();
     super.dispose();
+  }
+
+  void _handleConnectionChanged() {
+    final connection = widget.service.state.value.connection;
+    final becameConnected =
+        connection == BackendConnection.connected &&
+        _lastConnection != BackendConnection.connected;
+    _lastConnection = connection;
+    if (becameConnected) {
+      _loadSelectedProfile();
+    } else if (connection != BackendConnection.connected) {
+      _profileLoadGeneration += 1;
+    }
   }
 
   Future<void> _loadSelectedProfile() async {
     final generation = ++_profileLoadGeneration;
     final service = widget.service;
     if (service is! RepositoryService) return;
+    if (service.state.value.connection != BackendConnection.connected) return;
     final repository = service as RepositoryService;
     try {
       final profiles = await repository.listProfiles();

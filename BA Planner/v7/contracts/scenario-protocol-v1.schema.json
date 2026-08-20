@@ -19,7 +19,7 @@
     },
     "scenarioSummary": {
       "type": "object",
-      "required": ["scenario_id", "revision", "name", "description", "base_profile_revision", "phase_count", "stage_count", "student_count", "created_at", "updated_at"],
+      "required": ["scenario_id", "revision", "name", "description", "base_profile_revision", "phase_count", "stage_count", "student_count", "student_ids", "calculation", "created_at", "updated_at"],
       "properties": {
         "scenario_id": { "$ref": "#/$defs/id" },
         "revision": { "type": "integer", "minimum": 0 },
@@ -29,6 +29,41 @@
         "phase_count": { "type": "integer", "minimum": 0 },
         "stage_count": { "type": "integer", "minimum": 0 },
         "student_count": { "type": "integer", "minimum": 0 },
+        "student_ids": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "calculation": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["credits", "required_resource_type_count", "known_shortage_type_count", "inventory_complete", "first_bottleneck_phase_number", "representative_shortage"],
+              "properties": {
+                "credits": { "type": "integer", "minimum": 0 },
+                "required_resource_type_count": { "type": "integer", "minimum": 0 },
+                "known_shortage_type_count": { "type": "integer", "minimum": 0 },
+                "inventory_complete": { "type": "boolean" },
+                "first_bottleneck_phase_number": { "type": ["integer", "null"], "minimum": 1 },
+                "representative_shortage": {
+                  "oneOf": [
+                    { "type": "null" },
+                    {
+                      "type": "object",
+                      "required": ["resource_key", "item_id", "display_name", "category", "shortage"],
+                      "properties": {
+                        "resource_key": { "type": "string", "minLength": 1 },
+                        "item_id": { "type": ["string", "null"] },
+                        "display_name": { "type": "string", "minLength": 1 },
+                        "category": { "type": "string", "minLength": 1 },
+                        "shortage": { "type": "integer", "minimum": 1 }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
         "created_at": { "type": "string", "minLength": 1 },
         "updated_at": { "type": "string", "minLength": 1 }
       },

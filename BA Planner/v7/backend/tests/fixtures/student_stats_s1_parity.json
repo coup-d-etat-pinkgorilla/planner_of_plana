@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "student": "aru",
+  "schaledb_id": 10000,
+  "relationship": [
+    {"rank": 1, "expected": {"AttackPower": 0, "MaxHP": 0}},
+    {"rank": 10, "expected": {"AttackPower": 46, "MaxHP": 0}},
+    {"rank": 20, "expected": {"AttackPower": 126, "MaxHP": 530}},
+    {"rank": 50, "expected": {"AttackPower": 246, "MaxHP": 1030}},
+    {"rank": 100, "expected": {"AttackPower": 246, "MaxHP": 1030}}
+  ],
+  "equipment_interpolation": [
+    {"category": "Hat", "tier": 4, "stat": "AttackPower_Coefficient", "level": 1, "expected": 2000},
+    {"category": "Hat", "tier": 4, "stat": "AttackPower_Coefficient", "level": 20, "expected": 2244},
+    {"category": "Hat", "tier": 4, "stat": "AttackPower_Coefficient", "level": 40, "expected": 2500},
+    {"category": "Bag", "tier": 4, "stat": "DefensePower_Base", "level": 20, "expected": 744}
+  ],
+  "star_edges": {
+    "student": "kotama",
+    "level": 1,
+    "equipment": [{"tier": 1, "level": 1}, null, null],
+    "expected": {
+      "1": {"MaxHP": 2245, "AttackPower": 144, "DefensePower": 19, "HealPower": 1612},
+      "2": {"MaxHP": 2358, "AttackPower": 158, "DefensePower": 19, "HealPower": 1733},
+      "3": {"MaxHP": 2515, "AttackPower": 175, "DefensePower": 19, "HealPower": 1895},
+      "4": {"MaxHP": 2717, "AttackPower": 196, "DefensePower": 19, "HealPower": 2088},
+      "5": {"MaxHP": 3031, "AttackPower": 220, "DefensePower": 19, "HealPower": 2330}
+    }
+  },
+  "full_build": {
+    "level": 90,
+    "star": 5,
+    "equipment": [{"tier": 10, "level": 1}, {"tier": 10, "level": 33}, {"tier": 10, "level": 70}],
+    "weapon": {"star": 4, "level": 60},
+    "relationship_rank": 20,
+    "unowned_alternate_ids": [10031, 10089],
+    "favorite_gear_tier": 0,
+    "potential": {"max_hp": 25, "attack": 25, "heal": 25},
+    "expected": {"MaxHP": 44669, "AttackPower": 9037, "DefensePower": 109, "HealPower": 5891}
+  }
+}

@@ -349,6 +349,35 @@ void main() {
       expect(conditions.lowerEnabled, isTrue);
       expect(conditions.upperEnabled, isFalse);
 
+      await tester.tap(
+        find.byKey(const ValueKey('plan-stage-1-student-star-5')),
+      );
+      await tester.pump();
+      expect(conditions.lowerTargets['student_star'], 5);
+      await tester.tap(
+        find.byKey(const ValueKey('plan-stage-1-student-star-5')),
+      );
+      await tester.pump();
+      expect(conditions.lowerTargets['student_star'], 4);
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-stage-1-student-star-3')),
+      );
+      await tester.pump();
+      expect(conditions.lowerTargets['student_star'], 2);
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-stage-1-student-star-1')),
+      );
+      await tester.pump();
+      expect(conditions.lowerTargets['student_star'], 1);
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-stage-2-weapon-star-3')),
+      );
+      await tester.pump();
+      expect(conditions.upperTargets['weapon_star'], 2);
+
       final levelIncrease = find.descendant(
         of: find.byKey(const ValueKey('test-range-lower-card')),
         matching: find.byKey(const ValueKey('plan-stage-1-level-increase')),

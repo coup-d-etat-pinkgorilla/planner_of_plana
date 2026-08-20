@@ -9,15 +9,32 @@ class ToolBackendException implements Exception {
   String toString() => message;
 }
 
-class ToolBackendClient {
-  ToolBackendClient({String? backendDirectory, String? pythonExecutable})
-    : backendDirectory = _resolveBackendDirectory(backendDirectory),
-      pythonExecutable = pythonExecutable?.trim().isNotEmpty == true
-          ? pythonExecutable!.trim()
-          : (Platform.environment['BA_PLANNER_PYTHON']?.trim().isNotEmpty ==
-                    true
-                ? Platform.environment['BA_PLANNER_PYTHON']!.trim()
-                : 'py');
+abstract interface class ToolBackend {
+  Future<Map<String, dynamic>> call(
+    String method, [
+    Map<String, dynamic> params = const {},
+  ]);
+}
+
+class ToolBackendClient implements ToolBackend {
+  factory ToolBackendClient({
+    String? backendDirectory,
+    String? pythonExecutable,
+  }) {
+    final resolvedBackend = _resolveBackendDirectory(backendDirectory);
+    return ToolBackendClient._(
+      backendDirectory: resolvedBackend,
+      pythonExecutable: _resolvePythonExecutable(
+        pythonExecutable,
+        resolvedBackend,
+      ),
+    );
+  }
+
+  const ToolBackendClient._({
+    required this.backendDirectory,
+    required this.pythonExecutable,
+  });
 
   final String backendDirectory;
   final String pythonExecutable;
@@ -36,6 +53,24 @@ class ToolBackendClient {
     ).absolute.path;
   }
 
+  static String _resolvePythonExecutable(String? explicit, String backend) {
+    if (explicit?.trim().isNotEmpty == true) return explicit!.trim();
+    final fromEnvironment = Platform.environment['BA_PLANNER_PYTHON'];
+    if (fromEnvironment?.trim().isNotEmpty == true) {
+      return fromEnvironment!.trim();
+    }
+    final localVirtualEnvironment = File(
+      '$backend${Platform.pathSeparator}.venv'
+      '${Platform.pathSeparator}${Platform.isWindows ? 'Scripts' : 'bin'}'
+      '${Platform.pathSeparator}${Platform.isWindows ? 'python.exe' : 'python'}',
+    );
+    if (localVirtualEnvironment.existsSync()) {
+      return localVirtualEnvironment.absolute.path;
+    }
+    return Platform.isWindows ? 'py' : 'python3';
+  }
+
+  @override
   Future<Map<String, dynamic>> call(
     String method, [
     Map<String, dynamic> params = const {},

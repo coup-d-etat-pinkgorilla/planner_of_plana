@@ -13,6 +13,32 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test(
+    'startup probe keeps the process connecting until it responds',
+    () async {
+      final process = FakeBackendProcess();
+      final client = PlanningProtocolClient(
+        () async => process,
+        waitForStartupProbe: true,
+      );
+
+      final start = client.start();
+      await Future<void>.delayed(Duration.zero);
+      expect(client.connection.value, BackendConnection.connecting);
+      final request = _decode(process.writes.single);
+      expect(request['method'], 'repository.profile.list');
+
+      process.respond(request, {
+        'profiles': <Object>[],
+        'selected_profile_id': null,
+      });
+      await start;
+
+      expect(client.connection.value, BackendConnection.connected);
+      await client.dispose();
+    },
+  );
+
   test('matches multiple reversed responses by unique request id', () async {
     final process = FakeBackendProcess();
     final client = PlanningProtocolClient(() async => process);
@@ -464,6 +490,35 @@ void main() {
     await expectLater(service.reconnect(), throwsA(isA<StateError>()));
     expect(service.state.value.connection, BackendConnection.disconnected);
     await service.dispose();
+  });
+
+  test('backend launcher prefers the bundled virtual environment', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'ba_planner_v7_backend_runtime_',
+    );
+    try {
+      final module = File(
+        '${directory.path}${Platform.pathSeparator}core'
+        '${Platform.pathSeparator}backend_process.py',
+      );
+      await module.parent.create(recursive: true);
+      await module.writeAsString('# runtime marker');
+      final python = File(
+        '${directory.path}${Platform.pathSeparator}.venv'
+        '${Platform.pathSeparator}${Platform.isWindows ? 'Scripts' : 'bin'}'
+        '${Platform.pathSeparator}${Platform.isWindows ? 'python.exe' : 'python'}',
+      );
+      await python.parent.create(recursive: true);
+      await python.writeAsBytes(const [0]);
+
+      final config = BackendProcessConfig.resolve(
+        backendDirectory: directory.path,
+      );
+      expect(config.executable, python.absolute.path);
+      expect(config.arguments, ['-m', 'core.backend_process']);
+    } finally {
+      await directory.delete(recursive: true);
+    }
   });
 
   test(

@@ -6,6 +6,7 @@ import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/app_section.dart';
 import 'package:ba_planner_v7/ui/app_shell.dart';
 import 'package:ba_planner_v7/ui/widgets/ba_triangle_background.dart';
@@ -17,7 +18,55 @@ import 'package:ba_planner_v7/ui/widgets/lifted_path_shadow.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class _ConnectionGatedShellService extends MockAppService {
+  _ConnectionGatedShellService()
+    : super(
+        profiles: const [
+          RepositoryProfile(
+            id: '0000000000000000000000c2',
+            displayName: 'shell reconnect fixture',
+            avatarStudentId: 'hibiki',
+            revision: 0,
+            selected: true,
+          ),
+        ],
+      );
+
+  @override
+  Future<List<RepositoryProfile>> listProfiles() async {
+    if (state.value.connection != BackendConnection.connected) {
+      throw StateError('backend is not connected');
+    }
+    return super.listProfiles();
+  }
+}
+
 void main() {
+  testWidgets('app shell reloads its selected profile after connection', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 720));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final service = _ConnectionGatedShellService();
+    service.setConnection(BackendConnection.disconnected);
+    addTearDown(service.dispose);
+
+    await tester.pumpWidget(MaterialApp(home: AppShell(service: service)));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('home-header-profile-portrait')),
+      findsNothing,
+    );
+
+    service.setConnection(BackendConnection.connected);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('home-header-profile-portrait')),
+      findsOneWidget,
+    );
+  });
+
   test('section motion angles use monitor-space mathematical directions', () {
     const size = Size(640, 360);
     final right = sectionMotionOffset(size, 0);

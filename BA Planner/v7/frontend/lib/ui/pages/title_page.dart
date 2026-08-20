@@ -1,5 +1,6 @@
 // ignore_for_file: unused_element
 
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -53,21 +54,7 @@ const _actionTexture = BATriangleTextureConfig(
   fogStrength: 0.08,
 );
 
-const _primaryActionTexture = BATriangleTextureConfig(
-  baseColor: BATrianglePalette.softTitlePinkBase,
-  panelColor: BATrianglePalette.softTitlePinkPanel,
-  softColor: BATrianglePalette.softTitlePinkSoft,
-  accentColor: BATrianglePalette.softTitlePinkAccent,
-  triangleSize: 105,
-  tessellationContrast: 0.09,
-  randomSeed: 2077,
-  macroTriangleChance: 0.14,
-  macroTriangleScale: 2.2,
-  macroTriangleContrast: 0.06,
-  lightStrength: 0.22,
-  edgeVignetteStrength: 0.12,
-  fogStrength: 0.08,
-);
+enum _InitialAccountAction { create, imported, cancelled }
 
 class TitlePage extends StatefulWidget {
   const TitlePage({super.key, required this.service, this.onExitRequested});
@@ -95,6 +82,8 @@ class _TitlePageState extends State<TitlePage>
   StudentCatalogEntry? _studentGridWarmupPreview;
   bool _studentGridWarmupActive = false;
   int _studentGridWarmupRequest = 0;
+  int _accountLoadGeneration = 0;
+  late BackendConnection _lastConnection;
 
   RepositoryService? get _repository => widget.service is RepositoryService
       ? widget.service as RepositoryService
@@ -107,21 +96,72 @@ class _TitlePageState extends State<TitlePage>
       vsync: this,
       duration: const Duration(milliseconds: 460),
     );
+    _lastConnection = widget.service.state.value.connection;
+    widget.service.state.addListener(_handleConnectionChanged);
+    _loadAccount();
+  }
+
+  @override
+  void didUpdateWidget(covariant TitlePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (identical(oldWidget.service, widget.service)) return;
+    oldWidget.service.state.removeListener(_handleConnectionChanged);
+    _lastConnection = widget.service.state.value.connection;
+    widget.service.state.addListener(_handleConnectionChanged);
     _loadAccount();
   }
 
   @override
   void dispose() {
+    _accountLoadGeneration += 1;
     _studentGridWarmupRequest += 1;
+    widget.service.state.removeListener(_handleConnectionChanged);
     _exitController.dispose();
     _keyboardFocus.dispose();
     super.dispose();
   }
 
+  void _handleConnectionChanged() {
+    final connection = widget.service.state.value.connection;
+    final becameConnected =
+        connection == BackendConnection.connected &&
+        _lastConnection != BackendConnection.connected;
+    _lastConnection = connection;
+    if (becameConnected) {
+      _loadAccount();
+      return;
+    }
+    if (connection != BackendConnection.connected && _profile == null) {
+      _accountLoadGeneration += 1;
+      if (mounted) {
+        setState(() {
+          _loading = true;
+          _error = null;
+        });
+      }
+    }
+  }
+
   Future<void> _loadAccount() async {
+    final generation = ++_accountLoadGeneration;
+    if (widget.service.state.value.connection != BackendConnection.connected) {
+      if (mounted && generation == _accountLoadGeneration) {
+        setState(() {
+          _loading = true;
+          _error = null;
+        });
+      }
+      return;
+    }
+    if (mounted && !_loading) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
     final repository = _repository;
     if (repository == null) {
-      if (mounted) {
+      if (mounted && generation == _accountLoadGeneration) {
         setState(() {
           _loading = false;
           _error = '계정 저장소를 사용할 수 없습니다.';
@@ -130,12 +170,7 @@ class _TitlePageState extends State<TitlePage>
       return;
     }
     try {
-      final results = await Future.wait<Object>([
-        repository.listProfiles(),
-        widget.service.listStudents(),
-      ]);
-      final profiles = results[0] as List<RepositoryProfile>;
-      final catalog = results[1] as List<StudentCatalogEntry>;
+      final profiles = await repository.listProfiles();
       var selected = profiles.where((item) => item.selected).firstOrNull;
       if (selected == null && profiles.isNotEmpty) {
         final fallback = profiles.first;
@@ -155,21 +190,31 @@ class _TitlePageState extends State<TitlePage>
       final state = selected == null
           ? null
           : await repository.loadRepositoryState(selected.id);
-      if (!mounted) return;
+      if (!mounted || generation != _accountLoadGeneration) return;
       setState(() {
         _profile = selected;
         _repositoryState = state;
-        _totalStudents = catalog.length;
         _loading = false;
         _error = null;
       });
-      _scheduleStudentGridWarmup(catalog);
+      unawaited(_loadStudentCatalog(generation));
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || generation != _accountLoadGeneration) return;
       setState(() {
         _loading = false;
         _error = '$error';
       });
+    }
+  }
+
+  Future<void> _loadStudentCatalog(int accountGeneration) async {
+    try {
+      final catalog = await widget.service.listStudents();
+      if (!mounted || accountGeneration != _accountLoadGeneration) return;
+      setState(() => _totalStudents = catalog.length);
+      _scheduleStudentGridWarmup(catalog);
+    } catch (_) {
+      // Student catalog warmup is cosmetic and must not block account login.
     }
   }
 
@@ -203,13 +248,96 @@ class _TitlePageState extends State<TitlePage>
     );
   }
 
+  Future<_InitialAccountAction> _chooseInitialAccountAction() async {
+    final repository = _repository;
+    if (repository == null) return _InitialAccountAction.create;
+
+    List<RepositoryV6AccountPreview> accounts;
+    try {
+      accounts = await repository.previewV6Accounts();
+    } catch (_) {
+      // A missing sibling v6 installation is a normal first-run condition.
+      return _InitialAccountAction.create;
+    }
+    if (!mounted || accounts.isEmpty) return _InitialAccountAction.create;
+
+    final choice = await showDialog<Object>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        key: const ValueKey('title-initial-account-dialog'),
+        title: const Text('계정 데이터 선택'),
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 0, 24, 12),
+            child: Text('v6 원본은 변경하지 않고 새 v7 계정으로 복사합니다.'),
+          ),
+          SimpleDialogOption(
+            key: const ValueKey('title-create-new-account'),
+            onPressed: () =>
+                Navigator.pop(context, _InitialAccountAction.create),
+            child: const ListTile(
+              leading: Icon(Icons.person_add_alt_1_outlined),
+              title: Text('새 계정 만들기'),
+            ),
+          ),
+          for (final account in accounts)
+            SimpleDialogOption(
+              key: ValueKey('title-import-v6-${account.sourceProfileKey}'),
+              onPressed: () => Navigator.pop(context, account),
+              child: ListTile(
+                leading: const Icon(Icons.drive_file_move_outline),
+                title: Text('${account.displayName} · v6에서 가져오기'),
+                subtitle: Text(
+                  '학생 ${account.studentCount}명 · 인벤토리 '
+                  '${account.inventoryCount}종 · 계획 ${account.goalCount}개',
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+    if (!mounted || choice == null) return _InitialAccountAction.cancelled;
+    if (choice == _InitialAccountAction.create) {
+      return _InitialAccountAction.create;
+    }
+
+    final account = choice as RepositoryV6AccountPreview;
+    setState(() {
+      _actionRunning = true;
+      _error = null;
+    });
+    try {
+      await repository.importV6Account(account.sourceProfileKey);
+      return _InitialAccountAction.imported;
+    } catch (error) {
+      if (mounted) setState(() => _error = 'v6 계정을 가져오지 못했습니다: $error');
+      return _InitialAccountAction.cancelled;
+    } finally {
+      if (mounted) setState(() => _actionRunning = false);
+    }
+  }
+
   Future<void> _activatePrimary() async {
-    if (_loading || _actionRunning || _transitioning) return;
+    if (_loading ||
+        _actionRunning ||
+        _transitioning ||
+        widget.service.state.value.connection != BackendConnection.connected) {
+      return;
+    }
+    var initialAction = _InitialAccountAction.create;
+    if (_profile == null) {
+      initialAction = await _chooseInitialAccountAction();
+      if (!mounted || initialAction == _InitialAccountAction.cancelled) return;
+    }
     setState(() => _transitioning = true);
     await _exitController.forward();
     if (!mounted) return;
     if (_profile != null) {
       _openShell(AppSection.home);
+      return;
+    }
+    if (initialAction == _InitialAccountAction.imported) {
+      _openShell(AppSection.plan);
       return;
     }
     setState(() {
@@ -917,7 +1045,7 @@ class _StudioTitleCanvas extends StatelessWidget {
                   _StudioPathSurface(
                     key: const ValueKey('title-primary-texture'),
                     path: primaryContainerPath,
-                    texture: _primaryActionTexture,
+                    texture: titlePrimaryActionTexture,
                   ),
                   _positionedMarker('title-primary-position', primaryRect),
                   _positionedPathAction(

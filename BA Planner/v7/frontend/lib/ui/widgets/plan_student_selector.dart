@@ -8,6 +8,7 @@ import '../../services/repository_service.dart';
 import '../models/planning_models.dart';
 import '../studio/section_template.dart';
 import 'animated_section_stack.dart';
+import 'ba_triangle_background.dart';
 import 'lifted_path_shadow.dart';
 import 'section_template_surface.dart';
 import 'student_range_condition_section.dart';
@@ -29,6 +30,43 @@ const planStudentSelectorMotion = SectionMotionSpec(
   outro: planStudentSelectorOutroDegrees,
 );
 const planStudentSelectorSectionOpacity = 0.76;
+const planStudentSelectorSelectionWidth = 280.0;
+const planStudentSelectorSelectionHeight = 112.0;
+const planStudentSelectorConfirmTexture = titlePrimaryActionTexture;
+
+Rect planStudentSelectorSelectionSectionRect(
+  Size size, {
+  required Rect section1Bounds,
+}) {
+  const outerInset = 16.0;
+  final width = math.min(
+    planStudentSelectorSelectionWidth,
+    math.max(180.0, size.width * 0.22),
+  );
+  final height = math.min(
+    planStudentSelectorSelectionHeight,
+    section1Bounds.height,
+  );
+  return Rect.fromLTWH(
+    size.width - outerInset - width,
+    section1Bounds.bottom - height,
+    width,
+    height,
+  );
+}
+
+Path planStudentSelectorSelectionSectionPath(Size size) {
+  final depth = math.min(
+    size.width * 0.32,
+    size.height / math.tan(80 * math.pi / 180),
+  );
+  return buildRoundedSectionPolygon([
+    Offset(depth, 0),
+    Offset(size.width, 0),
+    Offset(size.width, size.height),
+    Offset(0, size.height),
+  ], radius: 10);
+}
 
 ({Rect grid, Rect filter, Rect condition}) planStudentSelectorSectionRects(
   Size size, {
@@ -131,7 +169,7 @@ class PlanStudentSelector extends StatefulWidget {
     super.key,
     required this.service,
     required this.plannedIds,
-    required this.onSelected,
+    required this.onConfirmed,
     required this.section1Bounds,
     required this.section1RightAtReference,
     required this.active,
@@ -139,7 +177,7 @@ class PlanStudentSelector extends StatefulWidget {
 
   final AppService service;
   final Set<String> plannedIds;
-  final ValueChanged<PlanningStudentSeed> onSelected;
+  final ValueChanged<List<PlanningStudentSeed>> onConfirmed;
   final Rect section1Bounds;
   final double section1RightAtReference;
   final bool active;
@@ -164,6 +202,7 @@ class _PlanStudentSelectorState extends State<PlanStudentSelector>
   bool _loading = true;
   String? _error;
   StudentRangeConditions _rangeConditions = StudentRangeConditions.initial();
+  final List<String> _selectedStudentIds = [];
 
   RepositoryService? get _repository => widget.service is RepositoryService
       ? widget.service as RepositoryService
@@ -302,21 +341,35 @@ class _PlanStudentSelectorState extends State<PlanStudentSelector>
     });
   }
 
-  void _selectStudent(String studentId) {
-    final student = _students.firstWhere(
-      (entry) => entry.studentId == studentId,
-    );
-    final currentValues = _studentValuesById[studentId] ?? const {};
-    widget.onSelected(
-      PlanningStudentSeed(
-        handoffId:
-            'plan-selector-$studentId-${DateTime.now().microsecondsSinceEpoch}',
-        studentId: studentId,
-        metadata: student.metadata,
-        currentValues: currentValues,
-        owned: _ownedIds.contains(studentId),
-      ),
-    );
+  void _toggleStudent(String studentId) {
+    setState(() {
+      if (_selectedStudentIds.contains(studentId)) {
+        _selectedStudentIds.remove(studentId);
+      } else {
+        _selectedStudentIds.add(studentId);
+      }
+    });
+  }
+
+  void _confirmSelection() {
+    if (_selectedStudentIds.isEmpty) return;
+    widget.onConfirmed([
+      for (final studentId in _selectedStudentIds)
+        () {
+          final student = _students.firstWhere(
+            (entry) => entry.studentId == studentId,
+          );
+          final currentValues = _studentValuesById[studentId] ?? const {};
+          return PlanningStudentSeed(
+            handoffId:
+                'plan-selector-$studentId-${DateTime.now().microsecondsSinceEpoch}',
+            studentId: studentId,
+            metadata: student.metadata,
+            currentValues: currentValues,
+            owned: _ownedIds.contains(studentId),
+          );
+        }(),
+    ]);
   }
 
   @override
@@ -331,6 +384,10 @@ class _PlanStudentSelectorState extends State<PlanStudentSelector>
       final gridRect = sections.grid;
       final filterRect = sections.filter;
       final conditionRect = sections.condition;
+      final selectionRect = planStudentSelectorSelectionSectionRect(
+        size,
+        section1Bounds: widget.section1Bounds,
+      );
       final visible = sortStudentGridEntries(
         _students.where(
           (student) =>
@@ -359,6 +416,19 @@ class _PlanStudentSelectorState extends State<PlanStudentSelector>
                     child: _buildGridBody(visible),
                   ),
                 ),
+              ),
+            ),
+          ),
+          Positioned.fromRect(
+            rect: selectionRect,
+            child: PlanStudentSelectorMotion(
+              key: const ValueKey('plan-student-selector-selection-motion'),
+              animation: _filterController,
+              child: _PlanStudentSelectionSection(
+                selectedCount: _selectedStudentIds.length,
+                onConfirm: _selectedStudentIds.isEmpty
+                    ? null
+                    : _confirmSelection,
               ),
             ),
           ),
@@ -483,10 +553,185 @@ class _PlanStudentSelectorState extends State<PlanStudentSelector>
       studentValuesById: _studentValuesById,
       plannedIds: widget.plannedIds,
       selectedId: null,
-      onSelected: _selectStudent,
+      selectedIds: _selectedStudentIds.toSet(),
+      onSelected: _toggleStudent,
       columns: planStudentSelectorGridColumns,
     );
   }
+}
+
+class _PlanStudentSelectionSection extends StatelessWidget {
+  const _PlanStudentSelectionSection({
+    required this.selectedCount,
+    required this.onConfirm,
+  });
+
+  final int selectedCount;
+  final VoidCallback? onConfirm;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final path = planStudentSelectorSelectionSectionPath(constraints.biggest);
+      final enabled = onConfirm != null;
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          CustomPaint(
+            key: const ValueKey('plan-student-selector-selection-foundation'),
+            painter: _PlanStudentSelectionSectionPainter(path),
+          ),
+          ClipPath(
+            clipper: _PlanStudentSelectorPathClipper(path),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                constraints.maxHeight / math.tan(80 * math.pi / 180) + 14,
+                12,
+                12,
+                12,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    '선택된 학생 $selectedCount명',
+                    key: const ValueKey('plan-student-selector-selected-count'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppColors.text,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: _PlanStudentSelectionConfirmButton(
+                      enabled: enabled,
+                      onPressed: onConfirm,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+class _PlanStudentSelectionConfirmButton extends StatelessWidget {
+  const _PlanStudentSelectionConfirmButton({
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final bool enabled;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final path = planStudentSelectorSelectionSectionPath(constraints.biggest);
+      return Semantics(
+        button: true,
+        enabled: enabled,
+        label: '선택된 학생 추가',
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            CustomPaint(
+              painter: _PlanStudentSelectionButtonPainter(
+                path: path,
+                enabled: enabled,
+              ),
+            ),
+            ClipPath(
+              clipper: _PlanStudentSelectorPathClipper(path),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  key: const ValueKey(
+                    'plan-student-selector-confirm-selection',
+                  ),
+                  onTap: onPressed,
+                  child: Center(
+                    child: Text(
+                      '선택된 학생 추가',
+                      style: TextStyle(
+                        color: enabled ? AppColors.text : AppColors.textMuted,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _PlanStudentSelectionSectionPainter extends CustomPainter {
+  const _PlanStudentSelectionSectionPainter(this.path);
+
+  final Path path;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    paintLiftedPathShadow(canvas, path, defaultLiftedSectionShadow);
+    canvas.drawPath(
+      path,
+      Paint()..color = AppColors.surface.withValues(alpha: 0.84),
+    );
+  }
+
+  @override
+  bool? hitTest(Offset position) => path.contains(position);
+
+  @override
+  bool shouldRepaint(_PlanStudentSelectionSectionPainter oldDelegate) =>
+      oldDelegate.path != path;
+}
+
+class _PlanStudentSelectionButtonPainter extends CustomPainter {
+  const _PlanStudentSelectionButtonPainter({
+    required this.path,
+    required this.enabled,
+  });
+
+  final Path path;
+  final bool enabled;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.clipPath(path, doAntiAlias: true);
+    BATriangleTexturePainter(
+      planStudentSelectorConfirmTexture,
+    ).paint(canvas, size);
+    if (!enabled) {
+      canvas.drawColor(Colors.black.withValues(alpha: 0.28), BlendMode.srcOver);
+    }
+    canvas.restore();
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = enabled
+            ? BATrianglePalette.softTitlePinkAccent
+            : AppColors.outline
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool? hitTest(Offset position) => path.contains(position);
+
+  @override
+  bool shouldRepaint(_PlanStudentSelectionButtonPainter oldDelegate) =>
+      oldDelegate.path != path || oldDelegate.enabled != enabled;
 }
 
 class PlanStudentSelectorMotion extends StatelessWidget {
@@ -580,6 +825,9 @@ class PlanStudentSelectorSectionPainter extends CustomPainter {
         ..style = PaintingStyle.fill,
     );
   }
+
+  @override
+  bool? hitTest(Offset position) => path.contains(position);
 
   @override
   bool shouldRepaint(PlanStudentSelectorSectionPainter oldDelegate) =>

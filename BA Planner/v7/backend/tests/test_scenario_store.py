@@ -13,9 +13,13 @@ def targets(level: int) -> dict[str, int]:
     return {
         "level": level, "bond_rank": 1, "student_star": 1,
         "weapon_level": 0, "weapon_star": 0, "ex_skill": 1,
-        "skill1": 1, "skill2": 1, "skill3": 1,
-        "equip1_tier": 1, "equip2_tier": 1, "equip3_tier": 1,
-        "equip1_level": 1, "equip2_level": 1, "equip3_level": 1,
+        "skill1": 1, "skill2": 0, "skill3": 0,
+        "equip1_tier": 1,
+        "equip2_tier": 1 if level >= 10 else 0,
+        "equip3_tier": 1 if level >= 20 else 0,
+        "equip1_level": 1,
+        "equip2_level": 1 if level >= 10 else 0,
+        "equip3_level": 1 if level >= 20 else 0,
         "equip4_tier": 0, "stat_hp": 0, "stat_atk": 0, "stat_heal": 0,
     }
 
@@ -139,6 +143,52 @@ class ScenarioStoreTests(unittest.TestCase):
         self.assertTrue(scenario_path.exists())
         self.repository.delete_profile(self.profile_id, 0, "delete-profile")
         self.assertFalse(scenario_path.exists())
+
+    def test_list_includes_current_projection_and_ordered_student_ids(self) -> None:
+        self.repository.update_students(
+            self.profile_id,
+            [{"version": 1, "student_id": "ayane", "values": {"level": 1}}],
+            0,
+            "students",
+        )
+        self.repository.update_inventory(
+            self.profile_id,
+            {
+                "version": 1,
+                "entries": [{"key": "credits", "quantity": "0"}],
+            },
+            1,
+            "inventory",
+        )
+        store = ScenarioStore(
+            self.root,
+            profile_revision=lambda profile_id: self.repository.get_state(profile_id)["revision"],
+            profile_state=self.repository.get_state,
+            id_factory=lambda: "f" * 32,
+        )
+        store.create(
+            self.profile_id,
+            0,
+            "calculated",
+            "계산 후보",
+            "",
+            2,
+            document("계산 후보"),
+        )
+
+        summary = store.list(self.profile_id)["scenarios"][0]
+        self.assertEqual(summary["student_ids"], ["ayane"])
+        calculation = summary["calculation"]
+        self.assertIsNotNone(calculation)
+        self.assertGreater(calculation["credits"], 0)
+        self.assertGreater(calculation["required_resource_type_count"], 0)
+        self.assertGreater(calculation["known_shortage_type_count"], 0)
+        self.assertFalse(calculation["inventory_complete"])
+        self.assertEqual(calculation["first_bottleneck_phase_number"], 1)
+        self.assertEqual(
+            calculation["representative_shortage"]["display_name"],
+            "크레딧",
+        )
 
 
 if __name__ == "__main__":

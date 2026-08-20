@@ -1,0 +1,2336 @@
+{
+  "version": 1,
+  "source_version": "student-basic-s2-2026-08-21",
+  "assets": [
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/081710_def_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 126,
+      "sha256": "820352d5805a021d76882ea843abbb06e2cd68405347ea0f1034fc3a2d1d5790",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/081710_def_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/081710_hp_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 136,
+      "sha256": "278874b10f5e91b7047679ca541cbddad5579ec06bfc7f1542a62a882ec07472",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/081710_hp_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/081810_heal_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 138,
+      "sha256": "d66995a4106790a4a29c1929d6a57e633cd5d2524fcaed7eb5fe363977a1802d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/081810_heal_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/081810_hp_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 140,
+      "sha256": "5d9812051e847a10640953c2146f12aa30063972d56d0027d9bed902205b1fe2",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/081810_hp_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/081838_heal_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 138,
+      "sha256": "d66995a4106790a4a29c1929d6a57e633cd5d2524fcaed7eb5fe363977a1802d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/081838_heal_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/081838_hp_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 136,
+      "sha256": "278874b10f5e91b7047679ca541cbddad5579ec06bfc7f1542a62a882ec07472",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/081838_hp_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/081838_hp_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 141,
+      "sha256": "e75416ee98c5a6812a4c16a213148037a28228d9f6de3e43e7ca687b5118839a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/081838_hp_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/081903_def_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 132,
+      "sha256": "4d3b3fb9ead9b6f779e7083b68821d12f484c66f5685d24a3fb38bb315391fd0",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/081903_def_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/081903_heal_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 140,
+      "sha256": "7aff139951efc6f0b4592217e760bf52425095a7cb91d711cf395638c90480f1",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/081903_heal_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/082012_def_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 128,
+      "sha256": "e06ace15579c6a5dfa86faecdecbae98228f9869171e42580b994022d81af855",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/082012_def_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/082012_hp_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 141,
+      "sha256": "e75416ee98c5a6812a4c16a213148037a28228d9f6de3e43e7ca687b5118839a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/082012_hp_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/082012_hp_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 140,
+      "sha256": "5d9812051e847a10640953c2146f12aa30063972d56d0027d9bed902205b1fe2",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/082012_hp_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/221219_hp_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 140,
+      "sha256": "5d9812051e847a10640953c2146f12aa30063972d56d0027d9bed902205b1fe2",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/221219_hp_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/221227_def_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 132,
+      "sha256": "4d3b3fb9ead9b6f779e7083b68821d12f484c66f5685d24a3fb38bb315391fd0",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/221227_def_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/221227_heal_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 144,
+      "sha256": "fbf9fecdb361566a199d977a6396f6b13671a955c423341a5b402348388dada5",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/221227_heal_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/221241_atk_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 139,
+      "sha256": "95cb0653fc14970dcd00f15ce89ce9d3d4a0ca551c4853d2ae8aa125142294b8",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/221241_atk_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/221241_def_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 132,
+      "sha256": "4d3b3fb9ead9b6f779e7083b68821d12f484c66f5685d24a3fb38bb315391fd0",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/221241_def_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/0/221252_hp_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 142,
+      "sha256": "1299925f0629521da0eb65da1fcc4c129bafaf2ef5ec325fa9554bfb4de66b80",
+      "source_path": "../v6/templates/basic_combat_stat_digits/0/221252_hp_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081710_hp_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "d7a4ec4452d966a765edf9e3d79895e2c170a27a1e08fcbc7ba4950c1a115b5d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081710_hp_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081710_hp_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 115,
+      "sha256": "cb1c05f0ad2e59816a44fd66251b90bca22255816b2ab50e1fc1f3c57396b13f",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081710_hp_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081710_hp_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "63a9e263bbbaf7a4c2aada940381cf44848af53ef81c09a9f40fe4a688530efa",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081710_hp_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081710_hp_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "63a9e263bbbaf7a4c2aada940381cf44848af53ef81c09a9f40fe4a688530efa",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081710_hp_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081810_def_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "3a946652a503e8f3461f28a28b59d2b5248c49b65b8bd5692ddf7b9704f9637d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081810_def_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081810_def_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 111,
+      "sha256": "756a7d512ce6626277ff6c52f4126257a5a59ae373f4319a92b328a3fc5c9fd8",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081810_def_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081810_heal_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 117,
+      "sha256": "148d26b32863a54bee4f0a6099df795663017a377dfa0fa6cc153669f7e81c65",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081810_heal_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081810_hp_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "d7a4ec4452d966a765edf9e3d79895e2c170a27a1e08fcbc7ba4950c1a115b5d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081810_hp_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081810_hp_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "d7a4ec4452d966a765edf9e3d79895e2c170a27a1e08fcbc7ba4950c1a115b5d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081810_hp_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081810_hp_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "63a9e263bbbaf7a4c2aada940381cf44848af53ef81c09a9f40fe4a688530efa",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081810_hp_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081838_atk_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 112,
+      "sha256": "65a573f111272a81bbe78cfabf749f3254a0778037dc3544376ec69ec61491d4",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081838_atk_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081838_hp_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "d7a4ec4452d966a765edf9e3d79895e2c170a27a1e08fcbc7ba4950c1a115b5d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081838_hp_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081838_hp_5.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 117,
+      "sha256": "027b87b5633b88d38df7567b96ee0680ad184d653ac3061fc614b0f78da8411a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081838_hp_5.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081903_atk_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 115,
+      "sha256": "cb1c05f0ad2e59816a44fd66251b90bca22255816b2ab50e1fc1f3c57396b13f",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081903_atk_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081903_atk_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "63a9e263bbbaf7a4c2aada940381cf44848af53ef81c09a9f40fe4a688530efa",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081903_atk_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081903_atk_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 117,
+      "sha256": "027b87b5633b88d38df7567b96ee0680ad184d653ac3061fc614b0f78da8411a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081903_atk_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081903_atk_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 112,
+      "sha256": "65a573f111272a81bbe78cfabf749f3254a0778037dc3544376ec69ec61491d4",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081903_atk_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081903_def_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "3a946652a503e8f3461f28a28b59d2b5248c49b65b8bd5692ddf7b9704f9637d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081903_def_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081950_def_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "3a946652a503e8f3461f28a28b59d2b5248c49b65b8bd5692ddf7b9704f9637d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081950_def_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081950_heal_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 117,
+      "sha256": "148d26b32863a54bee4f0a6099df795663017a377dfa0fa6cc153669f7e81c65",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081950_heal_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081950_heal_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 113,
+      "sha256": "9113a3ffa2116fa231c2f276c2e7a6b6180d93b8a7c53b652fccdeb65045853a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081950_heal_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081950_heal_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 115,
+      "sha256": "96f06a660ff79a285c1a041afcf76f28669aa22d2bd4f751abf8ea91f71c14fe",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081950_heal_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081950_hp_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 115,
+      "sha256": "cb1c05f0ad2e59816a44fd66251b90bca22255816b2ab50e1fc1f3c57396b13f",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081950_hp_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/081950_hp_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "63a9e263bbbaf7a4c2aada940381cf44848af53ef81c09a9f40fe4a688530efa",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/081950_hp_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/082012_def_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "3a946652a503e8f3461f28a28b59d2b5248c49b65b8bd5692ddf7b9704f9637d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/082012_def_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/082012_heal_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 117,
+      "sha256": "148d26b32863a54bee4f0a6099df795663017a377dfa0fa6cc153669f7e81c65",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/082012_heal_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/082012_heal_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 113,
+      "sha256": "9113a3ffa2116fa231c2f276c2e7a6b6180d93b8a7c53b652fccdeb65045853a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/082012_heal_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/082012_heal_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 113,
+      "sha256": "9113a3ffa2116fa231c2f276c2e7a6b6180d93b8a7c53b652fccdeb65045853a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/082012_heal_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/221219_atk_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 112,
+      "sha256": "65a573f111272a81bbe78cfabf749f3254a0778037dc3544376ec69ec61491d4",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/221219_atk_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/221219_def_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "3a946652a503e8f3461f28a28b59d2b5248c49b65b8bd5692ddf7b9704f9637d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/221219_def_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/221219_def_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 111,
+      "sha256": "756a7d512ce6626277ff6c52f4126257a5a59ae373f4319a92b328a3fc5c9fd8",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/221219_def_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/221227_def_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 111,
+      "sha256": "756a7d512ce6626277ff6c52f4126257a5a59ae373f4319a92b328a3fc5c9fd8",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/221227_def_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/221227_heal_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 117,
+      "sha256": "148d26b32863a54bee4f0a6099df795663017a377dfa0fa6cc153669f7e81c65",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/221227_heal_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/221227_heal_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 113,
+      "sha256": "9113a3ffa2116fa231c2f276c2e7a6b6180d93b8a7c53b652fccdeb65045853a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/221227_heal_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/221241_def_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "3a946652a503e8f3461f28a28b59d2b5248c49b65b8bd5692ddf7b9704f9637d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/221241_def_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/221241_heal_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 117,
+      "sha256": "148d26b32863a54bee4f0a6099df795663017a377dfa0fa6cc153669f7e81c65",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/221241_heal_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/221241_heal_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 113,
+      "sha256": "9113a3ffa2116fa231c2f276c2e7a6b6180d93b8a7c53b652fccdeb65045853a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/221241_heal_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/221241_heal_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 113,
+      "sha256": "9113a3ffa2116fa231c2f276c2e7a6b6180d93b8a7c53b652fccdeb65045853a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/221241_heal_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/221252_def_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 111,
+      "sha256": "756a7d512ce6626277ff6c52f4126257a5a59ae373f4319a92b328a3fc5c9fd8",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/221252_def_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/1/221252_hp_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 114,
+      "sha256": "63a9e263bbbaf7a4c2aada940381cf44848af53ef81c09a9f40fe4a688530efa",
+      "source_path": "../v6/templates/basic_combat_stat_digits/1/221252_hp_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/081710_def_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 150,
+      "sha256": "f89042b78ccf1c90fb58a6703ef2a82b5475bd8e5b7fb9f928ec4673f62cb9b2",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/081710_def_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/081810_heal_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 155,
+      "sha256": "ee637244bb87c033a38b9a15590aea8626ac894871bde06496f5758f8ada2d55",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/081810_heal_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/081838_atk_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 154,
+      "sha256": "3300269e44795e34c3f9ec6ce3483541e8a9f1d0ae619320dcad7968f21fa3c3",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/081838_atk_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/081838_def_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 150,
+      "sha256": "f89042b78ccf1c90fb58a6703ef2a82b5475bd8e5b7fb9f928ec4673f62cb9b2",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/081838_def_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/081903_hp_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 149,
+      "sha256": "e9ff40866a389a4c254329bbfe3efdfcd8fd87561f2b0f6a856db0054389402c",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/081903_hp_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/081903_hp_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 152,
+      "sha256": "34b986738a658ae5ba4ddee799ebc30469c1cf3639c5838341d99e5bb5a93459",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/081903_hp_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/081950_def_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 148,
+      "sha256": "0836658730d7b021ebcce5d3f85f5937cbd3303c2c6a475c404b9600f64bf33b",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/081950_def_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/082012_atk_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 150,
+      "sha256": "8101e995bc186d99c4001cc040f3afaf9ea26804e6355b6e0d0ebda769f7f547",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/082012_atk_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/082012_hp_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 149,
+      "sha256": "e9ff40866a389a4c254329bbfe3efdfcd8fd87561f2b0f6a856db0054389402c",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/082012_hp_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/221219_def_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 148,
+      "sha256": "0836658730d7b021ebcce5d3f85f5937cbd3303c2c6a475c404b9600f64bf33b",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/221219_def_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/221227_atk_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 154,
+      "sha256": "3300269e44795e34c3f9ec6ce3483541e8a9f1d0ae619320dcad7968f21fa3c3",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/221227_atk_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/221227_def_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 150,
+      "sha256": "f89042b78ccf1c90fb58a6703ef2a82b5475bd8e5b7fb9f928ec4673f62cb9b2",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/221227_def_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/221227_heal_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 155,
+      "sha256": "ee637244bb87c033a38b9a15590aea8626ac894871bde06496f5758f8ada2d55",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/221227_heal_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/221227_hp_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 153,
+      "sha256": "e8301f94f7b852db829d821edb71c847c9e04685391e0f1078d6d8f8995c51b0",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/221227_hp_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/221227_hp_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 150,
+      "sha256": "d227a4cc86046fba1a7720b08711568850d8c808cb159621d66a3b3e4686efab",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/221227_hp_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/221227_hp_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 153,
+      "sha256": "9f031f70bd034b0686ae1157a8f0d19fb55285675bc29a4fc6bc6722c67b35b7",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/221227_hp_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/221241_atk_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 152,
+      "sha256": "5cf3e04970b6731175c8fb07948bcf979235d70cfc393e38f1f0f12526b25da3",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/221241_atk_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/221241_hp_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 150,
+      "sha256": "d227a4cc86046fba1a7720b08711568850d8c808cb159621d66a3b3e4686efab",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/221241_hp_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/2/221245_heal_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 155,
+      "sha256": "ee637244bb87c033a38b9a15590aea8626ac894871bde06496f5758f8ada2d55",
+      "source_path": "../v6/templates/basic_combat_stat_digits/2/221245_heal_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/3/081710_atk_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "3",
+      "required": true,
+      "bytes": 144,
+      "sha256": "ef0c87fc8457d17724505ef7af5615246473981808b77710a424bf70579467b2",
+      "source_path": "../v6/templates/basic_combat_stat_digits/3/081710_atk_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/3/081710_atk_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "3",
+      "required": true,
+      "bytes": 150,
+      "sha256": "d0189913df68763ad54b7ef1c06ba4de46dafcfe7d9a31c60248291e2db0ef36",
+      "source_path": "../v6/templates/basic_combat_stat_digits/3/081710_atk_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/3/081710_heal_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "3",
+      "required": true,
+      "bytes": 146,
+      "sha256": "98b7f1c3f390f0bb70a22d3d890c61f4e58ea85397b0b3ac72ecb6485f076d36",
+      "source_path": "../v6/templates/basic_combat_stat_digits/3/081710_heal_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/3/081810_atk_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "3",
+      "required": true,
+      "bytes": 144,
+      "sha256": "ef0c87fc8457d17724505ef7af5615246473981808b77710a424bf70579467b2",
+      "source_path": "../v6/templates/basic_combat_stat_digits/3/081810_atk_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/3/081810_atk_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "3",
+      "required": true,
+      "bytes": 147,
+      "sha256": "aa8292e55cc6ea3a8f51f94fa1bb3f8ccacbdfcf1e7f9930b3c89784ebfa7b58",
+      "source_path": "../v6/templates/basic_combat_stat_digits/3/081810_atk_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/3/081903_hp_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "3",
+      "required": true,
+      "bytes": 156,
+      "sha256": "9e01f28d57e1af49572594383b481b5fcef7a3d6ffe35bc0d2c02e6162ae015f",
+      "source_path": "../v6/templates/basic_combat_stat_digits/3/081903_hp_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/3/221241_def_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "3",
+      "required": true,
+      "bytes": 149,
+      "sha256": "ff42c5902d48cbff905fd50fe929c7ecc1e4c819e6d1204d0de8c6ebd54460e3",
+      "source_path": "../v6/templates/basic_combat_stat_digits/3/221241_def_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/3/221241_hp_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "3",
+      "required": true,
+      "bytes": 147,
+      "sha256": "71113734fddded61c92ab21a5f999653a7ad26cb5dabe9fe41357e76bcd90f71",
+      "source_path": "../v6/templates/basic_combat_stat_digits/3/221241_hp_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/3/221252_heal_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "3",
+      "required": true,
+      "bytes": 144,
+      "sha256": "3f85dcbf42e3c0f75f8af38560908676312d7ce4eb393f7161687a9d6dfbf669",
+      "source_path": "../v6/templates/basic_combat_stat_digits/3/221252_heal_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/081710_atk_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 141,
+      "sha256": "e1b84679440db599524d6deacaaf43dc0767c24d0698c9a432085aee2222b866",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/081710_atk_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/081710_def_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 139,
+      "sha256": "e05266e74e6ddbee4226b82dc2d1e232573dad68d41fdf85cf49a08c89675aa6",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/081710_def_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/081810_hp_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 133,
+      "sha256": "f8e9a411f1e94d1fc4982e1eb39d819394814362e4e7879cf4479c44b9570fbf",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/081810_hp_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/081838_atk_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 134,
+      "sha256": "e8f8a7ad4e4fc4a11b1604805a383674fd837600287bbfec4d91619059cdfbbb",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/081838_atk_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/081838_def_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 139,
+      "sha256": "e05266e74e6ddbee4226b82dc2d1e232573dad68d41fdf85cf49a08c89675aa6",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/081838_def_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/081903_hp_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 136,
+      "sha256": "a2c3033ff3493c117300a2428726b65b5ff870a55dd6d5e2977ff0cc500ccc65",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/081903_hp_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/081950_atk_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 134,
+      "sha256": "e8f8a7ad4e4fc4a11b1604805a383674fd837600287bbfec4d91619059cdfbbb",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/081950_atk_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/081950_def_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 139,
+      "sha256": "e05266e74e6ddbee4226b82dc2d1e232573dad68d41fdf85cf49a08c89675aa6",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/081950_def_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/081950_hp_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 140,
+      "sha256": "28a9ce22d6e1ef56f5302f2ebe39aa6da223bbae4a95fd05bec7938cd086a774",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/081950_hp_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/082012_def_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 142,
+      "sha256": "c23ca79d740e4603305f9369db8f1266f20f8bf1521338ff985b9c86286a0f14",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/082012_def_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/082012_heal_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 138,
+      "sha256": "b229f03af88d7d2be9946636f62be163e31133ab53e841e6cdaee9fb4af4bb25",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/082012_heal_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/221219_heal_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 138,
+      "sha256": "b229f03af88d7d2be9946636f62be163e31133ab53e841e6cdaee9fb4af4bb25",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/221219_heal_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/221227_atk_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 136,
+      "sha256": "a2c3033ff3493c117300a2428726b65b5ff870a55dd6d5e2977ff0cc500ccc65",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/221227_atk_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/221227_heal_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 138,
+      "sha256": "2f8c564f9ea7f4ab0b8b29dc912783d5ec9838be8bc5dd2f40d235efc3018e43",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/221227_heal_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/221227_hp_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 140,
+      "sha256": "28a9ce22d6e1ef56f5302f2ebe39aa6da223bbae4a95fd05bec7938cd086a774",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/221227_hp_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/221241_atk_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 134,
+      "sha256": "e8f8a7ad4e4fc4a11b1604805a383674fd837600287bbfec4d91619059cdfbbb",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/221241_atk_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/221241_hp_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 140,
+      "sha256": "28a9ce22d6e1ef56f5302f2ebe39aa6da223bbae4a95fd05bec7938cd086a774",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/221241_hp_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/221245_atk_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 144,
+      "sha256": "39dd243bc0e161fc38548d5d4a3bf428e8ad524c55c886e820d4bda94ee2abd0",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/221245_atk_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/221245_def_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 144,
+      "sha256": "a3601c021602106d07ef36a3adae804a2714aab175ec89ca10d02584db170437",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/221245_def_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/221245_def_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 142,
+      "sha256": "c23ca79d740e4603305f9369db8f1266f20f8bf1521338ff985b9c86286a0f14",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/221245_def_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/221245_hp_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 140,
+      "sha256": "28a9ce22d6e1ef56f5302f2ebe39aa6da223bbae4a95fd05bec7938cd086a774",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/221245_hp_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/221245_hp_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 140,
+      "sha256": "3daf1a41c127ec63b5902edd58099cf5ab8eeaf7218cbb0795f046a1ec1fa515",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/221245_hp_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/4/221252_hp_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 140,
+      "sha256": "28a9ce22d6e1ef56f5302f2ebe39aa6da223bbae4a95fd05bec7938cd086a774",
+      "source_path": "../v6/templates/basic_combat_stat_digits/4/221252_hp_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/081810_def_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 135,
+      "sha256": "225848d6b89b534ae52b082893f24302c9546a97884877bf3b8be77b99e07b5f",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/081810_def_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/081810_heal_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 134,
+      "sha256": "d0976f85bc760fe752e738c701fb85412f3e6f2bc954e619b5be031da91f30ec",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/081810_heal_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/081810_heal_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 137,
+      "sha256": "f052bdee9cc220239966a0d4da4bfd91c7ecd984967f8c4fb38b772da12a282e",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/081810_heal_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/081903_heal_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 133,
+      "sha256": "33da902616148726851681e82022064d17b7dbd5237f7acab541f325cc1f1b26",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/081903_heal_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/081903_hp_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 134,
+      "sha256": "a8866ee94235f6c06588b214e036931a018c099e5d77571b4f617b1d70aa7e7b",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/081903_hp_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/081950_heal_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 136,
+      "sha256": "30d6ceb51080aea43401e5e425de4377f49c1cc60987813cd6d295addc045213",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/081950_heal_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/081950_hp_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 134,
+      "sha256": "eaa60cb33c9c124c9edf006a5051b63c56e7a70e1d26b32df5677757dd4e60d2",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/081950_hp_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/082012_atk_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 138,
+      "sha256": "ce6b4bf84b2f54d40d0955deb3ffc18225269445217d8270d347fbe86832efe1",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/082012_atk_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221219_heal_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 133,
+      "sha256": "33da902616148726851681e82022064d17b7dbd5237f7acab541f325cc1f1b26",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221219_heal_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221219_hp_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 138,
+      "sha256": "87b1dd73ab7a0a7e6e6a394e07303860b8bc1199ed8bf7c73c0a1c2a3ea25abd",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221219_hp_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221227_atk_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 138,
+      "sha256": "ce6b4bf84b2f54d40d0955deb3ffc18225269445217d8270d347fbe86832efe1",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221227_atk_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221241_atk_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 136,
+      "sha256": "2a3d4f78f72bbcd345ae661aada74b98d00d0d13b59dc1ade54a3df9a6958c7c",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221241_atk_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221241_heal_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 134,
+      "sha256": "d0976f85bc760fe752e738c701fb85412f3e6f2bc954e619b5be031da91f30ec",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221241_heal_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221241_heal_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 137,
+      "sha256": "f052bdee9cc220239966a0d4da4bfd91c7ecd984967f8c4fb38b772da12a282e",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221241_heal_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221241_hp_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 134,
+      "sha256": "a8866ee94235f6c06588b214e036931a018c099e5d77571b4f617b1d70aa7e7b",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221241_hp_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221245_atk_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 134,
+      "sha256": "a8866ee94235f6c06588b214e036931a018c099e5d77571b4f617b1d70aa7e7b",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221245_atk_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221245_heal_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 133,
+      "sha256": "33da902616148726851681e82022064d17b7dbd5237f7acab541f325cc1f1b26",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221245_heal_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221245_heal_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 136,
+      "sha256": "30d6ceb51080aea43401e5e425de4377f49c1cc60987813cd6d295addc045213",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221245_heal_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221245_hp_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 134,
+      "sha256": "a8866ee94235f6c06588b214e036931a018c099e5d77571b4f617b1d70aa7e7b",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221245_hp_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221252_atk_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 134,
+      "sha256": "a8866ee94235f6c06588b214e036931a018c099e5d77571b4f617b1d70aa7e7b",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221252_atk_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221252_heal_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 136,
+      "sha256": "30d6ceb51080aea43401e5e425de4377f49c1cc60987813cd6d295addc045213",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221252_heal_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221252_heal_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 134,
+      "sha256": "d0976f85bc760fe752e738c701fb85412f3e6f2bc954e619b5be031da91f30ec",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221252_heal_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/5/221252_hp_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 138,
+      "sha256": "87b1dd73ab7a0a7e6e6a394e07303860b8bc1199ed8bf7c73c0a1c2a3ea25abd",
+      "source_path": "../v6/templates/basic_combat_stat_digits/5/221252_hp_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/081710_def_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 149,
+      "sha256": "8f0e5a5cb4b58bc2d47dc8f14c7d76bc4f10c50d0d3ac9c785c6461fb5ecf27e",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/081710_def_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/081710_heal_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 145,
+      "sha256": "53d14791c1428e65ff14c39b91c2f3a3b6ce1ea2a2e37299ecc6ea1f5d906d62",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/081710_heal_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/081810_atk_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 157,
+      "sha256": "63ff7d4ab361b6b0e431cf80c7d6c92477529d414d22a2eabda56cbc9249e68a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/081810_atk_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/081838_atk_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 155,
+      "sha256": "371131f1bb74229a93310232328b9955377d3a97b9bbeeae3359d278845fd26c",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/081838_atk_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/082012_atk_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 155,
+      "sha256": "371131f1bb74229a93310232328b9955377d3a97b9bbeeae3359d278845fd26c",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/082012_atk_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/082012_atk_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 157,
+      "sha256": "63ff7d4ab361b6b0e431cf80c7d6c92477529d414d22a2eabda56cbc9249e68a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/082012_atk_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/082012_hp_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 151,
+      "sha256": "42b5160155d9be849639f6daf7e10064789444bdf44262ed9dd97e315aa0bce5",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/082012_hp_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/221219_atk_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 153,
+      "sha256": "60ca12edf9c530877ef4e86ed71e7e60eede6d0e622961c0dff7f7517d91243a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/221219_atk_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/221219_hp_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 154,
+      "sha256": "18eb0272eafdb360ce92b9206e847c48fc9886fa7e1478056847bef7ba296847",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/221219_hp_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/221227_def_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 147,
+      "sha256": "b68701768cbf29a50f77036c575bad25bfd60d9345f703eada2b69ae2ec36a7f",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/221227_def_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/221241_hp_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 151,
+      "sha256": "42b5160155d9be849639f6daf7e10064789444bdf44262ed9dd97e315aa0bce5",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/221241_hp_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/221245_heal_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 149,
+      "sha256": "c2e60c02ea2d05537a3eaf62b9d368da41de89b15118fd3f46a4175d88504d1f",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/221245_heal_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/221245_hp_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 151,
+      "sha256": "42b5160155d9be849639f6daf7e10064789444bdf44262ed9dd97e315aa0bce5",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/221245_hp_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/6/221252_hp_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 155,
+      "sha256": "371131f1bb74229a93310232328b9955377d3a97b9bbeeae3359d278845fd26c",
+      "source_path": "../v6/templates/basic_combat_stat_digits/6/221252_hp_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/7/081838_def_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 140,
+      "sha256": "614643fb6e05339110b5a7dcc3af513eb118479b115ceadf140652d4f220a65d",
+      "source_path": "../v6/templates/basic_combat_stat_digits/7/081838_def_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/7/081838_def_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 142,
+      "sha256": "52739c9d41933e7bc2890501aa87fd74f63aef26a70cc9900f9d8d1f93eb6a43",
+      "source_path": "../v6/templates/basic_combat_stat_digits/7/081838_def_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/7/081838_heal_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 138,
+      "sha256": "3409121bd75d965be642823364aa6705abf4129f97c632c0fa75398fbb9f7ba1",
+      "source_path": "../v6/templates/basic_combat_stat_digits/7/081838_heal_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/7/081838_heal_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 139,
+      "sha256": "10d796c9ef8d01db4ce96f82a62d80b5a7b8d5e1a2b9ab4866f3b2b44560278a",
+      "source_path": "../v6/templates/basic_combat_stat_digits/7/081838_heal_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/7/081838_heal_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 141,
+      "sha256": "349e3594039b69a237df54c56d486e8657b5417580f9c44c9e48db4f09539406",
+      "source_path": "../v6/templates/basic_combat_stat_digits/7/081838_heal_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/7/081903_atk_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 137,
+      "sha256": "e1af933b9109ccf089d82fa7853ee0d10b1ec9575678342934c0357eb0792654",
+      "source_path": "../v6/templates/basic_combat_stat_digits/7/081903_atk_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/7/081903_heal_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 136,
+      "sha256": "01877dc7539a74c0879f9f049e4116f6ff97d9b42b51dfd3600a359b7401615b",
+      "source_path": "../v6/templates/basic_combat_stat_digits/7/081903_heal_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/7/081903_heal_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 141,
+      "sha256": "349e3594039b69a237df54c56d486e8657b5417580f9c44c9e48db4f09539406",
+      "source_path": "../v6/templates/basic_combat_stat_digits/7/081903_heal_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/7/081950_atk_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 137,
+      "sha256": "e1af933b9109ccf089d82fa7853ee0d10b1ec9575678342934c0357eb0792654",
+      "source_path": "../v6/templates/basic_combat_stat_digits/7/081950_atk_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/7/221227_atk_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 139,
+      "sha256": "ee600a96434abae9a0c84aa5a17b6f9ab800ff392892c2fcc381181d40f72f07",
+      "source_path": "../v6/templates/basic_combat_stat_digits/7/221227_atk_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/7/221245_def_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 143,
+      "sha256": "96c7452b285d5a45e437ea85d766aacd476c0659959d19d3652fd3dae8ad4d6f",
+      "source_path": "../v6/templates/basic_combat_stat_digits/7/221245_def_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/7/221252_atk_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 134,
+      "sha256": "8e158db1b21361ae26fa4519aa43a968cec814501db451b11252080e8e9af7b5",
+      "source_path": "../v6/templates/basic_combat_stat_digits/7/221252_atk_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/8/081710_hp_5.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 157,
+      "sha256": "6c309eb682dd0f6575d3d3520449b76f89b49fd0d47af06eba2f8ffb237698ae",
+      "source_path": "../v6/templates/basic_combat_stat_digits/8/081710_hp_5.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/8/081810_hp_5.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 157,
+      "sha256": "6c309eb682dd0f6575d3d3520449b76f89b49fd0d47af06eba2f8ffb237698ae",
+      "source_path": "../v6/templates/basic_combat_stat_digits/8/081810_hp_5.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/8/081838_hp_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 154,
+      "sha256": "d837442a414c2b732b85743ffa1422d8ff37bcf64286337ca0f5ab027b762bef",
+      "source_path": "../v6/templates/basic_combat_stat_digits/8/081838_hp_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/8/081950_atk_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 154,
+      "sha256": "d837442a414c2b732b85743ffa1422d8ff37bcf64286337ca0f5ab027b762bef",
+      "source_path": "../v6/templates/basic_combat_stat_digits/8/081950_atk_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/8/221219_atk_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 158,
+      "sha256": "8a458472195daa0d6b95cf36adbf6d39a65334fb816157ec9a0efedee7c99d6c",
+      "source_path": "../v6/templates/basic_combat_stat_digits/8/221219_atk_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/8/221219_atk_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 154,
+      "sha256": "d837442a414c2b732b85743ffa1422d8ff37bcf64286337ca0f5ab027b762bef",
+      "source_path": "../v6/templates/basic_combat_stat_digits/8/221219_atk_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/8/221219_heal_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 153,
+      "sha256": "d700d3f2719d1bd65f5334e7044ac681334f7f280928b290544c0d67ed108591",
+      "source_path": "../v6/templates/basic_combat_stat_digits/8/221219_heal_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/8/221219_hp_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 157,
+      "sha256": "e2092e8282268b6729a677547e8d442c1b918f578465c18e69e9b62a62e5dc95",
+      "source_path": "../v6/templates/basic_combat_stat_digits/8/221219_hp_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/8/221245_atk_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 158,
+      "sha256": "8a458472195daa0d6b95cf36adbf6d39a65334fb816157ec9a0efedee7c99d6c",
+      "source_path": "../v6/templates/basic_combat_stat_digits/8/221245_atk_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/8/221252_atk_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 157,
+      "sha256": "6c309eb682dd0f6575d3d3520449b76f89b49fd0d47af06eba2f8ffb237698ae",
+      "source_path": "../v6/templates/basic_combat_stat_digits/8/221252_atk_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/8/221252_heal_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 154,
+      "sha256": "13601b67d1f06e8179adf7391e598d179ca0850f2e1876e13e102af6a7545fe1",
+      "source_path": "../v6/templates/basic_combat_stat_digits/8/221252_heal_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/081710_atk_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 152,
+      "sha256": "fb2ec24087029f9753578b5eca63904df45a7cb3703cee7b7d2799b09f110760",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/081710_atk_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/081710_heal_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 154,
+      "sha256": "81cac4152217f3e5ef836fabfdcadb4e3a22ad85d8cca826e7265862c98eef41",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/081710_heal_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/081710_heal_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 153,
+      "sha256": "09c7c11f19579c6c585bfc7b395a6e8d279c81041d00ee7bcc108573c2c3c202",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/081710_heal_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/081810_atk_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 157,
+      "sha256": "a0ce04f86c89f8de87356930f3bc6e4d98da36512a1d9d8fa9b207328980bedd",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/081810_atk_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/081838_hp_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 155,
+      "sha256": "bb87f3ba552027221d5ebfbbab5033283b4f7a4b689f67c40f1f1465d75ebb34",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/081838_hp_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/081903_def_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 142,
+      "sha256": "760ea891aea0867ef6d7a9f79ed1ed3eb970a425f40ba0bf0347b61723f197d2",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/081903_def_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/081950_atk_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 152,
+      "sha256": "fb2ec24087029f9753578b5eca63904df45a7cb3703cee7b7d2799b09f110760",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/081950_atk_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/081950_heal_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 151,
+      "sha256": "473cbe91d0b7125d4e22c92bc4f75ad03eea48e26613e8402f7b3970fe6fa719",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/081950_heal_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/081950_hp_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 149,
+      "sha256": "ff97e2a3e73d3cc38ce77a9c6f663fef279ff4e73dbda55b08a619c49d9889ce",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/081950_hp_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/082012_heal_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 149,
+      "sha256": "387e93e5485128845b7f42dc993955519fd57b6c08eeb40eb0d3792cc9c6e5aa",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/082012_heal_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/082012_hp_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 155,
+      "sha256": "bb87f3ba552027221d5ebfbbab5033283b4f7a4b689f67c40f1f1465d75ebb34",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/082012_hp_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/221219_heal_1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 154,
+      "sha256": "81cac4152217f3e5ef836fabfdcadb4e3a22ad85d8cca826e7265862c98eef41",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/221219_heal_1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/221219_hp_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 147,
+      "sha256": "07f8212a78d109da9d8a5052a5962b9d3037dc5df1ffb4b9b2f405f09d1620fa",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/221219_hp_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/221227_hp_4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 160,
+      "sha256": "4bfc44d32238b9b852b285d0173d1d657f53e103619b9d4edce942045a07e8f1",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/221227_hp_4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/221245_atk_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 157,
+      "sha256": "a0ce04f86c89f8de87356930f3bc6e4d98da36512a1d9d8fa9b207328980bedd",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/221245_atk_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/221245_hp_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 152,
+      "sha256": "fb2ec24087029f9753578b5eca63904df45a7cb3703cee7b7d2799b09f110760",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/221245_hp_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/221252_atk_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 157,
+      "sha256": "a0ce04f86c89f8de87356930f3bc6e4d98da36512a1d9d8fa9b207328980bedd",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/221252_atk_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_combat_stat_digits/9/221252_def_0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-combat-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 149,
+      "sha256": "387e93e5485128845b7f42dc993955519fd57b6c08eeb40eb0d3792cc9c6e5aa",
+      "source_path": "../v6/templates/basic_combat_stat_digits/9/221252_def_0.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/ex/1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "1",
+      "required": true,
+      "bytes": 1833,
+      "sha256": "5515b2ff51fc82592e078f4a4b54f09e2ddc91c67d81d1863bcd9094ac46c239",
+      "source_path": "../v6/templates/basic_skill/ex/1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/ex/2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "2",
+      "required": true,
+      "bytes": 2269,
+      "sha256": "a17948bd7671c21d5c09414c9d31e320e3ffc681912572f5a73b3c6a47a09d65",
+      "source_path": "../v6/templates/basic_skill/ex/2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/ex/3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "3",
+      "required": true,
+      "bytes": 2386,
+      "sha256": "f0385d8e613dd5d75d811b733ac94e1328292e8bc8dae8c729a66b20fff09260",
+      "source_path": "../v6/templates/basic_skill/ex/3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/ex/4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "4",
+      "required": true,
+      "bytes": 2128,
+      "sha256": "073554a9256e69bfc94ccbd49be5e49f27beba83a71ea620b52a4e6d892e68f4",
+      "source_path": "../v6/templates/basic_skill/ex/4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/ex/max.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "max",
+      "required": true,
+      "bytes": 6014,
+      "sha256": "4ba2647a041f4c1a2212664084cf50781fda4882f5c39d701e4f89a7ae009241",
+      "source_path": "../v6/templates/basic_skill/ex/max.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/normal/1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "1",
+      "required": true,
+      "bytes": 1368,
+      "sha256": "7762544002e5d9c662a8276d1e1a598c5adacae2a1b0461cbb3fbd0e0e5a444c",
+      "source_path": "../v6/templates/basic_skill/normal/1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/normal/2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "2",
+      "required": true,
+      "bytes": 1809,
+      "sha256": "0e8ea3e7197c835a0f855712136db2d6020ee26c1991feff4a63d24350240247",
+      "source_path": "../v6/templates/basic_skill/normal/2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/normal/3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "3",
+      "required": true,
+      "bytes": 1936,
+      "sha256": "a935d695c0065a93cf0fb56ec5071e0e5b58cd2d95370e40e6c4efa574b4b9e9",
+      "source_path": "../v6/templates/basic_skill/normal/3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/normal/4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "4",
+      "required": true,
+      "bytes": 1659,
+      "sha256": "04e78ae439e6641a041cd7e871c877758e8e0e4ee7458a6c5eaa219bb715d99c",
+      "source_path": "../v6/templates/basic_skill/normal/4.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/normal/5.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "5",
+      "required": true,
+      "bytes": 1708,
+      "sha256": "6b4359d5f130311159d30d082dd935955e4d662184a1dd754701a13534a751b9",
+      "source_path": "../v6/templates/basic_skill/normal/5.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/normal/6.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "6",
+      "required": true,
+      "bytes": 1958,
+      "sha256": "9829d7d3ca828bd22450d2e9e76cf88cd09e5b8deab52d3b167a3eba7db76cf0",
+      "source_path": "../v6/templates/basic_skill/normal/6.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/normal/7.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "7",
+      "required": true,
+      "bytes": 1608,
+      "sha256": "4862edd73606d6f083e49b0e7dc197d26fc28b857f6d2650ae7f647aa17fa0c7",
+      "source_path": "../v6/templates/basic_skill/normal/7.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/normal/8.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "8",
+      "required": true,
+      "bytes": 2160,
+      "sha256": "374a89a6b994135d4b3775a7a2c0564ea3bfda50b91309130e411bf31f3f1056",
+      "source_path": "../v6/templates/basic_skill/normal/8.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/normal/9.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "9",
+      "required": true,
+      "bytes": 2014,
+      "sha256": "a06541aac55ce9d29e325998d5e35b0351e50da9d0c7a59b975a551bf3a11aca",
+      "source_path": "../v6/templates/basic_skill/normal/9.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/normal/max.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "max",
+      "required": true,
+      "bytes": 5696,
+      "sha256": "171a83d097bd89310b01b14a0b9645b2b02b0a95f8a76ca808a4741f4d5bd284",
+      "source_path": "../v6/templates/basic_skill/normal/max.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/normal/max_2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "max",
+      "required": true,
+      "bytes": 5685,
+      "sha256": "1316a10f5016eaec7c749b4004126c964e9e131746c221f755610f46ab7de228",
+      "source_path": "../v6/templates/basic_skill/normal/max_2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_skill/normal/max_3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-skill-template",
+      "student_value": "max",
+      "required": true,
+      "bytes": 5593,
+      "sha256": "e6d839612fd0b8fd5da3a56734d96696602a95a0b4101031218133b4e96d1aeb",
+      "source_path": "../v6/templates/basic_skill/normal/max_3.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/0_215227_p2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 151,
+      "sha256": "420b506d2d7387d570a09ee53870d83d16f98ab9bc1278218a17345687c53825",
+      "source_path": "../v6/templates/basic_student/level_digits/0_215227_p2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/1_215255_p1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 124,
+      "sha256": "cefe19818c6d36c35c0237c958803230ce588e3b2aafa94d0999920d51eaf732",
+      "source_path": "../v6/templates/basic_student/level_digits/1_215255_p1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/1_215302_p1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 129,
+      "sha256": "476e1d822972b00089dff4dea0b4b2acfe911f008118a9c1983bfa235e31ac70",
+      "source_path": "../v6/templates/basic_student/level_digits/1_215302_p1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/2_215250_p1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 158,
+      "sha256": "0dbeb94d4d918830ebb01c4af186fb23ce7dd4f064f7eea3745e6853ad2ceff9",
+      "source_path": "../v6/templates/basic_student/level_digits/2_215250_p1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/2_215255_p2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 158,
+      "sha256": "cee45feedfbc7c9f36def79f108d243e05923c7b456452e6552dffffe2ae07a1",
+      "source_path": "../v6/templates/basic_student/level_digits/2_215255_p2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/3_215246_p1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "3",
+      "required": true,
+      "bytes": 157,
+      "sha256": "5426c6d418d9c416a2dcf21d683c9761760183a9a8acd5df6d3936f928233a4f",
+      "source_path": "../v6/templates/basic_student/level_digits/3_215246_p1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/3_215250_p2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "3",
+      "required": true,
+      "bytes": 152,
+      "sha256": "f7a6a749e5370308afb5b5abe756a36e1ff07a1cb0544a78ff1f6be7cae2618e",
+      "source_path": "../v6/templates/basic_student/level_digits/3_215250_p2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/4_215240_p1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 147,
+      "sha256": "9f5c7f83e225700b83d1a0f114dffbfb63965310e1ba0ea3887b437b91a5a5d9",
+      "source_path": "../v6/templates/basic_student/level_digits/4_215240_p1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/4_215246_p2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 158,
+      "sha256": "80a09745209476b4693e95f295fd26f327fc06fc34edaab3e689b1e4d57d8874",
+      "source_path": "../v6/templates/basic_student/level_digits/4_215246_p2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/5_215238_p1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 146,
+      "sha256": "6f8c7241ed5d8b99de49766e2d85a967b2ce2b22c9faad8ea3b225a29d20036b",
+      "source_path": "../v6/templates/basic_student/level_digits/5_215238_p1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/5_215240_p2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 156,
+      "sha256": "ae1f8e9e0b594a476f0291c3fa6c5f4556d78b81bb0cf03f9f05fee4e24db2f5",
+      "source_path": "../v6/templates/basic_student/level_digits/5_215240_p2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/6_215236_p1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 162,
+      "sha256": "77ec0864f7e38f819c743d424f3b216510886f24992389d4e19d7a1cedca7a61",
+      "source_path": "../v6/templates/basic_student/level_digits/6_215236_p1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/6_215238_p2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 163,
+      "sha256": "01cc1444dcc62daabf48a280e05440b8134d2f1315d4fc5194f2ebb2cf464584",
+      "source_path": "../v6/templates/basic_student/level_digits/6_215238_p2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/7_215234_p1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 145,
+      "sha256": "ca9d25d71f5845dd40f308cc8862ab82b476a625ed5417adaabc7e0dfd2c06be",
+      "source_path": "../v6/templates/basic_student/level_digits/7_215234_p1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/7_215236_p2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 144,
+      "sha256": "3eda86318ee5c359c2a9c9d9a2e621a5a7885591b3df6831561b4da57735ef42",
+      "source_path": "../v6/templates/basic_student/level_digits/7_215236_p2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/8_215230_p1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 164,
+      "sha256": "491f68f250fcfb12671982513c636c2d03e00c044e5abdfe2c4d19b0d1d04b02",
+      "source_path": "../v6/templates/basic_student/level_digits/8_215230_p1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/8_215234_p2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 165,
+      "sha256": "5015028e6d979cb399a7044f9469489b12efbde31bd61181d4ce25d54e71ae2b",
+      "source_path": "../v6/templates/basic_student/level_digits/8_215234_p2.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/9_215227_p1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 168,
+      "sha256": "cd3ac641bae53f54f2610c894cf42fbc8f38af7ab88dc477d6cfee23bd820d86",
+      "source_path": "../v6/templates/basic_student/level_digits/9_215227_p1.png"
+    },
+    {
+      "path": "templates/student_basic/basic_student/level_digits/9_215230_p2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-level-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 162,
+      "sha256": "b75363f61737d8559f346584f70beb53e76a696167473a4035866615a064a564",
+      "source_path": "../v6/templates/basic_student/level_digits/9_215230_p2.png"
+    },
+    {
+      "path": "templates/student_basic/weaponlevel_glyph/0.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-weapon-level-digit-template",
+      "digit": "0",
+      "required": true,
+      "bytes": 154,
+      "sha256": "8f730f126bfc6c6d10d570788a3aeec24aa1ae46536d5a07a093454257f4ba8b",
+      "source_path": "../v6/templates/weaponlevel_glyph/0.png"
+    },
+    {
+      "path": "templates/student_basic/weaponlevel_glyph/1.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-weapon-level-digit-template",
+      "digit": "1",
+      "required": true,
+      "bytes": 116,
+      "sha256": "590fd7d3c9b5602873147430e5bf1aafeb8bf65be4afdb94a2132b0b20a0ece9",
+      "source_path": "../v6/templates/weaponlevel_glyph/1.png"
+    },
+    {
+      "path": "templates/student_basic/weaponlevel_glyph/2.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-weapon-level-digit-template",
+      "digit": "2",
+      "required": true,
+      "bytes": 164,
+      "sha256": "392e0851243a5ac18c3dd3e211429333ebd933b91fcb589c530956cc43940d63",
+      "source_path": "../v6/templates/weaponlevel_glyph/2.png"
+    },
+    {
+      "path": "templates/student_basic/weaponlevel_glyph/3.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-weapon-level-digit-template",
+      "digit": "3",
+      "required": true,
+      "bytes": 168,
+      "sha256": "29ad2f176b1af9797b2837a5d2105c333c975c5b4565a8ee8df021211ddc6b08",
+      "source_path": "../v6/templates/weaponlevel_glyph/3.png"
+    },
+    {
+      "path": "templates/student_basic/weaponlevel_glyph/4.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-weapon-level-digit-template",
+      "digit": "4",
+      "required": true,
+      "bytes": 167,
+      "sha256": "a940393ad90af31e1b609b04fd141bdab0ae535e41b1adf90568aa7df839f359",
+      "source_path": "../v6/templates/weaponlevel_glyph/4.png"
+    },
+    {
+      "path": "templates/student_basic/weaponlevel_glyph/5.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-weapon-level-digit-template",
+      "digit": "5",
+      "required": true,
+      "bytes": 151,
+      "sha256": "ba61216f614c32a7f98e608f8fe073076c923a81d5c74fdd65272165f85dcf96",
+      "source_path": "../v6/templates/weaponlevel_glyph/5.png"
+    },
+    {
+      "path": "templates/student_basic/weaponlevel_glyph/6.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-weapon-level-digit-template",
+      "digit": "6",
+      "required": true,
+      "bytes": 169,
+      "sha256": "b07b76d36ddfbff169edfb6b1236214db0a862b89feed74e46bdf1ed363c9d56",
+      "source_path": "../v6/templates/weaponlevel_glyph/6.png"
+    },
+    {
+      "path": "templates/student_basic/weaponlevel_glyph/7.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-weapon-level-digit-template",
+      "digit": "7",
+      "required": true,
+      "bytes": 150,
+      "sha256": "76bb094ac228fc11f8826f91ab3ad8ae84f975fa15e69301c812802d0f543ad6",
+      "source_path": "../v6/templates/weaponlevel_glyph/7.png"
+    },
+    {
+      "path": "templates/student_basic/weaponlevel_glyph/8.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-weapon-level-digit-template",
+      "digit": "8",
+      "required": true,
+      "bytes": 182,
+      "sha256": "ef7d29a08f7d51d2be6614a0dd6db68c5709ea3493ab05e4688738276070cb8f",
+      "source_path": "../v6/templates/weaponlevel_glyph/8.png"
+    },
+    {
+      "path": "templates/student_basic/weaponlevel_glyph/9.png",
+      "scan_kind": "student",
+      "purpose": "student-basic-weapon-level-digit-template",
+      "digit": "9",
+      "required": true,
+      "bytes": 174,
+      "sha256": "019be7f0604b776e049f8ce8c6b280f76a221cd6f3f2ef75c70ecdab4f896c2e",
+      "source_path": "../v6/templates/weaponlevel_glyph/9.png"
+    }
+  ]
+}

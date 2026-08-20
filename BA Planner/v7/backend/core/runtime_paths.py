@@ -64,5 +64,12 @@ def resolve_v6_root() -> Path:
     override = os.environ.get("BA_PLANNER_V6_DIR")
     if override:
         return Path(override).expanduser()
-    return V7_DIR.parent / "v6"
+    candidates = (
+        V7_DIR.parent / "v6",
+        V7_DIR.parent.parent / "v6",
+    )
+    for candidate in candidates:
+        if (candidate / "config.json").is_file():
+            return candidate
+    return candidates[0]
 

@@ -27,14 +27,14 @@ def _targets(level: int) -> dict[str, int]:
         "weapon_star": 0,
         "ex_skill": 1,
         "skill1": 1,
-        "skill2": 1,
-        "skill3": 1,
+        "skill2": 0,
+        "skill3": 0,
         "equip1_tier": 1,
-        "equip2_tier": 1,
-        "equip3_tier": 1,
+        "equip2_tier": 1 if level >= 10 else 0,
+        "equip3_tier": 1 if level >= 20 else 0,
         "equip1_level": 1,
-        "equip2_level": 1,
-        "equip3_level": 1,
+        "equip2_level": 1 if level >= 10 else 0,
+        "equip3_level": 1 if level >= 20 else 0,
         "equip4_tier": 0,
         "stat_hp": 0,
         "stat_atk": 0,
@@ -120,6 +120,8 @@ class PlanningDocumentTests(unittest.TestCase):
             phase["stages"][0]["targets"].update(
                 {
                     "student_star": 5,
+                    "skill2": 1,
+                    "skill3": 1,
                     "weapon_star": 2,
                     "weapon_level": 40,
                     "equip1_tier": 9,
@@ -128,6 +130,49 @@ class PlanningDocumentTests(unittest.TestCase):
             )
         parsed = planning_document_from_wire(document)
         self.assertEqual(parsed.phases[0].stages[0].targets["equip1_level"], 65)
+
+    def test_game_unlock_combinations_are_rejected(self) -> None:
+        invalid_updates = (
+            ({"student_star": 1, "skill2": 1}, "2-star unlock"),
+            ({"student_star": 2, "skill2": 1, "skill3": 1}, "3-star unlock"),
+            ({"level": 9, "equip2_tier": 1, "equip2_level": 1}, "level 10"),
+            ({"level": 19, "equip3_tier": 1, "equip3_level": 1}, "level 20"),
+            (
+                {
+                    "level": 89,
+                    "student_star": 5,
+                    "skill2": 1,
+                    "skill3": 1,
+                    "stat_hp": 1,
+                },
+                "level 90",
+            ),
+            (
+                {
+                    "student_star": 4,
+                    "skill2": 1,
+                    "skill3": 1,
+                    "bond_rank": 21,
+                },
+                "4-star cap",
+            ),
+            (
+                {
+                    "student_star": 3,
+                    "skill2": 1,
+                    "skill3": 1,
+                    "bond_rank": 20,
+                    "equip4_tier": 2,
+                },
+                "higher bond_rank",
+            ),
+        )
+        for updates, message in invalid_updates:
+            with self.subTest(updates=updates):
+                document = _document()
+                document["phases"][0]["stages"][0]["targets"].update(updates)
+                with self.assertRaisesRegex(PlanningDocumentError, message):
+                    planning_document_from_wire(document)
 
     def test_scenario_comparison_reports_tradeoffs_without_a_winner(self) -> None:
         record = json.loads(FIXTURE.read_text(encoding="utf-8"))["record"]
@@ -146,7 +191,7 @@ class PlanningDocumentTests(unittest.TestCase):
         self.assertEqual(comparison["students"][0]["presence"], "both")
         self.assertNotIn("winner", comparison)
 
-    def test_scenario_compare_protocol_requires_two_scenarios(self) -> None:
+    def test_scenario_compare_protocol_accepts_active_plan_and_scenario(self) -> None:
         record = json.loads(FIXTURE.read_text(encoding="utf-8"))["record"]
         request = {
             "protocol": 1,
@@ -166,9 +211,17 @@ class PlanningDocumentTests(unittest.TestCase):
         }
         response = PlanningProtocolV1().handle(request)
         self.assertEqual(set(response["payload"]), {"projection_a", "projection_b", "comparison"})
+        active_plan = PlanningProtocolV1().handle({
+            **request,
+            "payload": {
+                **request["payload"],
+                "document_b": {**_document(), "document_id": "active-plan", "kind": "plan"},
+            },
+        })
+        self.assertEqual(set(active_plan["payload"]), {"projection_a", "projection_b", "comparison"})
         invalid = PlanningProtocolV1().handle({
             **request,
-            "payload": {**request["payload"], "document_b": {**_document(), "kind": "plan"}},
+            "payload": {**request["payload"], "document_b": request["payload"]["document_a"]},
         })
         self.assertEqual(invalid["payload"]["error"]["code"], "invalid_payload")
 

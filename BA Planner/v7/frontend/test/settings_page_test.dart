@@ -1,5 +1,6 @@
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/pages/settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +21,50 @@ Widget subject(
     ),
   ),
 );
+
+class _SettingsV6MockService extends MockAppService {
+  @override
+  Future<List<RepositoryV6AccountPreview>> previewV6Accounts() async => [
+    RepositoryV6AccountPreview.fromWire({
+      'source_profile_key': 'profile_deadbeef',
+      'display_name': 'v6 메인',
+      'avatar_student_id': 'ayane',
+      'student_count': 217,
+      'inventory_count': 614,
+      'goal_count': 9,
+      'warnings': <String>[],
+    }),
+  ];
+
+  @override
+  Future<RepositoryV6ImportResult> importV6Account(
+    String sourceProfileKey,
+  ) async {
+    final created = await createProfile(
+      'v6 메인',
+      'settings-v6-create',
+      avatarStudentId: 'ayane',
+    );
+    final revision = await selectProfile(
+      created.id,
+      created.revision,
+      'settings-v6-select',
+    );
+    return RepositoryV6ImportResult.fromWire({
+      'profile': {
+        'profile_id': created.id,
+        'display_name': created.displayName,
+        'avatar_student_id': created.avatarStudentId,
+        'revision': revision,
+        'selected': true,
+      },
+      'student_count': 217,
+      'inventory_count': 614,
+      'goal_count': 9,
+      'warnings': <String>[],
+    });
+  }
+}
 
 void main() {
   for (final size in const [
@@ -106,6 +151,35 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('revision_conflict'), findsOneWidget);
     expect(find.text('Renamed'), findsOneWidget);
+  });
+
+  testWidgets('settings imports and selects a v6 account', (tester) async {
+    final service = _SettingsV6MockService();
+    addTearDown(service.dispose);
+    var changes = 0;
+    await tester.pumpWidget(
+      subject(service, onProfileChanged: () => changes++),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('settings-profile-v6-import')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('settings-v6-import-confirm')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('v6 원본은 변경하지 않습니다'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, '가져오기'));
+    await tester.pumpAndSettle();
+
+    final profiles = await service.listProfiles();
+    expect(profiles, hasLength(2));
+    expect(
+      profiles.singleWhere((profile) => profile.selected).displayName,
+      'v6 메인',
+    );
+    expect(changes, 1);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(

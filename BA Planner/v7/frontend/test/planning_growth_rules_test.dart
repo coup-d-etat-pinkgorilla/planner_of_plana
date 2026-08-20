@@ -128,4 +128,80 @@ void main() {
       expect(projected['equip1_level'], 65);
     },
   );
+
+  test('skill targets raise the student star required to unlock them', () {
+    final passive = normalizePlanningGrowthTargets(
+      {..._targets(), 'skill2': 5},
+      changedKeys: const {'skill2'},
+    );
+    final sub = normalizePlanningGrowthTargets(
+      {..._targets(), 'skill3': 5},
+      changedKeys: const {'skill3'},
+    );
+
+    expect(passive['student_star'], 2);
+    expect(passive['skill2'], 5);
+    expect(passive['skill3'], 0);
+    expect(sub['student_star'], 3);
+    expect(sub['skill2'], 1);
+    expect(sub['skill3'], 5);
+  });
+
+  test('lowering student star clamps bond, skills, weapon, and stats', () {
+    final normalized = normalizePlanningGrowthTargets(
+      {
+        ..._targets(),
+        'level': 90,
+        'bond_rank': 100,
+        'student_star': 4,
+        'weapon_star': 4,
+        'weapon_level': 60,
+        'skill2': 10,
+        'skill3': 10,
+        'stat_hp': 25,
+      },
+      changedKeys: const {'student_star'},
+    );
+
+    expect(normalized['bond_rank'], 20);
+    expect(normalized['skill2'], 10);
+    expect(normalized['skill3'], 10);
+    expect(normalized['weapon_star'], 0);
+    expect(normalized['weapon_level'], 0);
+    expect(normalized['stat_hp'], 0);
+  });
+
+  test('equipment slots and ability release raise unlock prerequisites', () {
+    final equipment = normalizePlanningGrowthTargets(
+      {..._targets(), 'equip3_tier': 1, 'equip3_level': 1},
+      changedKeys: const {'equip3_tier', 'equip3_level'},
+    );
+    final stat = normalizePlanningGrowthTargets(
+      {..._targets(), 'stat_atk': 1},
+      changedKeys: const {'stat_atk'},
+    );
+
+    expect(equipment['level'], 20);
+    expect(equipment['equip3_tier'], 1);
+    expect(stat['level'], 90);
+    expect(stat['student_star'], 5);
+    expect(stat['stat_atk'], 1);
+  });
+
+  test('bond and favorite item targets enforce star and bond gates', () {
+    final bond = normalizePlanningGrowthTargets(
+      {..._targets(), 'bond_rank': 21},
+      changedKeys: const {'bond_rank'},
+    );
+    final favorite = normalizePlanningGrowthTargets(
+      {..._targets(), 'equip4_tier': 2},
+      changedKeys: const {'equip4_tier'},
+    );
+
+    expect(bond['student_star'], 5);
+    expect(bond['bond_rank'], 21);
+    expect(favorite['bond_rank'], 25);
+    expect(favorite['student_star'], 5);
+    expect(favorite['equip4_tier'], 2);
+  });
 }

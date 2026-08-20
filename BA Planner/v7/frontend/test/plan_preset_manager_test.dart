@@ -196,6 +196,37 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('preset editor star endpoints toggle off when tapped again', (
+    tester,
+  ) async {
+    await _pumpPlanningPage(tester);
+    await _openManager(tester);
+
+    await tester.tap(find.byKey(const ValueKey('plan-stage-1-student-star-5')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('plan-stage-1-student-star-5')));
+    await tester.pump();
+    expect(
+      tester
+          .widget<PlanPresetElementCard>(find.byType(PlanPresetElementCard))
+          .stage
+          .targets['student_star'],
+      4,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('plan-stage-1-weapon-star-1')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('plan-stage-1-weapon-star-1')));
+    await tester.pump();
+    expect(
+      tester
+          .widget<PlanPresetElementCard>(find.byType(PlanPresetElementCard))
+          .stage
+          .targets['weapon_star'],
+      0,
+    );
+  });
+
   testWidgets('preset manager remains usable at the narrow viewport', (
     tester,
   ) async {

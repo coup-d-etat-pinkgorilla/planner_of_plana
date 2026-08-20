@@ -231,6 +231,75 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _importV6Profile() async {
+    final repository = _repository;
+    if (repository == null || _profileAction) return;
+    setState(() {
+      _profileAction = true;
+      _actionError = null;
+    });
+    try {
+      final accounts = await repository.previewV6Accounts();
+      if (!mounted) return;
+      if (accounts.isEmpty) {
+        throw StateError('가져올 수 있는 v6 계정을 찾지 못했습니다.');
+      }
+      final selected = accounts.length == 1
+          ? accounts.single
+          : await showDialog<RepositoryV6AccountPreview>(
+              context: context,
+              builder: (context) => SimpleDialog(
+                key: const ValueKey('settings-v6-account-dialog'),
+                title: const Text('v6 계정 가져오기'),
+                children: [
+                  for (final account in accounts)
+                    SimpleDialogOption(
+                      onPressed: () => Navigator.pop(context, account),
+                      child: ListTile(
+                        title: Text(account.displayName),
+                        subtitle: Text(
+                          '학생 ${account.studentCount}명 · 인벤토리 '
+                          '${account.inventoryCount}종 · 계획 '
+                          '${account.goalCount}개',
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+      if (selected == null || !mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          key: const ValueKey('settings-v6-import-confirm'),
+          title: const Text('v6 계정을 v7로 복사'),
+          content: Text(
+            '${selected.displayName}의 학생·인벤토리·계획 데이터를 '
+            '새 v7 계정으로 복사합니다. v6 원본은 변경하지 않습니다.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('가져오기'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+      await repository.importV6Account(selected.sourceProfileKey);
+      await _reload();
+      widget.onProfileChanged();
+    } catch (error) {
+      if (mounted) setState(() => _actionError = '$error');
+    } finally {
+      if (mounted) setState(() => _profileAction = false);
+    }
+  }
+
   Future<void> _profileMutation(
     Future<Object?> Function() operation, {
     bool profileChanged = false,
@@ -393,6 +462,12 @@ class _SettingsPageState extends State<SettingsPage> {
         label: const Text('새 프로필'),
       ),
       OutlinedButton.icon(
+        key: const ValueKey('settings-profile-v6-import'),
+        onPressed: _profileAction ? null : _importV6Profile,
+        icon: const Icon(Icons.drive_file_move_outline),
+        label: const Text('v6 가져오기'),
+      ),
+      OutlinedButton.icon(
         onPressed: _profileAction || _selected == null ? null : _renameProfile,
         icon: const Icon(Icons.edit_outlined),
         label: const Text('이름 변경'),
@@ -428,7 +503,8 @@ class _SettingsPageState extends State<SettingsPage> {
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  '프로필 삭제·백업·가져오기는 현재 버전에서 지원하지 않습니다.',
+                  'v6 원본은 읽기 전용으로 유지되며 새 v7 계정으로 복사됩니다. '
+                  '백업은 아직 지원하지 않습니다.',
                   style: TextStyle(color: AppColors.textMuted),
                 ),
               ),

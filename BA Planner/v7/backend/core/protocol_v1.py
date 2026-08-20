@@ -393,10 +393,8 @@ class PlanningProtocolV1:
         records = _current_students_from_wire(payload["current_students"])
         document_a = planning_document_from_wire(payload["document_a"])
         document_b = planning_document_from_wire(payload["document_b"])
-        if document_a.kind != "scenario" or document_b.kind != "scenario":
-            raise InvalidPayload("scenario comparison requires two scenario documents")
         if document_a.document_id == document_b.document_id:
-            raise InvalidPayload("scenario comparison requires two different documents")
+            raise InvalidPayload("planning comparison requires two different documents")
         try:
             inventory = InventorySnapshot.from_dict(payload["inventory"])
         except RepositoryDTOError as error:

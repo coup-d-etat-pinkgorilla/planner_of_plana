@@ -9,7 +9,10 @@ import 'services/process_app_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  const useRealBackend = bool.fromEnvironment('BA_PLANNER_USE_REAL_BACKEND');
+  const useRealBackend = bool.fromEnvironment(
+    'BA_PLANNER_USE_REAL_BACKEND',
+    defaultValue: true,
+  );
   const backendDirectory = String.fromEnvironment('BA_PLANNER_BACKEND_DIR');
   const pythonExecutable = String.fromEnvironment('BA_PLANNER_PYTHON');
 

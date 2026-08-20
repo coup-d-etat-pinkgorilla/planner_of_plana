@@ -47,13 +47,14 @@ flutter build windows --release
 
 ## 실제 Python backend로 실행
 
-기본 실행은 UI 개발과 Widget test 안정성을 위해 `MockAppService`를 사용합니다.
-planning protocol v1 Python process를 사용하려면 backend 경로를 명시합니다.
+일반 실행과 Windows Release는 `ProcessAppService`와 실제 Python backend를 기본으로
+사용합니다. 개발 중 mock 화면만 필요하면
+`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`를 지정합니다.
+backend를 자동 탐지할 수 없는 개발 환경에서는 경로를 명시합니다.
 
 ```powershell
 cd frontend
 flutter run -d windows `
-  --dart-define=BA_PLANNER_USE_REAL_BACKEND=true `
   --dart-define="BA_PLANNER_BACKEND_DIR=C:\path\to\BA Planner\v7\backend"
 ```
 
@@ -62,8 +63,30 @@ flutter run -d windows `
 backend 경로는 실제 연결을 시작할 때 확인하므로 경로가 잘못되어도 앱 shell은
 연결 끊김 상태로 실행됩니다. P1에는 scanner가 포함되지 않아 실제 backend 모드의
 스캔 버튼은 `스캐너 미연결` 상태로 비활성화됩니다.
-배포용 Python runtime과 backend source/data 번들은 아직 release packaging 범위에
-포함되지 않습니다.
+Windows Release에는 backend source/data와 검증된 Python 3.11 가상환경이
+`release/backend/`로 함께 복사됩니다. 앱은 명시적인 Python 경로가 없으면 이
+가상환경을 우선 사용하고, 가상환경이 없는 개발 트리에서만 시스템 `py -3.11`로
+대체합니다.
+
+## v6 계정 가져오기
+
+첫 실행에 v7 계정이 없고 sibling `v6/config.json`이 발견되면 새 계정을 만들거나
+v6 계정을 가져올 수 있습니다. 가져오기는 계정명·대표 학생, 확정 학생 상태,
+인벤토리와 성장 목표를 새 v7 계정에 복사하고 그 계정을 선택한 뒤 계획 탭을 엽니다.
+설정의 `v6 가져오기`에서도 같은 작업을 다시 실행할 수 있습니다. v6 원본은 항상
+읽기 전용이며 스캔 후보·로그·전술 기록은 계획 계정 가져오기 범위에 포함되지 않습니다.
+
+다른 위치의 v6을 사용하려면 backend 실행 환경에
+`BA_PLANNER_V6_DIR=C:\path\to\v6`를 지정합니다.
+
+반복적인 실제 UI 검증에는 아래 개발용 시드 도구를 사용할 수 있습니다. v6 원본은 읽기만
+하고, 독립적인 `거모이는존재한다 (v7 UI 테스트)` v7 계정을 만들거나 재사용한 뒤 목록과
+계산 상태가 다른 8개 시나리오를 멱등하게 추가하고 그 계정을 선택합니다.
+
+```powershell
+cd backend
+py -3.11 tools\seed_ui_test_profile.py
+```
 
 ## Windows 실행 파일
 
@@ -119,6 +142,12 @@ Qt/Tk 코드를 반입하지 않고 v7 Flutter/Python 경계로 마이그레이�
 ```
 
 배포용 공용 도구 번들은 `frontend/tool/build_windows_developer_tools.ps1`로 갱신합니다.
+학생 메타데이터 편집기의 SchaleDB 화면은 전체/단일 최소 인연 필드 가져오기와 다중 slug
+병합 규칙 관리를 제공하며, 병합 카드에서 첫 경로는 기준, 이후 경로는 같은 로컬 학생을
+찾는 보조 경로로 표시합니다. 학생 및 인연 스탯 필드는 이 가져오기 범위에 포함하지 않습니다.
+아이템 통계 화면은 선택된 v7 계정의 인벤토리를 기본으로 읽고, 외부 JSON과 선택적인
+계획 증감 JSON도 분석합니다. 미확인 수량과 명시적 0을 구분하고 아이템 이미지를 사용해
+계획 반영 부족을 표시하며 서로 다른 재화의 수량을 하나의 총합으로 합치지 않습니다.
 
 ## v6 관계
 

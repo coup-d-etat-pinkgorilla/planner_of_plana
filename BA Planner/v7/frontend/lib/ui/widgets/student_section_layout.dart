@@ -3996,6 +3996,7 @@ class StudentDiagonalGrid extends StatefulWidget {
     required this.studentValuesById,
     this.plannedIds = const {},
     required this.selectedId,
+    this.selectedIds = const {},
     required this.onSelected,
     this.showAttributes = true,
     this.showNames = true,
@@ -4007,6 +4008,7 @@ class StudentDiagonalGrid extends StatefulWidget {
   final Map<String, Map<String, dynamic>> studentValuesById;
   final Set<String> plannedIds;
   final String? selectedId;
+  final Set<String> selectedIds;
   final ValueChanged<String> onSelected;
   final bool showAttributes;
   final bool showNames;
@@ -4129,11 +4131,6 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                         rowGap: _rowGap,
                         rowHorizontalOffsets: offsets,
                         contentPadding: padding,
-                        onCellTap: (index) {
-                          if (index < widget.students.length) {
-                            widget.onSelected(widget.students[index].studentId);
-                          }
-                        },
                       ),
                     ),
                     Positioned.fill(
@@ -4160,6 +4157,17 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                                     (item) =>
                                         item.studentId == widget.selectedId,
                                   ),
+                            selectedIndices: {
+                              for (
+                                var index = 0;
+                                index < widget.students.length;
+                                index++
+                              )
+                                if (widget.selectedIds.contains(
+                                  widget.students[index].studentId,
+                                ))
+                                  index,
+                            },
                           ),
                         ),
                       ),
@@ -4219,11 +4227,17 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
           height: cellHeight,
           child: Semantics(
             button: true,
-            selected: widget.students[index].studentId == widget.selectedId,
+            selected:
+                widget.students[index].studentId == widget.selectedId ||
+                widget.selectedIds.contains(widget.students[index].studentId),
             label: widget.students[index].displayName,
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () => widget.onSelected(widget.students[index].studentId),
+            child: ClipPath(
+              clipper: const _StudentGridCardHitClipper(),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () =>
+                    widget.onSelected(widget.students[index].studentId),
+              ),
             ),
           ),
         ),
@@ -4306,6 +4320,35 @@ Path studentGridCardPath(Rect rect) {
   ], radius: math.min(12, rect.shortestSide * 0.1));
 }
 
+Rect studentGridCardFittedRect(Rect cell) => Alignment.center.inscribe(
+  applyBoxFit(BoxFit.contain, studentGridCardSourceSize, cell.size).destination,
+  cell,
+);
+
+Path studentGridCardHitPath(Rect rect) {
+  final depth = math.min(
+    rect.width * 0.25,
+    rect.height / math.tan(80 * math.pi / 180),
+  );
+  return Path()
+    ..moveTo(rect.left + depth, rect.top)
+    ..lineTo(rect.right, rect.top)
+    ..lineTo(rect.right - depth, rect.bottom)
+    ..lineTo(rect.left, rect.bottom)
+    ..close();
+}
+
+class _StudentGridCardHitClipper extends CustomClipper<Path> {
+  const _StudentGridCardHitClipper();
+
+  @override
+  Path getClip(Size size) =>
+      studentGridCardHitPath(studentGridCardFittedRect(Offset.zero & size));
+
+  @override
+  bool shouldReclip(_StudentGridCardHitClipper oldClipper) => false;
+}
+
 Color studentAttackTypeColor(String? attackType) => switch (attackType) {
   'Explosive' => const Color(0xff920008),
   'Piercing' => const Color(0xffbd8901),
@@ -4340,6 +4383,7 @@ class StudentGridCardOverlayPainter extends CustomPainter {
     required this.showAttributes,
     required this.showNames,
     required this.selectedIndex,
+    this.selectedIndices = const {},
     required this.plannedIds,
     this.firstRow = 0,
     this.lastRow,
@@ -4360,6 +4404,7 @@ class StudentGridCardOverlayPainter extends CustomPainter {
   final bool showAttributes;
   final bool showNames;
   final int? selectedIndex;
+  final Set<int> selectedIndices;
   final Set<String> plannedIds;
   final int firstRow;
   final int? lastRow;
@@ -4391,14 +4436,7 @@ class StudentGridCardOverlayPainter extends CustomPainter {
         cellWidth,
         cellHeight,
       );
-      final fitted = Alignment.center.inscribe(
-        applyBoxFit(
-          BoxFit.contain,
-          studentGridCardSourceSize,
-          cell.size,
-        ).destination,
-        cell,
-      );
+      final fitted = studentGridCardFittedRect(cell);
       cards[index] = fitted;
       _paintCardOverlay(canvas, fitted, students[index]);
     }
@@ -4415,9 +4453,10 @@ class StudentGridCardOverlayPainter extends CustomPainter {
     for (final card in cards.values) {
       canvas.drawPath(studentGridCardPath(card), outlinePaint);
     }
-    final selected = selectedIndex;
-    final selectedCard = selected == null ? null : cards[selected];
-    if (selectedCard != null) {
+    final selections = {...selectedIndices, ?selectedIndex};
+    for (final selected in selections) {
+      final selectedCard = cards[selected];
+      if (selectedCard == null) continue;
       canvas.drawPath(
         studentGridCardPath(selectedCard),
         Paint()
@@ -4560,6 +4599,7 @@ class StudentGridCardOverlayPainter extends CustomPainter {
       oldDelegate.showAttributes != showAttributes ||
       oldDelegate.showNames != showNames ||
       oldDelegate.selectedIndex != selectedIndex ||
+      oldDelegate.selectedIndices != selectedIndices ||
       oldDelegate.plannedIds != plannedIds ||
       oldDelegate.firstRow != firstRow ||
       oldDelegate.lastRow != lastRow ||
@@ -4614,7 +4654,6 @@ class _StudentDiagonalScrollbar extends StatelessWidget {
               ? trackHeight
               : math.max(28.0, trackHeight * viewport / (viewport + maxScroll));
           final travel = math.max(1.0, trackHeight - handleHeight);
-          final trajectoryDepth = size.height / math.tan(80 * math.pi / 180);
           final handleTop =
               trackInset +
               travel *
@@ -4624,6 +4663,11 @@ class _StudentDiagonalScrollbar extends StatelessWidget {
             handleTop + handleHeight / 2,
             trackInset: trackInset,
           );
+          final dragPath = studentScrollbarDragPath(
+            size,
+            trackInset: trackInset,
+          );
+          final dragBounds = dragPath.getBounds();
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -4658,21 +4702,23 @@ class _StudentDiagonalScrollbar extends StatelessWidget {
                 child: const IgnorePointer(),
               ),
               if (maxScroll > 0)
-                Positioned(
-                  left: math.max(0, size.width - trajectoryDepth - 24),
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: GestureDetector(
-                    key: ValueKey('$keyPrefix-diagonal-scrollbar-drag'),
-                    behavior: HitTestBehavior.translucent,
-                    onVerticalDragUpdate: (details) {
-                      controller.jumpTo(
-                        (controller.offset +
-                                details.delta.dy * maxScroll / travel)
-                            .clamp(0.0, maxScroll),
-                      );
-                    },
+                Positioned.fromRect(
+                  rect: dragBounds,
+                  child: ClipPath(
+                    clipper: _LocalPathClipper(
+                      dragPath.shift(-dragBounds.topLeft),
+                    ),
+                    child: GestureDetector(
+                      key: ValueKey('$keyPrefix-diagonal-scrollbar-drag'),
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragUpdate: (details) {
+                        controller.jumpTo(
+                          (controller.offset +
+                                  details.delta.dy * maxScroll / travel)
+                              .clamp(0.0, maxScroll),
+                        );
+                      },
+                    ),
                   ),
                 ),
             ],
@@ -4695,6 +4741,34 @@ Offset studentScrollbarTrackPoint(
     size.width - trackInset - depth + (size.height - clampedY) / tangent,
     clampedY,
   );
+}
+
+Path studentScrollbarDragPath(
+  Size size, {
+  double trackInset = 10,
+  double hitSlop = 8,
+}) {
+  final start = studentScrollbarTrackPoint(
+    size,
+    trackInset,
+    trackInset: trackInset,
+  );
+  final end = studentScrollbarTrackPoint(
+    size,
+    size.height - trackInset,
+    trackInset: trackInset,
+  );
+  final direction = end - start;
+  final length = direction.distance;
+  if (length <= 0) return Path();
+  final normal =
+      Offset(-direction.dy / length, direction.dx / length) * hitSlop;
+  return Path()
+    ..moveTo((start + normal).dx, (start + normal).dy)
+    ..lineTo((end + normal).dx, (end + normal).dy)
+    ..lineTo((end - normal).dx, (end - normal).dy)
+    ..lineTo((start - normal).dx, (start - normal).dy)
+    ..close();
 }
 
 class _StudentDiagonalScrollbarPainter extends CustomPainter {

@@ -496,13 +496,20 @@ void main() {
     const size = Size(2560, 1392);
     final geometry = planStarterRightSectionGeometry(size);
     final section = planStarterSectionPath(size, 'element-7');
+    final editBounds = geometry.editButtonPath.getBounds();
     final deleteBounds = geometry.deleteButtonPath.getBounds();
     final returnBounds = geometry.returnButtonPath.getBounds();
     final phaseBounds = geometry.buttonPath.getBounds();
 
+    expect(editBounds.bottom, lessThan(deleteBounds.top));
     expect(deleteBounds.bottom, lessThan(returnBounds.top));
     expect(returnBounds.bottom, lessThan(phaseBounds.top));
-    for (final bounds in [deleteBounds, returnBounds, phaseBounds]) {
+    for (final bounds in [
+      editBounds,
+      deleteBounds,
+      returnBounds,
+      phaseBounds,
+    ]) {
       expect(bounds.isEmpty, isFalse);
       expect(section.contains(bounds.center), isTrue);
     }
@@ -1616,6 +1623,26 @@ void main() {
     expect(confirmed?.single.targets['weapon_star'], 4);
   });
 
+  testWidgets('tapping the selected star endpoint removes that endpoint', (
+    tester,
+  ) async {
+    await _pumpBuilder(tester);
+
+    await tester.tap(find.byKey(const ValueKey('plan-stage-1-weapon-star-1')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('plan-stage-1-weapon-star-1')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('plan-stage-1-student-star-5')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('plan-stage-1-student-star-3')));
+    await tester.pump();
+    final status = tester.widget<StudentStarStatus>(
+      find.byType(StudentStarStatus),
+    );
+    expect(status.targetStudentStars, 3);
+    expect(status.targetWeaponStars, 0);
+  });
+
   testWidgets('later star strips fill from the previous stage snapshot', (
     tester,
   ) async {
@@ -1640,8 +1667,8 @@ void main() {
     final status = tester.widget<StudentStarStatus>(
       find.descendant(of: secondCard, matching: find.byType(StudentStarStatus)),
     );
-    expect(status.studentStars, 5);
-    expect(status.weaponStars, 1);
+    expect(status.studentStars, 4);
+    expect(status.weaponStars, 0);
     expect(status.targetStudentStars, 5);
     expect(status.targetWeaponStars, 3);
   });

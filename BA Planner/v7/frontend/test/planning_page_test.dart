@@ -3,11 +3,13 @@ import 'dart:math' as math;
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/services/scenario_service.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/studio/plan_studio_layout.dart';
 import 'package:ba_planner_v7/ui/studio/section_template.dart';
 import 'package:ba_planner_v7/ui/widgets/bond_rank_portrait.dart';
+import 'package:ba_planner_v7/ui/widgets/ba_triangle_background.dart';
 import 'package:ba_planner_v7/ui/widgets/diagonal_media_list_item.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_phase_editor.dart';
@@ -29,6 +31,40 @@ PlanElementPreset _planningTestPreset() => PlanElementPreset(
   ],
 );
 
+PlanningDocument _comparisonTestDocument(
+  String id,
+  PlanningDocumentKind kind, {
+  int level = 1,
+}) {
+  final targets = {
+    for (final entry in planningDocumentTargetMaximums.entries)
+      entry.key: entry.key == 'bond_rank' ? 1 : 0,
+    'level': level,
+    'student_star': 1,
+    'ex_skill': 1,
+    'skill1': 1,
+  };
+  return PlanningDocument(
+    id: id,
+    name: id,
+    kind: kind,
+    phases: [
+      PlanningDocumentPhase(
+        id: '$id-phase',
+        name: '페이즈 1',
+        stages: [
+          PlanningDocumentStage(
+            id: '$id-stage',
+            studentId: 'ayane',
+            name: '목표',
+            targets: targets,
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
 void main() {
   test('plan phase items use the expanded readable height', () {
     expect(planPhaseItemHeight, 65);
@@ -47,6 +83,169 @@ void main() {
   test('all plan student selector panels use intro 80 and outro 260', () {
     expect(planStudentSelectorMotion.intro, 80);
     expect(planStudentSelectorMotion.outro, 260);
+  });
+
+  test(
+    'scenario rows use the standard height-derived 80 degree silhouette',
+    () {
+      const size = Size(900, 142);
+      final depth = planScenarioParallelogramDepth(size.height);
+      final expected = size.height / math.tan(80 * math.pi / 180);
+      final path = planScenarioParallelogramPath(size);
+
+      expect(depth, closeTo(expected, 0.001));
+      expect(depth, greaterThan(14));
+      expect(path.contains(const Offset(1, 71)), isFalse);
+      expect(path.contains(Offset(depth / 2 + 4, 71)), isTrue);
+      expect(path.contains(const Offset(899, 71)), isFalse);
+      expect(path.contains(Offset(900 - depth / 2 - 4, 71)), isTrue);
+    },
+  );
+
+  testWidgets('scenario viewport fog is clipped to the same parallelogram', (
+    tester,
+  ) async {
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 500,
+            height: 220,
+            child: PlanDiagonalScrollbar(
+              keyPrefix: 'scenario-fog-test',
+              controller: controller,
+              contentExtent: 600,
+              fogClipper: const PlanScenarioParallelogramClipper(),
+              child: SingleChildScrollView(
+                controller: controller,
+                child: const SizedBox(height: 600),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final clip = tester.widget<ClipPath>(
+      find.byKey(const ValueKey('scenario-fog-test-fog-clip')),
+    );
+    expect(clip.clipper, isA<PlanScenarioParallelogramClipper>());
+    expect(
+      find.byKey(const ValueKey('scenario-fog-test-viewport-fog-bottom')),
+      findsOneWidget,
+    );
+    final path = clip.clipper!.getClip(const Size(500, 220));
+    final depth = planScenarioParallelogramDepth(220);
+    expect(path.contains(const Offset(1, 110)), isFalse);
+    expect(path.contains(Offset(depth / 2 + 4, 110)), isTrue);
+    expect(path.contains(const Offset(499, 110)), isFalse);
+  });
+
+  test(
+    'selector confirmation is bottom-right and shares the title texture',
+    () {
+      const size = Size(2560, 1392);
+      const section1 = Rect.fromLTWH(20, 40, 420, 1200);
+      final rect = planStudentSelectorSelectionSectionRect(
+        size,
+        section1Bounds: section1,
+      );
+
+      expect(rect.right, size.width - 16);
+      expect(rect.bottom, section1.bottom);
+      expect(
+        planStudentSelectorConfirmTexture,
+        same(titlePrimaryActionTexture),
+      );
+      expect(planStudentSelectorConfirmTexture.randomSeed, 2077);
+      expect(planStudentSelectorConfirmTexture.triangleSize, 105);
+    },
+  );
+
+  testWidgets('scenario list card exposes identity calculation and portraits', (
+    tester,
+  ) async {
+    PlanningScenarioSummary summary({required String id, required int base}) =>
+        PlanningScenarioSummary(
+          id: id,
+          revision: 1,
+          name: id == 'current' ? '빠른 성장 후보' : '총력전 대비',
+          description: id == 'current' ? '딜러를 먼저 육성' : '다음 시즌 후보',
+          baseProfileRevision: base,
+          phaseCount: 2,
+          stageCount: 7,
+          studentCount: 5,
+          studentIds: const ['ayane', 'hasumi', 'aru', 'shiroko', 'hoshino'],
+          calculation: const PlanningScenarioCalculationSummary(
+            credits: 18200000,
+            requiredResourceTypeCount: 6,
+            knownShortageTypeCount: 4,
+            inventoryComplete: true,
+            firstBottleneckPhaseNumber: 2,
+            representativeShortage: PlanningScenarioRepresentativeShortage(
+              resourceKey: 'Item_Icon_ExpReport_4',
+              itemId: 'Item_Icon_ExpReport_4',
+              displayName: '최상급 활동 보고서',
+              category: 'report',
+              shortage: 84,
+            ),
+          ),
+          createdAt: '2026-08-12T10:00:00',
+          updatedAt: '2026-08-13T14:32:00',
+        );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 900,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 142,
+                    child: PlanScenarioListCard(
+                      scenario: summary(id: 'current', base: 3),
+                      stale: false,
+                      selected: false,
+                      onTap: () {},
+                    ),
+                  ),
+                  SizedBox(
+                    height: 142,
+                    child: PlanScenarioListCard(
+                      scenario: summary(id: 'stale', base: 2),
+                      stale: true,
+                      selected: false,
+                      onTap: () {},
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('빠른 성장 후보'), findsOneWidget);
+    expect(find.text('딜러를 먼저 육성'), findsOneWidget);
+    expect(find.text('학생 5 · 페이즈 2 · 성장 단계 7'), findsNWidgets(2));
+    expect(find.text('크레딧 18.2M · 부족 4종 · 최초 병목 페이즈 2'), findsNWidgets(2));
+    expect(find.text('최상급 활동 보고서 −84'), findsNWidgets(2));
+    expect(find.text('+1'), findsNWidgets(2));
+    expect(
+      find.byKey(const ValueKey('plan-scenario-portrait-current-ayane')),
+      findsOneWidget,
+    );
+    expect(find.text('현재 데이터 기준'), findsOneWidget);
+    expect(find.text('저장 시점과 다름'), findsOneWidget);
+    expect(find.text('수정 2026.08.13 14:32'), findsNWidgets(2));
+    expect(tester.takeException(), isNull);
   });
 
   test(
@@ -541,6 +740,132 @@ void main() {
       everyElement(PlanResourceCategory.ooparts),
     );
   });
+
+  test('bottleneck filtering preserves calculated focus-step data', () {
+    final focusStep = dummyPlanPhases.first.steps.first;
+    final detail = PlanBottleneckDetailPreview(
+      id: 'calculated-bottleneck',
+      rankLabel: '병목 1',
+      phaseNumber: 1,
+      focusPhaseId: 'calculated-phase',
+      focusStudentId: 'calculated-student',
+      focusStep: 1,
+      focusStage: '계산 단계',
+      focusField: PlanBottleneckFocusField.title,
+      focusStepData: focusStep,
+      resources: const [
+        PlanBottleneckResourcePreview(
+          id: 'calculated-resource',
+          name: '계산 재화',
+          remainingAtEntry: 0,
+          requiredAtEntry: 1,
+          shortage: 1,
+          iconAsset: planPrimaryBottleneckIconAsset,
+          affectedStageKeys: {'calculated-stage'},
+        ),
+      ],
+      delayedStages: const [],
+    );
+
+    final filtered = filterPlanBottleneckDetails(
+      [detail],
+      categories: PlanResourceCategory.values.toSet(),
+      sort: PlanResourceSort.nameAscending,
+    );
+
+    expect(filtered.single.focusStepData, same(focusStep));
+    expect(planBottleneckFocusStep(filtered.single).$1, same(focusStep));
+  });
+
+  for (final keyPrefix in const [
+    'plan-phase-consumption',
+    'plan-overall-consumption',
+  ]) {
+    testWidgets(
+      '$keyPrefix clamps a stale scroll offset when satisfied items hide',
+      (tester) async {
+        final resources = [
+          for (var index = 0; index < 8; index++)
+            PlanConsumptionResourcePreview(
+              id: 'satisfied-$index',
+              name: '충족 재화 $index',
+              amount: 1,
+              owned: 2,
+              iconAsset: planPrimaryBottleneckIconAsset,
+              affectedStageKeys: const {'stage'},
+            ),
+          const PlanConsumptionResourcePreview(
+            id: 'shortage',
+            name: '부족 재화',
+            amount: 2,
+            owned: 0,
+            iconAsset: planPrimaryBottleneckIconAsset,
+            affectedStageKeys: {'stage'},
+          ),
+        ];
+        var groups = [
+          PlanConsumptionGroupPreview(
+            id: 'group',
+            label: '그룹',
+            resources: resources,
+          ),
+        ];
+        late void Function(List<PlanConsumptionGroupPreview>) updateGroups;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 700,
+                  height: 300,
+                  child: StatefulBuilder(
+                    builder: (context, setState) {
+                      updateGroups = (next) => setState(() => groups = next);
+                      return PlanConsumptionDiagonalList(
+                        groups: groups,
+                        keyPrefix: keyPrefix,
+                        selectedResourceKey: null,
+                        onToggleResource: (_, _) {},
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final scroll = find.byKey(ValueKey('$keyPrefix-scroll'));
+        final scrollable = find.descendant(
+          of: scroll,
+          matching: find.byType(Scrollable),
+        );
+        final position = tester.state<ScrollableState>(scrollable).position;
+        expect(position.maxScrollExtent, greaterThan(0));
+        position.jumpTo(position.maxScrollExtent);
+        await tester.pump();
+
+        updateGroups([
+          PlanConsumptionGroupPreview(
+            id: 'group',
+            label: '그룹',
+            resources: [resources.last],
+          ),
+        ]);
+        await tester.pump();
+
+        final viewportRect = tester.getRect(scroll);
+        final cardRect = tester.getRect(
+          find.byKey(ValueKey('$keyPrefix-card-1')),
+        );
+        expect(position.pixels, lessThanOrEqualTo(position.maxScrollExtent));
+        expect(cardRect.left, lessThan(viewportRect.right));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   Future<void> pumpPage(
     WidgetTester tester,
@@ -2777,11 +3102,19 @@ void main() {
         const ValueKey('plan-student-selector-filter-container'),
       );
       expect(
-        find.descendant(of: gridContainer, matching: find.byType(ClipPath)),
+        find.byKey(
+          ValueKey(
+            '${const ValueKey('plan-student-selector-grid-container')}-clip',
+          ),
+        ),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: filterContainer, matching: find.byType(ClipPath)),
+        find.byKey(
+          ValueKey(
+            '${const ValueKey('plan-student-selector-filter-container')}-clip',
+          ),
+        ),
         findsOneWidget,
       );
       expect(
@@ -2891,6 +3224,12 @@ void main() {
       filterList.onToggle('ownership', 'owned');
       await tester.pump();
       expect(filterList.selected['ownership'], contains('owned'));
+      filterList.onToggle('ownership', 'owned');
+      await tester.pump();
+      expect(filterList.selected['ownership'], isEmpty);
+      filterList.onToggle('ownership', 'owned');
+      await tester.pump();
+      expect(filterList.selected['ownership'], contains('owned'));
 
       await tester.tap(
         find.byKey(
@@ -2996,7 +3335,7 @@ void main() {
         return Offset(translation.x, translation.y);
       }
 
-      for (final panel in const ['grid', 'filter', 'condition']) {
+      for (final panel in const ['grid', 'filter', 'condition', 'selection']) {
         expect(selectorMotionOffset(panel), Offset.zero);
       }
 
@@ -3008,7 +3347,7 @@ void main() {
         ),
       );
 
-      for (final panel in const ['grid', 'filter', 'condition']) {
+      for (final panel in const ['grid', 'filter', 'condition', 'selection']) {
         final offset = selectorMotionOffset(panel);
         expect(offset.dx, lessThan(0));
         expect(offset.dy, greaterThan(0));
@@ -3019,7 +3358,7 @@ void main() {
       setHostState(() => active = true);
       await tester.pumpAndSettle();
 
-      for (final panel in const ['grid', 'filter', 'condition']) {
+      for (final panel in const ['grid', 'filter', 'condition', 'selection']) {
         expect(selectorMotionOffset(panel), Offset.zero);
       }
       Offset planMotionOffset(String id) {
@@ -3071,6 +3410,11 @@ void main() {
       final selectedStudentId = firstSelectionGrid.students.first.studentId;
       await tester.tap(find.byKey(ValueKey('student-$selectedStudentId')));
       await tester.pump();
+      expect(find.text('선택된 학생 1명'), findsOneWidget);
+      await tester.tap(
+        find.byKey(const ValueKey('plan-student-selector-confirm-selection')),
+      );
+      await tester.pump();
       await tester.pump(
         Duration(
           milliseconds: planStudentSelectorMotionDuration.inMilliseconds ~/ 2,
@@ -3079,7 +3423,7 @@ void main() {
 
       expect(find.byType(PlanStudentSelector), findsOneWidget);
       expect(find.byType(PlanElementBuilder), findsNothing);
-      for (final panel in const ['grid', 'filter', 'condition']) {
+      for (final panel in const ['grid', 'filter', 'condition', 'selection']) {
         final transform = find.descendant(
           of: find.byKey(ValueKey('plan-student-selector-$panel-motion')),
           matching: find.byType(Transform),
@@ -3124,6 +3468,10 @@ void main() {
       planFilterList.onToggle('plan_status', 'planned');
       await tester.pump();
       await tester.tap(find.byKey(ValueKey('student-$selectedStudentId')));
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-student-selector-confirm-selection')),
+      );
       await tester.pumpAndSettle();
 
       final reopened = tester.widget<PlanElementBuilder>(
@@ -3131,6 +3479,196 @@ void main() {
       );
       expect(reopened.seed.studentId, selectedStudentId);
       expect(reopened.initialStages, isNotEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'scenario comparison selects active plan and exposes side-by-side actions',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final profile = (await service.listProfiles()).firstWhere(
+        (profile) => profile.selected,
+      );
+      final state = await service.loadRepositoryState(profile.id);
+      final created = await service.createScenario(
+        profileId: profile.id,
+        expectedRevision: 0,
+        idempotencyKey: 'comparison-create',
+        name: '비교 후보',
+        description: '',
+        baseProfileRevision: state.revision,
+        document: _comparisonTestDocument(
+          'scenario-compare',
+          PlanningDocumentKind.scenario,
+          level: 2,
+        ),
+      );
+      var incorporated = false;
+      var edited = false;
+      await tester.binding.setSurfaceSize(const Size(1600, 1000));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PlanScenarioComparisonSection(
+              service: service,
+              repositoryState: state,
+              activePlan: _comparisonTestDocument(
+                'active-plan',
+                PlanningDocumentKind.plan,
+              ),
+              section1Bounds: const Rect.fromLTWH(16, 20, 360, 940),
+              active: true,
+              onEdit: (_, _) async => edited = true,
+              onIncorporate: (_) async => incorporated = true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final activeCandidateRect = tester.getRect(
+        find.byKey(const ValueKey('plan-compare-candidate-active-plan')),
+      );
+      final scenarioCandidateRect = tester.getRect(
+        find.byKey(ValueKey('plan-compare-candidate-${created.scenarioId}')),
+      );
+      expect(scenarioCandidateRect.left, lessThan(activeCandidateRect.left));
+      expect(scenarioCandidateRect.right, lessThan(activeCandidateRect.right));
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-compare-candidate-active-plan')),
+      );
+      await tester.tap(
+        find.byKey(ValueKey('plan-compare-candidate-${created.scenarioId}')),
+      );
+      await tester.pump();
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const ValueKey('plan-scenario-compare-confirm')),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('plan-scenario-compare-confirm')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('활성 계획  ↔  비교 후보'), findsOneWidget);
+      expect(find.text('전체 결과'), findsOneWidget);
+      final firstSummaryRow = tester.getRect(
+        find.byKey(const ValueKey('plan-comparison-a-summary-row-0')),
+      );
+      final secondSummaryRow = tester.getRect(
+        find.byKey(const ValueKey('plan-comparison-a-summary-row-1')),
+      );
+      expect(secondSummaryRow.left, lessThan(firstSummaryRow.left));
+      expect(secondSummaryRow.right, lessThan(firstSummaryRow.right));
+      final comparisonPath = planScenarioListSectionPath(
+        const Size(1600, 1000),
+        const Rect.fromLTWH(16, 20, 360, 940),
+      );
+      for (final key in const [
+        'plan-scenario-comparison-back',
+        'plan-scenario-a-move',
+        'plan-scenario-b-move',
+      ]) {
+        final rect = tester.getRect(find.byKey(ValueKey(key))).deflate(1);
+        expect(
+          [
+            rect.topLeft,
+            rect.topRight,
+            rect.bottomRight,
+            rect.bottomLeft,
+          ].every(comparisonPath.contains),
+          isTrue,
+          reason: '$key must remain inside the 80-degree result section',
+        );
+      }
+      expect(
+        tester
+            .widget<TextButton>(
+              find.byKey(const ValueKey('plan-scenario-a-edit')),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('plan-scenario-b-incorporate')),
+      );
+      await tester.pump();
+      expect(incorporated, isTrue);
+      await tester.tap(find.byKey(const ValueKey('plan-scenario-b-edit')));
+      await tester.pump();
+      expect(edited, isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'comparison workspace incorporates a scenario after the active plan',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final profile = (await service.listProfiles()).firstWhere(
+        (profile) => profile.selected,
+      );
+      final state = await service.loadRepositoryState(profile.id);
+      final created = await service.createScenario(
+        profileId: profile.id,
+        expectedRevision: 0,
+        idempotencyKey: 'incorporate-create',
+        name: '편입 후보',
+        description: '',
+        baseProfileRevision: state.revision,
+        document: _comparisonTestDocument(
+          'scenario-incorporate',
+          PlanningDocumentKind.scenario,
+          level: 2,
+        ),
+      );
+      await tester.binding.setSurfaceSize(const Size(2560, 1392));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PlanningPage(service: service, loadRepositoryPlan: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final launch = tester.widget<FilledButton>(
+        find.byKey(const ValueKey('plan-scenario-compare-launch')),
+      );
+      expect(launch.onPressed, isNotNull);
+      await tester.tap(
+        find.byKey(const ValueKey('plan-scenario-compare-launch')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-compare-candidate-active-plan')),
+      );
+      await tester.tap(
+        find.byKey(ValueKey('plan-compare-candidate-${created.scenarioId}')),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-scenario-compare-confirm')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-scenario-b-incorporate')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('편입 후보 · 페이즈 1'), findsOneWidget);
+      expect(find.byType(PlanScenarioComparisonSection), findsNothing);
+      expect(find.text('"편입 후보" 시나리오를 현재 계획에 편입했습니다.'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -3182,6 +3720,189 @@ void main() {
   );
 
   testWidgets(
+    'scenario creation exits its selector before cancel and list handoffs',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpPage(tester, service, size: const Size(2560, 1392));
+      await tester.pumpAndSettle();
+
+      Offset selectorOffset(String panel) {
+        final transform = tester.widget<Transform>(
+          find
+              .descendant(
+                of: find.byKey(ValueKey('plan-student-selector-$panel-motion')),
+                matching: find.byType(Transform),
+              )
+              .first,
+        );
+        final translation = transform.transform.getTranslation();
+        return Offset(translation.x, translation.y);
+      }
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-scenario-create-launch')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-student-selector-launch')),
+      );
+      await tester.pump();
+      await tester.pump(
+        Duration(
+          milliseconds: planStudentSelectorMotionDuration.inMilliseconds ~/ 2,
+        ),
+      );
+      expect(find.byType(PlanStudentSelector), findsOneWidget);
+      for (final panel in const ['grid', 'filter', 'condition', 'selection']) {
+        final offset = selectorOffset(panel);
+        expect(offset.dx, lessThan(0));
+        expect(offset.dy, greaterThan(0));
+      }
+      await tester.pumpAndSettle();
+      expect(find.byType(PlanStudentSelector), findsNothing);
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-scenario-create-launch')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('plan-scenario-list-launch')));
+      await tester.pump();
+      await tester.pump(
+        Duration(
+          milliseconds: planStudentSelectorMotionDuration.inMilliseconds ~/ 2,
+        ),
+      );
+      expect(find.byType(PlanStudentSelector), findsOneWidget);
+      expect(find.byType(PlanScenarioListSection), findsNothing);
+      for (final panel in const ['grid', 'filter', 'condition', 'selection']) {
+        final offset = selectorOffset(panel);
+        expect(offset.dx, lessThan(0));
+        expect(offset.dy, greaterThan(0));
+      }
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PlanStudentSelector), findsNothing);
+      expect(find.byType(PlanScenarioListSection), findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const ValueKey('plan-scenario-create-launch')),
+            )
+            .onPressed,
+        isNull,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'multi-select processes students in click order and reopens the selected student plan',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpPage(
+        tester,
+        service,
+        size: const Size(2560, 1392),
+        presets: [
+          PlanElementPreset(
+            id: 'multi-growth',
+            name: '다중 성장',
+            isDefault: false,
+            stages: const [
+              {'level': 90, 'student_star': 5},
+            ],
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-student-selector-launch')),
+      );
+      await tester.pumpAndSettle();
+      final grid = tester.widget<StudentDiagonalGrid>(
+        find.byKey(const ValueKey('plan-student-selector-grid')),
+      );
+      final firstId = grid.students[0].studentId;
+      final secondId = grid.students[1].studentId;
+      await tester.tap(find.byKey(ValueKey('student-$firstId')));
+      await tester.pump();
+      expect(find.text('선택된 학생 1명'), findsOneWidget);
+      await tester.tap(find.byKey(ValueKey('student-$firstId')));
+      await tester.pump();
+      expect(find.text('선택된 학생 0명'), findsOneWidget);
+      await tester.tap(find.byKey(ValueKey('student-$firstId')));
+      await tester.tap(find.byKey(ValueKey('student-$secondId')));
+      await tester.pump();
+
+      final selectedGrid = tester.widget<StudentDiagonalGrid>(
+        find.byKey(const ValueKey('plan-student-selector-grid')),
+      );
+      expect(selectedGrid.selectedIds, {firstId, secondId});
+      expect(find.text('선택된 학생 2명'), findsOneWidget);
+      await tester.tap(
+        find.byKey(const ValueKey('plan-student-selector-confirm-selection')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<PlanElementBuilder>(find.byType(PlanElementBuilder))
+            .seed
+            .studentId,
+        firstId,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('plan-starter-preset-multi-growth')),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<PlanElementBuilder>(find.byType(PlanElementBuilder))
+            .seed
+            .studentId,
+        secondId,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('plan-starter-preset-multi-growth')),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
+      await tester.pumpAndSettle();
+
+      final builder = tester.widget<PlanElementBuilder>(
+        find.byType(PlanElementBuilder),
+      );
+      expect(builder.seed.studentId, secondId);
+      final firstItem = builder.unassignedItems.firstWhere(
+        (item) => item.studentId == firstId,
+      );
+      await tester.tap(
+        find.byKey(ValueKey('plan-unassigned-media-${firstItem.id}')),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-starter-edit-selected-student')),
+      );
+      await tester.pumpAndSettle();
+
+      final reopened = tester.widget<PlanElementBuilder>(
+        find.byType(PlanElementBuilder),
+      );
+      expect(reopened.seed.studentId, firstId);
+      expect(reopened.initialStages, isNotEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'scenario creation reuses student builder and phase editor without bulk apply',
     (tester) async {
       final service = MockAppService();
@@ -3210,6 +3931,10 @@ void main() {
       );
       await tester.tap(
         find.byKey(ValueKey('student-${grid.students.first.studentId}')),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-student-selector-confirm-selection')),
       );
       await tester.pumpAndSettle();
       expect(find.byType(PlanElementBuilder), findsOneWidget);
@@ -3261,6 +3986,68 @@ void main() {
         find.byKey(const ValueKey('plan-scenario-diagonal-scroll')),
         findsOneWidget,
       );
+      expect(
+        tester
+            .widget<ClipPath>(
+              find.byKey(
+                ValueKey('plan-scenario-card-clip-${list.scenarios.single.id}'),
+              ),
+            )
+            .clipper,
+        isA<PlanScenarioParallelogramClipper>(),
+      );
+      expect(
+        tester
+            .widget<ClipPath>(
+              find.byKey(const ValueKey('plan-scenario-fog-clip')),
+            )
+            .clipper,
+        isA<PlanScenarioParallelogramClipper>(),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'scenario selector accepts the upper-right of fourth-column portraits in rows 1-4',
+    (tester) async {
+      final service = MockAppService(fullStudentCatalog: true);
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpPage(
+        tester,
+        service,
+        size: const Size(2560, 1392),
+        presets: [_planningTestPreset()],
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-scenario-create-launch')),
+      );
+      await tester.pumpAndSettle();
+
+      final gridFinder = find.byKey(
+        const ValueKey('plan-student-selector-grid'),
+      );
+      final students = tester.widget<StudentDiagonalGrid>(gridFinder).students;
+      expect(students.length, greaterThanOrEqualTo(16));
+
+      for (var row = 0; row < 4; row++) {
+        final student = students[row * 4 + 3];
+        final target = find.byKey(ValueKey('student-${student.studentId}'));
+        final bounds = tester.getRect(target);
+        final fitted = studentGridCardFittedRect(Offset.zero & bounds.size);
+        final tapPoint = bounds.topLeft + fitted.topRight + const Offset(-2, 2);
+        await tester.tapAt(tapPoint);
+        await tester.pump();
+        expect(
+          tester.widget<StudentDiagonalGrid>(gridFinder).selectedIds,
+          contains(student.studentId),
+          reason: 'row ${row + 1}, column 4 upper-right must be tappable',
+        );
+      }
+
       expect(tester.takeException(), isNull);
     },
   );

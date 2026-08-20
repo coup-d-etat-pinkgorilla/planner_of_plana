@@ -9,6 +9,9 @@ class StudentMeta(TypedDict):
     template_name: str           # 학생 텍스처/초상화 파일명
     group: str                   # 같은 캐릭터임을 나타내는 그룹 키 ("시즈코")
     variant: str | None          # 코스튬/변형 태그 (없으면 None)
+    schaledb_id: NotRequired[int]
+    favor_item_tags: NotRequired[list[str]]
+    favor_item_unique_tags: NotRequired[list[str]]
     search_tags: NotRequired[list[str]]
     kr_search_tags: NotRequired[list[str]]
     school: NotRequired[str | None]
@@ -95,6 +98,9 @@ EDITABLE_FIELDS: tuple[str, ...] = (
     "template_name",
     "group",
     "variant",
+    "schaledb_id",
+    "favor_item_tags",
+    "favor_item_unique_tags",
     "search_tags",
     "kr_search_tags",
     "school",

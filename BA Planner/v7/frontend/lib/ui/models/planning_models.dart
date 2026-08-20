@@ -325,14 +325,25 @@ Map<String, int> planningDocumentTargets({
   };
   final changedKeys = <String>{
     for (final entry in const {
+      'target_level': 'level',
+      'target_bond_rank': 'bond_rank',
+      'target_star': 'student_star',
       'target_weapon_level': 'weapon_level',
       'target_weapon_star': 'weapon_star',
+      'target_ex_skill': 'ex_skill',
+      'target_skill1': 'skill1',
+      'target_skill2': 'skill2',
+      'target_skill3': 'skill3',
       'target_equip1_tier': 'equip1_tier',
       'target_equip2_tier': 'equip2_tier',
       'target_equip3_tier': 'equip3_tier',
       'target_equip1_level': 'equip1_level',
       'target_equip2_level': 'equip2_level',
       'target_equip3_level': 'equip3_level',
+      'target_equip4_tier': 'equip4_tier',
+      'target_stat_hp': 'stat_hp',
+      'target_stat_atk': 'stat_atk',
+      'target_stat_heal': 'stat_heal',
     }.entries)
       if (goal[entry.key] is int) entry.value,
   };

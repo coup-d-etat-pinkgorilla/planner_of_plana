@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:ba_planner_v7/services/backend_process.dart';
 import 'package:ba_planner_v7/services/planning_protocol_client.dart';
 import 'package:ba_planner_v7/services/process_app_service.dart';
+import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,8 +15,8 @@ Map<String, int> _targets(int level) => {
   'weapon_star': 0,
   'ex_skill': 1,
   'skill1': 1,
-  'skill2': 1,
-  'skill3': 1,
+  'skill2': 0,
+  'skill3': 0,
   'equip1_tier': 0,
   'equip2_tier': 0,
   'equip3_tier': 0,
@@ -78,6 +79,20 @@ void main() {
           'Scenario E2E',
           'scenario-profile',
         );
+        final studentsRevision = await service.saveRepositoryStudents(
+          profile.id,
+          [ConfirmedStudentState.fromValues('ayane', {'level': 1})],
+          profile.revision,
+          'scenario-students',
+        );
+        final repositoryRevision = await service.saveRepositoryInventory(
+          profile.id,
+          RepositoryInventoryState.fromEntries(const [
+            {'key': 'credits', 'quantity': '0'},
+          ]),
+          studentsRevision,
+          'scenario-inventory',
+        );
         final documentA = _document('scenario-a', 8);
         final documentB = _document('scenario-b', 10);
         final created = await service.createScenario(
@@ -86,13 +101,19 @@ void main() {
           idempotencyKey: 'create-a',
           name: '후보 A',
           description: '',
-          baseProfileRevision: profile.revision,
+          baseProfileRevision: repositoryRevision,
           document: documentA,
         );
         final list = await service.listScenarios(profile.id);
         expect(list.revision, 1);
         expect(list.scenarios.single.id, created.scenarioId);
         expect(list.scenarios.single.studentCount, 1);
+        expect(list.scenarios.single.studentIds, ['ayane']);
+        expect(list.scenarios.single.calculation?.credits, greaterThan(0));
+        expect(
+          list.scenarios.single.calculation?.firstBottleneckPhaseNumber,
+          1,
+        );
         final loaded = await service.getScenario(
           profile.id,
           created.scenarioId,
@@ -136,7 +157,7 @@ void main() {
         );
         expect(
           (await service.loadRepositoryState(profile.id)).revision,
-          profile.revision,
+          repositoryRevision,
         );
       } finally {
         await service?.dispose();

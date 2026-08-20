@@ -13,6 +13,22 @@ abstract final class BATrianglePalette {
   static const softTitlePinkAccent = Color(0x90eab9ef);
 }
 
+const titlePrimaryActionTexture = BATriangleTextureConfig(
+  baseColor: BATrianglePalette.softTitlePinkBase,
+  panelColor: BATrianglePalette.softTitlePinkPanel,
+  softColor: BATrianglePalette.softTitlePinkSoft,
+  accentColor: BATrianglePalette.softTitlePinkAccent,
+  triangleSize: 105,
+  tessellationContrast: 0.09,
+  randomSeed: 2077,
+  macroTriangleChance: 0.14,
+  macroTriangleScale: 2.2,
+  macroTriangleContrast: 0.06,
+  lightStrength: 0.22,
+  edgeVignetteStrength: 0.12,
+  fogStrength: 0.08,
+);
+
 @immutable
 class BATriangleTextureConfig {
   const BATriangleTextureConfig({

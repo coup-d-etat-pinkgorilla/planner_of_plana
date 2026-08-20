@@ -20,6 +20,7 @@ class MockAppService
         AppService,
         PlanningDocumentService,
         PlanningScenarioRepositoryService,
+        PlanningScenarioComparisonService,
         MockScenarioController,
         RepositoryService,
         ScannerService,
@@ -768,6 +769,68 @@ class MockAppService
     };
   }
 
+  @override
+  Future<PlanningScenarioComparisonResult> compareScenarios({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required PlanningDocument documentA,
+    required PlanningDocument documentB,
+  }) async {
+    if (documentA.id == documentB.id) throw StateError('invalid_payload');
+    final projectionA = await calculatePlanningDocument(
+      currentStudents: currentStudents,
+      inventory: inventory,
+      document: documentA.toWire(),
+    );
+    final projectionB = await calculatePlanningDocument(
+      currentStudents: currentStudents,
+      inventory: inventory,
+      document: documentB.toWire(),
+    );
+    Map<String, Map<String, int>> finalTargets(PlanningDocument document) => {
+      for (final stage in document.stages) stage.studentId: stage.targets,
+    };
+    final targetsA = finalTargets(documentA);
+    final targetsB = finalTargets(documentB);
+    final studentIds = {...targetsA.keys, ...targetsB.keys}.toList()..sort();
+    return PlanningScenarioComparisonResult(
+      projectionA: projectionA,
+      projectionB: projectionB,
+      comparison: {
+        'credits_a': 0,
+        'credits_b': 0,
+        'credits_delta_b_minus_a': 0,
+        'resource_type_count_a': 0,
+        'resource_type_count_b': 0,
+        'known_shortage_type_count_a': 0,
+        'known_shortage_type_count_b': 0,
+        'students': [
+          for (final studentId in studentIds)
+            {
+              'student_id': studentId,
+              'presence':
+                  targetsA.containsKey(studentId) &&
+                      targetsB.containsKey(studentId)
+                  ? 'both'
+                  : targetsA.containsKey(studentId)
+                  ? 'a_only'
+                  : 'b_only',
+              'target_differences': {
+                for (final key in planningDocumentTargetKeys)
+                  if (targetsA[studentId]?[key] != targetsB[studentId]?[key])
+                    key: {
+                      'a': targetsA[studentId]?[key],
+                      'b': targetsB[studentId]?[key],
+                    },
+              },
+            },
+        ],
+        'resources': <dynamic>[],
+        'bottlenecks': <dynamic>[],
+      },
+    );
+  }
+
   int _scenarioCollectionRevision(String profileId) =>
       _planningScenarioRevisions[profileId] ?? 0;
 
@@ -790,6 +853,15 @@ class MockAppService
       phaseCount: record.document.phases.length,
       stageCount: stageCount,
       studentCount: studentIds.length,
+      studentIds: List.unmodifiable(studentIds),
+      calculation: const PlanningScenarioCalculationSummary(
+        credits: 0,
+        requiredResourceTypeCount: 0,
+        knownShortageTypeCount: 0,
+        inventoryComplete: true,
+        firstBottleneckPhaseNumber: null,
+        representativeShortage: null,
+      ),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     );

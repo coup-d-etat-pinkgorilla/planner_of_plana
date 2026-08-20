@@ -52,6 +52,7 @@ class ProcessAppService
     return ProcessAppService(
       PlanningProtocolClient(
         () => startBackendProcess(config),
+        waitForStartupProbe: true,
         launchInfo: BackendLaunchInfo(
           configured: true,
           resolved: true,
@@ -90,6 +91,7 @@ class ProcessAppService
         );
         return startBackendProcess(config);
       },
+      waitForStartupProbe: true,
       launchInfo: BackendLaunchInfo.unresolved(
         configured: pythonExecutable.isNotEmpty || backendDirectory.isNotEmpty,
         executable: pythonExecutable.isEmpty

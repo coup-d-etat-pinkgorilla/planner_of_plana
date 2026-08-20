@@ -1006,6 +1006,25 @@ void main() {
       ),
     );
     expect(checkbox.value, isTrue);
+    await tester.tap(
+      find.byKey(const ValueKey('student-filter-school-Gehenna')),
+    );
+    await tester.pump();
+    expect(
+      tester
+          .widget<Checkbox>(
+            find.descendant(
+              of: find.byKey(const ValueKey('student-filter-school-Gehenna')),
+              matching: find.byType(Checkbox),
+            ),
+          )
+          .value,
+      isFalse,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('student-filter-school-Gehenna')),
+    );
+    await tester.pump();
     await tester.tap(find.byKey(const ValueKey('student-filter-reset')));
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('student-open-filter')));
@@ -1138,6 +1157,87 @@ void main() {
       isTrue,
     );
     expect(find.byKey(const ValueKey('student-student_0')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('four-column grid hit targets follow every visible card path', (
+    tester,
+  ) async {
+    final students = List.generate(
+      32,
+      (index) => StudentCatalogEntry.fallback('student_$index'),
+    );
+    final selected = <String>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Center(
+          child: SizedBox(
+            width: 700,
+            height: 600,
+            child: StudentDiagonalGrid(
+              students: students,
+              ownedIds: const {},
+              studentValuesById: const {},
+              selectedId: null,
+              onSelected: selected.add,
+              columns: 4,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byKey(const ValueKey('student-diagonal-grid-scroll')),
+      const Offset(0, -1),
+    );
+    await tester.pump();
+
+    final viewport = tester.getRect(
+      find.byKey(const ValueKey('student-diagonal-grid-scroll')),
+    );
+    final scrollbarDragPath = studentScrollbarDragPath(viewport.size);
+
+    for (var row = 0; row < 4; row++) {
+      final fourthColumn = find.byKey(
+        ValueKey('student-${students[row * 4 + 3].studentId}'),
+      );
+      final bounds = tester.getRect(fourthColumn);
+      final fitted = studentGridCardFittedRect(Offset.zero & bounds.size);
+      final upperRight = bounds.topLeft + fitted.topRight + const Offset(-2, 2);
+      expect(
+        scrollbarDragPath.contains(upperRight - viewport.topLeft),
+        isFalse,
+      );
+      await tester.tapAt(bounds.topLeft + const Offset(1, 1));
+    }
+    await tester.pump();
+    expect(selected, isEmpty);
+
+    for (var row = 0; row < 4; row++) {
+      final fourthColumn = find.byKey(
+        ValueKey('student-${students[row * 4 + 3].studentId}'),
+      );
+      final bounds = tester.getRect(fourthColumn);
+      final fitted = studentGridCardFittedRect(Offset.zero & bounds.size);
+      await tester.tapAt(
+        bounds.topLeft + fitted.topRight + const Offset(-2, 2),
+      );
+    }
+    await tester.pump();
+    expect(selected, [
+      for (var row = 0; row < 4; row++) 'student_${row * 4 + 3}',
+    ]);
+
+    selected.clear();
+    for (final student in students.take(16)) {
+      await tester.tap(find.byKey(ValueKey('student-${student.studentId}')));
+    }
+    await tester.pump();
+
+    expect(selected, [
+      for (final student in students.take(16)) student.studentId,
+    ]);
     expect(tester.takeException(), isNull);
   });
 

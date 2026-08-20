@@ -8,6 +8,7 @@ $ErrorActionPreference = "Stop"
 
 $frontendDirectory = Split-Path -Parent $PSScriptRoot
 $projectDirectory = Split-Path -Parent $frontendDirectory
+$backendDirectory = Join-Path $projectDirectory "backend"
 $bundleSource = Join-Path $frontendDirectory "build\windows\x64\runner\Release"
 $bundleDestination = Join-Path $projectDirectory "release"
 $releaseExecutable = Join-Path $bundleDestination "ba_planner_v7.exe"
@@ -46,7 +47,11 @@ function Get-TrackedSourceFiles {
         (Join-Path $frontendDirectory "windows\runner"),
         (Join-Path $frontendDirectory "windows\CMakeLists.txt"),
         (Join-Path $frontendDirectory "pubspec.yaml"),
-        (Join-Path $frontendDirectory "pubspec.lock")
+        (Join-Path $frontendDirectory "pubspec.lock"),
+        (Join-Path $backendDirectory "core"),
+        (Join-Path $backendDirectory "data"),
+        (Join-Path $backendDirectory "assets"),
+        (Join-Path $backendDirectory "pyproject.toml")
     )
 
     $files = foreach ($target in $sourceTargets) {
@@ -56,7 +61,8 @@ function Get-TrackedSourceFiles {
 
         $item = Get-Item -LiteralPath $target
         if ($item.PSIsContainer) {
-            Get-ChildItem -LiteralPath $target -File -Recurse
+            Get-ChildItem -LiteralPath $target -File -Recurse |
+                Where-Object { $_.Extension -ne ".pyc" }
         }
         else {
             $item
@@ -68,7 +74,13 @@ function Get-TrackedSourceFiles {
 
 function Get-SourceFingerprint {
     $lines = foreach ($file in Get-TrackedSourceFiles) {
-        $relativePath = $file.FullName.Substring($frontendDirectory.Length + 1).Replace("\", "/").ToLowerInvariant()
+        if ($file.FullName.StartsWith($frontendDirectory, [StringComparison]::OrdinalIgnoreCase)) {
+            $relativePath = "frontend/" + $file.FullName.Substring($frontendDirectory.Length + 1)
+        }
+        else {
+            $relativePath = "backend/" + $file.FullName.Substring($backendDirectory.Length + 1)
+        }
+        $relativePath = $relativePath.Replace("\", "/").ToLowerInvariant()
         $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
         "$relativePath|$hash"
     }
@@ -81,6 +93,42 @@ function Get-SourceFingerprint {
     finally {
         $sha256.Dispose()
     }
+}
+
+function Copy-BackendRuntime([string]$Destination) {
+    $runtimeTargets = @(
+        (Join-Path $backendDirectory "core"),
+        (Join-Path $backendDirectory "data"),
+        (Join-Path $backendDirectory "assets")
+    )
+    New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+    foreach ($target in $runtimeTargets) {
+        Get-ChildItem -LiteralPath $target -File -Recurse |
+            Where-Object { $_.Extension -ne ".pyc" } |
+            ForEach-Object {
+                $relativePath = $_.FullName.Substring($backendDirectory.Length + 1)
+                $destinationPath = Join-Path $Destination $relativePath
+                $destinationParent = Split-Path -Parent $destinationPath
+                New-Item -ItemType Directory -Path $destinationParent -Force | Out-Null
+                Copy-Item -LiteralPath $_.FullName -Destination $destinationPath
+            }
+    }
+    Copy-Item -LiteralPath (Join-Path $backendDirectory "pyproject.toml") -Destination $Destination
+
+    $virtualEnvironment = Join-Path $backendDirectory ".venv"
+    $virtualEnvironmentPython = Join-Path $virtualEnvironment "Scripts\python.exe"
+    if (-not (Test-Path -LiteralPath $virtualEnvironmentPython)) {
+        throw "Backend runtime environment is missing. Run 'uv venv backend\.venv --python 3.11' and install backend[test] before building Release."
+    }
+    Get-ChildItem -LiteralPath $virtualEnvironment -File -Recurse |
+        Where-Object { $_.Extension -ne ".pyc" } |
+        ForEach-Object {
+            $relativePath = $_.FullName.Substring($backendDirectory.Length + 1)
+            $destinationPath = Join-Path $Destination $relativePath
+            $destinationParent = Split-Path -Parent $destinationPath
+            New-Item -ItemType Directory -Path $destinationParent -Force | Out-Null
+            Copy-Item -LiteralPath $_.FullName -Destination $destinationPath
+        }
 }
 
 function Resolve-FlutterCommand {
@@ -184,6 +232,7 @@ Assert-ProjectChildDirectory $backupDirectory ".release-backup-"
 
 try {
     Copy-Item -LiteralPath $bundleSource -Destination $stageDirectory -Recurse
+    Copy-BackendRuntime (Join-Path $stageDirectory "backend")
 
     if (Test-Path -LiteralPath $bundleDestination) {
         Get-ChildItem -LiteralPath $bundleDestination -File -Filter "*.ba-section-studio.json" |

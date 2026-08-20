@@ -11,6 +11,110 @@ bool _exact(Map<String, dynamic> value, Set<String> keys) =>
     value.keys.toSet().length == keys.length &&
     value.keys.toSet().containsAll(keys);
 
+class PlanningScenarioRepresentativeShortage {
+  const PlanningScenarioRepresentativeShortage({
+    required this.resourceKey,
+    required this.itemId,
+    required this.displayName,
+    required this.category,
+    required this.shortage,
+  });
+
+  final String resourceKey;
+  final String? itemId;
+  final String displayName;
+  final String category;
+  final int shortage;
+
+  factory PlanningScenarioRepresentativeShortage.fromWire(
+    Map<String, dynamic> value,
+  ) {
+    if (!_exact(value, {
+          'resource_key',
+          'item_id',
+          'display_name',
+          'category',
+          'shortage',
+        }) ||
+        value['resource_key'] is! String ||
+        (value['resource_key'] as String).isEmpty ||
+        (value['item_id'] != null && value['item_id'] is! String) ||
+        value['display_name'] is! String ||
+        (value['display_name'] as String).isEmpty ||
+        value['category'] is! String ||
+        (value['category'] as String).isEmpty ||
+        value['shortage'] is! int ||
+        value['shortage'] < 1) {
+      throw const FormatException('Invalid representative shortage');
+    }
+    return PlanningScenarioRepresentativeShortage(
+      resourceKey: value['resource_key'] as String,
+      itemId: value['item_id'] as String?,
+      displayName: value['display_name'] as String,
+      category: value['category'] as String,
+      shortage: value['shortage'] as int,
+    );
+  }
+}
+
+class PlanningScenarioCalculationSummary {
+  const PlanningScenarioCalculationSummary({
+    required this.credits,
+    required this.requiredResourceTypeCount,
+    required this.knownShortageTypeCount,
+    required this.inventoryComplete,
+    required this.firstBottleneckPhaseNumber,
+    required this.representativeShortage,
+  });
+
+  final int credits;
+  final int requiredResourceTypeCount;
+  final int knownShortageTypeCount;
+  final bool inventoryComplete;
+  final int? firstBottleneckPhaseNumber;
+  final PlanningScenarioRepresentativeShortage? representativeShortage;
+
+  factory PlanningScenarioCalculationSummary.fromWire(
+    Map<String, dynamic> value,
+  ) {
+    const keys = {
+      'credits',
+      'required_resource_type_count',
+      'known_shortage_type_count',
+      'inventory_complete',
+      'first_bottleneck_phase_number',
+      'representative_shortage',
+    };
+    final firstBottleneck = value['first_bottleneck_phase_number'];
+    if (!_exact(value, keys) ||
+        value['credits'] is! int ||
+        value['credits'] < 0 ||
+        value['required_resource_type_count'] is! int ||
+        value['required_resource_type_count'] < 0 ||
+        value['known_shortage_type_count'] is! int ||
+        value['known_shortage_type_count'] < 0 ||
+        value['inventory_complete'] is! bool ||
+        (firstBottleneck != null &&
+            (firstBottleneck is! int || firstBottleneck < 1)) ||
+        (value['representative_shortage'] != null &&
+            value['representative_shortage'] is! Map)) {
+      throw const FormatException('Invalid scenario calculation summary');
+    }
+    return PlanningScenarioCalculationSummary(
+      credits: value['credits'] as int,
+      requiredResourceTypeCount: value['required_resource_type_count'] as int,
+      knownShortageTypeCount: value['known_shortage_type_count'] as int,
+      inventoryComplete: value['inventory_complete'] as bool,
+      firstBottleneckPhaseNumber: firstBottleneck as int?,
+      representativeShortage: value['representative_shortage'] == null
+          ? null
+          : PlanningScenarioRepresentativeShortage.fromWire(
+              _map(value['representative_shortage'], 'representative shortage'),
+            ),
+    );
+  }
+}
+
 class PlanningScenarioSummary {
   const PlanningScenarioSummary({
     required this.id,
@@ -21,6 +125,8 @@ class PlanningScenarioSummary {
     required this.phaseCount,
     required this.stageCount,
     required this.studentCount,
+    required this.studentIds,
+    required this.calculation,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -33,6 +139,8 @@ class PlanningScenarioSummary {
   final int phaseCount;
   final int stageCount;
   final int studentCount;
+  final List<String> studentIds;
+  final PlanningScenarioCalculationSummary? calculation;
   final String createdAt;
   final String updatedAt;
 
@@ -46,6 +154,8 @@ class PlanningScenarioSummary {
       'phase_count',
       'stage_count',
       'student_count',
+      'student_ids',
+      'calculation',
       'created_at',
       'updated_at',
     };
@@ -65,6 +175,14 @@ class PlanningScenarioSummary {
         value['stage_count'] < 0 ||
         value['student_count'] is! int ||
         value['student_count'] < 0 ||
+        value['student_ids'] is! List ||
+        !(value['student_ids'] as List).every(
+          (item) => item is String && item.isNotEmpty,
+        ) ||
+        (value['student_ids'] as List).toSet().length !=
+            (value['student_ids'] as List).length ||
+        (value['student_ids'] as List).length != value['student_count'] ||
+        (value['calculation'] != null && value['calculation'] is! Map) ||
         value['created_at'] is! String ||
         (value['created_at'] as String).isEmpty ||
         value['updated_at'] is! String ||
@@ -80,6 +198,14 @@ class PlanningScenarioSummary {
       phaseCount: value['phase_count'] as int,
       stageCount: value['stage_count'] as int,
       studentCount: value['student_count'] as int,
+      studentIds: List.unmodifiable(
+        (value['student_ids'] as List).cast<String>(),
+      ),
+      calculation: value['calculation'] == null
+          ? null
+          : PlanningScenarioCalculationSummary.fromWire(
+              _map(value['calculation'], 'scenario calculation'),
+            ),
       createdAt: value['created_at'] as String,
       updatedAt: value['updated_at'] as String,
     );
@@ -110,7 +236,7 @@ class PlanningScenarioRecord {
   final String updatedAt;
 
   bool isStaleAgainst(int currentProfileRevision) =>
-      baseProfileRevision != currentProfileRevision;
+      baseProfileRevision < currentProfileRevision;
 
   factory PlanningScenarioRecord.fromWire(Map<String, dynamic> value) {
     const keys = {

@@ -27,6 +27,7 @@ class ApplicationProtocolV1:
         self.scenarios = ScenarioProtocolV1(ScenarioStore(
             storage_root,
             profile_revision=lambda profile_id: repository.get_state(profile_id)["revision"],
+            profile_state=repository.get_state,
         ))
         self.tactical = TacticalProtocolV1(TacticalStore(storage_root, repository))
         self.tactical_v2 = TacticalProtocolV2(TacticalV2Store(storage_root, repository))

@@ -5,7 +5,9 @@ import itertools
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
+from core import runtime_paths
 from core.repository_protocol_v1 import RepositoryProtocolV1
 from core.repository_store import JsonRepository
 
@@ -120,6 +122,16 @@ class V6MigrationTests(unittest.TestCase):
             "payload": {},
         })
         self.assertEqual(response["payload"]["error"]["code"], "migration_source_invalid")
+
+    def test_default_v6_root_supports_workspace_and_release_bundle_layouts(self) -> None:
+        root = Path(self.temporary.name)
+        sibling_v6 = root / "v6"
+        _write_json(sibling_v6 / "config.json", {"profiles": []})
+        with patch.dict("os.environ", {}, clear=True):
+            with patch.object(runtime_paths, "V7_DIR", root / "v7"):
+                self.assertEqual(runtime_paths.resolve_v6_root(), sibling_v6)
+            with patch.object(runtime_paths, "V7_DIR", root / "v7" / "release"):
+                self.assertEqual(runtime_paths.resolve_v6_root(), sibling_v6)
 
 
 if __name__ == "__main__":

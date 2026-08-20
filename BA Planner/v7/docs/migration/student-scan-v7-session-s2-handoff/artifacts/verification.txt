@@ -1,0 +1,45 @@
+S2 verification record
+date: 2026-08-21 Asia/Seoul
+
+[PASS] focused matcher/asset/session/contract
+command (repository root):
+  $env:BA_PLANNER_ASSET_DIR=(Resolve-Path 'backend').Path
+  .\backend\.venv\Scripts\python.exe -m unittest backend.tests.test_student_scan_s2 backend.tests.test_scanner_production_adapters backend.tests.test_recognition_assets backend.tests.test_scanner_session backend.tests.test_scanner_protocol_contract -v
+result: Ran 22 tests; OK
+
+[PASS] subprocess readiness after auxiliary asset pack
+command (backend):
+  $env:BA_PLANNER_ASSET_DIR=(Resolve-Path '.').Path
+  .\.venv\Scripts\python.exe -m unittest tests.test_scanner_stdio_transport tests.test_recognition_assets -v
+result: Ran 6 tests; OK; asset_count=1013
+
+[PASS] full backend regression
+command (backend):
+  $env:BA_PLANNER_ASSET_DIR=(Resolve-Path '.').Path
+  .\.venv\Scripts\python.exe -m unittest discover -s tests -v
+result: Ran 171 tests in 59.496s; OK
+
+[PASS] deterministic asset sync
+command: .\backend\.venv\Scripts\python.exe backend\tools\sync_student_scan_s2_assets.py
+result: recognition_assets=233; fixtures=1; repeated auxiliary manifest SHA-256 identical
+student_basic_manifest_sha256: 27CE982E029EF979E2658647DCD71DC0D6E7364D07CE88881B4146C13DC99319
+
+[PASS] Python compile
+files: student_scan_recognizer.py, scanner_matchers.py, recognition_assets.py, sync_student_scan_s2_assets.py
+
+[PASS] CodeAlmanac
+commands: codealmanac validate; codealmanac health
+result: validate ok; 20 pages; all health finding counts zero
+
+[PASS] whitespace
+command: git diff --check
+result: no whitespace errors; only repository line-ending warnings
+
+[PASS] scope
+no protocol/schema/Flutter changes; no S3 equipment/favorite recognition; no S4 bond/calculation evidence; no S5 UI
+no Python runtime import from ../v6; sync tool uses v6 only as an offline asset source
+
+[PASS] real fixed fixture
+source: ../v6/debug/student_level_roi_per_image_20260624_2152_otsu_center_safe/02_lv12_215255_overlay.png
+confirmed: serika_new_year, level=12, star=5, EX=1, skill1=1, skill3=1, weapon=equipped/Lv50/4-star, HP=11054, ATK=1321, DEF=28, HEAL=4228
+uncertain: skill2; omitted from values and forces review without removing other confirmed fields

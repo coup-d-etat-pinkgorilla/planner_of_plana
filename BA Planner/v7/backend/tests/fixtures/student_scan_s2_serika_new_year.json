@@ -1,0 +1,32 @@
+{
+  "source": "../v6/debug/student_level_roi_per_image_20260624_2152_otsu_center_safe/02_lv12_215255_overlay.png",
+  "student_id": "serika_new_year",
+  "confirmed_values": {
+    "level": 12,
+    "student_star": 5,
+    "ex_skill": 1,
+    "skill1": 1,
+    "skill3": 1,
+    "weapon_state": "weapon_equipped",
+    "weapon_star": 4,
+    "weapon_level": 50,
+    "combat_hp": 11054,
+    "combat_atk": 1321,
+    "combat_def": 28,
+    "combat_heal": 4228
+  },
+  "uncertain_fields": [
+    "skill2"
+  ],
+  "excluded_s2_fields": [
+    "bond_rank",
+    "equip1",
+    "equip2",
+    "equip3",
+    "equip4",
+    "form_combat_stats",
+    "stat_hp",
+    "stat_atk",
+    "stat_heal"
+  ]
+}

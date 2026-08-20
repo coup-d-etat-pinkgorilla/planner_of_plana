@@ -26,9 +26,16 @@ class BackendProcessConfig {
     if (!directory.existsSync()) {
       throw StateError('Backend directory does not exist: ${directory.path}');
     }
-    final executable = pythonExecutable.isEmpty
-        ? (Platform.isWindows ? 'py' : 'python3')
-        : pythonExecutable;
+    final localVirtualEnvironment = File(
+      '${directory.path}${Platform.pathSeparator}.venv'
+      '${Platform.pathSeparator}${Platform.isWindows ? 'Scripts' : 'bin'}'
+      '${Platform.pathSeparator}${Platform.isWindows ? 'python.exe' : 'python'}',
+    );
+    final executable = pythonExecutable.isNotEmpty
+        ? pythonExecutable
+        : localVirtualEnvironment.existsSync()
+        ? localVirtualEnvironment.absolute.path
+        : (Platform.isWindows ? 'py' : 'python3');
     final executableName = executable
         .split(RegExp(r'[/\\]'))
         .last

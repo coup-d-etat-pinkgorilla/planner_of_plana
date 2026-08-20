@@ -383,12 +383,14 @@ Path planStarterContainerPath(Size size, String id) => buildStudioContainerPath(
 class PlanStarterRightSectionGeometry {
   const PlanStarterRightSectionGeometry({
     required this.listPath,
+    required this.editButtonPath,
     required this.deleteButtonPath,
     required this.returnButtonPath,
     required this.buttonPath,
   });
 
   final Path listPath;
+  final Path editButtonPath;
   final Path deleteButtonPath;
   final Path returnButtonPath;
   final Path buttonPath;
@@ -484,6 +486,7 @@ PlanStarterRightSectionGeometry planStarterRightSectionGeometry(
 
   return PlanStarterRightSectionGeometry(
     listPath: listPath,
+    editButtonPath: actionPath(3),
     deleteButtonPath: actionPath(2),
     returnButtonPath: actionPath(1),
     buttonPath: actionPath(0),
@@ -696,6 +699,7 @@ class PlanElementBuilder extends StatefulWidget {
     required this.onConfirm,
     required this.onRenameUnassigned,
     required this.onDeleteUnassigned,
+    this.onEditStudent,
     required this.onExitToPlan,
     required this.onOpenPhaseEditor,
     this.initialStages = const [],
@@ -712,6 +716,7 @@ class PlanElementBuilder extends StatefulWidget {
   final ValueChanged<List<PlanElementStageDraft>> onConfirm;
   final void Function(String id, String name) onRenameUnassigned;
   final ValueChanged<String> onDeleteUnassigned;
+  final ValueChanged<String>? onEditStudent;
   final VoidCallback onExitToPlan;
   final VoidCallback onOpenPhaseEditor;
 
@@ -773,6 +778,9 @@ class _PlanElementBuilderState extends State<PlanElementBuilder>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.seed.handoffId != widget.seed.handoffId) {
       _resetFromInitial();
+      _selectedUnassignedId = null;
+      _transitionPending = false;
+      if (widget.active) _sectionMotionController.forward(from: 0);
     }
     if (oldWidget.active != widget.active) {
       if (widget.active) {
@@ -822,6 +830,18 @@ class _PlanElementBuilderState extends State<PlanElementBuilder>
           : remaining[selectedIndex.clamp(0, remaining.length - 1)].id;
     });
     widget.onDeleteUnassigned(selectedId);
+  }
+
+  void _editSelectedStudent() {
+    final selectedId = _selectedUnassignedId;
+    if (selectedId == null) return;
+    final selected = widget.unassignedItems
+        .cast<PlanElementUnassignedItem?>()
+        .firstWhere((item) => item?.id == selectedId, orElse: () => null);
+    if (selected == null) return;
+    final callback = widget.onEditStudent;
+    if (callback == null) return;
+    _exitAfterSectionOutro(() => callback(selected.studentId));
   }
 
   void _resetFromInitial() {
@@ -1430,6 +1450,8 @@ class _PlanElementBuilderState extends State<PlanElementBuilder>
     final localDeletePath = geometry.deleteButtonPath.shift(
       -deleteBounds.topLeft,
     );
+    final editBounds = geometry.editButtonPath.getBounds();
+    final localEditPath = geometry.editButtonPath.shift(-editBounds.topLeft);
     return Stack(
       children: [
         Positioned.fromRect(
@@ -1466,6 +1488,19 @@ class _PlanElementBuilderState extends State<PlanElementBuilder>
                           setState(() => _selectedUnassignedId = id),
                     ),
             ),
+          ),
+        ),
+        Positioned.fromRect(
+          rect: editBounds,
+          child: _PlanStarterSideActionButton(
+            key: const ValueKey('plan-starter-edit-selected-student'),
+            path: localEditPath,
+            icon: Icons.edit_rounded,
+            label: '선택한 학생 계획 수정',
+            onPressed:
+                _selectedUnassignedId == null || widget.onEditStudent == null
+                ? null
+                : _editSelectedStudent,
           ),
         ),
         Positioned.fromRect(
@@ -3322,17 +3357,21 @@ class _StarTargetStrip extends StatelessWidget {
   Widget _starHitTarget(int index) {
     final studentSegment = index < 5;
     final value = studentSegment ? index + 1 : index - 4;
+    final selectedValue = studentSegment ? studentStar : weaponStar;
+    final requestedValue = value <= selectedValue ? value - 1 : value;
     final keyPrefix = studentSegment
         ? 'plan-stage-$stageNumber-student-star'
         : 'plan-stage-$stageNumber-weapon-star';
     return Semantics(
       button: true,
-      selected: value == (studentSegment ? studentStar : weaponStar),
+      selected: value == selectedValue,
       label: '${studentSegment ? '학생' : '전용무기'} 성급 $value',
       child: InkResponse(
         key: ValueKey('$keyPrefix-$value'),
-        onTap: () =>
-            onChanged(studentSegment ? 'student_star' : 'weapon_star', value),
+        onTap: () => onChanged(
+          studentSegment ? 'student_star' : 'weapon_star',
+          requestedValue,
+        ),
         radius: 14,
         child: const SizedBox.expand(),
       ),

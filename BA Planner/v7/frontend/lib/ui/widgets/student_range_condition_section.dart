@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
 import 'lifted_path_shadow.dart';
 import 'plan_element_builder.dart';
@@ -200,7 +201,13 @@ class StudentRangeConditionSection extends StatelessWidget {
               // toggling the condition a second time.
               onSelected: () {},
               onChanged: (field, value) {
-                final changed = {...targets, field: value};
+                final minimum = planElementTargetMinimums[field] ?? 0;
+                final maximum = planElementTargetMaximums[field] ?? value;
+                final changed = normalizePlanningGrowthTargets(
+                  {...targets, field: value.clamp(minimum, maximum).toInt()},
+                  changedKeys: {field},
+                  hasFavoriteItem: true,
+                );
                 onChanged(
                   kind == 'lower'
                       ? conditions.copyWith(lowerTargets: changed)

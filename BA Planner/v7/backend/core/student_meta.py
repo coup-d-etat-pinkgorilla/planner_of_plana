@@ -154,6 +154,19 @@ def variant(student_id: str) -> str | None:
     return meta["variant"] if meta else None
 
 
+def schaledb_id(student_id: str) -> int | None:
+    value = field(student_id, "schaledb_id")
+    return int(value) if isinstance(value, int) else None
+
+
+def favor_item_tags(student_id: str) -> tuple[str, ...]:
+    return _value_tuple(field(student_id, "favor_item_tags", []))
+
+
+def favor_item_unique_tags(student_id: str) -> tuple[str, ...]:
+    return _value_tuple(field(student_id, "favor_item_unique_tags", []))
+
+
 def all_ids() -> list[str]:
     """등록된 모든 student_id 목록."""
     return list(STUDENTS.keys())

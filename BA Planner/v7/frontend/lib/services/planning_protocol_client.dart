@@ -52,6 +52,8 @@ class PlanningProtocolClient {
     this._startProcess, {
     this.defaultTimeout = const Duration(seconds: 10),
     this.stopGracePeriod = const Duration(milliseconds: 750),
+    this.waitForStartupProbe = false,
+    this.startupProbeTimeout = const Duration(seconds: 30),
     BackendLaunchInfo launchInfo = const BackendLaunchInfo.unresolved(),
   }) : diagnostics = ValueNotifier(
          BackendDiagnostics(
@@ -69,6 +71,8 @@ class PlanningProtocolClient {
   final BackendProcessStarter _startProcess;
   final Duration defaultTimeout;
   final Duration stopGracePeriod;
+  final bool waitForStartupProbe;
+  final Duration startupProbeTimeout;
   final ValueNotifier<BackendDiagnostics> diagnostics;
   final ValueNotifier<BackendConnection> connection = ValueNotifier(
     BackendConnection.disconnected,
@@ -226,11 +230,24 @@ class PlanningProtocolClient {
           },
         ),
       );
+      if (waitForStartupProbe) {
+        _recordLifecycle('startup probe requested', generation: generation);
+        await _send(
+          'repository.profile.list',
+          const {},
+          timeout: startupProbeTimeout,
+          allowConnecting: true,
+        );
+        _recordLifecycle('startup probe completed', generation: generation);
+      }
       connection.value = BackendConnection.connected;
       _recordLifecycle('process connected', generation: generation);
     } catch (error) {
+      final process = _process;
       _process = null;
+      _failPending(BackendDisconnectedException('Backend start failed'));
       await _cancelSubscriptions();
+      process?.terminate();
       connection.value = BackendConnection.disconnected;
       _recordLifecycle(
         'start failed: ${redactDiagnosticText('$error')}',
@@ -244,12 +261,22 @@ class PlanningProtocolClient {
     String method,
     Map<String, dynamic> payload, {
     Duration? timeout,
+  }) => _send(method, payload, timeout: timeout);
+
+  Future<Map<String, dynamic>> _send(
+    String method,
+    Map<String, dynamic> payload, {
+    Duration? timeout,
+    bool allowConnecting = false,
   }) async {
     if (_disposed) {
       throw StateError('PlanningProtocolClient is disposed');
     }
     final process = _process;
-    if (process == null || connection.value != BackendConnection.connected) {
+    final connectionReady =
+        connection.value == BackendConnection.connected ||
+        (allowConnecting && connection.value == BackendConnection.connecting);
+    if (process == null || !connectionReady) {
       throw BackendDisconnectedException('Backend process is not connected');
     }
     final id = '$_generation-${++_nextRequestId}';

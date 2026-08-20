@@ -41,7 +41,133 @@ Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
   );
 }
 
+class _V6ImportMockService extends MockAppService {
+  _V6ImportMockService() : super(profiles: const []);
+
+  @override
+  Future<List<RepositoryV6AccountPreview>> previewV6Accounts() async => [
+    RepositoryV6AccountPreview.fromWire({
+      'source_profile_key': 'profile_deadbeef',
+      'display_name': '기존 v6 계정',
+      'avatar_student_id': 'ayane',
+      'student_count': 1,
+      'inventory_count': 1,
+      'goal_count': 1,
+      'warnings': <String>[],
+    }),
+  ];
+
+  @override
+  Future<RepositoryV6ImportResult> importV6Account(
+    String sourceProfileKey,
+  ) async {
+    final created = await createProfile(
+      '기존 v6 계정',
+      'v6-import-profile',
+      avatarStudentId: 'ayane',
+    );
+    await selectProfile(created.id, created.revision, 'v6-import-select');
+    final studentRevision = await saveRepositoryStudents(
+      created.id,
+      [
+        ConfirmedStudentState.fromValues('ayane', {'level': 1}),
+      ],
+      0,
+      'v6-import-students',
+    );
+    final inventoryRevision = await saveRepositoryInventory(
+      created.id,
+      RepositoryInventoryState.fromEntries([
+        {
+          'key': 'Item_Icon_ExpItem_0',
+          'item_id': 'Item_Icon_ExpItem_0',
+          'quantity': '0',
+        },
+      ]),
+      studentRevision,
+      'v6-import-inventory',
+    );
+    await saveRepositoryGoals(
+      created.id,
+      {
+        'version': 1,
+        'goals': [
+          {'student_id': 'ayane', 'target_level': 10},
+        ],
+      },
+      inventoryRevision,
+      'v6-import-goals',
+    );
+    final selected = (await listProfiles()).single;
+    return RepositoryV6ImportResult.fromWire({
+      'profile': {
+        'profile_id': selected.id,
+        'display_name': selected.displayName,
+        'avatar_student_id': selected.avatarStudentId,
+        'revision': selected.revision,
+        'selected': true,
+      },
+      'student_count': 1,
+      'inventory_count': 1,
+      'goal_count': 1,
+      'warnings': <String>[],
+    });
+  }
+}
+
+class _ConnectionGatedTitleService extends MockAppService {
+  _ConnectionGatedTitleService()
+    : super(
+        profiles: const [
+          RepositoryProfile(
+            id: '0000000000000000000000c1',
+            displayName: 'v7 reconnect fixture',
+            avatarStudentId: 'hibiki',
+            revision: 0,
+            selected: true,
+          ),
+        ],
+      );
+
+  int profileListCalls = 0;
+
+  @override
+  Future<List<RepositoryProfile>> listProfiles() async {
+    profileListCalls += 1;
+    if (state.value.connection != BackendConnection.connected) {
+      throw StateError('backend is not connected');
+    }
+    return super.listProfiles();
+  }
+}
+
 void main() {
+  testWidgets('title reloads the selected account after backend connection', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 720));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final service = _ConnectionGatedTitleService();
+    service.setConnection(BackendConnection.disconnected);
+    addTearDown(service.dispose);
+
+    await tester.pumpWidget(BAPlannerApp(service: service, showTitle: true));
+    await tester.pump();
+    expect(service.profileListCalls, 0);
+    await tester.tap(find.byKey(const ValueKey('title-primary-action')));
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('title-initial-account-dialog')),
+      findsNothing,
+    );
+
+    service.setConnection(BackendConnection.connected);
+    await _pumpUntilFound(tester, find.text('v7 reconnect fixture'));
+
+    expect(service.profileListCalls, 1);
+    expect(find.byKey(const ValueKey('title-account-section')), findsOneWidget);
+  });
+
   test(
     'student grid warmup follows the initial name sort and viewport cap',
     () {
@@ -1072,6 +1198,41 @@ void main() {
 
     expect(find.byKey(const ValueKey('account-editor-section')), findsNothing);
     expect(find.byKey(const ValueKey('title-brand-section')), findsOneWidget);
+  });
+
+  testWidgets('first run imports a v6 account and opens its repository plan', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 720));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final service = _V6ImportMockService();
+    addTearDown(service.dispose);
+
+    await tester.pumpWidget(BAPlannerApp(service: service, showTitle: true));
+    await _pumpUntilFound(tester, find.text('계정 생성'));
+    await tester.tap(find.byKey(const ValueKey('title-primary-action')));
+    await _pumpUntilFound(
+      tester,
+      find.byKey(const ValueKey('title-initial-account-dialog')),
+    );
+    expect(find.textContaining('학생 1명'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey('title-import-v6-profile_deadbeef')),
+    );
+    await _pumpUntilFound(
+      tester,
+      find.byKey(const ValueKey('plan-step-v6-imported-plan-ayane-1')),
+    );
+    expect(find.byKey(const ValueKey('planning-page')), findsOneWidget);
+    expect((await service.listProfiles()).single.selected, isTrue);
+    final state = await service.loadRepositoryState(
+      (await service.listProfiles()).single.id,
+    );
+    expect(state.students.single.studentId, 'ayane');
+    expect(state.inventory.entries.single['quantity'], '0');
+    expect(state.goals.single.values['target_level'], 10);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(

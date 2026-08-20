@@ -5,15 +5,17 @@ import hashlib
 import os
 from pathlib import Path
 import re
+from types import SimpleNamespace
 from typing import Any, Callable
 import uuid
 
 from core.planning_document import (
     PlanningDocumentError,
+    calculate_document_projection,
     planning_document_from_wire,
     planning_document_to_wire,
 )
-from core.repository_dto import canonical_json
+from core.repository_dto import ConfirmedStudent, InventorySnapshot, canonical_json
 
 
 STORE_VERSION = 1
@@ -47,12 +49,14 @@ class ScenarioStore:
         root: Path,
         *,
         profile_revision: Callable[[str], int],
+        profile_state: Callable[[str], dict[str, Any]] | None = None,
         id_factory: Callable[[], str] | None = None,
         clock: Callable[[], str] | None = None,
         fault: Callable[[str], None] | None = None,
     ) -> None:
         self.root = Path(root)
         self._profile_revision = profile_revision
+        self._profile_state = profile_state
         self._id_factory = id_factory or (lambda: uuid.uuid4().hex)
         self._clock = clock or _default_clock
         self._fault = fault or (lambda _stage: None)
@@ -199,9 +203,72 @@ class ScenarioStore:
             temporary.unlink(missing_ok=True)
             raise ScenarioStoreError("persistence_failed", "scenario write failed", retryable=True) from error
 
-    @staticmethod
-    def _summary(item: dict[str, Any]) -> dict[str, Any]:
+    def _calculation_summary(
+        self,
+        item: dict[str, Any],
+        state: dict[str, Any] | None,
+    ) -> dict[str, Any] | None:
+        if state is None:
+            return None
+        students = [ConfirmedStudent.from_dict(value) for value in state["students"]]
+        records = {
+            student.student_id: SimpleNamespace(
+                student_id=student.student_id,
+                **student.values,
+            )
+            for student in students
+        }
+        inventory = InventorySnapshot.from_dict(state["inventory"])
+        document = planning_document_from_wire(item["document"])
+        projection = calculate_document_projection(records, document, inventory)
+        resources = projection["overall"]["resources"]
+        known_shortages = [
+            resource
+            for resource in resources
+            if resource["shortage"] is not None and resource["shortage"] > 0
+        ]
+        representative = max(
+            known_shortages,
+            key=lambda resource: (resource["shortage"], resource["display_name"]),
+            default=None,
+        )
+        bottlenecks = projection["bottlenecks"]
+        return {
+            "credits": int(projection["overall"]["cost"]["credits"]),
+            "required_resource_type_count": len(resources),
+            "known_shortage_type_count": len(known_shortages),
+            "inventory_complete": all(resource["owned"] is not None for resource in resources),
+            "first_bottleneck_phase_number": (
+                int(bottlenecks[0]["phase_number"]) if bottlenecks else None
+            ),
+            "representative_shortage": None if representative is None else {
+                "resource_key": representative["resource_key"],
+                "item_id": representative["item_id"],
+                "display_name": representative["display_name"],
+                "category": representative["category"],
+                "shortage": int(representative["shortage"]),
+            },
+        }
+
+    def _safe_calculation_summary(
+        self,
+        item: dict[str, Any],
+        state: dict[str, Any] | None,
+    ) -> dict[str, Any] | None:
+        try:
+            return self._calculation_summary(item, state)
+        except Exception:
+            # Calculation is derived list data. Keep the persisted scenario
+            # discoverable when current-state projection is temporarily unavailable.
+            return None
+
+    def _summary(
+        self,
+        item: dict[str, Any],
+        state: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         stages = [stage for phase in item["document"]["phases"] for stage in phase["stages"]]
+        student_ids = list(dict.fromkeys(stage["student_id"] for stage in stages))
         return {
             "scenario_id": item["scenario_id"],
             "revision": item["revision"],
@@ -210,18 +277,21 @@ class ScenarioStore:
             "base_profile_revision": item["base_profile_revision"],
             "phase_count": len(item["document"]["phases"]),
             "stage_count": len(stages),
-            "student_count": len({stage["student_id"] for stage in stages}),
+            "student_count": len(student_ids),
+            "student_ids": student_ids,
+            "calculation": self._safe_calculation_summary(item, state),
             "created_at": item["created_at"],
             "updated_at": item["updated_at"],
         }
 
     def list(self, profile_id: str) -> dict[str, Any]:
         collection = self._read(profile_id)
+        state = self._profile_state(profile_id) if self._profile_state is not None else None
         return {
             "profile_id": profile_id,
             "revision": collection["revision"],
             "current_profile_revision": self._profile_current_revision(profile_id),
-            "scenarios": [self._summary(item) for item in collection["scenarios"]],
+            "scenarios": [self._summary(item, state) for item in collection["scenarios"]],
         }
 
     def get(self, profile_id: str, scenario_id: str) -> dict[str, Any]:
