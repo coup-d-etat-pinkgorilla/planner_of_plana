@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "student_id": "hibiki",
+  "student_level": 90,
+  "favorite_tier": "T2",
+  "client_resolution": [1280, 720],
+  "ui_scale_percent": 100,
+  "client": "Blue Archive Windows",
+  "emulator": null,
+  "captured_at": "2026-08-21T01:49:00+09:00",
+  "roi_version": "student-equipment-regions/v1",
+  "stable_frame": true,
+  "repeat_sample": 3,
+  "source": "../sample_03.png"
+}

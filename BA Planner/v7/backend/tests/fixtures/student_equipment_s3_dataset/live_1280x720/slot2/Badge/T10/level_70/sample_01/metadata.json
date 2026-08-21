@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "student_id": "mika",
+  "student_level": 90,
+  "slot": 2,
+  "family": "Badge",
+  "tier": "T10",
+  "level": 70,
+  "client_resolution": [
+    1280,
+    720
+  ],
+  "ui_scale_percent": 100,
+  "client": "Blue Archive Windows",
+  "emulator": null,
+  "captured_at": "2026-08-21T01:43:09+09:00",
+  "roi_version": "student-equipment-regions/v1",
+  "stable_frame": true,
+  "repeat_sample": 1,
+  "source": "full_screen.png",
+  "visual_answer": "basic screen shows T10 and Lv.70; equipment growth menu confirms T10/Lv.70"
+}

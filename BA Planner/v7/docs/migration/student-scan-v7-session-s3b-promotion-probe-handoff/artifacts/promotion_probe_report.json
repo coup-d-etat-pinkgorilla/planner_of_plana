@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-21",
+  "source": "C:\\Users\\brigh\\Pictures\\Screenshots\\BA",
+  "read_only": true,
+  "production_promoted": false,
+  "resolution": [2560, 1440],
+  "screenshots": [
+    {"file": "스크린샷 2026-08-21 131203.png", "sha256": "7eeeeb0ffe3a49a60021a1677edfe1333319981546f7ec2e71b62f9ed17ecf22", "expected_student": "kurumi", "expected": [1, 8, 9], "candidate": [15, 31, 45], "student_gate": false},
+    {"file": "스크린샷 2026-08-21 131225.png", "sha256": "47bc7f96958fecbc4d0bbaac33ea410e35a9e45611ba4b83cdffeada0442f868", "expected_student": "niko", "expected": [1, 8, 9], "candidate": [15, 38, 47], "student_gate": false},
+    {"file": "스크린샷 2026-08-21 131240.png", "sha256": "fd812e948812b235ef54c7f6d96b4daecee61b351cb9a267c3ff219bb04cde41", "expected_student": "saori_swimsuit", "expected": [1, 8, 9], "candidate": [12, 38, 47], "student_gate": true, "student_ref": "saori_swimsuit", "tiers": ["T1", "T1", "T1"]},
+    {"file": "스크린샷 2026-08-21 131411.png", "sha256": "d22867f28ecf173c13a5956fb9f7659d44c6041350a7f1734aa6f6d69a631141", "expected_student": "saori_swimsuit", "expected": [12, 16, 18], "candidate": [12, 16, 18], "student_gate": true, "student_ref": "saori_swimsuit", "tiers": ["T2", "T2", "T2"]},
+    {"file": "스크린샷 2026-08-21 131504.png", "sha256": "b53780e2e517ad69075f297b1850cf4305e121f4e9bc781ed49daadd777042ee", "expected_student": "niko", "expected": [12, 16, 18], "candidate": [12, 16, 18], "student_gate": false},
+    {"file": "스크린샷 2026-08-21 131601.png", "sha256": "f25a3d96e55bbbb44cee296efb75d845f2e800fa95ea98958962e8130377ad1e", "expected_student": "kurumi", "expected": [12, 16, 18], "candidate": [12, 16, 18], "student_gate": false}
+  ],
+  "results": {
+    "t1_expected_pairs": 9,
+    "t1_candidate_correct": 0,
+    "t1_gate_accepted": 0,
+    "t2_expected_pairs": 9,
+    "t2_candidate_correct": 9,
+    "t2_gate_accepted": 0,
+    "end_to_end_runtime_eligible_rois": 6,
+    "total_rois": 18,
+    "committed_false_positives": 0,
+    "t2_score_range": [0.488096260392355, 0.499430685305967],
+    "t2_margin_range": [0.019369, 0.069415]
+  },
+  "remaining_gates": [
+    "center-aware single-digit segmentation and real 1/8/9 coverage",
+    "improved 12/16/18 normalization or independent templates without lowering global gates",
+    "Niko and Kurumi student recognition assets and end-to-end replay",
+    "zero-false-positive replay of the prior 316 accepted pairs plus all 18 new probes",
+    "non-Lv70 exact 1280x720 repeats",
+    "fallback/menu-call and cold/warm benchmark after candidate implementation",
+    "explicit master acceptance"
+  ]
+}

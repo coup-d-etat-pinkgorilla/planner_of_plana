@@ -64,16 +64,23 @@ def quad_crop(image: Image.Image, region: dict[str, Any]) -> Image.Image:
 
 @dataclass(slots=True)
 class StudentBasicCropSet:
-    """Owned S2 crops derived from one stable frame; the full frame is not retained."""
+    """Owned S2/S3 crops derived from one stable frame; the full frame is not retained."""
 
     images: dict[str, Image.Image]
     cell_groups: dict[str, tuple[Image.Image, ...]]
     source_size: tuple[int, int]
+    regions: dict[str, Any]
 
     IMAGE_KEYS = (
         "student_texture_region", "basic_level_digits_quad", "basic_student_stars_quad",
         "basic_EX_skill", "basic_Skill_1", "basic_Skill_2", "basic_Skill_3",
         "basic_weapon_level_digits_quad", "basic_weapon_star_region",
+        "basic_equipment_1_level_digits_quad", "basic_equipment_2_level_digits_quad",
+        "basic_equipment_3_level_digits_quad", "basic_equipment_1_icon_region",
+        "basic_equipment_2_icon_region", "basic_equipment_3_icon_region",
+        "basic_equipment_1_empty_dot_region", "basic_equipment_2_empty_dot_region",
+        "basic_equipment_3_empty_dot_region", "basic_favorite_empty_dot_region",
+        "basic_favorite_tier_region",
     )
     COMBAT_KEYS = (
         "basic_combat_hp_digits", "basic_combat_atk_digits",
@@ -98,7 +105,7 @@ class StudentBasicCropSet:
                 cell_groups[key] = tuple(
                     ratio_crop(frame, cell).copy() for cell in cells if isinstance(cell, dict)
                 )
-        return cls(images=images, cell_groups=cell_groups, source_size=frame.size)
+        return cls(images=images, cell_groups=cell_groups, source_size=frame.size, regions=regions)
 
     def close(self) -> None:
         for image in self.images.values():
@@ -108,6 +115,7 @@ class StudentBasicCropSet:
                 image.close()
         self.images.clear()
         self.cell_groups.clear()
+        self.regions = {}
 
 
 @dataclass(frozen=True, slots=True)

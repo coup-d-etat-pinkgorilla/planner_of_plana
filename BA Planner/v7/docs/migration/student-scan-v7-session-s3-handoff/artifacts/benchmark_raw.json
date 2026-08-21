@@ -1,0 +1,545 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-20T16:58:37.228221+00:00",
+  "fixture": "backend/tests/fixtures/student_scan_s2_serika_new_year.png",
+  "environment": {
+    "python": "3.11",
+    "matcher": "pure Pillow prepared RGB/gray/edge; dark-ink glyph retained",
+    "source_size": [
+      2560,
+      1440
+    ],
+    "cache_limit": 384
+  },
+  "v6_offline_baseline": {
+    "status": "reproduced_in_isolated_dependency_complete_environment",
+    "fixture": "backend/tests/fixtures/student_equipment_s3_v6_baseline.json",
+    "schema_version": 1,
+    "generated_at": "2026-08-20T16:42:23.053014+00:00",
+    "implementation": "v6 core.matcher generated RGB/OpenCV",
+    "environment": {
+      "python": "3.12.12",
+      "opencv": "5.0.0",
+      "numpy": "2.5.2",
+      "pillow": "12.3.0",
+      "v6_root": "C:\\Users\\brigh\\planner_of_plana\\BA Planner\\v6"
+    },
+    "case": {
+      "slot": 1,
+      "family": "Shoes",
+      "tier": "T10",
+      "level": 70
+    },
+    "result": {
+      "cold_value": 70,
+      "cold_uncertain": false,
+      "cold_ms": 902.3751,
+      "warm_p50_ms": 58.53545,
+      "warm_p95_ms": 62.031,
+      "warm_samples_ms": [
+        60.9862,
+        57.1023,
+        54.5608,
+        57.3822,
+        55.4363,
+        62.031,
+        59.6243,
+        58.9157,
+        60.6223,
+        57.5884,
+        57.0221,
+        59.3726,
+        60.6443,
+        59.0424,
+        56.052,
+        58.8891,
+        58.1818,
+        56.3867,
+        52.8578,
+        63.401
+      ],
+      "all_warm_values": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "correct": true
+    },
+    "cold_cache_state": {
+      "full_screen_candidate_crops": {
+        "hits": 0,
+        "misses": 70,
+        "maxsize": 768,
+        "currsize": 70
+      },
+      "digit_template_bundles": {
+        "hits": 0,
+        "misses": 1,
+        "maxsize": 256,
+        "currsize": 1
+      }
+    },
+    "candidate_count": 70,
+    "candidate_canvas": [
+      2560,
+      1440,
+      3
+    ],
+    "theoretical_candidate_rgb_bytes": 774144000
+  },
+  "v7_timing_ms": {
+    "cold_start_and_template_load": 459.9397,
+    "actual_fast_path_first": 0.1942,
+    "t10_small_roi_cold": 141.6076,
+    "t10_small_roi_warm_p50": 18.5413,
+    "t10_small_roi_warm_p95": 19.8479,
+    "t10_small_roi_warm_samples": [
+      18.3767,
+      18.5158,
+      21.0402,
+      17.9715,
+      17.9632,
+      17.9775,
+      18.2357,
+      18.5668,
+      18.2812,
+      18.7397,
+      18.6769,
+      18.8598,
+      19.3825,
+      19.7532,
+      19.2271,
+      19.8479,
+      19.0339,
+      18.3817,
+      18.4964,
+      18.2472
+    ],
+    "template_load_counter": 6.0853,
+    "feature_prepare_counter": 69.286199
+  },
+  "answers": {
+    "real_master": {
+      "schema_version": 1,
+      "captured_at": "2026-08-21T01:43:09+09:00",
+      "client": "Blue Archive Windows",
+      "client_resolution": [
+        1280,
+        720
+      ],
+      "ui_scale_percent": 100,
+      "roi_version": "student-equipment-regions/v1",
+      "stable_repeats_per_condition": 3,
+      "answers": {
+        "mika": {
+          "student_level": 90,
+          "equip1": "T10",
+          "equip1_family": "Hat",
+          "equip1_level": 70,
+          "equip2": "T10",
+          "equip2_family": "Badge",
+          "equip2_level": 70,
+          "equip3": "T10",
+          "equip3_family": "Watch",
+          "equip3_level": 70,
+          "equip4": "empty"
+        },
+        "hibiki": {
+          "student_level": 90,
+          "equip1": "T10",
+          "equip1_family": "Hat",
+          "equip1_level": 70,
+          "equip2": "T10",
+          "equip2_family": "Hairpin",
+          "equip2_level": 70,
+          "equip3": "T10",
+          "equip3_family": "Watch",
+          "equip3_level": 70,
+          "equip4": "T2"
+        }
+      },
+      "same_answer_comparison": [
+        {
+          "method": "v6 generated RGB/OpenCV",
+          "answer_set": "Mika basic sample_01",
+          "tier_context": "visually confirmed T10",
+          "levels_correct": 1,
+          "levels_misread": 0,
+          "levels_fallback": 2,
+          "slot_results": {
+            "1": 70,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "method": "v7 prepared RGB/gray/edge small ROI",
+          "answer_set": "Mika basic samples 01-03",
+          "tiers_correct_per_repeat": 3,
+          "levels_correct_per_repeat": 0,
+          "levels_misread_per_repeat": 0,
+          "levels_fallback_per_repeat": 3,
+          "observed_candidate": 1
+        },
+        {
+          "method": "v7 empirical navy/dark-ink glyph",
+          "answer_set": "Mika basic samples 01-03",
+          "status": "not_activated",
+          "reason": "only the 7/0 labels are present; the session classifier deliberately requires competing labels"
+        },
+        {
+          "method": "v7 empirical-first + small ROI + one shared menu fallback",
+          "answer_set": "Mika basic/menu samples 01-03",
+          "final_levels_correct_per_repeat": 3,
+          "final_levels_misread_per_repeat": 0,
+          "final_levels_fallback_per_repeat": 0,
+          "slot_results": {
+            "1": 70,
+            "2": 70,
+            "3": 70
+          }
+        }
+      ],
+      "favorite_comparison": {
+        "answer_set": "Hibiki basic samples 01-03",
+        "expected": "T2",
+        "correct": 3,
+        "misread": 0,
+        "fallback": 0,
+        "confidence": 0.854468,
+        "margin": 0.120613
+      },
+      "decision": {
+        "basic_tier_reader": "retain",
+        "favorite_reader": "retain",
+        "small_roi_level_reader": "retain as conservative pre-menu attempt",
+        "equipment_menu_fallback": "retain for unresolved slots; required by the real T10/Lv70 evidence",
+        "empirical_thresholds": "do not change from one tier/level condition",
+        "roi_revision": "not justified",
+        "digit_pair_correction": "not justified",
+        "storage": "retain bounded prepared in-memory bundle; no atlas/NPZ change justified"
+      },
+      "remaining_coverage": [
+        "real equipped T1-T9 and non-70 level glyphs across families",
+        "real favorite T1",
+        "independent UI scale and resolution combinations"
+      ]
+    },
+    "actual_fixture": {
+      "expected": {
+        "equip1": "empty",
+        "equip2": "empty",
+        "equip3": "level_locked"
+      },
+      "predicted": {
+        "equip1": "empty",
+        "equip2": "empty",
+        "equip3": "level_locked"
+      },
+      "correct": true,
+      "unresolved_slots": []
+    },
+    "synthetic_same-generator": {
+      "sample_count": 12,
+      "correct": 12,
+      "misread": 0,
+      "fallback": 0,
+      "accuracy": 1.0,
+      "confusion": [
+        {
+          "expected": "1",
+          "predicted": "1",
+          "count": 1
+        },
+        {
+          "expected": "10",
+          "predicted": "10",
+          "count": 1
+        },
+        {
+          "expected": "20",
+          "predicted": "20",
+          "count": 1
+        },
+        {
+          "expected": "30",
+          "predicted": "30",
+          "count": 1
+        },
+        {
+          "expected": "40",
+          "predicted": "40",
+          "count": 1
+        },
+        {
+          "expected": "45",
+          "predicted": "45",
+          "count": 1
+        },
+        {
+          "expected": "50",
+          "predicted": "50",
+          "count": 1
+        },
+        {
+          "expected": "55",
+          "predicted": "55",
+          "count": 1
+        },
+        {
+          "expected": "60",
+          "predicted": "60",
+          "count": 1
+        },
+        {
+          "expected": "65",
+          "predicted": "65",
+          "count": 1
+        },
+        {
+          "expected": "70",
+          "predicted": "70",
+          "count": 1
+        },
+        {
+          "expected": "9",
+          "predicted": "9",
+          "count": 1
+        }
+      ],
+      "digit_confusion": [
+        {
+          "expected": "0",
+          "predicted": "0",
+          "count": 7
+        },
+        {
+          "expected": "1",
+          "predicted": "1",
+          "count": 2
+        },
+        {
+          "expected": "2",
+          "predicted": "2",
+          "count": 1
+        },
+        {
+          "expected": "3",
+          "predicted": "3",
+          "count": 1
+        },
+        {
+          "expected": "4",
+          "predicted": "4",
+          "count": 2
+        },
+        {
+          "expected": "5",
+          "predicted": "5",
+          "count": 5
+        },
+        {
+          "expected": "6",
+          "predicted": "6",
+          "count": 2
+        },
+        {
+          "expected": "7",
+          "predicted": "7",
+          "count": 1
+        },
+        {
+          "expected": "9",
+          "predicted": "9",
+          "count": 1
+        },
+        {
+          "expected": "blank",
+          "predicted": "blank",
+          "count": 2
+        }
+      ],
+      "tier_confusion": [
+        {
+          "expected": "T1",
+          "predicted": "T1",
+          "count": 1
+        },
+        {
+          "expected": "T10",
+          "predicted": "T10",
+          "count": 1
+        },
+        {
+          "expected": "T2",
+          "predicted": "T2",
+          "count": 1
+        },
+        {
+          "expected": "T3",
+          "predicted": "T3",
+          "count": 1
+        },
+        {
+          "expected": "T4",
+          "predicted": "T4",
+          "count": 1
+        },
+        {
+          "expected": "T5",
+          "predicted": "T5",
+          "count": 1
+        },
+        {
+          "expected": "T6",
+          "predicted": "T6",
+          "count": 1
+        },
+        {
+          "expected": "T7",
+          "predicted": "T7",
+          "count": 1
+        },
+        {
+          "expected": "T8",
+          "predicted": "T8",
+          "count": 1
+        },
+        {
+          "expected": "T9",
+          "predicted": "T9",
+          "count": 1
+        }
+      ],
+      "slot_confusion": [
+        {
+          "slot": "equip1",
+          "expected": "empty",
+          "predicted": "empty"
+        },
+        {
+          "slot": "equip2",
+          "expected": "empty",
+          "predicted": "empty"
+        },
+        {
+          "slot": "equip3",
+          "expected": "level_locked",
+          "predicted": "level_locked"
+        }
+      ],
+      "one_pixel_shift_expected": 70,
+      "one_pixel_shift_predicted": 70
+    }
+  },
+  "boundary_validation": {
+    "tiers_checked": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "level_answers_checked": [
+      1,
+      9,
+      10,
+      20,
+      30,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      70
+    ],
+    "single_digit_blank_checked": true,
+    "invalid_tier_level_rejection": "covered by tests.test_student_equipment_s3",
+    "empty_locked_unknown_favorite_locked": "covered by real fixture and tests.test_student_equipment_s3"
+  },
+  "cache_and_memory": {
+    "template_load_ms": 6.085300003178418,
+    "feature_prepare_ms": 69.28619940299541,
+    "match_ms": 810.4650997556746,
+    "cache_hits": 4830,
+    "cache_misses": 70,
+    "generated_cards": 70,
+    "prepared_features": 212,
+    "loaded_files": 23,
+    "menu_captures": 0,
+    "peak_cache_entries": 140,
+    "peak_cache_bytes": 658000,
+    "full_size_reference_canvases": 0,
+    "empirical_attempts": 0,
+    "empirical_hits": 0,
+    "calibration_samples": 0,
+    "tracemalloc_peak_bytes": 245851,
+    "installed_asset_increase_bytes": 3351020
+  },
+  "method_comparison": [
+    {
+      "method": "v6 generated RGB offline",
+      "status": "measured",
+      "accuracy": 1.0,
+      "cold_ms": 902.3751,
+      "warm_p50_ms": 58.53545
+    },
+    {
+      "method": "prepared RGB/gray/edge bundle",
+      "status": "measured",
+      "accuracy": 1.0
+    },
+    {
+      "method": "empirical navy/dark-ink glyph",
+      "status": "MASTER_REQUIRED",
+      "accuracy": null,
+      "reason": "one accepted real screen has no equipped level glyph and cannot establish thresholds/confusion pairs"
+    },
+    {
+      "method": "empirical-first plus small ROI fallback",
+      "status": "partially_measured",
+      "accuracy": 1.0,
+      "reason": "fast empty/locked answer is real; level fallback answer set is same-generator synthetic"
+    }
+  ],
+  "storage_decision": {
+    "selected": "bounded in-memory prepared features generated from one packaged font/background and existing equipment icons",
+    "individual_cell_pngs": "rejected_without_4005/8010-file deployment",
+    "npz": "not selected because numpy is not a v7 backend dependency",
+    "atlas": "deferred until empirical dataset coverage exists"
+  },
+  "master_required": [],
+  "future_calibration_coverage": [
+    "real equipped T1-T9 and non-70 level glyphs across families",
+    "real favorite T1",
+    "independent UI scale and resolution combinations"
+  ],
+  "v6_to_v7_timing_ratio": {
+    "cold_speedup": 6.372363,
+    "warm_p50_speedup": 3.157031
+  },
+  "cold_warm_identical": true
+}

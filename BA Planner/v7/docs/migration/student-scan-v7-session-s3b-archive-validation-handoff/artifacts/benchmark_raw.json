@@ -1,0 +1,363 @@
+{
+  "schema_version": 1,
+  "mode": "shadow_only",
+  "production_enabled": false,
+  "dataset": {
+    "resolution": [
+      1280,
+      720
+    ],
+    "ui_scale_percent": 100,
+    "conditions": 2,
+    "stable_repeats_per_condition": 3,
+    "level_pairs": 18,
+    "digit_cells": 36,
+    "observed_digits": [
+      "0",
+      "7"
+    ],
+    "observed_blank": false
+  },
+  "accuracy": {
+    "level_pairs_correct": 18,
+    "level_pairs_total": 18,
+    "digit_cells_correct": 36,
+    "digit_cells_total": 36,
+    "committed_false_positives": 0,
+    "confusion": {
+      "position_1": {
+        "7": {
+          "7": 18
+        }
+      },
+      "position_2": {
+        "0": {
+          "0": 18
+        }
+      }
+    }
+  },
+  "archive_validation": {
+    "source_screenshots": 194,
+    "eligible_screenshots": 116,
+    "students": 64,
+    "families": [
+      "Badge",
+      "Bag",
+      "Charm",
+      "Gloves",
+      "Hairpin",
+      "Hat",
+      "Necklace",
+      "Shoes",
+      "Watch"
+    ],
+    "tiers": [
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6",
+      "T7",
+      "T8",
+      "T9",
+      "T10"
+    ],
+    "slots": [
+      1,
+      2,
+      3
+    ],
+    "values": [
+      10,
+      20,
+      21,
+      30,
+      37,
+      40,
+      43,
+      45,
+      50,
+      54,
+      55,
+      59,
+      60,
+      65,
+      70
+    ],
+    "position_1_digits": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "position_2_digits": [
+      "0",
+      "1",
+      "3",
+      "4",
+      "5",
+      "7",
+      "9"
+    ],
+    "blank": false,
+    "correct": 298,
+    "total": 298,
+    "false_positive": 0,
+    "score_min": 0.5210635748600138,
+    "score_max": 0.6506317747721653,
+    "margin_min": 0.043264,
+    "margin_max": 0.11765,
+    "ground_truth": {
+      "method": "manual visual review of seven opaque-RGB 4x ROI contact sheets",
+      "reviewed_at": "2026-08-21",
+      "seed_disclosure": "matcher predictions were printed beside crops; every displayed digit was visually checked",
+      "template_leakage": false,
+      "reason": "runtime templates are independent equipment-menu assets, not archive crops"
+    }
+  },
+  "combined_evidence": {
+    "level_pairs_correct": 316,
+    "level_pairs_total": 316,
+    "digit_cells_correct": 632,
+    "digit_cells_total": 632,
+    "committed_false_positives": 0
+  },
+  "fallback": {
+    "generated_unresolved_before_binary": 18,
+    "binary_shadow_confident": 18,
+    "committed_unresolved_after_binary": 18,
+    "reduction_while_shadow": 0,
+    "menu_calls_before": 6,
+    "menu_calls_after": 6,
+    "reason": "insufficient independent 0-9 plus blank coverage"
+  },
+  "performance_ms": {
+    "startup_cold": 26.505499961785972,
+    "template_prepare": 25.311899953521788,
+    "frame_three_slots_warm_p50": 1.2885000323876739,
+    "frame_three_slots_warm_p95": 1.6241999110206962
+  },
+  "cache_and_memory": {
+    "binary_template_count": 51,
+    "binary_template_bytes": 3570,
+    "generated_cache_entries": 0,
+    "full_size_reference_canvases": 0
+  },
+  "metrics": {
+    "template_load_ms": 26.50259993970394,
+    "feature_prepare_ms": 0.0,
+    "match_ms": 0.0,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "generated_cards": 0,
+    "prepared_features": 0,
+    "loaded_files": 53,
+    "menu_captures": 0,
+    "peak_cache_entries": 0,
+    "peak_cache_bytes": 0,
+    "full_size_reference_canvases": 0,
+    "empirical_attempts": 0,
+    "empirical_hits": 0,
+    "calibration_samples": 0,
+    "binary_template_prepare_ms": 25.311899953521788,
+    "binary_template_count": 51,
+    "binary_template_bytes": 3570,
+    "binary_attempts": 108,
+    "binary_shadow_hits": 108,
+    "binary_shift_retries": 0,
+    "binary_match_ms": 48.27089968603104
+  },
+  "observations": [
+    {
+      "condition": "mika/sample_01",
+      "slot": 1,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.6240412424513507,
+      "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_01",
+      "slot": 2,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5604117928576157,
+      "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.055821;iou=0.497817;correlation=0.731713;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_01",
+      "slot": 3,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5294834965210129,
+      "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_02",
+      "slot": 1,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.6240412424513507,
+      "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_02",
+      "slot": 2,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5604117928576157,
+      "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.055821;iou=0.497817;correlation=0.731713;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_02",
+      "slot": 3,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5294834965210129,
+      "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_03",
+      "slot": 1,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.6240412424513507,
+      "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_03",
+      "slot": 2,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5604117928576157,
+      "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.055821;iou=0.497817;correlation=0.731713;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_03",
+      "slot": 3,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5294834965210129,
+      "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_01",
+      "slot": 1,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.6240412424513507,
+      "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_01",
+      "slot": 2,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5786399442662347,
+      "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.061347;iou=0.515152;correlation=0.754908;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_01",
+      "slot": 3,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5294834965210129,
+      "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_02",
+      "slot": 1,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.6240412424513507,
+      "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_02",
+      "slot": 2,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5786399442662347,
+      "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.061347;iou=0.515152;correlation=0.754908;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_02",
+      "slot": 3,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5294834965210129,
+      "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_03",
+      "slot": 1,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.6240412424513507,
+      "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_03",
+      "slot": 2,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5786399442662347,
+      "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.061347;iou=0.515152;correlation=0.754908;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_03",
+      "slot": 3,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5294834965210129,
+      "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    }
+  ],
+  "master_required": [
+    "independent real position-2 coverage for digits 2,6,8",
+    "independent real single-digit blank coverage",
+    "additional exact 1280x720 and non-2560x1440 repeats beyond Lv70",
+    "production threshold and margin selection from the completed confusion matrix"
+  ]
+}

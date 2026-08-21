@@ -1,0 +1,41 @@
+S3B archive validation — 2026-08-21 Asia/Seoul
+
+SOURCE (read-only)
+  C:\Users\brigh\Pictures\Screenshots\BA
+  194 PNG files: 179 x 2560x1440, 8 x 1275x720, 4 x 2559x1439,
+  2 x 1276x752, 1 x 1920x1080.
+
+RUNTIME-GATED ANALYSIS
+  582 possible slot observations from 194 screenshots.
+  Student ID/family/tier gate accepted 298 ROIs from 116 exact 2560x1440 screenshots.
+  Coverage: 64 students, 9 equipment families, slots 1/2/3, tiers T1-T10.
+  Seven opaque-RGB 4x contact sheets were visually reviewed.
+  298/298 level pairs correct, false positive 0, fallback 0.
+  Score range 0.521063574860014-0.650631774772165.
+  Margin range 0.043264-0.117650.
+  Values: 10,20,21,30,37,40,43,45,50,54,55,59,60,65,70.
+  Position 1 digits: 1,2,3,4,5,6,7.
+  Position 2 digits: 0,1,3,4,5,7,9.
+
+COMBINED S3B EVIDENCE
+  Archive 298 pairs plus accepted Mika/Hibiki 18 pairs.
+  316/316 level pairs and 632/632 digit cells correct.
+  Committed false positives remain 0 because matcher stays shadow-only.
+
+PASS: tests.test_student_equipment_s3b — 10 tests.
+PASS: combined S2/S3/S3B/recognition-asset/stdio — 36 tests in 32.782s.
+EXPECTED OUT-OF-SCOPE BASELINE FAILURES:
+  full backend: 196 tests in 63.678s; 1 failure and 7 errors.
+  These are the existing generated metadata gaps: Aru/Eimi/Kotama stat lookup IDs and Hoshino gift ID.
+  Archive validation changed no generated metadata/stat/gift files.
+PASS: Python compile and JSON parse.
+PASS: git diff --check (line-ending notices only).
+PASS: codealmanac validate and health; 20 pages, zero findings.
+
+MASTER_REQUIRED before production promotion:
+  independent real position-2 digits 2/6/8;
+  actual single-digit equipment level and blank second cell;
+  additional non-Lv70 exact 1280x720 evidence;
+  production threshold/margin decision after those samples.
+
+binary_production_enabled remains false. S4/S5 were not changed.

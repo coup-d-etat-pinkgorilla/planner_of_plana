@@ -1,0 +1,7059 @@
+{
+  "schema_version": 1,
+  "source_archive": "C:\\Users\\brigh\\Pictures\\Screenshots\\BA",
+  "source_screenshot_count": 194,
+  "eligible_screenshot_count": 116,
+  "reviewed_roi_count": 298,
+  "ground_truth": {
+    "method": "manual visual review of seven opaque-RGB 4x ROI contact sheets",
+    "reviewed_at": "2026-08-21",
+    "seed_disclosure": "matcher predictions were printed beside crops; every displayed digit was visually checked",
+    "template_leakage": false,
+    "reason": "runtime templates are independent equipment-menu assets, not archive crops"
+  },
+  "coverage": {
+    "values": [
+      10,
+      20,
+      21,
+      30,
+      37,
+      40,
+      43,
+      45,
+      50,
+      54,
+      55,
+      59,
+      60,
+      65,
+      70
+    ],
+    "position_1_digits": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "position_2_digits": [
+      "0",
+      "1",
+      "3",
+      "4",
+      "5",
+      "7",
+      "9"
+    ],
+    "blank": false,
+    "missing_for_production": [
+      "position_2_digit_2",
+      "position_2_digit_6",
+      "position_2_digit_8",
+      "single_digit_blank"
+    ],
+    "student_count": 64,
+    "families": [
+      "Badge",
+      "Bag",
+      "Charm",
+      "Gloves",
+      "Hairpin",
+      "Hat",
+      "Necklace",
+      "Shoes",
+      "Watch"
+    ],
+    "tiers": [
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6",
+      "T7",
+      "T8",
+      "T9",
+      "T10"
+    ],
+    "slots": [
+      1,
+      2,
+      3
+    ],
+    "resolutions": [
+      "2560x1440"
+    ]
+  },
+  "results": {
+    "correct": 298,
+    "total": 298,
+    "false_positive": 0,
+    "fallback": 0,
+    "score_min": 0.5210635748600138,
+    "score_max": 0.6506317747721653,
+    "margin_min": 0.043264,
+    "margin_max": 0.11765,
+    "level_confusion": {
+      "65": {
+        "65": 31
+      },
+      "70": {
+        "70": 184
+      },
+      "40": {
+        "40": 17
+      },
+      "55": {
+        "55": 10
+      },
+      "30": {
+        "30": 5
+      },
+      "10": {
+        "10": 9
+      },
+      "45": {
+        "45": 10
+      },
+      "60": {
+        "60": 16
+      },
+      "20": {
+        "20": 4
+      },
+      "50": {
+        "50": 6
+      },
+      "21": {
+        "21": 1
+      },
+      "37": {
+        "37": 2
+      },
+      "43": {
+        "43": 1
+      },
+      "54": {
+        "54": 1
+      },
+      "59": {
+        "59": 1
+      }
+    },
+    "digit_confusion": {
+      "position_1": {
+        "6": {
+          "6": 47
+        },
+        "7": {
+          "7": 184
+        },
+        "4": {
+          "4": 28
+        },
+        "5": {
+          "5": 18
+        },
+        "3": {
+          "3": 7
+        },
+        "1": {
+          "1": 9
+        },
+        "2": {
+          "2": 5
+        }
+      },
+      "position_2": {
+        "5": {
+          "5": 51
+        },
+        "0": {
+          "0": 241
+        },
+        "1": {
+          "1": 1
+        },
+        "7": {
+          "7": 2
+        },
+        "3": {
+          "3": 1
+        },
+        "4": {
+          "4": 1
+        },
+        "9": {
+          "9": 1
+        }
+      }
+    }
+  },
+  "atlas": {
+    "path": "roi_atlas.png",
+    "size": [
+      960,
+      540
+    ],
+    "sha256": "f2e68f8003edcb8495dcc6fbeb79af01c32f57ee9116ef57abaf5d416ea72df8"
+  },
+  "records": [
+    {
+      "source_file": "스크린샷 2026-03-28 210632.png",
+      "source_sha256": "02609ae76c9132604f1f98bcde763b5d6b4c6a4554a3f664e8752d9b14f3dcce",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "reijo",
+      "family": "Gloves",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5633862846358275,
+      "margin": 0.047096,
+      "atlas_box": [
+        0,
+        0,
+        48,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 210632.png",
+      "source_sha256": "02609ae76c9132604f1f98bcde763b5d6b4c6a4554a3f664e8752d9b14f3dcce",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "reijo",
+      "family": "Hairpin",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5856675989001128,
+      "margin": 0.068805,
+      "atlas_box": [
+        48,
+        0,
+        96,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 210811.png",
+      "source_sha256": "0ea0fb4e175886fa90118aa9fcc092a5ed2971e8bfb3c61e75959dacd711af5b",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kazusa_band",
+      "family": "Gloves",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5633862846358275,
+      "margin": 0.047096,
+      "atlas_box": [
+        96,
+        0,
+        144,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 210811.png",
+      "source_sha256": "0ea0fb4e175886fa90118aa9fcc092a5ed2971e8bfb3c61e75959dacd711af5b",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kazusa_band",
+      "family": "Hairpin",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5856675989001128,
+      "margin": 0.068805,
+      "atlas_box": [
+        144,
+        0,
+        192,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 211446.png",
+      "source_sha256": "88aea1d0b15ef8865794d3ce6c0c43e91810afb31482692c5eb714a1704ef7d3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "yuuka_pajama",
+      "family": "Shoes",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.585678333133486,
+      "margin": 0.048815,
+      "atlas_box": [
+        192,
+        0,
+        240,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 211446.png",
+      "source_sha256": "88aea1d0b15ef8865794d3ce6c0c43e91810afb31482692c5eb714a1704ef7d3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "yuuka_pajama",
+      "family": "Bag",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5917470678105768,
+      "margin": 0.06962,
+      "atlas_box": [
+        240,
+        0,
+        288,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 211711.png",
+      "source_sha256": "2218b0540080aef57b455ae1800e29140d796c6018e9a137d73a201df4d8b316",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kotori_cheerleader",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        288,
+        0,
+        336,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 211711.png",
+      "source_sha256": "2218b0540080aef57b455ae1800e29140d796c6018e9a137d73a201df4d8b316",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kotori_cheerleader",
+      "family": "Hairpin",
+      "tier": "T4",
+      "slot": 2,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5568153328206701,
+      "margin": 0.082163,
+      "atlas_box": [
+        336,
+        0,
+        384,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 211711.png",
+      "source_sha256": "2218b0540080aef57b455ae1800e29140d796c6018e9a137d73a201df4d8b316",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kotori_cheerleader",
+      "family": "Watch",
+      "tier": "T4",
+      "slot": 3,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5436095091865379,
+      "margin": 0.087121,
+      "atlas_box": [
+        384,
+        0,
+        432,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 211803.png",
+      "source_sha256": "ac5aacfcb2a6f8e67fe42099fcbd3fede077ab94342c2fa9c65e12b2e1d634cc",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aru_dress",
+      "family": "Hat",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5633862846358275,
+      "margin": 0.047096,
+      "atlas_box": [
+        432,
+        0,
+        480,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 211803.png",
+      "source_sha256": "ac5aacfcb2a6f8e67fe42099fcbd3fede077ab94342c2fa9c65e12b2e1d634cc",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aru_dress",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        480,
+        0,
+        528,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 211856.png",
+      "source_sha256": "7d6d60ffe66022f8a541e2effd7cb95db6601f2c90733cae358fbb00753acd8f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "sakurako_idol",
+      "family": "Gloves",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6123315537772717,
+      "margin": 0.088904,
+      "atlas_box": [
+        528,
+        0,
+        576,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 211856.png",
+      "source_sha256": "7d6d60ffe66022f8a541e2effd7cb95db6601f2c90733cae358fbb00753acd8f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "sakurako_idol",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        576,
+        0,
+        624,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212159.png",
+      "source_sha256": "77c8df3ad1d070b9f36114172523891ad62a6da4e41ae35c6014b2ecbdd869c1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "toki_bunny_girl",
+      "family": "Hat",
+      "tier": "T4",
+      "slot": 1,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5311963989636501,
+      "margin": 0.115546,
+      "atlas_box": [
+        624,
+        0,
+        672,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212159.png",
+      "source_sha256": "77c8df3ad1d070b9f36114172523891ad62a6da4e41ae35c6014b2ecbdd869c1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "toki_bunny_girl",
+      "family": "Hairpin",
+      "tier": "T4",
+      "slot": 2,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5568153328206701,
+      "margin": 0.082163,
+      "atlas_box": [
+        672,
+        0,
+        720,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212159.png",
+      "source_sha256": "77c8df3ad1d070b9f36114172523891ad62a6da4e41ae35c6014b2ecbdd869c1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "toki_bunny_girl",
+      "family": "Watch",
+      "tier": "T4",
+      "slot": 3,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5436095091865379,
+      "margin": 0.087121,
+      "atlas_box": [
+        720,
+        0,
+        768,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212242.png",
+      "source_sha256": "1dc59ec5ef245923bafdbdd85952170f2de9e29c3bbb2bb98c5bb5cf5e64391b",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "utaha_cheerleader",
+      "family": "Hat",
+      "tier": "T7",
+      "slot": 1,
+      "expected_value": 55,
+      "observed_prediction": 55,
+      "score": 0.5685679250721583,
+      "margin": 0.062653,
+      "atlas_box": [
+        768,
+        0,
+        816,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212242.png",
+      "source_sha256": "1dc59ec5ef245923bafdbdd85952170f2de9e29c3bbb2bb98c5bb5cf5e64391b",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "utaha_cheerleader",
+      "family": "Hairpin",
+      "tier": "T3",
+      "slot": 2,
+      "expected_value": 30,
+      "observed_prediction": 30,
+      "score": 0.5215688861224956,
+      "margin": 0.043455,
+      "atlas_box": [
+        816,
+        0,
+        864,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212242.png",
+      "source_sha256": "1dc59ec5ef245923bafdbdd85952170f2de9e29c3bbb2bb98c5bb5cf5e64391b",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "utaha_cheerleader",
+      "family": "Watch",
+      "tier": "T1",
+      "slot": 3,
+      "expected_value": 10,
+      "observed_prediction": 10,
+      "score": 0.5316165079200151,
+      "margin": 0.086621,
+      "atlas_box": [
+        864,
+        0,
+        912,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212615.png",
+      "source_sha256": "7fd62a602e5c5b0e278d9fd315cf0037da96dd5f3fb26bc069cd0a7c046afa64",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "megu",
+      "family": "Bag",
+      "tier": "T5",
+      "slot": 2,
+      "expected_value": 45,
+      "observed_prediction": 45,
+      "score": 0.5568153328206701,
+      "margin": 0.064853,
+      "atlas_box": [
+        912,
+        0,
+        960,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212615.png",
+      "source_sha256": "7fd62a602e5c5b0e278d9fd315cf0037da96dd5f3fb26bc069cd0a7c046afa64",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "megu",
+      "family": "Watch",
+      "tier": "T5",
+      "slot": 3,
+      "expected_value": 45,
+      "observed_prediction": 45,
+      "score": 0.5592687277356855,
+      "margin": 0.112297,
+      "atlas_box": [
+        0,
+        36,
+        48,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212726.png",
+      "source_sha256": "f11f6ace5c0566dbde744951525542bde3403a7bd55878f0c9c10fb9b645e46c",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "serina_christmas",
+      "family": "Shoes",
+      "tier": "T8",
+      "slot": 1,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5770121460075446,
+      "margin": 0.048273,
+      "atlas_box": [
+        48,
+        36,
+        96,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212726.png",
+      "source_sha256": "f11f6ace5c0566dbde744951525542bde3403a7bd55878f0c9c10fb9b645e46c",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "serina_christmas",
+      "family": "Hairpin",
+      "tier": "T8",
+      "slot": 2,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5818248411339915,
+      "margin": 0.068396,
+      "atlas_box": [
+        96,
+        36,
+        144,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212930.png",
+      "source_sha256": "fef1ede3ea7cb7bfc879ba4529f7e7fb8cf0db46055e8a48d840167ca6cdb17f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mine_idol",
+      "family": "Shoes",
+      "tier": "T7",
+      "slot": 1,
+      "expected_value": 55,
+      "observed_prediction": 55,
+      "score": 0.5745511391611409,
+      "margin": 0.05656,
+      "atlas_box": [
+        144,
+        36,
+        192,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212930.png",
+      "source_sha256": "fef1ede3ea7cb7bfc879ba4529f7e7fb8cf0db46055e8a48d840167ca6cdb17f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mine_idol",
+      "family": "Bag",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5917470678105768,
+      "margin": 0.06962,
+      "atlas_box": [
+        192,
+        36,
+        240,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 212930.png",
+      "source_sha256": "fef1ede3ea7cb7bfc879ba4529f7e7fb8cf0db46055e8a48d840167ca6cdb17f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mine_idol",
+      "family": "Charm",
+      "tier": "T7",
+      "slot": 3,
+      "expected_value": 55,
+      "observed_prediction": 55,
+      "score": 0.6343417201015712,
+      "margin": 0.111551,
+      "atlas_box": [
+        240,
+        36,
+        288,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213044.png",
+      "source_sha256": "d785a55433d43a4c4798ae84b157374d5177eef76bf56a2dfc3aa01b762b1d4b",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "noa",
+      "family": "Shoes",
+      "tier": "T8",
+      "slot": 1,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5770121460075446,
+      "margin": 0.048273,
+      "atlas_box": [
+        288,
+        36,
+        336,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213044.png",
+      "source_sha256": "d785a55433d43a4c4798ae84b157374d5177eef76bf56a2dfc3aa01b762b1d4b",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "noa",
+      "family": "Hairpin",
+      "tier": "T4",
+      "slot": 2,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5568153328206701,
+      "margin": 0.082163,
+      "atlas_box": [
+        336,
+        36,
+        384,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213044.png",
+      "source_sha256": "d785a55433d43a4c4798ae84b157374d5177eef76bf56a2dfc3aa01b762b1d4b",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "noa",
+      "family": "Charm",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5562493543060619,
+      "margin": 0.072703,
+      "atlas_box": [
+        384,
+        36,
+        432,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213202.png",
+      "source_sha256": "f5e7881d3853570c93cfd369b024347a540dca665019cab010a87f6ecca971c2",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kazusa",
+      "family": "Gloves",
+      "tier": "T4",
+      "slot": 1,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5328666913795854,
+      "margin": 0.108397,
+      "atlas_box": [
+        432,
+        36,
+        480,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213202.png",
+      "source_sha256": "f5e7881d3853570c93cfd369b024347a540dca665019cab010a87f6ecca971c2",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kazusa",
+      "family": "Hairpin",
+      "tier": "T4",
+      "slot": 2,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5568153328206701,
+      "margin": 0.082163,
+      "atlas_box": [
+        480,
+        36,
+        528,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213202.png",
+      "source_sha256": "f5e7881d3853570c93cfd369b024347a540dca665019cab010a87f6ecca971c2",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kazusa",
+      "family": "Watch",
+      "tier": "T4",
+      "slot": 3,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5436095091865379,
+      "margin": 0.087121,
+      "atlas_box": [
+        528,
+        36,
+        576,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213244.png",
+      "source_sha256": "88eee5f7c6c9cca91a89d0addf8ba7e0bdc13894bfdc892809ca63107155df8a",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "ui_swimsuit",
+      "family": "Shoes",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.585678333133486,
+      "margin": 0.048815,
+      "atlas_box": [
+        576,
+        36,
+        624,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213244.png",
+      "source_sha256": "88eee5f7c6c9cca91a89d0addf8ba7e0bdc13894bfdc892809ca63107155df8a",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "ui_swimsuit",
+      "family": "Hairpin",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5856675989001128,
+      "margin": 0.068805,
+      "atlas_box": [
+        624,
+        36,
+        672,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213346.png",
+      "source_sha256": "163fc031cc1d786bbe3cf7505f75f3afa098c22d89deff0ab80472d1dc428eec",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "nodoka_hot_springs",
+      "family": "Shoes",
+      "tier": "T5",
+      "slot": 1,
+      "expected_value": 45,
+      "observed_prediction": 45,
+      "score": 0.5382558001430542,
+      "margin": 0.043264,
+      "atlas_box": [
+        672,
+        36,
+        720,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213346.png",
+      "source_sha256": "163fc031cc1d786bbe3cf7505f75f3afa098c22d89deff0ab80472d1dc428eec",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "nodoka_hot_springs",
+      "family": "Hairpin",
+      "tier": "T5",
+      "slot": 2,
+      "expected_value": 45,
+      "observed_prediction": 45,
+      "score": 0.5511436403986344,
+      "margin": 0.065854,
+      "atlas_box": [
+        720,
+        36,
+        768,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213346.png",
+      "source_sha256": "163fc031cc1d786bbe3cf7505f75f3afa098c22d89deff0ab80472d1dc428eec",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "nodoka_hot_springs",
+      "family": "Necklace",
+      "tier": "T7",
+      "slot": 3,
+      "expected_value": 55,
+      "observed_prediction": 55,
+      "score": 0.6506317747721653,
+      "margin": 0.115307,
+      "atlas_box": [
+        768,
+        36,
+        816,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213501.png",
+      "source_sha256": "bc4628750bceec8ace6ad153f1b33d31582b178d10de9f2158be0ff449f43b72",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "tsukuyo",
+      "family": "Shoes",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.585678333133486,
+      "margin": 0.048815,
+      "atlas_box": [
+        816,
+        36,
+        864,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213501.png",
+      "source_sha256": "bc4628750bceec8ace6ad153f1b33d31582b178d10de9f2158be0ff449f43b72",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "tsukuyo",
+      "family": "Badge",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5840359604334142,
+      "margin": 0.068796,
+      "atlas_box": [
+        864,
+        36,
+        912,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213618.png",
+      "source_sha256": "782c67baa0dfa74350595463717a8a21b040166db9c8b8c66862736853bf1ed5",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aoba",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5830374706546319,
+      "margin": 0.077084,
+      "atlas_box": [
+        912,
+        36,
+        960,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213618.png",
+      "source_sha256": "782c67baa0dfa74350595463717a8a21b040166db9c8b8c66862736853bf1ed5",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aoba",
+      "family": "Bag",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5818355045983121,
+      "margin": 0.092645,
+      "atlas_box": [
+        0,
+        72,
+        48,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213727.png",
+      "source_sha256": "33653f2c9ffb03c32839beb11ee03ad4729cd330e302420c8adba0a2cf6e6dd3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "atsuko_swimsuit",
+      "family": "Shoes",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.585678333133486,
+      "margin": 0.048815,
+      "atlas_box": [
+        48,
+        72,
+        96,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213727.png",
+      "source_sha256": "33653f2c9ffb03c32839beb11ee03ad4729cd330e302420c8adba0a2cf6e6dd3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "atsuko_swimsuit",
+      "family": "Badge",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5416961996553931,
+      "margin": 0.08169,
+      "atlas_box": [
+        96,
+        72,
+        144,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213727.png",
+      "source_sha256": "33653f2c9ffb03c32839beb11ee03ad4729cd330e302420c8adba0a2cf6e6dd3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "atsuko_swimsuit",
+      "family": "Necklace",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5581367384300855,
+      "margin": 0.086065,
+      "atlas_box": [
+        144,
+        72,
+        192,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213829.png",
+      "source_sha256": "cf2ad11b66c6b4fdb2b18b13bebbf1377cd3a9ab768d4c4406e7c43a8fc9e77c",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "chinatsu_hot_springs",
+      "family": "Shoes",
+      "tier": "T8",
+      "slot": 1,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5770121460075446,
+      "margin": 0.048273,
+      "atlas_box": [
+        192,
+        72,
+        240,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213829.png",
+      "source_sha256": "cf2ad11b66c6b4fdb2b18b13bebbf1377cd3a9ab768d4c4406e7c43a8fc9e77c",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "chinatsu_hot_springs",
+      "family": "Badge",
+      "tier": "T8",
+      "slot": 2,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5818248411339915,
+      "margin": 0.068396,
+      "atlas_box": [
+        240,
+        72,
+        288,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213937.png",
+      "source_sha256": "8732d955b302713a08e1bdf47682381c8a3aab75c6faad17f6188469a54afca9",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_riding",
+      "family": "Gloves",
+      "tier": "T7",
+      "slot": 1,
+      "expected_value": 55,
+      "observed_prediction": 55,
+      "score": 0.5502909232421825,
+      "margin": 0.047904,
+      "atlas_box": [
+        288,
+        72,
+        336,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213937.png",
+      "source_sha256": "8732d955b302713a08e1bdf47682381c8a3aab75c6faad17f6188469a54afca9",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_riding",
+      "family": "Badge",
+      "tier": "T7",
+      "slot": 2,
+      "expected_value": 55,
+      "observed_prediction": 55,
+      "score": 0.5991738550811069,
+      "margin": 0.075357,
+      "atlas_box": [
+        336,
+        72,
+        384,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 213937.png",
+      "source_sha256": "8732d955b302713a08e1bdf47682381c8a3aab75c6faad17f6188469a54afca9",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_riding",
+      "family": "Watch",
+      "tier": "T7",
+      "slot": 3,
+      "expected_value": 55,
+      "observed_prediction": 55,
+      "score": 0.6243911358771714,
+      "margin": 0.113876,
+      "atlas_box": [
+        384,
+        72,
+        432,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214111.png",
+      "source_sha256": "cbd5341fc3295c0d06a44d0fdb5d3ae34e378783df330d3a06cc1746bfaff555",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "miyu_swimsuit",
+      "family": "Hat",
+      "tier": "T5",
+      "slot": 1,
+      "expected_value": 45,
+      "observed_prediction": 45,
+      "score": 0.5326933713695201,
+      "margin": 0.047298,
+      "atlas_box": [
+        432,
+        72,
+        480,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214111.png",
+      "source_sha256": "cbd5341fc3295c0d06a44d0fdb5d3ae34e378783df330d3a06cc1746bfaff555",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "miyu_swimsuit",
+      "family": "Hairpin",
+      "tier": "T5",
+      "slot": 2,
+      "expected_value": 45,
+      "observed_prediction": 45,
+      "score": 0.5547127423092688,
+      "margin": 0.065854,
+      "atlas_box": [
+        480,
+        72,
+        528,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214111.png",
+      "source_sha256": "cbd5341fc3295c0d06a44d0fdb5d3ae34e378783df330d3a06cc1746bfaff555",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "miyu_swimsuit",
+      "family": "Watch",
+      "tier": "T5",
+      "slot": 3,
+      "expected_value": 45,
+      "observed_prediction": 45,
+      "score": 0.5592687277356855,
+      "margin": 0.112297,
+      "atlas_box": [
+        528,
+        72,
+        576,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214230.png",
+      "source_sha256": "356b4a705b837b65ea0947bd31457e100aa9efb425d2204ff9e3e7efc19a1b37",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hibiki_cheerleader",
+      "family": "Hairpin",
+      "tier": "T4",
+      "slot": 2,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5568153328206701,
+      "margin": 0.082163,
+      "atlas_box": [
+        576,
+        72,
+        624,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214339.png",
+      "source_sha256": "ee785e890e0441eec1b2aea9a8c662e0e0290e47d5037b9a5af97dfa011514a6",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "toki",
+      "family": "Hairpin",
+      "tier": "T7",
+      "slot": 2,
+      "expected_value": 55,
+      "observed_prediction": 55,
+      "score": 0.5800841726121824,
+      "margin": 0.05543,
+      "atlas_box": [
+        624,
+        72,
+        672,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214339.png",
+      "source_sha256": "ee785e890e0441eec1b2aea9a8c662e0e0290e47d5037b9a5af97dfa011514a6",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "toki",
+      "family": "Watch",
+      "tier": "T1",
+      "slot": 3,
+      "expected_value": 10,
+      "observed_prediction": 10,
+      "score": 0.5316165079200151,
+      "margin": 0.086621,
+      "atlas_box": [
+        672,
+        72,
+        720,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214438.png",
+      "source_sha256": "204d29e3b24ed5665ee61f7bf9f79178327b9f2b2791d56a0c1421ddb15acd47",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kotama",
+      "family": "Shoes",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.585678333133486,
+      "margin": 0.048815,
+      "atlas_box": [
+        720,
+        72,
+        768,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214438.png",
+      "source_sha256": "204d29e3b24ed5665ee61f7bf9f79178327b9f2b2791d56a0c1421ddb15acd47",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kotama",
+      "family": "Hairpin",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5856675989001128,
+      "margin": 0.068805,
+      "atlas_box": [
+        768,
+        72,
+        816,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214522.png",
+      "source_sha256": "288c13aee9d51da066a47eb32f8136c99aad337448371463ee79be12bd21f1dc",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "asuna",
+      "family": "Gloves",
+      "tier": "T2",
+      "slot": 1,
+      "expected_value": 20,
+      "observed_prediction": 20,
+      "score": 0.5286674794054442,
+      "margin": 0.046622,
+      "atlas_box": [
+        816,
+        72,
+        864,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214522.png",
+      "source_sha256": "288c13aee9d51da066a47eb32f8136c99aad337448371463ee79be12bd21f1dc",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "asuna",
+      "family": "Watch",
+      "tier": "T1",
+      "slot": 3,
+      "expected_value": 10,
+      "observed_prediction": 10,
+      "score": 0.5316165079200151,
+      "margin": 0.086621,
+      "atlas_box": [
+        864,
+        72,
+        912,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214707.png",
+      "source_sha256": "4e2589634a24874a2d3098445db192011964167f0b4361509dc358a01c8f16bb",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shizuko",
+      "family": "Shoes",
+      "tier": "T8",
+      "slot": 1,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5770121460075446,
+      "margin": 0.048273,
+      "atlas_box": [
+        912,
+        72,
+        960,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214707.png",
+      "source_sha256": "4e2589634a24874a2d3098445db192011964167f0b4361509dc358a01c8f16bb",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shizuko",
+      "family": "Hairpin",
+      "tier": "T8",
+      "slot": 2,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5818248411339915,
+      "margin": 0.068396,
+      "atlas_box": [
+        0,
+        108,
+        48,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214707.png",
+      "source_sha256": "4e2589634a24874a2d3098445db192011964167f0b4361509dc358a01c8f16bb",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shizuko",
+      "family": "Necklace",
+      "tier": "T5",
+      "slot": 3,
+      "expected_value": 45,
+      "observed_prediction": 45,
+      "score": 0.5558529983280713,
+      "margin": 0.11765,
+      "atlas_box": [
+        48,
+        108,
+        96,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214826.png",
+      "source_sha256": "7341417148cd1136a766271b94493da7224a61a7231d344461eee925e7985d34",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "serika",
+      "family": "Gloves",
+      "tier": "T3",
+      "slot": 1,
+      "expected_value": 30,
+      "observed_prediction": 30,
+      "score": 0.5634270931240808,
+      "margin": 0.064162,
+      "atlas_box": [
+        96,
+        108,
+        144,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214826.png",
+      "source_sha256": "7341417148cd1136a766271b94493da7224a61a7231d344461eee925e7985d34",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "serika",
+      "family": "Watch",
+      "tier": "T1",
+      "slot": 3,
+      "expected_value": 10,
+      "observed_prediction": 10,
+      "score": 0.5316165079200151,
+      "margin": 0.086621,
+      "atlas_box": [
+        144,
+        108,
+        192,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214932.png",
+      "source_sha256": "7f4ad1cb6eb7ef086e823b45dfac4642ab9671182782d363f786972ce04c25bd",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "azusa_swimsuit",
+      "family": "Gloves",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5633862846358275,
+      "margin": 0.047096,
+      "atlas_box": [
+        192,
+        108,
+        240,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 214932.png",
+      "source_sha256": "7f4ad1cb6eb7ef086e823b45dfac4642ab9671182782d363f786972ce04c25bd",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "azusa_swimsuit",
+      "family": "Hairpin",
+      "tier": "T5",
+      "slot": 2,
+      "expected_value": 45,
+      "observed_prediction": 45,
+      "score": 0.5547127423092688,
+      "margin": 0.065854,
+      "atlas_box": [
+        240,
+        108,
+        288,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 215011.png",
+      "source_sha256": "63c9bd8db309f2aa6b5c519deb13aaac17d9d3e204577451938ff1d78dd836b1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "azusa",
+      "family": "Gloves",
+      "tier": "T8",
+      "slot": 1,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5776484598292289,
+      "margin": 0.048539,
+      "atlas_box": [
+        288,
+        108,
+        336,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 215011.png",
+      "source_sha256": "63c9bd8db309f2aa6b5c519deb13aaac17d9d3e204577451938ff1d78dd836b1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "azusa",
+      "family": "Hairpin",
+      "tier": "T8",
+      "slot": 2,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5818248411339915,
+      "margin": 0.068396,
+      "atlas_box": [
+        336,
+        108,
+        384,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 215117.png",
+      "source_sha256": "66baf6d7643bc5bd12c1be84a7d56246556488f8a7dde9b489bbec49b62f7da2",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mutsuki",
+      "family": "Hat",
+      "tier": "T8",
+      "slot": 1,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5770121460075446,
+      "margin": 0.048273,
+      "atlas_box": [
+        384,
+        108,
+        432,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 215117.png",
+      "source_sha256": "66baf6d7643bc5bd12c1be84a7d56246556488f8a7dde9b489bbec49b62f7da2",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mutsuki",
+      "family": "Hairpin",
+      "tier": "T8",
+      "slot": 2,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5818248411339915,
+      "margin": 0.068396,
+      "atlas_box": [
+        432,
+        108,
+        480,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 224532.png",
+      "source_sha256": "ab04a3397dab3da99898386ce6724d8e30582590212106bcdee8fa0c0378e3f9",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hasumi_swimsuit",
+      "family": "Hat",
+      "tier": "T2",
+      "slot": 1,
+      "expected_value": 20,
+      "observed_prediction": 20,
+      "score": 0.5286674794054442,
+      "margin": 0.046622,
+      "atlas_box": [
+        480,
+        108,
+        528,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 224532.png",
+      "source_sha256": "ab04a3397dab3da99898386ce6724d8e30582590212106bcdee8fa0c0378e3f9",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hasumi_swimsuit",
+      "family": "Hairpin",
+      "tier": "T2",
+      "slot": 2,
+      "expected_value": 20,
+      "observed_prediction": 20,
+      "score": 0.5210635748600138,
+      "margin": 0.066067,
+      "atlas_box": [
+        528,
+        108,
+        576,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 224624.png",
+      "source_sha256": "a1265415c981c19818d69dd72791fbe81625006734e018ad5cb4b34497552b4a",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hasumi_swimsuit",
+      "family": "Hat",
+      "tier": "T3",
+      "slot": 1,
+      "expected_value": 30,
+      "observed_prediction": 30,
+      "score": 0.5634270931240808,
+      "margin": 0.073617,
+      "atlas_box": [
+        576,
+        108,
+        624,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 224624.png",
+      "source_sha256": "a1265415c981c19818d69dd72791fbe81625006734e018ad5cb4b34497552b4a",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hasumi_swimsuit",
+      "family": "Hairpin",
+      "tier": "T3",
+      "slot": 2,
+      "expected_value": 30,
+      "observed_prediction": 30,
+      "score": 0.5215688861224956,
+      "margin": 0.043455,
+      "atlas_box": [
+        624,
+        108,
+        672,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 224726.png",
+      "source_sha256": "899063673796db042dc10dc085ccdb50c6a51bf5deac8dc16310f0670c5caec3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "megu",
+      "family": "Gloves",
+      "tier": "T6",
+      "slot": 1,
+      "expected_value": 50,
+      "observed_prediction": 50,
+      "score": 0.6471853803555039,
+      "margin": 0.074605,
+      "atlas_box": [
+        672,
+        108,
+        720,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 224726.png",
+      "source_sha256": "899063673796db042dc10dc085ccdb50c6a51bf5deac8dc16310f0670c5caec3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "megu",
+      "family": "Bag",
+      "tier": "T6",
+      "slot": 2,
+      "expected_value": 50,
+      "observed_prediction": 50,
+      "score": 0.5531108589540938,
+      "margin": 0.079524,
+      "atlas_box": [
+        720,
+        108,
+        768,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 224726.png",
+      "source_sha256": "899063673796db042dc10dc085ccdb50c6a51bf5deac8dc16310f0670c5caec3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "megu",
+      "family": "Watch",
+      "tier": "T6",
+      "slot": 3,
+      "expected_value": 50,
+      "observed_prediction": 50,
+      "score": 0.5500135934219477,
+      "margin": 0.087312,
+      "atlas_box": [
+        768,
+        108,
+        816,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 225426.png",
+      "source_sha256": "87b7c3f3fcdd6827e9299cce8b2c28371144dd0888f0c33c4eafe1e44c6bd556",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "toki",
+      "family": "Hairpin",
+      "tier": "T7",
+      "slot": 2,
+      "expected_value": 55,
+      "observed_prediction": 55,
+      "score": 0.5800841726121824,
+      "margin": 0.05543,
+      "atlas_box": [
+        816,
+        108,
+        864,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 225426.png",
+      "source_sha256": "87b7c3f3fcdd6827e9299cce8b2c28371144dd0888f0c33c4eafe1e44c6bd556",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "toki",
+      "family": "Watch",
+      "tier": "T1",
+      "slot": 3,
+      "expected_value": 10,
+      "observed_prediction": 10,
+      "score": 0.5316165079200151,
+      "margin": 0.086621,
+      "atlas_box": [
+        864,
+        108,
+        912,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 225537.png",
+      "source_sha256": "a3ee8ab5abef2a384a7119fa8624feb85ab38242437ad2058bb6dfe965254140",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hibiki_cheerleader",
+      "family": "Hairpin",
+      "tier": "T4",
+      "slot": 2,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5568153328206701,
+      "margin": 0.082163,
+      "atlas_box": [
+        912,
+        108,
+        960,
+        144
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 225916.png",
+      "source_sha256": "9f73883c0af812653566df5fa075ab3a9e9a6071dd1afe216ec86a8ef35a8699",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mimori",
+      "family": "Gloves",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5633862846358275,
+      "margin": 0.047096,
+      "atlas_box": [
+        0,
+        144,
+        48,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 225916.png",
+      "source_sha256": "9f73883c0af812653566df5fa075ab3a9e9a6071dd1afe216ec86a8ef35a8699",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mimori",
+      "family": "Bag",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5818355045983121,
+      "margin": 0.092645,
+      "atlas_box": [
+        48,
+        144,
+        96,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 230029.png",
+      "source_sha256": "cfa200b670abca17b39044c66ccebbab1fe19999489b96b1f9f00d71ae92498d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shizuko",
+      "family": "Shoes",
+      "tier": "T8",
+      "slot": 1,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5770121460075446,
+      "margin": 0.048273,
+      "atlas_box": [
+        96,
+        144,
+        144,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 230029.png",
+      "source_sha256": "cfa200b670abca17b39044c66ccebbab1fe19999489b96b1f9f00d71ae92498d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shizuko",
+      "family": "Hairpin",
+      "tier": "T8",
+      "slot": 2,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5818248411339915,
+      "margin": 0.068396,
+      "atlas_box": [
+        144,
+        144,
+        192,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-28 230029.png",
+      "source_sha256": "cfa200b670abca17b39044c66ccebbab1fe19999489b96b1f9f00d71ae92498d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shizuko",
+      "family": "Necklace",
+      "tier": "T5",
+      "slot": 3,
+      "expected_value": 45,
+      "observed_prediction": 45,
+      "score": 0.5558529983280713,
+      "margin": 0.11765,
+      "atlas_box": [
+        192,
+        144,
+        240,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120638.png",
+      "source_sha256": "615a486c4ff396293bb210cc7338dd6f2a36b230f1d378238042c0a0a6595094",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mika",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        240,
+        144,
+        288,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120638.png",
+      "source_sha256": "615a486c4ff396293bb210cc7338dd6f2a36b230f1d378238042c0a0a6595094",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mika",
+      "family": "Badge",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5416961996553931,
+      "margin": 0.08169,
+      "atlas_box": [
+        288,
+        144,
+        336,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120638.png",
+      "source_sha256": "615a486c4ff396293bb210cc7338dd6f2a36b230f1d378238042c0a0a6595094",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mika",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        336,
+        144,
+        384,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120645.png",
+      "source_sha256": "20df93cf44463ab5d36e394394fc255cb1baabade262a60bb6373b58ecefe5ea",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hina_dress",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        384,
+        144,
+        432,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120645.png",
+      "source_sha256": "20df93cf44463ab5d36e394394fc255cb1baabade262a60bb6373b58ecefe5ea",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hina_dress",
+      "family": "Badge",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5416961996553931,
+      "margin": 0.08169,
+      "atlas_box": [
+        432,
+        144,
+        480,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120645.png",
+      "source_sha256": "20df93cf44463ab5d36e394394fc255cb1baabade262a60bb6373b58ecefe5ea",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hina_dress",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        480,
+        144,
+        528,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120648.png",
+      "source_sha256": "9f5e3fb2467716afeef647b19d90a2d2c324f254a4726fdaf861fd59e48f834c",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "himari",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5830374706546319,
+      "margin": 0.077084,
+      "atlas_box": [
+        528,
+        144,
+        576,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120648.png",
+      "source_sha256": "9f5e3fb2467716afeef647b19d90a2d2c324f254a4726fdaf861fd59e48f834c",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "himari",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        576,
+        144,
+        624,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120650.png",
+      "source_sha256": "3573bb86abc1ee36121d4c9bf6f94c4f864b405cee10424ad7e4011b1cb2d96e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "nagisa",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        624,
+        144,
+        672,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120650.png",
+      "source_sha256": "3573bb86abc1ee36121d4c9bf6f94c4f864b405cee10424ad7e4011b1cb2d96e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "nagisa",
+      "family": "Bag",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5818355045983121,
+      "margin": 0.092645,
+      "atlas_box": [
+        672,
+        144,
+        720,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120650.png",
+      "source_sha256": "3573bb86abc1ee36121d4c9bf6f94c4f864b405cee10424ad7e4011b1cb2d96e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "nagisa",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        720,
+        144,
+        768,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120653.png",
+      "source_sha256": "1e989d254a40b98a0566331d4713a278516c791087d8aa21e97b2c09bcd28b08",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "wakamo",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        768,
+        144,
+        816,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120653.png",
+      "source_sha256": "1e989d254a40b98a0566331d4713a278516c791087d8aa21e97b2c09bcd28b08",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "wakamo",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        816,
+        144,
+        864,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120653.png",
+      "source_sha256": "1e989d254a40b98a0566331d4713a278516c791087d8aa21e97b2c09bcd28b08",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "wakamo",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        864,
+        144,
+        912,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120655.png",
+      "source_sha256": "7791ebffa1a546d6d8908cf8a472e631989d0bef085cab6c7ed94e834a8be678",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_swimsuit",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        912,
+        144,
+        960,
+        180
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120655.png",
+      "source_sha256": "7791ebffa1a546d6d8908cf8a472e631989d0bef085cab6c7ed94e834a8be678",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_swimsuit",
+      "family": "Bag",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5818355045983121,
+      "margin": 0.092645,
+      "atlas_box": [
+        0,
+        180,
+        48,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120655.png",
+      "source_sha256": "7791ebffa1a546d6d8908cf8a472e631989d0bef085cab6c7ed94e834a8be678",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_swimsuit",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        48,
+        180,
+        96,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120657.png",
+      "source_sha256": "23ac44e0edf0973aec11610fc9b288f41b6dcbe3ecd9bc51d5128b3185f03070",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hibiki",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        96,
+        180,
+        144,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120657.png",
+      "source_sha256": "23ac44e0edf0973aec11610fc9b288f41b6dcbe3ecd9bc51d5128b3185f03070",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hibiki",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        144,
+        180,
+        192,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120657.png",
+      "source_sha256": "23ac44e0edf0973aec11610fc9b288f41b6dcbe3ecd9bc51d5128b3185f03070",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hibiki",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        192,
+        180,
+        240,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120659.png",
+      "source_sha256": "6e5421304b4f5bcef3040b927c905e0b17963561ae2fba8b528fb57f82ac2628",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hoshino_swimsuit",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5830374706546319,
+      "margin": 0.077084,
+      "atlas_box": [
+        240,
+        180,
+        288,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120659.png",
+      "source_sha256": "6e5421304b4f5bcef3040b927c905e0b17963561ae2fba8b528fb57f82ac2628",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hoshino_swimsuit",
+      "family": "Bag",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5818355045983121,
+      "margin": 0.092645,
+      "atlas_box": [
+        288,
+        180,
+        336,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120702.png",
+      "source_sha256": "965b384116c8de56b04b3bb5e55d7b21a40081db62bd33ea52fcfda431835a3c",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hanako_swimsuit",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        336,
+        180,
+        384,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120702.png",
+      "source_sha256": "965b384116c8de56b04b3bb5e55d7b21a40081db62bd33ea52fcfda431835a3c",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hanako_swimsuit",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        384,
+        180,
+        432,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120712.png",
+      "source_sha256": "6ad2eda293e7c7cf2c50413b312e2280f4ce35f821a57404ec9a48d5f13ae964",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "neru",
+      "family": "Hat",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5633862846358275,
+      "margin": 0.047096,
+      "atlas_box": [
+        432,
+        180,
+        480,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120712.png",
+      "source_sha256": "6ad2eda293e7c7cf2c50413b312e2280f4ce35f821a57404ec9a48d5f13ae964",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "neru",
+      "family": "Badge",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5840359604334142,
+      "margin": 0.068796,
+      "atlas_box": [
+        480,
+        180,
+        528,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120714.png",
+      "source_sha256": "09089ea3c704c5bd6fb81331fc5624d9324ec46837820902c0537b97cfe6368b",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mine",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5830374706546319,
+      "margin": 0.077084,
+      "atlas_box": [
+        528,
+        180,
+        576,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120714.png",
+      "source_sha256": "09089ea3c704c5bd6fb81331fc5624d9324ec46837820902c0537b97cfe6368b",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mine",
+      "family": "Bag",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5818355045983121,
+      "margin": 0.092645,
+      "atlas_box": [
+        576,
+        180,
+        624,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-09 182937.png",
+      "source_sha256": "ca0cdc4974f1e1024957647478d878f174f9ff4e54fa7a308b0c589b5923e7c0",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kei",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5830374706546319,
+      "margin": 0.077084,
+      "atlas_box": [
+        624,
+        180,
+        672,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-09 182937.png",
+      "source_sha256": "ca0cdc4974f1e1024957647478d878f174f9ff4e54fa7a308b0c589b5923e7c0",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kei",
+      "family": "Hairpin",
+      "tier": "T4",
+      "slot": 2,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5568153328206701,
+      "margin": 0.082163,
+      "atlas_box": [
+        672,
+        180,
+        720,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-09 182937.png",
+      "source_sha256": "ca0cdc4974f1e1024957647478d878f174f9ff4e54fa7a308b0c589b5923e7c0",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kei",
+      "family": "Watch",
+      "tier": "T4",
+      "slot": 3,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5436095091865379,
+      "margin": 0.087121,
+      "atlas_box": [
+        720,
+        180,
+        768,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-09 182940.png",
+      "source_sha256": "584191eb2e071112ef7d1cd7d7d0130d5c37f206d2a3910a92450d8eb2a9ba57",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        768,
+        180,
+        816,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-09 182940.png",
+      "source_sha256": "584191eb2e071112ef7d1cd7d7d0130d5c37f206d2a3910a92450d8eb2a9ba57",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        816,
+        180,
+        864,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-09 182940.png",
+      "source_sha256": "584191eb2e071112ef7d1cd7d7d0130d5c37f206d2a3910a92450d8eb2a9ba57",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        864,
+        180,
+        912,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 005828.png",
+      "source_sha256": "39c92d926a0b0134c52dd01aa4180c1562c8be57df7676145056665faaebc1fd",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "utaha_cheerleader",
+      "family": "Hat",
+      "tier": "T7",
+      "slot": 1,
+      "expected_value": 55,
+      "observed_prediction": 55,
+      "score": 0.5685679250721583,
+      "margin": 0.062653,
+      "atlas_box": [
+        912,
+        180,
+        960,
+        216
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 005828.png",
+      "source_sha256": "39c92d926a0b0134c52dd01aa4180c1562c8be57df7676145056665faaebc1fd",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "utaha_cheerleader",
+      "family": "Hairpin",
+      "tier": "T3",
+      "slot": 2,
+      "expected_value": 30,
+      "observed_prediction": 30,
+      "score": 0.5215688861224956,
+      "margin": 0.043455,
+      "atlas_box": [
+        0,
+        216,
+        48,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 005828.png",
+      "source_sha256": "39c92d926a0b0134c52dd01aa4180c1562c8be57df7676145056665faaebc1fd",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "utaha_cheerleader",
+      "family": "Watch",
+      "tier": "T1",
+      "slot": 3,
+      "expected_value": 10,
+      "observed_prediction": 10,
+      "score": 0.5316165079200151,
+      "margin": 0.086621,
+      "atlas_box": [
+        48,
+        216,
+        96,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 005843.png",
+      "source_sha256": "b2b8ec6ee5a842edc9c00f5960af878f2afebe83964881c7ad7b36b399b5f5f0",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "megu",
+      "family": "Gloves",
+      "tier": "T6",
+      "slot": 1,
+      "expected_value": 50,
+      "observed_prediction": 50,
+      "score": 0.6471853803555039,
+      "margin": 0.074605,
+      "atlas_box": [
+        96,
+        216,
+        144,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 005843.png",
+      "source_sha256": "b2b8ec6ee5a842edc9c00f5960af878f2afebe83964881c7ad7b36b399b5f5f0",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "megu",
+      "family": "Bag",
+      "tier": "T6",
+      "slot": 2,
+      "expected_value": 50,
+      "observed_prediction": 50,
+      "score": 0.5531108589540938,
+      "margin": 0.079524,
+      "atlas_box": [
+        144,
+        216,
+        192,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 005843.png",
+      "source_sha256": "b2b8ec6ee5a842edc9c00f5960af878f2afebe83964881c7ad7b36b399b5f5f0",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "megu",
+      "family": "Watch",
+      "tier": "T6",
+      "slot": 3,
+      "expected_value": 50,
+      "observed_prediction": 50,
+      "score": 0.5500135934219477,
+      "margin": 0.087312,
+      "atlas_box": [
+        192,
+        216,
+        240,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 005850.png",
+      "source_sha256": "784d07803e39d79068463610cc694bbe713fa809b0674264180ab5c11faaec82",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "himari_battle",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5830374706546319,
+      "margin": 0.077084,
+      "atlas_box": [
+        240,
+        216,
+        288,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 005850.png",
+      "source_sha256": "784d07803e39d79068463610cc694bbe713fa809b0674264180ab5c11faaec82",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "himari_battle",
+      "family": "Hairpin",
+      "tier": "T4",
+      "slot": 2,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5568153328206701,
+      "margin": 0.082163,
+      "atlas_box": [
+        288,
+        216,
+        336,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 005850.png",
+      "source_sha256": "784d07803e39d79068463610cc694bbe713fa809b0674264180ab5c11faaec82",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "himari_battle",
+      "family": "Necklace",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5581367384300855,
+      "margin": 0.086065,
+      "atlas_box": [
+        336,
+        216,
+        384,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170104.png",
+      "source_sha256": "084c8cae4192d100c26fdf9179549c912248d52970c9eeeb1eb511a78f3f5dc3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hibiki",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        384,
+        216,
+        432,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170104.png",
+      "source_sha256": "084c8cae4192d100c26fdf9179549c912248d52970c9eeeb1eb511a78f3f5dc3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hibiki",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        432,
+        216,
+        480,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170104.png",
+      "source_sha256": "084c8cae4192d100c26fdf9179549c912248d52970c9eeeb1eb511a78f3f5dc3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hibiki",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        480,
+        216,
+        528,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170108.png",
+      "source_sha256": "951586affa5d851b49c2e6ba7f3a43042f76316c57212e9e1ff1e2586e3662b3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "wakamo",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        528,
+        216,
+        576,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170108.png",
+      "source_sha256": "951586affa5d851b49c2e6ba7f3a43042f76316c57212e9e1ff1e2586e3662b3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "wakamo",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        576,
+        216,
+        624,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170108.png",
+      "source_sha256": "951586affa5d851b49c2e6ba7f3a43042f76316c57212e9e1ff1e2586e3662b3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "wakamo",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        624,
+        216,
+        672,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170113.png",
+      "source_sha256": "a722caa3bd1c3a0ede0bad2e06c56fa49d732fedf26ba80eecebb5e4c0022ec4",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hina_dress",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        672,
+        216,
+        720,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170113.png",
+      "source_sha256": "a722caa3bd1c3a0ede0bad2e06c56fa49d732fedf26ba80eecebb5e4c0022ec4",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hina_dress",
+      "family": "Badge",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5416961996553931,
+      "margin": 0.08169,
+      "atlas_box": [
+        720,
+        216,
+        768,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170113.png",
+      "source_sha256": "a722caa3bd1c3a0ede0bad2e06c56fa49d732fedf26ba80eecebb5e4c0022ec4",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hina_dress",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        768,
+        216,
+        816,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170126.png",
+      "source_sha256": "d5b23c9e0d7cfefc8dfcd888eb6a0572febf1bc6655769d888ca5ea24b695304",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris",
+      "family": "Hat",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5633862846358275,
+      "margin": 0.047096,
+      "atlas_box": [
+        816,
+        216,
+        864,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170126.png",
+      "source_sha256": "d5b23c9e0d7cfefc8dfcd888eb6a0572febf1bc6655769d888ca5ea24b695304",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris",
+      "family": "Hairpin",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5856675989001128,
+      "margin": 0.068805,
+      "atlas_box": [
+        864,
+        216,
+        912,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170136.png",
+      "source_sha256": "e090dda6c4becbfa385665cec51ddbca75ced86f69dc8c7bcba9f69b758ddaf5",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "maki",
+      "family": "Gloves",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6123315537772717,
+      "margin": 0.088904,
+      "atlas_box": [
+        912,
+        216,
+        960,
+        252
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170136.png",
+      "source_sha256": "e090dda6c4becbfa385665cec51ddbca75ced86f69dc8c7bcba9f69b758ddaf5",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "maki",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        0,
+        252,
+        48,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170139.png",
+      "source_sha256": "46a88a149f2833c042a7f371d7429d07ace889e977a1f05ac6b08d48002a5249",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mashiro",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        48,
+        252,
+        96,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170139.png",
+      "source_sha256": "46a88a149f2833c042a7f371d7429d07ace889e977a1f05ac6b08d48002a5249",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mashiro",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        96,
+        252,
+        144,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170145.png",
+      "source_sha256": "309f340d6ca8a62106668256c3702509f037be8b6e47ae8933bf83ff14f9f689",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hina",
+      "family": "Hat",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5633862846358275,
+      "margin": 0.047096,
+      "atlas_box": [
+        144,
+        252,
+        192,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170145.png",
+      "source_sha256": "309f340d6ca8a62106668256c3702509f037be8b6e47ae8933bf83ff14f9f689",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hina",
+      "family": "Hairpin",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5856675989001128,
+      "margin": 0.068805,
+      "atlas_box": [
+        192,
+        252,
+        240,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170145.png",
+      "source_sha256": "309f340d6ca8a62106668256c3702509f037be8b6e47ae8933bf83ff14f9f689",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hina",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        240,
+        252,
+        288,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170148.png",
+      "source_sha256": "f09af78884acb5311dfa92c3a705d6551282512d0fbfbb2bc3a86a7800da3e82",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "asuna_bunny_girl",
+      "family": "Gloves",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5633862846358275,
+      "margin": 0.047096,
+      "atlas_box": [
+        288,
+        252,
+        336,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170148.png",
+      "source_sha256": "f09af78884acb5311dfa92c3a705d6551282512d0fbfbb2bc3a86a7800da3e82",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "asuna_bunny_girl",
+      "family": "Badge",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5840359604334142,
+      "margin": 0.068796,
+      "atlas_box": [
+        336,
+        252,
+        384,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170155.png",
+      "source_sha256": "62488ed768dfe6bc3185b9cfa8ee615ec6a2ab94ee66761bd777724935ecafb4",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "iori",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        384,
+        252,
+        432,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170155.png",
+      "source_sha256": "62488ed768dfe6bc3185b9cfa8ee615ec6a2ab94ee66761bd777724935ecafb4",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "iori",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        432,
+        252,
+        480,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170155.png",
+      "source_sha256": "62488ed768dfe6bc3185b9cfa8ee615ec6a2ab94ee66761bd777724935ecafb4",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "iori",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        480,
+        252,
+        528,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170158.png",
+      "source_sha256": "3d89807b9abcea3112c52296e64f07c1896b5da58d0b72575d5f9291dac0e8e8",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "sumire",
+      "family": "Hat",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5633862846358275,
+      "margin": 0.047096,
+      "atlas_box": [
+        528,
+        252,
+        576,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170158.png",
+      "source_sha256": "3d89807b9abcea3112c52296e64f07c1896b5da58d0b72575d5f9291dac0e8e8",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "sumire",
+      "family": "Bag",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5917470678105768,
+      "margin": 0.06962,
+      "atlas_box": [
+        576,
+        252,
+        624,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170203.png",
+      "source_sha256": "fee86f21b67883b214cead833eb83e1537d7f333ac77e5acef7c230acc11a8e2",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mutsuki",
+      "family": "Hat",
+      "tier": "T8",
+      "slot": 1,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5770121460075446,
+      "margin": 0.048273,
+      "atlas_box": [
+        624,
+        252,
+        672,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170203.png",
+      "source_sha256": "fee86f21b67883b214cead833eb83e1537d7f333ac77e5acef7c230acc11a8e2",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mutsuki",
+      "family": "Hairpin",
+      "tier": "T8",
+      "slot": 2,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5818248411339915,
+      "margin": 0.068396,
+      "atlas_box": [
+        672,
+        252,
+        720,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170219.png",
+      "source_sha256": "ef1db443b503c18790a73a58c6f02936a54f44724090e315de817749f6d63bf2",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "asuna",
+      "family": "Gloves",
+      "tier": "T2",
+      "slot": 1,
+      "expected_value": 20,
+      "observed_prediction": 20,
+      "score": 0.5286674794054442,
+      "margin": 0.046622,
+      "atlas_box": [
+        720,
+        252,
+        768,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170219.png",
+      "source_sha256": "ef1db443b503c18790a73a58c6f02936a54f44724090e315de817749f6d63bf2",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "asuna",
+      "family": "Watch",
+      "tier": "T1",
+      "slot": 3,
+      "expected_value": 10,
+      "observed_prediction": 10,
+      "score": 0.5316165079200151,
+      "margin": 0.086621,
+      "atlas_box": [
+        768,
+        252,
+        816,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170222.png",
+      "source_sha256": "6d86a636a0976146656953bc5e25cfc5e41c1f916c228cdbdb2c70e4a593d93f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "karin",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        816,
+        252,
+        864,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170222.png",
+      "source_sha256": "6d86a636a0976146656953bc5e25cfc5e41c1f916c228cdbdb2c70e4a593d93f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "karin",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        864,
+        252,
+        912,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170243.png",
+      "source_sha256": "e9941c3752ca21fa0305bd79909460e1cf4eddd5bbbea78e6d77f12ce595f9d1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kei",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5830374706546319,
+      "margin": 0.077084,
+      "atlas_box": [
+        912,
+        252,
+        960,
+        288
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170243.png",
+      "source_sha256": "e9941c3752ca21fa0305bd79909460e1cf4eddd5bbbea78e6d77f12ce595f9d1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kei",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        0,
+        288,
+        48,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170243.png",
+      "source_sha256": "e9941c3752ca21fa0305bd79909460e1cf4eddd5bbbea78e6d77f12ce595f9d1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kei",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        48,
+        288,
+        96,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170247.png",
+      "source_sha256": "0b8ef387af1224cccf8185082465faf1b002dab1f5c029415799f5bd28bfa7e4",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        96,
+        288,
+        144,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170247.png",
+      "source_sha256": "0b8ef387af1224cccf8185082465faf1b002dab1f5c029415799f5bd28bfa7e4",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        144,
+        288,
+        192,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170247.png",
+      "source_sha256": "0b8ef387af1224cccf8185082465faf1b002dab1f5c029415799f5bd28bfa7e4",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        192,
+        288,
+        240,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170748.png",
+      "source_sha256": "5566b79db6b441a7a5e3e91a46e37685b1145612d84ee99b3200d766b9c7a7c6",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_riding",
+      "family": "Gloves",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6123315537772717,
+      "margin": 0.088904,
+      "atlas_box": [
+        240,
+        288,
+        288,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170748.png",
+      "source_sha256": "5566b79db6b441a7a5e3e91a46e37685b1145612d84ee99b3200d766b9c7a7c6",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_riding",
+      "family": "Badge",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5416961996553931,
+      "margin": 0.08169,
+      "atlas_box": [
+        288,
+        288,
+        336,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170748.png",
+      "source_sha256": "5566b79db6b441a7a5e3e91a46e37685b1145612d84ee99b3200d766b9c7a7c6",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_riding",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        336,
+        288,
+        384,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170800.png",
+      "source_sha256": "c517e38e6e22ba6f4f0b8bfe9b6eef501e7efe87a1a34203ba5f5bbee3ba3dd1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_riding",
+      "family": "Gloves",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6123315537772717,
+      "margin": 0.088904,
+      "atlas_box": [
+        384,
+        288,
+        432,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170800.png",
+      "source_sha256": "c517e38e6e22ba6f4f0b8bfe9b6eef501e7efe87a1a34203ba5f5bbee3ba3dd1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_riding",
+      "family": "Badge",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5416961996553931,
+      "margin": 0.08169,
+      "atlas_box": [
+        432,
+        288,
+        480,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170800.png",
+      "source_sha256": "c517e38e6e22ba6f4f0b8bfe9b6eef501e7efe87a1a34203ba5f5bbee3ba3dd1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_riding",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        480,
+        288,
+        528,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170808.png",
+      "source_sha256": "e75d153e0a3ad9be1dd9c5bbf8bbec16bb846471a8295744aeb533ba8f894849",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_riding",
+      "family": "Gloves",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6123315537772717,
+      "margin": 0.088904,
+      "atlas_box": [
+        528,
+        288,
+        576,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170808.png",
+      "source_sha256": "e75d153e0a3ad9be1dd9c5bbf8bbec16bb846471a8295744aeb533ba8f894849",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_riding",
+      "family": "Badge",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5416961996553931,
+      "margin": 0.08169,
+      "atlas_box": [
+        576,
+        288,
+        624,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170808.png",
+      "source_sha256": "e75d153e0a3ad9be1dd9c5bbf8bbec16bb846471a8295744aeb533ba8f894849",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "shiroko_riding",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        624,
+        288,
+        672,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170831.png",
+      "source_sha256": "e6edc98fbd430e5cd0edfb5a8eda3154feef3357c68954a1f56d6a862bba73aa",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "karin",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        672,
+        288,
+        720,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-20 170831.png",
+      "source_sha256": "e6edc98fbd430e5cd0edfb5a8eda3154feef3357c68954a1f56d6a862bba73aa",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "karin",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        720,
+        288,
+        768,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 003239.png",
+      "source_sha256": "314789b47e420c28a637491f9bd093b0afec60692f0bb67ca362e275a6bfe2a8",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "tomoe_qipao",
+      "family": "Shoes",
+      "tier": "T3",
+      "slot": 1,
+      "expected_value": 21,
+      "observed_prediction": 21,
+      "score": 0.5286674794054442,
+      "margin": 0.046622,
+      "atlas_box": [
+        768,
+        288,
+        816,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 003421.png",
+      "source_sha256": "852c74f36ea4f419c916b0be784b341c38816f46b5bad81d85d8d208537d9fc6",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "tomoe_qipao",
+      "family": "Shoes",
+      "tier": "T4",
+      "slot": 1,
+      "expected_value": 37,
+      "observed_prediction": 37,
+      "score": 0.5442618389027498,
+      "margin": 0.0582,
+      "atlas_box": [
+        816,
+        288,
+        864,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 003421.png",
+      "source_sha256": "852c74f36ea4f419c916b0be784b341c38816f46b5bad81d85d8d208537d9fc6",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "tomoe_qipao",
+      "family": "Badge",
+      "tier": "T5",
+      "slot": 2,
+      "expected_value": 43,
+      "observed_prediction": 43,
+      "score": 0.5532353200559111,
+      "margin": 0.044529,
+      "atlas_box": [
+        864,
+        288,
+        912,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 003524.png",
+      "source_sha256": "333e8f8db60f8baaad6d052888bdc76850075fec08aeb3056717139ba8643483",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "tomoe_qipao",
+      "family": "Shoes",
+      "tier": "T4",
+      "slot": 1,
+      "expected_value": 37,
+      "observed_prediction": 37,
+      "score": 0.5442618389027498,
+      "margin": 0.0582,
+      "atlas_box": [
+        912,
+        288,
+        960,
+        324
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 003524.png",
+      "source_sha256": "333e8f8db60f8baaad6d052888bdc76850075fec08aeb3056717139ba8643483",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "tomoe_qipao",
+      "family": "Badge",
+      "tier": "T7",
+      "slot": 2,
+      "expected_value": 54,
+      "observed_prediction": 54,
+      "score": 0.5975290379275879,
+      "margin": 0.112185,
+      "atlas_box": [
+        0,
+        324,
+        48,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 003524.png",
+      "source_sha256": "333e8f8db60f8baaad6d052888bdc76850075fec08aeb3056717139ba8643483",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "tomoe_qipao",
+      "family": "Necklace",
+      "tier": "T8",
+      "slot": 3,
+      "expected_value": 59,
+      "observed_prediction": 59,
+      "score": 0.5629649141155472,
+      "margin": 0.064758,
+      "atlas_box": [
+        48,
+        324,
+        96,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 161646.png",
+      "source_sha256": "f225555f404e6478ee566798166d5c3c0e9dabcfcc467a76a7768d8ccb10f2b7",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "tsubaki",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5830374706546319,
+      "margin": 0.077084,
+      "atlas_box": [
+        96,
+        324,
+        144,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 161646.png",
+      "source_sha256": "f225555f404e6478ee566798166d5c3c0e9dabcfcc467a76a7768d8ccb10f2b7",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "tsubaki",
+      "family": "Bag",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5818355045983121,
+      "margin": 0.092645,
+      "atlas_box": [
+        144,
+        324,
+        192,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 161708.png",
+      "source_sha256": "addfd2367bda01ebf4ab18e52868108e04ed76fe5cef2a9cf802ae5d19098c7e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        192,
+        324,
+        240,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 161708.png",
+      "source_sha256": "addfd2367bda01ebf4ab18e52868108e04ed76fe5cef2a9cf802ae5d19098c7e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        240,
+        324,
+        288,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 161708.png",
+      "source_sha256": "addfd2367bda01ebf4ab18e52868108e04ed76fe5cef2a9cf802ae5d19098c7e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        288,
+        324,
+        336,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 161717.png",
+      "source_sha256": "77b59f9899475e226ddb95b51b9b4f0a1abe1e8917a578f8021681c829dcf000",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "himari_battle",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5830374706546319,
+      "margin": 0.077084,
+      "atlas_box": [
+        336,
+        324,
+        384,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 161717.png",
+      "source_sha256": "77b59f9899475e226ddb95b51b9b4f0a1abe1e8917a578f8021681c829dcf000",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "himari_battle",
+      "family": "Hairpin",
+      "tier": "T4",
+      "slot": 2,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5568153328206701,
+      "margin": 0.082163,
+      "atlas_box": [
+        384,
+        324,
+        432,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 161717.png",
+      "source_sha256": "77b59f9899475e226ddb95b51b9b4f0a1abe1e8917a578f8021681c829dcf000",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "himari_battle",
+      "family": "Necklace",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5581367384300855,
+      "margin": 0.086065,
+      "atlas_box": [
+        432,
+        324,
+        480,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 161727.png",
+      "source_sha256": "98d3f7673e72e3b4ffae730ace7f646b4c1bd35331888893eba95745607e6b43",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "serina",
+      "family": "Shoes",
+      "tier": "T8",
+      "slot": 1,
+      "expected_value": 60,
+      "observed_prediction": 60,
+      "score": 0.5770121460075446,
+      "margin": 0.048273,
+      "atlas_box": [
+        480,
+        324,
+        528,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 161727.png",
+      "source_sha256": "98d3f7673e72e3b4ffae730ace7f646b4c1bd35331888893eba95745607e6b43",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "serina",
+      "family": "Hairpin",
+      "tier": "T4",
+      "slot": 2,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5568153328206701,
+      "margin": 0.082163,
+      "atlas_box": [
+        528,
+        324,
+        576,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 161727.png",
+      "source_sha256": "98d3f7673e72e3b4ffae730ace7f646b4c1bd35331888893eba95745607e6b43",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "serina",
+      "family": "Necklace",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5581367384300855,
+      "margin": 0.086065,
+      "atlas_box": [
+        576,
+        324,
+        624,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221219.png",
+      "source_sha256": "efe72386d9fe896dfb9906ae0ed79f11bbddf87a5623a489ec429ad9ddfad47f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mika",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        624,
+        324,
+        672,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221219.png",
+      "source_sha256": "efe72386d9fe896dfb9906ae0ed79f11bbddf87a5623a489ec429ad9ddfad47f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mika",
+      "family": "Badge",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5416961996553931,
+      "margin": 0.08169,
+      "atlas_box": [
+        672,
+        324,
+        720,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221219.png",
+      "source_sha256": "efe72386d9fe896dfb9906ae0ed79f11bbddf87a5623a489ec429ad9ddfad47f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mika",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        720,
+        324,
+        768,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221227.png",
+      "source_sha256": "bd171808576b0fa41855fa02c3346957bd0fd34176cbcd2edd120cfc4cd3dbed",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "nagisa",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        768,
+        324,
+        816,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221227.png",
+      "source_sha256": "bd171808576b0fa41855fa02c3346957bd0fd34176cbcd2edd120cfc4cd3dbed",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "nagisa",
+      "family": "Bag",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5818355045983121,
+      "margin": 0.092645,
+      "atlas_box": [
+        816,
+        324,
+        864,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221227.png",
+      "source_sha256": "bd171808576b0fa41855fa02c3346957bd0fd34176cbcd2edd120cfc4cd3dbed",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "nagisa",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        864,
+        324,
+        912,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221241.png",
+      "source_sha256": "5531d465e2a5366631aa49c847f9c57bc6c0b0875da14d223ee243621eac9aed",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "ako",
+      "family": "Gloves",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6123315537772717,
+      "margin": 0.088904,
+      "atlas_box": [
+        912,
+        324,
+        960,
+        360
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221241.png",
+      "source_sha256": "5531d465e2a5366631aa49c847f9c57bc6c0b0875da14d223ee243621eac9aed",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "ako",
+      "family": "Badge",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5840359604334142,
+      "margin": 0.068796,
+      "atlas_box": [
+        0,
+        360,
+        48,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221245.png",
+      "source_sha256": "bee13240768808d07ea74c0653fcd59e93f34bf48621286595f795ab5131e5ce",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "maki",
+      "family": "Gloves",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6123315537772717,
+      "margin": 0.088904,
+      "atlas_box": [
+        48,
+        360,
+        96,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221245.png",
+      "source_sha256": "bee13240768808d07ea74c0653fcd59e93f34bf48621286595f795ab5131e5ce",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "maki",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        96,
+        360,
+        144,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221252.png",
+      "source_sha256": "de50258c82d10064f614b555dadbddf98089326c7c035d3b848f0edccdfe813d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "seia_swimsuit",
+      "family": "Gloves",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6123315537772717,
+      "margin": 0.088904,
+      "atlas_box": [
+        144,
+        360,
+        192,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221252.png",
+      "source_sha256": "de50258c82d10064f614b555dadbddf98089326c7c035d3b848f0edccdfe813d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "seia_swimsuit",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        192,
+        360,
+        240,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-21 221252.png",
+      "source_sha256": "de50258c82d10064f614b555dadbddf98089326c7c035d3b848f0edccdfe813d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "seia_swimsuit",
+      "family": "Necklace",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5581367384300855,
+      "margin": 0.086065,
+      "atlas_box": [
+        240,
+        360,
+        288,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-22 081710.png",
+      "source_sha256": "268338232c6c0ed604a2d643039ef3477e79fe830e0aa7a961b0ef70fa150b22",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mine",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5830374706546319,
+      "margin": 0.077084,
+      "atlas_box": [
+        288,
+        360,
+        336,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-22 081710.png",
+      "source_sha256": "268338232c6c0ed604a2d643039ef3477e79fe830e0aa7a961b0ef70fa150b22",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mine",
+      "family": "Bag",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5818355045983121,
+      "margin": 0.092645,
+      "atlas_box": [
+        336,
+        360,
+        384,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-22 081810.png",
+      "source_sha256": "494ab1b0ab997f4b2de49b7d4004990dc1c2018e6e8e7b8fab6347c9fe9f0859",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "atsuko",
+      "family": "Shoes",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.585678333133486,
+      "margin": 0.048815,
+      "atlas_box": [
+        384,
+        360,
+        432,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-22 081810.png",
+      "source_sha256": "494ab1b0ab997f4b2de49b7d4004990dc1c2018e6e8e7b8fab6347c9fe9f0859",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "atsuko",
+      "family": "Badge",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5416961996553931,
+      "margin": 0.08169,
+      "atlas_box": [
+        432,
+        360,
+        480,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-22 081838.png",
+      "source_sha256": "306c0ff1bf8e429719855c935951442dd75a440acc7da67720e96efebc46da93",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hoshino",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5830374706546319,
+      "margin": 0.077084,
+      "atlas_box": [
+        480,
+        360,
+        528,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-22 081838.png",
+      "source_sha256": "306c0ff1bf8e429719855c935951442dd75a440acc7da67720e96efebc46da93",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hoshino",
+      "family": "Bag",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5818355045983121,
+      "margin": 0.092645,
+      "atlas_box": [
+        528,
+        360,
+        576,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-22 081838.png",
+      "source_sha256": "306c0ff1bf8e429719855c935951442dd75a440acc7da67720e96efebc46da93",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "hoshino",
+      "family": "Charm",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5562493543060619,
+      "margin": 0.072703,
+      "atlas_box": [
+        576,
+        360,
+        624,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-22 081950.png",
+      "source_sha256": "79026352a12eb7bfd4bea4b01c6ee0b7fb87825bac8f441b39bdc26fd64c4ef1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kokona",
+      "family": "Shoes",
+      "tier": "T9",
+      "slot": 1,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.585678333133486,
+      "margin": 0.048815,
+      "atlas_box": [
+        624,
+        360,
+        672,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-22 081950.png",
+      "source_sha256": "79026352a12eb7bfd4bea4b01c6ee0b7fb87825bac8f441b39bdc26fd64c4ef1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kokona",
+      "family": "Hairpin",
+      "tier": "T9",
+      "slot": 2,
+      "expected_value": 65,
+      "observed_prediction": 65,
+      "score": 0.5856675989001128,
+      "margin": 0.068805,
+      "atlas_box": [
+        672,
+        360,
+        720,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 215227.png",
+      "source_sha256": "922c6195d7738e170312560eadc8606cf4afae211c5304167fa75e66d867de19",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "noa_pajama",
+      "family": "Gloves",
+      "tier": "T1",
+      "slot": 1,
+      "expected_value": 10,
+      "observed_prediction": 10,
+      "score": 0.5286032348415641,
+      "margin": 0.08,
+      "atlas_box": [
+        720,
+        360,
+        768,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 215227.png",
+      "source_sha256": "922c6195d7738e170312560eadc8606cf4afae211c5304167fa75e66d867de19",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "noa_pajama",
+      "family": "Watch",
+      "tier": "T1",
+      "slot": 3,
+      "expected_value": 10,
+      "observed_prediction": 10,
+      "score": 0.5316165079200151,
+      "margin": 0.086621,
+      "atlas_box": [
+        768,
+        360,
+        816,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230709.png",
+      "source_sha256": "96a7de39d2050856fad4fae4f32a5eee0692aedba03a4cd03e79280ca79b0b7e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        816,
+        360,
+        864,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230709.png",
+      "source_sha256": "96a7de39d2050856fad4fae4f32a5eee0692aedba03a4cd03e79280ca79b0b7e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        864,
+        360,
+        912,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230709.png",
+      "source_sha256": "96a7de39d2050856fad4fae4f32a5eee0692aedba03a4cd03e79280ca79b0b7e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        912,
+        360,
+        960,
+        396
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230719.png",
+      "source_sha256": "503d8a2133a145d9aaaec6fd677eb9ab3bd9a524418043aa60574a2a94adfed1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        0,
+        396,
+        48,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230719.png",
+      "source_sha256": "503d8a2133a145d9aaaec6fd677eb9ab3bd9a524418043aa60574a2a94adfed1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        48,
+        396,
+        96,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230719.png",
+      "source_sha256": "503d8a2133a145d9aaaec6fd677eb9ab3bd9a524418043aa60574a2a94adfed1",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        96,
+        396,
+        144,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230728.png",
+      "source_sha256": "deac922f4198d7b932879e87661f4821149201653b4b75dc9772aa2b45ea444d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        144,
+        396,
+        192,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230728.png",
+      "source_sha256": "deac922f4198d7b932879e87661f4821149201653b4b75dc9772aa2b45ea444d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        192,
+        396,
+        240,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230728.png",
+      "source_sha256": "deac922f4198d7b932879e87661f4821149201653b4b75dc9772aa2b45ea444d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        240,
+        396,
+        288,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230740.png",
+      "source_sha256": "867de1bba02442998910fe587ab6cf3b0dc8803438bf257f594aa8702a7c7785",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        288,
+        396,
+        336,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230740.png",
+      "source_sha256": "867de1bba02442998910fe587ab6cf3b0dc8803438bf257f594aa8702a7c7785",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        336,
+        396,
+        384,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230740.png",
+      "source_sha256": "867de1bba02442998910fe587ab6cf3b0dc8803438bf257f594aa8702a7c7785",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        384,
+        396,
+        432,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230750.png",
+      "source_sha256": "eb47aba93fe4fceae28ff46b7c406f3dc63a89f00ec5946262ffffb2e90718ad",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        432,
+        396,
+        480,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230750.png",
+      "source_sha256": "eb47aba93fe4fceae28ff46b7c406f3dc63a89f00ec5946262ffffb2e90718ad",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        480,
+        396,
+        528,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230750.png",
+      "source_sha256": "eb47aba93fe4fceae28ff46b7c406f3dc63a89f00ec5946262ffffb2e90718ad",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        528,
+        396,
+        576,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230811.png",
+      "source_sha256": "118c56633405a81417ab7319f093544ca2730fdf2b8f8b7367f069556b144fd0",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        576,
+        396,
+        624,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230811.png",
+      "source_sha256": "118c56633405a81417ab7319f093544ca2730fdf2b8f8b7367f069556b144fd0",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        624,
+        396,
+        672,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230811.png",
+      "source_sha256": "118c56633405a81417ab7319f093544ca2730fdf2b8f8b7367f069556b144fd0",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        672,
+        396,
+        720,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230818.png",
+      "source_sha256": "90227201ee8149eb43006c25a3e22318f80fe0ffc66a8a733988f3216a3a2991",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        720,
+        396,
+        768,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230818.png",
+      "source_sha256": "90227201ee8149eb43006c25a3e22318f80fe0ffc66a8a733988f3216a3a2991",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        768,
+        396,
+        816,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230818.png",
+      "source_sha256": "90227201ee8149eb43006c25a3e22318f80fe0ffc66a8a733988f3216a3a2991",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        816,
+        396,
+        864,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230830.png",
+      "source_sha256": "bed2b080c1212c32ec180c2a3181950dcd225166fae3a6ee0f215767c731e2e3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        864,
+        396,
+        912,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230830.png",
+      "source_sha256": "bed2b080c1212c32ec180c2a3181950dcd225166fae3a6ee0f215767c731e2e3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        912,
+        396,
+        960,
+        432
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230830.png",
+      "source_sha256": "bed2b080c1212c32ec180c2a3181950dcd225166fae3a6ee0f215767c731e2e3",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        0,
+        432,
+        48,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230838.png",
+      "source_sha256": "35e3b2c206ea3a25d6962593895d8e3ff4eca29ca32a27fb1af49672735c02d4",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        48,
+        432,
+        96,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230838.png",
+      "source_sha256": "35e3b2c206ea3a25d6962593895d8e3ff4eca29ca32a27fb1af49672735c02d4",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        96,
+        432,
+        144,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230838.png",
+      "source_sha256": "35e3b2c206ea3a25d6962593895d8e3ff4eca29ca32a27fb1af49672735c02d4",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        144,
+        432,
+        192,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230845.png",
+      "source_sha256": "955cd54ca22e85d3b345b2a22d45033619d6fbbcde45fb45c407ef1ebf8c64aa",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        192,
+        432,
+        240,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230845.png",
+      "source_sha256": "955cd54ca22e85d3b345b2a22d45033619d6fbbcde45fb45c407ef1ebf8c64aa",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        240,
+        432,
+        288,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230845.png",
+      "source_sha256": "955cd54ca22e85d3b345b2a22d45033619d6fbbcde45fb45c407ef1ebf8c64aa",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        288,
+        432,
+        336,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230857.png",
+      "source_sha256": "fdc62a3e9fa169b08165d55dc9b49a577a17d27d395335a9c50f1e628d31128d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        336,
+        432,
+        384,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230857.png",
+      "source_sha256": "fdc62a3e9fa169b08165d55dc9b49a577a17d27d395335a9c50f1e628d31128d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        384,
+        432,
+        432,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230857.png",
+      "source_sha256": "fdc62a3e9fa169b08165d55dc9b49a577a17d27d395335a9c50f1e628d31128d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        432,
+        432,
+        480,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230929.png",
+      "source_sha256": "db00e2b29a6d122a46b1962e9229cd5df0dc6fe04307019f9d0470549bc183ab",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        480,
+        432,
+        528,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230929.png",
+      "source_sha256": "db00e2b29a6d122a46b1962e9229cd5df0dc6fe04307019f9d0470549bc183ab",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        528,
+        432,
+        576,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230929.png",
+      "source_sha256": "db00e2b29a6d122a46b1962e9229cd5df0dc6fe04307019f9d0470549bc183ab",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        576,
+        432,
+        624,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230949.png",
+      "source_sha256": "e763e4ac0ee6df387daff9a3a1a169dd029d1d14d548f4c3ac50336e304c3615",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        624,
+        432,
+        672,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230949.png",
+      "source_sha256": "e763e4ac0ee6df387daff9a3a1a169dd029d1d14d548f4c3ac50336e304c3615",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        672,
+        432,
+        720,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230949.png",
+      "source_sha256": "e763e4ac0ee6df387daff9a3a1a169dd029d1d14d548f4c3ac50336e304c3615",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        720,
+        432,
+        768,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230957.png",
+      "source_sha256": "9a996f359eef7745d7b544e4b82b89584fbf7c7fc9e1f24f2c45a7678013c234",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        768,
+        432,
+        816,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230957.png",
+      "source_sha256": "9a996f359eef7745d7b544e4b82b89584fbf7c7fc9e1f24f2c45a7678013c234",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        816,
+        432,
+        864,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 230957.png",
+      "source_sha256": "9a996f359eef7745d7b544e4b82b89584fbf7c7fc9e1f24f2c45a7678013c234",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        864,
+        432,
+        912,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231004.png",
+      "source_sha256": "43491f1e4cec1eb88aef7efeee10aec4e52d54ccb6f82a35b336e60f4b16ed4f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        912,
+        432,
+        960,
+        468
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231004.png",
+      "source_sha256": "43491f1e4cec1eb88aef7efeee10aec4e52d54ccb6f82a35b336e60f4b16ed4f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        0,
+        468,
+        48,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231004.png",
+      "source_sha256": "43491f1e4cec1eb88aef7efeee10aec4e52d54ccb6f82a35b336e60f4b16ed4f",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        48,
+        468,
+        96,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231018.png",
+      "source_sha256": "370363383c866bc6058ef7fac4e92915abab323adccbe27bdbe81ffbcb82546a",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        96,
+        468,
+        144,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231018.png",
+      "source_sha256": "370363383c866bc6058ef7fac4e92915abab323adccbe27bdbe81ffbcb82546a",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        144,
+        468,
+        192,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231018.png",
+      "source_sha256": "370363383c866bc6058ef7fac4e92915abab323adccbe27bdbe81ffbcb82546a",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        192,
+        468,
+        240,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231025.png",
+      "source_sha256": "0aa7bba341aedb9845ec4f03c3051b81cd20de8b15d8da4482f4ed4198588d72",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        240,
+        468,
+        288,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231025.png",
+      "source_sha256": "0aa7bba341aedb9845ec4f03c3051b81cd20de8b15d8da4482f4ed4198588d72",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        288,
+        468,
+        336,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231025.png",
+      "source_sha256": "0aa7bba341aedb9845ec4f03c3051b81cd20de8b15d8da4482f4ed4198588d72",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        336,
+        468,
+        384,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231032.png",
+      "source_sha256": "2a948c8d348220debe9a66b5cb2401a295d699938854b87449a117dda3394d8a",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        384,
+        468,
+        432,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231032.png",
+      "source_sha256": "2a948c8d348220debe9a66b5cb2401a295d699938854b87449a117dda3394d8a",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        432,
+        468,
+        480,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231032.png",
+      "source_sha256": "2a948c8d348220debe9a66b5cb2401a295d699938854b87449a117dda3394d8a",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        480,
+        468,
+        528,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231039.png",
+      "source_sha256": "e64ff40f36472d9797113c5156e92a5f268b60f478c471460e3aab04297a2875",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        528,
+        468,
+        576,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231039.png",
+      "source_sha256": "e64ff40f36472d9797113c5156e92a5f268b60f478c471460e3aab04297a2875",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        576,
+        468,
+        624,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231039.png",
+      "source_sha256": "e64ff40f36472d9797113c5156e92a5f268b60f478c471460e3aab04297a2875",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        624,
+        468,
+        672,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231046.png",
+      "source_sha256": "cdc3214449b658d6b5ffc4230cea4a8433427da126c1ebfab884173f9fd34e05",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        672,
+        468,
+        720,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231046.png",
+      "source_sha256": "cdc3214449b658d6b5ffc4230cea4a8433427da126c1ebfab884173f9fd34e05",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        720,
+        468,
+        768,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231046.png",
+      "source_sha256": "cdc3214449b658d6b5ffc4230cea4a8433427da126c1ebfab884173f9fd34e05",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        768,
+        468,
+        816,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231052.png",
+      "source_sha256": "22bf8f2167fe792c9c30a2c3486585c752e6db83a1889c062dd8ab610794b765",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        816,
+        468,
+        864,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231052.png",
+      "source_sha256": "22bf8f2167fe792c9c30a2c3486585c752e6db83a1889c062dd8ab610794b765",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        864,
+        468,
+        912,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231052.png",
+      "source_sha256": "22bf8f2167fe792c9c30a2c3486585c752e6db83a1889c062dd8ab610794b765",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        912,
+        468,
+        960,
+        504
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231059.png",
+      "source_sha256": "bf4fbd44b7a489ff49c71abb25bc6a676b7737e7c6035c50d0c7568ccfde1adb",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        0,
+        504,
+        48,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231059.png",
+      "source_sha256": "bf4fbd44b7a489ff49c71abb25bc6a676b7737e7c6035c50d0c7568ccfde1adb",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        48,
+        504,
+        96,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231059.png",
+      "source_sha256": "bf4fbd44b7a489ff49c71abb25bc6a676b7737e7c6035c50d0c7568ccfde1adb",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        96,
+        504,
+        144,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231105.png",
+      "source_sha256": "f9e82153f75b8244c8b12f6a6259a86eb94c3d496e7bec6ea8a03a0b82755ddb",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        144,
+        504,
+        192,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231105.png",
+      "source_sha256": "f9e82153f75b8244c8b12f6a6259a86eb94c3d496e7bec6ea8a03a0b82755ddb",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        192,
+        504,
+        240,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231105.png",
+      "source_sha256": "f9e82153f75b8244c8b12f6a6259a86eb94c3d496e7bec6ea8a03a0b82755ddb",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        240,
+        504,
+        288,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231112.png",
+      "source_sha256": "1bb16713b631d1eec2a2cf10d338f48e97c500b9313257349af323c0f316a920",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        288,
+        504,
+        336,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231112.png",
+      "source_sha256": "1bb16713b631d1eec2a2cf10d338f48e97c500b9313257349af323c0f316a920",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        336,
+        504,
+        384,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231112.png",
+      "source_sha256": "1bb16713b631d1eec2a2cf10d338f48e97c500b9313257349af323c0f316a920",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        384,
+        504,
+        432,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231119.png",
+      "source_sha256": "8b761455e058dd88ed1ad7aeaf45993caf359ba300ca7d045b029b8723a41409",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        432,
+        504,
+        480,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231119.png",
+      "source_sha256": "8b761455e058dd88ed1ad7aeaf45993caf359ba300ca7d045b029b8723a41409",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Hairpin",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5753674633907857,
+      "margin": 0.084521,
+      "atlas_box": [
+        480,
+        504,
+        528,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 231119.png",
+      "source_sha256": "8b761455e058dd88ed1ad7aeaf45993caf359ba300ca7d045b029b8723a41409",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "aris_battle",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        528,
+        504,
+        576,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 234938.png",
+      "source_sha256": "6961c368628e80e8036834267c46db50cdbb0a11c03a9bee7d6d7c22113794ef",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mika",
+      "family": "Hat",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.6314494663241407,
+      "margin": 0.089221,
+      "atlas_box": [
+        576,
+        504,
+        624,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 234938.png",
+      "source_sha256": "6961c368628e80e8036834267c46db50cdbb0a11c03a9bee7d6d7c22113794ef",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mika",
+      "family": "Badge",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5416961996553931,
+      "margin": 0.08169,
+      "atlas_box": [
+        624,
+        504,
+        672,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 234938.png",
+      "source_sha256": "6961c368628e80e8036834267c46db50cdbb0a11c03a9bee7d6d7c22113794ef",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "mika",
+      "family": "Watch",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5520648649288344,
+      "margin": 0.072703,
+      "atlas_box": [
+        672,
+        504,
+        720,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-25 150559.png",
+      "source_sha256": "2567b7e717ac2099b01e6e382ac6dab73f7d27a49db4ab6f0427d04a529572bf",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "fuuka_new_year",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5830374706546319,
+      "margin": 0.077084,
+      "atlas_box": [
+        720,
+        504,
+        768,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-25 150559.png",
+      "source_sha256": "2567b7e717ac2099b01e6e382ac6dab73f7d27a49db4ab6f0427d04a529572bf",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "fuuka_new_year",
+      "family": "Badge",
+      "tier": "T10",
+      "slot": 2,
+      "expected_value": 70,
+      "observed_prediction": 70,
+      "score": 0.5416961996553931,
+      "margin": 0.08169,
+      "atlas_box": [
+        768,
+        504,
+        816,
+        540
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-06-25 150559.png",
+      "source_sha256": "2567b7e717ac2099b01e6e382ac6dab73f7d27a49db4ab6f0427d04a529572bf",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "fuuka_new_year",
+      "family": "Necklace",
+      "tier": "T10",
+      "slot": 3,
+      "expected_value": 40,
+      "observed_prediction": 40,
+      "score": 0.5504244358677439,
+      "margin": 0.086496,
+      "atlas_box": [
+        816,
+        504,
+        864,
+        540
+      ],
+      "review_status": "visual_verified"
+    }
+  ]
+}

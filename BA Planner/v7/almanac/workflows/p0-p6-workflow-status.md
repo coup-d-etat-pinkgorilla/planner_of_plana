@@ -10,6 +10,218 @@ sources:
 
 # P0-P6 Workflow Status
 
+### 2026-08-21 S3B generated-glyph template experiment added
+
+- Status: template provenance was audited after the user noted that v6 generated comparison cards
+  were built from background + equipment icon + rendered level text. No matcher implementation or
+  production flag changed; this entry records the next S3B experiment and acceptance boundary.
+- The current S3B binary bank is not the inventory-grid bank. It contains 54 byte-identical copies
+  from v6 `templates/equip{slot}level_digit{position}/`; 51 numeric files are loaded and three `v`
+  markers are excluded. These are equipment-menu, slot/position-specific assets, not student basic
+  detail-screen glyphs. The inventory `templates/inventory_count/` assets, fixed RGB mask, six-digit
+  geometry and `x`/`k` rules were not copied.
+- The user's accuracy concern is accepted: although the source is not the grid, reusing equipment-
+  menu digits across screens creates a domain mismatch in scale, antialiasing and placement. The
+  new real T1/T2 probe confirms it: centered single digits are split incorrectly, while 12/16/18
+  retain correct top-1 shapes but fall below the current confidence gates.
+- The v6/v7 generated path renders white text with a 1px `#505878` outline, -0.25 shear and bicubic
+  antialiasing after composing a 200x160 equipment card. The existing dark-ink extractor primarily
+  sees the navy outline rather than the white fill, so the outline must not be removed by assumption.
+- Decision: add an S3B generated-glyph experiment. Preserve the renderer's slot placement and quad
+  transform, but retain only the transformed text layer so background/icon pixels cannot enter the
+  binary template. Compare outline-only, fill+outline, and fill-only variants against the current
+  menu bank and the existing full-composite generated matcher. Outline-only is the lead hypothesis,
+  not an accepted production choice.
+- Single digits must be parsed from the full level ROI with a foreground bounding box or connected
+  component; only detected two-component glyphs may be split into digit positions. Template and
+  threshold calibration data must remain separate from the frozen validation sets. Promotion still
+  requires zero false positives when replaying the prior 316 accepted pairs plus 18 new probes,
+  exact non-Lv70 1280x720 repeats, fallback/performance measurements and explicit master acceptance.
+
+### 2026-08-21 S3B production-promotion probe remains shadow-only
+
+- Status: six new exact 2560x1440 screenshots were added to the read-only BA archive. They provide
+  three independent student repeats of T1 levels 1/8/9 and three repeats of T2 levels 12/16/18.
+  This closes the requested *sample availability* gap for position-2 digits 2/6/8 and a real
+  single-digit layout, but it does not pass the matcher gate.
+- On the nine T1 ROIs the current fixed two-cell split did not model the centered one-digit layout.
+  Candidate pairs were 15/31/45, 15/38/47 and 12/38/47 instead of 1/8/9, so 0/9 level pairs were
+  acceptable. The existing synthetic blank test is therefore not evidence for a real blank.
+- On the nine T2 ROIs the top-1 candidates were 12/16/18 on all three repeats, but 0/9 passed the
+  current score/margin gate. Scores were 0.488096-0.499431, below the 0.52 threshold; the 16 and 18
+  samples also had margins 0.019369-0.034806 below the 0.04 margin gate. Global thresholds must not
+  be lowered because that would overlap the previously accepted archive boundary.
+- The end-to-end runtime gate accepted student ID/family/tier only for the two Saori (Swimsuit)
+  captures (6/18 ROIs). Niko and Kurumi were below the student matcher gate on four captures
+  (score 0.788055-0.798752, margin 0.004795-0.006418), so their recognition templates must be added
+  and independently checked before these screens can count as production end-to-end evidence.
+- The archive analyzer was corrected to read icon tier whenever the student family is known, before
+  applying the binary level gate, matching production runtime order. This separates tier success
+  from binary rejection on low-tier samples.
+- Decision: `binary_production_enabled` stays false; generated/menu fallback and S4/S5 remain
+  unchanged. Promotion now requires a center-aware single-digit parser with real 1/8/9 support,
+  improved real-sample normalization/templates for 12/16/18 without threshold relaxation, Niko and
+  Kurumi student assets for end-to-end repeats, a zero-false-positive replay of all accepted and new
+  probes, and non-Lv70 exact 1280x720 repeats. An explicit master acceptance decision remains last.
+
+### 2026-08-21 S3B screenshot archive validation complete
+
+- Status: the user supplied `C:\Users\brigh\Pictures\Screenshots\BA` as an additional read-only
+  validation source. Its 194 PNGs were inventoried and screened through the runtime order of student
+  ID, metadata family, icon tier, then binary shadow level. S4/S5 and production behavior remain
+  untouched.
+- The archive contains 179 exact 2560x1440 images plus 15 nonstandard/cropped dimensions. The
+  runtime gates produced 298 eligible equipment ROIs from 116 screenshots, 64 students, all three
+  slots, all T1-T10 tiers, and nine equipment families. Every eligible ROI was enlarged 4x on seven
+  opaque-RGB contact sheets and visually checked against its printed prediction.
+- All 298 archive level pairs matched. Observed values are 10, 20, 21, 30, 37, 40, 43, 45, 50,
+  54, 55, 59, 60, 65 and 70. Position 1 now covers every valid tens digit 1-7; position 2 covers
+  0/1/3/4/5/7/9. Score range is 0.521064-0.650632 and margin range is 0.043264-0.117650.
+- A compact 960x540 ROI atlas and 298-record manifest preserve source filename/SHA-256,
+  student/family/tier/slot, visual ground truth, score/margin and atlas coordinates under
+  `backend/tests/fixtures/student_equipment_s3b_archive/`. The atlas replays 298/298 in a focused
+  test without copying archive screenshots into runtime assets.
+- Combined with the accepted Mika/Hibiki smoke data, S3B now has 316/316 correct level pairs and
+  632/632 correct digit cells with committed false positives 0. This materially narrows but does not
+  close the production gate: position-2 digits 2/6/8, actual single-digit blank, and broader
+  non-Lv70 1280x720 evidence remain missing. `binary_production_enabled` therefore stays false and
+  the generated/menu fallback remains unchanged.
+- Next action: review the separate archive-validation handoff. Production promotion requires the
+  remaining independent samples and an explicit acceptance decision; S4 still requires separate
+  user direction.
+
+### 2026-08-21 student equipment binary matcher S3B implementation complete
+
+- Status: the user-directed S3B implementation, shadow evidence, metrics, fixtures, benchmark and
+  handoff are complete. Production promotion is deliberately not approved because independent real
+  0-9 plus blank coverage is still missing. S4/S5 remain untouched.
+- The accepted S3 decision remains the safety baseline: binary observations cannot commit candidate
+  values until independent real 0-9 plus blank coverage exists, and uncertain observations continue
+  through the small-ROI generated matcher and unresolved-only one-menu fallback.
+- `PreparedBinaryGlyph` stores each 20x28 glyph as a compact Python integer bitset. The recognizer
+  prepares 51 existing equipment-menu digit templates once (3,570 binary bytes), extracts the basic
+  screen with the equipment adaptive dark-ink mask, and ranks slot/position candidates using 75%
+  IoU plus 25% normalized binary correlation. Exact alignment precedes conditional +/-1px retry.
+- The result is exposed as `equipment_binary_shadow` evidence before the accepted empirical/generated
+  paths. Its status is `shadow`, so even a value-bearing observation is never `confirmed`, never
+  enters payload values, and never suppresses the unresolved-only one-menu fallback.
+- Mika/Hibiki 1280x720 Lv70 data produced 18/18 level pairs and 36/36 digit cells with committed
+  false positives 0. Cold startup was 26.38ms including 25.10ms template preparation; a warm
+  three-slot frame measured p50 1.264ms and p95 1.450ms. Binary shadow left menu calls at 6/6 by
+  design, generated cache entries at 0, and full-size reference canvases at 0.
+- Nine S3B tests and the combined 35-test S2/S3/S3B/asset/stdio set pass. The full 195-test run has
+  the same eight out-of-scope generated metadata failures as S3: seven stat lookups for missing
+  Aru/Eimi/Kotama `schaledb_id` mappings and one Hoshino gift assertion. No affected generated file
+  was changed by S3B.
+- Remaining `MASTER_REQUIRED` gates are independent real digits 1-6/8/9, a real single-digit blank,
+  broader slot/tier/family/resolution repeats, and a completed confusion matrix before selecting
+  production thresholds. Next action is review the separate S3B handoff; S4 still requires explicit
+  user direction after acceptance.
+
+### 2026-08-21 student equipment binary matcher S3B added to workflow
+
+- Status: the user approved adding a post-S3 binary-matcher slice. S3 remains complete and its
+  generated matcher plus unresolved-only one-menu fallback remain the accepted safety baseline.
+  S3B is specified but not implemented. S4/S5 remain untouched and S4 now waits for S3B master
+  acceptance.
+- Read-only exploration on the accepted live dataset established the boundary. Directly applying
+  the inventory grid's fixed `#2D4663` mask and inventory digit templates to Mika equipment cells
+  found only 0-5 ink pixels and effectively zero IoU, so direct template/geometry reuse is rejected.
+- The viable hybrid uses the equipment adaptive dark-ink mask, 20x28 canonical glyphs, existing
+  equipment-menu slot/position binary masks, and grid-style IoU. Across three Mika and three Hibiki
+  1280x720 frames it ranked the expected `7`/`0` first in all 36 cells; score range was
+  0.459459-0.631818 and margin range 0.054173-0.080536.
+- This is feasibility evidence only because it covers T10/Lv70 and digits 7/0 at one resolution.
+  S3B must begin in shadow mode, collect independent 0-9 plus blank coverage, forbid template/test
+  leakage, and require committed false positives of zero before production promotion. Threshold,
+  ROI and confusion-pair tuning remain evidence-gated.
+- Approved order: `empty/locked -> family/tier -> binary -> small-ROI generated -> one-menu`.
+  Existing fallback is never removed by S3B; low confidence/margin and invalid tier-level pairs fall
+  through. No OpenCV/numpy runtime dependency or wholesale v6 inventory matcher copy is approved.
+- New session input: `docs/migration/student-scan-v7-session-s3b-input.md`. The workflow page now
+  records S3B implementation/data/performance gates. Next action is start S3B only on explicit user
+  direction, then update this status and produce a separate handoff before S4.
+
+### 2026-08-21 student scan S3 master validation complete
+
+- Status: S3 implementation and its master-only validation are complete. S4/S5 were not changed.
+  The former `MASTER_REQUIRED` gates are superseded by the executable v6 baseline and live evidence
+  below; the S3 benchmark now has an empty `master_required` list.
+- A disposable dependency-complete v6 environment reproduced the original OpenCV generated-RGB
+  T10/Lv70 result: cold 902.38ms, warm p50 58.54ms, warm p95 62.03ms, 70 full-screen candidate
+  cache misses, and 774,144,000 theoretical candidate RGB bytes. The environment was removed after
+  the raw JSON and offline runner were retained in v7; there is still no v6 runtime import.
+- Live Windows-client evidence at 1280x720/100% UI scale contains three stable repeats each for Mika
+  basic equipment, Mika's shared equipment-growth menu, and Hibiki favorite equipment. Mika visually
+  confirms Hat/Badge/Watch T10/Lv70 and Hibiki confirms favorite T2. Contract-shaped full-screen
+  copies and metadata remain under `student_equipment_s3_dataset/live_1280x720/`, separate from
+  runtime recognition assets.
+- On the same Mika answer set, v6 basic generated-RGB resolved slot1 Lv70 and conservatively fell
+  back on slots2/3; the v7 basic reader resolved all three T10 tiers but left all levels uncertain;
+  the one shared menu frame resolved all three Lv70 values on all three repeats. Hibiki favorite T2
+  resolved on all three repeats at confidence 0.854468 and margin 0.120613. No false level value was
+  committed by either path.
+- Decision: retain basic tier/favorite recognition, the conservative small-ROI level attempt, and
+  unresolved-only one-menu fallback. Do not retune empirical thresholds, ROI geometry, digit-pair
+  corrections, or storage from one real T10/Lv70 condition. Retain the bounded in-memory prepared
+  bundle; broader T1-T9/non-70, favorite T1, and resolution/UI-scale data is future calibration
+  coverage, not an unfinished S3 decision.
+- The warm matcher now evaluates the exact alignment first and allocates the +/-1px variants only
+  after an uncertain first pass. The final v7 benchmark is cold 141.61ms, warm p50 18.54ms and p95
+  19.85ms: 6.37x faster cold and 3.16x faster warm than the reproduced v6 run. The one-pixel-shift
+  regression remains exact, the compact cache remains bounded at 140 entries/658,000 bytes, and the
+  full-size reference-canvas counter remains zero.
+- Verification: all 15 S3 tests and the updated real-process 1,112-asset readiness test pass;
+  Python compile, `git diff --check`, CodeAlmanac validate, and CodeAlmanac health pass. A full
+  186-test run exposed eight pre-existing generated-data failures outside S3: seven stat-catalog
+  lookups cannot resolve Aru/Eimi/Kotama because current `student_meta_data.py` lacks their
+  `schaledb_id`, and the gift metadata test likewise sees no Hoshino `schaledb_id`. Those tracked
+  data files have no S3 diff and were not altered. The one S3-related stale asset-count assertion
+  found by that run was updated to 1,112 and passes in isolation.
+- Final handoff: `docs/migration/student-scan-v7-session-s3-handoff/output.md`. Next action is S3
+  review/acceptance; do not start S4 without a separate user direction.
+
+### 2026-08-21 student scan parity and stat validation S3 implementation complete
+
+- Status: the user accepted the S2 handoff by directing S3 to start. S3 implementation and Python
+  verification are complete; acceptance and the dataset-dependent measurement decisions below are
+  pending. S4 relationship OCR/stat mismatch evidence and S5 Flutter review work were not changed.
+- The v6 behavioral baseline has been re-read at `read_equipment()`,
+  `_read_basic_equipment_slot()`, the basic-equipment matcher functions, the prepared inventory-mask
+  flow, and the four required regression suites. The retained semantics are level-locked slots,
+  empty-dot short-circuiting, metadata-restricted equipment families, icon tier recognition,
+  tier/level compatibility, favorite empty/locked/T1/T2, and one shared menu capture for unresolved
+  slots.
+- `student_equipment_recognizer.py` is the v7-specific small module. It short-circuits locked and
+  empty slots, restricts icons to the student's metadata family, validates T1-T10 tier/level pairs,
+  recognizes favorite empty/locked/T1/T2, and prepares RGB/gray/edge plus dark-ink glyph features.
+  The 384-entry LRU owns compact cells only. Its generated fallback composes one cached 200x160 card
+  and transforms directly to the 48x36 ROI; the full-size reference-canvas counter remains zero.
+- Production wiring now opens the equipment menu only when the basic frame leaves slots unresolved,
+  waits for one stable menu frame shared by those slots, scans no resolved neighbor, closes the menu,
+  and discards the capture. Confirmed menu levels train at most four session-local basic glyph samples
+  per slot/position/digit; a classifier needs competing labels before using that calibration.
+- The version-1 S3 manifest adds 99 recognition artifacts (3,351,020 bytes): one dedicated bold font,
+  one card background, menu regions with open/close controls, favorite templates, menu tier/flag/digit
+  templates. Existing inventory equipment icons are reused inside the recognition catalog without
+  mixing them with Flutter runtime UI assets.
+- Final benchmark on the accepted machine: catalog verification plus cold start 0.62s; real Serika
+  empty/locked fast path 0.29ms; T10 Lv70 small-ROI cold 210.10ms; warm p50 67.01ms and p95 69.63ms
+  over 20 samples. The answer stayed Lv70, 70 cards produced 140 prepared cached cells, peak cache
+  payload was 658,000 bytes, and no 2560x1440 candidate canvas was created. Twelve same-generator
+  level answers, ten tier answers, one-pixel shift, digit/blank confusion, and the three real slot
+  states were exact; those synthetic results are not claimed as real-capture accuracy.
+- The accepted real answer set has only empty slot1/2, level-locked slot3, and unsupported favorite
+  evidence. Therefore empirical thresholds, ROI revision, digit-pair correction, atlas/pack choice,
+  and fallback removal remain `MASTER_REQUIRED`. The v6 OpenCV cold/warm path could not be rerun in
+  this environment because v7 has no OpenCV/numpy and v6 has no isolated environment; the historical
+  0.9-1.05s cold / 52ms warm values remain explicitly historical rather than a reproduced result.
+- Verification: 25 focused S2/S3/production/asset tests and all 182 backend tests passed. Asset
+  readiness reports 1,112 files; Python compile, `git diff --check`, CodeAlmanac validate, and
+  CodeAlmanac health passed. The handoff is under
+  `docs/migration/student-scan-v7-session-s3-handoff/`. Next action is master review, collection of
+  contract-complete real equipped/favorite/menu captures, and S3 acceptance; S4 must not start first.
+
 ### 2026-08-21 student scan parity and stat validation S2 complete
 
 - Status: the user accepted the S1 snapshot by directing S2 to start. S2 headless student basic-info

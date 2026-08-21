@@ -1,0 +1,993 @@
+{
+  "version": 1,
+  "source_version": "student-equipment-s3-2026-08-21",
+  "assets": [
+    {
+      "path": "regions/student_equipment_regions.json",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-regions",
+      "required": true,
+      "bytes": 1835,
+      "sha256": "9989c96a85c9414d1456f07bc5abe4a1d739f3ce2b7264cc38616d41465479bc",
+      "source_path": "../v6/regions/student_equipment_regions.json"
+    },
+    {
+      "path": "templates/student_equipment/card_background.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-card-background",
+      "required": true,
+      "bytes": 33517,
+      "sha256": "b86f0e8119d0bc08c5a65c623521ad4fc5a4f9782e182e36ec807c83fc598694",
+      "source_path": "../v6/templates/icons/temp/square.png"
+    },
+    {
+      "path": "templates/student_equipment/equipment_level_bold.ttf",
+      "scan_kind": "student",
+      "purpose": "student-equipment-font",
+      "required": true,
+      "bytes": 3118992,
+      "sha256": "f490194d9bf161f70076d01c9fb0a24d0019a324102de46c5fef579188ee96e6",
+      "source_path": "../v6/gui/font/경기천년제목_Bold.ttf"
+    },
+    {
+      "path": "templates/student_equipment/favorite/equip4_T1.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-favorite-template",
+      "required": true,
+      "bytes": 902,
+      "sha256": "10dcbbc72bcafbb3e3f0ae1ef7411133f546371982b532741e296623f4b80d53",
+      "source_path": "../v6/templates/equip4_basic/equip4_T1.png",
+      "equipment_value": "T1"
+    },
+    {
+      "path": "templates/student_equipment/favorite/equip4_T2.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-favorite-template",
+      "required": true,
+      "bytes": 1042,
+      "sha256": "e47b5e988a85649a15e81e1026162cc0749fbf0c829e8b2dca8633bb133f5941",
+      "source_path": "../v6/templates/equip4_basic/equip4_T2.png",
+      "equipment_value": "T2"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1/equip1_T1.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 2922,
+      "sha256": "4d459e51d9dc0b0109a1cb63b8613a92d42712c4faf6aee17e4fc070e0821771",
+      "source_path": "../v6/templates/equip1/equip1_T1.png",
+      "equipment_value": "1:T1"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1/equip1_T10.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 7922,
+      "sha256": "ca8eb33b239fd896dddff963cfa70182a8668fb61474f875001d95bf539b2889",
+      "source_path": "../v6/templates/equip1/equip1_T10.png",
+      "equipment_value": "1:T10"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1/equip1_T2.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3168,
+      "sha256": "f7e6d8855405a722227a7723199057a0b23f66f519b579fc9e398384285dd912",
+      "source_path": "../v6/templates/equip1/equip1_T2.png",
+      "equipment_value": "1:T2"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1/equip1_T3.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3276,
+      "sha256": "214056dfc774c0a927d924a9af3c949bd24eba98c307273fd5280606151ca382",
+      "source_path": "../v6/templates/equip1/equip1_T3.png",
+      "equipment_value": "1:T3"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1/equip1_T4.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3135,
+      "sha256": "b15c5fffd52c78716be2a1af39623088a62932ff06f4051f30730992fe4e8f7f",
+      "source_path": "../v6/templates/equip1/equip1_T4.png",
+      "equipment_value": "1:T4"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1/equip1_T5.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3150,
+      "sha256": "e4b5ac5f8f1793a5447e9e2d3fc2e0a390f0f0b1334da45b84eb5b500de66d61",
+      "source_path": "../v6/templates/equip1/equip1_T5.png",
+      "equipment_value": "1:T5"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1/equip1_T6.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3363,
+      "sha256": "fb64ded3a8bc5bc7de8558e538ed904cc8b45e5e87909930014e5772739d777f",
+      "source_path": "../v6/templates/equip1/equip1_T6.png",
+      "equipment_value": "1:T6"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1/equip1_T7.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3002,
+      "sha256": "1e01f0d02d99d42cfad843f9861cfb698ace59c3741a4aab3bba697d7273d3bf",
+      "source_path": "../v6/templates/equip1/equip1_T7.png",
+      "equipment_value": "1:T7"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1/equip1_T8.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3433,
+      "sha256": "1ef98396696fbaa2abbed9227786552182f3761eaedb9f90a41d21c3fd7376e6",
+      "source_path": "../v6/templates/equip1/equip1_T8.png",
+      "equipment_value": "1:T8"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1/equip1_T9.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3353,
+      "sha256": "d718a1554e483db75c5fa20c87e3dea3c2cbd53faa9f6d97c99ca0267b58b3e9",
+      "source_path": "../v6/templates/equip1/equip1_T9.png",
+      "equipment_value": "1:T9"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1_flag/equip1_empty.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-flag-template",
+      "required": true,
+      "bytes": 3864,
+      "sha256": "f5e953a14bfbe5c7576a1de35ab5cce794bc927951b535184d6d516b06e31f8d",
+      "source_path": "../v6/templates/equip1_flag/equip1_empty.png",
+      "equipment_value": "1:empty"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit1/1_1.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 350,
+      "sha256": "e2072efc7d69eeeff4fc107f05bda79234ea4ef38547a02e2cc0ccaed85dbce1",
+      "source_path": "../v6/templates/equip1level_digit1/1_1.png",
+      "equipment_value": "1:1:1"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit1/1_2.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 858,
+      "sha256": "4071a18347b76673e0b9036a74dee4f88bf89ba0fdd739880e6e9fb1f360aee4",
+      "source_path": "../v6/templates/equip1level_digit1/1_2.png",
+      "equipment_value": "1:1:2"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit1/1_3.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 965,
+      "sha256": "6d0da3654c68f2d0ee2e0106529caa2dee9fd1fa380e36445b6c5a6c5b8d963a",
+      "source_path": "../v6/templates/equip1level_digit1/1_3.png",
+      "equipment_value": "1:1:3"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit1/1_4.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 649,
+      "sha256": "3c5220ec371c5ab4e9b0f15d20258563b7350e0d0ac225da601944ef96d6a067",
+      "source_path": "../v6/templates/equip1level_digit1/1_4.png",
+      "equipment_value": "1:1:4"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit1/1_5.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 750,
+      "sha256": "13cd55701027d8bbc1aa91bf749bc1cdf62382724040566ce31b50318e9becfc",
+      "source_path": "../v6/templates/equip1level_digit1/1_5.png",
+      "equipment_value": "1:1:5"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit1/1_6.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1021,
+      "sha256": "cb2d5051e56b810ac6c8bc3c3a2f6bde5e4adb0c8ca8e84d62d2136057c2bdee",
+      "source_path": "../v6/templates/equip1level_digit1/1_6.png",
+      "equipment_value": "1:1:6"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit1/1_7.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1231,
+      "sha256": "ef84796d61e0521b973fddfd40ccc6f84015c668c44d07b4272d0c8d696f827a",
+      "source_path": "../v6/templates/equip1level_digit1/1_7.png",
+      "equipment_value": "1:1:7"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit1/1_v.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 513,
+      "sha256": "c310cef8719bbb353c7e17b1479558ee3d6be8f71d3ec62a8d0821b43b6607aa",
+      "source_path": "../v6/templates/equip1level_digit1/1_v.png",
+      "equipment_value": "1:1:v"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit2/2_0.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1330,
+      "sha256": "56930d642a2dee52dde64f9414b9f17e6875160d37e93947449aa2a704449470",
+      "source_path": "../v6/templates/equip1level_digit2/2_0.png",
+      "equipment_value": "1:2:0"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit2/2_1.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 371,
+      "sha256": "fe8a8581fc1d8e83ba098f5ba19b49a1068a15c934a9e5f5f6b41f521e53cdd2",
+      "source_path": "../v6/templates/equip1level_digit2/2_1.png",
+      "equipment_value": "1:2:1"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit2/2_2.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 834,
+      "sha256": "352ed9e2aeab896f426b2198b9cefcc8fcd5dae388114dedeb1f17153e15bef8",
+      "source_path": "../v6/templates/equip1level_digit2/2_2.png",
+      "equipment_value": "1:2:2"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit2/2_3.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 975,
+      "sha256": "e8e3eaf4fdeef2922bd3b376d766cc507ee3ea0971125749e1ca38f74674bc75",
+      "source_path": "../v6/templates/equip1level_digit2/2_3.png",
+      "equipment_value": "1:2:3"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit2/2_4.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 633,
+      "sha256": "9ae7c139ecd5bd8cc8b4d721e5bd9065485743593ea86e3a1f7d5fb891223623",
+      "source_path": "../v6/templates/equip1level_digit2/2_4.png",
+      "equipment_value": "1:2:4"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit2/2_5.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 761,
+      "sha256": "517bfe9662ee074334226066fc98d3fbd24577460357d8d9ca92caeddc4d4f4d",
+      "source_path": "../v6/templates/equip1level_digit2/2_5.png",
+      "equipment_value": "1:2:5"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit2/2_6.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1079,
+      "sha256": "6d6ec65fab9c72cdf897cbbcf4f553b70e4e02cddb56094bf52b0593379cbb72",
+      "source_path": "../v6/templates/equip1level_digit2/2_6.png",
+      "equipment_value": "1:2:6"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit2/2_7.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 645,
+      "sha256": "9f2760adaa54790cfe522bbcefff12af46189cd443811e33c31854e9450ad430",
+      "source_path": "../v6/templates/equip1level_digit2/2_7.png",
+      "equipment_value": "1:2:7"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit2/2_8.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1189,
+      "sha256": "46e81462bd3fc51f4d8271643bcad14a46f1cb14fdbf633fb0e3bf85257167a7",
+      "source_path": "../v6/templates/equip1level_digit2/2_8.png",
+      "equipment_value": "1:2:8"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip1level_digit2/2_9.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1027,
+      "sha256": "119593a44a7e49ab08f463e970711bfb842bcc3522381ed71e830bf1b72c3d6c",
+      "source_path": "../v6/templates/equip1level_digit2/2_9.png",
+      "equipment_value": "1:2:9"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2/equip2_T1.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3021,
+      "sha256": "e015d4d4d867e9cc8de6eb18e625c52bb7cf853a42c11a27a471d6bb18a8e6d4",
+      "source_path": "../v6/templates/equip2/equip2_T1.png",
+      "equipment_value": "2:T1"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2/equip2_T10.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 8162,
+      "sha256": "379ec282e3fab11927f0a6e722415939dd742cf896b35a7337d0b36f2d0ac066",
+      "source_path": "../v6/templates/equip2/equip2_T10.png",
+      "equipment_value": "2:T10"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2/equip2_T2.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3258,
+      "sha256": "2d843a88a5ef1231950dcc05c9a2a01ef0b0f8163a0928575fa200f7330a4914",
+      "source_path": "../v6/templates/equip2/equip2_T2.png",
+      "equipment_value": "2:T2"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2/equip2_T3.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3372,
+      "sha256": "bb6749009a4b3a2ff45a96d03a9568cf930bc2f3bb9f9956c96e6ff6efac46df",
+      "source_path": "../v6/templates/equip2/equip2_T3.png",
+      "equipment_value": "2:T3"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2/equip2_T4.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3252,
+      "sha256": "f8f8a20798b2ebee48a32ccf4a11a2dd8f21f2aea031274627495072805dbed8",
+      "source_path": "../v6/templates/equip2/equip2_T4.png",
+      "equipment_value": "2:T4"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2/equip2_T5.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3235,
+      "sha256": "7402544af22a6fdf38ce3f577761679714b666d25b581408badae6eef05c48ce",
+      "source_path": "../v6/templates/equip2/equip2_T5.png",
+      "equipment_value": "2:T5"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2/equip2_T6.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3451,
+      "sha256": "43cbef37d42588d344a5884f1f0ab9cd2184df822c858ce097259522aa6d5068",
+      "source_path": "../v6/templates/equip2/equip2_T6.png",
+      "equipment_value": "2:T6"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2/equip2_T7.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3108,
+      "sha256": "eb60c734f752b70d3a47d22769340074339892cc79041af313c51b14e0e9b99f",
+      "source_path": "../v6/templates/equip2/equip2_T7.png",
+      "equipment_value": "2:T7"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2/equip2_T8.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3504,
+      "sha256": "495946bf20f2a2e1231497ca8e8e8802b819d500c26d93e29bfb41e79f0c23ac",
+      "source_path": "../v6/templates/equip2/equip2_T8.png",
+      "equipment_value": "2:T8"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2/equip2_T9.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3404,
+      "sha256": "27bc475398ac12cd3742449c438ce55a227fc2b452c4a01fabaa42086e25bcf4",
+      "source_path": "../v6/templates/equip2/equip2_T9.png",
+      "equipment_value": "2:T9"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2_flag/equip2_empty.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-flag-template",
+      "required": true,
+      "bytes": 3914,
+      "sha256": "792eaab51723f1f20a2e1e071b8be198d13130d8e0737e91f2a2027b4c464ca0",
+      "source_path": "../v6/templates/equip2_flag/equip2_empty.png",
+      "equipment_value": "2:empty"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2_flag/equip2_level_locked.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-flag-template",
+      "required": true,
+      "bytes": 4067,
+      "sha256": "dbf94d5da3eab00ba1e7c7949550956cace8642e1bc5d1940e696c9ff99feafb",
+      "source_path": "../v6/templates/equip2_flag/equip2_level_locked.png",
+      "equipment_value": "2:level_locked"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit1/1_1.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 351,
+      "sha256": "f2b644b8ebe184849f5755d661582e63394e2003b62dc549d2666b2413fb03ee",
+      "source_path": "../v6/templates/equip2level_digit1/1_1.png",
+      "equipment_value": "2:1:1"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit1/1_2.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 850,
+      "sha256": "568e0a271dee3ca8bcf6152618d1dc0119ae528337a348863ed38748c8cf7495",
+      "source_path": "../v6/templates/equip2level_digit1/1_2.png",
+      "equipment_value": "2:1:2"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit1/1_3.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 994,
+      "sha256": "dc59591d8edbb850f009e61d67da3617f9eeac837776be3bf5fcd530d1d0691d",
+      "source_path": "../v6/templates/equip2level_digit1/1_3.png",
+      "equipment_value": "2:1:3"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit1/1_4.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 667,
+      "sha256": "4bdcb3dc3da2ac8b75d4e2851ea6268284717113e8c3d2156c152ecf8e95aa24",
+      "source_path": "../v6/templates/equip2level_digit1/1_4.png",
+      "equipment_value": "2:1:4"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit1/1_5.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 783,
+      "sha256": "0470d85a2697faec0bbf4b600943e402f900caeba3b64efa76a7f8c872579597",
+      "source_path": "../v6/templates/equip2level_digit1/1_5.png",
+      "equipment_value": "2:1:5"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit1/1_6.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1051,
+      "sha256": "1fdc303f5f1fb373db7a926d83f01bf08b59f7946bb49a5cc1522fbb375a6e22",
+      "source_path": "../v6/templates/equip2level_digit1/1_6.png",
+      "equipment_value": "2:1:6"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit1/1_7.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1276,
+      "sha256": "34cd412e3c22ab1f950ddca82e27695550fc78b70db276e19854fed029ad2972",
+      "source_path": "../v6/templates/equip2level_digit1/1_7.png",
+      "equipment_value": "2:1:7"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit1/1_v.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 567,
+      "sha256": "0c4b2f347b7d82be501c89cc71dbff47ab341581d8e964fb21b7784ffbea6f95",
+      "source_path": "../v6/templates/equip2level_digit1/1_v.png",
+      "equipment_value": "2:1:v"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit2/2_0.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1227,
+      "sha256": "7963063e9041dd113adac1f67af8092e1e9db6ea986a233a6695a33969c15982",
+      "source_path": "../v6/templates/equip2level_digit2/2_0.png",
+      "equipment_value": "2:2:0"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit2/2_1.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 351,
+      "sha256": "7c716c5692a5826486ed016fa59a9fcf0d527a9c0f684aabfe979da0c02470a3",
+      "source_path": "../v6/templates/equip2level_digit2/2_1.png",
+      "equipment_value": "2:2:1"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit2/2_2.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 804,
+      "sha256": "c6bc6792e27f2df9d6b2b4683eb0cbebec832b373ee42225d8969bfb67b36964",
+      "source_path": "../v6/templates/equip2level_digit2/2_2.png",
+      "equipment_value": "2:2:2"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit2/2_3.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 947,
+      "sha256": "cc3c72f1814098938d1fd5d756322625153ab051388dc604af8b2e1d08f50a4a",
+      "source_path": "../v6/templates/equip2level_digit2/2_3.png",
+      "equipment_value": "2:2:3"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit2/2_4.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 606,
+      "sha256": "23f817dedd7f0630db3f9b3bf644f43e66ad71a0da2a9c63bdc56358f1c3ca54",
+      "source_path": "../v6/templates/equip2level_digit2/2_4.png",
+      "equipment_value": "2:2:4"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit2/2_5.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 766,
+      "sha256": "ac2692501eb575c61ece9449fb8f79a5027bfafd51e74e93510743636953f0fe",
+      "source_path": "../v6/templates/equip2level_digit2/2_5.png",
+      "equipment_value": "2:2:5"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit2/2_6.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1032,
+      "sha256": "0c0921ffef7687b9695962e1276ff10c9f00b0a1df43682b9b97699d60496067",
+      "source_path": "../v6/templates/equip2level_digit2/2_6.png",
+      "equipment_value": "2:2:6"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit2/2_7.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 626,
+      "sha256": "177a9e61f13b7f31fde77eef6fcee3b172456cdd5f55bbfec68c29b8948f3759",
+      "source_path": "../v6/templates/equip2level_digit2/2_7.png",
+      "equipment_value": "2:2:7"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit2/2_8.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1141,
+      "sha256": "533f2c20b884794fb10a2210f237fa38a556b56417eb98d388668b232ac958d5",
+      "source_path": "../v6/templates/equip2level_digit2/2_8.png",
+      "equipment_value": "2:2:8"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip2level_digit2/2_9.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 997,
+      "sha256": "c41dffff2e28fb3b16a815c551e7af42ff668137a98b0ce7b40e244e4edc8933",
+      "source_path": "../v6/templates/equip2level_digit2/2_9.png",
+      "equipment_value": "2:2:9"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3/equip3_T1.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3052,
+      "sha256": "b6b93e6e6aeccf75b5a037c88755327d87dabace70822c6d50bf82f6899c546f",
+      "source_path": "../v6/templates/equip3/equip3_T1.png",
+      "equipment_value": "3:T1"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3/equip3_T10.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 8103,
+      "sha256": "c28b021bfbeed18e72b8cb2fbcdf60e51baf19f756c0ef74469589d29678f7e3",
+      "source_path": "../v6/templates/equip3/equip3_T10.png",
+      "equipment_value": "3:T10"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3/equip3_T2.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3287,
+      "sha256": "1e9bf39493fff799de992925ab6fa5ff86fd22034a3694dc62f3aa35b9665a9e",
+      "source_path": "../v6/templates/equip3/equip3_T2.png",
+      "equipment_value": "3:T2"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3/equip3_T3.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3385,
+      "sha256": "c8a2654009c38a4ea342882d77649c060d9dd3a70c198d8d820ca937603d1307",
+      "source_path": "../v6/templates/equip3/equip3_T3.png",
+      "equipment_value": "3:T3"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3/equip3_T4.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3253,
+      "sha256": "4c81062047f5b25bf218c63ad1469a81028b80231faae48f6cac776499e9f4ca",
+      "source_path": "../v6/templates/equip3/equip3_T4.png",
+      "equipment_value": "3:T4"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3/equip3_T5.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3289,
+      "sha256": "a8ef099c7e6a05ab31c28fae01bd2042aae2e7d0d3bf799d9954e6c93c426075",
+      "source_path": "../v6/templates/equip3/equip3_T5.png",
+      "equipment_value": "3:T5"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3/equip3_T6.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3445,
+      "sha256": "f5eb61958d86000b43d68dc97ffc4922daba5b8ec1bf96449780a754f778db9d",
+      "source_path": "../v6/templates/equip3/equip3_T6.png",
+      "equipment_value": "3:T6"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3/equip3_T7.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3137,
+      "sha256": "e5ce92ec1443b4cbb551d1f0fc07921d63834244e8808864d6a0e83ac43f27d8",
+      "source_path": "../v6/templates/equip3/equip3_T7.png",
+      "equipment_value": "3:T7"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3/equip3_T8.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3545,
+      "sha256": "885fccbe997ea8c572554bbf1d28591fd168d582154d62f05ee089664f78c5f9",
+      "source_path": "../v6/templates/equip3/equip3_T8.png",
+      "equipment_value": "3:T8"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3/equip3_T9.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3450,
+      "sha256": "3b843c45625709412a474159bedf585da1c08563d64138c87840c7993e1d0c31",
+      "source_path": "../v6/templates/equip3/equip3_T9.png",
+      "equipment_value": "3:T9"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3_flag/equip3_empty.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-flag-template",
+      "required": true,
+      "bytes": 3882,
+      "sha256": "d2402ad50ae3d4f02ff08fdbf91b4f4c75af75e66ad1d12a176e69952ad820ba",
+      "source_path": "../v6/templates/equip3_flag/equip3_empty.png",
+      "equipment_value": "3:empty"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3_flag/equip3_level_locked.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-flag-template",
+      "required": true,
+      "bytes": 4527,
+      "sha256": "1a303c157f40569b5468ae0174a89c01bca24ecde515437f0844a26791b18746",
+      "source_path": "../v6/templates/equip3_flag/equip3_level_locked.png",
+      "equipment_value": "3:level_locked"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit1/1_1.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 362,
+      "sha256": "57f052993b5a6260c7742b105f47e4f47055ad1161f5b1b4830ba62af3b7e689",
+      "source_path": "../v6/templates/equip3level_digit1/1_1.png",
+      "equipment_value": "3:1:1"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit1/1_2.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 889,
+      "sha256": "d92ca5bfbdfd7b320af2a381a675896d05ab31a661589e7e466c9b6a0fe79123",
+      "source_path": "../v6/templates/equip3level_digit1/1_2.png",
+      "equipment_value": "3:1:2"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit1/1_3.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 992,
+      "sha256": "b2aadbd466ef07e05eff3ee21074a7432ba4a93f10a70aad68a57321db2d46e0",
+      "source_path": "../v6/templates/equip3level_digit1/1_3.png",
+      "equipment_value": "3:1:3"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit1/1_4.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 654,
+      "sha256": "1d898a2509da51715cfd4ceacc83816b102990d5dd30f1b0b2ec346593551f66",
+      "source_path": "../v6/templates/equip3level_digit1/1_4.png",
+      "equipment_value": "3:1:4"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit1/1_5.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 748,
+      "sha256": "561492256ddcc668522b6e632b4667fb9adbc8a1f7efbf9858edb724495cddbb",
+      "source_path": "../v6/templates/equip3level_digit1/1_5.png",
+      "equipment_value": "3:1:5"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit1/1_6.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1047,
+      "sha256": "d1c89e8f438876d35e3c839a8dc8abbc30f24d5010f7e29e766f6d7f4ee19cdd",
+      "source_path": "../v6/templates/equip3level_digit1/1_6.png",
+      "equipment_value": "3:1:6"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit1/1_7.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1307,
+      "sha256": "10d7d6ac0e35bcbdc7137c886dbe7912705e9cce2b0f069893242f1950ca89d5",
+      "source_path": "../v6/templates/equip3level_digit1/1_7.png",
+      "equipment_value": "3:1:7"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit1/1_v.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 560,
+      "sha256": "36e81788e54d603e3a65c637d27bb1b74e4741dbc11933f29f18113f5e882750",
+      "source_path": "../v6/templates/equip3level_digit1/1_v.png",
+      "equipment_value": "3:1:v"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit2/2_0.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1179,
+      "sha256": "d2e1e1710f1b0784400416d3034f840a1cac73464a8aaf337181805ee5211ccc",
+      "source_path": "../v6/templates/equip3level_digit2/2_0.png",
+      "equipment_value": "3:2:0"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit2/2_1.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 327,
+      "sha256": "4589589f21483377b5c096ed37a58a10475d5a41dd43ab13760fe127b7a70f7c",
+      "source_path": "../v6/templates/equip3level_digit2/2_1.png",
+      "equipment_value": "3:2:1"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit2/2_2.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 783,
+      "sha256": "3533d91fefc97e2e44aa6367772b248539421849d38f3f42cd49af148ca8ebab",
+      "source_path": "../v6/templates/equip3level_digit2/2_2.png",
+      "equipment_value": "3:2:2"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit2/2_3.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 807,
+      "sha256": "c30ef03246ef7b69a643417390e01c3c1f801cfad50aecca8665e17d1ee274e7",
+      "source_path": "../v6/templates/equip3level_digit2/2_3.png",
+      "equipment_value": "3:2:3"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit2/2_4.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 562,
+      "sha256": "355143115025ebb5a04e15930d725d582d432c5ab5bbc5931a4ed58f7a24362f",
+      "source_path": "../v6/templates/equip3level_digit2/2_4.png",
+      "equipment_value": "3:2:4"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit2/2_5.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 625,
+      "sha256": "765d4bb4de9202ae1fcc3301fc2fc239c4396e83bc5f7a57c510487be981fa2f",
+      "source_path": "../v6/templates/equip3level_digit2/2_5.png",
+      "equipment_value": "3:2:5"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit2/2_6.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 882,
+      "sha256": "1b71f70e9ee9c40e0da7141bc3f5cbe33c414802158fcdf447afb9e7cbe1115e",
+      "source_path": "../v6/templates/equip3level_digit2/2_6.png",
+      "equipment_value": "3:2:6"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit2/2_7.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 602,
+      "sha256": "fd707b8998ce5134abacf5fcceac64878dd3b5de6c082e0918bb53896f5b27d9",
+      "source_path": "../v6/templates/equip3level_digit2/2_7.png",
+      "equipment_value": "3:2:7"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit2/2_8.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 1000,
+      "sha256": "6992b1d84f2af6a3d861ae7d5323dfeabcf492a2c8fb8881017e107742ab86e3",
+      "source_path": "../v6/templates/equip3level_digit2/2_8.png",
+      "equipment_value": "3:2:8"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip3level_digit2/2_9.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-digit-template",
+      "required": true,
+      "bytes": 892,
+      "sha256": "6b7143c93b32a4b4e1e5c55c6907c237f5794d8fd532e8efbd640b56861cbbf6",
+      "source_path": "../v6/templates/equip3level_digit2/2_9.png",
+      "equipment_value": "3:2:9"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip4/equip4_T1.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3011,
+      "sha256": "6200be4f93c17db49e45addf38748a8da87a70d463c0b54531021f83487214d8",
+      "source_path": "../v6/templates/equip4/equip4_T1.png",
+      "equipment_value": "4:T1"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip4/equip4_T2.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-tier-template",
+      "required": true,
+      "bytes": 3230,
+      "sha256": "975fc46186229270ae0041860fef143370eae56425332664405fc5dff0d037d8",
+      "source_path": "../v6/templates/equip4/equip4_T2.png",
+      "equipment_value": "4:T2"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip4_flag/equip4_empty.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-flag-template",
+      "required": true,
+      "bytes": 3871,
+      "sha256": "406ec5bb4424db56c44f0aa84a1c18ea8d61a6f957d1d9d6b5e3f4731039dfd1",
+      "source_path": "../v6/templates/equip4_flag/equip4_empty.png",
+      "equipment_value": "4:empty"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip4_flag/equip4_love_locked.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-flag-template",
+      "required": true,
+      "bytes": 4423,
+      "sha256": "b5d68f3e92850df6f20acd2981d5a3880dd25dc39d0019a9f14dc1a088f7a42c",
+      "source_path": "../v6/templates/equip4_flag/equip4_love_locked.png",
+      "equipment_value": "4:love_locked"
+    },
+    {
+      "path": "templates/student_equipment/menu/equip4_flag/equip4_null.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-menu-flag-template",
+      "required": true,
+      "bytes": 3071,
+      "sha256": "35de68ec31f8a4936fed00fbdbe14928b30762b8920df108a65bdffabc5c2d12",
+      "source_path": "../v6/templates/equip4_flag/equip4_null.png",
+      "equipment_value": "4:null"
+    }
+  ]
+}

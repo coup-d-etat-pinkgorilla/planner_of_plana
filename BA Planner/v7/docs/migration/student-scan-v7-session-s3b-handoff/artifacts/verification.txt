@@ -1,0 +1,35 @@
+S3B verification — 2026-08-21 Asia/Seoul
+
+PASS: .venv\Scripts\python.exe -B -m unittest tests.test_student_equipment_s3b -v
+  Ran 9 tests in 3.831s — OK
+
+PASS: .venv\Scripts\python.exe -B -m unittest tests.test_student_scan_s2 tests.test_student_equipment_s3 tests.test_student_equipment_s3b tests.test_recognition_assets tests.test_scanner_stdio_transport
+  Ran 35 tests in 33.009s — OK
+
+EXPECTED OUT-OF-SCOPE BASELINE FAILURES:
+  .venv\Scripts\python.exe -B -m unittest discover -s tests
+  Ran 195 tests in 64.018s — FAILED (failures=1, errors=7)
+  The same generated metadata baseline gap recorded by S3 remains: student_meta_data.py lacks
+  schaledb_id mappings used by seven Aru/Eimi/Kotama stat tests and one Hoshino gift test.
+  S3B did not edit generated student metadata, stat, or gift code/data.
+
+PASS: Python py_compile for student_equipment_recognizer.py, scanner_matchers.py,
+  test_student_equipment_s3b.py and benchmark_student_equipment_s3b.py.
+PASS: benchmark JSON parse.
+PASS: git diff --check (line-ending notices only; no whitespace errors).
+PASS: codealmanac validate — 20 pages.
+PASS: codealmanac health — 0 orphan/dead-ref/broken-link/broken-xwiki/empty/unused findings.
+PASS: source ZIP opened with eight non-empty expected entries.
+
+PASS: benchmark_student_equipment_s3b.py
+  18/18 level pairs; 36/36 digit cells; committed false positives 0.
+  startup cold 26.3801ms; template prepare 25.1012ms.
+  warm three-slot p50 1.26385ms; p95 1.44980ms.
+  51 compact templates / 3,570 bytes; full-size reference canvases 0.
+  Shadow mode intentionally leaves fallback reduction 0 and menu calls 6 before/after.
+
+MASTER_REQUIRED: acquire independent real digits 1-6/8/9 and single-digit blank with 2-3 stable
+repeats across relevant slot/tier/family/resolution conditions. Rebuild the complete confusion matrix,
+then select production score/margin gates. Until then binary_production_enabled remains false.
+
+S4/S5 were not changed. Flutter/Dart/Windows release verification is outside S3B.

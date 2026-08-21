@@ -78,7 +78,7 @@ class ScannerStdioTransportTests(unittest.TestCase):
         responses = [json.loads(line) for line in stdout.splitlines()]
         self.assertEqual(["assets", "targets"], [item["id"] for item in responses])
         self.assertTrue(responses[0]["payload"]["ready"])
-        self.assertEqual(1013, responses[0]["payload"]["asset_count"])
+        self.assertEqual(1112, responses[0]["payload"]["asset_count"])
         self.assertIsInstance(responses[1]["payload"]["targets"], list)
 
 

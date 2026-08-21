@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-21T01:43:09+09:00",
+  "client": "Blue Archive Windows",
+  "client_resolution": [1280, 720],
+  "ui_scale_percent": 100,
+  "roi_version": "student-equipment-regions/v1",
+  "stable_repeats_per_condition": 3,
+  "answers": {
+    "mika": {
+      "student_level": 90,
+      "equip1": "T10",
+      "equip1_family": "Hat",
+      "equip1_level": 70,
+      "equip2": "T10",
+      "equip2_family": "Badge",
+      "equip2_level": 70,
+      "equip3": "T10",
+      "equip3_family": "Watch",
+      "equip3_level": 70,
+      "equip4": "empty"
+    },
+    "hibiki": {
+      "student_level": 90,
+      "equip1": "T10",
+      "equip1_family": "Hat",
+      "equip1_level": 70,
+      "equip2": "T10",
+      "equip2_family": "Hairpin",
+      "equip2_level": 70,
+      "equip3": "T10",
+      "equip3_family": "Watch",
+      "equip3_level": 70,
+      "equip4": "T2"
+    }
+  },
+  "same_answer_comparison": [
+    {
+      "method": "v6 generated RGB/OpenCV",
+      "answer_set": "Mika basic sample_01",
+      "tier_context": "visually confirmed T10",
+      "levels_correct": 1,
+      "levels_misread": 0,
+      "levels_fallback": 2,
+      "slot_results": {"1": 70, "2": null, "3": null}
+    },
+    {
+      "method": "v7 prepared RGB/gray/edge small ROI",
+      "answer_set": "Mika basic samples 01-03",
+      "tiers_correct_per_repeat": 3,
+      "levels_correct_per_repeat": 0,
+      "levels_misread_per_repeat": 0,
+      "levels_fallback_per_repeat": 3,
+      "observed_candidate": 1
+    },
+    {
+      "method": "v7 empirical navy/dark-ink glyph",
+      "answer_set": "Mika basic samples 01-03",
+      "status": "not_activated",
+      "reason": "only the 7/0 labels are present; the session classifier deliberately requires competing labels"
+    },
+    {
+      "method": "v7 empirical-first + small ROI + one shared menu fallback",
+      "answer_set": "Mika basic/menu samples 01-03",
+      "final_levels_correct_per_repeat": 3,
+      "final_levels_misread_per_repeat": 0,
+      "final_levels_fallback_per_repeat": 0,
+      "slot_results": {"1": 70, "2": 70, "3": 70}
+    }
+  ],
+  "favorite_comparison": {
+    "answer_set": "Hibiki basic samples 01-03",
+    "expected": "T2",
+    "correct": 3,
+    "misread": 0,
+    "fallback": 0,
+    "confidence": 0.854468,
+    "margin": 0.120613
+  },
+  "decision": {
+    "basic_tier_reader": "retain",
+    "favorite_reader": "retain",
+    "small_roi_level_reader": "retain as conservative pre-menu attempt",
+    "equipment_menu_fallback": "retain for unresolved slots; required by the real T10/Lv70 evidence",
+    "empirical_thresholds": "do not change from one tier/level condition",
+    "roi_revision": "not justified",
+    "digit_pair_correction": "not justified",
+    "storage": "retain bounded prepared in-memory bundle; no atlas/NPZ change justified"
+  },
+  "remaining_coverage": [
+    "real equipped T1-T9 and non-70 level glyphs across families",
+    "real favorite T1",
+    "independent UI scale and resolution combinations"
+  ]
+}

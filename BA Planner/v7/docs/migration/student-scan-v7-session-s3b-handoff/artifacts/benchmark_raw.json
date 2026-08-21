@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "mode": "shadow_only",
+  "production_enabled": false,
+  "dataset": {
+    "resolution": [
+      1280,
+      720
+    ],
+    "ui_scale_percent": 100,
+    "conditions": 2,
+    "stable_repeats_per_condition": 3,
+    "level_pairs": 18,
+    "digit_cells": 36,
+    "observed_digits": [
+      "0",
+      "7"
+    ],
+    "observed_blank": false
+  },
+  "accuracy": {
+    "level_pairs_correct": 18,
+    "level_pairs_total": 18,
+    "digit_cells_correct": 36,
+    "digit_cells_total": 36,
+    "committed_false_positives": 0,
+    "confusion": {
+      "position_1": {
+        "7": {
+          "7": 18
+        }
+      },
+      "position_2": {
+        "0": {
+          "0": 18
+        }
+      }
+    }
+  },
+  "fallback": {
+    "generated_unresolved_before_binary": 18,
+    "binary_shadow_confident": 18,
+    "committed_unresolved_after_binary": 18,
+    "reduction_while_shadow": 0,
+    "menu_calls_before": 6,
+    "menu_calls_after": 6,
+    "reason": "insufficient independent 0-9 plus blank coverage"
+  },
+  "performance_ms": {
+    "startup_cold": 26.380099938251078,
+    "template_prepare": 25.10119997896254,
+    "frame_three_slots_warm_p50": 1.263850077521056,
+    "frame_three_slots_warm_p95": 1.4497999800369143
+  },
+  "cache_and_memory": {
+    "binary_template_count": 51,
+    "binary_template_bytes": 3570,
+    "generated_cache_entries": 0,
+    "full_size_reference_canvases": 0
+  },
+  "metrics": {
+    "template_load_ms": 26.376499910838902,
+    "feature_prepare_ms": 0.0,
+    "match_ms": 0.0,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "generated_cards": 0,
+    "prepared_features": 0,
+    "loaded_files": 53,
+    "menu_captures": 0,
+    "peak_cache_entries": 0,
+    "peak_cache_bytes": 0,
+    "full_size_reference_canvases": 0,
+    "empirical_attempts": 0,
+    "empirical_hits": 0,
+    "calibration_samples": 0,
+    "binary_template_prepare_ms": 25.10119997896254,
+    "binary_template_count": 51,
+    "binary_template_bytes": 3570,
+    "binary_attempts": 108,
+    "binary_shadow_hits": 108,
+    "binary_shift_retries": 0,
+    "binary_match_ms": 46.654100297018886
+  },
+  "observations": [
+    {
+      "condition": "mika/sample_01",
+      "slot": 1,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.6240412424513507,
+      "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_01",
+      "slot": 2,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5604117928576157,
+      "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.055821;iou=0.497817;correlation=0.731713;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_01",
+      "slot": 3,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5294834965210129,
+      "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_02",
+      "slot": 1,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.6240412424513507,
+      "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_02",
+      "slot": 2,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5604117928576157,
+      "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.055821;iou=0.497817;correlation=0.731713;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_02",
+      "slot": 3,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5294834965210129,
+      "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_03",
+      "slot": 1,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.6240412424513507,
+      "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_03",
+      "slot": 2,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5604117928576157,
+      "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.055821;iou=0.497817;correlation=0.731713;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "mika/sample_03",
+      "slot": 3,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5294834965210129,
+      "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_01",
+      "slot": 1,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.6240412424513507,
+      "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_01",
+      "slot": 2,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5786399442662347,
+      "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.061347;iou=0.515152;correlation=0.754908;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_01",
+      "slot": 3,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5294834965210129,
+      "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_02",
+      "slot": 1,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.6240412424513507,
+      "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_02",
+      "slot": 2,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5786399442662347,
+      "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.061347;iou=0.515152;correlation=0.754908;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_02",
+      "slot": 3,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5294834965210129,
+      "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_03",
+      "slot": 1,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.6240412424513507,
+      "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_03",
+      "slot": 2,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5786399442662347,
+      "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.061347;iou=0.515152;correlation=0.754908;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "condition": "hibiki/sample_03",
+      "slot": 3,
+      "expected_level": 70,
+      "predicted_level": 70,
+      "status": "shadow",
+      "confirmed": false,
+      "confidence": 0.5294834965210129,
+      "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+    }
+  ],
+  "master_required": [
+    "independent real coverage for digits 1,2,3,4,5,6,8,9",
+    "independent real single-digit blank coverage",
+    "slot/tier/family/resolution coverage with 2-3 stable repeats",
+    "production threshold and margin selection from the completed confusion matrix"
+  ]
+}

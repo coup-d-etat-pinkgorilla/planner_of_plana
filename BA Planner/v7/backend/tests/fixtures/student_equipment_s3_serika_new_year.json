@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "source": "backend/tests/fixtures/student_scan_s2_serika_new_year.png",
+  "source_width": 2560,
+  "source_height": 1440,
+  "student_id": "serika_new_year",
+  "student_level": 12,
+  "answer": {
+    "equip1": "empty",
+    "equip1_level": null,
+    "equip2": "empty",
+    "equip2_level": null,
+    "equip3": "level_locked",
+    "equip3_level": null,
+    "equip4": null
+  },
+  "evidence": {
+    "equip1": "basic_equipment_1_empty_dot_region",
+    "equip2": "basic_equipment_2_empty_dot_region",
+    "equip3": "student_level_12_below_unlock_20",
+    "equip4": "favorite_item_unsupported_on_kr"
+  },
+  "dataset_contract_status": "insufficient_for_empirical_thresholds",
+  "missing_coverage": [
+    "equipped slot level glyphs",
+    "T1-T10 real tier icons by family and slot",
+    "favorite T1/T2 real captures",
+    "2-3 stable repeats per condition",
+    "equipment-menu fallback full-screen capture"
+  ]
+}

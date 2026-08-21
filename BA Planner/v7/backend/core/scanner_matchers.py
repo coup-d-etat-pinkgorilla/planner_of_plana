@@ -10,6 +10,7 @@ from PIL import Image, ImageChops, ImageStat
 from core.recognition_assets import RecognitionAssetCatalog
 from core.scanner_session import ScannerError
 from core.student_scan_recognizer import StudentBasicCropSet, StudentBasicRecognizer
+from core.student_equipment_recognizer import EquipmentMenuRecognizer, StudentEquipmentRecognizer
 from core import student_meta
 
 
@@ -17,6 +18,52 @@ class CapturePort(Protocol):
     def capture(self, target: dict[str, Any]) -> Image.Image: ...
     def scroll(self, target: dict[str, Any], delta: int) -> None: ...
     def wait_stable(self, target: dict[str, Any], cancel: Event, timeout: float = 2.0) -> Image.Image: ...
+
+
+class EquipmentMenuCapturePort(Protocol):
+    """Input orchestration boundary; S3 consumes exactly one opened-menu frame."""
+
+    def capture_equipment_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
+    def close_equipment_menu(self, target: dict[str, Any]) -> None: ...
+
+
+class ClickCapturePort(CapturePort, Protocol):
+    def click(self, target: dict[str, Any], x_ratio: float, y_ratio: float) -> None: ...
+
+
+class EquipmentMenuCaptureAdapter:
+    """Minimal S3 input orchestrator; one stable menu frame is shared by unresolved slots."""
+
+    def __init__(self, capture: ClickCapturePort, catalog: RecognitionAssetCatalog) -> None:
+        self.capture = capture
+        self.regions = catalog.region_for_purpose("student", "student-equipment-menu-regions")
+
+    @staticmethod
+    def _center(region: dict[str, Any]) -> tuple[float, float]:
+        return (
+            (float(region["x1"]) + float(region["x2"])) / 2.0,
+            (float(region["y1"]) + float(region["y2"])) / 2.0,
+        )
+
+    def capture_equipment_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image:
+        if cancel.is_set():
+            raise ScannerError("cancelled", "equipment menu capture cancelled")
+        region = self.regions.get("equipment_button")
+        if not isinstance(region, dict):
+            raise ScannerError("region_missing", "equipment button region is missing")
+        self.capture.click(target, *self._center(region))
+        try:
+            if cancel.wait(0.35):
+                raise ScannerError("cancelled", "equipment menu capture cancelled")
+            return self.capture.wait_stable(target, cancel, timeout=3.0)
+        except Exception:
+            self.close_equipment_menu(target)
+            raise
+
+    def close_equipment_menu(self, target: dict[str, Any]) -> None:
+        region = self.regions.get("equipmentmenu_quit_button")
+        if isinstance(region, dict):
+            self.capture.click(target, *self._center(region))
 
 
 def image_pixels(image: Image.Image):
@@ -182,7 +229,15 @@ class SlotCountMatcher:
 
 
 class StudentMatcherAdapter:
-    def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = 0.82, margin: float = 0.04) -> None:
+    def __init__(
+        self,
+        capture: CapturePort,
+        catalog: RecognitionAssetCatalog,
+        *,
+        threshold: float = 0.82,
+        margin: float = 0.04,
+        equipment_menu: EquipmentMenuCapturePort | None = None,
+    ) -> None:
         self.capture = capture
         self.catalog = catalog
         self.threshold = threshold
@@ -193,6 +248,9 @@ class StudentMatcherAdapter:
         if not isinstance(self.texture_region, dict):
             raise ScannerError("region_missing", "student texture region is missing")
         self.basic_recognizer = StudentBasicRecognizer(catalog)
+        self.equipment_recognizer = StudentEquipmentRecognizer(catalog)
+        self.equipment_menu = equipment_menu
+        self.equipment_menu_recognizer = EquipmentMenuRecognizer(catalog) if equipment_menu is not None else None
 
     @staticmethod
     def _canonical_student_ref(identity: str) -> str:
@@ -206,7 +264,7 @@ class StudentMatcherAdapter:
     def __call__(self, target: dict[str, Any], cancel: Event, progress: Callable[[int, int | None, str], None]) -> list[dict[str, Any]]:
         if cancel.is_set():
             return []
-        progress(0, 3, "scanner.student.capture")
+        progress(0, 4, "scanner.student.capture")
         frame = self.capture.wait_stable(target, cancel)
         if cancel.is_set():
             frame.close()
@@ -216,14 +274,46 @@ class StudentMatcherAdapter:
         finally:
             frame.close()
         try:
-            progress(1, 3, "scanner.student.identify")
+            progress(1, 4, "scanner.student.identify")
             match = self.matcher.match(crops.images["student_texture_region"])
             student_ref = self._canonical_student_ref(match.identity)
             confident = match.score >= self.threshold and match.margin >= self.margin
             if cancel.is_set():
                 return []
-            progress(2, 3, "scanner.student.basic_fields")
+            progress(2, 4, "scanner.student.basic_fields")
             observations = self.basic_recognizer.recognize(crops)
+            equipment_observations, unresolved = self.equipment_recognizer.recognize(
+                crops,
+                student_ref=student_ref,
+                student_level=(
+                    int(observations["level"].value)
+                    if observations.get("level") is not None and observations["level"].confirmed
+                    else None
+                ),
+            )
+            observations.update(equipment_observations)
+            progress(3, 4, "scanner.student.equipment_fields")
+            if unresolved and self.equipment_menu is not None and self.equipment_menu_recognizer is not None:
+                menu_frame = self.equipment_menu.capture_equipment_menu(target, cancel)
+                self.equipment_recognizer.metrics.menu_captures += 1
+                try:
+                    fallback = self.equipment_menu_recognizer.recognize(menu_frame, unresolved)
+                finally:
+                    menu_frame.close()
+                    self.equipment_menu.close_equipment_menu(target)
+                for field, observation in fallback.items():
+                    if field.removeprefix("equip").split("_", 1)[0].isdigit() and int(field.removeprefix("equip").split("_", 1)[0]) in unresolved:
+                        observations[field] = observation
+                for slot in unresolved:
+                    learned = fallback.get(f"equip{slot}_level")
+                    region = self.regions.get(f"basic_equipment_{slot}_level_digits_quad")
+                    if slot <= 3 and learned is not None and learned.confirmed and isinstance(region, dict):
+                        self.equipment_recognizer.learn_basic_level(
+                            crops.images.get(f"basic_equipment_{slot}_level_digits_quad"),
+                            slot=slot,
+                            value=int(learned.value),
+                            region=region,
+                        )
         finally:
             crops.close()
         values = {
@@ -245,11 +335,18 @@ class StudentMatcherAdapter:
             "confidence": observation.confidence,
             "note": observation.note,
         } for field, observation in observations.items())
+        evidence.extend({
+            "field": field,
+            "status": observation.status,
+            "source": observation.source,
+            "confidence": observation.confidence,
+            "note": observation.note,
+        } for field, observation in self.equipment_recognizer.last_binary_shadow.items())
         review_required = (not confident) or any(
             observation.status not in {"ok", "inferred", "skipped"}
             for observation in observations.values()
         )
-        progress(3, 3, "scanner.student.matched")
+        progress(4, 4, "scanner.student.matched")
         return [{
             "payload": {"version": 1, "student_id": student_ref, "values": values, "provenance": provenance},
             "evidence": evidence,

@@ -1,0 +1,54 @@
+S3 master verification record — 2026-08-21 Asia/Seoul
+
+PASS: v6 dependency-complete offline reproduction
+  Temporary environment: Python 3.12.12, OpenCV 5.0.0, numpy 2.5.2, Pillow 12.3.0
+  v6 original tests: 4/4 passed.
+  T10/Lv70: cold 902.3751ms; warm p50 58.53545ms; p95 62.031ms; 20/20 correct.
+  Cache: 70 full-screen candidate misses; theoretical candidate RGB 774144000 bytes.
+  The disposable environment was deleted. v7 has no v6 runtime import or OpenCV/numpy dependency.
+
+PASS: live equipped/favorite/menu evidence
+  Client: Blue Archive Windows, 1280x720, UI scale 100%.
+  Three stable repeats each: Mika basic, Mika equipment menu, Hibiki basic/favorite.
+  Mika answer: Hat/Badge/Watch T10/Lv70; favorite empty.
+  Hibiki answer: Hat/Hairpin/Watch T10/Lv70; favorite T2.
+  v6 basic on Mika sample 01: slot1=70, slots2/3=fallback, no committed misread.
+  v7 basic: 3/3 tiers correct per repeat, 3/3 levels unresolved per repeat.
+  v7 shared menu fallback: 3/3 levels correct per repeat, across all three repeats.
+  Hibiki favorite: T2 3/3, confidence 0.854468, margin 0.120613.
+
+PASS: optimized v7 benchmark
+  cd backend
+  .venv\Scripts\python.exe tools\benchmark_student_equipment_s3.py --output tests\fixtures\student_equipment_s3_benchmark.json
+  Result: cold 141.6076ms; warm p50 18.5413ms; p95 19.8479ms.
+  Relative to reproduced v6: cold 6.372363x faster; warm p50 3.157031x faster.
+  Exact alignment is tried first; +/-1px features are created only after uncertainty.
+  One-pixel-shift answer remains Lv70. Full-size candidate canvases: 0.
+  Compact cache peak: 140 entries / 658000 bytes. Installed S3 assets: 3351020 bytes.
+
+PASS: focused regression
+  cd backend
+  .venv\Scripts\python.exe -m unittest tests.test_student_equipment_s3 tests.test_scanner_stdio_transport.ScannerStdioTransportTests.test_real_process_serves_asset_readiness_and_windows_target_list -q
+  Result: 16 tests passed. Asset readiness: 1112 files.
+
+PASS: static and almanac verification
+  .venv\Scripts\python.exe -m compileall -q core tools tests
+  git diff --check
+  codealmanac validate
+  codealmanac health
+  Result: compile and diff checks passed; validate ok; health zero findings.
+
+KNOWN OUT-OF-SCOPE BASELINE FAILURES:
+  A full 186-test run found seven student-stat lookup errors and one gift metadata failure because
+  the current tracked generated student_meta_data.py lacks schaledb_id for Aru/Eimi/Kotama/Hoshino.
+  S3 does not modify that generated file, student_meta.py, the stat catalog, or those tests.
+  The same run found one S3 stale 1013 asset-count assertion; it was updated to 1112 and now passes.
+
+DECISION:
+  Retain conservative basic tier/favorite readers, small-ROI level attempt, and unresolved-only one
+  shared menu fallback. Do not retune empirical thresholds, ROI, digit-pair corrections, or storage
+  from the single real T10/Lv70 condition. Broader T1-T9/non-70, favorite T1, and other UI-scale data
+  is future calibration coverage, not a remaining S3 master decision.
+
+NOT_VERIFIED: Flutter/Dart tests, Flutter analyze, Windows release build, and S4/S5 E2E were not run
+because S3 does not change Flutter and the user prohibited work after S3.

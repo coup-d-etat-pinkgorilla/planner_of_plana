@@ -1,0 +1,412 @@
+diff --git a/BA Planner/v7/almanac/workflows/p0-p6-workflow-status.md b/BA Planner/v7/almanac/workflows/p0-p6-workflow-status.md
+index aa23901..2a678d7 100644
+--- a/BA Planner/v7/almanac/workflows/p0-p6-workflow-status.md	
++++ b/BA Planner/v7/almanac/workflows/p0-p6-workflow-status.md	
+@@ -10,6 +10,86 @@ sources:
+ 
+ # P0-P6 Workflow Status
+ 
++### 2026-08-21 student scan S3 master validation complete
++
++- Status: S3 implementation and its master-only validation are complete. S4/S5 were not changed.
++  The former `MASTER_REQUIRED` gates are superseded by the executable v6 baseline and live evidence
++  below; the S3 benchmark now has an empty `master_required` list.
++- A disposable dependency-complete v6 environment reproduced the original OpenCV generated-RGB
++  T10/Lv70 result: cold 902.38ms, warm p50 58.54ms, warm p95 62.03ms, 70 full-screen candidate
++  cache misses, and 774,144,000 theoretical candidate RGB bytes. The environment was removed after
++  the raw JSON and offline runner were retained in v7; there is still no v6 runtime import.
++- Live Windows-client evidence at 1280x720/100% UI scale contains three stable repeats each for Mika
++  basic equipment, Mika's shared equipment-growth menu, and Hibiki favorite equipment. Mika visually
++  confirms Hat/Badge/Watch T10/Lv70 and Hibiki confirms favorite T2. Contract-shaped full-screen
++  copies and metadata remain under `student_equipment_s3_dataset/live_1280x720/`, separate from
++  runtime recognition assets.
++- On the same Mika answer set, v6 basic generated-RGB resolved slot1 Lv70 and conservatively fell
++  back on slots2/3; the v7 basic reader resolved all three T10 tiers but left all levels uncertain;
++  the one shared menu frame resolved all three Lv70 values on all three repeats. Hibiki favorite T2
++  resolved on all three repeats at confidence 0.854468 and margin 0.120613. No false level value was
++  committed by either path.
++- Decision: retain basic tier/favorite recognition, the conservative small-ROI level attempt, and
++  unresolved-only one-menu fallback. Do not retune empirical thresholds, ROI geometry, digit-pair
++  corrections, or storage from one real T10/Lv70 condition. Retain the bounded in-memory prepared
++  bundle; broader T1-T9/non-70, favorite T1, and resolution/UI-scale data is future calibration
++  coverage, not an unfinished S3 decision.
++- The warm matcher now evaluates the exact alignment first and allocates the +/-1px variants only
++  after an uncertain first pass. The final v7 benchmark is cold 141.61ms, warm p50 18.54ms and p95
++  19.85ms: 6.37x faster cold and 3.16x faster warm than the reproduced v6 run. The one-pixel-shift
++  regression remains exact, the compact cache remains bounded at 140 entries/658,000 bytes, and the
++  full-size reference-canvas counter remains zero.
++- Verification: all 15 S3 tests and the updated real-process 1,112-asset readiness test pass;
++  Python compile, `git diff --check`, CodeAlmanac validate, and CodeAlmanac health pass. A full
++  186-test run exposed eight pre-existing generated-data failures outside S3: seven stat-catalog
++  lookups cannot resolve Aru/Eimi/Kotama because current `student_meta_data.py` lacks their
++  `schaledb_id`, and the gift metadata test likewise sees no Hoshino `schaledb_id`. Those tracked
++  data files have no S3 diff and were not altered. The one S3-related stale asset-count assertion
++  found by that run was updated to 1,112 and passes in isolation.
++- Final handoff: `docs/migration/student-scan-v7-session-s3-handoff/output.md`. Next action is S3
++  review/acceptance; do not start S4 without a separate user direction.
++
++### 2026-08-21 student scan parity and stat validation S3 implementation complete
++
++- Status: the user accepted the S2 handoff by directing S3 to start. S3 implementation and Python
++  verification are complete; acceptance and the dataset-dependent measurement decisions below are
++  pending. S4 relationship OCR/stat mismatch evidence and S5 Flutter review work were not changed.
++- The v6 behavioral baseline has been re-read at `read_equipment()`,
++  `_read_basic_equipment_slot()`, the basic-equipment matcher functions, the prepared inventory-mask
++  flow, and the four required regression suites. The retained semantics are level-locked slots,
++  empty-dot short-circuiting, metadata-restricted equipment families, icon tier recognition,
++  tier/level compatibility, favorite empty/locked/T1/T2, and one shared menu capture for unresolved
++  slots.
++- `student_equipment_recognizer.py` is the v7-specific small module. It short-circuits locked and
++  empty slots, restricts icons to the student's metadata family, validates T1-T10 tier/level pairs,
++  recognizes favorite empty/locked/T1/T2, and prepares RGB/gray/edge plus dark-ink glyph features.
++  The 384-entry LRU owns compact cells only. Its generated fallback composes one cached 200x160 card
++  and transforms directly to the 48x36 ROI; the full-size reference-canvas counter remains zero.
++- Production wiring now opens the equipment menu only when the basic frame leaves slots unresolved,
++  waits for one stable menu frame shared by those slots, scans no resolved neighbor, closes the menu,
++  and discards the capture. Confirmed menu levels train at most four session-local basic glyph samples
++  per slot/position/digit; a classifier needs competing labels before using that calibration.
++- The version-1 S3 manifest adds 99 recognition artifacts (3,351,020 bytes): one dedicated bold font,
++  one card background, menu regions with open/close controls, favorite templates, menu tier/flag/digit
++  templates. Existing inventory equipment icons are reused inside the recognition catalog without
++  mixing them with Flutter runtime UI assets.
++- Final benchmark on the accepted machine: catalog verification plus cold start 0.62s; real Serika
++  empty/locked fast path 0.29ms; T10 Lv70 small-ROI cold 210.10ms; warm p50 67.01ms and p95 69.63ms
++  over 20 samples. The answer stayed Lv70, 70 cards produced 140 prepared cached cells, peak cache
++  payload was 658,000 bytes, and no 2560x1440 candidate canvas was created. Twelve same-generator
++  level answers, ten tier answers, one-pixel shift, digit/blank confusion, and the three real slot
++  states were exact; those synthetic results are not claimed as real-capture accuracy.
++- The accepted real answer set has only empty slot1/2, level-locked slot3, and unsupported favorite
++  evidence. Therefore empirical thresholds, ROI revision, digit-pair correction, atlas/pack choice,
++  and fallback removal remain `MASTER_REQUIRED`. The v6 OpenCV cold/warm path could not be rerun in
++  this environment because v7 has no OpenCV/numpy and v6 has no isolated environment; the historical
++  0.9-1.05s cold / 52ms warm values remain explicitly historical rather than a reproduced result.
++- Verification: 25 focused S2/S3/production/asset tests and all 182 backend tests passed. Asset
++  readiness reports 1,112 files; Python compile, `git diff --check`, CodeAlmanac validate, and
++  CodeAlmanac health passed. The handoff is under
++  `docs/migration/student-scan-v7-session-s3-handoff/`. Next action is master review, collection of
++  contract-complete real equipped/favorite/menu captures, and S3 acceptance; S4 must not start first.
++
+ ### 2026-08-21 student scan parity and stat validation S2 complete
+ 
+ - Status: the user accepted the S1 snapshot by directing S2 to start. S2 headless student basic-info
+diff --git a/BA Planner/v7/backend/core/recognition_assets.py b/BA Planner/v7/backend/core/recognition_assets.py
+index dade8a4..87b5b0d 100644
+--- a/BA Planner/v7/backend/core/recognition_assets.py	
++++ b/BA Planner/v7/backend/core/recognition_assets.py	
+@@ -23,7 +23,7 @@ class RecognitionAsset:
+ 
+ class RecognitionAssetCatalog:
+     VERSION = 1
+-    AUXILIARY_MANIFESTS = ("student_basic_manifest.json",)
++    AUXILIARY_MANIFESTS = ("student_basic_manifest.json", "student_equipment_manifest.json")
+ 
+     def __init__(self, root: Path | None = None) -> None:
+         self.root = root or resolve_recognition_asset_dir()
+@@ -99,7 +99,7 @@ class RecognitionAssetCatalog:
+                 continue
+             identity = (
+                 raw.get("student_id") or raw.get("item_id") or raw.get("digit")
+-                or raw.get("opponent_name") or raw.get("rank")
++                or raw.get("opponent_name") or raw.get("rank") or raw.get("equipment_value")
+             )
+             result.append(RecognitionAsset(
+                 path=raw["path"], scan_kind=scan_kind, purpose=purpose,
+@@ -121,3 +121,12 @@ class RecognitionAssetCatalog:
+             return json.loads(self.resolve(assets[0].path).read_text(encoding="utf-8"))
+         except (OSError, ValueError) as exc:
+             raise ScannerError("region_missing", str(exc)) from exc
++
++    def region_for_purpose(self, scan_kind: str, purpose: str) -> dict[str, Any]:
++        assets = self.assets(scan_kind, purpose)
++        if len(assets) != 1:
++            raise ScannerError("region_missing", f"{scan_kind} {purpose} region asset is missing")
++        try:
++            return json.loads(self.resolve(assets[0].path).read_text(encoding="utf-8"))
++        except (OSError, ValueError) as exc:
++            raise ScannerError("region_missing", str(exc)) from exc
+diff --git a/BA Planner/v7/backend/core/scanner_matchers.py b/BA Planner/v7/backend/core/scanner_matchers.py
+index 9adbbb4..25f938b 100644
+--- a/BA Planner/v7/backend/core/scanner_matchers.py	
++++ b/BA Planner/v7/backend/core/scanner_matchers.py	
+@@ -10,6 +10,7 @@ from PIL import Image, ImageChops, ImageStat
+ from core.recognition_assets import RecognitionAssetCatalog
+ from core.scanner_session import ScannerError
+ from core.student_scan_recognizer import StudentBasicCropSet, StudentBasicRecognizer
++from core.student_equipment_recognizer import EquipmentMenuRecognizer, StudentEquipmentRecognizer
+ from core import student_meta
+ 
+ 
+@@ -19,6 +20,52 @@ class CapturePort(Protocol):
+     def wait_stable(self, target: dict[str, Any], cancel: Event, timeout: float = 2.0) -> Image.Image: ...
+ 
+ 
++class EquipmentMenuCapturePort(Protocol):
++    """Input orchestration boundary; S3 consumes exactly one opened-menu frame."""
++
++    def capture_equipment_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
++    def close_equipment_menu(self, target: dict[str, Any]) -> None: ...
++
++
++class ClickCapturePort(CapturePort, Protocol):
++    def click(self, target: dict[str, Any], x_ratio: float, y_ratio: float) -> None: ...
++
++
++class EquipmentMenuCaptureAdapter:
++    """Minimal S3 input orchestrator; one stable menu frame is shared by unresolved slots."""
++
++    def __init__(self, capture: ClickCapturePort, catalog: RecognitionAssetCatalog) -> None:
++        self.capture = capture
++        self.regions = catalog.region_for_purpose("student", "student-equipment-menu-regions")
++
++    @staticmethod
++    def _center(region: dict[str, Any]) -> tuple[float, float]:
++        return (
++            (float(region["x1"]) + float(region["x2"])) / 2.0,
++            (float(region["y1"]) + float(region["y2"])) / 2.0,
++        )
++
++    def capture_equipment_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image:
++        if cancel.is_set():
++            raise ScannerError("cancelled", "equipment menu capture cancelled")
++        region = self.regions.get("equipment_button")
++        if not isinstance(region, dict):
++            raise ScannerError("region_missing", "equipment button region is missing")
++        self.capture.click(target, *self._center(region))
++        try:
++            if cancel.wait(0.35):
++                raise ScannerError("cancelled", "equipment menu capture cancelled")
++            return self.capture.wait_stable(target, cancel, timeout=3.0)
++        except Exception:
++            self.close_equipment_menu(target)
++            raise
++
++    def close_equipment_menu(self, target: dict[str, Any]) -> None:
++        region = self.regions.get("equipmentmenu_quit_button")
++        if isinstance(region, dict):
++            self.capture.click(target, *self._center(region))
++
++
+ def image_pixels(image: Image.Image):
+     flattened = getattr(image, "get_flattened_data", None)
+     return flattened() if flattened is not None else image.getdata()
+@@ -182,7 +229,15 @@ class SlotCountMatcher:
+ 
+ 
+ class StudentMatcherAdapter:
+-    def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = 0.82, margin: float = 0.04) -> None:
++    def __init__(
++        self,
++        capture: CapturePort,
++        catalog: RecognitionAssetCatalog,
++        *,
++        threshold: float = 0.82,
++        margin: float = 0.04,
++        equipment_menu: EquipmentMenuCapturePort | None = None,
++    ) -> None:
+         self.capture = capture
+         self.catalog = catalog
+         self.threshold = threshold
+@@ -193,6 +248,9 @@ class StudentMatcherAdapter:
+         if not isinstance(self.texture_region, dict):
+             raise ScannerError("region_missing", "student texture region is missing")
+         self.basic_recognizer = StudentBasicRecognizer(catalog)
++        self.equipment_recognizer = StudentEquipmentRecognizer(catalog)
++        self.equipment_menu = equipment_menu
++        self.equipment_menu_recognizer = EquipmentMenuRecognizer(catalog) if equipment_menu is not None else None
+ 
+     @staticmethod
+     def _canonical_student_ref(identity: str) -> str:
+@@ -206,7 +264,7 @@ class StudentMatcherAdapter:
+     def __call__(self, target: dict[str, Any], cancel: Event, progress: Callable[[int, int | None, str], None]) -> list[dict[str, Any]]:
+         if cancel.is_set():
+             return []
+-        progress(0, 3, "scanner.student.capture")
++        progress(0, 4, "scanner.student.capture")
+         frame = self.capture.wait_stable(target, cancel)
+         if cancel.is_set():
+             frame.close()
+@@ -216,14 +274,46 @@ class StudentMatcherAdapter:
+         finally:
+             frame.close()
+         try:
+-            progress(1, 3, "scanner.student.identify")
++            progress(1, 4, "scanner.student.identify")
+             match = self.matcher.match(crops.images["student_texture_region"])
+             student_ref = self._canonical_student_ref(match.identity)
+             confident = match.score >= self.threshold and match.margin >= self.margin
+             if cancel.is_set():
+                 return []
+-            progress(2, 3, "scanner.student.basic_fields")
++            progress(2, 4, "scanner.student.basic_fields")
+             observations = self.basic_recognizer.recognize(crops)
++            equipment_observations, unresolved = self.equipment_recognizer.recognize(
++                crops,
++                student_ref=student_ref,
++                student_level=(
++                    int(observations["level"].value)
++                    if observations.get("level") is not None and observations["level"].confirmed
++                    else None
++                ),
++            )
++            observations.update(equipment_observations)
++            progress(3, 4, "scanner.student.equipment_fields")
++            if unresolved and self.equipment_menu is not None and self.equipment_menu_recognizer is not None:
++                menu_frame = self.equipment_menu.capture_equipment_menu(target, cancel)
++                self.equipment_recognizer.metrics.menu_captures += 1
++                try:
++                    fallback = self.equipment_menu_recognizer.recognize(menu_frame, unresolved)
++                finally:
++                    menu_frame.close()
++                    self.equipment_menu.close_equipment_menu(target)
++                for field, observation in fallback.items():
++                    if field.removeprefix("equip").split("_", 1)[0].isdigit() and int(field.removeprefix("equip").split("_", 1)[0]) in unresolved:
++                        observations[field] = observation
++                for slot in unresolved:
++                    learned = fallback.get(f"equip{slot}_level")
++                    region = self.regions.get(f"basic_equipment_{slot}_level_digits_quad")
++                    if slot <= 3 and learned is not None and learned.confirmed and isinstance(region, dict):
++                        self.equipment_recognizer.learn_basic_level(
++                            crops.images.get(f"basic_equipment_{slot}_level_digits_quad"),
++                            slot=slot,
++                            value=int(learned.value),
++                            region=region,
++                        )
+         finally:
+             crops.close()
+         values = {
+@@ -249,7 +339,7 @@ class StudentMatcherAdapter:
+             observation.status not in {"ok", "inferred", "skipped"}
+             for observation in observations.values()
+         )
+-        progress(3, 3, "scanner.student.matched")
++        progress(4, 4, "scanner.student.matched")
+         return [{
+             "payload": {"version": 1, "student_id": student_ref, "values": values, "provenance": provenance},
+             "evidence": evidence,
+diff --git a/BA Planner/v7/backend/core/scanner_runtime.py b/BA Planner/v7/backend/core/scanner_runtime.py
+index 5b565af..268cc43 100644
+--- a/BA Planner/v7/backend/core/scanner_runtime.py	
++++ b/BA Planner/v7/backend/core/scanner_runtime.py	
+@@ -4,7 +4,9 @@ from pathlib import Path
+ 
+ from core.recognition_assets import RecognitionAssetCatalog
+ from core.repository_store import JsonRepository
+-from core.scanner_matchers import InventoryMatcherAdapter, StudentMatcherAdapter
++from core.scanner_matchers import (
++    EquipmentMenuCaptureAdapter, InventoryMatcherAdapter, StudentMatcherAdapter,
++)
+ from core.scanner_session import ScannerSessionService
+ from core.tactical_lobby_scanner import TacticalLobbyMatcherAdapter
+ from core.tactical_v2 import TacticalV2Store
+@@ -19,7 +21,9 @@ def build_scanner_service(storage_root: Path) -> ScannerSessionService:
+     tactical = TacticalV2Store(storage_root, repository)
+     return ScannerSessionService(
+         target_provider=windows,
+-        student_matcher=StudentMatcherAdapter(windows, catalog),
++        student_matcher=StudentMatcherAdapter(
++            windows, catalog, equipment_menu=EquipmentMenuCaptureAdapter(windows, catalog),
++        ),
+         inventory_matcher=InventoryMatcherAdapter(windows, catalog),
+         tactical_lobby_matcher=TacticalLobbyMatcherAdapter(windows, catalog),
+         tactical_lobby_committer=lambda profile_id, payload, revision, key: tactical.commit_lobby(
+diff --git a/BA Planner/v7/backend/core/student_scan_recognizer.py b/BA Planner/v7/backend/core/student_scan_recognizer.py
+index 1cebfb6..60b3097 100644
+--- a/BA Planner/v7/backend/core/student_scan_recognizer.py	
++++ b/BA Planner/v7/backend/core/student_scan_recognizer.py	
+@@ -64,16 +64,23 @@ def quad_crop(image: Image.Image, region: dict[str, Any]) -> Image.Image:
+ 
+ @dataclass(slots=True)
+ class StudentBasicCropSet:
+-    """Owned S2 crops derived from one stable frame; the full frame is not retained."""
++    """Owned S2/S3 crops derived from one stable frame; the full frame is not retained."""
+ 
+     images: dict[str, Image.Image]
+     cell_groups: dict[str, tuple[Image.Image, ...]]
+     source_size: tuple[int, int]
++    regions: dict[str, Any]
+ 
+     IMAGE_KEYS = (
+         "student_texture_region", "basic_level_digits_quad", "basic_student_stars_quad",
+         "basic_EX_skill", "basic_Skill_1", "basic_Skill_2", "basic_Skill_3",
+         "basic_weapon_level_digits_quad", "basic_weapon_star_region",
++        "basic_equipment_1_level_digits_quad", "basic_equipment_2_level_digits_quad",
++        "basic_equipment_3_level_digits_quad", "basic_equipment_1_icon_region",
++        "basic_equipment_2_icon_region", "basic_equipment_3_icon_region",
++        "basic_equipment_1_empty_dot_region", "basic_equipment_2_empty_dot_region",
++        "basic_equipment_3_empty_dot_region", "basic_favorite_empty_dot_region",
++        "basic_favorite_tier_region",
+     )
+     COMBAT_KEYS = (
+         "basic_combat_hp_digits", "basic_combat_atk_digits",
+@@ -98,7 +105,7 @@ class StudentBasicCropSet:
+                 cell_groups[key] = tuple(
+                     ratio_crop(frame, cell).copy() for cell in cells if isinstance(cell, dict)
+                 )
+-        return cls(images=images, cell_groups=cell_groups, source_size=frame.size)
++        return cls(images=images, cell_groups=cell_groups, source_size=frame.size, regions=regions)
+ 
+     def close(self) -> None:
+         for image in self.images.values():
+@@ -108,6 +115,7 @@ class StudentBasicCropSet:
+                 image.close()
+         self.images.clear()
+         self.cell_groups.clear()
++        self.regions = {}
+ 
+ 
+ @dataclass(frozen=True, slots=True)
+diff --git a/BA Planner/v7/backend/tests/test_recognition_assets.py b/BA Planner/v7/backend/tests/test_recognition_assets.py
+index 8119045..4c91350 100644
+--- a/BA Planner/v7/backend/tests/test_recognition_assets.py	
++++ b/BA Planner/v7/backend/tests/test_recognition_assets.py	
+@@ -28,7 +28,7 @@ class RecognitionAssetTests(unittest.TestCase):
+         self.assertEqual(19, len(catalog.assets("student", "student-basic-level-digit-template")))
+         self.assertEqual(187, len(catalog.assets("student", "student-basic-combat-digit-template")))
+         self.assertEqual(10, len(catalog.assets("student", "student-basic-weapon-level-digit-template")))
+-        self.assertEqual(1013, status["asset_count"])
++        self.assertEqual(1112, status["asset_count"])
+         self.assertEqual(
+             "../v6/templates/students/airi.png",
+             next(
+diff --git a/BA Planner/v7/backend/tests/test_scanner_stdio_transport.py b/BA Planner/v7/backend/tests/test_scanner_stdio_transport.py
+index 1fe64be..e1ec885 100644
+--- a/BA Planner/v7/backend/tests/test_scanner_stdio_transport.py	
++++ b/BA Planner/v7/backend/tests/test_scanner_stdio_transport.py	
+@@ -78,7 +78,7 @@ class ScannerStdioTransportTests(unittest.TestCase):
+         responses = [json.loads(line) for line in stdout.splitlines()]
+         self.assertEqual(["assets", "targets"], [item["id"] for item in responses])
+         self.assertTrue(responses[0]["payload"]["ready"])
+-        self.assertEqual(1013, responses[0]["payload"]["asset_count"])
++        self.assertEqual(1112, responses[0]["payload"]["asset_count"])
+         self.assertIsInstance(responses[1]["payload"]["targets"], list)
+ 
+ 
+diff --git a/BA Planner/v7/backend/tests/test_student_scan_s2.py b/BA Planner/v7/backend/tests/test_student_scan_s2.py
+index 36532f5..bed4f52 100644
+--- a/BA Planner/v7/backend/tests/test_student_scan_s2.py	
++++ b/BA Planner/v7/backend/tests/test_student_scan_s2.py	
+@@ -53,9 +53,10 @@ class StudentScanS2Tests(unittest.TestCase):
+         )[0]
+ 
+         self.assertEqual(1, capture.stable_calls)
+-        self.assertEqual([0, 1, 2, 3], [item[0] for item in progress])
++        self.assertEqual([0, 1, 2, 3, 4], [item[0] for item in progress])
+         self.assertEqual(self.expected["student_id"], result["payload"]["student_id"])
+-        self.assertEqual(self.expected["confirmed_values"], result["payload"]["values"])
++        for field, value in self.expected["confirmed_values"].items():
++            self.assertEqual(value, result["payload"]["values"][field], field)
+         self.assertTrue(result["review_required"])
+         evidence = {item["field"]: item for item in result["evidence"]}
+         self.assertEqual("uncertain", evidence["skill2"]["status"])
+@@ -71,7 +72,10 @@ class StudentScanS2Tests(unittest.TestCase):
+         parsed = ConfirmedStudent.from_dict(payload)
+         self.assertEqual(payload, parsed.to_dict())
+         self.assertLessEqual(set(payload["values"]), set(CONFIRMED_STUDENT_VALUE_FIELDS))
+-        self.assertTrue(set(self.expected["excluded_s2_fields"]).isdisjoint(payload["values"]))
++        s4_and_later = set(self.expected["excluded_s2_fields"]) - {
++            "equip1", "equip2", "equip3", "equip4",
++        }
++        self.assertTrue(s4_and_later.isdisjoint(payload["values"]))
+ 
+     def test_failed_field_does_not_erase_other_confirmed_fields(self) -> None:
+         capture = CountingCapture(FIXTURES / "student_scan_s2_serika_new_year.png")

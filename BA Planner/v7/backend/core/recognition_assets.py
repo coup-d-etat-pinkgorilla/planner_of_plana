@@ -23,7 +23,7 @@ class RecognitionAsset:
 
 class RecognitionAssetCatalog:
     VERSION = 1
-    AUXILIARY_MANIFESTS = ("student_basic_manifest.json",)
+    AUXILIARY_MANIFESTS = ("student_basic_manifest.json", "student_equipment_manifest.json")
 
     def __init__(self, root: Path | None = None) -> None:
         self.root = root or resolve_recognition_asset_dir()
@@ -99,7 +99,7 @@ class RecognitionAssetCatalog:
                 continue
             identity = (
                 raw.get("student_id") or raw.get("item_id") or raw.get("digit")
-                or raw.get("opponent_name") or raw.get("rank")
+                or raw.get("opponent_name") or raw.get("rank") or raw.get("equipment_value")
             )
             result.append(RecognitionAsset(
                 path=raw["path"], scan_kind=scan_kind, purpose=purpose,
@@ -117,6 +117,15 @@ class RecognitionAssetCatalog:
         assets = self.assets(scan_kind, purpose)
         if len(assets) != 1:
             raise ScannerError("region_missing", f"{scan_kind} region asset is missing")
+        try:
+            return json.loads(self.resolve(assets[0].path).read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise ScannerError("region_missing", str(exc)) from exc
+
+    def region_for_purpose(self, scan_kind: str, purpose: str) -> dict[str, Any]:
+        assets = self.assets(scan_kind, purpose)
+        if len(assets) != 1:
+            raise ScannerError("region_missing", f"{scan_kind} {purpose} region asset is missing")
         try:
             return json.loads(self.resolve(assets[0].path).read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:

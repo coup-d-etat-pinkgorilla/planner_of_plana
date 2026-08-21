@@ -28,7 +28,7 @@ class RecognitionAssetTests(unittest.TestCase):
         self.assertEqual(19, len(catalog.assets("student", "student-basic-level-digit-template")))
         self.assertEqual(187, len(catalog.assets("student", "student-basic-combat-digit-template")))
         self.assertEqual(10, len(catalog.assets("student", "student-basic-weapon-level-digit-template")))
-        self.assertEqual(1013, status["asset_count"])
+        self.assertEqual(1112, status["asset_count"])
         self.assertEqual(
             "../v6/templates/students/airi.png",
             next(

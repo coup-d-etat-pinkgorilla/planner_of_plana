@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "student_id": "mika",
+  "student_level": 90,
+  "client_resolution": [1280, 720],
+  "ui_scale_percent": 100,
+  "client": "Blue Archive Windows",
+  "emulator": null,
+  "captured_at": "2026-08-21T01:46:00+09:00",
+  "roi_version": "student-equipment-menu-regions/v1",
+  "stable_frame": true,
+  "repeat_samples": [1, 2, 3],
+  "answer": {
+    "equip1": "T10",
+    "equip1_level": 70,
+    "equip2": "T10",
+    "equip2_level": 70,
+    "equip3": "T10",
+    "equip3_level": 70,
+    "equip4": "empty"
+  }
+}

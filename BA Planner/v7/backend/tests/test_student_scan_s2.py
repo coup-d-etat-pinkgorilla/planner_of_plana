@@ -53,9 +53,10 @@ class StudentScanS2Tests(unittest.TestCase):
         )[0]
 
         self.assertEqual(1, capture.stable_calls)
-        self.assertEqual([0, 1, 2, 3], [item[0] for item in progress])
+        self.assertEqual([0, 1, 2, 3, 4], [item[0] for item in progress])
         self.assertEqual(self.expected["student_id"], result["payload"]["student_id"])
-        self.assertEqual(self.expected["confirmed_values"], result["payload"]["values"])
+        for field, value in self.expected["confirmed_values"].items():
+            self.assertEqual(value, result["payload"]["values"][field], field)
         self.assertTrue(result["review_required"])
         evidence = {item["field"]: item for item in result["evidence"]}
         self.assertEqual("uncertain", evidence["skill2"]["status"])
@@ -71,7 +72,10 @@ class StudentScanS2Tests(unittest.TestCase):
         parsed = ConfirmedStudent.from_dict(payload)
         self.assertEqual(payload, parsed.to_dict())
         self.assertLessEqual(set(payload["values"]), set(CONFIRMED_STUDENT_VALUE_FIELDS))
-        self.assertTrue(set(self.expected["excluded_s2_fields"]).isdisjoint(payload["values"]))
+        s4_and_later = set(self.expected["excluded_s2_fields"]) - {
+            "equip1", "equip2", "equip3", "equip4",
+        }
+        self.assertTrue(s4_and_later.isdisjoint(payload["values"]))
 
     def test_failed_field_does_not_erase_other_confirmed_fields(self) -> None:
         capture = CountingCapture(FIXTURES / "student_scan_s2_serika_new_year.png")

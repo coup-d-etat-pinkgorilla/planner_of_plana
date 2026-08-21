@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "mode": "shadow_only",
+  "dataset": "student_equipment_s3_dataset/live_1280x720",
+  "level_pairs": {
+    "expected_70": {
+      "predicted_70": 18
+    }
+  },
+  "digit_cells": {
+    "position_1": {
+      "expected_7": {
+        "predicted_7": 18
+      }
+    },
+    "position_2": {
+      "expected_0": {
+        "predicted_0": 18
+      }
+    }
+  },
+  "correct_cells": 36,
+  "total_cells": 36,
+  "committed_false_positives": 0,
+  "coverage_warning": "Only digit 7/0 at T10/Lv70, 1280x720, 100% UI scale is real evidence.",
+  "master_required": [
+    "independent real digits 1,2,3,4,5,6,8,9",
+    "independent real single-digit blank",
+    "slot/tier/family/resolution repeats",
+    "production threshold selection after full confusion coverage"
+  ]
+}

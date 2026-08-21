@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-20T16:42:23.053014+00:00",
+  "implementation": "v6 core.matcher generated RGB/OpenCV",
+  "environment": {
+    "python": "3.12.12",
+    "opencv": "5.0.0",
+    "numpy": "2.5.2",
+    "pillow": "12.3.0",
+    "v6_root": "C:\\Users\\brigh\\planner_of_plana\\BA Planner\\v6"
+  },
+  "case": {
+    "slot": 1,
+    "family": "Shoes",
+    "tier": "T10",
+    "level": 70
+  },
+  "result": {
+    "cold_value": 70,
+    "cold_uncertain": false,
+    "cold_ms": 902.3751,
+    "warm_p50_ms": 58.53545,
+    "warm_p95_ms": 62.031,
+    "warm_samples_ms": [
+      60.9862,
+      57.1023,
+      54.5608,
+      57.3822,
+      55.4363,
+      62.031,
+      59.6243,
+      58.9157,
+      60.6223,
+      57.5884,
+      57.0221,
+      59.3726,
+      60.6443,
+      59.0424,
+      56.052,
+      58.8891,
+      58.1818,
+      56.3867,
+      52.8578,
+      63.401
+    ],
+    "all_warm_values": [
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70,
+      70
+    ],
+    "correct": true
+  },
+  "cold_cache_state": {
+    "full_screen_candidate_crops": {
+      "hits": 0,
+      "misses": 70,
+      "maxsize": 768,
+      "currsize": 70
+    },
+    "digit_template_bundles": {
+      "hits": 0,
+      "misses": 1,
+      "maxsize": 256,
+      "currsize": 1
+    }
+  },
+  "candidate_count": 70,
+  "candidate_canvas": [
+    2560,
+    1440,
+    3
+  ],
+  "theoretical_candidate_rgb_bytes": 774144000
+}

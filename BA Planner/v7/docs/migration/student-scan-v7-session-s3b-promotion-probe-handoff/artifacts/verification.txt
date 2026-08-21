@@ -1,0 +1,35 @@
+S3B promotion probe verification, 2026-08-21
+
+Source inventory:
+- six new PNG files, all exact 2560x1440
+- source files were read only; SHA-256 values are recorded in promotion_probe_report.json
+
+Visual ground truth:
+- T1: levels 1, 8, 9 repeated across three students (9 ROIs)
+- T2: levels 12, 16, 18 repeated across three students (9 ROIs)
+
+Runtime-path analysis:
+- full archive after addition: 200 screenshots / 600 slot observations
+- new Saori (Swimsuit) captures: student/family/tier gate passed for 6/6 ROIs
+- new Niko/Kurumi captures: student gate failed, so 12 ROIs were not end-to-end eligible
+- T1 current fixed-cell candidates: 0/9 correct
+- T2 top-1 candidates: 9/9 correct; confidence gate accepted 0/9
+- production commits: 0; binary_production_enabled remains false
+
+Tool correction:
+- analyze_student_screenshot_archive_s3b.py now reads icon tier whenever family is known,
+  before binary gating, matching the production runtime dependency order.
+
+MASTER_REQUIRED:
+- implement and review the listed matcher/student-asset changes before promotion
+- obtain non-Lv70 exact 1280x720 repeats
+- replay prior and new independent ground truth with committed false positives 0
+- rerun fallback/menu-call and cold/warm p50/p95 measurements
+- explicitly accept production enablement; do not start S4/S5 from this probe
+
+Repository verification:
+- python JSON parse: PASS
+- python compile of analyze_student_screenshot_archive_s3b.py: PASS
+- tests.test_student_equipment_s3b: 10/10 PASS
+- codealmanac validate: PASS
+- codealmanac health: PASS (all categories zero)

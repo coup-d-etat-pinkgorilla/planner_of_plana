@@ -18,6 +18,9 @@ sources:
   - id: scanner-contract
     type: file
     path: contracts/scanner-protocol-v1.schema.json
+  - id: s3b-input
+    type: file
+    path: docs/migration/student-scan-v7-session-s3b-input.md
 ---
 
 # Student Scan Validation Workflow
@@ -35,6 +38,8 @@ sources:
 - 스캔한 현재 상태, 정적 Schale 원천값, 계산 결과와 사용자 목표는 서로 다른 버킷이다.
 - 계산 불일치는 자동 수정 근거가 아니라 사용자 검토를 요구하는 독립 evidence다.
 - `../v6`는 동작과 fixture의 참조일 뿐 v7 런타임 dependency가 아니다.
+- 장비 기본 화면에는 S3 뒤의 S3B에서 장비 전용 binary matcher를 추가 검증한다. 재고
+  그리드 matcher의 알고리즘 개념만 사용하고 재고 좌표·고정색·템플릿은 직접 재사용하지 않는다.
 
 ## 현재 기준선
 
@@ -93,6 +98,122 @@ v7 장비 matcher는 다음 순서로 구현한다.
 6. 기본 화면에서 확정되지 않은 슬롯만 한 번의 장비 메뉴 캡처로 fallback한다.
 7. 합성 fallback이 필요해도 작은 card/ROI 좌표계에서 만들고 전체 2560x1440 canvas를
    후보마다 생성하지 않는다.
+
+### S3B binary matcher 결정
+
+S3 master 실캡처 이후 수행한 탐색 실험은 binary 경로의 가능성과 직접 복사의 한계를 함께
+확인했다. 재고 그리드의 고정 `#2D4663` 마스크와 숫자 템플릿을 Mika 장비 셀에 그대로
+적용하면 글자를 거의 검출하지 못했다. 반면 장비 adaptive dark-ink mask를 20x28 glyph로
+정규화하고 기존 장비-menu의 자리별 binary mask와 IoU로 비교하면 Mika/Hibiki 6프레임의
+`7`/`0` 36셀에서 top-1 36/36이었다. 최소 score는 0.459459, 최소 margin은 0.054173이었다.
+
+이 결과는 T10/Lv70 한 조건뿐이므로 threshold 확정이나 menu fallback 제거 근거가 아니다.
+S3B는 다음 경계로 별도 순차 slice를 갖는다. [@s3b-input]
+
+- 48x36 ROI와 두 셀 분할, 장비 adaptive dark-ink 추출, canonical glyph 정규화를 사용한다.
+- 장비-menu digit asset을 슬롯·자리별 binary template로 준비하고 IoU와 normalized
+  correlation, 최고 score와 2위 margin을 기록한다.
+- exact alignment를 먼저 비교하고 불확정일 때만 +/-1px를 시도한다.
+- 실행 순서는 `empty/locked -> family/tier -> binary -> small-ROI generated -> one-menu`다.
+- low confidence/margin, asset 누락, invalid tier-level은 값을 확정하지 않고 기존 fallback으로
+  내린다. 기존 menu fallback은 제거하지 않는다.
+- inventory의 6자리 geometry, 고정 RGB, `x`/`k` suffix, OpenCV/numpy 구현과 confusion 보정을
+  통째로 반입하지 않는다.
+- 실제 0~9와 blank coverage가 부족하면 binary 결과는 shadow evidence로만 남긴다.
+
+S3B promotion gate는 실제 답지에서 committed false positive 0, 숫자·자리·슬롯 confusion
+matrix, binary 전후 fallback/menu-call 감소량, cold/warm p50/p95와 bounded cache를 요구한다.
+같은 캡처에서 만든 template로 그 캡처를 평가하는 leakage는 금지하며, 실캡처 coverage가
+부족하면 threshold·ROI·혼동쌍을 `MASTER_REQUIRED`로 유지한다.
+
+S3B 구현 결과는 production 승격과 분리한다. 20x28 glyph는 Python integer bitset으로 준비하고
+51개 slot/position menu digit template(3,570 bytes)을 시작 시 한 번 읽는다. 기본 화면에서는
+adaptive dark-ink 뒤 75% IoU + 25% normalized binary correlation으로 순위를 매기며 exact가
+불확실할 때만 +/-1px를 재시도한다. 결과는 `equipment_binary_shadow` evidence로 generated보다
+앞서 기록되지만 `shadow` status라 confirmed payload나 fallback 대상 집합을 바꾸지 않는다.
+
+현재 Mika/Hibiki Lv70의 18개 level pair/36개 digit cell은 모두 `70`/`7,0` top-1이었다.
+committed false positive는 0이며 shadow 상태의 fallback 감소와 menu 호출 감소도 각각 0,
+기존과 같은 6회다. cold startup 26.38ms(그중 template prepare 25.10ms), warm 3-slot p50
+1.264ms/p95 1.450ms, full-size canvas 0으로 측정했다. 이는 smoke gate 통과이지 production
+threshold 확정이 아니다. 실제 digits 1-6/8/9, single-digit blank, slot/tier/family/resolution
+반복과 전체 confusion matrix는 계속 `MASTER_REQUIRED`다.
+
+추가 archive 검증은 `C:\Users\brigh\Pictures\Screenshots\BA`의 PNG 194장을 read-only source로
+사용했다. runtime의 ID → metadata family → icon tier gate를 통과한 116개 2560x1440 화면에서
+298개 ROI를 얻었고, 64명·9 families·3 slots·T1-T10을 포함한다. 4배 확대 RGB contact sheet
+7장을 육안 대조한 결과 298/298 level pair가 일치했다. 값 coverage는
+10/20/21/30/37/40/43/45/50/54/55/59/60/65/70이며, position 1은 1-7 전체, position 2는
+0/1/3/4/5/7/9를 포함한다. score 0.521064-0.650632, margin 0.043264-0.117650이었다.
+
+source screenshot은 runtime asset으로 복제하지 않았다. 대신 48x36 ROI 298개를 960x540
+test-only atlas로 묶고 source filename/SHA-256, student/family/tier/slot, 육안 답지와 atlas
+좌표를 manifest에 보존했다. 기존 smoke와 합치면 316/316 level pairs, 632/632 digit cells,
+committed false positive 0이다. 그러나 position-2 digit 2/6/8, actual single-digit blank와
+non-Lv70 1280x720 evidence가 없으므로 production gate는 아직 닫히지 않는다.
+
+후속 production probe로 exact 2560x1440 화면 6장을 추가했다. T1의 1/8/9와 T2의
+12/16/18을 각각 서로 다른 학생 3명으로 반복했으므로 누락 숫자를 실제 화면에서 관찰하는
+목적은 달성했다. 그러나 T1 9개 ROI는 한 자리 숫자가 두 고정 cell의 가운데에 놓여
+15/31/45, 15/38/47, 12/38/47 후보로 분절되어 0/9가 실패했다. 실제 한 자리 화면에서는
+두 번째 cell이 단순 blank가 아니므로 기존 합성 blank test를 production 근거로 사용하지 않는다.
+
+T2 9개 ROI의 top-1 후보는 세 반복 모두 12/16/18로 맞았지만 score 0.488096-0.499431과
+margin 0.019369-0.069415 때문에 현 0.52/0.04 gate에서 0/9가 확정되었다. 기존 archive의
+최소 통과값이 score 0.521064, margin 0.043264이므로 전역 threshold를 낮춰 해결하지 않는다.
+중앙 정렬 한 자리 parser, 실제 1/8/9 template coverage, 12/16/18의 정규화/template 개선을
+먼저 적용하고 기존 316쌍과 새 18쌍을 독립 답지로 전부 재생해 false positive 0을 확인한다.
+
+또한 새 화면 중 Saori (Swimsuit) 두 장만 student ID/family/tier end-to-end gate를 통과했고
+Niko/Kurumi 네 장은 student matcher margin 부족으로 중단되었다. 두 학생의 recognition asset을
+추가 검증해야 새 18 ROI 전부를 end-to-end production evidence로 셀 수 있다. 여섯 장은 모두
+2560x1440이므로 non-Lv70 exact 1280x720 반복 gate도 여전히 별도로 남는다.
+
+### S3B 생성형 glyph template 실험
+
+현재 S3B binary template의 출처를 구분한다. 이는 inventory grid의
+`templates/inventory_count/`가 아니다. v6의 장비-menu 자리별
+`templates/equip{slot}level_digit{position}/`에서 v7 recognition asset으로 54개가 byte-identical
+복사되었고, 숫자 51개만 matcher가 읽으며 `v` marker 3개는 제외한다. 따라서 grid의 고정
+RGB mask, 6자리 geometry, `x`/`k` suffix와 confusion 보정을 반입하지 않았다는 기존 결정은
+유효하다.
+
+그러나 장비-menu template도 학생 기본 상세 화면과는 다른 화면에서 나온 asset이다. 글자
+크기, antialiasing, 배치가 다르고 position-1 bank에는 1-7만 있다. 실제 한 자리 1/8/9가
+고정 두 cell 중앙에서 잘못 분절되고, 12/16/18의 top-1은 맞아도 score가 낮은 결과는 이
+cross-screen domain mismatch를 production blocker로 취급할 근거다. 기존 menu bank는 비교
+기준 또는 보조 fallback 후보로 유지할 수 있지만 그 자체로 production template 승격 근거가
+되지 않는다.
+
+후속 S3B 실험은 사용자가 제안한 v6 생성형 경로에서 숫자 layer만 분리한다. v6/v7 renderer는
+200x160 배경과 family/tier icon 위에 28px Bold 흰색 숫자, 1px `#505878` outline, -0.25 shear를
+합성하고 bicubic으로 실제 slot/quad ROI를 만든다. 현재 adaptive dark-ink는 흰 fill보다 남색
+outline을 주 신호로 추출하므로 outline을 먼저 제거하지 않는다. 대신 다음 후보를 같은 frozen
+답지에서 독립 비교한다.
+
+1. 현재 장비-menu binary bank
+2. 생성형 outline-only glyph
+3. 생성형 fill+outline alpha silhouette
+4. 생성형 fill-only glyph
+5. 기존 background+icon+number full-composite generated matcher
+
+생성형 glyph는 background/icon RGB를 포함하지 않는다. 투명 text layer에 동일한 위치·shear·
+quad transform을 적용하거나 full composite 결과를 transformed text alpha와 교차해 text
+pixel만 남긴다. 이를 통해 실제 geometry와 resampling은 보존하되 family/tier 배경 오염은
+차단한다. Outline-only는 우선 가설일 뿐이며 variant 결과 전에는 확정하지 않는다.
+
+한 자리 숫자는 먼저 전체 48x36 level ROI에서 foreground bounding box 또는 connected
+component를 찾고 하나의 centered glyph로 정규화한다. 두 component가 검출된 경우에만 자리별
+cell/template 비교로 전환한다. 합성 `digit+blank` cell만으로 실제 blank coverage를 주장하지
+않는다.
+
+Template 생성은 합성이므로 실캡처 답지를 직접 복제하지 않지만 threshold·variant 선택에는
+별도 calibration set을 사용한다. 기존 316 accepted level pairs와 새 18 probe pairs는 frozen
+validation으로 유지하며 template 생성이나 threshold tuning에 사용하지 않는다. Variant별로
+single-digit 1/8/9, two-digit 12/16/18, 기존 10-70 confusion, score/margin, false positive,
+fallback/menu-call, cold/warm p50/p95와 bounded memory를 비교한다. Production 승격은 전체
+frozen replay의 committed false positive 0, non-Lv70 exact 1280x720 반복과 master 명시 승인을
+모두 만족한 뒤에만 가능하다.
 
 구현은 v6 생성형 matcher의 offline 기준 결과, 사전 준비 RGB/gray/edge feature bundle,
 실캡처 정규화 glyph, 실캡처 우선+소형 합성 fallback을 같은 답지로 비교한다. 이 비교는
@@ -192,6 +313,22 @@ metadata를 두고, metadata에는 slot/family/tier/level, client 해상도, UI 
 - 기존 v6의 tier/level 호환 검증과 empty/locked 의미를 보존한다.
 - cold/warm benchmark, confusion matrix, cache/feature 준비 횟수와 fallback 회귀를 추가한다.
 
+### S3B — 장비 기본 화면 binary matcher 보강
+
+- S3의 안전한 generated/menu fallback을 유지한 채 장비 전용 binary matcher를 shadow로
+  먼저 추가한다.
+- adaptive dark-ink, canonical glyph, 장비-menu binary template, IoU/correlation과 조건부
+  shift를 사용한다.
+- 장비-menu template의 cross-screen 한계가 실측되면 v6 생성형 text layer에서 background와
+  icon을 제외한 glyph를 만들고 outline-only/fill+outline/fill-only를 frozen 답지로 비교한다.
+- 한 자리 숫자는 전체 ROI의 centered component로 먼저 판독하고, 실제 두 component가 있을
+  때만 자리별 분할을 적용한다.
+- 실제 digit 0~9와 한 자리 blank coverage에서 false-positive 0과 fallback 감소를 입증한
+  경우에만 candidate value를 확정하는 production 단계로 승격한다.
+- 충분한 답지가 없으면 threshold/ROI/confusion 보정을 확정하지 않고 shadow evidence와
+  `MASTER_REQUIRED`로 인계한다.
+- 상세 입력과 acceptance는 `student-scan-v7-session-s3b-input.md`를 따른다. [@s3b-input]
+
 ### S4 — 인연 랭크 OCR과 계산 교차 검증
 
 - 실제 screenshot fixture로 인연 ROI와 숫자 matcher를 고정한다.
@@ -207,8 +344,9 @@ metadata를 두고, metadata에는 slot/family/tier/level, client 해상도, UI 
 - 수정 → 재검증 → 승인/보류/거절 → commit 및 stale revision 경로를 테스트한다.
 - 좁은/보통/최대화 viewport와 실제 Python process E2E를 통과한다.
 
-단계는 순차 의존한다. 다음 단계는 이전 단계가 master 검증을 통과한 accepted snapshot에서만
-시작한다. 동일한 scanner 대형 모듈을 여러 세션이 동시에 수정하지 않는다.
+단계는 순차 의존한다. S3B는 accepted S3 snapshot에서 시작하고 S4는 S3B master 검증을
+통과한 accepted snapshot에서만 시작한다. 동일한 scanner 대형 모듈을 여러 세션이 동시에
+수정하지 않는다.
 
 ## 전체 완료 조건
 
