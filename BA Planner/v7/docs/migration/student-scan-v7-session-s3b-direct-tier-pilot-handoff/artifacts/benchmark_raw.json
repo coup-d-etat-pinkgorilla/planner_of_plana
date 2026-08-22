@@ -1,0 +1,422 @@
+{
+  "schema_version": 1,
+  "mode": "direct_actual_inner_roi_pilot",
+  "dataset": {
+    "template_rois": 30,
+    "independent_validation_rois": 12,
+    "families": [
+      "Shoes",
+      "Bag",
+      "Necklace"
+    ],
+    "template_tiers": 10,
+    "validation_tier": "T2"
+  },
+  "direct": {
+    "top1_correct": 12,
+    "accepted_at_current_gate": 12,
+    "wrong": 0,
+    "score_min": 0.9998996533815451,
+    "margin_min": 0.5027628640942806,
+    "warm_one_roi_p50_ms": 9.317300049588084,
+    "warm_one_roi_p95_ms": 10.260300012305379,
+    "rows": [
+      {
+        "source_file": "스크린샷 2026-08-23 014644.png",
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9998996533815451,
+        "margin": 0.5565405041698285
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014644.png",
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999916931990296,
+        "margin": 0.7125057650351349
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014644.png",
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999795711129691,
+        "margin": 0.5027628640942806
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014646.png",
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9998996533815451,
+        "margin": 0.5565405041698285
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014646.png",
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999916931990296,
+        "margin": 0.7125057650351349
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014646.png",
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999795711129691,
+        "margin": 0.5027628640942806
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014648.png",
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9998996533815451,
+        "margin": 0.5565405041698285
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014648.png",
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999916931990296,
+        "margin": 0.7125057650351349
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014648.png",
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999795711129691,
+        "margin": 0.5027628640942806
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014654.png",
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9998996533815451,
+        "margin": 0.5565405041698285
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014654.png",
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999916931990296,
+        "margin": 0.7125057650351349
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014654.png",
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999795711129691,
+        "margin": 0.5027628640942806
+      }
+    ]
+  },
+  "direct_rgb_mean": {
+    "top1_correct": 12,
+    "wrong": 0,
+    "score_min": 0.9999187675070028,
+    "margin_min": 0.03922969187675074,
+    "warm_one_roi_p50_ms": 0.7661000126972795,
+    "warm_one_roi_p95_ms": 0.8476999355480075,
+    "rows": [
+      {
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999187675070028,
+        "margin": 0.2019435107376284
+      },
+      {
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999831932773109,
+        "margin": 0.15076190476190465
+      },
+      {
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999775910364146,
+        "margin": 0.03922969187675074
+      },
+      {
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999187675070028,
+        "margin": 0.2019435107376284
+      },
+      {
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999831932773109,
+        "margin": 0.15076190476190465
+      },
+      {
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999775910364146,
+        "margin": 0.03922969187675074
+      },
+      {
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999187675070028,
+        "margin": 0.2019435107376284
+      },
+      {
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999831932773109,
+        "margin": 0.15076190476190465
+      },
+      {
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999775910364146,
+        "margin": 0.03922969187675074
+      },
+      {
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999187675070028,
+        "margin": 0.2019435107376284
+      },
+      {
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999831932773109,
+        "margin": 0.15076190476190465
+      },
+      {
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999775910364146,
+        "margin": 0.03922969187675074
+      }
+    ]
+  },
+  "direct_prepared_feature": {
+    "template_prepare_ms": 17.906000022776425,
+    "template_prepared_bytes": 436800,
+    "top1_correct": 12,
+    "wrong": 0,
+    "score_min": 0.9997642857142857,
+    "margin_min": 0.14488382352941176,
+    "warm_one_roi_p50_ms": 2.233099949080497,
+    "warm_one_roi_p95_ms": 2.385700005106628,
+    "rows": [
+      {
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9997642857142857,
+        "margin": 0.24206246498599437
+      },
+      {
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999464285714286,
+        "margin": 0.23710952380952377
+      },
+      {
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999306722689075,
+        "margin": 0.14488382352941176
+      },
+      {
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9997642857142857,
+        "margin": 0.24206246498599437
+      },
+      {
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999464285714286,
+        "margin": 0.23710952380952377
+      },
+      {
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999306722689075,
+        "margin": 0.14488382352941176
+      },
+      {
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9997642857142857,
+        "margin": 0.24206246498599437
+      },
+      {
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999464285714286,
+        "margin": 0.23710952380952377
+      },
+      {
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999306722689075,
+        "margin": 0.14488382352941176
+      },
+      {
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9997642857142857,
+        "margin": 0.24206246498599437
+      },
+      {
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999464285714286,
+        "margin": 0.23710952380952377
+      },
+      {
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.9999306722689075,
+        "margin": 0.14488382352941176
+      }
+    ]
+  },
+  "template_self_check": {
+    "top1_correct": 30,
+    "total": 30,
+    "margin_min": 0.3542086928990462
+  },
+  "synthetic_baseline": {
+    "accepted_correct": 8,
+    "fallback": 4,
+    "warm_one_roi_p50_ms": 51.928100001532584,
+    "warm_one_roi_p95_ms": 52.809500019066036,
+    "rows": [
+      {
+        "source_file": "스크린샷 2026-08-23 014644.png",
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.8972286394077651,
+        "note": "family=Shoes;tier=T2;margin=0.476684"
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014644.png",
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.6389603733590454,
+        "note": "family=Bag;tier=T2;margin=0.368350"
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014644.png",
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": null,
+        "score": 0.5958670585412589,
+        "note": "family=Necklace;tier=T2;margin=0.035068"
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014646.png",
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.8972286394077651,
+        "note": "family=Shoes;tier=T2;margin=0.476684"
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014646.png",
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.6389603733590454,
+        "note": "family=Bag;tier=T2;margin=0.368350"
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014646.png",
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": null,
+        "score": 0.5958670585412589,
+        "note": "family=Necklace;tier=T2;margin=0.035068"
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014648.png",
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.8972286394077651,
+        "note": "family=Shoes;tier=T2;margin=0.476684"
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014648.png",
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.6389603733590454,
+        "note": "family=Bag;tier=T2;margin=0.368350"
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014648.png",
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": null,
+        "score": 0.5958670585412589,
+        "note": "family=Necklace;tier=T2;margin=0.035068"
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014654.png",
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.8972286394077651,
+        "note": "family=Shoes;tier=T2;margin=0.476684"
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014654.png",
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "score": 0.6389603733590454,
+        "note": "family=Bag;tier=T2;margin=0.368350"
+      },
+      {
+        "source_file": "스크린샷 2026-08-23 014654.png",
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": null,
+        "score": 0.5958670585412589,
+        "note": "family=Necklace;tier=T2;margin=0.035068"
+      }
+    ]
+  },
+  "decision": "diagnostic until the independent validation result and remaining six-family coverage are reviewed"
+}

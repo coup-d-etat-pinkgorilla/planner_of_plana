@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-23",
+  "source_folder": "C:/Users/brigh/Pictures/Screenshots/BA/S3B_SHOE_BAG_NECKLACE_SAMPLE",
+  "families": ["Shoes", "Bag", "Necklace"],
+  "screenshots": [
+    {"file":"스크린샷 2026-08-23 014422.png","sha256":"f3fa1cef8e345daf59582cfcf9e8bc670563b093624ab004d602f7e05aa7c526","student_ref":"haruna_sportswear","tier":"T1","split":"template"},
+    {"file":"스크린샷 2026-08-23 014508.png","sha256":"465b7c1c1e3493de829b794e326539724568e0adfefeb1d7ade8192a57107e33","student_ref":"haruna_sportswear","tier":"T2","split":"template"},
+    {"file":"스크린샷 2026-08-23 014516.png","sha256":"268b666101597ed76cb54e36ac90948b0a2b83a18f6527199e0a4bf3ee2e8b89","student_ref":"haruna_sportswear","tier":"T3","split":"template"},
+    {"file":"스크린샷 2026-08-23 014524.png","sha256":"d1f40a1e678476aa5d3e70cdb393061da484189da2a98fceb6cd0df9d1c4034b","student_ref":"haruna_sportswear","tier":"T4","split":"template"},
+    {"file":"스크린샷 2026-08-23 014532.png","sha256":"cde3d8682779c046b0dd491fb0f9a0d4ea7d1d04a99980f0b345ed80fc823298","student_ref":"haruna_sportswear","tier":"T5","split":"template"},
+    {"file":"스크린샷 2026-08-23 014540.png","sha256":"75f4325270cf7132ae09689ba2c9cf05f421b58795a1e0ad62f94cea59ef0df0","student_ref":"haruna_sportswear","tier":"T6","split":"template"},
+    {"file":"스크린샷 2026-08-23 014551.png","sha256":"8c93aea65bfb1893159b550a04855da5e5fa1eb917bd35b0d2377cb8789dd203","student_ref":"haruna_sportswear","tier":"T7","split":"template"},
+    {"file":"스크린샷 2026-08-23 014600.png","sha256":"367da342ced3d0892fd756a20ae39bb193d99c0061370044a4f290dafeab00f9","student_ref":"haruna_sportswear","tier":"T8","split":"template"},
+    {"file":"스크린샷 2026-08-23 014608.png","sha256":"835ed07d398e1893197dffe0e345fb5ec6c97de6167c30a6caa7c06107ebe927","student_ref":"haruna_sportswear","tier":"T9","split":"template"},
+    {"file":"스크린샷 2026-08-23 014618.png","sha256":"a9468fa5e04c242794ad51ba0301a92334f1422960bf36ab1493ce5644b5b918","student_ref":"haruna_sportswear","tier":"T10","split":"template"},
+    {"file":"스크린샷 2026-08-23 014644.png","sha256":"0b759f7f5ebb3508f852d8290b50e2744d26212c8b0e548bd9c5c30da297b231","student_ref":"kurumi","tier":"T2","split":"validation"},
+    {"file":"스크린샷 2026-08-23 014646.png","sha256":"ae35b74d49f2cba96ccbb00c5d0bc031baec90bf569c57acd7ddbb5576787c62","student_ref":"kurumi","tier":"T2","split":"validation"},
+    {"file":"스크린샷 2026-08-23 014648.png","sha256":"0d023194f05331245e0b2381af8533b5ce467de1400262175b1d99876dc1cdd5","student_ref":"kurumi","tier":"T2","split":"validation"},
+    {"file":"스크린샷 2026-08-23 014654.png","sha256":"3cb344d751fd7cde5a58fdae553dd8820f2cad6e6c18f47d6179f84cc6bc1cf2","student_ref":"kurumi","tier":"T2","split":"validation"}
+  ]
+}

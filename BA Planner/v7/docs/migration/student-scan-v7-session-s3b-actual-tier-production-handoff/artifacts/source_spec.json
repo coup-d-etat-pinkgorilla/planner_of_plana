@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-23",
+  "validation_policy": "independent validation waived by user; fixed icon placement was verified in v6",
+  "datasets": [
+    {
+      "source_folder": "C:/Users/brigh/Pictures/Screenshots/BA/S3B_SHOE_BAG_NECKLACE_SAMPLE",
+      "student_ref": "haruna_sportswear",
+      "families": ["Shoes", "Bag", "Necklace"],
+      "screenshots": [
+        ["스크린샷 2026-08-23 014422.png","f3fa1cef8e345daf59582cfcf9e8bc670563b093624ab004d602f7e05aa7c526"],
+        ["스크린샷 2026-08-23 014508.png","465b7c1c1e3493de829b794e326539724568e0adfefeb1d7ade8192a57107e33"],
+        ["스크린샷 2026-08-23 014516.png","268b666101597ed76cb54e36ac90948b0a2b83a18f6527199e0a4bf3ee2e8b89"],
+        ["스크린샷 2026-08-23 014524.png","d1f40a1e678476aa5d3e70cdb393061da484189da2a98fceb6cd0df9d1c4034b"],
+        ["스크린샷 2026-08-23 014532.png","cde3d8682779c046b0dd491fb0f9a0d4ea7d1d04a99980f0b345ed80fc823298"],
+        ["스크린샷 2026-08-23 014540.png","75f4325270cf7132ae09689ba2c9cf05f421b58795a1e0ad62f94cea59ef0df0"],
+        ["스크린샷 2026-08-23 014551.png","8c93aea65bfb1893159b550a04855da5e5fa1eb917bd35b0d2377cb8789dd203"],
+        ["스크린샷 2026-08-23 014600.png","367da342ced3d0892fd756a20ae39bb193d99c0061370044a4f290dafeab00f9"],
+        ["스크린샷 2026-08-23 014608.png","835ed07d398e1893197dffe0e345fb5ec6c97de6167c30a6caa7c06107ebe927"],
+        ["스크린샷 2026-08-23 014618.png","a9468fa5e04c242794ad51ba0301a92334f1422960bf36ab1493ce5644b5b918"]
+      ]
+    },
+    {
+      "source_folder": "C:/Users/brigh/Pictures/Screenshots/BA/S3B_AIRI_KANNA_SAMPLE",
+      "student_ref": "airi_band",
+      "families": ["Hat", "Hairpin", "Charm"],
+      "screenshots": [
+        ["스크린샷 2026-08-23 015405.png","67ab7df52a13e8cd2c863feb690e3830b458889507b89c104fd874aaca6874d0"],
+        ["스크린샷 2026-08-23 015414.png","c9ef8e0b17af0cae2f9bf8b7a802792971d6dc6bb94a64c6f13e931c38bedd73"],
+        ["스크린샷 2026-08-23 015424.png","e515eaaa78d24169e15c04a738a28ceca6cf68b41080e14e1ffb20b14c072d60"],
+        ["스크린샷 2026-08-23 015456.png","0288dfb5f621a6480857ac5ca83ecca659c59147cad547e881715aea01d8c855"],
+        ["스크린샷 2026-08-23 015511.png","a218f37e49f8c31b41c23ed85d11d77045c80f1bf004a544f8fbb9624087b01c"],
+        ["스크린샷 2026-08-23 015519.png","43a2d5f40a01a766108f24b3a3c083b03de86f3312b1eb594864c818e91b9d3e"],
+        ["스크린샷 2026-08-23 015528.png","73063b12039292944f1e166cb5149fed3d162b87831a8ead94f28db06f06d7ef"],
+        ["스크린샷 2026-08-23 015536.png","ed60b673f496c974ce6fe970fd37cc7ba0c2266c850c353d0addbe3449227204"],
+        ["스크린샷 2026-08-23 015545.png","71f4e286c4322e010bd5859942b18e7d30268843d16275c70f879b1e963fbab7"],
+        ["스크린샷 2026-08-23 015555.png","49883048c7174b20adfd0c782cb22feeebfcb41b3d601561017fd9214eb6962b"]
+      ]
+    },
+    {
+      "source_folder": "C:/Users/brigh/Pictures/Screenshots/BA/S3B_AIRI_KANNA_SAMPLE",
+      "student_ref": "kanna",
+      "families": ["Gloves", "Badge", "Watch"],
+      "screenshots": [
+        ["스크린샷 2026-08-23 015609.png","b111f362dd4ff5d7d95da2f1b2af68ed2cef779d5f37876768d3d3ef9a4f5abe"],
+        ["스크린샷 2026-08-23 015617.png","3e735cb4a4849c0bf102c976bc092b32cd24d288cdfc2c632ef540fd61406c28"],
+        ["스크린샷 2026-08-23 015626.png","be1b9b4124341135b26c231cc0c1ffa6e4a3291734d4d1e71931ceb87d1ab0b4"],
+        ["스크린샷 2026-08-23 015633.png","4a5a2ee22d03f1238171b599d2def6131f4c8993872d05cc443fda1424aa74e5"],
+        ["스크린샷 2026-08-23 015642.png","c549a326e0ae87eba1c04e369e57f45b7046948835e54239f8224648e9167c43"],
+        ["스크린샷 2026-08-23 015649.png","e312a57b0425b1826b50b7300eb41dd4f2b68a4552d53b9e640114cbf568b604"],
+        ["스크린샷 2026-08-23 015658.png","4232388d1ac44d578f806f51f011be42dc693fc40c9069d96ec13459026be9b3"],
+        ["스크린샷 2026-08-23 015706.png","d017e9dbaf4cd1f8b335d7205a525066210a969cdda7a3b9096d8d301b3631e9"],
+        ["스크린샷 2026-08-23 015713.png","7ab5fc037188a3172939fab6564e19a84821ec8bff26fbcccc351162d5e71bce"],
+        ["스크린샷 2026-08-23 015722.png","af3020e64f5f2fde9fdaf231277aa362c290b57fdbc6717e7227a910d4e263b9"]
+      ]
+    }
+  ]
+}

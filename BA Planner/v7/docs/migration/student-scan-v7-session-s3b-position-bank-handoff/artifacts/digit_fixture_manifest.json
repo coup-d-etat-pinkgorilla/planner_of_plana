@@ -1,0 +1,371 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-23T01:20:00+09:00",
+  "source_screenshot_count": 5,
+  "reviewed_roi_count": 15,
+  "exact_1280x720_roi_count": 12,
+  "ground_truth": {
+    "method": "manual visual review of the user-supplied equipment levels",
+    "template_leakage": false,
+    "runtime_assets_contain_source_pixels": false
+  },
+  "coverage": {
+    "exact_1280x720_values": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "exact_1280x720_ones_digits": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "slots": [
+      1,
+      2,
+      3
+    ],
+    "tiers": [
+      "T2"
+    ]
+  },
+  "atlas": {
+    "path": "roi_atlas.png",
+    "size": [
+      288,
+      108
+    ],
+    "sha256": "87d2338cfce41e196e80740216a89791f8460cc6efceef7b1413d2f7f9239888"
+  },
+  "records": [
+    {
+      "source_file": "스크린샷 2026-08-23 010231.png",
+      "source_sha256": "0cfa7d02f730f56b548de9d17a495de54c94ff017abd709868623aeaabd3f11c",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "evidence_class": "cross_resolution_diagnostic",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Hat",
+      "tier": "T1",
+      "slot": 1,
+      "expected_value": 10,
+      "atlas_box": [
+        0,
+        0,
+        48,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010231.png",
+      "source_sha256": "0cfa7d02f730f56b548de9d17a495de54c94ff017abd709868623aeaabd3f11c",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "evidence_class": "cross_resolution_diagnostic",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Hairpin",
+      "tier": "T2",
+      "slot": 2,
+      "expected_value": 11,
+      "atlas_box": [
+        48,
+        0,
+        96,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010231.png",
+      "source_sha256": "0cfa7d02f730f56b548de9d17a495de54c94ff017abd709868623aeaabd3f11c",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "evidence_class": "cross_resolution_diagnostic",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Watch",
+      "tier": "T2",
+      "slot": 3,
+      "expected_value": 12,
+      "atlas_box": [
+        96,
+        0,
+        144,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010251.png",
+      "source_sha256": "e967a762714a110ca5c266087dcc9a9d3e2f348c45dc933d18f1b57ac29b0b62",
+      "source_size": [
+        1280,
+        720
+      ],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Hat",
+      "tier": "T2",
+      "slot": 1,
+      "expected_value": 10,
+      "atlas_box": [
+        144,
+        0,
+        192,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010251.png",
+      "source_sha256": "e967a762714a110ca5c266087dcc9a9d3e2f348c45dc933d18f1b57ac29b0b62",
+      "source_size": [
+        1280,
+        720
+      ],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Hairpin",
+      "tier": "T2",
+      "slot": 2,
+      "expected_value": 11,
+      "atlas_box": [
+        192,
+        0,
+        240,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010251.png",
+      "source_sha256": "e967a762714a110ca5c266087dcc9a9d3e2f348c45dc933d18f1b57ac29b0b62",
+      "source_size": [
+        1280,
+        720
+      ],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Watch",
+      "tier": "T2",
+      "slot": 3,
+      "expected_value": 12,
+      "atlas_box": [
+        240,
+        0,
+        288,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010308.png",
+      "source_sha256": "da7f77cd4d299f3e99361a4b92e7d2ed950073220f1d33c90dcbf33bb57a5ddc",
+      "source_size": [
+        1280,
+        720
+      ],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Hat",
+      "tier": "T2",
+      "slot": 1,
+      "expected_value": 13,
+      "atlas_box": [
+        0,
+        36,
+        48,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010308.png",
+      "source_sha256": "da7f77cd4d299f3e99361a4b92e7d2ed950073220f1d33c90dcbf33bb57a5ddc",
+      "source_size": [
+        1280,
+        720
+      ],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Hairpin",
+      "tier": "T2",
+      "slot": 2,
+      "expected_value": 14,
+      "atlas_box": [
+        48,
+        36,
+        96,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010308.png",
+      "source_sha256": "da7f77cd4d299f3e99361a4b92e7d2ed950073220f1d33c90dcbf33bb57a5ddc",
+      "source_size": [
+        1280,
+        720
+      ],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Watch",
+      "tier": "T2",
+      "slot": 3,
+      "expected_value": 15,
+      "atlas_box": [
+        96,
+        36,
+        144,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010328.png",
+      "source_sha256": "c41ff5342a9536e6b496770deceeb5114368a55a836545c3f2f969e2df00aa4f",
+      "source_size": [
+        1280,
+        720
+      ],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Hat",
+      "tier": "T2",
+      "slot": 1,
+      "expected_value": 16,
+      "atlas_box": [
+        144,
+        36,
+        192,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010328.png",
+      "source_sha256": "c41ff5342a9536e6b496770deceeb5114368a55a836545c3f2f969e2df00aa4f",
+      "source_size": [
+        1280,
+        720
+      ],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Hairpin",
+      "tier": "T2",
+      "slot": 2,
+      "expected_value": 17,
+      "atlas_box": [
+        192,
+        36,
+        240,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010328.png",
+      "source_sha256": "c41ff5342a9536e6b496770deceeb5114368a55a836545c3f2f969e2df00aa4f",
+      "source_size": [
+        1280,
+        720
+      ],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Watch",
+      "tier": "T2",
+      "slot": 3,
+      "expected_value": 18,
+      "atlas_box": [
+        240,
+        36,
+        288,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010354.png",
+      "source_sha256": "8cd6de5ffab2b1f1fd619da756a4cf732cfa771f1c673b3e02f771b033c42f20",
+      "source_size": [
+        1280,
+        720
+      ],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Hat",
+      "tier": "T2",
+      "slot": 1,
+      "expected_value": 19,
+      "atlas_box": [
+        0,
+        72,
+        48,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010354.png",
+      "source_sha256": "8cd6de5ffab2b1f1fd619da756a4cf732cfa771f1c673b3e02f771b033c42f20",
+      "source_size": [
+        1280,
+        720
+      ],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Hairpin",
+      "tier": "T2",
+      "slot": 2,
+      "expected_value": 19,
+      "atlas_box": [
+        48,
+        72,
+        96,
+        108
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 010354.png",
+      "source_sha256": "8cd6de5ffab2b1f1fd619da756a4cf732cfa771f1c673b3e02f771b033c42f20",
+      "source_size": [
+        1280,
+        720
+      ],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "family": "Watch",
+      "tier": "T2",
+      "slot": 3,
+      "expected_value": 19,
+      "atlas_box": [
+        96,
+        72,
+        144,
+        108
+      ],
+      "review_status": "visual_verified"
+    }
+  ]
+}

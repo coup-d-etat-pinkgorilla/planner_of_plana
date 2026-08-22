@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "purpose": "student basic equipment position digit masks",
+  "font_rule": "v6-verified white fill, 1px #505878 outline, shear -0.25",
+  "positions": {
+    "1": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "2": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ]
+  },
+  "template_count": 19,
+  "templates": [
+    {
+      "position": 1,
+      "digit": "1",
+      "source_value": 1,
+      "bits_hex": "1fff81fff80fff000f0000f0000f0000f0000f0000f0000f0000f0000f0000e0000f0000f0000f0000e0000e0000e0000f0000f0000fe000fe000fe00000000000",
+      "ink": 129,
+      "pixels": 560
+    },
+    {
+      "position": 1,
+      "digit": "2",
+      "source_value": 2,
+      "bits_hex": "1fffc1fffc0fdfc000fc000f8000f0003c0007c00078000f0001e0003c0007800078000f8000f0000e0000e0000e0000f0000f8180fff807ff003fe00000000000",
+      "ink": 153,
+      "pixels": 560
+    },
+    {
+      "position": 1,
+      "digit": "3",
+      "source_value": 3,
+      "bits_hex": "1ff807ffc0f8180f8000f0001e0001e0001e0001e0000f8000780007fe001fe003fe0078000e0001e0001e0001e0000f0000f0080fff807ff001fe00000000000",
+      "ink": 151,
+      "pixels": 560
+    },
+    {
+      "position": 1,
+      "digit": "4",
+      "source_value": 4,
+      "bits_hex": "78000700007800070001fffc3fffc3fffc0783c0703807038070f0070f0071e0071c0071c00738007f0007e0007e000fc000fc000f800070000000000000",
+      "ink": 159,
+      "pixels": 560
+    },
+    {
+      "position": 1,
+      "digit": "5",
+      "source_value": 5,
+      "bits_hex": "1ff807ffc0f8180f8000f0001e0001e0001e0001e0000f0000f8000fff003ff001ff0000f00007000070000700007000070000f00fff00fff00fff00000000000",
+      "ink": 154,
+      "pixels": 560
+    },
+    {
+      "position": 1,
+      "digit": "6",
+      "source_value": 6,
+      "bits_hex": "3fc007ff00f0f80f0781e0781e0781c0781c0381c0381c03c1e0381f07807ff807ff801e780003800078000780007800078000f80fff00ff8007f800000000000",
+      "ink": 179,
+      "pixels": 560
+    },
+    {
+      "position": 1,
+      "digit": "7",
+      "source_value": 7,
+      "bits_hex": "f0000e0001c0001c0001800038000780007800070000f0000e0000e0001c0001c0003c0003800070000700007000060000f0000fff81fffc0fffc0000000000",
+      "ink": 109,
+      "pixels": 560
+    },
+    {
+      "position": 1,
+      "digit": "8",
+      "source_value": 8,
+      "bits_hex": "7fe00fff01f0781e03c3c03c3803c3803c3c03c1e0780f07007fe007fc003f8007fe00f0f01e0703c0781c0783c0383e0781e0701fff00ffc003f800000000000",
+      "ink": 203,
+      "pixels": 560
+    },
+    {
+      "position": 1,
+      "digit": "9",
+      "source_value": 9,
+      "bits_hex": "7f800ff803f1007e0007800070000f0000f0000e0000f3e00fff80fff81f07c1e03c1e01c0e01c0e01c0e03c0e03c0707c0707807ff803fe001fc00000000000",
+      "ink": 177,
+      "pixels": 560
+    },
+    {
+      "position": 2,
+      "digit": "0",
+      "source_value": 10,
+      "bits_hex": "1fe003ff0078f807078070780f0380f03c0f03c0e03c1e01c1e01c0e01c1e03c1e03c1e01c1e0180e0380e0380e038070780707807ff803fe001fc00000000000",
+      "ink": 180,
+      "pixels": 560
+    },
+    {
+      "position": 2,
+      "digit": "1",
+      "source_value": 11,
+      "bits_hex": "1fff81fff00ffe000f0000f0000f0000e0000e0000f0000f0000f0000f0000e0000e0000f0000f0000e0000e0000e0000f0000f0000fe000fe000fe00000000000",
+      "ink": 124,
+      "pixels": 560
+    },
+    {
+      "position": 2,
+      "digit": "2",
+      "source_value": 12,
+      "bits_hex": "1fffc1fffc1fffc000f8000f0001f0003c0007c00078000f0001e0003c0007800078000f8000f0001e0001e0001e0000f0000f8100fff807ff003fe00000000000",
+      "ink": 156,
+      "pixels": 560
+    },
+    {
+      "position": 2,
+      "digit": "3",
+      "source_value": 13,
+      "bits_hex": "1ff807ffc0f8180f8000f0001e0001e0001e0001e0000f0000f80007fe003fe007fe0078000e0001c0001e0001e0001e0000f0000fff807ff003fe00000000000",
+      "ink": 152,
+      "pixels": 560
+    },
+    {
+      "position": 2,
+      "digit": "4",
+      "source_value": 14,
+      "bits_hex": "f0000e0000e0000e0000f0003fffc3fffc3fffc0e07c0e0380e0700e0f00e1e00e1c00e3800e3800ff000ff000fe000fc000fc000f8000f0000e0000000000000",
+      "ink": 164,
+      "pixels": 560
+    },
+    {
+      "position": 2,
+      "digit": "5",
+      "source_value": 15,
+      "bits_hex": "1ff807ffc0f8180f8000f0001e0001e0001e0001e0000f0000f8000ffe007ff001ff0000f000070000f0000f00007000070000f00fff00fff00fff00000000000",
+      "ink": 156,
+      "pixels": 560
+    },
+    {
+      "position": 2,
+      "digit": "6",
+      "source_value": 16,
+      "bits_hex": "1fe003ff0078f8070780f0380e03c0e03c0e03c1e01c1e01c0f01c0f07c07ffc07ffc00e3c0001c00038000380003800078000f807ff807fc007f800000000000",
+      "ink": 175,
+      "pixels": 560
+    },
+    {
+      "position": 2,
+      "digit": "7",
+      "source_value": 17,
+      "bits_hex": "f0000f0000e0001e0001c0003800078000700007000070000f0000e0001c0001c0003c00078000780007800070000e0001f0001fffc1fffc1fffc0000000000",
+      "ink": 119,
+      "pixels": 560
+    },
+    {
+      "position": 2,
+      "digit": "8",
+      "source_value": 18,
+      "bits_hex": "7fe00fff01e0781e0383c03c3803c3803c3c03c3e0780f0f007fe007fc003f800ffe00f1f01e0703c0701c0783c0783c0783e0701fff00ffc007f800000000000",
+      "ink": 206,
+      "pixels": 560
+    },
+    {
+      "position": 2,
+      "digit": "9",
+      "source_value": 19,
+      "bits_hex": "7f800ff803f1007e0007800070000f0000f0000e0001f3e01fff80fff81f0781e03c1e03c1e01c1e01c0e03c0e03c0f0780707807ff803fe001fc00000000000",
+      "ink": 181,
+      "pixels": 560
+    }
+  ]
+}

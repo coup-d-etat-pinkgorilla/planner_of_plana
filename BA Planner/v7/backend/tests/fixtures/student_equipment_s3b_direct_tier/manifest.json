@@ -1,0 +1,889 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-23",
+  "source_screenshot_count": 14,
+  "roi_count": 42,
+  "roi_size": [
+    70,
+    40
+  ],
+  "ground_truth": {
+    "method": "user tier sequence plus visual review",
+    "template_split": "haruna_sportswear T1-T10",
+    "independent_validation_split": "kurumi T2 four stable frames",
+    "runtime_assets_contain_source_pixels": false
+  },
+  "coverage": {
+    "families": [
+      "Shoes",
+      "Bag",
+      "Necklace"
+    ],
+    "template_tiers": [
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6",
+      "T7",
+      "T8",
+      "T9",
+      "T10"
+    ],
+    "validation_tiers": [
+      "T2"
+    ],
+    "validation_roi_count": 12
+  },
+  "atlas": {
+    "path": "inner_icon_atlas.png",
+    "size": [
+      700,
+      200
+    ],
+    "sha256": "b4838621f14f6cb1a548915cd433b137b13a1ceddb3a26111c4c27fbe0087b13"
+  },
+  "records": [
+    {
+      "source_file": "스크린샷 2026-08-23 014422.png",
+      "source_sha256": "f3fa1cef8e345daf59582cfcf9e8bc670563b093624ab004d602f7e05aa7c526",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Shoes",
+      "tier": "T1",
+      "slot": 1,
+      "split": "template",
+      "atlas_box": [
+        0,
+        0,
+        70,
+        40
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014422.png",
+      "source_sha256": "f3fa1cef8e345daf59582cfcf9e8bc670563b093624ab004d602f7e05aa7c526",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Bag",
+      "tier": "T1",
+      "slot": 2,
+      "split": "template",
+      "atlas_box": [
+        70,
+        0,
+        140,
+        40
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014422.png",
+      "source_sha256": "f3fa1cef8e345daf59582cfcf9e8bc670563b093624ab004d602f7e05aa7c526",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Necklace",
+      "tier": "T1",
+      "slot": 3,
+      "split": "template",
+      "atlas_box": [
+        140,
+        0,
+        210,
+        40
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014508.png",
+      "source_sha256": "465b7c1c1e3493de829b794e326539724568e0adfefeb1d7ade8192a57107e33",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Shoes",
+      "tier": "T2",
+      "slot": 1,
+      "split": "template",
+      "atlas_box": [
+        210,
+        0,
+        280,
+        40
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014508.png",
+      "source_sha256": "465b7c1c1e3493de829b794e326539724568e0adfefeb1d7ade8192a57107e33",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Bag",
+      "tier": "T2",
+      "slot": 2,
+      "split": "template",
+      "atlas_box": [
+        280,
+        0,
+        350,
+        40
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014508.png",
+      "source_sha256": "465b7c1c1e3493de829b794e326539724568e0adfefeb1d7ade8192a57107e33",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Necklace",
+      "tier": "T2",
+      "slot": 3,
+      "split": "template",
+      "atlas_box": [
+        350,
+        0,
+        420,
+        40
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014516.png",
+      "source_sha256": "268b666101597ed76cb54e36ac90948b0a2b83a18f6527199e0a4bf3ee2e8b89",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Shoes",
+      "tier": "T3",
+      "slot": 1,
+      "split": "template",
+      "atlas_box": [
+        420,
+        0,
+        490,
+        40
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014516.png",
+      "source_sha256": "268b666101597ed76cb54e36ac90948b0a2b83a18f6527199e0a4bf3ee2e8b89",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Bag",
+      "tier": "T3",
+      "slot": 2,
+      "split": "template",
+      "atlas_box": [
+        490,
+        0,
+        560,
+        40
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014516.png",
+      "source_sha256": "268b666101597ed76cb54e36ac90948b0a2b83a18f6527199e0a4bf3ee2e8b89",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Necklace",
+      "tier": "T3",
+      "slot": 3,
+      "split": "template",
+      "atlas_box": [
+        560,
+        0,
+        630,
+        40
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014524.png",
+      "source_sha256": "d1f40a1e678476aa5d3e70cdb393061da484189da2a98fceb6cd0df9d1c4034b",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Shoes",
+      "tier": "T4",
+      "slot": 1,
+      "split": "template",
+      "atlas_box": [
+        630,
+        0,
+        700,
+        40
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014524.png",
+      "source_sha256": "d1f40a1e678476aa5d3e70cdb393061da484189da2a98fceb6cd0df9d1c4034b",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Bag",
+      "tier": "T4",
+      "slot": 2,
+      "split": "template",
+      "atlas_box": [
+        0,
+        40,
+        70,
+        80
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014524.png",
+      "source_sha256": "d1f40a1e678476aa5d3e70cdb393061da484189da2a98fceb6cd0df9d1c4034b",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Necklace",
+      "tier": "T4",
+      "slot": 3,
+      "split": "template",
+      "atlas_box": [
+        70,
+        40,
+        140,
+        80
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014532.png",
+      "source_sha256": "cde3d8682779c046b0dd491fb0f9a0d4ea7d1d04a99980f0b345ed80fc823298",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Shoes",
+      "tier": "T5",
+      "slot": 1,
+      "split": "template",
+      "atlas_box": [
+        140,
+        40,
+        210,
+        80
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014532.png",
+      "source_sha256": "cde3d8682779c046b0dd491fb0f9a0d4ea7d1d04a99980f0b345ed80fc823298",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Bag",
+      "tier": "T5",
+      "slot": 2,
+      "split": "template",
+      "atlas_box": [
+        210,
+        40,
+        280,
+        80
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014532.png",
+      "source_sha256": "cde3d8682779c046b0dd491fb0f9a0d4ea7d1d04a99980f0b345ed80fc823298",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Necklace",
+      "tier": "T5",
+      "slot": 3,
+      "split": "template",
+      "atlas_box": [
+        280,
+        40,
+        350,
+        80
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014540.png",
+      "source_sha256": "75f4325270cf7132ae09689ba2c9cf05f421b58795a1e0ad62f94cea59ef0df0",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Shoes",
+      "tier": "T6",
+      "slot": 1,
+      "split": "template",
+      "atlas_box": [
+        350,
+        40,
+        420,
+        80
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014540.png",
+      "source_sha256": "75f4325270cf7132ae09689ba2c9cf05f421b58795a1e0ad62f94cea59ef0df0",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Bag",
+      "tier": "T6",
+      "slot": 2,
+      "split": "template",
+      "atlas_box": [
+        420,
+        40,
+        490,
+        80
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014540.png",
+      "source_sha256": "75f4325270cf7132ae09689ba2c9cf05f421b58795a1e0ad62f94cea59ef0df0",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Necklace",
+      "tier": "T6",
+      "slot": 3,
+      "split": "template",
+      "atlas_box": [
+        490,
+        40,
+        560,
+        80
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014551.png",
+      "source_sha256": "8c93aea65bfb1893159b550a04855da5e5fa1eb917bd35b0d2377cb8789dd203",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Shoes",
+      "tier": "T7",
+      "slot": 1,
+      "split": "template",
+      "atlas_box": [
+        560,
+        40,
+        630,
+        80
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014551.png",
+      "source_sha256": "8c93aea65bfb1893159b550a04855da5e5fa1eb917bd35b0d2377cb8789dd203",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Bag",
+      "tier": "T7",
+      "slot": 2,
+      "split": "template",
+      "atlas_box": [
+        630,
+        40,
+        700,
+        80
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014551.png",
+      "source_sha256": "8c93aea65bfb1893159b550a04855da5e5fa1eb917bd35b0d2377cb8789dd203",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Necklace",
+      "tier": "T7",
+      "slot": 3,
+      "split": "template",
+      "atlas_box": [
+        0,
+        80,
+        70,
+        120
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014600.png",
+      "source_sha256": "367da342ced3d0892fd756a20ae39bb193d99c0061370044a4f290dafeab00f9",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Shoes",
+      "tier": "T8",
+      "slot": 1,
+      "split": "template",
+      "atlas_box": [
+        70,
+        80,
+        140,
+        120
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014600.png",
+      "source_sha256": "367da342ced3d0892fd756a20ae39bb193d99c0061370044a4f290dafeab00f9",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Bag",
+      "tier": "T8",
+      "slot": 2,
+      "split": "template",
+      "atlas_box": [
+        140,
+        80,
+        210,
+        120
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014600.png",
+      "source_sha256": "367da342ced3d0892fd756a20ae39bb193d99c0061370044a4f290dafeab00f9",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Necklace",
+      "tier": "T8",
+      "slot": 3,
+      "split": "template",
+      "atlas_box": [
+        210,
+        80,
+        280,
+        120
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014608.png",
+      "source_sha256": "835ed07d398e1893197dffe0e345fb5ec6c97de6167c30a6caa7c06107ebe927",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Shoes",
+      "tier": "T9",
+      "slot": 1,
+      "split": "template",
+      "atlas_box": [
+        280,
+        80,
+        350,
+        120
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014608.png",
+      "source_sha256": "835ed07d398e1893197dffe0e345fb5ec6c97de6167c30a6caa7c06107ebe927",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Bag",
+      "tier": "T9",
+      "slot": 2,
+      "split": "template",
+      "atlas_box": [
+        350,
+        80,
+        420,
+        120
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014608.png",
+      "source_sha256": "835ed07d398e1893197dffe0e345fb5ec6c97de6167c30a6caa7c06107ebe927",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Necklace",
+      "tier": "T9",
+      "slot": 3,
+      "split": "template",
+      "atlas_box": [
+        420,
+        80,
+        490,
+        120
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014618.png",
+      "source_sha256": "a9468fa5e04c242794ad51ba0301a92334f1422960bf36ab1493ce5644b5b918",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Shoes",
+      "tier": "T10",
+      "slot": 1,
+      "split": "template",
+      "atlas_box": [
+        490,
+        80,
+        560,
+        120
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014618.png",
+      "source_sha256": "a9468fa5e04c242794ad51ba0301a92334f1422960bf36ab1493ce5644b5b918",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Bag",
+      "tier": "T10",
+      "slot": 2,
+      "split": "template",
+      "atlas_box": [
+        560,
+        80,
+        630,
+        120
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014618.png",
+      "source_sha256": "a9468fa5e04c242794ad51ba0301a92334f1422960bf36ab1493ce5644b5b918",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "haruna_sportswear",
+      "family": "Necklace",
+      "tier": "T10",
+      "slot": 3,
+      "split": "template",
+      "atlas_box": [
+        630,
+        80,
+        700,
+        120
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014644.png",
+      "source_sha256": "0b759f7f5ebb3508f852d8290b50e2744d26212c8b0e548bd9c5c30da297b231",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "kurumi",
+      "family": "Shoes",
+      "tier": "T2",
+      "slot": 1,
+      "split": "validation",
+      "atlas_box": [
+        0,
+        120,
+        70,
+        160
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014644.png",
+      "source_sha256": "0b759f7f5ebb3508f852d8290b50e2744d26212c8b0e548bd9c5c30da297b231",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "kurumi",
+      "family": "Bag",
+      "tier": "T2",
+      "slot": 2,
+      "split": "validation",
+      "atlas_box": [
+        70,
+        120,
+        140,
+        160
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014644.png",
+      "source_sha256": "0b759f7f5ebb3508f852d8290b50e2744d26212c8b0e548bd9c5c30da297b231",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "kurumi",
+      "family": "Necklace",
+      "tier": "T2",
+      "slot": 3,
+      "split": "validation",
+      "atlas_box": [
+        140,
+        120,
+        210,
+        160
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014646.png",
+      "source_sha256": "ae35b74d49f2cba96ccbb00c5d0bc031baec90bf569c57acd7ddbb5576787c62",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "kurumi",
+      "family": "Shoes",
+      "tier": "T2",
+      "slot": 1,
+      "split": "validation",
+      "atlas_box": [
+        210,
+        120,
+        280,
+        160
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014646.png",
+      "source_sha256": "ae35b74d49f2cba96ccbb00c5d0bc031baec90bf569c57acd7ddbb5576787c62",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "kurumi",
+      "family": "Bag",
+      "tier": "T2",
+      "slot": 2,
+      "split": "validation",
+      "atlas_box": [
+        280,
+        120,
+        350,
+        160
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014646.png",
+      "source_sha256": "ae35b74d49f2cba96ccbb00c5d0bc031baec90bf569c57acd7ddbb5576787c62",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "kurumi",
+      "family": "Necklace",
+      "tier": "T2",
+      "slot": 3,
+      "split": "validation",
+      "atlas_box": [
+        350,
+        120,
+        420,
+        160
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014648.png",
+      "source_sha256": "0d023194f05331245e0b2381af8533b5ce467de1400262175b1d99876dc1cdd5",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "kurumi",
+      "family": "Shoes",
+      "tier": "T2",
+      "slot": 1,
+      "split": "validation",
+      "atlas_box": [
+        420,
+        120,
+        490,
+        160
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014648.png",
+      "source_sha256": "0d023194f05331245e0b2381af8533b5ce467de1400262175b1d99876dc1cdd5",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "kurumi",
+      "family": "Bag",
+      "tier": "T2",
+      "slot": 2,
+      "split": "validation",
+      "atlas_box": [
+        490,
+        120,
+        560,
+        160
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014648.png",
+      "source_sha256": "0d023194f05331245e0b2381af8533b5ce467de1400262175b1d99876dc1cdd5",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "kurumi",
+      "family": "Necklace",
+      "tier": "T2",
+      "slot": 3,
+      "split": "validation",
+      "atlas_box": [
+        560,
+        120,
+        630,
+        160
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014654.png",
+      "source_sha256": "3cb344d751fd7cde5a58fdae553dd8820f2cad6e6c18f47d6179f84cc6bc1cf2",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "kurumi",
+      "family": "Shoes",
+      "tier": "T2",
+      "slot": 1,
+      "split": "validation",
+      "atlas_box": [
+        630,
+        120,
+        700,
+        160
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014654.png",
+      "source_sha256": "3cb344d751fd7cde5a58fdae553dd8820f2cad6e6c18f47d6179f84cc6bc1cf2",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "kurumi",
+      "family": "Bag",
+      "tier": "T2",
+      "slot": 2,
+      "split": "validation",
+      "atlas_box": [
+        0,
+        160,
+        70,
+        200
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 014654.png",
+      "source_sha256": "3cb344d751fd7cde5a58fdae553dd8820f2cad6e6c18f47d6179f84cc6bc1cf2",
+      "source_size": [
+        1280,
+        720
+      ],
+      "student_ref": "kurumi",
+      "family": "Necklace",
+      "tier": "T2",
+      "slot": 3,
+      "split": "validation",
+      "atlas_box": [
+        70,
+        160,
+        140,
+        200
+      ],
+      "review_status": "visual_verified"
+    }
+  ]
+}

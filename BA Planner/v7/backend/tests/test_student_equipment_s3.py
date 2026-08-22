@@ -280,7 +280,7 @@ class StudentEquipmentS3Tests(unittest.TestCase):
         self.assertEqual([], report["master_required"])
         self.assertEqual("retain for unresolved slots; required by the real T10/Lv70 evidence", report["answers"]["real_master"]["decision"]["equipment_menu_fallback"])
 
-    def test_master_real_mika_repeats_keep_levels_unresolved_until_menu(self) -> None:
+    def test_master_real_mika_repeats_resolve_with_position_bank_without_menu(self) -> None:
         basic = StudentEquipmentRecognizer(self.catalog)
         menu = EquipmentMenuRecognizer(self.catalog)
         try:
@@ -294,13 +294,12 @@ class StudentEquipmentS3Tests(unittest.TestCase):
                     )
                     crops.close()
                     self.assertEqual(["T10", "T10", "T10"], [values[f"equip{slot}"].value for slot in (1, 2, 3)])
-                    self.assertEqual((1, 2, 3), unresolved)
-                    self.assertTrue(all(values[f"equip{slot}_level"].value is None for slot in (1, 2, 3)))
-
-                    menu_path = LIVE_ROOT / "equipment_menu" / f"sample_{index:02d}.png"
-                    with Image.open(menu_path) as menu_frame:
-                        resolved = menu.recognize(menu_frame, unresolved)
-                    self.assertEqual([70, 70, 70], [resolved[f"equip{slot}_level"].value for slot in (1, 2, 3)])
+                    self.assertEqual((), unresolved)
+                    self.assertEqual([70, 70, 70], [values[f"equip{slot}_level"].value for slot in (1, 2, 3)])
+                    self.assertTrue(all(
+                        values[f"equip{slot}_level"].source == "equipment_position_binary"
+                        for slot in (1, 2, 3)
+                    ))
         finally:
             basic.close()
 

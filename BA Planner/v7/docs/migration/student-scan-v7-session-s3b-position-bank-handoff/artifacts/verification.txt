@@ -1,0 +1,28 @@
+S3B position bank verification
+==============================
+
+PASS  focused S2/S3/S3B/asset/stdio set: 35 tests
+PASS  full backend suite before final component guard: 200/200
+PASS  final component-guard S3B suite: 15/15
+PASS  frozen position benchmark: 349/349 accepted correct, 0 accepted wrong
+PASS  exact 1280x720 subset: 30/30
+PASS  integration fallback: menu calls 6 -> 0, unresolved slots 0
+PASS  Python py_compile for recognizer, matcher, builders/exporter/benchmark
+PASS  git diff --check (line-ending warnings only)
+PASS  codealmanac validate
+PASS  codealmanac health: 0 orphans/dead refs/broken links/errors
+
+Current-shell rerun note
+------------------------
+
+A later full-suite rerun selected the system Python, which has neither Pillow/jsonschema nor the
+project-local AppData permission. Test collection therefore failed for environment reasons. The
+workspace currently has no .venv directory to repeat that run. This does not supersede the completed
+200/200 run and the post-guard 15/15 run above; it is recorded so the master can reproduce with the
+dependency-complete Python environment.
+
+Known remaining boundary
+------------------------
+
+Kurumi Necklace T2 remains a tier-icon gate rejection (T2 top-1, score 0.493740, margin 0.009946).
+The promoted 19-mask path covers equipment level only. S4/S5 were not changed.

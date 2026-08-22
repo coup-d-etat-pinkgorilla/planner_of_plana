@@ -74,3 +74,18 @@ generated matcher, unresolved-only 단일 장비-menu fallback과 애용품 판�
 `slave-artifact-handoff.md` 계약에 따라 input과 같은 디렉터리의 별도 S3B handoff 폴더에
 `output.md`, patch, benchmark 원자료, 실캡처 답지, confusion matrix와 verification을 저장한다.
 S3B master acceptance 전에는 S4를 시작하지 않는다.
+
+## 2026-08-23 승인된 후속 결정
+
+- 게임은 장비 레벨의 폰트, -0.25 기울기와 두 digit 위치를 고정하며, 한 자리 숫자는 첫
+  위치를 사용한다. v6 mask 형상/위치는 과거 육안 검증 완료라는 사용자 결정을 입력으로
+  받아 중복 형상 실험을 생략한다.
+- Runtime level bank는 첫 위치 1~9와 둘째 위치 0~9, 총 19개 compact fill mask로 제한한다.
+  원본 screenshot pixel은 runtime asset에 넣지 않는다.
+- 새 exact 1280x720 네 장의 10~19가 일의 자리 0~9와 세 slot을 충족하므로 숫자 위치 bank에
+  필요한 추가 촬영은 없다. 함께 제공된 2560x1440 화면은 diagnostic-only다.
+- 349/349 replay, accepted-wrong 0, exact 30/30과 menu-call 6→0을 근거로 이 19-mask **level**
+  경로만 production-selected로 변경한다. Legacy menu binary와 whole-string generated 경로는
+  안전 fallback/diagnostic으로 유지한다.
+- Kurumi Necklace T2의 별도 tier-icon rejection은 남아 있으므로 full S3B end-to-end 승격과
+  S4 시작은 이 결정에 포함하지 않는다.

@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-23T01:20:00+09:00",
+  "screenshots": [
+    {
+      "file": "스크린샷 2026-08-23 010231.png",
+      "sha256": "0cfa7d02f730f56b548de9d17a495de54c94ff017abd709868623aeaabd3f11c",
+      "source_size": [2560, 1440],
+      "evidence_class": "cross_resolution_diagnostic",
+      "student_ref": "hiyori_swimsuit",
+      "tiers": ["T1", "T2", "T2"],
+      "expected": [10, 11, 12]
+    },
+    {
+      "file": "스크린샷 2026-08-23 010251.png",
+      "sha256": "e967a762714a110ca5c266087dcc9a9d3e2f348c45dc933d18f1b57ac29b0b62",
+      "source_size": [1280, 720],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "tiers": ["T2", "T2", "T2"],
+      "expected": [10, 11, 12]
+    },
+    {
+      "file": "스크린샷 2026-08-23 010308.png",
+      "sha256": "da7f77cd4d299f3e99361a4b92e7d2ed950073220f1d33c90dcbf33bb57a5ddc",
+      "source_size": [1280, 720],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "tiers": ["T2", "T2", "T2"],
+      "expected": [13, 14, 15]
+    },
+    {
+      "file": "스크린샷 2026-08-23 010328.png",
+      "sha256": "c41ff5342a9536e6b496770deceeb5114368a55a836545c3f2f969e2df00aa4f",
+      "source_size": [1280, 720],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "tiers": ["T2", "T2", "T2"],
+      "expected": [16, 17, 18]
+    },
+    {
+      "file": "스크린샷 2026-08-23 010354.png",
+      "sha256": "8cd6de5ffab2b1f1fd619da756a4cf732cfa771f1c673b3e02f771b033c42f20",
+      "source_size": [1280, 720],
+      "evidence_class": "exact_1280x720",
+      "student_ref": "hiyori_swimsuit",
+      "tiers": ["T2", "T2", "T2"],
+      "expected": [19, 19, 19]
+    }
+  ]
+}

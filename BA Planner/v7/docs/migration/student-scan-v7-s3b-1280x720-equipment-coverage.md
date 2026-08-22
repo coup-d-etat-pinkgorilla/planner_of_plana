@@ -63,6 +63,20 @@ v6 `profile_dd633a06/ba_planner.db`의 읽기 전용 snapshot SHA-256
 
 ## 최소 factorized capture: 30 설정
 
+> 2026-08-23 범위 보정: 아래 30설정은 family별 tier icon과 전체 end-to-end 독립 split을
+> 검증하는 계획으로 계속 유효하다. 숫자 glyph 자체의 production bank는 게임의 고정
+> 폰트·기울기·배치와 과거 v6 mask 육안 검증을 사용자 보증으로 받아, 첫 자리 1~9와 둘째
+> 자리 0~9의 19개 위치 template로 닫았다. `S3B_1280_DIGITS`의 exact 1280x720 네 장에서
+> 10~19/일의 자리 0~9를 세 slot으로 재생했으며, 숫자 bank를 위해 tier별 모든 자릿수를
+> 다시 조합 촬영할 필요는 없다. 아래 행렬은 숫자 template 생성 요구가 아니라 tier 및
+> 전체 scanner 검증 요구다.
+
+> 2026-08-23 tier-ROI 후속 결정: 아이리(밴드), 하루나(체육복), 칸나의 exact 1280x720
+> T1~T10 화면으로 9 family x 10 tier 실제 inner ROI bank를 완성했다. 게임의 아이콘 고정
+> 위치가 v6에서 검증됐다는 사용자 결정에 따라 이 bank만을 위한 별도 30-screen identity
+> validation은 생략한다. 기존 쿠루미 T2와 Mika/Hibiki T10 독립 regression 30 ROI는 모두
+> 통과했다. 이 면제는 숫자·학생 identity·다른 해상도나 전체 scanner 검증으로 확대하지 않는다.
+
 Runtime에서 tier icon은 family별로 판독하지만 level glyph는 family를 입력으로 받지 않고
 slot geometry별로 판독한다. 따라서 family×tier와 slot×digit/layout을 독립 축으로 검증할 수
 있다. Family-tier는 9×10=90개이고 한 화면에서 세 slot을 읽으므로 **최소 30장**이 필요하다.

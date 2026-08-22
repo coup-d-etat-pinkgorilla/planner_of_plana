@@ -1,0 +1,13 @@
+PASS source: 30 exact 1280x720 T1-T10 screens, all SHA-256 fixed
+PASS bank: 9 families x 10 tiers = 90 actual 70x40 inner ROIs
+PASS template self-check: 90/90 correct, wrong 0, minimum margin 0.129761
+PASS available independent regression: 30/30 correct, wrong 0, direct source 30/30
+PASS Kurumi Necklace T2: score 0.999931, margin 0.144884
+PASS performance: warm p50/p95 1.960/2.269ms, prepare 52.269ms, cold 91.631ms
+PASS memory: 1,310,400 prepared bytes
+PASS focused S3/S3B/asset/stdio: 38/38
+PASS full backend: 203/203
+PASS production fallback: synthesized reader retained for uncertain/missing direct bank
+PASS S4/S5 untouched
+
+VALIDATION_POLICY: independent T1-T10 recapture waived by explicit user decision because v6 verified fixed icon placement.

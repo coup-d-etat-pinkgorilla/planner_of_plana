@@ -1,0 +1,304 @@
+{
+  "schema_version": 1,
+  "mode": "actual_fixed-inner-roi-production-gate",
+  "production_enabled": true,
+  "validation_policy": "independent validation waived by user; fixed icon placement was verified in v6",
+  "bank": {
+    "templates": 90,
+    "families": 9,
+    "tiers": 10,
+    "prepared_bytes": 1310400,
+    "prepare_ms": 52.26929998025298,
+    "cold_recognizer_ms": 91.63070004433393
+  },
+  "template_self_check": {
+    "correct": 90,
+    "total": 90,
+    "wrong": 0,
+    "score_min": 1.0,
+    "margin_min": 0.129761
+  },
+  "available_independent_regression": {
+    "correct": 30,
+    "total": 30,
+    "wrong": 0,
+    "direct_source": 30,
+    "score_min": 0.9997642857142857,
+    "margin_min": 0.144884,
+    "warm_one_roi_p50_ms": 1.9596500205807388,
+    "warm_one_roi_p95_ms": 2.268600044772029,
+    "rows": [
+      {
+        "dataset": "kurumi_t2",
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9997642857142857,
+        "margin": 0.242062
+      },
+      {
+        "dataset": "kurumi_t2",
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999464285714286,
+        "margin": 0.23711
+      },
+      {
+        "dataset": "kurumi_t2",
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999306722689075,
+        "margin": 0.144884
+      },
+      {
+        "dataset": "kurumi_t2",
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9997642857142857,
+        "margin": 0.242062
+      },
+      {
+        "dataset": "kurumi_t2",
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999464285714286,
+        "margin": 0.23711
+      },
+      {
+        "dataset": "kurumi_t2",
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999306722689075,
+        "margin": 0.144884
+      },
+      {
+        "dataset": "kurumi_t2",
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9997642857142857,
+        "margin": 0.242062
+      },
+      {
+        "dataset": "kurumi_t2",
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999464285714286,
+        "margin": 0.23711
+      },
+      {
+        "dataset": "kurumi_t2",
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999306722689075,
+        "margin": 0.144884
+      },
+      {
+        "dataset": "kurumi_t2",
+        "family": "Shoes",
+        "expected": "T2",
+        "candidate": "T2",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9997642857142857,
+        "margin": 0.242062
+      },
+      {
+        "dataset": "kurumi_t2",
+        "family": "Bag",
+        "expected": "T2",
+        "candidate": "T2",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999464285714286,
+        "margin": 0.23711
+      },
+      {
+        "dataset": "kurumi_t2",
+        "family": "Necklace",
+        "expected": "T2",
+        "candidate": "T2",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999306722689075,
+        "margin": 0.144884
+      },
+      {
+        "dataset": "mika_t10",
+        "family": "Hat",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 1.0,
+        "margin": 0.237652
+      },
+      {
+        "dataset": "mika_t10",
+        "family": "Badge",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 1.0,
+        "margin": 0.196153
+      },
+      {
+        "dataset": "mika_t10",
+        "family": "Watch",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999999299719888,
+        "margin": 0.191411
+      },
+      {
+        "dataset": "mika_t10",
+        "family": "Hat",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 1.0,
+        "margin": 0.237652
+      },
+      {
+        "dataset": "mika_t10",
+        "family": "Badge",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 1.0,
+        "margin": 0.196153
+      },
+      {
+        "dataset": "mika_t10",
+        "family": "Watch",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999999299719888,
+        "margin": 0.191411
+      },
+      {
+        "dataset": "mika_t10",
+        "family": "Hat",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 1.0,
+        "margin": 0.237652
+      },
+      {
+        "dataset": "mika_t10",
+        "family": "Badge",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 1.0,
+        "margin": 0.196153
+      },
+      {
+        "dataset": "mika_t10",
+        "family": "Watch",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999999299719888,
+        "margin": 0.191411
+      },
+      {
+        "dataset": "hibiki_t10",
+        "family": "Hat",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 1.0,
+        "margin": 0.237652
+      },
+      {
+        "dataset": "hibiki_t10",
+        "family": "Hairpin",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 1.0,
+        "margin": 0.243854
+      },
+      {
+        "dataset": "hibiki_t10",
+        "family": "Watch",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999999299719888,
+        "margin": 0.191411
+      },
+      {
+        "dataset": "hibiki_t10",
+        "family": "Hat",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 1.0,
+        "margin": 0.237652
+      },
+      {
+        "dataset": "hibiki_t10",
+        "family": "Hairpin",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 1.0,
+        "margin": 0.243854
+      },
+      {
+        "dataset": "hibiki_t10",
+        "family": "Watch",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999999299719888,
+        "margin": 0.191411
+      },
+      {
+        "dataset": "hibiki_t10",
+        "family": "Hat",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 1.0,
+        "margin": 0.237652
+      },
+      {
+        "dataset": "hibiki_t10",
+        "family": "Hairpin",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 1.0,
+        "margin": 0.243854
+      },
+      {
+        "dataset": "hibiki_t10",
+        "family": "Watch",
+        "expected": "T10",
+        "candidate": "T10",
+        "source": "equipment_direct_icon_tier",
+        "score": 0.9999999299719888,
+        "margin": 0.191411
+      }
+    ]
+  },
+  "decision": "production selected; synthesized reader retained only as uncertainty/missing-asset fallback"
+}

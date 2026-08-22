@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_version": "student-equipment-s3-2026-08-21",
+  "source_version": "student-equipment-s3b-actual-tier-roi-2026-08-23",
   "assets": [
     {
       "path": "regions/student_equipment_regions.json",
@@ -28,6 +28,33 @@
       "bytes": 3118992,
       "sha256": "f490194d9bf161f70076d01c9fb0a24d0019a324102de46c5fef579188ee96e6",
       "source_path": "../v6/gui/font/경기천년제목_Bold.ttf"
+    },
+    {
+      "path": "templates/student_equipment/basic_position_digits.json",
+      "scan_kind": "student",
+      "purpose": "student-equipment-position-digit-bank",
+      "required": true,
+      "bytes": 5751,
+      "sha256": "622df595cd1baa955aee070c9d9adef2b09d3064f566a03426306098c075dbdc",
+      "source_path": "generated:v6-verified-font-outline-shear-position-mask-v1"
+    },
+    {
+      "path": "templates/student_equipment/basic_tier_inner_rois.json",
+      "scan_kind": "student",
+      "purpose": "student-equipment-basic-tier-roi-metadata",
+      "required": true,
+      "bytes": 32552,
+      "sha256": "96702195081c19b241aba12d617b0010898bad4e79fcc819f44506521f253487",
+      "source_path": "generated:actual-exact-1280x720-basic-tier-roi-v1"
+    },
+    {
+      "path": "templates/student_equipment/basic_tier_inner_rois.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-basic-tier-roi-atlas",
+      "required": true,
+      "bytes": 433772,
+      "sha256": "d6f68361163235fa6e2811c1274c55147ac3789ab11651d30e54013cfd33ef6b",
+      "source_path": "generated:actual-exact-1280x720-basic-tier-roi-v1"
     },
     {
       "path": "templates/student_equipment/favorite/equip4_T1.png",

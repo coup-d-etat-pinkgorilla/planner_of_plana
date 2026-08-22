@@ -10,6 +10,77 @@ sources:
 
 # P0-P6 Workflow Status
 
+### 2026-08-23 S3B actual tier-ROI bank production-selected
+
+- Status: two additional exact 1280x720 sequences provide Airi (Band) T1-T10 for
+  Hat/Hairpin/Charm and Kanna T1-T10 for Gloves/Badge/Watch. Combined with Haruna (Sportswear)
+  Shoes/Bag/Necklace, the actual basic-screen bank now contains all 9 families x 10 tiers = 90
+  fixed 70x40 inner ROIs. Source files and SHA-256 are retained in the generated metadata; only the
+  recognition ROI atlas, not full screenshots, enters runtime assets.
+- By explicit user decision, a new identity-disjoint T1-T10 validation capture set is not required:
+  v6 already verified that game equipment icons occupy the exact same position. This waiver applies
+  to the fixed tier-icon ROI bank, not to unrelated scanner fields or non-exact resolutions.
+- Runtime loads and prepares the 90 actual ROIs once, then compares only the metadata-selected
+  family's ten tiers. Score threshold is 0.65 and top1 margin is 0.08. The former background plus
+  inventory-icon synthesis remains only as a missing-bank/uncertainty fallback and is no longer the
+  normal path.
+- Gate results: 90/90 template tiers correct with wrong 0, minimum margin 0.129761. The already
+  available identity-independent Kurumi T2 plus Mika/Hibiki T10 regression is 30/30, wrong 0 and
+  direct-source 30/30, with minimum score/margin 0.999764/0.144884. Kurumi Necklace T2 is therefore
+  resolved. Warm one-ROI p50/p95 is 1.960/2.269ms; bank preparation is 52.269ms, recognizer cold
+  construction 91.631ms and prepared memory 1,310,400 bytes.
+- Recognition assets increase from 1,115 to 1,117. The 38-test S3/S3B/asset/stdio set and full
+  backend 203/203 pass. The production level path remains the 19-mask position bank; S4/S5 remain
+  untouched.
+
+### 2026-08-23 S3B direct tier-ROI pilot passes three families
+
+- Status: the user proposed replacing per-read `background + inventory icon` synthesis with direct
+  comparison against fixed actual basic-screen icon ROIs. Fourteen exact 1280x720 screenshots were
+  accepted from `S3B_SHOE_BAG_NECKLACE_SAMPLE`: Haruna (Sportswear) supplies one T1-T10 template
+  screen for Shoes/Bag/Necklace, and four Kurumi T2 screens form an identity-independent validation
+  split. The source folder is read-only; its 42 inner 70x40 ROIs are stored only in a test fixture.
+- On Kurumi's 12 validation ROIs, the current synthesized reader confirms 8/12 and falls back on all
+  four Necklace T2 observations. Direct actual-ROI correlation confirms 12/12 with wrong 0,
+  minimum score 0.999900 and minimum margin 0.502763. Necklace margin improves from 0.035068 to
+  0.502763. All 30 template tiers are self-consistent with minimum top1 margin 0.354209.
+- The prepared-feature direct variant also returns 12/12 with wrong 0, minimum margin 0.144884 and
+  warm one-ROI p50/p95 2.233/2.386ms, compared with synthesized p50/p95 51.928/52.810ms. Its 30
+  prepared templates use 436,800 bytes. RGB-mean-only is faster at 0.766/0.848ms but Necklace's
+  0.039230 margin is too narrow to select as the production variant.
+- Decision: the direct actual-ROI design is technically validated for the three pilot families but
+  remains diagnostic. Production code and the synthesized fallback are unchanged until Hat,
+  Hairpin, Charm, Gloves, Badge and Watch receive T1-T10 template coverage and an identity-disjoint
+  validation split covers all nine families. The new S3B fixture regression passes 16/16 focused
+  tests. S4/S5 remain untouched.
+
+### 2026-08-23 S3B fixed-position level bank promoted
+
+- Status: the five newly supplied screenshots were reviewed. Four are exact 1280x720 and cover
+  levels 10-19, including every ones digit 0-9 in all three slots; the 2560x1440 10/11/12 frame is
+  retained as diagnostic evidence only. Under the user's fixed-font, fixed-shear, fixed-position and
+  prior v6 visual-mask verification decisions, no further per-digit capture is required.
+- Runtime now loads one compact v7-owned bank with 19 masks: first-position digits 1-9 and
+  second-position digits 0-9. It contains 1,330 prepared bytes (5,751-byte JSON), uses the accepted
+  v6 text-layer renderer only to build the masks, and contains no source screenshot pixels. The
+  matcher requires exactly one tall fill component in each occupied cell so external icon/background
+  contamination cannot be silently accepted.
+- The fixed-position path is production-selected for equipment **level** only. It runs after
+  empty/locked/family/tier and before the legacy generated/menu fallbacks. Low score/margin,
+  contamination, blank misuse and invalid tier-level pairs still fall back safely. The older
+  equipment-menu binary and whole-string generated variants remain diagnostic/fallback paths.
+- Frozen replay is 349/349 top-1 and 349/349 accepted-correct with accepted-wrong 0 and fallback 0;
+  exact 1280x720 is 30/30. Minimum score/margin are 0.654438/0.086389. Six integration frames reduce
+  equipment-menu calls from 6 to 0, leave no unresolved slot, and build no whole-string templates.
+  Cold recognizer construction is 36.288ms, bank load 0.462ms, and one-ROI warm p50/p95 is
+  2.768/3.206ms.
+- Verification: the focused 35-test set passed; the full backend suite passed 200/200 before the
+  final component-contamination guard, followed by the guard-specific S3B suite passing 15/15 and
+  the unchanged 349/349 benchmark. Runtime recognition assets now total 1,115.
+- Remaining boundary: Kurumi Necklace T2 is still a separate tier-icon rejection (T2 top-1,
+  score 0.493740, margin 0.009946). This does not block the level fast path but does block claiming
+  full S3B end-to-end production completion. S4/S5 remain untouched.
+
 ### 2026-08-22 minimum matrix representatives corrected from the actual v6 account
 
 - The earlier Shiroko/Hoshino/Ako proposal was not executable because those students are already

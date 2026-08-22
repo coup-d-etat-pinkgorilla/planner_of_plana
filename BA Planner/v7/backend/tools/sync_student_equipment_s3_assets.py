@@ -39,6 +39,13 @@ def _copy(source: Path, relative: Path, purpose: str, identity: str | None = Non
 def sync() -> dict[str, int]:
     if not V6_ROOT.is_dir():
         raise FileNotFoundError(f"v6 reference tree not found: {V6_ROOT}")
+    position_bank = DESTINATION_ROOT / "basic_position_digits.json"
+    position_bank_bytes = position_bank.read_bytes() if position_bank.is_file() else None
+    direct_tier_files = {
+        name: (DESTINATION_ROOT / name).read_bytes()
+        for name in ("basic_tier_inner_rois.json", "basic_tier_inner_rois.png")
+        if (DESTINATION_ROOT / name).is_file()
+    }
     if DESTINATION_ROOT.exists():
         shutil.rmtree(DESTINATION_ROOT)
     assets: list[dict[str, object]] = []
@@ -55,6 +62,36 @@ def sync() -> dict[str, int]:
         bold_fonts[0], Path("templates/student_equipment/equipment_level_bold.ttf"),
         "student-equipment-font",
     ))
+    if position_bank_bytes is not None:
+        position_bank.parent.mkdir(parents=True, exist_ok=True)
+        position_bank.write_bytes(position_bank_bytes)
+        size, digest = _digest(position_bank)
+        assets.append({
+            "path": "templates/student_equipment/basic_position_digits.json",
+            "scan_kind": "student",
+            "purpose": "student-equipment-position-digit-bank",
+            "required": True,
+            "bytes": size,
+            "sha256": digest,
+            "source_path": "generated:v6-verified-font-outline-shear-position-mask-v1",
+        })
+    for name, content in direct_tier_files.items():
+        destination = DESTINATION_ROOT / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(content)
+        size, digest = _digest(destination)
+        assets.append({
+            "path": f"templates/student_equipment/{name}",
+            "scan_kind": "student",
+            "purpose": (
+                "student-equipment-basic-tier-roi-metadata"
+                if name.endswith(".json") else "student-equipment-basic-tier-roi-atlas"
+            ),
+            "required": True,
+            "bytes": size,
+            "sha256": digest,
+            "source_path": "generated:actual-exact-1280x720-basic-tier-roi-v1",
+        })
     region_entry = _copy(
         V6_ROOT / "regions" / "student_equipment_regions.json",
         Path("regions/student_equipment_regions.json"),

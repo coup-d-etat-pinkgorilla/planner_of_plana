@@ -317,6 +317,77 @@ synthetic-only negative/fallback 검증으로 분리한다. 전체 규칙과 기
 
 ## 인연 스탯과 검증 dependency
 
+### S3B 위치별 19-mask production 결정 (2026-08-23)
+
+사용자는 게임이 장비 레벨을 항상 같은 위치와 같은 폰트/기울기로 표시하고, v6 mask의
+픽셀 단위 형상과 위치도 과거에 모두 육안 검증했다고 확정했다. 한 자리 숫자는 두 자리
+layout의 첫 번째 위치를 그대로 사용한다. 따라서 전체 문자열 70개나 tier별 digit Cartesian
+표본을 production 전제조건으로 삼지 않고 다음 19개 equivalence class만 유지한다.
+
+- 첫 번째 위치: 1~9 아홉 개
+- 두 번째 위치: 0~9 열 개
+- 두 번째 위치 blank: 별도 숫자 template가 아니라 foreground 부재와 tier-level validity로 검증
+
+`S3B_1280_DIGITS`의 exact 1280x720 네 장은 10~19를 세 slot에서 관측해 일의 자리 0~9를
+모두 채운다. 함께 제공된 2560x1440 한 장은 diagnostic-only다. 이 자료는 template pixel
+source가 아니라 독립 답지/fixture이며 runtime bank는 v7 renderer의 white fill, navy 1px
+outline, -0.25 shear와 고정 cell placement에서 생성한다. 결과 bank는 19개/1,330 prepared
+bytes이고 source screenshot pixel을 포함하지 않는다.
+
+Production-selected level 경로는 cell별 near-white fill을 추출하고, occupied cell마다 tall
+connected component가 정확히 하나인지 확인한 뒤 0.52 score와 0.04 margin gate를 적용한다.
+349쌍 replay에서 349/349 정답, accepted wrong 0, fallback 0이며 exact 1280x720은 30/30이다.
+최소 score/margin은 0.654438/0.086389다. Cold construction 36.288ms, bank load 0.462ms,
+warm one-ROI p50/p95 2.768/3.206ms이고, 여섯 integration frame의 menu 호출은 6→0이다.
+
+이 승격은 장비 level에만 적용한다. Kurumi Necklace T2 icon은 T2가 top-1이어도 기존 tier
+gate에서 거부되므로 full S3B end-to-end production 완료 주장은 보류한다. Tier가 확정되지
+않거나 위치 matcher가 불확실하면 기존 generated/menu 경로로 내리며 S4/S5는 시작하지 않는다.
+
+### S3B 실제 tier ROI pilot (2026-08-23)
+
+기본 화면 tier reader의 기존 template는 실제 화면 crop이 아니다. v6 inventory icon을 공통
+`square.png` 배경 위에 합성하고 매 판독마다 family의 T1~T10 후보를 열어 비교한다. 사용자는
+합성 오차와 반복 I/O를 함께 제거하기 위해 실제 고정 inner ROI의 직접 대조를 제안했다.
+
+Exact 1280x720 하루나(체육복) T1~T10 열 장에서 Shoes/Bag/Necklace 30개 70x40 inner ROI를
+template split으로 만들고, 쿠루미 T2 네 장의 같은 세 family 12개 ROI를 identity-independent
+validation으로 분리했다. 전체 screenshot은 runtime asset에 들어가지 않으며 test-only atlas와
+source SHA-256 manifest만 보존한다.
+
+| 방식 | 쿠루미 T2 정답/12 | fallback | 최소 margin | warm p50/p95 ms |
+|---|---:|---:|---:|---:|
+| 기존 배경+아이콘 합성 | 8 | 4 | Necklace 0.035068 | 51.928 / 52.810 |
+| 실제 ROI correlation | 12 | 0 | 0.502763 | 9.317 / 10.260 |
+| 실제 ROI prepared feature | 12 | 0 | 0.144884 | 2.233 / 2.386 |
+| 실제 ROI RGB mean only | 12 | 0 | 0.039230 | 0.766 / 0.848 |
+
+Prepared feature가 속도와 margin의 균형이 가장 좋아 현재 pilot lead다. RGB mean-only는 빠르지만
+Necklace margin이 좁아 선택하지 않는다. 아직 Shoes/Bag/Necklace의 독립 검증도 T2에 한정되며
+나머지 여섯 family template가 없으므로 production reader는 변경하지 않는다. 다음 입력은
+아이리(밴드)의 Hat/Hairpin/Charm T1~T10 열 장과 칸나의 Gloves/Badge/Watch T1~T10 열 장이다.
+그 뒤 치히로·마리나(치파오)·츠루기(수영복)의 identity-disjoint T1~T10 30장을 validation으로
+사용해 전체 9-family gate를 판정한다.
+
+#### 실제 ROI production 후속 결정
+
+아이리(밴드)의 Hat/Hairpin/Charm T1~T10과 칸나의 Gloves/Badge/Watch T1~T10 exact
+1280x720 자료가 추가되어 하루나(체육복) 자료와 함께 9 family x 10 tier의 90-template bank가
+완성됐다. 사용자는 v6에서 장비 아이콘이 정확히 같은 위치에 배치됨을 이미 검증했으므로
+새로운 identity-disjoint T1~T10 validation을 생략하기로 결정했다. 이 면제는 fixed tier-icon
+ROI에만 적용한다.
+
+Runtime은 700x360 atlas 한 장과 provenance metadata를 읽어 90개의 70x40 `PreparedFeature`를
+시작 시 한 번 만든다. 학생 metadata로 family를 제한한 뒤 열 tier만 비교하며 score 0.65,
+margin 0.08을 모두 통과할 때 `equipment_direct_icon_tier`를 확정한다. 불확실하거나 asset이
+없을 때만 기존 배경+inventory-icon 합성 reader로 fallback한다.
+
+90 template self-check는 90/90, wrong 0, 최소 margin 0.129761이다. 기존에 확보된 쿠루미 T2
+4프레임과 Mika/Hibiki T10 6프레임의 30 ROI도 30/30, wrong 0, direct source 30/30이며 최소
+score/margin은 0.999764/0.144884다. Warm p50/p95는 1.960/2.269ms, bank prepare 52.269ms,
+cold recognizer 91.631ms, prepared memory 1,310,400 bytes다. 이에 actual ROI 경로를 production
+선택하고 기존 합성 경로는 안전 fallback으로 유지한다.
+
 학생 한 의상의 인연 보너스는 `FavorStatType` 두 항목과 `FavorStatValue` 일곱 구간을
 사용한다. 랭크 2~5, 6~10, 11~15, 16~20, 21~30, 31~40, 41~50에서 각 랭크 증가량을
 누적하며 51~100은 추가 스탯이 없다. `FavorAlts`의 다른 의상은 각 의상의 현재 인연

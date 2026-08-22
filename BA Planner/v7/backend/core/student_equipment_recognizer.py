@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from dataclasses import dataclass
+import json
 from pathlib import Path
 from math import sqrt
 from time import perf_counter
@@ -149,6 +150,36 @@ def _retain_tall_components(mask: Image.Image) -> Image.Image:
     return result
 
 
+def _component_count(mask: Image.Image) -> int:
+    binary = mask.convert("L").point(lambda value: 255 if value >= 127 else 0)
+    width, height = binary.size
+    pixels = binary.load()
+    seen: set[tuple[int, int]] = set()
+    count = 0
+    for y in range(height):
+        for x in range(width):
+            if not pixels[x, y] or (x, y) in seen:
+                continue
+            count += 1
+            stack = [(x, y)]
+            seen.add((x, y))
+            while stack:
+                current_x, current_y = stack.pop()
+                for offset_y in (-1, 0, 1):
+                    for offset_x in (-1, 0, 1):
+                        next_point = (current_x + offset_x, current_y + offset_y)
+                        if (
+                            (offset_x or offset_y)
+                            and 0 <= next_point[0] < width and 0 <= next_point[1] < height
+                            and pixels[next_point[0], next_point[1]]
+                            and next_point not in seen
+                        ):
+                            seen.add(next_point)
+                            stack.append(next_point)
+    binary.close()
+    return count
+
+
 def _text_mask_variants(image: Image.Image) -> dict[str, Image.Image]:
     """Return text-only fill/outline masks using the white fill as the locality seed."""
 
@@ -287,6 +318,18 @@ class EquipmentMetrics:
     generated_binary_attempts: int = 0
     generated_binary_shadow_hits: int = 0
     generated_binary_match_ms: float = 0.0
+    position_binary_template_prepare_ms: float = 0.0
+    position_binary_template_count: int = 0
+    position_binary_template_bytes: int = 0
+    position_binary_attempts: int = 0
+    position_binary_shadow_hits: int = 0
+    position_binary_match_ms: float = 0.0
+    direct_tier_template_prepare_ms: float = 0.0
+    direct_tier_template_count: int = 0
+    direct_tier_template_bytes: int = 0
+    direct_tier_attempts: int = 0
+    direct_tier_hits: int = 0
+    direct_tier_match_ms: float = 0.0
 
     def to_dict(self) -> dict[str, float | int]:
         return {name: getattr(self, name) for name in self.__dataclass_fields__}
@@ -352,6 +395,8 @@ class StudentEquipmentRecognizer:
         level_margin: float = 0.025,
         binary_shadow_threshold: float = 0.52,
         binary_shadow_margin: float = 0.04,
+        direct_tier_threshold: float = 0.65,
+        direct_tier_margin: float = 0.08,
     ) -> None:
         started = perf_counter()
         self.catalog = catalog
@@ -359,11 +404,15 @@ class StudentEquipmentRecognizer:
         self.cache = PreparedFeatureCache(cache_size, self.metrics)
         self.level_threshold = level_threshold
         self.level_margin = level_margin
-        # Exploratory 7/0 gates only. They never authorize a production value.
+        # Shared binary gates. Legacy menu-domain and whole-string paths remain shadow-only.
         self.binary_shadow_threshold = binary_shadow_threshold
         self.binary_shadow_margin = binary_shadow_margin
+        self.direct_tier_threshold = direct_tier_threshold
+        self.direct_tier_margin = direct_tier_margin
         self.binary_production_enabled = False
         self.generated_binary_production_enabled = False
+        self.position_binary_production_enabled = True
+        self.direct_tier_production_enabled = True
         self._card_cache: OrderedDict[tuple[str, str], Image.Image] = OrderedDict()
         self._font: ImageFont.FreeTypeFont | ImageFont.ImageFont | None = None
         self._favorite_templates = self._load_images("student-equipment-favorite-template")
@@ -371,13 +420,15 @@ class StudentEquipmentRecognizer:
         self._binary_templates = self._load_binary_templates()
         self.metrics.binary_template_prepare_ms = (perf_counter() - binary_started) * 1000.0
         self._generated_binary_templates: dict[str, dict[int, PreparedBinaryGlyph]] = {}
-        generated_binary_started = perf_counter()
-        self._ensure_generated_binary_variant("fill")
-        self.metrics.generated_binary_template_prepare_ms = (
-            perf_counter() - generated_binary_started
-        ) * 1000.0
         self.last_binary_shadow: dict[str, Observation] = {}
         self.last_generated_binary_shadow: dict[str, Observation] = {}
+        position_started = perf_counter()
+        self._position_binary_templates = self._load_position_binary_templates()
+        self.metrics.position_binary_template_prepare_ms = (perf_counter() - position_started) * 1000.0
+        self.last_position_binary_shadow: dict[str, Observation] = {}
+        direct_tier_started = perf_counter()
+        self._direct_tier_templates = self._load_direct_tier_templates()
+        self.metrics.direct_tier_template_prepare_ms = (perf_counter() - direct_tier_started) * 1000.0
         self._empirical: dict[tuple[int, int], dict[str, list[Image.Image]]] = {}
         self.metrics.template_load_ms = (perf_counter() - started) * 1000.0
 
@@ -419,6 +470,160 @@ class StudentEquipmentRecognizer:
             key: {label: tuple(samples) for label, samples in labels.items()}
             for key, labels in grouped.items()
         }
+
+    def _load_position_binary_templates(self) -> dict[int, dict[str, PreparedBinaryGlyph]]:
+        path = self._asset("student-equipment-position-digit-bank")
+        if path is None:
+            return {}
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            return {}
+        result: dict[int, dict[str, PreparedBinaryGlyph]] = {}
+        for raw in payload.get("templates", []):
+            try:
+                position = int(raw["position"])
+                digit = str(raw["digit"])
+                prepared = PreparedBinaryGlyph(
+                    bits=int(str(raw["bits_hex"]), 16),
+                    ink=int(raw["ink"]),
+                    pixels=int(raw["pixels"]),
+                )
+            except (KeyError, TypeError, ValueError):
+                continue
+            if position not in (1, 2) or not digit.isdigit() or len(digit) != 1:
+                continue
+            result.setdefault(position, {})[digit] = prepared
+            self.metrics.position_binary_template_count += 1
+            self.metrics.position_binary_template_bytes += (prepared.pixels + 7) // 8
+        self.metrics.loaded_files += int(bool(result))
+        return result
+
+    def _load_direct_tier_templates(self) -> dict[str, dict[str, PreparedFeature]]:
+        metadata_path = self._asset("student-equipment-basic-tier-roi-metadata")
+        if metadata_path is None:
+            return {}
+        try:
+            payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+            atlas_path = self.catalog.resolve(str(payload["atlas_path"]))
+            with Image.open(atlas_path) as source:
+                atlas = source.convert("RGB")
+        except (OSError, ValueError, TypeError, KeyError):
+            return {}
+        result: dict[str, dict[str, PreparedFeature]] = {}
+        try:
+            for raw in payload.get("records", []):
+                try:
+                    family = str(raw["family"])
+                    tier = str(raw["tier"])
+                    box = tuple(int(value) for value in raw["atlas_box"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                if tier not in EQUIPMENT_MAX_LEVEL or len(box) != 4:
+                    continue
+                crop = atlas.crop(box)
+                prepared = PreparedFeature.from_image(crop)
+                crop.close()
+                result.setdefault(family, {})[tier] = prepared
+                self.metrics.direct_tier_template_count += 1
+                self.metrics.direct_tier_template_bytes += prepared.byte_size
+        finally:
+            atlas.close()
+        if any(set(group) != set(EQUIPMENT_MAX_LEVEL) for group in result.values()):
+            for group in result.values():
+                for prepared in group.values():
+                    prepared.close()
+            return {}
+        self.metrics.loaded_files += 2
+        return result
+
+    @staticmethod
+    def _position_fill_glyph(cell: Image.Image) -> PreparedBinaryGlyph | None:
+        variants = _text_mask_variants(cell)
+        normalized: Image.Image | None = None
+        try:
+            if _component_count(variants["fill"]) != 1:
+                return None
+            normalized = _normalize_mask(variants["fill"])
+            return PreparedBinaryGlyph.from_mask(normalized)
+        finally:
+            if normalized is not None:
+                normalized.close()
+            for mask in variants.values():
+                mask.close()
+
+    def read_position_binary_level(
+        self,
+        crop: Image.Image | None,
+        *,
+        tier: str,
+        region: dict[str, Any],
+    ) -> Observation:
+        """Read fixed first/second level positions from the 19-mask compact bank."""
+
+        self.metrics.position_binary_attempts += 1
+        started = perf_counter()
+        if crop is None or tier not in EQUIPMENT_MAX_LEVEL or set(self._position_binary_templates) != {1, 2}:
+            self.metrics.position_binary_match_ms += (perf_counter() - started) * 1000.0
+            return Observation(
+                None, 0.0, "shadow", "equipment_position_binary_shadow",
+                "context_crop_or_templates_missing;production_enabled=false",
+            )
+        cells = self._level_cells(crop, region)
+        labels: list[str] = []
+        scores: list[float] = []
+        margins: list[float] = []
+        try:
+            for position, cell in enumerate(cells, start=1):
+                screen = self._position_fill_glyph(cell)
+                if screen is None:
+                    if position == 2 and labels:
+                        labels.append("blank")
+                        scores.append(1.0)
+                        margins.append(1.0)
+                        continue
+                    return Observation(
+                        None, 0.0, "shadow", "equipment_position_binary_shadow",
+                        f"position={position};feature_missing;production_enabled=false",
+                    )
+                ranked = sorted(
+                    (
+                        (digit, *screen.compare(template))
+                        for digit, template in self._position_binary_templates[position].items()
+                    ),
+                    key=lambda item: item[1], reverse=True,
+                )
+                if len(ranked) < 2:
+                    return Observation(
+                        None, 0.0, "shadow", "equipment_position_binary_shadow",
+                        f"position={position};competitors_missing;production_enabled=false",
+                    )
+                labels.append(ranked[0][0])
+                scores.append(ranked[0][1])
+                margins.append(ranked[0][1] - ranked[1][1])
+            value = int("".join(label for label in labels if label != "blank"))
+            confident = (
+                equipment_level_matches_tier(value, tier)
+                and min(scores) >= self.binary_shadow_threshold
+                and min(margins) >= self.binary_shadow_margin
+            )
+            if confident:
+                self.metrics.position_binary_shadow_hits += 1
+            production = confident and self.position_binary_production_enabled
+            return Observation(
+                value if confident else None,
+                min(scores),
+                "ok" if production else "shadow",
+                "equipment_position_binary" if production else "equipment_position_binary_shadow",
+                (
+                    f"tier={tier};candidate={value};labels={labels};margin={min(margins):.6f};"
+                    f"production_enabled={str(self.position_binary_production_enabled).lower()}"
+                ),
+            )
+        finally:
+            self.metrics.position_binary_match_ms += (perf_counter() - started) * 1000.0
+            for cell in cells:
+                cell.close()
 
     def _asset(self, purpose: str) -> Path | None:
         assets = self.catalog.assets("student", purpose)
@@ -975,7 +1180,39 @@ class StudentEquipmentRecognizer:
         bottom = round(crop.height * (1.0 - float(ratio.get("bottom", 0.30))))
         return crop.crop((left, top, max(left + 1, right), max(top + 1, bottom)))
 
-    def read_tier(self, crop: Image.Image | None, family: str, region: dict[str, Any]) -> Observation:
+    def read_direct_tier(self, crop: Image.Image | None, family: str, region: dict[str, Any]) -> Observation:
+        self.metrics.direct_tier_attempts += 1
+        started = perf_counter()
+        templates = self._direct_tier_templates.get(family, {})
+        if crop is None or set(templates) != set(EQUIPMENT_MAX_LEVEL):
+            self.metrics.direct_tier_match_ms += (perf_counter() - started) * 1000.0
+            return Observation(None, 0.0, "uncertain", "equipment_direct_icon_tier", f"family={family};templates_missing")
+        inner = self._inner_icon(crop, region)
+        screen = PreparedFeature.from_image(inner)
+        inner.close()
+        try:
+            ranked = sorted(
+                ((tier, _feature_similarity(screen, template)) for tier, template in templates.items()),
+                key=lambda item: item[1], reverse=True,
+            )
+        finally:
+            screen.close()
+            self.metrics.direct_tier_match_ms += (perf_counter() - started) * 1000.0
+        tier, score = ranked[0]
+        margin = score - ranked[1][1]
+        confident = (
+            self.direct_tier_production_enabled
+            and score >= self.direct_tier_threshold
+            and margin >= self.direct_tier_margin
+        )
+        self.metrics.direct_tier_hits += int(confident)
+        return Observation(
+            tier if confident else None, score, "ok" if confident else "uncertain",
+            "equipment_direct_icon_tier",
+            f"family={family};tier={tier};margin={margin:.6f};production_enabled={str(self.direct_tier_production_enabled).lower()}",
+        )
+
+    def _read_synthesized_tier(self, crop: Image.Image | None, family: str, region: dict[str, Any]) -> Observation:
         if crop is None:
             return Observation(None, 0.0, "region_missing", "equipment_icon_tier", "crop missing")
         screen = self._inner_icon(crop, region).convert("RGB")
@@ -1010,6 +1247,16 @@ class StudentEquipmentRecognizer:
         confident = score >= 0.35 and margin >= 0.08
         return Observation(tier if confident else None, score, "ok" if confident else "uncertain", "equipment_icon_tier", f"family={family};tier={tier};margin={margin:.6f}")
 
+    def read_tier(self, crop: Image.Image | None, family: str, region: dict[str, Any]) -> Observation:
+        direct = self.read_direct_tier(crop, family, region)
+        if direct.confirmed:
+            return direct
+        fallback = self._read_synthesized_tier(crop, family, region)
+        return Observation(
+            fallback.value, fallback.confidence, fallback.status, fallback.source,
+            fallback.note + f";direct={direct.note}",
+        )
+
     def read_favorite(self, crop: Image.Image | None) -> Observation:
         if crop is None or not self._favorite_templates:
             return Observation(None, 0.0, "uncertain", "favorite_tier_template", "crop or templates missing")
@@ -1034,6 +1281,7 @@ class StudentEquipmentRecognizer:
         observations: dict[str, Observation] = {}
         self.last_binary_shadow = {}
         self.last_generated_binary_shadow = {}
+        self.last_position_binary_shadow = {}
         unresolved: list[int] = []
         families = student_meta.equipment_slots(student_id)
         for slot in (1, 2, 3):
@@ -1061,12 +1309,19 @@ class StudentEquipmentRecognizer:
                 slot=slot, tier=str(tier.value) if tier.confirmed else "", region=level_region,
             )
             self.last_binary_shadow[level_field] = binary
-            generated_binary = self.read_generated_binary_level(
+            position_binary = self.read_position_binary_level(
                 crops.images.get(f"basic_equipment_{slot}_level_digits_quad"),
-                slot=slot, tier=str(tier.value) if tier.confirmed else "", variant="fill",
+                tier=str(tier.value) if tier.confirmed else "", region=level_region,
             )
-            self.last_generated_binary_shadow[level_field] = generated_binary
-            level = self.read_empirical_level(
+            if not position_binary.confirmed:
+                self.last_position_binary_shadow[level_field] = position_binary
+            if position_binary.value is None:
+                generated_binary = self.read_generated_binary_level(
+                    crops.images.get(f"basic_equipment_{slot}_level_digits_quad"),
+                    slot=slot, tier=str(tier.value) if tier.confirmed else "", variant="fill",
+                )
+                self.last_generated_binary_shadow[level_field] = generated_binary
+            level = position_binary if position_binary.confirmed else self.read_empirical_level(
                 crops.images.get(f"basic_equipment_{slot}_level_digits_quad"),
                 slot=slot, tier=str(tier.value) if tier.confirmed else "", region=level_region,
             )
@@ -1105,6 +1360,10 @@ class StudentEquipmentRecognizer:
         for image in self._favorite_templates.values():
             image.close()
         self._favorite_templates.clear()
+        for tiers in self._direct_tier_templates.values():
+            for template in tiers.values():
+                template.close()
+        self._direct_tier_templates.clear()
         for labels in self._empirical.values():
             for samples in labels.values():
                 for image in samples:

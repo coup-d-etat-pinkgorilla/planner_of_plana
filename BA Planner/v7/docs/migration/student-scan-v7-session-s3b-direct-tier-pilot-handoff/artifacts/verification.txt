@@ -1,0 +1,12 @@
+PASS source: 14 PNG, all exact 1280x720, SHA-256 fixed in source_spec.json
+PASS fixture: 30 Haruna template ROIs + 12 Kurumi validation ROIs, each 70x40
+PASS direct correlation: 12/12 accepted correct, wrong 0, minimum margin 0.502763
+PASS prepared feature: 12/12 correct, wrong 0, p50/p95 2.233/2.386ms
+PASS synthesized baseline: 8/12 accepted, Necklace T2 fallback 4/4, p50/p95 51.928/52.810ms
+PASS template self check: 30/30 top1, minimum margin 0.354209
+PASS backend.tests.test_student_equipment_s3b: 16/16
+PASS py_compile, git diff --check, codealmanac validate and health
+
+NOT_PROMOTED: only Shoes/Bag/Necklace have T1-T10 templates and independent validation covers T2 only.
+NEXT_DATA: Airi (Band) Hat/Hairpin/Charm T1-T10 and Kanna Gloves/Badge/Watch T1-T10.
+FINAL_VALIDATION: Chihiro, Marina (Qipao), Tsurugi (Swimsuit) identity-disjoint T1-T10.

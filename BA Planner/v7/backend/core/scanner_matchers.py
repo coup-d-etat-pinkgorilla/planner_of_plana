@@ -349,6 +349,13 @@ class StudentMatcherAdapter:
             "confidence": observation.confidence,
             "note": observation.note,
         } for field, observation in self.equipment_recognizer.last_generated_binary_shadow.items())
+        evidence.extend({
+            "field": field,
+            "status": observation.status,
+            "source": observation.source,
+            "confidence": observation.confidence,
+            "note": observation.note,
+        } for field, observation in self.equipment_recognizer.last_position_binary_shadow.items())
         review_required = (not confident) or any(
             observation.status not in {"ok", "inferred", "skipped"}
             for observation in observations.values()

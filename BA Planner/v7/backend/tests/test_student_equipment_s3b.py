@@ -23,6 +23,11 @@ BENCHMARK = Path(__file__).parent / "fixtures" / "student_equipment_s3b_benchmar
 ARCHIVE_FIXTURE = Path(__file__).parent / "fixtures" / "student_equipment_s3b_archive"
 PROMOTION_FIXTURE = Path(__file__).parent / "fixtures" / "student_equipment_s3b_promotion_probe"
 GENERATED_BENCHMARK = Path(__file__).parent / "fixtures" / "student_equipment_s3b_generated_glyph_benchmark.json"
+POSITION_BENCHMARK = Path(__file__).parent / "fixtures" / "student_equipment_s3b_position_benchmark.json"
+POSITION_FIXTURE = Path(__file__).parent / "fixtures" / "student_equipment_s3b_1280_digits"
+DIRECT_TIER_FIXTURE = Path(__file__).parent / "fixtures" / "student_equipment_s3b_direct_tier"
+DIRECT_TIER_BENCHMARK = Path(__file__).parent / "fixtures" / "student_equipment_s3b_direct_tier_benchmark.json"
+ACTUAL_TIER_BENCHMARK = Path(__file__).parent / "fixtures" / "student_equipment_s3b_actual_tier_benchmark.json"
 
 
 class LiveMikaCapture:
@@ -51,9 +56,14 @@ class StudentEquipmentS3BTests(unittest.TestCase):
             self.assertEqual(set("0123456789"), set(recognizer._binary_templates[(3, 2)]))
             self.assertFalse(recognizer.binary_production_enabled)
             self.assertFalse(recognizer.generated_binary_production_enabled)
-            self.assertEqual(70, recognizer.metrics.generated_binary_template_count)
-            self.assertEqual(9800, recognizer.metrics.generated_binary_template_bytes)
-            self.assertEqual({"fill"}, set(recognizer._generated_binary_templates))
+            self.assertEqual(0, recognizer.metrics.generated_binary_template_count)
+            self.assertEqual(0, recognizer.metrics.generated_binary_template_bytes)
+            self.assertEqual(set(), set(recognizer._generated_binary_templates))
+            self.assertEqual(19, recognizer.metrics.position_binary_template_count)
+            self.assertEqual(1330, recognizer.metrics.position_binary_template_bytes)
+            self.assertEqual(set("123456789"), set(recognizer._position_binary_templates[1]))
+            self.assertEqual(set("0123456789"), set(recognizer._position_binary_templates[2]))
+            self.assertTrue(recognizer.position_binary_production_enabled)
         finally:
             recognizer.close()
 
@@ -90,7 +100,7 @@ class StudentEquipmentS3BTests(unittest.TestCase):
         finally:
             recognizer.close()
 
-    def test_shadow_result_never_replaces_generated_or_menu_fallback_value(self) -> None:
+    def test_legacy_shadow_stays_noncommitting_while_position_bank_commits(self) -> None:
         recognizer = StudentEquipmentRecognizer(self.catalog)
         path = LIVE_ROOT / "student_detail" / "sample_01.png"
         try:
@@ -102,8 +112,12 @@ class StudentEquipmentS3BTests(unittest.TestCase):
                 )
             finally:
                 crops.close()
-            self.assertEqual((1, 2, 3), unresolved)
-            self.assertTrue(all(values[f"equip{slot}_level"].value is None for slot in (1, 2, 3)))
+            self.assertEqual((), unresolved)
+            self.assertTrue(all(values[f"equip{slot}_level"].value == 70 for slot in (1, 2, 3)))
+            self.assertTrue(all(
+                values[f"equip{slot}_level"].source == "equipment_position_binary"
+                for slot in (1, 2, 3)
+            ))
             self.assertEqual(
                 [70, 70, 70],
                 [recognizer.last_binary_shadow[f"equip{slot}_level"].value for slot in (1, 2, 3)],
@@ -209,7 +223,7 @@ class StudentEquipmentS3BTests(unittest.TestCase):
         finally:
             recognizer.close()
 
-    def test_adapter_exposes_shadow_evidence_without_payload_commit(self) -> None:
+    def test_adapter_uses_position_bank_without_building_whole_string_bank(self) -> None:
         adapter = StudentMatcherAdapter(LiveMikaCapture(), self.catalog)
         try:
             with patch.object(adapter.matcher, "match", return_value=Match("mika", 1.0, 1.0)):
@@ -219,16 +233,22 @@ class StudentEquipmentS3BTests(unittest.TestCase):
                 item for item in result["evidence"]
                 if item["source"] == "equipment_generated_binary_shadow"
             ]
+            position = [
+                item for item in result["evidence"]
+                if item["source"] == "equipment_position_binary"
+            ]
             self.assertEqual(3, len(shadow))
-            self.assertEqual(3, len(generated_shadow))
+            self.assertEqual(0, len(generated_shadow))
+            self.assertEqual(3, len(position))
             self.assertEqual({"shadow"}, {item["status"] for item in shadow})
-            self.assertEqual({"shadow"}, {item["status"] for item in generated_shadow})
+            self.assertEqual({"ok"}, {item["status"] for item in position})
             self.assertTrue(all("production_enabled=false" in item["note"] for item in shadow))
-            self.assertTrue(all("variant=fill" in item["note"] for item in generated_shadow))
+            self.assertTrue(all("candidate=70" in item["note"] for item in position))
             self.assertTrue(all(
-                result["payload"]["values"].get(f"equip{slot}_level") is None
+                result["payload"]["values"].get(f"equip{slot}_level") == 70
                 for slot in (1, 2, 3)
             ))
+            self.assertEqual(0, adapter.equipment_recognizer.metrics.generated_binary_template_count)
         finally:
             adapter.equipment_recognizer.close()
 
@@ -336,6 +356,123 @@ class StudentEquipmentS3BTests(unittest.TestCase):
         self.assertEqual(70, report["cache_and_memory"]["generated_fill_template_count"])
         self.assertEqual(9800, report["cache_and_memory"]["generated_fill_template_bytes"])
         self.assertEqual(0, report["cache_and_memory"]["full_size_reference_canvases"])
+
+    def test_exact_1280_position_digit_fixture_covers_all_ones_digits(self) -> None:
+        manifest = json.loads((POSITION_FIXTURE / "manifest.json").read_text(encoding="utf-8"))
+        atlas_path = POSITION_FIXTURE / manifest["atlas"]["path"]
+        self.assertEqual(manifest["atlas"]["sha256"], sha256(atlas_path.read_bytes()).hexdigest())
+        self.assertEqual(12, manifest["exact_1280x720_roi_count"])
+        self.assertEqual(list(range(10)), manifest["coverage"]["exact_1280x720_ones_digits"])
+        recognizer = StudentEquipmentRecognizer(self.catalog)
+        try:
+            with Image.open(atlas_path) as atlas:
+                for record in manifest["records"]:
+                    crop = atlas.crop(tuple(record["atlas_box"]))
+                    observation = recognizer.read_position_binary_level(
+                        crop,
+                        tier=str(record["tier"]),
+                        region=self.regions[f"basic_equipment_{record['slot']}_level_digits_quad"],
+                    )
+                    crop.close()
+                    candidate = re.search(r"(?:^|;)candidate=(\d+)(?:;|$)", observation.note)
+                    self.assertIsNotNone(candidate)
+                    self.assertEqual(int(record["expected_value"]), int(candidate.group(1)))
+        finally:
+            recognizer.close()
+
+    def test_position_bank_benchmark_replays_349_without_wrong_or_fallback(self) -> None:
+        report = json.loads(POSITION_BENCHMARK.read_text(encoding="utf-8"))
+        self.assertEqual(349, report["datasets"]["combined_level_pairs"])
+        self.assertEqual(349, report["accuracy"]["top1_correct"])
+        self.assertEqual(349, report["accuracy"]["accepted_correct"])
+        self.assertEqual(0, report["accuracy"]["accepted_wrong"])
+        self.assertEqual(0, report["accuracy"]["feature_fallback"])
+        self.assertEqual(19, report["templates"]["count"])
+        self.assertEqual(1330, report["templates"]["bytes"])
+        self.assertEqual(6, report["runtime_fallback"]["menu_calls_before_position_bank"])
+        self.assertEqual(0, report["runtime_fallback"]["menu_calls_after_position_bank"])
+        self.assertEqual(0, report["runtime_fallback"]["whole_string_templates_built"])
+        self.assertLess(report["performance_ms"]["position_bank_load"], 5.0)
+
+    def test_position_bank_rejects_blank_contamination_and_invalid_tier_pair(self) -> None:
+        recognizer = StudentEquipmentRecognizer(self.catalog)
+        region = self.regions["basic_equipment_1_level_digits_quad"]
+        blank = Image.new("RGB", (48, 36), "white")
+        try:
+            self.assertIsNone(
+                recognizer.read_position_binary_level(blank, tier="T10", region=region).value
+            )
+            path = LIVE_ROOT / "student_detail" / "sample_01.png"
+            with Image.open(path) as frame:
+                crops = StudentBasicCropSet.from_frame(frame, self.regions)
+            try:
+                source = crops.images["basic_equipment_1_level_digits_quad"]
+                invalid = recognizer.read_position_binary_level(source, tier="T9", region=region)
+                self.assertIsNone(invalid.value)
+                contaminated = source.copy()
+                contaminated.paste("white", (0, 7, 3, 30))
+                rejected = recognizer.read_position_binary_level(
+                    contaminated, tier="T10", region=region,
+                )
+                contaminated.close()
+                self.assertIsNone(rejected.value)
+            finally:
+                crops.close()
+        finally:
+            blank.close()
+            recognizer.close()
+
+    def test_direct_tier_pilot_keeps_source_split_and_fixes_kurumi_t2(self) -> None:
+        manifest = json.loads((DIRECT_TIER_FIXTURE / "manifest.json").read_text(encoding="utf-8"))
+        atlas_path = DIRECT_TIER_FIXTURE / manifest["atlas"]["path"]
+        self.assertEqual(manifest["atlas"]["sha256"], sha256(atlas_path.read_bytes()).hexdigest())
+        self.assertEqual(42, manifest["roi_count"])
+        self.assertEqual(30, sum(row["split"] == "template" for row in manifest["records"]))
+        self.assertEqual(12, sum(row["split"] == "validation" for row in manifest["records"]))
+        self.assertEqual({"haruna_sportswear"}, {
+            row["student_ref"] for row in manifest["records"] if row["split"] == "template"
+        })
+        self.assertEqual({"kurumi"}, {
+            row["student_ref"] for row in manifest["records"] if row["split"] == "validation"
+        })
+
+        report = json.loads(DIRECT_TIER_BENCHMARK.read_text(encoding="utf-8"))
+        self.assertEqual(12, report["direct"]["top1_correct"])
+        self.assertEqual(12, report["direct"]["accepted_at_current_gate"])
+        self.assertEqual(0, report["direct"]["wrong"])
+        self.assertGreater(report["direct"]["margin_min"], 0.50)
+        self.assertEqual(8, report["synthetic_baseline"]["accepted_correct"])
+        self.assertEqual(4, report["synthetic_baseline"]["fallback"])
+        self.assertEqual(12, report["direct_prepared_feature"]["top1_correct"])
+        self.assertLess(
+            report["direct_prepared_feature"]["warm_one_roi_p50_ms"],
+            report["synthetic_baseline"]["warm_one_roi_p50_ms"],
+        )
+
+    def test_actual_tier_bank_is_complete_and_selected_for_production(self) -> None:
+        report = json.loads(ACTUAL_TIER_BENCHMARK.read_text(encoding="utf-8"))
+        self.assertTrue(report["production_enabled"])
+        self.assertEqual(90, report["bank"]["templates"])
+        self.assertEqual(9, report["bank"]["families"])
+        self.assertEqual(10, report["bank"]["tiers"])
+        self.assertEqual(90, report["template_self_check"]["correct"])
+        self.assertEqual(0, report["template_self_check"]["wrong"])
+        self.assertGreater(report["template_self_check"]["margin_min"], 0.12)
+        regression = report["available_independent_regression"]
+        self.assertEqual(30, regression["correct"])
+        self.assertEqual(30, regression["direct_source"])
+        self.assertEqual(0, regression["wrong"])
+        self.assertLess(regression["warm_one_roi_p95_ms"], 5.0)
+
+        recognizer = StudentEquipmentRecognizer(self.catalog)
+        try:
+            self.assertTrue(recognizer.direct_tier_production_enabled)
+            self.assertEqual(90, recognizer.metrics.direct_tier_template_count)
+            self.assertEqual(1310400, recognizer.metrics.direct_tier_template_bytes)
+            self.assertEqual(9, len(recognizer._direct_tier_templates))
+            self.assertTrue(all(len(tiers) == 10 for tiers in recognizer._direct_tier_templates.values()))
+        finally:
+            recognizer.close()
 
 
 if __name__ == "__main__":

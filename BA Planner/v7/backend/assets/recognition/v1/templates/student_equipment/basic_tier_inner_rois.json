@@ -1,0 +1,1297 @@
+{
+  "schema_version": 1,
+  "source": "actual exact-1280x720 basic-screen inner icon ROIs",
+  "validation_policy": "independent validation waived by user; fixed icon placement was verified in v6",
+  "roi_size": [
+    70,
+    40
+  ],
+  "template_count": 90,
+  "families": [
+    "Hat",
+    "Gloves",
+    "Shoes",
+    "Bag",
+    "Badge",
+    "Hairpin",
+    "Charm",
+    "Watch",
+    "Necklace"
+  ],
+  "tiers": [
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5",
+    "T6",
+    "T7",
+    "T8",
+    "T9",
+    "T10"
+  ],
+  "atlas_path": "templates/student_equipment/basic_tier_inner_rois.png",
+  "atlas_sha256": "d6f68361163235fa6e2811c1274c55147ac3789ab11651d30e54013cfd33ef6b",
+  "records": [
+    {
+      "family": "Hat",
+      "tier": "T1",
+      "atlas_box": [
+        0,
+        0,
+        70,
+        40
+      ],
+      "source_file": "스크린샷 2026-08-23 015405.png",
+      "source_sha256": "67ab7df52a13e8cd2c863feb690e3830b458889507b89c104fd874aaca6874d0",
+      "student_ref": "airi_band",
+      "slot": 1
+    },
+    {
+      "family": "Hat",
+      "tier": "T2",
+      "atlas_box": [
+        70,
+        0,
+        140,
+        40
+      ],
+      "source_file": "스크린샷 2026-08-23 015414.png",
+      "source_sha256": "c9ef8e0b17af0cae2f9bf8b7a802792971d6dc6bb94a64c6f13e931c38bedd73",
+      "student_ref": "airi_band",
+      "slot": 1
+    },
+    {
+      "family": "Hat",
+      "tier": "T3",
+      "atlas_box": [
+        140,
+        0,
+        210,
+        40
+      ],
+      "source_file": "스크린샷 2026-08-23 015424.png",
+      "source_sha256": "e515eaaa78d24169e15c04a738a28ceca6cf68b41080e14e1ffb20b14c072d60",
+      "student_ref": "airi_band",
+      "slot": 1
+    },
+    {
+      "family": "Hat",
+      "tier": "T4",
+      "atlas_box": [
+        210,
+        0,
+        280,
+        40
+      ],
+      "source_file": "스크린샷 2026-08-23 015456.png",
+      "source_sha256": "0288dfb5f621a6480857ac5ca83ecca659c59147cad547e881715aea01d8c855",
+      "student_ref": "airi_band",
+      "slot": 1
+    },
+    {
+      "family": "Hat",
+      "tier": "T5",
+      "atlas_box": [
+        280,
+        0,
+        350,
+        40
+      ],
+      "source_file": "스크린샷 2026-08-23 015511.png",
+      "source_sha256": "a218f37e49f8c31b41c23ed85d11d77045c80f1bf004a544f8fbb9624087b01c",
+      "student_ref": "airi_band",
+      "slot": 1
+    },
+    {
+      "family": "Hat",
+      "tier": "T6",
+      "atlas_box": [
+        350,
+        0,
+        420,
+        40
+      ],
+      "source_file": "스크린샷 2026-08-23 015519.png",
+      "source_sha256": "43a2d5f40a01a766108f24b3a3c083b03de86f3312b1eb594864c818e91b9d3e",
+      "student_ref": "airi_band",
+      "slot": 1
+    },
+    {
+      "family": "Hat",
+      "tier": "T7",
+      "atlas_box": [
+        420,
+        0,
+        490,
+        40
+      ],
+      "source_file": "스크린샷 2026-08-23 015528.png",
+      "source_sha256": "73063b12039292944f1e166cb5149fed3d162b87831a8ead94f28db06f06d7ef",
+      "student_ref": "airi_band",
+      "slot": 1
+    },
+    {
+      "family": "Hat",
+      "tier": "T8",
+      "atlas_box": [
+        490,
+        0,
+        560,
+        40
+      ],
+      "source_file": "스크린샷 2026-08-23 015536.png",
+      "source_sha256": "ed60b673f496c974ce6fe970fd37cc7ba0c2266c850c353d0addbe3449227204",
+      "student_ref": "airi_band",
+      "slot": 1
+    },
+    {
+      "family": "Hat",
+      "tier": "T9",
+      "atlas_box": [
+        560,
+        0,
+        630,
+        40
+      ],
+      "source_file": "스크린샷 2026-08-23 015545.png",
+      "source_sha256": "71f4e286c4322e010bd5859942b18e7d30268843d16275c70f879b1e963fbab7",
+      "student_ref": "airi_band",
+      "slot": 1
+    },
+    {
+      "family": "Hat",
+      "tier": "T10",
+      "atlas_box": [
+        630,
+        0,
+        700,
+        40
+      ],
+      "source_file": "스크린샷 2026-08-23 015555.png",
+      "source_sha256": "49883048c7174b20adfd0c782cb22feeebfcb41b3d601561017fd9214eb6962b",
+      "student_ref": "airi_band",
+      "slot": 1
+    },
+    {
+      "family": "Gloves",
+      "tier": "T1",
+      "atlas_box": [
+        0,
+        40,
+        70,
+        80
+      ],
+      "source_file": "스크린샷 2026-08-23 015609.png",
+      "source_sha256": "b111f362dd4ff5d7d95da2f1b2af68ed2cef779d5f37876768d3d3ef9a4f5abe",
+      "student_ref": "kanna",
+      "slot": 1
+    },
+    {
+      "family": "Gloves",
+      "tier": "T2",
+      "atlas_box": [
+        70,
+        40,
+        140,
+        80
+      ],
+      "source_file": "스크린샷 2026-08-23 015617.png",
+      "source_sha256": "3e735cb4a4849c0bf102c976bc092b32cd24d288cdfc2c632ef540fd61406c28",
+      "student_ref": "kanna",
+      "slot": 1
+    },
+    {
+      "family": "Gloves",
+      "tier": "T3",
+      "atlas_box": [
+        140,
+        40,
+        210,
+        80
+      ],
+      "source_file": "스크린샷 2026-08-23 015626.png",
+      "source_sha256": "be1b9b4124341135b26c231cc0c1ffa6e4a3291734d4d1e71931ceb87d1ab0b4",
+      "student_ref": "kanna",
+      "slot": 1
+    },
+    {
+      "family": "Gloves",
+      "tier": "T4",
+      "atlas_box": [
+        210,
+        40,
+        280,
+        80
+      ],
+      "source_file": "스크린샷 2026-08-23 015633.png",
+      "source_sha256": "4a5a2ee22d03f1238171b599d2def6131f4c8993872d05cc443fda1424aa74e5",
+      "student_ref": "kanna",
+      "slot": 1
+    },
+    {
+      "family": "Gloves",
+      "tier": "T5",
+      "atlas_box": [
+        280,
+        40,
+        350,
+        80
+      ],
+      "source_file": "스크린샷 2026-08-23 015642.png",
+      "source_sha256": "c549a326e0ae87eba1c04e369e57f45b7046948835e54239f8224648e9167c43",
+      "student_ref": "kanna",
+      "slot": 1
+    },
+    {
+      "family": "Gloves",
+      "tier": "T6",
+      "atlas_box": [
+        350,
+        40,
+        420,
+        80
+      ],
+      "source_file": "스크린샷 2026-08-23 015649.png",
+      "source_sha256": "e312a57b0425b1826b50b7300eb41dd4f2b68a4552d53b9e640114cbf568b604",
+      "student_ref": "kanna",
+      "slot": 1
+    },
+    {
+      "family": "Gloves",
+      "tier": "T7",
+      "atlas_box": [
+        420,
+        40,
+        490,
+        80
+      ],
+      "source_file": "스크린샷 2026-08-23 015658.png",
+      "source_sha256": "4232388d1ac44d578f806f51f011be42dc693fc40c9069d96ec13459026be9b3",
+      "student_ref": "kanna",
+      "slot": 1
+    },
+    {
+      "family": "Gloves",
+      "tier": "T8",
+      "atlas_box": [
+        490,
+        40,
+        560,
+        80
+      ],
+      "source_file": "스크린샷 2026-08-23 015706.png",
+      "source_sha256": "d017e9dbaf4cd1f8b335d7205a525066210a969cdda7a3b9096d8d301b3631e9",
+      "student_ref": "kanna",
+      "slot": 1
+    },
+    {
+      "family": "Gloves",
+      "tier": "T9",
+      "atlas_box": [
+        560,
+        40,
+        630,
+        80
+      ],
+      "source_file": "스크린샷 2026-08-23 015713.png",
+      "source_sha256": "7ab5fc037188a3172939fab6564e19a84821ec8bff26fbcccc351162d5e71bce",
+      "student_ref": "kanna",
+      "slot": 1
+    },
+    {
+      "family": "Gloves",
+      "tier": "T10",
+      "atlas_box": [
+        630,
+        40,
+        700,
+        80
+      ],
+      "source_file": "스크린샷 2026-08-23 015722.png",
+      "source_sha256": "af3020e64f5f2fde9fdaf231277aa362c290b57fdbc6717e7227a910d4e263b9",
+      "student_ref": "kanna",
+      "slot": 1
+    },
+    {
+      "family": "Shoes",
+      "tier": "T1",
+      "atlas_box": [
+        0,
+        80,
+        70,
+        120
+      ],
+      "source_file": "스크린샷 2026-08-23 014422.png",
+      "source_sha256": "f3fa1cef8e345daf59582cfcf9e8bc670563b093624ab004d602f7e05aa7c526",
+      "student_ref": "haruna_sportswear",
+      "slot": 1
+    },
+    {
+      "family": "Shoes",
+      "tier": "T2",
+      "atlas_box": [
+        70,
+        80,
+        140,
+        120
+      ],
+      "source_file": "스크린샷 2026-08-23 014508.png",
+      "source_sha256": "465b7c1c1e3493de829b794e326539724568e0adfefeb1d7ade8192a57107e33",
+      "student_ref": "haruna_sportswear",
+      "slot": 1
+    },
+    {
+      "family": "Shoes",
+      "tier": "T3",
+      "atlas_box": [
+        140,
+        80,
+        210,
+        120
+      ],
+      "source_file": "스크린샷 2026-08-23 014516.png",
+      "source_sha256": "268b666101597ed76cb54e36ac90948b0a2b83a18f6527199e0a4bf3ee2e8b89",
+      "student_ref": "haruna_sportswear",
+      "slot": 1
+    },
+    {
+      "family": "Shoes",
+      "tier": "T4",
+      "atlas_box": [
+        210,
+        80,
+        280,
+        120
+      ],
+      "source_file": "스크린샷 2026-08-23 014524.png",
+      "source_sha256": "d1f40a1e678476aa5d3e70cdb393061da484189da2a98fceb6cd0df9d1c4034b",
+      "student_ref": "haruna_sportswear",
+      "slot": 1
+    },
+    {
+      "family": "Shoes",
+      "tier": "T5",
+      "atlas_box": [
+        280,
+        80,
+        350,
+        120
+      ],
+      "source_file": "스크린샷 2026-08-23 014532.png",
+      "source_sha256": "cde3d8682779c046b0dd491fb0f9a0d4ea7d1d04a99980f0b345ed80fc823298",
+      "student_ref": "haruna_sportswear",
+      "slot": 1
+    },
+    {
+      "family": "Shoes",
+      "tier": "T6",
+      "atlas_box": [
+        350,
+        80,
+        420,
+        120
+      ],
+      "source_file": "스크린샷 2026-08-23 014540.png",
+      "source_sha256": "75f4325270cf7132ae09689ba2c9cf05f421b58795a1e0ad62f94cea59ef0df0",
+      "student_ref": "haruna_sportswear",
+      "slot": 1
+    },
+    {
+      "family": "Shoes",
+      "tier": "T7",
+      "atlas_box": [
+        420,
+        80,
+        490,
+        120
+      ],
+      "source_file": "스크린샷 2026-08-23 014551.png",
+      "source_sha256": "8c93aea65bfb1893159b550a04855da5e5fa1eb917bd35b0d2377cb8789dd203",
+      "student_ref": "haruna_sportswear",
+      "slot": 1
+    },
+    {
+      "family": "Shoes",
+      "tier": "T8",
+      "atlas_box": [
+        490,
+        80,
+        560,
+        120
+      ],
+      "source_file": "스크린샷 2026-08-23 014600.png",
+      "source_sha256": "367da342ced3d0892fd756a20ae39bb193d99c0061370044a4f290dafeab00f9",
+      "student_ref": "haruna_sportswear",
+      "slot": 1
+    },
+    {
+      "family": "Shoes",
+      "tier": "T9",
+      "atlas_box": [
+        560,
+        80,
+        630,
+        120
+      ],
+      "source_file": "스크린샷 2026-08-23 014608.png",
+      "source_sha256": "835ed07d398e1893197dffe0e345fb5ec6c97de6167c30a6caa7c06107ebe927",
+      "student_ref": "haruna_sportswear",
+      "slot": 1
+    },
+    {
+      "family": "Shoes",
+      "tier": "T10",
+      "atlas_box": [
+        630,
+        80,
+        700,
+        120
+      ],
+      "source_file": "스크린샷 2026-08-23 014618.png",
+      "source_sha256": "a9468fa5e04c242794ad51ba0301a92334f1422960bf36ab1493ce5644b5b918",
+      "student_ref": "haruna_sportswear",
+      "slot": 1
+    },
+    {
+      "family": "Bag",
+      "tier": "T1",
+      "atlas_box": [
+        0,
+        120,
+        70,
+        160
+      ],
+      "source_file": "스크린샷 2026-08-23 014422.png",
+      "source_sha256": "f3fa1cef8e345daf59582cfcf9e8bc670563b093624ab004d602f7e05aa7c526",
+      "student_ref": "haruna_sportswear",
+      "slot": 2
+    },
+    {
+      "family": "Bag",
+      "tier": "T2",
+      "atlas_box": [
+        70,
+        120,
+        140,
+        160
+      ],
+      "source_file": "스크린샷 2026-08-23 014508.png",
+      "source_sha256": "465b7c1c1e3493de829b794e326539724568e0adfefeb1d7ade8192a57107e33",
+      "student_ref": "haruna_sportswear",
+      "slot": 2
+    },
+    {
+      "family": "Bag",
+      "tier": "T3",
+      "atlas_box": [
+        140,
+        120,
+        210,
+        160
+      ],
+      "source_file": "스크린샷 2026-08-23 014516.png",
+      "source_sha256": "268b666101597ed76cb54e36ac90948b0a2b83a18f6527199e0a4bf3ee2e8b89",
+      "student_ref": "haruna_sportswear",
+      "slot": 2
+    },
+    {
+      "family": "Bag",
+      "tier": "T4",
+      "atlas_box": [
+        210,
+        120,
+        280,
+        160
+      ],
+      "source_file": "스크린샷 2026-08-23 014524.png",
+      "source_sha256": "d1f40a1e678476aa5d3e70cdb393061da484189da2a98fceb6cd0df9d1c4034b",
+      "student_ref": "haruna_sportswear",
+      "slot": 2
+    },
+    {
+      "family": "Bag",
+      "tier": "T5",
+      "atlas_box": [
+        280,
+        120,
+        350,
+        160
+      ],
+      "source_file": "스크린샷 2026-08-23 014532.png",
+      "source_sha256": "cde3d8682779c046b0dd491fb0f9a0d4ea7d1d04a99980f0b345ed80fc823298",
+      "student_ref": "haruna_sportswear",
+      "slot": 2
+    },
+    {
+      "family": "Bag",
+      "tier": "T6",
+      "atlas_box": [
+        350,
+        120,
+        420,
+        160
+      ],
+      "source_file": "스크린샷 2026-08-23 014540.png",
+      "source_sha256": "75f4325270cf7132ae09689ba2c9cf05f421b58795a1e0ad62f94cea59ef0df0",
+      "student_ref": "haruna_sportswear",
+      "slot": 2
+    },
+    {
+      "family": "Bag",
+      "tier": "T7",
+      "atlas_box": [
+        420,
+        120,
+        490,
+        160
+      ],
+      "source_file": "스크린샷 2026-08-23 014551.png",
+      "source_sha256": "8c93aea65bfb1893159b550a04855da5e5fa1eb917bd35b0d2377cb8789dd203",
+      "student_ref": "haruna_sportswear",
+      "slot": 2
+    },
+    {
+      "family": "Bag",
+      "tier": "T8",
+      "atlas_box": [
+        490,
+        120,
+        560,
+        160
+      ],
+      "source_file": "스크린샷 2026-08-23 014600.png",
+      "source_sha256": "367da342ced3d0892fd756a20ae39bb193d99c0061370044a4f290dafeab00f9",
+      "student_ref": "haruna_sportswear",
+      "slot": 2
+    },
+    {
+      "family": "Bag",
+      "tier": "T9",
+      "atlas_box": [
+        560,
+        120,
+        630,
+        160
+      ],
+      "source_file": "스크린샷 2026-08-23 014608.png",
+      "source_sha256": "835ed07d398e1893197dffe0e345fb5ec6c97de6167c30a6caa7c06107ebe927",
+      "student_ref": "haruna_sportswear",
+      "slot": 2
+    },
+    {
+      "family": "Bag",
+      "tier": "T10",
+      "atlas_box": [
+        630,
+        120,
+        700,
+        160
+      ],
+      "source_file": "스크린샷 2026-08-23 014618.png",
+      "source_sha256": "a9468fa5e04c242794ad51ba0301a92334f1422960bf36ab1493ce5644b5b918",
+      "student_ref": "haruna_sportswear",
+      "slot": 2
+    },
+    {
+      "family": "Badge",
+      "tier": "T1",
+      "atlas_box": [
+        0,
+        160,
+        70,
+        200
+      ],
+      "source_file": "스크린샷 2026-08-23 015609.png",
+      "source_sha256": "b111f362dd4ff5d7d95da2f1b2af68ed2cef779d5f37876768d3d3ef9a4f5abe",
+      "student_ref": "kanna",
+      "slot": 2
+    },
+    {
+      "family": "Badge",
+      "tier": "T2",
+      "atlas_box": [
+        70,
+        160,
+        140,
+        200
+      ],
+      "source_file": "스크린샷 2026-08-23 015617.png",
+      "source_sha256": "3e735cb4a4849c0bf102c976bc092b32cd24d288cdfc2c632ef540fd61406c28",
+      "student_ref": "kanna",
+      "slot": 2
+    },
+    {
+      "family": "Badge",
+      "tier": "T3",
+      "atlas_box": [
+        140,
+        160,
+        210,
+        200
+      ],
+      "source_file": "스크린샷 2026-08-23 015626.png",
+      "source_sha256": "be1b9b4124341135b26c231cc0c1ffa6e4a3291734d4d1e71931ceb87d1ab0b4",
+      "student_ref": "kanna",
+      "slot": 2
+    },
+    {
+      "family": "Badge",
+      "tier": "T4",
+      "atlas_box": [
+        210,
+        160,
+        280,
+        200
+      ],
+      "source_file": "스크린샷 2026-08-23 015633.png",
+      "source_sha256": "4a5a2ee22d03f1238171b599d2def6131f4c8993872d05cc443fda1424aa74e5",
+      "student_ref": "kanna",
+      "slot": 2
+    },
+    {
+      "family": "Badge",
+      "tier": "T5",
+      "atlas_box": [
+        280,
+        160,
+        350,
+        200
+      ],
+      "source_file": "스크린샷 2026-08-23 015642.png",
+      "source_sha256": "c549a326e0ae87eba1c04e369e57f45b7046948835e54239f8224648e9167c43",
+      "student_ref": "kanna",
+      "slot": 2
+    },
+    {
+      "family": "Badge",
+      "tier": "T6",
+      "atlas_box": [
+        350,
+        160,
+        420,
+        200
+      ],
+      "source_file": "스크린샷 2026-08-23 015649.png",
+      "source_sha256": "e312a57b0425b1826b50b7300eb41dd4f2b68a4552d53b9e640114cbf568b604",
+      "student_ref": "kanna",
+      "slot": 2
+    },
+    {
+      "family": "Badge",
+      "tier": "T7",
+      "atlas_box": [
+        420,
+        160,
+        490,
+        200
+      ],
+      "source_file": "스크린샷 2026-08-23 015658.png",
+      "source_sha256": "4232388d1ac44d578f806f51f011be42dc693fc40c9069d96ec13459026be9b3",
+      "student_ref": "kanna",
+      "slot": 2
+    },
+    {
+      "family": "Badge",
+      "tier": "T8",
+      "atlas_box": [
+        490,
+        160,
+        560,
+        200
+      ],
+      "source_file": "스크린샷 2026-08-23 015706.png",
+      "source_sha256": "d017e9dbaf4cd1f8b335d7205a525066210a969cdda7a3b9096d8d301b3631e9",
+      "student_ref": "kanna",
+      "slot": 2
+    },
+    {
+      "family": "Badge",
+      "tier": "T9",
+      "atlas_box": [
+        560,
+        160,
+        630,
+        200
+      ],
+      "source_file": "스크린샷 2026-08-23 015713.png",
+      "source_sha256": "7ab5fc037188a3172939fab6564e19a84821ec8bff26fbcccc351162d5e71bce",
+      "student_ref": "kanna",
+      "slot": 2
+    },
+    {
+      "family": "Badge",
+      "tier": "T10",
+      "atlas_box": [
+        630,
+        160,
+        700,
+        200
+      ],
+      "source_file": "스크린샷 2026-08-23 015722.png",
+      "source_sha256": "af3020e64f5f2fde9fdaf231277aa362c290b57fdbc6717e7227a910d4e263b9",
+      "student_ref": "kanna",
+      "slot": 2
+    },
+    {
+      "family": "Hairpin",
+      "tier": "T1",
+      "atlas_box": [
+        0,
+        200,
+        70,
+        240
+      ],
+      "source_file": "스크린샷 2026-08-23 015405.png",
+      "source_sha256": "67ab7df52a13e8cd2c863feb690e3830b458889507b89c104fd874aaca6874d0",
+      "student_ref": "airi_band",
+      "slot": 2
+    },
+    {
+      "family": "Hairpin",
+      "tier": "T2",
+      "atlas_box": [
+        70,
+        200,
+        140,
+        240
+      ],
+      "source_file": "스크린샷 2026-08-23 015414.png",
+      "source_sha256": "c9ef8e0b17af0cae2f9bf8b7a802792971d6dc6bb94a64c6f13e931c38bedd73",
+      "student_ref": "airi_band",
+      "slot": 2
+    },
+    {
+      "family": "Hairpin",
+      "tier": "T3",
+      "atlas_box": [
+        140,
+        200,
+        210,
+        240
+      ],
+      "source_file": "스크린샷 2026-08-23 015424.png",
+      "source_sha256": "e515eaaa78d24169e15c04a738a28ceca6cf68b41080e14e1ffb20b14c072d60",
+      "student_ref": "airi_band",
+      "slot": 2
+    },
+    {
+      "family": "Hairpin",
+      "tier": "T4",
+      "atlas_box": [
+        210,
+        200,
+        280,
+        240
+      ],
+      "source_file": "스크린샷 2026-08-23 015456.png",
+      "source_sha256": "0288dfb5f621a6480857ac5ca83ecca659c59147cad547e881715aea01d8c855",
+      "student_ref": "airi_band",
+      "slot": 2
+    },
+    {
+      "family": "Hairpin",
+      "tier": "T5",
+      "atlas_box": [
+        280,
+        200,
+        350,
+        240
+      ],
+      "source_file": "스크린샷 2026-08-23 015511.png",
+      "source_sha256": "a218f37e49f8c31b41c23ed85d11d77045c80f1bf004a544f8fbb9624087b01c",
+      "student_ref": "airi_band",
+      "slot": 2
+    },
+    {
+      "family": "Hairpin",
+      "tier": "T6",
+      "atlas_box": [
+        350,
+        200,
+        420,
+        240
+      ],
+      "source_file": "스크린샷 2026-08-23 015519.png",
+      "source_sha256": "43a2d5f40a01a766108f24b3a3c083b03de86f3312b1eb594864c818e91b9d3e",
+      "student_ref": "airi_band",
+      "slot": 2
+    },
+    {
+      "family": "Hairpin",
+      "tier": "T7",
+      "atlas_box": [
+        420,
+        200,
+        490,
+        240
+      ],
+      "source_file": "스크린샷 2026-08-23 015528.png",
+      "source_sha256": "73063b12039292944f1e166cb5149fed3d162b87831a8ead94f28db06f06d7ef",
+      "student_ref": "airi_band",
+      "slot": 2
+    },
+    {
+      "family": "Hairpin",
+      "tier": "T8",
+      "atlas_box": [
+        490,
+        200,
+        560,
+        240
+      ],
+      "source_file": "스크린샷 2026-08-23 015536.png",
+      "source_sha256": "ed60b673f496c974ce6fe970fd37cc7ba0c2266c850c353d0addbe3449227204",
+      "student_ref": "airi_band",
+      "slot": 2
+    },
+    {
+      "family": "Hairpin",
+      "tier": "T9",
+      "atlas_box": [
+        560,
+        200,
+        630,
+        240
+      ],
+      "source_file": "스크린샷 2026-08-23 015545.png",
+      "source_sha256": "71f4e286c4322e010bd5859942b18e7d30268843d16275c70f879b1e963fbab7",
+      "student_ref": "airi_band",
+      "slot": 2
+    },
+    {
+      "family": "Hairpin",
+      "tier": "T10",
+      "atlas_box": [
+        630,
+        200,
+        700,
+        240
+      ],
+      "source_file": "스크린샷 2026-08-23 015555.png",
+      "source_sha256": "49883048c7174b20adfd0c782cb22feeebfcb41b3d601561017fd9214eb6962b",
+      "student_ref": "airi_band",
+      "slot": 2
+    },
+    {
+      "family": "Charm",
+      "tier": "T1",
+      "atlas_box": [
+        0,
+        240,
+        70,
+        280
+      ],
+      "source_file": "스크린샷 2026-08-23 015405.png",
+      "source_sha256": "67ab7df52a13e8cd2c863feb690e3830b458889507b89c104fd874aaca6874d0",
+      "student_ref": "airi_band",
+      "slot": 3
+    },
+    {
+      "family": "Charm",
+      "tier": "T2",
+      "atlas_box": [
+        70,
+        240,
+        140,
+        280
+      ],
+      "source_file": "스크린샷 2026-08-23 015414.png",
+      "source_sha256": "c9ef8e0b17af0cae2f9bf8b7a802792971d6dc6bb94a64c6f13e931c38bedd73",
+      "student_ref": "airi_band",
+      "slot": 3
+    },
+    {
+      "family": "Charm",
+      "tier": "T3",
+      "atlas_box": [
+        140,
+        240,
+        210,
+        280
+      ],
+      "source_file": "스크린샷 2026-08-23 015424.png",
+      "source_sha256": "e515eaaa78d24169e15c04a738a28ceca6cf68b41080e14e1ffb20b14c072d60",
+      "student_ref": "airi_band",
+      "slot": 3
+    },
+    {
+      "family": "Charm",
+      "tier": "T4",
+      "atlas_box": [
+        210,
+        240,
+        280,
+        280
+      ],
+      "source_file": "스크린샷 2026-08-23 015456.png",
+      "source_sha256": "0288dfb5f621a6480857ac5ca83ecca659c59147cad547e881715aea01d8c855",
+      "student_ref": "airi_band",
+      "slot": 3
+    },
+    {
+      "family": "Charm",
+      "tier": "T5",
+      "atlas_box": [
+        280,
+        240,
+        350,
+        280
+      ],
+      "source_file": "스크린샷 2026-08-23 015511.png",
+      "source_sha256": "a218f37e49f8c31b41c23ed85d11d77045c80f1bf004a544f8fbb9624087b01c",
+      "student_ref": "airi_band",
+      "slot": 3
+    },
+    {
+      "family": "Charm",
+      "tier": "T6",
+      "atlas_box": [
+        350,
+        240,
+        420,
+        280
+      ],
+      "source_file": "스크린샷 2026-08-23 015519.png",
+      "source_sha256": "43a2d5f40a01a766108f24b3a3c083b03de86f3312b1eb594864c818e91b9d3e",
+      "student_ref": "airi_band",
+      "slot": 3
+    },
+    {
+      "family": "Charm",
+      "tier": "T7",
+      "atlas_box": [
+        420,
+        240,
+        490,
+        280
+      ],
+      "source_file": "스크린샷 2026-08-23 015528.png",
+      "source_sha256": "73063b12039292944f1e166cb5149fed3d162b87831a8ead94f28db06f06d7ef",
+      "student_ref": "airi_band",
+      "slot": 3
+    },
+    {
+      "family": "Charm",
+      "tier": "T8",
+      "atlas_box": [
+        490,
+        240,
+        560,
+        280
+      ],
+      "source_file": "스크린샷 2026-08-23 015536.png",
+      "source_sha256": "ed60b673f496c974ce6fe970fd37cc7ba0c2266c850c353d0addbe3449227204",
+      "student_ref": "airi_band",
+      "slot": 3
+    },
+    {
+      "family": "Charm",
+      "tier": "T9",
+      "atlas_box": [
+        560,
+        240,
+        630,
+        280
+      ],
+      "source_file": "스크린샷 2026-08-23 015545.png",
+      "source_sha256": "71f4e286c4322e010bd5859942b18e7d30268843d16275c70f879b1e963fbab7",
+      "student_ref": "airi_band",
+      "slot": 3
+    },
+    {
+      "family": "Charm",
+      "tier": "T10",
+      "atlas_box": [
+        630,
+        240,
+        700,
+        280
+      ],
+      "source_file": "스크린샷 2026-08-23 015555.png",
+      "source_sha256": "49883048c7174b20adfd0c782cb22feeebfcb41b3d601561017fd9214eb6962b",
+      "student_ref": "airi_band",
+      "slot": 3
+    },
+    {
+      "family": "Watch",
+      "tier": "T1",
+      "atlas_box": [
+        0,
+        280,
+        70,
+        320
+      ],
+      "source_file": "스크린샷 2026-08-23 015609.png",
+      "source_sha256": "b111f362dd4ff5d7d95da2f1b2af68ed2cef779d5f37876768d3d3ef9a4f5abe",
+      "student_ref": "kanna",
+      "slot": 3
+    },
+    {
+      "family": "Watch",
+      "tier": "T2",
+      "atlas_box": [
+        70,
+        280,
+        140,
+        320
+      ],
+      "source_file": "스크린샷 2026-08-23 015617.png",
+      "source_sha256": "3e735cb4a4849c0bf102c976bc092b32cd24d288cdfc2c632ef540fd61406c28",
+      "student_ref": "kanna",
+      "slot": 3
+    },
+    {
+      "family": "Watch",
+      "tier": "T3",
+      "atlas_box": [
+        140,
+        280,
+        210,
+        320
+      ],
+      "source_file": "스크린샷 2026-08-23 015626.png",
+      "source_sha256": "be1b9b4124341135b26c231cc0c1ffa6e4a3291734d4d1e71931ceb87d1ab0b4",
+      "student_ref": "kanna",
+      "slot": 3
+    },
+    {
+      "family": "Watch",
+      "tier": "T4",
+      "atlas_box": [
+        210,
+        280,
+        280,
+        320
+      ],
+      "source_file": "스크린샷 2026-08-23 015633.png",
+      "source_sha256": "4a5a2ee22d03f1238171b599d2def6131f4c8993872d05cc443fda1424aa74e5",
+      "student_ref": "kanna",
+      "slot": 3
+    },
+    {
+      "family": "Watch",
+      "tier": "T5",
+      "atlas_box": [
+        280,
+        280,
+        350,
+        320
+      ],
+      "source_file": "스크린샷 2026-08-23 015642.png",
+      "source_sha256": "c549a326e0ae87eba1c04e369e57f45b7046948835e54239f8224648e9167c43",
+      "student_ref": "kanna",
+      "slot": 3
+    },
+    {
+      "family": "Watch",
+      "tier": "T6",
+      "atlas_box": [
+        350,
+        280,
+        420,
+        320
+      ],
+      "source_file": "스크린샷 2026-08-23 015649.png",
+      "source_sha256": "e312a57b0425b1826b50b7300eb41dd4f2b68a4552d53b9e640114cbf568b604",
+      "student_ref": "kanna",
+      "slot": 3
+    },
+    {
+      "family": "Watch",
+      "tier": "T7",
+      "atlas_box": [
+        420,
+        280,
+        490,
+        320
+      ],
+      "source_file": "스크린샷 2026-08-23 015658.png",
+      "source_sha256": "4232388d1ac44d578f806f51f011be42dc693fc40c9069d96ec13459026be9b3",
+      "student_ref": "kanna",
+      "slot": 3
+    },
+    {
+      "family": "Watch",
+      "tier": "T8",
+      "atlas_box": [
+        490,
+        280,
+        560,
+        320
+      ],
+      "source_file": "스크린샷 2026-08-23 015706.png",
+      "source_sha256": "d017e9dbaf4cd1f8b335d7205a525066210a969cdda7a3b9096d8d301b3631e9",
+      "student_ref": "kanna",
+      "slot": 3
+    },
+    {
+      "family": "Watch",
+      "tier": "T9",
+      "atlas_box": [
+        560,
+        280,
+        630,
+        320
+      ],
+      "source_file": "스크린샷 2026-08-23 015713.png",
+      "source_sha256": "7ab5fc037188a3172939fab6564e19a84821ec8bff26fbcccc351162d5e71bce",
+      "student_ref": "kanna",
+      "slot": 3
+    },
+    {
+      "family": "Watch",
+      "tier": "T10",
+      "atlas_box": [
+        630,
+        280,
+        700,
+        320
+      ],
+      "source_file": "스크린샷 2026-08-23 015722.png",
+      "source_sha256": "af3020e64f5f2fde9fdaf231277aa362c290b57fdbc6717e7227a910d4e263b9",
+      "student_ref": "kanna",
+      "slot": 3
+    },
+    {
+      "family": "Necklace",
+      "tier": "T1",
+      "atlas_box": [
+        0,
+        320,
+        70,
+        360
+      ],
+      "source_file": "스크린샷 2026-08-23 014422.png",
+      "source_sha256": "f3fa1cef8e345daf59582cfcf9e8bc670563b093624ab004d602f7e05aa7c526",
+      "student_ref": "haruna_sportswear",
+      "slot": 3
+    },
+    {
+      "family": "Necklace",
+      "tier": "T2",
+      "atlas_box": [
+        70,
+        320,
+        140,
+        360
+      ],
+      "source_file": "스크린샷 2026-08-23 014508.png",
+      "source_sha256": "465b7c1c1e3493de829b794e326539724568e0adfefeb1d7ade8192a57107e33",
+      "student_ref": "haruna_sportswear",
+      "slot": 3
+    },
+    {
+      "family": "Necklace",
+      "tier": "T3",
+      "atlas_box": [
+        140,
+        320,
+        210,
+        360
+      ],
+      "source_file": "스크린샷 2026-08-23 014516.png",
+      "source_sha256": "268b666101597ed76cb54e36ac90948b0a2b83a18f6527199e0a4bf3ee2e8b89",
+      "student_ref": "haruna_sportswear",
+      "slot": 3
+    },
+    {
+      "family": "Necklace",
+      "tier": "T4",
+      "atlas_box": [
+        210,
+        320,
+        280,
+        360
+      ],
+      "source_file": "스크린샷 2026-08-23 014524.png",
+      "source_sha256": "d1f40a1e678476aa5d3e70cdb393061da484189da2a98fceb6cd0df9d1c4034b",
+      "student_ref": "haruna_sportswear",
+      "slot": 3
+    },
+    {
+      "family": "Necklace",
+      "tier": "T5",
+      "atlas_box": [
+        280,
+        320,
+        350,
+        360
+      ],
+      "source_file": "스크린샷 2026-08-23 014532.png",
+      "source_sha256": "cde3d8682779c046b0dd491fb0f9a0d4ea7d1d04a99980f0b345ed80fc823298",
+      "student_ref": "haruna_sportswear",
+      "slot": 3
+    },
+    {
+      "family": "Necklace",
+      "tier": "T6",
+      "atlas_box": [
+        350,
+        320,
+        420,
+        360
+      ],
+      "source_file": "스크린샷 2026-08-23 014540.png",
+      "source_sha256": "75f4325270cf7132ae09689ba2c9cf05f421b58795a1e0ad62f94cea59ef0df0",
+      "student_ref": "haruna_sportswear",
+      "slot": 3
+    },
+    {
+      "family": "Necklace",
+      "tier": "T7",
+      "atlas_box": [
+        420,
+        320,
+        490,
+        360
+      ],
+      "source_file": "스크린샷 2026-08-23 014551.png",
+      "source_sha256": "8c93aea65bfb1893159b550a04855da5e5fa1eb917bd35b0d2377cb8789dd203",
+      "student_ref": "haruna_sportswear",
+      "slot": 3
+    },
+    {
+      "family": "Necklace",
+      "tier": "T8",
+      "atlas_box": [
+        490,
+        320,
+        560,
+        360
+      ],
+      "source_file": "스크린샷 2026-08-23 014600.png",
+      "source_sha256": "367da342ced3d0892fd756a20ae39bb193d99c0061370044a4f290dafeab00f9",
+      "student_ref": "haruna_sportswear",
+      "slot": 3
+    },
+    {
+      "family": "Necklace",
+      "tier": "T9",
+      "atlas_box": [
+        560,
+        320,
+        630,
+        360
+      ],
+      "source_file": "스크린샷 2026-08-23 014608.png",
+      "source_sha256": "835ed07d398e1893197dffe0e345fb5ec6c97de6167c30a6caa7c06107ebe927",
+      "student_ref": "haruna_sportswear",
+      "slot": 3
+    },
+    {
+      "family": "Necklace",
+      "tier": "T10",
+      "atlas_box": [
+        630,
+        320,
+        700,
+        360
+      ],
+      "source_file": "스크린샷 2026-08-23 014618.png",
+      "source_sha256": "a9468fa5e04c242794ad51ba0301a92334f1422960bf36ab1493ce5644b5b918",
+      "student_ref": "haruna_sportswear",
+      "slot": 3
+    }
+  ]
+}
