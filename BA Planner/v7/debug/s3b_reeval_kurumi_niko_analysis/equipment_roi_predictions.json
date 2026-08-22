@@ -1,0 +1,780 @@
+{
+  "schema_version": 1,
+  "source": "..\\debug\\s3b_reeval_kurumi_niko_sources",
+  "screenshots": 6,
+  "observations": 18,
+  "runtime_eligible_observations": 17,
+  "predicted_observations": 0,
+  "records": [
+    {
+      "file": "스크린샷 2026-08-21 131203.png",
+      "sha256": "7eeeeb0ffe3a49a60021a1677edfe1333319981546f7ec2e71b62f9ed17ecf22",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 1,
+      "student_ref": "kurumi",
+      "student_score": 1.0,
+      "student_margin": 0.17389223629266515,
+      "family": "Shoes",
+      "tier": "T1",
+      "tier_confidence": 0.7178010569475145,
+      "tier_note": "family=Shoes;tier=T1;margin=0.372387",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 1,
+      "generated_fill_confidence": 0.9212155369650005,
+      "generated_fill_note": "slot=1;tier=T1;variant=fill;value=1;margin=0.449731;iou=0.904412;correlation=0.971627;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 1,
+          "confidence": 0.7733260381794849,
+          "note": "slot=1;tier=T1;variant=outline;value=1;margin=0.424983;iou=0.727273;correlation=0.911486;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": 1,
+          "confidence": 0.8551709291536073,
+          "note": "slot=1;tier=T1;variant=fill_outline;value=1;margin=0.224184;iou=0.826772;correlation=0.940369;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 1,
+          "confidence": 0.9212155369650005,
+          "note": "slot=1;tier=T1;variant=fill;value=1;margin=0.449731;iou=0.904412;correlation=0.971627;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.1805432946283428,
+      "labels": "['1', '5']",
+      "note": "slot=1;tier=T10;value=15;labels=['1', '5'];margin=0.005016;iou=0.051948;correlation=0.566329;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131203.png",
+      "sha256": "7eeeeb0ffe3a49a60021a1677edfe1333319981546f7ec2e71b62f9ed17ecf22",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 2,
+      "student_ref": "kurumi",
+      "student_score": 1.0,
+      "student_margin": 0.17389223629266515,
+      "family": "Bag",
+      "tier": "T1",
+      "tier_confidence": 0.9178466112792596,
+      "tier_note": "family=Bag;tier=T1;margin=0.284527",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 8,
+      "generated_fill_confidence": 0.8648947099575662,
+      "generated_fill_note": "slot=2;tier=T1;variant=fill;value=8;margin=0.184729;iou=0.837838;correlation=0.946065;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 8,
+          "confidence": 0.6698763367349194,
+          "note": "slot=2;tier=T1;variant=outline;value=8;margin=0.142192;iou=0.606061;correlation=0.861324;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": 8,
+          "confidence": 0.7849950652220601,
+          "note": "slot=2;tier=T1;variant=fill_outline;value=8;margin=0.056228;iou=0.746667;correlation=0.899980;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 8,
+          "confidence": 0.8648947099575662,
+          "note": "slot=2;tier=T1;variant=fill;value=8;margin=0.184729;iou=0.837838;correlation=0.946065;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.4846138371052384,
+      "labels": "['3', '1']",
+      "note": "slot=2;tier=T10;value=31;labels=['3', '1'];margin=0.032764;iou=0.410853;correlation=0.705897;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131203.png",
+      "sha256": "7eeeeb0ffe3a49a60021a1677edfe1333319981546f7ec2e71b62f9ed17ecf22",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 3,
+      "student_ref": "kurumi",
+      "student_score": 1.0,
+      "student_margin": 0.17389223629266515,
+      "family": "Necklace",
+      "tier": "T1",
+      "tier_confidence": 0.7196482213845704,
+      "tier_note": "family=Necklace;tier=T1;margin=0.448277",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 9,
+      "generated_fill_confidence": 0.867931187380899,
+      "generated_fill_note": "slot=3;tier=T1;variant=fill;value=9;margin=0.279343;iou=0.841026;correlation=0.948648;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 9,
+          "confidence": 0.7499642824928673,
+          "note": "slot=3;tier=T1;variant=outline;value=9;margin=0.256606;iou=0.700000;correlation=0.899857;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": 9,
+          "confidence": 0.8123984018371038,
+          "note": "slot=3;tier=T1;variant=fill_outline;value=9;margin=0.100778;iou=0.777778;correlation=0.916260;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 9,
+          "confidence": 0.867931187380899,
+          "note": "slot=3;tier=T1;variant=fill;value=9;margin=0.279343;iou=0.841026;correlation=0.948648;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.39988576103741447,
+      "labels": "['4', '5']",
+      "note": "slot=3;tier=T10;value=45;labels=['4', '5'];margin=0.003552;iou=0.320000;correlation=0.639543;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131225.png",
+      "sha256": "47bc7f96958fecbc4d0bbaac33ea410e35a9e45611ba4b83cdffeada0442f868",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 1,
+      "student_ref": "niko",
+      "student_score": 1.0,
+      "student_margin": 0.17389223629266515,
+      "family": "Shoes",
+      "tier": "T1",
+      "tier_confidence": 0.7178010569475145,
+      "tier_note": "family=Shoes;tier=T1;margin=0.372387",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 1,
+      "generated_fill_confidence": 0.9212155369650005,
+      "generated_fill_note": "slot=1;tier=T1;variant=fill;value=1;margin=0.449731;iou=0.904412;correlation=0.971627;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 1,
+          "confidence": 0.7733260381794849,
+          "note": "slot=1;tier=T1;variant=outline;value=1;margin=0.424983;iou=0.727273;correlation=0.911486;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": 1,
+          "confidence": 0.8551709291536073,
+          "note": "slot=1;tier=T1;variant=fill_outline;value=1;margin=0.224184;iou=0.826772;correlation=0.940369;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 1,
+          "confidence": 0.9212155369650005,
+          "note": "slot=1;tier=T1;variant=fill;value=1;margin=0.449731;iou=0.904412;correlation=0.971627;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.1805432946283428,
+      "labels": "['1', '5']",
+      "note": "slot=1;tier=T10;value=15;labels=['1', '5'];margin=0.005016;iou=0.051948;correlation=0.566329;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131225.png",
+      "sha256": "47bc7f96958fecbc4d0bbaac33ea410e35a9e45611ba4b83cdffeada0442f868",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 2,
+      "student_ref": "niko",
+      "student_score": 1.0,
+      "student_margin": 0.17389223629266515,
+      "family": "Hairpin",
+      "tier": "T1",
+      "tier_confidence": 0.9419087911245864,
+      "tier_note": "family=Hairpin;tier=T1;margin=0.511799",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 8,
+      "generated_fill_confidence": 0.8648947099575662,
+      "generated_fill_note": "slot=2;tier=T1;variant=fill;value=8;margin=0.184729;iou=0.837838;correlation=0.946065;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 8,
+          "confidence": 0.6698763367349194,
+          "note": "slot=2;tier=T1;variant=outline;value=8;margin=0.142192;iou=0.606061;correlation=0.861324;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": 8,
+          "confidence": 0.7849950652220601,
+          "note": "slot=2;tier=T1;variant=fill_outline;value=8;margin=0.056228;iou=0.746667;correlation=0.899980;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 8,
+          "confidence": 0.8648947099575662,
+          "note": "slot=2;tier=T1;variant=fill;value=8;margin=0.184729;iou=0.837838;correlation=0.946065;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.18994637250285604,
+      "labels": "['3', '8']",
+      "note": "slot=2;tier=T10;value=38;labels=['3', '8'];margin=0.000628;iou=0.063953;correlation=0.567925;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131225.png",
+      "sha256": "47bc7f96958fecbc4d0bbaac33ea410e35a9e45611ba4b83cdffeada0442f868",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 3,
+      "student_ref": "niko",
+      "student_score": 1.0,
+      "student_margin": 0.17389223629266515,
+      "family": "Watch",
+      "tier": "T1",
+      "tier_confidence": 0.8250743207529327,
+      "tier_note": "family=Watch;tier=T1;margin=0.278512",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 9,
+      "generated_fill_confidence": 0.867931187380899,
+      "generated_fill_note": "slot=3;tier=T1;variant=fill;value=9;margin=0.279343;iou=0.841026;correlation=0.948648;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 9,
+          "confidence": 0.7466978340189889,
+          "note": "slot=3;tier=T1;variant=outline;value=9;margin=0.255012;iou=0.696133;correlation=0.898394;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": 9,
+          "confidence": 0.8104062818463544,
+          "note": "slot=3;tier=T1;variant=fill_outline;value=9;margin=0.100364;iou=0.775449;correlation=0.915278;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 9,
+          "confidence": 0.867931187380899,
+          "note": "slot=3;tier=T1;variant=fill;value=9;margin=0.279343;iou=0.841026;correlation=0.948648;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.41704095426944515,
+      "labels": "['4', '7']",
+      "note": "slot=3;tier=T10;value=47;labels=['4', '7'];margin=0.003536;iou=0.342561;correlation=0.640482;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131240.png",
+      "sha256": "fd812e948812b235ef54c7f6d96b4daecee61b351cb9a267c3ff219bb04cde41",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 1,
+      "student_ref": "saori_swimsuit",
+      "student_score": 0.9867903787672476,
+      "student_margin": 0.1521956699346405,
+      "family": "Gloves",
+      "tier": "T1",
+      "tier_confidence": 0.9509331929782936,
+      "tier_note": "family=Gloves;tier=T1;margin=0.241724",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 1,
+      "generated_fill_confidence": 0.9273012598859633,
+      "generated_fill_note": "slot=1;tier=T1;variant=fill;value=1;margin=0.451488;iou=0.911765;correlation=0.973911;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 1,
+          "confidence": 0.7733260381794849,
+          "note": "slot=1;tier=T1;variant=outline;value=1;margin=0.424983;iou=0.727273;correlation=0.911486;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": 1,
+          "confidence": 0.8584955451761034,
+          "note": "slot=1;tier=T1;variant=fill_outline;value=1;margin=0.224742;iou=0.830709;correlation=0.941856;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 1,
+          "confidence": 0.9273012598859633,
+          "note": "slot=1;tier=T1;variant=fill;value=1;margin=0.451488;iou=0.911765;correlation=0.973911;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.19283543818680987,
+      "labels": "['1', '2']",
+      "note": "slot=1;tier=T10;value=12;labels=['1', '2'];margin=0.002351;iou=0.066116;correlation=0.572995;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131240.png",
+      "sha256": "fd812e948812b235ef54c7f6d96b4daecee61b351cb9a267c3ff219bb04cde41",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 2,
+      "student_ref": "saori_swimsuit",
+      "student_score": 0.9867903787672476,
+      "student_margin": 0.1521956699346405,
+      "family": "Hairpin",
+      "tier": "T1",
+      "tier_confidence": 0.9419087911245864,
+      "tier_note": "family=Hairpin;tier=T1;margin=0.511799",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 8,
+      "generated_fill_confidence": 0.8648947099575662,
+      "generated_fill_note": "slot=2;tier=T1;variant=fill;value=8;margin=0.184729;iou=0.837838;correlation=0.946065;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 8,
+          "confidence": 0.6698763367349194,
+          "note": "slot=2;tier=T1;variant=outline;value=8;margin=0.142192;iou=0.606061;correlation=0.861324;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": 8,
+          "confidence": 0.7849950652220601,
+          "note": "slot=2;tier=T1;variant=fill_outline;value=8;margin=0.056228;iou=0.746667;correlation=0.899980;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 8,
+          "confidence": 0.8648947099575662,
+          "note": "slot=2;tier=T1;variant=fill;value=8;margin=0.184729;iou=0.837838;correlation=0.946065;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.18994637250285604,
+      "labels": "['3', '8']",
+      "note": "slot=2;tier=T10;value=38;labels=['3', '8'];margin=0.000628;iou=0.063953;correlation=0.567925;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131240.png",
+      "sha256": "fd812e948812b235ef54c7f6d96b4daecee61b351cb9a267c3ff219bb04cde41",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 3,
+      "student_ref": "saori_swimsuit",
+      "student_score": 0.9867903787672476,
+      "student_margin": 0.1521956699346405,
+      "family": "Watch",
+      "tier": "T1",
+      "tier_confidence": 0.8250743207529327,
+      "tier_note": "family=Watch;tier=T1;margin=0.278512",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 9,
+      "generated_fill_confidence": 0.867931187380899,
+      "generated_fill_note": "slot=3;tier=T1;variant=fill;value=9;margin=0.279343;iou=0.841026;correlation=0.948648;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 9,
+          "confidence": 0.7466978340189889,
+          "note": "slot=3;tier=T1;variant=outline;value=9;margin=0.255012;iou=0.696133;correlation=0.898394;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": 9,
+          "confidence": 0.8104062818463544,
+          "note": "slot=3;tier=T1;variant=fill_outline;value=9;margin=0.100364;iou=0.775449;correlation=0.915278;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 9,
+          "confidence": 0.867931187380899,
+          "note": "slot=3;tier=T1;variant=fill;value=9;margin=0.279343;iou=0.841026;correlation=0.948648;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.41704095426944515,
+      "labels": "['4', '7']",
+      "note": "slot=3;tier=T10;value=47;labels=['4', '7'];margin=0.003536;iou=0.342561;correlation=0.640482;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131411.png",
+      "sha256": "d22867f28ecf173c13a5956fb9f7659d44c6041350a7f1734aa6f6d69a631141",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 1,
+      "student_ref": "saori_swimsuit",
+      "student_score": 0.9879299144426289,
+      "student_margin": 0.15437743963326078,
+      "family": "Gloves",
+      "tier": "T2",
+      "tier_confidence": 0.8656953768921336,
+      "tier_note": "family=Gloves;tier=T2;margin=0.256658",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 12,
+      "generated_fill_confidence": 0.7631533595094468,
+      "generated_fill_note": "slot=1;tier=T2;variant=fill;value=12;margin=0.143921;iou=0.719745;correlation=0.893378;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 12,
+          "confidence": 0.5664095883301306,
+          "note": "slot=1;tier=T2;variant=outline;value=12;margin=0.077922;iou=0.493976;correlation=0.783711;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": 12,
+          "confidence": 0.7137172217921672,
+          "note": "slot=1;tier=T2;variant=fill_outline;value=12;margin=0.040925;iou=0.673835;correlation=0.833364;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 12,
+          "confidence": 0.7631533595094468,
+          "note": "slot=1;tier=T2;variant=fill;value=12;margin=0.143921;iou=0.719745;correlation=0.893378;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.4945197068760835,
+      "labels": "['1', '2']",
+      "note": "slot=1;tier=T10;value=12;labels=['1', '2'];margin=0.069415;iou=0.421986;correlation=0.712121;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131411.png",
+      "sha256": "d22867f28ecf173c13a5956fb9f7659d44c6041350a7f1734aa6f6d69a631141",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 2,
+      "student_ref": "saori_swimsuit",
+      "student_score": 0.9879299144426289,
+      "student_margin": 0.15437743963326078,
+      "family": "Hairpin",
+      "tier": "T2",
+      "tier_confidence": 0.48931166124690073,
+      "tier_note": "family=Hairpin;tier=T2;margin=0.267315",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 16,
+      "generated_fill_confidence": 0.7289341330992705,
+      "generated_fill_note": "slot=2;tier=T2;variant=fill;value=16;margin=0.074350;iou=0.681564;correlation=0.871044;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 16,
+          "confidence": 0.6274298407546967,
+          "note": "slot=2;tier=T2;variant=outline;value=16;margin=0.086370;iou=0.563953;correlation=0.817859;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": null,
+          "confidence": 0.7531251136588273,
+          "note": "slot=2;tier=T2;variant=fill_outline;value=16;margin=0.036985;iou=0.721122;correlation=0.849134;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 16,
+          "confidence": 0.7289341330992705,
+          "note": "slot=2;tier=T2;variant=fill;value=16;margin=0.074350;iou=0.681564;correlation=0.871044;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.48975779383122375,
+      "labels": "['1', '6']",
+      "note": "slot=2;tier=T10;value=16;labels=['1', '6'];margin=0.019369;iou=0.417544;correlation=0.706400;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131411.png",
+      "sha256": "d22867f28ecf173c13a5956fb9f7659d44c6041350a7f1734aa6f6d69a631141",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 3,
+      "student_ref": "saori_swimsuit",
+      "student_score": 0.9879299144426289,
+      "student_margin": 0.15437743963326078,
+      "family": "Watch",
+      "tier": "T2",
+      "tier_confidence": 0.6219007790095976,
+      "tier_note": "family=Watch;tier=T2;margin=0.266619",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 18,
+      "generated_fill_confidence": 0.7969236516884097,
+      "generated_fill_note": "slot=3;tier=T2;variant=fill;value=18;margin=0.084633;iou=0.761273;correlation=0.903875;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 18,
+          "confidence": 0.7048684861817374,
+          "note": "slot=3;tier=T2;variant=outline;value=18;margin=0.082042;iou=0.651613;correlation=0.864635;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": null,
+          "confidence": 0.7769776201177815,
+          "note": "slot=3;tier=T2;variant=fill_outline;value=18;margin=0.032654;iou=0.747475;correlation=0.865486;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 18,
+          "confidence": 0.7969236516884097,
+          "note": "slot=3;tier=T2;variant=fill;value=18;margin=0.084633;iou=0.761273;correlation=0.903875;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.49412576080069937,
+      "labels": "['1', '8']",
+      "note": "slot=3;tier=T10;value=18;labels=['1', '8'];margin=0.030524;iou=0.417085;correlation=0.714894;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131504.png",
+      "sha256": "b53780e2e517ad69075f297b1850cf4305e121f4e9bc781ed49daadd777042ee",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 1,
+      "student_ref": "niko",
+      "student_score": 0.9890948393246187,
+      "student_margin": 0.16560031998910674,
+      "family": "Shoes",
+      "tier": "T2",
+      "tier_confidence": 0.8651877153279548,
+      "tier_note": "family=Shoes;tier=T2;margin=0.468656",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 12,
+      "generated_fill_confidence": 0.7631533595094468,
+      "generated_fill_note": "slot=1;tier=T2;variant=fill;value=12;margin=0.143921;iou=0.719745;correlation=0.893378;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 12,
+          "confidence": 0.5731747192911264,
+          "note": "slot=1;tier=T2;variant=outline;value=12;margin=0.078944;iou=0.501520;correlation=0.788140;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": 12,
+          "confidence": 0.7202787486139656,
+          "note": "slot=1;tier=T2;variant=fill_outline;value=12;margin=0.041332;iou=0.681081;correlation=0.837872;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 12,
+          "confidence": 0.7631533595094468,
+          "note": "slot=1;tier=T2;variant=fill;value=12;margin=0.143921;iou=0.719745;correlation=0.893378;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.4945197068760835,
+      "labels": "['1', '2']",
+      "note": "slot=1;tier=T10;value=12;labels=['1', '2'];margin=0.067780;iou=0.421986;correlation=0.712121;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131504.png",
+      "sha256": "b53780e2e517ad69075f297b1850cf4305e121f4e9bc781ed49daadd777042ee",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 2,
+      "student_ref": "niko",
+      "student_score": 0.9890948393246187,
+      "student_margin": 0.16560031998910674,
+      "family": "Hairpin",
+      "tier": "T2",
+      "tier_confidence": 0.48931166124690073,
+      "tier_note": "family=Hairpin;tier=T2;margin=0.267315",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 16,
+      "generated_fill_confidence": 0.7289341330992705,
+      "generated_fill_note": "slot=2;tier=T2;variant=fill;value=16;margin=0.074350;iou=0.681564;correlation=0.871044;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 16,
+          "confidence": 0.6274298407546967,
+          "note": "slot=2;tier=T2;variant=outline;value=16;margin=0.086370;iou=0.563953;correlation=0.817859;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": null,
+          "confidence": 0.7531251136588273,
+          "note": "slot=2;tier=T2;variant=fill_outline;value=16;margin=0.036985;iou=0.721122;correlation=0.849134;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 16,
+          "confidence": 0.7289341330992705,
+          "note": "slot=2;tier=T2;variant=fill;value=16;margin=0.074350;iou=0.681564;correlation=0.871044;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.48975779383122375,
+      "labels": "['1', '6']",
+      "note": "slot=2;tier=T10;value=16;labels=['1', '6'];margin=0.019369;iou=0.417544;correlation=0.706400;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131504.png",
+      "sha256": "b53780e2e517ad69075f297b1850cf4305e121f4e9bc781ed49daadd777042ee",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 3,
+      "student_ref": "niko",
+      "student_score": 0.9890948393246187,
+      "student_margin": 0.16560031998910674,
+      "family": "Watch",
+      "tier": "T2",
+      "tier_confidence": 0.6219007790095976,
+      "tier_note": "family=Watch;tier=T2;margin=0.266619",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 18,
+      "generated_fill_confidence": 0.7969236516884097,
+      "generated_fill_note": "slot=3;tier=T2;variant=fill;value=18;margin=0.084633;iou=0.761273;correlation=0.903875;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 18,
+          "confidence": 0.7048684861817374,
+          "note": "slot=3;tier=T2;variant=outline;value=18;margin=0.082042;iou=0.651613;correlation=0.864635;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": null,
+          "confidence": 0.7769776201177815,
+          "note": "slot=3;tier=T2;variant=fill_outline;value=18;margin=0.032654;iou=0.747475;correlation=0.865486;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 18,
+          "confidence": 0.7969236516884097,
+          "note": "slot=3;tier=T2;variant=fill;value=18;margin=0.084633;iou=0.761273;correlation=0.903875;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.49412576080069937,
+      "labels": "['1', '8']",
+      "note": "slot=3;tier=T10;value=18;labels=['1', '8'];margin=0.030524;iou=0.417085;correlation=0.714894;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131601.png",
+      "sha256": "f25a3d96e55bbbb44cee296efb75d845f2e800fa95ea98958962e8130377ad1e",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 1,
+      "student_ref": "kurumi",
+      "student_score": 0.9852312829066812,
+      "student_margin": 0.16986003313362374,
+      "family": "Shoes",
+      "tier": "T2",
+      "tier_confidence": 0.8651877153279548,
+      "tier_note": "family=Shoes;tier=T2;margin=0.468656",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 12,
+      "generated_fill_confidence": 0.7631533595094468,
+      "generated_fill_note": "slot=1;tier=T2;variant=fill;value=12;margin=0.143921;iou=0.719745;correlation=0.893378;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 12,
+          "confidence": 0.5731747192911264,
+          "note": "slot=1;tier=T2;variant=outline;value=12;margin=0.078944;iou=0.501520;correlation=0.788140;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": 12,
+          "confidence": 0.7202787486139656,
+          "note": "slot=1;tier=T2;variant=fill_outline;value=12;margin=0.041332;iou=0.681081;correlation=0.837872;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 12,
+          "confidence": 0.7631533595094468,
+          "note": "slot=1;tier=T2;variant=fill;value=12;margin=0.143921;iou=0.719745;correlation=0.893378;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.4945197068760835,
+      "labels": "['1', '2']",
+      "note": "slot=1;tier=T10;value=12;labels=['1', '2'];margin=0.067780;iou=0.421986;correlation=0.712121;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131601.png",
+      "sha256": "f25a3d96e55bbbb44cee296efb75d845f2e800fa95ea98958962e8130377ad1e",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 2,
+      "student_ref": "kurumi",
+      "student_score": 0.9852312829066812,
+      "student_margin": 0.16986003313362374,
+      "family": "Bag",
+      "tier": "T2",
+      "tier_confidence": 0.5469708970355414,
+      "tier_note": "family=Bag;tier=T2;margin=0.278448",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": 16,
+      "generated_fill_confidence": 0.7289341330992705,
+      "generated_fill_note": "slot=2;tier=T2;variant=fill;value=16;margin=0.074350;iou=0.681564;correlation=0.871044;layout=full_roi;production_enabled=false",
+      "generated_variants": {
+        "outline": {
+          "prediction": 16,
+          "confidence": 0.6288926489377871,
+          "note": "slot=2;tier=T2;variant=outline;value=16;margin=0.086643;iou=0.565598;correlation=0.818778;layout=full_roi;production_enabled=false"
+        },
+        "fill_outline": {
+          "prediction": null,
+          "confidence": 0.7542277796015513,
+          "note": "slot=2;tier=T2;variant=fill_outline;value=16;margin=0.037050;iou=0.722314;correlation=0.849969;layout=full_roi;production_enabled=false"
+        },
+        "fill": {
+          "prediction": 16,
+          "confidence": 0.7289341330992705,
+          "note": "slot=2;tier=T2;variant=fill;value=16;margin=0.074350;iou=0.681564;correlation=0.871044;layout=full_roi;production_enabled=false"
+        }
+      },
+      "runtime_eligible": true,
+      "confidence": 0.4880962603923549,
+      "labels": "['1', '6']",
+      "note": "slot=2;tier=T10;value=16;labels=['1', '6'];margin=0.019369;iou=0.416084;correlation=0.704133;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    },
+    {
+      "file": "스크린샷 2026-08-21 131601.png",
+      "sha256": "f25a3d96e55bbbb44cee296efb75d845f2e800fa95ea98958962e8130377ad1e",
+      "size": [
+        2560,
+        1440
+      ],
+      "slot": 3,
+      "student_ref": "kurumi",
+      "student_score": 0.9852312829066812,
+      "student_margin": 0.16986003313362374,
+      "family": "Necklace",
+      "tier": null,
+      "tier_confidence": 0.49374034167402137,
+      "tier_note": "family=Necklace;tier=T2;margin=0.009946",
+      "prediction": null,
+      "gated_prediction": null,
+      "generated_fill_prediction": null,
+      "generated_fill_confidence": 0.0,
+      "generated_fill_note": null,
+      "generated_variants": {},
+      "runtime_eligible": false,
+      "confidence": 0.4994306853059671,
+      "labels": "['1', '8']",
+      "note": "slot=3;tier=T10;value=18;labels=['1', '8'];margin=0.034806;iou=0.427609;correlation=0.714894;shift_retry=True;production_enabled=false;coverage=digits_7_0_only"
+    }
+  ],
+  "metrics": {
+    "template_load_ms": 257.5927000725642,
+    "feature_prepare_ms": 0.0,
+    "match_ms": 0.0,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "generated_cards": 0,
+    "prepared_features": 0,
+    "loaded_files": 54,
+    "menu_captures": 0,
+    "peak_cache_entries": 0,
+    "peak_cache_bytes": 0,
+    "full_size_reference_canvases": 0,
+    "empirical_attempts": 0,
+    "empirical_hits": 0,
+    "calibration_samples": 0,
+    "binary_template_prepare_ms": 32.699799980036914,
+    "binary_template_count": 51,
+    "binary_template_bytes": 3570,
+    "binary_attempts": 36,
+    "binary_shadow_hits": 0,
+    "binary_shift_retries": 66,
+    "binary_match_ms": 62.56350036710501,
+    "generated_binary_template_prepare_ms": 703.2698000548407,
+    "generated_binary_template_count": 210,
+    "generated_binary_template_bytes": 29400,
+    "generated_binary_attempts": 51,
+    "generated_binary_shadow_hits": 46,
+    "generated_binary_match_ms": 606.126899830997
+  }
+}

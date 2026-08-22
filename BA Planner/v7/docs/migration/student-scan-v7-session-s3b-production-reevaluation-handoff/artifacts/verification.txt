@@ -1,0 +1,59 @@
+S3B production promotion re-evaluation
+Date: 2026-08-22 Asia/Seoul
+
+Decision:
+- promotion rejected
+- generated_binary_production_enabled: false
+- menu binary production flag: false
+- fallback suppression: unchanged
+- S4/S5: untouched
+
+Kurumi/Niko recognition:
+- manifest/catalog integrity: PASS
+- six promotion screenshots: student identity 6/6
+- independent T2 repeat Niko: score 0.989095, margin 0.165600
+- independent T2 repeat Kurumi: score 0.985231, margin 0.169860
+- template-source T1 screens score 1.0 and are not counted as independent identity evidence
+
+2560x1440 promotion replay:
+- tier-confirmed slots: 17/18
+- generated fill correct on tier-confirmed slots: 17/17
+- full end-to-end: 17/18
+- blocker: Kurumi slot 3 Necklace, expected/top-1 T2, score 0.493740, margin 0.009946
+
+1275x720 client-area replay:
+- exact 1280x720 files found: 0
+- client-area 1275x720 files: 8
+- framed 1276x752 files: 2 (not promotion evidence)
+- manually reviewed level-bearing, tier-eligible observations: 11
+- generated fill: correct 6, wrong 3, fallback 2
+- three additional tier-eligible blank/non-level crops: false positive 0
+- blocker: Aris T9 Lv65 is accepted as Lv6 in slots 1/2/3
+- same Lv65 -> Lv6 result in outline, fill+outline and fill
+- fill score range 0.749681-0.768803, margin range 0.207606-0.222588
+- implication: threshold tuning alone cannot safely repair the scale-dependent digit loss
+
+Frozen replay and performance:
+- generated fill: 334/334, wrong 0, fallback 0
+- latest cold menu+fill: 261.390ms
+- latest generated fill prepare: 219.656ms
+- warm three-slot p50/p95: 6.935/8.398ms
+
+Verification:
+- tests.test_student_equipment_s3b: 12/12 PASS
+- recognition asset + stdio focused tests: 6/6 PASS
+- combined S2/S3/S3B/asset/stdio: 38/38 PASS in 48.352s
+- Python AST and handoff JSON parse: PASS
+- codealmanac validate: PASS
+- codealmanac health: 20 pages, 0 orphans/dead refs/broken links/broken xwiki/empty topics/empty pages
+- scoped git diff --check for changed diagnostic tools and this handoff: PASS
+- repository-wide git diff --check is not a valid clean gate for this worktree because the pre-existing
+  user portrait migration rewrote many tracked files with CRLF; those unrelated edits were preserved
+
+MASTER_REQUIRED:
+- preserve both digits at 1275x720 and add a portable Lv65/Lv6 regression
+- resolve Kurumi Necklace T2 tier rejection
+- keep threshold calibration separate from frozen validation
+- reduce and remeasure cold preparation
+- measure fallback/menu-call reduction after a new production candidate exists
+- explicitly approve promotion; until then production flags remain false

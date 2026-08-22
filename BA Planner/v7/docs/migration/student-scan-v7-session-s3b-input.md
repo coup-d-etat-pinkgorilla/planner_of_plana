@@ -26,12 +26,16 @@ generated matcher, unresolved-only 단일 장비-menu fallback과 애용품 판�
 
 ## 구현 계약
 
-1. 기존 48x36 장비 레벨 ROI와 두 자리 셀 분할을 유지한다.
+1. 기존 48x36 장비 레벨 ROI를 유지한다. 장비-menu baseline은 두 자리 셀 분할을 유지하지만,
+   생성형 glyph 경로는 전체 level string을 먼저 판독해 실제 한 자리 숫자를 반으로 자르지 않는다.
 2. 장비 전용 adaptive dark-ink mask를 20x28 canonical glyph로 trim/normalize한다.
-3. 장비-menu digit asset을 슬롯·자리·label별 binary template로 시작 시 한 번 준비한다.
+3. 장비-menu digit asset을 슬롯·자리·label별 baseline으로 유지한다. 추가 생성형 경로는 v7
+   renderer의 transparent text layer에서 background/icon을 제외한 outline/fill+outline/fill
+   whole-string template를 비교하며 production runtime에는 승인된 variant만 bounded하게 준비한다.
 4. IoU와 normalized correlation을 함께 기록하고 최고 score와 2위 margin으로 판정한다.
 5. 정위치 비교를 먼저 수행하고 불확정일 때만 작은 +/-1px 이동을 시도한다.
-6. 한 자리 레벨의 두 번째 blank와 T1~T10 최대 레벨 규칙을 반드시 검증한다.
+6. 실제 한 자리 레벨은 전체 ROI foreground로 검증한다. 합성 두 번째 blank만으로 실제 blank
+   coverage를 주장하지 않으며 T1~T10 최대 레벨 규칙을 함께 검증한다.
 7. 실행 순서는 `empty/locked -> family/tier -> binary -> small-ROI generated -> one-menu`
    로 한다. 앞 단계가 확정한 슬롯은 뒤 단계가 다시 읽지 않는다.
 8. binary 결과가 불확실하면 값을 만들지 않고 기존 generated/menu 경로로 넘긴다.

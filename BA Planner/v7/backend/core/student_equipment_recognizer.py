@@ -22,6 +22,8 @@ EQUIPMENT_UNLOCK_LEVEL = {1: 1, 2: 10, 3: 20}
 EQUIPMENT_SLOT_CARD_X = {1: 1356, 2: 1542, 3: 1728}
 EQUIPMENT_SLOT_TEXT_X = {1: 1419, 2: 1605, 3: 1791}
 EQUIPMENT_CARD_Y = 1114
+EQUIPMENT_REFERENCE_SIZE = (2560, 1440)
+GENERATED_BINARY_VARIANTS = ("outline", "fill_outline", "fill")
 
 
 def _pixels(image: Image.Image):
@@ -88,6 +90,78 @@ def _dark_ink_mask(image: Image.Image) -> Image.Image:
         for red, green, blue in _pixels(rgb)
     ])
     return mask
+
+
+def _light_text_mask(image: Image.Image) -> Image.Image:
+    """Extract the near-white level fill without accepting the pale card background."""
+
+    rgba = image.convert("RGBA")
+    mask = Image.new("L", rgba.size)
+    mask.putdata([
+        255 if alpha >= 32 and min(red, green, blue) >= 238
+        and max(red, green, blue) - min(red, green, blue) <= 18 else 0
+        for red, green, blue, alpha in _pixels(rgba)
+    ])
+    rgba.close()
+    return mask
+
+
+def _retain_tall_components(mask: Image.Image) -> Image.Image:
+    """Keep digit-sized 8-connected components and reject card/icon speckles."""
+
+    binary = mask.convert("L").point(lambda value: 255 if value >= 127 else 0)
+    width, height = binary.size
+    pixels = binary.load()
+    seen: set[tuple[int, int]] = set()
+    retained: list[list[tuple[int, int]]] = []
+    minimum_height = max(6, round(height * 0.45))
+    for y in range(height):
+        for x in range(width):
+            if not pixels[x, y] or (x, y) in seen:
+                continue
+            stack = [(x, y)]
+            seen.add((x, y))
+            component: list[tuple[int, int]] = []
+            while stack:
+                current_x, current_y = stack.pop()
+                component.append((current_x, current_y))
+                for offset_y in (-1, 0, 1):
+                    for offset_x in (-1, 0, 1):
+                        next_x, next_y = current_x + offset_x, current_y + offset_y
+                        if (
+                            (offset_x or offset_y)
+                            and 0 <= next_x < width and 0 <= next_y < height
+                            and pixels[next_x, next_y]
+                            and (next_x, next_y) not in seen
+                        ):
+                            seen.add((next_x, next_y))
+                            stack.append((next_x, next_y))
+            xs = [point[0] for point in component]
+            ys = [point[1] for point in component]
+            if len(component) >= 6 and max(xs) - min(xs) + 1 >= 2 and max(ys) - min(ys) + 1 >= minimum_height:
+                retained.append(component)
+    result = Image.new("L", binary.size)
+    output = result.load()
+    for component in retained:
+        for x, y in component:
+            output[x, y] = 255
+    binary.close()
+    return result
+
+
+def _text_mask_variants(image: Image.Image) -> dict[str, Image.Image]:
+    """Return text-only fill/outline masks using the white fill as the locality seed."""
+
+    light = _light_text_mask(image)
+    fill = _retain_tall_components(light)
+    light.close()
+    dark = _dark_ink_mask(image)
+    locality = fill.filter(ImageFilter.MaxFilter(7))
+    outline = ImageChops.multiply(dark, locality)
+    fill_outline = ImageChops.lighter(fill, outline)
+    dark.close()
+    locality.close()
+    return {"outline": outline, "fill_outline": fill_outline, "fill": fill}
 
 
 def _normalize_mask(mask: Image.Image, size: tuple[int, int] = (20, 28)) -> Image.Image | None:
@@ -207,6 +281,12 @@ class EquipmentMetrics:
     binary_shadow_hits: int = 0
     binary_shift_retries: int = 0
     binary_match_ms: float = 0.0
+    generated_binary_template_prepare_ms: float = 0.0
+    generated_binary_template_count: int = 0
+    generated_binary_template_bytes: int = 0
+    generated_binary_attempts: int = 0
+    generated_binary_shadow_hits: int = 0
+    generated_binary_match_ms: float = 0.0
 
     def to_dict(self) -> dict[str, float | int]:
         return {name: getattr(self, name) for name in self.__dataclass_fields__}
@@ -283,13 +363,21 @@ class StudentEquipmentRecognizer:
         self.binary_shadow_threshold = binary_shadow_threshold
         self.binary_shadow_margin = binary_shadow_margin
         self.binary_production_enabled = False
+        self.generated_binary_production_enabled = False
         self._card_cache: OrderedDict[tuple[str, str], Image.Image] = OrderedDict()
         self._font: ImageFont.FreeTypeFont | ImageFont.ImageFont | None = None
         self._favorite_templates = self._load_images("student-equipment-favorite-template")
         binary_started = perf_counter()
         self._binary_templates = self._load_binary_templates()
         self.metrics.binary_template_prepare_ms = (perf_counter() - binary_started) * 1000.0
+        self._generated_binary_templates: dict[str, dict[int, PreparedBinaryGlyph]] = {}
+        generated_binary_started = perf_counter()
+        self._ensure_generated_binary_variant("fill")
+        self.metrics.generated_binary_template_prepare_ms = (
+            perf_counter() - generated_binary_started
+        ) * 1000.0
         self.last_binary_shadow: dict[str, Observation] = {}
+        self.last_generated_binary_shadow: dict[str, Observation] = {}
         self._empirical: dict[tuple[int, int], dict[str, list[Image.Image]]] = {}
         self.metrics.template_load_ms = (perf_counter() - started) * 1000.0
 
@@ -377,6 +465,143 @@ class StudentEquipmentRecognizer:
             canvas.size, Image.Transform.AFFINE, (1, -shear, 0, 0, 1, 0),
             resample=Image.Resampling.BICUBIC,
         )
+
+    def _generated_text_crop(
+        self, slot: int, value: int, region: dict[str, Any],
+    ) -> Image.Image | None:
+        points = region.get("points_ratio")
+        output = region.get("output_size", (48, 36))
+        if slot not in EQUIPMENT_SLOT_TEXT_X or not isinstance(points, list) or len(points) != 4:
+            return None
+        layer = Image.new("RGBA", (200, 160))
+        text_layer = self._render_level(value)
+        layer.alpha_composite(
+            text_layer,
+            dest=(EQUIPMENT_SLOT_TEXT_X[slot] - EQUIPMENT_SLOT_CARD_X[slot], 6),
+        )
+        text_layer.close()
+        try:
+            reference_width, reference_height = EQUIPMENT_REFERENCE_SIZE
+            local = [
+                (
+                    float(point["x"]) * reference_width - EQUIPMENT_SLOT_CARD_X[slot],
+                    float(point["y"]) * reference_height - EQUIPMENT_CARD_Y,
+                )
+                for point in points
+            ]
+            top_left, top_right, bottom_right, bottom_left = local
+            return layer.transform(
+                (int(output[0]), int(output[1])), Image.Transform.QUAD,
+                (*top_left, *bottom_left, *bottom_right, *top_right),
+                resample=Image.Resampling.BICUBIC,
+            )
+        finally:
+            layer.close()
+
+    def _load_generated_binary_variant(
+        self, variant: str,
+    ) -> dict[int, PreparedBinaryGlyph]:
+        regions = self.catalog.region("student")
+        region = regions.get("basic_equipment_1_level_digits_quad", {})
+        result: dict[int, PreparedBinaryGlyph] = {}
+        if not isinstance(region, dict):
+            return result
+        for value in range(1, max(EQUIPMENT_MAX_LEVEL.values()) + 1):
+            crop = self._generated_text_crop(1, value, region)
+            if crop is None:
+                continue
+            variants = _text_mask_variants(crop)
+            crop.close()
+            try:
+                normalized = _normalize_mask(variants[variant], size=(40, 28))
+                prepared = PreparedBinaryGlyph.from_mask(normalized)
+                if normalized is not None:
+                    normalized.close()
+                if prepared is None:
+                    continue
+                result[value] = prepared
+                self.metrics.generated_binary_template_count += 1
+                self.metrics.generated_binary_template_bytes += (prepared.pixels + 7) // 8
+            finally:
+                for mask in variants.values():
+                    mask.close()
+        return result
+
+    def _ensure_generated_binary_variant(self, variant: str) -> None:
+        if variant in self._generated_binary_templates:
+            return
+        started = perf_counter()
+        self._generated_binary_templates[variant] = self._load_generated_binary_variant(variant)
+        if variant != "fill":
+            self.metrics.generated_binary_template_prepare_ms += (
+                perf_counter() - started
+            ) * 1000.0
+
+    def read_generated_binary_level(
+        self,
+        crop: Image.Image | None,
+        *,
+        slot: int,
+        tier: str,
+        variant: str = "outline",
+    ) -> Observation:
+        """Rank a full level string against text-only generated glyphs in shadow mode."""
+
+        self.metrics.generated_binary_attempts += 1
+        started = perf_counter()
+        if crop is None or tier not in EQUIPMENT_MAX_LEVEL or variant not in GENERATED_BINARY_VARIANTS:
+            self.metrics.generated_binary_match_ms += (perf_counter() - started) * 1000.0
+            return Observation(
+                None, 0.0, "shadow", "equipment_generated_binary_shadow",
+                f"slot={slot};tier={tier};variant={variant};context_or_crop_missing;production_enabled=false",
+            )
+        variants = _text_mask_variants(crop)
+        normalized: Image.Image | None = None
+        try:
+            self._ensure_generated_binary_variant(variant)
+            normalized = _normalize_mask(variants[variant], size=(40, 28))
+            screen = PreparedBinaryGlyph.from_mask(normalized)
+            candidates = self._generated_binary_templates.get(variant, {})
+            ranked = sorted(
+                (
+                    (value, *screen.compare(template))
+                    for value, template in candidates.items()
+                    if value <= EQUIPMENT_MAX_LEVEL[tier]
+                ),
+                key=lambda item: item[1],
+                reverse=True,
+            ) if screen is not None else []
+            if not ranked:
+                return Observation(
+                    None, 0.0, "shadow", "equipment_generated_binary_shadow",
+                    f"slot={slot};tier={tier};variant={variant};feature_or_templates_missing;production_enabled=false",
+                )
+            value, score, iou, correlation = ranked[0]
+            margin = score - (ranked[1][1] if len(ranked) > 1 else 0.0)
+            confident = (
+                equipment_level_matches_tier(value, tier)
+                and score >= self.binary_shadow_threshold
+                and margin >= self.binary_shadow_margin
+            )
+            if confident:
+                self.metrics.generated_binary_shadow_hits += 1
+            return Observation(
+                value if confident else None,
+                score,
+                "shadow",
+                "equipment_generated_binary_shadow",
+                (
+                    f"slot={slot};tier={tier};variant={variant};value={value};"
+                    f"margin={margin:.6f};iou={iou:.6f};correlation={correlation:.6f};"
+                    "layout=full_roi;production_enabled=false"
+                ),
+            )
+        finally:
+            self.metrics.generated_binary_match_ms += (perf_counter() - started) * 1000.0
+            if normalized is not None:
+                normalized.close()
+            for mask in variants.values():
+                mask.close()
 
     @staticmethod
     def _level_cells(crop: Image.Image, region: dict[str, Any]) -> tuple[Image.Image, Image.Image]:
@@ -808,6 +1033,7 @@ class StudentEquipmentRecognizer:
         student_id, _form = student_meta.split_form_ref(student_ref)
         observations: dict[str, Observation] = {}
         self.last_binary_shadow = {}
+        self.last_generated_binary_shadow = {}
         unresolved: list[int] = []
         families = student_meta.equipment_slots(student_id)
         for slot in (1, 2, 3):
@@ -835,6 +1061,11 @@ class StudentEquipmentRecognizer:
                 slot=slot, tier=str(tier.value) if tier.confirmed else "", region=level_region,
             )
             self.last_binary_shadow[level_field] = binary
+            generated_binary = self.read_generated_binary_level(
+                crops.images.get(f"basic_equipment_{slot}_level_digits_quad"),
+                slot=slot, tier=str(tier.value) if tier.confirmed else "", variant="fill",
+            )
+            self.last_generated_binary_shadow[level_field] = generated_binary
             level = self.read_empirical_level(
                 crops.images.get(f"basic_equipment_{slot}_level_digits_quad"),
                 slot=slot, tier=str(tier.value) if tier.confirmed else "", region=level_region,

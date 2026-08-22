@@ -10,6 +10,153 @@ sources:
 
 # P0-P6 Workflow Status
 
+### 2026-08-22 minimum matrix representatives corrected from the actual v6 account
+
+- The earlier Shiroko/Hoshino/Ako proposal was not executable because those students are already
+  developed. The read-only v6 account database was therefore evaluated at SHA-256
+  `4b5a2052cf45cd89117eb4d219bef4cfb4e6bf1e8c5129de03e9c8d5a099f011`.
+- Calibration now uses Airi (Band), Haruna (Sportswear), and Kanna. Their current equipment states
+  are respectively T1/Lv1 in all slots, empty in all slots, and T1/Lv1 plus two empty slots. They
+  are already student level 20+, so all equipment slots are unlocked.
+- Independent validation uses Chihiro, Marina (Qipao), and Tsurugi (Swimsuit), whose states are
+  respectively T1/Lv1 in all slots, empty in all slots, and T1/Lv1 in all slots. The two trios are
+  identity-disjoint, and each trio covers all nine equipment families exactly once.
+- The 30-row factorized lower bound and 60-configuration/180-PNG two-split total are unchanged. The
+  12/23/34 anchor moves from Shiroko T4 to Airi (Band) T4. Production flags remain false; S4/S5 are
+  unchanged.
+
+### 2026-08-22 exact 1280 equipment matrix reduced to a proven 30-screen core
+
+- Status: the user-proposed mixed-slot approach (`12/23/34`) is valid when coverage is factorized
+  along the runtime boundary. Tier recognition is family-specific, while generated level glyph
+  recognition is slot-specific and family-independent.
+- Nine families times ten tiers require 90 family-tier observations. Three independently readable
+  slots per screenshot give a lower bound of 30 screenshots. A generated 30-row matrix reaches the
+  bound while every slot covers one-digit 1-9, tens digits 1-7, ones digits 0-9, all ten tier maxima
+  and the 12/23/34 plus 56/65 confusion pairs.
+- The executable v6-account calibration/validation representatives are recorded in the correction
+  entry above. All three slots advance monotonically T1→T10, and the calibration T4 anchor is
+  exactly 12/23/34. Three stable repeats require 90 PNGs per split.
+- The identity-independent validation trio also covers all nine families without overlap. The
+  minimum production-quality two-split plan is 60 configurations/180 PNGs. Repeated
+  frames from calibration are not validation independence.
+- The earlier 1,335 configurations remain the Cartesian exhaustive option only if every family must
+  be directly paired with every valid level. Production flags remain false and S4/S5 are unchanged.
+
+### 2026-08-22 exact 16:9 S3B evidence policy and 1280 matrix fixed
+
+- Status: by user decision, non-16:9 and non-exact-size screenshots are excluded from calibration,
+  validation and production promotion evidence. The prior 1275x720/1276x752 replay remains a scale
+  diagnostic only; its Aris Lv65→Lv6 result is not a promotion failure until reproduced at exact
+  1280x720.
+- Exact 1280x720 exhaustive coverage contains 4,005 equipped atomic cases: nine families times 445
+  valid tier-level pairs. Shiroko (Hat/Hairpin/Watch), Hoshino (Shoes/Bag/Charm) and Ako
+  (Gloves/Badge/Necklace) cover all nine families without overlap.
+- Advancing all three slots together requires 445 configurations per representative, or 1,335
+  configurations total. Three stable repeats require 4,005 PNGs. Fourteen physically valid
+  empty/equipped/locked patterns, five unlock boundary probes and six favorite states add at most
+  75 PNGs at three repeats, for a non-deduplicated upper bound of 4,080.
+- Seven unresolved-slot masks and invalid tier-level/blank/partial-digit cases are deterministic
+  synthetic tests, not live accuracy denominator samples. Exact dimension, border/padding/letterbox
+  rejection and capture metadata are specified in
+  `docs/migration/student-scan-v7-s3b-1280x720-equipment-coverage.md`.
+- Production remains disabled. Current valid exact-1280 evidence covers Lv70 only, so non-Lv70 exact
+  1280 coverage, independent calibration/validation, the existing 2560 Kurumi T2 tier miss, cold
+  optimization, fallback reduction measurement and explicit master acceptance remain open. S4/S5
+  remain untouched.
+
+### 2026-08-22 S3B low-resolution diagnostic (superseded as promotion evidence)
+
+- Status: this entry preserves the diagnostic result, but the later exact-16:9 policy supersedes its
+  use for promotion decisions. Kurumi and Niko recognition assets now exist and pass catalog integrity. Their separate
+  T2 repeat captures pass the student gate as `niko` at score/margin 0.989095/0.165600 and
+  `kurumi` at 0.985231/0.169860. The template-source T1 captures themselves score 1.0 and are not
+  treated as independent identity evidence.
+- Replaying the six 2560x1440 promotion screens now resolves the former student gate: all 6/6
+  identities are correct. Icon tier is confirmed for 17/18 equipment slots; Kurumi T2 slot 3
+  identifies T2 as top-1 but is rejected at score 0.493740 and margin 0.009946. Generated fill is
+  correct on all 17 tier-eligible levels; the full end-to-end result is therefore 17/18, not 18/18.
+- The BA archive contains eight 1275x720 client-area captures and two 1276x752 framed captures,
+  not additional exact 1280x720 PNGs. Manual review identified 11 tier-eligible level-bearing
+  observations in the 1275x720 set: generated fill accepts 6 correctly, accepts three real Lv65
+  values incorrectly as Lv6, and falls back on two real Lv1 values. Three additional tier-eligible
+  blank/non-level crops all fall back, so this replay has no blank false positive.
+- The Lv65 failure reproduces in all three generated variants and all three equipment slots. Fill
+  accepts Lv6 at score 0.749681-0.768803 and margin 0.207606-0.222588, so threshold adjustment alone
+  cannot safely repair it. The current near-white/tall-component extraction loses the second digit
+  at this client scale.
+- Frozen 334 remains 334/334 for generated fill and the 12 S3B plus 6 asset/stdio tests pass. The
+  latest benchmark measured cold menu+fill construction 261.390ms, fill preparation 219.656ms,
+  and warm three-slot p50/p95 6.935/8.398ms; timing remains an optimization gate.
+- Decision: production promotion is rejected and both production flags remain false. Before another
+  review, fix scale-aware two-digit preservation and the Kurumi Necklace T2 tier miss, add the
+  1275x720 set as a portable reviewed regression, pass an independent calibration/validation split,
+  reduce cold cost, measure fallback/menu-call reduction, and obtain explicit master acceptance.
+  S4/S5 remain untouched.
+
+### 2026-08-22 student portrait AP-bar exclusion implemented
+
+- Status: all 254 existing `student-template` portrait assets now exclude the 82px top resource
+  bar. The templates remain identity crops and no Kurumi/Niko portrait was synthesized or added by
+  this migration.
+- `student_texture_region.y1` moved from `0.0082` to `0.0653`, corresponding to y=94 on the
+  2560x1440 reference frame. This keeps the old crop's 12px origin plus the removed 82px bar and
+  also places current captures below the relocated AP icon and the full resource bar.
+- The recognition manifest now records each portrait as an adapted v6 source and carries refreshed
+  byte counts/SHA-256 values. The region asset integrity fields were refreshed as well. The
+  developer-tool extractor automatically uses the revised region for future Kurumi/Niko and other
+  portrait extraction.
+- Verification: 58 focused tests pass: asset readiness/all-template height, production adapters,
+  the S2 fixed screen, S3/S3B equipment regressions and the developer-tool extraction boundary.
+  Two direct current-UI Saori (Swimsuit) repeats match at 0.988101-0.988759 confidence with
+  0.153849-0.154296 margin. S3B production promotion and S4/S5 are unchanged.
+- Follow-up correction: the revised 2560x1440 extractor initially produced 647x529 because
+  `y2=0.4329` rounded to 623. The top boundary remains y=94; only the bottom boundary moves to
+  y=624 (`y2=0.4333`), making new Niko/Kurumi outputs 647x530 without reintroducing the AP bar.
+  Both portraits were re-extracted from the reviewed current-UI captures; each now matches its
+  source repeat at confidence 1.0 with margin 0.173892. The catalog now contains 256 student
+  templates and 1,114 total recognition assets.
+- A second normalization pass found 11 legacy RGBA/RGB sources whose original height was 611px.
+  Those assets now remove 81px rather than 82px, preserving the complete portrait while excluding
+  their shorter top bar. All 256 student templates are therefore exactly 647x530; provenance records
+  the per-source 81px or 82px removal and manifest integrity values are refreshed.
+
+### 2026-08-22 S3B generated text-layer glyph shadow implemented
+
+- Status: the user-directed continuation of S3B is implemented and remains shadow-only. Production
+  enablement, fallback suppression and S4/S5 were not changed. Runtime now emits a separate
+  `equipment_generated_binary_shadow` observation in addition to the existing menu-derived binary
+  shadow; neither observation is confirmed or copied into candidate payload values.
+- The v7-owned renderer creates a transparent text layer with the accepted v6 font, white fill,
+  1px navy outline, -0.25 shear and the existing level ROI transform. Screen extraction uses the
+  near-white fill as a locality seed, rejects short card/icon components, and can derive outline,
+  fill+outline and fill masks without retaining background or equipment-icon pixels. Full level
+  strings are normalized to one 40x28 bitset, so real single digits are no longer cut at the old
+  24px cell boundary.
+- The six reviewed promotion screenshots were exported, with source SHA-256 verification, to a
+  portable 432x72 test-only atlas containing 18 ROIs. It covers T1 levels 1/8/9 and T2 levels
+  12/16/18 across Kurumi, Niko and Saori (Swimsuit), all three slots, without copying source pixels
+  into runtime recognition assets.
+- Frozen replay now covers 334 level pairs: the prior 298 archive ROIs, 18 Mika/Hibiki exact
+  1280x720 Lv70 pairs and the 18 new exact 2560x1440 probes. The old menu bank produced top-1
+  325/334 and accepted 316/334 with 18 fallbacks. Generated outline produced top-1 334/334 and
+  accepted 331/334; fill+outline produced top-1 334/334 and accepted 310/334. Generated fill
+  produced top-1 and current-gate acceptance 334/334, accepted-wrong 0 and fallback 0, with minimum
+  score 0.616097 and minimum margin 0.065519.
+- Generated fill is only the benchmark lead, not a production-selected variant. No threshold was
+  changed, and the frozen 334 pairs are not authorized for threshold calibration. Production still
+  requires an independent calibration set, non-Lv70 exact 1280x720 repeats and an explicit master
+  decision. Niko/Kurumi student recognition assets are also required before all new screens count
+  as end-to-end scan evidence.
+- A single slot-independent fill bank contains 70 whole-level bitsets/9,800 bytes. Outline and
+  fill+outline are created lazily for the comparison tool; all three variants total 210 bitsets/
+  29,400 bytes. Measured cold construction with menu+fill was 206.438ms, fill preparation 173.055ms,
+  and warm three-slot fill matching p50 4.525ms/p95 4.925ms; full-size reference canvases remain 0.
+  Cold preparation therefore remains an optimization gate before production promotion.
+- Verification: 12 S3B tests and the 38-test S2/S3/S3B/asset/stdio set pass. The full backend run
+  executed 198 tests and retained exactly the known out-of-scope baseline: seven missing
+  Aru/Eimi/Kotama stat-catalog errors and one Hoshino gift assertion. No new failure was introduced.
+
 ### 2026-08-21 S3B generated-glyph template experiment added
 
 - Status: template provenance was audited after the user noted that v6 generated comparison cards

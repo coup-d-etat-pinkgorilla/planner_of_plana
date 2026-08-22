@@ -76,6 +76,16 @@ def analyze_equipment_rois(source: Path, output: Path, assets: Path) -> None:
                         tier=str(tier.value) if tier is not None and tier.confirmed else "",
                         region=regions[key],
                     ) if tier is not None else None
+                    generated_by_variant = {
+                        variant: recognizer.read_generated_binary_level(
+                            crop,
+                            slot=slot,
+                            tier=str(tier.value),
+                            variant=variant,
+                        )
+                        for variant in ("outline", "fill_outline", "fill")
+                    } if tier is not None and tier.confirmed else {}
+                    generated = generated_by_variant.get("fill")
                     labels_match = re.search(r"labels=(\[[^]]*\])", observation.note)
                     records.append({
                         "file": path.name,
@@ -88,8 +98,20 @@ def analyze_equipment_rois(source: Path, output: Path, assets: Path) -> None:
                         "family": family,
                         "tier": tier.value if tier is not None else None,
                         "tier_confidence": tier.confidence if tier is not None else 0.0,
+                        "tier_note": tier.note if tier is not None else None,
                         "prediction": observation.value,
                         "gated_prediction": gated.value if gated is not None else None,
+                        "generated_fill_prediction": generated.value if generated is not None else None,
+                        "generated_fill_confidence": generated.confidence if generated is not None else 0.0,
+                        "generated_fill_note": generated.note if generated is not None else None,
+                        "generated_variants": {
+                            variant: {
+                                "prediction": item.value,
+                                "confidence": item.confidence,
+                                "note": item.note,
+                            }
+                            for variant, item in generated_by_variant.items()
+                        },
                         "runtime_eligible": bool(tier is not None and tier.confirmed),
                         "confidence": observation.confidence,
                         "labels": labels_match.group(1) if labels_match else None,
@@ -98,9 +120,10 @@ def analyze_equipment_rois(source: Path, output: Path, assets: Path) -> None:
             finally:
                 crops.close()
 
+        eligible = [item for item in records if item["runtime_eligible"]]
         visible = [item for item in records if item["gated_prediction"] is not None]
-        for start in range(0, len(visible), 48):
-            items = visible[start:start + 48]
+        for start in range(0, len(eligible), 48):
+            items = eligible[start:start + 48]
             sheet = Image.new("RGB", (1536, ((len(items) + 7) // 8) * 190), (25, 25, 25))
             draw = ImageDraw.Draw(sheet)
             for index, item in enumerate(items):
@@ -113,8 +136,16 @@ def analyze_equipment_rois(source: Path, output: Path, assets: Path) -> None:
                 y = (index // 8) * 190
                 sheet.paste(crop, (x, y))
                 stamp = Path(item["file"]).stem.removeprefix("스크린샷 ").replace("-", "")[2:]
-                draw.text((x + 2, y + 146), f"{stamp} s{item['slot']} p={item['gated_prediction']}", fill="white")
-                draw.text((x + 2, y + 161), f"score={item['confidence']:.3f}", fill="white")
+                draw.text(
+                    (x + 2, y + 146),
+                    f"{stamp} s{item['slot']} m={item['gated_prediction']} g={item['generated_fill_prediction']}",
+                    fill="white",
+                )
+                draw.text(
+                    (x + 2, y + 161),
+                    f"gscore={item['generated_fill_confidence']:.3f}",
+                    fill="white",
+                )
                 crop.close()
                 crops.close()
             target = output / f"equipment_roi_{start // 48 + 1:02d}.png"

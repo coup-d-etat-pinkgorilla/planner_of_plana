@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "evaluated_at": "2026-08-22",
+  "decision": "promotion_rejected",
+  "production_enabled": false,
+  "student_templates": {
+    "catalog_integrity": "pass",
+    "six_screen_identity_matches": 6,
+    "six_screen_identity_total": 6,
+    "independent_t2_repeats": {
+      "niko": {"score": 0.9890948393246187, "margin": 0.16560031998910674},
+      "kurumi": {"score": 0.9852312829066812, "margin": 0.16986003313362374}
+    },
+    "leakage_note": "T1 template-source screens score 1.0 and are not independent identity evidence"
+  },
+  "promotion_probe_2560x1440": {
+    "screens": 6,
+    "levels": 18,
+    "tier_confirmed": 17,
+    "generated_fill_correct_when_tier_confirmed": 17,
+    "end_to_end_correct": 17,
+    "end_to_end_total": 18,
+    "blocking_case": {
+      "student": "kurumi",
+      "slot": 3,
+      "family": "Necklace",
+      "expected_tier": "T2",
+      "top1_tier": "T2",
+      "score": 0.49374034167402137,
+      "margin": 0.009946
+    }
+  },
+  "client_area_1275x720": {
+    "screens": 8,
+    "reviewed_level_bearing": 11,
+    "generated_fill_correct": 6,
+    "generated_fill_wrong": 3,
+    "generated_fill_fallback": 2,
+    "reviewed_blank_or_non_level": 3,
+    "blank_false_positive": 0,
+    "blocking_case": {
+      "student": "aris",
+      "tier": "T9",
+      "expected": 65,
+      "observed": 6,
+      "slots": [1, 2, 3],
+      "variants": ["outline", "fill_outline", "fill"],
+      "fill_score_range": [0.7496813383712548, 0.7688028901542638],
+      "fill_margin_range": [0.207606, 0.222588]
+    }
+  },
+  "framed_1276x752": {
+    "screens": 2,
+    "promotion_evidence": false
+  },
+  "frozen_replay": {
+    "pairs": 334,
+    "generated_fill_correct": 334,
+    "generated_fill_wrong": 0,
+    "generated_fill_fallback": 0
+  },
+  "performance_ms": {
+    "cold_menu_plus_fill": 261.3903000019491,
+    "generated_fill_prepare": 219.65610003098845,
+    "warm_three_slot_p50": 6.935199955478311,
+    "warm_three_slot_p95": 8.398200036026537
+  },
+  "required_before_next_promotion_review": [
+    "preserve both digits at 1275x720 and add an Lv65/Lv6 regression",
+    "resolve Kurumi Necklace T2 tier rejection",
+    "freeze the reviewed 1275x720 evidence as a portable fixture",
+    "keep calibration separate from frozen validation",
+    "reduce and remeasure cold preparation cost",
+    "measure fallback and equipment-menu call reduction",
+    "obtain explicit master acceptance"
+  ]
+}
+

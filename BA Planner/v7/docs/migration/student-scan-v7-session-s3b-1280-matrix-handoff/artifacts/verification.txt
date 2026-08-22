@@ -1,0 +1,48 @@
+Exact 1280x720 S3B equipment coverage matrix
+Date: 2026-08-22 Asia/Seoul
+
+Evidence policy:
+- accepted live image size: exactly 1280x720
+- accepted aspect ratio: 16:9
+- window border, title bar, padding and letterbox: rejected
+- 1275x720 and 1276x752 results: diagnostic only, excluded from promotion metrics
+
+Coverage:
+- tier-level pairs per family: 445
+- normal equipment families: 9
+- equipped atomic cases: 4,005
+- empty atomic cases: 3
+- level-locked atomic cases: 2
+- normal equipment atomic cases: 4,010
+- favorite atomic states: 6
+- live atomic cases including favorite: 4,016
+- equipped capture configurations: 1,335
+- equipped PNGs at three stable repeats: 4,005
+- physical empty/equipped/locked patterns: 14
+- unlock boundary probes: 5
+- unresolved masks: 7, fixture/transport scope
+- non-deduplicated live PNG upper bound at three repeats: 4,080
+
+Exact family cover:
+- shiroko: Hat / Hairpin / Watch
+- hoshino: Shoes / Bag / Charm
+- ako: Gloves / Badge / Necklace
+
+Validation:
+- generated manifest rows: 1,335
+- every equipped row source_size: [1280, 720]
+- every equipped row repeat_count: 3
+- representative tuples equal runtime student metadata: PASS
+- physical state patterns: 14
+- unresolved masks: 7
+- Python AST and JSON parse: PASS
+- tests.test_student_equipment_s3b: 12/12 PASS in 7.371s
+- codealmanac validate: PASS
+- codealmanac health: 20 pages, 0 orphans/dead refs/broken links/broken xwiki/empty pages
+
+MASTER_REQUIRED:
+- collect exact 1280x720 non-Lv70 captures using calibration/validation separation
+- ensure every capture has source hash and environment metadata
+- reproduce or clear the prior Lv65/Lv6 diagnostic only at exact 1280x720
+- retain the 2560 Kurumi T2 tier miss as a separate valid 16:9 blocker
+- keep production disabled until the matrix gate and explicit acceptance are complete

@@ -1,0 +1,48 @@
+S3B generated text-layer glyph verification
+Date: 2026-08-22 Asia/Seoul
+
+Implementation:
+- transparent generated text layer; background and equipment icon excluded
+- white fill, 1px navy outline, -0.25 shear and existing quad geometry retained
+- screen near-white fill locality seed plus tall-component filtering
+- full level string normalized to a 40x28 integer bitset
+- runtime source: equipment_generated_binary_shadow
+- production enabled: false
+- existing generated/menu fallback suppression: none
+
+Frozen dataset:
+- archive exact 2560x1440: 298 level pairs
+- Mika/Hibiki exact 1280x720 Lv70: 18 level pairs
+- promotion probe exact 2560x1440 T1 1/8/9 and T2 12/16/18: 18 level pairs
+- total: 334
+
+Results:
+- menu binary: top1 325/334, accepted 316/334, wrong 0, fallback 18
+- generated outline: top1 334/334, accepted 331/334, wrong 0, fallback 3
+- generated fill+outline: top1 334/334, accepted 310/334, wrong 0, fallback 24
+- generated fill: top1 334/334, accepted 334/334, wrong 0, fallback 0
+- generated fill minimum score: 0.616097
+- generated fill minimum margin: 0.065519
+
+Performance and memory:
+- cold menu+fill construction: 206.438ms
+- generated fill preparation: 173.055ms
+- warm three-slot fill p50: 4.525ms
+- warm three-slot fill p95: 4.925ms
+- fill bank: 70 templates / 9,800 bytes
+- all three variants after lazy benchmark: 210 templates / 29,400 bytes
+- full-size reference canvases: 0
+
+Verification:
+- tests.test_student_equipment_s3b: 12/12 PASS
+- combined S2/S3/S3B/recognition-asset/stdio: 38/38 PASS
+- full backend: 198 executed; same known 1 failure + 7 errors only
+- known baseline: Aru/Eimi/Kotama stat catalog IDs and Hoshino gift assertion
+
+MASTER_REQUIRED:
+- obtain independent calibration data; do not tune thresholds on frozen 334
+- obtain non-Lv70 exact 1280x720 repeats
+- add Niko/Kurumi student recognition assets for end-to-end probe replay
+- reduce and remeasure cold fill-bank preparation before production
+- measure actual fallback/menu-call reduction only after an explicit production candidate decision
+- explicitly accept production enablement; S4/S5 remain excluded

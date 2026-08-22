@@ -1,0 +1,61 @@
+Exact 1280x720 minimum factorized equipment matrix
+Date: 2026-08-22 Asia/Seoul
+
+Proof of lower bound:
+- family-specific tier cases: 9 families x 10 tiers = 90
+- independently readable observations per screenshot: 3 slots
+- lower bound: 90 / 3 = 30 screenshot configurations
+- generated matrix: 30, therefore the lower bound is reached
+
+Factorization boundary:
+- tier icon reader receives family and tier-icon ROI
+- generated glyph reader receives slot, tier and level ROI; family is not an input
+- family-tier and slot-digit/layout axes may therefore be covered independently
+
+Calibration split:
+- students: Airi (Band), Haruna (Sportswear), Kanna
+- v6 account states: T1/Lv1 x3; empty x3; T1/Lv1 + empty + empty
+- configurations: 30
+- stable repeats: 3
+- PNGs: 90
+- exact 12/23/34 row: Airi (Band) T4
+
+Independent validation split:
+- students: Chihiro, Marina (Qipao), Tsurugi (Swimsuit)
+- v6 account states: T1/Lv1 x3; empty x3; T1/Lv1 x3
+- students are identity-disjoint from calibration; each split independently covers all nine families
+- configurations: 30
+- stable repeats: 3
+- PNGs: 90
+- two-split total: 60 configurations / 180 PNGs
+
+Per-slot coverage in each split:
+- required level samples: 30
+- single-digit layout: 1 through 9
+- tens digit: 1 through 7
+- ones digit: 0 through 9
+- tier maxima: 10,20,30,40,45,50,55,60,65,70
+- confusion strings: 12,23,34,56,65
+- unique family-tier pairs: 90/90
+- every tier-level pair is valid under its tier cap
+- every student's three slots advance monotonically T1 through T10
+
+Validation performed:
+- generated JSON parse: PASS
+- 30 rows per split: PASS
+- runtime metadata and read-only v6 account family/state tuples: PASS
+- v6 account database SHA-256: 4b5a2052cf45cd89117eb4d219bef4cfb4e6bf1e8c5129de03e9c8d5a099f011
+- family-tier uniqueness and completeness: PASS
+- per-slot level-set equality: PASS
+- per-slot tier-max boundary coverage: PASS
+- exact Airi (Band) T4 12/23/34: PASS
+- exact 1280x720 and repeat-count fields: PASS
+- existing exhaustive handoff matrix SHA-256 restoration: PASS
+- codealmanac validate: PASS
+- codealmanac health: 20 pages, 0 orphans/dead refs/broken links/broken xwiki/empty pages
+
+MASTER_REQUIRED:
+- collect the 30 calibration and 30 independent validation configurations at exact 1280x720
+- keep stable repeats and source hashes; repeats are not independent validation samples
+- add empty/locked/favorite supplements separately
+- retain production false until accepted-wrong 0 and all remaining S3B gates pass

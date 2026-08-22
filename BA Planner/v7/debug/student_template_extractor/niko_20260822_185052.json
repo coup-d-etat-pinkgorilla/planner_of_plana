@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "student_id": "niko",
+  "captured_at": "2026-08-22T18:50:52",
+  "source_image_path": "C:\\Users\\brigh\\Pictures\\Screenshots\\BA\\스크린샷 2026-08-21 131225.png",
+  "source_size": {
+    "width": 2560,
+    "height": 1440
+  },
+  "crop_box_image": {
+    "left": 408,
+    "top": 94,
+    "right": 1055,
+    "bottom": 624
+  },
+  "output_path": "C:\\Users\\brigh\\planner_of_plana\\BA Planner\\v7\\backend\\assets\\recognition\\v1\\templates\\students\\niko.png",
+  "recognition_manifest_path": "C:\\Users\\brigh\\planner_of_plana\\BA Planner\\v7\\backend\\assets\\recognition\\v1\\manifest.json"
+}

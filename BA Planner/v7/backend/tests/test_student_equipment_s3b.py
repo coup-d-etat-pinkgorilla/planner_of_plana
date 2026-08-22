@@ -4,6 +4,7 @@ from pathlib import Path
 from threading import Event
 from hashlib import sha256
 import json
+import re
 import unittest
 from unittest.mock import patch
 
@@ -20,6 +21,8 @@ ASSETS = BACKEND / "assets" / "recognition" / "v1"
 LIVE_ROOT = Path(__file__).parent / "fixtures" / "student_equipment_s3_dataset" / "live_1280x720"
 BENCHMARK = Path(__file__).parent / "fixtures" / "student_equipment_s3b_benchmark.json"
 ARCHIVE_FIXTURE = Path(__file__).parent / "fixtures" / "student_equipment_s3b_archive"
+PROMOTION_FIXTURE = Path(__file__).parent / "fixtures" / "student_equipment_s3b_promotion_probe"
+GENERATED_BENCHMARK = Path(__file__).parent / "fixtures" / "student_equipment_s3b_generated_glyph_benchmark.json"
 
 
 class LiveMikaCapture:
@@ -47,6 +50,10 @@ class StudentEquipmentS3BTests(unittest.TestCase):
             self.assertEqual({"1", "2", "3", "4", "5", "6", "7"}, set(recognizer._binary_templates[(1, 1)]))
             self.assertEqual(set("0123456789"), set(recognizer._binary_templates[(3, 2)]))
             self.assertFalse(recognizer.binary_production_enabled)
+            self.assertFalse(recognizer.generated_binary_production_enabled)
+            self.assertEqual(70, recognizer.metrics.generated_binary_template_count)
+            self.assertEqual(9800, recognizer.metrics.generated_binary_template_bytes)
+            self.assertEqual({"fill"}, set(recognizer._generated_binary_templates))
         finally:
             recognizer.close()
 
@@ -208,9 +215,16 @@ class StudentEquipmentS3BTests(unittest.TestCase):
             with patch.object(adapter.matcher, "match", return_value=Match("mika", 1.0, 1.0)):
                 result = adapter({"target_id": "fixture"}, Event(), lambda *_args: None)[0]
             shadow = [item for item in result["evidence"] if item["source"] == "equipment_binary_shadow"]
+            generated_shadow = [
+                item for item in result["evidence"]
+                if item["source"] == "equipment_generated_binary_shadow"
+            ]
             self.assertEqual(3, len(shadow))
+            self.assertEqual(3, len(generated_shadow))
             self.assertEqual({"shadow"}, {item["status"] for item in shadow})
+            self.assertEqual({"shadow"}, {item["status"] for item in generated_shadow})
             self.assertTrue(all("production_enabled=false" in item["note"] for item in shadow))
+            self.assertTrue(all("variant=fill" in item["note"] for item in generated_shadow))
             self.assertTrue(all(
                 result["payload"]["values"].get(f"equip{slot}_level") is None
                 for slot in (1, 2, 3)
@@ -270,6 +284,58 @@ class StudentEquipmentS3BTests(unittest.TestCase):
             self.assertEqual(298, recognizer.metrics.binary_shadow_hits)
         finally:
             recognizer.close()
+
+    def test_generated_glyph_variants_replay_18_single_and_two_digit_probes(self) -> None:
+        manifest = json.loads((PROMOTION_FIXTURE / "manifest.json").read_text(encoding="utf-8"))
+        atlas_path = PROMOTION_FIXTURE / manifest["atlas"]["path"]
+        self.assertEqual(manifest["atlas"]["sha256"], sha256(atlas_path.read_bytes()).hexdigest())
+        self.assertEqual(18, manifest["reviewed_roi_count"])
+        recognizer = StudentEquipmentRecognizer(self.catalog)
+        try:
+            with Image.open(atlas_path) as atlas:
+                for record in manifest["records"]:
+                    crop = atlas.crop(tuple(record["atlas_box"]))
+                    try:
+                        for variant in ("outline", "fill_outline", "fill"):
+                            observation = recognizer.read_generated_binary_level(
+                                crop,
+                                slot=int(record["slot"]),
+                                tier=str(record["tier"]),
+                                variant=variant,
+                            )
+                            candidate = re.search(r"(?:^|;)value=(\d+)(?:;|$)", observation.note)
+                            self.assertIsNotNone(candidate, record["source_file"])
+                            self.assertEqual(
+                                int(record["expected_value"]), int(candidate.group(1)),
+                                f"{variant}:{record['source_file']}:slot{record['slot']}",
+                            )
+                        self.assertEqual(
+                            int(record["expected_value"]),
+                            recognizer.read_generated_binary_level(
+                                crop,
+                                slot=int(record["slot"]),
+                                tier=str(record["tier"]),
+                                variant="fill",
+                            ).value,
+                        )
+                    finally:
+                        crop.close()
+        finally:
+            recognizer.close()
+
+    def test_generated_fill_benchmark_replays_all_334_without_fallback_or_wrong_accept(self) -> None:
+        report = json.loads(GENERATED_BENCHMARK.read_text(encoding="utf-8"))
+        self.assertEqual(334, report["datasets"]["combined_level_pairs"])
+        fill = report["methods"]["generated_fill"]
+        self.assertEqual(334, fill["top1_correct"])
+        self.assertEqual(334, fill["accepted_correct"])
+        self.assertEqual(0, fill["accepted_wrong"])
+        self.assertEqual(0, fill["fallback"])
+        self.assertEqual("benchmark_lead_not_production_selected", report["selection_status"])
+        self.assertFalse(report["production_enabled"])
+        self.assertEqual(70, report["cache_and_memory"]["generated_fill_template_count"])
+        self.assertEqual(9800, report["cache_and_memory"]["generated_fill_template_bytes"])
+        self.assertEqual(0, report["cache_and_memory"]["full_size_reference_canvases"])
 
 
 if __name__ == "__main__":

@@ -43,6 +43,13 @@ sources:
 
 ## 현재 기준선
 
+학생 identity portrait의 `student_texture_region`은 상단 자원 바와 AP 아이콘을 포함하지
+않는다. 2560x1440 기준 기존 crop 시작 y=12에서 상단 82px를 제거해 새 시작점을 y=94
+(`y1=0.0653`)로 고정한다. 하단은 y=624(`y2=0.4333`)로 두어 기준 2560x1440 추출 크기를
+647x530으로 유지한다. 기존 `student-template`도 같은 82px를 제거하며, 이후 developer-tool
+추출은 이 ROI를 그대로 사용한다. 따라서 AP 아이콘의 수평 배치나 상단 바 UI 변경은 학생
+identity similarity에 들어가지 않는다.
+
 v7의 `StudentMatcherAdapter`는 현재 안정 프레임에서 학생 이미지 템플릿만 매칭하고
 `values: {}` 후보를 반환한다. 반면 repository DTO와 recognition region에는 레벨,
 성급, 무기, 장비, HP, ATK, DEF, HEAL 필드의 자리가 이미 있다. Flutter는 candidate를
@@ -215,6 +222,52 @@ fallback/menu-call, cold/warm p50/p95와 bounded memory를 비교한다. Product
 frozen replay의 committed false positive 0, non-Lv70 exact 1280x720 반복과 master 명시 승인을
 모두 만족한 뒤에만 가능하다.
 
+2026-08-22 구현 결과에서 생성형 glyph는 background/icon을 포함하지 않는 transparent text
+layer와 screen의 near-white fill locality seed를 사용한다. 짧은 background/icon component를
+제외하고 전체 숫자 문자열을 40x28 integer bitset으로 정규화하므로 한 자리 1/8/9를 기존
+24px cell 경계에서 자르지 않는다. Outline과 fill+outline은 fill 주변으로 제한해 배경의
+남색 픽셀이 outline으로 섞이지 않게 한다.
+
+육안 검증한 새 6장은 source SHA-256을 확인한 뒤 18 ROI/432x72 test-only atlas로 고정했다.
+기존 archive 298, Mika/Hibiki 1280x720 Lv70 18, 새 T1/T2 probe 18을 합친 frozen 334 pair에서
+비교 결과는 다음과 같다.
+
+| 방법 | top-1 | 현 gate accepted | accepted wrong | fallback |
+|---|---:|---:|---:|---:|
+| 장비-menu binary | 325/334 | 316/334 | 0 | 18 |
+| generated outline | 334/334 | 331/334 | 0 | 3 |
+| generated fill+outline | 334/334 | 310/334 | 0 | 24 |
+| generated fill | 334/334 | 334/334 | 0 | 0 |
+
+Generated fill의 최소 score는 0.616097, 최소 margin은 0.065519였다. 이는 가장 강한 shadow
+lead를 정한 결과이지 production variant나 threshold를 승인한 결과가 아니다. Frozen 334는
+variant 비교와 회귀 검증에만 쓰고 threshold calibration에는 사용하지 않는다. Runtime은
+`equipment_generated_binary_shadow` evidence를 별도로 내보내며 candidate payload와 기존
+generated/menu fallback 대상은 바꾸지 않는다.
+
+Fill runtime bank는 슬롯 간 공유하는 level 1-70 whole-string 70개 bitset/9,800 bytes다.
+비교용 outline/fill+outline은 benchmark에서 lazy 생성하며 세 variant 전체는 210개/
+29,400 bytes다. Menu+fill cold construction 206.438ms 중 fill prepare가 173.055ms이고 warm
+3-slot fill p50/p95는 4.525/4.925ms, full-size canvas는 0이다. Production 전에는 fill bank를
+build-time compact asset으로 만들거나 동등한 lazy/precompute 방법으로 cold 비용을 낮춘 뒤
+다시 측정한다.
+
+후속 재평가에서 Niko/Kurumi asset과 별도 T2 repeat의 student gate는 통과했다. 새 18 ROI의
+generated fill도 tier가 확인된 17개에서는 17/17 정답이었지만 Kurumi Necklace T2 tier가
+score 0.493740, margin 0.009946으로 거부되어 전체 end-to-end는 17/18이다.
+
+BA archive의 저해상도 자료는 exact 1280x720이 아니라 client-area 1275x720 8장과 framed
+1276x752 2장이다. 육안 답지가 있는 1275x720 level-bearing 11개에서 generated fill은 정답 6,
+오답 3, fallback 2였다. 오답 세 개는 모두 Aris T9의 실제 Lv65를 Lv6으로 확신 있게 수락한
+것이며 outline/fill+outline/fill 전 variant와 세 slot에서 동일하게 재현됐다. Tier-eligible
+blank/non-level 세 개는 모두 fallback해 blank false positive는 없었다. 따라서 threshold만
+조정해서는 승격할 수 없고, client scale에서 두 번째 digit component를 보존하는 추출 수정과
+Lv65/Lv6 회귀가 먼저 필요하다.
+
+남은 gate는 1275x720 portable reviewed regression, scale-aware two-digit 보존, Kurumi T2 slot-3
+tier 보정, 독립 calibration/validation 분리, fallback/menu-call 감소량, cold 최적화와 master
+명시 승인이다. 이 조건 전까지 generated fill도 shadow-only이고 S4/S5를 시작하지 않는다.
+
 구현은 v6 생성형 matcher의 offline 기준 결과, 사전 준비 RGB/gray/edge feature bundle,
 실캡처 정규화 glyph, 실캡처 우선+소형 합성 fallback을 같은 답지로 비교한다. 이 비교는
 `../v6` runtime import를 허용하지 않는다. 실제 캡처 coverage와 confusion matrix가 충분해질
@@ -234,6 +287,33 @@ metadata를 두고, metadata에는 slot/family/tier/level, client 해상도, UI 
 - cache miss, 생성·로드 횟수, peak/transient RAM, 설치 파일 증가량
 - cold/warm 결과 동일성, T1~T10 경계, 한 자리+blank, 잘못된 tier-level 거부
 - feature 누락 시 fallback 보존과 후보별 full-size canvas 생성 금지
+
+## Exact 1280x720 장비 전수 matrix
+
+사용자 결정에 따라 16:9가 아니거나 pixel size가 정확히 1280x720이 아닌 screenshot은
+calibration, validation과 promotion evidence에서 제외한다. 1275x720과 1276x752 결과는
+scale diagnostic으로만 남기며 exact 1280x720에서 재현하기 전에는 pass/fail 분모에 넣지 않는다.
+
+일반 장비 9 family 각각의 tier별 유효 level 수 합은 445이므로 equipped 원자 경우는
+9x445=4,005개다. Shiroko(Hat/Hairpin/Watch), Hoshino(Shoes/Bag/Charm),
+Ako(Gloves/Badge/Necklace) 세 tuple이 9 family를 중복 없이 덮는다. 세 slot을 같은
+tier-level로 성장시키면 학생당 445, 총 1,335 capture configurations이며 stable repeat
+3회 기준 4,005 PNG다.
+
+Runtime factorization을 이용하면 실캡처 core는 더 줄일 수 있다. Tier icon은 family-specific,
+level glyph는 slot-specific/family-independent이므로 90 family-tier observations의 하한은
+화면당 3 slot 기준 30장이다. 30-row matrix는 각 slot에서 한 자리 1~9, tens 1~7, ones
+0~9, tier max 10개와 12/23/34·56/65 혼동쌍을 모두 포함하며 Shiroko T4 화면에 실제
+12/23/34를 배치한다. Shiroko/Hoshino/Ako calibration 30설정과 Aru/Eimi/Kotama Camping
+validation 30설정을 분리한다. Stable repeat 3회 기준 90+90=180 PNG가 production-quality
+최소 2-split이다. 모든 family-level Cartesian pair를 직접 요구할 때만 1,335설정을 사용한다.
+
+별도로 student level band에 따른 empty/equipped/locked 물리 상태 14개, unlock boundary
+Lv1/9/10/19/20, favorite unsupported/empty/love-locked/T1/T2/uncertain 6개를 둔다. Unresolved
+slot mask 7개와 blank, 0, tier max+1, 70 초과, partial digit, nonnumeric contamination은
+synthetic-only negative/fallback 검증으로 분리한다. 전체 규칙과 기계 판독 manifest는
+`docs/migration/student-scan-v7-s3b-1280x720-equipment-coverage.md` 및 해당 handoff artifact를
+따른다.
 
 ## 인연 스탯과 검증 dependency
 

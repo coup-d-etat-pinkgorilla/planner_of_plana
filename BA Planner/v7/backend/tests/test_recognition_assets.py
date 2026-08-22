@@ -8,6 +8,8 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
+from PIL import Image
+
 from core.recognition_assets import RecognitionAssetCatalog
 from core.runtime_paths import PACKAGED_RECOGNITION_ASSET_DIR, resolve_recognition_asset_dir
 from core.scanner_session import ScannerError
@@ -21,22 +23,38 @@ class RecognitionAssetTests(unittest.TestCase):
         catalog = RecognitionAssetCatalog(ASSETS)
         status = catalog.verify()
         self.assertTrue(status["ready"])
-        self.assertEqual(254, len(catalog.assets("student", "student-template")))
+        self.assertEqual(256, len(catalog.assets("student", "student-template")))
         self.assertEqual(497, len(catalog.assets("inventory", "inventory-template")))
         self.assertEqual(10, len(catalog.assets("inventory", "inventory-count-template")))
         self.assertEqual(17, len(catalog.assets("student", "student-basic-skill-template")))
         self.assertEqual(19, len(catalog.assets("student", "student-basic-level-digit-template")))
         self.assertEqual(187, len(catalog.assets("student", "student-basic-combat-digit-template")))
         self.assertEqual(10, len(catalog.assets("student", "student-basic-weapon-level-digit-template")))
-        self.assertEqual(1112, status["asset_count"])
+        self.assertEqual(1114, status["asset_count"])
         self.assertEqual(
-            "../v6/templates/students/airi.png",
+            "adapted:../v6/templates/students/airi.png#top-bar-removed-82px",
             next(
                 item["source_path"]
                 for item in catalog.load()["assets"]
                 if item["path"] == "templates/students/airi.png"
             ),
         )
+        portrait_region = catalog.region("student")["student_texture_region"]
+        self.assertEqual(0.0653, portrait_region["y1"])
+        self.assertEqual(0.4333, portrait_region["y2"])
+        portrait_box = (
+            round(2560 * portrait_region["x1"]),
+            round(1440 * portrait_region["y1"]),
+            round(2560 * portrait_region["x2"]),
+            round(1440 * portrait_region["y2"]),
+        )
+        self.assertEqual((647, 530), (
+            portrait_box[2] - portrait_box[0],
+            portrait_box[3] - portrait_box[1],
+        ))
+        for asset in catalog.assets("student", "student-template"):
+            with Image.open(catalog.resolve(asset.path)) as template:
+                self.assertEqual(530, template.height)
         for asset in catalog.load()["assets"]:
             self.assertTrue(catalog.resolve(asset["path"]).is_file())
 

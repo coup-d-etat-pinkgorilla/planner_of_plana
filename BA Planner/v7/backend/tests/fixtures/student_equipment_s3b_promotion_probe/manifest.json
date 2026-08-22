@@ -1,0 +1,418 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-21",
+  "source_screenshot_count": 6,
+  "reviewed_roi_count": 18,
+  "ground_truth": {
+    "method": "manual visual review of six exact 2560x1440 screenshots",
+    "template_leakage": false,
+    "reason": "generated text templates do not contain pixels from validation captures"
+  },
+  "coverage": {
+    "values": [
+      1,
+      8,
+      9,
+      12,
+      16,
+      18
+    ],
+    "single_digit_values": [
+      1,
+      8,
+      9
+    ],
+    "two_digit_values": [
+      12,
+      16,
+      18
+    ],
+    "students": [
+      "kurumi",
+      "niko",
+      "saori_swimsuit"
+    ],
+    "tiers": [
+      "T1",
+      "T2"
+    ],
+    "slots": [
+      1,
+      2,
+      3
+    ],
+    "resolutions": [
+      "2560x1440"
+    ]
+  },
+  "atlas": {
+    "path": "roi_atlas.png",
+    "size": [
+      432,
+      72
+    ],
+    "sha256": "363e6aad47c4890f5e2c8a30f789b9e9426693abed09f0583f234a348e2b4cfe"
+  },
+  "records": [
+    {
+      "source_file": "스크린샷 2026-08-21 131203.png",
+      "source_sha256": "7eeeeb0ffe3a49a60021a1677edfe1333319981546f7ec2e71b62f9ed17ecf22",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kurumi",
+      "family": "Shoes",
+      "tier": "T1",
+      "slot": 1,
+      "expected_value": 1,
+      "atlas_box": [
+        0,
+        0,
+        48,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131203.png",
+      "source_sha256": "7eeeeb0ffe3a49a60021a1677edfe1333319981546f7ec2e71b62f9ed17ecf22",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kurumi",
+      "family": "Bag",
+      "tier": "T1",
+      "slot": 2,
+      "expected_value": 8,
+      "atlas_box": [
+        48,
+        0,
+        96,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131203.png",
+      "source_sha256": "7eeeeb0ffe3a49a60021a1677edfe1333319981546f7ec2e71b62f9ed17ecf22",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kurumi",
+      "family": "Necklace",
+      "tier": "T1",
+      "slot": 3,
+      "expected_value": 9,
+      "atlas_box": [
+        96,
+        0,
+        144,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131225.png",
+      "source_sha256": "47bc7f96958fecbc4d0bbaac33ea410e35a9e45611ba4b83cdffeada0442f868",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "niko",
+      "family": "Shoes",
+      "tier": "T1",
+      "slot": 1,
+      "expected_value": 1,
+      "atlas_box": [
+        144,
+        0,
+        192,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131225.png",
+      "source_sha256": "47bc7f96958fecbc4d0bbaac33ea410e35a9e45611ba4b83cdffeada0442f868",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "niko",
+      "family": "Hairpin",
+      "tier": "T1",
+      "slot": 2,
+      "expected_value": 8,
+      "atlas_box": [
+        192,
+        0,
+        240,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131225.png",
+      "source_sha256": "47bc7f96958fecbc4d0bbaac33ea410e35a9e45611ba4b83cdffeada0442f868",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "niko",
+      "family": "Watch",
+      "tier": "T1",
+      "slot": 3,
+      "expected_value": 9,
+      "atlas_box": [
+        240,
+        0,
+        288,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131240.png",
+      "source_sha256": "fd812e948812b235ef54c7f6d96b4daecee61b351cb9a267c3ff219bb04cde41",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "saori_swimsuit",
+      "family": "Gloves",
+      "tier": "T1",
+      "slot": 1,
+      "expected_value": 1,
+      "atlas_box": [
+        288,
+        0,
+        336,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131240.png",
+      "source_sha256": "fd812e948812b235ef54c7f6d96b4daecee61b351cb9a267c3ff219bb04cde41",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "saori_swimsuit",
+      "family": "Hairpin",
+      "tier": "T1",
+      "slot": 2,
+      "expected_value": 8,
+      "atlas_box": [
+        336,
+        0,
+        384,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131240.png",
+      "source_sha256": "fd812e948812b235ef54c7f6d96b4daecee61b351cb9a267c3ff219bb04cde41",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "saori_swimsuit",
+      "family": "Watch",
+      "tier": "T1",
+      "slot": 3,
+      "expected_value": 9,
+      "atlas_box": [
+        384,
+        0,
+        432,
+        36
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131411.png",
+      "source_sha256": "d22867f28ecf173c13a5956fb9f7659d44c6041350a7f1734aa6f6d69a631141",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "saori_swimsuit",
+      "family": "Gloves",
+      "tier": "T2",
+      "slot": 1,
+      "expected_value": 12,
+      "atlas_box": [
+        0,
+        36,
+        48,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131411.png",
+      "source_sha256": "d22867f28ecf173c13a5956fb9f7659d44c6041350a7f1734aa6f6d69a631141",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "saori_swimsuit",
+      "family": "Hairpin",
+      "tier": "T2",
+      "slot": 2,
+      "expected_value": 16,
+      "atlas_box": [
+        48,
+        36,
+        96,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131411.png",
+      "source_sha256": "d22867f28ecf173c13a5956fb9f7659d44c6041350a7f1734aa6f6d69a631141",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "saori_swimsuit",
+      "family": "Watch",
+      "tier": "T2",
+      "slot": 3,
+      "expected_value": 18,
+      "atlas_box": [
+        96,
+        36,
+        144,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131504.png",
+      "source_sha256": "b53780e2e517ad69075f297b1850cf4305e121f4e9bc781ed49daadd777042ee",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "niko",
+      "family": "Shoes",
+      "tier": "T2",
+      "slot": 1,
+      "expected_value": 12,
+      "atlas_box": [
+        144,
+        36,
+        192,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131504.png",
+      "source_sha256": "b53780e2e517ad69075f297b1850cf4305e121f4e9bc781ed49daadd777042ee",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "niko",
+      "family": "Hairpin",
+      "tier": "T2",
+      "slot": 2,
+      "expected_value": 16,
+      "atlas_box": [
+        192,
+        36,
+        240,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131504.png",
+      "source_sha256": "b53780e2e517ad69075f297b1850cf4305e121f4e9bc781ed49daadd777042ee",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "niko",
+      "family": "Watch",
+      "tier": "T2",
+      "slot": 3,
+      "expected_value": 18,
+      "atlas_box": [
+        240,
+        36,
+        288,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131601.png",
+      "source_sha256": "f25a3d96e55bbbb44cee296efb75d845f2e800fa95ea98958962e8130377ad1e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kurumi",
+      "family": "Shoes",
+      "tier": "T2",
+      "slot": 1,
+      "expected_value": 12,
+      "atlas_box": [
+        288,
+        36,
+        336,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131601.png",
+      "source_sha256": "f25a3d96e55bbbb44cee296efb75d845f2e800fa95ea98958962e8130377ad1e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kurumi",
+      "family": "Bag",
+      "tier": "T2",
+      "slot": 2,
+      "expected_value": 16,
+      "atlas_box": [
+        336,
+        36,
+        384,
+        72
+      ],
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-21 131601.png",
+      "source_sha256": "f25a3d96e55bbbb44cee296efb75d845f2e800fa95ea98958962e8130377ad1e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "student_ref": "kurumi",
+      "family": "Necklace",
+      "tier": "T2",
+      "slot": 3,
+      "expected_value": 18,
+      "atlas_box": [
+        384,
+        36,
+        432,
+        72
+      ],
+      "review_status": "visual_verified"
+    }
+  ]
+}
