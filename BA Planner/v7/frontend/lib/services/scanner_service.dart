@@ -169,8 +169,12 @@ class ScannerCandidate {
     required List<ScannerFieldEvidence> evidence,
     required this.reviewRequired,
     required this.approved,
+    List<Map<String, dynamic>> audit = const [],
   }) : payload = Map.unmodifiable(payload),
-       evidence = List.unmodifiable(evidence);
+       evidence = List.unmodifiable(evidence),
+       audit = List.unmodifiable(
+         audit.map((item) => Map<String, dynamic>.unmodifiable(item)),
+       );
   final String id;
   final String sessionId;
   final int generation;
@@ -180,6 +184,7 @@ class ScannerCandidate {
   final List<ScannerFieldEvidence> evidence;
   final bool reviewRequired;
   final bool approved;
+  final List<Map<String, dynamic>> audit;
 
   factory ScannerCandidate.fromWire(Map<String, dynamic> wire) =>
       ScannerCandidate(
@@ -198,6 +203,9 @@ class ScannerCandidate {
             .toList(),
         reviewRequired: wire['review_required'] as bool,
         approved: wire['approved'] as bool,
+        audit: (wire['audit'] as List? ?? const [])
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList(growable: false),
       );
 }
 

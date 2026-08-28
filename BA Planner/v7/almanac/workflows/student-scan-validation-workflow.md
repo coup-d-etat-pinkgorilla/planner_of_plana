@@ -659,6 +659,19 @@ multiplier-eligible flat 합계에 들어감을 확정했다.
 
 ## 프로토콜 원칙
 
+### 대화형 진단 추출 계약
+
+완료된 학생 단일/전체 스캔은 version 1 JSON 진단 문서로 추출할 수 있다. 추출은 새 scanner
+IPC 메서드를 만들지 않고 기존 authoritative session snapshot을 다시 읽어 최신 candidate
+revision, 전체 evidence와 세션 이벤트를 고정한다. 저장소 비교 문맥은 추출 시점에 다시 읽되
+후보와 같은 canonical student ID의 확정값만 포함한다.
+
+문서는 후보 payload, evidence의 source/confidence/details, 계산 expected/observed/delta,
+dependency, review/approval 상태와 audit을 보존한다. 계정명, profile ID, 게임 창 ID/제목과
+이미지는 포함하지 않는다. 따라서 문서만으로 판정할 수 없는 항목은 `게임 내 육안 확인 필요`로
+보고하고, 사용자가 제공한 실제 값으로 계산식·정적 메타데이터·OCR/matcher 문제를 분리한다.
+계약 스키마는 `contracts/student-scan-diagnostic-v1.schema.json`이다.
+
 - candidate payload는 계속 repository에 저장 가능한 `ConfirmedStudent` 형식이다.
 - 계산 결과는 `values`에 넣지 않고 evidence에 둔다.
 - scanner protocol v1을 확장한다면 `fieldEvidence.details` 같은 optional 구조로 추가하고

@@ -6,6 +6,7 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
+import '../../services/student_scan_diagnostic.dart';
 import '../../services/window_dock_service.dart';
 import '../widgets/diagonal_section.dart';
 import '../widgets/repository_profile_panel.dart';
@@ -22,6 +23,9 @@ class ScanPage extends StatefulWidget {
     this.onRecentChanged,
     this.onCompanionChanged,
     this.windowDockService = const WindowsWindowDockService(),
+    this.studentScanDiagnosticFileService =
+        const NativeStudentScanDiagnosticFileService(),
+    this.now = DateTime.now,
   });
 
   final AppService service;
@@ -30,6 +34,8 @@ class ScanPage extends StatefulWidget {
   final ValueChanged<List<ScannerRecentSummary>>? onRecentChanged;
   final ValueChanged<ScanCompanionState?>? onCompanionChanged;
   final WindowDockService windowDockService;
+  final StudentScanDiagnosticFileService studentScanDiagnosticFileService;
+  final DateTime Function() now;
 
   @override
   State<ScanPage> createState() => _ScanPageState();
@@ -75,6 +81,7 @@ class _ScanPageState extends State<ScanPage> {
   final Map<String, String> _candidateErrors = {};
   String? _candidateNotice;
   bool _companionActive = false;
+  bool _exportingStudentDiagnostic = false;
 
   bool get _connected =>
       widget.service.state.value.connection == BackendConnection.connected;
@@ -94,6 +101,15 @@ class _ScanPageState extends State<ScanPage> {
       _recognitionReady &&
       _selectedTarget?.status == ScannerTargetStatus.ready &&
       (_stage == _SessionStage.idle || _stage == _SessionStage.terminal);
+
+  bool get _canExportStudentDiagnostic =>
+      !_exportingStudentDiagnostic &&
+      _stage == _SessionStage.terminal &&
+      _outcome == 'completed' &&
+      _session?.kind == ScannerKind.student &&
+      _repository != null &&
+      _profile != null &&
+      _candidates.values.any((item) => item.kind == ScannerKind.student);
 
   @override
   void initState() {
@@ -315,6 +331,55 @@ class _ScanPageState extends State<ScanPage> {
       }
     } finally {
       if (mounted) setState(() => _recovering = false);
+    }
+  }
+
+  Future<void> _exportStudentDiagnostic() async {
+    final scanner = _scanner;
+    final repository = _repository;
+    final profile = _profile;
+    final session = _session;
+    if (!_canExportStudentDiagnostic ||
+        scanner == null ||
+        repository == null ||
+        profile == null ||
+        session == null) {
+      return;
+    }
+    setState(() {
+      _exportingStudentDiagnostic = true;
+      _candidateNotice = null;
+    });
+    try {
+      final results = await Future.wait<Object>([
+        scanner.scannerSnapshot(session),
+        repository.loadRepositoryState(profile.id),
+      ]);
+      final generatedAt = widget.now();
+      final document = buildStudentScanDiagnosticDocument(
+        session: session,
+        snapshot: results[0] as ScannerSessionSnapshot,
+        repositoryState: results[1] as RepositoryState,
+        generatedAt: generatedAt,
+      );
+      final path = await widget.studentScanDiagnosticFileService.save(
+        suggestedName: defaultStudentScanDiagnosticFileName(
+          session,
+          generatedAt,
+        ),
+        contents: encodeStudentScanDiagnosticDocument(document),
+      );
+      if (!mounted || path == null) return;
+      setState(() {
+        _repositoryState = results[1] as RepositoryState;
+        _candidateNotice = '학생 스캔 진단 파일을 저장했습니다.';
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() => _candidateNotice = '학생 스캔 진단 추출 실패: $error');
+      }
+    } finally {
+      if (mounted) setState(() => _exportingStudentDiagnostic = false);
     }
   }
 
@@ -1018,6 +1083,16 @@ class _ScanPageState extends State<ScanPage> {
                     : _recoverSnapshot,
                 icon: const Icon(Icons.sync),
                 label: Text(_recovering ? 'Recovering…' : 'Recover snapshot'),
+              ),
+              OutlinedButton.icon(
+                key: const ValueKey('scan-export-student-diagnostic'),
+                onPressed: _canExportStudentDiagnostic
+                    ? _exportStudentDiagnostic
+                    : null,
+                icon: const Icon(Icons.file_download_outlined),
+                label: Text(
+                  _exportingStudentDiagnostic ? '추출 중…' : '진단 JSON 추출',
+                ),
               ),
             ],
           ),

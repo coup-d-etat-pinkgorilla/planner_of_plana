@@ -10,6 +10,27 @@ sources:
 
 # P0-P6 Workflow Status
 
+### 2026-08-28 student scan conversational diagnostic export complete
+
+- Completed student single/full sessions now expose `진단 JSON 추출`. The exporter refreshes the
+  authoritative scanner snapshot and repository state before writing a version-1 document, so final
+  candidate revisions, evidence details, calculation expected/observed/delta, dependencies, audit and
+  the complete event stream remain available for conversation-based review.
+- Repository context is limited to confirmed records whose canonical student IDs occur in the scan.
+  Account names, profile IDs, scanner target/window identity and images are excluded. The contract is
+  `contracts/student-scan-diagnostic-v1.schema.json`; full screenshots continue not to be retained.
+- The review workflow is diagnostic-first: report suspicious calculation or recognition evidence and
+  explicitly list fields requiring in-game visual confirmation. User-confirmed values then isolate the
+  fault to calculation, static metadata or recognition without silently changing observed scan values.
+- Verification: the 18 focused diagnostic/ScanPage tests pass, the complete Flutter suite passes
+  397/397 with process E2E tests serialized, and `flutter analyze` reports no issues. The complete
+  Python suite passes 266/266, the contract schema gate passes, and Windows Release builds
+  `ba_planner_v7.exe`. An earlier parallel validation run caused expected shared-process timeouts and a
+  Studio font-copy file race; both pass when run without cross-suite filesystem/process contention.
+- Next action: export a real affected v7 student scan and use the resulting JSON to identify the first
+  suspicious or visual-verification-required fields, including the reported new-student revalidation
+  case.
+
 ### 2026-08-28 inventory catalog ordinal stability fixed
 
 - `resource_key` is the only durable inventory identity. `order_index` is explicitly scoped to a

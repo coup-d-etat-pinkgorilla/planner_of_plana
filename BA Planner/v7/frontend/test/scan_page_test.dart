@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
+import 'package:ba_planner_v7/services/student_scan_diagnostic.dart';
 import 'package:ba_planner_v7/services/window_dock_service.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_companion_dock.dart';
 import 'package:ba_planner_v7/ui/pages/scan_page.dart';
@@ -16,6 +18,9 @@ Widget _subject(
   ValueChanged<List<ScannerRecentSummary>>? onRecentChanged,
   ValueChanged<ScanCompanionState?>? onCompanionChanged,
   WindowDockService windowDockService = const WindowsWindowDockService(),
+  StudentScanDiagnosticFileService studentScanDiagnosticFileService =
+      const NativeStudentScanDiagnosticFileService(),
+  DateTime Function() now = DateTime.now,
 }) => MaterialApp(
   home: Scaffold(
     body: ScanPage(
@@ -24,6 +29,8 @@ Widget _subject(
       onRecentChanged: onRecentChanged,
       onCompanionChanged: onCompanionChanged,
       windowDockService: windowDockService,
+      studentScanDiagnosticFileService: studentScanDiagnosticFileService,
+      now: now,
     ),
   ),
 );
@@ -51,6 +58,48 @@ Future<void> _reveal(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  testWidgets(
+    'completed student scan exports a privacy-limited diagnostic JSON',
+    (tester) async {
+      final service = MockAppService();
+      final files = _RecordingStudentScanDiagnosticFileService();
+      addTearDown(service.dispose);
+      await tester.pumpWidget(
+        _subject(
+          service,
+          studentScanDiagnosticFileService: files,
+          now: () => DateTime.utc(2026, 8, 28, 12, 34, 56),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _selectTarget(tester, 'mock-window');
+      await tester.tap(find.byKey(const ValueKey('scan-start')));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump();
+
+      final export = find.byKey(
+        const ValueKey('scan-export-student-diagnostic'),
+      );
+      await _reveal(tester, export);
+      expect(tester.widget<OutlinedButton>(export).onPressed, isNotNull);
+      await tester.tap(export);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+
+      expect(files.suggestedName, contains('2026-08-28T12-34-56.000Z-single'));
+      final document = jsonDecode(files.contents!) as Map<String, dynamic>;
+      expect(document['format'], studentScanDiagnosticFormat);
+      expect(document['privacy'], {
+        'account_name_included': false,
+        'window_title_included': false,
+        'images_included': false,
+      });
+      expect(document['candidates'], isNotEmpty);
+      expect(files.contents, isNot(contains('Mock Blue Archive')));
+      expect(files.contents, isNot(contains('"Main"')));
+    },
+  );
+
   testWidgets('full student scan docks before start and restores on terminal', (
     tester,
   ) async {
@@ -588,6 +637,22 @@ class _RecordingWindowDockService implements WindowDockService {
   @override
   Future<void> restore() async {
     restoreCalls += 1;
+  }
+}
+
+class _RecordingStudentScanDiagnosticFileService
+    implements StudentScanDiagnosticFileService {
+  String? suggestedName;
+  String? contents;
+
+  @override
+  Future<String?> save({
+    required String suggestedName,
+    required String contents,
+  }) async {
+    this.suggestedName = suggestedName;
+    this.contents = contents;
+    return 'C:/fake/$suggestedName';
   }
 }
 

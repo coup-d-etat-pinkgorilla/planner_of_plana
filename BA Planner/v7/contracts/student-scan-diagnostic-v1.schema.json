@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ba-planner.local/contracts/student-scan-diagnostic-v1.schema.json",
+  "title": "BA Planner student scan diagnostic v1",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "generated_at",
+    "privacy",
+    "session",
+    "summary",
+    "repository_context",
+    "candidates",
+    "events"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format": {"const": "ba_planner_student_scan_diagnostic"},
+    "version": {"const": 1},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "privacy": {
+      "type": "object",
+      "required": ["account_name_included", "window_title_included", "images_included"],
+      "additionalProperties": false,
+      "properties": {
+        "account_name_included": {"const": false},
+        "window_title_included": {"const": false},
+        "images_included": {"const": false}
+      }
+    },
+    "session": {
+      "type": "object",
+      "required": ["session_id", "generation", "scan_kind", "student_scan_mode", "terminal", "last_sequence"],
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {"type": "string", "minLength": 1},
+        "generation": {"type": "integer", "minimum": 1},
+        "scan_kind": {"const": "student"},
+        "student_scan_mode": {"enum": ["single", "full"]},
+        "terminal": {"const": "completed"},
+        "last_sequence": {"type": "integer", "minimum": 0}
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["candidate_count", "review_required_count", "approved_count", "evidence_status_counts"],
+      "additionalProperties": false,
+      "properties": {
+        "candidate_count": {"type": "integer", "minimum": 0},
+        "review_required_count": {"type": "integer", "minimum": 0},
+        "approved_count": {"type": "integer", "minimum": 0},
+        "evidence_status_counts": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "repository_context": {
+      "type": "object",
+      "required": ["revision", "confirmed_students"],
+      "additionalProperties": false,
+      "properties": {
+        "revision": {"type": "integer", "minimum": 0},
+        "confirmed_students": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["candidate_id", "session_id", "generation", "revision", "scan_kind", "payload", "evidence", "review_required", "approved", "audit"],
+        "additionalProperties": false,
+        "properties": {
+          "candidate_id": {"type": "string", "minLength": 1},
+          "session_id": {"type": "string", "minLength": 1},
+          "generation": {"type": "integer", "minimum": 1},
+          "revision": {"type": "integer", "minimum": 1},
+          "scan_kind": {"const": "student"},
+          "payload": {"type": "object"},
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["field", "status", "source"],
+              "properties": {
+                "field": {"type": "string"},
+                "status": {"type": "string"},
+                "source": {"type": "string"},
+                "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+                "note": {"type": "string"},
+                "details": {"type": "object"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "review_required": {"type": "boolean"},
+          "approved": {"type": "boolean"},
+          "audit": {"type": "array", "items": {"type": "object"}}
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sequence", "event_kind", "payload"],
+        "additionalProperties": false,
+        "properties": {
+          "sequence": {"type": "integer", "minimum": 1},
+          "event_kind": {"enum": ["phase", "progress", "feedback", "candidate", "diagnostic", "terminal"]},
+          "payload": {"type": "object"}
+        }
+      }
+    }
+  }
+}
