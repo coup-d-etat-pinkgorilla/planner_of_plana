@@ -25,6 +25,7 @@ import 'widgets/development_panel.dart';
 import 'widgets/diagonal_header.dart';
 import 'widgets/lifted_path_shadow.dart';
 import 'widgets/recovery_banner.dart';
+import 'widgets/scan_companion_dock.dart';
 
 const _sectionMotions = <SectionMotionSpec>[
   SectionMotionSpec(intro: 0, outro: 180),
@@ -98,6 +99,7 @@ class _AppShellState extends State<AppShell>
   var _profileGeneration = 0;
   late bool _studentTabActive;
   late bool _planTabActive;
+  ScanCompanionState? _scanCompanion;
 
   @override
   void initState() {
@@ -374,6 +376,10 @@ class _AppShellState extends State<AppShell>
                                   onRecentChanged: (recent) {
                                     setState(() => _recentScans = recent);
                                   },
+                                  onCompanionChanged: (companion) {
+                                    if (!mounted) return;
+                                    setState(() => _scanCompanion = companion);
+                                  },
                                 ),
                                 SettingsPage(
                                   service: widget.service,
@@ -447,6 +453,8 @@ class _AppShellState extends State<AppShell>
               },
             ),
           ),
+          if (_scanCompanion != null)
+            Positioned.fill(child: ScanCompanionDock(state: _scanCompanion!)),
         ],
       ),
     );

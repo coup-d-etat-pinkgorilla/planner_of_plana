@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "asset_purpose": "student-studio-numeric-digit-bank",
+  "template_count": 160,
+  "production_enabled": true,
+  "sha_resolved_archive": {
+    "student_level": {"correct": 10, "values": 10},
+    "weapon_level": {"correct": 89, "values": 89},
+    "equipment_level_two_digit": {"correct": 307, "values": 307},
+    "relationship_rank": {"correct": 24, "values": 24, "digit_correct": 48, "digits": 48}
+  },
+  "real_full_screen_fixture": {
+    "student_level": {"value": 12, "source": "student_level_studio_position_bank"},
+    "weapon_level": {"value": 50, "source": "weapon_level_studio_position_bank"},
+    "relationship_rank": {"value": 24, "source": "relationship_rank_studio_position_bank"}
+  },
+  "compatibility_fallback": {
+    "old_1280_mika_equipment_repeats": {"correct": 18, "values": 18},
+    "one_digit_equipment_layout": "existing promoted compact position bank"
+  }
+}

@@ -86,6 +86,25 @@ class RelationshipStatsV1:
 
 
 @dataclass(frozen=True, slots=True)
+class SkillStatEffectV1:
+    stat: str
+    values: tuple[int, ...]
+
+    @classmethod
+    def from_list(cls, value: object, label: str) -> "SkillStatEffectV1":
+        if not isinstance(value, list) or len(value) != 2:
+            raise StudentStatsDataError(f"{label} must be [stat, ten level values]")
+        stat, values = value
+        if not isinstance(stat, str) or not stat:
+            raise StudentStatsDataError(f"{label}[0] must be a non-empty stat name")
+        if not isinstance(values, list) or len(values) != 10 or any(
+            not isinstance(item, int) or isinstance(item, bool) for item in values
+        ):
+            raise StudentStatsDataError(f"{label}[1] must contain ten integers")
+        return cls(stat=stat, values=tuple(values))
+
+
+@dataclass(frozen=True, slots=True)
 class StudentStatRecordV1:
     schaledb_id: int
     path: str
@@ -97,6 +116,8 @@ class StudentStatRecordV1:
     relationship: RelationshipStatsV1
     favorite_gear_released: tuple[bool, bool, bool]
     favorite_gear: tuple[StatRangeV1, ...]
+    passive_skill: tuple[SkillStatEffectV1, ...]
+    weapon_passive_skill: tuple[SkillStatEffectV1, ...]
 
     @classmethod
     def from_dict(cls, value: object, label: str = "student") -> "StudentStatRecordV1":
@@ -106,6 +127,7 @@ class StudentStatRecordV1:
             {
                 "id", "path", "initial_star", "growth_type", "base_stats", "equipment",
                 "weapon", "relationship", "favorite_gear_released", "favorite_gear",
+                "passive_skill", "weapon_passive_skill",
             },
             label,
         )
@@ -146,6 +168,16 @@ class StudentStatRecordV1:
             favorite_gear_released=(released_raw[0], released_raw[1], released_raw[2]),
             favorite_gear=tuple(
                 StatRangeV1.from_list(item, f"{label}.favorite_gear") for item in favorite_raw
+            ),
+            passive_skill=tuple(
+                SkillStatEffectV1.from_list(item, f"{label}.passive_skill")
+                for item in _array(data["passive_skill"], f"{label}.passive_skill")
+            ),
+            weapon_passive_skill=tuple(
+                SkillStatEffectV1.from_list(item, f"{label}.weapon_passive_skill")
+                for item in _array(
+                    data["weapon_passive_skill"], f"{label}.weapon_passive_skill"
+                )
             ),
         )
 
@@ -250,11 +282,15 @@ class StudentStatBuildV1:
     weapon: UniqueWeaponLevelV1 | None = None
     favorite_gear_tier: int = 0
     potential: PotentialLevelsV1 = PotentialLevelsV1()
+    passive_skill_level: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class MissingStatDependencyV1:
-    kind: Literal["current_relationship", "alternate_relationship", "alternate_static_data", "equipment"]
+    kind: Literal[
+        "current_relationship", "alternate_relationship", "alternate_static_data",
+        "equipment", "passive_skill",
+    ]
     key: str
 
 
@@ -278,6 +314,12 @@ class StudentStatCalculationV1:
 def _object(value: object, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise StudentStatsDataError(f"{label} must be an object")
+    return value
+
+
+def _array(value: object, label: str) -> list[object]:
+    if not isinstance(value, list):
+        raise StudentStatsDataError(f"{label} must be an array")
     return value
 
 

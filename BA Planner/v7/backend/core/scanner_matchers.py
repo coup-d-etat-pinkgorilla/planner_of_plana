@@ -29,6 +29,7 @@ class EquipmentMenuCapturePort(Protocol):
 
 class ClickCapturePort(CapturePort, Protocol):
     def click(self, target: dict[str, Any], x_ratio: float, y_ratio: float) -> None: ...
+    def press_key(self, target: dict[str, Any], key: str) -> bool: ...
 
 
 class EquipmentMenuCaptureAdapter:
@@ -229,6 +230,8 @@ class SlotCountMatcher:
 
 
 class StudentMatcherAdapter:
+    _DOCK_CARD_TRANSITION_SECONDS = 0.32
+
     def __init__(
         self,
         capture: CapturePort,
@@ -261,7 +264,25 @@ class StudentMatcherAdapter:
                     return student_meta.format_form_ref(student_id, form_index)
         return identity
 
-    def __call__(self, target: dict[str, Any], cancel: Event, progress: Callable[[int, int | None, str], None]) -> list[dict[str, Any]]:
+    @staticmethod
+    def _report_student_feedback(
+        progress: Callable[..., None],
+        current: int,
+        total: int | None,
+        message: str,
+        student_id: str,
+        field: str,
+        values: dict[str, Any],
+    ) -> None:
+        if not getattr(progress, "supports_feedback", False):
+            return
+        progress(current, total, message, {
+            "student_id": student_id,
+            "field": field,
+            "values": values,
+        })
+
+    def _scan_current(self, target: dict[str, Any], cancel: Event, progress: Callable[..., None]) -> list[dict[str, Any]]:
         if cancel.is_set():
             return []
         progress(0, 4, "scanner.student.capture")
@@ -278,10 +299,28 @@ class StudentMatcherAdapter:
             match = self.matcher.match(crops.images["student_texture_region"])
             student_ref = self._canonical_student_ref(match.identity)
             confident = match.score >= self.threshold and match.margin >= self.margin
+            self._report_student_feedback(
+                progress, 1, 4, "scanner.student.identify",
+                student_ref, "student_id", {},
+            )
+            if (
+                target.get("student_scan_mode") == "full"
+                and getattr(progress, "supports_feedback", False)
+                and cancel.wait(self._DOCK_CARD_TRANSITION_SECONDS)
+            ):
+                return []
             if cancel.is_set():
                 return []
             progress(2, 4, "scanner.student.basic_fields")
             observations = self.basic_recognizer.recognize(crops)
+            live_values: dict[str, Any] = {}
+            for field, observation in observations.items():
+                if observation.confirmed:
+                    live_values[field] = observation.value
+                    self._report_student_feedback(
+                        progress, 2, 4, "scanner.student.basic_fields",
+                        student_ref, field, dict(live_values),
+                    )
             equipment_observations, unresolved = self.equipment_recognizer.recognize(
                 crops,
                 student_ref=student_ref,
@@ -292,6 +331,13 @@ class StudentMatcherAdapter:
                 ),
             )
             observations.update(equipment_observations)
+            for field, observation in equipment_observations.items():
+                if observation.confirmed:
+                    live_values[field] = observation.value
+                    self._report_student_feedback(
+                        progress, 3, 4, "scanner.student.equipment_fields",
+                        student_ref, field, dict(live_values),
+                    )
             progress(3, 4, "scanner.student.equipment_fields")
             if unresolved and self.equipment_menu is not None and self.equipment_menu_recognizer is not None:
                 menu_frame = self.equipment_menu.capture_equipment_menu(target, cancel)
@@ -304,6 +350,13 @@ class StudentMatcherAdapter:
                 for field, observation in fallback.items():
                     if field.removeprefix("equip").split("_", 1)[0].isdigit() and int(field.removeprefix("equip").split("_", 1)[0]) in unresolved:
                         observations[field] = observation
+                        if observation.confirmed:
+                            live_values[field] = observation.value
+                            self._report_student_feedback(
+                                progress, 3, 4,
+                                "scanner.student.equipment_fields",
+                                student_ref, field, dict(live_values),
+                            )
                 for slot in unresolved:
                     learned = fallback.get(f"equip{slot}_level")
                     region = self.regions.get(f"basic_equipment_{slot}_level_digits_quad")
@@ -367,6 +420,128 @@ class StudentMatcherAdapter:
             "review_required": review_required,
         }]
 
+    def __call__(self, target: dict[str, Any], cancel: Event, progress: Callable[..., None]) -> list[dict[str, Any]]:
+        if target.get("student_scan_mode", "single") != "full":
+            return self._scan_current(target, cancel, progress)
+        click = getattr(self.capture, "click", None)
+        if not callable(click):
+            raise ScannerError("input_unavailable", "full student scan requires click input")
+        results: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        previous_student_id: str | None = None
+        pending_button_fallback = False
+        direction = "right"
+
+        def navigate() -> None:
+            nonlocal pending_button_fallback
+            press_key = getattr(self.capture, "press_key", None)
+            used_key = callable(press_key) and bool(press_key(target, direction))
+            pending_button_fallback = used_key
+            if not used_key:
+                click(
+                    target,
+                    0.9777 if direction == "right" else 0.0223,
+                    0.53465,
+                )
+
+        def depart(student_id: str) -> bool:
+            self._report_student_feedback(
+                progress,
+                len(results),
+                None,
+                "scanner.student.transition.exit",
+                student_id,
+                "__student_exit__",
+                {},
+            )
+            if (
+                getattr(progress, "supports_feedback", False)
+                and cancel.wait(self._DOCK_CARD_TRANSITION_SECONDS)
+            ):
+                return False
+            return True
+
+        def depart_and_navigate(student_id: str) -> bool:
+            if not depart(student_id):
+                return False
+            navigate()
+            return True
+
+        for _index in range(500):
+            if cancel.is_set():
+                break
+            def current_progress(
+                _current: int,
+                _total: int | None,
+                message: str,
+                feedback: dict[str, Any] | None = None,
+            ) -> None:
+                if feedback is None:
+                    progress(len(results), None, message)
+                else:
+                    progress(len(results), None, message, feedback)
+
+            current_progress.supports_feedback = getattr(  # type: ignore[attr-defined]
+                progress, "supports_feedback", False
+            )
+            scanned = self._scan_current(target, cancel, current_progress)
+            if not scanned:
+                break
+            student_id = scanned[0].get("payload", {}).get("student_id")
+            if not isinstance(student_id, str):
+                raise ScannerError("matcher_failed", "student candidate identity is missing")
+            if student_id in seen:
+                if (
+                    student_id == previous_student_id
+                    and pending_button_fallback
+                ):
+                    progress(len(results), None, "scanner.student.full.navigation_retry")
+                    if not depart(student_id):
+                        break
+                    click(
+                        target,
+                        0.9777 if direction == "right" else 0.0223,
+                        0.53465,
+                    )
+                    pending_button_fallback = False
+                    if cancel.wait(0.45):
+                        break
+                    continue
+                if student_id == previous_student_id and direction == "right":
+                    direction = "left"
+                    progress(
+                        len(results), None,
+                        "scanner.student.full.navigation_reverse",
+                    )
+                    if not depart_and_navigate(student_id):
+                        break
+                    if cancel.wait(0.45):
+                        break
+                    continue
+                if student_id == previous_student_id or direction == "right":
+                    progress(
+                        len(results), len(results),
+                        "scanner.student.full.complete",
+                    )
+                    break
+                previous_student_id = student_id
+                if not depart_and_navigate(student_id):
+                    break
+                progress(len(results), None, "scanner.student.full.navigating")
+                if cancel.wait(0.45):
+                    break
+                continue
+            seen.add(student_id)
+            previous_student_id = student_id
+            results.extend(scanned)
+            progress(len(results), None, "scanner.student.full.collected")
+            if not depart_and_navigate(student_id):
+                break
+            progress(len(results), None, "scanner.student.full.navigating")
+            if cancel.wait(0.45):
+                break
+        return results
+
 
 class InventoryMatcherAdapter:
     def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = 0.80, margin: float = 0.03, max_pages: int = 5) -> None:
@@ -406,7 +581,7 @@ class InventoryMatcherAdapter:
                 index = page * len(self.slots) + slot_index
                 count = self.count_matcher.match(crop)
                 quantity_confident = count.value is not None
-                entries.append({"key": match.identity, "quantity": count.value, "item_id": match.identity, "name": None, "index": index, "profile_id": "visible-grid"})
+                entries.append({"key": match.identity, "quantity": count.value, "item_id": match.identity, "name": None, "observed_slot": index, "profile_id": "visible-grid"})
                 evidence.extend([
                     {"field": f"entries[{index}].item_id", "status": "ok" if confident else "uncertain", "source": source, "confidence": match.score, "note": f"margin={match.margin:.6f}"},
                     {"field": f"entries[{index}].quantity", "status": "ok" if quantity_confident else "uncertain", "source": "slot_count_glyph", "confidence": count.score, "note": f"margin={count.margin:.6f}"},

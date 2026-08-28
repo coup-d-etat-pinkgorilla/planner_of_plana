@@ -76,18 +76,7 @@ FAVORITE_ITEM_STUDENT_IDS: frozenset[str] = frozenset({
 
 FAVORITE_ITEM_MAX_TIER = "T2"
 
-JP_ONLY_STUDENT_IDS: frozenset[str] = frozenset(('akane_school_uniform',
- 'erika',
- 'haruka_dress',
- 'kisaki_swimsuit',
- 'konoka',
- 'kurumi',
- 'mutsuki_dress',
- 'nagusa_swimsuit',
- 'niko',
- 'otogi',
- 'rena',
- 'shun_swimsuit'))
+JP_ONLY_STUDENT_IDS: frozenset[str] = frozenset(('erika', 'haruka_dress', 'kisaki_swimsuit', 'mutsuki_dress', 'nagusa_swimsuit', 'shun_swimsuit'))
 
 STUDENTS: dict[str, StudentMeta] = {'ayane': {'display_name': '아야네',
            'template_name': 'ayane.png',

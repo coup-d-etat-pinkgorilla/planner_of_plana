@@ -272,22 +272,36 @@ class RepositoryGoalState {
 }
 
 class RepositoryInventoryState {
-  RepositoryInventoryState._(List<Map<String, dynamic>> entries)
-    : entries = List.unmodifiable(
+  RepositoryInventoryState._(
+    List<Map<String, dynamic>> entries,
+    this.catalogRevision,
+  ) : entries = List.unmodifiable(
         entries.map(Map<String, dynamic>.unmodifiable),
       );
 
   final List<Map<String, dynamic>> entries;
+  final String? catalogRevision;
 
   factory RepositoryInventoryState.fromEntries(
     List<Map<String, dynamic>> entries,
   ) => RepositoryInventoryState.fromWire({'version': 1, 'entries': entries});
 
-  Map<String, dynamic> toWire() => {'version': 1, 'entries': entries};
+  Map<String, dynamic> toWire() => {
+    'version': 1,
+    if (catalogRevision != null) 'catalog_revision': catalogRevision,
+    'entries': entries,
+  };
 
   factory RepositoryInventoryState.fromWire(Map<String, dynamic> value) {
-    if (!_exact(value, {'version', 'entries'}) ||
+    final keys = value.keys.toSet();
+    if (!keys.containsAll({'version', 'entries'}) ||
+        !{'version', 'entries', 'catalog_revision'}.containsAll(keys) ||
         value['version'] != 1 ||
+        (value['catalog_revision'] != null &&
+            (value['catalog_revision'] is! String ||
+                !RegExp(
+                  r'^[0-9a-f]{64}$',
+                ).hasMatch(value['catalog_revision'] as String))) ||
         value['entries'] is! List) {
       throw const FormatException('Invalid inventory snapshot');
     }
@@ -300,6 +314,7 @@ class RepositoryInventoryState {
       'name',
       'index',
       'profile_id',
+      'observed_slot',
     };
     for (final raw in value['entries'] as List) {
       final item = _wireMap(raw, 'inventory entry');
@@ -315,7 +330,10 @@ class RepositoryInventoryState {
           (item['item_id'] != null && item['item_id'] is! String) ||
           (item['name'] != null && item['name'] is! String) ||
           (item['profile_id'] != null && item['profile_id'] is! String) ||
-          (item['index'] != null && item['index'] is! int)) {
+          (item['index'] != null && item['index'] is! int) ||
+          (item['observed_slot'] != null &&
+              (item['observed_slot'] is! int ||
+                  (item['observed_slot'] as int) < 0))) {
         throw const FormatException('Invalid inventory entry');
       }
       entries.add(item);
@@ -326,7 +344,10 @@ class RepositoryInventoryState {
     if (identities.toSet().length != identities.length) {
       throw const FormatException('Duplicate inventory identity');
     }
-    return RepositoryInventoryState._(entries);
+    return RepositoryInventoryState._(
+      entries,
+      value['catalog_revision'] as String?,
+    );
   }
 }
 

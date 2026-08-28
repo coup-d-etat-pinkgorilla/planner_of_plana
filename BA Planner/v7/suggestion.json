@@ -1,0 +1,482 @@
+{
+  "reference_path": "C:\\Users\\brigh\\Pictures\\Screenshots\\BA\\S4_FAVOR_RANK\\스크린샷 2026-08-23 030417.png",
+  "layers": [],
+  "rois": [
+    {
+      "name": "weaponlevel_digit1",
+      "x": 1609,
+      "y": 915,
+      "width": 22,
+      "height": 32,
+      "enabled": true,
+      "shape": "parallelogram",
+      "slant": 8,
+      "points": [
+        {
+          "x": 1617,
+          "y": 915
+        },
+        {
+          "x": 1639,
+          "y": 915
+        },
+        {
+          "x": 1631,
+          "y": 947
+        },
+        {
+          "x": 1609,
+          "y": 947
+        }
+      ]
+    },
+    {
+      "name": "weaponlevel_digit2",
+      "x": 1631,
+      "y": 915,
+      "width": 22,
+      "height": 32,
+      "enabled": true,
+      "shape": "parallelogram",
+      "slant": 8,
+      "points": [
+        {
+          "x": 1639,
+          "y": 915
+        },
+        {
+          "x": 1661,
+          "y": 915
+        },
+        {
+          "x": 1653,
+          "y": 947
+        },
+        {
+          "x": 1631,
+          "y": 947
+        }
+      ]
+    },
+    {
+      "name": "equip1level_digit1",
+      "x": 1420,
+      "y": 1123,
+      "width": 18,
+      "height": 24,
+      "enabled": true,
+      "shape": "parallelogram",
+      "slant": 8,
+      "points": [
+        {
+          "x": 1428,
+          "y": 1123
+        },
+        {
+          "x": 1446,
+          "y": 1123
+        },
+        {
+          "x": 1438,
+          "y": 1147
+        },
+        {
+          "x": 1420,
+          "y": 1147
+        }
+      ]
+    },
+    {
+      "name": "equip1level_digit2",
+      "x": 1438,
+      "y": 1123,
+      "width": 18,
+      "height": 24,
+      "enabled": true,
+      "shape": "parallelogram",
+      "slant": 8,
+      "points": [
+        {
+          "x": 1446,
+          "y": 1123
+        },
+        {
+          "x": 1464,
+          "y": 1123
+        },
+        {
+          "x": 1456,
+          "y": 1147
+        },
+        {
+          "x": 1438,
+          "y": 1147
+        }
+      ]
+    },
+    {
+      "name": "equip2level_digit1",
+      "x": 1606,
+      "y": 1123,
+      "width": 18,
+      "height": 24,
+      "enabled": true,
+      "shape": "parallelogram",
+      "slant": 8,
+      "points": [
+        {
+          "x": 1614,
+          "y": 1123
+        },
+        {
+          "x": 1632,
+          "y": 1123
+        },
+        {
+          "x": 1624,
+          "y": 1147
+        },
+        {
+          "x": 1606,
+          "y": 1147
+        }
+      ]
+    },
+    {
+      "name": "equip2level_digit2",
+      "x": 1624,
+      "y": 1123,
+      "width": 18,
+      "height": 24,
+      "enabled": true,
+      "shape": "parallelogram",
+      "slant": 8,
+      "points": [
+        {
+          "x": 1632,
+          "y": 1123
+        },
+        {
+          "x": 1650,
+          "y": 1123
+        },
+        {
+          "x": 1642,
+          "y": 1147
+        },
+        {
+          "x": 1624,
+          "y": 1147
+        }
+      ]
+    },
+    {
+      "name": "equip3level_digit1",
+      "x": 1792,
+      "y": 1123,
+      "width": 18,
+      "height": 24,
+      "enabled": true,
+      "shape": "parallelogram",
+      "slant": 8,
+      "points": [
+        {
+          "x": 1800,
+          "y": 1123
+        },
+        {
+          "x": 1818,
+          "y": 1123
+        },
+        {
+          "x": 1810,
+          "y": 1147
+        },
+        {
+          "x": 1792,
+          "y": 1147
+        }
+      ]
+    },
+    {
+      "name": "equip3level_digit2",
+      "x": 1810,
+      "y": 1123,
+      "width": 18,
+      "height": 24,
+      "enabled": true,
+      "shape": "parallelogram",
+      "slant": 8,
+      "points": [
+        {
+          "x": 1818,
+          "y": 1123
+        },
+        {
+          "x": 1836,
+          "y": 1123
+        },
+        {
+          "x": 1828,
+          "y": 1147
+        },
+        {
+          "x": 1810,
+          "y": 1147
+        }
+      ]
+    },
+    {
+      "name": "studentlevel_digit1",
+      "x": 112,
+      "y": 1197,
+      "width": 18,
+      "height": 27,
+      "enabled": true,
+      "shape": "parallelogram",
+      "slant": 8,
+      "points": [
+        {
+          "x": 120,
+          "y": 1197
+        },
+        {
+          "x": 138,
+          "y": 1197
+        },
+        {
+          "x": 130,
+          "y": 1224
+        },
+        {
+          "x": 112,
+          "y": 1224
+        }
+      ]
+    },
+    {
+      "name": "studentlevel_digit2",
+      "x": 130,
+      "y": 1197,
+      "width": 18,
+      "height": 27,
+      "enabled": true,
+      "shape": "parallelogram",
+      "slant": 8,
+      "points": [
+        {
+          "x": 138,
+          "y": 1197
+        },
+        {
+          "x": 156,
+          "y": 1197
+        },
+        {
+          "x": 148,
+          "y": 1224
+        },
+        {
+          "x": 130,
+          "y": 1224
+        }
+      ]
+    },
+    {
+      "name": "affectionlevel_digit1",
+      "x": 95,
+      "y": 1133,
+      "width": 17,
+      "height": 26,
+      "enabled": true,
+      "shape": "rectangle",
+      "slant": 0,
+      "points": [
+        {
+          "x": 95,
+          "y": 1133
+        },
+        {
+          "x": 112,
+          "y": 1133
+        },
+        {
+          "x": 112,
+          "y": 1159
+        },
+        {
+          "x": 95,
+          "y": 1159
+        }
+      ]
+    },
+    {
+      "name": "affectionlevel_digit2",
+      "x": 112,
+      "y": 1133,
+      "width": 17,
+      "height": 26,
+      "enabled": true,
+      "shape": "rectangle",
+      "slant": 0,
+      "points": [
+        {
+          "x": 112,
+          "y": 1133
+        },
+        {
+          "x": 129,
+          "y": 1133
+        },
+        {
+          "x": 129,
+          "y": 1159
+        },
+        {
+          "x": 112,
+          "y": 1159
+        }
+      ]
+    },
+    {
+      "name": "affectionlevel_1digit_digit1",
+      "x": 103,
+      "y": 1133,
+      "width": 17,
+      "height": 26,
+      "enabled": true,
+      "shape": "rectangle",
+      "slant": 0,
+      "points": [
+        {
+          "x": 103,
+          "y": 1133
+        },
+        {
+          "x": 120,
+          "y": 1133
+        },
+        {
+          "x": 120,
+          "y": 1159
+        },
+        {
+          "x": 103,
+          "y": 1159
+        }
+      ]
+    },
+    {
+      "name": "affectionlevel_3digit_digit1",
+      "x": 86,
+      "y": 1133,
+      "width": 17,
+      "height": 26,
+      "enabled": true,
+      "shape": "rectangle",
+      "slant": 0,
+      "points": [
+        {
+          "x": 86,
+          "y": 1133
+        },
+        {
+          "x": 103,
+          "y": 1133
+        },
+        {
+          "x": 103,
+          "y": 1159
+        },
+        {
+          "x": 86,
+          "y": 1159
+        }
+      ]
+    },
+    {
+      "name": "affectionlevel_3digit_digit2",
+      "x": 103,
+      "y": 1133,
+      "width": 17,
+      "height": 26,
+      "enabled": true,
+      "shape": "rectangle",
+      "slant": 0,
+      "points": [
+        {
+          "x": 103,
+          "y": 1133
+        },
+        {
+          "x": 120,
+          "y": 1133
+        },
+        {
+          "x": 120,
+          "y": 1159
+        },
+        {
+          "x": 103,
+          "y": 1159
+        }
+      ]
+    },
+    {
+      "name": "affectionlevel_3digit_digit3",
+      "x": 120,
+      "y": 1133,
+      "width": 17,
+      "height": 26,
+      "enabled": true,
+      "shape": "rectangle",
+      "slant": 0,
+      "points": [
+        {
+          "x": 120,
+          "y": 1133
+        },
+        {
+          "x": 137,
+          "y": 1133
+        },
+        {
+          "x": 137,
+          "y": 1159
+        },
+        {
+          "x": 120,
+          "y": 1159
+        }
+      ]
+    }
+  ],
+  "roi": {
+    "name": "weaponlevel_digit1",
+    "x": 1609,
+    "y": 915,
+    "width": 22,
+    "height": 32,
+    "enabled": true,
+    "shape": "parallelogram",
+    "slant": 8,
+    "points": [
+      {
+        "x": 1617,
+        "y": 915
+      },
+      {
+        "x": 1639,
+        "y": 915
+      },
+      {
+        "x": 1631,
+        "y": 947
+      },
+      {
+        "x": 1609,
+        "y": 947
+      }
+    ]
+  }
+}

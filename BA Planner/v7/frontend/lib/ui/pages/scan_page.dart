@@ -6,8 +6,11 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
+import '../../services/window_dock_service.dart';
 import '../widgets/diagonal_section.dart';
 import '../widgets/repository_profile_panel.dart';
+import '../widgets/scan_companion_dock.dart';
+import '../widgets/scan_student_review_workspace.dart';
 
 enum _SessionStage { idle, starting, running, cancelling, terminal }
 
@@ -17,12 +20,16 @@ class ScanPage extends StatefulWidget {
     required this.service,
     required this.onCandidateHandoff,
     this.onRecentChanged,
+    this.onCompanionChanged,
+    this.windowDockService = const WindowsWindowDockService(),
   });
 
   final AppService service;
   final void Function(ScannerSession session, ScannerCandidate candidate)
   onCandidateHandoff;
   final ValueChanged<List<ScannerRecentSummary>>? onRecentChanged;
+  final ValueChanged<ScanCompanionState?>? onCompanionChanged;
+  final WindowDockService windowDockService;
 
   @override
   State<ScanPage> createState() => _ScanPageState();
@@ -40,8 +47,11 @@ class _ScanPageState extends State<ScanPage> {
   List<ScannerTarget> _targets = const [];
   Map<String, dynamic>? _readiness;
   RepositoryProfile? _profile;
+  RepositoryState? _repositoryState;
+  Map<String, StudentCatalogEntry> _studentCatalog = const {};
   String? _targetId;
   ScannerKind _kind = ScannerKind.student;
+  StudentScanMode _studentScanMode = StudentScanMode.single;
   bool _targetsLoading = true;
   bool _readinessLoading = true;
   bool _recovering = false;
@@ -61,6 +71,10 @@ class _ScanPageState extends State<ScanPage> {
   Map<String, dynamic>? _terminalError;
   final Map<String, ScannerCandidate> _candidates = {};
   final List<ScannerRecentSummary> _recent = [];
+  final Set<String> _busyCandidateIds = {};
+  final Map<String, String> _candidateErrors = {};
+  String? _candidateNotice;
+  bool _companionActive = false;
 
   bool get _connected =>
       widget.service.state.value.connection == BackendConnection.connected;
@@ -97,6 +111,7 @@ class _ScanPageState extends State<ScanPage> {
 
   @override
   void dispose() {
+    if (_companionActive) unawaited(widget.windowDockService.restore());
     widget.service.state.removeListener(_connectionChanged);
     unawaited(_subscription?.cancel());
     super.dispose();
@@ -160,6 +175,34 @@ class _ScanPageState extends State<ScanPage> {
     }
   }
 
+  Future<void> _selectProfile(RepositoryProfile profile) async {
+    final repository = _repository;
+    final profileChanged = _profile?.id != profile.id;
+    setState(() {
+      _profile = profile;
+      _repositoryState = null;
+      if (profileChanged) _candidateNotice = null;
+    });
+    if (repository == null) return;
+    try {
+      final results = await Future.wait<Object>([
+        repository.loadRepositoryState(profile.id),
+        widget.service.listStudents(),
+      ]);
+      if (!mounted || _profile?.id != profile.id) return;
+      final state = results[0] as RepositoryState;
+      final catalog = results[1] as List<StudentCatalogEntry>;
+      setState(() {
+        _repositoryState = state;
+        _studentCatalog = {for (final item in catalog) item.studentId: item};
+      });
+    } catch (error) {
+      if (mounted && _profile?.id == profile.id) {
+        setState(() => _candidateNotice = '프로필 현재값을 불러오지 못했습니다: $error');
+      }
+    }
+  }
+
   Future<void> _start() async {
     final scanner = _scanner;
     final target = _selectedTarget;
@@ -172,7 +215,22 @@ class _ScanPageState extends State<ScanPage> {
       _resetProjection();
     });
     try {
-      final session = await scanner.startScannerSession(_kind, target.id);
+      if (_kind == ScannerKind.student &&
+          _studentScanMode == StudentScanMode.full) {
+        await widget.windowDockService.dockBeside(target.id);
+        if (!mounted) {
+          await widget.windowDockService.restore();
+          return;
+        }
+        _companionActive = true;
+        _publishCompanion();
+      }
+      final session = await scanner.startScannerSession(
+        _kind,
+        target.id,
+        profileId: _profile?.id,
+        studentScanMode: _studentScanMode,
+      );
       if (!mounted) return;
       setState(() {
         _session = session;
@@ -186,7 +244,9 @@ class _ScanPageState extends State<ScanPage> {
           }
         }
       });
+      _publishCompanion();
     } catch (error) {
+      if (_companionActive) await _closeCompanion();
       if (mounted) {
         setState(() {
           _stage = _SessionStage.idle;
@@ -206,6 +266,7 @@ class _ScanPageState extends State<ScanPage> {
       _stage = _SessionStage.cancelling;
       _sessionError = null;
     });
+    _publishCompanion();
     try {
       await scanner.cancelScannerSession(session);
       if (mounted) setState(() {});
@@ -279,6 +340,75 @@ class _ScanPageState extends State<ScanPage> {
       return;
     }
     setState(() => _applyEvent(event));
+    if (_companionActive) {
+      _publishCompanion();
+      if (event.eventKind == ScannerEventKind.terminal) {
+        unawaited(_closeCompanion());
+      }
+    }
+  }
+
+  void _publishCompanion() {
+    if (!_companionActive) return;
+    final target = _selectedTarget;
+    final feedback = _liveStudentFeedback;
+    widget.onCompanionChanged?.call(
+      ScanCompanionState(
+        targetTitle: target?.title ?? target?.id ?? 'Blue Archive',
+        modeLabel: '전체 학생',
+        stageLabel: _stage.name,
+        phase: _phase,
+        recognizedCount: _candidates.length,
+        progressCurrent: _progressCurrent,
+        progressTotal: _progressTotal,
+        messageKey: _messageKey,
+        student: feedback,
+        cancelling: _stage == _SessionStage.cancelling,
+        onCancel: _stage == _SessionStage.running
+            ? () => unawaited(_cancel())
+            : null,
+      ),
+    );
+  }
+
+  ScanDockStudentFeedback? get _liveStudentFeedback {
+    if (_liveFeedbackAwaitingStudent) return null;
+    final eventValues = _liveFeedbackValues;
+    final studentId = _liveFeedbackStudentId;
+    if (studentId != null) {
+      return ScanDockStudentFeedback(
+        studentId: studentId,
+        displayName: _studentCatalog[studentId]?.displayName ?? studentId,
+        values: eventValues,
+      );
+    }
+    final students = _candidates.values.where(
+      (item) => item.kind == ScannerKind.student,
+    );
+    if (students.isEmpty) return null;
+    final candidate = students.last;
+    final values = candidate.payload['values'];
+    final id = candidate.payload['student_id'];
+    if (id is! String || values is! Map) return null;
+    return ScanDockStudentFeedback(
+      studentId: id,
+      displayName: _studentCatalog[id]?.displayName ?? id,
+      values: Map<String, dynamic>.from(values),
+    );
+  }
+
+  String? _liveFeedbackStudentId;
+  Map<String, dynamic> _liveFeedbackValues = {};
+  bool _liveFeedbackAwaitingStudent = false;
+
+  Future<void> _closeCompanion() async {
+    if (!_companionActive) return;
+    _companionActive = false;
+    try {
+      await widget.windowDockService.restore();
+    } finally {
+      if (mounted) widget.onCompanionChanged?.call(null);
+    }
   }
 
   void _applyEvent(ScannerEvent event, {bool recordRecent = true}) {
@@ -290,6 +420,25 @@ class _ScanPageState extends State<ScanPage> {
         _progressCurrent = event.payload['current'] as int?;
         _progressTotal = event.payload['total'] as int?;
         _messageKey = event.payload['message_key'] as String?;
+        break;
+      case ScannerEventKind.feedback:
+        final studentId = event.payload['student_id'];
+        final field = event.payload['field'];
+        final values = event.payload['values'];
+        if (field == '__student_exit__') {
+          _liveFeedbackStudentId = null;
+          _liveFeedbackValues = {};
+          _liveFeedbackAwaitingStudent = true;
+          break;
+        }
+        if (studentId is String && values is Map) {
+          if (_liveFeedbackStudentId != studentId) {
+            _liveFeedbackValues = {};
+          }
+          _liveFeedbackStudentId = studentId;
+          _liveFeedbackValues.addAll(Map<String, dynamic>.from(values));
+          _liveFeedbackAwaitingStudent = false;
+        }
         break;
       case ScannerEventKind.diagnostic:
         final code = event.payload['code'];
@@ -324,6 +473,173 @@ class _ScanPageState extends State<ScanPage> {
     }
   }
 
+  ScannerSession? _sessionFor(ScannerCandidate candidate) {
+    final active = _session;
+    if (active != null &&
+        active.id == candidate.sessionId &&
+        active.generation == candidate.generation) {
+      return active;
+    }
+    for (final item in _recent) {
+      if (item.sessionId == candidate.sessionId &&
+          item.generation == candidate.generation) {
+        return item.session;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _revalidateStudentCandidate(
+    ScannerCandidate candidate,
+    Map<String, dynamic> payload,
+    Map<int, int> relationshipRanks,
+  ) async {
+    final scanner = _scanner;
+    final session = _sessionFor(candidate);
+    if (scanner == null || session == null) return;
+    setState(() {
+      _busyCandidateIds.add(candidate.id);
+      _candidateErrors.remove(candidate.id);
+      _candidateNotice = null;
+    });
+    try {
+      final revised = await scanner.reviewScannerCandidate(
+        session,
+        candidate,
+        payload,
+        approve: false,
+        reason: 'edited_and_revalidated_in_scan_page',
+        relationshipRanks: relationshipRanks,
+      );
+      if (!mounted) return;
+      setState(() {
+        _keepCandidate(revised);
+        _candidateErrors.remove(candidate.id);
+        _candidateNotice = '수정값을 revision ${revised.revision}에서 재검증했습니다.';
+      });
+    } catch (error) {
+      if (mounted) {
+        final message = '재검증 실패: $error';
+        setState(() {
+          _candidateErrors[candidate.id] = message;
+          _candidateNotice = message;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _busyCandidateIds.remove(candidate.id));
+    }
+  }
+
+  Future<void> _holdStudentCandidate(ScannerCandidate candidate) async {
+    setState(() {
+      _candidateNotice = '후보를 보류했습니다. 확정된 현재값은 변경되지 않았습니다.';
+    });
+  }
+
+  Future<void> _discardStudentCandidate(ScannerCandidate candidate) async {
+    final scanner = _scanner;
+    final session = _sessionFor(candidate);
+    if (scanner == null || session == null) return;
+    setState(() {
+      _busyCandidateIds.add(candidate.id);
+      _candidateNotice = null;
+    });
+    try {
+      await scanner.reviewScannerCandidate(
+        session,
+        candidate,
+        candidate.payload,
+        approve: false,
+        reason: 'discarded_in_scan_page',
+      );
+      if (!mounted) return;
+      setState(() {
+        _candidates.remove(candidate.id);
+        _candidateErrors.remove(candidate.id);
+        _candidateNotice = '후보를 폐기했습니다. 확정된 현재값은 변경되지 않았습니다.';
+      });
+    } catch (error) {
+      if (mounted) {
+        final message = '후보 폐기 실패: $error';
+        setState(() {
+          _candidateErrors[candidate.id] = message;
+          _candidateNotice = message;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _busyCandidateIds.remove(candidate.id));
+    }
+  }
+
+  Future<void> _applyStudentCandidate(ScannerCandidate candidate) async {
+    final scanner = _scanner;
+    final repository = _repository;
+    final profile = _profile;
+    final state = _repositoryState;
+    final session = _sessionFor(candidate);
+    if (scanner == null ||
+        repository == null ||
+        profile == null ||
+        state == null ||
+        session == null) {
+      setState(() {
+        const message = '적용에 필요한 프로필 또는 세션 상태가 없습니다.';
+        _candidateErrors[candidate.id] = message;
+        _candidateNotice = message;
+      });
+      return;
+    }
+    setState(() {
+      _busyCandidateIds.add(candidate.id);
+      _candidateNotice = null;
+    });
+    try {
+      final approved = candidate.approved
+          ? candidate
+          : await scanner.reviewScannerCandidate(
+              session,
+              candidate,
+              candidate.payload,
+              approve: true,
+              reason: 'applied_in_scan_page',
+            );
+      if (!mounted) return;
+      setState(() => _keepCandidate(approved));
+      final committed = await scanner.commitScannerCandidate(
+        session,
+        approved,
+        profileId: profile.id,
+        expectedRepositoryRevision: state.revision,
+        idempotencyKey: 'scan-apply-${approved.id}-${approved.revision}',
+      );
+      final refreshed = await repository.loadRepositoryState(profile.id);
+      if (!mounted) return;
+      setState(() {
+        _repositoryState = refreshed;
+        _candidates.remove(candidate.id);
+        _candidateErrors.remove(candidate.id);
+        _candidateNotice =
+            '결과를 repository revision ${committed['revision']}에 적용했습니다.';
+      });
+    } catch (error) {
+      if (mounted) {
+        RepositoryState? refreshed;
+        try {
+          refreshed = await repository.loadRepositoryState(profile.id);
+        } catch (_) {}
+        if (!mounted) return;
+        final message = '적용 실패: $error. 후보와 수정값을 유지했습니다.';
+        setState(() {
+          if (refreshed != null) _repositoryState = refreshed;
+          _candidateErrors[candidate.id] = message;
+          _candidateNotice = message;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _busyCandidateIds.remove(candidate.id));
+    }
+  }
+
   void _resetProjection() {
     _phase = null;
     _progressCurrent = null;
@@ -333,6 +649,10 @@ class _ScanPageState extends State<ScanPage> {
     _outcome = null;
     _terminalError = null;
     _candidates.clear();
+    _liveFeedbackStudentId = null;
+    _liveFeedbackValues = {};
+    _liveFeedbackAwaitingStudent = false;
+    _candidateErrors.clear();
   }
 
   void _recordRecent() {
@@ -382,6 +702,7 @@ class _ScanPageState extends State<ScanPage> {
       _messageKey = item.messageKey;
       _outcome = item.outcome;
       _terminalError = item.terminalError;
+      _candidateErrors.clear();
       _candidates
         ..clear()
         ..addEntries(item.candidates.map((item) => MapEntry(item.id, item)));
@@ -434,7 +755,7 @@ class _ScanPageState extends State<ScanPage> {
       children: [
         RepositoryProfilePanel(
           service: widget.service,
-          onSelected: (profile) => setState(() => _profile = profile),
+          onSelected: _selectProfile,
         ),
         const SizedBox(height: AppSpacing.sm),
         DiagonalSection(
@@ -550,27 +871,48 @@ class _ScanPageState extends State<ScanPage> {
                         : (value) => setState(() => _targetId = value),
                   ),
                 ),
-                SegmentedButton<ScannerKind>(
+                SegmentedButton<String>(
                   key: const ValueKey('scan-kind'),
                   segments: const [
                     ButtonSegment(
-                      value: ScannerKind.student,
-                      label: Text('Student'),
+                      value: 'student_single',
+                      label: Text('1명'),
                       icon: Icon(Icons.school_outlined),
                     ),
                     ButtonSegment(
-                      value: ScannerKind.inventory,
-                      label: Text('Inventory'),
+                      value: 'student_full',
+                      label: Text('전체'),
+                      icon: Icon(Icons.groups_outlined),
+                    ),
+                    ButtonSegment(
+                      value: 'inventory',
+                      label: Text('재고'),
                       icon: Icon(Icons.inventory_2_outlined),
                     ),
                   ],
-                  selected: {_kind},
+                  selected: {
+                    _kind == ScannerKind.inventory
+                        ? 'inventory'
+                        : _studentScanMode == StudentScanMode.full
+                        ? 'student_full'
+                        : 'student_single',
+                  },
                   onSelectionChanged:
                       _stage == _SessionStage.running ||
                           _stage == _SessionStage.cancelling ||
                           _stage == _SessionStage.starting
                       ? null
-                      : (value) => setState(() => _kind = value.first),
+                      : (value) => setState(() {
+                          final selection = value.first;
+                          _kind = selection == 'inventory'
+                              ? ScannerKind.inventory
+                              : ScannerKind.student;
+                          if (_kind == ScannerKind.student) {
+                            _studentScanMode = selection == 'student_full'
+                                ? StudentScanMode.full
+                                : StudentScanMode.single;
+                          }
+                        }),
                 ),
                 FilledButton.icon(
                   key: const ValueKey('scan-start'),
@@ -591,6 +933,37 @@ class _ScanPageState extends State<ScanPage> {
         if (_stage != _SessionStage.idle) ...[
           const SizedBox(height: AppSpacing.sm),
           _buildSession(progress),
+        ],
+        if (_candidates.values.any(
+          (item) => item.kind == ScannerKind.student,
+        )) ...[
+          const SizedBox(height: AppSpacing.sm),
+          ScanStudentReviewWorkspace(
+            candidates: _candidates.values
+                .where((item) => item.kind == ScannerKind.student)
+                .toList(growable: false),
+            currentStudents: {
+              for (final item
+                  in _repositoryState?.students ??
+                      const <ConfirmedStudentState>[])
+                item.studentId: item,
+            },
+            catalog: _studentCatalog,
+            busyCandidateIds: _busyCandidateIds,
+            candidateErrors: _candidateErrors,
+            singleScan: _session?.studentScanMode != StudentScanMode.full,
+            onRevalidate: _revalidateStudentCandidate,
+            onHold: _holdStudentCandidate,
+            onDiscard: _discardStudentCandidate,
+            onApply: _applyStudentCandidate,
+          ),
+        ],
+        if (_candidateNotice != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            _candidateNotice!,
+            key: const ValueKey('scan-student-candidate-notice'),
+          ),
         ],
         if (_recent.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.sm),
@@ -676,7 +1049,9 @@ class _ScanPageState extends State<ScanPage> {
               _sessionError!,
               style: const TextStyle(color: AppColors.danger),
             ),
-          for (final candidate in _candidates.values) ...[
+          for (final candidate in _candidates.values.where(
+            (item) => item.kind != ScannerKind.student,
+          )) ...[
             const Divider(),
             _CandidateSummary(
               candidate: candidate,

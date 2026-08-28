@@ -11,7 +11,7 @@ BA Planner v7은 Flutter for Windows 프론트엔드와 headless Python 백엔�
 - 고정 ㄴ자 글라스 그림자와 상태 보존형 페이지 섹션 전환
 - v6의 80° 사다리꼴 홈 섹션과 가시 간격을 보존하는 평행사변형 메뉴 행
 - 계획 목표 모델과 성장 비용 계산
-- 학생 정적 메타데이터 lookup API
+- BA Planner 소유의 versioned canonical 학생 메타데이터와 호환 lookup API
 - v6 계산 결과를 고정한 Python parity fixture
 - protocol v1 계약과 Python JSONL process/Dart process client
 - mock 기본값을 보존한 `ProcessAppService` 실제 backend 선택 경로
@@ -29,6 +29,7 @@ BA Planner v7은 Flutter for Windows 프론트엔드와 headless Python 백엔�
 | --- | --- |
 | `frontend/` | Flutter Windows UI와 UI 전용 asset |
 | `backend/` | UI 프레임워크에 의존하지 않는 Python 로직 |
+| `backend/data/metadata/v1/` | BA Planner canonical 학생 메타데이터와 schema |
 | `contracts/` | Flutter/Python 공용 IPC envelope와 fixture |
 | `docs/migration/` | v6 지식, 복사 근거와 이전 상태 |
 | `almanac/` | v7의 장기 경계와 불변식 |

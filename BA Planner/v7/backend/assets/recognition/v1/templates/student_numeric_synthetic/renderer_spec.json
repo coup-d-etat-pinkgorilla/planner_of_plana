@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "purpose": "student numeric deterministic synthetic renderer",
+  "font": {
+    "path": "templates/student_numeric_synthetic/GyeonggiTitle-Medium.ttf",
+    "family": "GyeonggiTitle",
+    "weight": "Medium",
+    "sha256": "da6fc2e29f3fdc1f25a1f94e18549040acef06ac8d7d9dc373e0f6eabbcae8da",
+    "bytes": 2968964
+  },
+  "review_basis": "manual visual review in v6 Template Alignment Studio",
+  "fields": {
+    "student_level": {
+      "font_size": 25,
+      "fill": "#FFFFFF",
+      "outline": "#505878",
+      "stroke_width": 1,
+      "shear": -0.2,
+      "mask_variant": "fill",
+      "layouts": [
+        1,
+        2
+      ],
+      "valid_range": [
+        1,
+        90
+      ],
+      "output_size": [
+        52,
+        42
+      ],
+      "center_trim": 3,
+      "calibration_source_purpose": "student-basic-level-digit-template",
+      "calibration_mean_iou": 0.552045,
+      "calibration_min_iou": 0.42723,
+      "selection": "user-verified font/shear; bounded size/stroke search against calibration partition",
+      "render_pipeline": "complete_string_native_raster->field_roi->low_ink_split->20x28_binary_glyph",
+      "raster_size_offsets": [
+        -2,
+        -1,
+        0,
+        1,
+        2
+      ]
+    },
+    "weapon_level": {
+      "font_size": 25,
+      "fill": "#FFFFFF",
+      "outline": "#505878",
+      "stroke_width": 1,
+      "shear": -0.25,
+      "mask_variant": "fill",
+      "layouts": [
+        1,
+        2
+      ],
+      "valid_range": [
+        1,
+        60
+      ],
+      "output_size": [
+        64,
+        48
+      ],
+      "center_trim": 1,
+      "calibration_source_purpose": "student-basic-weapon-level-digit-template",
+      "calibration_mean_iou": 0.484354,
+      "calibration_min_iou": 0.348958,
+      "selection": "user-verified font/shear; bounded size/stroke search against calibration partition",
+      "render_pipeline": "complete_string_native_raster->field_roi->low_ink_split->20x28_binary_glyph",
+      "raster_size_offsets": [
+        -2,
+        -1,
+        0,
+        1,
+        2
+      ]
+    },
+    "relationship_rank": {
+      "font_size": 35,
+      "fill": "#FFFFFF",
+      "outline": "#3A465D",
+      "stroke_width": 1,
+      "shear": 0.0,
+      "mask_variant": "combined",
+      "layouts": [
+        1,
+        2,
+        3
+      ],
+      "valid_range": [
+        1,
+        100
+      ],
+      "output_size": [
+        72,
+        96
+      ],
+      "center_trim": 0,
+      "calibration_source_purpose": "student-relationship-rank-digit-template",
+      "calibration_mean_iou": 0.579687,
+      "calibration_min_iou": 0.21875,
+      "selection": "user-verified font/shear; bounded size/stroke search against calibration partition",
+      "render_pipeline": "complete_string_native_raster->field_roi->low_ink_split->20x28_binary_glyph",
+      "raster_size_offsets": [
+        -2,
+        -1,
+        0,
+        1,
+        2
+      ]
+    }
+  }
+}

@@ -57,12 +57,15 @@ class StudentScanS2Tests(unittest.TestCase):
         self.assertEqual(self.expected["student_id"], result["payload"]["student_id"])
         for field, value in self.expected["confirmed_values"].items():
             self.assertEqual(value, result["payload"]["values"][field], field)
-        self.assertTrue(result["review_required"])
+        self.assertFalse(result["review_required"])
         evidence = {item["field"]: item for item in result["evidence"]}
-        self.assertEqual("uncertain", evidence["skill2"]["status"])
-        self.assertNotIn("skill2", result["payload"]["values"])
+        self.assertEqual("ok", evidence["skill2"]["status"])
+        self.assertEqual("basic_skill_combined", evidence["skill2"]["source"])
         self.assertEqual("ok", evidence["combat_hp"]["status"])
         self.assertEqual("inferred", evidence["weapon_state"]["status"])
+        self.assertEqual("student_level_studio_position_bank", evidence["level"]["source"])
+        self.assertEqual("relationship_rank_studio_position_bank", evidence["bond_rank"]["source"])
+        self.assertEqual("weapon_level_studio_position_bank", evidence["weapon_level"]["source"])
 
     def test_payload_uses_only_repository_dto_fields_and_excludes_later_slices(self) -> None:
         capture = CountingCapture(FIXTURES / "student_scan_s2_serika_new_year.png")
@@ -73,7 +76,7 @@ class StudentScanS2Tests(unittest.TestCase):
         self.assertEqual(payload, parsed.to_dict())
         self.assertLessEqual(set(payload["values"]), set(CONFIRMED_STUDENT_VALUE_FIELDS))
         s4_and_later = set(self.expected["excluded_s2_fields"]) - {
-            "equip1", "equip2", "equip3", "equip4",
+            "bond_rank", "equip1", "equip2", "equip3", "equip4",
         }
         self.assertTrue(s4_and_later.isdisjoint(payload["values"]))
 
@@ -82,7 +85,7 @@ class StudentScanS2Tests(unittest.TestCase):
         result = StudentMatcherAdapter(capture, self.catalog)(
             {"target_id": "fixture"}, Event(), lambda *_item: None
         )[0]
-        self.assertNotIn("skill2", result["payload"]["values"])
+        self.assertEqual(1, result["payload"]["values"]["skill2"])
         for field, value in self.expected["confirmed_values"].items():
             self.assertEqual(value, result["payload"]["values"][field], field)
 
@@ -98,7 +101,14 @@ class StudentScanS2Tests(unittest.TestCase):
         self.assertEqual((2560, 1440), crops.source_size)
         self.assertFalse(hasattr(crops, "frame"))
         self.assertIn("student_texture_region", crops.images)
-        self.assertEqual(4, len(crops.cell_groups))
+        self.assertEqual(12, len(crops.cell_groups))
+        self.assertEqual(
+            (2, 2, 2, 2, 2, 1, 2, 3),
+            tuple(
+                len(crops.cell_groups[key])
+                for key in StudentBasicCropSet.STUDIO_NUMERIC_KEYS
+            ),
+        )
         crops.close()
 
 

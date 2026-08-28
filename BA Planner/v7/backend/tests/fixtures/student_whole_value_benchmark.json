@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "mode": "whole-value-synthetic-shadow-benchmark",
+  "templates": {
+    "count": 250,
+    "json_bytes": 131990,
+    "prepared_bytes": 64000,
+    "cold_load_ms": 0.8345001842826605
+  },
+  "fields": {
+    "student_level": {
+      "samples": 3,
+      "correct": 2,
+      "warm_p50_ms": 0.07485004607588053,
+      "warm_p95_ms": 0.0925001222640276,
+      "rows": [
+        {
+          "source": "student_scan_s2_serika_new_year.png",
+          "expected": 12,
+          "observed": 17,
+          "score": 0.6534773529780928,
+          "margin": 0.010005681335421235,
+          "correct": false
+        },
+        {
+          "source": "codex-clipboard-5a9ae2c9-a048-480c-8d46-52c492e5b433.png",
+          "expected": 90,
+          "observed": 90,
+          "score": 0.613123709754768,
+          "margin": 0.011851393207680583,
+          "correct": true
+        },
+        {
+          "source": "codex-clipboard-c41a51be-ae40-4e82-a75a-48b0fce9317b.png",
+          "expected": 90,
+          "observed": 90,
+          "score": 0.613123709754768,
+          "margin": 0.010093266006729107,
+          "correct": true
+        }
+      ]
+    },
+    "weapon_level": {
+      "samples": 3,
+      "correct": 3,
+      "warm_p50_ms": 0.05020014941692352,
+      "warm_p95_ms": 0.058999983593821526,
+      "rows": [
+        {
+          "source": "student_scan_s2_serika_new_year.png",
+          "expected": 50,
+          "observed": 50,
+          "score": 0.6757669539549064,
+          "margin": 0.024798650519876397,
+          "correct": true
+        },
+        {
+          "source": "codex-clipboard-5a9ae2c9-a048-480c-8d46-52c492e5b433.png",
+          "expected": 60,
+          "observed": 60,
+          "score": 0.6251106303915916,
+          "margin": 0.05521620421441353,
+          "correct": true
+        },
+        {
+          "source": "codex-clipboard-c41a51be-ae40-4e82-a75a-48b0fce9317b.png",
+          "expected": 60,
+          "observed": 60,
+          "score": 0.6251106303915916,
+          "margin": 0.05521620421441353,
+          "correct": true
+        }
+      ]
+    },
+    "relationship_rank": {
+      "samples": 8,
+      "correct": 7,
+      "warm_p50_ms": 0.08579995483160019,
+      "warm_p95_ms": 0.09980006143450737,
+      "rows": [
+        {
+          "source": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 97,
+          "score": 0.5650685697242905,
+          "margin": 0.013823166426732869,
+          "correct": false
+        },
+        {
+          "source": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 47,
+          "score": 0.7904622789682167,
+          "margin": 0.07472688875650646,
+          "correct": true
+        },
+        {
+          "source": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 41,
+          "score": 0.8584237483856428,
+          "margin": 0.13622548918318766,
+          "correct": true
+        },
+        {
+          "source": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 39,
+          "score": 0.7177810854970166,
+          "margin": 0.010234771044764557,
+          "correct": true
+        },
+        {
+          "source": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 37,
+          "score": 0.7205829879456331,
+          "margin": 0.024129936229485116,
+          "correct": true
+        },
+        {
+          "source": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 34,
+          "score": 0.7507557410964311,
+          "margin": 0.03732984669279438,
+          "correct": true
+        },
+        {
+          "source": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 23,
+          "score": 0.7890945381483143,
+          "margin": 0.07009042081673122,
+          "correct": true
+        },
+        {
+          "source": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 18,
+          "score": 0.7801300838351932,
+          "margin": 0.04023205723678036,
+          "correct": true
+        }
+      ]
+    }
+  },
+  "decision": {
+    "production": "not promoted",
+    "reason": "runtime cost is bounded, but student and relationship validation accuracy is insufficient"
+  }
+}

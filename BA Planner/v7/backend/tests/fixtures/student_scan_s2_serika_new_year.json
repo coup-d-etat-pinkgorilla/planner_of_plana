@@ -3,9 +3,11 @@
   "student_id": "serika_new_year",
   "confirmed_values": {
     "level": 12,
+    "bond_rank": 24,
     "student_star": 5,
     "ex_skill": 1,
     "skill1": 1,
+    "skill2": 1,
     "skill3": 1,
     "weapon_state": "weapon_equipped",
     "weapon_star": 4,
@@ -15,11 +17,8 @@
     "combat_def": 28,
     "combat_heal": 4228
   },
-  "uncertain_fields": [
-    "skill2"
-  ],
+  "uncertain_fields": [],
   "excluded_s2_fields": [
-    "bond_rank",
     "equip1",
     "equip2",
     "equip3",

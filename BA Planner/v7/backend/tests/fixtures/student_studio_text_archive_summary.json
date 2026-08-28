@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "screenshot_root": "C:/Users/brigh/Pictures/Screenshots/BA",
+  "screenshot_files": 290,
+  "resolved_answer_files": 146,
+  "template_count": 160,
+  "unsupported_layouts": {
+    "equipment_one_digit": 9
+  },
+  "results": {
+    "student_level_visual_ground_truth": {
+      "values": 10,
+      "correct": 10,
+      "digits": 19,
+      "digit_correct": 19,
+      "single_digit_blank_correct": 1,
+      "coverage_values": [1, 12, 23, 34, 45, 56, 67, 78, 89, 90]
+    },
+    "equipment_level_visual_ground_truth": {
+      "values": 307,
+      "correct": 307,
+      "accuracy": 1.0,
+      "digit_accuracy": 1.0,
+      "minimum_score": 0.689873417721519,
+      "minimum_margin": 0.07258064516129037,
+      "confusion": {}
+    },
+    "relationship_rank_visual_ground_truth": {
+      "values": 24,
+      "correct": 24,
+      "accuracy": 1.0,
+      "digit_accuracy": 1.0,
+      "digits": 48,
+      "digit_correct": 48,
+      "minimum_score": 0.6901408450704225,
+      "minimum_margin": 0.032997987927565364,
+      "confusion": {},
+      "layouts": {
+        "1": {"values": 1, "correct": 1, "digits": 1, "digit_correct": 1},
+        "2": {"values": 22, "correct": 22, "digits": 44, "digit_correct": 44},
+        "3": {"values": 1, "correct": 1, "digits": 3, "digit_correct": 3}
+      }
+    },
+    "student_level_legacy_agreement": {
+      "values": 122,
+      "correct": 122,
+      "accuracy": 1.0,
+      "digit_accuracy": 1.0,
+      "minimum_score": 0.8,
+      "minimum_margin": 0.1446136663620673,
+      "confusion": {}
+    },
+    "weapon_level_legacy_agreement": {
+      "values": 89,
+      "correct": 89,
+      "accuracy": 1.0,
+      "digit_accuracy": 1.0,
+      "minimum_score": 0.7968253968253968,
+      "minimum_margin": 0.13877471129379526,
+      "confusion": {}
+    }
+  }
+}

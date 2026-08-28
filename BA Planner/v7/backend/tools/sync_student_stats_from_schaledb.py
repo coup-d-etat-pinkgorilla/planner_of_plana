@@ -35,6 +35,7 @@ PRIMARY_STAT_SOURCE_FIELDS = (
     ("DefensePower", "DefensePower1", "DefensePower100"),
     ("HealPower", "HealPower1", "HealPower100"),
 )
+PRIMARY_STAT_NAMES = tuple(item[0] for item in PRIMARY_STAT_SOURCE_FIELDS)
 
 
 def _read_source(source: str) -> tuple[bytes, str]:
@@ -125,6 +126,34 @@ def _normalize_student(raw: dict[str, Any]) -> dict[str, object]:
     favorite_gear = _stat_ranges(
         gear.get("StatType", []), gear.get("StatValue", []), f"student {student_id}.Gear"
     )
+    skills = raw.get("Skills") if isinstance(raw.get("Skills"), dict) else {}
+
+    def passive_effects(kind: str) -> list[list[object]]:
+        skill = skills.get(kind) if isinstance(skills.get(kind), dict) else {}
+        effects = skill.get("Effects") if isinstance(skill.get("Effects"), list) else []
+        result: list[list[object]] = []
+        for effect in effects:
+            if not isinstance(effect, dict):
+                continue
+            stat = effect.get("Stat")
+            values = effect.get("Value")
+            if not isinstance(stat, str) or not any(
+                stat.startswith(primary) for primary in PRIMARY_STAT_NAMES
+            ):
+                continue
+            if effect.get("Target") != ["Self"]:
+                raise ValueError(f"student {student_id}.{kind} primary stat must target Self")
+            if (
+                not isinstance(values, list)
+                or len(values) != 1
+                or not isinstance(values[0], list)
+                or len(values[0]) != 10
+                or any(not isinstance(item, int) or isinstance(item, bool) for item in values[0])
+            ):
+                raise ValueError(f"student {student_id}.{kind} has invalid primary stat values")
+            result.append([stat, values[0]])
+        return result
+
     return {
         "id": student_id,
         "path": path,
@@ -148,6 +177,8 @@ def _normalize_student(raw: dict[str, Any]) -> dict[str, object]:
         },
         "favorite_gear_released": released_values,
         "favorite_gear": favorite_gear,
+        "passive_skill": passive_effects("Passive"),
+        "weapon_passive_skill": passive_effects("WeaponPassive"),
     }
 
 

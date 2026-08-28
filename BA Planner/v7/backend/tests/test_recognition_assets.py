@@ -23,14 +23,31 @@ class RecognitionAssetTests(unittest.TestCase):
         catalog = RecognitionAssetCatalog(ASSETS)
         status = catalog.verify()
         self.assertTrue(status["ready"])
-        self.assertEqual(256, len(catalog.assets("student", "student-template")))
+        self.assertEqual(260, len(catalog.assets("student", "student-template")))
         self.assertEqual(497, len(catalog.assets("inventory", "inventory-template")))
         self.assertEqual(10, len(catalog.assets("inventory", "inventory-count-template")))
         self.assertEqual(17, len(catalog.assets("student", "student-basic-skill-template")))
         self.assertEqual(19, len(catalog.assets("student", "student-basic-level-digit-template")))
         self.assertEqual(187, len(catalog.assets("student", "student-basic-combat-digit-template")))
         self.assertEqual(10, len(catalog.assets("student", "student-basic-weapon-level-digit-template")))
-        self.assertEqual(1117, status["asset_count"])
+        self.assertEqual(16, len(catalog.assets("student", "student-relationship-rank-template")))
+        relationship_digits = catalog.assets(
+            "student",
+            "student-relationship-rank-digit-template",
+        )
+        self.assertEqual(32, len(relationship_digits))
+        self.assertEqual(set("0123456789"), {asset.identity for asset in relationship_digits})
+        synthetic_digits = catalog.assets("student", "student-synthetic-digit-template")
+        self.assertEqual(602, len(synthetic_digits))
+        self.assertEqual(set("0123456789"), {asset.identity for asset in synthetic_digits if asset.identity})
+        studio_bank = catalog.assets("student", "student-studio-numeric-digit-bank")
+        self.assertEqual(1, len(studio_bank))
+        studio_payload = json.loads(
+            catalog.resolve(studio_bank[0].path).read_text(encoding="utf-8")
+        )
+        self.assertEqual(160, studio_payload["template_count"])
+        self.assertTrue(studio_payload["processing"]["production"])
+        self.assertEqual(1773, status["asset_count"])
         self.assertEqual(
             "adapted:../v6/templates/students/airi.png#top-bar-removed-82px",
             next(
@@ -40,6 +57,23 @@ class RecognitionAssetTests(unittest.TestCase):
             ),
         )
         portrait_region = catalog.region("student")["student_texture_region"]
+        numeric_regions = catalog.region("student")
+        self.assertEqual(
+            (2, 2, 2, 2, 2, 1, 2, 3),
+            tuple(
+                len(numeric_regions[key]["cells"])
+                for key in (
+                    "basic_student_level_studio_cells",
+                    "basic_weapon_level_studio_cells",
+                    "basic_equipment_1_level_studio_cells",
+                    "basic_equipment_2_level_studio_cells",
+                    "basic_equipment_3_level_studio_cells",
+                    "basic_relationship_rank_studio_1_cells",
+                    "basic_relationship_rank_studio_2_cells",
+                    "basic_relationship_rank_studio_3_cells",
+                )
+            ),
+        )
         self.assertEqual(0.0653, portrait_region["y1"])
         self.assertEqual(0.4333, portrait_region["y2"])
         portrait_box = (

@@ -21,9 +21,41 @@ sources:
   - id: s3b-input
     type: file
     path: docs/migration/student-scan-v7-session-s3b-input.md
+  - id: student-basic-recognizer
+    type: file
+    path: backend/core/student_scan_recognizer.py
+  - id: equipment-position-bank
+    type: file
+    path: backend/tools/build_student_equipment_position_digit_bank.py
 ---
 
 # Student Scan Validation Workflow
+
+## Production Studio numeric bank (2026-08-28)
+
+The production scanner loads one required compact asset named
+`student-studio-numeric-digit-bank`. The stable-frame crop phase emits exact polygon cells for all 16
+approved positions; consumers never need to retain or reconstruct the full frame. Student level, weapon
+level and relationship rank use the bank before their empirical readers. Equipment uses the new
+slot-specific two-digit bank first and preserves the prior compact position bank for centered one-digit
+levels and older low-resolution raster generations.
+
+Promotion gates are frozen by SHA-resolved archive replay: student 10/10, weapon 89/89, equipment
+307/307 and relationship 24/24. A production change must preserve both these current-generation results
+and the old 1280 Mika fallback repeats. Regenerate the asset and region integrity together with
+`backend/tools/sync_student_studio_numeric_bank.py` after any Studio text or ROI edit.
+
+## Relationship layout completion (2026-08-28)
+
+Relationship rank uses separate centered position banks for each supported display width. The one-digit
+layout uses `x=103..120`; the two-digit layout uses `x=95..112 / 112..129`; and the three-digit layout
+uses `x=86..103 / 103..120 / 120..137`. Every cell shares `y=1133..1159` and is generated from the
+user-aligned 32 px, unsheared, zero-stroke fill layer in `suggestion_text_1.json`, `suggestion_text.json`,
+or `suggestion_text_100.json` respectively. Do not reuse the two-digit positions by padding values.
+
+The frozen archive gate covers rank 6, 22 two-digit records, and rank 100: 24/24 values and 48/48 digits
+are correct. Keep layout-specific atlas pages and per-layout summaries when changing these coordinates or
+the foreground mask.
 
 이 문서는 v6 학생 스캔의 실제 인식 기능을 v7 Python scanner session과 Flutter 검토
 화면에 연결하고, SchaleDB 방식의 학생 스탯 계산을 독립 검증 증거로 사용하는 후속
@@ -32,14 +64,49 @@ sources:
 
 ## 승인된 결정
 
+- 전체 학생 스캔을 시작하면 메인 UI는 같은 Flutter 상태를 유지한 채 Windows 도크 화면으로
+  전환된다. 도크는 게임 창과 같은 외곽 높이, 가로:세로 3:8이며 우측을 우선하되 여유가 더
+  큰 쪽에 붙는다. 위치 이동만으로 함께 배치할 수 없을 때만 게임 외곽 크기를 1280x720으로
+  맞춘다. 종료·실패·취소 시 두 창의 원래 위치와 크기를 복원하고 메인 결과 검토 화면을 연다.
+- protocol v1의 `feedback` 이벤트는 최종 candidate 이전에 확정된 학생 필드를 실시간으로
+  전달한다. 도크 상단은 대상·모드·단계·진행·인식 수·취소를 표시하고, 하단 80도 사다리꼴은
+  학생 탭 상세 정보 구조를 축약해 표시한다. 학생 교체는 `기존 카드 0도 퇴장 완료 → 게임의
+  학생 이동 → 다음 학생 ID 카드 180도 입장 완료 → 인식 필드 실시간 반영` 순서로 실행한다.
+  이를 위해 matcher는 이동 전에 `__student_exit__` 피드백을 보내고, 다음 화면에서는 학생
+  ID를 값 없는 카드로 먼저 보낸다. 같은 학생의 후속 필드 갱신에는 교체 애니메이션을
+  재시작하지 않는다.
+
+- 실제 Steam Windows 클라이언트에서 백그라운드 캡처와 학생 인식은 가능하지만 마우스
+  클릭과 드래그 메시지는 소비되지 않는다. 전체 스캔의 방향키 이동은 성공하더라도 게임
+  창이 포그라운드로 전환되므로 완전한 백그라운드 전체 스캔으로 표시하지 않는다.
+
 - 학생 스탯 계산은 도입한다. 주 용도는 상세 스탯 표시와 학생 스캔 교차 검증이다.
 - 학생 스캔에는 인연 랭크가 필수 입력이다. v6에는 해당 인식이 없으므로 신규 구현한다.
+- 학생 1명 스캔은 결과 화면에서 나머지 보유 의상의 인연 랭크를 입력받아 같은 후보를
+  재검증한다. 입력값은 검증 문맥이며 다른 의상의 확정 저장값으로 승격하지 않는다.
+- 전체 학생 스캔은 v6처럼 다음 학생을 반복 순회하되 후보를 즉시 검증·표시하지 않는다.
+  반복 종료 후 후보 전원의 인연 랭크를 SchaleDB ID로 합산하고 한 번에 교차 검증한 뒤
+  결과 화면을 공개한다.
+- 결과 화면의 후보 목록은 계획-시작 중앙 목록과 같은 80도 사선 스크롤 투영을 사용한다.
+  단일 스캔의 보유 의상 인연 랭크는 주 후보 바로 아래 의상 행에서 입력·확인한다.
+- 전체 학생 결과는 카탈로그의 `group`을 기준으로 같은 캐릭터의 모든 의상을 위아래로
+  인접 배치하되, 캐릭터의 최초 등장 순서와 그룹 안의 스캔 순서는 보존한다.
+- 전체 학생의 다음 화면 이동은 대상 창의 우측 방향키 입력을 우선 사용한다. 같은 학생이
+  즉시 다시 인식되면 우측 버튼 입력을 한 번 보완하고 안정화 대기 후 재확인한다. 입력이
+  실제로 반영되지 않은 상황을 정상 순회 완료로 즉시 오판하지 않는다. 목록 오른쪽 끝이면
+  왼쪽으로 방향을 바꾸고 이미 확인한 학생을 건너뛰면서 반대쪽 끝까지 수집한다.
 - 장비 스캔은 v6 동작을 참고하되 생성형 레벨 템플릿의 고비용 경로를 그대로 이전하지 않는다.
 - 스캔한 현재 상태, 정적 Schale 원천값, 계산 결과와 사용자 목표는 서로 다른 버킷이다.
 - 계산 불일치는 자동 수정 근거가 아니라 사용자 검토를 요구하는 독립 evidence다.
 - `../v6`는 동작과 fixture의 참조일 뿐 v7 런타임 dependency가 아니다.
 - 장비 기본 화면에는 S3 뒤의 S3B에서 장비 전용 binary matcher를 추가 검증한다. 재고
   그리드 matcher의 알고리즘 개념만 사용하고 재고 좌표·고정색·템플릿은 직접 재사용하지 않는다.
+- 학생 레벨, 전용무기 레벨, 인연 랭크와 장비 레벨 숫자는 먼저 실제 화면의 숫자 ROI를
+  자리별로 확정한다. 기울어진 글자를 역기울기 affine transform으로 펴고 직사각형으로
+  자르지 않는다. 원본 픽셀을 유지한 채 서로 평행한 사선 경계 사이를 평행사변형 cell로
+  잘라낸다. 이 ROI gate를 통과한 뒤에만 게임 글꼴·채움·외곽선·기울기·자리 배치를 재현한
+  결정론적 합성 템플릿을 평가한다. 실제 게임 캡처는 ROI와 renderer 파라미터를 고정하는
+  calibration 및 독립 validation 답지로만 사용하며 runtime template에는 포함하지 않는다.
 
 ## 현재 기준선
 
@@ -67,6 +134,151 @@ v6는 학생 기본 화면과 추가 패널을 이동하며 다음 값을 읽는
 
 v6에는 인연 랭크 판독 함수, ROI 또는 템플릿이 없다. 따라서 인연 랭크는 실제 게임
 화면 fixture를 먼저 확보하고 위치·글꼴·최대 자릿수·폼 전환 영향을 특성화해야 한다.
+
+## 학생·전용무기·인연·장비 숫자 ROI 우선 전환
+
+현재 학생 레벨은 검수된 실제 화면에서 잘라낸 숫자 bank, 전용무기 레벨은 생성 이력이
+남아 있지 않은 v6 정규화 mask, 인연 랭크는 검수 화면에서 파생한 whole-rank 및 digit bank,
+장비 레벨은 위치별 합성 bank를 사용한다. 네 경로의 첫 공통 계약은 template가 아니라
+`field ROI -> foreground mask -> source-preserving parallelogram digit cells`이다. 각 화면의
+서로 다른 색·외곽선·자리 배치는 유지한다. 자리 ROI를 육안으로 승인한 뒤에만
+`synthetic text layer -> same parallelogram geometry -> canonical glyph`를 평가한다.
+[@student-basic-recognizer] [@equipment-position-bank]
+
+### ROI 우선 계약
+
+- 원본 field ROI 안에서 숫자 전경만 추출한다. 학생·무기·장비는 흰 채움과 남색 외곽선의
+  역할을 분리해 보고, 인연은 하트 중앙 숫자 상자만 사용한다. UI 배경, 하트 장식, 장비
+  아이콘과 레벨 접두사는 digit cell에 들어오면 안 된다.
+- 분할 좌표는 `u = x - shear * (y - y_center)` 축에서 자리 사이의 low-ink valley를 찾되,
+  화면 bitmap을 이 축으로 변환하지 않는다. 실제 cut은 원본 좌표의
+  `x = u + shear * (y - y_center)`인 두 평행선 사이 polygon mask로 수행한다. 따라서 잘린
+  glyph에는 inverse shear, bicubic/bilinear resampling 또는 형태 복원이 없다.
+- 학생 레벨은 두 자리까지, 전용무기와 장비는 한/두 자리, 인연은 한/두 자리와 `100`의
+  세 자리 layout을 각각 검증한다. 인연 shear `0`은 같은 알고리즘의 직사각형 특수 사례다.
+- renderer shear는 초기 경계 후보로만 사용한다: 학생 `-0.20`, 전용무기와 장비 `-0.25`,
+  인연 `0`. 실제 ROI 경계 기울기와 바깥 여백은 실캡처 contact sheet의 육안 승인으로
+  별도 고정하며 template 점수를 높이기 위해 조정하지 않는다.
+- 사용자가 v6 Template Alignment Studio에서 저장한 `suggestion.json`이 있으면 D2의 수동
+  경계 권위로 사용한다. v6의 `width`는 slant를 포함한 bounding width가 아니므로 v7은
+  `x/y/width`를 재조합하지 않고 저장된 `points` 네 점을 직접 읽는다. 기준 화면과 다른
+  해상도에는 reference width/height 비율로 점을 투영하되, 추출은 bounding crop과 polygon
+  alpha mask만 사용하고 quad warp를 적용하지 않는다.
+- Studio `suggestion_text.json`이 함께 있으면 D3 renderer의 font path, size, shear, fill 및
+  stroke metadata를 우선 calibration 후보로 사용한다. 비교용 matcher template는 화면의 RGB
+  색을 보존하지 않고 전경을 흰색 binary mask로 canonicalize한다. 배경 제거 후 숫자 신호가
+  흰색인 현재 pipeline에서는 합성 template도 흰색이어야 하며, fill-only와 configured-stroke를
+  실제 ROI에서 모두 비교한다. `Lv.`/`.` 및 이웃 outline처럼 polygon 경계에 걸린 별도 connected
+  component는 제거하되 숫자 본체와 연결된 획은 임의로 깎지 않는다.
+- ROI gate는 각 cell의 숫자 획 잘림 0, 이웃 자리 획 혼입 0, 빈 cell 0, 원본 전경 픽셀의
+  합집합 보존과 source pixel 값 불변을 요구한다. 이 조건을 통과하기 전에는 recognition
+  score, threshold, font size나 자간을 최적화하지 않는다.
+- 2026-08-27 BA screenshot archive replay에서 이 gate가 필드별로 갈렸다. 현재 두 자리 장비
+  cell은 visual ground truth 307/307을 통과했지만, 인연은 13/22이며 학생은 legacy-confirmed
+  값과 59/122만 일치했다. 인연 41/47과 학생 90에서는 첫 cell에 점 또는 세로획만 남았다.
+  따라서 하나의 두 자리 Studio 절대좌표를 모든 값에 재사용하지 않는다. 게임이 전체 문자열을
+  가운데 정렬하므로 layout별 전체 숫자 bounds를 먼저 검출하고 그 bounds에 상대적인 평행사변형
+  cell을 만들거나, 값 layout별 anchor/cell geometry를 별도로 승인한다. 색·threshold·폰트
+  재탐색은 이 geometry gate를 대체할 수 없다.
+- 후속 색상-mask replay에서 학생 90의 첫 cell은 실제로 9 본체 263픽셀을 포함하고 있었다.
+  기존 후처리가 경계에 닿지 않은 2픽셀 점을 본체보다 우선한 것이 `9->1`의 원인이었다.
+  숫자 cell에서는 높이가 cell의 30% 미만인 점 성분을 제외한 뒤 가장 큰 성분을 유지한다.
+  이 규칙은 학생 legacy agreement를 122/122로 회복했고 ROI -1/-2 이동은 추가 이득이 없어
+  학생의 육안 승인 좌표를 변경하지 않는다. 인연은 남색 hue mask와 -2 reference-pixel 이동으로
+  14/22까지만 개선되므로 이 결과를 production으로 승격하지 않는다.
+- 자리별 atlas에서는 인연의 `(2,2)` 최적 shift 군이 26/26 정답이고, 세로 shift `1` 군은
+  3/15만 정답이었다. 같은 숫자의 정답/오답 mask 모두 글자 본체를 유지하므로 전체 ROI를 다시
+  이동하는 대신 position별 두 번째 baseline/raster variant 또는 translation 이후의 shape
+  normalization을 shadow 비교한다. 학생 atlas는 현재 레벨 90의 `9/0`만 포함하므로 122/122
+  일치는 그 두 숫자에 한정하고 다른 레벨 숫자의 production coverage로 확대 해석하지 않는다.
+- 이후 BA 폴더의 별도 육안 답지 series `1/12/23/34/45/56/67/78/89/90`을 찾아 학생 레벨
+  범위를 바로잡았다. 현재 합성 경로는 10/10 값과 19/19 가시 숫자를 맞히며 레벨 1의 둘째
+  cell도 blank로 유지한다. 첫째 자리는 1-9, 둘째 자리는 0과 2-9를 실제 화면으로 확인했다.
+  둘째 자리 1만 실화면 미확보로 기록하되, 사용 가능한 BA 데이터에서는 오답이 없으므로 다음
+  numeric 개선 대상은 인연 랭크로 전환한다.
+- 갱신된 인연 `suggestion_text`의 rank-37 `3/7` fill alpha를 기준으로 두 cell을 각각 17px로
+  넓혀 오른쪽 끝 1px 잘림을 제거했다. 이후 남은 실패는 ROI가 아니라 2560 기준 17x26 합성
+  template를 1280 기준 약 9x13 실제 cell에 크기 보정 없이 비교한 문제로 판명됐다. Binary
+  template를 실제 ROI 크기에 nearest-neighbor로 맞춘 뒤 shift 비교하며, 두 자리 답지는
+  2560 13/13과 1280 9/9, 합계 22/22 값·44/44 숫자를 통과한다. 한 자리 및 `100`은 별도
+  layout gate로 계속 남긴다.
+
+### 고정 산출물
+
+- 하나의 versioned renderer spec에 필드별 font file SHA-256, font size, fill, outline와 두께,
+  shear, anchor/baseline, source canvas, quad ROI, output size, center trim, cell bounds를 기록한다.
+- builder는 외부 설치 글꼴이나 OS font fallback을 사용하지 않고 recognition asset에 포함된
+  고정 TTF/OTF만 읽는다. 같은 입력에서 JSON/atlas 또는 bitset bank의 byte hash가 항상 같아야
+  한다.
+- 학생 레벨은 `1..100`, 전용무기 레벨은 `1..60`, 인연 랭크는 `1..100`의 유효 범위를
+  생성한다. 저장은 모든 완성 문자열 PNG가 아니라 실제 layout이 다른 위치별 equivalence
+  class로 축약한다. 학생·전용무기는 한 자리/두 자리 배치를, 인연은 한 자리/두 자리와
+  `100`의 세 자리 배치를 별도로 표현한다.
+- template identity에는 최소한 `field`, `position`, `digit`, `layout_width`가 들어간다.
+  위치가 동일하다는 실측 근거가 없는 필드끼리는 숫자 모양이 같아도 bank를 공유하지 않는다.
+- calibration screenshot, validation screenshot과 예상값은 test fixture 및 provenance manifest에
+  남기되 그 픽셀로 runtime template를 만들지 않는다.
+- 글꼴과 기울기는 자동 탐색으로 결정하지 않는다. 사용자가 v6 Template Alignment Studio에서
+  육안으로 확인한 값을 승인 기준으로 사용한다. 세 필드는 모두 경기천년제목 Medium을 쓰며,
+  학생 레벨은 shear `-0.2`, 인연 랭크는 shear `0`, 전용무기 레벨은 장비 레벨과 같은
+  shear `-0.25`를 사용하되 별도 글자 크기를 갖는다. Font size, 테두리색과 두께, raster
+  variant는 이 고정 조건 안에서 calibration 점수를 참고해 선택하고 독립 screenshot으로
+  validation한다.
+
+### 순차 전환 단계
+
+1. **D0 기준선 동결** — 현재 학생/전용무기/인연/장비 reader의 모든 실제 fixture에서 값, score,
+   runner-up margin, fallback/review 상태와 처리 시간을 기록한다. 기존 asset은 이 단계에서
+   삭제하지 않는다.
+2. **D1 field ROI 특성화** — 네 필드에서 숫자 전경만 남는 outer ROI와 field-specific mask를
+   실제 한/두/세 자리 화면으로 고정한다. 숫자 획을 자르거나 UI 배경을 포함한 표본은
+   renderer 작업으로 넘기지 않는다.
+3. **D2 평행사변형 자리 추출** — 예상 layout별 low-ink valley와 평행한 polygon 경계를
+   계산하거나 사용자가 승인한 Studio `suggestion.json`의 points를 사용해 원본 픽셀을 그대로
+   자리별로 자른다. actual ROI, 경계 overlay, 각 digit cell을 한 contact sheet에 배치해
+   사용자가 육안 승인한다. 수동 suggestion과 자동 valley가 다르면 suggestion을 우선하되,
+   불필요한 UI 픽셀이 들어온 수동 cell은 승인된 것으로 간주하지 않고 Studio에서 다시 조정한다.
+4. **D3 renderer 특성화** — 사용자가 Template Alignment Studio에서 승인한 글꼴과 shear를
+   고정한다. 그 안에서 필드별 font size, baseline, fill/outline 색과 두께를 calibration으로
+   선택한다. 같은 화면으로 renderer를 맞추고 평가하지 않도록 calibration과 validation을
+   화면 단위로 분리하고 선택값과 탐색 범위를 manifest에 기록한다.
+5. **D4 결정론적 bank 생성** — 고정 renderer spec과 승인된 동일 polygon cell geometry로
+   위치별 digit mask를 생성하고 asset
+   catalog에 별도 purpose로 등록한다. builder 재실행 hash, 누락 digit/position, runtime UI
+   asset 혼입 여부를 자동 검사한다.
+6. **D5 shadow 비교** — 기존 reader의 candidate를 바꾸지 않은 채 합성 matcher의 top-1,
+   score, margin, shift, 예상값을 evidence로 수집한다. 학생 레벨, 전용무기 레벨, 인연 랭크와 장비 레벨을
+   각각 독립 confusion matrix로 평가한다.
+7. **D6 필드별 승격** — ROI gate와 matcher gate를 모두 통과한 필드만 하나씩 합성 bank를
+   production primary로 승격한다. 앞 필드의 회귀와 실제 전체 스캔을 통과하기 전에는 다음
+   필드를 승격하지 않는다. 승격 중 불확실한 합성 결과는 기존 확정값을 덮지 않고 review로
+   보낸다.
+8. **D7 legacy runtime 제거** — 네 필드가 모두 acceptance gate를 통과하면 실캡처 파생
+   digit/whole-rank asset과 출처 불명 weapon glyph를 runtime manifest에서 제거한다. 해당
+   이미지는 필요한 경우 test-only fixture로만 보존하며, production에서는 합성 bank 외의
+   legacy matcher로 조용히 fallback하지 않는다.
+
+### 승격 기준
+
+- 독립 validation에서 accepted wrong가 필드별 0이어야 하며, 현재 실제 fixture의 확정값을
+  하나도 잃지 않아야 한다. 오답을 fallback/review로 내리는 것은 허용하지만 확정 오답은
+  허용하지 않는다.
+- 각 필드는 0~9 숫자 모양, 가능한 모든 자리, 한 자리 blank, 최소·최대 경계와 `8/9`,
+  `1/7`, `3/8`, `5/6` 혼동쌍을 validation에서 다룬다. 실제 계정에 없는 값은 합성 self-test로
+  geometry만 확인할 수 있지만 production 정확도 분모에는 넣지 않는다.
+- 학생 레벨은 1/9/10/89/90/99/100, 전용무기는 1/9/10/49/50/59/60, 인연은
+  1/8/9/10/89/90/99/100 경계를 실제 캡처 또는 사용자가 명시적으로 승인한 대체 근거로
+  고정한다. 확보되지 않은 실제 경계는 `MASTER_REQUIRED`로 남기며 검증되었다고 표기하지 않는다.
+- 1280x720 exact client가 필수 validation 기준이다. 더 큰 해상도는 scale diagnostic으로
+  추가하되 exact 기준을 대신하지 않는다.
+- cold bank 준비 시간, warm field p50/p95, prepared memory와 설치 용량을 기록한다. 스캔 중
+  문자열별 전체 화면을 다시 렌더링하거나 OS 글꼴을 반복 로드해서는 안 된다.
+- 단일 스캔과 전체 스캔, 다른 학생/의상 전환, 결과 재검증에서 값과 evidence source가
+  동일해야 한다. 전체 스탯 교차 검증도 새 숫자 입력으로 기존 exact fixture를 유지해야 한다.
+
+이 전환의 완료 상태는 필드별 `specified -> generated -> shadow -> production -> legacy_removed`
+중 하나로 P0-P6 상태 문서에 기록한다. 현재 결정만으로 정확도 승격을 간주하지 않으며,
+세 필드는 모두 `specified`에서 시작한다.
 
 ## 장비 스캔 성능 위험
 
@@ -407,8 +619,28 @@ cold recognizer 91.631ms, prepared memory 1,310,400 bytes다. 이에 actual ROI 
 ## 계산 검증 정책
 
 검증 대상은 기본 화면의 HP, ATK, DEF, HEAL 네 값이다. 계산 입력은 학생 ID/폼, 레벨,
-성급, 장비 티어와 레벨, 전용무기, 인연, 애용품, 능력 개방이다. 패시브가 게임 기본 화면
-표시에 포함되는지는 실제 screenshot parity fixture로 고정하기 전까지 추측하지 않는다.
+성급, 장비 티어와 레벨, 전용무기, 인연, 애용품, 능력 개방이다. 2026-08-26 실제 Mika와
+Mika(수영복) 캡처 parity로 기본 정보의 네 값에는 패시브/전용무기 패시브 전투 버프를
+포함하지 않으며, 장비·전용무기·인연·능력 개방의 `*_Base` 값은 장비 계수 적용 전의
+multiplier-eligible flat 합계에 들어감을 확정했다.
+
+이 계산 계약은 과거 GitHub 저장소가 아니라 2026-08-26 현재 `https://schaledb.com/`가
+실제로 내려주는 브라우저 번들에서도 다시 확인했다. 현재 사이트는 계산을 원격 API에만
+위임하지 않는 Vite/Vue SPA이며, HTML이 로드하는 `assets/index-57036167.js`, 학생 화면의
+`assets/StudentView-6410470d.js`, 스탯 조립 코드가 있는
+`assets/StudentListModal-fd52132b.js`에 계산 코드가 포함되어 있다. 배포 번들의 누적기는
+다음 순서를 사용한다.
+
+1. 레벨·성급으로 학생 기본값을 네 자리 소수 보간 및 반올림한다.
+2. 전용무기·인연·능력 개방·장비의 `Base`를 multiplier-eligible flat으로 합산한다.
+3. 장비의 `Coefficient`를 `amount / 10000`으로 누적한다.
+4. `round((base + Base) * Coefficient) + BaseOuter`로 최종값을 만든다.
+
+현재 번들의 능력 개방 값은 `round(해당 레벨의 성급 미적용 보간 스탯 × 개방 레벨 ×
+0.002)`이며 레벨 90·5성 이상에서 활성화된다. 기본 정보 조립 경로는 패시브 효과를 별도
+옵션으로 유지하므로 게임 기본 정보 교차 검증에서는 `include_skill_buffs=false`가 맞다.
+라이브 asset hash는 새 배포에서 바뀔 수 있으므로 URL은 조사 증거이며, parity fixture와
+위 수식이 지속 계약이다.
 
 판정은 다음 네 상태를 사용한다.
 
@@ -452,6 +684,8 @@ cold recognizer 91.631ms, prepared memory 1,310,400 bytes다. 이에 actual ROI 
 - ID, 폼, 레벨, 성급, 스킬, 무기, 전투 스탯을 candidate values/evidence로 반환한다.
 - 한 기본 캡처의 named ROI를 소비자들이 공유하고 full screenshot 보존 시간을 제한한다.
 - v6 callback·Qt 상태를 반입하지 않고 session cancel/progress contract를 사용한다.
+- 후속 D0~D5에서 학생 레벨과 전용무기 레벨의 실캡처/출처 불명 digit bank를 필드별
+  합성 위치 bank로 교체한다. 합성 bank가 승격되기 전까지 기존 S2 reader는 기준선이다.
 
 ### S3 — 최적화된 장비/애용품 스캔
 
@@ -483,6 +717,14 @@ cold recognizer 91.631ms, prepared memory 1,310,400 bytes다. 이에 actual ROI 
 ### S4 — 인연 랭크 OCR과 계산 교차 검증
 
 - 실제 screenshot fixture로 인연 ROI와 숫자 matcher를 고정한다.
+- 전체 랭크 crop matcher만으로 미관측 숫자를 가장 가까운 기지 랭크에 강제하지 않는다.
+  하트 중앙의 숫자 영역을 별도 ROI로 좁히고 navy/저채도 숫자 ink를 자리별로 분리한다.
+- 현재 실캡처 파생 digit/whole-rank 경로는 D0 기준선과 D3 shadow 비교에만 유지한다.
+  필드별 renderer spec으로 만든 합성 위치 bank의 score와 runner-up margin이 충분할 때만
+  D4에서 자리별 결과를 production으로 승격한다.
+- 현재 답지의 8과 9 표본 부족은 합성 self-test로 해소되었다고 간주하지 않는다. 가능한
+  exact 1280x720 숫자 중심 crop을 추가 확보하고, D5 이후에는 불확실한 결과를 legacy
+  whole-rank로 숨겨 확정하지 않고 review로 보낸다.
 - current/alternate outfit dependency와 second-pass 재검증을 구현한다.
 - 네 전투 스탯의 expected/observed/delta evidence를 생성한다.
 - 불일치를 자동 수정하지 않고 review-required로 승격한다.
@@ -506,6 +748,8 @@ cold recognizer 91.631ms, prepared memory 1,310,400 bytes다. 이에 actual ROI 
 - 다른 의상 인연이 누락된 후보는 오류가 아닌 dependency missing으로 표시된다.
 - 계산 불일치 후보는 명시적 검토 없이는 commit되지 않는다.
 - 장비 matcher는 후보마다 2560x1440 합성 canvas를 만들지 않는다.
+- 학생 레벨·전용무기 레벨·인연 랭크는 고정 renderer spec에서 재현 가능한 합성 위치 bank를
+  사용하고, 실캡처 파생 runtime digit asset과 출처 불명 weapon glyph가 제거되어 있다.
 - Python 전체 test, Flutter 전체 test, `flutter analyze`, 실제 process E2E, Windows release와
   시각 검토를 통과한다.
 - recognition asset과 runtime UI asset은 계속 분리된다.

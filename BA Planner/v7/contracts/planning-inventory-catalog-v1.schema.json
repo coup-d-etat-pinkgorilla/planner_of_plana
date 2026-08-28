@@ -38,10 +38,11 @@
           "protocol": { "const": 1 }, "id": { "type": "string", "minLength": 1 },
           "type": { "const": "response" }, "method": { "const": "planning.inventory.catalog" },
           "payload": {
-            "type": "object", "required": ["items", "sort"],
+            "type": "object", "required": ["items", "sort", "catalog_revision"],
             "properties": {
               "items": { "type": "array", "items": { "$ref": "#/$defs/item" } },
-              "sort": { "const": "profile_order" }
+              "sort": { "const": "profile_order" },
+              "catalog_revision": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
             },
             "additionalProperties": false
           }

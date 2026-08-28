@@ -261,8 +261,10 @@ class MockAppService
   @override
   Future<ScannerSession> startScannerSession(
     ScannerKind kind,
-    String targetId,
-  ) async {
+    String targetId, {
+    String? profileId,
+    StudentScanMode studentScanMode = StudentScanMode.single,
+  }) async {
     final target = _scannerTargets.where((item) => item.id == targetId);
     if (target.isEmpty || target.single.status != ScannerTargetStatus.ready) {
       throw StateError('target_not_ready');
@@ -271,6 +273,7 @@ class MockAppService
       id: 'mock-session-${++_scannerGeneration}',
       generation: _scannerGeneration,
       kind: kind,
+      studentScanMode: studentScanMode,
     );
     _scannerHistory[session.id] = [];
     _emitScannerEvent(session, ScannerEventKind.phase, {'phase': 'capturing'});
@@ -362,17 +365,64 @@ class MockAppService
     Map<String, dynamic> payload, {
     required bool approve,
     required String reason,
-  }) async => ScannerCandidate(
-    id: candidate.id,
-    sessionId: session.id,
-    generation: session.generation,
-    revision: candidate.revision + 1,
-    kind: session.kind,
-    payload: payload,
-    evidence: candidate.evidence,
-    reviewRequired: candidate.reviewRequired,
-    approved: approve,
-  );
+    Map<int, int>? relationshipRanks,
+  }) async {
+    final studentRevalidation =
+        session.kind == ScannerKind.student &&
+        reason == 'edited_and_revalidated_in_scan_page';
+    final reviewed = ScannerCandidate(
+      id: candidate.id,
+      sessionId: session.id,
+      generation: session.generation,
+      revision: candidate.revision + 1,
+      kind: session.kind,
+      payload: payload,
+      evidence: [
+        for (final item in candidate.evidence)
+          studentRevalidation &&
+                  !{
+                    'ok',
+                    'inferred',
+                    'skipped',
+                    'verified',
+                  }.contains(item.status)
+              ? ScannerFieldEvidence(
+                  field: item.field,
+                  status: 'verified',
+                  source: 'user_review',
+                  confidence: 1,
+                  note: 'field confirmed in scanner review workspace',
+                  details: item.details,
+                )
+              : item,
+      ],
+      reviewRequired: studentRevalidation ? false : candidate.reviewRequired,
+      approved: approve,
+    );
+    _scannerCandidates['${session.id}:${candidate.id}'] = reviewed;
+    return reviewed;
+  }
+
+  @override
+  Future<ScannerCandidate> revalidateScannerCandidate(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    Map<int, int>? relationshipRanks,
+  }) async {
+    final revised = ScannerCandidate(
+      id: candidate.id,
+      sessionId: candidate.sessionId,
+      generation: candidate.generation,
+      revision: candidate.revision + 1,
+      kind: candidate.kind,
+      payload: candidate.payload,
+      evidence: candidate.evidence,
+      reviewRequired: candidate.reviewRequired,
+      approved: false,
+    );
+    _scannerCandidates['${session.id}:${candidate.id}'] = revised;
+    return revised;
+  }
 
   @override
   Future<Map<String, dynamic>> commitScannerCandidate(
@@ -459,6 +509,42 @@ class MockAppService
           confidence: review ? 0.62 : 0.98,
           note: review ? 'Manual review required' : '',
         ),
+        const ScannerFieldEvidence(
+          field: 'student_stat_validation',
+          status: 'verified',
+          source: 'student_stats_v1',
+          confidence: 1,
+          details: {
+            'relationship_contributions': [
+              {
+                'kind': 'current',
+                'student_id': 'aru',
+                'schaledb_id': 10000,
+                'rank': 20,
+                'owned': true,
+                'applied': true,
+                'modifier': {
+                  'flat': {'AttackPower': 126, 'MaxHP': 530},
+                  'coefficient_basis_points': <String, int>{},
+                  'separated_flat': <String, int>{},
+                },
+              },
+              {
+                'kind': 'alternate',
+                'student_id': 'aru_new_year',
+                'schaledb_id': 10031,
+                'rank': 10,
+                'owned': true,
+                'applied': true,
+                'modifier': {
+                  'flat': {'AttackPower': 45},
+                  'coefficient_basis_points': <String, int>{},
+                  'separated_flat': <String, int>{},
+                },
+              },
+            ],
+          },
+        ),
       ],
       reviewRequired: review,
       approved: false,
@@ -480,6 +566,7 @@ class MockAppService
           'source': item.source,
           'confidence': item.confidence,
           'note': item.note,
+          'details': item.details,
         },
     ],
     'review_required': candidate.reviewRequired,
@@ -610,35 +697,40 @@ class MockAppService
   };
 
   @override
-  Future<List<InventoryCatalogEntry>> listInventoryItems() async => const [
-    InventoryCatalogEntry(
-      resourceKey: 'Item_Icon_ExpItem_0',
-      itemId: 'Item_Icon_ExpItem_0',
-      displayName: 'Basic activity report',
-      category: 'activity_report',
-      profileId: 'activity_reports',
-      orderIndex: 0,
-      zeroFillAllowed: true,
-    ),
-    InventoryCatalogEntry(
-      resourceKey: 'Item_Icon_SkillBook_Gehenna_0',
-      itemId: 'Item_Icon_SkillBook_Gehenna_0',
-      displayName: 'Gehenna Note T1',
-      category: 'tech_notes',
-      profileId: 'tech_notes',
-      orderIndex: 0,
-      zeroFillAllowed: true,
-    ),
-    InventoryCatalogEntry(
-      resourceKey: 'Item_Icon_Material_Nebra_0',
-      itemId: 'Item_Icon_Material_Nebra_0',
-      displayName: 'Nebra Disk T1',
-      category: 'oopart',
-      profileId: 'ooparts',
-      orderIndex: 0,
-      zeroFillAllowed: true,
-    ),
-  ];
+  Future<InventoryCatalogResult> listInventoryItems() async =>
+      const InventoryCatalogResult(
+        catalogRevision:
+            '0000000000000000000000000000000000000000000000000000000000000000',
+        items: [
+          InventoryCatalogEntry(
+            resourceKey: 'Item_Icon_ExpItem_0',
+            itemId: 'Item_Icon_ExpItem_0',
+            displayName: 'Basic activity report',
+            category: 'activity_report',
+            profileId: 'activity_reports',
+            orderIndex: 0,
+            zeroFillAllowed: true,
+          ),
+          InventoryCatalogEntry(
+            resourceKey: 'Item_Icon_SkillBook_Gehenna_0',
+            itemId: 'Item_Icon_SkillBook_Gehenna_0',
+            displayName: 'Gehenna Note T1',
+            category: 'tech_notes',
+            profileId: 'tech_notes',
+            orderIndex: 0,
+            zeroFillAllowed: true,
+          ),
+          InventoryCatalogEntry(
+            resourceKey: 'Item_Icon_Material_Nebra_0',
+            itemId: 'Item_Icon_Material_Nebra_0',
+            displayName: 'Nebra Disk T1',
+            category: 'oopart',
+            profileId: 'ooparts',
+            orderIndex: 0,
+            zeroFillAllowed: true,
+          ),
+        ],
+      );
 
   @override
   Future<InventoryShortageResult> calculateShortages({

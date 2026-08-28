@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import hashlib
+import json
+from typing import Callable, Iterable
 
 from core import student_meta
 from core.equipment_items import (
@@ -49,6 +52,21 @@ _WORKBOOKS = (
 _REPORT_NAMES = ("초급 활동 보고서", "일반 활동 보고서", "상급 활동 보고서", "최상급 활동 보고서")
 
 
+def ordered_student_eleph_ids(
+    student_ids: Iterable[str],
+    display_name: Callable[[str], str],
+    is_jp_only: Callable[[str], bool],
+) -> list[str]:
+    """Return the version-scoped in-game order; IDs remain stable identity."""
+    return sorted(
+        (student_id for student_id in student_ids if not is_jp_only(student_id)),
+        key=lambda student_id: (
+            f"{display_name(student_id)}의 엘레프".casefold(),
+            student_id,
+        ),
+    )
+
+
 def _rows() -> list[InventoryCatalogRow]:
     rows: list[InventoryCatalogRow] = []
 
@@ -88,9 +106,8 @@ def _rows() -> list[InventoryCatalogRow]:
         add(item_id, name, "workbook", "ooparts", index)
         index += 1
 
-    eleph_ids = sorted(
-        (student_id for student_id in student_meta.all_ids() if not student_meta.is_jp_only(student_id)),
-        key=lambda student_id: (f"{student_meta.display_name(student_id)}의 엘레프".casefold(), student_id),
+    eleph_ids = ordered_student_eleph_ids(
+        student_meta.all_ids(), student_meta.display_name, student_meta.is_jp_only
     )
     for index, student_id in enumerate(eleph_ids):
         add(
@@ -128,3 +145,11 @@ def resolve_planning_resource(label: str) -> InventoryCatalogRow | None:
 
 def catalog_payload() -> list[dict[str, object]]:
     return [row.to_dict() for row in CATALOG]
+
+
+def _catalog_revision(rows: list[dict[str, object]]) -> str:
+    content = json.dumps(rows, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+
+CATALOG_REVISION = _catalog_revision(catalog_payload())

@@ -157,6 +157,13 @@ class PlanningProtocolClient {
       'stale_generation',
       'candidate_not_found',
       'candidate_revision_conflict',
+      'profile_not_found',
+      'revision_conflict',
+      'idempotency_conflict',
+      'repository_busy',
+      'corrupt_data',
+      'migration_required',
+      'persistence_failed',
       'session_not_committable',
       'review_required',
       'invalid_candidate',
@@ -439,7 +446,10 @@ class PlanningProtocolClient {
     }
     if (!_validSuccessPayload(pending.method, payload)) {
       pending.completer.completeError(
-        BackendProtocolException('Invalid success response for $id'),
+        BackendProtocolException(
+          'Invalid success response for ${pending.method} $id '
+          '(keys: ${payload.keys.toList()..sort()})',
+        ),
       );
       _fatalProtocolError('Invalid success response for $id', generation);
       return;
@@ -507,15 +517,8 @@ class PlanningProtocolClient {
   }
 
   bool _validInventoryCatalog(Map<String, dynamic> payload) {
-    if (payload.keys.toSet().length != 2 ||
-        payload['sort'] != 'profile_order' ||
-        payload['items'] is! List) {
-      return false;
-    }
     try {
-      for (final item in payload['items'] as List) {
-        InventoryCatalogEntry.fromWire(Map<String, dynamic>.from(item as Map));
-      }
+      InventoryCatalogResult.fromWire(payload);
       return true;
     } on Object {
       return false;
@@ -631,6 +634,7 @@ class PlanningProtocolClient {
         const {
           'phase',
           'progress',
+          'feedback',
           'candidate',
           'diagnostic',
           'terminal',
@@ -653,6 +657,18 @@ class PlanningProtocolClient {
                 value['total'] == null) &&
             value['message_key'] is String &&
             (value['message_key'] as String).isNotEmpty,
+      'feedback' =>
+        value.keys.toSet().difference({
+              ...baseKeys,
+              'student_id',
+              'field',
+              'values',
+            }).isEmpty &&
+            value['student_id'] is String &&
+            (value['student_id'] as String).isNotEmpty &&
+            value['field'] is String &&
+            (value['field'] as String).isNotEmpty &&
+            value['values'] is Map,
       'candidate' =>
         value.keys.toSet().difference({...baseKeys, 'candidate'}).isEmpty &&
             _validScannerCandidate(value['candidate']),
@@ -729,8 +745,11 @@ class PlanningProtocolClient {
             payload['generation'] is int &&
             payload['events'] is List &&
             payload['candidates'] is List,
-      'scanner.candidate.get' || 'scanner.candidate.review' =>
-        _validScannerCandidate(payload['candidate']),
+      'scanner.candidate.get' ||
+      'scanner.candidate.review' ||
+      'scanner.candidate.revalidate' => _validScannerCandidate(
+        payload['candidate'],
+      ),
       'scanner.candidate.commit' =>
         payload['candidate_id'] is String &&
             payload['candidate_revision'] is int &&

@@ -7,6 +7,8 @@ enum ScannerTargetStatus { ready, minimized, closed, unsupported }
 
 enum ScannerKind { student, inventory, tacticalLobby }
 
+enum StudentScanMode { single, full }
+
 extension ScannerKindWire on ScannerKind {
   String get wireName => switch (this) {
     ScannerKind.student => 'student',
@@ -22,7 +24,14 @@ extension ScannerKindWire on ScannerKind {
   };
 }
 
-enum ScannerEventKind { phase, progress, candidate, diagnostic, terminal }
+enum ScannerEventKind {
+  phase,
+  progress,
+  feedback,
+  candidate,
+  diagnostic,
+  terminal,
+}
 
 enum ScannerEventDecision {
   accepted,
@@ -57,15 +66,20 @@ class ScannerSession {
     required this.id,
     required this.generation,
     required this.kind,
+    this.studentScanMode = StudentScanMode.single,
   });
   final String id;
   final int generation;
   final ScannerKind kind;
+  final StudentScanMode studentScanMode;
 
   factory ScannerSession.fromWire(Map<String, dynamic> wire) => ScannerSession(
     id: wire['session_id'] as String,
     generation: wire['generation'] as int,
     kind: ScannerKindWire.fromWire(wire['scan_kind'] as String),
+    studentScanMode: StudentScanMode.values.byName(
+      wire['student_scan_mode'] as String? ?? 'single',
+    ),
   );
 }
 
@@ -120,12 +134,14 @@ class ScannerFieldEvidence {
     required this.source,
     this.confidence,
     this.note = '',
+    this.details,
   });
   final String field;
   final String status;
   final String source;
   final double? confidence;
   final String note;
+  final Map<String, dynamic>? details;
 
   factory ScannerFieldEvidence.fromWire(Map<String, dynamic> wire) =>
       ScannerFieldEvidence(
@@ -134,6 +150,11 @@ class ScannerFieldEvidence {
         source: wire['source'] as String,
         confidence: (wire['confidence'] as num?)?.toDouble(),
         note: wire['note'] as String? ?? '',
+        details: wire['details'] == null
+            ? null
+            : Map<String, dynamic>.unmodifiable(
+                Map<String, dynamic>.from(wire['details'] as Map),
+              ),
       );
 }
 
@@ -336,7 +357,12 @@ abstract interface class ScannerService {
   Stream<ScannerEvent> get scannerEvents;
   Future<List<ScannerTarget>> listScannerTargets();
   Future<Map<String, dynamic>> scannerReadiness();
-  Future<ScannerSession> startScannerSession(ScannerKind kind, String targetId);
+  Future<ScannerSession> startScannerSession(
+    ScannerKind kind,
+    String targetId, {
+    String? profileId,
+    StudentScanMode studentScanMode = StudentScanMode.single,
+  });
   Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session);
   Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session);
   Future<ScannerCandidate> getScannerCandidate(
@@ -349,6 +375,12 @@ abstract interface class ScannerService {
     Map<String, dynamic> payload, {
     required bool approve,
     required String reason,
+    Map<int, int>? relationshipRanks,
+  });
+  Future<ScannerCandidate> revalidateScannerCandidate(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    Map<int, int>? relationshipRanks,
   });
   Future<Map<String, dynamic>> commitScannerCandidate(
     ScannerSession session,
@@ -425,14 +457,19 @@ class ScannerProtocolClient implements ScannerService {
   @override
   Future<ScannerSession> startScannerSession(
     ScannerKind kind,
-    String targetId,
-  ) async {
+    String targetId, {
+    String? profileId,
+    StudentScanMode studentScanMode = StudentScanMode.single,
+  }) async {
     _startPending = true;
     late final Map<String, dynamic> wire;
     try {
       wire = await _client.send('scanner.session.start', {
         'scan_kind': kind.wireName,
         'target_id': targetId,
+        'profile_id': ?profileId,
+        if (kind == ScannerKind.student)
+          'student_scan_mode': studentScanMode.name,
       });
     } finally {
       _startPending = false;
@@ -496,6 +533,7 @@ class ScannerProtocolClient implements ScannerService {
     Map<String, dynamic> payload, {
     required bool approve,
     required String reason,
+    Map<int, int>? relationshipRanks,
   }) async => ScannerCandidate.fromWire(
     Map<String, dynamic>.from(
       (await _client.send('scanner.candidate.review', {
@@ -506,6 +544,32 @@ class ScannerProtocolClient implements ScannerService {
             'candidate_payload': payload,
             'approve': approve,
             'reason': reason,
+            if (relationshipRanks != null)
+              'relationship_ranks': {
+                for (final entry in relationshipRanks.entries)
+                  '${entry.key}': entry.value,
+              },
+          }))['candidate']
+          as Map,
+    ),
+  );
+  @override
+  Future<ScannerCandidate> revalidateScannerCandidate(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    Map<int, int>? relationshipRanks,
+  }) async => ScannerCandidate.fromWire(
+    Map<String, dynamic>.from(
+      (await _client.send('scanner.candidate.revalidate', {
+            'session_id': session.id,
+            'generation': session.generation,
+            'candidate_id': candidate.id,
+            'expected_candidate_revision': candidate.revision,
+            if (relationshipRanks != null)
+              'relationship_ranks': {
+                for (final entry in relationshipRanks.entries)
+                  '${entry.key}': entry.value,
+              },
           }))['candidate']
           as Map,
     ),

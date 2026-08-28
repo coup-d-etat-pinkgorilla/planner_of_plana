@@ -36,6 +36,19 @@ Python backend는 계산, 저장, scanner orchestration을 소유합니다. Flut
 Qt signal이나 QML model을 backend DTO에 넣지 않습니다. 현재 첫 slice는 계획 목표와
 총 필요량 계산이며, 목표와 현재 상태의 의미를 합치지 않습니다. [@planning-model]
 
+학생 정적 메타데이터의 source of truth는
+`backend/data/metadata/v1/student_catalog.json`입니다. core 학생 레코드, 폼,
+서버 가용성, 애용품 상태, provider reference와 선물 affinity를 versioned catalog의
+서로 다른 영역에 둡니다. `core.student_meta`는 기존 계산·scanner 호출자를 위한
+호환 lookup façade이며 generated Python 선언은 더 이상 runtime source가 아닙니다.
+SchaleDB 네트워크와 원본 DTO는 provider가, slug/ID 및 allowlist 변환은 adapter가
+소유합니다. 자세한 계약은 [Canonical Metadata Boundary](canonical-metadata)를 따릅니다.
+
+Inventory의 `resource_key`만 version 간 stable identity입니다. `order_index`는 현재
+catalog revision에 속하는 scan/display ordinal이고 실제 화면에서 관측한 위치는
+`observed_slot`입니다. 상세 계약은
+[Inventory Catalog Order Stability](inventory-catalog-order)를 따릅니다.
+
 planning과 repository slice의 실행 경계는 JSON Lines stdin/stdout Python process와 Dart
 process client입니다. Python은 profile catalog, confirmed current, inventory와 goal의 atomic
 persistence를 소유하고 Flutter는 immutable typed repository state만 소비합니다. 기본 UI

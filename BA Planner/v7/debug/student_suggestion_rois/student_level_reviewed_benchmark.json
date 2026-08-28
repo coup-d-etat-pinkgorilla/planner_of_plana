@@ -1,0 +1,521 @@
+{
+  "schema_version": 1,
+  "method": "reviewed BA level series + Studio position ROI + pale color mask + white synthetic template",
+  "values": 10,
+  "value_correct": 10,
+  "digits": 19,
+  "digit_correct": 19,
+  "minimum_score": 0.7654320987654321,
+  "average_score": 0.8072042671036094,
+  "minimum_margin": 0.13329601791140255,
+  "average_margin": 0.20298800854500013,
+  "single_digit_blank_correct": 1,
+  "coverage": {
+    "values": [
+      1,
+      12,
+      23,
+      34,
+      45,
+      56,
+      67,
+      78,
+      89,
+      90
+    ],
+    "position_1_digits": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "position_2_digits": [
+      "0",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ]
+  },
+  "rows": [
+    {
+      "field": "student_level",
+      "source_file": "스크린샷 2026-06-24 215302.png",
+      "source_sha256": "1eabcf0c67a1e5be3741625ae543daf278ec9857fa42bc696361aca021e1f8b2",
+      "expected": 1,
+      "observed": 1,
+      "correct": true,
+      "evidence": "visual_ground_truth",
+      "digits": [
+        {
+          "position": 1,
+          "roi": "studentlevel_digit1",
+          "expected": "1",
+          "observed": "1",
+          "correct": true,
+          "score": 0.7922705314009661,
+          "margin": 0.27516026524127035,
+          "shift": [
+            -1,
+            1
+          ],
+          "cleanup": {
+            "components": 2,
+            "removed_ink": 4,
+            "kept_ink": 171
+          }
+        }
+      ],
+      "single_digit_second_cell": {
+        "roi": "studentlevel_digit2",
+        "blank": true,
+        "cleanup": {
+          "components": 0,
+          "removed_ink": 0,
+          "kept_ink": 0
+        }
+      }
+    },
+    {
+      "field": "student_level",
+      "source_file": "스크린샷 2026-06-24 215255.png",
+      "source_sha256": "6449c34119b58f654cde8a7071998facb20348abf2e1f47b93760b036d04044a",
+      "expected": 12,
+      "observed": 12,
+      "correct": true,
+      "evidence": "visual_ground_truth",
+      "digits": [
+        {
+          "position": 1,
+          "roi": "studentlevel_digit1",
+          "expected": "1",
+          "observed": "1",
+          "correct": true,
+          "score": 0.7922705314009661,
+          "margin": 0.27516026524127035,
+          "shift": [
+            -1,
+            1
+          ],
+          "cleanup": {
+            "components": 2,
+            "removed_ink": 4,
+            "kept_ink": 171
+          }
+        },
+        {
+          "position": 2,
+          "roi": "studentlevel_digit2",
+          "expected": "2",
+          "observed": "2",
+          "correct": true,
+          "score": 0.7654320987654321,
+          "margin": 0.21207241497096563,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 1,
+            "removed_ink": 0,
+            "kept_ink": 201
+          }
+        }
+      ],
+      "single_digit_second_cell": null
+    },
+    {
+      "field": "student_level",
+      "source_file": "스크린샷 2026-06-24 215250.png",
+      "source_sha256": "30903f4c830284c62428d26207a2fdc62b9f0a5d4a84629c0271ae319001ac10",
+      "expected": 23,
+      "observed": 23,
+      "correct": true,
+      "evidence": "visual_ground_truth",
+      "digits": [
+        {
+          "position": 1,
+          "roi": "studentlevel_digit1",
+          "expected": "2",
+          "observed": "2",
+          "correct": true,
+          "score": 0.7695473251028807,
+          "margin": 0.2265785751028807,
+          "shift": [
+            -1,
+            1
+          ],
+          "cleanup": {
+            "components": 2,
+            "removed_ink": 2,
+            "kept_ink": 202
+          }
+        },
+        {
+          "position": 2,
+          "roi": "studentlevel_digit2",
+          "expected": "3",
+          "observed": "3",
+          "correct": true,
+          "score": 0.7888446215139442,
+          "margin": 0.18699276966209233,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 1,
+            "removed_ink": 0,
+            "kept_ink": 201
+          }
+        }
+      ],
+      "single_digit_second_cell": null
+    },
+    {
+      "field": "student_level",
+      "source_file": "스크린샷 2026-06-24 215246.png",
+      "source_sha256": "82406468908aa74dc2df6a07388aee42e884d7ad8fd39fb3bbd688950579aa8b",
+      "expected": 34,
+      "observed": 34,
+      "correct": true,
+      "evidence": "visual_ground_truth",
+      "digits": [
+        {
+          "position": 1,
+          "roi": "studentlevel_digit1",
+          "expected": "3",
+          "observed": "3",
+          "correct": true,
+          "score": 0.8313725490196079,
+          "margin": 0.20679917018001748,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 2,
+            "removed_ink": 4,
+            "kept_ink": 219
+          }
+        },
+        {
+          "position": 2,
+          "roi": "studentlevel_digit2",
+          "expected": "4",
+          "observed": "4",
+          "correct": true,
+          "score": 0.8446969696969697,
+          "margin": 0.3516607579978054,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 1,
+            "removed_ink": 0,
+            "kept_ink": 227
+          }
+        }
+      ],
+      "single_digit_second_cell": null
+    },
+    {
+      "field": "student_level",
+      "source_file": "스크린샷 2026-06-24 215240.png",
+      "source_sha256": "dcd8e90f95a66956a298237171f3120d6332ff6417cd20f4cf2d41e9d230edcf",
+      "expected": 45,
+      "observed": 45,
+      "correct": true,
+      "evidence": "visual_ground_truth",
+      "digits": [
+        {
+          "position": 1,
+          "roi": "studentlevel_digit1",
+          "expected": "4",
+          "observed": "4",
+          "correct": true,
+          "score": 0.8226415094339623,
+          "margin": 0.34474095694777446,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 3,
+            "removed_ink": 3,
+            "kept_ink": 222
+          }
+        },
+        {
+          "position": 2,
+          "roi": "studentlevel_digit2",
+          "expected": "5",
+          "observed": "5",
+          "correct": true,
+          "score": 0.7884615384615384,
+          "margin": 0.15479817212490476,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 2,
+            "removed_ink": 1,
+            "kept_ink": 208
+          }
+        }
+      ],
+      "single_digit_second_cell": null
+    },
+    {
+      "field": "student_level",
+      "source_file": "스크린샷 2026-06-24 215238.png",
+      "source_sha256": "9dfdeb290eaf8c4478058b5f225c9a18fb72dd11698ef51b5e58defc9c39fdf2",
+      "expected": 56,
+      "observed": 56,
+      "correct": true,
+      "evidence": "visual_ground_truth",
+      "digits": [
+        {
+          "position": 1,
+          "roi": "studentlevel_digit1",
+          "expected": "5",
+          "observed": "5",
+          "correct": true,
+          "score": 0.789272030651341,
+          "margin": 0.15201712869055672,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 3,
+            "removed_ink": 18,
+            "kept_ink": 210
+          }
+        },
+        {
+          "position": 2,
+          "roi": "studentlevel_digit2",
+          "expected": "6",
+          "observed": "6",
+          "correct": true,
+          "score": 0.852233676975945,
+          "margin": 0.14052196526423333,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 1,
+            "removed_ink": 0,
+            "kept_ink": 252
+          }
+        }
+      ],
+      "single_digit_second_cell": null
+    },
+    {
+      "field": "student_level",
+      "source_file": "스크린샷 2026-06-24 215236.png",
+      "source_sha256": "fef8ab15f40fb2142fd69750dec421efb49a8f3398d631a6c5dddc96b5a4d00e",
+      "expected": 67,
+      "observed": 67,
+      "correct": true,
+      "evidence": "visual_ground_truth",
+      "digits": [
+        {
+          "position": 1,
+          "roi": "studentlevel_digit1",
+          "expected": "6",
+          "observed": "6",
+          "correct": true,
+          "score": 0.8108108108108109,
+          "margin": 0.13329601791140255,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 4,
+            "removed_ink": 6,
+            "kept_ink": 245
+          }
+        },
+        {
+          "position": 2,
+          "roi": "studentlevel_digit2",
+          "expected": "7",
+          "observed": "7",
+          "correct": true,
+          "score": 0.7743589743589744,
+          "margin": 0.20878520386717114,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 1,
+            "removed_ink": 0,
+            "kept_ink": 154
+          }
+        }
+      ],
+      "single_digit_second_cell": null
+    },
+    {
+      "field": "student_level",
+      "source_file": "스크린샷 2026-06-24 215234.png",
+      "source_sha256": "f034fa53039c6c937c3f5c29c44a29d8adb187f70c45c41096e7fd240e6b144b",
+      "expected": 78,
+      "observed": 78,
+      "correct": true,
+      "evidence": "visual_ground_truth",
+      "digits": [
+        {
+          "position": 1,
+          "roi": "studentlevel_digit1",
+          "expected": "7",
+          "observed": "7",
+          "correct": true,
+          "score": 0.7777777777777778,
+          "margin": 0.20460704607046076,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 5,
+            "removed_ink": 16,
+            "kept_ink": 159
+          }
+        },
+        {
+          "position": 2,
+          "roi": "studentlevel_digit2",
+          "expected": "8",
+          "observed": "8",
+          "correct": true,
+          "score": 0.8416149068322981,
+          "margin": 0.15392721914461038,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 1,
+            "removed_ink": 0,
+            "kept_ink": 275
+          }
+        }
+      ],
+      "single_digit_second_cell": null
+    },
+    {
+      "field": "student_level",
+      "source_file": "스크린샷 2026-06-24 215230.png",
+      "source_sha256": "65f4439457023608733262ad78f3905a1a6826423e9561fcd48954b803d87fae",
+      "expected": 89,
+      "observed": 89,
+      "correct": true,
+      "evidence": "visual_ground_truth",
+      "digits": [
+        {
+          "position": 1,
+          "roi": "studentlevel_digit1",
+          "expected": "8",
+          "observed": "8",
+          "correct": true,
+          "score": 0.8065476190476191,
+          "margin": 0.15126811594202905,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 3,
+            "removed_ink": 3,
+            "kept_ink": 285
+          }
+        },
+        {
+          "position": 2,
+          "roi": "studentlevel_digit2",
+          "expected": "9",
+          "observed": "9",
+          "correct": true,
+          "score": 0.8485915492957746,
+          "margin": 0.16720353667747812,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 2,
+            "removed_ink": 1,
+            "kept_ink": 242
+          }
+        }
+      ],
+      "single_digit_second_cell": null
+    },
+    {
+      "field": "student_level",
+      "source_file": "스크린샷 2026-06-24 215227.png",
+      "source_sha256": "922c6195d7738e170312560eadc8606cf4afae211c5304167fa75e66d867de19",
+      "expected": 90,
+      "observed": 90,
+      "correct": true,
+      "evidence": "visual_ground_truth",
+      "digits": [
+        {
+          "position": 1,
+          "roi": "studentlevel_digit1",
+          "expected": "9",
+          "observed": "9",
+          "correct": true,
+          "score": 0.8,
+          "margin": 0.16656891495601178,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 3,
+            "removed_ink": 3,
+            "kept_ink": 263
+          }
+        },
+        {
+          "position": 2,
+          "roi": "studentlevel_digit2",
+          "expected": "0",
+          "observed": "0",
+          "correct": true,
+          "score": 0.8401360544217688,
+          "margin": 0.1446136663620673,
+          "shift": [
+            0,
+            0
+          ],
+          "cleanup": {
+            "components": 1,
+            "removed_ink": 0,
+            "kept_ink": 250
+          }
+        }
+      ],
+      "single_digit_second_cell": null
+    }
+  ]
+}

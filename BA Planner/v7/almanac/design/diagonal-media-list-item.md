@@ -25,6 +25,18 @@ sources:
 
 # Diagonal Media List Item
 
+## 2026-08-25 S5 scan-result outfit grouping
+
+- The Scan workspace's result navigator now follows the Plan Start middle-list motion geometry:
+  every row recomputes its X position from viewport Y and live vertical scroll offset at 80 degrees,
+  with the shared top/bottom viewport fog.
+- Single scans render owned alternate outfits as subordinate rows directly after the scanned outfit.
+  The alternate row owns its 1-100 relationship-rank input or confirmed value, so dependency input is
+  no longer detached from the outfit it describes.
+- Full scans use `StudentCatalogEntry.group` as the stable base-character key. Character groups retain
+  first occurrence order and outfits retain capture order within the group, keeping all costumes of
+  one character vertically adjacent.
+
 ## 2026-08-01 student-catalog current-state presentation
 
 - The shared row keeps its original planning presentation by default. Student

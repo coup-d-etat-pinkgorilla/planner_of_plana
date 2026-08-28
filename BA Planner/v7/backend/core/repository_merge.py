@@ -131,6 +131,9 @@ def merge_inventory(old: Mapping[str, Mapping[str, Any]], new: Mapping[str, Mapp
             continue
         previous = current.get(key, {})
         current[key] = {name: entry.get(name, previous.get(name)) for name in ("key", "item_id", "name", "quantity", "index", "profile_id")}
+        observed_slot = entry.get("observed_slot", previous.get("observed_slot"))
+        if observed_slot is not None:
+            current[key]["observed_slot"] = observed_slot
         current[key]["key"] = key
     return {key: current[key] for key in sorted(current)}
 

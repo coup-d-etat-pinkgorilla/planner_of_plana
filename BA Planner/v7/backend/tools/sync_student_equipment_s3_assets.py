@@ -10,6 +10,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 V6_ROOT = REPOSITORY_ROOT.parent / "v6"
 RECOGNITION_ROOT = REPOSITORY_ROOT / "backend" / "assets" / "recognition" / "v1"
 DESTINATION_ROOT = RECOGNITION_ROOT / "templates" / "student_equipment"
+MEDIUM_FONT_SOURCE = REPOSITORY_ROOT / "frontend" / "assets" / "fonts" / "GyeonggiTitle-Medium.ttf"
 
 
 def _digest(path: Path) -> tuple[int, str]:
@@ -17,7 +18,14 @@ def _digest(path: Path) -> tuple[int, str]:
     return len(content), hashlib.sha256(content).hexdigest()
 
 
-def _copy(source: Path, relative: Path, purpose: str, identity: str | None = None) -> dict[str, object]:
+def _copy(
+    source: Path,
+    relative: Path,
+    purpose: str,
+    identity: str | None = None,
+    *,
+    source_path: str | None = None,
+) -> dict[str, object]:
     destination = RECOGNITION_ROOT / relative
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source, destination)
@@ -29,7 +37,7 @@ def _copy(source: Path, relative: Path, purpose: str, identity: str | None = Non
         "required": True,
         "bytes": size,
         "sha256": digest,
-        "source_path": f"../v6/{source.relative_to(V6_ROOT).as_posix()}",
+        "source_path": source_path or f"../v6/{source.relative_to(V6_ROOT).as_posix()}",
     }
     if identity is not None:
         entry["equipment_value"] = identity
@@ -55,12 +63,12 @@ def sync() -> dict[str, int]:
         Path("templates/student_equipment/card_background.png"),
         "student-equipment-card-background",
     ))
-    bold_fonts = sorted((V6_ROOT / "gui" / "font").glob("*Bold.ttf"))
-    if not bold_fonts:
-        raise FileNotFoundError("v6 equipment rendering font is missing")
+    if not MEDIUM_FONT_SOURCE.is_file():
+        raise FileNotFoundError("reviewed GyeonggiTitle Medium font is missing")
     assets.append(_copy(
-        bold_fonts[0], Path("templates/student_equipment/equipment_level_bold.ttf"),
+        MEDIUM_FONT_SOURCE, Path("templates/student_equipment/equipment_level_medium.ttf"),
         "student-equipment-font",
+        source_path="frontend/assets/fonts/GyeonggiTitle-Medium.ttf",
     ))
     if position_bank_bytes is not None:
         position_bank.parent.mkdir(parents=True, exist_ok=True)

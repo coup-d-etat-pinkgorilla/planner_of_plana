@@ -10,6 +10,885 @@ sources:
 
 # P0-P6 Workflow Status
 
+### 2026-08-28 inventory catalog ordinal stability fixed
+
+- `resource_key` is the only durable inventory identity. `order_index` is explicitly scoped to a
+  SHA-256 `catalog_revision`, returned by `planning.inventory.catalog` and accepted on repository
+  inventory snapshots. The current revision hashes all 545 canonical catalog rows.
+- Repository load and write paths rebase known identities to the current catalog `profile_id` and
+  `order_index`. A scanner screen position is now `observed_slot`; legacy `visible-grid` entries
+  migrate their former `index` into `observed_slot` before receiving the current catalog ordinal.
+- The student-eleph order remains the v6-compatible localized KR order and is deterministic for the
+  same metadata. It is intentionally allowed to move when student availability or display metadata
+  changes. Canonical IDs remain stable across those moves.
+- The brittle Ayane absolute-index assertion was replaced by a catalog-revision gate and a relative
+  Asuna/Ayane ordering assertion. The previously failing `113` versus `115` case now proves an
+  intentional metadata-version change rather than presenting a false stable-slot contract.
+- Verification: 71 focused Python inventory/repository/scanner/protocol tests and the full 266-test
+  Python suite pass. The full 394-test Flutter suite, the isolated repository process E2E,
+  `flutter analyze`, `codealmanac validate`, `codealmanac health`, and `git diff --check` also pass.
+  `flutter build windows --release` produces `ba_planner_v7.exe` successfully.
+- Next action: treat any future absolute `order_index` assertion without its `catalog_revision` as a
+  contract regression; no further `profile_slot` stability work is pending in this slice.
+
+### 2026-08-28 BA Planner canonical metadata boundary established
+
+- BA Planner now owns the version-1 student catalog at
+  `backend/data/metadata/v1/student_catalog.json`, with its JSON schema beside it. Core student
+  records, form overrides, server availability, favorite-item state, provider references and gift
+  affinity are distinct catalog sections. SchaleDB-specific IDs and imported tag fields are rejected
+  from the provider-neutral `students` section.
+- `core.student_meta` is now a compatibility lookup façade over the canonical catalog. Existing
+  planning, protocol and scanner callers retain the same `schaledb_id`, gift-tag, form and server
+  behavior while the generated `core/student_meta_data.py` declaration is no longer a runtime or
+  developer-tool write target.
+- `core.schaledb_provider` owns HTTP retrieval only. `core.schaledb_metadata_adapter` owns URL/slug
+  parsing, exceptional and multi-path identity mapping, raw DTO normalization and the explicit
+  three-field student allowlist. The standalone metadata tool orchestrates preview/apply and writes
+  the canonical catalog atomically.
+- The bootstrap snapshot contains 265 students and preserves the current generated declaration's
+  student, form, JP-only and favorite-item semantics. Nine new boundary tests plus the existing 19
+  student-catalog/developer-tool tests pass. The full 262-test backend run passes 261 tests and has one
+  unrelated existing inventory parity failure: `Item_Icon_SecretStone_ayane` profile slot is 115 while its fixture still
+  expects 113; the current uncommitted JP-only metadata baseline already produces that mismatch.
+- Next action: migrate gift item definitions and student-stat provider references only if their
+  independent bounded catalogs need a common provider provenance contract; do not fold either data
+  family into the canonical student record.
+
+### 2026-08-28 Studio numeric bank promoted to the production scanner
+
+- The 160 user-aligned masks are now packaged as one required recognition asset at
+  `templates/student_numeric_studio/position_digit_bank.json`. Its manifest contract marks the bank
+  production-enabled and avoids loading 160 separate files. Eight small Studio cell groups are generated
+  into the student region document for student level, weapon level, three equipment slots and the
+  one/two/three-digit relationship layouts.
+- `StudentBasicCropSet` creates these exact polygon cells during the original stable capture and still
+  does not retain the full frame. `StudentBasicRecognizer` now prioritizes the Studio bank for student
+  level, weapon level and relationship rank. `StudentEquipmentRecognizer` prioritizes the slot-specific
+  Studio bank for reviewed two-digit levels, while retaining the promoted compact bank for centered
+  one-digit levels and for older 1280 captures whose fill raster does not clear the new gate.
+- SHA-resolved production-path replay passes 10/10 reviewed student levels, 89/89 weapon levels,
+  307/307 two-digit equipment values and 24/24 relationship values (48/48 relationship digits).
+  The real S2 full-screen fixture selects the new Studio sources for level 12, weapon level 50 and
+  relationship rank 24. Existing old-generation 1280 Mika repeats remain 18/18 correct through the
+  explicit compact fallback rather than being forced through a mismatched raster generation.
+- The deterministic production sync entry point is
+  `backend/tools/sync_student_studio_numeric_bank.py`. It updates the compact bank, region geometry,
+  auxiliary asset manifest and root region integrity together.
+
+### 2026-08-28 one/two/three-digit relationship layouts complete
+
+- The user added authoritative `suggestion_text_1.json` and `suggestion_text_100.json` placements for
+  the remaining centered one-digit and three-digit relationship layouts. Their fill-alpha bounds define
+  17x26 cells at `x=103..120` for one digit and `x=86..103 / 103..120 / 120..137` for three digits,
+  all at `y=1133..1159`. The established two-digit cells remain `x=95..112 / 112..129`.
+- The Studio template builder now loads each relationship layout from its own reference document and
+  screenshot while retaining the common white fill-only digit-bank contract. It emits 160 templates:
+  the previous 120 plus 10 one-digit-position and 30 three-digit-position templates.
+- Full archive replay now evaluates every visually verified relationship record instead of excluding the
+  boundary layouts. Rank 6 passes 1/1 value and 1/1 digit; the two-digit set remains 22/22 values and
+  44/44 digits; rank 100 passes 1/1 value and 3/3 digits. Combined relationship evidence is 24/24 values
+  and 48/48 digits with no confusion. Only the unrelated one-digit equipment layout remains unsupported.
+- Layout-specific atlases are emitted beside the retained two-digit pages as
+  `relationship_rank_1digit_position1.png` and `relationship_rank_3digit_position1/2/3.png`.
+
+### 2026-08-28 updated relationship fill geometry and resolution normalization
+
+- The user updated the `suggestion_text.json` relationship layers and declared the rank-37 `3` and `7`
+  positions authoritative. Both now use 32 px Bold, black fill, zero stroke and zero shear at layer origins
+  `(93,1130)` and `(110,1130)`. Their rendered fill-alpha bounds are respectively
+  `(95,1133)-(112,1158)` and `(112,1134)-(129,1157)`.
+- The previous 16-pixel relationship cells clipped the rightmost fill column of both reference glyphs.
+  `suggestion.json` now uses adjacent 17-pixel cells `x=95..112` and `x=112..129` while retaining the
+  already sufficient `y=1133..1159`. A regression renders the authoritative layers and proves their alpha
+  bounds are contained without a right-edge cut.
+- The remaining apparent per-digit/raster mismatch was actually a comparison-scale bug. The 2560x1440
+  synthetic templates were 17x26, while 1280x720 screenshots yielded approximately 9x13 source cells.
+  The matcher compared them without normalizing size, causing every low-ink failure cluster. `_best_shift`
+  now resizes the binary template to the actual ROI dimensions with deterministic nearest-neighbor
+  topology preservation before applying the bounded +/-2 shift.
+- Nearest, box and Lanczos threshold probes all produced the same answer, but nearest was selected because
+  it adds no grayscale threshold contract. The final replay is 22/22 two-digit relationship values and
+  44/44 digits: 13/13 at 2560x1440 and 9/9 at 1280x720. Minimum IoU is 0.690141 and minimum runner-up
+  margin is 0.032998. Equipment remains 307/307 visual-ground-truth correct, student remains 122/122
+  legacy agreement and weapon remains 89/89 legacy agreement.
+- Both per-position relationship atlases were regenerated and contain no red mismatch cards. One-digit
+  and rank-100 layouts remain outside this two-digit gate, so this result clears the two-digit shadow
+  matcher but does not by itself claim complete relationship production coverage.
+
+### 2026-08-28 reviewed non-90 student-level archive correction
+
+- The earlier level atlas was incorrectly limited to the 122 equipment-manifest sources, all of which
+  happened to be level 90. A separate BA archive series was recovered from the v6 behavioral reference
+  and hash-frozen in v7: levels `1/12/23/34/45/56/67/78/89/90`, one 2560x1440 screenshot each.
+- The approved Studio position cells, pale color mask, tall-component cleanup and white synthetic bank
+  produce 10/10 correct values and 19/19 correct visible digits. Minimum digit IoU is 0.765432 and minimum
+  runner-up margin is 0.133296. Level 1 occupies the first position cell and the second cell is truly
+  blank, so the available one-digit layout is also handled without forcing a false zero.
+- Position 1 now has visual-ground-truth coverage for digits 1-9. Position 2 covers 0 and 2-9; position-2
+  digit 1 is the only missing real placement in this archive. The older reader failed to confirm level 89
+  because its whole-value margin was 0.015433, while the Studio synthetic matcher reads both 8 and 9
+  correctly with digit margins 0.151 and 0.167.
+- The student atlas was regenerated from this reviewed series instead of the level-90-only agreement set.
+  The prior 122/122 level-90 replay remains useful repeated agreement evidence. Within all available BA
+  data the student-level path has no observed wrong value, so numeric work now moves to the remaining
+  relationship-rank blocker. Student production promotion still records the absent position-2 digit-1
+  live sample rather than claiming exhaustive placement coverage.
+- Artifacts: `backend/tests/fixtures/student_level_studio_archive_source_spec.json`,
+  `debug/student_suggestion_rois/student_level_reviewed_benchmark.json`, and the corrected
+  `debug/student_suggestion_rois/digit_atlas/student_level_all_positions.png`.
+
+### 2026-08-28 relationship/student per-position digit atlas
+
+- A new archive atlas places each approved digit ROI, its field color mask, the expected synthetic
+  template and the matcher-selected template in that order. Relationship pages retain all 44 available
+  visually verified digit samples and group them by position and expected digit. Student-level pages
+  cover all 244 legacy-confirmed digit samples but collapse exact duplicate masks to two displayed
+  variants per position with occurrence counts.
+- Relationship coverage is position 1 digits `1/2/3/4/5/7` and position 2 digits
+  `0/1/2/3/4/6/7/8/9`; no claim is made for absent digit/position combinations. The strongest trend is
+  renderer alignment class rather than one global ROI displacement: all 26 samples whose best template
+  shift is `(2,2)` are correct, while shifts with vertical component `1` are only 3/15 correct. The
+  repeated failures are first-position `3->1` (3/6) and second-position `0->5` (2/5), with single
+  alternate-render failures for `1/2/3/7/8/9`.
+- Correct and incorrect captures of the same relationship digit visibly retain complete color-mask
+  glyphs. The failing cluster has a different one-pixel raster topology/baseline and IoU favors a thin
+  or partial wrong template (`3->1`, `0/2/3/8->5`) despite the expected glyph being recognizable. This
+  supports a second per-position raster/baseline variant or shape normalization test; it does not support
+  moving every approved ROI in one direction again.
+- The first student atlas pass was limited to level 90 because it consumed only equipment-manifest
+  sources. Its 244 digits selected the expected templates, but the later reviewed-series correction above
+  supersedes that atlas coverage statement and adds non-90 visual ground truth.
+- Artifacts: `debug/student_suggestion_rois/digit_atlas/relationship_rank_position1.png`,
+  `relationship_rank_position2.png`, `student_level_all_positions.png` and `digit_atlas_summary.json`.
+  The deterministic exporter is `backend/tools/export_student_numeric_digit_atlas.py`.
+
+### 2026-08-27 student/relationship color-mask post-processing replay
+
+- The user confirmed the Studio digit ROIs visually, so the archive was re-evaluated as a foreground
+  post-processing problem. A failing student-level 90 cell contained a 263-pixel glyph component that
+  touched one ROI edge and a separate two-pixel dot. The old component rank prioritized zero border
+  contact before area and therefore selected the dot. It was not evidence that the approved ROI missed 9.
+- Student cleanup now discards components shorter than 30% of cell height and keeps the largest remaining
+  component. The existing pale low-chroma mask then improves legacy-confirmed agreement from 59/122 to
+  122/122 values and from 181/244 to 244/244 digits. Minimum IoU rises from 0.01 to 0.80 and minimum
+  runner-up margin from 0.001228 to 0.144614. Moving the ROI 0, -1 or -2 reference pixels produced the
+  same 122/122, so the visually approved student coordinates remain unchanged.
+- Relationship extraction now keeps the largest tall component from a navy hue mask (`R < 150`,
+  `3 <= G-R <= 38`, `5 <= B-G <= 45`). A -2 reference-pixel horizontal shift performs best. Visual-
+  ground-truth accuracy improves only from 13/22 to 14/22 values and 29/44 to 32/44 digits. Fixed RGB
+  distance radii 24/36/48 around `(54,72,94)` are no better. Relationship remains shadow-blocked because
+  the remaining errors are template topology/alignment confusions, not background-noise selection.
+- Equipment remains 307/307 visual-ground-truth correct and weapon remains 89/89 legacy-confirmed
+  agreement after the post-processing change. Full variant evidence is stored in
+  `debug/student_suggestion_rois/suggestion_text_postprocess_benchmark.json`.
+
+### 2026-08-27 BA screenshot archive Studio-template replay
+
+- The root Studio geometry and 120 white position templates were replayed against all 290 image files
+  under `C:/Users/brigh/Pictures/Screenshots/BA`. SHA-256 provenance resolved 146 source files from the
+  reviewed equipment and relationship manifests, preventing same-name screenshots from being silently
+  substituted.
+- Two-digit equipment is 307/307 value-correct and 614/614 digit-correct against visual ground truth.
+  Minimum IoU is 0.689873 and minimum runner-up margin is 0.072581. Nine one-digit equipment records are
+  excluded because the current Studio suggestion defines no centered one-digit cell.
+- The initial relationship pass was only 13/22 value-correct and 29/44 digit-correct against visual
+  ground truth. Its first cleanup made some 41/47 cells appear as a dot, but the later color-mask replay
+  proved that component selection and template fit had to be separated before blaming approved ROI
+  geometry. One one-digit and one three-digit record remain unsupported.
+- The initial student pass agreed with the confirmed legacy reader for only 59/122 values, with all 63
+  digit differences reported as `9->1`. The later post-processing replay proved that the approved ROI did
+  contain the complete 9 and that a two-pixel dot was selected by the old cleanup rule. Weapon level
+  agreed on 89/89 confirmed two-digit legacy values. Student and weapon figures are agreement evidence,
+  not independent visual-ground-truth accuracy.
+- White canonical template color remains supported. This initial pass did not isolate color-mask cleanup
+  from template fit; the later replay supersedes its student diagnosis. Relationship remains blocked, and
+  separate one/two/three-digit layouts are still required for uncovered boundary values.
+- Frozen summary: `backend/tests/fixtures/student_studio_text_archive_summary.json`. Full rows and visual
+  audit are in `debug/student_suggestion_rois/suggestion_text_archive_benchmark.json` and
+  `suggestion_text_archive_comparison.png`.
+
+### 2026-08-27 Studio text-driven white template bank
+
+- Root `suggestion_text.json` supersedes the provisional Medium-font assumption for this calibration:
+  all 12 visible layers point to packaged GyeonggiTitle Bold. The reviewed sizes are weapon 37 px,
+  equipment 28 px, relationship 32 px and student 33 px. Weapon/equipment/student shear is -0.25 and
+  relationship shear is zero. Relationship declares a 2 px white stroke; weapon/equipment declare a
+  1 px black stroke; student declares no stroke.
+- v7 reproduces the v6 text rasterizer but fixes a template-export trap: the v6 ROI export replaces a
+  virtual layer's alpha with the whole polygon alpha, producing an opaque parallelogram instead of a
+  glyph. Source screenshot replay retains that legacy behavior, while template extraction explicitly
+  intersects text alpha with polygon alpha.
+- Source foreground is intentionally canonicalized to a white binary mask. For weapon/equipment/student
+  this means pale low-chroma fill; relationship dark digit ink is also remapped to white. Connected-
+  component cleanup keeps the central digit and removes border fragments from the preceding `.`/`Lv.`
+  and neighboring outline/equipment art before comparison.
+- Fill-only beats the declared stroke variant for weapon, all equipment positions and relationship;
+  student has no declared stroke, so both are identical. Actual-ROI IoU with a bounded +/-2 px integer
+  shift is weapon 0.797-0.835, equipment 0.690-0.791, relationship 0.765-0.804 and student 0.803-0.844.
+- A deterministic 120-mask white bank now covers 0-9 for all 12 user-defined positions under
+  `debug/student_suggestion_rois/templates/`; the 12 actually visible digits remain the independent
+  calibration rows. `suggestion_text_template_comparison.png` shows original ROI, cleaned foreground,
+  configured stroke, fill-only and selected template. The bank remains diagnostic and is not in the
+  recognition manifest until broader digits/layouts pass validation.
+
+### 2026-08-27 v6 Studio suggestion ROI replay
+
+- The user-created root `suggestion.json` targets an exact 2560x1440 reference and defines 12 enabled
+  cells: student level 2, relationship rank 2, unique-weapon level 2 and two cells for each of three
+  equipment slots. v7 now reads the stored four `points` directly instead of treating `width` as the
+  final crop width. In the v6 schema a width-18/slant-8 parallelogram has a 26-pixel bounding width.
+- `core/studio_roi_suggestion.py` reproduces the v6 export boundary without importing v6: reference-
+  relative point scaling, bounding crop and polygon alpha only. It performs no quad warp, inverse shear
+  or resampling, and regression checks compare every opaque output pixel to the source pixel.
+- `debug/student_suggestion_rois/suggestion_roi_comparison.png` and 12 individual PNGs replay the file.
+  Student 90, relationship 37 and weapon 50 separate into readable cells. Equipment 70/70/65 cells
+  separate the digits but retain lower-edge `Lv.`/equipment-art pixels inside the user polygons, so the
+  equipment suggestion is not yet number-only approved. The file also has no one-digit layout or
+  relationship `100` third-cell evidence; those remain later ROI gates.
+- This is diagnostic extraction only. Production region definitions and matchers remain unchanged
+  until the user approves or adjusts the Studio cells.
+
+### 2026-08-27 ROI-first parallelogram digit extraction
+
+- Numeric migration order changed from renderer/template fitting first to ROI approval first for
+  student level, unique-weapon level, relationship rank and equipment level. Recognition scores,
+  thresholds, font size and spacing are now downstream of a visual digit-cell gate.
+- `core/slanted_digit_roi.py` introduces a source-preserving splitter. It measures low-ink valleys on
+  the slanted `u` axis, then applies polygon masks between parallel boundaries in the original bitmap.
+  It does not inverse-shear, affine-transform or resample glyph pixels. Relationship shear zero is the
+  rectangular special case; current diagnostic candidates are student -0.20 and weapon/equipment
+  -0.25 pending visual approval.
+- The student diagnostic foreground rule was narrowed from a broad luminance mask to pale low-chroma
+  fill so the bright backing no longer dominates level-90 segmentation. Existing production readers
+  and template selection remain unchanged while the ROI gate is reviewed.
+- `debug/student_synthetic_digits/parallelogram_digit_roi_comparison.png` contains the original numeric
+  ROI, boundary overlay and each extracted digit for all available basic student/weapon screens, eight
+  independent relationship screens and representative equipment values 1/8/9/12/50/60/70. Automated
+  checks require non-empty expected cells, source foreground preservation and binary pixel identity;
+  human approval of stroke cuts, neighbor intrusion and background remains the next gate.
+
+### 2026-08-27 numeric ROI feedback and exhaustive whole-value benchmark
+
+- Student and weapon experimental recognition no longer needs to split the visual report into two
+  digit cells: a compact shadow bank now contains all complete values for student 1-90, weapon 1-60
+  and relationship 1-100. Each screenshot produces one full numeric mask and ranks it against compact
+  64x32 bitsets, so no per-frame inverse-shear or per-digit boundary reconstruction is required.
+- The 250-template packaged bank is 131,990 JSON bytes and 64,000 prepared bytes. Measured cold
+  load/prepare is 0.835 ms. Warm full-field p95 is 0.093 ms for 90 student candidates, 0.059 ms for
+  60 weapon candidates and 0.100 ms for 100 relationship candidates. Exhaustive comparison is thus
+  conclusively bounded and much cheaper than the earlier v6 full-screen RGB candidate generation.
+- Accuracy blocks promotion: student is 2/3 (`12 -> 17`, both 90 correct), weapon is 3/3 but covers
+  only 50/60, and independent relationship validation is 7/8 (`50 -> 97`). The bank is packaged as
+  shadow evidence only; no production result source or fallback order changed.
+- The relationship numeric feature now crops directly to the heart's central number box (70% of the
+  previous width and 32% of its height, about 22.4% of the prior ROI area) before navy-mask extraction.
+  This removes the upper/lower heart body and most side decoration while retaining all reviewed
+  1/2/3-digit bounds. Student and weapon whole-value diagnostics consume their full number masks and
+  no longer cut at the arithmetic midpoint; the established production digit readers remain unchanged.
+- `debug/student_synthetic_digits/whole_value_roi_comparison.png` shows numeric ROI, full extracted
+  mask, smooth font, expected whole-value mask and selected whole-value mask for every benchmark row.
+  The independent relationship sheet was regenerated with the narrowed number-only ROI. The focused
+  student-scan, candidate, recognition, synthetic and relationship suite passes 25 tests.
+
+### 2026-08-27 synthetic numeric complete-string correction and equipment Medium promotion
+
+- The numeric builder no longer writes a centered single-digit glyph into every declared layout and
+  position. It now rasterizes the complete one/two/three-digit string at the native field scale,
+  applies the reviewed shear, splits at actual low-ink valleys and only then canonicalizes each cell
+  to the 20x28 binary matcher representation. The renderer spec freezes this pipeline explicitly.
+- Visual reports now separate the smooth anti-aliased font render from the deliberately jagged binary
+  match mask. Each row shows actual ROI, extracted mask, smooth font, expected matcher mask and selected
+  matcher mask, so the font fit is no longer misrepresented by a nearest-neighbor debug enlargement.
+- Equipment level switched from the inherited v6 GyeonggiTitle Bold asset to the user-reviewed
+  GyeonggiTitle Medium asset. Medium size 30 restores all 18 outline/fill generated probes. Its rebuilt
+  19-mask production position bank replays 349/349 reviewed level pairs, including 30/30 exact
+  1280x720 pairs, with zero accepted wrong and zero fallback; minimum score is 0.598552 and minimum
+  margin is 0.043855.
+- The corrected student shadow bank uses the white fill topology selected by calibration. Rank 12 still
+  has raw `12 -> 11`, but now falls below the margin gate instead of being accepted. Both rank-90
+  samples are raw-correct but also remain fallback due to margin 0.029. Weapon 50/60 stays accepted-
+  correct. Relationship validation remains 7/8 raw, six accepted-correct, two fallback and zero
+  accepted-wrong; rank 50 still selects 54 only below the gate.
+- Updated contact sheets are under `debug/student_synthetic_digits/`: basic screen, independent
+  relationship validation and equipment Medium position-bank validation. The focused synthetic,
+  equipment and recognition-asset suite passes 24 tests. Student/relationship synthetic readers remain
+  shadow-only pending broader real ROI coverage; the equipment position bank remains production.
+- The full backend suite ran 233 tests: 232 pass. The only failure is the pre-existing unrelated gift
+  metadata assertion that `student_meta.schaledb_id("hoshino")` must be an integer; the current generated
+  catalog returns `None`.
+
+### 2026-08-27 synthetic student numeric D1-D3 shadow result
+
+- The user visually verified the common typeface and field transforms in the v6 Template Alignment
+  Studio. All three fields use GyeonggiTitle Medium. Student level fixes shear at `-0.2`, relationship
+  rank at `0`, and unique-weapon level follows the equipment transform at `-0.25` with a separately
+  fitted size. Font SHA-256 is
+  `DA6FC2E29F3FDC1F25A1F94E18549040ACEF06AC8D7D9DC373E0F6EABBCAE8DA`.
+- A deterministic builder now packages the font, a versioned renderer spec and 600 generated raster
+  masks: five nearby raster-size variants for each digit/layout/position equivalence class. The
+  selected provisional renderers are student level 35 px/1 px `#505878` combined mask, weapon level
+  25 px/1 px `#505878` white-fill mask, and relationship rank 35 px/1 px `#3A465D` combined mask.
+  The recognition manifest contains 602 new shadow assets including the font and spec.
+- Three reviewed basic screens produced student level 2/3 (`12 -> 11`, both 90 correct), weapon level
+  3/3 (50 and two 60s), and relationship rank 3/3 raw (24/41/74). The relationship atlas validation
+  partition produced 7/8 raw; score `0.45` plus margin `0.05` yields six accepted-correct, two fallback
+  and zero accepted-wrong. Across all 24 relationship atlas records, the same gate yields 12
+  accepted-correct, 12 fallback and zero accepted-wrong.
+- Promotion decision: no production reader changed. Student level fails because the confident 12->11
+  confusion cannot be thresholded away without losing correct 90 samples. Weapon level remains shadow
+  despite 3/3 because the available real values cover only 50/60. Relationship rank remains shadow
+  because rank 50 is read as 54 and the independent rank 18 has sub-gate margin. Current state is
+  student `shadow-blocked`, weapon `shadow-evidence-incomplete`, relationship `shadow-blocked`.
+- The 16 focused asset, synthetic-bank, S2 and S4 tests pass. The full backend run completed 232
+  tests with two failures: the scanner asset-count expectation was updated from 1169 to 1771 and its
+  focused rerun passes; the remaining unrelated pre-existing gift metadata failure is
+  `student_meta.schaledb_id("hoshino") is None`. `codealmanac validate` and `git diff --check` pass.
+  Generated hashes and the deliberate no-promotion benchmark are frozen in regressions. Next action
+  is refine actual ROI raster geometry for the student 2/1 confusion and relationship 50/54, then
+  rerun the same independent partitions before any D4 promotion.
+- Visual audit contact sheets are exported under `debug/student_synthetic_digits/`. The basic-screen
+  sheet places actual ROI, extracted mask, expected synthetic and selected synthetic side by side for
+  all three fields. The independent relationship sheet applies the same comparison to all eight held-
+  out 1280x720 records and labels gate fallback separately from a raw mismatch.
+
+### 2026-08-27 student/weapon/relationship synthetic digit migration specified
+
+- User direction now requires student level, unique-weapon level and relationship rank to converge
+  on deterministic synthetic digit templates. The shared boundary is synthetic text-layer rendering,
+  ROI geometry and canonical glyph preparation; each field retains its own verified font, color,
+  outline, shear and one/two/three-digit placement instead of reusing inventory coordinates or masks.
+- The active student-scan workflow now defines D0 baseline freeze, D1 renderer characterization,
+  D2 deterministic position-bank generation, D3 shadow comparison, D4 sequential field promotion
+  and D5 removal of legacy runtime banks. Actual screenshots are calibration/independent-validation
+  answers only and must not contribute pixels to production templates.
+- Promotion order is student level, weapon level, then relationship rank. Each field requires zero
+  accepted wrong answers, no loss on current real fixtures, independent position/digit confusion
+  coverage, exact 1280x720 boundary evidence, deterministic builder hashes and bounded startup/warm
+  cost. Missing real 8/9 or boundary evidence remains `MASTER_REQUIRED`; synthetic self-tests do not
+  count as live accuracy evidence.
+- Current state: student level `specified`, weapon level `specified`, relationship rank `specified`.
+  No runtime matcher or recognition asset changed in this decision-only update. Next action is D0:
+  freeze the three current readers' fixture values/scores/margins and create the versioned renderer
+  spec without deleting the existing banks.
+
+### 2026-08-26 companion dock maximized-window restoration and live SchaleDB verification
+
+- The disappearing 3:8 companion geometry was a native Windows ordering bug. The runner applied
+  the dock rectangle and then called `SW_RESTORE`; when Planner had been maximized, Windows restored
+  its previous normal rectangle over the requested dock rectangle. Docking now captures complete
+  `WINDOWPLACEMENT` state for both windows, restores them before applying dock geometry, and restores
+  the original placements on terminal, failure or cancellation. The companion width is the exact
+  rounded `game outer height * 3 / 8`, without an unrelated minimum-width override.
+- Actual-client verification started a full scan from a maximized 2560x1392 Planner. Blue Archive
+  was placed at `(647,347)` with outer size 1282x752 and the companion at `(1943,347)` with outer
+  size 271x752, leaving the intended 14 px seam. Cancellation restored Planner to `(0,0)` at
+  2560x1392. A Flutter workflow regression also fixes the order `dock -> start -> terminal -> restore`.
+- The current `https://schaledb.com/` deployment was inspected directly rather than relying on its
+  archived GitHub source. Its live Vite/Vue bundles contain the stat calculation client-side. The
+  deployed accumulator computes `round((base + Base) * Coefficient) + BaseOuter`; unique-weapon,
+  relationship, potential and equipment `Base` additions use the multiplier-eligible bucket, while
+  only explicit `BaseOuter` remains outside. Potential is
+  `round(interpolated unstarred level stat * potential level * 0.002)`, and basic-info assembly keeps
+  passive skill buffs separate. This independently confirms the calculation correction below.
+- Verification passes the focused dock/workflow tests, `flutter analyze`, the Windows Release build,
+  and actual-client dock/restore. The full Flutter run completed 392 tests before one process E2E
+  hit its 10-second `repository.profile.list` timeout under parallel load; that sole test passes when
+  rerun serially. `codealmanac validate` and `git diff --check` report no content errors.
+
+### 2026-08-26 in-game basic-stat parity correction
+
+- The two attached Mika basic-info captures are now frozen as calculation regressions. At Lv90,
+  UE4 Lv60 and T10 Lv70 equipment, regular Mika with bond 74 / alternate bond 41 / potential
+  25-25-25 resolves to HP 95,756, ATK 6,893, DEF 121 and HEAL 5,948. Swimsuit Mika with the
+  reversed bonds and potential 0-25-0 resolves to HP 61,848, ATK 8,637, DEF 93 and HEAL 5,820.
+- Root cause was the local stat accumulator treating every game-data `*_Base` value as a
+  non-multiplying separated flat. In the client/Schale calculation contract, equipment flat,
+  unique-weapon, potential and relationship additions enter the multiplier-eligible flat bucket;
+  equipment coefficients are applied after those values are summed. The corrected order reproduces
+  all eight visible values exactly without changing the established `/99` weapon interpolation or
+  the `0.2%` per-level potential formula.
+- Basic Info does not include passive-skill combat buffs. Candidate validation now explicitly uses
+  the basic-display calculation scope and excludes passive/weapon-passive skill effects, while the
+  general calculator retains its opt-in combat-buff path. Potential levels absent from the basic
+  candidate use the same student's already confirmed repository values instead of silently becoming
+  zero.
+- Both attached UE60 images previously missed weapon level 60 at score `0.574879` despite a strong
+  `0.079384` runner-up margin. The live-basic cutoff is now `0.57`; both frames confirm UE60 and infer
+  `weapon_equipped` with the four-star color result.
+- Full-scan revalidation no longer replaces its batch relationship map with an empty UI map. The
+  backend merges revalidation overrides into the captured batch context, and the result workspace
+  sends known alternate-outfit rows in both single and full modes.
+- Focused verification passes the exact Mika regressions, all stat-calculation and validation tests,
+  and the full-scan retained-context regression. The full backend run passes 228/229; its sole
+  failure is the pre-existing unrelated inventory parity row for `Item_Icon_SecretStone_ayane`
+  (current catalog 115 versus fixture 113). Flutter passes 392/392, `flutter analyze` and
+  `codealmanac validate` report no issues, and the Windows Release build completes successfully
+  with SHA-256 `F0822A12ED800EAC0A84B1CB6D1199D8FDD51F5D36B661D995DD5DD4D312B822`.
+
+### 2026-08-26 skill-level parity restored and relationship digits introduced
+
+- The skill-level regression was caused by the v7 port replacing v6's weighted matcher with one
+  dark-mask IoU comparison and increasing the runner-up margin gate from `0.04` to `0.05`. On the
+  fixed Serika (New Year) frame this made normal skill 2 uncertain (`0.7568`, margin `0.0362`) even
+  though the visible value is 1. The reader now restores the v6 behavior in pure Pillow: 15% full
+  skill-card/UI correlation plus 85% Otsu text correlation, with the original `0.70` score and
+  `0.04` margin gates. The same frame now confirms all four skills, while the existing 1280x720
+  Hibiki/Mika MAX regressions remain correct.
+- Relationship recognition previously compared the complete heart crop only against 16 assets for
+  15 already-seen ranks. An unseen rank therefore had no representable answer: the visible Serika
+  rank 24 was confidently forced to rank 34 (`0.6867`, margin `0.0392`). A narrower center ROI now
+  removes most heart border and blue background, keeps low-chroma navy number ink, splits at
+  low-ink valleys, and compares individual digits.
+- A reproducible builder derives 32 digit glyphs covering 0-9 from reviewed calibration partitions
+  only. Strong digit evidence (`score >= 0.65`, `margin >= 0.10`) takes precedence; otherwise the
+  established whole-rank reader remains the conservative fallback for the reviewed validation set.
+  This hybrid reads the formerly unseen rank 24 as 24 while preserving every existing rank
+  6/10/18/20/23/26/34/37/39/41/47/50/52/74/100 regression.
+- Focused verification passes 13 relationship, student-scan and recognition-asset tests. The full
+  backend suite passes 227/227, Flutter passes 392/392, `flutter analyze` and `codealmanac validate`
+  report no issues, and the synchronized Windows Release fingerprint is
+  `03F3ABFC000C71576256B1D590770DBF31A602A19E912171B9389715FD911AAC`. Exact rank 1/9 acquisition
+  and broader independent 8/9 digit samples remain open evidence gates; the hybrid deliberately
+  does not claim verified coverage for every rank from 1 through 100.
+
+### 2026-08-26 full-scan feedback transition order revised
+
+- Full student scanning now enforces `old card exit -> game student navigation -> next identity card
+  entrance -> recognized value updates`. Before every key/button navigation, the matcher publishes a
+  `__student_exit__` feedback sentinel and waits 320 ms, exceeding the dock's 260 ms exit animation.
+  After the next screen is identified, it publishes an identity-only feedback card and waits another
+  320 ms before basic/equipment recognition streams confirmed values.
+- ScanPage suppresses candidate fallback while waiting between students, so a completed candidate
+  cannot reappear after the exit sentinel. The dock still updates later fields for the same identity
+  in place without restarting its entrance animation.
+- Regression coverage freezes both sides of the boundary: the production adapter asserts exit
+  feedback precedes every navigation input, and the dock widget asserts exit completion, empty next
+  identity entrance, then in-place value application. Verification passes all 226 backend tests, all
+  392 Flutter tests serially, and `flutter analyze`; the one process test that raced during the
+  parallel Flutter run also passes alone. The synchronized Windows Release source fingerprint is
+  `30D9377D553605EAAC35EBB49B92C252C2F52B95BE23DFAA11042FBF43F8CA64`.
+
+### 2026-08-26 full-scan companion dock and live feedback implemented
+
+- Full student scans now temporarily turn the existing Planner window into a companion dock instead
+  of running the normal main UI over the game. The native Windows runner places it on the roomier
+  side of Blue Archive, preferring the right, with the same outer height and a 3:8 width-to-height
+  ratio. It moves the game and dock together inside the monitor work area without changing game size;
+  only an impossible combined fit uses the explicit 1280x720 game fallback. Both original window
+  rectangles are restored on completion, failure or cancellation before the main result review opens.
+- The dock keeps Blue Archive focused and the Planner topmost without activation. Its upper regular
+  section shows target, full-scan mode, phase/stage, recognized count, progress, message and cancel.
+  Only the lower live-student section is an 80-degree trapezoid. It mirrors the Student detail
+  information groups with portrait, level/star/bond, weapon, skills, equipment and combat stats.
+- Scanner protocol v1 adds a strictly validated `feedback` event. Confirmed identity/basic/skill/
+  equipment fields are streamed before the final candidate and merged per student by Flutter. A new
+  student waits for the old card's 0-degree exit to finish before entering from 180 degrees; updates
+  for the same student redraw in place.
+- Actual-client verification produced a 270x720 companion beside the 1280x720 Steam client. The
+  moved game accepted the equipment-menu click and returned recognized equipment fields, proving
+  that position-only `SetWindowPos` does not invalidate the adapter's client-ratio click coordinates.
+  The terminal event restored the original main window and displayed the result workspace.
+- That live run also reproduced a one-student completion when scanning began at the roster's right
+  edge. Full navigation now reverses to the left after the right key and right-button fallback both
+  leave the immediate student unchanged. It traverses already-seen students in reverse until it finds
+  unseen entries or reaches the opposite edge, while a normal wrapped identity cycle still completes.
+- Verification passes all 225 backend tests with external planning-asset overrides disabled, all 391
+  Flutter tests, `flutter analyze`, the focused native Debug Windows build, and actual-client docking.
+  The synchronized Windows Release is current at source fingerprint
+  `C256FA11D0EA2BB5CEF1E34AE578F478748719C2C937897A6B116A49FAAE7E68`.
+
+### 2026-08-26 actual-client background input verification
+
+- Actual-client capture and student recognition were verified while Blue Archive remained occluded
+  and `foreground=false`: the 1280x720 client frame consistently recognized
+  `kirino_swimsuit`. Background capture/OCR is therefore operational.
+- Background mouse input is not operational in the Steam Windows client. A `PostMessage` click on
+  the next-student button, a synchronous `SendMessage` click with mouse-move/down/up, and a bounded
+  twelve-step horizontal drag all left the recognized student unchanged while the window remained
+  `foreground=false`.
+- A correctly encoded right-arrow key message did move from `kirino_swimsuit` to `junko_new_year`,
+  but Blue Archive promoted itself to the foreground while consuming the key. The inverse left-arrow
+  restored `kirino_swimsuit`; PowerPoint was then restored as the foreground window and Blue Archive
+  was confirmed `foreground=false` again.
+- Conclusion: background scan capture and OCR are supported, but click and drag are not. Full-scan
+  navigation currently requires a temporary foreground transition through its right-arrow path.
+  `WindowsCaptureInputAdapter` has no production drag API, and adding a `PostMessage` drag would not
+  provide functional background input based on this live result.
+
+### 2026-08-25 full student scan navigation repaired
+
+- Actual-client full scanning could remain on the current student because v7 sent only a synthetic
+  `PostMessage` click to the right-side button. Windows reported message delivery even when Blue
+  Archive ignored the input, and the immediately repeated identity was then mistaken for a completed
+  roster cycle.
+- Full scanning now follows the proven v6 navigation order without importing v6 code: the Windows
+  adapter foregrounds the selected game window and sends a physical right-arrow key first, with a
+  correctly encoded Win32 key-message fallback when foreground input is unavailable.
+- The matcher distinguishes a normal previously-seen cycle from an unchanged immediately previous
+  student. An unchanged key navigation gets one right-button retry and a longer settle interval before
+  the scan may terminate. Capture cancellation remains honored during both waits.
+- Focused production-adapter coverage freezes key-first navigation, click-only compatibility and the
+  unchanged-key button retry. All 9 production-adapter and all 10 scanner-session tests pass. The
+  complete backend suite passes all 222 tests when the stale user-local metadata override is disabled;
+  the default environment still has only the previously documented unrelated gift-metadata failure.
+  Actual-client confirmation remains next. Windows Release synchronization was attempted but safely
+  stopped because BA Planner v7 is currently running; close the app before rebuilding the bundle.
+
+### 2026-08-25 S5 scan-result diagonal outfit list rebuild
+
+- The Scan result workspace now projects its student rows along the same fixed 80-degree,
+  viewport-relative diagonal used by the Plan Start middle lists. The list owns vertical scrolling
+  and top/bottom fog while the existing selected-candidate detail and red/green review actions remain
+  available.
+- A single-student scan inserts every owned alternate outfit as a real result-list row immediately
+  below the scanned outfit. Missing ranks are entered directly in those outfit rows; known ranks stay
+  visible there for confirmation. Revalidation still sends them through the separately typed
+  `relationship_ranks` map and never commits an alternate outfit as candidate state.
+- A full-student scan orders candidates by the catalog's stable character `group`, preserving first
+  character occurrence and original outfit order within each group. All outfits of one character are
+  therefore vertically adjacent before the next character begins.
+- Focused verification passes all 14 ScanPage widget tests plus the dedicated full-scan grouping
+  regression at 800x720, 1280x720, 1440x900 and 1920x1080. `flutter analyze` reports no issues and
+  all 389 Flutter tests pass serially. Actual-client visual review and a later Windows Release sync
+  remain open while the broader S5 result-section redesign continues.
+
+### 2026-08-25 single/full student relationship validation split implemented
+
+- The user replaced the temporary apply-first circular-dependency workaround with two explicit
+  student scan modes. `학생 1명` keeps the scanned student's rank in the candidate payload and asks
+  for every other owned outfit's missing rank in the Scan result workspace. Those entries are
+  validation-only context: they are range-checked at 1-100, sent separately from the candidate DTO,
+  and never become confirmed repository state through another outfit's commit.
+- `전체 학생` follows the v6 behavioral loop rewritten inside the v7 matcher boundary: scan the
+  current detail page, click the right-side next-student control, and stop when a previously seen
+  student identity returns. Candidates remain buffered while capture continues. Only after the loop
+  ends does the session collect all confirmed candidate `bond_rank` values by SchaleDB ID and run
+  stat validation over the whole candidate set before publishing the result workspace.
+- The old green `deferred` path is no longer emitted for missing owned-alternate ranks. A single scan
+  remains red `dependency_missing` until all required owned outfit ranks are provided and
+  revalidation succeeds. Full-scan candidates use the batch context automatically. The protocol now
+  carries `student_scan_mode` and an optional, separately typed `relationship_ranks` validation map.
+- Focused backend coverage proves single-input revalidation and full-batch aggregation. ScanPage
+  coverage proves the missing-rank result stays red, exposes the alternate-rank input, and turns
+  green only after a valid rank and revalidation. The production-adapter test also freezes the
+  v6-style next-student loop and seen-identity stop rule.
+- Final verification passes with all 220 backend tests when local external-asset overrides are
+  disabled, all 388 Flutter tests serially, and `flutter analyze`. The default backend environment
+  has one unrelated failure because the existing user-local
+  `%LOCALAPPDATA%\BA Planner\assets\current\core\student_meta.py` predates the generated
+  `schaledb_id` fields and overrides packaged metadata; the local file was preserved rather than
+  silently rewritten. This does not alter the scanner's versioned stat catalog or validation map.
+- The synchronized Windows Release is current at source fingerprint
+  `5B1B84732912A10BDDDFAF96028B69B17996255F662CE8A1B5D5F37262310D1D`.
+  Actual-client visual and interaction verification of both scan modes remains the next action.
+
+### 2026-08-24 owned-alternate circular dependency removed
+
+> Superseded on 2026-08-25 by the explicit single/full workflow above. The historical `deferred`
+> implementation record is retained for traceability but is no longer the active behavior.
+
+- The user correctly identified a deadlock: if two owned outfits both have an unconfirmed
+  relationship rank, each candidate previously returned `dependency_missing`, so neither candidate
+  could become green or be committed to satisfy the other.
+- Validation now emits protocol status `deferred` only when a profile is selected, every remaining
+  calculation dependency is an `alternate_relationship`, and each referenced alternate already
+  exists as an owned repository student. `deferred` is non-blocking and renders as a green result
+  labeled `다른 의상 랭크 적용 대기`, allowing the current rank to be applied first. Scanning and
+  applying the other owned outfits then resolves the calculation dependency without bypassing OCR,
+  field, passive-skill, ownership-context, suspicious-stat or repository errors.
+- Missing profile/ownership context remains blocking `dependency_missing`. Dedicated backend tests
+  cover both branches and prove a deferred candidate can commit; ScanPage coverage proves it renders
+  green with `적용`. Full verification passes with all 217 backend tests, all 388 Flutter tests and
+  Flutter analysis. The synchronized Release source fingerprint is
+  `4BEC4530FE30EBE37A793BD6CAC676AF5C6E9DDCD815560245558CBAD0A5E9F3`.
+
+### 2026-08-24 first review follow-up: result scrolling and live Hibiki rank-50 regression
+
+- The attached Planner screenshot proves that revalidation ran through revision 3 but retained a
+  red `partial` result. Revalidation is not another screen capture/OCR pass: it validates the values
+  entered or confirmed through `수정`, then reruns stat/dependency validation. Clicking it without
+  correcting the wrong or missing field is therefore not expected to turn the candidate green.
+- The attached game frame is Hibiki at relationship rank 50, while the Planner candidate contains
+  rank 10. Direct production replay reproduced the defect at score `0.351579` and margin `0.018823`.
+  The 1280x720 source is frozen as `hibiki_rank50_1280x720_20260824.png`, SHA-256
+  `6514A61096C93A6D0B9B13B1390E5A8EB53AECE16B8E71C2CBF2CB12619948A1`.
+- Hibiki's live rendering variant is now a sixteenth rank template. The relationship gate raises
+  the absolute score floor from 0.33 to 0.38 and lowers the close-variant margin floor from 0.008
+  to 0.005. This rejects the prior low-score wrong acceptance while preserving the reviewed rank-37
+  variant. Hibiki now replays as rank 50 with confidence 1.0 and margin `0.648421`; all eight
+  independent validation records still match.
+- The wide Scan result frame previously fixed its height to 590px while rendering an unscrollable
+  `Column`, causing lower fields and evidence to be clipped. It now owns an independent vertical
+  `SingleChildScrollView` with a visible scrollbar. Long-result viewport coverage asserts that its
+  scroll position moves at 1280x720, 1440x900 and 1920x1080. The 13-test ScanPage suite and Flutter
+  analysis pass. Full verification passes with all 215 backend tests and all 387 Flutter tests.
+- A fresh Windows build initially waited while the user was running the old Release. After the app
+  closed, the synchronized `release/` bundle was replaced normally without terminating the process.
+
+### 2026-08-24 first actual-client S5 visual review findings
+
+- The user confirmed that the red problem-state border is visible. Fine visual-detail judgment is
+  explicitly deferred because the UI will be redesigned later.
+- The user could not locate `재검증`. Inspection found the problem actions below the comparison and
+  expandable evidence content. The action row has been moved directly below the candidate status
+  header, before the comparison table; a widget assertion now freezes that ordering. The focused
+  13-test ScanPage suite and `flutter analyze` pass after the change. The synchronized release
+  source fingerprint is `6BBF97A87EC261D3D2BE0BA161287054053707C36B8481FFC5DCA9A6A2CC7009`.
+- Actual-client relationship-rank recognition quality was reported as unsatisfactory. S4 is no
+  longer eligible for final acceptance based only on the existing fixture snapshot. Before tuning
+  ROI, segmentation or thresholds, collect each observed wrong/uncertain value together with its
+  true rank and original-resolution source frame. UI styling is not part of this recognition audit.
+
+### 2026-08-24 S5 automated implementation and release complete; user visual review pending
+
+- The remaining S5 automated flow is complete. The real Dart `ProcessAppService` to Python process
+  E2E covers edit, candidate revision increment, validator revalidation, approval, stale-candidate
+  rejection, repository-revision conflict recovery, latest-revision commit, process restart and a
+  second successful scan cycle.
+- Scanner repository failures are now serialized as structured protocol errors, including
+  `revision_conflict`, and the Dart success-payload validator accepts the candidate returned by
+  `scanner.candidate.revalidate`. This closes the two protocol-boundary defects exposed by the real
+  process test.
+- The Scan review workspace is covered at 800x720, 1280x720, 1440x900 and 1920x1080. Each viewport
+  reaches a rendered green candidate and its `적용` action without a Flutter rendering exception.
+- Verification: all 214 backend tests passed; all 387 Flutter tests passed with
+  `--concurrency=1`; `flutter analyze` reported no issues; the scanner real-process E2E passed; and
+  the Windows release build and synchronized release bundle completed. The default parallel
+  Flutter run can exceed the existing 10-second startup limits when several Python-process E2Es
+  launch together, while all nine process-test files pass individually and the full serial run
+  passes.
+- The synchronized `release/ba_planner_v7.exe` is 80,384 bytes with SHA-256
+  `9DD3C7080D8938E23F49EB11F047F075D2C918B0B660BEE3A28AD25659EC5B07`; its source fingerprint is
+  `41A71195137439C3EB3BD7410247E6FFDD50497520AA9E036FA2224519BC9435`.
+- Status: implementation and automated verification are complete. S5 and the provisional S4
+  snapshot remain pending only on the requested user visual/real-client review of red -> green ->
+  apply, relationship-rank contributions for owned alternate outfits, passive-derived stat
+  calculation, and narrow/normal/maximized layout.
+
+### 2026-08-23 S4 provisionally accepted; passive and alternate evidence integrated into S5
+
+- The user provisionally accepted the final S4 snapshot. Exact rank-1 and rank-9 source acquisition
+  is no longer a blocker: the independently replayed one-digit rank-6 frame is accepted as sufficient
+  evidence to assume the established one-digit path works until a real-client S5 run can challenge it.
+  The final acceptance remains explicitly operational rather than purely fixture-based and will be
+  confirmed by running S5 against the actual game client.
+- Primary-stat calculation now includes the scanned `skill2` passive level. SchaleDB `Passive`
+  self-buffs are applied at the scanned level, and the additive `WeaponPassive` primary-stat effect
+  is applied when the unique weapon is at least 2-star. A missing unlocked passive level is an
+  explicit dependency instead of silently calculating without it.
+- Relationship contributions are no longer collapsed into an opaque total. Current and alternate
+  outfits have separate contribution keys, and validation evidence records local student ID,
+  SchaleDB ID, ownership, confirmed rank, applied state and exact flat/coefficient/base modifier.
+  The Scan workspace renders those rows, portraits, ranks and modifiers under expandable evidence.
+- Automated coverage freezes Hoshino / Hoshino (Swimsuit) / Hoshino (Armed) ranks 29 / 37 / 24 and
+  asserts that every owned form is applied. It also covers missing passive input, Hoshino passive
+  coefficients, unique-weapon passive base addition, and the Scan UI evidence cards.
+- Focused verification currently passes: 14 backend stat/validator tests, all 12 ScanPage widget
+  tests, Dart static analysis with no issues, Python compilation of the changed modules, and
+  `codealmanac validate`. The real Python-process fixture and test now encode edit, revision
+  increment, validator revalidation, approval, stale-candidate rejection, repository-conflict
+  rejection and successful commit across backend restart. Its final rerun is still pending because
+  the Flutter SDK cache access escalation was rejected after the tool usage limit was reached.
+  Full-suite/release execution therefore remains open, followed by actual-client visual validation
+  and UI polish.
+- Artifacts: `backend/core/student_stats_types.py`, `backend/core/student_stats.py`,
+  `backend/core/student_candidate_validation.py`, generated
+  `backend/data/student_stats/v1/catalog.json`, `frontend/lib/ui/widgets/scan_student_review_workspace.dart`,
+  and their focused backend/Flutter tests.
+
+### 2026-08-23 S4 rank-100 boundary verified and remaining workflow consolidated
+
+- The newly supplied `KakaoTalk_20260823_192529629.jpg` is an original 2560x1440 student-basic
+  screen that visibly shows Hoshino (Swimsuit) at relationship rank 100. Its frozen SHA-256 is
+  `cca886e674b625288130d58af5358c0ac1ada69feef4aea98522efeb7b7c27e7`; the established ratio
+  ROI produces a 59x86 crop.
+- Before adding a rank-100 template, production recognition returned an uncertain rank-74 proposal
+  at confidence `0.252585` and margin `0.014274`. After exporting the reviewed crop as the fifteenth
+  compact relationship-rank template, the same full source returns rank 100 with `ok`, confidence
+  `1.0` and margin `0.747415`. Existing independent validation rows remain separate and continue to
+  protect the known 1280x720 ranks. This sole rank-100 source is explicitly calibration evidence,
+  not an independent repeat set.
+- The S4 fixture now lists rank 100 under verified ranks and reduces the acquisition gates to ranks
+  1 and 9. Recognition readiness now owns 1,132 assets. The earlier downloaded WEBP remains only a
+  layout reference and is superseded as rank-100 acquisition evidence by this original frame.
+- Verification: the direct full-source replay passed; the 9-test relationship/readiness/stdio
+  impact set passed; the 16-test Flutter scanner process/protocol/UI impact set passed; and all 211
+  backend tests passed in the project virtual environment.
+- Remaining execution order is now fixed: (1) acquire and freeze original rank-1 and rank-9 samples,
+  (2) verify or explicitly accept the current passive-skill exclusion and then approve the final S4
+  snapshot, (3) finish the S5 dependency-portrait/status and real-process E2E/viewport coverage,
+  and (4) run Windows release plus real-game visual review and package the required handoff
+  screenshot/test/release artifacts. S5 UI stage 1 remains complete while these final gates stay open.
+- Artifacts: `backend/tests/fixtures/student_relationship_s4_source_spec.json`,
+  `backend/tests/fixtures/student_relationship_s4/`,
+  `backend/assets/recognition/v1/templates/student_relationship_rank/100/`,
+  `backend/assets/recognition/v1/student_basic_manifest.json`,
+  `backend/tools/export_student_relationship_s4.py`, and the S4 recognition tests.
+
+### 2026-08-23 S5 UI stage 1 implementation complete
+
+- Status: the approved ScanPage-owned student review workspace is implemented and automated
+  verification is complete. Real-game visual review and the later S5 completion slices remain
+  pending; this entry does not close the outstanding S4 rank 1/9 or passive-skill gates.
+- Student scan candidates now remain in the Scan tab and use the established diagonal
+  list-to-selected-detail composition. Wide layouts use a split workspace and compact layouts
+  stack the result list above the detail. The detail shows the portrait, current/scanned/
+  calculated/delta values and expandable field evidence.
+- Blocking evidence and local validation errors render a red status frame with `수정`, `재검증`
+  and `보류`. Revalidation can promote explicitly confirmed fields to verified evidence; a generic
+  hold does not clear review requirements. A green result alone exposes `적용`, which approves the
+  exact candidate revision when needed and commits it against the selected profile revision.
+- `후보 폐기` is a secondary overflow action with confirmation and never changes confirmed current
+  state. Apply/review/commit failures retain the candidate and expose a recoverable red notice.
+  Legacy Student-tab handoff is no longer the normal owner of student candidate review.
+- Verification: `flutter analyze` passed; all 386 Flutter tests passed; all 210 backend tests passed
+  in the project virtual environment. Coverage includes red-to-green revalidation, green apply,
+  confirmed discard, repository-conflict red recovery, Scan-tab hold ownership, P6 hold/approval
+  compatibility and the distinction between generic hold and explicit Scan-workspace revalidation.
+- Artifacts: `frontend/lib/ui/widgets/scan_student_review_workspace.dart`,
+  `frontend/lib/ui/pages/scan_page.dart`, `frontend/lib/services/mock_app_service.dart`,
+  `frontend/test/scan_page_test.dart`, `frontend/test/home_app_shell_test.dart`,
+  `backend/core/scanner_session.py`, and `backend/tests/test_scanner_session.py`.
+
+### 2026-08-23 S5 UI stage 1 approved for implementation
+
+- The user explicitly approved the consolidated S5 UI flow, including the secondary overflow
+  `후보 폐기` action with confirmation, and authorized implementation of UI stage 1.
+- Stage 1 is bounded to the ScanPage-owned student result list/detail workspace, green/red result
+  borders, established Student/Planning diagonal composition reuse, and the approved red/green
+  action states. This approval does not convert the outstanding S4 rank 1/9/100 and passive-skill
+  evidence gates into verified results, and it does not authorize unrelated S5 or other-tab redesign.
+
+### 2026-08-23 S5 UI-flow approval gate fixed
+
+- The user expects S5 to include UI work. Before any S5 implementation or file modification begins,
+  Codex must present the proposed end-to-end UI flow and obtain explicit user confirmation.
+- The confirmation scope must include the entry point, screen/state sequence, candidate review and
+  approval behavior, dependency-missing and suspicious handling, retry/revalidation path, commit
+  feedback, error/cancel recovery and observable acceptance criteria. S5 remains untouched until
+  that UI-flow approval is recorded.
+
+### 2026-08-23 S5 review workspace ownership and visual state decided
+
+- By user decision, student scan results and their full review workspace remain in `ScanPage`.
+  Student candidates must not require a handoff to `StudentPage` merely to view, compare, edit,
+  revalidate, approve, hold, reject or commit the scan result.
+- A result with no blocking issue uses a green outer border. A result with a problem uses a red
+  outer border. The border is the primary at-a-glance result state; textual status and accessible
+  semantics must remain available and color must not be the only machine-readable distinction.
+- S5 should actively reuse the established Planning and Student tab UI composition and structure,
+  especially diagonal list rows, selected-row/detail-panel hierarchy, existing section geometry,
+  responsive behavior and motion primitives. It must not invent an unrelated card language for
+  the scanner review workspace.
+- This decision supersedes the earlier proposal to route `Review in Students` as the normal student
+  candidate flow. Any Student tab navigation retained in S5 is optional contextual navigation, not
+  the owner of review or commit.
+
+### 2026-08-23 S5 result-state actions decided
+
+- By user decision, a red/problem result emphasizes exactly three primary actions in the scanner
+  review workspace: `수정`, `재검증`, and `보류`. It does not expose an apply/commit action while
+  any blocking problem remains.
+- When edits or dependency resolution move the same result into the green/no-problem state, the UI
+  exposes `적용`. `적용` is the single explicit user action that performs any required candidate
+  approval and then commits that exact candidate revision to the selected profile repository.
+- This replaces the proposed always-visible separate `승인` and `Commit` controls. It also fixes
+  `dependency_missing`, `partial`, `suspicious`, uncertain/failed recognition evidence, stale
+  validation and unresolved errors as red states that cannot be applied until revalidation clears
+  them. Apply failure or repository conflict returns the result to a red recoverable state without
+  discarding the edited candidate or changing confirmed current values.
+
+### 2026-08-23 S4 implementation opened with unavailable 1/9/100 gates
+
+- By explicit user decision, ranks 1, 9 and a production-grade rank 100 remain `NOT_VERIFIED`
+  acquisition gates and do not block implementation of the remaining S4 slice. The downloaded
+  rank-100 WEBP is still layout-only evidence. Final S4 acceptance remains open until those gates
+  and passive-skill inclusion are resolved.
+- A v7-owned ratio ROI (`0.033,0.765` to `0.056,0.825`) now captures the relationship-rank heart.
+  Fourteen compact whole-rank glyph assets were generated from reviewed 2560x1440 calibration
+  captures; full screenshots remain outside the repository. An independent 1280x720 partition
+  confirms ranks 50/47/41/39/37/34/23/18, and the separate 2560x1440 single-digit reference
+  confirms rank 6. A pink-heart presence guard prevents blank/dark frames from becoming ranks.
+- Runtime student recognition now emits canonical `bond_rank`. Evidence generation validates
+  rank/star semantics, derives linked alternate ranks from the selected profile, calculates the
+  four primary stats without mutating the candidate, and records structured `expected`,
+  `observed`, `delta`, `dependencies` and `suggestion` details with `verified`, `partial`,
+  `dependency_missing` or `suspicious` status. Passive-skill inclusion is explicitly labeled
+  `passive_skill_excluded_not_verified` rather than guessed.
+- Hoshino ground truth 29/37/24 is frozen in tests. With Armed Hoshino's known rank deliberately
+  withheld, Hoshino (Swimsuit) produces `dependency_missing` for SchaleDB alternate 10098; after
+  supplying rank 24, the same validation no longer has relationship dependencies. Rank above the
+  star semantic cap produces `suspicious` and leaves the candidate payload byte-for-byte unchanged.
+- Scanner protocol v1 additively accepts optional `profile_id` at session start and adds
+  `scanner.candidate.revalidate`. Session review and second-pass revalidation replace only the
+  calculated evidence, increment candidate revision and clear prior approval. Dart decodes the
+  structured evidence map, forwards the selected profile and exposes the revalidation call; mock
+  and process implementations are aligned.
+- Verification: the 30-test S4 impact set passes, Flutter analyze reports no issues, and Flutter
+  test passes 384/384. The full backend run reached 203 passing tests with five failures; four were
+  S4 expectation changes and now pass in the impact rerun. The remaining failure is the pre-existing
+  generated `student_meta` reload/cache issue (`student_meta.schaledb_id("hoshino")` becomes `None`
+  after developer-tool mutation tests), outside S4. `codealmanac` still cannot execute on this host
+  because it fails to canonicalize its script path.
+
+### 2026-08-23 Hoshino alternate relationship ground truth fixed
+
+- The user confirmed the same account's linked Hoshino relationship ranks as regular Hoshino 29,
+  Hoshino (Swimsuit) 37 and Hoshino (Armed) 24.
+- This three-form set is the S4 complete ground truth. The dependency-missing fixture will omit one
+  known alternate rank during the first pass, preserve the candidate without declaring a mismatch,
+  then restore the omitted value during the second pass and run the exact four-stat comparison.
+
+### 2026-08-23 Hoshino alternate ownership clarified
+
+- The user owns all three linked Hoshino forms: regular Hoshino, Hoshino (Swimsuit) and Hoshino
+  (Armed), and can inspect every relationship rank. Hoshino (Swimsuit) rank 37 is therefore not a
+  naturally unknown dependency by itself.
+- S4 should acquire the actual ranks for the regular and Armed forms as ground truth, then create
+  the `dependency_missing` fixture by deliberately withholding one known alternate rank from the
+  first-pass input. Supplying it in the second pass must move the same candidate from
+  `dependency_missing` to the exact calculated comparison state. This avoids treating an unknown
+  real answer as validation truth.
+
+### 2026-08-23 S4 boundary-rank and alternate-dependency samples expanded
+
+- Nine additional read-only PNGs were added to `S4_FAVOR_RANK`. Otogi rank 10, clean Chiaki rank
+  18, Kasumi rank 18 and Shigure rank 20 each have a 1280x720/2560x1440 pair. Hoshino (Swimsuit)
+  rank 37 has one 2560x1440 frame. The clean rank-18 pairs replace the earlier Discord-overlay
+  frames as usable digit-8 evidence.
+- The user confirmed that Mika and Mika (Swimsuit) are the same account's actual relationship ranks
+  74 and 41. This is accepted as the S4 alternate-outfit dependency-complete ground truth pair.
+- Hoshino (Swimsuit) rank 37 is the proposed dependency-missing fixture. The static v1 catalog links
+  it to both `hoshino` and `hoshino_battle_tank`; the owned/unowned status and which owned rank is
+  unknown still require one explicit ground-truth clarification before this fixture can be labeled
+  `dependency_missing` rather than `NOT_VERIFIED`.
+- The exact S4 boundary set now has production-origin rank 10/20/50 captures, rank 6 single-digit
+  placement and broad two-digit glyph coverage at both resolutions. Exact rank 1 and 9 captures and
+  an original production-grade rank-100 capture remain acquisition gates; the downloaded rank-100
+  WEBP remains layout/maximum reference only.
+
+### 2026-08-23 S3B master snapshot accepted and S4 acquisition opened
+
+- By explicit user decision, the most recent S3B result is accepted as the master snapshot. The
+  sequential prerequisite for S4 is therefore satisfied; S5 remains untouched.
+- The read-only `C:\Users\brigh\Pictures\Screenshots\BA\S4_FAVOR_RANK` source currently contains
+  25 PNGs. Twenty-four form 1280x720/2560x1440 pairs for relationship ranks
+  74/52/50/47/41/39/37/35/34/26/23/18. The remaining 2560x1440 image is a cafe screen rather than
+  a student relationship-rank fixture and is excluded.
+- `C:\Users\brigh\Pictures\Screenshots\BA\스크린샷 2026-06-24 215236.png` is accepted as the
+  temporary 2560x1440 single-digit layout reference for rank 6. The downloaded 1280x720 WEBP with
+  SHA-256 `E1D56CEAE6BCAED8422CCF6706EE4FC6B57B8E426F16B8EEC771EB310EF5CE03` is accepted only as
+  a temporary rank-100 maximum/layout reference, not as a production promotion fixture.
+- The paired samples cover every decimal glyph 0-9 across two- and three-character observations,
+  and rank 6 adds an actual one-digit placement. Exact rank 1/9/10/20 fixtures, an original
+  production-grade rank-100 capture, alternate-outfit dependency missing/complete ground truth,
+  and the calculator input manifest remain acquisition gates. S4 ROI/glyph characterization may
+  begin without guessing these missing answers, but S4 acceptance cannot claim them verified.
+- Privacy screening excludes the cafe image that visibly contains an account/friend name and both
+  rank-18 `024440`/`024442` frames with a Discord notification overlay. Source images remain outside runtime
+  assets; fixture material must retain provenance/SHA-256 while removing account-identifying UI.
+
 ### 2026-08-23 S3B actual tier-ROI bank production-selected
 
 - Status: two additional exact 1280x720 sequences provide Airi (Band) T1-T10 for

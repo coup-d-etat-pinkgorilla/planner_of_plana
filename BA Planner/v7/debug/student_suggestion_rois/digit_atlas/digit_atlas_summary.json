@@ -1,0 +1,451 @@
+{
+  "schema_version": 1,
+  "fields": {
+    "relationship_rank": {
+      "layouts": {
+        "1": {
+          "1": {
+            "6": {
+              "samples": 1,
+              "displayed_variants": 1,
+              "correct": 1,
+              "observed": {
+                "6": 1
+              },
+              "best_shifts": {
+                "(0, 0)": 1
+              }
+            }
+          }
+        },
+        "2": {
+          "1": {
+            "1": {
+              "samples": 3,
+              "displayed_variants": 3,
+              "correct": 3,
+              "observed": {
+                "1": 3
+              },
+              "best_shifts": {
+                "(0, 0)": 3
+              }
+            },
+            "2": {
+              "samples": 4,
+              "displayed_variants": 4,
+              "correct": 4,
+              "observed": {
+                "2": 4
+              },
+              "best_shifts": {
+                "(0, 0)": 4
+              }
+            },
+            "3": {
+              "samples": 6,
+              "displayed_variants": 6,
+              "correct": 6,
+              "observed": {
+                "3": 6
+              },
+              "best_shifts": {
+                "(0, 0)": 5,
+                "(1, 0)": 1
+              }
+            },
+            "4": {
+              "samples": 4,
+              "displayed_variants": 4,
+              "correct": 4,
+              "observed": {
+                "4": 4
+              },
+              "best_shifts": {
+                "(0, 0)": 4
+              }
+            },
+            "5": {
+              "samples": 4,
+              "displayed_variants": 4,
+              "correct": 4,
+              "observed": {
+                "5": 4
+              },
+              "best_shifts": {
+                "(0, 0)": 4
+              }
+            },
+            "7": {
+              "samples": 1,
+              "displayed_variants": 1,
+              "correct": 1,
+              "observed": {
+                "7": 1
+              },
+              "best_shifts": {
+                "(0, 0)": 1
+              }
+            }
+          },
+          "2": {
+            "0": {
+              "samples": 5,
+              "displayed_variants": 5,
+              "correct": 5,
+              "observed": {
+                "0": 5
+              },
+              "best_shifts": {
+                "(0, 0)": 5
+              }
+            },
+            "1": {
+              "samples": 2,
+              "displayed_variants": 2,
+              "correct": 2,
+              "observed": {
+                "1": 2
+              },
+              "best_shifts": {
+                "(-1, 0)": 2
+              }
+            },
+            "2": {
+              "samples": 1,
+              "displayed_variants": 1,
+              "correct": 1,
+              "observed": {
+                "2": 1
+              },
+              "best_shifts": {
+                "(0, 0)": 1
+              }
+            },
+            "3": {
+              "samples": 2,
+              "displayed_variants": 2,
+              "correct": 2,
+              "observed": {
+                "3": 2
+              },
+              "best_shifts": {
+                "(0, 0)": 2
+              }
+            },
+            "4": {
+              "samples": 3,
+              "displayed_variants": 3,
+              "correct": 3,
+              "observed": {
+                "4": 3
+              },
+              "best_shifts": {
+                "(-1, 0)": 3
+              }
+            },
+            "6": {
+              "samples": 1,
+              "displayed_variants": 1,
+              "correct": 1,
+              "observed": {
+                "6": 1
+              },
+              "best_shifts": {
+                "(-1, 0)": 1
+              }
+            },
+            "7": {
+              "samples": 4,
+              "displayed_variants": 4,
+              "correct": 4,
+              "observed": {
+                "7": 4
+              },
+              "best_shifts": {
+                "(0, 0)": 4
+              }
+            },
+            "8": {
+              "samples": 2,
+              "displayed_variants": 2,
+              "correct": 2,
+              "observed": {
+                "8": 2
+              },
+              "best_shifts": {
+                "(0, 0)": 2
+              }
+            },
+            "9": {
+              "samples": 2,
+              "displayed_variants": 2,
+              "correct": 2,
+              "observed": {
+                "9": 2
+              },
+              "best_shifts": {
+                "(0, 0)": 1,
+                "(-1, 0)": 1
+              }
+            }
+          }
+        },
+        "3": {
+          "1": {
+            "1": {
+              "samples": 1,
+              "displayed_variants": 1,
+              "correct": 1,
+              "observed": {
+                "1": 1
+              },
+              "best_shifts": {
+                "(0, 0)": 1
+              }
+            }
+          },
+          "2": {
+            "0": {
+              "samples": 1,
+              "displayed_variants": 1,
+              "correct": 1,
+              "observed": {
+                "0": 1
+              },
+              "best_shifts": {
+                "(0, 0)": 1
+              }
+            }
+          },
+          "3": {
+            "0": {
+              "samples": 1,
+              "displayed_variants": 1,
+              "correct": 1,
+              "observed": {
+                "0": 1
+              },
+              "best_shifts": {
+                "(-1, 0)": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "student_level": {
+      "1": {
+        "1": {
+          "samples": 2,
+          "displayed_variants": 1,
+          "correct": 2,
+          "observed": {
+            "1": 2
+          },
+          "best_shifts": {
+            "(-1, 1)": 2
+          }
+        },
+        "2": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "2": 1
+          },
+          "best_shifts": {
+            "(-1, 1)": 1
+          }
+        },
+        "3": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "3": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "4": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "4": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "5": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "5": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "6": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "6": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "7": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "7": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "8": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "8": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "9": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "9": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        }
+      },
+      "2": {
+        "0": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "0": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "2": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "2": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "3": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "3": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "4": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "4": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "5": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "5": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "6": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "6": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "7": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "7": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "8": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "8": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        },
+        "9": {
+          "samples": 1,
+          "displayed_variants": 1,
+          "correct": 1,
+          "observed": {
+            "9": 1
+          },
+          "best_shifts": {
+            "(0, 0)": 1
+          }
+        }
+      }
+    }
+  },
+  "images": [
+    "debug/student_suggestion_rois/digit_atlas/relationship_rank_1digit_position1.png",
+    "debug/student_suggestion_rois/digit_atlas/relationship_rank_position1.png",
+    "debug/student_suggestion_rois/digit_atlas/relationship_rank_position2.png",
+    "debug/student_suggestion_rois/digit_atlas/relationship_rank_3digit_position1.png",
+    "debug/student_suggestion_rois/digit_atlas/relationship_rank_3digit_position2.png",
+    "debug/student_suggestion_rois/digit_atlas/relationship_rank_3digit_position3.png",
+    "debug/student_suggestion_rois/digit_atlas/student_level_all_positions.png"
+  ]
+}

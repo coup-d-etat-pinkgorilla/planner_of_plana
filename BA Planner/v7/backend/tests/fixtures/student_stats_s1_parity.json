@@ -36,6 +36,6 @@
     "unowned_alternate_ids": [10031, 10089],
     "favorite_gear_tier": 0,
     "potential": {"max_hp": 25, "attack": 25, "heal": 25},
-    "expected": {"MaxHP": 44669, "AttackPower": 9037, "DefensePower": 109, "HealPower": 5891}
+    "expected": {"MaxHP": 47166, "AttackPower": 9625, "DefensePower": 109, "HealPower": 5891}
   }
 }

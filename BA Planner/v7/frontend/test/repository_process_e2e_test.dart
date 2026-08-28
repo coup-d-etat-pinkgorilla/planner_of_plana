@@ -43,9 +43,10 @@ void main() {
         firstService = newService();
         await firstService.reconnect();
         final inventoryCatalog = await firstService.listInventoryItems();
-        expect(inventoryCatalog.length, greaterThan(100));
+        expect(inventoryCatalog.items.length, greaterThan(100));
+        expect(inventoryCatalog.catalogRevision, hasLength(64));
         expect(
-          inventoryCatalog.any(
+          inventoryCatalog.items.any(
             (item) => item.resourceKey == 'Item_Icon_ExpItem_0',
           ),
           isTrue,

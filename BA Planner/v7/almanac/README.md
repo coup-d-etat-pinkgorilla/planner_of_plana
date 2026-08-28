@@ -14,6 +14,11 @@ v7은 Flutter와 Python의 프로세스 경계, 데이터 의미와 v6 parity를
 관리합니다. 시작점은 [Target Runtime Boundaries](architecture/runtime-boundaries)입니다.
 일회성 복사 목록은 Almanac이 아니라 `docs/migration/`에 둡니다. [@project-readme]
 
+학생 정적 데이터의 소유권과 SchaleDB provider/adapter 격리는
+[Canonical Metadata Boundary](architecture/canonical-metadata)에 기록합니다.
+Inventory identity, catalog revision, profile ordinal과 scanner 관측 위치의 구분은
+[Inventory Catalog Order Stability](architecture/inventory-catalog-order)에 기록합니다.
+
 슬레이브 명령용 프롬프트를 작성하거나 결과물을 인계할 때는
 [Slave Artifact Handoff](workflows/slave-artifact-handoff)의 `input.md`, `output.md`,
 `artifacts/` 계약을 사용합니다.

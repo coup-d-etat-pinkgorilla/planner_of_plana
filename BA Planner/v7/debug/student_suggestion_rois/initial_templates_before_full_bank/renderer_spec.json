@@ -1,0 +1,349 @@
+{
+  "schema_version": 1,
+  "purpose": "student-studio-suggestion-white-digit-templates",
+  "source": [
+    "suggestion.json",
+    "suggestion_text.json"
+  ],
+  "reference_size": [
+    2560,
+    1440
+  ],
+  "font": {
+    "path": "font.ttf",
+    "sha256": "f490194d9bf161f70076d01c9fb0a24d0019a324102de46c5fef579188ee96e6",
+    "family": "GyeonggiTitle Bold"
+  },
+  "processing": {
+    "source_foreground": "field threshold -> 8-connected components -> keep central non-border dominant digit",
+    "template_color": "white binary mask; RGB layer colors are not retained",
+    "comparison": "exact Studio polygon ROI; best integer shift within +/-2 px; binary IoU",
+    "production": false
+  },
+  "templates": [
+    {
+      "roi": "weaponlevel_digit1",
+      "field": "weapon_level",
+      "digit": "5",
+      "font_size": 37,
+      "shear": -0.25,
+      "declared_fill": "#FFFFFF",
+      "declared_stroke_width": 1,
+      "declared_stroke_fill": "#000000",
+      "text_bold": false,
+      "template_color": "#FFFFFF",
+      "selected_variant": "fill_only",
+      "score": 0.7968253968253968,
+      "shift": [
+        1,
+        1
+      ],
+      "configured_score": 0.581986143187067,
+      "fill_only_score": 0.7968253968253968,
+      "source_cleanup": {
+        "components": 5,
+        "removed_ink": 167,
+        "kept_ink": 252
+      },
+      "path": "templates/student_numeric_studio_suggestion/weaponlevel_digit1.png",
+      "sha256": "32d52d329a932bbb2f7510f1cc37f8ae7ee5fcf2fd30c20e99beb1b626164ce2"
+    },
+    {
+      "roi": "weaponlevel_digit2",
+      "field": "weapon_level",
+      "digit": "0",
+      "font_size": 37,
+      "shear": -0.25,
+      "declared_fill": "#FFFFFF",
+      "declared_stroke_width": 1,
+      "declared_stroke_fill": "#000000",
+      "text_bold": false,
+      "template_color": "#FFFFFF",
+      "selected_variant": "fill_only",
+      "score": 0.8351648351648352,
+      "shift": [
+        1,
+        1
+      ],
+      "configured_score": 0.6288659793814433,
+      "fill_only_score": 0.8351648351648352,
+      "source_cleanup": {
+        "components": 7,
+        "removed_ink": 140,
+        "kept_ink": 305
+      },
+      "path": "templates/student_numeric_studio_suggestion/weaponlevel_digit2.png",
+      "sha256": "ad1ddabf38f9badfe5c603733a132c8680537e08e242977a46c36b55f135d931"
+    },
+    {
+      "roi": "equip1level_digit1",
+      "field": "equipment_level",
+      "digit": "7",
+      "font_size": 28,
+      "shear": -0.25,
+      "declared_fill": "#FFFFFF",
+      "declared_stroke_width": 1,
+      "declared_stroke_fill": "#000000",
+      "text_bold": false,
+      "template_color": "#FFFFFF",
+      "selected_variant": "fill_only",
+      "score": 0.782608695652174,
+      "shift": [
+        1,
+        1
+      ],
+      "configured_score": 0.5226130653266332,
+      "fill_only_score": 0.782608695652174,
+      "source_cleanup": {
+        "components": 7,
+        "removed_ink": 151,
+        "kept_ink": 108
+      },
+      "path": "templates/student_numeric_studio_suggestion/equip1level_digit1.png",
+      "sha256": "d6a79f8e297cfe5c7ca007bd6183b708b945d9fcf97415c7c715942fc4930b28"
+    },
+    {
+      "roi": "equip1level_digit2",
+      "field": "equipment_level",
+      "digit": "0",
+      "font_size": 28,
+      "shear": -0.25,
+      "declared_fill": "#FFFFFF",
+      "declared_stroke_width": 1,
+      "declared_stroke_fill": "#000000",
+      "text_bold": false,
+      "template_color": "#FFFFFF",
+      "selected_variant": "fill_only",
+      "score": 0.771689497716895,
+      "shift": [
+        1,
+        1
+      ],
+      "configured_score": 0.5652173913043478,
+      "fill_only_score": 0.771689497716895,
+      "source_cleanup": {
+        "components": 5,
+        "removed_ink": 69,
+        "kept_ink": 172
+      },
+      "path": "templates/student_numeric_studio_suggestion/equip1level_digit2.png",
+      "sha256": "1deebab2f68195b3ec4ba29f06b2d1c3d54222865bf3e6799af76b860714573a"
+    },
+    {
+      "roi": "equip2level_digit1",
+      "field": "equipment_level",
+      "digit": "7",
+      "font_size": 28,
+      "shear": -0.25,
+      "declared_fill": "#FFFFFF",
+      "declared_stroke_width": 1,
+      "declared_stroke_fill": "#000000",
+      "text_bold": true,
+      "template_color": "#FFFFFF",
+      "selected_variant": "fill_only",
+      "score": 0.689873417721519,
+      "shift": [
+        0,
+        1
+      ],
+      "configured_score": 0.4772727272727273,
+      "fill_only_score": 0.689873417721519,
+      "source_cleanup": {
+        "components": 6,
+        "removed_ink": 73,
+        "kept_ink": 109
+      },
+      "path": "templates/student_numeric_studio_suggestion/equip2level_digit1.png",
+      "sha256": "937612a27eaa0495ca508a242165887861296bc5407fcfd424459128f8f5dc01"
+    },
+    {
+      "roi": "equip2level_digit2",
+      "field": "equipment_level",
+      "digit": "0",
+      "font_size": 28,
+      "shear": -0.25,
+      "declared_fill": "#FFFFFF",
+      "declared_stroke_width": 1,
+      "declared_stroke_fill": "#000000",
+      "text_bold": false,
+      "template_color": "#FFFFFF",
+      "selected_variant": "fill_only",
+      "score": 0.7741935483870968,
+      "shift": [
+        0,
+        1
+      ],
+      "configured_score": 0.5551839464882943,
+      "fill_only_score": 0.7741935483870968,
+      "source_cleanup": {
+        "components": 4,
+        "removed_ink": 43,
+        "kept_ink": 169
+      },
+      "path": "templates/student_numeric_studio_suggestion/equip2level_digit2.png",
+      "sha256": "bfb66feede1f449f5937918ac1f791ff789329c9f40e75e0924ce4269ee2acb8"
+    },
+    {
+      "roi": "equip3level_digit1",
+      "field": "equipment_level",
+      "digit": "6",
+      "font_size": 28,
+      "shear": -0.25,
+      "declared_fill": "#FFFFFF",
+      "declared_stroke_width": 1,
+      "declared_stroke_fill": "#000000",
+      "text_bold": false,
+      "template_color": "#FFFFFF",
+      "selected_variant": "fill_only",
+      "score": 0.7853881278538812,
+      "shift": [
+        0,
+        1
+      ],
+      "configured_score": 0.5584415584415584,
+      "fill_only_score": 0.7853881278538812,
+      "source_cleanup": {
+        "components": 10,
+        "removed_ink": 67,
+        "kept_ink": 172
+      },
+      "path": "templates/student_numeric_studio_suggestion/equip3level_digit1.png",
+      "sha256": "ed4a4b4aa71acb9ab74403ab62d20ba8bb1ded5e7e512c79b1ca5198e8da0778"
+    },
+    {
+      "roi": "equip3level_digit2",
+      "field": "equipment_level",
+      "digit": "5",
+      "font_size": 28,
+      "shear": -0.25,
+      "declared_fill": "#FFFFFF",
+      "declared_stroke_width": 1,
+      "declared_stroke_fill": "#000000",
+      "text_bold": false,
+      "template_color": "#FFFFFF",
+      "selected_variant": "fill_only",
+      "score": 0.7912087912087912,
+      "shift": [
+        0,
+        1
+      ],
+      "configured_score": 0.5274725274725275,
+      "fill_only_score": 0.7912087912087912,
+      "source_cleanup": {
+        "components": 5,
+        "removed_ink": 117,
+        "kept_ink": 144
+      },
+      "path": "templates/student_numeric_studio_suggestion/equip3level_digit2.png",
+      "sha256": "0c3aa926ffcb1f950371553dd8443067d70f4780b382a87326bf6512a6713186"
+    },
+    {
+      "roi": "studentlevel_digit1",
+      "field": "student_level",
+      "digit": "9",
+      "font_size": 33,
+      "shear": -0.25,
+      "declared_fill": "#000000",
+      "declared_stroke_width": 0,
+      "declared_stroke_fill": "#000000",
+      "text_bold": false,
+      "template_color": "#FFFFFF",
+      "selected_variant": "configured_stroke",
+      "score": 0.8032786885245902,
+      "shift": [
+        0,
+        0
+      ],
+      "configured_score": 0.8032786885245902,
+      "fill_only_score": 0.8032786885245902,
+      "source_cleanup": {
+        "components": 2,
+        "removed_ink": 4,
+        "kept_ink": 264
+      },
+      "path": "templates/student_numeric_studio_suggestion/studentlevel_digit1.png",
+      "sha256": "3cc8d16978d96637aeed8b4d82eb4ff27193426ad578ee0e830b833700b4c954"
+    },
+    {
+      "roi": "studentlevel_digit2",
+      "field": "student_level",
+      "digit": "0",
+      "font_size": 33,
+      "shear": -0.25,
+      "declared_fill": "#000000",
+      "declared_stroke_width": 0,
+      "declared_stroke_fill": "#000000",
+      "text_bold": false,
+      "template_color": "#FFFFFF",
+      "selected_variant": "configured_stroke",
+      "score": 0.8435374149659864,
+      "shift": [
+        0,
+        0
+      ],
+      "configured_score": 0.8435374149659864,
+      "fill_only_score": 0.8435374149659864,
+      "source_cleanup": {
+        "components": 1,
+        "removed_ink": 0,
+        "kept_ink": 251
+      },
+      "path": "templates/student_numeric_studio_suggestion/studentlevel_digit2.png",
+      "sha256": "aee9284f24147730b4681e046162d1510d735506c9bcd3d6823a1cdba2abb6df"
+    },
+    {
+      "roi": "affectionlevel_digit1",
+      "field": "relationship_rank",
+      "digit": "3",
+      "font_size": 32,
+      "shear": 0.0,
+      "declared_fill": "#000000",
+      "declared_stroke_width": 2,
+      "declared_stroke_fill": "#ffffff",
+      "text_bold": false,
+      "template_color": "#FFFFFF",
+      "selected_variant": "fill_only",
+      "score": 0.8036529680365296,
+      "shift": [
+        2,
+        2
+      ],
+      "configured_score": 0.6136363636363636,
+      "fill_only_score": 0.8036529680365296,
+      "source_cleanup": {
+        "components": 1,
+        "removed_ink": 0,
+        "kept_ink": 193
+      },
+      "path": "templates/student_numeric_studio_suggestion/affectionlevel_digit1.png",
+      "sha256": "972dbdc2c28be38c9a942a6e84d29f8e1bcfb5587278b83602e44d075ca6c051"
+    },
+    {
+      "roi": "affectionlevel_digit2",
+      "field": "relationship_rank",
+      "digit": "7",
+      "font_size": 32,
+      "shear": 0.0,
+      "declared_fill": "#000000",
+      "declared_stroke_width": 2,
+      "declared_stroke_fill": "#ffffff",
+      "text_bold": false,
+      "template_color": "#FFFFFF",
+      "selected_variant": "fill_only",
+      "score": 0.7647058823529411,
+      "shift": [
+        2,
+        1
+      ],
+      "configured_score": 0.5783132530120482,
+      "fill_only_score": 0.7647058823529411,
+      "source_cleanup": {
+        "components": 1,
+        "removed_ink": 0,
+        "kept_ink": 155
+      },
+      "path": "templates/student_numeric_studio_suggestion/affectionlevel_digit2.png",
+      "sha256": "6196712ef586897971587242e4953cc59abdcfc6993e053c67354e38e821a411"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from threading import Event
+from types import MethodType
 import unittest
 from unittest.mock import patch
 
@@ -96,6 +97,223 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         self.assertTrue(result["review_required"])
         self.assertGreaterEqual(result["evidence"][0]["confidence"], 0.99)
 
+    def test_full_student_adapter_buffers_until_identity_repeats(self) -> None:
+        class Clicks:
+            def __init__(self) -> None:
+                self.points = []
+
+            def click(self, _target, x_ratio, y_ratio):
+                self.points.append((x_ratio, y_ratio))
+
+        adapter = object.__new__(StudentMatcherAdapter)
+        adapter.capture = Clicks()
+        identities = iter(("hoshino", "hoshino_swimsuit", "hoshino"))
+
+        def scan_current(_self, _target, _cancel, _progress):
+            return [{
+                "payload": {
+                    "version": 1, "student_id": next(identities),
+                    "values": {}, "provenance": {},
+                },
+                "evidence": [], "review_required": False,
+            }]
+
+        adapter._scan_current = MethodType(scan_current, adapter)
+        result = adapter(
+            {"target_id": "fixture", "student_scan_mode": "full"},
+            Event(),
+            lambda *_args: None,
+        )
+        self.assertEqual(
+            ["hoshino", "hoshino_swimsuit"],
+            [item["payload"]["student_id"] for item in result],
+        )
+        self.assertEqual([(0.9777, 0.53465), (0.9777, 0.53465)], adapter.capture.points)
+
+    def test_full_student_adapter_prefers_right_key_navigation(self) -> None:
+        class Inputs:
+            def __init__(self) -> None:
+                self.keys = []
+                self.points = []
+
+            def press_key(self, _target, key):
+                self.keys.append(key)
+                return True
+
+            def click(self, _target, x_ratio, y_ratio):
+                self.points.append((x_ratio, y_ratio))
+
+        adapter = object.__new__(StudentMatcherAdapter)
+        adapter.capture = Inputs()
+        identities = iter(("hoshino", "hoshino_swimsuit", "hoshino"))
+
+        def scan_current(_self, _target, _cancel, _progress):
+            return [{
+                "payload": {
+                    "version": 1, "student_id": next(identities),
+                    "values": {}, "provenance": {},
+                },
+                "evidence": [], "review_required": False,
+            }]
+
+        adapter._scan_current = MethodType(scan_current, adapter)
+        result = adapter(
+            {"target_id": "fixture", "student_scan_mode": "full"},
+            Event(),
+            lambda *_args: None,
+        )
+        self.assertEqual(
+            ["hoshino", "hoshino_swimsuit"],
+            [item["payload"]["student_id"] for item in result],
+        )
+        self.assertEqual(["right", "right"], adapter.capture.keys)
+        self.assertEqual([], adapter.capture.points)
+
+    def test_full_student_adapter_exits_card_before_student_navigation(self) -> None:
+        timeline: list[str] = []
+
+        class ImmediateCancel:
+            def is_set(self) -> bool:
+                return False
+
+            def wait(self, _timeout: float) -> bool:
+                return False
+
+        class Inputs:
+            def press_key(self, _target, key):
+                timeline.append(f"navigate:{key}")
+                return True
+
+            def click(self, _target, _x_ratio, _y_ratio):
+                timeline.append("navigate:click")
+
+        class FeedbackProgress:
+            supports_feedback = True
+
+            def __call__(self, _current, _total, _message, feedback=None):
+                if feedback and feedback.get("field") == "__student_exit__":
+                    timeline.append(f"exit:{feedback['student_id']}")
+
+        adapter = object.__new__(StudentMatcherAdapter)
+        adapter.capture = Inputs()
+        identities = iter(("aru", "aru_dress", "aru"))
+
+        def scan_current(_self, _target, _cancel, _progress):
+            student_id = next(identities)
+            timeline.append(f"scan:{student_id}")
+            return [{
+                "payload": {
+                    "version": 1,
+                    "student_id": student_id,
+                    "values": {},
+                    "provenance": {},
+                },
+                "evidence": [],
+                "review_required": False,
+            }]
+
+        adapter._scan_current = MethodType(scan_current, adapter)
+        adapter(
+            {"student_scan_mode": "full"},
+            ImmediateCancel(),
+            FeedbackProgress(),
+        )
+
+        self.assertEqual(
+            [
+                "scan:aru",
+                "exit:aru",
+                "navigate:right",
+                "scan:aru_dress",
+                "exit:aru_dress",
+                "navigate:right",
+                "scan:aru",
+            ],
+            timeline,
+        )
+
+    def test_full_student_adapter_retries_button_after_unchanged_key(self) -> None:
+        class Inputs:
+            def __init__(self) -> None:
+                self.keys = []
+                self.points = []
+
+            def press_key(self, _target, key):
+                self.keys.append(key)
+                return True
+
+            def click(self, _target, x_ratio, y_ratio):
+                self.points.append((x_ratio, y_ratio))
+
+        adapter = object.__new__(StudentMatcherAdapter)
+        adapter.capture = Inputs()
+        identities = iter(("aru", "aru", "aru_dress", "aru"))
+
+        def scan_current(_self, _target, _cancel, _progress):
+            return [{
+                "payload": {
+                    "version": 1, "student_id": next(identities),
+                    "values": {}, "provenance": {},
+                },
+                "evidence": [], "review_required": False,
+            }]
+
+        adapter._scan_current = MethodType(scan_current, adapter)
+        result = adapter(
+            {"target_id": "fixture", "student_scan_mode": "full"},
+            Event(),
+            lambda *_args: None,
+        )
+        self.assertEqual(
+            ["aru", "aru_dress"],
+            [item["payload"]["student_id"] for item in result],
+        )
+        self.assertEqual(["right", "right"], adapter.capture.keys)
+        self.assertEqual([(0.9777, 0.53465)], adapter.capture.points)
+
+    def test_full_student_adapter_reverses_at_right_edge(self) -> None:
+        class Inputs:
+            def __init__(self) -> None:
+                self.keys = []
+                self.points = []
+
+            def press_key(self, _target, key):
+                self.keys.append(key)
+                return True
+
+            def click(self, _target, x_ratio, y_ratio):
+                self.points.append((x_ratio, y_ratio))
+
+        adapter = object.__new__(StudentMatcherAdapter)
+        adapter.capture = Inputs()
+        identities = iter(
+            ("last", "last", "last", "middle", "first", "first", "first")
+        )
+
+        def scan_current(_self, _target, _cancel, _progress):
+            return [{
+                "payload": {
+                    "version": 1,
+                    "student_id": next(identities),
+                    "values": {},
+                    "provenance": {},
+                },
+                "evidence": [],
+                "review_required": False,
+            }]
+
+        adapter._scan_current = MethodType(scan_current, adapter)
+        result = adapter(
+            {"student_scan_mode": "full"}, Event(), lambda *_args: None
+        )
+
+        self.assertEqual(
+            ["last", "middle", "first"],
+            [item["payload"]["student_id"] for item in result],
+        )
+        self.assertIn("left", adapter.capture.keys)
+        self.assertIn((0.0223, 0.53465), adapter.capture.points)
+
     def test_inventory_adapter_matches_real_icon_and_count_glyphs(self) -> None:
         frame = Image.new("RGB", (1280, 720), "black")
         slot = self.catalog.region("inventory")["item"]["grid_slots"][0]
@@ -112,6 +330,8 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         entries = result["payload"]["entries"]
         self.assertEqual("Item_Icon_Material_Mandragora_0", entries[0]["item_id"])
         self.assertEqual("42", entries[0]["quantity"])
+        self.assertEqual(0, entries[0]["observed_slot"])
+        self.assertNotIn("index", entries[0])
         self.assertFalse(result["review_required"])
         self.assertIn("slot_count_glyph", {item["source"] for item in result["evidence"]})
         self.assertTrue(any(item["source"] in {"grid_icon_template", "detail_template_fallback"} for item in result["evidence"]))

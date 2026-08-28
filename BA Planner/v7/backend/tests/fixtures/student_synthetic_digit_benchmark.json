@@ -1,0 +1,646 @@
+{
+  "schema_version": 1,
+  "mode": "synthetic-shadow-no-runtime-promotion",
+  "renderer_spec": {
+    "schema_version": 1,
+    "purpose": "student numeric deterministic synthetic renderer",
+    "font": {
+      "path": "templates/student_numeric_synthetic/GyeonggiTitle-Medium.ttf",
+      "family": "GyeonggiTitle",
+      "weight": "Medium",
+      "sha256": "da6fc2e29f3fdc1f25a1f94e18549040acef06ac8d7d9dc373e0f6eabbcae8da",
+      "bytes": 2968964
+    },
+    "review_basis": "manual visual review in v6 Template Alignment Studio",
+    "fields": {
+      "student_level": {
+        "font_size": 25,
+        "fill": "#FFFFFF",
+        "outline": "#505878",
+        "stroke_width": 1,
+        "shear": -0.2,
+        "mask_variant": "fill",
+        "layouts": [
+          1,
+          2
+        ],
+        "valid_range": [
+          1,
+          90
+        ],
+        "output_size": [
+          52,
+          42
+        ],
+        "center_trim": 3,
+        "calibration_source_purpose": "student-basic-level-digit-template",
+        "calibration_mean_iou": 0.552045,
+        "calibration_min_iou": 0.42723,
+        "selection": "user-verified font/shear; bounded size/stroke search against calibration partition",
+        "render_pipeline": "complete_string_native_raster->field_roi->low_ink_split->20x28_binary_glyph",
+        "raster_size_offsets": [
+          -2,
+          -1,
+          0,
+          1,
+          2
+        ]
+      },
+      "weapon_level": {
+        "font_size": 25,
+        "fill": "#FFFFFF",
+        "outline": "#505878",
+        "stroke_width": 1,
+        "shear": -0.25,
+        "mask_variant": "fill",
+        "layouts": [
+          1,
+          2
+        ],
+        "valid_range": [
+          1,
+          60
+        ],
+        "output_size": [
+          64,
+          48
+        ],
+        "center_trim": 1,
+        "calibration_source_purpose": "student-basic-weapon-level-digit-template",
+        "calibration_mean_iou": 0.484354,
+        "calibration_min_iou": 0.348958,
+        "selection": "user-verified font/shear; bounded size/stroke search against calibration partition",
+        "render_pipeline": "complete_string_native_raster->field_roi->low_ink_split->20x28_binary_glyph",
+        "raster_size_offsets": [
+          -2,
+          -1,
+          0,
+          1,
+          2
+        ]
+      },
+      "relationship_rank": {
+        "font_size": 35,
+        "fill": "#FFFFFF",
+        "outline": "#3A465D",
+        "stroke_width": 1,
+        "shear": 0.0,
+        "mask_variant": "combined",
+        "layouts": [
+          1,
+          2,
+          3
+        ],
+        "valid_range": [
+          1,
+          100
+        ],
+        "output_size": [
+          72,
+          96
+        ],
+        "center_trim": 0,
+        "calibration_source_purpose": "student-relationship-rank-digit-template",
+        "calibration_mean_iou": 0.579687,
+        "calibration_min_iou": 0.21875,
+        "selection": "user-verified font/shear; bounded size/stroke search against calibration partition",
+        "render_pipeline": "complete_string_native_raster->field_roi->low_ink_split->20x28_binary_glyph",
+        "raster_size_offsets": [
+          -2,
+          -1,
+          0,
+          1,
+          2
+        ]
+      }
+    }
+  },
+  "shadow_gates": {
+    "student_level": {
+      "score": 0.45,
+      "margin": 0.05
+    },
+    "weapon_level": {
+      "score": 0.44,
+      "margin": 0.05
+    },
+    "relationship_rank": {
+      "score": 0.45,
+      "margin": 0.05
+    }
+  },
+  "basic_frames": [
+    {
+      "source": "student_scan_s2_serika_new_year.png",
+      "source_sha256": "618c46cccfa840937cdd03d887dcfa871147521aae9ca1ee7601f0d8cae9bdb4",
+      "observed": {
+        "student_level": {
+          "value": 11,
+          "score": 0.5630177069894996,
+          "margin": 0.04476799637752982,
+          "layout": 2,
+          "expected": 12,
+          "correct": false,
+          "accepted": false
+        },
+        "weapon_level": {
+          "value": 50,
+          "score": 0.5588514152245241,
+          "margin": 0.06485096499706616,
+          "layout": 2,
+          "expected": 50,
+          "correct": true,
+          "accepted": true
+        },
+        "relationship_rank": {
+          "value": 24,
+          "score": 0.8449949312301024,
+          "margin": 0.23560677482328551,
+          "layout": 2,
+          "expected": 24,
+          "correct": true,
+          "accepted": true
+        }
+      },
+      "elapsed_ms": 231.0295
+    },
+    {
+      "source": "codex-clipboard-5a9ae2c9-a048-480c-8d46-52c492e5b433.png",
+      "source_sha256": "94bb797c748c5a5bf790dc2cf30e91095c82d303e1a125b1d244c1994cc42f9b",
+      "observed": {
+        "student_level": {
+          "value": 90,
+          "score": 0.5610854827755973,
+          "margin": 0.02855146679221232,
+          "layout": 2,
+          "expected": 90,
+          "correct": true,
+          "accepted": false
+        },
+        "weapon_level": {
+          "value": 60,
+          "score": 0.45870808365428756,
+          "margin": 0.06608115845431362,
+          "layout": 2,
+          "expected": 60,
+          "correct": true,
+          "accepted": true
+        },
+        "relationship_rank": {
+          "value": 41,
+          "score": 0.7880783988955943,
+          "margin": 0.3276149659985569,
+          "layout": 2,
+          "expected": 41,
+          "correct": true,
+          "accepted": true
+        }
+      },
+      "elapsed_ms": 219.3
+    },
+    {
+      "source": "codex-clipboard-c41a51be-ae40-4e82-a75a-48b0fce9317b.png",
+      "source_sha256": "fb7651cfa4574896515b1ef5d1781a769c8a3864257687ccec992b2b7cc75e17",
+      "observed": {
+        "student_level": {
+          "value": 90,
+          "score": 0.5587922137055678,
+          "margin": 0.02855146679221232,
+          "layout": 2,
+          "expected": 90,
+          "correct": true,
+          "accepted": false
+        },
+        "weapon_level": {
+          "value": 60,
+          "score": 0.45870808365428756,
+          "margin": 0.06608115845431362,
+          "layout": 2,
+          "expected": 60,
+          "correct": true,
+          "accepted": true
+        },
+        "relationship_rank": {
+          "value": 74,
+          "score": 0.35871411267557596,
+          "margin": 0.08517558672682107,
+          "layout": 2,
+          "expected": 74,
+          "correct": true,
+          "accepted": false
+        }
+      },
+      "elapsed_ms": 216.3163
+    }
+  ],
+  "relationship_partitions": {
+    "calibration": {
+      "samples": 15,
+      "correct": 8,
+      "accepted_correct": 3,
+      "accepted_wrong": 0,
+      "fallback": 12,
+      "accuracy": 0.5333333333333333,
+      "minimum_score": 0.31852958093569683,
+      "minimum_margin": 0.001685188652987113
+    },
+    "calibration_only": {
+      "samples": 1,
+      "correct": 1,
+      "accepted_correct": 1,
+      "accepted_wrong": 0,
+      "fallback": 0,
+      "accuracy": 1.0,
+      "minimum_score": 0.728327841977128,
+      "minimum_margin": 0.05613832698674304
+    },
+    "validation": {
+      "samples": 8,
+      "correct": 7,
+      "accepted_correct": 6,
+      "accepted_wrong": 0,
+      "fallback": 2,
+      "accuracy": 0.875,
+      "minimum_score": 0.35201602537657084,
+      "minimum_margin": 0.0008884092253256259
+    }
+  },
+  "relationship_confusion": [
+    {
+      "expected": 6,
+      "observed": 6,
+      "count": 1
+    },
+    {
+      "expected": 10,
+      "observed": 10,
+      "count": 1
+    },
+    {
+      "expected": 18,
+      "observed": 18,
+      "count": 2
+    },
+    {
+      "expected": 20,
+      "observed": 20,
+      "count": 1
+    },
+    {
+      "expected": 23,
+      "observed": 23,
+      "count": 1
+    },
+    {
+      "expected": 23,
+      "observed": 24,
+      "count": 1
+    },
+    {
+      "expected": 26,
+      "observed": 26,
+      "count": 1
+    },
+    {
+      "expected": 34,
+      "observed": 34,
+      "count": 1
+    },
+    {
+      "expected": 34,
+      "observed": 84,
+      "count": 1
+    },
+    {
+      "expected": 37,
+      "observed": 37,
+      "count": 1
+    },
+    {
+      "expected": 37,
+      "observed": 81,
+      "count": 1
+    },
+    {
+      "expected": 39,
+      "observed": 39,
+      "count": 1
+    },
+    {
+      "expected": 39,
+      "observed": 88,
+      "count": 1
+    },
+    {
+      "expected": 41,
+      "observed": 41,
+      "count": 2
+    },
+    {
+      "expected": 47,
+      "observed": 41,
+      "count": 1
+    },
+    {
+      "expected": 47,
+      "observed": 47,
+      "count": 1
+    },
+    {
+      "expected": 50,
+      "observed": 50,
+      "count": 1
+    },
+    {
+      "expected": 50,
+      "observed": 54,
+      "count": 1
+    },
+    {
+      "expected": 50,
+      "observed": 60,
+      "count": 1
+    },
+    {
+      "expected": 52,
+      "observed": 61,
+      "count": 1
+    },
+    {
+      "expected": 74,
+      "observed": 74,
+      "count": 1
+    },
+    {
+      "expected": 100,
+      "observed": 100,
+      "count": 1
+    }
+  ],
+  "relationship_rows": [
+    {
+      "partition": "calibration",
+      "source": "KakaoTalk_20260823_192529629.jpg",
+      "expected": 100,
+      "value": 100,
+      "score": 0.5850680607690923,
+      "margin": 0.11452924960808358,
+      "layout": 3,
+      "correct": true,
+      "accepted": true
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 030220.png",
+      "expected": 10,
+      "value": 10,
+      "score": 0.5107230285872212,
+      "margin": 0.004333543044881649,
+      "layout": 2,
+      "correct": true,
+      "accepted": false
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 030255.png",
+      "expected": 20,
+      "value": 20,
+      "score": 0.42792707467977886,
+      "margin": 0.06651466026320191,
+      "layout": 2,
+      "correct": true,
+      "accepted": false
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 024117.png",
+      "expected": 74,
+      "value": 74,
+      "score": 0.42599611704295515,
+      "margin": 0.0808613195766209,
+      "layout": 2,
+      "correct": true,
+      "accepted": false
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 024132.png",
+      "expected": 52,
+      "value": 61,
+      "score": 0.37088182447453955,
+      "margin": 0.015554411940173651,
+      "layout": 2,
+      "correct": false,
+      "accepted": false
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 024221.png",
+      "expected": 39,
+      "value": 88,
+      "score": 0.35754931304698456,
+      "margin": 0.008355308061628819,
+      "layout": 2,
+      "correct": false,
+      "accepted": false
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 024357.png",
+      "expected": 26,
+      "value": 26,
+      "score": 0.8249539975078889,
+      "margin": 0.14921519263199656,
+      "layout": 2,
+      "correct": true,
+      "accepted": true
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 030233.png",
+      "expected": 18,
+      "value": 18,
+      "score": 0.5107230285872212,
+      "margin": 0.004333543044881649,
+      "layout": 2,
+      "correct": true,
+      "accepted": false
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 024140.png",
+      "expected": 50,
+      "value": 60,
+      "score": 0.3713778848158103,
+      "margin": 0.00483792372492392,
+      "layout": 2,
+      "correct": false,
+      "accepted": false
+    },
+    {
+      "partition": "calibration",
+      "source": "hibiki_rank50_1280x720_20260824.png",
+      "expected": 50,
+      "value": 50,
+      "score": 0.730889100597777,
+      "margin": 0.09482505016582254,
+      "layout": 2,
+      "correct": true,
+      "accepted": true
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 024150.png",
+      "expected": 47,
+      "value": 41,
+      "score": 0.31852958093569683,
+      "margin": 0.01957831784987696,
+      "layout": 2,
+      "correct": false,
+      "accepted": false
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 024204.png",
+      "expected": 41,
+      "value": 41,
+      "score": 0.3620128188438063,
+      "margin": 0.027821821802479274,
+      "layout": 2,
+      "correct": true,
+      "accepted": false
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 024229.png",
+      "expected": 37,
+      "value": 81,
+      "score": 0.3415554661862158,
+      "margin": 0.015065291211598941,
+      "layout": 2,
+      "correct": false,
+      "accepted": false
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 024252.png",
+      "expected": 34,
+      "value": 84,
+      "score": 0.41622800290443923,
+      "margin": 0.0543748217489175,
+      "layout": 2,
+      "correct": false,
+      "accepted": false
+    },
+    {
+      "partition": "calibration",
+      "source": "스크린샷 2026-08-23 024417.png",
+      "expected": 23,
+      "value": 24,
+      "score": 0.3797174973920907,
+      "margin": 0.001685188652987113,
+      "layout": 2,
+      "correct": false,
+      "accepted": false
+    },
+    {
+      "partition": "validation",
+      "source": "스크린샷 2026-08-23 024139.png",
+      "expected": 50,
+      "value": 54,
+      "score": 0.35201602537657084,
+      "margin": 0.035171375701464114,
+      "layout": 2,
+      "correct": false,
+      "accepted": false
+    },
+    {
+      "partition": "validation",
+      "source": "스크린샷 2026-08-23 024147.png",
+      "expected": 47,
+      "value": 47,
+      "score": 0.6411036153377507,
+      "margin": 0.17444707239619023,
+      "layout": 2,
+      "correct": true,
+      "accepted": true
+    },
+    {
+      "partition": "validation",
+      "source": "스크린샷 2026-08-23 024202.png",
+      "expected": 41,
+      "value": 41,
+      "score": 0.7932687051399882,
+      "margin": 0.31715379499253127,
+      "layout": 2,
+      "correct": true,
+      "accepted": true
+    },
+    {
+      "partition": "validation",
+      "source": "스크린샷 2026-08-23 024215.png",
+      "expected": 39,
+      "value": 39,
+      "score": 0.7114782502280909,
+      "margin": 0.11753349539837077,
+      "layout": 2,
+      "correct": true,
+      "accepted": true
+    },
+    {
+      "partition": "validation",
+      "source": "스크린샷 2026-08-23 024226.png",
+      "expected": 37,
+      "value": 37,
+      "score": 0.6440962700757888,
+      "margin": 0.11075034323014599,
+      "layout": 2,
+      "correct": true,
+      "accepted": true
+    },
+    {
+      "partition": "validation",
+      "source": "스크린샷 2026-08-23 024250.png",
+      "expected": 34,
+      "value": 34,
+      "score": 0.6386310799630449,
+      "margin": 0.10118962217224048,
+      "layout": 2,
+      "correct": true,
+      "accepted": true
+    },
+    {
+      "partition": "validation",
+      "source": "스크린샷 2026-08-23 024414.png",
+      "expected": 23,
+      "value": 23,
+      "score": 0.7225495712277583,
+      "margin": 0.1636823682117503,
+      "layout": 2,
+      "correct": true,
+      "accepted": true
+    },
+    {
+      "partition": "validation",
+      "source": "스크린샷 2026-08-23 030242.png",
+      "expected": 18,
+      "value": 18,
+      "score": 0.6560662397678542,
+      "margin": 0.0008884092253256259,
+      "layout": 2,
+      "correct": true,
+      "accepted": false
+    },
+    {
+      "partition": "calibration_only",
+      "source": "스크린샷 2026-06-24 215236.png",
+      "expected": 6,
+      "value": 6,
+      "score": 0.728327841977128,
+      "margin": 0.05613832698674304,
+      "layout": 1,
+      "correct": true,
+      "accepted": true
+    }
+  ]
+}

@@ -22,7 +22,7 @@ mode selects the surface. Each operation starts the Python developer-tool
 backend, sends one protocol-v1 JSON request through stdin, reads one JSON
 response from stdout, and lets the process exit. [@flutter-entry] [@python-entry]
 
-The tools use v7 generated metadata and recognition assets directly. Template
+The tools use v7 canonical metadata and recognition assets directly. Template
 extraction updates both the PNG and its recognition manifest integrity fields.
 Grid inspection is read-only and uses the production v7 template matcher and
 packaged region catalog. No v6 module and no Qt/Tk presentation code is a v7
@@ -32,8 +32,10 @@ The root `.cmd` launchers prefer `release/developer_tools/ba_planner_v7.exe`
 and fall back to `flutter run` during development. Each launcher starts a new
 OS process, so closing a tool cannot close the main Planner UI process.
 
-The metadata editor's SchaleDB surface is a two-step boundary. Preview returns
-incoming minimal gift-affinity fields alongside the current generated student
+The metadata editor writes `backend/data/metadata/v1/student_catalog.json`; it no
+longer rewrites `core/student_meta_data.py`. The editor's SchaleDB surface is a
+two-step boundary. Preview returns
+incoming minimal gift-affinity fields alongside the current canonical student
 metadata, without writing. Apply atomically updates the three student fields and
 the separate four-field gift catalog. The comparison UI renders bundled portraits
 and present icons, shows current and incoming tags separately, and reports local
@@ -60,7 +62,12 @@ before any write. Direct apply is limited to existing students; new identities a
 editor drafts until the local required fields are completed. Both paths keep gift
 catalog persistence separate from student metadata and exclude bond-stat fields.
 
-Server state is an independent generated-data mutation. `metadata.server.set`
+SchaleDB HTTP access lives in `core/schaledb_provider.py`. Raw field normalization,
+slug exceptions, merge-path matching and the three-field student allowlist live in
+`core/schaledb_metadata_adapter.py`. The developer tool only orchestrates preview,
+confirmation and canonical persistence; it does not interpret SchaleDB source DTOs.
+
+Server state is an independent canonical-data mutation. `metadata.server.set`
 validates the student, changes only `JP_ONLY_STUDENT_IDS`, and returns the previous
 and next server plus KR asset warnings. The UI confirms this action separately from
 base metadata save or SchaleDB import, then refreshes both editor and diagnostic

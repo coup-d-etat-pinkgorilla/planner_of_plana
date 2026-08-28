@@ -22,11 +22,30 @@ def _student_matcher(_target, _cancel, progress):
         },
         "evidence": [{
             "field": "level",
-            "status": "ok",
+            "status": "uncertain",
             "source": "scanner-e2e-fixture",
-            "confidence": 1.0,
+            "confidence": 0.6,
         }],
+        "review_required": True,
     }]
+
+
+def _student_validator(payload, profile_id):
+    level = payload.get("values", {}).get("level")
+    verified = level == 91
+    return {
+        "field": "student_stat_validation",
+        "status": "verified" if verified else "suspicious",
+        "source": "scanner-e2e-validator",
+        "confidence": 1.0 if verified else 0.0,
+        "note": "edited level accepted" if verified else "level requires review",
+        "details": {
+            "validation_status": "verified" if verified else "suspicious",
+            "profile_id": profile_id,
+            "expected_level": 91,
+            "observed_level": level,
+        },
+    }
 
 
 def main() -> None:
@@ -51,6 +70,7 @@ def main() -> None:
             "missing": [],
             "corrupt": [],
         },
+        student_validator=_student_validator,
     )
     serve(protocol=ApplicationProtocolV1(
         storage_root=Path(storage_root),

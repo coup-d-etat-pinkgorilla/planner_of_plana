@@ -1,0 +1,4062 @@
+{
+  "schema_version": 1,
+  "results": [
+    {
+      "variant": "student_current_largest_tall",
+      "field": "student_level",
+      "reference_dx": 0,
+      "values": 122,
+      "value_correct": 122,
+      "value_accuracy": 1.0,
+      "digits": 244,
+      "digit_correct": 244,
+      "digit_accuracy": 1.0,
+      "confusion": {},
+      "failure_samples": []
+    },
+    {
+      "variant": "student_current_largest_tall",
+      "field": "student_level",
+      "reference_dx": -1,
+      "values": 122,
+      "value_correct": 122,
+      "value_accuracy": 1.0,
+      "digits": 244,
+      "digit_correct": 244,
+      "digit_accuracy": 1.0,
+      "confusion": {},
+      "failure_samples": []
+    },
+    {
+      "variant": "student_current_largest_tall",
+      "field": "student_level",
+      "reference_dx": -2,
+      "values": 122,
+      "value_correct": 122,
+      "value_accuracy": 1.0,
+      "digits": 244,
+      "digit_correct": 244,
+      "digit_accuracy": 1.0,
+      "confusion": {},
+      "failure_samples": []
+    },
+    {
+      "variant": "student_pale_blue_largest_tall",
+      "field": "student_level",
+      "reference_dx": 0,
+      "values": 122,
+      "value_correct": 122,
+      "value_accuracy": 1.0,
+      "digits": 244,
+      "digit_correct": 244,
+      "digit_accuracy": 1.0,
+      "confusion": {},
+      "failure_samples": []
+    },
+    {
+      "variant": "student_pale_blue_largest_tall",
+      "field": "student_level",
+      "reference_dx": -1,
+      "values": 122,
+      "value_correct": 122,
+      "value_accuracy": 1.0,
+      "digits": 244,
+      "digit_correct": 244,
+      "digit_accuracy": 1.0,
+      "confusion": {},
+      "failure_samples": []
+    },
+    {
+      "variant": "student_pale_blue_largest_tall",
+      "field": "student_level",
+      "reference_dx": -2,
+      "values": 122,
+      "value_correct": 122,
+      "value_accuracy": 1.0,
+      "digits": 244,
+      "digit_correct": 244,
+      "digit_accuracy": 1.0,
+      "confusion": {},
+      "failure_samples": []
+    },
+    {
+      "variant": "relationship_current_largest_tall",
+      "field": "relationship_rank",
+      "reference_dx": 0,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 27,
+      "digit_accuracy": 0.6136363636363636,
+      "confusion": {
+        "5->8": 2,
+        "0->9": 2,
+        "4->5": 2,
+        "7->0": 2,
+        "1->9": 1,
+        "3->5": 4,
+        "9->1": 1,
+        "2->5": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 89,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "8",
+              "score": 0.573170731707317,
+              "margin": 0.010670731707317027,
+              "shift": [
+                2,
+                -2
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.6282051282051282,
+              "margin": 0.016440422322775206,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 89,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "8",
+              "score": 0.573170731707317,
+              "margin": 0.010670731707317027,
+              "shift": [
+                2,
+                -2
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.6282051282051282,
+              "margin": 0.016440422322775206,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.5454545454545454,
+              "margin": 0.016042780748663055,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "0",
+              "score": 0.5230769230769231,
+              "margin": 0.036965811965812,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.5454545454545454,
+              "margin": 0.016042780748663055,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "9",
+              "score": 0.5211267605633803,
+              "margin": 0.007613247049866767,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 51,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.5526315789473685,
+              "margin": 0.03947368421052633,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "1",
+              "score": 0.4827586206896552,
+              "margin": 0.0027586206896552112,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.5526315789473685,
+              "margin": 0.03947368421052633,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "0",
+              "score": 0.5230769230769231,
+              "margin": 0.036965811965812,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 54,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.5526315789473685,
+              "margin": 0.03947368421052633,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.5769230769230769,
+              "margin": 0.01692307692307682,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "5",
+              "score": 0.525,
+              "margin": 0.037195121951219545,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.5540540540540541,
+              "margin": 0.04756054756054762,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.47368421052631576,
+              "margin": 0.0224646983311938,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.5851063829787234,
+              "margin": 0.006159014557670761,
+              "shift": [
+                0,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_current_largest_tall",
+      "field": "relationship_rank",
+      "reference_dx": -1,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 31,
+      "digit_accuracy": 0.7045454545454546,
+      "confusion": {
+        "0->9": 2,
+        "7->1": 2,
+        "1->9": 1,
+        "3->5": 4,
+        "9->7": 1,
+        "2->5": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5972222222222222,
+              "margin": 0.012806637806637822,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.5714285714285714,
+              "margin": 0.004418262150220897,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5972222222222222,
+              "margin": 0.012806637806637822,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.5714285714285714,
+              "margin": 0.004418262150220897,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 41,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.5972222222222222,
+              "margin": 0.025793650793650813,
+              "shift": [
+                -2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "1",
+              "score": 0.46153846153846156,
+              "margin": 0.0,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 49,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.5972222222222222,
+              "margin": 0.025793650793650813,
+              "shift": [
+                -2,
+                1
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "9",
+              "score": 0.5211267605633803,
+              "margin": 0.007613247049866767,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 57,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.582089552238806,
+              "margin": 0.04240701255626633,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "7",
+              "score": 0.5060240963855421,
+              "margin": 0.018524096385542144,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 51,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.582089552238806,
+              "margin": 0.04240701255626633,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "1",
+              "score": 0.46835443037974683,
+              "margin": 0.018354430379746822,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 54,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.582089552238806,
+              "margin": 0.04240701255626633,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.5764705882352941,
+              "margin": 0.08235294117647052,
+              "shift": [
+                -2,
+                2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "5",
+              "score": 0.547945205479452,
+              "margin": 0.040008697542944116,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.4939759036144578,
+              "margin": 0.008681785967398992,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.5217391304347826,
+              "margin": 0.034897025171624685,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.5851063829787234,
+              "margin": 0.006159014557670761,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_current_largest_tall",
+      "field": "relationship_rank",
+      "reference_dx": -2,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 31,
+      "digit_accuracy": 0.7045454545454546,
+      "confusion": {
+        "0->5": 2,
+        "1->3": 1,
+        "1->9": 1,
+        "3->1": 3,
+        "9->5": 1,
+        "7->1": 1,
+        "2->5": 1,
+        "3->5": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5972222222222222,
+              "margin": 0.06150793650793651,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "5",
+              "score": 0.5822784810126582,
+              "margin": 0.018175916910094125,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024204.png",
+          "expected": 41,
+          "observed": 43,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.7671232876712328,
+              "margin": 0.17916032470826992,
+              "shift": [
+                2,
+                2
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "3",
+              "score": 0.548936170212766,
+              "margin": 0.01293617021276594,
+              "shift": [
+                -1,
+                2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5972222222222222,
+              "margin": 0.06150793650793651,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "5",
+              "score": 0.5822784810126582,
+              "margin": 0.018175916910094125,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 49,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.618421052631579,
+              "margin": 0.09894053315105955,
+              "shift": [
+                -2,
+                2
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "9",
+              "score": 0.5384615384615384,
+              "margin": 0.0011481056257175437,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 15,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.5396825396825397,
+              "margin": 0.01265551265551268,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "5",
+              "score": 0.5,
+              "margin": 0.007042253521126751,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 11,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.5396825396825397,
+              "margin": 0.01265551265551268,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "1",
+              "score": 0.4927536231884058,
+              "margin": 0.007459505541347,
+              "shift": [
+                0,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 14,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.5396825396825397,
+              "margin": 0.01265551265551268,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.6438356164383562,
+              "margin": 0.12954990215264195,
+              "shift": [
+                -2,
+                2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "5",
+              "score": 0.547945205479452,
+              "margin": 0.040008697542944116,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.5135135135135135,
+              "margin": 0.004422604422604448,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.5217391304347826,
+              "margin": 0.034897025171624685,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.6024096385542169,
+              "margin": 0.02593905031892285,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_navy_largest_tall",
+      "field": "relationship_rank",
+      "reference_dx": 0,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 28,
+      "digit_accuracy": 0.6363636363636364,
+      "confusion": {
+        "0->9": 2,
+        "4->5": 3,
+        "7->0": 2,
+        "1->0": 1,
+        "3->5": 4,
+        "9->8": 1,
+        "2->5": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5512820512820513,
+              "margin": 0.008072174738841476,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.6153846153846154,
+              "margin": 0.015384615384615441,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5512820512820513,
+              "margin": 0.008072174738841476,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.6153846153846154,
+              "margin": 0.015384615384615441,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.5135135135135135,
+              "margin": 0.049227799227799185,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "0",
+              "score": 0.515625,
+              "margin": 0.03675176056338031,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.5135135135135135,
+              "margin": 0.049227799227799185,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "0",
+              "score": 0.5,
+              "margin": 0.007042253521126751,
+              "shift": [
+                1,
+                -2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 58,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.56,
+              "margin": 0.040000000000000036,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "8",
+              "score": 0.46153846153846156,
+              "margin": 0.002079002079002079,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.56,
+              "margin": 0.040000000000000036,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "0",
+              "score": 0.515625,
+              "margin": 0.03675176056338031,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.56,
+              "margin": 0.040000000000000036,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.5205479452054794,
+              "margin": 0.0010674257249599917,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "5",
+              "score": 0.52,
+              "margin": 0.026172839506172885,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.547945205479452,
+              "margin": 0.047945205479452024,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.47368421052631576,
+              "margin": 0.0224646983311938,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.5402298850574713,
+              "margin": 0.0025954764553207665,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_navy_largest_tall",
+      "field": "relationship_rank",
+      "reference_dx": -1,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 29,
+      "digit_accuracy": 0.6590909090909091,
+      "confusion": {
+        "0->9": 2,
+        "4->5": 2,
+        "7->1": 2,
+        "1->0": 1,
+        "3->5": 4,
+        "9->7": 1,
+        "2->5": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5857142857142857,
+              "margin": 0.03308270676691727,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.5604395604395604,
+              "margin": 0.0037385295117253747,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5857142857142857,
+              "margin": 0.03308270676691727,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.5604395604395604,
+              "margin": 0.0037385295117253747,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 51,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.5522388059701493,
+              "margin": 0.017027538364515538,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "1",
+              "score": 0.45454545454545453,
+              "margin": 0.0,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.5522388059701493,
+              "margin": 0.017027538364515538,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "0",
+              "score": 0.5,
+              "margin": 0.007042253521126751,
+              "shift": [
+                2,
+                -2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 57,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.5909090909090909,
+              "margin": 0.042521994134897434,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "7",
+              "score": 0.4878048780487805,
+              "margin": 0.019450447669033644,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 51,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.5909090909090909,
+              "margin": 0.042521994134897434,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "1",
+              "score": 0.46153846153846156,
+              "margin": 0.018500486854917286,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 54,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.5909090909090909,
+              "margin": 0.042521994134897434,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.5287356321839081,
+              "margin": 0.0882594417077176,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "5",
+              "score": 0.5441176470588235,
+              "margin": 0.03778853313477282,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.5,
+              "margin": 0.0,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.5217391304347826,
+              "margin": 0.034897025171624685,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.5402298850574713,
+              "margin": 0.0025954764553207665,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_navy_largest_tall",
+      "field": "relationship_rank",
+      "reference_dx": -2,
+      "values": 22,
+      "value_correct": 14,
+      "value_accuracy": 0.6363636363636364,
+      "digits": 44,
+      "digit_correct": 32,
+      "digit_accuracy": 0.7272727272727273,
+      "confusion": {
+        "0->5": 2,
+        "1->9": 1,
+        "3->1": 3,
+        "9->7": 1,
+        "7->1": 1,
+        "2->5": 1,
+        "3->5": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5857142857142857,
+              "margin": 0.07969018932874361,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "5",
+              "score": 0.569620253164557,
+              "margin": 0.018338201882505678,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5857142857142857,
+              "margin": 0.07969018932874361,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "5",
+              "score": 0.569620253164557,
+              "margin": 0.018338201882505678,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 49,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.5394736842105263,
+              "margin": 0.030039721946375386,
+              "shift": [
+                -2,
+                2
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "9",
+              "score": 0.5384615384615384,
+              "margin": 0.0011481056257175437,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 17,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.5483870967741935,
+              "margin": 0.014140521431727726,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "7",
+              "score": 0.4714285714285714,
+              "margin": 0.009890109890109855,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 11,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.5483870967741935,
+              "margin": 0.014140521431727726,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "1",
+              "score": 0.4852941176470588,
+              "margin": 0.007682177348551367,
+              "shift": [
+                0,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 14,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.5483870967741935,
+              "margin": 0.014140521431727726,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.5945945945945946,
+              "margin": 0.09459459459459463,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "5",
+              "score": 0.5342465753424658,
+              "margin": 0.04218308327897374,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.5211267605633803,
+              "margin": 0.00189599133261098,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.5217391304347826,
+              "margin": 0.034897025171624685,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.5454545454545454,
+              "margin": 0.01533406352683453,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_navy_distance24",
+      "field": "relationship_rank",
+      "reference_dx": 0,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 28,
+      "digit_accuracy": 0.6363636363636364,
+      "confusion": {
+        "0->9": 2,
+        "4->5": 3,
+        "7->0": 2,
+        "1->0": 1,
+        "3->5": 4,
+        "9->4": 1,
+        "2->5": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.4342105263157895,
+              "margin": 0.019576379974326097,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.4805194805194805,
+              "margin": 0.021695951107715827,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.4342105263157895,
+              "margin": 0.019576379974326097,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.4805194805194805,
+              "margin": 0.021695951107715827,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.4657534246575342,
+              "margin": 0.02672903441363178,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "0",
+              "score": 0.4262295081967213,
+              "margin": 0.04441132637853945,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.4657534246575342,
+              "margin": 0.02672903441363178,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "0",
+              "score": 0.484375,
+              "margin": 0.005501760563380309,
+              "shift": [
+                1,
+                -2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 54,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.36619718309859156,
+              "margin": 0.015547832449240906,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "4",
+              "score": 0.4090909090909091,
+              "margin": 0.009090909090909094,
+              "shift": [
+                1,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.36619718309859156,
+              "margin": 0.015547832449240906,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "0",
+              "score": 0.4262295081967213,
+              "margin": 0.04441132637853945,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.36619718309859156,
+              "margin": 0.015547832449240906,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.4722222222222222,
+              "margin": 0.01767676767676768,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "5",
+              "score": 0.410958904109589,
+              "margin": 0.0018679950186799021,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.39436619718309857,
+              "margin": 0.008401284902396833,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.4605263157894737,
+              "margin": 0.021501925545571232,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.4578313253012048,
+              "margin": 0.022537207654145963,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_navy_distance24",
+      "field": "relationship_rank",
+      "reference_dx": -1,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 29,
+      "digit_accuracy": 0.6590909090909091,
+      "confusion": {
+        "0->9": 2,
+        "4->1": 2,
+        "7->3": 2,
+        "1->0": 1,
+        "3->1": 3,
+        "9->7": 1,
+        "2->4": 1,
+        "3->4": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.4782608695652174,
+              "margin": 0.024927536231884095,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.4111111111111111,
+              "margin": 0.009049255441007986,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.4782608695652174,
+              "margin": 0.024927536231884095,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.4111111111111111,
+              "margin": 0.009049255441007986,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 13,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "1",
+              "score": 0.5106382978723404,
+              "margin": 0.0033919210607461503,
+              "shift": [
+                1,
+                -2
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "3",
+              "score": 0.38181818181818183,
+              "margin": 0.003439803439803435,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 10,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "1",
+              "score": 0.5106382978723404,
+              "margin": 0.0033919210607461503,
+              "shift": [
+                1,
+                -2
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "0",
+              "score": 0.484375,
+              "margin": 0.005501760563380309,
+              "shift": [
+                2,
+                -2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 17,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.4166666666666667,
+              "margin": 0.010416666666666685,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "7",
+              "score": 0.41025641025641024,
+              "margin": 0.001165501165501126,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 13,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.4166666666666667,
+              "margin": 0.010416666666666685,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "3",
+              "score": 0.38181818181818183,
+              "margin": 0.003439803439803435,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 14,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.4166666666666667,
+              "margin": 0.010416666666666685,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.4457831325301205,
+              "margin": 0.028061613542778696,
+              "shift": [
+                -2,
+                2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 44,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "4",
+              "score": 0.46551724137931033,
+              "margin": 0.010971786833855801,
+              "shift": [
+                2,
+                -2
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "4",
+              "score": 0.38596491228070173,
+              "margin": 0.02530917457578369,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.5072463768115942,
+              "margin": 0.03356216628527847,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.4578313253012048,
+              "margin": 0.022537207654145963,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_navy_distance24",
+      "field": "relationship_rank",
+      "reference_dx": -2,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 30,
+      "digit_accuracy": 0.6818181818181818,
+      "confusion": {
+        "0->6": 2,
+        "4->1": 3,
+        "1->9": 1,
+        "3->1": 4,
+        "9->7": 1,
+        "2->4": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 56,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.4782608695652174,
+              "margin": 0.04688832054560954,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "6",
+              "score": 0.4177215189873418,
+              "margin": 0.012658227848101278,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 56,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.4782608695652174,
+              "margin": 0.04688832054560954,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "6",
+              "score": 0.4177215189873418,
+              "margin": 0.012658227848101278,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 17,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "1",
+              "score": 0.5106382978723404,
+              "margin": 0.01730496453900704,
+              "shift": [
+                2,
+                -2
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "7",
+              "score": 0.41935483870967744,
+              "margin": 0.015099519560741292,
+              "shift": [
+                -2,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 19,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "1",
+              "score": 0.5106382978723404,
+              "margin": 0.01730496453900704,
+              "shift": [
+                2,
+                -2
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "9",
+              "score": 0.5230769230769231,
+              "margin": 0.000688863375430615,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 17,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.4166666666666667,
+              "margin": 0.02450980392156865,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "7",
+              "score": 0.3939393939393939,
+              "margin": 0.0020475020475020367,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 17,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.4166666666666667,
+              "margin": 0.02450980392156865,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "7",
+              "score": 0.41935483870967744,
+              "margin": 0.015099519560741292,
+              "shift": [
+                -2,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 11,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.4166666666666667,
+              "margin": 0.02450980392156865,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "1",
+              "score": 0.5217391304347826,
+              "margin": 0.014696876913655843,
+              "shift": [
+                2,
+                -2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 41,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "4",
+              "score": 0.46551724137931033,
+              "margin": 0.014813016027197645,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.4166666666666667,
+              "margin": 0.008503401360544227,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.5072463768115942,
+              "margin": 0.03356216628527847,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.47297297297297297,
+              "margin": 0.044401544401544424,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_navy_distance36",
+      "field": "relationship_rank",
+      "reference_dx": 0,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 28,
+      "digit_accuracy": 0.6363636363636364,
+      "confusion": {
+        "0->9": 2,
+        "4->5": 3,
+        "7->0": 2,
+        "1->0": 1,
+        "3->5": 4,
+        "9->4": 1,
+        "2->5": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.4675324675324675,
+              "margin": 0.021749335002347048,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.5324675324675324,
+              "margin": 0.026585179526355973,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.4675324675324675,
+              "margin": 0.021749335002347048,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.5324675324675324,
+              "margin": 0.026585179526355973,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.4794520547945205,
+              "margin": 0.028232542599398558,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "0",
+              "score": 0.4262295081967213,
+              "margin": 0.04441132637853945,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.4794520547945205,
+              "margin": 0.028232542599398558,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "0",
+              "score": 0.484375,
+              "margin": 0.005501760563380309,
+              "shift": [
+                1,
+                -2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 54,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.39436619718309857,
+              "margin": 0.017742820559721928,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "4",
+              "score": 0.417910447761194,
+              "margin": 0.009459743535841891,
+              "shift": [
+                1,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.39436619718309857,
+              "margin": 0.017742820559721928,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "0",
+              "score": 0.4262295081967213,
+              "margin": 0.04441132637853945,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.39436619718309857,
+              "margin": 0.017742820559721928,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.4861111111111111,
+              "margin": 0.018578643578643583,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "5",
+              "score": 0.4246575342465753,
+              "margin": 0.0004151100041510647,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.4507042253521127,
+              "margin": 0.019669742593492023,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.4605263157894737,
+              "margin": 0.021501925545571232,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.46987951807228917,
+              "margin": 0.022820694542877384,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_navy_distance36",
+      "field": "relationship_rank",
+      "reference_dx": -1,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 31,
+      "digit_accuracy": 0.7045454545454546,
+      "confusion": {
+        "0->9": 2,
+        "7->3": 2,
+        "1->0": 1,
+        "3->5": 3,
+        "9->4": 1,
+        "2->4": 1,
+        "3->4": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5142857142857142,
+              "margin": 0.027443609022556326,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.45555555555555555,
+              "margin": 0.012256586483390619,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5142857142857142,
+              "margin": 0.027443609022556326,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.45555555555555555,
+              "margin": 0.012256586483390619,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 43,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.5217391304347826,
+              "margin": 0.0017391304347825765,
+              "shift": [
+                -2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "3",
+              "score": 0.38181818181818183,
+              "margin": 0.003439803439803435,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 40,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.5217391304347826,
+              "margin": 0.0017391304347825765,
+              "shift": [
+                -2,
+                1
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "0",
+              "score": 0.484375,
+              "margin": 0.005501760563380309,
+              "shift": [
+                2,
+                -2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 54,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.4375,
+              "margin": 0.006127450980392135,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "4",
+              "score": 0.417910447761194,
+              "margin": 0.00018892877385223716,
+              "shift": [
+                2,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 53,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.4375,
+              "margin": 0.006127450980392135,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "3",
+              "score": 0.38181818181818183,
+              "margin": 0.003439803439803435,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 54,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.4375,
+              "margin": 0.006127450980392135,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.4578313253012048,
+              "margin": 0.02745157846576174,
+              "shift": [
+                -2,
+                2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 44,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "4",
+              "score": 0.4827586206896552,
+              "margin": 0.01306165099268547,
+              "shift": [
+                2,
+                -2
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "4",
+              "score": 0.43103448275862066,
+              "margin": 0.004804974561899378,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.5072463768115942,
+              "margin": 0.03356216628527847,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.46987951807228917,
+              "margin": 0.022820694542877384,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_navy_distance36",
+      "field": "relationship_rank",
+      "reference_dx": -2,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 31,
+      "digit_accuracy": 0.7045454545454546,
+      "confusion": {
+        "0->6": 2,
+        "4->1": 2,
+        "1->9": 1,
+        "3->4": 3,
+        "9->3": 1,
+        "2->4": 1,
+        "3->1": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 56,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5142857142857142,
+              "margin": 0.04999999999999993,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "6",
+              "score": 0.46835443037974683,
+              "margin": 0.012658227848101278,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 56,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5142857142857142,
+              "margin": 0.04999999999999993,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "6",
+              "score": 0.46835443037974683,
+              "margin": 0.012658227848101278,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 17,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "1",
+              "score": 0.52,
+              "margin": 0.013333333333333308,
+              "shift": [
+                2,
+                2
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "7",
+              "score": 0.41935483870967744,
+              "margin": 0.015099519560741292,
+              "shift": [
+                -2,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 19,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "1",
+              "score": 0.52,
+              "margin": 0.013333333333333308,
+              "shift": [
+                2,
+                2
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "9",
+              "score": 0.5230769230769231,
+              "margin": 0.000688863375430615,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 43,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "4",
+              "score": 0.43137254901960786,
+              "margin": 0.024592888002658686,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "3",
+              "score": 0.4098360655737705,
+              "margin": 0.006850990946904834,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 47,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "4",
+              "score": 0.43137254901960786,
+              "margin": 0.024592888002658686,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "7",
+              "score": 0.41935483870967744,
+              "margin": 0.015099519560741292,
+              "shift": [
+                -2,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 44,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "4",
+              "score": 0.43137254901960786,
+              "margin": 0.024592888002658686,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.5211267605633803,
+              "margin": 0.010488462691039868,
+              "shift": [
+                -2,
+                2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 41,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "4",
+              "score": 0.4827586206896552,
+              "margin": 0.017969888295289005,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.4791666666666667,
+              "margin": 0.03916666666666668,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.5072463768115942,
+              "margin": 0.03356216628527847,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.4864864864864865,
+              "margin": 0.044928044928044975,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_navy_distance48",
+      "field": "relationship_rank",
+      "reference_dx": 0,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 28,
+      "digit_accuracy": 0.6363636363636364,
+      "confusion": {
+        "0->9": 2,
+        "4->5": 3,
+        "7->0": 2,
+        "1->0": 1,
+        "3->5": 3,
+        "9->8": 1,
+        "2->5": 1,
+        "3->4": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.4805194805194805,
+              "margin": 0.02268815521827572,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.5454545454545454,
+              "margin": 0.027807486631015954,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.4805194805194805,
+              "margin": 0.02268815521827572,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.5454545454545454,
+              "margin": 0.027807486631015954,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.4931506849315068,
+              "margin": 0.029736050785165336,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "0",
+              "score": 0.4426229508196721,
+              "margin": 0.05131860299358515,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.4931506849315068,
+              "margin": 0.029736050785165336,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "0",
+              "score": 0.484375,
+              "margin": 0.005501760563380309,
+              "shift": [
+                1,
+                -2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 58,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.4027777777777778,
+              "margin": 0.00018037518037516964,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "8",
+              "score": 0.4157303370786517,
+              "margin": 0.00396563119629878,
+              "shift": [
+                -2,
+                -1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 50,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.4027777777777778,
+              "margin": 0.00018037518037516964,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "0",
+              "score": 0.4426229508196721,
+              "margin": 0.05131860299358515,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.4027777777777778,
+              "margin": 0.00018037518037516964,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "5",
+              "score": 0.5,
+              "margin": 0.019480519480519487,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 54,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "5",
+              "score": 0.4383561643835616,
+              "margin": 0.017303532804614274,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "4",
+              "score": 0.4482758620689655,
+              "margin": 0.003831417624521105,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.4605263157894737,
+              "margin": 0.021501925545571232,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.47058823529411764,
+              "margin": 0.014066496163682884,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_navy_distance48",
+      "field": "relationship_rank",
+      "reference_dx": -1,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 31,
+      "digit_accuracy": 0.7045454545454546,
+      "confusion": {
+        "0->9": 2,
+        "4->1": 2,
+        "1->0": 1,
+        "3->5": 3,
+        "9->7": 1,
+        "2->5": 1,
+        "3->4": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5285714285714286,
+              "margin": 0.02857142857142858,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.4666666666666667,
+              "margin": 0.013058419243986263,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 59,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5285714285714286,
+              "margin": 0.02857142857142858,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "9",
+              "score": 0.4666666666666667,
+              "margin": 0.013058419243986263,
+              "shift": [
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 17,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "1",
+              "score": 0.54,
+              "margin": 0.003768115942028971,
+              "shift": [
+                1,
+                2
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "7",
+              "score": 0.3918918918918919,
+              "margin": 0.013104013104013101,
+              "shift": [
+                -2,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 10,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "1",
+              "score": 0.54,
+              "margin": 0.003768115942028971,
+              "shift": [
+                1,
+                2
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "0",
+              "score": 0.484375,
+              "margin": 0.005501760563380309,
+              "shift": [
+                2,
+                -2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 57,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.4461538461538462,
+              "margin": 0.005475880052151272,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "7",
+              "score": 0.4125,
+              "margin": 0.0007352941176470562,
+              "shift": [
+                -2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 57,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.4461538461538462,
+              "margin": 0.005475880052151272,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "7",
+              "score": 0.3918918918918919,
+              "margin": 0.013104013104013101,
+              "shift": [
+                -2,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 54,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "5",
+              "score": 0.4461538461538462,
+              "margin": 0.005475880052151272,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.46987951807228917,
+              "margin": 0.026841543388744893,
+              "shift": [
+                -2,
+                2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 54,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "5",
+              "score": 0.48484848484848486,
+              "margin": 0.010272213662044172,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "4",
+              "score": 0.4482758620689655,
+              "margin": 0.005652911249293402,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.5072463768115942,
+              "margin": 0.03356216628527847,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.47058823529411764,
+              "margin": 0.014066496163682884,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "relationship_navy_distance48",
+      "field": "relationship_rank",
+      "reference_dx": -2,
+      "values": 22,
+      "value_correct": 13,
+      "value_accuracy": 0.5909090909090909,
+      "digits": 44,
+      "digit_correct": 31,
+      "digit_accuracy": 0.7045454545454546,
+      "confusion": {
+        "0->6": 2,
+        "4->1": 2,
+        "1->9": 1,
+        "3->1": 4,
+        "9->5": 1,
+        "2->5": 1,
+        "1->5": 1,
+        "8->5": 1
+      },
+      "failure_samples": [
+        {
+          "source_file": "hibiki_rank50_1280x720_20260824.png",
+          "expected": 50,
+          "observed": 56,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5285714285714286,
+              "margin": 0.04642857142857143,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "6",
+              "score": 0.4810126582278481,
+              "margin": 0.012658227848101278,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024139.png",
+          "expected": 50,
+          "observed": 56,
+          "digits": [
+            {
+              "expected": "5",
+              "observed": "5",
+              "score": 0.5285714285714286,
+              "margin": 0.04642857142857143,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "0",
+              "observed": "6",
+              "score": 0.4810126582278481,
+              "margin": 0.012658227848101278,
+              "shift": [
+                1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024147.png",
+          "expected": 47,
+          "observed": 17,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "1",
+              "score": 0.54,
+              "margin": 0.020000000000000018,
+              "shift": [
+                2,
+                2
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "7",
+              "score": 0.43548387096774194,
+              "margin": 0.03965053763440862,
+              "shift": [
+                -2,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024202.png",
+          "expected": 41,
+          "observed": 19,
+          "digits": [
+            {
+              "expected": "4",
+              "observed": "1",
+              "score": 0.54,
+              "margin": 0.020000000000000018,
+              "shift": [
+                2,
+                2
+              ]
+            },
+            {
+              "expected": "1",
+              "observed": "9",
+              "score": 0.5230769230769231,
+              "margin": 0.000688863375430615,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024215.png",
+          "expected": 39,
+          "observed": 15,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.4406779661016949,
+              "margin": 0.02558362647905338,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "9",
+              "observed": "5",
+              "score": 0.41333333333333333,
+              "margin": 0.005438596491228076,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024226.png",
+          "expected": 37,
+          "observed": 17,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.4406779661016949,
+              "margin": 0.02558362647905338,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "7",
+              "observed": "7",
+              "score": 0.43548387096774194,
+              "margin": 0.03965053763440862,
+              "shift": [
+                -2,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024250.png",
+          "expected": 34,
+          "observed": 14,
+          "digits": [
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.4406779661016949,
+              "margin": 0.02558362647905338,
+              "shift": [
+                1,
+                1
+              ]
+            },
+            {
+              "expected": "4",
+              "observed": "4",
+              "score": 0.5352112676056338,
+              "margin": 0.015211267605633738,
+              "shift": [
+                -2,
+                2
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 024414.png",
+          "expected": 23,
+          "observed": 51,
+          "digits": [
+            {
+              "expected": "2",
+              "observed": "5",
+              "score": 0.4788732394366197,
+              "margin": 0.004296968250179001,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "3",
+              "observed": "1",
+              "score": 0.4791666666666667,
+              "margin": 0.03916666666666668,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "source_file": "스크린샷 2026-08-23 030242.png",
+          "expected": 18,
+          "observed": 55,
+          "digits": [
+            {
+              "expected": "1",
+              "observed": "5",
+              "score": 0.5072463768115942,
+              "margin": 0.03356216628527847,
+              "shift": [
+                2,
+                1
+              ]
+            },
+            {
+              "expected": "8",
+              "observed": "5",
+              "score": 0.4868421052631579,
+              "margin": 0.029010779961953115,
+              "shift": [
+                2,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

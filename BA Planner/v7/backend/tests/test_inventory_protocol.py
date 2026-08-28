@@ -9,7 +9,7 @@ import unittest
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
-from core.inventory_catalog import BY_KEY
+from core.inventory_catalog import BY_KEY, CATALOG_REVISION
 from core.repository_dto import InventorySnapshot, RepositoryDTOError
 
 
@@ -27,11 +27,21 @@ class InventoryProtocolTests(unittest.TestCase):
     def test_v6_representative_parity_fixture_matches_catalog(self) -> None:
         fixture = json.loads((ROOT / "contracts/fixtures/inventory_catalog_v6_parity.json").read_text(encoding="utf-8"))
         self.assertEqual(fixture["version"], 1)
+        self.assertEqual(fixture["catalog_revision"], CATALOG_REVISION)
         for expected in fixture["representative_rows"]:
             with self.subTest(key=expected["resource_key"]):
                 row = BY_KEY[expected["resource_key"]].to_dict()
                 for key, value in expected.items():
                     self.assertEqual(row[key], value)
+        eleph_rows = sorted(
+            (row for row in BY_KEY.values() if row.profile_id == "student_elephs"),
+            key=lambda row: row.order_index,
+        )
+        relative = set(fixture["student_eleph_relative_order"])
+        self.assertEqual(
+            fixture["student_eleph_relative_order"],
+            [row.resource_key for row in eleph_rows if row.resource_key in relative],
+        )
 
     def test_new_method_schemas_accept_canonical_messages_and_reject_malformed(self) -> None:
         schemas = {

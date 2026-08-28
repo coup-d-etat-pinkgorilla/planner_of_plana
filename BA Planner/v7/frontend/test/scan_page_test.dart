@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
+import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
+import 'package:ba_planner_v7/services/window_dock_service.dart';
+import 'package:ba_planner_v7/ui/widgets/scan_companion_dock.dart';
 import 'package:ba_planner_v7/ui/pages/scan_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,12 +14,16 @@ Widget _subject(
   MockAppService service, {
   void Function(ScannerSession, ScannerCandidate)? onHandoff,
   ValueChanged<List<ScannerRecentSummary>>? onRecentChanged,
+  ValueChanged<ScanCompanionState?>? onCompanionChanged,
+  WindowDockService windowDockService = const WindowsWindowDockService(),
 }) => MaterialApp(
   home: Scaffold(
     body: ScanPage(
       service: service,
       onCandidateHandoff: onHandoff ?? (_, _) {},
       onRecentChanged: onRecentChanged,
+      onCompanionChanged: onCompanionChanged,
+      windowDockService: windowDockService,
     ),
   ),
 );
@@ -44,6 +51,36 @@ Future<void> _reveal(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  testWidgets('full student scan docks before start and restores on terminal', (
+    tester,
+  ) async {
+    final service = MockAppService();
+    final dock = _RecordingWindowDockService();
+    final companions = <ScanCompanionState?>[];
+    addTearDown(service.dispose);
+    await tester.pumpWidget(
+      _subject(
+        service,
+        windowDockService: dock,
+        onCompanionChanged: companions.add,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _selectTarget(tester, 'mock-window');
+    await tester.tap(find.text('전체'));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('scan-start')));
+    await tester.pump();
+
+    expect(dock.dockedTargets, ['mock-window']);
+    expect(dock.restoreCalls, 0);
+    expect(companions.whereType<ScanCompanionState>(), isNotEmpty);
+
+    await tester.pump(const Duration(milliseconds: 35));
+    expect(dock.restoreCalls, 1);
+    expect(companions.last, isNull);
+  });
+
   testWidgets('loading, empty, error, disconnected and refresh are distinct', (
     tester,
   ) async {
@@ -72,69 +109,207 @@ void main() {
     expect(start.onPressed, isNull);
   });
 
-  testWidgets('preparation keeps stable target IDs and blocks non-ready target', (
+  testWidgets(
+    'preparation keeps stable target IDs and blocks non-ready target',
+    (tester) async {
+      final service = MockAppService(
+        scannerTargets: const [
+          ScannerTarget(
+            id: 'same-minimized',
+            title: 'Same title',
+            status: ScannerTargetStatus.minimized,
+          ),
+          ScannerTarget(
+            id: 'same-ready',
+            title: 'Same title',
+            status: ScannerTargetStatus.ready,
+            foreground: true,
+          ),
+        ],
+      );
+      addTearDown(service.dispose);
+      await tester.pumpWidget(_subject(service));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('scan-page')), findsOneWidget);
+      expect(find.textContaining('Manifest 1'), findsOneWidget);
+      await _selectTarget(tester, 'same-minimized');
+      var start = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Start scan'),
+      );
+      expect(start.onPressed, isNull);
+      expect(find.textContaining('choose a ready target'), findsOneWidget);
+
+      await _selectTarget(tester, 'same-ready');
+      start = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Start scan'),
+      );
+      expect(start.onPressed, isNotNull);
+      expect(find.textContaining('foreground'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'student problem result stays in scan workspace and revalidates green',
+    (tester) async {
+      final service = MockAppService(
+        scannerScenario: MockScannerScenario.reviewRequired,
+      );
+      addTearDown(service.dispose);
+      ScannerCandidate? handedOff;
+      await tester.pumpWidget(
+        _subject(service, onHandoff: (_, candidate) => handedOff = candidate),
+      );
+      await tester.pumpAndSettle();
+      await _selectTarget(tester, 'mock-window');
+      await tester.tap(find.byKey(const ValueKey('scan-start')));
+      await tester.pump(const Duration(milliseconds: 35));
+
+      expect(find.textContaining('Outcome: completed'), findsOneWidget);
+      final revalidate = find.byKey(
+        const ValueKey('scan-student-revalidate-mock-candidate-1'),
+      );
+      await _reveal(tester, revalidate);
+      expect(
+        tester.getTopLeft(revalidate).dy,
+        lessThan(tester.getTopLeft(find.text('현재 확정값 / 스캔값 / 계산값 / 차이')).dy),
+      );
+      await tester.tap(find.text('상세 증거'));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('다른 의상 인연 보너스 검증'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('relationship-contribution-10000')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('relationship-contribution-10031')),
+        findsOneWidget,
+      );
+      expect(find.text('인연 20'), findsOneWidget);
+      expect(find.text('인연 10'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics && widget.properties.label == '문제 있는 스캔 결과',
+        ),
+        findsWidgets,
+      );
+      expect(find.text('수정'), findsOneWidget);
+      expect(find.text('재검증'), findsOneWidget);
+      expect(find.text('보류'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('scan-student-apply-mock-candidate-1')),
+        findsNothing,
+      );
+      await tester.tap(revalidate);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics && widget.properties.label == '문제 없는 스캔 결과',
+        ),
+        findsWidgets,
+      );
+      expect(
+        find.byKey(const ValueKey('scan-student-apply-mock-candidate-1')),
+        findsOneWidget,
+      );
+      expect(handedOff, isNull);
+    },
+  );
+
+  testWidgets('green result applies in scan tab and discard is confirmed', (
     tester,
   ) async {
-    final service = MockAppService(
-      scannerTargets: const [
-        ScannerTarget(
-          id: 'same-minimized',
-          title: 'Same title',
-          status: ScannerTargetStatus.minimized,
-        ),
-        ScannerTarget(
-          id: 'same-ready',
-          title: 'Same title',
-          status: ScannerTargetStatus.ready,
-          foreground: true,
-        ),
-      ],
-    );
+    final service = MockAppService();
     addTearDown(service.dispose);
     await tester.pumpWidget(_subject(service));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('scan-page')), findsOneWidget);
-    expect(find.textContaining('Manifest 1'), findsOneWidget);
-    await _selectTarget(tester, 'same-minimized');
-    var start = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Start scan'),
-    );
-    expect(start.onPressed, isNull);
-    expect(find.textContaining('choose a ready target'), findsOneWidget);
-
-    await _selectTarget(tester, 'same-ready');
-    start = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Start scan'),
-    );
-    expect(start.onPressed, isNotNull);
-    expect(find.textContaining('foreground'), findsOneWidget);
-  });
-
-  testWidgets('projects deterministic candidate and hands it to the data owner', (
-    tester,
-  ) async {
-    final service = MockAppService(
-      scannerScenario: MockScannerScenario.reviewRequired,
-    );
-    addTearDown(service.dispose);
-    ScannerCandidate? handedOff;
-    await tester.pumpWidget(
-      _subject(service, onHandoff: (_, candidate) => handedOff = candidate),
-    );
     await tester.pumpAndSettle();
     await _selectTarget(tester, 'mock-window');
     await tester.tap(find.byKey(const ValueKey('scan-start')));
     await tester.pump(const Duration(milliseconds: 35));
 
-    expect(find.textContaining('Outcome: completed'), findsOneWidget);
-    expect(find.text('Review required'), findsOneWidget);
-    expect(find.textContaining('62.0%'), findsOneWidget);
-    final review = find.byKey(const ValueKey('scan-review-mock-candidate-1'));
-    await _reveal(tester, review);
-    await tester.tap(review);
-    expect(handedOff?.kind, ScannerKind.student);
-    expect(handedOff?.payload['student_id'], 'aru');
+    final apply = find.byKey(
+      const ValueKey('scan-student-apply-mock-candidate-1'),
+    );
+    await _reveal(tester, apply);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == '문제 없는 스캔 결과',
+      ),
+      findsWidgets,
+    );
+    await tester.tap(apply);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.textContaining('repository revision'), findsOneWidget);
+    expect(apply, findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.byKey(const ValueKey('scan-retry')));
+    await tester.pump(const Duration(milliseconds: 35));
+    final more = find.byKey(
+      const ValueKey('scan-student-more-mock-candidate-2'),
+    );
+    await _reveal(tester, more);
+    final overflow = tester.widget<PopupMenuButton<String>>(more);
+    overflow.onSelected!('discard');
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('확정된 현재값은 변경되지 않습니다'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('scan-student-discard-confirm')),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('후보를 폐기했습니다'), findsOneWidget);
+  });
+
+  testWidgets('apply conflict returns red and recovers through revalidation', (
+    tester,
+  ) async {
+    final service = MockAppService();
+    addTearDown(service.dispose);
+    await tester.pumpWidget(_subject(service));
+    await tester.pumpAndSettle();
+    final profile = (await service.listProfiles()).single;
+    await _selectTarget(tester, 'mock-window');
+    await tester.tap(find.byKey(const ValueKey('scan-start')));
+    await tester.pump(const Duration(milliseconds: 35));
+
+    await service.saveRepositoryGoals(
+      profile.id,
+      const {'version': 1, 'goals': <dynamic>[]},
+      0,
+      'concurrent-scan-test-update',
+    );
+    final apply = find.byKey(
+      const ValueKey('scan-student-apply-mock-candidate-1'),
+    );
+    await _reveal(tester, apply);
+    await tester.tap(apply);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.textContaining('적용 실패'), findsWidgets);
+    expect(apply, findsNothing);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == '문제 있는 스캔 결과',
+      ),
+      findsWidgets,
+    );
+
+    final revalidate = find.byKey(
+      const ValueKey('scan-student-revalidate-mock-candidate-1'),
+    );
+    await tester.tap(revalidate);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(apply, findsOneWidget);
+    await tester.tap(apply);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.textContaining('repository revision 2'), findsOneWidget);
   });
 
   testWidgets('publishes an immutable typed terminal recent projection', (
@@ -156,54 +331,59 @@ void main() {
     expect(recent!.single.kind, ScannerKind.student);
     expect(recent!.single.outcome, 'completed');
     expect(recent!.single.candidateCount, 1);
-    expect(
-      () => recent!.add(recent!.single),
-      throwsUnsupportedError,
-    );
+    expect(() => recent!.add(recent!.single), throwsUnsupportedError);
   });
 
-  testWidgets('cancel acknowledgement remains cancelling until terminal and retry is new', (
-    tester,
-  ) async {
-    final service = MockAppService();
-    addTearDown(service.dispose);
-    await tester.pumpWidget(_subject(service));
-    await tester.pumpAndSettle();
-    await _selectTarget(tester, 'mock-window');
-    await tester.tap(find.byKey(const ValueKey('scan-start')));
-    await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('scan-cancel')));
-    await tester.pump();
-    expect(find.text('Cancelling…'), findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 10));
-    expect(find.textContaining('Outcome: cancelled'), findsOneWidget);
+  testWidgets(
+    'cancel acknowledgement remains cancelling until terminal and retry is new',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      await tester.pumpWidget(_subject(service));
+      await tester.pumpAndSettle();
+      await _selectTarget(tester, 'mock-window');
+      await tester.tap(find.byKey(const ValueKey('scan-start')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('scan-cancel')));
+      await tester.pump();
+      expect(find.text('Cancelling…'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 10));
+      expect(find.textContaining('Outcome: cancelled'), findsOneWidget);
 
-    final retry = find.byKey(const ValueKey('scan-retry'));
-    await _reveal(tester, retry);
-    await tester.tap(retry);
-    await tester.pump();
-    expect(find.textContaining('generation 2'), findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 35));
-  });
+      final retry = find.byKey(const ValueKey('scan-retry'));
+      await _reveal(tester, retry);
+      await tester.tap(retry);
+      await tester.pump();
+      expect(find.textContaining('generation 2'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 35));
+    },
+  );
 
-  testWidgets('stream error recovers authoritative snapshot without direct commit', (
-    tester,
-  ) async {
-    final service = _SnapshotMockService();
-    addTearDown(service.dispose);
-    await tester.pumpWidget(_subject(service));
-    await tester.pumpAndSettle();
-    await _selectTarget(tester, 'mock-window');
-    await tester.tap(find.byKey(const ValueKey('scan-start')));
-    await tester.pump();
-    service.emitGap();
-    await tester.pump();
-    await tester.pump();
+  testWidgets(
+    'stream error recovers authoritative snapshot without direct commit',
+    (tester) async {
+      final service = _SnapshotMockService();
+      addTearDown(service.dispose);
+      await tester.pumpWidget(_subject(service));
+      await tester.pumpAndSettle();
+      await _selectTarget(tester, 'mock-window');
+      await tester.tap(find.byKey(const ValueKey('scan-start')));
+      await tester.pump();
+      service.emitGap();
+      await tester.pump();
+      await tester.pump();
 
-    expect(find.textContaining('Outcome: completed'), findsOneWidget);
-    await _reveal(tester, find.textContaining('Recent sessions in this app run'));
-    await _reveal(tester, find.textContaining('Candidate snapshot-candidate'));
-  });
+      expect(find.textContaining('Outcome: completed'), findsOneWidget);
+      await _reveal(
+        tester,
+        find.textContaining('Recent sessions in this app run'),
+      );
+      await _reveal(
+        tester,
+        find.textContaining('Candidate snapshot-candidate'),
+      );
+    },
+  );
 
   testWidgets('candidate kind and payload mismatch is not handed off', (
     tester,
@@ -226,39 +406,196 @@ void main() {
     await tester.tap(review);
     await tester.pump();
     expect(handoffCount, 0);
-    expect(find.textContaining('Candidate kind or payload mismatch'), findsOneWidget);
+    expect(
+      find.textContaining('Candidate kind or payload mismatch'),
+      findsOneWidget,
+    );
   });
 
-  for (final size in const [Size(1280, 720), Size(1440, 900), Size(1280, 960)]) {
-    testWidgets('scan controls remain reachable at ${size.width}x${size.height}', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(size);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      final service = MockAppService(
-        scannerTargets: const [
-          ScannerTarget(
-            id: 'long-ready-target',
-            title:
-                'Blue Archive window with a deliberately very long target title for layout verification',
-            status: ScannerTargetStatus.ready,
+  testWidgets('single scan requires owned alternate rank before green', (
+    tester,
+  ) async {
+    final service = _SnapshotMockService(deferred: true);
+    addTearDown(service.dispose);
+    await tester.pumpWidget(_subject(service));
+    await tester.pumpAndSettle();
+    await _selectTarget(tester, 'mock-window');
+    await tester.tap(find.byKey(const ValueKey('scan-start')));
+    await tester.pump();
+    service.emitGap();
+    await tester.pump();
+    await tester.pump();
+
+    final input = find.byKey(
+      const ValueKey('alternate-rank-snapshot-candidate-10098'),
+    );
+    await _reveal(tester, input);
+    expect(find.text('dependency missing'), findsWidgets);
+    await tester.enterText(input, '24');
+    expect(
+      tester
+          .getTopLeft(
+            find.byKey(
+              const ValueKey(
+                'scan-result-row-host-snapshot-candidate-relationship-10098',
+              ),
+            ),
+          )
+          .dy,
+      greaterThan(
+        tester
+            .getTopLeft(
+              find.byKey(
+                const ValueKey('scan-result-row-host-snapshot-candidate'),
+              ),
+            )
+            .dy,
+      ),
+    );
+    final revalidate = find.byKey(
+      const ValueKey('scan-student-revalidate-snapshot-candidate'),
+    );
+    await _reveal(tester, revalidate);
+    tester.widget<FilledButton>(revalidate).onPressed!();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    final apply = find.byKey(
+      const ValueKey('scan-student-apply-snapshot-candidate'),
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == '문제 없는 스캔 결과',
+      ),
+      findsWidgets,
+    );
+    expect(apply, findsOneWidget);
+  });
+
+  for (final size in const [
+    Size(800, 720),
+    Size(1280, 720),
+    Size(1440, 900),
+    Size(1920, 1080),
+  ]) {
+    testWidgets(
+      'scan workspace remains reachable at ${size.width}x${size.height}',
+      (tester) async {
+        await tester.binding.setSurfaceSize(size);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final service = MockAppService(
+          scannerTargets: const [
+            ScannerTarget(
+              id: 'long-ready-target',
+              title:
+                  'Blue Archive window with a deliberately very long target title for layout verification',
+              status: ScannerTargetStatus.ready,
+            ),
+          ],
+        );
+        addTearDown(service.dispose);
+        final profile = (await service.listProfiles()).single;
+        final repository = await service.loadRepositoryState(profile.id);
+        await service.saveRepositoryStudents(
+          profile.id,
+          [
+            ConfirmedStudentState.fromValues('aru', const {
+              'level': 90,
+              'bond_rank': 20,
+              'student_star': 5,
+              'weapon_state': 'weapon_equipped',
+              'weapon_star': 3,
+              'weapon_level': 50,
+              'ex_skill': 5,
+              'skill1': 10,
+              'skill2': 10,
+              'skill3': 10,
+              'equip1': 'T10',
+              'equip1_level': 70,
+              'equip2': 'T10',
+              'equip2_level': 70,
+              'equip3': 'T10',
+              'equip3_level': 70,
+              'combat_hp': 42191,
+              'combat_atk': 6785,
+              'combat_def': 437,
+              'combat_heal': 7211,
+            }),
+          ],
+          repository.revision,
+          'scan-viewport-long-result-${size.width}',
+        );
+        await tester.pumpWidget(_subject(service));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const ValueKey('scan-start')), findsOneWidget);
+        expect(find.byKey(const ValueKey('scan-refresh')), findsOneWidget);
+        await _selectTarget(tester, 'long-ready-target');
+        await tester.tap(find.byKey(const ValueKey('scan-start')));
+        await tester.pump(const Duration(milliseconds: 35));
+        final apply = find.byKey(
+          const ValueKey('scan-student-apply-mock-candidate-1'),
+        );
+        await _reveal(tester, apply);
+        expect(tester.takeException(), isNull);
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics && widget.properties.label == '문제 없는 스캔 결과',
           ),
-        ],
-      );
-      addTearDown(service.dispose);
-      await tester.pumpWidget(_subject(service));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      expect(find.byKey(const ValueKey('scan-start')), findsOneWidget);
-      expect(find.byKey(const ValueKey('scan-refresh')), findsOneWidget);
-    });
+          findsWidgets,
+        );
+        expect(apply, findsOneWidget);
+        if (size.width >= 920) {
+          final detailScroll = find.byKey(
+            const ValueKey('scan-student-detail-scroll-mock-candidate-1'),
+          );
+          expect(detailScroll, findsOneWidget);
+          final singleChild = find.descendant(
+            of: detailScroll,
+            matching: find.byType(SingleChildScrollView),
+          );
+          final position = tester
+              .widget<SingleChildScrollView>(singleChild.first)
+              .controller!
+              .position;
+          final before = position.pixels;
+          await tester.drag(detailScroll, const Offset(0, -260));
+          await tester.pump();
+          expect(position.pixels, greaterThan(before));
+          expect(tester.takeException(), isNull);
+        }
+      },
+    );
+  }
+}
+
+class _RecordingWindowDockService implements WindowDockService {
+  final List<String> dockedTargets = [];
+  int restoreCalls = 0;
+
+  @override
+  Future<ScanDockPlacement> dockBeside(String targetId) async {
+    dockedTargets.add(targetId);
+    return const ScanDockPlacement(
+      side: 'right',
+      width: 270,
+      height: 720,
+      gameResized: false,
+    );
+  }
+
+  @override
+  Future<void> restore() async {
+    restoreCalls += 1;
   }
 }
 
 class _SnapshotMockService extends MockAppService {
-  _SnapshotMockService({this.mismatch = false});
+  _SnapshotMockService({this.mismatch = false, this.deferred = false});
 
   final bool mismatch;
+  final bool deferred;
   final StreamController<ScannerEvent> _events = StreamController.broadcast();
 
   @override
@@ -267,9 +604,16 @@ class _SnapshotMockService extends MockAppService {
   @override
   Future<ScannerSession> startScannerSession(
     ScannerKind kind,
-    String targetId,
-  ) async {
-    return ScannerSession(id: 'snapshot-session', generation: 1, kind: kind);
+    String targetId, {
+    String? profileId,
+    StudentScanMode studentScanMode = StudentScanMode.single,
+  }) async {
+    return ScannerSession(
+      id: 'snapshot-session',
+      generation: 1,
+      kind: kind,
+      studentScanMode: studentScanMode,
+    );
   }
 
   void emitGap() => _events.addError(StateError('sequence gap'));
@@ -290,15 +634,46 @@ class _SnapshotMockService extends MockAppService {
               'student_id': 'aru',
               'values': {'level': 90},
             },
-      evidence: const [
-        ScannerFieldEvidence(
-          field: 'level',
-          status: 'ok',
-          source: 'snapshot',
-          confidence: 0.99,
-        ),
-      ],
-      reviewRequired: false,
+      evidence: deferred
+          ? const [
+              ScannerFieldEvidence(
+                field: 'student_stat_validation',
+                status: 'dependency_missing',
+                source: 'student_stats_v1',
+                details: {
+                  'suggestion': {
+                    'action': 'provide_alternate_relationship_ranks',
+                  },
+                  'relationship_contributions': [
+                    {
+                      'kind': 'current',
+                      'student_id': 'aru',
+                      'schaledb_id': 10000,
+                      'rank': 20,
+                      'owned': true,
+                      'applied': true,
+                    },
+                    {
+                      'kind': 'alternate',
+                      'student_id': 'aru_newyear',
+                      'schaledb_id': 10098,
+                      'rank': null,
+                      'owned': true,
+                      'applied': false,
+                    },
+                  ],
+                },
+              ),
+            ]
+          : const [
+              ScannerFieldEvidence(
+                field: 'level',
+                status: 'ok',
+                source: 'snapshot',
+                confidence: 0.99,
+              ),
+            ],
+      reviewRequired: deferred,
       approved: false,
     );
     ScannerEvent event(

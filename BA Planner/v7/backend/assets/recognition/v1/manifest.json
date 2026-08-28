@@ -30,8 +30,8 @@
       "scan_kind": "student",
       "purpose": "student-regions",
       "required": true,
-      "bytes": 39707,
-      "sha256": "64007d0410ace9bd197b31e9a59b1a18a535f305931c2feb1a7bee670393747a",
+      "bytes": 21411,
+      "sha256": "f363a6f1658cb57657edf66dad6aba6c5fb83971843d6868fbac3c771bb10a42",
       "source_path": "adapted:../v6/regions/student_normal_info_regions.json"
     },
     {
@@ -5651,6 +5651,15 @@
       "source_path": "adapted:../v6/templates/students/akane_bunny_girl.png#top-bar-removed-82px"
     },
     {
+      "path": "templates/students/akane_student_uniform.png",
+      "scan_kind": "student",
+      "purpose": "student-template",
+      "required": false,
+      "bytes": 308041,
+      "sha256": "1c948df2277c448779b41d78c3571719ab15450632ffea8b1b08c3f6a67ab88c",
+      "student_id": "akane_student_uniform"
+    },
+    {
       "path": "templates/students/akari.png",
       "scan_kind": "student",
       "purpose": "student-template",
@@ -6741,6 +6750,15 @@
       "source_path": "adapted:../v6/templates/students/kokona.png#top-bar-removed-82px"
     },
     {
+      "path": "templates/students/konoka.png",
+      "scan_kind": "student",
+      "purpose": "student-template",
+      "required": false,
+      "bytes": 245025,
+      "sha256": "0edca5e8798172c9db29d2e34494f06b9148ba0bb0050b18a5f625fee3ad2cfe",
+      "student_id": "konoka"
+    },
+    {
       "path": "templates/students/kotama.png",
       "scan_kind": "student",
       "purpose": "student-template",
@@ -7369,6 +7387,15 @@
       "source_path": "adapted:../v6/templates/students/nozomi.png#top-bar-removed-82px"
     },
     {
+      "path": "templates/students/otogi.png",
+      "scan_kind": "student",
+      "purpose": "student-template",
+      "required": false,
+      "bytes": 232226,
+      "sha256": "3ca80770244b2daa45989d1370e5153e4b8fe624d78a7561090f512e9be73293",
+      "student_id": "otogi"
+    },
+    {
       "path": "templates/students/pina.png",
       "scan_kind": "student",
       "purpose": "student-template",
@@ -7437,6 +7464,15 @@
       "bytes": 245667,
       "sha256": "cd4daa52fd77701245117b4b6b3b311af95858fe18b9966d666ef005342acf5f",
       "source_path": "adapted:../v6/templates/students/reisa_magical.png#top-bar-removed-82px"
+    },
+    {
+      "path": "templates/students/rena.png",
+      "scan_kind": "student",
+      "purpose": "student-template",
+      "required": false,
+      "bytes": 335760,
+      "sha256": "55ec76d99e725fe1d5e77743fe03ec82efdbb1d2fb8a256661b9a7ab13e72868",
+      "student_id": "rena"
     },
     {
       "path": "templates/students/renge.png",

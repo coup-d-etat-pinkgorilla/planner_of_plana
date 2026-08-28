@@ -33,8 +33,15 @@ class WindowsCaptureInputAdapter:
 
     WM_LBUTTONDOWN = 0x0201
     WM_LBUTTONUP = 0x0202
+    WM_KEYDOWN = 0x0100
+    WM_KEYUP = 0x0101
     WM_MOUSEWHEEL = 0x020A
     MK_LBUTTON = 0x0001
+    VK_RIGHT = 0x27
+    MAPVK_VK_TO_VSC = 0
+    KEYEVENTF_EXTENDEDKEY = 0x0001
+    KEYEVENTF_KEYUP = 0x0002
+    SW_RESTORE = 9
     PW_CLIENTONLY = 0x00000001
     PW_RENDERFULLCONTENT = 0x00000002
     DIB_RGB_COLORS = 0
@@ -172,6 +179,59 @@ class WindowsCaptureInputAdapter:
             raise ScannerError("input_failed", "mouse down failed")
         if not user32.PostMessageW(hwnd, self.WM_LBUTTONUP, 0, lparam):
             raise ScannerError("input_failed", "mouse up failed")
+
+    def press_key(self, target: dict[str, Any], key: str) -> bool:
+        if key != "right":
+            raise ScannerError("input_failed", f"unsupported scanner key: {key}")
+        user32, _gdi32 = self._libraries()
+        hwnd = self._hwnd(target)
+        scan_code = int(
+            user32.MapVirtualKeyW(self.VK_RIGHT, self.MAPVK_VK_TO_VSC)
+        ) & 0xFF
+        if scan_code <= 0:
+            raise ScannerError("input_failed", "right-arrow scan code is unavailable")
+
+        if int(user32.GetForegroundWindow() or 0) != int(hwnd or 0):
+            user32.ShowWindow(hwnd, self.SW_RESTORE)
+            user32.BringWindowToTop(hwnd)
+            user32.SetForegroundWindow(hwnd)
+            user32.SetActiveWindow(hwnd)
+            sleep(0.05)
+        if int(user32.GetForegroundWindow() or 0) == int(hwnd or 0):
+            user32.keybd_event(
+                self.VK_RIGHT,
+                scan_code,
+                self.KEYEVENTF_EXTENDEDKEY,
+                0,
+            )
+            user32.keybd_event(
+                self.VK_RIGHT,
+                scan_code,
+                self.KEYEVENTF_EXTENDEDKEY | self.KEYEVENTF_KEYUP,
+                0,
+            )
+            return True
+
+        extended = 1 << 24
+        down_lparam = 1 | (scan_code << 16) | extended
+        up_lparam = down_lparam | (1 << 30) | (1 << 31)
+        down = bool(
+            user32.PostMessageW(
+                hwnd,
+                self.WM_KEYDOWN,
+                self.VK_RIGHT,
+                down_lparam,
+            )
+        )
+        up = bool(
+            user32.PostMessageW(
+                hwnd,
+                self.WM_KEYUP,
+                self.VK_RIGHT,
+                up_lparam,
+            )
+        )
+        return down and up
 
     def scroll(self, target: dict[str, Any], delta: int) -> None:
         user32, _gdi32 = self._libraries()

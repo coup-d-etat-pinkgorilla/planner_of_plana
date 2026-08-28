@@ -142,15 +142,9 @@ class ProcessAppService
   }
 
   @override
-  Future<List<InventoryCatalogEntry>> listInventoryItems() async {
+  Future<InventoryCatalogResult> listInventoryItems() async {
     final payload = await _client.send('planning.inventory.catalog', {});
-    return (payload['items'] as List)
-        .map(
-          (item) => InventoryCatalogEntry.fromWire(
-            Map<String, dynamic>.from(item as Map),
-          ),
-        )
-        .toList(growable: false);
+    return InventoryCatalogResult.fromWire(payload);
   }
 
   @override
@@ -927,8 +921,15 @@ class ProcessAppService
   @override
   Future<ScannerSession> startScannerSession(
     ScannerKind kind,
-    String targetId,
-  ) => _scanner.startScannerSession(kind, targetId);
+    String targetId, {
+    String? profileId,
+    StudentScanMode studentScanMode = StudentScanMode.single,
+  }) => _scanner.startScannerSession(
+    kind,
+    targetId,
+    profileId: profileId,
+    studentScanMode: studentScanMode,
+  );
 
   @override
   Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session) =>
@@ -951,12 +952,25 @@ class ProcessAppService
     Map<String, dynamic> payload, {
     required bool approve,
     required String reason,
+    Map<int, int>? relationshipRanks,
   }) => _scanner.reviewScannerCandidate(
     session,
     candidate,
     payload,
     approve: approve,
     reason: reason,
+    relationshipRanks: relationshipRanks,
+  );
+
+  @override
+  Future<ScannerCandidate> revalidateScannerCandidate(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    Map<int, int>? relationshipRanks,
+  }) => _scanner.revalidateScannerCandidate(
+    session,
+    candidate,
+    relationshipRanks: relationshipRanks,
   );
 
   @override

@@ -355,7 +355,7 @@ class _NoRepositoryService implements AppService {
   @override
   Future<List<StudentCatalogEntry>> listStudents() => delegate.listStudents();
   @override
-  Future<List<InventoryCatalogEntry>> listInventoryItems() =>
+  Future<InventoryCatalogResult> listInventoryItems() =>
       delegate.listInventoryItems();
   @override
   Future<InventoryShortageResult> calculateShortages({

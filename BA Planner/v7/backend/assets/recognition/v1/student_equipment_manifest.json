@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_version": "student-equipment-s3b-actual-tier-roi-2026-08-23",
+  "source_version": "student-equipment-s3-2026-08-21",
   "assets": [
     {
       "path": "regions/student_equipment_regions.json",
@@ -12,30 +12,12 @@
       "source_path": "../v6/regions/student_equipment_regions.json"
     },
     {
-      "path": "templates/student_equipment/card_background.png",
-      "scan_kind": "student",
-      "purpose": "student-equipment-card-background",
-      "required": true,
-      "bytes": 33517,
-      "sha256": "b86f0e8119d0bc08c5a65c623521ad4fc5a4f9782e182e36ec807c83fc598694",
-      "source_path": "../v6/templates/icons/temp/square.png"
-    },
-    {
-      "path": "templates/student_equipment/equipment_level_bold.ttf",
-      "scan_kind": "student",
-      "purpose": "student-equipment-font",
-      "required": true,
-      "bytes": 3118992,
-      "sha256": "f490194d9bf161f70076d01c9fb0a24d0019a324102de46c5fef579188ee96e6",
-      "source_path": "../v6/gui/font/경기천년제목_Bold.ttf"
-    },
-    {
       "path": "templates/student_equipment/basic_position_digits.json",
       "scan_kind": "student",
       "purpose": "student-equipment-position-digit-bank",
       "required": true,
-      "bytes": 5751,
-      "sha256": "622df595cd1baa955aee070c9d9adef2b09d3064f566a03426306098c075dbdc",
+      "bytes": 5768,
+      "sha256": "d19cad6bbc53ce2fa6c5439d6d3f1fbf84e513a0bbb8b20f62ad9a57edd5d28a",
       "source_path": "generated:v6-verified-font-outline-shear-position-mask-v1"
     },
     {
@@ -55,6 +37,24 @@
       "bytes": 433772,
       "sha256": "d6f68361163235fa6e2811c1274c55147ac3789ab11651d30e54013cfd33ef6b",
       "source_path": "generated:actual-exact-1280x720-basic-tier-roi-v1"
+    },
+    {
+      "path": "templates/student_equipment/card_background.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-card-background",
+      "required": true,
+      "bytes": 33517,
+      "sha256": "b86f0e8119d0bc08c5a65c623521ad4fc5a4f9782e182e36ec807c83fc598694",
+      "source_path": "../v6/templates/icons/temp/square.png"
+    },
+    {
+      "path": "templates/student_equipment/equipment_level_medium.ttf",
+      "scan_kind": "student",
+      "purpose": "student-equipment-font",
+      "required": true,
+      "bytes": 2968964,
+      "sha256": "da6fc2e29f3fdc1f25a1f94e18549040acef06ac8d7d9dc373e0f6eabbcae8da",
+      "source_path": "frontend/assets/fonts/GyeonggiTitle-Medium.ttf"
     },
     {
       "path": "templates/student_equipment/favorite/equip4_T1.png",

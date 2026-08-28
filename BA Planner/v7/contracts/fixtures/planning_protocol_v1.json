@@ -79,7 +79,7 @@
     {
       "name": "inventory catalog response",
       "valid": true,
-      "message": { "protocol": 1, "id": "inventory-catalog", "type": "response", "method": "planning.inventory.catalog", "payload": { "items": [{ "resource_key": "Item_Icon_ExpItem_0", "item_id": "Item_Icon_ExpItem_0", "display_name": "Basic activity report", "category": "activity_report", "profile_id": "activity_reports", "order_index": 0, "zero_fill_allowed": true }], "sort": "profile_order" } }
+      "message": { "protocol": 1, "id": "inventory-catalog", "type": "response", "method": "planning.inventory.catalog", "payload": { "items": [{ "resource_key": "Item_Icon_ExpItem_0", "item_id": "Item_Icon_ExpItem_0", "display_name": "Basic activity report", "category": "activity_report", "profile_id": "activity_reports", "order_index": 0, "zero_fill_allowed": true }], "sort": "profile_order", "catalog_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" } }
     },
     {
       "name": "plan shortage request preserves explicit zero",

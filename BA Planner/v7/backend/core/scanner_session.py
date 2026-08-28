@@ -3,6 +3,7 @@ from __future__ import annotations
 from concurrent.futures import Future, ThreadPoolExecutor
 from copy import deepcopy
 from dataclasses import dataclass, field
+from inspect import Parameter, signature
 from threading import Event, RLock
 from typing import Any, Callable, Mapping, Protocol
 from uuid import uuid4
@@ -35,6 +36,7 @@ class RepositoryCommitPort(Protocol):
 Matcher = Callable[[dict[str, Any], Event, Callable[[int, int | None, str], None]], list[dict[str, Any]]]
 EventSink = Callable[[dict[str, Any]], None]
 TacticalLobbyCommitter = Callable[[str, dict[str, Any], int, str], dict[str, Any]]
+StudentValidator = Callable[[Mapping[str, Any], str | None, Mapping[int, int] | None], dict[str, Any]]
 
 
 @dataclass(slots=True)
@@ -49,6 +51,7 @@ class SessionCandidate:
     revision: int = 1
     approved: bool = False
     audit: list[dict[str, Any]] = field(default_factory=list)
+    validation_relationship_ranks: dict[int, int] = field(default_factory=dict)
 
     def to_wire(self) -> dict[str, Any]:
         return {
@@ -71,6 +74,8 @@ class _Session:
     generation: int
     scan_kind: str
     target: dict[str, Any]
+    profile_id: str | None = None
+    student_scan_mode: str = "single"
     cancel: Event = field(default_factory=Event)
     sequence: int = 0
     terminal: str | None = None
@@ -95,6 +100,7 @@ class ScannerSessionService:
         event_sink: EventSink | None = None,
         id_factory: Callable[[], str] | None = None,
         executor: ThreadPoolExecutor | None = None,
+        student_validator: StudentValidator | None = None,
     ) -> None:
         self._target_provider = target_provider
         self._matchers = {"student": student_matcher, "inventory": inventory_matcher}
@@ -106,6 +112,14 @@ class ScannerSessionService:
         self._event_sink = event_sink or (lambda _event: None)
         self._id_factory = id_factory or (lambda: uuid4().hex)
         self._executor = executor or ThreadPoolExecutor(max_workers=1, thread_name_prefix="scanner")
+        self._student_validator = student_validator
+        self._student_validator_accepts_context = False
+        if student_validator is not None:
+            parameters = signature(student_validator).parameters.values()
+            self._student_validator_accepts_context = (
+                any(item.kind == Parameter.VAR_POSITIONAL for item in parameters)
+                or len(tuple(signature(student_validator).parameters.values())) >= 3
+            )
         self._owns_executor = executor is None
         self._lock = RLock()
         self._generation = 0
@@ -130,26 +144,41 @@ class ScannerSessionService:
                 raise ScannerError("scanner_busy", "cannot replace event sink during a session")
             self._event_sink = event_sink
 
-    def start(self, scan_kind: str, target_id: str) -> dict[str, Any]:
+    def start(
+        self,
+        scan_kind: str,
+        target_id: str,
+        profile_id: str | None = None,
+        student_scan_mode: str = "single",
+    ) -> dict[str, Any]:
         if scan_kind not in self._matchers:
             raise ScannerError("invalid_payload", "scan_kind must be student, inventory, or tactical_lobby")
         target = next((item for item in self.targets() if item.get("target_id") == target_id), None)
         if target is None:
             raise ScannerError("target_not_found", "capture target was not found")
+        if student_scan_mode not in {"single", "full"}:
+            raise ScannerError("invalid_payload", "student_scan_mode must be single or full")
+        target["student_scan_mode"] = student_scan_mode if scan_kind == "student" else "single"
         with self._lock:
             if self._active is not None and self._active.terminal is None:
                 raise ScannerError("scanner_busy", "another scanner session is active")
             self._generation += 1
-            session = _Session(self._id_factory(), self._generation, scan_kind, target)
+            session = _Session(
+                self._id_factory(), self._generation, scan_kind, target, profile_id,
+                student_scan_mode if scan_kind == "student" else "single",
+            )
             self._active = session
             self._sessions[session.session_id] = session
             # The session is registered before the worker can publish its first event.
             session.future = self._executor.submit(self._run, session)
-            return {
+            result = {
                 "session_id": session.session_id,
                 "generation": session.generation,
                 "scan_kind": session.scan_kind,
             }
+            if scan_kind == "student":
+                result["student_scan_mode"] = session.student_scan_mode
+            return result
 
     def cancel(self, session_id: str, generation: int) -> dict[str, Any]:
         session = self._session(session_id, generation)
@@ -179,6 +208,35 @@ class ScannerSessionService:
                 raise ScannerError("candidate_not_found", "scanner candidate was not found")
             return item.to_wire()
 
+    def revalidate(
+        self, session_id: str, generation: int, candidate_id: str,
+        expected_candidate_revision: int,
+        relationship_ranks: Mapping[int, int] | None = None,
+    ) -> dict[str, Any]:
+        session = self._session(session_id, generation)
+        with self._lock:
+            item = session.candidates.get(candidate_id)
+            if item is None:
+                raise ScannerError("candidate_not_found", "scanner candidate was not found")
+            if item.revision != expected_candidate_revision:
+                raise ScannerError("candidate_revision_conflict", "candidate revision is stale")
+            if item.scan_kind != "student" or self._student_validator is None:
+                raise ScannerError("revalidation_unavailable", "student revalidation is unavailable")
+            item.evidence = [entry for entry in item.evidence if entry.get("field") != "student_stat_validation"]
+            if relationship_ranks is not None:
+                item.validation_relationship_ranks.update(relationship_ranks)
+            item.evidence.append(self._validate_student(
+                item.payload, session.profile_id, item.validation_relationship_ranks,
+            ))
+            item.review_required = any(
+                entry.get("status") not in {"ok", "inferred", "skipped", "verified", "deferred"}
+                for entry in item.evidence if isinstance(entry, dict)
+            )
+            item.revision += 1
+            item.approved = False
+            item.audit.append({"from_revision": item.revision - 1, "source": "second_pass_revalidation"})
+            return item.to_wire()
+
     def review(
         self,
         session_id: str,
@@ -189,6 +247,7 @@ class ScannerSessionService:
         *,
         approve: bool,
         reason: str,
+        relationship_ranks: Mapping[int, int] | None = None,
     ) -> dict[str, Any]:
         session = self._session(session_id, generation)
         with self._lock:
@@ -198,6 +257,29 @@ class ScannerSessionService:
             if item.revision != expected_candidate_revision:
                 raise ScannerError("candidate_revision_conflict", "candidate revision is stale")
             self._validated_payload(item.scan_kind, payload)
+            if (
+                item.scan_kind == "student"
+                and reason == "edited_and_revalidated_in_scan_page"
+            ):
+                values = payload.get("values") if isinstance(payload, dict) else None
+                if isinstance(values, dict):
+                    reviewed: list[dict[str, Any]] = []
+                    for evidence in item.evidence:
+                        replacement = deepcopy(evidence)
+                        if (
+                            isinstance(replacement, dict)
+                            and replacement.get("field") in values
+                            and replacement.get("status")
+                            not in {"ok", "inferred", "skipped", "verified", "deferred"}
+                        ):
+                            replacement.update({
+                                "status": "verified",
+                                "source": "user_review",
+                                "confidence": 1.0,
+                                "note": "field confirmed in scanner review workspace",
+                            })
+                        reviewed.append(replacement)
+                    item.evidence = reviewed
             item.audit.append({
                 "from_revision": item.revision,
                 "reason": reason,
@@ -205,6 +287,17 @@ class ScannerSessionService:
                 "source": "user_review",
             })
             item.payload = deepcopy(payload)
+            if item.scan_kind == "student" and self._student_validator is not None:
+                if relationship_ranks is not None:
+                    item.validation_relationship_ranks.update(relationship_ranks)
+                item.evidence = [entry for entry in item.evidence if entry.get("field") != "student_stat_validation"]
+                item.evidence.append(self._validate_student(
+                    item.payload, session.profile_id, item.validation_relationship_ranks,
+                ))
+                item.review_required = any(
+                    entry.get("status") not in {"ok", "inferred", "skipped", "verified", "deferred"}
+                    for entry in item.evidence if isinstance(entry, dict)
+                )
             item.revision += 1
             item.approved = approve
             return item.to_wire()
@@ -309,11 +402,33 @@ class ScannerSessionService:
                 self._terminal(session, "cancelled")
                 return
 
-            def progress(current: int, total: int | None, message_key: str) -> None:
+            def progress(
+                current: int,
+                total: int | None,
+                message_key: str,
+                feedback: Mapping[str, Any] | None = None,
+            ) -> None:
                 if not session.cancel.is_set():
                     self._emit(session, "progress", {
                         "current": current, "total": total, "message_key": message_key,
                     })
+                    if feedback is not None:
+                        student_id = feedback.get("student_id")
+                        values = feedback.get("values")
+                        field = feedback.get("field")
+                        if (
+                            isinstance(student_id, str)
+                            and student_id
+                            and isinstance(values, Mapping)
+                            and isinstance(field, str)
+                            and field
+                        ):
+                            self._emit(session, "feedback", {
+                                "student_id": student_id,
+                                "field": field,
+                                "values": dict(values),
+                            })
+            progress.supports_feedback = True  # type: ignore[attr-defined]
 
             candidates = self._matchers[session.scan_kind](session.target, session.cancel, progress)
             if session.cancel.is_set():
@@ -321,11 +436,16 @@ class ScannerSessionService:
                 return
             if not isinstance(candidates, list):
                 raise ScannerError("matcher_failed", "matcher returned invalid candidates")
+            batch_relationship_ranks = (
+                self._batch_relationship_ranks(candidates)
+                if session.scan_kind == "student" and session.student_scan_mode == "full"
+                else {}
+            )
             for raw in candidates:
                 if session.cancel.is_set():
                     self._terminal(session, "cancelled")
                     return
-                candidate = self._make_candidate(session, raw)
+                candidate = self._make_candidate(session, raw, batch_relationship_ranks)
                 with self._lock:
                     session.candidates[candidate.candidate_id] = candidate
                 self._emit(session, "candidate", {"candidate": candidate.to_wire()})
@@ -335,7 +455,12 @@ class ScannerSessionService:
         except Exception as exc:
             self._terminal(session, "failed", code="matcher_failed", message=str(exc))
 
-    def _make_candidate(self, session: _Session, raw: Mapping[str, Any]) -> SessionCandidate:
+    def _make_candidate(
+        self,
+        session: _Session,
+        raw: Mapping[str, Any],
+        relationship_ranks: Mapping[int, int] | None = None,
+    ) -> SessionCandidate:
         if not isinstance(raw, Mapping):
             raise ScannerError("matcher_failed", "matcher candidate must be an object")
         payload = raw.get("payload")
@@ -343,8 +468,11 @@ class ScannerSessionService:
         if not isinstance(payload, dict) or not isinstance(evidence, list):
             raise ScannerError("matcher_failed", "matcher candidate has invalid payload/evidence")
         self._validated_payload(session.scan_kind, payload)
+        if session.scan_kind == "student" and self._student_validator is not None:
+            evidence = [item for item in evidence if item.get("field") != "student_stat_validation"]
+            evidence.append(self._validate_student(payload, session.profile_id, relationship_ranks))
         review_required = bool(raw.get("review_required", False)) or any(
-            isinstance(item, dict) and item.get("status") not in {"ok", "inferred", "skipped"}
+            isinstance(item, dict) and item.get("status") not in {"ok", "inferred", "skipped", "verified", "deferred"}
             for item in evidence
         )
         return SessionCandidate(
@@ -355,7 +483,41 @@ class ScannerSessionService:
             payload=deepcopy(payload),
             evidence=deepcopy(evidence),
             review_required=review_required,
+            validation_relationship_ranks=dict(relationship_ranks or {}),
         )
+
+    def _batch_relationship_ranks(self, candidates: list[dict[str, Any]]) -> dict[int, int]:
+        ranks: dict[int, int] = {}
+        if self._student_validator is None:
+            return ranks
+        catalog = getattr(self._student_validator, "catalog", None)
+        if catalog is None:
+            return ranks
+        from core.student_stats_catalog import student_stat_record
+        for raw in candidates:
+            payload = raw.get("payload") if isinstance(raw, Mapping) else None
+            values = payload.get("values") if isinstance(payload, Mapping) else None
+            student_id = payload.get("student_id") if isinstance(payload, Mapping) else None
+            rank = values.get("bond_rank") if isinstance(values, Mapping) else None
+            if not isinstance(student_id, str) or not isinstance(rank, int) or isinstance(rank, bool):
+                continue
+            try:
+                ranks[student_stat_record(student_id, catalog=catalog).schaledb_id] = rank
+            except (KeyError, ValueError):
+                continue
+        return ranks
+
+    def _validate_student(
+        self,
+        payload: Mapping[str, Any],
+        profile_id: str | None,
+        relationship_ranks: Mapping[int, int] | None,
+    ) -> dict[str, Any]:
+        if self._student_validator is None:
+            raise ScannerError("revalidation_unavailable", "student revalidation is unavailable")
+        if self._student_validator_accepts_context:
+            return self._student_validator(payload, profile_id, relationship_ranks)
+        return self._student_validator(payload, profile_id)  # type: ignore[call-arg]
 
     def _emit(self, session: _Session, event_kind: str, data: dict[str, Any]) -> None:
         with self._lock:

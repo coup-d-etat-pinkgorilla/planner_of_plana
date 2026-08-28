@@ -10,7 +10,8 @@ import tempfile
 import unittest
 
 from core.application_protocol_v1 import ApplicationProtocolV1
-from core.repository_store import JsonRepository, RepositoryError
+from core.inventory_catalog import BY_KEY, CATALOG_REVISION
+from core.repository_store import JsonRepository, RepositoryError, rebase_inventory_snapshot
 
 
 def student(student_id: str = "s1", level: int = 80) -> dict:
@@ -27,6 +28,42 @@ class RepositoryPersistenceTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temporary.cleanup()
+
+    def test_inventory_rebase_separates_catalog_order_from_observed_slot(self) -> None:
+        key = "Item_Icon_ExpItem_0"
+        rebased = rebase_inventory_snapshot({
+            "version": 1,
+            "entries": [{
+                "key": key,
+                "item_id": key,
+                "quantity": "3",
+                "index": 17,
+                "profile_id": "visible-grid",
+            }],
+        })
+        entry = rebased["entries"][0]
+        self.assertEqual(CATALOG_REVISION, rebased["catalog_revision"])
+        self.assertEqual(BY_KEY[key].order_index, entry["index"])
+        self.assertEqual(BY_KEY[key].profile_id, entry["profile_id"])
+        self.assertEqual(17, entry["observed_slot"])
+
+    def test_inventory_update_rebases_stale_catalog_ordinal(self) -> None:
+        key = "Item_Icon_SecretStone_ayane"
+        self.repository.update_inventory(
+            self.profile_id,
+            {"version": 1, "entries": [{
+                "key": key,
+                "item_id": key,
+                "quantity": "5",
+                "index": 113,
+                "profile_id": "student_elephs",
+            }]},
+            0,
+            "rebase-inventory",
+        )
+        inventory = self.repository.get_state(self.profile_id)["inventory"]
+        self.assertEqual(CATALOG_REVISION, inventory["catalog_revision"])
+        self.assertEqual(BY_KEY[key].order_index, inventory["entries"][0]["index"])
 
     def test_profile_create_list_select_rename_conflict_and_retry(self) -> None:
         retried = self.repository.create_profile("Main", "create-main")

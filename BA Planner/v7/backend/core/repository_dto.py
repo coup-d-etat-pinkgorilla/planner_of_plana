@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, fields
 import json
+import re
 from typing import Any, ClassVar
 
 from core.planning import (
@@ -179,6 +180,7 @@ class InventoryEntry:
     name: str | None = None
     index: int | None = None
     profile_id: str | None = None
+    observed_slot: int | None = None
 
     @classmethod
     def from_dict(cls, value: object) -> "InventoryEntry":
@@ -195,32 +197,46 @@ class InventoryEntry:
                 "inventory_entry.quantity must be null or a canonical non-negative integer string"
             )
         index = _optional_int(data.get("index"), "inventory_entry.index")
-        return cls(key=key, quantity=data["quantity"], item_id=data.get("item_id"), name=data.get("name"), index=index, profile_id=data.get("profile_id"))
+        observed_slot = _optional_int(data.get("observed_slot"), "inventory_entry.observed_slot")
+        return cls(key=key, quantity=data["quantity"], item_id=data.get("item_id"), name=data.get("name"), index=index, profile_id=data.get("profile_id"), observed_slot=observed_slot)
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        result = asdict(self)
+        if self.observed_slot is None:
+            result.pop("observed_slot")
+        return result
 
 
 @dataclass(frozen=True, slots=True)
 class InventorySnapshot:
     entries: tuple[InventoryEntry, ...]
     version: int = DTO_VERSION
+    catalog_revision: str | None = None
 
     @classmethod
     def from_dict(cls, value: object) -> "InventorySnapshot":
         data = _object(value, "inventory_snapshot")
-        _strict(data, {"version", "entries"}, {"version", "entries"}, "inventory_snapshot")
+        _strict(data, {"version", "entries", "catalog_revision"}, {"version", "entries"}, "inventory_snapshot")
         _version(data, "inventory_snapshot")
+        catalog_revision = data.get("catalog_revision")
+        if catalog_revision is not None and (
+            not isinstance(catalog_revision, str)
+            or re.fullmatch(r"[0-9a-f]{64}", catalog_revision) is None
+        ):
+            raise RepositoryDTOError("inventory_snapshot.catalog_revision must be a SHA-256 hex string or null")
         if not isinstance(data["entries"], list):
             raise RepositoryDTOError("inventory_snapshot.entries must be an array")
         entries = tuple(InventoryEntry.from_dict(item) for item in data["entries"])
         identities = [entry.item_id or entry.key for entry in entries]
         if len(identities) != len(set(identities)):
             raise RepositoryDTOError("inventory_snapshot entries must have unique canonical identity")
-        return cls(entries=entries)
+        return cls(entries=entries, catalog_revision=catalog_revision)
 
     def to_dict(self) -> dict[str, Any]:
-        return {"version": self.version, "entries": [item.to_dict() for item in self.entries]}
+        result = {"version": self.version, "entries": [item.to_dict() for item in self.entries]}
+        if self.catalog_revision is not None:
+            result["catalog_revision"] = self.catalog_revision
+        return result
 
 
 @dataclass(frozen=True, slots=True)

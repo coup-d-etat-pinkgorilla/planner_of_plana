@@ -1,0 +1,474 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-24",
+  "ground_truth": {
+    "method": "manual review of user-supplied relationship ranks",
+    "full_screenshots_retained": false,
+    "template_leakage": false
+  },
+  "coverage": {
+    "verified_ranks": [
+      6,
+      10,
+      18,
+      20,
+      23,
+      26,
+      34,
+      37,
+      39,
+      41,
+      47,
+      50,
+      52,
+      74,
+      100
+    ],
+    "not_verified": [
+      1,
+      9
+    ],
+    "resolutions": [
+      "1280x720",
+      "2560x1440"
+    ]
+  },
+  "atlas": {
+    "path": "roi_atlas.png",
+    "sha256": "25287bdaf011b76af188a789f6da881d0449bb253d648741c4e2a8296ea418ea"
+  },
+  "records": [
+    {
+      "source_file": "KakaoTalk_20260823_192529629.jpg",
+      "source_sha256": "cca886e674b625288130d58af5358c0ac1ada69feef4aea98522efeb7b7c27e7",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 100,
+      "student_ref": "hoshino_swimsuit",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        0,
+        0,
+        72,
+        96
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 030220.png",
+      "source_sha256": "226423a6959cd942ad94c8000ae5645db05e803373ae186bd72b2abab0d1e923",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 10,
+      "student_ref": "otogi",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        72,
+        0,
+        144,
+        96
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 030255.png",
+      "source_sha256": "bb448935bd23227ee14e2ef1ed85036b0ffd7a58dfecfa98272ed4f96dbbb4e7",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 20,
+      "student_ref": "shigure",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        144,
+        0,
+        216,
+        96
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024117.png",
+      "source_sha256": "9c0ab66a67ff00befb90c781461f85bdeafcbf1138df365770d35c0727a8ba8c",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 74,
+      "student_ref": "mika",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        216,
+        0,
+        288,
+        96
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024132.png",
+      "source_sha256": "81419697015d0750c760661cb8615f3201cab850da3c0422f03653b428feb1bd",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 52,
+      "student_ref": "hina_dress",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        288,
+        0,
+        360,
+        96
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024221.png",
+      "source_sha256": "f573254d2144a91c20b8508451533690538e6d0b06812245342eacd1cf41edae",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 39,
+      "student_ref": "seia",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        360,
+        0,
+        432,
+        96
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024357.png",
+      "source_sha256": "68001b2086fe16d8395f91b579ac7db01e2a68928efd34c6b614ef45b061f784",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 26,
+      "student_ref": "hasumi",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        0,
+        96,
+        72,
+        192
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 030233.png",
+      "source_sha256": "7d1fffb69ff1e38796596b5f8e7d850250c221d644a918939c879e03ba723326",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 18,
+      "student_ref": "chiaki",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        72,
+        96,
+        144,
+        192
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024140.png",
+      "source_sha256": "76de563e25e9b5894c1db8092bab14bd56eeb6a3be6afe6dfbbfd05245b47093",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 50,
+      "student_ref": "himari",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        144,
+        96,
+        216,
+        192
+      ]
+    },
+    {
+      "source_file": "hibiki_rank50_1280x720_20260824.png",
+      "source_sha256": "6514a61096c93a6d0b9b13b1390e5a8eb53aece16b8e71c2cbf2cb12619948a1",
+      "source_size": [
+        1280,
+        720
+      ],
+      "rank": 50,
+      "student_ref": "hibiki",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        216,
+        96,
+        288,
+        192
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024150.png",
+      "source_sha256": "d600f0f013dcc15ca843da30600f1e92b01efbf2f7992b99be0bd3e30b451195",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 47,
+      "student_ref": "nagisa",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        288,
+        96,
+        360,
+        192
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024204.png",
+      "source_sha256": "54a185037de99046f68c4e759c496f033b12dd46d525743be65ea50a448a0c5b",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 41,
+      "student_ref": "mika_swimsuit",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        360,
+        96,
+        432,
+        192
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024229.png",
+      "source_sha256": "3a96382b494587a20eea4fd3fe29dad6bb277486023fcdd376c34ad304aeb636",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 37,
+      "student_ref": "hanako_swimsuit",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        0,
+        192,
+        72,
+        288
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024252.png",
+      "source_sha256": "99372833c42ec7caf7037f17f7412228074d1080e54e290a50fdaec919d5262d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 34,
+      "student_ref": "airi",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        72,
+        192,
+        144,
+        288
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024417.png",
+      "source_sha256": "955213042e45cfa71f31736792adb911b5ad57aeddc30203dca937e0f2c23421",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 23,
+      "student_ref": "ibuki",
+      "partition": "calibration",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        144,
+        192,
+        216,
+        288
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024139.png",
+      "source_sha256": "aa1ae84186fd3bcdcbd5717cace744c84ea3db78c405385991f38df691229c88",
+      "source_size": [
+        1280,
+        720
+      ],
+      "rank": 50,
+      "student_ref": "himari",
+      "partition": "validation",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        216,
+        192,
+        288,
+        288
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024147.png",
+      "source_sha256": "cc3c8814f279c30d6fc4f27f35f570d154b9d72d65401262c4aa66171607eba7",
+      "source_size": [
+        1280,
+        720
+      ],
+      "rank": 47,
+      "student_ref": "nagisa",
+      "partition": "validation",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        288,
+        192,
+        360,
+        288
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024202.png",
+      "source_sha256": "153c1baf1d6a81f091c39ce77085b727a5f2cf99454b559647cb5eb3297193a4",
+      "source_size": [
+        1280,
+        720
+      ],
+      "rank": 41,
+      "student_ref": "mika_swimsuit",
+      "partition": "validation",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        360,
+        192,
+        432,
+        288
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024215.png",
+      "source_sha256": "811a5767af17c68f8b892ab39efc0d7ce7acaadddfeb0da84d77c515828ebb9e",
+      "source_size": [
+        1280,
+        720
+      ],
+      "rank": 39,
+      "student_ref": "seia",
+      "partition": "validation",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        0,
+        288,
+        72,
+        384
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024226.png",
+      "source_sha256": "35a02c464c45cdeb4e0480108d2598125d2a1d78deff2cf752b4c46ffd1d0717",
+      "source_size": [
+        1280,
+        720
+      ],
+      "rank": 37,
+      "student_ref": "hanako_swimsuit",
+      "partition": "validation",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        72,
+        288,
+        144,
+        384
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024250.png",
+      "source_sha256": "b4c563453fa62c7ab186789eba3daef624169bd94ec1ab2b53b14a04de58000f",
+      "source_size": [
+        1280,
+        720
+      ],
+      "rank": 34,
+      "student_ref": "airi",
+      "partition": "validation",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        144,
+        288,
+        216,
+        384
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 024414.png",
+      "source_sha256": "876307cd83763fd75b34946257bbed0baf95fc9b8ef389cac269a309b87f84d1",
+      "source_size": [
+        1280,
+        720
+      ],
+      "rank": 23,
+      "student_ref": "ibuki",
+      "partition": "validation",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        216,
+        288,
+        288,
+        384
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-23 030242.png",
+      "source_sha256": "18ac8c6ee17cf639832f62d1dc35e03dbe6d3ea6affc275b9258769cf111b731",
+      "source_size": [
+        1280,
+        720
+      ],
+      "rank": 18,
+      "student_ref": "kasumi",
+      "partition": "validation",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        288,
+        288,
+        360,
+        384
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 215236.png",
+      "source_sha256": "fef8ab15f40fb2142fd69750dec421efb49a8f3398d631a6c5dddc96b5a4d00e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 6,
+      "student_ref": "unknown",
+      "partition": "calibration_only",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        360,
+        288,
+        432,
+        384
+      ]
+    }
+  ]
+}

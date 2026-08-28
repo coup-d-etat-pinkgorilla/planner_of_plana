@@ -1,25 +1,20 @@
-"""Runtime lookup API for student metadata.
-
-Generated values live in core.student_meta_data so callers can inspect or edit
-the lookup API without loading the complete generated dataset.
-"""
+"""Compatibility lookup API over BA Planner canonical student metadata."""
 
 from __future__ import annotations
 
 from functools import lru_cache
-import importlib
 import re
 from typing import Any
 
-from core import student_meta_data as _student_meta_data
+from core.canonical_metadata import load_catalog
 from core.student_meta_types import EDITABLE_FIELDS, StudentFormMeta, StudentMeta
 
-_student_meta_data = importlib.reload(_student_meta_data)
-FAVORITE_ITEM_MAX_TIER = _student_meta_data.FAVORITE_ITEM_MAX_TIER
-FAVORITE_ITEM_STUDENT_IDS = _student_meta_data.FAVORITE_ITEM_STUDENT_IDS
-JP_ONLY_STUDENT_IDS = _student_meta_data.JP_ONLY_STUDENT_IDS
-MULTI_FORM_STUDENTS = _student_meta_data.MULTI_FORM_STUDENTS
-STUDENTS = _student_meta_data.STUDENTS
+_catalog = load_catalog()
+FAVORITE_ITEM_MAX_TIER = _catalog.favorite_item_max_tier
+FAVORITE_ITEM_STUDENT_IDS = _catalog.favorite_item_student_ids
+JP_ONLY_STUDENT_IDS = _catalog.jp_only_student_ids
+MULTI_FORM_STUDENTS: dict[str, tuple[StudentFormMeta, ...]] = _catalog.forms
+STUDENTS: dict[str, StudentMeta] = _catalog.legacy_students()
 
 _FORM_REF_RE = re.compile(r"^(?P<base>.*?)(?:\s*[#:@]\s*(?P<form>[1-9][0-9]*))?$")
 
@@ -453,40 +448,3 @@ def terrain_with_weapon3(student_id: str, terrain_key: str) -> str | None:
     if boosted != terrain_key:
         return current
     return upgraded_terrain_rank(current)
-
-
-def _load_external_student_meta() -> None:
-    try:
-        from pathlib import Path
-        import runpy
-
-        from core.runtime_paths import DEFAULT_ASSET_DIR
-
-        candidates = (
-            DEFAULT_ASSET_DIR / "core" / "student_meta_data.py",
-            DEFAULT_ASSET_DIR / "core" / "student_meta.py",
-        )
-        external_path = next((path for path in candidates if path.exists()), None)
-        if external_path is None or external_path.resolve() == Path(__file__).resolve():
-            return
-        namespace = runpy.run_path(str(external_path))
-        global FAVORITE_ITEM_MAX_TIER
-        global FAVORITE_ITEM_STUDENT_IDS
-        global JP_ONLY_STUDENT_IDS
-        global MULTI_FORM_STUDENTS
-        global STUDENTS
-        if isinstance(namespace.get("STUDENTS"), dict):
-            STUDENTS = namespace["STUDENTS"]
-        if isinstance(namespace.get("MULTI_FORM_STUDENTS"), dict):
-            MULTI_FORM_STUDENTS = namespace["MULTI_FORM_STUDENTS"]
-        if isinstance(namespace.get("FAVORITE_ITEM_STUDENT_IDS"), (set, frozenset)):
-            FAVORITE_ITEM_STUDENT_IDS = frozenset(namespace["FAVORITE_ITEM_STUDENT_IDS"])
-        if isinstance(namespace.get("JP_ONLY_STUDENT_IDS"), (set, frozenset)):
-            JP_ONLY_STUDENT_IDS = frozenset(namespace["JP_ONLY_STUDENT_IDS"])
-        if namespace.get("FAVORITE_ITEM_MAX_TIER") is not None:
-            FAVORITE_ITEM_MAX_TIER = str(namespace["FAVORITE_ITEM_MAX_TIER"])
-    except Exception:
-        return
-
-
-_load_external_student_meta()

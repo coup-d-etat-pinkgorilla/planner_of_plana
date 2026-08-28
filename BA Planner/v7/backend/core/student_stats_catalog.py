@@ -39,6 +39,8 @@ def student_stat_record(
         schaledb_id = selected.paths.get(merge_paths[path_index].casefold())
     else:
         schaledb_id = student_meta.schaledb_id(student_id)
+        if schaledb_id is None:
+            schaledb_id = selected.paths.get(student_id.casefold())
     if schaledb_id is None or schaledb_id not in selected.students:
         raise KeyError(f"student stat data not found: {student_id}#{normalized_form}")
     return selected.students[schaledb_id]

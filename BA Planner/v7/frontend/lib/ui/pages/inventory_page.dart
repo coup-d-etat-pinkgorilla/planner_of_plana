@@ -40,6 +40,7 @@ class _InventoryPageState extends State<InventoryPage> {
   final Map<String, TextEditingController> _editors = {};
   final Set<String> _dirtyKeys = {};
   List<InventoryCatalogEntry> _catalog = const [];
+  String? _catalogRevision;
   RepositoryProfile? _profile;
   RepositoryState? _repositoryState;
   InventoryShortageResult? _shortages;
@@ -104,7 +105,8 @@ class _InventoryPageState extends State<InventoryPage> {
       final catalog = await widget.service.listInventoryItems();
       if (!mounted) return;
       setState(() {
-        _catalog = catalog;
+        _catalog = catalog.items;
+        _catalogRevision = catalog.catalogRevision;
         _loading = false;
       });
       _syncEditors();
@@ -187,11 +189,13 @@ class _InventoryPageState extends State<InventoryPage> {
         'quantity': quantity,
         'item_id': item.itemId,
         'name': item.displayName,
-        'index': item.orderIndex,
-        'profile_id': item.profileId,
       });
     }
-    return {'version': 1, 'entries': entries};
+    return {
+      'version': 1,
+      if (_catalogRevision != null) 'catalog_revision': _catalogRevision,
+      'entries': entries,
+    };
   }
 
   Future<void> _save() async {

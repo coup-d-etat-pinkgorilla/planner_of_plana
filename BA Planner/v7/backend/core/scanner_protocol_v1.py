@@ -14,6 +14,7 @@ METHODS = frozenset({
     "scanner.session.snapshot",
     "scanner.candidate.get",
     "scanner.candidate.review",
+    "scanner.candidate.revalidate",
     "scanner.candidate.commit",
 })
 
@@ -36,7 +37,7 @@ class ScannerProtocolV1:
         except RepositoryError as exc:
             details = dict(exc.details)
             details["retryable"] = exc.retryable
-            return self._error(request_id, method, exc.code, exc.message, details)
+            return self._error(request_id, method, exc.code, str(exc), details)
 
     def _dispatch(self, method: str, payload: dict[str, Any]) -> dict[str, Any]:
         if method == "scanner.target.list":
@@ -46,8 +47,18 @@ class ScannerProtocolV1:
             self._exact(payload, set())
             return self.service.recognition_status()
         if method == "scanner.session.start":
-            self._exact(payload, {"scan_kind", "target_id"})
-            return self.service.start(self._text(payload["scan_kind"], "scan_kind"), self._text(payload["target_id"], "target_id"))
+            if not {"scan_kind", "target_id"}.issubset(payload) or not set(payload).issubset({
+                "scan_kind", "target_id", "profile_id", "student_scan_mode",
+            }):
+                raise ScannerError("invalid_payload", "start payload has invalid fields")
+            profile_id = payload.get("profile_id")
+            student_scan_mode = payload.get("student_scan_mode", "single")
+            return self.service.start(
+                self._text(payload["scan_kind"], "scan_kind"),
+                self._text(payload["target_id"], "target_id"),
+                self._text(profile_id, "profile_id") if profile_id is not None else None,
+                self._text(student_scan_mode, "student_scan_mode"),
+            )
         if method in {"scanner.session.cancel", "scanner.session.snapshot"}:
             self._exact(payload, {"session_id", "generation"})
             args = (self._text(payload["session_id"], "session_id"), self._integer(payload["generation"], "generation", minimum=1))
@@ -62,7 +73,8 @@ class ScannerProtocolV1:
             return {"candidate": candidate}
         if method == "scanner.candidate.review":
             required = {"session_id", "generation", "candidate_id", "expected_candidate_revision", "candidate_payload", "approve", "reason"}
-            self._exact(payload, required)
+            if not required.issubset(payload) or not set(payload).issubset(required | {"relationship_ranks"}):
+                raise ScannerError("invalid_payload", "review payload has invalid fields")
             candidate_payload = self._object(payload["candidate_payload"], "candidate_payload")
             if not isinstance(payload["approve"], bool):
                 raise ScannerError("invalid_payload", "approve must be a boolean")
@@ -74,8 +86,20 @@ class ScannerProtocolV1:
                 candidate_payload,
                 approve=payload["approve"],
                 reason=self._string(payload["reason"], "reason"),
+                relationship_ranks=self._relationship_ranks(payload.get("relationship_ranks")),
             )
             return {"candidate": candidate}
+        if method == "scanner.candidate.revalidate":
+            required = {"session_id", "generation", "candidate_id", "expected_candidate_revision"}
+            if not required.issubset(payload) or not set(payload).issubset(required | {"relationship_ranks"}):
+                raise ScannerError("invalid_payload", "revalidate payload has invalid fields")
+            return {"candidate": self.service.revalidate(
+                self._text(payload["session_id"], "session_id"),
+                self._integer(payload["generation"], "generation", minimum=1),
+                self._text(payload["candidate_id"], "candidate_id"),
+                self._integer(payload["expected_candidate_revision"], "expected_candidate_revision", minimum=1),
+                self._relationship_ranks(payload.get("relationship_ranks")),
+            )}
         if method == "scanner.candidate.commit":
             required = {"session_id", "generation", "candidate_id", "candidate_revision", "profile_id", "expected_repository_revision", "idempotency_key"}
             self._exact(payload, required)
@@ -125,3 +149,20 @@ class ScannerProtocolV1:
         if not isinstance(value, int) or isinstance(value, bool) or value < minimum:
             raise ScannerError("invalid_payload", f"{label} must be an integer >= {minimum}")
         return value
+
+    @staticmethod
+    def _relationship_ranks(value: object) -> dict[int, int] | None:
+        if value is None:
+            return None
+        if not isinstance(value, dict):
+            raise ScannerError("invalid_payload", "relationship_ranks must be an object")
+        result: dict[int, int] = {}
+        for raw_id, rank in value.items():
+            try:
+                student_id = int(raw_id)
+            except (TypeError, ValueError) as exc:
+                raise ScannerError("invalid_payload", "relationship rank ids must be integers") from exc
+            if student_id < 1 or not isinstance(rank, int) or isinstance(rank, bool) or not 1 <= rank <= 100:
+                raise ScannerError("invalid_payload", "relationship ranks must be integers from 1 to 100")
+            result[student_id] = rank
+        return result

@@ -9,6 +9,7 @@ from pathlib import Path
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 V7_DIR = BACKEND_DIR.parent
 PACKAGED_PLANNING_DATA_DIR = BACKEND_DIR / "data" / "planning"
+PACKAGED_METADATA_CATALOG_PATH = BACKEND_DIR / "data" / "metadata" / "v1" / "student_catalog.json"
 PACKAGED_RECOGNITION_ASSET_DIR = BACKEND_DIR / "assets" / "recognition" / "v1"
 
 
@@ -38,6 +39,16 @@ def resolve_planning_data_dir() -> Path:
 
 
 PLANNING_DATA_DIR = resolve_planning_data_dir()
+
+
+def resolve_metadata_catalog_path() -> Path:
+    override = os.environ.get("BA_PLANNER_METADATA_PATH")
+    if override:
+        return Path(override).expanduser()
+    external = DEFAULT_ASSET_DIR / "data" / "metadata" / "v1" / "student_catalog.json"
+    if external.is_file():
+        return external
+    return PACKAGED_METADATA_CATALOG_PATH
 
 
 def resolve_recognition_asset_dir() -> Path:

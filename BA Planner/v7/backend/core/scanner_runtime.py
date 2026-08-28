@@ -8,6 +8,7 @@ from core.scanner_matchers import (
     EquipmentMenuCaptureAdapter, InventoryMatcherAdapter, StudentMatcherAdapter,
 )
 from core.scanner_session import ScannerSessionService
+from core.student_candidate_validation import StudentCandidateValidator
 from core.tactical_lobby_scanner import TacticalLobbyMatcherAdapter
 from core.tactical_v2 import TacticalV2Store
 from core.windows_scanner_adapter import WindowsCaptureInputAdapter
@@ -31,4 +32,5 @@ def build_scanner_service(storage_root: Path) -> ScannerSessionService:
         ),
         repository=repository,
         asset_status=catalog.verify,
+        student_validator=StudentCandidateValidator(repository),
     )

@@ -244,6 +244,44 @@ class InventoryCatalogEntry {
 }
 
 @immutable
+class InventoryCatalogResult {
+  const InventoryCatalogResult({
+    required this.catalogRevision,
+    required this.items,
+  });
+
+  final String catalogRevision;
+  final List<InventoryCatalogEntry> items;
+
+  factory InventoryCatalogResult.fromWire(Map<String, dynamic> value) {
+    if (value.keys.toSet().length != 3 ||
+        !value.keys.toSet().containsAll({
+          'items',
+          'sort',
+          'catalog_revision',
+        }) ||
+        value['sort'] != 'profile_order' ||
+        value['catalog_revision'] is! String ||
+        !RegExp(
+          r'^[0-9a-f]{64}$',
+        ).hasMatch(value['catalog_revision'] as String) ||
+        value['items'] is! List) {
+      throw const FormatException('Invalid inventory catalog');
+    }
+    return InventoryCatalogResult(
+      catalogRevision: value['catalog_revision'] as String,
+      items: List.unmodifiable(
+        (value['items'] as List).map(
+          (item) => InventoryCatalogEntry.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+@immutable
 class InventoryShortageRow {
   const InventoryShortageRow({
     required this.resourceKey,
@@ -406,7 +444,7 @@ abstract interface class AppService {
 
   Future<List<StudentCatalogEntry>> listStudents();
 
-  Future<List<InventoryCatalogEntry>> listInventoryItems();
+  Future<InventoryCatalogResult> listInventoryItems();
 
   Future<InventoryShortageResult> calculateShortages({
     required List<Map<String, dynamic>> currentStudents,

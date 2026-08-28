@@ -13,6 +13,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageStat
 from core import student_meta
 from core.recognition_assets import RecognitionAssetCatalog
 from core.student_scan_recognizer import Observation, StudentBasicCropSet
+from core.studio_numeric_bank import StudioNumericBank
 
 
 EQUIPMENT_MAX_LEVEL = {
@@ -400,6 +401,8 @@ class StudentEquipmentRecognizer:
     ) -> None:
         started = perf_counter()
         self.catalog = catalog
+        self.studio_numeric_bank = StudioNumericBank.from_catalog(catalog)
+        self._studio_equipment_templates = self._prepare_studio_equipment_templates()
         self.metrics = EquipmentMetrics()
         self.cache = PreparedFeatureCache(cache_size, self.metrics)
         self.level_threshold = level_threshold
@@ -441,6 +444,83 @@ class StudentEquipmentRecognizer:
                 result[asset.identity] = source.convert("RGB")
             self.metrics.loaded_files += 1
         return result
+
+    def _prepare_studio_equipment_templates(
+        self,
+    ) -> dict[tuple[int, int], dict[str, PreparedBinaryGlyph]]:
+        result: dict[tuple[int, int], dict[str, PreparedBinaryGlyph]] = {}
+        for slot in (1, 2, 3):
+            for position in (1, 2):
+                roi_name = f"equip{slot}level_digit{position}"
+                for digit, image in self.studio_numeric_bank.templates.get(roi_name, {}).items():
+                    normalized = _normalize_mask(image)
+                    prepared = PreparedBinaryGlyph.from_mask(normalized)
+                    if normalized is not None:
+                        normalized.close()
+                    if prepared is not None:
+                        result.setdefault((slot, position), {})[digit] = prepared
+        return result
+
+    def _read_studio_position_level(
+        self,
+        crop: Image.Image | None,
+        *,
+        slot: int,
+        tier: str,
+        region: dict[str, Any],
+    ) -> Observation | None:
+        if crop is None or tier not in EQUIPMENT_MAX_LEVEL:
+            return None
+        cells = self._level_cells(crop, region)
+        labels: list[str] = []
+        scores: list[float] = []
+        margins: list[float] = []
+        try:
+            for position, cell in enumerate(cells, start=1):
+                screen = self._position_fill_glyph(cell)
+                if screen is None:
+                    if position == 2 and labels:
+                        break
+                    return None
+                ranked = sorted(
+                    (
+                        (digit, *screen.compare(template))
+                        for digit, template in self._studio_equipment_templates.get(
+                            (slot, position), {}
+                        ).items()
+                    ),
+                    key=lambda item: item[1],
+                    reverse=True,
+                )
+                if len(ranked) < 2:
+                    return None
+                labels.append(ranked[0][0])
+                scores.append(ranked[0][1])
+                margins.append(ranked[0][1] - ranked[1][1])
+            if not labels or labels[0] == "0":
+                return None
+            value = int("".join(labels))
+            # The user-aligned document currently freezes the two-digit layout.
+            # Centered one-digit equipment continues through the prior bank.
+            confident = (
+                value >= 10
+                and equipment_level_matches_tier(value, tier)
+                and min(scores) >= self.binary_shadow_threshold
+                and min(margins) >= self.binary_shadow_margin
+            )
+            return Observation(
+                value if confident else None,
+                min(scores),
+                "ok" if confident else "uncertain",
+                "equipment_studio_position_bank",
+                (
+                    f"slot={slot};tier={tier};candidate={value};labels={labels};"
+                    f"margin={min(margins):.6f};normalized=true"
+                ),
+            )
+        finally:
+            for cell in cells:
+                cell.close()
 
     def _load_binary_templates(
         self,
@@ -558,11 +638,48 @@ class StudentEquipmentRecognizer:
         *,
         tier: str,
         region: dict[str, Any],
+        slot: int = 1,
+        studio_cells: tuple[Image.Image, ...] | None = None,
     ) -> Observation:
-        """Read fixed first/second level positions from the 19-mask compact bank."""
+        """Read the approved Studio slot positions, then retain the old compact fallback."""
 
         self.metrics.position_binary_attempts += 1
         started = perf_counter()
+        raw_studio = self.studio_numeric_bank.match(
+            studio_cells,
+            field="equipment_level",
+            roi_names=(f"equip{slot}level_digit1", f"equip{slot}level_digit2"),
+            allow_trailing_blank=True,
+        )
+        raw_confident = (
+            raw_studio.complete
+            and raw_studio.value is not None
+            and raw_studio.value >= 10
+            and equipment_level_matches_tier(raw_studio.value, tier)
+            and raw_studio.score >= 0.60
+            and raw_studio.margin >= 0.04
+        )
+        if raw_confident:
+            self.metrics.position_binary_shadow_hits += 1
+            self.metrics.position_binary_match_ms += (perf_counter() - started) * 1000.0
+            return Observation(
+                raw_studio.value,
+                raw_studio.score,
+                "ok",
+                "equipment_studio_position_bank",
+                (
+                    f"slot={slot};tier={tier};candidate={raw_studio.value};"
+                    f"labels={list(raw_studio.labels)};margin={raw_studio.margin:.6f};"
+                    f"shifts={list(raw_studio.shifts)};normalized=false"
+                ),
+            )
+        studio = self._read_studio_position_level(
+            crop, slot=slot, tier=tier, region=region,
+        )
+        if studio is not None and studio.confirmed:
+            self.metrics.position_binary_shadow_hits += 1
+            self.metrics.position_binary_match_ms += (perf_counter() - started) * 1000.0
+            return studio
         if crop is None or tier not in EQUIPMENT_MAX_LEVEL or set(self._position_binary_templates) != {1, 2}:
             self.metrics.position_binary_match_ms += (perf_counter() - started) * 1000.0
             return Observation(
@@ -632,7 +749,10 @@ class StudentEquipmentRecognizer:
     def _get_font(self):
         if self._font is None:
             path = self._asset("student-equipment-font")
-            self._font = ImageFont.truetype(str(path), 28) if path is not None else ImageFont.load_default()
+            # Medium has a smaller raster body than the former v6 Bold asset.
+            # Size 30 preserves the reviewed in-game level geometry and replays
+            # all outline/fill generated probes as well as the position bank.
+            self._font = ImageFont.truetype(str(path), 30) if path is not None else ImageFont.load_default()
             self.metrics.loaded_files += int(path is not None)
         return self._font
 
@@ -1311,7 +1431,11 @@ class StudentEquipmentRecognizer:
             self.last_binary_shadow[level_field] = binary
             position_binary = self.read_position_binary_level(
                 crops.images.get(f"basic_equipment_{slot}_level_digits_quad"),
+                slot=slot,
                 tier=str(tier.value) if tier.confirmed else "", region=level_region,
+                studio_cells=crops.cell_groups.get(
+                    f"basic_equipment_{slot}_level_studio_cells"
+                ),
             )
             if not position_binary.confirmed:
                 self.last_position_binary_shadow[level_field] = position_binary
@@ -1353,6 +1477,7 @@ class StudentEquipmentRecognizer:
         return observations, tuple(unresolved)
 
     def close(self) -> None:
+        self.studio_numeric_bank.close()
         self.cache.close()
         for image in self._card_cache.values():
             image.close()

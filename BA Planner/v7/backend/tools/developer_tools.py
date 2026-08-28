@@ -11,7 +11,6 @@ import pprint
 import re
 import sys
 import tempfile
-from urllib.request import Request, urlopen
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -21,15 +20,18 @@ V7_DIR = BACKEND_DIR.parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
+from core import schaledb_metadata_adapter, schaledb_provider
+from core.canonical_metadata import load_catalog, write_catalog
+from core.runtime_paths import resolve_metadata_catalog_path
 from core.student_meta_types import StudentFormMeta
 
 PROTOCOL_VERSION = 1
-METADATA_PATH = BACKEND_DIR / "core" / "student_meta_data.py"
+CANONICAL_METADATA_PATH = resolve_metadata_catalog_path()
 GIFT_METADATA_PATH = BACKEND_DIR / "core" / "gift_meta_data.py"
 SCHALE_MERGE_PATHS_PATH = BACKEND_DIR / "core" / "schale_merge_paths.py"
 EXTRACTION_METADATA_DIR = V7_DIR / "debug" / "student_template_extractor"
-SCHALE_STUDENTS_URL = "https://schaledb.com/data/en/students.min.json"
-SCHALE_ITEMS_URL = "https://schaledb.com/data/en/items.min.json"
+SCHALE_STUDENTS_URL = schaledb_provider.SCHALEDB_STUDENTS_URL
+SCHALE_ITEMS_URL = schaledb_provider.SCHALEDB_ITEMS_URL
 UNIVERSAL_GIFT_TAGS = frozenset({"BC", "Bc", "ew"})
 
 # This process is consumed by Dart as a UTF-8 JSON transport. Windows otherwise
@@ -138,8 +140,8 @@ def _replace_assignment(source: str, name: str, rendered: str) -> str:
 
 
 def _metadata_module():
-    from core import student_meta_data
-    return importlib.reload(student_meta_data)
+    from core import student_meta
+    return importlib.reload(student_meta)
 
 
 def _merge_paths_module():
@@ -169,8 +171,17 @@ def _write_schale_merge_paths(merge_paths: dict[str, tuple[str, ...]]) -> None:
 
 
 def _write_metadata_assignment(name: str, rendered: str) -> None:
-    source = METADATA_PATH.read_text(encoding="utf-8")
-    _atomic_text_write(METADATA_PATH, _replace_assignment(source, name, rendered))
+    if name != "JP_ONLY_STUDENT_IDS":
+        raise ValueError(f"canonical metadata assignment is unsupported: {name}")
+    expression = ast.parse(rendered).body[0]
+    if not isinstance(expression, ast.AnnAssign) or not isinstance(expression.value, ast.Call):
+        raise ValueError("invalid JP_ONLY_STUDENT_IDS assignment")
+    raw_ids = ast.literal_eval(expression.value.args[0])
+    module = _metadata_module()
+    _write_students_and_jp_only(
+        {key: dict(value) for key, value in module.STUDENTS.items()},
+        set(raw_ids),
+    )
     importlib.invalidate_caches()
 
 
@@ -262,26 +273,18 @@ def _set_jp_only(student_id: str, enabled: bool) -> None:
 
 
 def _write_students_and_jp_only(students: dict[str, dict], jp_only_ids: set[str]) -> None:
-    source = METADATA_PATH.read_text(encoding="utf-8")
-    rendered_students = "STUDENTS: dict[str, StudentMeta] = " + pprint.pformat(
-        students, width=100, sort_dicts=False
+    catalog = load_catalog(CANONICAL_METADATA_PATH)
+    write_catalog(
+        catalog.with_legacy_students(students, jp_only_ids),
+        CANONICAL_METADATA_PATH,
     )
-    rendered_jp_only = "JP_ONLY_STUDENT_IDS: frozenset[str] = frozenset(" + pprint.pformat(
-        tuple(sorted(jp_only_ids)), width=100
-    ) + ")"
-    source = _replace_assignment(source, "STUDENTS", rendered_students)
-    source = _replace_assignment(source, "JP_ONLY_STUDENT_IDS", rendered_jp_only)
-    _atomic_text_write(METADATA_PATH, source)
     importlib.invalidate_caches()
 
 
 def _write_multi_forms(forms: dict[str, tuple[dict[str, Any], ...]]) -> None:
-    rendered = "MULTI_FORM_STUDENTS: dict[str, tuple[StudentFormMeta, ...]] = " + pprint.pformat(
-        forms,
-        width=100,
-        sort_dicts=False,
-    )
-    _write_metadata_assignment("MULTI_FORM_STUDENTS", rendered)
+    catalog = load_catalog(CANONICAL_METADATA_PATH)
+    write_catalog(catalog.with_forms(forms), CANONICAL_METADATA_PATH)
+    importlib.invalidate_caches()
 
 
 def metadata_forms_get(params: dict[str, Any]) -> dict[str, Any]:
@@ -801,94 +804,30 @@ def metadata_items_analyze(params: dict[str, Any]) -> dict[str, Any]:
 
 
 def _fetch_schaledb_json(url: str) -> dict[str, Any]:
-    request = Request(
-        url,
-        headers={"User-Agent": "BA-Planner-v7/1", "Accept": "application/json"},
-    )
-    with urlopen(request, timeout=30) as response:
-        payload = json.load(response)
-    if not isinstance(payload, dict):
-        raise ValueError(f"SchaleDB returned a non-object payload: {url}")
-    return payload
-
-
-_PATH_EXCEPTIONS = {
-    "hoshino_battle": "hoshino_battle_tank",
-    "shiroko_riding": "shiroko_cycling",
-    "shoukouhou_misaki": "shokuhou_misaki",
-    "shun_kid": "shun_small",
-}
-_PATH_REPLACEMENTS = (
-    ("_bunny_girl", "_bunnygirl"),
-    ("_school_uniform", "_uniform"),
-    ("_new_year", "_newyear"),
-    ("_hot_springs", "_onsen"),
-    ("_sportswear", "_track"),
-    ("_camping", "_camp"),
-    ("_part_timer", "_parttime"),
-)
+    return schaledb_provider.fetch_json(url)
 
 
 def _normalized_schale_path(value: object) -> str:
-    return re.sub(r"[^a-z0-9]+", "", str(value or "").casefold())
+    return schaledb_metadata_adapter.normalized_path(value)
 
 
 def _schale_path_for_local_id(student_id: str) -> str:
-    merge_paths = _get_schale_merge_paths().get(student_id)
-    if merge_paths:
-        return merge_paths[0]
-    path = _PATH_EXCEPTIONS.get(student_id, student_id)
-    for old, new in _PATH_REPLACEMENTS:
-        path = path.replace(old, new)
-    return path
+    return schaledb_metadata_adapter.path_for_local_id(student_id, _get_schale_merge_paths())
 
 
 def _local_id_for_schale_path(path_name: str, student_ids: Any) -> str | None:
-    normalized = _normalized_schale_path(path_name)
-    for student_id, paths in _get_schale_merge_paths().items():
-        if student_id in student_ids and any(_normalized_schale_path(path) == normalized for path in paths):
-            return student_id
-    return next(
-        (
-            student_id
-            for student_id in student_ids
-            if _normalized_schale_path(_schale_path_for_local_id(student_id)) == normalized
-        ),
-        None,
+    return schaledb_metadata_adapter.local_id_for_path(
+        path_name, student_ids, _get_schale_merge_paths()
     )
 
 
 def _parse_schale_student_source(source: object) -> str:
-    text = str(source or "").strip().rstrip("/")
-    if not text:
-        raise ValueError("SchaleDB URL or student slug is required")
-    match = re.search(r"/students?/([^/?#]+)", text, re.IGNORECASE)
-    if match:
-        return match.group(1).strip().lower()
-    match = re.search(r"([a-z0-9_]+)$", text, re.IGNORECASE)
-    if match:
-        return match.group(1).strip().lower()
-    raise ValueError(f"could not parse a student slug from: {source}")
+    return schaledb_metadata_adapter.parse_student_source(source)
 
 
 def _minimal_schale_gifts(raw_items: dict[str, Any]) -> list[dict[str, Any]]:
-    gifts: list[dict[str, Any]] = []
     gift_asset_dir = V7_DIR / "frontend" / "assets" / "item_icons" / "presents"
-    for raw in raw_items.values():
-        if not isinstance(raw, dict) or raw.get("Category") != "Favor":
-            continue
-        icon_name = str(raw.get("Icon") or "")
-        icon_asset = f"assets/item_icons/presents/{icon_name}.png"
-        gifts.append({
-            "id": int(raw["Id"]),
-            "category": "Favor",
-            "tags": [str(tag) for tag in raw.get("Tags") or []],
-            "exp_value": int(raw.get("ExpValue") or 0),
-            "name": str(raw.get("Name") or raw["Id"]),
-            "icon_asset": icon_asset if (gift_asset_dir / f"{icon_name}.png").is_file() else None,
-        })
-    gifts.sort(key=lambda row: (row["exp_value"], row["id"]))
-    return gifts
+    return schaledb_metadata_adapter.adapt_gifts(raw_items, gift_asset_dir)
 
 
 def _student_gift_affinities(incoming: dict[str, Any], gifts: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -926,13 +865,8 @@ def _student_gift_affinities(incoming: dict[str, Any], gifts: list[dict[str, Any
 
 def _minimal_schale_snapshot() -> dict[str, Any]:
     module = _metadata_module()
-    raw_students = _fetch_schaledb_json(SCHALE_STUDENTS_URL)
-    raw_items = _fetch_schaledb_json(SCHALE_ITEMS_URL)
-    path_lookup = {
-        _normalized_schale_path(raw.get("PathName")): raw
-        for raw in raw_students.values()
-        if isinstance(raw, dict) and raw.get("PathName")
-    }
+    raw_students, raw_items = schaledb_provider.SchaleDBProvider(_fetch_schaledb_json).snapshot()
+    path_lookup = schaledb_metadata_adapter.student_index(raw_students)
 
     students: list[dict[str, Any]] = []
     missing: list[str] = []
@@ -941,11 +875,7 @@ def _minimal_schale_snapshot() -> dict[str, Any]:
         if raw is None:
             missing.append(student_id)
             continue
-        incoming = {
-            "schaledb_id": int(raw["Id"]),
-            "favor_item_tags": [str(tag) for tag in raw.get("FavorItemTags") or []],
-            "favor_item_unique_tags": [str(tag) for tag in raw.get("FavorItemUniqueTags") or []],
-        }
+        incoming = schaledb_metadata_adapter.adapt_student(raw)
         changed_fields = [name for name, value in incoming.items() if current.get(name) != value]
         students.append({
             "student_id": student_id,
@@ -992,13 +922,8 @@ def _single_schale_snapshot(params: dict[str, Any]) -> dict[str, Any]:
     if not source and preferred_id:
         source = _schale_path_for_local_id(preferred_id)
     slug = _parse_schale_student_source(source)
-    raw_students = _fetch_schaledb_json(SCHALE_STUDENTS_URL)
-    raw_items = _fetch_schaledb_json(SCHALE_ITEMS_URL)
-    path_lookup = {
-        _normalized_schale_path(raw.get("PathName")): raw
-        for raw in raw_students.values()
-        if isinstance(raw, dict) and raw.get("PathName")
-    }
+    raw_students, raw_items = schaledb_provider.SchaleDBProvider(_fetch_schaledb_json).snapshot()
+    path_lookup = schaledb_metadata_adapter.student_index(raw_students)
     raw = path_lookup.get(_normalized_schale_path(slug))
     if raw is None:
         raw = path_lookup.get(_normalized_schale_path(_schale_path_for_local_id(slug)))
@@ -1011,11 +936,7 @@ def _single_schale_snapshot(params: dict[str, Any]) -> dict[str, Any]:
     if not re.fullmatch(r"[a-z0-9_]+", local_id):
         raise ValueError("student_id must contain only lowercase letters, digits, and underscores")
     current = dict(module.STUDENTS.get(local_id, {}))
-    incoming = {
-        "schaledb_id": int(raw["Id"]),
-        "favor_item_tags": [str(tag) for tag in raw.get("FavorItemTags") or []],
-        "favor_item_unique_tags": [str(tag) for tag in raw.get("FavorItemUniqueTags") or []],
-    }
+    incoming = schaledb_metadata_adapter.adapt_student(raw)
     gifts = _minimal_schale_gifts(raw_items)
     special_gifts, preferred_gifts = _student_gift_affinities(incoming, gifts)
     return {

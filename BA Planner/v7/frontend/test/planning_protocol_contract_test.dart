@@ -302,8 +302,12 @@ bool validMessage(Object? value) {
 
   if (message['method'] == 'planning.inventory.catalog') {
     if (message['type'] == 'request') return payload.isEmpty;
-    if (!_exactKeys(payload, {'items', 'sort'}) ||
+    if (!_exactKeys(payload, {'items', 'sort', 'catalog_revision'}) ||
         payload['sort'] != 'profile_order' ||
+        payload['catalog_revision'] is! String ||
+        !RegExp(
+          r'^[0-9a-f]{64}$',
+        ).hasMatch(payload['catalog_revision'] as String) ||
         payload['items'] is! List) {
       return false;
     }

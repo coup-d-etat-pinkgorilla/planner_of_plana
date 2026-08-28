@@ -108,12 +108,16 @@ class _MutableModifier:
     coefficient_basis_points: dict[str, int] = field(default_factory=dict)
     separated_flat: dict[str, int] = field(default_factory=dict)
 
-    def add(self, stat: str, amount: int) -> None:
+    def add(self, stat: str, amount: int, *, separated_flat: bool = False) -> None:
         if stat.endswith("_Coefficient"):
             target = self.coefficient_basis_points
             key = stat.removesuffix("_Coefficient")
         elif stat.endswith("_Base"):
-            target = self.separated_flat
+            # The game's ``*_Base`` values join the multiplier-eligible flat
+            # bucket.  This includes equipment, unique-weapon and potential
+            # bonuses.  A non-multiplying flat value is an explicit call-site
+            # property; it is not implied by the ``_Base`` suffix.
+            target = self.separated_flat if separated_flat else self.flat
             key = stat.removesuffix("_Base")
         else:
             target = self.flat
@@ -184,6 +188,8 @@ def _validate_build(student: StudentStatRecordV1, build: StudentStatBuildV1) -> 
         build.level < 90 or build.star < 5
     ):
         raise ValueError("potential requires a level 90, 5-star student")
+    if build.passive_skill_level is not None and not 1 <= build.passive_skill_level <= 10:
+        raise ValueError("passive skill level must be from 1 to 10")
 
 
 def _equipment_contributions(
@@ -239,11 +245,13 @@ def _relationship_contributions(
     contributions: dict[str, _MutableModifier],
     missing: list[MissingStatDependencyV1],
 ) -> None:
-    target = _modifier(contributions, "relationship")
     if build.relationship.current_rank is None:
         missing.append(MissingStatDependencyV1("current_relationship", str(student.schaledb_id)))
     else:
-        _add_values(target, relationship_stat_values(student, build.relationship.current_rank))
+        _add_values(
+            _modifier(contributions, f"relationship_current_{student.schaledb_id}"),
+            relationship_stat_values(student, build.relationship.current_rank),
+        )
 
     expected_alternates = set(student.relationship.alternate_ids)
     unknown_inputs = (
@@ -264,7 +272,35 @@ def _relationship_contributions(
         if alternate is None:
             missing.append(MissingStatDependencyV1("alternate_static_data", str(alternate_id)))
             continue
-        _add_values(target, relationship_stat_values(alternate, rank))
+        _add_values(
+            _modifier(contributions, f"relationship_alternate_{alternate_id}"),
+            relationship_stat_values(alternate, rank),
+        )
+
+
+def _passive_skill_contribution(
+    student: StudentStatRecordV1,
+    build: StudentStatBuildV1,
+    contributions: dict[str, _MutableModifier],
+    missing: list[MissingStatDependencyV1],
+    *,
+    include_skill_buffs: bool,
+) -> None:
+    if not include_skill_buffs:
+        return
+    if build.star < 2:
+        return
+    level = build.passive_skill_level
+    if level is None:
+        missing.append(MissingStatDependencyV1("passive_skill", "skill2"))
+        return
+    target = _modifier(contributions, "passive_skill")
+    for effect in student.passive_skill:
+        target.add(effect.stat, effect.values[level - 1])
+    if build.weapon is not None and build.weapon.star >= 2:
+        weapon_target = _modifier(contributions, "weapon_passive_skill")
+        for effect in student.weapon_passive_skill:
+            weapon_target.add(effect.stat, effect.values[level - 1])
 
 
 def _favorite_gear_contribution(
@@ -338,6 +374,8 @@ def calculate_student_stats(
     student: StudentStatRecordV1,
     build: StudentStatBuildV1,
     catalog: StudentStatCatalogV1,
+    *,
+    include_skill_buffs: bool = True,
 ) -> StudentStatCalculationV1:
     """Calculate exact totals or an explicitly non-exact partial when inputs are missing."""
 
@@ -348,6 +386,13 @@ def calculate_student_stats(
     _equipment_contributions(student, build, catalog, contributions, missing)
     _weapon_contribution(student, build, contributions)
     _relationship_contributions(student, build, catalog, contributions, missing)
+    _passive_skill_contribution(
+        student,
+        build,
+        contributions,
+        missing,
+        include_skill_buffs=include_skill_buffs,
+    )
     _favorite_gear_contribution(student, build, contributions)
     _potential_contribution(student, build, contributions)
     partial_values = _totals(contributions.values())

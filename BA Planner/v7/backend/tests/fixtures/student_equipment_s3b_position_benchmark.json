@@ -14,8 +14,8 @@
     "accepted_wrong": 0,
     "feature_fallback": 0,
     "exact_1280x720_correct": 30,
-    "score_min": 0.6544379094335128,
-    "margin_min": 0.086389,
+    "score_min": 0.598551573349599,
+    "margin_min": 0.043855,
     "confusion": {
       "65": {
         "65": 31
@@ -129,10 +129,10 @@
     "source_pixels_in_runtime_assets": false
   },
   "performance_ms": {
-    "cold_recognizer_with_position_bank": 36.28839994780719,
-    "position_bank_load": 0.46220002695918083,
-    "one_roi_warm_p50": 2.767500001937151,
-    "one_roi_warm_p95": 3.2063000835478306
+    "cold_recognizer_with_position_bank": 92.91870007291436,
+    "position_bank_load": 0.5078001413494349,
+    "one_roi_warm_p50": 2.790600061416626,
+    "one_roi_warm_p95": 3.302500117570162
   },
   "runtime_fallback": {
     "integration_frames": 6,

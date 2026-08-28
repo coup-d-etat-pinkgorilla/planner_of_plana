@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ba-planner.local/contracts/canonical-student-metadata-v1.schema.json",
+  "title": "BA Planner canonical student metadata catalog v1",
+  "type": "object",
+  "required": [
+    "version",
+    "students",
+    "forms",
+    "server_availability",
+    "favorite_items",
+    "provider_refs",
+    "gift_affinities"
+  ],
+  "properties": {
+    "version": {"const": 1},
+    "students": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["display_name", "template_name", "group"],
+        "not": {
+          "anyOf": [
+            {"required": ["schaledb_id"]},
+            {"required": ["favor_item_tags"]},
+            {"required": ["favor_item_unique_tags"]}
+          ]
+        }
+      }
+    },
+    "forms": {"type": "object"},
+    "server_availability": {
+      "type": "object",
+      "required": ["jp_only_student_ids"]
+    },
+    "favorite_items": {
+      "type": "object",
+      "required": ["student_ids", "max_tier"]
+    },
+    "provider_refs": {"type": "object"},
+    "gift_affinities": {"type": "object"}
+  },
+  "additionalProperties": false
+}

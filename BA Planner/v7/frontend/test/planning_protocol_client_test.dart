@@ -142,8 +142,12 @@ void main() {
           },
         ],
         'sort': 'profile_order',
+        'catalog_revision':
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       });
-      expect((await catalogFuture).single.resourceKey, 'item');
+      final catalog = await catalogFuture;
+      expect(catalog.items.single.resourceKey, 'item');
+      expect(catalog.catalogRevision, hasLength(64));
 
       final shortageFuture = service.calculateShortages(
         currentStudents: const [],
@@ -188,6 +192,28 @@ void main() {
       await service.dispose();
     },
   );
+
+  test('inventory snapshot preserves catalog revision and observed slot', () {
+    final state = RepositoryInventoryState.fromWire({
+      'version': 1,
+      'catalog_revision':
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      'entries': [
+        {
+          'key': 'item',
+          'item_id': 'item',
+          'quantity': '2',
+          'index': 5,
+          'profile_id': 'materials',
+          'observed_slot': 17,
+        },
+      ],
+    });
+    expect(state.catalogRevision, hasLength(64));
+    expect(state.entries.single['index'], 5);
+    expect(state.entries.single['observed_slot'], 17);
+    expect(state.toWire()['catalog_revision'], state.catalogRevision);
+  });
 
   test(
     'times out and reports a late response id without reconnecting',

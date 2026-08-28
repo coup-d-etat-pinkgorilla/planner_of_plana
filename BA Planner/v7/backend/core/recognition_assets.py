@@ -99,7 +99,7 @@ class RecognitionAssetCatalog:
                 continue
             identity = (
                 raw.get("student_id") or raw.get("item_id") or raw.get("digit")
-                or raw.get("opponent_name") or raw.get("rank") or raw.get("equipment_value")
+                or raw.get("relationship_rank") or raw.get("opponent_name") or raw.get("rank") or raw.get("equipment_value")
             )
             result.append(RecognitionAsset(
                 path=raw["path"], scan_kind=scan_kind, purpose=purpose,

@@ -10,6 +10,7 @@ import time
 from typing import Any, Callable
 import uuid
 
+from core.inventory_catalog import BY_KEY as INVENTORY_CATALOG_BY_KEY, CATALOG_REVISION
 from core.planning import GrowthPlan, StudentGoal
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, StudentGoalRecord, canonical_json
 from core.repository_merge import resolve_inventory_snapshot
@@ -18,6 +19,31 @@ from core.v6_migration import V6MigrationError, load_v6_accounts
 
 STORE_VERSION = 1
 DEFAULT_PROFILE_AVATAR = "hasumi"
+
+
+def rebase_inventory_snapshot(inventory: dict[str, Any]) -> dict[str, Any]:
+    """Rebase version-scoped ordinals while retaining observed screen slots."""
+    snapshot = InventorySnapshot.from_dict(inventory)
+    entries: list[dict[str, Any]] = []
+    for item in snapshot.entries:
+        entry = item.to_dict()
+        identity = item.item_id or item.key
+        catalog_row = INVENTORY_CATALOG_BY_KEY.get(identity)
+        if catalog_row is not None:
+            if (
+                entry.get("observed_slot") is None
+                and entry.get("profile_id") == "visible-grid"
+                and entry.get("index") is not None
+            ):
+                entry["observed_slot"] = entry["index"]
+            entry["index"] = catalog_row.order_index
+            entry["profile_id"] = catalog_row.profile_id
+        entries.append(entry)
+    return InventorySnapshot.from_dict({
+        "version": 1,
+        "catalog_revision": CATALOG_REVISION,
+        "entries": entries,
+    }).to_dict()
 
 
 class RepositoryError(RuntimeError):
@@ -135,6 +161,7 @@ class JsonRepository:
                 StudentGoalRecord.from_dict({"version": 1, "goal": goal})
         except (TypeError, ValueError, AttributeError, KeyError) as error:
             raise RepositoryError("corrupt_data", "profile contains invalid repository data") from error
+        value["inventory"] = rebase_inventory_snapshot(value["inventory"])
         return value
 
     def _lock(self) -> int:
@@ -205,7 +232,7 @@ class JsonRepository:
                 return {"profile": {**existing, "avatar_student_id": existing.get("avatar_student_id", DEFAULT_PROFILE_AVATAR), "selected": catalog["selected_profile_id"] == profile_id}, "revision": existing["revision"]}
             if any(item["display_name"].casefold() == display_name.strip().casefold() for item in catalog["profiles"]):
                 raise RepositoryError("profile_name_conflict", "profile display name already exists")
-            profile = {"version": 1, "profile_id": profile_id, "revision": 0, "students": [], "inventory": {"version": 1, "entries": []}, "goals": {"version": 1, "goals": []}, "idempotency": {}}
+            profile = {"version": 1, "profile_id": profile_id, "revision": 0, "students": [], "inventory": {"version": 1, "catalog_revision": CATALOG_REVISION, "entries": []}, "goals": {"version": 1, "goals": []}, "idempotency": {}}
             summary = {"profile_id": profile_id, "display_name": display_name.strip(), "avatar_student_id": avatar_student_id, "revision": 0, "selected": catalog["selected_profile_id"] is None}
             if catalog["selected_profile_id"] is None:
                 catalog["selected_profile_id"] = profile_id
@@ -353,7 +380,7 @@ class JsonRepository:
         return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"students:{canonical_json(canonical)}", lambda _c, p: p.__setitem__("students", canonical))
 
     def update_inventory(self, profile_id: str, inventory: dict[str, Any], expected_revision: int, idempotency_key: str) -> dict[str, Any]:
-        canonical = InventorySnapshot.from_dict(inventory).to_dict()
+        canonical = rebase_inventory_snapshot(inventory)
         return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"inventory:{canonical_json(canonical)}", lambda _c, p: p.__setitem__("inventory", canonical))
 
     def save_goals(self, profile_id: str, goals: dict[str, Any], expected_revision: int, idempotency_key: str) -> dict[str, Any]:

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "source_archive": "C:/Users/brigh/Pictures/Screenshots/BA",
+  "provenance": {
+    "behavioral_reference": "../v6/tools/build_basic_student_card_templates.py",
+    "use": "visual-ground-truth validation only; source pixels are not runtime templates"
+  },
+  "records": [
+    {"source_file":"스크린샷 2026-06-24 215302.png","source_sha256":"1eabcf0c67a1e5be3741625ae543daf278ec9857fa42bc696361aca021e1f8b2","source_size":[2560,1440],"student_level":1},
+    {"source_file":"스크린샷 2026-06-24 215255.png","source_sha256":"6449c34119b58f654cde8a7071998facb20348abf2e1f47b93760b036d04044a","source_size":[2560,1440],"student_level":12},
+    {"source_file":"스크린샷 2026-06-24 215250.png","source_sha256":"30903f4c830284c62428d26207a2fdc62b9f0a5d4a84629c0271ae319001ac10","source_size":[2560,1440],"student_level":23},
+    {"source_file":"스크린샷 2026-06-24 215246.png","source_sha256":"82406468908aa74dc2df6a07388aee42e884d7ad8fd39fb3bbd688950579aa8b","source_size":[2560,1440],"student_level":34},
+    {"source_file":"스크린샷 2026-06-24 215240.png","source_sha256":"dcd8e90f95a66956a298237171f3120d6332ff6417cd20f4cf2d41e9d230edcf","source_size":[2560,1440],"student_level":45},
+    {"source_file":"스크린샷 2026-06-24 215238.png","source_sha256":"9dfdeb290eaf8c4478058b5f225c9a18fb72dd11698ef51b5e58defc9c39fdf2","source_size":[2560,1440],"student_level":56},
+    {"source_file":"스크린샷 2026-06-24 215236.png","source_sha256":"fef8ab15f40fb2142fd69750dec421efb49a8f3398d631a6c5dddc96b5a4d00e","source_size":[2560,1440],"student_level":67},
+    {"source_file":"스크린샷 2026-06-24 215234.png","source_sha256":"f034fa53039c6c937c3f5c29c44a29d8adb187f70c45c41096e7fd240e6b144b","source_size":[2560,1440],"student_level":78},
+    {"source_file":"스크린샷 2026-06-24 215230.png","source_sha256":"65f4439457023608733262ad78f3905a1a6826423e9561fcd48954b803d87fae","source_size":[2560,1440],"student_level":89},
+    {"source_file":"스크린샷 2026-06-24 215227.png","source_sha256":"922c6195d7738e170312560eadc8606cf4afae211c5304167fa75e66d867de19","source_size":[2560,1440],"student_level":90}
+  ]
+}

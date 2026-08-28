@@ -155,7 +155,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     try {
       final value = await widget.service.listInventoryItems();
       if (mounted && generation == _generation)
-        setState(() => _inventory = value);
+        setState(() => _inventory = value.items);
     } catch (error) {
       if (mounted && generation == _generation)
         setState(() => _inventoryError = 'Inventory catalog failed: $error');

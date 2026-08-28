@@ -40,6 +40,24 @@ class ScannerProtocolContractTests(unittest.TestCase):
             self.assertEqual(1, sum(event["payload"]["event_kind"] == "terminal" for event in session_events))
             self.assertEqual("terminal", session_events[-1]["payload"]["event_kind"])
 
+    def test_field_feedback_event_is_part_of_protocol_v1(self) -> None:
+        event = {
+            "protocol": 1,
+            "type": "event",
+            "method": "scanner.session.event",
+            "payload": {
+                "session_id": "session-feedback",
+                "generation": 1,
+                "sequence": 2,
+                "scan_kind": "student",
+                "event_kind": "feedback",
+                "student_id": "shiroko",
+                "field": "level",
+                "values": {"level": 90},
+            },
+        }
+        self.assertEqual([], list(self.validator.iter_errors(event)))
+
 
 if __name__ == "__main__":
     unittest.main()

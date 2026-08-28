@@ -50,7 +50,7 @@ def build_bank(assets: Path) -> dict[str, object]:
     return {
         "schema_version": 1,
         "purpose": "student basic equipment position digit masks",
-        "font_rule": "v6-verified white fill, 1px #505878 outline, shear -0.25",
+        "font_rule": "user-reviewed GyeonggiTitle Medium, white fill, 1px #505878 outline, shear -0.25",
         "positions": {"1": list("123456789"), "2": list("0123456789")},
         "template_count": len(records),
         "templates": records,

@@ -21,7 +21,7 @@ from core.planning import (
     StudentGoal,
 )
 from core.planning_calc import calculate_plan_totals
-from core.inventory_catalog import catalog_payload
+from core.inventory_catalog import CATALOG_REVISION, catalog_payload
 from core.plan_shortages import derive_plan_shortages
 from core.planning_document import (
     PlanningDocumentError,
@@ -342,7 +342,14 @@ class PlanningProtocolV1:
             return error_response(
                 request, "inventory_catalog_failed", "Inventory catalog lookup failed"
             )
-        return _success(request, {"items": items, "sort": "profile_order"})
+        return _success(
+            request,
+            {
+                "items": items,
+                "sort": "profile_order",
+                "catalog_revision": CATALOG_REVISION,
+            },
+        )
 
     def _plan_shortages(self, request: dict[str, Any]) -> dict[str, Any]:
         payload = request["payload"]
