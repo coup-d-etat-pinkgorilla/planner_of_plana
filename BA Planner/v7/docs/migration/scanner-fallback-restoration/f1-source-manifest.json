@@ -1,0 +1,61 @@
+{
+  "phase": "F1",
+  "recorded_on": "2026-08-30",
+  "v6_references": [
+    {
+      "path": "../v6/core/capture.py",
+      "sha256": "91dd80501e39ce1b1da91e39f2ca8a956f258198b982c5c210b04029ee7d2105"
+    },
+    {
+      "path": "../v6/core/input.py",
+      "sha256": "ac586e6fadb0ce2ed3a6d89bd199f2729c21b42f390f263971e8ebd4bcfb06e1"
+    },
+    {
+      "path": "../v6/core/scanner_components/runtime.py",
+      "sha256": "21a5e66328ca11747f50508ecef11ba46ec24d76fcaf0b72dd2cf16d3462949e"
+    },
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "sha256": "332e5488f90a2d9bc24e3c0e12167d777b1f810e35c5501db941e2d58407839c"
+    }
+  ],
+  "files": [
+    {
+      "path": "backend/core/windows_scanner_adapter.py",
+      "sha256": "1da9f7db57facd68a20b25f8970c06d1441d755a3c9e3428ede68c7c92459f66"
+    },
+    {
+      "path": "backend/core/windows_capture_worker.py",
+      "sha256": "4d08964d0295605051a16951c0eda48e8ef513a99617681ea22b4868c455e576"
+    },
+    {
+      "path": "backend/core/scanner_matchers.py",
+      "sha256": "3e79b0af91f2a7886d9325d850b85815e67bd9e60f33b73227c70fc8b15f1f79"
+    },
+    {
+      "path": "backend/core/scanner_session.py",
+      "sha256": "b98fe10f326d1009ca45a37cb8afe14784ce8d56effd7b5d7ad3790d512db7d8"
+    },
+    {
+      "path": "backend/core/scanner_runtime.py",
+      "sha256": "a3243fbe546f6df83be9b6d3e9c41e033b4e7e5c7db7bd592533e2bd3144d9d4"
+    },
+    {
+      "path": "backend/tests/test_scanner_fallback_f1.py",
+      "sha256": "853b33b00d4c70d270202e0a24cae6685d693799df953525d20755a98812465d"
+    },
+    {
+      "path": "backend/tests/test_scanner_production_adapters.py",
+      "sha256": "05bd0988ec0824156049d0524400417fa62b4a9fce0da056d26cee3c8134e979"
+    },
+    {
+      "path": "backend/tests/test_scanner_session.py",
+      "sha256": "688f06113b9a6e651cebbbd3ddc7951173cca236a9b96398b2604d328f9a2770"
+    },
+    {
+      "path": "backend/tests/fixtures/scanner_fallback_restoration/f1-capture-input-parity.json",
+      "sha256": "654d78125bd9fc1d03e58831418ab5df3d6e3caace77b8d1aa1c16162101ce22"
+    }
+  ],
+  "f0_snapshot": "source-manifest.json remains unchanged; v7 source drift is expected after F1"
+}

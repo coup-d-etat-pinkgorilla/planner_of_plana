@@ -1,0 +1,39 @@
+{
+  "at": "2026-08-30T22:24:44.638301+09:00",
+  "action": "click",
+  "target_id": "hwnd:470ffc",
+  "input": {
+    "kind": "click",
+    "client": [
+      1132,
+      105
+    ],
+    "method": "send_input",
+    "screen": [
+      1780,
+      483
+    ]
+  },
+  "status": "captured",
+  "before": {
+    "status": "ready",
+    "foreground": true
+  },
+  "size": [
+    1280,
+    720
+  ],
+  "image_sha256": "2c41e3ed551191f1a49702c6e7181655f0d9fa58bb85d86abdef13a07cb9763e",
+  "capture": [
+    {
+      "round": 1,
+      "method": 3,
+      "ok": true
+    }
+  ],
+  "after": {
+    "status": "ready",
+    "foreground": true
+  },
+  "seconds": 1.172000000020489
+}

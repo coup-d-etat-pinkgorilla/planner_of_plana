@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "phase": "F11",
+  "requirement": "R24",
+  "generated_at": "2026-09-01T14:06:41.9862109+09:00",
+  "runtime_v6_import": false,
+  "persistent_automatic_write": false,
+  "native_coverage": {
+    "resolution": [
+      1280,
+      720
+    ],
+    "student_ref": "hanako_swimsuit",
+    "first_level_source": "level_tab_template",
+    "session_samples": 2,
+    "second_level_source": "student_level_studio_position_bank_session_calibrated",
+    "second_level_panel_inputs": 0
+  },
+  "regression": {
+    "python": "529/529 in 274.584s",
+    "flutter_analyze": "clean in 2.3s",
+    "flutter": "399/399 sequential in 3:39"
+  },
+  "files": [
+    {
+      "path": "backend/core/session_calibration.py",
+      "sha256": "33f2347ede12af12bcda74f5294cfb616c6d40c4f7f75101044e775facc75862",
+      "bytes": 5745
+    },
+    {
+      "path": "backend/core/studio_numeric_bank.py",
+      "sha256": "ac42c1f3d8c7d2d9d08274fa063d5425a5b4cf2fe70668505208ed14198b1deb",
+      "bytes": 13098
+    },
+    {
+      "path": "backend/core/scanner_matchers.py",
+      "sha256": "88d82dab90c870a5777fbe8f5c54c691be24128fe223964dcdebf27d94314812",
+      "bytes": 72030
+    },
+    {
+      "path": "backend/core/scanner_session.py",
+      "sha256": "809fc9befb541ff84737bd7cd1b6e2b6dc8cc2f5cee4a1cde5d940009d220f6f",
+      "bytes": 31197
+    },
+    {
+      "path": "backend/core/student_scan_recognizer.py",
+      "sha256": "ba38260ea0e6fe6d6c31f7de08902b6d776f30a833d64c331ac57c8c7dd134d5",
+      "bytes": 41750
+    },
+    {
+      "path": "backend/core/student_equipment_recognizer.py",
+      "sha256": "4897437286c7c2d9e436cb5f95835d03a594a483e12cd3a4ce477d25fec3782c",
+      "bytes": 73192
+    },
+    {
+      "path": "backend/tests/test_session_calibration_f11.py",
+      "sha256": "fee59e500b8bdefc5fd40ff8a50cdfd4f2704499a1929eeb1645885bd6cb5b6a",
+      "bytes": 8166
+    },
+    {
+      "path": "backend/tests/fixtures/session_calibration_f11_v6_parity.json",
+      "sha256": "721ffac12c09a86a6511291ab50bdf6102055edc425aadd336e5aa7c4e056d91",
+      "bytes": 1734
+    },
+    {
+      "path": "backend/tools/verify_student_potential_live.py",
+      "sha256": "95e5a0636f7da078948f1049f7600f3713326b5593d8fff3f076d28dde073c49",
+      "bytes": 5814
+    },
+    {
+      "path": "debug/scanner_f11_live/session-calibration-1280.json",
+      "sha256": "ffc391e7fcb06c256d2b080c296bab17b560f25861c6ed4e78df2c56302454eb",
+      "bytes": 23216
+    },
+    {
+      "path": "docs/migration/scanner-fallback-restoration/f11-results.md",
+      "sha256": "6721053a5abf18f106138673a9498f606aee7d6df60cf2ee55f49b32c49c524e",
+      "bytes": 5191
+    }
+  ]
+}

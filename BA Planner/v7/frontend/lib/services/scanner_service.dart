@@ -9,6 +9,22 @@ enum ScannerKind { student, inventory, tacticalLobby }
 
 enum StudentScanMode { single, full }
 
+enum InventoryScanProfile {
+  studentElephs('student_elephs'),
+  techNotes('tech_notes'),
+  tacticalBd('tactical_bd'),
+  ooparts('ooparts'),
+  activityReports('activity_reports'),
+  presents('presents'),
+  equipment('equipment');
+
+  const InventoryScanProfile(this.wireName);
+  final String wireName;
+
+  static InventoryScanProfile fromWire(String value) =>
+      values.firstWhere((item) => item.wireName == value);
+}
+
 extension ScannerKindWire on ScannerKind {
   String get wireName => switch (this) {
     ScannerKind.student => 'student',
@@ -370,6 +386,7 @@ abstract interface class ScannerService {
     String targetId, {
     String? profileId,
     StudentScanMode studentScanMode = StudentScanMode.single,
+    InventoryScanProfile? inventoryScanProfile,
   });
   Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session);
   Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session);
@@ -468,6 +485,7 @@ class ScannerProtocolClient implements ScannerService {
     String targetId, {
     String? profileId,
     StudentScanMode studentScanMode = StudentScanMode.single,
+    InventoryScanProfile? inventoryScanProfile,
   }) async {
     _startPending = true;
     late final Map<String, dynamic> wire;
@@ -478,6 +496,8 @@ class ScannerProtocolClient implements ScannerService {
         'profile_id': ?profileId,
         if (kind == ScannerKind.student)
           'student_scan_mode': studentScanMode.name,
+        if (kind == ScannerKind.inventory && inventoryScanProfile != null)
+          'inventory_scan_profile': inventoryScanProfile.wireName,
       });
     } finally {
       _startPending = false;

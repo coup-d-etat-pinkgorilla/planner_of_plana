@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "source": "v6 core/scanner_components/student.py:read_level and core/matcher.py:read_student_level_v5/read_student_level/read_level_digit; characterized before adaptation",
+  "regions": {
+    "level_digit_1": {"x1":0.6219,"y1":0.3254,"x2":0.6308,"y2":0.3484},
+    "level_digit_2": {"x1":0.6312,"y1":0.3254,"x2":0.6406,"y2":0.3484}
+  },
+  "first_digit_labels": [1,2,3,4,5,6,7,8,9],
+  "second_digit_labels": [0,1,2,3,4,5,6,7,8,9],
+  "read_limit": 3,
+  "v6_threshold": 0.55,
+  "v6_null_note": "read_level_digit builds only numeric candidates; 2_null.png is not used and visually contains a digit, so it is not an absence reference",
+  "v7_safety_changes": ["blank second ROI must be positively confirmed; failed second digit does not shorten the number", "failed first digit never promotes the second digit", "F2 title/tab and same-student recovery", "preserve confirmed observations", "no runtime calibration before F11"]
+}

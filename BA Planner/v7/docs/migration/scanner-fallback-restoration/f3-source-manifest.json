@@ -1,0 +1,135 @@
+{
+  "phase": "F3",
+  "recorded_on": "2026-08-31",
+  "note": "F3 final implementation snapshot including lazy numeric bank initialization; historical F0-F2 snapshots are unchanged",
+  "files": [
+    {
+      "path": "backend/core/student_potential_recognizer.py",
+      "sha256": "7491bf4b3035ff449a39a989af51e9b69559a033bc2c1567bc5db8df3ec2ce97"
+    },
+    {
+      "path": "backend/core/scanner_matchers.py",
+      "sha256": "e597988239734258c97e90e3c69616087014e2381967cab74d06c6c8e4fe5721"
+    },
+    {
+      "path": "backend/core/scanner_runtime.py",
+      "sha256": "c0f61c0977863c0310be79c647db07c897537e702c72a532ddeef661056149c7"
+    },
+    {
+      "path": "backend/core/student_candidate_validation.py",
+      "sha256": "da0263afa54c7b2b7b83f38da680fb830ab799fc6a8fdb6bd520e36080b12761"
+    },
+    {
+      "path": "backend/core/recognition_assets.py",
+      "sha256": "acafd4035239831507cbd1cf3d072b1a73fec57ad13391d84154c159f446ce63"
+    },
+    {
+      "path": "backend/core/student_panel_recovery.py",
+      "sha256": "7a23a62ab0a8e3c3ed53eba47d43b58a4cda238f61df12da262cef06ad978b49"
+    },
+    {
+      "path": "backend/tests/test_student_potential_f3.py",
+      "sha256": "3a5b1a9ac0bf1f859e05a963e6b447ecaf42454c268cad92b5073d304abe38ef"
+    },
+    {
+      "path": "backend/tests/test_student_candidate_validation_s4.py",
+      "sha256": "07f4aaeb814a150f2ceb79d0bc9f5469ced47d88d1706b6500e515b3e7646cc3"
+    },
+    {
+      "path": "backend/tests/test_student_scan_s2.py",
+      "sha256": "7dbde72cdcc9856a7f9901f32f50f7342aee5c6f1809ddc682cb4b6d108112bc"
+    },
+    {
+      "path": "backend/tests/test_recognition_assets.py",
+      "sha256": "9dec69596b80956012b6ecd18aac15ead0e317eb4127e7e849c068dd2af4d212"
+    },
+    {
+      "path": "backend/tests/test_scanner_stdio_transport.py",
+      "sha256": "a2891fd66dcfebef5209a37f5f6a5dc1d9889abe6d94882e538f1024712bda67"
+    },
+    {
+      "path": "backend/tests/fixtures/student_potential_f3_v6_parity.json",
+      "sha256": "a1e70d6ec3ff0ffaa7ea0c6c563812849f853f8155a2db53e2e5ef374efd459b"
+    },
+    {
+      "path": "backend/tests/fixtures/student_potential_f3_live/manifest.json",
+      "sha256": "b167c90f150addcee024bf910d0928deb55947eeb067ea44d1d3b184bf8e5091"
+    },
+    {
+      "path": "backend/assets/recognition/v1/student_potential_manifest.json",
+      "sha256": "937d11cd22cef599dfd8a8f175656deb28793f30f399fb9753d9b627fd676021"
+    },
+    {
+      "path": "backend/assets/recognition/v1/regions/student_potential_regions.json",
+      "sha256": "bc266efddaada83be9c33bb1acc044c007714aa0b69a8f86bb20b1fae94381d1"
+    },
+    {
+      "path": "backend/tools/sync_student_potential_f3_assets.py",
+      "sha256": "753ac666fe1ad978d31e4e93f1f3d6e4a98817add44b067465d861149baed9c8"
+    },
+    {
+      "path": "backend/tools/export_student_potential_f3_fixtures.py",
+      "sha256": "49f64c4ca8963bc7a3352671952863b4477ed5a0cd8677cc7b9dc7fc714fcfcc"
+    },
+    {
+      "path": "backend/tools/verify_student_potential_live.py",
+      "sha256": "f8943f66c7fae14c186f2b96c6139f897b2c43f173e2fa59942639ebcb3b1989"
+    },
+    {
+      "path": "backend/tools/verify_student_panel_live.py",
+      "sha256": "d77b94a1041a3dfa191e9c2cdfaa6bac78b41f587db634ee901fe5270ce995cc"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "sha256": "ce56ebf9ac4ab3c22398938d7c45973d7686785be5e0a2607ef94832290ad2a2"
+    },
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "sha256": "332e5488f90a2d9bc24e3c0e12167d777b1f810e35c5501db941e2d58407839c"
+    },
+    {
+      "path": "../v6/regions/student_normal_info_regions.json",
+      "sha256": "9dff521403601f68dbce41ac8aaf6c4208f0c278bcb67912f41188f17f7d3b88"
+    },
+    {
+      "path": "../v6/regions/student_data_regions.json",
+      "sha256": "defacffbaafe6e25484479a4ee6fa024174e843f5445fca7c9f8a910831f11e5"
+    },
+    {
+      "path": "../v6/regions/student_statmenu_regions.json",
+      "sha256": "e6d9a8ca07bcdd70b1c3d5198937e12d2c8d7922ae93108908efef29b5500926"
+    }
+  ],
+  "symbols": [
+    {
+      "path": "../v6/core/matcher.py",
+      "name": "read_stat_value_result",
+      "line": 1656,
+      "sha256": "308d0c9fabc4a1649f431c43ade58ea624452b25c7138355ef7959d1c638929d"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "name": "read_basic_additional_stat_badge_result",
+      "line": 2817,
+      "sha256": "b43b6bcc4e525d0fde15f3c7dd787d3b8f45c7915cdab02e09a32efbd1c18219"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "name": "read_basic_additional_stat_value_result",
+      "line": 2925,
+      "sha256": "3d58c0153e7d12a40ce7d4b7881fff83659c70d8e163a3a3269c67f504565a10"
+    },
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "name": "read_basic_combat_stats",
+      "line": 2504,
+      "sha256": "b4d29a101f17de5b97f4a2533807b1acb0e96247274b520159a6fd8f36bce30f"
+    },
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "name": "read_stats",
+      "line": 2571,
+      "sha256": "2ce7e6224d83d8c07ed1dabb59aa75a40a714d5a356208edb4ae1c1aff83d9fc"
+    }
+  ]
+}

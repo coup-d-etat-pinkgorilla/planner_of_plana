@@ -31,6 +31,10 @@ P0~P6 작업을 새 대화에서 계속할 때는
 [P0-P6 Implementation Workflow](workflows/p0-p6-workflow)를 기준으로 합니다. 단계
 정의는 이 문서에, 현재 상태와 실제 산출물은 Workflow Status에 기록합니다.
 
+v6에서 빠진 학생·재고 스캔 폴백의 전체 재도입은
+[Scanner Fallback Restoration Workflow](workflows/scanner-fallback-restoration-workflow)의
+R01~R24 추적표와 F0~F12 단계별 gate를 따릅니다. 문서 작성과 실제 구현 완료는 구분합니다.
+
 P6 완료 후 전술대항전 로비 스캔, 상대 방어 이력, 통계, 방어 변경 감지, 예상 방어덱과
 공유 분석을 P13까지 확장하는 순서는
 [P7-P13 Tactical Challenge Backend Workflow](workflows/p7-p13-tactical-backend-workflow)를

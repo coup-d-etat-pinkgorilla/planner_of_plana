@@ -1,0 +1,109 @@
+{
+  "phase": "F4",
+  "recorded_on": "2026-08-31",
+  "note": "F0-F3 historical snapshots retained unchanged",
+  "files": [
+    {
+      "path": "backend/core/student_level_recognizer.py",
+      "sha256": "e799b9424551cc91a673ece99ea8c19af21114c5eadef0e956384fe7ffca4966"
+    },
+    {
+      "path": "backend/core/scanner_matchers.py",
+      "sha256": "2c6cdd732a7230158bd407adb6f6520a70eb67a04f3ee17f3d9764c40e104a25"
+    },
+    {
+      "path": "backend/core/scanner_runtime.py",
+      "sha256": "24749d1a9c3004b6122908e2d1421924429e5041865bdbc6700fa4ff80486a46"
+    },
+    {
+      "path": "backend/core/recognition_assets.py",
+      "sha256": "22d116175c5397d5640fd2a4a087e0a98f23ea8f4c11246094575e246930ab08"
+    },
+    {
+      "path": "backend/core/student_panel_recovery.py",
+      "sha256": "7a23a62ab0a8e3c3ed53eba47d43b58a4cda238f61df12da262cef06ad978b49"
+    },
+    {
+      "path": "backend/tests/test_student_level_f4.py",
+      "sha256": "a0d834ccd0a4b760bfe9e8a26343b9c55485292cfda5bcf96d6b0555491f345c"
+    },
+    {
+      "path": "backend/tests/test_recognition_assets.py",
+      "sha256": "c2db11a5b4b6b902f0a2a4afee0e1174fc85be4c687c18c5ff8089d0ec335a30"
+    },
+    {
+      "path": "backend/tests/test_scanner_stdio_transport.py",
+      "sha256": "057d91174f64e7dbb60c2d4861770f3ed2c33ca83ba82f72b93769c27a93d341"
+    },
+    {
+      "path": "backend/tests/fixtures/student_level_f4_v6_parity.json",
+      "sha256": "7257ba48b4f9600ea6d3b6d4ea2d330f0918b7e162fed09f7b2009d55f5794cb"
+    },
+    {
+      "path": "backend/tests/fixtures/student_level_f4_live/manifest.json",
+      "sha256": "2ae6167f9d32249f943bc177834430450c027aa6b0ffa4beb38bdf19ec940017"
+    },
+    {
+      "path": "backend/assets/recognition/v1/student_level_manifest.json",
+      "sha256": "5ee42e0863908ea7a69abfc21f17b07d98912bd951b117bacfb183bd501918cc"
+    },
+    {
+      "path": "backend/assets/recognition/v1/regions/student_level_regions.json",
+      "sha256": "29e16b525b7dc89090ed13f42a97178d49efb68bd44de6d7418d248cbf8d76f9"
+    },
+    {
+      "path": "backend/tools/sync_student_level_f4_assets.py",
+      "sha256": "eedf16966d3851cab073610d929aa3238d29d11060f2f392f4c0b244fc56945a"
+    },
+    {
+      "path": "backend/tools/export_student_level_f4_fixtures.py",
+      "sha256": "19906f1e04676672011e3e194eca5769e614c7f33cf136730339d8bc34fa6554"
+    },
+    {
+      "path": "backend/tools/verify_student_panel_live.py",
+      "sha256": "af16a18b1fcb4476a520f2cd70a969a714cf045751c38e23db7a7ccb2b00a491"
+    },
+    {
+      "path": "backend/tools/verify_student_potential_live.py",
+      "sha256": "0c3a26745d278999ca789c50e59872d93ff2a21dfdba24e99b4068e84b437137"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "sha256": "ce56ebf9ac4ab3c22398938d7c45973d7686785be5e0a2607ef94832290ad2a2"
+    },
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "sha256": "332e5488f90a2d9bc24e3c0e12167d777b1f810e35c5501db941e2d58407839c"
+    },
+    {
+      "path": "../v6/regions/student_level_info_regions.json",
+      "sha256": "fa7e3d1e0a7fbb09d1aa5f9e6122e6755a88d80fa70659d2bc03caf66f30e4f0"
+    }
+  ],
+  "symbols": [
+    {
+      "path": "../v6/core/matcher.py",
+      "name": "read_level_digit",
+      "line": 3162,
+      "sha256": "a0a9ea2ffa742f5eee820b42006ea7ebcc6776500b7688fdea5a82aa4cf0f344"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "name": "read_student_level",
+      "line": 3180,
+      "sha256": "7d52977e3073ee3041011f2ae8d303384c85cbafe0d010095b4e4e999b0b49c7"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "name": "read_student_level_v5",
+      "line": 4228,
+      "sha256": "b9e0e6e9d6414b3ad9c05897716a690b820feadd690dcade6b24c06ca7b26658"
+    },
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "name": "read_level",
+      "line": 2161,
+      "sha256": "2f880f1ea9f63eaef5348064fae8b917e9f41c2fd5e34e3fd8c57a683e44e554"
+    }
+  ]
+}

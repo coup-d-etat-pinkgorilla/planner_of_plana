@@ -1,0 +1,566 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-08-30T10:43:18.623767+00:00",
+  "duration_seconds": 52.51600000006147,
+  "mode": "offline_archive_existing_bank_and_old_json_revalidation",
+  "live_game_inputs": 0,
+  "profile_writes": 0,
+  "template_regeneration": false,
+  "renderer_spec_sha256": "279933a7e784b5cdee7ca837932d9ac2bf181baedbc8833fe79ed6681bb255c4",
+  "archive": {
+    "screenshot_files": 313,
+    "resolved_answer_files": 163,
+    "template_count": 160,
+    "unsupported_layouts": {
+      "equipment_one_digit": 9
+    },
+    "summaries": {
+      "equipment_level": {
+        "visual_ground_truth": {
+          "values": 307,
+          "value_correct": 307,
+          "value_accuracy": 1.0,
+          "digits": 614,
+          "digit_correct": 614,
+          "digit_accuracy": 1.0,
+          "minimum_score": 0.689873417721519,
+          "average_score": 0.7645420904581655,
+          "minimum_margin": 0.07258064516129037,
+          "average_margin": 0.1636287893428041,
+          "confusion": {}
+        },
+        "legacy_agreement": {
+          "values": 0,
+          "value_correct": 0,
+          "value_accuracy": 0.0,
+          "digits": 0,
+          "digit_correct": 0,
+          "digit_accuracy": 0.0,
+          "minimum_score": 0.0,
+          "average_score": 0.0,
+          "minimum_margin": 0.0,
+          "average_margin": 0.0,
+          "confusion": {}
+        }
+      },
+      "relationship_rank": {
+        "visual_ground_truth": {
+          "values": 26,
+          "value_correct": 26,
+          "value_accuracy": 1.0,
+          "digits": 52,
+          "digit_correct": 52,
+          "digit_accuracy": 1.0,
+          "minimum_score": 0.6901408450704225,
+          "average_score": 0.7756708358754598,
+          "minimum_margin": 0.032997987927565364,
+          "average_margin": 0.18753058846624754,
+          "confusion": {},
+          "layouts": {
+            "1": {
+              "values": 1,
+              "value_correct": 1,
+              "value_accuracy": 1.0,
+              "digits": 1,
+              "digit_correct": 1,
+              "digit_accuracy": 1.0,
+              "minimum_score": 0.762589928057554,
+              "average_score": 0.762589928057554,
+              "minimum_margin": 0.08165607591747615,
+              "average_margin": 0.08165607591747615,
+              "confusion": {}
+            },
+            "2": {
+              "values": 24,
+              "value_correct": 24,
+              "value_accuracy": 1.0,
+              "digits": 48,
+              "digit_correct": 48,
+              "digit_accuracy": 1.0,
+              "minimum_score": 0.6901408450704225,
+              "average_score": 0.7781396915985225,
+              "minimum_margin": 0.032997987927565364,
+              "average_margin": 0.19032452288551624,
+              "confusion": {}
+            },
+            "3": {
+              "values": 1,
+              "value_correct": 1,
+              "value_accuracy": 1.0,
+              "digits": 3,
+              "digit_correct": 3,
+              "digit_accuracy": 1.0,
+              "minimum_score": 0.7,
+              "average_score": 0.7405294469124256,
+              "minimum_margin": 0.11451393366286988,
+              "average_margin": 0.17811914194087172,
+              "confusion": {}
+            }
+          }
+        },
+        "legacy_agreement": {
+          "values": 0,
+          "value_correct": 0,
+          "value_accuracy": 0.0,
+          "digits": 0,
+          "digit_correct": 0,
+          "digit_accuracy": 0.0,
+          "minimum_score": 0.0,
+          "average_score": 0.0,
+          "minimum_margin": 0.0,
+          "average_margin": 0.0,
+          "confusion": {}
+        }
+      },
+      "student_level": {
+        "visual_ground_truth": {
+          "values": 0,
+          "value_correct": 0,
+          "value_accuracy": 0.0,
+          "digits": 0,
+          "digit_correct": 0,
+          "digit_accuracy": 0.0,
+          "minimum_score": 0.0,
+          "average_score": 0.0,
+          "minimum_margin": 0.0,
+          "average_margin": 0.0,
+          "confusion": {}
+        },
+        "legacy_agreement": {
+          "values": 122,
+          "value_correct": 122,
+          "value_accuracy": 1.0,
+          "digits": 244,
+          "digit_correct": 244,
+          "digit_accuracy": 1.0,
+          "minimum_score": 0.8,
+          "average_score": 0.820721059184222,
+          "minimum_margin": 0.1446136663620673,
+          "average_margin": 0.15566398313951404,
+          "confusion": {}
+        }
+      },
+      "weapon_level": {
+        "visual_ground_truth": {
+          "values": 16,
+          "value_correct": 16,
+          "value_accuracy": 1.0,
+          "digits": 32,
+          "digit_correct": 32,
+          "digit_accuracy": 1.0,
+          "minimum_score": 0.7938931297709924,
+          "average_score": 0.822133719105103,
+          "minimum_margin": 0.12212678762912865,
+          "average_margin": 0.1722704676752677,
+          "confusion": {}
+        },
+        "legacy_agreement": {
+          "values": 89,
+          "value_correct": 89,
+          "value_accuracy": 1.0,
+          "digits": 178,
+          "digit_correct": 178,
+          "digit_accuracy": 1.0,
+          "minimum_score": 0.7938931297709924,
+          "average_score": 0.8191081860846579,
+          "minimum_margin": 0.12212678762912865,
+          "average_margin": 0.1560447072171678,
+          "confusion": {}
+        }
+      }
+    }
+  },
+  "diagnostic": {
+    "source_sha256": "49728fb463147bd9c2e2deb7b16a1fcf9bf350828f43878d9a50874777a7826e",
+    "candidate_count": 224,
+    "status_counts": {
+      "verified": 135,
+      "dependency_missing": 75,
+      "suspicious": 14
+    }
+  },
+  "feedback_state_frame_replay": [
+    {
+      "source_file": "스크린샷 2026-08-29 233619.png",
+      "student_ref": "wakamo_swimsuit",
+      "kind": "original_2560",
+      "expected_state": "weapon_unlocked_not_equipped",
+      "observed_state": "weapon_unlocked_not_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233619.png",
+      "student_ref": "wakamo_swimsuit",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_unlocked_not_equipped",
+      "observed_state": "weapon_unlocked_not_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233640.png",
+      "student_ref": "hiyori",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233640.png",
+      "student_ref": "hiyori",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233655.png",
+      "student_ref": "hina_swimsuit",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233655.png",
+      "student_ref": "hina_swimsuit",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233703.png",
+      "student_ref": "suzumi_magical",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233703.png",
+      "student_ref": "suzumi_magical",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233712.png",
+      "student_ref": "ritsu",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233712.png",
+      "student_ref": "ritsu",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233719.png",
+      "student_ref": "kurumi",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233719.png",
+      "student_ref": "kurumi",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233730.png",
+      "student_ref": "aru",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233730.png",
+      "student_ref": "aru",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233742.png",
+      "student_ref": "izuna_swimsuit",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233742.png",
+      "student_ref": "izuna_swimsuit",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233755.png",
+      "student_ref": "hoshino_battle#1",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233755.png",
+      "student_ref": "hoshino_battle#1",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233758.png",
+      "student_ref": "hoshino_battle#2",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233758.png",
+      "student_ref": "hoshino_battle#2",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233808.png",
+      "student_ref": "rio_battle",
+      "kind": "original_2560",
+      "expected_state": "no_weapon_system",
+      "observed_state": "no_weapon_system",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233808.png",
+      "student_ref": "rio_battle",
+      "kind": "derived_1280_not_live",
+      "expected_state": "no_weapon_system",
+      "observed_state": "no_weapon_system",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233825.png",
+      "student_ref": "nagisa",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233825.png",
+      "student_ref": "nagisa",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233831.png",
+      "student_ref": "neru_school_uniform",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233831.png",
+      "student_ref": "neru_school_uniform",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233840.png",
+      "student_ref": "eimi",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233840.png",
+      "student_ref": "eimi",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233852.png",
+      "student_ref": "iori",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233852.png",
+      "student_ref": "iori",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233908.png",
+      "student_ref": "yuzu",
+      "kind": "original_2560",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233908.png",
+      "student_ref": "yuzu",
+      "kind": "derived_1280_not_live",
+      "expected_state": "weapon_equipped",
+      "observed_state": "weapon_equipped",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233918.png",
+      "student_ref": "tomoe_qipao",
+      "kind": "original_2560",
+      "expected_state": "no_weapon_system",
+      "observed_state": "no_weapon_system",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233918.png",
+      "student_ref": "tomoe_qipao",
+      "kind": "derived_1280_not_live",
+      "expected_state": "no_weapon_system",
+      "observed_state": "no_weapon_system",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233926.png",
+      "student_ref": "saori_swimsuit",
+      "kind": "original_2560",
+      "expected_state": "no_weapon_system",
+      "observed_state": "no_weapon_system",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233926.png",
+      "student_ref": "saori_swimsuit",
+      "kind": "derived_1280_not_live",
+      "expected_state": "no_weapon_system",
+      "observed_state": "no_weapon_system",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233934.png",
+      "student_ref": "niko",
+      "kind": "original_2560",
+      "expected_state": "no_weapon_system",
+      "observed_state": "no_weapon_system",
+      "state_correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233934.png",
+      "student_ref": "niko",
+      "kind": "derived_1280_not_live",
+      "expected_state": "no_weapon_system",
+      "observed_state": "no_weapon_system",
+      "state_correct": true
+    }
+  ],
+  "student_level_visual_series": [
+    {
+      "source_file": "스크린샷 2026-06-24 215302.png",
+      "expected": 1,
+      "observed": 1,
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 215255.png",
+      "expected": 12,
+      "observed": 12,
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 215250.png",
+      "expected": 23,
+      "observed": 23,
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 215246.png",
+      "expected": 34,
+      "observed": 34,
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 215240.png",
+      "expected": 45,
+      "observed": 45,
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 215238.png",
+      "expected": 56,
+      "observed": 56,
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 215236.png",
+      "expected": 67,
+      "observed": 67,
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 215234.png",
+      "expected": 78,
+      "observed": 78,
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 215230.png",
+      "expected": 89,
+      "observed": 89,
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "source_file": "스크린샷 2026-06-24 215227.png",
+      "expected": 90,
+      "observed": 90,
+      "status": "ok",
+      "correct": true
+    }
+  ],
+  "limitations": [
+    "No live game scan or input trace",
+    "Derived 1280 frames are not actual 1280 captures",
+    "Existing bank and validation partition provenance retained; not a newly held-out benchmark",
+    "Archive skips nine one-digit equipment records"
+  ]
+}

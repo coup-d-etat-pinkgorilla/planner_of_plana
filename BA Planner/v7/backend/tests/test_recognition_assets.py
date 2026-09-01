@@ -47,7 +47,10 @@ class RecognitionAssetTests(unittest.TestCase):
         )
         self.assertEqual(160, studio_payload["template_count"])
         self.assertTrue(studio_payload["processing"]["production"])
-        self.assertEqual(1773, status["asset_count"])
+        self.assertEqual(3, len(catalog.assets("student", "student-weapon-state-template")))
+        self.assertEqual(20, len(catalog.assets("student", "student-weapon-menu-level-template")))
+        self.assertEqual(4, len(catalog.assets("student", "student-weapon-menu-star-template")))
+        self.assertEqual(3051, status["asset_count"])
         self.assertEqual(
             "adapted:../v6/templates/students/airi.png#top-bar-removed-82px",
             next(

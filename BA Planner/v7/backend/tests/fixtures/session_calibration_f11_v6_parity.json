@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "phase": "F11",
+  "requirement": "R24",
+  "legacy": {
+    "level_call_path": "read_level -> verified level tab value -> _learn_basic_level_for_run",
+    "equipment_call_path": "read_equipment -> verified equipment menu value -> _learn_basic_equipment_slot",
+    "storage": "scanner-instance run templates"
+  },
+  "v7_policy": {
+    "scope_key": [
+      "profile_id",
+      "actual_capture_width",
+      "actual_capture_height",
+      "session_id",
+      "generation",
+      "student_ref",
+      "field"
+    ],
+    "eligible_sources": [
+      "level_tab_template",
+      "equipment_menu_digit"
+    ],
+    "required": [
+      "same student and form",
+      "verified detail panel",
+      "independent confirmed value",
+      "no confirmed-value conflict"
+    ],
+    "precedence": [
+      "user_confirmed",
+      "session_calibrated",
+      "bundled"
+    ],
+    "discard_on": [
+      "cancel",
+      "terminal",
+      "profile_change",
+      "capture_resolution_change"
+    ],
+    "forbidden": [
+      "persistent write",
+      "self-training from session calibration output",
+      "session calibration marked user confirmed"
+    ]
+  },
+  "positive_cases": [
+    "level detail truth calibrates the same student form in the active session",
+    "equipment detail truth calibrates only the matching slot field",
+    "explicit user sample wins over an automatic session sample"
+  ],
+  "negative_cases": [
+    "detail error or conflict is rejected",
+    "another student form cannot consume the sample",
+    "another profile resolution session or generation cannot consume the sample",
+    "cancel and terminal discard all automatic samples",
+    "automatic samples never enter recognition_samples storage"
+  ]
+}

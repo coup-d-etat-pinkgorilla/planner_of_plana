@@ -1,0 +1,23 @@
+test_basic_success_does_not_click_or_load_detail_bank (test_student_level_f4.LevelF4Tests.test_basic_success_does_not_click_or_load_detail_bank) ... ok
+test_blank_or_dark_screen_is_not_level (test_student_level_f4.LevelF4Tests.test_blank_or_dark_screen_is_not_level) ... ok
+test_cancel_after_open_prevents_read_and_closes (test_student_level_f4.LevelF4Tests.test_cancel_after_open_prevents_read_and_closes) ... ok
+test_exhaustion_retains_other_fields_and_partial_evidence (test_student_level_f4.LevelF4Tests.test_exhaustion_retains_other_fields_and_partial_evidence) ... ok
+test_existing_conflict_stays_sticky_without_click (test_student_level_f4.LevelF4Tests.test_existing_conflict_stays_sticky_without_click) ... ok
+test_failed_first_digit_does_not_promote_second (test_student_level_f4.LevelF4Tests.test_failed_first_digit_does_not_promote_second) ... ok
+test_failure_then_third_read_success_closes_once (test_student_level_f4.LevelF4Tests.test_failure_then_third_read_success_closes_once) ... ok
+test_level_tab_uses_basic_tab_for_return_not_panel_close (test_student_level_f4.LevelF4Tests.test_level_tab_uses_basic_tab_for_return_not_panel_close) ... ok
+test_matcher_resolves_level_before_dependent_potential_and_equipment (test_student_level_f4.LevelF4Tests.test_matcher_resolves_level_before_dependent_potential_and_equipment) ... ok
+test_missing_menu_keeps_previous_uncertain_value (test_student_level_f4.LevelF4Tests.test_missing_menu_keeps_previous_uncertain_value) ... ok
+test_native1280_low_max_level_state_and_return (test_student_level_f4.LevelF4Tests.test_native1280_low_max_level_state_and_return) ... ok
+test_native1280_potential_recheck_without_synthetic_resize (test_student_level_f4.LevelF4Tests.test_native1280_potential_recheck_without_synthetic_resize) ... ok
+test_out_of_range_is_not_confirmed (test_student_level_f4.LevelF4Tests.test_out_of_range_is_not_confirmed) ... ok
+test_restore_failure_propagates_even_after_successful_read (test_student_level_f4.LevelF4Tests.test_restore_failure_propagates_even_after_successful_read) ... ok
+test_return_to_other_student_is_not_success (test_student_level_f4.LevelF4Tests.test_return_to_other_student_is_not_success) ... ok
+test_safe_open_failure_closes_and_stays_partial (test_student_level_f4.LevelF4Tests.test_safe_open_failure_closes_and_stays_partial) ... ok
+test_unknown_second_digit_does_not_shorten_number (test_student_level_f4.LevelF4Tests.test_unknown_second_digit_does_not_shorten_number) ... ok
+test_v6_parity_regions_and_all_single_double_levels (test_student_level_f4.LevelF4Tests.test_v6_parity_regions_and_all_single_double_levels) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 8.973s
+
+OK

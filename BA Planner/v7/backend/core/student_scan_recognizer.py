@@ -627,7 +627,13 @@ class StudentBasicRecognizer:
             match.value if confident else None,
             match.score,
             "ok" if confident else "uncertain",
-            source,
+            (
+                f"{source}_user_confirmed"
+                if match.used_user_sample
+                else f"{source}_session_calibrated"
+                if match.used_session_sample
+                else source
+            ),
             (
                 f"value={match.value};labels={list(match.labels)};"
                 f"margin={match.margin:.6f};shifts={list(match.shifts)}"
@@ -864,7 +870,7 @@ class StudentBasicRecognizer:
         value = round(raw)
         residual = abs(raw - value)
         score = max(0.0, min(1.0, 1.0 - residual / 0.50))
-        confident = 1 <= value <= 5 and height >= 4 and residual <= 0.22
+        confident = 1 <= value <= 4 and height >= 4 and residual <= 0.22
         return Observation(value if confident else None, score, "ok" if confident else "uncertain", "basic_weapon_star_color", f"raw={raw:.6f}")
 
     @staticmethod

@@ -1,0 +1,15 @@
+test_f10_assets_are_versioned_and_ready (test_inventory_navigation_f10.AssetTests.test_f10_assets_are_versioned_and_ready) ... ok
+test_account_profile_is_never_used_as_inventory_scan_profile (test_inventory_navigation_f10.PreparationTests.test_account_profile_is_never_used_as_inventory_scan_profile) ... ok
+test_filter_open_retries_once_and_exhausts_without_later_inputs (test_inventory_navigation_f10.PreparationTests.test_filter_open_retries_once_and_exhausts_without_later_inputs) ... ok
+test_item_prepare_orders_filter_then_verified_sort_then_confirm (test_inventory_navigation_f10.PreparationTests.test_item_prepare_orders_filter_then_verified_sort_then_confirm) ... ok
+test_parity_contract_is_frozen_before_implementation (test_inventory_navigation_f10.PreparationTests.test_parity_contract_is_frozen_before_implementation) ... ok
+test_sort_repairs_at_most_twice_and_requires_post_click_match (test_inventory_navigation_f10.PreparationTests.test_sort_repairs_at_most_twice_and_requires_post_click_match) ... ok
+test_ambiguous_overlap_is_failure_not_terminal (test_inventory_navigation_f10.ScrollTests.test_ambiguous_overlap_is_failure_not_terminal) ... ok
+test_no_motion_retries_once_then_is_verified_terminal (test_inventory_navigation_f10.ScrollTests.test_no_motion_retries_once_then_is_verified_terminal) ... ok
+test_profile_order_requires_membership_monotonicity_and_unique_ids (test_inventory_navigation_f10.ScrollTests.test_profile_order_requires_membership_monotonicity_and_unique_ids) ... ok
+test_row_overlap_recovers_three_rows_and_scans_only_new_two (test_inventory_navigation_f10.ScrollTests.test_row_overlap_recovers_three_rows_and_scans_only_new_two) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 3.111s
+
+OK

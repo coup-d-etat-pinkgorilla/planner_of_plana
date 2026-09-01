@@ -1,0 +1,54 @@
+{
+  "size": [
+    1280,
+    720
+  ],
+  "source": "item",
+  "original_selected": 0,
+  "result": {
+    "identity": "Item_Icon_SkillBook_Hyakkiyako_1",
+    "score": 0.957757343047234,
+    "margin": 0.019406677440464315,
+    "count": {
+      "value": "843",
+      "score": 0.855186739942553,
+      "reason": "",
+      "source": "inventory_detail_count"
+    },
+    "source": "inventory_detail_template"
+  },
+  "frames": [
+    "frame-00.png",
+    "frame-01.png",
+    "frame-02.png",
+    "frame-03.png",
+    "frame-04.png"
+  ],
+  "inputs": [
+    {
+      "x": 0.6695,
+      "y": 0.2875,
+      "cleanup": false
+    },
+    {
+      "x": 0.5844,
+      "y": 0.2875,
+      "cleanup": true
+    }
+  ],
+  "trace": [
+    {
+      "input": "select_slot",
+      "slot": 1,
+      "cleanup": false
+    },
+    {
+      "input": "select_slot",
+      "slot": 0,
+      "cleanup": true
+    },
+    {
+      "restored": 0
+    }
+  ]
+}

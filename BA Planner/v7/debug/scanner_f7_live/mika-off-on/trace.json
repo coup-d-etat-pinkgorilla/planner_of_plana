@@ -1,0 +1,232 @@
+{
+  "status": "returned_basic",
+  "diagnostic_first_read_missing": false,
+  "size": [
+    1280,
+    720
+  ],
+  "growth": {
+    "value": true,
+    "confidence": 0.9022888321847042,
+    "status": "ok",
+    "source": "equipment_growth_template",
+    "note": "margin=0.110778"
+  },
+  "favorite_dot": null,
+  "fields": {
+    "equip1": {
+      "value": "T10",
+      "confidence": 0.9221503184158449,
+      "status": "ok",
+      "source": "equipment_menu_tier",
+      "note": "margin=0.285584"
+    },
+    "equip1_level": {
+      "value": 70,
+      "confidence": 0.8201892536305411,
+      "status": "ok",
+      "source": "equipment_menu_digit",
+      "note": "value=70;tier=T10"
+    },
+    "equip2": {
+      "value": "T10",
+      "confidence": 0.8824617341129066,
+      "status": "ok",
+      "source": "equipment_menu_tier",
+      "note": "margin=0.265196"
+    },
+    "equip2_level": {
+      "value": 70,
+      "confidence": 0.9068368002378979,
+      "status": "ok",
+      "source": "equipment_menu_digit",
+      "note": "value=70;tier=T10"
+    },
+    "equip3": {
+      "value": "T10",
+      "confidence": 0.9525088079110829,
+      "status": "ok",
+      "source": "equipment_menu_tier",
+      "note": "margin=0.313015"
+    },
+    "equip3_level": {
+      "value": 70,
+      "confidence": 0.8512501480664608,
+      "status": "ok",
+      "source": "equipment_menu_digit",
+      "note": "value=70;tier=T10"
+    }
+  },
+  "returned_state": "basic",
+  "seconds": 4.171000000089407,
+  "checks": [
+    {
+      "value": false,
+      "confidence": 0.9173056843487882,
+      "status": "ok",
+      "source": "equipment_show_all_template",
+      "note": "margin=0.375501"
+    },
+    {
+      "value": false,
+      "confidence": 0.9173056843487882,
+      "status": "ok",
+      "source": "equipment_show_all_template",
+      "note": "margin=0.375501"
+    },
+    {
+      "value": true,
+      "confidence": 0.9179465333265482,
+      "status": "ok",
+      "source": "equipment_show_all_template",
+      "note": "margin=0.408186"
+    }
+  ],
+  "reads": [
+    {
+      "equip1": {
+        "value": "T10",
+        "confidence": 0.9221503184158449,
+        "status": "ok",
+        "source": "equipment_menu_tier",
+        "note": "margin=0.285584"
+      },
+      "equip1_level": {
+        "value": 70,
+        "confidence": 0.8201892536305411,
+        "status": "ok",
+        "source": "equipment_menu_digit",
+        "note": "value=70;tier=T10"
+      },
+      "equip2": {
+        "value": "T10",
+        "confidence": 0.8824617341129066,
+        "status": "ok",
+        "source": "equipment_menu_tier",
+        "note": "margin=0.265196"
+      },
+      "equip2_level": {
+        "value": 70,
+        "confidence": 0.9068368002378979,
+        "status": "ok",
+        "source": "equipment_menu_digit",
+        "note": "value=70;tier=T10"
+      },
+      "equip3": {
+        "value": "T10",
+        "confidence": 0.9525088079110829,
+        "status": "ok",
+        "source": "equipment_menu_tier",
+        "note": "margin=0.313015"
+      },
+      "equip3_level": {
+        "value": 70,
+        "confidence": 0.8512501480664608,
+        "status": "ok",
+        "source": "equipment_menu_digit",
+        "note": "value=70;tier=T10"
+      }
+    }
+  ],
+  "trace": [
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.31388042463602606,
+        "equipment": 0.3232891970183022,
+        "skill": 0.253324027474369,
+        "stat": 0.3233335185268096,
+        "basic": 0.9530937890137329,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "open",
+      "panel": "equipment"
+    },
+    {
+      "state": "equipment",
+      "scores": {
+        "weapon": 0.5533872791135603,
+        "equipment": 0.970127136136458,
+        "skill": 0.2719202185771855,
+        "stat": 0.8326854876174581,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "show_all": false,
+      "status": "ok",
+      "panel": "equipment"
+    },
+    {
+      "state": "equipment",
+      "scores": {
+        "weapon": 0.5538051632876106,
+        "equipment": 0.970163316921482,
+        "skill": 0.27175499978902357,
+        "stat": 0.8327934114736633,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "show_all": false,
+      "status": "ok",
+      "panel": "equipment"
+    },
+    {
+      "input": "enable_show_all",
+      "panel": "equipment"
+    },
+    {
+      "state": "equipment",
+      "scores": {
+        "weapon": 0.553808157091753,
+        "equipment": 0.9701634287688212,
+        "skill": 0.27175269581460126,
+        "stat": 0.8327933919282766,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "show_all": true,
+      "status": "ok",
+      "panel": "equipment"
+    },
+    {
+      "state": "equipment",
+      "scores": {
+        "weapon": 0.5533872791135603,
+        "equipment": 0.970127136136458,
+        "skill": 0.27192033062200344,
+        "stat": 0.8326854988219399,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "restore",
+      "attempt": 1
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.3151918929338283,
+        "equipment": 0.3251140364178779,
+        "skill": 0.2530023407830788,
+        "stat": 0.3253289154052495,
+        "basic": 0.9530937890137329,
+        "level": 0,
+        "star": 0
+      }
+    }
+  ]
+}

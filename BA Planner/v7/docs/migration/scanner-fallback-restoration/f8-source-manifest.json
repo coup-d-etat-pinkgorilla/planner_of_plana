@@ -1,0 +1,100 @@
+{
+  "phase": "F8 R16-R18",
+  "recorded_on": "2026-09-01",
+  "note": "F0-F7 historical snapshots retained; native1280 calibration, no profile writes or runtime learning",
+  "previous_snapshot": {
+    "path": "docs/migration/scanner-fallback-restoration/f7-continuation-source-manifest.json",
+    "sha256": "47a09bbf4276306234a2bd5103a891fb18826e6f42a5fd06d9f32a2506085e74"
+  },
+  "files": [
+    {
+      "path": "backend/core/student_identity_recovery.py",
+      "sha256": "f0c6402723f088e6f81c42d997b897359ea5def9f3376705054606d207737953"
+    },
+    {
+      "path": "backend/core/student_form_recovery.py",
+      "sha256": "bfc1e783f6d9f7cebf5ddb06d52742127451f389ce5bf30e219c94dea7361056"
+    },
+    {
+      "path": "backend/core/scanner_matchers.py",
+      "sha256": "dcbf5e92cf2de6398d3cb44733e6ab40bb44f2b9d2972e925043ea818bfacad1"
+    },
+    {
+      "path": "backend/core/scanner_runtime.py",
+      "sha256": "a6226543174cc8d1f0033e28aa367886f8e3537e0900a41d68b6321181353aa5"
+    },
+    {
+      "path": "backend/core/recognition_assets.py",
+      "sha256": "7a19d8039dfa63f152fc2312c951e5ff3d8b0a34f1e6d395606c20b82ff9ab8c"
+    },
+    {
+      "path": "backend/core/student_panel_recovery.py",
+      "sha256": "3f69eead05f6a69bff51c7940db9c9e4c277933a094fb40f50a6f9e7452c4b83"
+    },
+    {
+      "path": "backend/core/student_scan_recognizer.py",
+      "sha256": "1b85d5731d129259e60ec3767bfb783ebe0d28d45b51e273c4ecc9143628606a"
+    },
+    {
+      "path": "backend/tests/test_student_identity_f8.py",
+      "sha256": "9a1c123a5ba02e75eeda8bcc23f8124a0aa3c644acf373d44452980a6ab7b9b0"
+    },
+    {
+      "path": "backend/tests/test_student_forms_f8.py",
+      "sha256": "b6bc078f8c5da6e6141302af75091faea4facd42ed745e0703293b4a4ed81e26"
+    },
+    {
+      "path": "backend/tests/test_scanner_production_adapters.py",
+      "sha256": "05bd0988ec0824156049d0524400417fa62b4a9fce0da056d26cee3c8134e979"
+    },
+    {
+      "path": "backend/tests/test_scanner_fallback_f1.py",
+      "sha256": "853b33b00d4c70d270202e0a24cae6685d693799df953525d20755a98812465d"
+    },
+    {
+      "path": "backend/tests/test_recognition_assets.py",
+      "sha256": "75450be158c076879c8abb29cc555ebb44dbce7abfaec6bfee472108797c96e9"
+    },
+    {
+      "path": "backend/tests/test_scanner_stdio_transport.py",
+      "sha256": "ce0dacc38567ff78134018ee7cba4aad3b559472475d8a82c7526dbc7a1bc6b6"
+    },
+    {
+      "path": "backend/tests/fixtures/student_identity_f8_v6_parity.json",
+      "sha256": "16ad25b2755ea3a2fa6f0fd846cf3458caf59787eff1b2187c8412073e8def5b"
+    },
+    {
+      "path": "backend/tests/fixtures/student_identity_f8_live/manifest.json",
+      "sha256": "bb0486834d004e9607fc91746ce837bbb5d529c213836e081a999109a0af4818"
+    },
+    {
+      "path": "backend/assets/recognition/v1/student_identity_manifest.json",
+      "sha256": "8c3963e24ffb618dae27690eb08a1555f9f6a7fef47170128de6f0a8e79b9b6e"
+    },
+    {
+      "path": "backend/tools/sync_student_identity_f8_assets.py",
+      "sha256": "b53f90b00588d1d002bde9b0d574bce12ed0e5cea5f0f3fc7546e9b8176da53b"
+    },
+    {
+      "path": "backend/tools/export_student_identity_f8_fixtures.py",
+      "sha256": "a528b426885a66234519df5f193bc3f659c46c7e5ddffac43903c84ae7fe79ed"
+    },
+    {
+      "path": "backend/tools/verify_student_identity_f8_live.py",
+      "sha256": "c040aa293fd5b61332c78989bc852c34aafc7523aa5134d515bb52c76d645042"
+    },
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "sha256": "332e5488f90a2d9bc24e3c0e12167d777b1f810e35c5501db941e2d58407839c"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "sha256": "ce56ebf9ac4ab3c22398938d7c45973d7686785be5e0a2607ef94832290ad2a2"
+    },
+    {
+      "path": "../v6/core/scanner_shared.py",
+      "sha256": "ba77711ec132a3646c32591499f89c525e41f78b3db7ac64ec9d8afcf6417a60"
+    }
+  ],
+  "started_on": "2026-08-31"
+}

@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "scope": "F0 approved target contract; not current runtime protocol",
+  "decisions": {
+    "D1": {
+      "status": "user_confirmed_2026-08-30",
+      "policy": "automatic calibration is session-local; only explicit user-confirmed samples persist",
+      "key": [
+        "profile_id",
+        "actual_capture_width",
+        "actual_capture_height",
+        "session_id",
+        "generation",
+        "student_ref",
+        "field"
+      ],
+      "eligibility": [
+        "same student and form",
+        "target detail panel verified",
+        "independent confirmed value",
+        "no contradiction with existing confirmed value"
+      ],
+      "precedence": [
+        "user_confirmed",
+        "eligible_session_calibration",
+        "bundled"
+      ],
+      "discard_on": [
+        "cancel",
+        "terminal",
+        "profile_change",
+        "capture_resolution_change"
+      ],
+      "forbidden": [
+        "automatic persistent writes",
+        "calibration output as own training label",
+        "claiming automatic sample is user confirmed"
+      ]
+    },
+    "D2": {
+      "status": "legacy_characterized_current_bank_promotion_deferred_to_F7",
+      "legacy": {
+        "normal_tier_score": 0.72,
+        "fallback_score": 0.66,
+        "level": 70,
+        "top_candidate": "T10",
+        "scan_level_required": true,
+        "source": "inferred",
+        "note": "level70_implies_t10"
+      },
+      "current_bank_promotion": false,
+      "required_before_F7": [
+        "independent positive and negative real tier crops",
+        "blank/noise/tie/incorrect-family negatives",
+        "separate calibration and validation sets",
+        "bounded field-specific inferred source; never globally lower threshold"
+      ]
+    },
+    "D3": {
+      "status": "user_confirmed_2026-08-30",
+      "policy": "unknown screen stops safely; normal screen plus failed fields stays partial; already collected candidates remain reviewable",
+      "target_result": {
+        "scope": "planned backend internal result DTO, not a protocol v1 extension",
+        "fields": [
+          "candidates",
+          "outcome: completed|failed|cancelled",
+          "error: code/message or null",
+          "screen_state: basic_verified|panel_verified|unknown",
+          "coverage_complete: boolean"
+        ]
+      },
+      "publication": "publish fully collected candidates before the single terminal event; snapshot/candidate retain them after failure/cancel; monotonically increasing sequence",
+      "retention": "session-memory review only, until session/service disposal; no automatic disk/profile writes",
+      "candidate_rules": [
+        "uncertain identity must not seed confirmed fields",
+        "keep confirmed fields when fallback fails",
+        "conflicting confirmed evidence requires review",
+        "interrupted in-flight read is not a fully collected candidate",
+        "retain per-form identity and provenance"
+      ],
+      "commit": "retain existing completed-session + review/revision checks; failed/cancelled retained candidates are not committable",
+      "cancel": "cleanup-only bounded close/return; never start new exploration",
+      "screen_unknown": "failed terminal with structured reason; no next student/panel/navigation",
+      "field_failure": "partial evidence, absent value, continue only on verified screen",
+      "inventory": "incomplete coverage prohibits zero-fill"
+    }
+  },
+  "d2_legacy_cases": [
+    {
+      "scan_level": true,
+      "level": 70,
+      "top": "T10",
+      "score": 0.66,
+      "expected": "inferred"
+    },
+    {
+      "scan_level": true,
+      "level": 70,
+      "top": "T10",
+      "score": 0.719999,
+      "expected": "inferred"
+    },
+    {
+      "scan_level": true,
+      "level": 70,
+      "top": "T10",
+      "score": 0.72,
+      "expected": "normal_threshold"
+    },
+    {
+      "scan_level": true,
+      "level": 70,
+      "top": "T10",
+      "score": 0.659999,
+      "expected": "unknown"
+    },
+    {
+      "scan_level": true,
+      "level": 69,
+      "top": "T10",
+      "score": 0.7,
+      "expected": "unknown"
+    },
+    {
+      "scan_level": true,
+      "level": null,
+      "top": "T10",
+      "score": 0.7,
+      "expected": "unknown"
+    },
+    {
+      "scan_level": false,
+      "level": 70,
+      "top": "T10",
+      "score": 0.7,
+      "expected": "unknown"
+    },
+    {
+      "scan_level": true,
+      "level": 70,
+      "top": "T9",
+      "score": 0.7,
+      "expected": "unknown"
+    }
+  ],
+  "d3_scenarios": [
+    {
+      "id": "close_failed_after_two_students",
+      "collected": [
+        "s1",
+        "s2"
+      ],
+      "in_flight": "s3",
+      "screen": "unknown",
+      "expected": {
+        "retained": [
+          "s1",
+          "s2"
+        ],
+        "terminal": "failed",
+        "new_navigation": 0,
+        "profile_writes": 0,
+        "commit_allowed": false
+      }
+    },
+    {
+      "id": "capture_exhausted_after_one_student",
+      "collected": [
+        "s1"
+      ],
+      "screen": "unknown",
+      "expected": {
+        "retained": [
+          "s1"
+        ],
+        "terminal": "failed",
+        "new_navigation": 0,
+        "profile_writes": 0,
+        "commit_allowed": false
+      }
+    },
+    {
+      "id": "normal_screen_one_field_failed",
+      "collected": [],
+      "screen": "basic_verified",
+      "expected": {
+        "field_value": null,
+        "field_evidence": "partial",
+        "continue_allowed": true,
+        "profile_writes": 0
+      }
+    },
+    {
+      "id": "cancel_after_one_student",
+      "collected": [
+        "s1"
+      ],
+      "in_flight": "s2",
+      "expected": {
+        "retained": [
+          "s1"
+        ],
+        "terminal": "cancelled",
+        "new_exploration": 0,
+        "cleanup_allowed": true,
+        "commit_allowed": false
+      }
+    }
+  ]
+}

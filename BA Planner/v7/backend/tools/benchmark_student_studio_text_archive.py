@@ -12,6 +12,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 from core.recognition_assets import RecognitionAssetCatalog
 from core.studio_roi_suggestion import extract_studio_roi, load_studio_suggestion
 from core.student_scan_recognizer import StudentBasicCropSet, StudentBasicRecognizer
+from core.studio_numeric_bank import _shape_normalized_iou
 from tools.build_student_studio_text_templates import (
     DEBUG,
     ROOT,
@@ -30,6 +31,9 @@ EQUIPMENT_MANIFESTS = (
 )
 RELATIONSHIP_MANIFEST = (
     ROOT / "backend" / "tests" / "fixtures" / "student_relationship_s4" / "manifest.json"
+)
+WEAPON_MANIFEST = (
+    ROOT / "backend" / "tests" / "fixtures" / "student_weapon_level_s4" / "manifest.json"
 )
 REPORT = DEBUG / "suggestion_text_archive_benchmark.json"
 CONTACT_SHEET = DEBUG / "suggestion_text_archive_comparison.png"
@@ -74,11 +78,16 @@ def _load_bank(spec: dict[str, Any]) -> dict[str, dict[str, Image.Image]]:
 def _rank(
     source: Image.Image,
     templates: dict[str, Image.Image],
+    *,
+    field: str,
 ) -> tuple[str, float, float, list[int]]:
     ranked: list[tuple[str, float, int, int]] = []
     for digit, template in templates.items():
-        score, dx, dy, shifted = _best_shift(source, template)
-        shifted.close()
+        if field == "weapon_level":
+            score, dx, dy = _shape_normalized_iou(source, template), 0, 0
+        else:
+            score, dx, dy, shifted = _best_shift(source, template)
+            shifted.close()
         ranked.append((digit, score, dx, dy))
     ranked.sort(key=lambda item: item[1], reverse=True)
     first, second = ranked[0], ranked[1]
@@ -104,7 +113,9 @@ def _evaluate_value(
         roi = roi_lookup[roi_name]
         source_roi = extract_studio_roi(frame, roi, reference_size=reference_size)
         source_mask, cleanup = _source_digit_mask(source_roi, field)
-        observed, score, margin, shift = _rank(source_mask, bank[roi_name])
+        observed, score, margin, shift = _rank(
+            source_mask, bank[roi_name], field=field,
+        )
         source_roi.close()
         source_mask.close()
         digits.append(
@@ -271,6 +282,14 @@ def benchmark() -> dict[str, Any]:
         path = _resolve_source(index, record, resolved)
         source_by_name[str(record["source_file"])] = path
         relationship_records.append(record)
+    weapon_payload = json.loads(WEAPON_MANIFEST.read_text(encoding="utf-8"))
+    weapon_records: list[dict[str, Any]] = []
+    for record in weapon_payload["records"]:
+        if record.get("review_status") != "visual_verified":
+            continue
+        path = _resolve_source(index, record, resolved)
+        source_by_name[str(record["source_file"])] = path
+        weapon_records.append(record)
 
     ground_truth: list[dict[str, Any]] = []
     unsupported = Counter()
@@ -301,6 +320,31 @@ def benchmark() -> dict[str, Any]:
                         extra={"slot": slot, "tier": record["tier"]},
                     )
                 )
+        finally:
+            frame.close()
+    for record in weapon_records:
+        level = int(record["level"])
+        if len(str(level)) != 2:
+            unsupported["weapon_one_digit"] += 1
+            continue
+        source_file = str(record["source_file"])
+        with Image.open(source_by_name[source_file]) as opened:
+            frame = opened.convert("RGBA")
+        try:
+            ground_truth.append(
+                _evaluate_value(
+                    frame,
+                    field="weapon_level",
+                    expected=level,
+                    roi_names=["weaponlevel_digit1", "weaponlevel_digit2"],
+                    roi_lookup=roi_lookup,
+                    reference_size=suggestion.reference_size,
+                    bank=bank,
+                    source_file=source_file,
+                    evidence="visual_verified",
+                    extra={"student_ref": record["student_ref"], "partition": record["partition"]},
+                )
+            )
         finally:
             frame.close()
     for record in relationship_records:
@@ -403,7 +447,7 @@ def benchmark() -> dict[str, Any]:
         "screenshot_files": sum(len(paths) for paths in index.values()),
         "resolved_answer_files": len(resolved),
         "template_count": len(spec["templates"]),
-        "method": "Studio points + field foreground cleanup + white per-position digit bank + +/-2px IoU",
+        "method": "Studio points + field foreground cleanup + white per-position digit bank + weapon shape normalization / other-field +/-2px IoU",
         "unsupported_layouts": dict(unsupported),
         "summaries": summaries,
         "visual_ground_truth_rows": ground_truth,

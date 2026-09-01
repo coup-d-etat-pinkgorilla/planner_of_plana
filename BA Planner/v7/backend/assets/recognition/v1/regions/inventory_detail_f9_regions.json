@@ -1,0 +1,1978 @@
+{
+  "title": {
+    "x1": 0.08,
+    "y1": 0,
+    "x2": 0.18,
+    "y2": 0.06
+  },
+  "list_title": {
+    "x1": 0.53,
+    "y1": 0.13,
+    "x2": 0.59,
+    "y2": 0.175
+  },
+  "sources": {
+    "item": {
+      "name_region": {
+        "x1": 0.0473,
+        "y1": 0.6653,
+        "x2": 0.3777,
+        "y2": 0.7566
+      },
+      "count_region": {
+        "x1": 0.3853,
+        "y1": 0.7129,
+        "x2": 0.442,
+        "y2": 0.7502
+      },
+      "grid_slots": [
+        {
+          "cx": 0.5844,
+          "cy": 0.2875,
+          "x1": 0.5387,
+          "y1": 0.2215,
+          "x2": 0.6301,
+          "y2": 0.3535
+        },
+        {
+          "cx": 0.6695,
+          "cy": 0.2875,
+          "x1": 0.6238,
+          "y1": 0.2215,
+          "x2": 0.7152,
+          "y2": 0.3535
+        },
+        {
+          "cx": 0.7547,
+          "cy": 0.2875,
+          "x1": 0.709,
+          "y1": 0.2215,
+          "x2": 0.8004,
+          "y2": 0.3535
+        },
+        {
+          "cx": 0.8398,
+          "cy": 0.2875,
+          "x1": 0.7941,
+          "y1": 0.2215,
+          "x2": 0.8855,
+          "y2": 0.3535
+        },
+        {
+          "cx": 0.925,
+          "cy": 0.2875,
+          "x1": 0.8793,
+          "y1": 0.2215,
+          "x2": 0.9707,
+          "y2": 0.3535
+        },
+        {
+          "cx": 0.5844,
+          "cy": 0.4285,
+          "x1": 0.5387,
+          "y1": 0.3625,
+          "x2": 0.6301,
+          "y2": 0.4944
+        },
+        {
+          "cx": 0.6695,
+          "cy": 0.4285,
+          "x1": 0.6238,
+          "y1": 0.3625,
+          "x2": 0.7152,
+          "y2": 0.4944
+        },
+        {
+          "cx": 0.7547,
+          "cy": 0.4285,
+          "x1": 0.709,
+          "y1": 0.3625,
+          "x2": 0.8004,
+          "y2": 0.4944
+        },
+        {
+          "cx": 0.8398,
+          "cy": 0.4285,
+          "x1": 0.7941,
+          "y1": 0.3625,
+          "x2": 0.8855,
+          "y2": 0.4944
+        },
+        {
+          "cx": 0.925,
+          "cy": 0.4285,
+          "x1": 0.8793,
+          "y1": 0.3625,
+          "x2": 0.9707,
+          "y2": 0.4944
+        },
+        {
+          "cx": 0.5844,
+          "cy": 0.5687,
+          "x1": 0.5387,
+          "y1": 0.5028,
+          "x2": 0.6301,
+          "y2": 0.6347
+        },
+        {
+          "cx": 0.6695,
+          "cy": 0.5687,
+          "x1": 0.6238,
+          "y1": 0.5028,
+          "x2": 0.7152,
+          "y2": 0.6347
+        },
+        {
+          "cx": 0.7547,
+          "cy": 0.5687,
+          "x1": 0.709,
+          "y1": 0.5028,
+          "x2": 0.8004,
+          "y2": 0.6347
+        },
+        {
+          "cx": 0.8398,
+          "cy": 0.5687,
+          "x1": 0.7941,
+          "y1": 0.5028,
+          "x2": 0.8855,
+          "y2": 0.6347
+        },
+        {
+          "cx": 0.925,
+          "cy": 0.5687,
+          "x1": 0.8793,
+          "y1": 0.5028,
+          "x2": 0.9707,
+          "y2": 0.6347
+        },
+        {
+          "cx": 0.5844,
+          "cy": 0.709,
+          "x1": 0.5387,
+          "y1": 0.6431,
+          "x2": 0.6301,
+          "y2": 0.775
+        },
+        {
+          "cx": 0.6695,
+          "cy": 0.709,
+          "x1": 0.6238,
+          "y1": 0.6431,
+          "x2": 0.7152,
+          "y2": 0.775
+        },
+        {
+          "cx": 0.7547,
+          "cy": 0.709,
+          "x1": 0.709,
+          "y1": 0.6431,
+          "x2": 0.8004,
+          "y2": 0.775
+        },
+        {
+          "cx": 0.8398,
+          "cy": 0.709,
+          "x1": 0.7941,
+          "y1": 0.6431,
+          "x2": 0.8855,
+          "y2": 0.775
+        },
+        {
+          "cx": 0.925,
+          "cy": 0.709,
+          "x1": 0.8793,
+          "y1": 0.6431,
+          "x2": 0.9707,
+          "y2": 0.775
+        }
+      ],
+      "grid_cols": 5,
+      "grid_rows": 4,
+      "profile_grid_templates": {
+        "student_elephs": {
+          "crop_ratio": {
+            "left": 0.363,
+            "right": 0.3592,
+            "top": 0.2896,
+            "bottom": 0.3159
+          },
+          "tier_hint": {
+            "enabled": false
+          },
+          "composite_rois": [
+            {
+              "name": "face",
+              "weight": 0.9,
+              "crop_ratio": {
+                "left": 0.363,
+                "right": 0.3592,
+                "top": 0.2896,
+                "bottom": 0.3159
+              }
+            },
+            {
+              "name": "outer_appearance",
+              "weight": 0.1,
+              "crop_ratio": {
+                "left": 0.34,
+                "right": 0.34,
+                "top": 0.24,
+                "bottom": 0.28
+              }
+            }
+          ],
+          "threshold": 0.8,
+          "margin": 0.015
+        },
+        "presents": {
+          "crop_ratio": {
+            "left": 0.34,
+            "right": 0.34,
+            "top": 0.28,
+            "bottom": 0.3
+          },
+          "tier_hint": {
+            "enabled": true
+          },
+          "candidate_filter": {
+            "mode": "background_tier",
+            "strict": true
+          },
+          "composite_rois": [
+            {
+              "name": "object",
+              "weight": 1.0,
+              "crop_ratio": {
+                "left": 0.34,
+                "right": 0.34,
+                "top": 0.28,
+                "bottom": 0.3
+              }
+            }
+          ],
+          "threshold": 0.8,
+          "margin": 0.015,
+          "background": "icons/temp/square_yellow.png",
+          "use_numeric_tier_backgrounds": false,
+          "background_rules": [
+            {
+              "contains": "SSR",
+              "background": "icons/temp/square_purple.png"
+            },
+            {
+              "contains": "Lv2",
+              "background": "icons/temp/square_purple.png"
+            }
+          ]
+        },
+        "activity_reports": {
+          "candidate_filter": {
+            "mode": "background_tier",
+            "strict": true
+          }
+        },
+        "ooparts": {
+          "background_rules": [
+            {
+              "contains": "Item_Icon_WorkBook_",
+              "background": "icons/temp/square_yellow.png"
+            }
+          ],
+          "candidate_filter": {
+            "mode": "background_tier",
+            "strict": true,
+            "separate_workbook_branch": true
+          }
+        },
+        "tactical_bd": {
+          "candidate_filter": {
+            "mode": "background_tier",
+            "strict": true
+          },
+          "direct_icon_match": {
+            "enabled": true,
+            "screen_crop_ratio": {
+              "left": 0.3,
+              "right": 0.34,
+              "top": 0.25,
+              "bottom": 0.35
+            },
+            "template_crop_ratio": {
+              "left": 0.295,
+              "right": 0.34,
+              "top": 0.24,
+              "bottom": 0.34
+            },
+            "threshold": 0.88,
+            "margin": 0.04,
+            "fast_min_score": 0.9,
+            "fast_min_margin": 0.045,
+            "include_tierless": false
+          }
+        },
+        "tech_notes": {
+          "candidate_filter": {
+            "mode": "background_tier",
+            "strict": true
+          },
+          "background_rules": [
+            {
+              "contains": "Item_Icon_SkillBook_Ultimate_Piece",
+              "background": "icons/temp/square_purple.png"
+            }
+          ],
+          "tier_hint": {
+            "enabled": true,
+            "reference_width": 234,
+            "reference_height": 190,
+            "sample_box": {
+              "x": 27,
+              "y": 58,
+              "width": 20,
+              "height": 20
+            },
+            "sample_search_box": {
+              "x": 27,
+              "y": 58,
+              "width": 20,
+              "height": 20
+            },
+            "sample_stride": 20,
+            "palette": {
+              "0": [
+                181,
+                203,
+                218
+              ],
+              "1": [
+                119,
+                176,
+                253
+              ],
+              "2": [
+                237,
+                158,
+                140
+              ],
+              "3": [
+                174,
+                93,
+                253
+              ]
+            },
+            "max_distance": 70.0,
+            "min_distance_margin": 8.0,
+            "fallback_min_score": 0.82
+          },
+          "direct_icon_match": {
+            "enabled": true,
+            "screen_crop_ratio": {
+              "left": 0.3547,
+              "right": 0.4103,
+              "top": 0.2632,
+              "bottom": 0.4474
+            },
+            "template_crop_ratio": {
+              "left": 0.348,
+              "right": 0.4097,
+              "top": 0.2541,
+              "bottom": 0.442
+            },
+            "threshold": 0.82,
+            "margin": 0.08,
+            "fast_min_score": 0.82,
+            "fast_min_margin": 0.08,
+            "include_tierless": false
+          }
+        }
+      }
+    },
+    "equipment": {
+      "name_region": {
+        "x1": 0.0463,
+        "y1": 0.7805,
+        "x2": 0.4139,
+        "y2": 0.8727
+      },
+      "count_region": {
+        "x1": 0.4222,
+        "y1": 0.8348,
+        "x2": 0.4806,
+        "y2": 0.8628
+      },
+      "grid_slots": [
+        {
+          "cx": 0.5828,
+          "cy": 0.2875,
+          "x1": 0.5371,
+          "y1": 0.2215,
+          "x2": 0.6285,
+          "y2": 0.3535
+        },
+        {
+          "cx": 0.668,
+          "cy": 0.2875,
+          "x1": 0.6223,
+          "y1": 0.2215,
+          "x2": 0.7137,
+          "y2": 0.3535
+        },
+        {
+          "cx": 0.7531,
+          "cy": 0.2875,
+          "x1": 0.7074,
+          "y1": 0.2215,
+          "x2": 0.7988,
+          "y2": 0.3535
+        },
+        {
+          "cx": 0.8383,
+          "cy": 0.2875,
+          "x1": 0.7926,
+          "y1": 0.2215,
+          "x2": 0.884,
+          "y2": 0.3535
+        },
+        {
+          "cx": 0.9234,
+          "cy": 0.2875,
+          "x1": 0.8777,
+          "y1": 0.2215,
+          "x2": 0.9691,
+          "y2": 0.3535
+        },
+        {
+          "cx": 0.5828,
+          "cy": 0.4278,
+          "x1": 0.5371,
+          "y1": 0.3618,
+          "x2": 0.6285,
+          "y2": 0.4938
+        },
+        {
+          "cx": 0.668,
+          "cy": 0.4278,
+          "x1": 0.6223,
+          "y1": 0.3618,
+          "x2": 0.7137,
+          "y2": 0.4938
+        },
+        {
+          "cx": 0.7531,
+          "cy": 0.4278,
+          "x1": 0.7074,
+          "y1": 0.3618,
+          "x2": 0.7988,
+          "y2": 0.4938
+        },
+        {
+          "cx": 0.8383,
+          "cy": 0.4278,
+          "x1": 0.7926,
+          "y1": 0.3618,
+          "x2": 0.884,
+          "y2": 0.4938
+        },
+        {
+          "cx": 0.9234,
+          "cy": 0.4278,
+          "x1": 0.8777,
+          "y1": 0.3618,
+          "x2": 0.9691,
+          "y2": 0.4938
+        },
+        {
+          "cx": 0.5828,
+          "cy": 0.5687,
+          "x1": 0.5371,
+          "y1": 0.5028,
+          "x2": 0.6285,
+          "y2": 0.6347
+        },
+        {
+          "cx": 0.668,
+          "cy": 0.5687,
+          "x1": 0.6223,
+          "y1": 0.5028,
+          "x2": 0.7137,
+          "y2": 0.6347
+        },
+        {
+          "cx": 0.7531,
+          "cy": 0.5687,
+          "x1": 0.7074,
+          "y1": 0.5028,
+          "x2": 0.7988,
+          "y2": 0.6347
+        },
+        {
+          "cx": 0.8383,
+          "cy": 0.5687,
+          "x1": 0.7926,
+          "y1": 0.5028,
+          "x2": 0.884,
+          "y2": 0.6347
+        },
+        {
+          "cx": 0.9234,
+          "cy": 0.5687,
+          "x1": 0.8777,
+          "y1": 0.5028,
+          "x2": 0.9691,
+          "y2": 0.6347
+        },
+        {
+          "cx": 0.5828,
+          "cy": 0.709,
+          "x1": 0.5371,
+          "y1": 0.6431,
+          "x2": 0.6285,
+          "y2": 0.775
+        },
+        {
+          "cx": 0.668,
+          "cy": 0.709,
+          "x1": 0.6223,
+          "y1": 0.6431,
+          "x2": 0.7137,
+          "y2": 0.775
+        },
+        {
+          "cx": 0.7531,
+          "cy": 0.709,
+          "x1": 0.7074,
+          "y1": 0.6431,
+          "x2": 0.7988,
+          "y2": 0.775
+        },
+        {
+          "cx": 0.8383,
+          "cy": 0.709,
+          "x1": 0.7926,
+          "y1": 0.6431,
+          "x2": 0.884,
+          "y2": 0.775
+        },
+        {
+          "cx": 0.9234,
+          "cy": 0.709,
+          "x1": 0.8777,
+          "y1": 0.6431,
+          "x2": 0.9691,
+          "y2": 0.775
+        },
+        {
+          "cx": 0.5828,
+          "cy": 0.8493,
+          "x1": 0.5371,
+          "y1": 0.7833,
+          "x2": 0.6285,
+          "y2": 0.9153
+        },
+        {
+          "cx": 0.668,
+          "cy": 0.8493,
+          "x1": 0.6223,
+          "y1": 0.7833,
+          "x2": 0.7137,
+          "y2": 0.9153
+        },
+        {
+          "cx": 0.7531,
+          "cy": 0.8493,
+          "x1": 0.7074,
+          "y1": 0.7833,
+          "x2": 0.7988,
+          "y2": 0.9153
+        },
+        {
+          "cx": 0.8383,
+          "cy": 0.8493,
+          "x1": 0.7926,
+          "y1": 0.7833,
+          "x2": 0.884,
+          "y2": 0.9153
+        },
+        {
+          "cx": 0.9234,
+          "cy": 0.8493,
+          "x1": 0.8777,
+          "y1": 0.7833,
+          "x2": 0.9691,
+          "y2": 0.9153
+        }
+      ],
+      "grid_cols": 5,
+      "grid_rows": 5,
+      "grid_template": {
+        "crop_ratio": {
+          "left": 0.2436,
+          "right": 0.3205,
+          "top": 0.2526,
+          "bottom": 0.4368
+        }
+      }
+    }
+  },
+  "profiles": {
+    "activity_reports": {
+      "icon": {
+        "x1": 0.203516,
+        "y1": 0.238194,
+        "x2": 0.310937,
+        "y2": 0.440972
+      },
+      "name": {
+        "x1": 0.044922,
+        "y1": 0.665278,
+        "x2": 0.371484,
+        "y2": 0.75625
+      },
+      "source": "item"
+    },
+    "equipment": {
+      "icon": {
+        "x1": 0.203516,
+        "y1": 0.238194,
+        "x2": 0.310937,
+        "y2": 0.440972
+      },
+      "name": {
+        "x1": 0.049219,
+        "y1": 0.778472,
+        "x2": 0.411719,
+        "y2": 0.870833
+      },
+      "source": "equipment"
+    },
+    "ooparts": {
+      "icon": {
+        "x1": 0.203516,
+        "y1": 0.238194,
+        "x2": 0.310937,
+        "y2": 0.440972
+      },
+      "name": {
+        "x1": 0.044922,
+        "y1": 0.665278,
+        "x2": 0.371484,
+        "y2": 0.75625
+      },
+      "source": "item"
+    },
+    "presents": {
+      "icon": {
+        "x1": 0.199609,
+        "y1": 0.229861,
+        "x2": 0.316016,
+        "y2": 0.456944
+      },
+      "name": {
+        "x1": 0.044922,
+        "y1": 0.665278,
+        "x2": 0.371484,
+        "y2": 0.75625
+      },
+      "source": "item"
+    },
+    "student_elephs": {
+      "icon": {
+        "x1": 0.199609,
+        "y1": 0.229861,
+        "x2": 0.316016,
+        "y2": 0.456944
+      },
+      "name": {
+        "x1": 0.044922,
+        "y1": 0.665278,
+        "x2": 0.371484,
+        "y2": 0.75625
+      },
+      "source": "item"
+    },
+    "tactical_bd": {
+      "icon": {
+        "x1": 0.203516,
+        "y1": 0.238194,
+        "x2": 0.310937,
+        "y2": 0.440972
+      },
+      "name": {
+        "x1": 0.044922,
+        "y1": 0.665278,
+        "x2": 0.371484,
+        "y2": 0.75625
+      },
+      "source": "item"
+    },
+    "tech_notes": {
+      "icon": {
+        "x1": 0.203516,
+        "y1": 0.238194,
+        "x2": 0.310937,
+        "y2": 0.440972
+      },
+      "name": {
+        "x1": 0.044922,
+        "y1": 0.665278,
+        "x2": 0.371484,
+        "y2": 0.75625
+      },
+      "source": "item"
+    }
+  },
+  "counts": {
+    "item": {
+      "1": {
+        "x": {
+          "region": {
+            "points_ratio": [
+              {
+                "x": 0.402734375,
+                "y": 0.725
+              },
+              {
+                "x": 0.41328125,
+                "y": 0.725
+              },
+              {
+                "x": 0.4109375,
+                "y": 0.7430555555555556
+              },
+              {
+                "x": 0.400390625,
+                "y": 0.7430555555555556
+              }
+            ],
+            "output_size": [
+              27,
+              27
+            ]
+          },
+          "templates": {
+            "001": "templates/inventory_f9/inventory_count/x_digit1_001.png"
+          }
+        },
+        "digits": [
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.4171875,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.426171875,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.421875,
+                  "y": 0.74375
+                },
+                {
+                  "x": 0.412890625,
+                  "y": 0.74375
+                }
+              ],
+              "output_size": [
+                23,
+                38
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/inventory_count/digit2_2_001.png",
+              "002": "templates/inventory_f9/inventory_count/digit2_2_002.png",
+              "003": "templates/inventory_f9/inventory_count/digit2_2_003.png",
+              "004": "templates/inventory_f9/inventory_count/digit2_2_004.png",
+              "005": "templates/inventory_f9/inventory_count/digit2_2_005.png",
+              "006": "templates/inventory_f9/inventory_count/digit2_2_006.png",
+              "007": "templates/inventory_f9/inventory_count/digit2_2_007.png",
+              "008": "templates/inventory_f9/inventory_count/digit2_2_008.png",
+              "009": "templates/inventory_f9/inventory_count/digit2_2_009.png",
+              "010": "templates/inventory_f9/inventory_count/digit2_2_010.png"
+            }
+          }
+        ]
+      },
+      "2": {
+        "x": {
+          "region": {
+            "points_ratio": [
+              {
+                "x": 0.39765625,
+                "y": 0.7256944444444444
+              },
+              {
+                "x": 0.40859375,
+                "y": 0.7256944444444444
+              },
+              {
+                "x": 0.405859375,
+                "y": 0.7430555555555556
+              },
+              {
+                "x": 0.394921875,
+                "y": 0.7430555555555556
+              }
+            ],
+            "output_size": [
+              28,
+              26
+            ]
+          },
+          "templates": {
+            "001": "templates/inventory_f9/inventory_count/x_digit2_001.png"
+          }
+        },
+        "digits": [
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.41171875,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.420703125,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.41640625,
+                  "y": 0.74375
+                },
+                {
+                  "x": 0.407421875,
+                  "y": 0.74375
+                }
+              ],
+              "output_size": [
+                23,
+                38
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/inventory_count/digit2_2_001.png",
+              "002": "templates/inventory_f9/inventory_count/digit2_2_002.png",
+              "003": "templates/inventory_f9/inventory_count/digit2_2_003.png",
+              "004": "templates/inventory_f9/inventory_count/digit2_2_004.png",
+              "005": "templates/inventory_f9/inventory_count/digit2_2_005.png",
+              "006": "templates/inventory_f9/inventory_count/digit2_2_006.png",
+              "007": "templates/inventory_f9/inventory_count/digit2_2_007.png",
+              "008": "templates/inventory_f9/inventory_count/digit2_2_008.png",
+              "009": "templates/inventory_f9/inventory_count/digit2_2_009.png",
+              "010": "templates/inventory_f9/inventory_count/digit2_2_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.42265625,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.431640625,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.42734375,
+                  "y": 0.74375
+                },
+                {
+                  "x": 0.418359375,
+                  "y": 0.74375
+                }
+              ],
+              "output_size": [
+                23,
+                38
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/inventory_count/digit2_2_001.png",
+              "002": "templates/inventory_f9/inventory_count/digit2_2_002.png",
+              "003": "templates/inventory_f9/inventory_count/digit2_2_003.png",
+              "004": "templates/inventory_f9/inventory_count/digit2_2_004.png",
+              "005": "templates/inventory_f9/inventory_count/digit2_2_005.png",
+              "006": "templates/inventory_f9/inventory_count/digit2_2_006.png",
+              "007": "templates/inventory_f9/inventory_count/digit2_2_007.png",
+              "008": "templates/inventory_f9/inventory_count/digit2_2_008.png",
+              "009": "templates/inventory_f9/inventory_count/digit2_2_009.png",
+              "010": "templates/inventory_f9/inventory_count/digit2_2_010.png"
+            }
+          }
+        ]
+      },
+      "3": {
+        "x": {
+          "region": {
+            "points_ratio": [
+              {
+                "x": 0.392578125,
+                "y": 0.7256944444444444
+              },
+              {
+                "x": 0.40390625,
+                "y": 0.7256944444444444
+              },
+              {
+                "x": 0.40078125,
+                "y": 0.74375
+              },
+              {
+                "x": 0.389453125,
+                "y": 0.74375
+              }
+            ],
+            "output_size": [
+              29,
+              27
+            ]
+          },
+          "templates": {
+            "001": "templates/inventory_f9/inventory_count/x_digit3_001.png"
+          }
+        },
+        "digits": [
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.40625,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.415234375,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.4109375,
+                  "y": 0.74375
+                },
+                {
+                  "x": 0.401953125,
+                  "y": 0.74375
+                }
+              ],
+              "output_size": [
+                23,
+                38
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/inventory_count/digit2_2_001.png",
+              "002": "templates/inventory_f9/inventory_count/digit2_2_002.png",
+              "003": "templates/inventory_f9/inventory_count/digit2_2_003.png",
+              "004": "templates/inventory_f9/inventory_count/digit2_2_004.png",
+              "005": "templates/inventory_f9/inventory_count/digit2_2_005.png",
+              "006": "templates/inventory_f9/inventory_count/digit2_2_006.png",
+              "007": "templates/inventory_f9/inventory_count/digit2_2_007.png",
+              "008": "templates/inventory_f9/inventory_count/digit2_2_008.png",
+              "009": "templates/inventory_f9/inventory_count/digit2_2_009.png",
+              "010": "templates/inventory_f9/inventory_count/digit2_2_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.4171875,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.426171875,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.421875,
+                  "y": 0.74375
+                },
+                {
+                  "x": 0.412890625,
+                  "y": 0.74375
+                }
+              ],
+              "output_size": [
+                23,
+                38
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/inventory_count/digit2_2_001.png",
+              "002": "templates/inventory_f9/inventory_count/digit2_2_002.png",
+              "003": "templates/inventory_f9/inventory_count/digit2_2_003.png",
+              "004": "templates/inventory_f9/inventory_count/digit2_2_004.png",
+              "005": "templates/inventory_f9/inventory_count/digit2_2_005.png",
+              "006": "templates/inventory_f9/inventory_count/digit2_2_006.png",
+              "007": "templates/inventory_f9/inventory_count/digit2_2_007.png",
+              "008": "templates/inventory_f9/inventory_count/digit2_2_008.png",
+              "009": "templates/inventory_f9/inventory_count/digit2_2_009.png",
+              "010": "templates/inventory_f9/inventory_count/digit2_2_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.428125,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.437109375,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.4328125,
+                  "y": 0.74375
+                },
+                {
+                  "x": 0.423828125,
+                  "y": 0.74375
+                }
+              ],
+              "output_size": [
+                23,
+                38
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/inventory_count/digit2_2_001.png",
+              "002": "templates/inventory_f9/inventory_count/digit2_2_002.png",
+              "003": "templates/inventory_f9/inventory_count/digit2_2_003.png",
+              "004": "templates/inventory_f9/inventory_count/digit2_2_004.png",
+              "005": "templates/inventory_f9/inventory_count/digit2_2_005.png",
+              "006": "templates/inventory_f9/inventory_count/digit2_2_006.png",
+              "007": "templates/inventory_f9/inventory_count/digit2_2_007.png",
+              "008": "templates/inventory_f9/inventory_count/digit2_2_008.png",
+              "009": "templates/inventory_f9/inventory_count/digit2_2_009.png",
+              "010": "templates/inventory_f9/inventory_count/digit2_2_010.png"
+            }
+          }
+        ]
+      },
+      "4": {
+        "x": {
+          "region": {
+            "points_ratio": [
+              {
+                "x": 0.387109375,
+                "y": 0.7256944444444444
+              },
+              {
+                "x": 0.3984375,
+                "y": 0.7256944444444444
+              },
+              {
+                "x": 0.3953125,
+                "y": 0.7430555555555556
+              },
+              {
+                "x": 0.383984375,
+                "y": 0.7430555555555556
+              }
+            ],
+            "output_size": [
+              29,
+              26
+            ]
+          },
+          "templates": {
+            "001": "templates/inventory_f9/inventory_count/x_digit4_001.png"
+          }
+        },
+        "digits": [
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.40078125,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.409765625,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.40546875,
+                  "y": 0.74375
+                },
+                {
+                  "x": 0.396484375,
+                  "y": 0.74375
+                }
+              ],
+              "output_size": [
+                23,
+                38
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/inventory_count/digit2_2_001.png",
+              "002": "templates/inventory_f9/inventory_count/digit2_2_002.png",
+              "003": "templates/inventory_f9/inventory_count/digit2_2_003.png",
+              "004": "templates/inventory_f9/inventory_count/digit2_2_004.png",
+              "005": "templates/inventory_f9/inventory_count/digit2_2_005.png",
+              "006": "templates/inventory_f9/inventory_count/digit2_2_006.png",
+              "007": "templates/inventory_f9/inventory_count/digit2_2_007.png",
+              "008": "templates/inventory_f9/inventory_count/digit2_2_008.png",
+              "009": "templates/inventory_f9/inventory_count/digit2_2_009.png",
+              "010": "templates/inventory_f9/inventory_count/digit2_2_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.41171875,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.420703125,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.41640625,
+                  "y": 0.74375
+                },
+                {
+                  "x": 0.407421875,
+                  "y": 0.74375
+                }
+              ],
+              "output_size": [
+                23,
+                38
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/inventory_count/digit2_2_001.png",
+              "002": "templates/inventory_f9/inventory_count/digit2_2_002.png",
+              "003": "templates/inventory_f9/inventory_count/digit2_2_003.png",
+              "004": "templates/inventory_f9/inventory_count/digit2_2_004.png",
+              "005": "templates/inventory_f9/inventory_count/digit2_2_005.png",
+              "006": "templates/inventory_f9/inventory_count/digit2_2_006.png",
+              "007": "templates/inventory_f9/inventory_count/digit2_2_007.png",
+              "008": "templates/inventory_f9/inventory_count/digit2_2_008.png",
+              "009": "templates/inventory_f9/inventory_count/digit2_2_009.png",
+              "010": "templates/inventory_f9/inventory_count/digit2_2_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.42265625,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.431640625,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.42734375,
+                  "y": 0.74375
+                },
+                {
+                  "x": 0.418359375,
+                  "y": 0.74375
+                }
+              ],
+              "output_size": [
+                23,
+                38
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/inventory_count/digit2_2_001.png",
+              "002": "templates/inventory_f9/inventory_count/digit2_2_002.png",
+              "003": "templates/inventory_f9/inventory_count/digit2_2_003.png",
+              "004": "templates/inventory_f9/inventory_count/digit2_2_004.png",
+              "005": "templates/inventory_f9/inventory_count/digit2_2_005.png",
+              "006": "templates/inventory_f9/inventory_count/digit2_2_006.png",
+              "007": "templates/inventory_f9/inventory_count/digit2_2_007.png",
+              "008": "templates/inventory_f9/inventory_count/digit2_2_008.png",
+              "009": "templates/inventory_f9/inventory_count/digit2_2_009.png",
+              "010": "templates/inventory_f9/inventory_count/digit2_2_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.43359375,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.442578125,
+                  "y": 0.71875
+                },
+                {
+                  "x": 0.43828125,
+                  "y": 0.74375
+                },
+                {
+                  "x": 0.429296875,
+                  "y": 0.74375
+                }
+              ],
+              "output_size": [
+                23,
+                38
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/inventory_count/digit2_2_001.png",
+              "002": "templates/inventory_f9/inventory_count/digit2_2_002.png",
+              "003": "templates/inventory_f9/inventory_count/digit2_2_003.png",
+              "004": "templates/inventory_f9/inventory_count/digit2_2_004.png",
+              "005": "templates/inventory_f9/inventory_count/digit2_2_005.png",
+              "006": "templates/inventory_f9/inventory_count/digit2_2_006.png",
+              "007": "templates/inventory_f9/inventory_count/digit2_2_007.png",
+              "008": "templates/inventory_f9/inventory_count/digit2_2_008.png",
+              "009": "templates/inventory_f9/inventory_count/digit2_2_009.png",
+              "010": "templates/inventory_f9/inventory_count/digit2_2_010.png"
+            }
+          }
+        ]
+      }
+    },
+    "equipment": {
+      "1": {
+        "x": {
+          "region": {
+            "points_ratio": [
+              {
+                "x": 0.440234375,
+                "y": 0.8416666666666667
+              },
+              {
+                "x": 0.451171875,
+                "y": 0.8416666666666667
+              },
+              {
+                "x": 0.4484375,
+                "y": 0.8583333333333333
+              },
+              {
+                "x": 0.4375,
+                "y": 0.8583333333333333
+              }
+            ],
+            "output_size": [
+              28,
+              25
+            ]
+          },
+          "templates": {
+            "001": "templates/inventory_f9/equipment_count/e_x_digit1_001.png"
+          }
+        },
+        "digits": [
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.454296875,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.46328125,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.458984375,
+                  "y": 0.8590277777777777
+                },
+                {
+                  "x": 0.45,
+                  "y": 0.8590277777777777
+                }
+              ],
+              "output_size": [
+                23,
+                39
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit2_2_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit2_2_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit2_2_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit2_2_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit2_2_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit2_2_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit2_2_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit2_2_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit2_2_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit2_2_010.png"
+            }
+          }
+        ]
+      },
+      "2": {
+        "x": {
+          "region": {
+            "points_ratio": [
+              {
+                "x": 0.434765625,
+                "y": 0.8416666666666667
+              },
+              {
+                "x": 0.445703125,
+                "y": 0.8416666666666667
+              },
+              {
+                "x": 0.443359375,
+                "y": 0.8583333333333333
+              },
+              {
+                "x": 0.432421875,
+                "y": 0.8583333333333333
+              }
+            ],
+            "output_size": [
+              28,
+              25
+            ]
+          },
+          "templates": {
+            "001": "templates/inventory_f9/equipment_count/e_x_digit2_001.png"
+          }
+        },
+        "digits": [
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.448828125,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.4578125,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.453515625,
+                  "y": 0.8590277777777777
+                },
+                {
+                  "x": 0.44453125,
+                  "y": 0.8590277777777777
+                }
+              ],
+              "output_size": [
+                23,
+                39
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit2_2_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit2_2_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit2_2_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit2_2_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit2_2_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit2_2_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit2_2_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit2_2_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit2_2_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit2_2_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.459765625,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.46875,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.464453125,
+                  "y": 0.8590277777777777
+                },
+                {
+                  "x": 0.45546875,
+                  "y": 0.8590277777777777
+                }
+              ],
+              "output_size": [
+                23,
+                39
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit2_2_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit2_2_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit2_2_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit2_2_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit2_2_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit2_2_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit2_2_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit2_2_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit2_2_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit2_2_010.png"
+            }
+          }
+        ]
+      },
+      "3": {
+        "x": {
+          "region": {
+            "points_ratio": [
+              {
+                "x": 0.4296875,
+                "y": 0.8409722222222222
+              },
+              {
+                "x": 0.441015625,
+                "y": 0.8409722222222222
+              },
+              {
+                "x": 0.437890625,
+                "y": 0.8583333333333333
+              },
+              {
+                "x": 0.4265625,
+                "y": 0.8583333333333333
+              }
+            ],
+            "output_size": [
+              29,
+              26
+            ]
+          },
+          "templates": {
+            "001": "templates/inventory_f9/equipment_count/e_x_digit3_001.png"
+          }
+        },
+        "digits": [
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.443359375,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.45234375,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.448046875,
+                  "y": 0.8590277777777777
+                },
+                {
+                  "x": 0.4390625,
+                  "y": 0.8590277777777777
+                }
+              ],
+              "output_size": [
+                23,
+                39
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit2_2_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit2_2_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit2_2_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit2_2_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit2_2_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit2_2_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit2_2_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit2_2_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit2_2_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit2_2_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.454296875,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.46328125,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.458984375,
+                  "y": 0.8590277777777777
+                },
+                {
+                  "x": 0.45,
+                  "y": 0.8590277777777777
+                }
+              ],
+              "output_size": [
+                23,
+                39
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit2_2_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit2_2_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit2_2_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit2_2_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit2_2_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit2_2_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit2_2_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit2_2_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit2_2_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit2_2_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.465234375,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.47421875,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.469921875,
+                  "y": 0.8590277777777777
+                },
+                {
+                  "x": 0.4609375,
+                  "y": 0.8590277777777777
+                }
+              ],
+              "output_size": [
+                23,
+                39
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit2_2_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit2_2_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit2_2_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit2_2_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit2_2_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit2_2_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit2_2_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit2_2_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit2_2_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit2_2_010.png"
+            }
+          }
+        ]
+      },
+      "4": {
+        "x": {
+          "region": {
+            "points_ratio": [
+              {
+                "x": 0.424609375,
+                "y": 0.8416666666666667
+              },
+              {
+                "x": 0.435546875,
+                "y": 0.8416666666666667
+              },
+              {
+                "x": 0.432421875,
+                "y": 0.8583333333333333
+              },
+              {
+                "x": 0.421484375,
+                "y": 0.8583333333333333
+              }
+            ],
+            "output_size": [
+              28,
+              25
+            ]
+          },
+          "templates": {
+            "001": "templates/inventory_f9/equipment_count/e_x_digit4_001.png"
+          }
+        },
+        "digits": [
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.43828125,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.447265625,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.44296875,
+                  "y": 0.8590277777777777
+                },
+                {
+                  "x": 0.433984375,
+                  "y": 0.8590277777777777
+                }
+              ],
+              "output_size": [
+                23,
+                39
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit2_2_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit2_2_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit2_2_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit2_2_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit2_2_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit2_2_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit2_2_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit2_2_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit2_2_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit2_2_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.44921875,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.458203125,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.45390625,
+                  "y": 0.8590277777777777
+                },
+                {
+                  "x": 0.444921875,
+                  "y": 0.8590277777777777
+                }
+              ],
+              "output_size": [
+                23,
+                39
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit2_2_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit2_2_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit2_2_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit2_2_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit2_2_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit2_2_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit2_2_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit2_2_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit2_2_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit2_2_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.46015625,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.469140625,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.46484375,
+                  "y": 0.8590277777777777
+                },
+                {
+                  "x": 0.455859375,
+                  "y": 0.8590277777777777
+                }
+              ],
+              "output_size": [
+                23,
+                39
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit2_2_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit2_2_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit2_2_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit2_2_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit2_2_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit2_2_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit2_2_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit2_2_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit2_2_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit2_2_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.47109375,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.480078125,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.47578125,
+                  "y": 0.8590277777777777
+                },
+                {
+                  "x": 0.466796875,
+                  "y": 0.8590277777777777
+                }
+              ],
+              "output_size": [
+                23,
+                39
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit2_2_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit2_2_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit2_2_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit2_2_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit2_2_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit2_2_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit2_2_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit2_2_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit2_2_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit2_2_010.png"
+            }
+          }
+        ]
+      },
+      "5": {
+        "x": {
+          "region": {
+            "points_ratio": [
+              {
+                "x": 0.423828125,
+                "y": 0.8423611111111111
+              },
+              {
+                "x": 0.4328125,
+                "y": 0.8423611111111111
+              },
+              {
+                "x": 0.43046875,
+                "y": 0.8569444444444444
+              },
+              {
+                "x": 0.421484375,
+                "y": 0.8569444444444444
+              }
+            ],
+            "output_size": [
+              23,
+              22
+            ]
+          },
+          "templates": {
+            "001": "templates/inventory_f9/equipment_count/e_x_digit5_001.png"
+          }
+        },
+        "digits": [
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.43515625,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.4421875,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.4390625,
+                  "y": 0.8541666666666666
+                },
+                {
+                  "x": 0.43203125,
+                  "y": 0.8541666666666666
+                }
+              ],
+              "output_size": [
+                18,
+                31
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit5_5_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit5_5_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit5_5_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit5_5_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit5_5_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit5_5_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit5_5_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit5_5_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit5_5_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit5_5_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.444140625,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.451171875,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.448046875,
+                  "y": 0.8541666666666666
+                },
+                {
+                  "x": 0.441015625,
+                  "y": 0.8541666666666666
+                }
+              ],
+              "output_size": [
+                18,
+                31
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit5_5_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit5_5_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit5_5_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit5_5_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit5_5_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit5_5_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit5_5_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit5_5_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit5_5_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit5_5_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.453125,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.46015625,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.45703125,
+                  "y": 0.8541666666666666
+                },
+                {
+                  "x": 0.45,
+                  "y": 0.8541666666666666
+                }
+              ],
+              "output_size": [
+                18,
+                31
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit5_5_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit5_5_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit5_5_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit5_5_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit5_5_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit5_5_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit5_5_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit5_5_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit5_5_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit5_5_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.462109375,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.469140625,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.466015625,
+                  "y": 0.8541666666666666
+                },
+                {
+                  "x": 0.458984375,
+                  "y": 0.8541666666666666
+                }
+              ],
+              "output_size": [
+                18,
+                31
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit5_5_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit5_5_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit5_5_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit5_5_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit5_5_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit5_5_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit5_5_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit5_5_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit5_5_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit5_5_010.png"
+            }
+          },
+          {
+            "region": {
+              "points_ratio": [
+                {
+                  "x": 0.47109375,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.478125,
+                  "y": 0.8333333333333334
+                },
+                {
+                  "x": 0.475,
+                  "y": 0.8541666666666666
+                },
+                {
+                  "x": 0.46796875,
+                  "y": 0.8541666666666666
+                }
+              ],
+              "output_size": [
+                18,
+                31
+              ]
+            },
+            "templates": {
+              "001": "templates/inventory_f9/equipment_count/eq_digit5_5_001.png",
+              "002": "templates/inventory_f9/equipment_count/eq_digit5_5_002.png",
+              "003": "templates/inventory_f9/equipment_count/eq_digit5_5_003.png",
+              "004": "templates/inventory_f9/equipment_count/eq_digit5_5_004.png",
+              "005": "templates/inventory_f9/equipment_count/eq_digit5_5_005.png",
+              "006": "templates/inventory_f9/equipment_count/eq_digit5_5_006.png",
+              "007": "templates/inventory_f9/equipment_count/eq_digit5_5_007.png",
+              "008": "templates/inventory_f9/equipment_count/eq_digit5_5_008.png",
+              "009": "templates/inventory_f9/equipment_count/eq_digit5_5_009.png",
+              "010": "templates/inventory_f9/equipment_count/eq_digit5_5_010.png"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

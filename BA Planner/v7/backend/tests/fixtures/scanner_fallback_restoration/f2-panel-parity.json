@@ -1,0 +1,28 @@
+{
+  "phase": "F2", "rows": ["R03", "R04", "R05"],
+  "v6": {
+    "source_manifest": "docs/migration/scanner-fallback-restoration/source-manifest.json",
+    "functions": ["_click_student_region_and_wait", "_close_student_panel", "_restore_basic_tab", "_is_student_panel_title_capture"],
+    "open": "click then bounded predicate polling then additional wait and final predicate capture",
+    "close": "configured region, captured close fallback, then Escape and basic-detail verification",
+    "title": "all four title competitors; min .86/margin .04, bootstrap .82/.10; adaptive history exists",
+    "tab": "basic/level/star active tab templates; .90 threshold"
+  },
+  "v7": {
+    "no_v6_runtime_import": true,
+    "predicate": "bundled independent title and active-tab templates; no missing-template permissive fallback",
+    "threshold": {"title": 0.86, "title_margin": 0.04, "tab_color": 0.90, "tab_correlation_floor": 0.75},
+    "open_clicks": 1, "preflight_captures": 1, "open_captures": 4, "open_seconds": 4,
+    "open_delay_seconds": 0.15, "final_delay_seconds": 0.35,
+    "close_actions": 3, "close_captures": 7, "close_seconds": 5,
+    "close_order": ["verified panel configured X", "verified same-X interior alternate point", "Escape"],
+    "basic_return": "active basic tab plus pre-open nameplate color similarity .985 and portrait .90, title absent",
+    "unknown_screen": "fail safely; no blind alternate coordinate clicks",
+    "cancellation": "no new open/recapture; cleanup with independent bounded cancellation token",
+    "weapon_frames": 3, "recapture_checks_per_read": 2, "recapture_seconds": 2,
+    "merge": "confirmed survives uncertain; different confirmed values retained as uncertain conflict evidence, never last-wins",
+    "read_failure": "after verified same-student basic return, keep basic values and unresolved partial evidence; unsafe input/target/return propagates failure",
+    "automatic_learning": "no new permanent training; conflicting observations never calibrate"
+  },
+  "cases": ["open ignored", "late final capture", "wrong panel", "missing templates", "close ignored then alternate", "Escape recovery", "all close fail", "different student return", "cancel before open", "cancel during opening", "cancel recapture", "one field recovered", "retry confirmed value preserved", "confirmed conflict sticky", "unknown weapon no open", "real weapon/equipment open and basic return"]
+}

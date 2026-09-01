@@ -1,0 +1,3239 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-08-30",
+  "scope": "working-tree bytes, not HEAD; static inspection, no v6 import or live trace",
+  "call_site_limit": "Name matches in listed sources only; callbacks, aliases, dynamic binding and same-name methods require manual call-path review in restoration-matrix.json",
+  "files": [
+    {
+      "path": "../v6/core/capture.py",
+      "sha256": "91dd80501e39ce1b1da91e39f2ca8a956f258198b982c5c210b04029ee7d2105"
+    },
+    {
+      "path": "../v6/core/input.py",
+      "sha256": "ac586e6fadb0ce2ed3a6d89bd199f2729c21b42f390f263971e8ebd4bcfb06e1"
+    },
+    {
+      "path": "../v6/core/inventory_count_matcher.py",
+      "sha256": "d189d9b7ab041b742565fccd099655b1ff96393f6ff793cfbd3583f3622067a8"
+    },
+    {
+      "path": "../v6/core/inventory_profiles.py",
+      "sha256": "031dcd5f3c6008f23af282caf4218a467dcd6be79fcade0946aaf0e474eb5949"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "sha256": "ce56ebf9ac4ab3c22398938d7c45973d7686785be5e0a2607ef94832290ad2a2"
+    },
+    {
+      "path": "../v6/core/scan_status.py",
+      "sha256": "5af8c037ea9aa08709503436c2a53df4af943cbf90cc7c8e9541510071faabb1"
+    },
+    {
+      "path": "../v6/core/scanner.py",
+      "sha256": "f2521ec01095e82ea90545166d20e5af5f40e9fb4a935cdca5d0ef7b10d718e4"
+    },
+    {
+      "path": "../v6/core/scanner_components/inventory.py",
+      "sha256": "e0a3dcc5c3f3161f9a66f65f5aa71f5234265b8acc1e8e9ec2a202987dd9eceb"
+    },
+    {
+      "path": "../v6/core/scanner_components/runtime.py",
+      "sha256": "21a5e66328ca11747f50508ecef11ba46ec24d76fcaf0b72dd2cf16d3462949e"
+    },
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "sha256": "332e5488f90a2d9bc24e3c0e12167d777b1f810e35c5501db941e2d58407839c"
+    },
+    {
+      "path": "../v6/core/scanner_shared.py",
+      "sha256": "ba77711ec132a3646c32591499f89c525e41f78b3db7ac64ec9d8afcf6417a60"
+    },
+    {
+      "path": "../v6/main.py",
+      "sha256": "78b82bace02a204790623d118c3d18342d0bdb840b1c5c4c60abb691e8dfbe51"
+    },
+    {
+      "path": "backend/core/recognition_answer_samples.py",
+      "sha256": "7c5fa7d9e16d641bb2042bea6e89cb6772429ccb7a1cc12d29cf468ed8d23a38"
+    },
+    {
+      "path": "backend/core/repository_dto.py",
+      "sha256": "d188e809cce17d07196bc1053032e5dfc71b9f3bb1176ac79de531e6c6262c7d"
+    },
+    {
+      "path": "backend/core/scanner_matchers.py",
+      "sha256": "5907061e622a27ac80f4cf19ab0da761f592db2ef7ce61b8f0a657fcc2a03210"
+    },
+    {
+      "path": "backend/core/scanner_protocol_v1.py",
+      "sha256": "aba862e9f09ac61f591db16bc90075a35ec5ca7e088e59158b69f6d6b63c8ae7"
+    },
+    {
+      "path": "backend/core/scanner_runtime.py",
+      "sha256": "712f7b4700234d15fadef060d981cd530cccf478726eed74d2415fbd44301f05"
+    },
+    {
+      "path": "backend/core/scanner_session.py",
+      "sha256": "2ab038d506d47eb95d80a223b286e9f594ed496ae8731b756ccd39e7a4cd9f66"
+    },
+    {
+      "path": "backend/core/student_candidate_validation.py",
+      "sha256": "f7480a4bfb4080832403b648da278d2062dd3ecbb97edada0004e9f62d234770"
+    },
+    {
+      "path": "backend/core/student_equipment_recognizer.py",
+      "sha256": "94c489deac9afb92aa7453c1f08e8c515d26c6dae047bdb3fd786451cba8fadc"
+    },
+    {
+      "path": "backend/core/student_scan_recognizer.py",
+      "sha256": "1b85d5731d129259e60ec3767bfb783ebe0d28d45b51e273c4ecc9143628606a"
+    },
+    {
+      "path": "backend/core/student_weapon_recognizer.py",
+      "sha256": "d9f7e00960e5eafc3dc1816e761f08bb8dd1b648a75b5e85868433c6343a8108"
+    },
+    {
+      "path": "backend/core/studio_numeric_bank.py",
+      "sha256": "d4726af135d5e9e1cc983c33fdc2f634ce559a8f97cee4cff3fdccbe5155a9a6"
+    },
+    {
+      "path": "backend/core/windows_scanner_adapter.py",
+      "sha256": "18f585e92a535e8f1d47d7106f25f2f97ef0b35a47d0fe05ae07c08af2a87d5f"
+    },
+    {
+      "path": "contracts/scanner-protocol-v1.schema.json",
+      "sha256": "55260c4562d9f1a6df678d1a73fe5dd62ac46701ad7e6c110a9fc6821d34cb1a"
+    },
+    {
+      "path": "contracts/student-scan-diagnostic-v1.schema.json",
+      "sha256": "b0095c5603f456367dc56275c65f1a1c717f13a5ca6f76c0c03ab27b72f2b484"
+    }
+  ],
+  "symbols": [
+    {
+      "ref": "../v6/core/capture.py:_print_window",
+      "qualified_symbol": "_print_window",
+      "line": 294,
+      "end_line": 402,
+      "signature": "hwnd: int",
+      "normalized_source_sha256": "2f76f6248ff9f746f766506341ead73c8daafa6008ab22d4cf7f1acddde67fdd",
+      "called_symbols": [
+        "BITMAPINFOHEADER",
+        "Image.frombuffer",
+        "Image.frombuffer('RGBA', (w, h), buf.raw, 'raw', 'BGRA', 0, 1).convert",
+        "_RECT",
+        "_cache_window_metrics",
+        "_gdi.CreateCompatibleBitmap",
+        "_gdi.CreateCompatibleDC",
+        "_gdi.DeleteDC",
+        "_gdi.DeleteObject",
+        "_gdi.GetDIBits",
+        "_gdi.SelectObject",
+        "_get_cached_window_metrics",
+        "_get_client_rect_screen",
+        "_is_minimized",
+        "_log.warning",
+        "_u32.GetDC",
+        "_u32.GetWindowRect",
+        "_u32.PrintWindow",
+        "_u32.ReleaseDC",
+        "bool",
+        "ctypes.byref",
+        "ctypes.create_string_buffer",
+        "ctypes.sizeof",
+        "img.crop",
+        "max"
+      ],
+      "self_state_dependencies": [],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/capture.py",
+          "symbol": "capture_window_background",
+          "line": 266
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/input.py:click_point",
+      "qualified_symbol": "click_point",
+      "line": 536,
+      "end_line": 574,
+      "signature": "hwnd: int, cx: int, cy: int, *, label: str='', delay: float=0.0",
+      "normalized_source_sha256": "938e0614aa77734d3996ffa30d99310cf64f34d88347f50d90231a54c98595f3",
+      "called_symbols": [
+        "_activate_window",
+        "_can_use_physical_fallback",
+        "_is_foreground_window",
+        "_log.debug",
+        "_move_cursor_to_client",
+        "_pag_click",
+        "_post_click",
+        "bool",
+        "client_to_screen",
+        "time.sleep"
+      ],
+      "self_state_dependencies": [],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/input.py",
+          "symbol": "click_region",
+          "line": 604
+        },
+        {
+          "path": "../v6/core/input.py",
+          "symbol": "safe_click",
+          "line": 826
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._scan_grid",
+          "line": 1730
+        },
+        {
+          "path": "../v6/core/scanner_components/runtime.py",
+          "symbol": "ScannerRuntimeComponent._click_ratio_point",
+          "line": 200
+        },
+        {
+          "path": "../v6/core/scanner_components/runtime.py",
+          "symbol": "ScannerRuntimeComponent._click_r",
+          "line": 507
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/matcher.py:_match_student_texture_optimized",
+      "qualified_symbol": "_match_student_texture_optimized",
+      "line": 1307,
+      "end_line": 1345,
+      "signature": "crop: Image.Image, candidate_ids: Iterable[str] | None=None, *, fallback_candidate_ids: Iterable[str] | None=None, top_k: int | None=None, injected_candidate_ids: Iterable[str] | None=None",
+      "normalized_source_sha256": "2b0d8ccd8e7e8fb31c0655886da2ed77ee42f29f7d138eebed25e311813b33e4",
+      "called_symbols": [
+        "_log_student_texture_topk_config",
+        "_match_student_texture_with_topk_decision",
+        "_student_texture_candidates",
+        "_student_texture_topk_from_env",
+        "_student_texture_topk_method_from_env",
+        "max"
+      ],
+      "self_state_dependencies": [],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/matcher.py",
+          "symbol": "match_student_texture",
+          "line": 1356
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/inventory.py:_advance_inventory_page_with_input",
+      "qualified_symbol": "InventoryScannerComponent._advance_inventory_page_with_input",
+      "line": 1612,
+      "end_line": 1656,
+      "signature": "self, input_backend: InventoryGridInput, slots: list[dict], grid_r: dict, grid_cols: int, before_page: InventoryPageSnapshot",
+      "normalized_source_sha256": "02e4166f576fa5b686c7012fec973d4d344485ca8735ea183fb47fce27b21d32",
+      "called_symbols": [
+        "_count_row_overlap",
+        "_img_hash",
+        "_log.exception",
+        "crop_region",
+        "input_backend.advance_page",
+        "self._capture",
+        "self._capture_inventory_page",
+        "self._wait",
+        "self.log"
+      ],
+      "self_state_dependencies": [
+        "_capture",
+        "_capture_inventory_page",
+        "_wait",
+        "log"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._scan_grid",
+          "line": 3005
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/inventory.py:_ensure_region_matches_reference",
+      "qualified_symbol": "InventoryScannerComponent._ensure_region_matches_reference",
+      "line": 305,
+      "end_line": 333,
+      "signature": "self, name: str, *, threshold: float=INVENTORY_SORT_RULE_MATCH_THRESHOLD, click_delay: float=DELAY_AFTER_CLICK, check_wait: float=INVENTORY_SORT_RULE_CHECK_WAIT, retry_wait: float=INVENTORY_SORT_RULE_RETRY_WAIT, max_attempts: int=INVENTORY_SORT_RULE_MAX_ATTEMPTS",
+      "normalized_source_sha256": "5f6bfb29e71115c23e21d75dc918bc6a6ab95e5ab770bdcfaa06fe1125d95713",
+      "called_symbols": [
+        "range",
+        "self._click_region_capture",
+        "self._region_capture_match_score",
+        "self._wait",
+        "self.log"
+      ],
+      "self_state_dependencies": [
+        "_click_region_capture",
+        "_region_capture_match_score",
+        "_wait",
+        "log"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._prepare_item_inventory",
+          "line": 428
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._prepare_equipment_inventory",
+          "line": 452
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/inventory.py:_fill_missing_profile_entries",
+      "qualified_symbol": "InventoryScannerComponent._fill_missing_profile_entries",
+      "line": 876,
+      "end_line": 936,
+      "signature": "self, items: list[ItemEntry], profile, source: str",
+      "normalized_source_sha256": "3535e58020275e044e3e1c05c23cc4e2b44b6c73a9548d2ee5aab4b8fc767b32",
+      "called_symbols": [
+        "_entry_rank",
+        "bool",
+        "by_item_id.get",
+        "by_item_id.pop",
+        "by_name.get",
+        "by_name.pop",
+        "enumerate",
+        "int",
+        "inventory_profile_ordered_item_ids",
+        "len",
+        "list",
+        "rebuilt.append",
+        "str",
+        "str(entry.quantity or '').strip",
+        "unmatched.append"
+      ],
+      "self_state_dependencies": [],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._scan_grid",
+          "line": 3164
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/inventory.py:_match_inventory_detail_crop",
+      "qualified_symbol": "InventoryScannerComponent._match_inventory_detail_crop",
+      "line": 801,
+      "end_line": 865,
+      "signature": "self, crop: Image.Image | None, profile_id: str | None, name_crop: Image.Image | None=None",
+      "normalized_source_sha256": "5bf53e7cbb44a76a6193b8d3563063b18adcffda4763afbe9ffceba626201397",
+      "called_symbols": [
+        "_combine_inventory_detail_scores",
+        "_inventory_detail_strict_family",
+        "family_top_scores.get",
+        "family_top_scores.setdefault",
+        "family_top_scores.values",
+        "len",
+        "match_score_resized_raw",
+        "match_score_textonly",
+        "max",
+        "name_catalog.get",
+        "name_catalog.setdefault",
+        "name_catalog.setdefault(item_id, []).append",
+        "scores_by_id.get",
+        "scores_by_id.items",
+        "self._inventory_detail_name_template_catalog_for_scan",
+        "self._inventory_detail_template_catalog_for_scan",
+        "self.log",
+        "sorted",
+        "top_scores.append",
+        "top_scores.sort"
+      ],
+      "self_state_dependencies": [
+        "_inventory_detail_name_template_catalog_for_scan",
+        "_inventory_detail_template_catalog_for_scan",
+        "log"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._verify_inventory_slot",
+          "line": 677
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._match_inventory_detail_template",
+          "line": 871
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/inventory.py:_open_equipment_inventory_filter_panel",
+      "qualified_symbol": "InventoryScannerComponent._open_equipment_inventory_filter_panel",
+      "line": 273,
+      "end_line": 297,
+      "signature": "self, *, timeout: float=INVENTORY_PANEL_OPEN_TIMEOUT, initial_wait: float=INVENTORY_FILTER_MENU_SETTLE_WAIT, max_attempts: int=2",
+      "normalized_source_sha256": "30436947cbe55474a5bdcdd78c7f29b93043f57887d0d9570c0198f64fa5f5f3",
+      "called_symbols": [
+        "min",
+        "range",
+        "self._click_region_capture",
+        "self._wait_for_equipment_inventory_filter_menu_open",
+        "self.log",
+        "self.stop"
+      ],
+      "self_state_dependencies": [
+        "_click_region_capture",
+        "_wait_for_equipment_inventory_filter_menu_open",
+        "log",
+        "stop"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._prepare_equipment_inventory",
+          "line": 445
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/inventory.py:_open_item_inventory_filter_panel",
+      "qualified_symbol": "InventoryScannerComponent._open_item_inventory_filter_panel",
+      "line": 248,
+      "end_line": 272,
+      "signature": "self, *, timeout: float=INVENTORY_PANEL_OPEN_TIMEOUT, initial_wait: float=INVENTORY_FILTER_MENU_SETTLE_WAIT, max_attempts: int=2",
+      "normalized_source_sha256": "f2adbbeb5a5c3388042f55b530bc706a5fe24f7ca2bf41260f9a9e3e11e1c241",
+      "called_symbols": [
+        "min",
+        "range",
+        "self._click_region_capture",
+        "self._wait_for_item_inventory_filter_menu_open",
+        "self.log",
+        "self.stop"
+      ],
+      "self_state_dependencies": [
+        "_click_region_capture",
+        "_wait_for_item_inventory_filter_menu_open",
+        "log",
+        "stop"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._prepare_item_inventory",
+          "line": 376
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/inventory.py:_scroll_inventory_page",
+      "qualified_symbol": "InventoryScannerComponent._scroll_inventory_page",
+      "line": 988,
+      "end_line": 1611,
+      "signature": "self, rect: tuple[int, int, int, int], slots: list[dict], grid_r: dict, drag_config: InventoryDragConfig, scroll_amount: int, grid_cols: int, scroll_index: int=0, debug_dir: Path | None=None, before_y_offset_px: int=0, drag_rx_offset: float=0.0, focus_anchor_before_capture: bool=False",
+      "normalized_source_sha256": "a5901813875c88e6b53ec72b7bb4e6bf9e7e58b93da3b4fd49bc759729410d21",
+      "called_symbols": [
+        "','.join",
+        "_adapt_inventory_drag_amount",
+        "_click_inventory_focus_anchor_slot",
+        "_count_row_overlap",
+        "_estimate_inventory_overlap_digit_y_delta",
+        "_estimate_inventory_scroll_motion",
+        "_grid_region",
+        "_images_similar",
+        "_img_hash",
+        "_inventory_gray_band_layout_slots",
+        "_inventory_normal_residual_carry_limit_px",
+        "_inventory_normal_residual_limit_px",
+        "_inventory_overlap_rows_from_motion",
+        "_move_cursor_away_from_inventory_grid",
+        "_reconcile_inventory_scroll_overlap",
+        "_save_inventory_scroll_debug",
+        "_shift_slots_y",
+        "_slot_row_step_px",
+        "_verify_inventory_near_zero_motion",
+        "abs",
+        "bool",
+        "crop_region",
+        "drag_config.delta_ry",
+        "drag_scroll",
+        "enumerate",
+        "find_target_hwnd",
+        "float",
+        "getattr",
+        "gray_layout.get",
+        "int",
+        "len",
+        "max",
+        "min",
+        "round",
+        "self._capture",
+        "self._capture_inventory_page",
+        "self._capture_settled_inventory_scroll_frame",
+        "self._debug",
+        "self._wait",
+        "self.log",
+        "str"
+      ],
+      "self_state_dependencies": [
+        "_capture",
+        "_capture_inventory_page",
+        "_capture_settled_inventory_scroll_frame",
+        "_debug",
+        "_inventory_motion_row_step_px",
+        "_last_inventory_tail_page_detected",
+        "_wait",
+        "log"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._scan_grid",
+          "line": 3014
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent.capture_inventory_scroll_debug",
+          "line": 3277
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/inventory.py:_verify_inventory_slot",
+      "qualified_symbol": "InventoryScannerComponent._verify_inventory_slot",
+      "line": 578,
+      "end_line": 701,
+      "signature": "self, rect: tuple[int, int, int, int], slot: dict, name_r: dict, count_r: dict, source: str, profile_id: str | None=None, input_backend: InventoryGridInput | None=None, slot_index: int | None=None, count_fallback: InventoryVerification | None=None",
+      "normalized_source_sha256": "15b0a1f76a275d38340c8c7fbfa1002bd35a85ad9516f523b7db9d5e3ede7dfb",
+      "called_symbols": [
+        "(profile_id or source or 'inventory').replace",
+        "(profile_id or source or 'inventory').replace('/', '_').replace",
+        "InventoryVerification",
+        "_inventory_slot_safe_click_point",
+        "_log.debug",
+        "debug_dir.mkdir",
+        "img2.save",
+        "input_backend.confirm_slot",
+        "input_backend.move_to_slot",
+        "int",
+        "os.environ.get",
+        "read_equipment_count_from_detail",
+        "read_item_count_from_detail",
+        "safe_click",
+        "self._capture",
+        "self._debug",
+        "self._inventory_detail_crop",
+        "self._inventory_detail_name_crop",
+        "self._match_inventory_detail_crop",
+        "self._wait",
+        "self.log",
+        "slot.get",
+        "str",
+        "str(count_match.reason).startswith",
+        "time.time"
+      ],
+      "self_state_dependencies": [
+        "_capture",
+        "_debug",
+        "_inventory_detail_crop",
+        "_inventory_detail_name_crop",
+        "_match_inventory_detail_crop",
+        "_wait",
+        "log"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._scan_grid",
+          "line": 2583
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/runtime.py:_capture",
+      "qualified_symbol": "ScannerRuntimeComponent._capture",
+      "line": 420,
+      "end_line": 468,
+      "signature": "self, retry: int=RETRY_CAPTURE",
+      "normalized_source_sha256": "a1a91bceaaccb4f5ae793b8e684798c0abf27faba5a9d582565fc5c0e3465f54",
+      "called_symbols": [
+        "_log.debug",
+        "_log.info",
+        "capture_window_background",
+        "img.info.get",
+        "inventory_resolution_key",
+        "range",
+        "self._error",
+        "self._status",
+        "self._stop_requested",
+        "self._wait",
+        "time.perf_counter"
+      ],
+      "self_state_dependencies": [
+        "_error",
+        "_inventory_capture_resolution",
+        "_status",
+        "_stop_requested",
+        "_wait"
+      ],
+      "status_events": [
+        "capture.failed"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._capture_settled_inventory_scroll_frame",
+          "line": 33
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._wait_for_inventory_filter_menu_open",
+          "line": 83
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._wait_for_item_inventory_filter_menu_open",
+          "line": 118
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._wait_for_equipment_inventory_filter_menu_open",
+          "line": 164
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent.scan_resources",
+          "line": 495
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._return_lobby",
+          "line": 541
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._verify_inventory_slot",
+          "line": 619
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._scroll_inventory_page",
+          "line": 1014
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._scroll_inventory_page",
+          "line": 1068
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._scroll_inventory_page",
+          "line": 1150
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._scroll_inventory_page",
+          "line": 1335
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._advance_inventory_page_with_input",
+          "line": 1630
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent._scan_grid",
+          "line": 1985
+        },
+        {
+          "path": "../v6/core/scanner_components/inventory.py",
+          "symbol": "InventoryScannerComponent.capture_inventory_scroll_debug",
+          "line": 3252
+        },
+        {
+          "path": "../v6/core/scanner_components/runtime.py",
+          "symbol": "ScannerRuntimeComponent._region_capture_match_score",
+          "line": 255
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._get_student_basic_capture",
+          "line": 234
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._wait_for_student_menu_state",
+          "line": 595
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._wait_for_student_detail",
+          "line": 623
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._wait_for_student_detail_fast",
+          "line": 659
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._wait_for_capture_match",
+          "line": 774
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._click_student_region_and_wait",
+          "line": 827
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._recover_first_student_entry",
+          "line": 850
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_skills",
+          "line": 1504
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_weapon",
+          "line": 1776
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_equipment",
+          "line": 1929
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_equipment",
+          "line": 1965
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_equipment",
+          "line": 1936
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_level",
+          "line": 2228
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_click_student_region_and_wait",
+      "qualified_symbol": "StudentScannerComponent._click_student_region_and_wait",
+      "line": 790,
+      "end_line": 847,
+      "signature": "self, region_key: str, label: str, predicate: Callable[[Optional[Image.Image]], bool], *, timeout: float, initial_wait: float=DELAY_AFTER_CLICK, poll: float=UI_FLAG_POLL, stable_polls: int=1, fallback_delay: float=DELAY_TAB_SWITCH, match_delay: float=UI_FLAG_MATCH_DELAY",
+      "normalized_source_sha256": "890fa4c019e6fb5121d8c25179a7973c5bba4b1418a4e93fd74ef11f2a323779",
+      "called_symbols": [
+        "_log.info",
+        "_log.warning",
+        "min",
+        "predicate",
+        "self._capture",
+        "self._click_r",
+        "self._panel_transition_initial_wait",
+        "self._record_panel_transition",
+        "self._wait",
+        "self._wait_for_capture_match",
+        "self.log",
+        "self.r.get",
+        "self.r.get('student', {}).get",
+        "str",
+        "str(success).lower",
+        "time.perf_counter"
+      ],
+      "self_state_dependencies": [
+        "_capture",
+        "_click_r",
+        "_panel_transition_initial_wait",
+        "_record_panel_transition",
+        "_wait",
+        "_wait_for_capture_match",
+        "log",
+        "r"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._restore_basic_tab",
+          "line": 868
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_skills",
+          "line": 1483
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_weapon",
+          "line": 1739
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_equipment",
+          "line": 1915
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_level",
+          "line": 2202
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_student_star",
+          "line": 2324
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_stats",
+          "line": 2623
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_close_student_panel",
+      "qualified_symbol": "StudentScannerComponent._close_student_panel",
+      "line": 11,
+      "end_line": 38,
+      "signature": "self, *, capture_name: str | None=None, region_key: str | None=None, settle_reason: str, wait: float=PANEL_CLOSE_SETTLE_WAIT",
+      "normalized_source_sha256": "9afe65b71c40405a552bdfa5be17a24c763450ed59f5fc22a1be822172cbb8b6",
+      "called_symbols": [
+        "self._click_captured_point",
+        "self._click_r",
+        "self._esc",
+        "self._settle_student_detail",
+        "time.perf_counter"
+      ],
+      "self_state_dependencies": [
+        "_active_student_panel",
+        "_click_captured_point",
+        "_click_r",
+        "_esc",
+        "_settle_student_detail",
+        "r"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_skills",
+          "line": 1561
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_weapon",
+          "line": 1801
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_equipment",
+          "line": 1989
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_stats",
+          "line": 2683
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_current_student_form_index",
+      "qualified_symbol": "StudentScannerComponent._current_student_form_index",
+      "line": 2443,
+      "end_line": 2452,
+      "signature": "self, student_id: str",
+      "normalized_source_sha256": "dcf572a7032fe9fd8bd8ceb215c3af66914a545b55da6439f50d87b4f63ceae2",
+      "called_symbols": [
+        "self._get_student_basic_capture",
+        "self._match_current_student_form_by_attributes",
+        "self._match_current_student_form_by_template",
+        "student_meta.is_multi_form"
+      ],
+      "self_state_dependencies": [
+        "_get_student_basic_capture",
+        "_match_current_student_form_by_attributes",
+        "_match_current_student_form_by_template"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_multi_form_combat_stats",
+          "line": 2475
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_equipment_growth_button_active",
+      "qualified_symbol": "StudentScannerComponent._equipment_growth_button_active",
+      "line": 333,
+      "end_line": 335,
+      "signature": "self, img: Image.Image, region: dict",
+      "normalized_source_sha256": "c383c341d270ccb8ed22b92607119401deafd7d760e665486930e5a4e541e4b0",
+      "called_symbols": [
+        "self._active_blue_button_ratio"
+      ],
+      "self_state_dependencies": [
+        "_active_blue_button_ratio"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_equipment",
+          "line": 1843
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_is_student_panel_title_capture",
+      "qualified_symbol": "StudentScannerComponent._is_student_panel_title_capture",
+      "line": 510,
+      "end_line": 548,
+      "signature": "self, img: Optional[Image.Image], panel_name: str",
+      "normalized_source_sha256": "f78fcdbc0d76b85b2a088f5b094fccfd3ebe8b9a695e959f1927bbcdd6f0d9d1",
+      "called_symbols": [
+        "' '.join",
+        "STUDENT_PANEL_TITLE_TEMPLATES.get",
+        "STUDENT_PANEL_TITLE_TEMPLATES.items",
+        "_log.debug",
+        "_log.warning",
+        "bool",
+        "crop_region",
+        "expected_template.exists",
+        "match_score_resized",
+        "max",
+        "scores.get",
+        "scores.items",
+        "self._is_student_additional_menu_capture",
+        "self._panel_title_score_history.get",
+        "self._panel_title_score_threshold",
+        "self._record_panel_title_score",
+        "sorted",
+        "str",
+        "str(bootstrap_match).lower",
+        "str(matched).lower",
+        "template_path.exists"
+      ],
+      "self_state_dependencies": [
+        "_is_student_additional_menu_capture",
+        "_panel_title_score_history",
+        "_panel_title_score_threshold",
+        "_record_panel_title_score"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_skills",
+          "line": 1486
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_weapon",
+          "line": 1742
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_equipment",
+          "line": 1918
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_stats",
+          "line": 2626
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_learn_basic_equipment_slot",
+      "qualified_symbol": "StudentScannerComponent._learn_basic_equipment_slot",
+      "line": 456,
+      "end_line": 475,
+      "signature": "self, entry: StudentEntry, image: Image.Image, regions: dict, slot: int",
+      "normalized_source_sha256": "58129ddc2c17db634ba8e27aa5dce9367e87eb2c3f742d91e89304141f709637",
+      "called_symbols": [
+        "_log.debug",
+        "getattr",
+        "hasattr",
+        "isinstance",
+        "learn_basic_equipment_level",
+        "regions.get",
+        "self._basic_equip_level_run_templates.setdefault"
+      ],
+      "self_state_dependencies": [
+        "_basic_equip_level_run_templates"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_equipment",
+          "line": 1960
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_equipment",
+          "line": 1974
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_learn_basic_level_for_run",
+      "qualified_symbol": "StudentScannerComponent._learn_basic_level_for_run",
+      "line": 2123,
+      "end_line": 2160,
+      "signature": "self, image: Image.Image, region: dict, level: int",
+      "normalized_source_sha256": "37d5eb9b45177ad2489585418ae296853c47d4ae5cf87527666a136e890eefc5",
+      "called_symbols": [
+        "_log.info",
+        "enumerate",
+        "extract_basic_student_level_glyphs",
+        "glyph.copy",
+        "len",
+        "position_templates.setdefault",
+        "position_templates.values",
+        "self._basic_level_run_templates.setdefault",
+        "self._basic_level_run_templates.values",
+        "str",
+        "sum",
+        "variants.append",
+        "zip"
+      ],
+      "self_state_dependencies": [
+        "_basic_level_run_templates"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_level",
+          "line": 2244
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_read_skills_from_basic",
+      "qualified_symbol": "StudentScannerComponent._read_skills_from_basic",
+      "line": 1403,
+      "end_line": 1471,
+      "signature": "self, entry: StudentEntry, img: Image.Image",
+      "normalized_source_sha256": "a812fd2e1781f43bcd039e9346097a54eaa0d530693316e8333983174e312b6c",
+      "called_symbols": [
+        "FieldMeta.ok",
+        "FieldMeta.skipped",
+        "_log.debug",
+        "_log.info",
+        "crop_region",
+        "entry.set_meta",
+        "int",
+        "read_basic_skill_result",
+        "self._get_student_basic_region",
+        "self._status",
+        "self._status_skill_value",
+        "self.log",
+        "setattr",
+        "sr.get",
+        "staged.items"
+      ],
+      "self_state_dependencies": [
+        "_get_student_basic_region",
+        "_status",
+        "_status_skill_value",
+        "log",
+        "r"
+      ],
+      "status_events": [
+        "skills.basic.success",
+        "skills.skill2.skip_star_locked",
+        "skills.skill3.skip_star_locked",
+        "skills.summary"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_skills",
+          "line": 1477
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_recover_first_student_entry",
+      "qualified_symbol": "StudentScannerComponent._recover_first_student_entry",
+      "line": 848,
+      "end_line": 859,
+      "signature": "self",
+      "normalized_source_sha256": "a2d655c59b718c0aae857ea744706ac92e1b51161384ebaeeacbf853891db818",
+      "called_symbols": [
+        "_log.warning",
+        "self._capture",
+        "self._invalidate_student_basic_capture",
+        "self._is_lobby_capture",
+        "self._is_student_menu_capture",
+        "self.enter_first_student",
+        "self.enter_student_menu"
+      ],
+      "self_state_dependencies": [
+        "_capture",
+        "_invalidate_student_basic_capture",
+        "_is_lobby_capture",
+        "_is_student_menu_capture",
+        "enter_first_student",
+        "enter_student_menu"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.identify_student",
+          "line": 1394
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_restore_basic_tab",
+      "qualified_symbol": "StudentScannerComponent._restore_basic_tab",
+      "line": 860,
+      "end_line": 883,
+      "signature": "self",
+      "normalized_source_sha256": "d720d5c275ba0d2ff54e2c3e5c247a84e35f8a10ac551702821803d9f8b30778",
+      "called_symbols": [
+        "self._click_student_region_and_wait",
+        "self._esc",
+        "self._get_student_basic_capture",
+        "self._is_basic_info_tab_on_capture",
+        "self._set_student_basic_capture",
+        "self._settle_student_detail"
+      ],
+      "self_state_dependencies": [
+        "_click_student_region_and_wait",
+        "_esc",
+        "_get_student_basic_capture",
+        "_is_basic_info_tab_on_capture",
+        "_set_student_basic_capture",
+        "_settle_student_detail",
+        "r"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._scan_student_fields",
+          "line": 935
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.scan_current_student",
+          "line": 999
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.scan_students_v5",
+          "line": 1034
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.scan_students_v5",
+          "line": 1130
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.scan_students_v5",
+          "line": 1080
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.identify_student",
+          "line": 1397
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_level",
+          "line": 2252
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_level",
+          "line": 2218
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_scan_equip_slot",
+      "qualified_symbol": "StudentScannerComponent._scan_equip_slot",
+      "line": 1994,
+      "end_line": 2122,
+      "signature": "self, entry: StudentEntry, img: Image.Image, sr: dict, slot: int, skip_flags: set[EquipSlotFlag], scan_level: bool",
+      "normalized_source_sha256": "0e6142586288f0b8c8e627a6c80e5fe7d07c5966d3b0b15878a38693aa669c59",
+      "called_symbols": [
+        "' '.join",
+        "FieldMeta",
+        "FieldMeta.failed",
+        "FieldMeta.ok",
+        "FieldMeta.region_missing",
+        "FieldMeta.skipped",
+        "FieldMeta.uncertain",
+        "_log.debug",
+        "crop_region",
+        "entry.set_meta",
+        "getattr",
+        "rank_equip_tier_candidates",
+        "read_equip_level",
+        "read_equip_slot_flag",
+        "self._field_confirmed",
+        "self._status",
+        "self.log",
+        "setattr",
+        "sr.get"
+      ],
+      "self_state_dependencies": [
+        "_field_confirmed",
+        "_status",
+        "log"
+      ],
+      "status_events": [
+        "equip2.slot_flag.empty",
+        "equip2.slot_flag.level_locked",
+        "equip3.slot_flag.empty",
+        "equip3.slot_flag.level_locked",
+        "favorite.slot_flag.empty",
+        "favorite.slot_flag.love_locked",
+        "favorite.slot_flag.null",
+        "favorite.tier.t1",
+        "favorite.tier.t2"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_equipment",
+          "line": 1958
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_equipment",
+          "line": 1979
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_equipment",
+          "line": 1972
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_send_student_arrow",
+      "qualified_symbol": "StudentScannerComponent._send_student_arrow",
+      "line": 1290,
+      "end_line": 1297,
+      "signature": "self, direction: str",
+      "normalized_source_sha256": "7b0110c4e7f8cbb6d44573ef187ea97bba904deb204ed9e4d57b4d277a0e9593",
+      "called_symbols": [
+        "find_target_hwnd",
+        "self.log",
+        "send_key"
+      ],
+      "self_state_dependencies": [
+        "log"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.go_next_student",
+          "line": 1249
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.go_next_student_fast",
+          "line": 1269
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.go_previous_student_fast",
+          "line": 1287
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:_student_attribute_candidates",
+      "qualified_symbol": "StudentScannerComponent._student_attribute_candidates",
+      "line": 1298,
+      "end_line": 1330,
+      "signature": "self, image: Image.Image",
+      "normalized_source_sha256": "f0b3932e896e3c1c521da8c9532736c44fc43beae9a1e09eb5f5f99aee17f150",
+      "called_symbols": [
+        "' '.join",
+        "_log.debug",
+        "_log.info",
+        "crop_region",
+        "len",
+        "read_basic_student_attribute_result",
+        "regions.get",
+        "self._get_student_basic_region",
+        "self.r.get",
+        "str",
+        "student_meta.ids_matching_attributes"
+      ],
+      "self_state_dependencies": [
+        "_get_student_basic_region",
+        "r"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.identify_student._try",
+          "line": 1354
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:go_next_student",
+      "qualified_symbol": "StudentScannerComponent.go_next_student",
+      "line": 1245,
+      "end_line": 1265,
+      "signature": "self",
+      "normalized_source_sha256": "21f5005d0fd87e15822c366bd06ae5465794aeaa7598347ece59411f26b3ee32",
+      "called_symbols": [
+        "self._click_r",
+        "self._current_student_digest",
+        "self._invalidate_student_basic_capture",
+        "self._send_student_arrow",
+        "self._status",
+        "self._wait",
+        "self._wait_for_student_change",
+        "self._warn",
+        "self.log",
+        "self.r['student'].get"
+      ],
+      "self_state_dependencies": [
+        "_click_r",
+        "_current_student_digest",
+        "_invalidate_student_basic_capture",
+        "_send_student_arrow",
+        "_status",
+        "_wait",
+        "_wait_for_student_change",
+        "_warn",
+        "log",
+        "r"
+      ],
+      "status_events": [
+        "navigation.next.arrow",
+        "navigation.next.button_fallback",
+        "navigation.next.no_change"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.scan_students_v5",
+          "line": 1081
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.scan_students_v5",
+          "line": 1132
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:go_previous_student_fast",
+      "qualified_symbol": "StudentScannerComponent.go_previous_student_fast",
+      "line": 1285,
+      "end_line": 1289,
+      "signature": "self, previous_digest: str",
+      "normalized_source_sha256": "499192686fa02642062d6b997a16c91341f7ab22003da6eb9d641e8997caf8d4",
+      "called_symbols": [
+        "self._invalidate_student_basic_capture",
+        "self._send_student_arrow",
+        "self._wait_for_student_change"
+      ],
+      "self_state_dependencies": [
+        "_invalidate_student_basic_capture",
+        "_send_student_arrow",
+        "_wait_for_student_change"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": []
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:identify_student",
+      "qualified_symbol": "StudentScannerComponent.identify_student",
+      "line": 1331,
+      "end_line": 1402,
+      "signature": "self, idx: int=0, *, candidate_ids: Iterable[str] | None=None, fallback_candidate_ids: Iterable[str] | None=None",
+      "normalized_source_sha256": "20043959394f12c8bd47463045c209b7fd619df2cbbec1dcda1e5fac0eaf673e",
+      "called_symbols": [
+        "ScanCtx",
+        "_log.debug",
+        "_log.info",
+        "_log.warning",
+        "crop_region",
+        "dump_roi",
+        "match_student_texture",
+        "self._asv.on_step_error",
+        "self._get_student_basic_capture",
+        "self._info",
+        "self._invalidate_student_basic_capture",
+        "self._recover_first_student_entry",
+        "self._restore_basic_tab",
+        "self._retry",
+        "self._status",
+        "self._student_attribute_candidates",
+        "self._warn",
+        "sr.get",
+        "student_meta.display_name"
+      ],
+      "self_state_dependencies": [
+        "_asv",
+        "_get_student_basic_capture",
+        "_info",
+        "_invalidate_student_basic_capture",
+        "_recover_first_student_entry",
+        "_restore_basic_tab",
+        "_retry",
+        "_status",
+        "_student_attribute_candidates",
+        "_warn",
+        "r"
+      ],
+      "status_events": [
+        "student.identify.failed",
+        "student.identify.retry",
+        "student.identify.start",
+        "student.identify.success"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.scan_current_student",
+          "line": 971
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.scan_students_v5",
+          "line": 1057
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:read_basic_combat_stats",
+      "qualified_symbol": "StudentScannerComponent.read_basic_combat_stats",
+      "line": 2504,
+      "end_line": 2570,
+      "signature": "self, entry: StudentEntry",
+      "normalized_source_sha256": "b4d29a101f17de5b97f4a2533807b1acb0e96247274b520159a6fd8f36bce30f",
+      "called_symbols": [
+        "FieldMeta.ok",
+        "FieldMeta.region_missing",
+        "FieldMeta.uncertain",
+        "_log.debug",
+        "entry.set_meta",
+        "int",
+        "read_basic_additional_stat_badge_result",
+        "read_basic_additional_stat_value_result",
+        "read_basic_combat_stat_result",
+        "regions.get",
+        "self._field_confirmed",
+        "self._get_student_basic_capture",
+        "self.log",
+        "self.r.get",
+        "setattr"
+      ],
+      "self_state_dependencies": [
+        "_field_confirmed",
+        "_get_student_basic_capture",
+        "log",
+        "r"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._scan_student_fields",
+          "line": 951
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_multi_form_combat_stats",
+          "line": 2489
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:read_equipment",
+      "qualified_symbol": "StudentScannerComponent.read_equipment",
+      "line": 1806,
+      "end_line": 1993,
+      "signature": "self, entry: StudentEntry",
+      "normalized_source_sha256": "bb28b500fb77d72ee9a789059b080abbd8799f2d5dfc8593b72734c4d4270563",
+      "called_symbols": [
+        "FieldMeta",
+        "FieldMeta.skipped",
+        "ScreenCropSet.from_image",
+        "_log.debug",
+        "_log.warning",
+        "all",
+        "crop_region",
+        "entry.label",
+        "entry.set_meta",
+        "getattr",
+        "key.startswith",
+        "read_basic_favorite_tier_result",
+        "read_equip_check",
+        "read_equip_check_inside",
+        "self._apply_basic_equipment_hints",
+        "self._basic_equipment_empty_dot_present",
+        "self._capture",
+        "self._click_r",
+        "self._click_student_region_and_wait",
+        "self._close_student_panel",
+        "self._equipment_growth_button_active",
+        "self._esc",
+        "self._field_confirmed",
+        "self._get_student_basic_capture",
+        "self._is_student_panel_title_capture",
+        "self._learn_basic_equipment_slot",
+        "self._mark_favorite_item_unsupported",
+        "self._read_basic_equipment_slot",
+        "self._scan_equip_slot",
+        "self._status",
+        "self._wait",
+        "self.log",
+        "skip_flags.add",
+        "slots_to_scan.discard",
+        "sorted",
+        "sr.get",
+        "str",
+        "student_meta.favorite_item_enabled",
+        "tuple"
+      ],
+      "self_state_dependencies": [
+        "_active_student_panel",
+        "_apply_basic_equipment_hints",
+        "_basic_equipment_empty_dot_present",
+        "_capture",
+        "_click_r",
+        "_click_student_region_and_wait",
+        "_close_student_panel",
+        "_equipment_growth_button_active",
+        "_esc",
+        "_field_confirmed",
+        "_get_student_basic_capture",
+        "_is_student_panel_title_capture",
+        "_learn_basic_equipment_slot",
+        "_mark_favorite_item_unsupported",
+        "_read_basic_equipment_slot",
+        "_scan_equip_slot",
+        "_status",
+        "_student_equipment_crops",
+        "_wait",
+        "log",
+        "r"
+      ],
+      "status_events": [
+        "equip2.skip_level_locked_from_level",
+        "equip3.skip_level_locked_from_level",
+        "equipment.start",
+        "favorite.basic_empty_dot",
+        "favorite.slot_flag.love_locked",
+        "favorite.start"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._scan_student_fields",
+          "line": 947
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:read_level",
+      "qualified_symbol": "StudentScannerComponent.read_level",
+      "line": 2161,
+      "end_line": 2252,
+      "signature": "self, entry: StudentEntry",
+      "normalized_source_sha256": "2f880f1ea9f63eaef5348064fae8b917e9f41c2fd5e34e3fd8c57a683e44e554",
+      "called_symbols": [
+        "FieldMeta.failed",
+        "FieldMeta.ok",
+        "FieldMeta.region_missing",
+        "ScanCtx",
+        "_log.info",
+        "_log.warning",
+        "entry.label",
+        "entry.set_meta",
+        "int",
+        "range",
+        "read_basic_student_level_result",
+        "read_student_level_v5",
+        "self._asv.on_step_error",
+        "self._capture",
+        "self._click_student_region_and_wait",
+        "self._field_confirmed",
+        "self._get_student_basic_capture",
+        "self._get_student_basic_region",
+        "self._learn_basic_level_for_run",
+        "self._restore_basic_tab",
+        "self._status",
+        "self._wait",
+        "self.log",
+        "sr.get"
+      ],
+      "self_state_dependencies": [
+        "_asv",
+        "_basic_level_run_templates",
+        "_capture",
+        "_click_student_region_and_wait",
+        "_field_confirmed",
+        "_get_student_basic_capture",
+        "_get_student_basic_region",
+        "_is_level_tab_on_capture",
+        "_learn_basic_level_for_run",
+        "_restore_basic_tab",
+        "_status",
+        "_wait",
+        "log",
+        "r"
+      ],
+      "status_events": [
+        "level.read.failed",
+        "level.read.ok",
+        "level.start"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._scan_student_fields",
+          "line": 923
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:read_multi_form_combat_stats",
+      "qualified_symbol": "StudentScannerComponent.read_multi_form_combat_stats",
+      "line": 2471,
+      "end_line": 2503,
+      "signature": "self, entry: StudentEntry",
+      "normalized_source_sha256": "e57cdbe14c2ed56a83fa8c75b60e522917def960b12c45900d97387f8c13d23d",
+      "called_symbols": [
+        "StudentEntry",
+        "_entry_combat_stats",
+        "_store_entry_form_combat_stats",
+        "entry.get_meta",
+        "entry.set_meta",
+        "original_meta.items",
+        "original_stats.items",
+        "self._current_student_form_index",
+        "self._status",
+        "self._stop_requested",
+        "self._switch_student_form",
+        "self.log",
+        "self.read_basic_combat_stats",
+        "setattr",
+        "str",
+        "student_meta.form_indexes",
+        "student_meta.is_multi_form",
+        "student_meta.normalize_form_index"
+      ],
+      "self_state_dependencies": [
+        "_current_student_form_index",
+        "_status",
+        "_stop_requested",
+        "_switch_student_form",
+        "log",
+        "read_basic_combat_stats"
+      ],
+      "status_events": [
+        "student.form.switch"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._scan_student_fields",
+          "line": 955
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:read_skills",
+      "qualified_symbol": "StudentScannerComponent.read_skills",
+      "line": 1472,
+      "end_line": 1565,
+      "signature": "self, entry: StudentEntry",
+      "normalized_source_sha256": "e5b2dd0e88ffdd4c7da806bebde21eee9675a9d6623b0d08990387c466337c4d",
+      "called_symbols": [
+        "FieldMeta.failed",
+        "FieldMeta.ok",
+        "FieldMeta.region_missing",
+        "FieldMeta.skipped",
+        "ScanCtx",
+        "_log.debug",
+        "_log.warning",
+        "crop_region",
+        "ctx.with_step",
+        "dump_roi",
+        "entry.set_meta",
+        "getattr",
+        "int",
+        "read_skill",
+        "read_skill_check",
+        "self._asv.on_step_error",
+        "self._capture",
+        "self._click_r",
+        "self._click_student_region_and_wait",
+        "self._close_student_panel",
+        "self._esc",
+        "self._get_student_basic_capture",
+        "self._is_student_panel_title_capture",
+        "self._read_skills_from_basic",
+        "self._status",
+        "self._status_skill_value",
+        "self._wait",
+        "self.log",
+        "setattr",
+        "sr.get"
+      ],
+      "self_state_dependencies": [
+        "_active_student_panel",
+        "_asv",
+        "_capture",
+        "_click_r",
+        "_click_student_region_and_wait",
+        "_close_student_panel",
+        "_esc",
+        "_get_student_basic_capture",
+        "_is_student_panel_title_capture",
+        "_read_skills_from_basic",
+        "_status",
+        "_status_skill_value",
+        "_wait",
+        "log",
+        "r"
+      ],
+      "status_events": [
+        "skills.basic.fallback",
+        "skills.skill2.skip_star_locked",
+        "skills.skill3.skip_star_locked",
+        "skills.start",
+        "skills.summary"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._scan_student_fields",
+          "line": 939
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:read_stats",
+      "qualified_symbol": "StudentScannerComponent.read_stats",
+      "line": 2571,
+      "end_line": 2687,
+      "signature": "self, entry: StudentEntry",
+      "normalized_source_sha256": "2ce7e6224d83d8c07ed1dabb59aa75a40a714d5a356208edb4ae1c1aff83d9fc",
+      "called_symbols": [
+        "FieldMeta.inferred",
+        "FieldMeta.ok",
+        "FieldMeta.region_missing",
+        "FieldMeta.uncertain",
+        "ScanCtx",
+        "ScreenCropSet.from_image",
+        "_log.warning",
+        "additional_values.get",
+        "badges.get",
+        "crop_region",
+        "ctx.with_step",
+        "entry.set_meta",
+        "getattr",
+        "int",
+        "len",
+        "read_stat_value_result",
+        "self._click_student_region_and_wait",
+        "self._close_student_panel",
+        "self._esc",
+        "self._field_confirmed",
+        "self._is_student_panel_title_capture",
+        "self._status",
+        "self._student_stat_crops.get",
+        "self.log",
+        "setattr",
+        "sr.get"
+      ],
+      "self_state_dependencies": [
+        "_active_student_panel",
+        "_click_student_region_and_wait",
+        "_close_student_panel",
+        "_esc",
+        "_field_confirmed",
+        "_is_student_panel_title_capture",
+        "_status",
+        "_student_stat_crops",
+        "log",
+        "r"
+      ],
+      "status_events": [
+        "stats.basic_values_skip",
+        "stats.skip_condition",
+        "stats.start",
+        "stats.summary"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._scan_student_fields",
+          "line": 960
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:read_student_star",
+      "qualified_symbol": "StudentScannerComponent.read_student_star",
+      "line": 2253,
+      "end_line": 2363,
+      "signature": "self, entry: StudentEntry",
+      "normalized_source_sha256": "a4f206b752b2fe2f7902b302852fecd9b306d44fc5bc02043723bb946f2b4e04",
+      "called_symbols": [
+        "FieldMeta.failed",
+        "FieldMeta.inferred",
+        "FieldMeta.ok",
+        "FieldMeta.region_missing",
+        "FieldMeta.uncertain",
+        "ScanCtx",
+        "_log.info",
+        "_log.warning",
+        "crop_region",
+        "entry.get_meta",
+        "entry.label",
+        "entry.set_meta",
+        "int",
+        "read_basic_student_star_result",
+        "read_student_star_v5_result",
+        "self._click_student_region_and_wait",
+        "self._field_confirmed",
+        "self._get_student_basic_capture",
+        "self._get_student_basic_region",
+        "self._status",
+        "self.log",
+        "sr.get"
+      ],
+      "self_state_dependencies": [
+        "_click_student_region_and_wait",
+        "_field_confirmed",
+        "_get_student_basic_capture",
+        "_get_student_basic_region",
+        "_is_star_tab_on_capture",
+        "_status",
+        "log",
+        "r"
+      ],
+      "status_events": [
+        "star.infer_from_weapon",
+        "star.read.ok",
+        "star.read.uncertain",
+        "star.start"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._scan_student_fields",
+          "line": 931
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:read_weapon",
+      "qualified_symbol": "StudentScannerComponent.read_weapon",
+      "line": 1629,
+      "end_line": 1805,
+      "signature": "self, entry: StudentEntry",
+      "normalized_source_sha256": "0d00f038f4bcae69580f3b08c580bc65c85b06e32bbc34db7becd51366c8ed25",
+      "called_symbols": [
+        "FieldMeta",
+        "FieldMeta.failed",
+        "FieldMeta.ok",
+        "FieldMeta.region_missing",
+        "FieldMeta.skipped",
+        "FieldMeta.uncertain",
+        "crop_region",
+        "entry.get_meta",
+        "entry.set_meta",
+        "int",
+        "range",
+        "read_basic_weapon_level_result",
+        "read_basic_weapon_star_result",
+        "read_weapon_level",
+        "read_weapon_star_v5_result",
+        "self._capture",
+        "self._click_student_region_and_wait",
+        "self._close_student_panel",
+        "self._esc",
+        "self._field_confirmed",
+        "self._get_student_basic_capture",
+        "self._get_student_basic_region",
+        "self._is_student_panel_title_capture",
+        "self._status",
+        "self._wait",
+        "self.log",
+        "self.read_weapon_state",
+        "sr.get"
+      ],
+      "self_state_dependencies": [
+        "_active_student_panel",
+        "_capture",
+        "_click_student_region_and_wait",
+        "_close_student_panel",
+        "_esc",
+        "_field_confirmed",
+        "_get_student_basic_capture",
+        "_get_student_basic_region",
+        "_is_student_panel_title_capture",
+        "_status",
+        "_wait",
+        "log",
+        "r",
+        "read_weapon_state"
+      ],
+      "status_events": [
+        "weapon.basic_fast_fallback",
+        "weapon.basic_fast_success",
+        "weapon.skip_no_system",
+        "weapon.skip_not_equipped",
+        "weapon.skip_star_locked",
+        "weapon.skip_state_uncertain",
+        "weapon.start",
+        "weapon.summary"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._scan_student_fields",
+          "line": 943
+        }
+      ]
+    },
+    {
+      "ref": "../v6/core/scanner_components/student.py:read_weapon_state",
+      "qualified_symbol": "StudentScannerComponent.read_weapon_state",
+      "line": 1566,
+      "end_line": 1628,
+      "signature": "self, entry: StudentEntry",
+      "normalized_source_sha256": "deca14a18f965385d057daf725b2377096d73c96b0ac771dcba2fd4d6ee77a3b",
+      "called_symbols": [
+        "FieldMeta.failed",
+        "FieldMeta.ok",
+        "FieldMeta.region_missing",
+        "FieldMeta.uncertain",
+        "ScanCtx",
+        "_log.warning",
+        "crop_region",
+        "detect_weapon_state",
+        "entry.set_meta",
+        "self._active_blue_button_ratio",
+        "self._get_student_basic_capture",
+        "self._get_student_basic_region",
+        "self._status",
+        "self.log",
+        "sr.get"
+      ],
+      "self_state_dependencies": [
+        "_active_blue_button_ratio",
+        "_get_student_basic_capture",
+        "_get_student_basic_region",
+        "_status",
+        "log",
+        "r"
+      ],
+      "status_events": [
+        "weapon_state.equipped",
+        "weapon_state.no_system",
+        "weapon_state.start",
+        "weapon_state.uncertain",
+        "weapon_state.unlocked_not_equipped"
+      ],
+      "syntactic_call_sites": [
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent._scan_student_fields",
+          "line": 927
+        },
+        {
+          "path": "../v6/core/scanner_components/student.py",
+          "symbol": "StudentScannerComponent.read_weapon",
+          "line": 1634
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/scanner_matchers.py:EquipmentMenuCaptureAdapter.capture_equipment_menu",
+      "qualified_symbol": "EquipmentMenuCaptureAdapter.capture_equipment_menu",
+      "line": 60,
+      "end_line": 73,
+      "signature": "self, target: dict[str, Any], cancel: Event",
+      "normalized_source_sha256": "5b4c5c853992a5725cf9a3e07ed3489c6592cc8ca98f73ac54828b06f073288c",
+      "called_symbols": [
+        "ScannerError",
+        "cancel.is_set",
+        "cancel.wait",
+        "isinstance",
+        "self._center",
+        "self.capture.click",
+        "self.capture.wait_stable",
+        "self.close_equipment_menu",
+        "self.regions.get"
+      ],
+      "self_state_dependencies": [
+        "_center",
+        "capture",
+        "close_equipment_menu",
+        "regions"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 624
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/scanner_matchers.py:EquipmentMenuCaptureAdapter.close_equipment_menu",
+      "qualified_symbol": "EquipmentMenuCaptureAdapter.close_equipment_menu",
+      "line": 75,
+      "end_line": 78,
+      "signature": "self, target: dict[str, Any]",
+      "normalized_source_sha256": "794ea364657fac930d3704ceffb54e699e6048320b97037f7660a5b54b3be30b",
+      "called_symbols": [
+        "isinstance",
+        "self._center",
+        "self.capture.click",
+        "self.regions.get"
+      ],
+      "self_state_dependencies": [
+        "_center",
+        "capture",
+        "regions"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "EquipmentMenuCaptureAdapter.capture_equipment_menu",
+          "line": 72
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 630
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/scanner_matchers.py:InventoryMatcherAdapter.__call__",
+      "qualified_symbol": "InventoryMatcherAdapter.__call__",
+      "line": 848,
+      "end_line": 931,
+      "signature": "self, target: dict[str, Any], cancel: Event, progress: Callable[[int, int | None, str], None]",
+      "normalized_source_sha256": "97eb5564bbcfe47147daffe452e80186a66752634b374a9144b51c6e262195a0",
+      "called_symbols": [
+        "any",
+        "cancel.is_set",
+        "crop.close",
+        "crop.copy",
+        "entries.append",
+        "enumerate",
+        "evidence.append",
+        "evidence.extend",
+        "frame.close",
+        "image_has_visible_content",
+        "image_similarity",
+        "isinstance",
+        "len",
+        "next_frame.close",
+        "progress",
+        "range",
+        "ratio_crop",
+        "self.answer_samples.close",
+        "self.answer_samples.load_inventory",
+        "self.capture.scroll",
+        "self.capture.wait_stable",
+        "self.count_matcher.match",
+        "self.matcher.match",
+        "self.matcher.replace_user_templates",
+        "slot_crops.values",
+        "target.get"
+      ],
+      "self_state_dependencies": [
+        "answer_samples",
+        "capture",
+        "count_matcher",
+        "margin",
+        "matcher",
+        "max_pages",
+        "slots",
+        "threshold"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": []
+    },
+    {
+      "ref": "backend/core/scanner_matchers.py:SlotCountMatcher.match",
+      "qualified_symbol": "SlotCountMatcher.match",
+      "line": 316,
+      "end_line": 339,
+      "signature": "self, slot: Image.Image",
+      "normalized_source_sha256": "950fb4e1e3096fa15d26498678823520e0bdc7a0eae5acfee114240684dbb4a9",
+      "called_symbols": [
+        "''.join",
+        "CountMatch",
+        "digits.append",
+        "image_pixels",
+        "margins.append",
+        "max",
+        "min",
+        "range",
+        "round",
+        "scores.append",
+        "self._binary_iou",
+        "self._ink_mask",
+        "self.digit_box",
+        "self.templates.items",
+        "slot.crop",
+        "sorted",
+        "sum"
+      ],
+      "self_state_dependencies": [
+        "_binary_iou",
+        "_ink_mask",
+        "digit_box",
+        "margin",
+        "templates",
+        "threshold"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 539
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "InventoryMatcherAdapter.__call__",
+          "line": 876
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "InventoryMatcherAdapter.__call__",
+          "line": 892
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "InventoryMatcherAdapter.__call__",
+          "line": 881
+        },
+        {
+          "path": "backend/core/student_equipment_recognizer.py",
+          "symbol": "StudentEquipmentRecognizer.read_position_binary_level",
+          "line": 648
+        },
+        {
+          "path": "backend/core/student_scan_recognizer.py",
+          "symbol": "StudentBasicRecognizer.read_level",
+          "line": 643
+        },
+        {
+          "path": "backend/core/student_scan_recognizer.py",
+          "symbol": "StudentBasicRecognizer.read_relationship_rank",
+          "line": 696
+        },
+        {
+          "path": "backend/core/student_scan_recognizer.py",
+          "symbol": "StudentBasicRecognizer.read_weapon_level",
+          "line": 821
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/scanner_matchers.py:StudentMatcherAdapter.__call__",
+      "qualified_symbol": "StudentMatcherAdapter.__call__",
+      "line": 709,
+      "end_line": 830,
+      "signature": "self, target: dict[str, Any], cancel: Event, progress: Callable[..., None]",
+      "normalized_source_sha256": "de1655fd51ee6f7a1d2fc6a379ac8f415bdff74d17d023a8a3d10d0f63b4d4f2",
+      "called_symbols": [
+        "ScannerError",
+        "bool",
+        "callable",
+        "cancel.is_set",
+        "cancel.wait",
+        "click",
+        "depart",
+        "depart_and_navigate",
+        "getattr",
+        "isinstance",
+        "len",
+        "navigate",
+        "press_key",
+        "progress",
+        "range",
+        "results.extend",
+        "scanned[0].get",
+        "scanned[0].get('payload', {}).get",
+        "seen.add",
+        "self._close_answer_specimens",
+        "self._report_student_feedback",
+        "self._scan_current",
+        "set",
+        "target.get"
+      ],
+      "self_state_dependencies": [
+        "_DOCK_CARD_TRANSITION_SECONDS",
+        "_close_answer_specimens",
+        "_report_student_feedback",
+        "_scan_current",
+        "capture"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": []
+    },
+    {
+      "ref": "backend/core/scanner_matchers.py:StudentMatcherAdapter._canonical_student_ref",
+      "qualified_symbol": "StudentMatcherAdapter._canonical_student_ref",
+      "line": 495,
+      "end_line": 501,
+      "signature": "identity: str",
+      "normalized_source_sha256": "b93c59f743a66963062cb153cbe07efb4373fb9f8b42559b43f71bfb1e1c280a",
+      "called_symbols": [
+        "Path",
+        "student_meta.all_ids",
+        "student_meta.form_indexes",
+        "student_meta.format_form_ref",
+        "student_meta.template_path_for_form"
+      ],
+      "self_state_dependencies": [],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 540
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+      "qualified_symbol": "StudentMatcherAdapter._scan_current",
+      "line": 521,
+      "end_line": 707,
+      "signature": "self, target: dict[str, Any], cancel: Event, progress: Callable[..., None]",
+      "normalized_source_sha256": "6bf277770a186e411f9b7360db597ab41d2718a03c383e81d209f80029fbb236",
+      "called_symbols": [
+        "Observation",
+        "StudentBasicCropSet.from_frame",
+        "all",
+        "any",
+        "cancel.is_set",
+        "cancel.wait",
+        "crops.close",
+        "crops.images.get",
+        "current.items",
+        "dict",
+        "equipment_observations.items",
+        "evidence.extend",
+        "fallback.get",
+        "fallback.items",
+        "field.removeprefix",
+        "field.removeprefix('equip').split",
+        "field.removeprefix('equip').split('_', 1)[0].isdigit",
+        "frame.close",
+        "getattr",
+        "int",
+        "isinstance",
+        "menu_frame.close",
+        "observations.get",
+        "observations.items",
+        "observations.update",
+        "observations.values",
+        "progress",
+        "provenance.update",
+        "range",
+        "ratio_crop",
+        "self._activate_numeric_samples",
+        "self._canonical_student_ref",
+        "self._numeric_groups",
+        "self._report_student_feedback",
+        "self.basic_recognizer.recognize",
+        "self.capture.wait_stable",
+        "self.equipment_menu.capture_equipment_menu",
+        "self.equipment_menu.close_equipment_menu",
+        "self.equipment_menu_recognizer.recognize",
+        "self.equipment_recognizer.last_binary_shadow.items",
+        "self.equipment_recognizer.last_generated_binary_shadow.items",
+        "self.equipment_recognizer.last_position_binary_shadow.items",
+        "self.equipment_recognizer.learn_basic_level",
+        "self.equipment_recognizer.recognize",
+        "self.matcher.match",
+        "self.regions.get",
+        "self.weapon_menu.capture_weapon_menu",
+        "self.weapon_menu.close_weapon_menu",
+        "self.weapon_menu.recapture_weapon_menu",
+        "self.weapon_recognizer.read_state",
+        "self.weapon_recognizer.recognize_menu",
+        "self.weapon_recognizer.regions.get",
+        "target.get"
+      ],
+      "self_state_dependencies": [
+        "_DOCK_CARD_TRANSITION_SECONDS",
+        "_activate_numeric_samples",
+        "_canonical_student_ref",
+        "_numeric_groups",
+        "_report_student_feedback",
+        "basic_recognizer",
+        "capture",
+        "equipment_menu",
+        "equipment_menu_recognizer",
+        "equipment_recognizer",
+        "margin",
+        "matcher",
+        "regions",
+        "threshold",
+        "weapon_menu",
+        "weapon_recognizer"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter.__call__",
+          "line": 711
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter.__call__",
+          "line": 773
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/scanner_matchers.py:StudentMatcherAdapter.train_user_answer",
+      "qualified_symbol": "StudentMatcherAdapter.train_user_answer",
+      "line": 448,
+      "end_line": 492,
+      "signature": "self, profile_id: str, candidate_id: str, specimen: dict[str, Any], payload: dict[str, Any]",
+      "normalized_source_sha256": "6f7adad32a4aff245de8df43e3c4cd4ae7652edfe216daddb398cdd9572e81c2",
+      "called_symbols": [
+        "bank.add_user_template",
+        "groups.get",
+        "isinstance",
+        "len",
+        "mask.close",
+        "mask.getbbox",
+        "payload.get",
+        "self._numeric_spec",
+        "self.answer_samples.save_numeric",
+        "source_digit_mask",
+        "specimen.get",
+        "str",
+        "values.get",
+        "zip"
+      ],
+      "self_state_dependencies": [
+        "_numeric_spec",
+        "answer_samples",
+        "basic_recognizer",
+        "equipment_recognizer"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_runtime.py",
+          "symbol": "build_scanner_service.train_answer",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/scanner_matchers.py:TemplateMatcher._match_templates",
+      "qualified_symbol": "TemplateMatcher._match_templates",
+      "line": 243,
+      "end_line": 257,
+      "signature": "self, image: Image.Image, templates: list[tuple[str, Image.Image]], center_trim: float, source: str",
+      "normalized_source_sha256": "7b8026aa89dbb7581068fa22e083255998f2194a5f7878a874f87b7962eb5303",
+      "called_symbols": [
+        "Match",
+        "best_by_identity.get",
+        "best_by_identity.items",
+        "image_similarity",
+        "len",
+        "max",
+        "self._center",
+        "sorted"
+      ],
+      "self_state_dependencies": [
+        "_center"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "TemplateMatcher.match",
+          "line": 221
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/scanner_matchers.py:TemplateMatcher.match",
+      "qualified_symbol": "TemplateMatcher.match",
+      "line": 209,
+      "end_line": 221,
+      "signature": "self, image: Image.Image, *, center_trim: float=0.0, prefer_user: bool=False, threshold: float=0.0, margin: float=0.0",
+      "normalized_source_sha256": "1932cb016603553c41604ca4eece7d03b8e62aa0c4b37d01add3795c40c425a2",
+      "called_symbols": [
+        "self._match_preferred",
+        "self._match_templates"
+      ],
+      "self_state_dependencies": [
+        "_lock",
+        "_match_preferred",
+        "_match_templates",
+        "templates",
+        "user_templates"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 539
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "InventoryMatcherAdapter.__call__",
+          "line": 876
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "InventoryMatcherAdapter.__call__",
+          "line": 892
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "InventoryMatcherAdapter.__call__",
+          "line": 881
+        },
+        {
+          "path": "backend/core/student_equipment_recognizer.py",
+          "symbol": "StudentEquipmentRecognizer.read_position_binary_level",
+          "line": 648
+        },
+        {
+          "path": "backend/core/student_scan_recognizer.py",
+          "symbol": "StudentBasicRecognizer.read_level",
+          "line": 643
+        },
+        {
+          "path": "backend/core/student_scan_recognizer.py",
+          "symbol": "StudentBasicRecognizer.read_relationship_rank",
+          "line": 696
+        },
+        {
+          "path": "backend/core/student_scan_recognizer.py",
+          "symbol": "StudentBasicRecognizer.read_weapon_level",
+          "line": 821
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/scanner_matchers.py:WeaponMenuCaptureAdapter.capture_weapon_menu",
+      "qualified_symbol": "WeaponMenuCaptureAdapter.capture_weapon_menu",
+      "line": 95,
+      "end_line": 108,
+      "signature": "self, target: dict[str, Any], cancel: Event",
+      "normalized_source_sha256": "23ba3efb486e9243862c1c69772d4845876e54b5761f32767b27f5ea222b6c92",
+      "called_symbols": [
+        "ScannerError",
+        "cancel.is_set",
+        "cancel.wait",
+        "isinstance",
+        "self._center",
+        "self.capture.click",
+        "self.capture.wait_stable",
+        "self.close_weapon_menu",
+        "self.regions.get"
+      ],
+      "self_state_dependencies": [
+        "_center",
+        "capture",
+        "close_weapon_menu",
+        "regions"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 579
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/scanner_matchers.py:WeaponMenuCaptureAdapter.close_weapon_menu",
+      "qualified_symbol": "WeaponMenuCaptureAdapter.close_weapon_menu",
+      "line": 115,
+      "end_line": 118,
+      "signature": "self, target: dict[str, Any]",
+      "normalized_source_sha256": "0e83688162c7bb7c0681e89922c451b4797e73c77c86d2a73c49f28e22505132",
+      "called_symbols": [
+        "isinstance",
+        "self._center",
+        "self.capture.click",
+        "self.regions.get"
+      ],
+      "self_state_dependencies": [
+        "_center",
+        "capture",
+        "regions"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "WeaponMenuCaptureAdapter.capture_weapon_menu",
+          "line": 107
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 594
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/student_candidate_validation.py:StudentCandidateValidator.__call__",
+      "qualified_symbol": "StudentCandidateValidator.__call__",
+      "line": 33,
+      "end_line": 229,
+      "signature": "self, payload: Mapping[str, Any], profile_id: str | None, relationship_ranks: Mapping[int, int] | None=None",
+      "normalized_source_sha256": "abc1e516acbcd4b469fce08effc0717bb53abb1bbcc09418a75224d80405c03d",
+      "called_symbols": [
+        "(relationship_ranks or {}).items",
+        "EquipmentAbsentV1",
+        "EquipmentLevelV1",
+        "PotentialLevelsV1",
+        "RelationshipLevelsV1",
+        "STAT_FIELDS.items",
+        "StudentStatBuildV1",
+        "UniqueWeaponLevelV1",
+        "alternate_ranks.get",
+        "alternate_ranks.setdefault",
+        "alternate_student_ids.get",
+        "any",
+        "asdict",
+        "calculate_student_stats",
+        "details['delta'].values",
+        "details['dependencies'].append",
+        "details['dependencies'].extend",
+        "equipment.append",
+        "existing.get",
+        "existing.get('values', {}).get",
+        "existing_values.get",
+        "frozenset",
+        "isinstance",
+        "len",
+        "missing_potential_fields.append",
+        "owned_ids.add",
+        "payload.get",
+        "range",
+        "relationship_rows.append",
+        "result.contributions.get",
+        "result.contributions.items",
+        "result.values.items",
+        "self._evidence",
+        "self._tier",
+        "self.repository.get_state",
+        "self.repository.get_state(profile_id).get",
+        "set",
+        "str",
+        "student_stat_record",
+        "tuple",
+        "values.get",
+        "weapon_dependencies.append"
+      ],
+      "self_state_dependencies": [
+        "_evidence",
+        "_tier",
+        "catalog",
+        "repository"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": []
+    },
+    {
+      "ref": "backend/core/student_equipment_recognizer.py:EquipmentMenuRecognizer.recognize",
+      "qualified_symbol": "EquipmentMenuRecognizer.recognize",
+      "line": 1532,
+      "end_line": 1563,
+      "signature": "self, frame: Image.Image, slots: Iterable[int]",
+      "normalized_source_sha256": "e6452c9529326c20e06381531be4dd647fbc5a6df4d0200848e6e31bd2264814",
+      "called_symbols": [
+        "''.join",
+        "Observation",
+        "_ratio_crop",
+        "dict.fromkeys",
+        "digit_scores.append",
+        "digits.append",
+        "equipment_level_matches_tier",
+        "int",
+        "isinstance",
+        "key.split",
+        "key.startswith",
+        "min",
+        "self._rank",
+        "self.digits.items",
+        "self.flags.items",
+        "self.regions.get",
+        "self.tiers.items",
+        "str",
+        "tuple"
+      ],
+      "self_state_dependencies": [
+        "_rank",
+        "digits",
+        "flags",
+        "regions",
+        "tiers"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 555
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 605
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 627
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/student_equipment_recognizer.py:StudentEquipmentRecognizer.learn_basic_level",
+      "qualified_symbol": "StudentEquipmentRecognizer.learn_basic_level",
+      "line": 1262,
+      "end_line": 1285,
+      "signature": "self, crop: Image.Image | None, *, slot: int, value: int, region: dict[str, Any]",
+      "normalized_source_sha256": "d96d3739f2d8a26bdd782c95a93d52ee595be46e740a7825876bf1ab8fcd5885",
+      "called_symbols": [
+        "_dark_ink_mask",
+        "_normalize_mask",
+        "cell.close",
+        "enumerate",
+        "len",
+        "samples.append",
+        "samples.pop",
+        "samples.pop(0).close",
+        "self._empirical.setdefault",
+        "self._empirical.setdefault((slot, position), {}).setdefault",
+        "self._level_cells",
+        "str",
+        "zip"
+      ],
+      "self_state_dependencies": [
+        "_empirical",
+        "_level_cells",
+        "metrics"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 645
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/student_equipment_recognizer.py:StudentEquipmentRecognizer.read_tier",
+      "qualified_symbol": "StudentEquipmentRecognizer.read_tier",
+      "line": 1374,
+      "end_line": 1382,
+      "signature": "self, crop: Image.Image | None, family: str, region: dict[str, Any]",
+      "normalized_source_sha256": "bc88a495cf2d900a3de45e144e3c73aa8b6c9df36ca8b284df2f0eb2377bfa28",
+      "called_symbols": [
+        "Observation",
+        "self._read_synthesized_tier",
+        "self.read_direct_tier"
+      ],
+      "self_state_dependencies": [
+        "_read_synthesized_tier",
+        "read_direct_tier"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/student_equipment_recognizer.py",
+          "symbol": "StudentEquipmentRecognizer.recognize",
+          "line": 1430
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/student_equipment_recognizer.py:StudentEquipmentRecognizer.recognize",
+      "qualified_symbol": "StudentEquipmentRecognizer.recognize",
+      "line": 1396,
+      "end_line": 1481,
+      "signature": "self, crops: StudentBasicCropSet, *, student_ref: str, student_level: int | None, favorite_growth_active: bool | None=None",
+      "normalized_source_sha256": "42305e9e74596b8fe2481f6ae68718ba51f746d6be92410866c0298fef8b539d",
+      "called_symbols": [
+        "Observation",
+        "crops.cell_groups.get",
+        "crops.images.get",
+        "crops.regions.get",
+        "equipment_level_matches_tier",
+        "int",
+        "len",
+        "self.empty_dot",
+        "self.read_binary_level",
+        "self.read_empirical_level",
+        "self.read_favorite",
+        "self.read_generated_binary_level",
+        "self.read_generated_level",
+        "self.read_position_binary_level",
+        "self.read_tier",
+        "str",
+        "student_meta.equipment_slots",
+        "student_meta.favorite_item_enabled",
+        "student_meta.split_form_ref",
+        "tuple",
+        "unresolved.append"
+      ],
+      "self_state_dependencies": [
+        "empty_dot",
+        "last_binary_shadow",
+        "last_generated_binary_shadow",
+        "last_position_binary_shadow",
+        "read_binary_level",
+        "read_empirical_level",
+        "read_favorite",
+        "read_generated_binary_level",
+        "read_generated_level",
+        "read_position_binary_level",
+        "read_tier"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 555
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 605
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 627
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.read_level",
+      "qualified_symbol": "StudentBasicRecognizer.read_level",
+      "line": 637,
+      "end_line": 678,
+      "signature": "self, crop: Image.Image | None, studio_cells: tuple[Image.Image, ...] | None=None",
+      "normalized_source_sha256": "1803b60f94c4bcc3cc6e1fb548db2921d5e43d99dcc3c918dd4bc9d55882603e",
+      "called_symbols": [
+        "''.join",
+        "Observation",
+        "_luminance",
+        "_mask_from_predicate",
+        "_normalize_mask",
+        "_pixels",
+        "_rank_glyph",
+        "any",
+        "crop.convert",
+        "int",
+        "mask.crop",
+        "max",
+        "min",
+        "self._studio_numeric_observation",
+        "self.studio_numeric_bank.match",
+        "str",
+        "sum"
+      ],
+      "self_state_dependencies": [
+        "_studio_numeric_observation",
+        "level_templates",
+        "studio_numeric_bank"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/student_scan_recognizer.py",
+          "symbol": "StudentBasicRecognizer.recognize",
+          "line": 915
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.read_skill",
+      "qualified_symbol": "StudentBasicRecognizer.read_skill",
+      "line": 564,
+      "end_line": 607,
+      "signature": "self, crop: Image.Image | None, *, is_ex: bool",
+      "normalized_source_sha256": "61e21dc5ef67ff78a4cb85ef9e9540a505abf13834896b3e21a1b82b0d7dd4a7",
+      "called_symbols": [
+        "Observation",
+        "_ncc_difference_score",
+        "_skill_text_feature",
+        "_skill_ui_feature",
+        "crop_features.setdefault",
+        "int",
+        "len",
+        "max",
+        "self.skill_templates[group].items",
+        "self.skill_templates[group].values",
+        "sorted"
+      ],
+      "self_state_dependencies": [
+        "skill_templates"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/student_scan_recognizer.py",
+          "symbol": "StudentBasicRecognizer.recognize",
+          "line": 929
+        },
+        {
+          "path": "backend/core/student_scan_recognizer.py",
+          "symbol": "StudentBasicRecognizer.recognize",
+          "line": 930
+        },
+        {
+          "path": "backend/core/student_scan_recognizer.py",
+          "symbol": "StudentBasicRecognizer.recognize",
+          "line": 931
+        },
+        {
+          "path": "backend/core/student_scan_recognizer.py",
+          "symbol": "StudentBasicRecognizer.recognize",
+          "line": 932
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.read_student_star",
+      "qualified_symbol": "StudentBasicRecognizer.read_student_star",
+      "line": 801,
+      "end_line": 813,
+      "signature": "self, crop: Image.Image | None",
+      "normalized_source_sha256": "d47223edb1fbd04d01b678979dec495a71c9f3dfe84d0eb82477c35111965d31",
+      "called_symbols": [
+        "Observation",
+        "abs",
+        "max",
+        "min",
+        "round",
+        "self._color_bbox"
+      ],
+      "self_state_dependencies": [
+        "_color_bbox"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/student_scan_recognizer.py",
+          "symbol": "StudentBasicRecognizer.recognize",
+          "line": 928
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.recognize",
+      "qualified_symbol": "StudentBasicRecognizer.recognize",
+      "line": 913,
+      "end_line": 948,
+      "signature": "self, crops: StudentBasicCropSet",
+      "normalized_source_sha256": "fe31edb3049ae73312b68962824bf5548992757dade565760862b9b36bece9c0",
+      "called_symbols": [
+        "Observation",
+        "all",
+        "crops.cell_groups.get",
+        "crops.images.get",
+        "min",
+        "self.read_combat",
+        "self.read_level",
+        "self.read_relationship_rank",
+        "self.read_skill",
+        "self.read_student_star",
+        "self.read_weapon_level",
+        "self.read_weapon_star"
+      ],
+      "self_state_dependencies": [
+        "read_combat",
+        "read_level",
+        "read_relationship_rank",
+        "read_skill",
+        "read_student_star",
+        "read_weapon_level",
+        "read_weapon_star"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 555
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 605
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 627
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/student_weapon_recognizer.py:StudentWeaponRecognizer.read_state",
+      "qualified_symbol": "StudentWeaponRecognizer.read_state",
+      "line": 79,
+      "end_line": 118,
+      "signature": "self, crop: Image.Image | None, *, student_star: int | None",
+      "normalized_source_sha256": "fcda6644c769a23978319cbabc6898a6992aa76c6251b985c90d795525efa35a",
+      "called_symbols": [
+        "ImageStat.Stat",
+        "Observation",
+        "crop.convert",
+        "gray.close",
+        "isinstance",
+        "self._rank"
+      ],
+      "self_state_dependencies": [
+        "_rank",
+        "state_templates"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 557
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/student_weapon_recognizer.py:StudentWeaponRecognizer.recognize_menu",
+      "qualified_symbol": "StudentWeaponRecognizer.recognize_menu",
+      "line": 120,
+      "end_line": 182,
+      "signature": "self, frame: Image.Image",
+      "normalized_source_sha256": "8f5b230e57230cf3eee7e569365821350109a5678b2cc8f6f04997a6bcbabd4e",
+      "called_symbols": [
+        "''.join",
+        "Observation",
+        "crop.close",
+        "digit_margins.append",
+        "digit_scores.append",
+        "digits.append",
+        "digits.clear",
+        "identity.split",
+        "identity.startswith",
+        "int",
+        "isinstance",
+        "label.isdigit",
+        "min",
+        "ratio_crop",
+        "self._rank",
+        "self.level_templates.items",
+        "self.regions.get",
+        "star_crop.close",
+        "star_label.isdigit"
+      ],
+      "self_state_dependencies": [
+        "_rank",
+        "level_templates",
+        "regions",
+        "star_templates"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 585
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.capture",
+      "qualified_symbol": "WindowsCaptureInputAdapter.capture",
+      "line": 108,
+      "end_line": 149,
+      "signature": "self, target: dict[str, Any]",
+      "normalized_source_sha256": "bbc9f8969669f894c054845c637fb6e021e0cd06093d79d32a606067f48183e3",
+      "called_symbols": [
+        "Image.frombuffer",
+        "Image.frombuffer('RGB', (width, height), buffer, 'raw', 'BGRX', 0, 1).copy",
+        "ScannerError",
+        "_BITMAPINFO",
+        "ctypes.byref",
+        "ctypes.create_string_buffer",
+        "ctypes.sizeof",
+        "gdi32.BitBlt",
+        "gdi32.CreateCompatibleBitmap",
+        "gdi32.CreateCompatibleDC",
+        "gdi32.DeleteDC",
+        "gdi32.DeleteObject",
+        "gdi32.GetDIBits",
+        "gdi32.SelectObject",
+        "self._hwnd",
+        "self._libraries",
+        "self.diagnose",
+        "user32.GetClientRect",
+        "user32.GetDC",
+        "user32.PrintWindow",
+        "user32.ReleaseDC",
+        "wintypes.RECT"
+      ],
+      "self_state_dependencies": [
+        "BI_RGB",
+        "DIB_RGB_COLORS",
+        "PW_CLIENTONLY",
+        "PW_RENDERFULLCONTENT",
+        "SRCCOPY",
+        "_hwnd",
+        "_libraries",
+        "diagnose"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/windows_scanner_adapter.py",
+          "symbol": "WindowsCaptureInputAdapter.wait_stable",
+          "line": 158
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.click",
+      "qualified_symbol": "WindowsCaptureInputAdapter.click",
+      "line": 169,
+      "end_line": 181,
+      "signature": "self, target: dict[str, Any], x_ratio: float, y_ratio: float",
+      "normalized_source_sha256": "c8f5f81130c953c00ac8d786b80414322b490cf3361662469e19c8b28bbabf78",
+      "called_symbols": [
+        "ScannerError",
+        "ctypes.byref",
+        "max",
+        "min",
+        "round",
+        "self._hwnd",
+        "self._libraries",
+        "user32.GetClientRect",
+        "user32.PostMessageW",
+        "wintypes.RECT"
+      ],
+      "self_state_dependencies": [
+        "MK_LBUTTON",
+        "WM_LBUTTONDOWN",
+        "WM_LBUTTONUP",
+        "_hwnd",
+        "_libraries"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "EquipmentMenuCaptureAdapter.capture_equipment_menu",
+          "line": 66
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "EquipmentMenuCaptureAdapter.close_equipment_menu",
+          "line": 78
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "WeaponMenuCaptureAdapter.capture_weapon_menu",
+          "line": 101
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "WeaponMenuCaptureAdapter.close_weapon_menu",
+          "line": 118
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter.__call__.navigate",
+          "line": 727
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter.__call__",
+          "line": 788
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.press_key",
+      "qualified_symbol": "WindowsCaptureInputAdapter.press_key",
+      "line": 183,
+      "end_line": 234,
+      "signature": "self, target: dict[str, Any], key: str",
+      "normalized_source_sha256": "f3ceea2f05e9fb126f37a38266863ce04cfd1e819d9dbd94a740b183d6548156",
+      "called_symbols": [
+        "ScannerError",
+        "bool",
+        "int",
+        "self._hwnd",
+        "self._libraries",
+        "sleep",
+        "user32.BringWindowToTop",
+        "user32.GetForegroundWindow",
+        "user32.MapVirtualKeyW",
+        "user32.PostMessageW",
+        "user32.SetActiveWindow",
+        "user32.SetForegroundWindow",
+        "user32.ShowWindow",
+        "user32.keybd_event"
+      ],
+      "self_state_dependencies": [
+        "KEYEVENTF_EXTENDEDKEY",
+        "KEYEVENTF_KEYUP",
+        "MAPVK_VK_TO_VSC",
+        "SW_RESTORE",
+        "VK_RIGHT",
+        "WM_KEYDOWN",
+        "WM_KEYUP",
+        "_hwnd",
+        "_libraries"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter.__call__.navigate",
+          "line": 724
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.scroll",
+      "qualified_symbol": "WindowsCaptureInputAdapter.scroll",
+      "line": 236,
+      "end_line": 241,
+      "signature": "self, target: dict[str, Any], delta: int",
+      "normalized_source_sha256": "4d811fe6aa5fb4a97d56e951b61894f01579ad40ee0b68d6411f1321ad12f1bd",
+      "called_symbols": [
+        "ScannerError",
+        "ctypes.c_short",
+        "self._hwnd",
+        "self._libraries",
+        "user32.PostMessageW"
+      ],
+      "self_state_dependencies": [
+        "WM_MOUSEWHEEL",
+        "_hwnd",
+        "_libraries"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "InventoryMatcherAdapter.__call__",
+          "line": 908
+        }
+      ]
+    },
+    {
+      "ref": "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.wait_stable",
+      "qualified_symbol": "WindowsCaptureInputAdapter.wait_stable",
+      "line": 151,
+      "end_line": 167,
+      "signature": "self, target: dict[str, Any], cancel: Event, timeout: float=2.0",
+      "normalized_source_sha256": "0f6f185420c88d9a1f9db24b2d7a6958d0ec0a3c312f0cf36afe3ef99e803418",
+      "called_symbols": [
+        "ScannerError",
+        "cancel.is_set",
+        "cancel.wait",
+        "image_similarity",
+        "monotonic",
+        "self.capture"
+      ],
+      "self_state_dependencies": [
+        "capture"
+      ],
+      "status_events": [],
+      "syntactic_call_sites": [
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "EquipmentMenuCaptureAdapter.capture_equipment_menu",
+          "line": 70
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "WeaponMenuCaptureAdapter.capture_weapon_menu",
+          "line": 105
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "WeaponMenuCaptureAdapter.recapture_weapon_menu",
+          "line": 113
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "StudentMatcherAdapter._scan_current",
+          "line": 525
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "InventoryMatcherAdapter.__call__",
+          "line": 849
+        },
+        {
+          "path": "backend/core/scanner_matchers.py",
+          "symbol": "InventoryMatcherAdapter.__call__",
+          "line": 909
+        }
+      ]
+    }
+  ]
+}

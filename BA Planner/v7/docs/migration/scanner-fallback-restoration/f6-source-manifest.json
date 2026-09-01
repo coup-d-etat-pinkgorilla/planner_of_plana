@@ -1,0 +1,87 @@
+{
+  "phase": "F6",
+  "recorded_on": "2026-08-31",
+  "note": "F0-F5 snapshots unchanged",
+  "files": [
+    {
+      "path": "backend/core/student_skill_recognizer.py",
+      "sha256": "60d779cfbbe8f8f45d8b07ddb89b4d11fb8ca53823fbf5376b801500c88dc63b"
+    },
+    {
+      "path": "backend/core/scanner_matchers.py",
+      "sha256": "2dd8728198b2cf7a3204e21b6cc75a2a582b1dc8003b9350dc747c61e05d2c2c"
+    },
+    {
+      "path": "backend/core/scanner_runtime.py",
+      "sha256": "67ce39872a11842f9f9ee07e9eef00003f61a459f65ba8ca83f9a6b50b120281"
+    },
+    {
+      "path": "backend/core/student_candidate_validation.py",
+      "sha256": "19029ac4cec1615c6bb405bc05207ab99fa84ec793e5af6f0a17d236b9954738"
+    },
+    {
+      "path": "backend/core/recognition_assets.py",
+      "sha256": "f10494d3c31a297fd07d53f738ea633432181b8228cd27f50f891e3ec5b7a9b5"
+    },
+    {
+      "path": "backend/core/student_panel_recovery.py",
+      "sha256": "7a23a62ab0a8e3c3ed53eba47d43b58a4cda238f61df12da262cef06ad978b49"
+    },
+    {
+      "path": "backend/tests/test_student_skill_f6.py",
+      "sha256": "944dc7eb499870553bdd3a65159f88a17b9a38efec501ae7687921b741f3b229"
+    },
+    {
+      "path": "backend/tests/test_recognition_assets.py",
+      "sha256": "5272b66403efb2841e06d55f49783b12ced86065fb126c300ebb6927d79bd1fe"
+    },
+    {
+      "path": "backend/tests/test_scanner_stdio_transport.py",
+      "sha256": "3b9558e22d356eeb34ca6e80f395226073b95deaa61ecbb92129914580794ae3"
+    },
+    {
+      "path": "backend/tests/fixtures/student_skill_f6_v6_parity.json",
+      "sha256": "c8acbd9577df1bf6d0b0e19910059997cc4f68282e6063e1a699c74346afe232"
+    },
+    {
+      "path": "backend/tests/fixtures/student_skill_f6_live/manifest.json",
+      "sha256": "156b18ed788ef47be3b6481d4875977667dda5c44058ae5c69b83cd1b2f41b88"
+    },
+    {
+      "path": "backend/assets/recognition/v1/student_skill_manifest.json",
+      "sha256": "79ac3025145f30206c633de39f9516ee1fdedcd73eb4ad01682fadd3dfe87b0d"
+    },
+    {
+      "path": "backend/assets/recognition/v1/regions/student_skill_regions.json",
+      "sha256": "be8836412e74fdc72fe05a2632c78b2688151a812762141c6b8644c6adec4b42"
+    },
+    {
+      "path": "backend/tools/sync_student_skill_f6_assets.py",
+      "sha256": "691f74f9be7dae9cc541db9e38c7dc4c7f3dc3570d54c167216aca6e7c909d71"
+    },
+    {
+      "path": "backend/tools/export_student_skill_f6_fixtures.py",
+      "sha256": "275fb7bde337c1c1ca26c4c96d4ce462192f5ac18f56a0883169bd865d8cd7de"
+    },
+    {
+      "path": "backend/tools/verify_student_skill_live.py",
+      "sha256": "49c2bcf63639a83460b3b0c0c1e8cf648b8227e31f94ea1a8834e111547bc013"
+    },
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "sha256": "332e5488f90a2d9bc24e3c0e12167d777b1f810e35c5501db941e2d58407839c"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "sha256": "ce56ebf9ac4ab3c22398938d7c45973d7686785be5e0a2607ef94832290ad2a2"
+    },
+    {
+      "path": "../v6/regions/student_skillmenu_regions.json",
+      "sha256": "1f1ed23c1c65ff2df8f00e9be81f78800d8c2cc57fcfbdc5585ef74e761f6f27"
+    },
+    {
+      "path": "../v6/regions/student_data_regions.json",
+      "sha256": "defacffbaafe6e25484479a4ee6fa024174e843f5445fca7c9f8a910831f11e5"
+    }
+  ]
+}

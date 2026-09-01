@@ -1,0 +1,48 @@
+{
+  "size": [
+    1280,
+    720
+  ],
+  "source": "equipment",
+  "original_selected": 0,
+  "error": {
+    "code": "cancelled",
+    "message": "inventory detail read cancelled after safe restore"
+  },
+  "frames": [
+    "frame-00.png",
+    "frame-01.png",
+    "frame-02.png",
+    "frame-03.png",
+    "frame-04.png",
+    "frame-05.png",
+    "frame-06.png"
+  ],
+  "inputs": [
+    {
+      "x": 0.8383,
+      "y": 0.5687,
+      "cleanup": false
+    },
+    {
+      "x": 0.5828,
+      "y": 0.2875,
+      "cleanup": true
+    }
+  ],
+  "trace": [
+    {
+      "input": "select_slot",
+      "slot": 13,
+      "cleanup": false
+    },
+    {
+      "input": "select_slot",
+      "slot": 0,
+      "cleanup": true
+    },
+    {
+      "restored": 0
+    }
+  ]
+}

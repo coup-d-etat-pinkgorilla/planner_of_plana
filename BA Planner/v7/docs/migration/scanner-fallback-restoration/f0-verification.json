@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "phase": "F0",
+  "status": "complete",
+  "python": {
+    "command": "py -3.11 -m unittest discover -s tests -v",
+    "cwd": "backend",
+    "tests": 290,
+    "seconds": 95.973,
+    "result": "OK"
+  },
+  "checks": {
+    "manifest_integrity": "passed:24 rows/65 symbols/26 source files/19 feedback images/226 evidence files",
+    "codealmanac_validate": "passed",
+    "codealmanac_health": "passed",
+    "git_diff_check": "passed",
+    "python_tools_compile": "passed",
+    "measured_summary_assertions": "passed"
+  },
+  "not_run": [
+    "live game input/scan",
+    "Flutter analyze/tests/release; no protocol/UI changes"
+  ],
+  "artifacts": [
+    {
+      "path": "backend/tests/fixtures/scanner_fallback_restoration/decision-contracts.json",
+      "sha256": "580f304d51955dae704517254af0c3b90d5e99f622a11ef55cb47d731d3d91e6"
+    },
+    {
+      "path": "backend/tests/fixtures/scanner_fallback_restoration/evidence-catalog.json",
+      "sha256": "cf4efca1946f7c16022118d15a9699a360cc7b763588399e9af628588b781b26"
+    },
+    {
+      "path": "backend/tests/fixtures/scanner_fallback_restoration/feedback1-manifest.json",
+      "sha256": "5ad9dcd3e8afcf19140826b4cf96ed2b886eda2eba40ee1651fe6ae67018cfaf"
+    },
+    {
+      "path": "backend/tests/fixtures/scanner_fallback_restoration/restoration-matrix.json",
+      "sha256": "0923fef1fcaf0e8f18030beb8c56237b67a09d82ec3f5ee4f7f51a46168e185c"
+    },
+    {
+      "path": "docs/migration/scanner-fallback-restoration/dependencies-and-decisions.md",
+      "sha256": "1ca63675441781cf34db173d9fca3a5c6f43a6e99a536dd5385747994b3eb9af"
+    },
+    {
+      "path": "docs/migration/scanner-fallback-restoration/f0-archive.json",
+      "sha256": "8d5136b83d1ee8b398a9e39d4f42b5bbaa8bd2f9088288941ee0101c4cead63c"
+    },
+    {
+      "path": "docs/migration/scanner-fallback-restoration/f0-archive.png",
+      "sha256": "34065a31069040830c5f59cb8d9006a3a79172d0e687680181f48d0ad49811d4"
+    },
+    {
+      "path": "docs/migration/scanner-fallback-restoration/f0-baseline.json",
+      "sha256": "5428db76df66165b645e89f317040068625494e537c7b441dc702e2bce8b7d46"
+    },
+    {
+      "path": "docs/migration/scanner-fallback-restoration/f0-diagnostic-replay.json",
+      "sha256": "65aefbbd328aea4f36be3eefe5a36eb830a00fb5841ff7693a5ff8f39085e6a6"
+    },
+    {
+      "path": "docs/migration/scanner-fallback-restoration/f0-python-tests.txt",
+      "sha256": "e8381728e9005eb7fd85db4644f36513016d727d9cc28989598cbe4a367c9c7f"
+    },
+    {
+      "path": "docs/migration/scanner-fallback-restoration/README.md",
+      "sha256": "e9bfa4e9f5e35fa0da125e3346d933b182493d32ba90190a796ab3aeb1f58dbe"
+    },
+    {
+      "path": "docs/migration/scanner-fallback-restoration/source-manifest.json",
+      "sha256": "d87d3635c955b19b3df91c88f71de9fc651a55bc27be5baa74e1227377b8e475"
+    }
+  ]
+}

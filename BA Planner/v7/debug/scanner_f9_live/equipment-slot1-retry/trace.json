@@ -1,0 +1,58 @@
+{
+  "size": [
+    1280,
+    720
+  ],
+  "source": "equipment",
+  "original_selected": 0,
+  "result": {
+    "identity": "Equipment_Icon_Exp_2",
+    "score": 0.9723758595560734,
+    "margin": 0.11543567909390395,
+    "count": {
+      "value": null,
+      "score": 0.8575242288608245,
+      "reason": "weak_digit_match",
+      "source": "inventory_detail_count"
+    },
+    "source": "inventory_detail_template"
+  },
+  "frames": [
+    "frame-00.png",
+    "frame-01.png",
+    "frame-02.png",
+    "frame-03.png",
+    "frame-04.png",
+    "frame-05.png",
+    "frame-06.png",
+    "frame-07.png",
+    "frame-08.png"
+  ],
+  "inputs": [
+    {
+      "x": 0.668,
+      "y": 0.2875,
+      "cleanup": false
+    },
+    {
+      "x": 0.5828,
+      "y": 0.2875,
+      "cleanup": true
+    }
+  ],
+  "trace": [
+    {
+      "input": "select_slot",
+      "slot": 1,
+      "cleanup": false
+    },
+    {
+      "input": "select_slot",
+      "slot": 0,
+      "cleanup": true
+    },
+    {
+      "restored": 0
+    }
+  ]
+}

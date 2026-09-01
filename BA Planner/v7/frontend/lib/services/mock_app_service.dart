@@ -264,6 +264,7 @@ class MockAppService
     String targetId, {
     String? profileId,
     StudentScanMode studentScanMode = StudentScanMode.single,
+    InventoryScanProfile? inventoryScanProfile,
   }) async {
     final target = _scannerTargets.where((item) => item.id == targetId);
     if (target.isEmpty || target.single.status != ScannerTargetStatus.ready) {

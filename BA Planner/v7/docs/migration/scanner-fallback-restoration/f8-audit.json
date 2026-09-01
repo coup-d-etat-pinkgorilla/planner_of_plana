@@ -1,0 +1,162 @@
+{
+  "asset_status": {
+    "ready": true,
+    "manifest_version": 1,
+    "source_version": "v6-catalog-v7-layout-2026-07-29",
+    "asset_count": 2005,
+    "missing": [],
+    "corrupt": [],
+    "supported_resolutions": [
+      [
+        1280,
+        720
+      ],
+      [
+        1920,
+        1080
+      ],
+      [
+        2560,
+        1440
+      ]
+    ]
+  },
+  "source_hashes_verified": 22,
+  "previous_snapshot_verified": true,
+  "native_hashes_verified": 7,
+  "native_results": [
+    {
+      "file": "lobby-calibration.png",
+      "state": "lobby",
+      "expected_state": "lobby"
+    },
+    {
+      "file": "lobby-verification.png",
+      "state": "lobby",
+      "expected_state": "lobby"
+    },
+    {
+      "file": "lobby-hidden.png",
+      "state": "unknown",
+      "expected_state": "unknown"
+    },
+    {
+      "file": "student-list.png",
+      "state": "student_list",
+      "expected_state": "student_list"
+    },
+    {
+      "file": "mika.png",
+      "state": "basic",
+      "expected_state": "basic",
+      "portrait_only": {
+        "identity": "mika",
+        "score": 0.990701734976398,
+        "margin": 0.05884012459150334,
+        "accepted": true
+      },
+      "resolved": {
+        "identity": "mika",
+        "source": "student_texture_template",
+        "score": 0.990701734976398,
+        "margin": 0.05884012459150334
+      },
+      "attributes": {}
+    },
+    {
+      "file": "hoshino-form1.png",
+      "state": "basic",
+      "expected_state": "basic",
+      "portrait_only": {
+        "identity": "hoshino_battle",
+        "score": 0.9917643938362382,
+        "margin": 0.014649855891430641,
+        "accepted": false
+      },
+      "resolved": {
+        "identity": "hoshino_battle",
+        "source": "student_texture_attribute_form",
+        "score": 0.9917643938362382,
+        "margin": 0.15159881082062454
+      },
+      "attributes": {
+        "attack_type": "mystic",
+        "defense_type": "heavy",
+        "position": "front",
+        "role": "tanker"
+      }
+    },
+    {
+      "file": "hoshino-form2.png",
+      "state": "basic",
+      "expected_state": "basic",
+      "portrait_only": {
+        "identity": "hoshino_battle_1",
+        "score": 0.9861302593954249,
+        "margin": 0.004476301515976777,
+        "accepted": false
+      },
+      "resolved": {
+        "identity": "hoshino_battle#2",
+        "source": "student_texture_attribute_form",
+        "score": 0.9861302593954249,
+        "margin": 0.14809240536492374
+      },
+      "attributes": {
+        "attack_type": "mystic",
+        "defense_type": "heavy",
+        "position": "front",
+        "role": "dealer"
+      }
+    }
+  ],
+  "synthetic_dim_negatives": [
+    {
+      "file": "lobby-verification",
+      "factor": 0.4,
+      "state": "unknown"
+    },
+    {
+      "file": "lobby-verification",
+      "factor": 0.6,
+      "state": "unknown"
+    },
+    {
+      "file": "lobby-verification",
+      "factor": 0.8,
+      "state": "unknown"
+    },
+    {
+      "file": "student-list",
+      "factor": 0.4,
+      "state": "unknown"
+    },
+    {
+      "file": "student-list",
+      "factor": 0.6,
+      "state": "unknown"
+    },
+    {
+      "file": "student-list",
+      "factor": 0.8,
+      "state": "unknown"
+    },
+    {
+      "file": "hoshino-form1",
+      "factor": 0.4,
+      "state": "unknown"
+    },
+    {
+      "file": "hoshino-form1",
+      "factor": 0.6,
+      "state": "unknown"
+    },
+    {
+      "file": "hoshino-form1",
+      "factor": 0.8,
+      "state": "unknown"
+    }
+  ],
+  "note": "Development regression and synthetic brightness negatives; not natural failure rate or holdout",
+  "live_candidate_dto_accepted": 6
+}

@@ -1,0 +1,79 @@
+{
+  "at": "2026-08-31T01:44:11.321029+09:00",
+  "panel": "star",
+  "target": "hwnd:de0e88",
+  "status": "returned_basic",
+  "size": [
+    1280,
+    720
+  ],
+  "fields": {
+    "student_star": {
+      "value": 5,
+      "confidence": 0.8915013210183113,
+      "status": "ok",
+      "source": "star_tab_template",
+      "note": "label=5;margin=0.051038"
+    }
+  },
+  "state": "basic",
+  "trace": [
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.31520332392321326,
+        "equipment": 0.32499484256848055,
+        "skill": 0.2528731934573134,
+        "stat": 0.32521343218516857,
+        "basic": 0.9530960839391937,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "open",
+      "panel": "star"
+    },
+    {
+      "state": "star",
+      "scores": {
+        "weapon": 0.20447640428605798,
+        "equipment": 0.235686886479553,
+        "skill": 0.18969823931161206,
+        "stat": 0.23535046785933628,
+        "basic": 0,
+        "level": 0,
+        "star": 0.9261766827943299
+      }
+    },
+    {
+      "state": "star",
+      "scores": {
+        "weapon": 0.20221919386732176,
+        "equipment": 0.23258249829871563,
+        "skill": 0.18918455268428855,
+        "stat": 0.2321772976685045,
+        "basic": 0,
+        "level": 0,
+        "star": 0.9314712248535778
+      }
+    },
+    {
+      "input": "restore",
+      "attempt": 1
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.31959775175261207,
+        "equipment": 0.3256786468601043,
+        "skill": 0.25894065804094746,
+        "stat": 0.3263751768192248,
+        "basic": 0.9432059879195124,
+        "level": 0,
+        "star": 0
+      }
+    }
+  ],
+  "seconds": 2.577999999979511
+}

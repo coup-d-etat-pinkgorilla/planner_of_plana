@@ -1,0 +1,180 @@
+{
+  "status": "returned_basic",
+  "diagnostic_first_read_missing": false,
+  "size": [
+    1280,
+    720
+  ],
+  "growth": {
+    "value": true,
+    "confidence": 0.9022888321847042,
+    "status": "ok",
+    "source": "equipment_growth_template",
+    "note": "margin=0.110778"
+  },
+  "favorite_dot": null,
+  "fields": {
+    "equip1": {
+      "value": "T10",
+      "confidence": 0.9220762404333559,
+      "status": "ok",
+      "source": "equipment_menu_tier",
+      "note": "margin=0.285454"
+    },
+    "equip1_level": {
+      "value": 70,
+      "confidence": 0.8202350808529576,
+      "status": "ok",
+      "source": "equipment_menu_digit",
+      "note": "value=70;tier=T10"
+    },
+    "equip2": {
+      "value": "T8",
+      "confidence": 0.8804285749168919,
+      "status": "ok",
+      "source": "equipment_menu_tier",
+      "note": "margin=0.052232"
+    },
+    "equip2_level": {
+      "value": 60,
+      "confidence": 0.8790665773570161,
+      "status": "ok",
+      "source": "equipment_menu_digit",
+      "note": "value=60;tier=T8"
+    },
+    "equip3": {
+      "value": "T10",
+      "confidence": 0.9525179176196221,
+      "status": "ok",
+      "source": "equipment_menu_tier",
+      "note": "margin=0.313031"
+    },
+    "equip3_level": {
+      "value": 70,
+      "confidence": 0.8512501480664608,
+      "status": "ok",
+      "source": "equipment_menu_digit",
+      "note": "value=70;tier=T10"
+    }
+  },
+  "returned_state": "basic",
+  "seconds": 3.1100000001024455,
+  "checks": [
+    {
+      "value": true,
+      "confidence": 0.9181441763177006,
+      "status": "ok",
+      "source": "equipment_show_all_template",
+      "note": "margin=0.408466"
+    }
+  ],
+  "reads": [
+    {
+      "equip1": {
+        "value": "T10",
+        "confidence": 0.9220762404333559,
+        "status": "ok",
+        "source": "equipment_menu_tier",
+        "note": "margin=0.285454"
+      },
+      "equip1_level": {
+        "value": 70,
+        "confidence": 0.8202350808529576,
+        "status": "ok",
+        "source": "equipment_menu_digit",
+        "note": "value=70;tier=T10"
+      },
+      "equip2": {
+        "value": "T8",
+        "confidence": 0.8804285749168919,
+        "status": "ok",
+        "source": "equipment_menu_tier",
+        "note": "margin=0.052232"
+      },
+      "equip2_level": {
+        "value": 60,
+        "confidence": 0.8790665773570161,
+        "status": "ok",
+        "source": "equipment_menu_digit",
+        "note": "value=60;tier=T8"
+      },
+      "equip3": {
+        "value": "T10",
+        "confidence": 0.9525179176196221,
+        "status": "ok",
+        "source": "equipment_menu_tier",
+        "note": "margin=0.313031"
+      },
+      "equip3_level": {
+        "value": 70,
+        "confidence": 0.8512501480664608,
+        "status": "ok",
+        "source": "equipment_menu_digit",
+        "note": "value=70;tier=T10"
+      }
+    }
+  ],
+  "trace": [
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.2396220389024987,
+        "equipment": 0.2886399937838616,
+        "skill": 0.22365592877012008,
+        "stat": 0.3019234431492871,
+        "basic": 0.9530937890137329,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "open",
+      "panel": "equipment"
+    },
+    {
+      "state": "equipment",
+      "scores": {
+        "weapon": 0.5542370416217995,
+        "equipment": 0.9687031344725078,
+        "skill": 0.2712456125932976,
+        "stat": 0.8317830994828119,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "show_all": true,
+      "status": "ok",
+      "panel": "equipment"
+    },
+    {
+      "state": "equipment",
+      "scores": {
+        "weapon": 0.5533540772356079,
+        "equipment": 0.9687423526740219,
+        "skill": 0.2715639258343569,
+        "stat": 0.8316016907424753,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "restore",
+      "attempt": 1
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.24154527592542696,
+        "equipment": 0.29367321179314343,
+        "skill": 0.2236407849102797,
+        "stat": 0.30695432969518943,
+        "basic": 0.9530937890137329,
+        "level": 0,
+        "star": 0
+      }
+    }
+  ]
+}

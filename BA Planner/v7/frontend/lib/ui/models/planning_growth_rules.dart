@@ -63,12 +63,12 @@ const studentStarMaximumBondRanks = <int, int>{
   1: 10,
   2: 10,
   3: 20,
-  4: 20,
+  4: 30,
   5: 100,
 };
 
 const equipmentSlotUnlockLevels = <int, int>{2: 10, 3: 20};
-const favoriteItemUnlockBondRanks = <int, int>{1: 20, 2: 25};
+const favoriteItemUnlockBondRanks = <int, int>{1: 15, 2: 20};
 
 int minimumEquipmentTierForLevel(int level) {
   final normalized = math.max(0, level);

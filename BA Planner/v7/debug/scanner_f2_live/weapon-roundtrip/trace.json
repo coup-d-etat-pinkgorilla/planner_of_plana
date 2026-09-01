@@ -1,0 +1,86 @@
+{
+  "at": "2026-08-30T22:30:17.579631+09:00",
+  "panel": "weapon",
+  "target": "hwnd:470ffc",
+  "status": "returned_basic",
+  "size": [
+    1280,
+    720
+  ],
+  "fields": {
+    "weapon_star": {
+      "value": 4,
+      "confidence": 0.8894662418362344,
+      "status": "ok",
+      "source": "weapon_menu_star_template",
+      "note": "value=4;margin=0.159533"
+    },
+    "weapon_level": {
+      "value": 60,
+      "confidence": 0.8580075945307921,
+      "status": "ok",
+      "source": "weapon_menu_level_template",
+      "note": "value=60;margin=0.230056"
+    }
+  },
+  "state": "basic",
+  "trace": [
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.3149829003703487,
+        "equipment": 0.3245202922666151,
+        "skill": 0.2538247790458301,
+        "stat": 0.3245542350835412,
+        "basic": 0.9291001128103021,
+        "level": -0.4504412433212959,
+        "star": -0.4390974929544126
+      }
+    },
+    {
+      "input": "open",
+      "panel": "weapon"
+    },
+    {
+      "state": "weapon",
+      "scores": {
+        "weapon": 0.9591383270955706,
+        "equipment": 0.5157489806670239,
+        "skill": 0.31847044119914264,
+        "stat": 0.5424077972630816,
+        "basic": 0.12432164190409017,
+        "level": 0.21502551142251625,
+        "star": 0.08918378708526012
+      }
+    },
+    {
+      "state": "weapon",
+      "scores": {
+        "weapon": 0.9590777510552283,
+        "equipment": 0.5157598325707211,
+        "skill": 0.3180673014737582,
+        "stat": 0.5422504692066765,
+        "basic": 0.12432164190409017,
+        "level": 0.21502551142251625,
+        "star": 0.08934180955466406
+      }
+    },
+    {
+      "input": "restore",
+      "attempt": 1
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.31505684945729895,
+        "equipment": 0.319394569729339,
+        "skill": 0.25559810890890095,
+        "stat": 0.3200031350275377,
+        "basic": 0.9291001128103021,
+        "level": -0.45096551162937704,
+        "star": -0.4391950356451855
+      }
+    }
+  ],
+  "seconds": 2.765000000130385
+}

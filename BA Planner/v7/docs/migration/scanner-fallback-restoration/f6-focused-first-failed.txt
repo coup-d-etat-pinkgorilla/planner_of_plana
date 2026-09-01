@@ -1,0 +1,65 @@
+test_basic_success_zero_clicks (test_student_skill_f6.SkillF6Tests.test_basic_success_zero_clicks) ... ok
+test_blank_and_missing_templates_uncertain (test_student_skill_f6.SkillF6Tests.test_blank_and_missing_templates_uncertain) ... ok
+test_cancel_after_checkbox_recapture_restores_without_read (test_student_skill_f6.SkillF6Tests.test_cancel_after_checkbox_recapture_restores_without_read) ... ok
+test_cancel_prevents_read_and_closes (test_student_skill_f6.SkillF6Tests.test_cancel_prevents_read_and_closes) ... ok
+test_checkbox_true_false_and_unknown (test_student_skill_f6.SkillF6Tests.test_checkbox_true_false_and_unknown) ... ok
+test_confirmed_star_gates_locked_fields_and_keeps_bank_lazy (test_student_skill_f6.SkillF6Tests.test_confirmed_star_gates_locked_fields_and_keeps_bank_lazy) ... ok
+test_conflicting_locked_value_is_retained_for_review (test_student_skill_f6.SkillF6Tests.test_conflicting_locked_value_is_retained_for_review) ... ok
+test_detail_failure_partial_and_no_retry (test_student_skill_f6.SkillF6Tests.test_detail_failure_partial_and_no_retry) ... ok
+test_ignored_checkbox_no_retoggle_and_partial (test_student_skill_f6.SkillF6Tests.test_ignored_checkbox_no_retoggle_and_partial) ... ok
+test_locked_template_not_numeric_or_skipped_without_star (test_student_skill_f6.SkillF6Tests.test_locked_template_not_numeric_or_skipped_without_star) ... ok
+test_matcher_resolves_skills_after_star_before_downstream (test_student_skill_f6.SkillF6Tests.test_matcher_resolves_skills_after_star_before_downstream) ... ERROR
+test_numeric_and_max_parity_at_two_sizes (test_student_skill_f6.SkillF6Tests.test_numeric_and_max_parity_at_two_sizes) ... 
+  test_numeric_and_max_parity_at_two_sizes (test_student_skill_f6.SkillF6Tests.test_numeric_and_max_parity_at_two_sizes) (field='skill1', value=5, size=(1280, 720)) ... FAIL
+  test_numeric_and_max_parity_at_two_sizes (test_student_skill_f6.SkillF6Tests.test_numeric_and_max_parity_at_two_sizes) (field='skill2', value=5, size=(1280, 720)) ... FAIL
+  test_numeric_and_max_parity_at_two_sizes (test_student_skill_f6.SkillF6Tests.test_numeric_and_max_parity_at_two_sizes) (field='skill3', value=5, size=(1280, 720)) ... FAIL
+test_off_or_unknown_never_reads_values (test_student_skill_f6.SkillF6Tests.test_off_or_unknown_never_reads_values) ... ok
+test_partial_failure_only_reads_missing_slots (test_student_skill_f6.SkillF6Tests.test_partial_failure_only_reads_missing_slots) ... ok
+test_restore_failure_propagates (test_student_skill_f6.SkillF6Tests.test_restore_failure_propagates) ... ok
+test_safe_open_failure_partial (test_student_skill_f6.SkillF6Tests.test_safe_open_failure_partial) ... ok
+test_show_all_off_click_once_recheck_then_return (test_student_skill_f6.SkillF6Tests.test_show_all_off_click_once_recheck_then_return) ... ok
+test_show_all_on_never_toggled (test_student_skill_f6.SkillF6Tests.test_show_all_on_never_toggled) ... ok
+test_unknown_checkbox_no_click_and_restores (test_student_skill_f6.SkillF6Tests.test_unknown_checkbox_no_click_and_restores) ... ok
+test_unknown_or_conflicted_star_never_skips (test_student_skill_f6.SkillF6Tests.test_unknown_or_conflicted_star_never_skips) ... ok
+test_wrong_student_return_fails (test_student_skill_f6.SkillF6Tests.test_wrong_student_return_fails) ... ok
+
+======================================================================
+ERROR: test_matcher_resolves_skills_after_star_before_downstream (test_student_skill_f6.SkillF6Tests.test_matcher_resolves_skills_after_star_before_downstream)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\brigh\planner_of_plana\BA Planner\v7\backend\tests\test_student_skill_f6.py", line 164, in test_matcher_resolves_skills_after_star_before_downstream
+    result=matcher._scan_current({},Event(),lambda *a:None)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\brigh\planner_of_plana\BA Planner\v7\backend\core\scanner_matchers.py", line 616, in _scan_current
+    recovery.state = recovery.recognizer.classify(frame)
+                     ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Recovery' object has no attribute 'recognizer'
+
+======================================================================
+FAIL: test_numeric_and_max_parity_at_two_sizes (test_student_skill_f6.SkillF6Tests.test_numeric_and_max_parity_at_two_sizes) (field='skill1', value=5, size=(1280, 720))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\brigh\planner_of_plana\BA Planner\v7\backend\tests\test_student_skill_f6.py", line 57, in test_numeric_and_max_parity_at_two_sizes
+    self.assertEqual(value,self.reader.recognize_menu(frame,(field,))[field].value)
+AssertionError: 5 != None
+
+======================================================================
+FAIL: test_numeric_and_max_parity_at_two_sizes (test_student_skill_f6.SkillF6Tests.test_numeric_and_max_parity_at_two_sizes) (field='skill2', value=5, size=(1280, 720))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\brigh\planner_of_plana\BA Planner\v7\backend\tests\test_student_skill_f6.py", line 57, in test_numeric_and_max_parity_at_two_sizes
+    self.assertEqual(value,self.reader.recognize_menu(frame,(field,))[field].value)
+AssertionError: 5 != None
+
+======================================================================
+FAIL: test_numeric_and_max_parity_at_two_sizes (test_student_skill_f6.SkillF6Tests.test_numeric_and_max_parity_at_two_sizes) (field='skill3', value=5, size=(1280, 720))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\brigh\planner_of_plana\BA Planner\v7\backend\tests\test_student_skill_f6.py", line 57, in test_numeric_and_max_parity_at_two_sizes
+    self.assertEqual(value,self.reader.recognize_menu(frame,(field,))[field].value)
+AssertionError: 5 != None
+
+----------------------------------------------------------------------
+Ran 21 tests in 7.061s
+
+FAILED (failures=3, errors=1)

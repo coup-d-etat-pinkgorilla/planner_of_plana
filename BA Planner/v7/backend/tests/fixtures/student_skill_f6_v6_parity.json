@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "source": "v6 scanner_components/student.py:_read_skills_from_basic/read_skills; matcher.py:read_skill/read_check_flag/read_skill_check; characterized before adaptation",
+  "unlocks": {"skill2": 2, "skill3": 3},
+  "maximum": {"ex_skill": 5, "skill1": 10, "skill2": 10, "skill3": 10},
+  "detail_reads": 1,
+  "checkbox_click_limit": 1,
+  "legacy_thresholds": {"skill": 0.60, "checkbox": 0.55},
+  "safety_changes": ["Unknown checkbox is never false", "Reverify active skill panel and checked state after enabling", "Only confirmed student stars gate locked slots", "Preserve confirmed fields and sticky conflicts", "F2 same-student return including cancellation", "No learning or growth inputs"]
+}

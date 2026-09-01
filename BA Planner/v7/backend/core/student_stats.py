@@ -13,6 +13,7 @@ from core.planning_growth_rules import (
     WEAPON_STAR_MAX_LEVEL,
 )
 from core.student_stats_types import (
+    EquipmentAbsentV1,
     EquipmentLevelV1,
     MissingStatDependencyV1,
     PRIMARY_STAT_NAMES,
@@ -202,8 +203,10 @@ def _equipment_contributions(
     for slot, (category, equipped) in enumerate(zip(student.equipment, build.equipment, strict=True), 1):
         unlock_level = EQUIPMENT_SLOT_UNLOCK_LEVEL.get(slot, 1)
         if build.level < unlock_level:
-            if equipped is not None:
+            if equipped is not None and not isinstance(equipped, EquipmentAbsentV1):
                 raise ValueError(f"equipment slot {slot} is locked until student level {unlock_level}")
+            continue
+        if isinstance(equipped, EquipmentAbsentV1):
             continue
         if equipped is None:
             missing.append(MissingStatDependencyV1("equipment", f"slot:{slot}"))

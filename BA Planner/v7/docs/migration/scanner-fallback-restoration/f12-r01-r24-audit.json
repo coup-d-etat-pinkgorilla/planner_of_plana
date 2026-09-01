@@ -1,0 +1,876 @@
+{
+  "schema_version": 1,
+  "scope": "F12 R01-R24 implementation/artifact/fixture/test/historical-live traceability",
+  "source_matrix": "backend/tests/fixtures/scanner_fallback_restoration/restoration-matrix.json",
+  "evidence_partition_rule": "Historical native scans, fixed-frame replay, old JSON replay and new F12 native scans remain separate.",
+  "rows": [
+    {
+      "id": "R01",
+      "phase": "F1",
+      "dependency_group": "capture_input",
+      "implementation": [
+        {
+          "symbol": "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.capture",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.wait_stable",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_scanner_fallback_f1.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/scanner_fallback_restoration/f1-capture-input-parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f1-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R02",
+      "phase": "F1",
+      "dependency_group": "capture_input",
+      "implementation": [
+        {
+          "symbol": "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.click",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.press_key",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter.__call__",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_scanner_fallback_f1.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/scanner_fallback_restoration/f1-capture-input-parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f1-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R03",
+      "phase": "F2",
+      "dependency_group": "panel",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:EquipmentMenuCaptureAdapter.capture_equipment_menu",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/scanner_matchers.py:WeaponMenuCaptureAdapter.capture_weapon_menu",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_panel_f2.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/scanner_fallback_restoration/f2-panel-parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f2-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [
+        "E-S3-LIVE"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R04",
+      "phase": "F2",
+      "dependency_group": "panel",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:EquipmentMenuCaptureAdapter.close_equipment_menu",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/scanner_matchers.py:WeaponMenuCaptureAdapter.close_weapon_menu",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_panel_f2.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/scanner_fallback_restoration/f2-panel-parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f2-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [
+        "E-S3-LIVE"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R05",
+      "phase": "F2",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/student_weapon_recognizer.py:StudentWeaponRecognizer.recognize_menu",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_panel_f2.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/scanner_fallback_restoration/f2-panel-parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f2-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [
+        "E-FEEDBACK",
+        "E-S2W"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R06",
+      "phase": "F3",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/student_candidate_validation.py:StudentCandidateValidator.__call__",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_potential_f3.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_potential_f3_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f3-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280+native2560",
+      "historical_evidence_refs": [
+        "E-FEEDBACK"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R07",
+      "phase": "F4",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.read_level",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_level_f4.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_level_f4_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f4-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [
+        "E-LEVEL",
+        "E-FEEDBACK"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R08",
+      "phase": "F5",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/student_weapon_recognizer.py:StudentWeaponRecognizer.read_state",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.read_student_star",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_star_f5.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_star_f5_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f5-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [
+        "E-FEEDBACK",
+        "E-S2W"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R09",
+      "phase": "F5",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.read_student_star",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_star_f5.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_star_f5_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f5-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [
+        "E-FEEDBACK"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R10",
+      "phase": "F6",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.read_skill",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_skill_f6.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_skill_f6_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f6-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [
+        "E-FEEDBACK"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R11",
+      "phase": "F6",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.recognize",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_skill_f6.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_skill_f6_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f6-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R12",
+      "phase": "F7",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/student_equipment_recognizer.py:EquipmentMenuRecognizer.recognize",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_equipment_f7.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_equipment_f7_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f7-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280; native2560 favorite-lock fixture only",
+      "historical_evidence_refs": [
+        "E-S3-LIVE"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R13",
+      "phase": "F7",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_equipment_f7.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_equipment_f7_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f7-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280; native2560 favorite-lock fixture only",
+      "historical_evidence_refs": [
+        "E-S3-LIVE"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R14",
+      "phase": "F7",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/student_equipment_recognizer.py:StudentEquipmentRecognizer.read_tier",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/student_equipment_recognizer.py:StudentEquipmentRecognizer.recognize",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_equipment_f7.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_equipment_f7_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f7-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280; native2560 favorite-lock fixture only",
+      "historical_evidence_refs": [
+        "E-S3-LIVE",
+        "E-EQUIPMENT-ARCHIVE"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R15",
+      "phase": "F7",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/student_equipment_recognizer.py:StudentEquipmentRecognizer.recognize",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_equipment_f7.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_equipment_f7_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f7-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280; native2560 favorite-lock fixture only",
+      "historical_evidence_refs": [
+        "E-S3-LIVE"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R16",
+      "phase": "F8",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter.__call__",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_identity_f8.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_identity_f8_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f8-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280+multi-form",
+      "historical_evidence_refs": [
+        "E-FEEDBACK"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R17",
+      "phase": "F8",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:TemplateMatcher.match",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/scanner_matchers.py:TemplateMatcher._match_templates",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_identity_f8.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_identity_f8_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f8-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280+multi-form",
+      "historical_evidence_refs": [
+        "E-FEEDBACK"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R18",
+      "phase": "F8",
+      "dependency_group": "student",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter._canonical_student_ref",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_student_identity_f8.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/student_identity_f8_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f8-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280+multi-form",
+      "historical_evidence_refs": [
+        "E-FEEDBACK"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R19",
+      "phase": "F9",
+      "dependency_group": "inventory",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:InventoryMatcherAdapter.__call__",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_inventory_detail_f9.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/inventory_detail_f9_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f9-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R20",
+      "phase": "F9",
+      "dependency_group": "inventory",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:SlotCountMatcher.match",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/scanner_matchers.py:InventoryMatcherAdapter.__call__",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_inventory_detail_f9.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/inventory_detail_f9_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f9-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R21",
+      "phase": "F9",
+      "dependency_group": "inventory",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:InventoryMatcherAdapter.__call__",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_inventory_detail_f9.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/inventory_detail_f9_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f9-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R22",
+      "phase": "F10",
+      "dependency_group": "inventory",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:InventoryMatcherAdapter.__call__",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_inventory_navigation_f10.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/inventory_navigation_f10_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f10-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R23",
+      "phase": "F10",
+      "dependency_group": "inventory",
+      "implementation": [
+        {
+          "symbol": "backend/core/scanner_matchers.py:InventoryMatcherAdapter.__call__",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.scroll",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_inventory_navigation_f10.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/inventory_navigation_f10_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f10-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280",
+      "historical_evidence_refs": [],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    },
+    {
+      "id": "R24",
+      "phase": "F11",
+      "dependency_group": "calibration",
+      "implementation": [
+        {
+          "symbol": "backend/core/session_calibration.py:SessionCalibrationStore",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/studio_numeric_bank.py:StudioNumericBank.add_session_template",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/scanner_matchers.py:StudentMatcherAdapter.train_user_answer",
+          "file_exists": true,
+          "name_present": true
+        },
+        {
+          "symbol": "backend/core/student_equipment_recognizer.py:StudentEquipmentRecognizer.learn_basic_level",
+          "file_exists": true,
+          "name_present": true
+        }
+      ],
+      "artifacts": {
+        "test": {
+          "path": "backend/tests/test_session_calibration_f11.py",
+          "exists": true
+        },
+        "fixture": {
+          "path": "backend/tests/fixtures/session_calibration_f11_v6_parity.json",
+          "exists": true
+        },
+        "result": {
+          "path": "docs/migration/scanner-fallback-restoration/f11-results.md",
+          "exists": true
+        }
+      },
+      "historical_live_coverage": "native1280 level; equipment integration pending F12",
+      "historical_evidence_refs": [
+        "E-LEVEL",
+        "E-S3-LIVE"
+      ],
+      "trace_partition": "historical_native_scan",
+      "audit_pass": true
+    }
+  ],
+  "summary": {
+    "row_count": 24,
+    "ids_complete": true,
+    "passed": 24,
+    "failed": []
+  }
+}

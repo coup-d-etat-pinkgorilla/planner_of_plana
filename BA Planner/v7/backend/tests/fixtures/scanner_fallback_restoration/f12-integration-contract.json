@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "phase": "F12",
+  "completion_scope": [
+    "R01-R24 artifact fixture test and coverage audit",
+    "historical diagnostic replay reported separately",
+    "fixed frame replay reported separately",
+    "new native game scan reported separately",
+    "actual Python Dart process single full multi-form and inventory paths",
+    "latency p50 p95 maximum wait memory and handle cleanup",
+    "native 1280 and 2560 representative traces",
+    "sequential Python and Flutter regressions",
+    "Windows release build and recognition asset integrity"
+  ],
+  "safety": {
+    "candidate_policy": "review memory only",
+    "forbidden": [
+      "automatic repository commit",
+      "automatic profile write",
+      "automatic permanent learning",
+      "consumable use",
+      "purchase",
+      "growth execution",
+      "equipment change"
+    ]
+  },
+  "evidence_partitions": [
+    "historical_json",
+    "fixed_frame_replay",
+    "synthetic_fault_injection",
+    "new_native_1280",
+    "new_native_2560",
+    "process_e2e",
+    "release_integrity"
+  ],
+  "blocking_conditions": [
+    "unresolved decision gate",
+    "missing R01-R24 implementation artifact",
+    "important path without verification",
+    "confirmed incorrect recovered value",
+    "incomplete or unsafe screen recovery",
+    "release asset integrity failure"
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "reviewed_at": "2026-08-24",
+  "reviewed_at": "2026-08-29",
   "screenshots": [
     {"relative_path":"S4_FAVOR_RANK/KakaoTalk_20260823_192529629.jpg","sha256":"cca886e674b625288130d58af5358c0ac1ada69feef4aea98522efeb7b7c27e7","source_size":[2560,1440],"rank":100,"student_ref":"hoshino_swimsuit","partition":"calibration"},
     {"relative_path":"S4_FAVOR_RANK/스크린샷 2026-08-23 030220.png","sha256":"226423a6959cd942ad94c8000ae5645db05e803373ae186bd72b2abab0d1e923","source_size":[2560,1440],"rank":10,"student_ref":"otogi","partition":"calibration"},
@@ -24,6 +24,8 @@
     {"relative_path":"S4_FAVOR_RANK/스크린샷 2026-08-23 024250.png","sha256":"b4c563453fa62c7ab186789eba3daef624169bd94ec1ab2b53b14a04de58000f","source_size":[1280,720],"rank":34,"student_ref":"airi","partition":"validation"},
     {"relative_path":"S4_FAVOR_RANK/스크린샷 2026-08-23 024414.png","sha256":"876307cd83763fd75b34946257bbed0baf95fc9b8ef389cac269a309b87f84d1","source_size":[1280,720],"rank":23,"student_ref":"ibuki","partition":"validation"},
     {"relative_path":"S4_FAVOR_RANK/스크린샷 2026-08-23 030242.png","sha256":"18ac8c6ee17cf639832f62d1dc35e03dbe6d3ea6affc275b9258769cf111b731","source_size":[1280,720],"rank":18,"student_ref":"kasumi","partition":"validation"},
+    {"relative_path":"S4_FAVOR_RANK/스크린샷 2026-08-29 021908.png","sha256":"ec2a6df477e919194c804d7fa2cb28d4a4bf0ab6aab33e63276febfcbcf1051e","source_size":[2560,1440],"rank":30,"student_ref":"utaha","partition":"studio_validation"},
+    {"relative_path":"S4_FAVOR_RANK/스크린샷 2026-08-29 021948.png","sha256":"a85e2d7f2fed26422f44f032f49275f79ccc2602c6982a33e5f572d0ff7cb421","source_size":[2560,1440],"rank":28,"student_ref":"mashiro","partition":"studio_validation"},
     {"relative_path":"스크린샷 2026-06-24 215236.png","sha256":"fef8ab15f40fb2142fd69750dec421efb49a8f3398d631a6c5dddc96b5a4d00e","source_size":[2560,1440],"rank":6,"student_ref":"unknown","partition":"calibration_only"}
   ]
 }

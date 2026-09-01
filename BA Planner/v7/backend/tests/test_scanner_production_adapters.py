@@ -52,13 +52,27 @@ class FakeUser32:
     def GetClientRect(self, _hwnd, _rect):
         return self.client_rect
 
+    def GetWindowTextLengthW(self, _hwnd):
+        return 12
+
+    def GetWindowTextW(self, _hwnd, buffer, _length):
+        buffer.value = "Blue Archive"
+        return 12
+
+    def GetWindowThreadProcessId(self, _hwnd, pid):
+        pid._obj.value = 100
+        return 200
+
+    def IsWindowVisible(self, _hwnd):
+        return True
+
 
 class UnstableWindowsAdapter(WindowsCaptureInputAdapter):
     def __init__(self) -> None:
         super().__init__()
         self.frame = 0
 
-    def capture(self, _target):
+    def capture(self, _target, **_kwargs):
         self.frame += 1
         return Image.new("RGB", (32, 32), (self.frame % 255, 0, 0))
 
@@ -126,7 +140,7 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         )
         self.assertEqual(
             ["hoshino", "hoshino_swimsuit"],
-            [item["payload"]["student_id"] for item in result],
+            [item["payload"]["student_id"] for item in result.candidates],
         )
         self.assertEqual([(0.9777, 0.53465), (0.9777, 0.53465)], adapter.capture.points)
 
@@ -164,7 +178,7 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         )
         self.assertEqual(
             ["hoshino", "hoshino_swimsuit"],
-            [item["payload"]["student_id"] for item in result],
+            [item["payload"]["student_id"] for item in result.candidates],
         )
         self.assertEqual(["right", "right"], adapter.capture.keys)
         self.assertEqual([], adapter.capture.points)
@@ -266,7 +280,7 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         )
         self.assertEqual(
             ["aru", "aru_dress"],
-            [item["payload"]["student_id"] for item in result],
+            [item["payload"]["student_id"] for item in result.candidates],
         )
         self.assertEqual(["right", "right"], adapter.capture.keys)
         self.assertEqual([(0.9777, 0.53465)], adapter.capture.points)
@@ -309,10 +323,12 @@ class ScannerProductionAdapterTests(unittest.TestCase):
 
         self.assertEqual(
             ["last", "middle", "first"],
-            [item["payload"]["student_id"] for item in result],
+            [item["payload"]["student_id"] for item in result.candidates],
         )
         self.assertIn("left", adapter.capture.keys)
         self.assertIn((0.0223, 0.53465), adapter.capture.points)
+        self.assertEqual("failed", result.outcome)
+        self.assertEqual("navigation_unconfirmed", result.error.code)
 
     def test_inventory_adapter_matches_real_icon_and_count_glyphs(self) -> None:
         frame = Image.new("RGB", (1280, 720), "black")
@@ -356,25 +372,55 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         self.assertEqual("detail_template_fallback", item_evidence["source"])
         self.assertTrue(result["review_required"])
 
+    def test_inventory_profile_never_relabels_a_confident_foreign_item(self) -> None:
+        frame = Image.new("RGB", (1280, 720), "black")
+        slot = self.catalog.region("inventory")["item"]["grid_slots"][0]
+        template = Image.open(ASSETS / "templates/inventory/ooparts/Item_Icon_Material_Mandragora_0.png")
+        paste_ratio(frame, template, slot)
+
+        class Navigation:
+            def prepare(self, _target, _cancel, _frame):
+                return type("Prepared", (), {"source": "item", "profile_id": "tech_notes"})()
+
+            def advance(self, _target, _cancel, current, _source):
+                return type("Moved", (), {
+                    "frame": current.copy(), "overlap_rows": 5, "slot_indices": (),
+                    "terminal": True, "terminal_after_page": False,
+                    "reason": "verified_no_motion",
+                })()
+
+            def verify_profile_order(self, _profile, item_ids):
+                return bool(item_ids)
+
+        result = InventoryMatcherAdapter(
+            ScriptedCapture(frame), self.catalog, navigation=Navigation(),
+        )({"target_id": "fixture", "inventory_scan_profile": "tech_notes"}, Event(), lambda *_args: None)[0]
+        self.assertEqual([], result["payload"]["entries"])
+        self.assertTrue(any(
+            item["source"] == "inventory_profile_catalog" and item["status"] == "skipped"
+            for item in result["evidence"]
+        ))
+
     def test_cancellation_and_import_safe_windows_boundary(self) -> None:
         frame = Image.new("RGB", (1280, 720), "black")
         cancel = Event()
         cancel.set()
         student = StudentMatcherAdapter(ScriptedCapture(frame), self.catalog)
         self.assertEqual([], student({"target_id": "fixture"}, cancel, lambda *_args: None))
-        adapter = WindowsCaptureInputAdapter()
+        adapter = WindowsCaptureInputAdapter(isolate_capture=False)
         self.assertEqual([], [item for item in adapter() if "definitely-not-a-window" in item["title"]])
 
     def test_windows_diagnostics_capture_failure_timeout_and_cancel(self) -> None:
-        adapter = WindowsCaptureInputAdapter()
+        adapter = WindowsCaptureInputAdapter(isolate_capture=False)
         with patch.object(WindowsCaptureInputAdapter, "_libraries", return_value=(FakeUser32(exists=False), object())):
             self.assertEqual("closed", adapter.diagnose({"target_id": "hwnd:1"})["status"])
         with patch.object(WindowsCaptureInputAdapter, "_libraries", return_value=(FakeUser32(minimized=True), object())):
             self.assertEqual("minimized", adapter.diagnose({"target_id": "hwnd:1"})["status"])
         with patch.object(WindowsCaptureInputAdapter, "_libraries", return_value=(FakeUser32(client_rect=False), object())):
-            with self.assertRaisesRegex(ScannerError, "GetClientRect failed") as failure:
+            with self.assertRaisesRegex(ScannerError, "capture methods exhausted") as failure:
                 adapter.capture({"target_id": "hwnd:1"})
             self.assertEqual("capture_failed", failure.exception.code)
+            self.assertEqual(15, len(adapter.last_capture_trace))
         unstable = UnstableWindowsAdapter()
         with self.assertRaises(ScannerError) as timeout:
             unstable.wait_stable({"target_id": "fixture"}, Event(), timeout=0.01)
@@ -384,6 +430,31 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         with self.assertRaises(ScannerError) as cancelled:
             unstable.wait_stable({"target_id": "fixture"}, cancel)
         self.assertEqual("cancelled", cancelled.exception.code)
+
+    def test_drag_scroll_releases_mouse_when_a_move_is_rejected(self) -> None:
+        class DragUser32:
+            def __init__(self):self.flags=[];self.calls=0
+            def GetAsyncKeyState(self,_key):return 0
+            def ClientToScreen(self,_hwnd,_point):return True
+            def SetCursorPos(self,_x,_y):return True
+            def WindowFromPoint(self,_point):return 1
+            def GetAncestor(self,_hwnd,_flag):return 1
+            def GetForegroundWindow(self):return 1
+            def SendInput(self,count,events,_size):
+                self.calls+=1
+                self.flags.extend(int(events[index].mi.dwFlags) for index in range(count))
+                return 0 if self.calls==3 else count
+
+        user32=DragUser32();adapter=WindowsCaptureInputAdapter(isolate_capture=False)
+        adapter._checked_hwnd=lambda _target:1
+        adapter._foreground=lambda _u,_target,_hwnd:True
+        adapter._client=lambda _u,_hwnd:(1280,720)
+        with patch.object(WindowsCaptureInputAdapter,"_libraries",return_value=(user32,object())):
+            with self.assertRaises(ScannerError) as failure:
+                adapter.drag_scroll({"_scanner_cancel":Event()},(.78,.75),(.78,.65))
+        self.assertEqual("input_failed",failure.exception.code)
+        self.assertEqual(0x0002,user32.flags[0])
+        self.assertEqual(0x0004,user32.flags[-1])
 
 
 if __name__ == "__main__":

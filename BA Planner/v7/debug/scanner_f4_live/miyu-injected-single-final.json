@@ -1,0 +1,375 @@
+{
+  "seconds": 6.9060000001918525,
+  "target": "hwnd:de0e88",
+  "trace": [
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.22119238012993309,
+        "equipment": 0.24828490201970047,
+        "skill": 0.1709436767010728,
+        "stat": 0.24266172944552905,
+        "basic": 0.9530960839391937,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "open",
+      "panel": "equipment"
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.2224083491017309,
+        "equipment": 0.25202699836114567,
+        "skill": 0.17054514020610345,
+        "stat": 0.2462639783769335,
+        "basic": 0.9530960839391937,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.22133771552361217,
+        "equipment": 0.24976382412004555,
+        "skill": 0.17036546020004195,
+        "stat": 0.2439965981676151,
+        "basic": 0.9530960839391937,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.22107034707683496,
+        "equipment": 0.24709030909181123,
+        "skill": 0.17151280984582645,
+        "stat": 0.24169496042125957,
+        "basic": 0.9530960839391937,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.22123018595012886,
+        "equipment": 0.24827255477329244,
+        "skill": 0.17091985527103476,
+        "stat": 0.24265159296403793,
+        "basic": 0.9530960839391937,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.22271737976721387,
+        "equipment": 0.2534134292060806,
+        "skill": 0.17083219573987113,
+        "stat": 0.24769954407269773,
+        "basic": 0.9530960839391937,
+        "level": 0,
+        "star": 0
+      }
+    }
+  ],
+  "diagnostic_forced_level_fallback": true,
+  "level_fallback_trace": [
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.22134141271433516,
+        "equipment": 0.2497628638509318,
+        "skill": 0.17035982687621457,
+        "stat": 0.24399963067371883,
+        "basic": 0.9530960839391937,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "open",
+      "panel": "level"
+    },
+    {
+      "state": "level",
+      "scores": {
+        "weapon": 0.16378644004961798,
+        "equipment": 0.19923370551593425,
+        "skill": 0.14646061404298907,
+        "stat": 0.19359602890563563,
+        "basic": 0,
+        "level": 0.9093211648673007,
+        "star": 0
+      }
+    },
+    {
+      "state": "level",
+      "scores": {
+        "weapon": 0.16097055914425107,
+        "equipment": 0.19416857792165718,
+        "skill": 0.14537997867098895,
+        "stat": 0.1886340759424402,
+        "basic": 0,
+        "level": 0.9129383077611436,
+        "star": 0
+      }
+    },
+    {
+      "input": "restore",
+      "attempt": 1
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.23052079707424447,
+        "equipment": 0.2454366146374022,
+        "skill": 0.17646535263114005,
+        "stat": 0.2446141700474703,
+        "basic": 0.9403851802893441,
+        "level": 0,
+        "star": 0
+      }
+    }
+  ],
+  "candidates": [
+    {
+      "payload": {
+        "version": 1,
+        "student_id": "miyu",
+        "values": {
+          "level": 1,
+          "bond_rank": 2,
+          "student_star": 3,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "combat_hp": 3051,
+          "combat_atk": 407,
+          "combat_def": 18,
+          "combat_heal": 1734,
+          "weapon_state": "no_weapon_system",
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0,
+          "equip1": "empty",
+          "equip2": "level_locked",
+          "equip3": "level_locked"
+        },
+        "provenance": {
+          "student_id": "student_texture_template",
+          "level": "level_tab_template",
+          "bond_rank": "relationship_rank_studio_position_bank",
+          "student_star": "basic_star_color",
+          "ex_skill": "basic_skill_combined",
+          "skill1": "basic_skill_combined",
+          "skill2": "basic_skill_combined",
+          "skill3": "basic_skill_combined",
+          "combat_hp": "basic_combat_digit",
+          "combat_atk": "basic_combat_digit",
+          "combat_def": "basic_combat_digit",
+          "combat_heal": "basic_combat_digit",
+          "weapon_state": "student_star_gate",
+          "stat_hp": "potential_gate",
+          "stat_atk": "potential_gate",
+          "stat_heal": "potential_gate",
+          "equip1": "equipment_empty_dot",
+          "equip2": "student_level_unlock_rule",
+          "equip3": "student_level_unlock_rule"
+        }
+      },
+      "evidence": [
+        {
+          "field": "student_id",
+          "status": "ok",
+          "source": "student_texture_template",
+          "confidence": 0.9928375487926652,
+          "note": "margin=0.075468;form_ref=miyu"
+        },
+        {
+          "field": "level",
+          "status": "ok",
+          "source": "level_tab_template",
+          "confidence": 0.8757763975155279,
+          "note": "d1:label=1;margin=0.437180;ink=0.336898;d2:ink=0.000000"
+        },
+        {
+          "field": "bond_rank",
+          "status": "ok",
+          "source": "relationship_rank_studio_position_bank",
+          "confidence": 0.8035714285714286,
+          "note": "value=2;labels=['2'];margin=0.214286;shifts=[(0, 0)]"
+        },
+        {
+          "field": "student_star",
+          "status": "ok",
+          "source": "basic_star_color",
+          "confidence": 0.9276672694394222,
+          "note": "raw=3.025316"
+        },
+        {
+          "field": "ex_skill",
+          "status": "ok",
+          "source": "basic_skill_combined",
+          "confidence": 0.9312715536927508,
+          "note": "group=ex;label=1;margin=0.088036"
+        },
+        {
+          "field": "skill1",
+          "status": "ok",
+          "source": "basic_skill_combined",
+          "confidence": 0.90359749764927,
+          "note": "group=normal;label=1;margin=0.081343"
+        },
+        {
+          "field": "skill2",
+          "status": "ok",
+          "source": "basic_skill_combined",
+          "confidence": 0.9194773879784514,
+          "note": "group=normal;label=1;margin=0.088017"
+        },
+        {
+          "field": "skill3",
+          "status": "ok",
+          "source": "basic_skill_combined",
+          "confidence": 0.8975123913335565,
+          "note": "group=normal;label=1;margin=0.084340"
+        },
+        {
+          "field": "weapon_level",
+          "status": "skipped",
+          "source": "basic_weapon_state_template",
+          "confidence": 1.0,
+          "note": "state=no_weapon_system"
+        },
+        {
+          "field": "weapon_star",
+          "status": "skipped",
+          "source": "basic_weapon_state_template",
+          "confidence": 1.0,
+          "note": "state=no_weapon_system"
+        },
+        {
+          "field": "combat_hp",
+          "status": "ok",
+          "source": "basic_combat_digit",
+          "confidence": 0.6518218623481782,
+          "note": "group=hp;margin=0.058673;stop=EMPTY"
+        },
+        {
+          "field": "combat_atk",
+          "status": "ok",
+          "source": "basic_combat_digit",
+          "confidence": 0.7597765363128491,
+          "note": "group=atk;margin=0.129259;stop=EMPTY"
+        },
+        {
+          "field": "combat_def",
+          "status": "ok",
+          "source": "basic_combat_digit",
+          "confidence": 0.7189542483660131,
+          "note": "group=def;margin=0.055655;stop=EMPTY"
+        },
+        {
+          "field": "combat_heal",
+          "status": "ok",
+          "source": "basic_combat_digit",
+          "confidence": 0.7119565217391305,
+          "note": "group=heal;margin=0.180835;stop=EMPTY"
+        },
+        {
+          "field": "weapon_state",
+          "status": "inferred",
+          "source": "student_star_gate",
+          "confidence": 1.0,
+          "note": "student_star=3"
+        },
+        {
+          "field": "stat_hp",
+          "status": "inferred",
+          "source": "potential_gate",
+          "confidence": 1,
+          "note": "locked"
+        },
+        {
+          "field": "stat_atk",
+          "status": "inferred",
+          "source": "potential_gate",
+          "confidence": 1,
+          "note": "locked"
+        },
+        {
+          "field": "stat_heal",
+          "status": "inferred",
+          "source": "potential_gate",
+          "confidence": 1,
+          "note": "locked"
+        },
+        {
+          "field": "equip1",
+          "status": "inferred",
+          "source": "equipment_empty_dot",
+          "confidence": 1.0,
+          "note": "orange dot present"
+        },
+        {
+          "field": "equip1_level",
+          "status": "skipped",
+          "source": "equipment_empty_dot",
+          "confidence": 1.0,
+          "note": "slot empty"
+        },
+        {
+          "field": "equip2",
+          "status": "inferred",
+          "source": "student_level_unlock_rule",
+          "confidence": 1.0,
+          "note": "student_level=1;unlock=10"
+        },
+        {
+          "field": "equip2_level",
+          "status": "skipped",
+          "source": "student_level_unlock_rule",
+          "confidence": 1.0,
+          "note": "slot locked"
+        },
+        {
+          "field": "equip3",
+          "status": "inferred",
+          "source": "student_level_unlock_rule",
+          "confidence": 1.0,
+          "note": "student_level=1;unlock=20"
+        },
+        {
+          "field": "equip3_level",
+          "status": "skipped",
+          "source": "student_level_unlock_rule",
+          "confidence": 1.0,
+          "note": "slot locked"
+        },
+        {
+          "field": "equip4",
+          "status": "uncertain",
+          "source": "favorite_tier_template",
+          "confidence": 0.0,
+          "note": "tier=T1;margin=0.000000"
+        },
+        {
+          "field": "equipment_panel",
+          "status": "partial",
+          "source": "panel_recovery",
+          "confidence": 0,
+          "note": "panel_open_failed;same-student basic restored"
+        }
+      ],
+      "review_required": true
+    }
+  ]
+}

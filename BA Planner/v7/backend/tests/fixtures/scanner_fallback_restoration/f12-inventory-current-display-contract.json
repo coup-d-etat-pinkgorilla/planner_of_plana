@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "observed_resolution": [1280, 720],
+  "observed_ui": "current Korean item display settings",
+  "display_controls": ["basic", "name", "quantity", "expiry", "ascending", "descending"],
+  "category_checkboxes_available": false,
+  "required_behavior": [
+    "select and verify basic ascending display order",
+    "limit recognition competitors to the explicit inventory scan profile catalog",
+    "never label an out-of-profile visible item with the requested profile",
+    "never zero-fill unless terminal coverage and profile order are both verified"
+  ],
+  "historical_f10_behavior": "preserved as historical parity evidence; current native UI supersedes category-checkbox input"
+}

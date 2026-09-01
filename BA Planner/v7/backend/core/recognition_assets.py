@@ -23,7 +23,20 @@ class RecognitionAsset:
 
 class RecognitionAssetCatalog:
     VERSION = 1
-    AUXILIARY_MANIFESTS = ("student_basic_manifest.json", "student_equipment_manifest.json")
+    AUXILIARY_MANIFESTS = (
+        "student_basic_manifest.json",
+        "student_equipment_manifest.json",
+        "student_weapon_manifest.json",
+        "student_panel_manifest.json",
+        "student_potential_manifest.json",
+        "student_level_manifest.json",
+        "student_star_manifest.json",
+        "student_skill_manifest.json",
+        "student_equipment_f7_manifest.json",
+        "student_identity_manifest.json",
+        "inventory_detail_f9_manifest.json",
+        "inventory_navigation_f10_manifest.json",
+    )
 
     def __init__(self, root: Path | None = None) -> None:
         self.root = root or resolve_recognition_asset_dir()
@@ -99,7 +112,14 @@ class RecognitionAssetCatalog:
                 continue
             identity = (
                 raw.get("student_id") or raw.get("item_id") or raw.get("digit")
-                or raw.get("relationship_rank") or raw.get("opponent_name") or raw.get("rank") or raw.get("equipment_value")
+                or raw.get("relationship_rank") or raw.get("opponent_name") or raw.get("rank")
+                or raw.get("equipment_value") or raw.get("weapon_value") or raw.get("panel_state")
+                or raw.get("potential_value")
+                or raw.get("level_value")
+                or raw.get("star_value")
+                or raw.get("skill_value")
+                or raw.get("equipment_state")
+                or raw.get("identity_value")
             )
             result.append(RecognitionAsset(
                 path=raw["path"], scan_kind=scan_kind, purpose=purpose,

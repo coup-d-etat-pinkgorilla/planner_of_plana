@@ -1,0 +1,28 @@
+{
+  "at": "2026-08-31T01:09:45.192278+09:00",
+  "action": "capture",
+  "target_id": "hwnd:de0e88",
+  "input": {},
+  "status": "captured",
+  "before": {
+    "status": "ready",
+    "foreground": true
+  },
+  "size": [
+    1280,
+    720
+  ],
+  "image_sha256": "758ce68a987114e72362fe78aa67c39316b77bf58620dc17103e0d651345d2fa",
+  "capture": [
+    {
+      "round": 1,
+      "method": 3,
+      "ok": true
+    }
+  ],
+  "after": {
+    "status": "ready",
+    "foreground": true
+  },
+  "seconds": 0.4839999999385327
+}

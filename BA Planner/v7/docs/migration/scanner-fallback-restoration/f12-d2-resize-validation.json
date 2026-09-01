@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "validated_at": "2026-09-01",
+  "decision": "complete_with_acknowledged_risk",
+  "acceptance": "Three arbitrary 16:9 game-window sizes completed without a D2 problem.",
+  "checks": [
+    {
+      "sequence": 1,
+      "client_size": [1280, 720],
+      "observed_outer_size": [1280, 751],
+      "trace": "f12-d2-resize-1-1280x751.json",
+      "terminal": "completed",
+      "student_id": "mika",
+      "equipment": ["T10/70", "T10/70", "T10/70"],
+      "d2_special_inference_count": 0,
+      "mutations": {"review": 0, "revalidate": 0, "commit": 0},
+      "elapsed_ms": 13419,
+      "passed": true
+    },
+    {
+      "sequence": 2,
+      "client_size_logical": [1079, 607],
+      "observed_outer_size": [1079, 638],
+      "ratio_note": "DPI-scaled 16:9 client; one-pixel logical rounding",
+      "trace": "f12-d2-resize-2-1079x607-client.json",
+      "terminal": "completed",
+      "student_id": "mika",
+      "equipment": ["T10/70", "T10/70", "T10/70"],
+      "d2_special_inference_count": 0,
+      "unrelated_inference_sources": ["independent_weapon_flag"],
+      "mutations": {"review": 0, "revalidate": 0, "commit": 0},
+      "elapsed_ms": 18952,
+      "passed": true
+    },
+    {
+      "sequence": 3,
+      "client_size": [960, 540],
+      "observed_outer_size": [960, 571],
+      "trace": "f12-d2-resize-3-960x540-client.json",
+      "terminal": "completed",
+      "student_id": "mika",
+      "equipment": ["T10/70", "T10/70", "T10/70"],
+      "d2_special_inference_count": 0,
+      "mutations": {"review": 0, "revalidate": 0, "commit": 0},
+      "elapsed_ms": 19890,
+      "passed": true
+    }
+  ],
+  "acknowledged_risk": {
+    "natural_low_score_t10_70_sample_observed": false,
+    "native2560_special_inference_enabled": false,
+    "synthetic_corruption_promoted_to_natural_evidence": false,
+    "safe_behavior": "Keep native2560 special inference disabled and retain uncertain reads as partial."
+  },
+  "workflow_status": {
+    "f12": "complete",
+    "f0_f12": "complete"
+  }
+}

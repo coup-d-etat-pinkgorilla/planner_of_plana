@@ -1,0 +1,27 @@
+test_agreeing_five_preserves_direct_source (test_student_star_f5.StarF5Tests.test_agreeing_five_preserves_direct_source) ... ok
+test_basic_success_no_click_no_bank (test_student_star_f5.StarF5Tests.test_basic_success_no_click_no_bank) ... ok
+test_blank_dark_and_uniform_frames_do_not_default_to_one (test_student_star_f5.StarF5Tests.test_blank_dark_and_uniform_frames_do_not_default_to_one) ... ok
+test_cancel_after_open_prevents_read_and_closes (test_student_star_f5.StarF5Tests.test_cancel_after_open_prevents_read_and_closes) ... ok
+test_conflicting_star_cannot_be_validated_as_confirmed_stats (test_student_star_f5.StarF5Tests.test_conflicting_star_cannot_be_validated_as_confirmed_stats) ... ok
+test_different_student_return_fails (test_student_star_f5.StarF5Tests.test_different_student_return_fails) ... ok
+test_direct_star_conflicts_are_sticky_not_overwritten (test_student_star_f5.StarF5Tests.test_direct_star_conflicts_are_sticky_not_overwritten) ... ok
+test_failed_detail_is_one_read_and_partial (test_student_star_f5.StarF5Tests.test_failed_detail_is_one_read_and_partial) ... ok
+test_independent_equipped_and_unlocked_empty_infer_five_without_click (test_student_star_f5.StarF5Tests.test_independent_equipped_and_unlocked_empty_infer_five_without_click) ... ok
+test_inferred_gates_and_values_never_create_circular_inference (test_student_star_f5.StarF5Tests.test_inferred_gates_and_values_never_create_circular_inference) ... ok
+test_matcher_conflict_retains_direct_value_and_requires_review (test_student_star_f5.StarF5Tests.test_matcher_conflict_retains_direct_value_and_requires_review) ... ok
+test_matcher_independent_state_before_star_and_potential_gates (test_student_star_f5.StarF5Tests.test_matcher_independent_state_before_star_and_potential_gates) ... ok
+test_native1280_current_stars_not_upgrade_preview_and_return (test_student_star_f5.StarF5Tests.test_native1280_current_stars_not_upgrade_preview_and_return) ... ok
+test_no_templates_is_uncertain (test_student_star_f5.StarF5Tests.test_no_templates_is_uncertain) ... ok
+test_parity_all_five_stars_at_two_resolutions (test_student_star_f5.StarF5Tests.test_parity_all_five_stars_at_two_resolutions) ... ok
+test_real_f2_star_panel_is_five (test_student_star_f5.StarF5Tests.test_real_f2_star_panel_is_five) ... ok
+test_restore_failure_is_not_partial_success (test_student_star_f5.StarF5Tests.test_restore_failure_is_not_partial_success) ... ok
+test_safe_open_failure_is_partial (test_student_star_f5.StarF5Tests.test_safe_open_failure_is_partial) ... ok
+test_star_return_uses_basic_tab (test_student_star_f5.StarF5Tests.test_star_return_uses_basic_tab) ... ok
+test_tied_template_candidates_are_uncertain (test_student_star_f5.StarF5Tests.test_tied_template_candidates_are_uncertain) ... ok
+test_unavailable_menu_preserves_unresolved_observation (test_student_star_f5.StarF5Tests.test_unavailable_menu_preserves_unresolved_observation) ... ok
+test_unknown_or_locked_weapon_uses_tab_and_preserves_other_fields (test_student_star_f5.StarF5Tests.test_unknown_or_locked_weapon_uses_tab_and_preserves_other_fields) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 6.040s
+
+OK

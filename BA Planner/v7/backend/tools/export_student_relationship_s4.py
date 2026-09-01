@@ -12,6 +12,7 @@ from core.student_scan_recognizer import relationship_rank_mask, ratio_crop
 
 REGION = {"x1": 0.033, "y1": 0.765, "x2": 0.056, "y2": 0.825}
 PURPOSE = "student-relationship-rank-template"
+DIGIT_PURPOSE = "student-relationship-rank-digit-template"
 
 
 def export(source_root: Path, spec_path: Path, backend_root: Path) -> None:
@@ -95,8 +96,17 @@ def export(source_root: Path, spec_path: Path, backend_root: Path) -> None:
 
     manifest_path = backend_root / "assets" / "recognition" / "v1" / "student_basic_manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    manifest["assets"] = [item for item in manifest["assets"] if item.get("purpose") != PURPOSE]
-    manifest["assets"].extend(manifest_entries)
+    assets = manifest["assets"]
+    insertion_index = 0
+    for item in assets:
+        if item.get("purpose") in {PURPOSE, DIGIT_PURPOSE}:
+            break
+        if item.get("purpose") != PURPOSE:
+            insertion_index += 1
+    assets = [item for item in assets if item.get("purpose") != PURPOSE]
+    manifest_entries.sort(key=lambda item: str(item["path"]))
+    assets[insertion_index:insertion_index] = manifest_entries
+    manifest["assets"] = assets
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 

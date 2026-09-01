@@ -1,0 +1,65 @@
+{
+  "phase": "F10 R22-R23",
+  "source": "../v6/core/scanner_components/inventory.py",
+  "contracts": {
+    "filter_open": {
+      "max_attempts": 2,
+      "require_verified_menu_after_each_click": true,
+      "exhaustion": "inventory_filter_unconfirmed"
+    },
+    "item_prepare_order": [
+      "open_filter", "activate_filter_tab_if_sort_tab", "reset_filter",
+      "select_profile_filter", "activate_sort_tab", "verify_or_repair_sort", "confirm"
+    ],
+    "item_profile_filters": {
+      "student_elephs": "eleph_filter",
+      "tech_notes": "note_filter",
+      "tactical_bd": "bd_filter",
+      "ooparts": "ooparts_filter",
+      "activity_reports": "reports_filter",
+      "presents": "mixed_ooparts_x_note_y"
+    },
+    "sort": {
+      "student_elephs": "name_ascending",
+      "other_items": "default_ascending",
+      "equipment": "default_ascending",
+      "max_repair_clicks": 2,
+      "require_post_click_verification": true
+    },
+    "scroll": {
+      "max_pages": 60,
+      "one_primary_input_per_attempt": true,
+      "primary_wheel_delta": -240,
+      "recovery_wheel_delta": -360,
+      "primary_drag": [[0.78, 0.75], [0.78, 0.65]],
+      "recovery_drag": [[0.78, 0.75], [0.78, 0.58]],
+      "no_motion_allows_one_recovery_input": true,
+      "stable_after_frames_required": 2,
+      "overlap_is_row_slot_sequence_not_whole_frame": true,
+      "animated_slot_histogram_score": 0.94,
+      "animated_slot_histogram_margin": 0.03,
+      "equipment_histogram_margin": 0.025,
+      "near_zero_or_ambiguous_overlap": "inventory_scroll_unverified",
+      "tail_residual_score_range": [0.88, 0.94],
+      "tail_residual_scans_full_page_once": true,
+      "scan_only_nonoverlap_rows_when_verified": true,
+      "repeat_or_verified_no_motion": "terminal",
+      "input_failure_is_not_terminal": true
+    },
+    "coverage": {
+      "deduplicate_by_item_id": true,
+      "preserve_completed_slots_on_failure": true,
+      "zero_fill_requires": [
+        "verified_filter", "verified_sort", "verified_monotonic_profile_order",
+        "verified_terminal", "no_unresolved_slots"
+      ],
+      "cancel_or_partial_or_scroll_failure_zero_fill": false
+    },
+    "separation": {
+      "account_profile_id_is_scan_profile": false,
+      "runtime_v6_import": false,
+      "auto_repository_write": false,
+      "auto_learning": false
+    }
+  }
+}

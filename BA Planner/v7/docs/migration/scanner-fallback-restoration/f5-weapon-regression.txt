@@ -1,0 +1,14 @@
+test_basic_failure_opens_panel_retries_twice_and_closes (test_student_weapon_s2w.StudentWeaponS2WTests.test_basic_failure_opens_panel_retries_twice_and_closes) ... ok
+test_basic_weapon_value_survives_conflicting_detail_in_review_payload (test_student_weapon_s2w.StudentWeaponS2WTests.test_basic_weapon_value_survives_conflicting_detail_in_review_payload) ... ok
+test_blank_state_roi_is_not_guessed_as_no_system (test_student_weapon_s2w.StudentWeaponS2WTests.test_blank_state_roi_is_not_guessed_as_no_system) ... ok
+test_feedback_crops_cover_all_three_weapon_states (test_student_weapon_s2w.StudentWeaponS2WTests.test_feedback_crops_cover_all_three_weapon_states) ... ok
+test_non_equipped_states_skip_details_without_opening_panel (test_student_weapon_s2w.StudentWeaponS2WTests.test_non_equipped_states_skip_details_without_opening_panel) ... ok
+test_student_below_five_stars_is_independently_no_system (test_student_weapon_s2w.StudentWeaponS2WTests.test_student_below_five_stars_is_independently_no_system) ... ok
+test_unknown_state_does_not_open_weapon_panel (test_student_weapon_s2w.StudentWeaponS2WTests.test_unknown_state_does_not_open_weapon_panel) ... ok
+test_weapon_menu_adapter_rejects_unverified_basic_screen (test_student_weapon_s2w.StudentWeaponS2WTests.test_weapon_menu_adapter_rejects_unverified_basic_screen) ... ok
+test_weapon_menu_reads_independent_level_and_star_rois (test_student_weapon_s2w.StudentWeaponS2WTests.test_weapon_menu_reads_independent_level_and_star_rois) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 12.671s
+
+OK

@@ -1,0 +1,17 @@
+{
+  "diagnostic": {
+    "first_missing": false,
+    "form_template_tie": false,
+    "cancel_after_form_read": false
+  },
+  "error": {
+    "code": "panel_wrong_start",
+    "message": "unverified first-entry state; no input"
+  },
+  "frames": [
+    "frame-00.png"
+  ],
+  "inputs": [],
+  "entry_trace": [],
+  "form_trace": []
+}

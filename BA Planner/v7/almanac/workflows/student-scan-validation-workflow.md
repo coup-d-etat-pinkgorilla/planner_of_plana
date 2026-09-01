@@ -31,6 +31,36 @@ sources:
 
 # Student Scan Validation Workflow
 
+## v6 fallback restoration follow-up (2026-08-30)
+
+The user requested restoration of all omitted scanner fallback behaviors after the v6/v7 audit.
+[Scanner Fallback Restoration Workflow](scanner-fallback-restoration-workflow) is the execution
+contract for R01-R24 and F0-F12, including common capture/input/panel recovery, student detail paths,
+identity/forms, inventory recovery and isolated calibration. Existing S2W remains the starting
+implementation; the new workflow's F0 baseline/contracts are complete and F1-F12 remain pending. Actual phase outcomes
+remain in [P0-P6 Workflow Status](p0-p6-workflow-status). The permanent user-confirmed sample policy
+below remains in force; automatic session calibration has a decision gate before implementation.
+
+## User-confirmed answer samples (2026-08-29)
+
+The v7 review boundary now restores both v6 correction properties without importing v6 runtime code.
+An explicit `edited_and_revalidated_in_scan_page` review promotes the candidate-owned numeric cells for
+student level, relationship rank, weapon level and equipment slots 1-3. The corrected value determines
+the relationship layout and the digit label for each fixed Studio position. Only cleaned binary glyph
+masks are persisted; the stable frame and full-screen image are never retained.
+
+Samples live under `recognition_samples/{profile_id}/{width}x{height}/` and are loaded before each scan.
+Loading clears the previous profile's process-local samples first, so samples never cross account or
+capture-resolution boundaries. User variants receive deterministic tie-breaking precedence while the
+bundled Studio bank remains an immutable fallback. A successful review updates the in-memory bank
+immediately; subsequent scans do not require a backend restart.
+
+Candidate crops are private session state and never appear in candidate wire payloads or diagnostic
+exports. They survive repeated edit/revalidate cycles, then close on approval, discard, commit, or
+service shutdown. Automatic recognition, second-pass calculation-only revalidation, hold, and discard
+do not train. Inventory grid crops follow the same profile/resolution isolation and are promoted only
+after explicit inventory approval.
+
 ## Production Studio numeric bank (2026-08-28)
 
 The production scanner loads one required compact asset named
@@ -196,6 +226,37 @@ v6에는 인연 랭크 판독 함수, ROI 또는 템플릿이 없다. 따라서 
   cell도 blank로 유지한다. 첫째 자리는 1-9, 둘째 자리는 0과 2-9를 실제 화면으로 확인했다.
   둘째 자리 1만 실화면 미확보로 기록하되, 사용 가능한 BA 데이터에서는 오답이 없으므로 다음
   numeric 개선 대상은 인연 랭크로 전환한다.
+- 사용자가 보유하지 않은 인연 38/48 대신 28과 30의 실캡처를 제공했다. 두 샘플은 학습에
+  섞지 않고 `studio_validation` partition에 두며, 기존 position bank가 뒷자리 `8`과 `0`을 각각
+  runner-up margin 0.138587, 0.120299로 구별하는지 검사한다. 이는 인연 필드의 실제 글리프
+  구별 증거이지, 별도 ROI·색상 mask·position bank를 쓰는 전용무기 필드의 정답 crop을
+  대신하지 않는다. 필드 간 template 복사나 저신뢰 `...8`의 일괄 `...0` 보정은 금지한다.
+  하트 ROI만 쓰는 legacy whole-rank fallback은 두 atlas crop을 모두 20으로 읽으므로 일반
+  `validation`에는 포함하지 않으며, full-frame Studio 경로와 fallback의 검증 결과를 분리한다.
+- 전용무기 필드 자체의 실제 `48`(토키 무장)과 `50`(네루) 2560x1440 화면도 별도
+  `student_weapon_level_s4` 정답지에 등록했다. 기존 Studio bank는 두 값을 모두 맞히고 뒷자리
+  `8`/`0` margin은 각각 0.134337/0.145771이다. 반면 legacy reader는 48을 추정하되 margin
+  0.011260으로 확정하지 못한다. 따라서 30→38·40→48 문제는 Studio의 글리프 부재가 아니라
+  문제 화면에서 Studio confirmation이 실패해 legacy fallback으로 내려간 경로를 우선 조사한다.
+  실제 48이 존재하므로 저신뢰 뒷자리 8을 무조건 0으로 치환해서는 안 된다.
+- v6 대비 해상도 회귀의 핵심은 기본 카드 matcher 하나의 성능 차이가 아니다. v6는 기본 카드
+  level/star 중 하나라도 불확실하면 전용무기 상세 패널을 열고, 비율 ROI 두 개를 position별
+  template 크기로 정규화해 최대 두 번 재촬영했다. v7에는 장비 메뉴 fallback만 이관됐고
+  전용무기 상세 fallback은 없다. 동시에 v7 Studio는 2560 template를 source cell 크기로
+  nearest-neighbor 축소하면서 이동 범위는 source pixel 기준 ±2로 고정하고, 0.65/0.05 gate도
+  해상도와 무관하게 고정한다. 2560→1280 축소 실험에서 48은 margin 0.134337→0.042857,
+  50은 score 0.796825→0.647059로 떨어져 각각 한 gate만 실패했다. 실제 224명 진단에서
+  Studio 전용무기 확정은 카린 50 한 건뿐이므로 배치 단위 경로 회귀로 취급한다.
+- 2026-08-30에는 이 중 기본 카드 해상도 회귀를 먼저 닫았다. 전용무기 Studio 비교만 각 mask의
+  foreground bounding box를 32x32로 정규화해 shape IoU를 계산하고, 다른 숫자 필드의 기존 shift
+  비교는 유지한다. feedback1의 30/40/50/60 14개와 기존 48/50 2개를 SHA-pinned visual truth로
+  재생한 결과 16/16 값·32/32 숫자가 맞고 최소 score/margin은 0.793893/0.122127이다. 새 14개를
+  1280으로 축소한 재현에서도 전부 일치한다. 이 변경은 v6의 상세 패널 fallback을 대체하지
+  않는다. 이어진 S2W slice는 feedback1에서 장착/해금 후 미장착/시스템 미해금의 세 상태를
+  SHA-pinned crop으로 고정하고, v6의 상태·패널 좌표와 초기 1회+재촬영 2회·항상 닫기 동작을
+  별도 fixture로 특성화한 뒤 도입했다. 장착 상태인데 기본 level/star 중 하나라도 확정되지
+  않을 때만 패널을 열며, 상세 패널의 두 level 자리와 star는 서로 독립된 ROI/template bank로
+  판독한다. 미장착·미해금·5성 미만은 상세값을 `skipped`로 유지하고 패널을 열지 않는다.
 - 갱신된 인연 `suggestion_text`의 rank-37 `3/7` fill alpha를 기준으로 두 cell을 각각 17px로
   넓혀 오른쪽 끝 1px 잘림을 제거했다. 이후 남은 실패는 ROI가 아니라 2560 기준 17x26 합성
   template를 1280 기준 약 9x13 실제 cell에 크기 보정 없이 비교한 문제로 판명됐다. Binary
@@ -611,6 +672,11 @@ cold recognizer 91.631ms, prepared memory 1,310,400 bytes다. 이에 actual ROI 
 - 다른 의상을 보유하지만 아직 해당 인연 랭크를 모름: 정확 비교 금지, dependency missing
 - 다른 의상을 보유하지 않음: 인연 1, 보너스 0으로 계산
 - 모든 관련 의상 랭크가 있음: exact relationship contribution 계산
+- 일반 장비가 `empty`/`locked`로 확인됨: 알려진 미장착이며 기여도 0으로 계산
+- 일반 장비 상태를 읽지 못함: 미장착으로 가정하지 않고 equipment dependency missing
+- 레벨 90·5성 학생의 능력 개방 값이 후보와 기존 확정 상태에 모두 없음: 0으로 가정하지
+  않고 `stat_hp`/`stat_atk`/`stat_heal` 입력 dependency로 유지
+- 능력 개방이 아직 잠긴 학생: 세 능력 개방 값은 규칙상 0으로 계산 가능
 
 스캔 순서 때문에 아직 만나지 않은 다른 의상 값이 없을 수 있다. 첫 pass에서 이를 오류로
 판정하지 않고 repository 기존값을 사용하거나 `pending_dependency`로 남긴다. 전체 scan이
@@ -641,6 +707,9 @@ multiplier-eligible flat 합계에 들어감을 확정했다.
 옵션으로 유지하므로 게임 기본 정보 교차 검증에서는 `include_skill_buffs=false`가 맞다.
 라이브 asset hash는 새 배포에서 바뀔 수 있으므로 URL은 조사 증거이며, parity fixture와
 위 수식이 지속 계약이다.
+
+성급별 인연 상한은 1성 10, 2성 10, 3성 20, 4성 30, 5성 100이다. 애용품 해금 인연은
+T1 15, T2 20이다. 백엔드 계산 검증과 Flutter 목표 정규화는 같은 표를 사용해야 한다.
 
 판정은 다음 네 상태를 사용한다.
 

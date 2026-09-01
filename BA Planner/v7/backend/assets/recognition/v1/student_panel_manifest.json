@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "source_version": "student-panel-f2-v6-2026-08-30",
+  "assets": [
+    {
+      "path": "regions/student_panel_regions.json",
+      "scan_kind": "student",
+      "purpose": "student-panel-regions",
+      "required": true,
+      "bytes": 927,
+      "sha256": "e660306f4b54130f0a81cebbb03a605a91fd8d43d83accbaf024fe724bde01a0",
+      "source_path": "adapted:../v6/regions/student_data_regions.json+core/scanner_shared.py",
+      "panel_state": null
+    },
+    {
+      "path": "templates/student_panel/student_panel_title_weapon.png",
+      "scan_kind": "student",
+      "purpose": "student-panel-template",
+      "required": true,
+      "bytes": 10273,
+      "sha256": "62ba7dedc30e07bf7e9e0dd836a48cb6ee70f2d5e9f7452c8c5bcfaeb4acd148",
+      "source_path": "../v6/templates/menu_detect_flag/student_panel_title_weapon.png",
+      "panel_state": "weapon"
+    },
+    {
+      "path": "templates/student_panel/student_panel_title_equipment.png",
+      "scan_kind": "student",
+      "purpose": "student-panel-template",
+      "required": true,
+      "bytes": 12983,
+      "sha256": "8c13b20c8b74a592f6aecb893dc1f91e1e5ad30276b077f3ce3435457d9bcf18",
+      "source_path": "../v6/templates/menu_detect_flag/student_panel_title_equipment.png",
+      "panel_state": "equipment"
+    },
+    {
+      "path": "templates/student_panel/student_panel_title_skill.png",
+      "scan_kind": "student",
+      "purpose": "student-panel-template",
+      "required": true,
+      "bytes": 9244,
+      "sha256": "824c8d07babd3d3fb673c5c44fc423c68ad8bd80699003daf3cdddf743ce80d2",
+      "source_path": "../v6/templates/menu_detect_flag/student_panel_title_skill.png",
+      "panel_state": "skill"
+    },
+    {
+      "path": "templates/student_panel/student_panel_title_stat.png",
+      "scan_kind": "student",
+      "purpose": "student-panel-template",
+      "required": true,
+      "bytes": 11338,
+      "sha256": "7fa662d7ce1f8d523f508970a1dddc66fef439caf149eb780bc68458e1598434",
+      "source_path": "../v6/templates/menu_detect_flag/student_panel_title_stat.png",
+      "panel_state": "stat"
+    },
+    {
+      "path": "templates/student_panel/student_data__basic_info_button_on.png",
+      "scan_kind": "student",
+      "purpose": "student-panel-template",
+      "required": true,
+      "bytes": 4048,
+      "sha256": "b71d629aaa7172e6861debb91030674f4dce47bf4c47526e2c6cb45ae3c377b5",
+      "source_path": "../v6/templates/menu_detect_flag/student_data__basic_info_button_on.png",
+      "panel_state": "basic"
+    },
+    {
+      "path": "templates/student_panel/student_data__levelcheck_button_on.png",
+      "scan_kind": "student",
+      "purpose": "student-panel-template",
+      "required": true,
+      "bytes": 3065,
+      "sha256": "ce71dd8653e63df563790ea880e671532365ff0ed0fb6a81bcd366c0939317eb",
+      "source_path": "../v6/templates/menu_detect_flag/student_data__levelcheck_button_on.png",
+      "panel_state": "level"
+    },
+    {
+      "path": "templates/student_panel/student_data__star_menu_button_on.png",
+      "scan_kind": "student",
+      "purpose": "student-panel-template",
+      "required": true,
+      "bytes": 4541,
+      "sha256": "43647c2f60ba76d1bda345493bde32090d90b70c862c171a8d0e41f56854c3a8",
+      "source_path": "../v6/templates/menu_detect_flag/student_data__star_menu_button_on.png",
+      "panel_state": "star"
+    }
+  ]
+}

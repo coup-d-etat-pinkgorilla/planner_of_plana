@@ -672,6 +672,7 @@ class _SnapshotMockService extends MockAppService {
     String targetId, {
     String? profileId,
     StudentScanMode studentScanMode = StudentScanMode.single,
+    InventoryScanProfile? inventoryScanProfile,
   }) async {
     return ScannerSession(
       id: 'snapshot-session',

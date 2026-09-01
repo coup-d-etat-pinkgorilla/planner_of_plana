@@ -1,0 +1,119 @@
+{
+  "mode": "panel",
+  "diagnostic_missing_basic": false,
+  "status": "returned_basic",
+  "size": [
+    1280,
+    720
+  ],
+  "fields": {
+    "ex_skill": {
+      "value": 1,
+      "confidence": 0.9532685554815904,
+      "status": "ok",
+      "source": "skill_menu_template",
+      "note": "field=ex_skill;label=1;margin=0.116023"
+    },
+    "skill1": {
+      "value": 1,
+      "confidence": 0.943677706263391,
+      "status": "ok",
+      "source": "skill_menu_template",
+      "note": "field=skill1;label=1;margin=0.114742"
+    },
+    "skill2": {
+      "value": 1,
+      "confidence": 0.9177436684751002,
+      "status": "ok",
+      "source": "skill_menu_template",
+      "note": "field=skill2;label=1;margin=0.099765"
+    },
+    "skill3": {
+      "value": 1,
+      "confidence": 0.9396801447140978,
+      "status": "ok",
+      "source": "skill_menu_template",
+      "note": "field=skill3;label=1;margin=0.117113"
+    }
+  },
+  "returned_state": "basic",
+  "seconds": 3.577999999979511,
+  "checks": [
+    {
+      "value": true,
+      "confidence": 0.8987412629880288,
+      "status": "ok",
+      "source": "skill_show_all_template",
+      "note": "label=true;margin=0.582511"
+    },
+    {
+      "value": true,
+      "confidence": 0.8987412629880288,
+      "status": "ok",
+      "source": "skill_show_all_template",
+      "note": "label=true;margin=0.582511"
+    }
+  ],
+  "skill_trace": [
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.22134678197587196,
+        "equipment": 0.24669111595931287,
+        "skill": 0.17162765755263043,
+        "stat": 0.2412574983797436,
+        "basic": 0.9530937890137329,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "open",
+      "panel": "skill"
+    },
+    {
+      "state": "skill",
+      "scores": {
+        "weapon": 0.3448423365500829,
+        "equipment": 0.2920426258611651,
+        "skill": 0.9612303984406456,
+        "stat": 0.33056474780219386,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "show_all": true,
+      "status": "ok"
+    },
+    {
+      "state": "skill",
+      "scores": {
+        "weapon": 0.3448423365500829,
+        "equipment": 0.2920426258611651,
+        "skill": 0.9612303984406456,
+        "stat": 0.33056474780219386,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "restore",
+      "attempt": 1
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.22047537429189315,
+        "equipment": 0.24574857959064372,
+        "skill": 0.17119279904206872,
+        "stat": 0.24032159021424873,
+        "basic": 0.9530937890137329,
+        "level": 0,
+        "star": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,226 @@
+{
+  "version": 1,
+  "source_version": "student-identity-f8-2026-08-31",
+  "assets": [
+    {
+      "path": "regions/student_identity_regions.json",
+      "scan_kind": "student",
+      "purpose": "student-identity-regions",
+      "required": true,
+      "bytes": 1346,
+      "sha256": "f7d85e6e88a10d245b1ec68266ad9eb8ee6f633bb166260c390b21a98e15adcd",
+      "source_path": "../v6/regions/student_normal_info_regions.json+lobby_regions.json+student_menu_regions.json",
+      "identity_value": null
+    },
+    {
+      "path": "templates/student_identity/attributes/attack_type/explosive.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 2002,
+      "sha256": "cc47b4db5bc99502ac328eff5548504ef1182674358e29ab493d98382c0d03cc",
+      "source_path": "../v6/templates/student_basic_attributes/attack_type/explosive.png",
+      "identity_value": "attack_type:explosive"
+    },
+    {
+      "path": "templates/student_identity/attributes/attack_type/mystic.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 1704,
+      "sha256": "58eac6a12d62d9e9be44222c6f40e2550e4d1e6c66cb7599a6c5ca0c2433a440",
+      "source_path": "../v6/templates/student_basic_attributes/attack_type/mystic.png",
+      "identity_value": "attack_type:mystic"
+    },
+    {
+      "path": "templates/student_identity/attributes/attack_type/piercing.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 2149,
+      "sha256": "331758c746135a5d5d41348072c9ab97dced656891ce3ad4f5561e9b9cc41236",
+      "source_path": "../v6/templates/student_basic_attributes/attack_type/piercing.png",
+      "identity_value": "attack_type:piercing"
+    },
+    {
+      "path": "templates/student_identity/attributes/attack_type/sonic.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 2177,
+      "sha256": "899a964141ecc29769bac8e9e8451c54ebeb5a6fc128d4f26d1301cd784d517f",
+      "source_path": "../v6/templates/student_basic_attributes/attack_type/sonic.png",
+      "identity_value": "attack_type:sonic"
+    },
+    {
+      "path": "templates/student_identity/attributes/combat_class/special.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 3725,
+      "sha256": "49e409caeae119485ef849997c4ec4340bba78028abe3564555ce92673e4ca71",
+      "source_path": "../v6/templates/student_basic_attributes/combat_class/special.png",
+      "identity_value": "combat_class:special"
+    },
+    {
+      "path": "templates/student_identity/attributes/combat_class/striker.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 4449,
+      "sha256": "d31e884764ade1e9e113d7e9727328f13f6d80253dd35a4d0071b922f6520ef5",
+      "source_path": "../v6/templates/student_basic_attributes/combat_class/striker.png",
+      "identity_value": "combat_class:striker"
+    },
+    {
+      "path": "templates/student_identity/attributes/defense_type/composite.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 4092,
+      "sha256": "b060f827cb1830eb114243c8e4feae1ef022ae1e263912315b4ce223c3b38b91",
+      "source_path": "../v6/templates/student_basic_attributes/defense_type/composite.png",
+      "identity_value": "defense_type:composite"
+    },
+    {
+      "path": "templates/student_identity/attributes/defense_type/elastic.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 3782,
+      "sha256": "109b8bb354a8971a2c2478edbafd9240faa3cc01c9792157f6fe2b9dadde3473",
+      "source_path": "../v6/templates/student_basic_attributes/defense_type/elastic.png",
+      "identity_value": "defense_type:elastic"
+    },
+    {
+      "path": "templates/student_identity/attributes/defense_type/heavy.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 3491,
+      "sha256": "141fd88ce0db3620c6a1e7c7d49a132222d4ab01b942f5cc18383dbbabd5de42",
+      "source_path": "../v6/templates/student_basic_attributes/defense_type/heavy.png",
+      "identity_value": "defense_type:heavy"
+    },
+    {
+      "path": "templates/student_identity/attributes/defense_type/light.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 3631,
+      "sha256": "75e218bc2805e8ecd2c678dde438aeeff8f3210c92107289daaf332269751498",
+      "source_path": "../v6/templates/student_basic_attributes/defense_type/light.png",
+      "identity_value": "defense_type:light"
+    },
+    {
+      "path": "templates/student_identity/attributes/defense_type/special.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 3730,
+      "sha256": "d5f6a1cb3f344384dd034fd88a07a36f481c016aa669f0730067c5cc4af9d61c",
+      "source_path": "../v6/templates/student_basic_attributes/defense_type/special.png",
+      "identity_value": "defense_type:special"
+    },
+    {
+      "path": "templates/student_identity/attributes/position/back.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 4052,
+      "sha256": "fdd34dc07ef13fd5e7268a2aff63a376b8dd064caa560e5e5c96b9503a1e0580",
+      "source_path": "../v6/templates/student_basic_attributes/position/back.png",
+      "identity_value": "position:back"
+    },
+    {
+      "path": "templates/student_identity/attributes/position/front.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 4549,
+      "sha256": "f1b1805809f82ceaaf29c2b2e91d281d2ef449a2948c36f9afd3b77ec0aaee8b",
+      "source_path": "../v6/templates/student_basic_attributes/position/front.png",
+      "identity_value": "position:front"
+    },
+    {
+      "path": "templates/student_identity/attributes/position/middle.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 5213,
+      "sha256": "3d03463e8fcfb6f952708308a1b695b32571a5424715322e4bd6bffc6fabe759",
+      "source_path": "../v6/templates/student_basic_attributes/position/middle.png",
+      "identity_value": "position:middle"
+    },
+    {
+      "path": "templates/student_identity/attributes/role/dealer.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 3832,
+      "sha256": "f740f6cbb4ba6b5cac31e46f76677a3157e5f23da54f2afb7914e22bd013d87a",
+      "source_path": "../v6/templates/student_basic_attributes/role/dealer.png",
+      "identity_value": "role:dealer"
+    },
+    {
+      "path": "templates/student_identity/attributes/role/healer.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 3628,
+      "sha256": "0aa2ef84edf5781d82bdf268e3a4ec34253571cdea89d882cff703c65c7c05a1",
+      "source_path": "../v6/templates/student_basic_attributes/role/healer.png",
+      "identity_value": "role:healer"
+    },
+    {
+      "path": "templates/student_identity/attributes/role/supporter.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 4164,
+      "sha256": "1ebf76770e7027d2cd6a738ea93695fed59eeaccf3df0efa2ea7340f7481db6b",
+      "source_path": "../v6/templates/student_basic_attributes/role/supporter.png",
+      "identity_value": "role:supporter"
+    },
+    {
+      "path": "templates/student_identity/attributes/role/t_s.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 3888,
+      "sha256": "0afefcf8c965a0fa34174f52d70ce27f93ab1a03aab102c15b54523e443988b1",
+      "source_path": "../v6/templates/student_basic_attributes/role/t_s.png",
+      "identity_value": "role:t_s"
+    },
+    {
+      "path": "templates/student_identity/attributes/role/tanker.png",
+      "scan_kind": "student",
+      "purpose": "student-attribute-template",
+      "required": true,
+      "bytes": 3429,
+      "sha256": "196d2da5dde7075e5c9c3cc319b8c5856e9663969edfdf40bc691aad97cf6a1e",
+      "source_path": "../v6/templates/student_basic_attributes/role/tanker.png",
+      "identity_value": "role:tanker"
+    },
+    {
+      "path": "templates/student_identity/lobby_template.png",
+      "scan_kind": "student",
+      "purpose": "student-entry-template",
+      "required": true,
+      "bytes": 4149,
+      "sha256": "0a9ccb0ae77f2714603b4d7ee15e94d7898cb5cecdfaf6d007c2108842ae48b6",
+      "source_path": "../v6/templates/menu_detect_flag/lobby_template.png",
+      "identity_value": "lobby"
+    },
+    {
+      "path": "templates/student_identity/student_menu__menu_detect_flag.png",
+      "scan_kind": "student",
+      "purpose": "student-entry-template",
+      "required": true,
+      "bytes": 8797,
+      "sha256": "96d4fc3f5b88bc2d7fe2752fe7e186792825beb7d59a81e3c3d1987935cc49cf",
+      "source_path": "../v6/templates/menu_detect_flag/student_menu__menu_detect_flag.png",
+      "identity_value": "student_list"
+    }
+  ]
+}

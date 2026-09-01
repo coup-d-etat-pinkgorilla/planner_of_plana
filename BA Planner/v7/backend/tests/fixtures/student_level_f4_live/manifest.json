@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "actual_client_size": [
+    1280,
+    720
+  ],
+  "partition": "development_regression_not_holdout_or_runtime_learning",
+  "assets": [
+    {
+      "file": "f3-mika-basic.png",
+      "source": "debug/scanner_f3_1280_live/00-basic.png",
+      "state": "basic",
+      "level": null,
+      "potential": [
+        25,
+        25,
+        25
+      ],
+      "sha256": "758ce68a987114e72362fe78aa67c39316b77bf58620dc17103e0d651345d2fa"
+    },
+    {
+      "file": "f3-mika-stat.png",
+      "source": "debug/scanner_f3_1280_live/mika-stat/opened.png",
+      "state": "stat",
+      "level": null,
+      "potential": [
+        25,
+        25,
+        25
+      ],
+      "sha256": "3391fddb96b3eecd5af441378f8e090cbff0eab7827ee86e6dcd315cc9e942b9"
+    },
+    {
+      "file": "f3-hina-stat.png",
+      "source": "debug/scanner_f3_1280_live/hina-stat/opened.png",
+      "state": "stat",
+      "level": null,
+      "potential": [
+        25,
+        25,
+        0
+      ],
+      "sha256": "b3cd550fd0d88042339748254cbfd155cd59f7b9c15ebd7ff69c658d2aaf99e9"
+    },
+    {
+      "file": "mika-basic.png",
+      "source": "debug/scanner_f4_live/00-mika.png",
+      "state": "basic",
+      "level": 90,
+      "potential": null,
+      "sha256": "8203e80ddc6fb19c12141e1a5f0ce7f9608898dcdd7569e37cbe3fc3a2999926"
+    },
+    {
+      "file": "mika-level.png",
+      "source": "debug/scanner_f4_live/mika-level/opened.png",
+      "state": "level",
+      "level": 90,
+      "potential": null,
+      "sha256": "e1a85441b7e1c78c65f445651015ade2ae1cf258a350a799481b59ee8f9b6846"
+    },
+    {
+      "file": "mika-return.png",
+      "source": "debug/scanner_f4_live/mika-level/returned.png",
+      "state": "basic",
+      "level": 90,
+      "potential": null,
+      "sha256": "9352ede8e8b6a6934eec2798315de5cbac85d9eed8de506f276b5954cb4e267d"
+    },
+    {
+      "file": "miyu-basic.png",
+      "source": "debug/scanner_f4_live/01-miyu.png",
+      "state": "basic",
+      "level": 1,
+      "potential": null,
+      "sha256": "bfd8eca4d0c5028561f5a67c2235ecd6d92af1c283f4b4ec062ee86681aaf6dc"
+    },
+    {
+      "file": "miyu-level.png",
+      "source": "debug/scanner_f4_live/miyu-level/opened.png",
+      "state": "level",
+      "level": 1,
+      "potential": null,
+      "sha256": "bd39237ecbad114531f9dbaea0645f7d1bc4f98a74fca7fe4f0fca6b09b40340"
+    },
+    {
+      "file": "miyu-return.png",
+      "source": "debug/scanner_f4_live/miyu-level/returned.png",
+      "state": "basic",
+      "level": 1,
+      "potential": null,
+      "sha256": "8481bba9e65893d77948fc6a82d8f0f2f7e65a636c3e2a78b4a2c182ef4ca813"
+    }
+  ]
+}

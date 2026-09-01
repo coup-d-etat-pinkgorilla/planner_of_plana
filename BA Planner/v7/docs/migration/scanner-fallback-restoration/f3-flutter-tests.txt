@@ -1,0 +1,481 @@
+Resolving dependencies...
+Downloading packages...
+  clock 1.1.2 (1.1.3 available)
+  cross_file 0.3.5+4 (0.3.5+5 available)
+  file_selector_android 0.5.2+9 (0.5.2+10 available)
+  file_selector_ios 0.5.3+5 (0.5.3+6 available)
+  file_selector_linux 0.9.4 (0.9.4+1 available)
+  file_selector_macos 0.9.5 (0.9.5+1 available)
+  file_selector_windows 0.9.3+5 (0.9.3+6 available)
+  matcher 0.12.19 (0.12.20 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.0 (1.19.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.11 (0.7.13 available)
+  vector_math 2.2.0 (2.4.2 available)
+  vm_service 15.2.0 (15.3.0 available)
+Got dependencies!
+14 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart
+00:00 +0: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagnostics_service_test.dart: process diagnostics are bounded and redact secrets
+[backend] line 0 token=<redacted> password=<redacted>
+[backend] line 1 token=<redacted> password=<redacted>
+[backend] line 2 token=<redacted> password=<redacted>
+[backend] line 3 token=<redacted> password=<redacted>
+[backend] line 4 token=<redacted> password=<redacted>
+[backend] line 5 token=<redacted> password=<redacted>
+[backend] line 6 token=<redacted> password=<redacted>
+[backend] line 7 token=<redacted> password=<redacted>
+[backend] line 8 token=<redacted> password=<redacted>
+[backend] line 9 token=<redacted> password=<redacted>
+[backend] line 10 token=<redacted> password=<redacted>
+[backend] line 11 token=<redacted> password=<redacted>
+[backend] line 12 token=<redacted> password=<redacted>
+[backend] line 13 token=<redacted> password=<redacted>
+[backend] line 14 token=<redacted> password=<redacted>
+[backend] line 15 token=<redacted> password=<redacted>
+[backend] line 16 token=<redacted> password=<redacted>
+[backend] line 17 token=<redacted> password=<redacted>
+[backend] line 18 token=<redacted> password=<redacted>
+[backend] line 19 token=<redacted> password=<redacted>
+[backend] line 20 token=<redacted> password=<redacted>
+[backend] line 21 token=<redacted> password=<redacted>
+[backend] line 22 token=<redacted> password=<redacted>
+[backend] line 23 token=<redacted> password=<redacted>
+[backend] line 24 token=<redacted> password=<redacted>
+[backend] line 25 token=<redacted> password=<redacted>
+[backend] line 26 token=<redacted> password=<redacted>
+[backend] line 27 token=<redacted> password=<redacted>
+[backend] line 28 token=<redacted> password=<redacted>
+[backend] line 29 token=<redacted> password=<redacted>
+[backend] line 30 token=<redacted> password=<redacted>
+[backend] line 31 token=<redacted> password=<redacted>
+[backend] line 32 token=<redacted> password=<redacted>
+[backend] line 33 token=<redacted> password=<redacted>
+[backend] line 34 token=<redacted> password=<redacted>
+[backend] line 35 token=<redacted> password=<redacted>
+[backend] line 36 token=<redacted> password=<redacted>
+[backend] line 37 token=<redacted> password=<redacted>
+[backend] line 38 token=<redacted> password=<redacted>
+[backend] line 39 token=<redacted> password=<redacted>
+[backend] line 40 token=<redacted> password=<redacted>
+[backend] line 41 token=<redacted> password=<redacted>
+[backend] line 42 token=<redacted> password=<redacted>
+[backend] line 43 token=<redacted> password=<redacted>
+[backend] line 44 token=<redacted> password=<redacted>
+[backend] line 45 token=<redacted> password=<redacted>
+[backend] line 46 token=<redacted> password=<redacted>
+[backend] line 47 token=<redacted> password=<redacted>
+[backend] line 48 token=<redacted> password=<redacted>
+[backend] line 49 token=<redacted> password=<redacted>
+[backend] line 50 token=<redacted> password=<redacted>
+[backend] line 51 token=<redacted> password=<redacted>
+[backend] line 52 token=<redacted> password=<redacted>
+[backend] line 53 token=<redacted> password=<redacted>
+[backend] line 54 token=<redacted> password=<redacted>
+[backend] line 55 token=<redacted> password=<redacted>
+[backend] line 56 token=<redacted> password=<redacted>
+[backend] line 57 token=<redacted> password=<redacted>
+[backend] line 58 token=<redacted> password=<redacted>
+[backend] line 59 token=<redacted> password=<redacted>
+00:00 +6: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +7: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagonal_media_list_item_test.dart: renders reusable media data and colored value deltas
+00:00 +8: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: real P6 flow holds then approves scan and restores every saved bucket
+00:00 +9: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: real P6 flow holds then approves scan and restores every saved bucket
+00:01 +10: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: real P6 flow holds then approves scan and restores every saved bucket
+00:01 +11: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: real P6 flow holds then approves scan and restores every saved bucket
+00:01 +12: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: real P6 flow holds then approves scan and restores every saved bucket
+00:01 +13: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: real P6 flow holds then approves scan and restores every saved bucket
+00:01 +14: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: real P6 flow holds then approves scan and restores every saved bucket
+00:01 +15: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: real P6 flow holds then approves scan and restores every saved bucket
+00:01 +16: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +17: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +18: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +19: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +20: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +21: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +22: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +23: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +24: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +25: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +26: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +27: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +28: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +29: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +30: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +31: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +32: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +33: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +34: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +35: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +36: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +37: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +38: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +39: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +40: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +41: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +42: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +43: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +44: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +45: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +46: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +47: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +48: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +49: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +50: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +51: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +52: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +53: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +54: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +55: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +56: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +57: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +58: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +59: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +60: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +61: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +62: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +63: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +64: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +65: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +66: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +67: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +68: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +69: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +70: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +71: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +72: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +73: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +74: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +75: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +76: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +77: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +78: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +79: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +80: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +81: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +82: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +83: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +84: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +85: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +86: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +87: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +88: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +89: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +90: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +91: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +92: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +93: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +94: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +95: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +96: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +97: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +98: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +99: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +100: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +101: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +102: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +103: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +104: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +105: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +106: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +107: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +108: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +109: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +110: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +111: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +112: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +113: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +114: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +115: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +116: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +117: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +118: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +119: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +120: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +121: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +122: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +123: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +124: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +125: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +126: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +127: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +128: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +129: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +130: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +131: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +132: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +133: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +134: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +135: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +136: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:05 +137: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:05 +138: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:05 +139: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:05 +140: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:06 +141: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:06 +142: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:06 +143: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:06 +144: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:06 +145: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:06 +146: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:06 +147: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:07 +148: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:07 +149: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:07 +150: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:07 +151: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:07 +152: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:07 +153: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:07 +154: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:07 +155: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:08 +156: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:08 +157: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:08 +158: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:08 +159: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:08 +160: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:08 +161: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:08 +162: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:09 +163: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:09 +164: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:09 +165: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:09 +166: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:09 +167: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:09 +168: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:09 +169: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +170: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +171: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +172: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +173: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +174: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +175: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +176: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +177: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +178: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +179: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +180: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +181: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +182: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +183: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +184: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +185: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +186: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +187: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +188: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +189: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +190: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +191: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +192: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +193: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:10 +194: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:11 +195: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:11 +196: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:11 +197: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:11 +198: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:11 +199: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:11 +200: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:12 +201: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:12 +202: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:12 +203: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:12 +204: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:12 +205: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:13 +206: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:13 +207: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:13 +208: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:13 +209: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:13 +210: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:13 +211: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:13 +212: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +213: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +214: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +215: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +216: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +217: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +218: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +219: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +220: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +221: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +222: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:15 +223: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:15 +224: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:15 +225: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:15 +226: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +227: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +228: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +229: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +230: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +231: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +232: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +233: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +234: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +235: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +236: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:17 +237: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:17 +238: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:17 +239: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:17 +240: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:17 +241: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:17 +242: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:18 +243: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:18 +244: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:18 +245: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:18 +246: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:18 +247: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:18 +248: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +249: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +250: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +251: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +252: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +253: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +254: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +255: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +256: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +257: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +258: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +259: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +260: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +261: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:19 +262: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +263: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +264: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +265: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +266: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +267: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +268: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +269: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +270: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +271: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +272: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +273: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +274: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +275: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +276: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +277: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +278: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +279: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +280: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +281: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +282: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +283: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +284: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +285: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +286: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +287: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +288: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +289: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +290: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +291: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +292: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +293: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +294: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +295: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +296: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +297: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:20 +298: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:21 +299: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:21 +300: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:21 +301: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:21 +302: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:21 +303: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:21 +304: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:21 +305: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:21 +306: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:21 +307: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +308: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +309: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +310: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +311: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +312: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +313: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +314: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +315: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +316: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +317: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +318: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +319: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +320: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +321: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +322: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +323: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:22 +324: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:23 +325: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:23 +326: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:23 +327: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:23 +328: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:23 +329: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:23 +330: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:23 +331: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:23 +332: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:24 +333: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:24 +334: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:24 +335: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:24 +336: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:24 +337: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:24 +338: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:24 +339: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:24 +340: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:24 +341: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:24 +342: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:25 +343: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:25 +344: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:25 +345: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:25 +346: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:25 +347: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:26 +348: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:26 +349: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +350: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +351: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +352: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +353: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +354: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +355: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +356: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +357: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +358: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +359: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +360: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +361: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:27 +362: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:28 +363: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:28 +364: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:28 +365: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:28 +366: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:28 +367: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:28 +368: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:28 +369: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:28 +370: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:28 +371: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:29 +372: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:29 +373: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:29 +374: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:30 +375: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:30 +376: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:30 +377: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:31 +378: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:31 +379: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:31 +380: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:32 +381: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:32 +382: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:33 +383: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:33 +384: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:33 +385: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:33 +386: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:34 +387: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:34 +388: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:34 +389: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:35 +390: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:35 +391: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:36 +392: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:36 +393: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:36 +394: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:37 +395: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:38 +396: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario creation reuses student builder and phase editor without bulk apply
+00:38 +397: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: development panel opens as an overlay in a narrow window
+00:39 +398: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario selector accepts the upper-right of fourth-column portraits in rows 1-4
+00:39 +399: All tests passed!

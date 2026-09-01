@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "source": "v6 scanner_components/student.py:read_student_star; matcher.py:read_star_result/read_student_star_v5_result; characterized before adaptation",
+  "regions": {"student_star_region": {"x1": 0.5964, "y1": 0.3159, "x2": 0.7098, "y2": 0.3579}},
+  "labels": [1, 2, 3, 4, 5],
+  "v6_masked_threshold": 0.60,
+  "detail_reads": 1,
+  "independent_weapon_states_implying_five": ["weapon_equipped", "weapon_unlocked_not_equipped"],
+  "safety_changes": ["Never infer from student_star_gate or basic_weapon_values", "Confirmed basic stars take priority; contradictions remain sticky review evidence", "Missing templates or blank ROI never default to one star", "F2 verifies star tab and same-student basic return including cancellation", "No learning or profile writes"]
+}

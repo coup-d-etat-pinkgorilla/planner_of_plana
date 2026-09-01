@@ -1,0 +1,21 @@
+validate: ok
+wiki:  v7
+path:  C:\Users\brigh\planner_of_plana\BA Planner\v7\almanac
+index: 23 pages
+orphans (0): ok
+
+dead-refs (0): ok
+
+broken-links (0): ok
+
+broken-xwiki (0): ok
+
+empty-topics (0): ok
+
+empty-pages (0): ok
+
+missing-source-citations (0): ok
+
+unused-sources (0): ok
+
+duplicate-sources (0): ok

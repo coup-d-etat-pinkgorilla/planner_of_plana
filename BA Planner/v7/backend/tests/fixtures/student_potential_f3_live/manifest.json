@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "partition": "development_regression_not_holdout_or_runtime_learning",
+  "note": "Real client captures; 1280 sample from F2. Expected values visually reviewed. Template-derived unit tests are separate.",
+  "assets": [
+    {
+      "file": "mika-basic-2560.png",
+      "source": "debug/scanner_f3_live/00-initial.png",
+      "sha256": "de8ba7fb1e5e88cb9dedc85d435c10b1a1acb3fca1b9b6c22f7aa334026c76ef",
+      "panel": "basic",
+      "level": 90,
+      "student_star": 5,
+      "potential": [
+        25,
+        25,
+        25
+      ]
+    },
+    {
+      "file": "mika-stat-2560.png",
+      "source": "debug/scanner_f3_live/mika-stat-roundtrip-retry/opened.png",
+      "sha256": "57f90da98d186ee13e743387b7fb5cd62b205dcae5adf26f00ee9ca5524432c8",
+      "panel": "stat",
+      "level": 90,
+      "student_star": 5,
+      "potential": [
+        25,
+        25,
+        25
+      ]
+    },
+    {
+      "file": "hina-basic-2560.png",
+      "source": "debug/scanner_f3_live/05-next-student.png",
+      "sha256": "6cce7048e203206f4186714bc46e7d7ca420689858a1be110b468819bc0c32f9",
+      "panel": "basic",
+      "level": 90,
+      "student_star": 5,
+      "potential": [
+        25,
+        25,
+        0
+      ]
+    },
+    {
+      "file": "hina-stat-2560.png",
+      "source": "debug/scanner_f3_live/hina-stat-roundtrip/opened.png",
+      "sha256": "cfec32279be54253776e23c85982a740f31535c9530e7beeadd6fd21ca6db1c1",
+      "panel": "stat",
+      "level": 90,
+      "student_star": 5,
+      "potential": [
+        25,
+        25,
+        0
+      ]
+    },
+    {
+      "file": "miyu-basic-2560.png",
+      "source": "debug/scanner_f3_live/03-last-student.png",
+      "sha256": "22c2c831c0615413df808944641e78fb90fbe2741187c16ca0e09e26831d65bc",
+      "panel": "basic",
+      "level": 1,
+      "student_star": 3,
+      "potential": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "mika-basic-1280.png",
+      "source": "debug/scanner_f2_live/05-basic-restored.png",
+      "sha256": "4c7df0b3e373c776a6060fde33d91f1c8767047d4da6fb5ad13226779dc3f4da",
+      "panel": "basic",
+      "level": 90,
+      "student_star": 5,
+      "potential": [
+        25,
+        25,
+        25
+      ]
+    }
+  ]
+}

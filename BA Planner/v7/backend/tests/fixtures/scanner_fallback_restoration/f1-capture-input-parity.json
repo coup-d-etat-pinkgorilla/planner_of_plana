@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "phase": "F1",
+  "rows": [
+    "R01",
+    "R02"
+  ],
+  "v6_reference": {
+    "source_manifest": "docs/migration/scanner-fallback-restoration/source-manifest.json",
+    "capture": {
+      "flags": [
+        2,
+        0
+      ],
+      "rounds": 3,
+      "retry_delay_seconds": 0.1
+    },
+    "input": "foreground physical click preferred, same-HWND message fallback; right navigation active; left helper exists"
+  },
+  "v7_contract": {
+    "capture": {
+      "methods": [
+        "PrintWindow(client,3)",
+        "PrintWindow(client,1)",
+        "PrintWindow(window,2) crop-to-client",
+        "PrintWindow(window,0) crop-to-client",
+        "BitBlt(client) foreground-only"
+      ],
+      "rounds": 3,
+      "max_native_attempts_per_capture": 15,
+      "max_pixels": 16777216,
+      "deadline_seconds": 2,
+      "worker": "persistent hidden subprocess; killed on deadline/cancel; no input in worker",
+      "stable": {
+        "max_frames": 12,
+        "max_failed_frames": 3,
+        "max_native_attempts": 180,
+        "default_seconds": 2,
+        "max_seconds": 5,
+        "consecutive_comparisons": 2,
+        "similarity": 0.995,
+        "deadline_shared": true
+      }
+    },
+    "input": {
+      "keys": [
+        "left",
+        "right"
+      ],
+      "foreground_activation_attempts": 1,
+      "physical_batches": 1,
+      "message_batches": 1,
+      "partial_send": "cleanup release then fail; never repeat down",
+      "target_validation": [
+        "positive HWND",
+        "current PID/thread matches selected binding",
+        "expected title",
+        "visible/not minimized",
+        "client-to-screen geometry",
+        "foreground before SendInput",
+        "WindowFromPoint root target before mouse input"
+      ],
+      "background": "attempt selected HWND activation; if denied post to same HWND without moving cursor",
+      "minimized": "reject capture/input without restore",
+      "cancel": "no new exploration; explicit panel-close cleanup allowed"
+    },
+    "navigation": {
+      "key_then_button": true,
+      "button_after_key_api_failure": true,
+      "button_after_confirmed_same_student": true,
+      "unverified_no_motion": "safe navigation_unconfirmed failure rather than completed",
+      "max_iterations": 500,
+      "uncertain_identity": "stop before using ID-dependent fields"
+    },
+    "retention": {
+      "internal_type": "ScanBatchResult",
+      "fields": [
+        "candidates",
+        "outcome",
+        "error",
+        "screen_state",
+        "coverage_complete"
+      ],
+      "publish": "completed raw candidates before one terminal",
+      "commit": "completed sessions only",
+      "inventory": "retain fully collected entries as review-required incomplete candidate; never zero-fill"
+    }
+  },
+  "cases": [
+    {
+      "id": "capture_fallback",
+      "positive": "3 fails,1 succeeds;3/1 fail,2 succeeds cropped;3/1/2 fail,0 succeeds;all print fail,BitBlt foreground succeeds",
+      "negative": "all methods fail 3 rounds; successful blank render; missing GDI handle; resized/window recycled; deadline/cancel"
+    },
+    {
+      "id": "stable",
+      "positive": "failed capture then three matching frames",
+      "negative": "12 changing frames; three capture failures; wrong dimensions; cancellation; release all prior frames"
+    },
+    {
+      "id": "input",
+      "positive": "left/right SendInput; activation denied same-HWND message fallback; physical rejected before any event -> message fallback",
+      "negative": "recycled/closed/minimized/hidden/wrong title HWND; cursor target overlap; focus loss; partial SendInput; invalid/NaN coordinates; cancellation"
+    },
+    {
+      "id": "navigation",
+      "positive": "key API failure -> button; unchanged key -> button then different ID; right cycle terminates",
+      "negative": "unchanged both methods does not prove edge; repeated left safety; iteration budget; identity uncertain"
+    },
+    {
+      "id": "retention",
+      "positive": "two collected + third capture failure -> two before failed; cancel after one -> one before cancelled",
+      "negative": "no commit on failed/cancelled; no in-flight partial student; close untransferred specimens; no events after terminal"
+    }
+  ]
+}

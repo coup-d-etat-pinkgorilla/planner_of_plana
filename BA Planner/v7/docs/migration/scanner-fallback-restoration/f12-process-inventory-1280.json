@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "evidence_partition": "new_f12_native_scan",
+  "mutations": {
+    "review": 0,
+    "revalidate": 0,
+    "commit": 0
+  },
+  "started_at_utc": "2026-09-01T09:33:55.563019Z",
+  "finished_at_utc": "2026-09-01T09:34:15.922780Z",
+  "elapsed_ms": 20359,
+  "kind": "inventory",
+  "student_scan_mode": "single",
+  "target": {
+    "id": "hwnd:8204a0",
+    "title": "Blue Archive",
+    "status": "ready",
+    "foreground": true
+  },
+  "readiness": {
+    "ready": true,
+    "manifest_version": 1,
+    "source_version": "v6-catalog-v7-layout-2026-07-29",
+    "asset_count": 3051,
+    "missing": [],
+    "corrupt": [],
+    "supported_resolutions": [
+      [
+        1280,
+        720
+      ],
+      [
+        1920,
+        1080
+      ],
+      [
+        2560,
+        1440
+      ]
+    ]
+  },
+  "session": {
+    "id": "eefabb22340641d38a5b8cc3c7c2317c",
+    "generation": 1
+  },
+  "cancel_result": {
+    "accepted": true,
+    "terminal": null
+  },
+  "errors": [],
+  "events": [
+    {
+      "received_ms": 10043,
+      "sequence": 1,
+      "event_kind": "phase",
+      "payload": {
+        "session_id": "eefabb22340641d38a5b8cc3c7c2317c",
+        "generation": 1,
+        "sequence": 1,
+        "scan_kind": "inventory",
+        "event_kind": "phase",
+        "phase": "capturing"
+      }
+    },
+    {
+      "received_ms": 16383,
+      "sequence": 2,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "eefabb22340641d38a5b8cc3c7c2317c",
+        "generation": 1,
+        "sequence": 2,
+        "scan_kind": "inventory",
+        "event_kind": "progress",
+        "current": 1,
+        "total": null,
+        "message_key": "scanner.inventory.grid"
+      }
+    },
+    {
+      "received_ms": 19801,
+      "sequence": 3,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "eefabb22340641d38a5b8cc3c7c2317c",
+        "generation": 1,
+        "sequence": 3,
+        "scan_kind": "inventory",
+        "event_kind": "progress",
+        "current": 2,
+        "total": null,
+        "message_key": "scanner.inventory.grid"
+      }
+    },
+    {
+      "received_ms": 20313,
+      "sequence": 4,
+      "event_kind": "candidate",
+      "payload": {
+        "session_id": "eefabb22340641d38a5b8cc3c7c2317c",
+        "generation": 1,
+        "sequence": 4,
+        "scan_kind": "inventory",
+        "event_kind": "candidate",
+        "candidate": {
+          "candidate_id": "56d45522cd904a5e97ecd5c331e26765",
+          "session_id": "eefabb22340641d38a5b8cc3c7c2317c",
+          "generation": 1,
+          "revision": 1,
+          "scan_kind": "inventory",
+          "payload": {
+            "version": 1,
+            "entries": [
+              {
+                "key": "Item_Icon_Favor_Random",
+                "quantity": "8",
+                "item_id": "Item_Icon_Favor_Random",
+                "name": null,
+                "observed_slot": 0,
+                "profile_id": "presents"
+              },
+              {
+                "key": "Item_Icon_Favor_Selection",
+                "quantity": "197",
+                "item_id": "Item_Icon_Favor_Selection",
+                "name": null,
+                "observed_slot": 1,
+                "profile_id": "presents"
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "field": "entries[0].item_id",
+              "status": "ok",
+              "source": "inventory_detail_template",
+              "confidence": 0.9653554529459824,
+              "note": "margin=0.026054"
+            },
+            {
+              "field": "entries[0].quantity",
+              "status": "ok",
+              "source": "inventory_detail_count",
+              "confidence": 0.8577734043966381,
+              "note": ""
+            },
+            {
+              "field": "entries[1].item_id",
+              "status": "ok",
+              "source": "inventory_detail_template",
+              "confidence": 0.9655993619920965,
+              "note": "margin=0.025933"
+            },
+            {
+              "field": "entries[1].quantity",
+              "status": "ok",
+              "source": "inventory_detail_count",
+              "confidence": 0.8607890853894685,
+              "note": ""
+            },
+            {
+              "field": "scan_coverage",
+              "status": "partial",
+              "source": "scan_interrupted",
+              "confidence": 0.0,
+              "note": "cancelled"
+            }
+          ],
+          "review_required": true,
+          "approved": false,
+          "audit": []
+        }
+      }
+    },
+    {
+      "received_ms": 20313,
+      "sequence": 5,
+      "event_kind": "terminal",
+      "payload": {
+        "session_id": "eefabb22340641d38a5b8cc3c7c2317c",
+        "generation": 1,
+        "sequence": 5,
+        "scan_kind": "inventory",
+        "event_kind": "terminal",
+        "outcome": "cancelled"
+      }
+    }
+  ],
+  "snapshot": {
+    "terminal": "cancelled",
+    "last_sequence": 5,
+    "candidate_count": 1,
+    "candidates": [
+      {
+        "id": "56d45522cd904a5e97ecd5c331e26765",
+        "revision": 1,
+        "review_required": true,
+        "approved": false,
+        "payload": {
+          "version": 1,
+          "entries": [
+            {
+              "key": "Item_Icon_Favor_Random",
+              "quantity": "8",
+              "item_id": "Item_Icon_Favor_Random",
+              "name": null,
+              "observed_slot": 0,
+              "profile_id": "presents"
+            },
+            {
+              "key": "Item_Icon_Favor_Selection",
+              "quantity": "197",
+              "item_id": "Item_Icon_Favor_Selection",
+              "name": null,
+              "observed_slot": 1,
+              "profile_id": "presents"
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "field": "entries[0].item_id",
+            "status": "ok",
+            "source": "inventory_detail_template",
+            "confidence": 0.9653554529459824,
+            "note": "margin=0.026054",
+            "details": null
+          },
+          {
+            "field": "entries[0].quantity",
+            "status": "ok",
+            "source": "inventory_detail_count",
+            "confidence": 0.8577734043966381,
+            "note": "",
+            "details": null
+          },
+          {
+            "field": "entries[1].item_id",
+            "status": "ok",
+            "source": "inventory_detail_template",
+            "confidence": 0.9655993619920965,
+            "note": "margin=0.025933",
+            "details": null
+          },
+          {
+            "field": "entries[1].quantity",
+            "status": "ok",
+            "source": "inventory_detail_count",
+            "confidence": 0.8607890853894685,
+            "note": "",
+            "details": null
+          },
+          {
+            "field": "scan_coverage",
+            "status": "partial",
+            "source": "scan_interrupted",
+            "confidence": 0.0,
+            "note": "cancelled",
+            "details": null
+          }
+        ]
+      }
+    ]
+  }
+}

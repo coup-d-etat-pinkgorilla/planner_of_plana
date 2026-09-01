@@ -1,0 +1,1052 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "id": "E-FEEDBACK",
+      "kind": "existing_actual_2560_basic_screens",
+      "manifest": "backend/tests/fixtures/scanner_fallback_restoration/feedback1-manifest.json",
+      "coverage": "19 screens, two Hoshino forms, partial visual truth; no input sequence"
+    },
+    {
+      "id": "E-S2W",
+      "kind": "real_state_crops_and_characterized_menu_contract",
+      "manifest": "backend/tests/fixtures/student_weapon_s2w_v6_parity.json",
+      "coverage": "Three real state crops; weapon menu test frames are synthetic wiring evidence, not independent real menu truth"
+    },
+    {
+      "id": "E-S3-LIVE",
+      "kind": "existing_actual_1280_basic_and_equipment_menu",
+      "manifest": "backend/tests/fixtures/student_equipment_s3_live_master.json",
+      "coverage": "Mika basic/shared equipment menu and Hibiki favorite T2, three repeats; slot copies duplicate source frames; no checkbox-off/close-failure/input trace"
+    },
+    {
+      "id": "E-LEVEL",
+      "kind": "existing_2560_visual_level_series",
+      "manifest": "backend/tests/fixtures/student_level_studio_archive_source_spec.json",
+      "coverage": "Levels 1,12,23,34,45,56,67,78,89,90; basic only, not detail tab"
+    },
+    {
+      "id": "E-EQUIPMENT-ARCHIVE",
+      "kind": "existing_actual_crops_with_partition_metadata",
+      "manifest": "backend/tests/fixtures/student_equipment_s3b_archive/manifest.json",
+      "coverage": "Existing equipment truth; not proof for T10/70 score relaxation; preserve training/validation partition"
+    },
+    {
+      "id": "E-DIAGNOSTIC",
+      "kind": "old_json_without_images",
+      "manifest": "debug/scan test/ba-planner-student-scan-2026-08-29T00-49-15.526282Z-full.json",
+      "coverage": "224 old candidates, frozen confirmed-student context; does not supply capture size or new image truth"
+    }
+  ],
+  "files": [
+    {
+      "path": "backend/assets/recognition/v1/manifest.json",
+      "sha256": "85e315b50587406e2e6b0ac61820f590c804ed27f55bfca4bbc11701f96652c0"
+    },
+    {
+      "path": "backend/assets/recognition/v1/student_basic_manifest.json",
+      "sha256": "33ad3d28e55742b6d3e99afbe88218df93ff77dc4c3a66fea0cf9c003ed4d6e6"
+    },
+    {
+      "path": "backend/assets/recognition/v1/student_equipment_manifest.json",
+      "sha256": "0b9a7dce895935e47edffb3375460d4725fceba311d149787d21a94862b10a81"
+    },
+    {
+      "path": "backend/assets/recognition/v1/student_weapon_manifest.json",
+      "sha256": "352c8c197e183c82758c60736124f9660601a53e4276ecef0d52a8a05deb352f"
+    },
+    {
+      "path": "backend/core/student_stats.py",
+      "sha256": "038521266cadfca4b595d0b705b6069c33fb0ab607f6a8e4e9439b156b47caa8"
+    },
+    {
+      "path": "backend/core/student_stats_catalog.py",
+      "sha256": "6559428cf4498636675a93075a3adf7ed0749e3ee8a1fa78e25f4c3647b6a225"
+    },
+    {
+      "path": "backend/core/student_stats_types.py",
+      "sha256": "4f2a564f6db8d6bb28b07f29e9f4759d8fee93f84d7640d8af6fe85d49263a51"
+    },
+    {
+      "path": "backend/data/metadata/v1/student_catalog.json",
+      "sha256": "545cd8aa5a7b2aa1cdd6fbe2cffbe011bd4a65437aef40711ef597bee734ecef"
+    },
+    {
+      "path": "backend/data/student_stats/v1/catalog.json",
+      "sha256": "2d4b8bd11d0d4f6ad0d434ac859b63684e87cd3dade73aec4e63b3f038245fde"
+    },
+    {
+      "path": "backend/tests/fixtures/scanner_fallback_restoration/feedback1-manifest.json",
+      "sha256": "5ad9dcd3e8afcf19140826b4cf96ed2b886eda2eba40ee1651fe6ae67018cfaf"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/README.md",
+      "sha256": "395e99e6decbda9adba3c85fe781ff5b2a51ae58f3c2584c9fc210083cf351ab"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/equipment_menu/metadata.json",
+      "sha256": "dbb504c6f4cefb053ffadca6343120e7d54bacdfd98c40b058fe297f33e191c5"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/equipment_menu/sample_01.png",
+      "sha256": "7f84acf66833c4d14955ea25123ce0bb65b73bcd0ffc71634d61d9cad4b194db",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/equipment_menu/sample_02.png",
+      "sha256": "1970cc5accca66dae95d41fdca56c45a16afe77ca85a629d056fd6f17fd13675",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/equipment_menu/sample_03.png",
+      "sha256": "680ac25b5c683b6cb272912e63fff8354c575fe51ce3ff13aabf83149e24dd94",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/favorite_hibiki/student_detail/sample_01.png",
+      "sha256": "caf10b98f12cd5bc45299059d0f84a8c53a4d8186e72bf56abfe8b112562afba",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/favorite_hibiki/student_detail/sample_01/metadata.json",
+      "sha256": "ebb86e7447cf9b24569ccafbc82b23fd27fec272b845ae4273daa8388761e9fa"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/favorite_hibiki/student_detail/sample_02.png",
+      "sha256": "14818db3f041544c2ac17c16c6959d820b09d6f155da2303773e02cbed81a9ca",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/favorite_hibiki/student_detail/sample_02/metadata.json",
+      "sha256": "7adafcd3a0ea5cbce55e023ce8c0af939023dc5fbe13b160ee2e06cb9cae211f"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/favorite_hibiki/student_detail/sample_03.png",
+      "sha256": "c7317886965212e224b4990ddcbff47dc2022e07b832039624126f1d652aa184",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/favorite_hibiki/student_detail/sample_03/metadata.json",
+      "sha256": "000e8a43b78156e82556767fb43bd25ee79e756586d2bfd0fd4dd20a3a53c7b0"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot1/Hat/T10/level_70/sample_01/full_screen.png",
+      "sha256": "77b8c933cfc80b170854e0a08a5a846b7436d9377b0ee55491b940912e2588db",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot1/Hat/T10/level_70/sample_01/metadata.json",
+      "sha256": "856acd43f9912ef7830d36e305c5d16e531fbae60711f37ddc697c819653be79"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot1/Hat/T10/level_70/sample_02/full_screen.png",
+      "sha256": "295d8f42b949cc4b3cdfa89c072ed43f378245bc2f80fb35ab56fe400eaece82",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot1/Hat/T10/level_70/sample_02/metadata.json",
+      "sha256": "56099d1d6751e15e0c021149821496677a6e92dadd1fa9b5c7b3d1f89d08656e"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot1/Hat/T10/level_70/sample_03/full_screen.png",
+      "sha256": "a113e3a3a1e54db486d9c7fe3e1c5b9605659519df06a2af1de43d55c2c896ad",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot1/Hat/T10/level_70/sample_03/metadata.json",
+      "sha256": "d55fcfc35a5c60a990c11242fa0bb4a437dce54b475f945da9933731acade228"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot2/Badge/T10/level_70/sample_01/full_screen.png",
+      "sha256": "77b8c933cfc80b170854e0a08a5a846b7436d9377b0ee55491b940912e2588db",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot2/Badge/T10/level_70/sample_01/metadata.json",
+      "sha256": "979a3f2e30c4992e4ffacb207b35ae53a9d9de1260762e039a590e5e8ad80f6b"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot2/Badge/T10/level_70/sample_02/full_screen.png",
+      "sha256": "295d8f42b949cc4b3cdfa89c072ed43f378245bc2f80fb35ab56fe400eaece82",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot2/Badge/T10/level_70/sample_02/metadata.json",
+      "sha256": "f9a80718ea2e26ddf1afa3e92b18a7d81654ad8aa6255c546456bab9c6491721"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot2/Badge/T10/level_70/sample_03/full_screen.png",
+      "sha256": "a113e3a3a1e54db486d9c7fe3e1c5b9605659519df06a2af1de43d55c2c896ad",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot2/Badge/T10/level_70/sample_03/metadata.json",
+      "sha256": "27623fc9f50ffea31ee704bd85500d859164a32918207287b821a3a3e8dfc84a"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot3/Watch/T10/level_70/sample_01/full_screen.png",
+      "sha256": "77b8c933cfc80b170854e0a08a5a846b7436d9377b0ee55491b940912e2588db",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot3/Watch/T10/level_70/sample_01/metadata.json",
+      "sha256": "c4b0561dedbfc9fba819e0a0bc7a0636c60c87e0801f42535f9b3a978053d251"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot3/Watch/T10/level_70/sample_02/full_screen.png",
+      "sha256": "295d8f42b949cc4b3cdfa89c072ed43f378245bc2f80fb35ab56fe400eaece82",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot3/Watch/T10/level_70/sample_02/metadata.json",
+      "sha256": "4c8591379d57201175842e2b1ee0873d2d4c1fe52b692af1ce7c9499ae93625b"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot3/Watch/T10/level_70/sample_03/full_screen.png",
+      "sha256": "a113e3a3a1e54db486d9c7fe3e1c5b9605659519df06a2af1de43d55c2c896ad",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/slot3/Watch/T10/level_70/sample_03/metadata.json",
+      "sha256": "a462b398f07ce91ba53404384d02c6dfe9742333207b861ce22693d08db1ca5c"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/student_detail/sample_01.png",
+      "sha256": "77b8c933cfc80b170854e0a08a5a846b7436d9377b0ee55491b940912e2588db",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/student_detail/sample_02.png",
+      "sha256": "295d8f42b949cc4b3cdfa89c072ed43f378245bc2f80fb35ab56fe400eaece82",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_dataset/live_1280x720/student_detail/sample_03.png",
+      "sha256": "a113e3a3a1e54db486d9c7fe3e1c5b9605659519df06a2af1de43d55c2c896ad",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3_live_master.json",
+      "sha256": "e386d07a34f8f621fdbd48338ce6b9df74d32aeaa73d4d7c675625c733d9c31c"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3b_archive/manifest.json",
+      "sha256": "226cbeaecdf2b5782f3b2ea0158a9e8b98f0f0766c5896204573e5aa26305b92"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3b_archive/roi_atlas.png",
+      "sha256": "f2e68f8003edcb8495dcc6fbeb79af01c32f57ee9116ef57abaf5d416ea72df8",
+      "size": [
+        960,
+        540
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3b_direct_tier/inner_icon_atlas.png",
+      "sha256": "b4838621f14f6cb1a548915cd433b137b13a1ceddb3a26111c4c27fbe0087b13",
+      "size": [
+        700,
+        200
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3b_direct_tier/manifest.json",
+      "sha256": "09ed7b77dc2984d56b62b4194d8e99d922a8179bee10f035a1d260c3154de737"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3b_promotion_probe/manifest.json",
+      "sha256": "f3ccec6c19a95c5783369518891e5b50d44542e9799079290a49d15dedb92906"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_s3b_promotion_probe/roi_atlas.png",
+      "sha256": "363e6aad47c4890f5e2c8a30f789b9e9426693abed09f0583f234a348e2b4cfe",
+      "size": [
+        432,
+        72
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_level_studio_archive_source_spec.json",
+      "sha256": "cb74d15cd7d6e25db12f5811804404c5757d5f244d74d2fbe405b82924c51ce0"
+    },
+    {
+      "path": "backend/tests/fixtures/student_relationship_s4/manifest.json",
+      "sha256": "f3b7a1cc7f64641dd9cc412da321889e339f6f0a1bbee45a0f0de0868228ed88"
+    },
+    {
+      "path": "backend/tests/fixtures/student_studio_text_archive_summary.json",
+      "sha256": "fcc322ca4ad88d2b05aad8389934dfc67063c03857fa27746adb26f167cb2e87"
+    },
+    {
+      "path": "backend/tests/fixtures/student_weapon_level_s4/manifest.json",
+      "sha256": "53444320ba7c338253b2910498461be85e24f408082aed214bc2f1fc49d91a00"
+    },
+    {
+      "path": "backend/tests/fixtures/student_weapon_s2w_v6_parity.json",
+      "sha256": "3a38143a345b2017e85983f6d251d1df43a1dfc3419e9f523d6cd1f57e43f790"
+    },
+    {
+      "path": "backend/tests/fixtures/student_weapon_s2w_v6_parity/state/no_weapon_system.png",
+      "sha256": "a79f24a19792b73b6b5f882c2ce7533d56b602b1eb07bf20e2eabb40627fc203",
+      "size": [
+        57,
+        55
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_weapon_s2w_v6_parity/state/weapon_equipped.png",
+      "sha256": "e3a6c054feaed162b156f948aa751f95e423ade856acfee26936c84662ae712c",
+      "size": [
+        57,
+        55
+      ]
+    },
+    {
+      "path": "backend/tests/fixtures/student_weapon_s2w_v6_parity/state/weapon_unlocked_not_equipped.png",
+      "sha256": "1b4a53d1648fe0b59f8ab54ee4e0d7a0edb46c06d651e6d4c36a1790d0d9ab32",
+      "size": [
+        57,
+        55
+      ]
+    },
+    {
+      "path": "backend/tools/benchmark_scanner_fallback_f0.py",
+      "sha256": "84391168d2c997acc36a169e79137d0903bc778b9170c87d16ce225d8733b9e8"
+    },
+    {
+      "path": "backend/tools/benchmark_student_studio_text_archive.py",
+      "sha256": "536cd84f17ab3d63786435ae602e74e3794b0e81f6c470344c0c2a5ffba8a2bf"
+    },
+    {
+      "path": "backend/tools/scanner_fallback_f0_manifest.py",
+      "sha256": "0a69df612022c20757e7f8981738feb5a2ba0560d54689fb18698ffe2e8b2c34"
+    },
+    {
+      "path": "debug/scan test/ba-planner-student-scan-2026-08-29T00-49-15.526282Z-full.json",
+      "sha256": "49728fb463147bd9c2e2deb7b16a1fcf9bf350828f43878d9a50874777a7826e"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_1digit_digit1/0.png",
+      "sha256": "4191f89e79e18c22cfe77993ac0b8732c34df173bb21f659c8144f5009b99dd7"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_1digit_digit1/1.png",
+      "sha256": "b08cd84ceea6a8f5f5dd2770ab41c813b282813c3cbdf5c03725d73a791de179"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_1digit_digit1/2.png",
+      "sha256": "317cb02c04419ce780c8f1d1c36fb4152cfa8a378529962ac6f962fa6f079c0f"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_1digit_digit1/3.png",
+      "sha256": "122db688778d18163c7114a715821d2c079afe4069a772a80fe7415a3fd5b656"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_1digit_digit1/4.png",
+      "sha256": "a3af16325f2dfd8506f426a8ae5b338bcc4c894b6da2eaf58cb833fa8169e194"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_1digit_digit1/5.png",
+      "sha256": "72cb55eaa2d0b3ec755f4a685519a56afe631a95efc3400602b15b91c574c2db"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_1digit_digit1/6.png",
+      "sha256": "ab90b0647bf898706280ac19f90c134cd386c0770df19f39f951142f6762da65"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_1digit_digit1/7.png",
+      "sha256": "f4aea0b0fb1c3eba6c1804af233e4ce16cb65553a270c4d75dc05cd8e1efc628"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_1digit_digit1/8.png",
+      "sha256": "0be6e9bcf27c9e21ca59ff86d75a558add1b91f4515520799989dca26d400b8c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_1digit_digit1/9.png",
+      "sha256": "ab3227473742d01a6a3a3e6d51fcd258402b25406efba23b24ac78d934c401a6"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit1/0.png",
+      "sha256": "4191f89e79e18c22cfe77993ac0b8732c34df173bb21f659c8144f5009b99dd7"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit1/1.png",
+      "sha256": "b08cd84ceea6a8f5f5dd2770ab41c813b282813c3cbdf5c03725d73a791de179"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit1/2.png",
+      "sha256": "317cb02c04419ce780c8f1d1c36fb4152cfa8a378529962ac6f962fa6f079c0f"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit1/3.png",
+      "sha256": "122db688778d18163c7114a715821d2c079afe4069a772a80fe7415a3fd5b656"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit1/4.png",
+      "sha256": "a3af16325f2dfd8506f426a8ae5b338bcc4c894b6da2eaf58cb833fa8169e194"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit1/5.png",
+      "sha256": "72cb55eaa2d0b3ec755f4a685519a56afe631a95efc3400602b15b91c574c2db"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit1/6.png",
+      "sha256": "ab90b0647bf898706280ac19f90c134cd386c0770df19f39f951142f6762da65"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit1/7.png",
+      "sha256": "f4aea0b0fb1c3eba6c1804af233e4ce16cb65553a270c4d75dc05cd8e1efc628"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit1/8.png",
+      "sha256": "0be6e9bcf27c9e21ca59ff86d75a558add1b91f4515520799989dca26d400b8c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit1/9.png",
+      "sha256": "ab3227473742d01a6a3a3e6d51fcd258402b25406efba23b24ac78d934c401a6"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit2/0.png",
+      "sha256": "4191f89e79e18c22cfe77993ac0b8732c34df173bb21f659c8144f5009b99dd7"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit2/1.png",
+      "sha256": "b08cd84ceea6a8f5f5dd2770ab41c813b282813c3cbdf5c03725d73a791de179"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit2/2.png",
+      "sha256": "317cb02c04419ce780c8f1d1c36fb4152cfa8a378529962ac6f962fa6f079c0f"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit2/3.png",
+      "sha256": "122db688778d18163c7114a715821d2c079afe4069a772a80fe7415a3fd5b656"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit2/4.png",
+      "sha256": "a3af16325f2dfd8506f426a8ae5b338bcc4c894b6da2eaf58cb833fa8169e194"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit2/5.png",
+      "sha256": "72cb55eaa2d0b3ec755f4a685519a56afe631a95efc3400602b15b91c574c2db"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit2/6.png",
+      "sha256": "ab90b0647bf898706280ac19f90c134cd386c0770df19f39f951142f6762da65"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit2/7.png",
+      "sha256": "f4aea0b0fb1c3eba6c1804af233e4ce16cb65553a270c4d75dc05cd8e1efc628"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit2/8.png",
+      "sha256": "0be6e9bcf27c9e21ca59ff86d75a558add1b91f4515520799989dca26d400b8c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit2/9.png",
+      "sha256": "ab3227473742d01a6a3a3e6d51fcd258402b25406efba23b24ac78d934c401a6"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit3/0.png",
+      "sha256": "4191f89e79e18c22cfe77993ac0b8732c34df173bb21f659c8144f5009b99dd7"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit3/1.png",
+      "sha256": "b08cd84ceea6a8f5f5dd2770ab41c813b282813c3cbdf5c03725d73a791de179"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit3/2.png",
+      "sha256": "317cb02c04419ce780c8f1d1c36fb4152cfa8a378529962ac6f962fa6f079c0f"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit3/3.png",
+      "sha256": "122db688778d18163c7114a715821d2c079afe4069a772a80fe7415a3fd5b656"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit3/4.png",
+      "sha256": "a3af16325f2dfd8506f426a8ae5b338bcc4c894b6da2eaf58cb833fa8169e194"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit3/5.png",
+      "sha256": "72cb55eaa2d0b3ec755f4a685519a56afe631a95efc3400602b15b91c574c2db"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit3/6.png",
+      "sha256": "ab90b0647bf898706280ac19f90c134cd386c0770df19f39f951142f6762da65"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit3/7.png",
+      "sha256": "f4aea0b0fb1c3eba6c1804af233e4ce16cb65553a270c4d75dc05cd8e1efc628"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit3/8.png",
+      "sha256": "0be6e9bcf27c9e21ca59ff86d75a558add1b91f4515520799989dca26d400b8c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_3digit_digit3/9.png",
+      "sha256": "ab3227473742d01a6a3a3e6d51fcd258402b25406efba23b24ac78d934c401a6"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit1/0.png",
+      "sha256": "4191f89e79e18c22cfe77993ac0b8732c34df173bb21f659c8144f5009b99dd7"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit1/1.png",
+      "sha256": "b08cd84ceea6a8f5f5dd2770ab41c813b282813c3cbdf5c03725d73a791de179"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit1/2.png",
+      "sha256": "317cb02c04419ce780c8f1d1c36fb4152cfa8a378529962ac6f962fa6f079c0f"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit1/3.png",
+      "sha256": "122db688778d18163c7114a715821d2c079afe4069a772a80fe7415a3fd5b656"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit1/4.png",
+      "sha256": "a3af16325f2dfd8506f426a8ae5b338bcc4c894b6da2eaf58cb833fa8169e194"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit1/5.png",
+      "sha256": "72cb55eaa2d0b3ec755f4a685519a56afe631a95efc3400602b15b91c574c2db"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit1/6.png",
+      "sha256": "ab90b0647bf898706280ac19f90c134cd386c0770df19f39f951142f6762da65"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit1/7.png",
+      "sha256": "f4aea0b0fb1c3eba6c1804af233e4ce16cb65553a270c4d75dc05cd8e1efc628"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit1/8.png",
+      "sha256": "0be6e9bcf27c9e21ca59ff86d75a558add1b91f4515520799989dca26d400b8c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit1/9.png",
+      "sha256": "ab3227473742d01a6a3a3e6d51fcd258402b25406efba23b24ac78d934c401a6"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit2/0.png",
+      "sha256": "4191f89e79e18c22cfe77993ac0b8732c34df173bb21f659c8144f5009b99dd7"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit2/1.png",
+      "sha256": "b08cd84ceea6a8f5f5dd2770ab41c813b282813c3cbdf5c03725d73a791de179"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit2/2.png",
+      "sha256": "317cb02c04419ce780c8f1d1c36fb4152cfa8a378529962ac6f962fa6f079c0f"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit2/3.png",
+      "sha256": "122db688778d18163c7114a715821d2c079afe4069a772a80fe7415a3fd5b656"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit2/4.png",
+      "sha256": "a3af16325f2dfd8506f426a8ae5b338bcc4c894b6da2eaf58cb833fa8169e194"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit2/5.png",
+      "sha256": "72cb55eaa2d0b3ec755f4a685519a56afe631a95efc3400602b15b91c574c2db"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit2/6.png",
+      "sha256": "ab90b0647bf898706280ac19f90c134cd386c0770df19f39f951142f6762da65"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit2/7.png",
+      "sha256": "f4aea0b0fb1c3eba6c1804af233e4ce16cb65553a270c4d75dc05cd8e1efc628"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit2/8.png",
+      "sha256": "0be6e9bcf27c9e21ca59ff86d75a558add1b91f4515520799989dca26d400b8c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/affectionlevel_digit2/9.png",
+      "sha256": "ab3227473742d01a6a3a3e6d51fcd258402b25406efba23b24ac78d934c401a6"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit1/0.png",
+      "sha256": "5330da482958f329696a3854d67fcc4c0fd9c5cabc71b95666b00dca131baffb"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit1/1.png",
+      "sha256": "3f7bfed1eb0461933beb8f5491ea31928ac03943c86948bf867469c649733a6b"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit1/2.png",
+      "sha256": "4ef884352880176bb5b919ddd2c0448f8073eeb8649b80c88352ed65e4448354"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit1/3.png",
+      "sha256": "422f45e8c0a3975ca55e996eecfe31cdda902272b3c652049a78c6d1d3b68bb5"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit1/4.png",
+      "sha256": "0ac141852a186cff853f5bf8cf346e262c4d8278de70becf23f3a7a84674bfe3"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit1/5.png",
+      "sha256": "e4b5663b7ee9d0c02c2f8703d9dc23cacda35435a2d177af3107b3c8d5589d8f"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit1/6.png",
+      "sha256": "e993c9ee7d78d908b0448ddb56246a34e21ac8d2465c236409e4675828d30340"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit1/7.png",
+      "sha256": "36727c3f7f9cbbb0d002787aab8c9f9d544de5ce610af6d08f0b3ce9269fdccd"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit1/8.png",
+      "sha256": "9cbbd7c847c482e706ae56d0083ec74c929241b19b71c617ce44cae4c1fb3d8f"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit1/9.png",
+      "sha256": "3c41d14e6ce744d87d37a423e1cb6ac9abc3fee8ba0207783f6703e67119e7fd"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit2/0.png",
+      "sha256": "be22399f321c8bee0a27bc238a4f72d1fa345398abd01309a9257e39f4e42209"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit2/1.png",
+      "sha256": "97283e0acfeefb36fa8545bb9f9e6f99a19aac1d0e593c3a2ecf077477546676"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit2/2.png",
+      "sha256": "7acb80494b3d9f4478a995138a323243ec34c865a9e4a40768aebe98386dd382"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit2/3.png",
+      "sha256": "fe8b37097e08732ef9a4c8dc0bfc142c0dd2ba63abea52cec36506eba38a9f3c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit2/4.png",
+      "sha256": "34d6231ace731f74c87fa310127362c1a3dcd1f4693081e4ae60b353a7c33948"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit2/5.png",
+      "sha256": "7aedfd82312007a1721123230550d340be23c3ce4ce3480b54f9dbe3eaf0751a"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit2/6.png",
+      "sha256": "ab3160ca3512e4d9cab2fca090d9af5d2e84883881c9a5929c72d55d0d30fe9d"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit2/7.png",
+      "sha256": "358a366fd078c547f46c185c600d1417db2770bf5d9ba3edd0462ed131f9a5e7"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit2/8.png",
+      "sha256": "d639d49b526e8d13f22481b2723cd74c7db88aef6cfe9c0e7927c0b74eaf0bc4"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip1level_digit2/9.png",
+      "sha256": "2aa789ca41a19674054e1a9529d6de5aab49603747d73b1215904ce4464782b3"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit1/0.png",
+      "sha256": "ddf4f09934ab6e33daa8a3d0a5c6a6a3360808fb15bfca9613be393977e61d50"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit1/1.png",
+      "sha256": "f343aa37bd0ca30855b78a5b35fd271441fc40e4ef5bd3fcee9fc1f6765e6e82"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit1/2.png",
+      "sha256": "7e71c88a4b54902abeb51abfb55899ad5db4318e9343af03d662926f986a05ba"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit1/3.png",
+      "sha256": "6463b75d626ee0bfc7d89853ec612541fff6883737ae46950f49060e6389fd89"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit1/4.png",
+      "sha256": "1b9cda570acc342d689846d943aad6a07f9aab009b3b8fe8e23eb8cccfbb6275"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit1/5.png",
+      "sha256": "020b421d289e61acab10703053bb7cabfe1caec3bdc6ed330f82034359de278d"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit1/6.png",
+      "sha256": "f469378a8992890d6ed26e4d01d9b5731ab35f45874827c1c69c31ca979a27dc"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit1/7.png",
+      "sha256": "843fece5c5690e43c4d274bb8b361a964ccb989c177692abbdebd2447209cd64"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit1/8.png",
+      "sha256": "00a832529e785c9a2911781cdbf4967748c3599975f3ff65599577c868475236"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit1/9.png",
+      "sha256": "6e3bbc7ef0f6ca154c5b2ab829e50ad7de34ed98787615eb2a1d6d000277663f"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit2/0.png",
+      "sha256": "be22399f321c8bee0a27bc238a4f72d1fa345398abd01309a9257e39f4e42209"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit2/1.png",
+      "sha256": "97283e0acfeefb36fa8545bb9f9e6f99a19aac1d0e593c3a2ecf077477546676"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit2/2.png",
+      "sha256": "7acb80494b3d9f4478a995138a323243ec34c865a9e4a40768aebe98386dd382"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit2/3.png",
+      "sha256": "fe8b37097e08732ef9a4c8dc0bfc142c0dd2ba63abea52cec36506eba38a9f3c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit2/4.png",
+      "sha256": "34d6231ace731f74c87fa310127362c1a3dcd1f4693081e4ae60b353a7c33948"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit2/5.png",
+      "sha256": "7aedfd82312007a1721123230550d340be23c3ce4ce3480b54f9dbe3eaf0751a"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit2/6.png",
+      "sha256": "ab3160ca3512e4d9cab2fca090d9af5d2e84883881c9a5929c72d55d0d30fe9d"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit2/7.png",
+      "sha256": "358a366fd078c547f46c185c600d1417db2770bf5d9ba3edd0462ed131f9a5e7"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit2/8.png",
+      "sha256": "d639d49b526e8d13f22481b2723cd74c7db88aef6cfe9c0e7927c0b74eaf0bc4"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip2level_digit2/9.png",
+      "sha256": "2aa789ca41a19674054e1a9529d6de5aab49603747d73b1215904ce4464782b3"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit1/0.png",
+      "sha256": "49e541b3cc146f7aee7f53e97ee91bed637763e2c8ce162c2b5c12921993203f"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit1/1.png",
+      "sha256": "b69efd32a6fe624bddaa5dae53a058105dd49461e037fc429ad754208d6b5ce4"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit1/2.png",
+      "sha256": "e7c9a29291efc0824573710d64e3fcd17ac28eb5de9d8326ff9fb66d1304d817"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit1/3.png",
+      "sha256": "17a6f02f8e51601c8ca1f866545ce4c085ba8c60de97d8418d744e3aded63f2e"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit1/4.png",
+      "sha256": "4ba519f49040077c357528d1af39e3a8fa80254559837d37921fae7b3db0f217"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit1/5.png",
+      "sha256": "615673fd2d68548312fc0440298ff0fffcc94c62fe35ec92b76b25dfcd431bde"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit1/6.png",
+      "sha256": "0fad4cc32352148f2cab2722c338208636ec0cdd0af058a490725bc15b644f86"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit1/7.png",
+      "sha256": "3fdffdbbcb9125fdfe39cb4d2e43a3cd04a7cfc4a82b17cc1adb7ec854d1897c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit1/8.png",
+      "sha256": "67574645c7af18a33a5c135952c2b3fbe0c648f9f171e1c55af355c3514683cb"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit1/9.png",
+      "sha256": "d39864fbe0b0387d135208c69eac339e8fa62827314b8622284f8718ec0f82d9"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit2/0.png",
+      "sha256": "be22399f321c8bee0a27bc238a4f72d1fa345398abd01309a9257e39f4e42209"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit2/1.png",
+      "sha256": "97283e0acfeefb36fa8545bb9f9e6f99a19aac1d0e593c3a2ecf077477546676"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit2/2.png",
+      "sha256": "7acb80494b3d9f4478a995138a323243ec34c865a9e4a40768aebe98386dd382"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit2/3.png",
+      "sha256": "fe8b37097e08732ef9a4c8dc0bfc142c0dd2ba63abea52cec36506eba38a9f3c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit2/4.png",
+      "sha256": "34d6231ace731f74c87fa310127362c1a3dcd1f4693081e4ae60b353a7c33948"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit2/5.png",
+      "sha256": "7aedfd82312007a1721123230550d340be23c3ce4ce3480b54f9dbe3eaf0751a"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit2/6.png",
+      "sha256": "ab3160ca3512e4d9cab2fca090d9af5d2e84883881c9a5929c72d55d0d30fe9d"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit2/7.png",
+      "sha256": "358a366fd078c547f46c185c600d1417db2770bf5d9ba3edd0462ed131f9a5e7"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit2/8.png",
+      "sha256": "d639d49b526e8d13f22481b2723cd74c7db88aef6cfe9c0e7927c0b74eaf0bc4"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/equip3level_digit2/9.png",
+      "sha256": "2aa789ca41a19674054e1a9529d6de5aab49603747d73b1215904ce4464782b3"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/renderer_spec.json",
+      "sha256": "279933a7e784b5cdee7ca837932d9ac2bf181baedbc8833fe79ed6681bb255c4"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit1/0.png",
+      "sha256": "696fa45eb5aa71e5e82eb57a1a930ff9b771b5ab3e148db8c1d824fd00638400"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit1/1.png",
+      "sha256": "2fc0c87bc5f08a5247fe3ec287d1ca4104ca0db947c3d5f81bc7ca190776de7c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit1/2.png",
+      "sha256": "80aff05e52900f69ec644ab19b53a20225b3fa69de178763c41db0044f5acbb7"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit1/3.png",
+      "sha256": "ab0f3cdf8b124a1b0f32d429870ac27b08bb5496c31e7a5f002ac4613d330fe0"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit1/4.png",
+      "sha256": "c8f2c14016f90729cce0fed28becee976eacba48eea0a3ba919ff296557e1305"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit1/5.png",
+      "sha256": "99aa28ec071af2731170e075d8cca7d770d5e0733a66412afad2645efc01b0dc"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit1/6.png",
+      "sha256": "04591e1c7ca62d2041e96d4c16103eb0f8f44a376f05a7a3801c7b9667685c08"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit1/7.png",
+      "sha256": "7bd77919d9077dcc4d736afa9b257d30a21a7481c15c768fba074c610b919d61"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit1/8.png",
+      "sha256": "bd1a3bd2c2b224bdfc311c620c367529d5e723338cda19f14f62fa8bfcf9755c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit1/9.png",
+      "sha256": "3cc8d16978d96637aeed8b4d82eb4ff27193426ad578ee0e830b833700b4c954"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit2/0.png",
+      "sha256": "aee9284f24147730b4681e046162d1510d735506c9bcd3d6823a1cdba2abb6df"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit2/1.png",
+      "sha256": "e4404c701e886d5df484f6625bf7a31ae1277d588fc2bc7e1fb3c30cb0569f5d"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit2/2.png",
+      "sha256": "8b1be427a2997c7a62c5bd2fdc05dc30af511ca2a5dc69f8ecf34a1a56391c61"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit2/3.png",
+      "sha256": "2189d068d4ca3d255c9ebdf44288628685e2fb199e09c68b18b339f351be01ed"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit2/4.png",
+      "sha256": "197905c306f1f0e2376705731ab41f48f3e3c4d088736d9f8862bcf2de9e574c"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit2/5.png",
+      "sha256": "727b55d041ebc249692db11c1a7eda131b4ad10c1690468390f60a4b22cc83aa"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit2/6.png",
+      "sha256": "c0534d21d6cdcadeddc4ac4fcf223d9aac4d3ce3bcbe2a74f7b5bfddde5ec917"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit2/7.png",
+      "sha256": "233a6270821a825cbd934b3a56adc1aa28d765697956a9c108550ca775f76656"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit2/8.png",
+      "sha256": "42a9c6cb901a9647d8e51eba3060e38391918fc28e320985614eb0ffeb96dc84"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/studentlevel_digit2/9.png",
+      "sha256": "9cb071e4059969f7e26e5a885f47b3acfc3e1ddd86b174db9fdcd29925eac9f2"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit1/0.png",
+      "sha256": "f157908abfff494502f7a7bf1540ad624fa475ca693f280aeacd267f2020b19b"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit1/1.png",
+      "sha256": "08b27494063e3fa11ef8dac815349ed200cf3e271f6d06186048835a548f1da7"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit1/2.png",
+      "sha256": "65c9093ba226d65e9052e8a34ef3101db6e887d5aebe01bcd8108e09e3813674"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit1/3.png",
+      "sha256": "a6af1efc135d5bd6c004d4fd2af128f3b6f8dc404ddb9e13dd5412ae5941fe5e"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit1/4.png",
+      "sha256": "6edb7ae7cc4c0a18a15e724322c101e307aa51e74c0ddc00bd6ca33191c4d5bb"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit1/5.png",
+      "sha256": "dd4628cb4882e0a83e0a7c50f17babf8535dea7d330547976243fdf58de33e83"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit1/6.png",
+      "sha256": "333d5d321965f248d2f942292de00ee6c0ca1443f508ad88b0055ac1b5267ef2"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit1/7.png",
+      "sha256": "01111aa2ae12507d3def65705db5d3f6c937d2fdb4825eb7682adabd34bceb15"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit1/8.png",
+      "sha256": "1fe8980a70b4a89c895cc4a63ffbb4bd6550b81bdc84df6101dde7e0be331714"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit1/9.png",
+      "sha256": "e8f054f7d60ef9d6db5147b244b958a5c1ce91e66e5d9b398c394fe32e91a781"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit2/0.png",
+      "sha256": "f157908abfff494502f7a7bf1540ad624fa475ca693f280aeacd267f2020b19b"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit2/1.png",
+      "sha256": "08b27494063e3fa11ef8dac815349ed200cf3e271f6d06186048835a548f1da7"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit2/2.png",
+      "sha256": "65c9093ba226d65e9052e8a34ef3101db6e887d5aebe01bcd8108e09e3813674"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit2/3.png",
+      "sha256": "a6af1efc135d5bd6c004d4fd2af128f3b6f8dc404ddb9e13dd5412ae5941fe5e"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit2/4.png",
+      "sha256": "6edb7ae7cc4c0a18a15e724322c101e307aa51e74c0ddc00bd6ca33191c4d5bb"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit2/5.png",
+      "sha256": "dd4628cb4882e0a83e0a7c50f17babf8535dea7d330547976243fdf58de33e83"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit2/6.png",
+      "sha256": "333d5d321965f248d2f942292de00ee6c0ca1443f508ad88b0055ac1b5267ef2"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit2/7.png",
+      "sha256": "01111aa2ae12507d3def65705db5d3f6c937d2fdb4825eb7682adabd34bceb15"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit2/8.png",
+      "sha256": "1fe8980a70b4a89c895cc4a63ffbb4bd6550b81bdc84df6101dde7e0be331714"
+    },
+    {
+      "path": "debug/student_suggestion_rois/templates/weaponlevel_digit2/9.png",
+      "sha256": "e8f054f7d60ef9d6db5147b244b958a5c1ce91e66e5d9b398c394fe32e91a781"
+    },
+    {
+      "path": "suggestion.json",
+      "sha256": "b9cb5ed383c86aa62fc1fb3d9896f847145d3e6cd5e6cd1f26ba025811229a31"
+    },
+    {
+      "path": "suggestion_text.json",
+      "sha256": "070c6311f439719a4147d65e11b248fb442a1081922b7b0e6e1cf41ae64406bc"
+    },
+    {
+      "path": "suggestion_text_1.json",
+      "sha256": "34b8986e980bd642beb2f917af2fad077cb68cc7e4b26088c7591a3d3e550aa7"
+    },
+    {
+      "path": "suggestion_text_100.json",
+      "sha256": "7ba9f64162c435c4d34fdf0f3425b83447a6907e513f2982d6d6a410f789c26d"
+    }
+  ],
+  "missing_evidence": [
+    "new live input traces at 1280 and 2560",
+    "wrong/late panel and return-failure traces",
+    "skill/equipment checkbox-off sequence",
+    "level/star/potential/weapon independent detail screen set",
+    "inventory actual detail and multi-page filter/sort/scroll traces",
+    "current-bank R14 threshold-specific independent positive/negative validation"
+  ],
+  "partitions": "Reuse original manifests without training on validation crops; derived sizes share their source partition"
+}

@@ -1,0 +1,40 @@
+{
+  "diagnostic": {
+    "first_missing": false,
+    "form_template_tie": false,
+    "cancel_after_form_read": false
+  },
+  "error": {
+    "code": "entry_unconfirmed",
+    "message": "entry input did not reach its expected state"
+  },
+  "frames": [
+    "frame-00.png",
+    "frame-01.png",
+    "frame-02.png",
+    "frame-03.png"
+  ],
+  "inputs": [
+    {
+      "x": 0.2596,
+      "y": 0.9177,
+      "cleanup": false
+    }
+  ],
+  "entry_trace": [
+    {
+      "input": "lobby",
+      "expected": "student_list"
+    },
+    {
+      "state": "lobby"
+    },
+    {
+      "state": "lobby"
+    },
+    {
+      "state": "lobby"
+    }
+  ],
+  "form_trace": []
+}

@@ -1,0 +1,18 @@
+test_attribute_candidates_require_three_fields_and_keep_all_portrait_competitors (test_student_identity_f8.IdentityF8Tests.test_attribute_candidates_require_three_fields_and_keep_all_portrait_competitors) ... ok
+test_cancel_prevents_first_capture (test_student_identity_f8.IdentityF8Tests.test_cancel_prevents_first_capture) ... ok
+test_entry_cycle_cannot_repeat_after_failed_transition (test_student_identity_f8.IdentityF8Tests.test_entry_cycle_cannot_repeat_after_failed_transition) ... ok
+test_entry_recovery_is_first_student_only (test_student_identity_f8.IdentityF8Tests.test_entry_recovery_is_first_student_only) ... ok
+test_entry_transition_timeout_is_bounded_without_reclick (test_student_identity_f8.IdentityF8Tests.test_entry_transition_timeout_is_bounded_without_reclick) ... ok
+test_failed_identity_recaptures_before_reading_any_fields (test_student_identity_f8.IdentityF8Tests.test_failed_identity_recaptures_before_reading_any_fields) ... ok
+test_form_attribute_tie_never_defaults_to_form_one (test_student_identity_f8.IdentityF8Tests.test_form_attribute_tie_never_defaults_to_form_one) ... ok
+test_identity_retry_exhaustion_never_uses_top1_as_context (test_student_identity_f8.IdentityF8Tests.test_identity_retry_exhaustion_never_uses_top1_as_context) ... ok
+test_lobby_list_basic_requires_each_visual_transition (test_student_identity_f8.IdentityF8Tests.test_lobby_list_basic_requires_each_visual_transition) ... ok
+test_native_states_identity_forms_and_independent_combat (test_student_identity_f8.IdentityF8Tests.test_native_states_identity_forms_and_independent_combat) ... ok
+test_strong_base_portrait_can_disambiguate_form_but_attributes_cannot_identify_base (test_student_identity_f8.IdentityF8Tests.test_strong_base_portrait_can_disambiguate_form_but_attributes_cannot_identify_base) ... ok
+test_success_does_not_recapture (test_student_identity_f8.IdentityF8Tests.test_success_does_not_recapture) ... ok
+test_unknown_entry_does_not_click (test_student_identity_f8.IdentityF8Tests.test_unknown_entry_does_not_click) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 27.207s
+
+OK

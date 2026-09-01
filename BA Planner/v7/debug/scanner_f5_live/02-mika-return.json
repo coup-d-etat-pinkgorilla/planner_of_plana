@@ -1,0 +1,32 @@
+{
+  "at": "2026-08-31T01:49:49.833741+09:00",
+  "action": "right",
+  "target_id": "hwnd:de0e88",
+  "input": {
+    "kind": "key",
+    "key": "right",
+    "method": "send_input"
+  },
+  "status": "captured",
+  "before": {
+    "status": "ready",
+    "foreground": true
+  },
+  "size": [
+    1280,
+    720
+  ],
+  "image_sha256": "5375bee59232148050b160e9bb52f720b2fa212f2910bd4458e4de8ae4aec342",
+  "capture": [
+    {
+      "round": 1,
+      "method": 3,
+      "ok": true
+    }
+  ],
+  "after": {
+    "status": "ready",
+    "foreground": true
+  },
+  "seconds": 1.156999999890104
+}

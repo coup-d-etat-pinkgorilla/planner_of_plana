@@ -1,0 +1,195 @@
+{
+  "profile": "tech_notes",
+  "frames": [
+    "frame-00.png",
+    "frame-01.png",
+    "frame-02.png",
+    "frame-03.png",
+    "frame-04.png",
+    "frame-05.png",
+    "frame-06.png",
+    "frame-07.png",
+    "frame-08.png",
+    "frame-09.png"
+  ],
+  "inputs": [
+    {
+      "kind": "click",
+      "x": 0.8410154999999999,
+      "y": 0.1590275,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.1132815,
+      "y": 0.2149305,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.8677735,
+      "y": 0.2260415,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.2271485,
+      "y": 0.488889,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.11738299999999999,
+      "y": 0.2895835,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.228125,
+      "y": 0.2541665,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.5958985,
+      "y": 0.8277775,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.8410154999999999,
+      "y": 0.1590275,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.1132815,
+      "y": 0.2149305,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.8677735,
+      "y": 0.2260415,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.2271485,
+      "y": 0.488889,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.11738299999999999,
+      "y": 0.2895835,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.228125,
+      "y": 0.2541665,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.5958985,
+      "y": 0.8277775,
+      "cleanup": false
+    }
+  ],
+  "steps": [],
+  "source": "item",
+  "prepared": {
+    "source": "item",
+    "profile_id": "tech_notes",
+    "filter_verified": true,
+    "sort_verified": true
+  },
+  "prepare_trace": [
+    {
+      "input": "filtermenu_button",
+      "cleanup": false
+    },
+    {
+      "input": "filter_tab",
+      "cleanup": false
+    },
+    {
+      "input": "filter_reset_button",
+      "cleanup": false
+    },
+    {
+      "input": "note_filter",
+      "cleanup": false
+    },
+    {
+      "input": "sort_tab",
+      "cleanup": false
+    },
+    {
+      "observe": "sort_rule_check",
+      "score": 0.31965743563604376,
+      "attempt": 1
+    },
+    {
+      "input": "sort_rule_check",
+      "cleanup": false
+    },
+    {
+      "observe": "sort_rule_check",
+      "score": 0.9200774546916859,
+      "attempt": 2
+    },
+    {
+      "input": "filter_confirm_button",
+      "cleanup": false
+    }
+  ],
+  "restored": {
+    "source": "item",
+    "profile_id": "tech_notes",
+    "filter_verified": true,
+    "sort_verified": true
+  },
+  "restore_trace": [
+    {
+      "input": "filtermenu_button",
+      "cleanup": false
+    },
+    {
+      "input": "filter_tab",
+      "cleanup": false
+    },
+    {
+      "input": "filter_reset_button",
+      "cleanup": false
+    },
+    {
+      "input": "note_filter",
+      "cleanup": false
+    },
+    {
+      "input": "sort_tab",
+      "cleanup": false
+    },
+    {
+      "observe": "sort_rule_check",
+      "score": 0.31965743563604376,
+      "attempt": 1
+    },
+    {
+      "input": "sort_rule_check",
+      "cleanup": false
+    },
+    {
+      "observe": "sort_rule_check",
+      "score": 0.9200774546916859,
+      "attempt": 2
+    },
+    {
+      "input": "filter_confirm_button",
+      "cleanup": false
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "source_version": "inventory-f10-2026-09-01",
+  "assets": [
+    {
+      "path": "templates/inventory_f10/sort_rule_check_001.png",
+      "scan_kind": "inventory",
+      "purpose": "inventory-navigation-template",
+      "required": true,
+      "bytes": 3785,
+      "sha256": "f82060b49ca2fdec34534524452c70c3ccd83e2df8ab3ba9cc73c521a5d755b9",
+      "identity_value": "sort_rule_check",
+      "source_path": "../v6/debug/region_captures/sort_rule_check_001.png"
+    },
+    {
+      "path": "templates/inventory_f10/sort_name_rule_check_001.png",
+      "scan_kind": "inventory",
+      "purpose": "inventory-navigation-template",
+      "required": true,
+      "bytes": 3586,
+      "sha256": "6c9b39b3fc5e31250e01bc9e7a376edc54d97b4bf8ee2ecc08cea3832c9704b2",
+      "identity_value": "sort_name_rule_check",
+      "source_path": "../v6/debug/region_captures/sort_name_rule_check_001.png"
+    },
+    {
+      "path": "templates/inventory_f10/eq_sort_rule_check_001.png",
+      "scan_kind": "inventory",
+      "purpose": "inventory-navigation-template",
+      "required": true,
+      "bytes": 3651,
+      "sha256": "28c92f242014f24524b502699335bf2f40d53920bc9eca7ea64e054455fb79fd",
+      "identity_value": "eq_sort_rule_check",
+      "source_path": "../v6/debug/region_captures/eq_sort_rule_check_001.png"
+    },
+    {
+      "path": "templates/inventory_f10/filter_title.png",
+      "scan_kind": "inventory",
+      "purpose": "inventory-navigation-template",
+      "required": true,
+      "bytes": 7437,
+      "sha256": "dcbac128167f5b336661b51059ceacdca0b271bae6d9b2a04e7e57a8d809fe10",
+      "identity_value": "filter_title",
+      "source_path": "../v6/templates/menu_detect_flag/inventory_filter_title_display_settings.png"
+    },
+    {
+      "path": "regions/inventory_navigation_f10_regions.json",
+      "scan_kind": "inventory",
+      "purpose": "inventory-navigation-regions",
+      "required": true,
+      "bytes": 2127,
+      "sha256": "4ec5e0f84ea76c40e358299576189320c319689540c253dfca08826c1921a1e6",
+      "identity_value": "regions",
+      "source_path": "../v6/debug/region_captures/filtermenu_button.region.json,../v6/debug/region_captures/eq_filtermenu_button.region.json,../v6/debug/region_captures/filter_tab.region.json,../v6/debug/region_captures/sort_tab.region.json,../v6/debug/region_captures/filter_reset_button.region.json,../v6/debug/region_captures/filter_confirm_button.region.json,../v6/debug/region_captures/eq_filter_confirm_button.region.json,../v6/debug/region_captures/eleph_filter.region.json,../v6/debug/region_captures/note_filter.region.json,../v6/debug/region_captures/bd_filter.region.json,../v6/debug/region_captures/ooparts_filter.region.json,../v6/debug/region_captures/reports_filter.region.json"
+    }
+  ]
+}

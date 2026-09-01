@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "evidence_partition": "new_f12_native_process_summary",
+  "traces": [
+    {
+      "file": "f12-process-inventory-1280.json",
+      "kind": "inventory",
+      "student_scan_mode": "single",
+      "elapsed_ms": 20359,
+      "terminal": "cancelled",
+      "terminal_error": null,
+      "event_count": 5,
+      "candidate_count": 1,
+      "candidate_ids": [],
+      "inventory_entry_count": 2,
+      "review_required_count": 1,
+      "evidence_status_counts": {
+        "ok": 4,
+        "partial": 1
+      },
+      "evidence_source_counts": {
+        "inventory_detail_count": 2,
+        "inventory_detail_template": 2,
+        "scan_interrupted": 1
+      },
+      "event_gap_ms": {
+        "p50": 512,
+        "p95": 6340,
+        "max": 6340
+      },
+      "mutations": {
+        "review": 0,
+        "revalidate": 0,
+        "commit": 0
+      }
+    },
+    {
+      "file": "f12-process-inventory-2560.json",
+      "kind": "inventory",
+      "student_scan_mode": "full",
+      "elapsed_ms": 35305,
+      "terminal": "cancelled",
+      "terminal_error": null,
+      "event_count": 6,
+      "candidate_count": 1,
+      "candidate_ids": [],
+      "inventory_entry_count": 3,
+      "review_required_count": 1,
+      "evidence_status_counts": {
+        "ok": 7,
+        "partial": 2,
+        "skipped": 34
+      },
+      "evidence_source_counts": {
+        "inventory_detail_count": 3,
+        "inventory_detail_template": 3,
+        "inventory_profile_catalog": 35,
+        "scan_interrupted": 1,
+        "verified_row_overlap": 1
+      },
+      "event_gap_ms": {
+        "p50": 4568,
+        "p95": 8567,
+        "max": 8567
+      },
+      "mutations": {
+        "review": 0,
+        "revalidate": 0,
+        "commit": 0
+      }
+    },
+    {
+      "file": "f12-process-student-full-1280.json",
+      "kind": "student",
+      "student_scan_mode": "full",
+      "elapsed_ms": 45740,
+      "terminal": "cancelled",
+      "terminal_error": null,
+      "event_count": 592,
+      "candidate_count": 10,
+      "candidate_ids": [
+        "shun",
+        "koharu_swimsuit",
+        "aris",
+        "yuzu_maid",
+        "ako",
+        "midori",
+        "yuuka",
+        "aru",
+        "nonomi",
+        "ayane_swimsuit"
+      ],
+      "inventory_entry_count": 0,
+      "review_required_count": 10,
+      "evidence_status_counts": {
+        "dependency_missing": 10,
+        "inferred": 27,
+        "ok": 248,
+        "shadow": 30,
+        "skipped": 5
+      },
+      "evidence_source_counts": {
+        "basic_combat_digit": 40,
+        "basic_skill_combined": 40,
+        "basic_star_color": 10,
+        "basic_weapon_level_glyph": 7,
+        "basic_weapon_star_color": 9,
+        "basic_weapon_state_template": 10,
+        "equipment_binary_shadow": 30,
+        "equipment_direct_icon_tier": 30,
+        "equipment_position_binary": 30,
+        "favorite_metadata": 5,
+        "favorite_tier_template": 5,
+        "potential_atk_template": 1,
+        "potential_badge_absent": 27,
+        "potential_badge_color": 30,
+        "potential_basic_template": 1,
+        "potential_hp_template": 1,
+        "relationship_rank_studio_position_bank": 10,
+        "student_level_studio_position_bank": 10,
+        "student_stats_v1": 10,
+        "student_texture_template": 10,
+        "weapon_menu_level_template": 3,
+        "weapon_menu_star_template": 1
+      },
+      "event_gap_ms": {
+        "p50": 0,
+        "p95": 335,
+        "max": 5026
+      },
+      "mutations": {
+        "review": 0,
+        "revalidate": 0,
+        "commit": 0
+      }
+    },
+    {
+      "file": "f12-process-student-multiform-1280.json",
+      "kind": "student",
+      "student_scan_mode": "single",
+      "elapsed_ms": 21077,
+      "terminal": "completed",
+      "terminal_error": null,
+      "event_count": 57,
+      "candidate_count": 2,
+      "candidate_ids": [
+        "hoshino_battle",
+        "hoshino_battle#2"
+      ],
+      "inventory_entry_count": 0,
+      "review_required_count": 2,
+      "evidence_status_counts": {
+        "dependency_missing": 1,
+        "inferred": 2,
+        "ok": 52,
+        "partial": 1,
+        "shadow": 6,
+        "skipped": 2
+      },
+      "evidence_source_counts": {
+        "basic_combat_digit": 8,
+        "basic_skill_combined": 8,
+        "basic_star_color": 2,
+        "basic_weapon_level_glyph": 2,
+        "basic_weapon_star_color": 2,
+        "basic_weapon_state_template": 2,
+        "equipment_binary_shadow": 6,
+        "equipment_direct_icon_tier": 6,
+        "equipment_position_binary": 6,
+        "favorite_metadata": 2,
+        "potential_atk_template": 2,
+        "potential_badge_absent": 2,
+        "potential_badge_color": 6,
+        "potential_hp_template": 2,
+        "relationship_rank_studio_position_bank": 2,
+        "student_form_verified": 1,
+        "student_level_studio_position_bank": 2,
+        "student_stats_v1": 2,
+        "student_texture_attribute_form": 1
+      },
+      "event_gap_ms": {
+        "p50": 0,
+        "p95": 1206,
+        "max": 5636
+      },
+      "mutations": {
+        "review": 0,
+        "revalidate": 0,
+        "commit": 0
+      }
+    },
+    {
+      "file": "f12-process-student-single-1280.json",
+      "kind": "student",
+      "student_scan_mode": "single",
+      "elapsed_ms": 20006,
+      "terminal": "completed",
+      "terminal_error": null,
+      "event_count": 56,
+      "candidate_count": 1,
+      "candidate_ids": [
+        "mika"
+      ],
+      "inventory_entry_count": 0,
+      "review_required_count": 1,
+      "evidence_status_counts": {
+        "dependency_missing": 1,
+        "ok": 27,
+        "shadow": 3,
+        "skipped": 1
+      },
+      "evidence_source_counts": {
+        "basic_combat_digit": 4,
+        "basic_skill_combined": 4,
+        "basic_star_color": 1,
+        "basic_weapon_level_glyph": 1,
+        "basic_weapon_star_color": 1,
+        "basic_weapon_state_template": 1,
+        "equipment_binary_shadow": 3,
+        "equipment_direct_icon_tier": 3,
+        "equipment_position_binary": 3,
+        "favorite_metadata": 1,
+        "potential_atk_template": 1,
+        "potential_badge_color": 3,
+        "potential_basic_template": 1,
+        "potential_hp_template": 1,
+        "relationship_rank_studio_position_bank": 1,
+        "student_level_studio_position_bank": 1,
+        "student_stats_v1": 1,
+        "student_texture_template": 1
+      },
+      "event_gap_ms": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "mutations": {
+        "review": 0,
+        "revalidate": 0,
+        "commit": 0
+      }
+    },
+    {
+      "file": "f12-process-student-single-2560.json",
+      "kind": "student",
+      "student_scan_mode": "single",
+      "elapsed_ms": 14718,
+      "terminal": "completed",
+      "terminal_error": null,
+      "event_count": 56,
+      "candidate_count": 1,
+      "candidate_ids": [
+        "mika"
+      ],
+      "inventory_entry_count": 0,
+      "review_required_count": 1,
+      "evidence_status_counts": {
+        "dependency_missing": 1,
+        "ok": 27,
+        "shadow": 3,
+        "skipped": 1
+      },
+      "evidence_source_counts": {
+        "basic_combat_digit": 4,
+        "basic_skill_combined": 4,
+        "basic_star_color": 1,
+        "basic_weapon_star_color": 1,
+        "basic_weapon_state_template": 1,
+        "equipment_binary_shadow": 3,
+        "equipment_direct_icon_tier": 3,
+        "equipment_studio_position_bank": 3,
+        "favorite_metadata": 1,
+        "potential_badge_color": 3,
+        "potential_basic_template": 3,
+        "relationship_rank_studio_position_bank": 1,
+        "student_level_studio_position_bank": 1,
+        "student_stats_v1": 1,
+        "student_texture_template": 1,
+        "weapon_level_studio_position_bank": 1
+      },
+      "event_gap_ms": {
+        "p50": 0,
+        "p95": 218,
+        "max": 3441
+      },
+      "mutations": {
+        "review": 0,
+        "revalidate": 0,
+        "commit": 0
+      }
+    }
+  ],
+  "resources": {
+    "sample_count": 122,
+    "working_set_bytes": {
+      "first": 88469504,
+      "last": 92762112,
+      "max": 92762112
+    },
+    "private_memory_bytes": {
+      "first": 76079104,
+      "last": 80224256,
+      "max": 80224256
+    },
+    "handles": {
+      "first": 187,
+      "last": 188,
+      "max": 189
+    }
+  },
+  "safety": {
+    "review_calls": 0,
+    "revalidation_calls": 0,
+    "commit_calls": 0,
+    "persistent_learning": 0,
+    "profile_writes": 0,
+    "game_consumable_actions": 0
+  }
+}

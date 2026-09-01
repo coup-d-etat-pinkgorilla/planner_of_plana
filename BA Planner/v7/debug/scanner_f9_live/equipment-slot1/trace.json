@@ -1,0 +1,17 @@
+{
+  "size": [
+    1280,
+    720
+  ],
+  "source": "equipment",
+  "original_selected": null,
+  "error": {
+    "code": "inventory_selection_unknown",
+    "message": "page/selection unconfirmed; no input"
+  },
+  "frames": [
+    "frame-00.png"
+  ],
+  "inputs": [],
+  "trace": []
+}

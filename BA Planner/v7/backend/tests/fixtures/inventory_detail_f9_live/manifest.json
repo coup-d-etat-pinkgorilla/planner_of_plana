@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "actual_client_size": [
+    1280,
+    720
+  ],
+  "partition": "development_calibration_not_holdout",
+  "assets": [
+    {
+      "file": "item.png",
+      "source": "debug/scanner_f9_live/item-initial/frame.png",
+      "source_kind": "item",
+      "identity": "Item_Icon_SkillBook_Hyakkiyako_0",
+      "count": "2344",
+      "selected_slot": 0,
+      "sha256": "cdf1c8ed02d6ef0bba5ba14d998490d84e220e11a8e6a90d62c4a997e0c782a2"
+    },
+    {
+      "file": "equipment.png",
+      "source": "debug/scanner_f9_live/equipment-initial/frame.png",
+      "source_kind": "equipment",
+      "identity": "Equipment_Icon_Exp_3",
+      "count": "116",
+      "selected_slot": 0,
+      "sha256": "f8f6aa8f9ba1c559f6fb9a4b7f4a5097018d327bc91ca3727b3bbd74ac5f14a2"
+    },
+    {
+      "file": "item-selected1.png",
+      "source": "debug/scanner_f9_live/item-slot1/frame-02.png",
+      "source_kind": "item",
+      "identity": "Item_Icon_SkillBook_Hyakkiyako_1",
+      "count": "843",
+      "selected_slot": 1,
+      "sha256": "4e9e9ae2f09c04d88e898e9ba5576621fd641902193097c115f0843e6618068e"
+    },
+    {
+      "file": "equipment-necklace10.png",
+      "source": "debug/scanner_f9_live/equipment-slot13/frame-04.png",
+      "source_kind": "equipment",
+      "identity": "Equipment_Icon_Necklace_Tier10",
+      "count": "306",
+      "selected_slot": 13,
+      "sha256": "0dcfcfccdea823c2f51d68b50b1ef07bc26df9ae9b69a52c52804eec0522def5"
+    },
+    {
+      "file": "equipment-weak-count.png",
+      "source": "debug/scanner_f9_live/equipment-slot1-retry/frame-04.png",
+      "source_kind": "equipment",
+      "identity": "Equipment_Icon_Exp_2",
+      "count": null,
+      "selected_slot": 1,
+      "sha256": "f3d8000a44560daacb39dfa0072ca9ffc40dff50053e74d05984e07b3c06ef24"
+    },
+    {
+      "file": "equipment-unknown-id.png",
+      "source": "debug/scanner_f9_live/equipment-slot4/frame-03.png",
+      "source_kind": "equipment",
+      "identity": null,
+      "count": "1934",
+      "selected_slot": 4,
+      "sha256": "3b252a54d74e211c2258a719544ad3bdbd499b96611d3d3616272b9d6555bc03"
+    },
+    {
+      "file": "equipment-faded-selection.png",
+      "source": "debug/scanner_f9_live/equipment-slot1/frame-00.png",
+      "source_kind": "equipment",
+      "identity": "Equipment_Icon_Exp_3",
+      "count": "116",
+      "selected_slot": null,
+      "sha256": "6ecb2760a2351d368df3246cff350615579f82cdb085c8fe30e384c7cd77ca74"
+    }
+  ]
+}

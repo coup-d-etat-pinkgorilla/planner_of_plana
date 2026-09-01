@@ -254,6 +254,11 @@ class EquipmentLevelV1:
 
 
 @dataclass(frozen=True, slots=True)
+class EquipmentAbsentV1:
+    """A slot that was observed and is known to have no equipment."""
+
+
+@dataclass(frozen=True, slots=True)
 class UniqueWeaponLevelV1:
     star: int
     level: int
@@ -277,7 +282,11 @@ class RelationshipLevelsV1:
 class StudentStatBuildV1:
     level: int
     star: int
-    equipment: tuple[EquipmentLevelV1 | None, EquipmentLevelV1 | None, EquipmentLevelV1 | None]
+    equipment: tuple[
+        EquipmentLevelV1 | EquipmentAbsentV1 | None,
+        EquipmentLevelV1 | EquipmentAbsentV1 | None,
+        EquipmentLevelV1 | EquipmentAbsentV1 | None,
+    ]
     relationship: RelationshipLevelsV1
     weapon: UniqueWeaponLevelV1 | None = None
     favorite_gear_tier: int = 0

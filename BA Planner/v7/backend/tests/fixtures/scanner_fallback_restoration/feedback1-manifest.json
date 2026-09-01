@@ -1,0 +1,466 @@
+{
+  "schema_version": 1,
+  "source_root": "C:/Users/brigh/Pictures/Screenshots/BA/feedback1",
+  "recorded_on": "2026-08-30",
+  "records": [
+    {
+      "source_file": "스크린샷 2026-08-29 233619.png",
+      "source_sha256": "890059dcf554dab84f31029477e5c7433492b654c5e252c6abe58f6d4121647e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "wakamo_swimsuit",
+      "canonical_student_id": "wakamo_swimsuit",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_unlocked_not_equipped",
+        "stat_hp": 0,
+        "stat_atk": 0,
+        "stat_heal": 0
+      },
+      "truth_provenance": [
+        "p0-p6-workflow-status:2026-08-30 feedback1 review",
+        "p0-p6-workflow-status:feedback1 absent potential badges visually confirmed"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233640.png",
+      "source_sha256": "d7ed8cc8542ced538ac8029f9b5e18ac47c801f4e83ba383945616246627d826",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "hiyori",
+      "canonical_student_id": "hiyori",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 40,
+        "stat_hp": 0,
+        "stat_atk": 0,
+        "stat_heal": 0
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review",
+        "p0-p6-workflow-status:feedback1 absent potential badges visually confirmed"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233655.png",
+      "source_sha256": "6928c03ac078e49478519628f5f88b3cbcb1f514f6b6b25fc6820e4e70cee8ae",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "hina_swimsuit",
+      "canonical_student_id": "hina_swimsuit",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 30,
+        "stat_hp": 0,
+        "stat_atk": 0,
+        "stat_heal": 0
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review",
+        "p0-p6-workflow-status:feedback1 absent potential badges visually confirmed"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233703.png",
+      "source_sha256": "e1eaf5e06bd1531bc4dd433bc6cf0904c8e922eaf092c22022ec58701878f95d",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "suzumi_magical",
+      "canonical_student_id": "suzumi_magical",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 40,
+        "stat_hp": 0,
+        "stat_atk": 0,
+        "stat_heal": 0
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review",
+        "p0-p6-workflow-status:feedback1 absent potential badges visually confirmed"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233712.png",
+      "source_sha256": "3bbc9753011f09405e5bdb6594f1b4104d940187abe428926aa4a1933491b351",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "ritsu",
+      "canonical_student_id": "ritsu",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 40,
+        "stat_hp": 0,
+        "stat_atk": 0,
+        "stat_heal": 0
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review",
+        "p0-p6-workflow-status:feedback1 absent potential badges visually confirmed"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233719.png",
+      "source_sha256": "ab239416b9dd051912f1b82e663030877a3d26d128777dcb1f0d2d6a5c666fdc",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "kurumi",
+      "canonical_student_id": "kurumi",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 40,
+        "stat_hp": 0,
+        "stat_atk": 0,
+        "stat_heal": 0
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review",
+        "p0-p6-workflow-status:feedback1 absent potential badges visually confirmed"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233730.png",
+      "source_sha256": "7bfc694982dc3780eb7cda67af56cd9633c041761bf0a722db461e88d2906e95",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "aru",
+      "canonical_student_id": "aru",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 60,
+        "stat_hp": 25,
+        "stat_atk": 25
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233742.png",
+      "source_sha256": "6d42a637dbe2d4587773734acd109a519826b61f0ce1992de41d381114cde906",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "izuna_swimsuit",
+      "canonical_student_id": "izuna_swimsuit",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 50,
+        "stat_atk": 25
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233755.png",
+      "source_sha256": "4004484bf7e48cb5bd6273b5009d7a98b76ea40090afe8ee504b10a71e7cd4f0",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "hoshino_battle#1",
+      "canonical_student_id": "hoshino_battle",
+      "form_index": 1,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 60,
+        "stat_hp": 25,
+        "stat_atk": 25
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233758.png",
+      "source_sha256": "2033b6910a8046c07c59dc86cd045dbb490f8896aa877eb144aa54aef8217561",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "hoshino_battle#2",
+      "canonical_student_id": "hoshino_battle",
+      "form_index": 2,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 60,
+        "stat_hp": 25,
+        "stat_atk": 25
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233808.png",
+      "source_sha256": "0b0700fee9dccc2b5e6ba5e5f061d604115df01a7c7403ece3d0b8a98e76b014",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "rio_battle",
+      "canonical_student_id": "rio_battle",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "no_weapon_system",
+        "level": 78,
+        "student_star": 4
+      },
+      "truth_provenance": [
+        "p0-p6-workflow-status:2026-08-30 feedback1 review"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233825.png",
+      "source_sha256": "33c5fe33859550a8f45b0b7bdaff95044c5b4b89f657a69a64d434ff6d2389dd",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "nagisa",
+      "canonical_student_id": "nagisa",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 50
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233831.png",
+      "source_sha256": "904f756c58800247c2c72a8794fdedca337b0dd97561afd3b64ef47faf1326f5",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "neru_school_uniform",
+      "canonical_student_id": "neru_school_uniform",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 60
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233840.png",
+      "source_sha256": "bde2ded924e4db64573d159365eda325f4881b68423db868f9e08aaa8901de27",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "eimi",
+      "canonical_student_id": "eimi",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 60
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233852.png",
+      "source_sha256": "6dd4cca25b2ea0d112d2299b356929bfe1f186c0053d8cdb74d8d7b639089acf",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "iori",
+      "canonical_student_id": "iori",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 60
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233908.png",
+      "source_sha256": "3bd8011c1b0c4e99c839fc815901fe2188783bd284922ba15e26580543598991",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "yuzu",
+      "canonical_student_id": "yuzu",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "weapon_equipped",
+        "weapon_level": 60
+      },
+      "truth_provenance": [
+        "student_weapon_level_s4/manifest.json:visual_verified",
+        "p0-p6-workflow-status:2026-08-30 S2W feedback1 state review"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233918.png",
+      "source_sha256": "c0fb4aa67b82a9112e03dcf2913aebaa28a912ee8b2c9ead79726c854e9f5e07",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "tomoe_qipao",
+      "canonical_student_id": "tomoe_qipao",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "no_weapon_system",
+        "level": 90,
+        "student_star": 3,
+        "bond_rank": 15
+      },
+      "truth_provenance": [
+        "F0 direct visual review of original screenshot on 2026-08-30"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233926.png",
+      "source_sha256": "0638e0394e9af1b4bae9fdc49c03f9023c1f9ea9f46e68f620768ac12e009eb0",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "saori_swimsuit",
+      "canonical_student_id": "saori_swimsuit",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "no_weapon_system",
+        "level": 90,
+        "student_star": 4,
+        "bond_rank": 13
+      },
+      "truth_provenance": [
+        "F0 direct visual review of original screenshot on 2026-08-30"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233934.png",
+      "source_sha256": "b56329ee17421fa3372cf1e1c9d166d552abebf7471395d9232620326af1a875",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "capture_kind": "actual_2560_basic_screen",
+      "student_ref": "niko",
+      "canonical_student_id": "niko",
+      "form_index": null,
+      "partition": "existing_feedback1_validation_not_new_holdout",
+      "visual_truth": {
+        "weapon_state": "no_weapon_system",
+        "level": 90,
+        "student_star": 4,
+        "bond_rank": 12
+      },
+      "truth_provenance": [
+        "F0 direct visual review of original screenshot on 2026-08-30"
+      ],
+      "unlisted_fields": "not asserted by this F0 fixture"
+    }
+  ],
+  "coverage_notes": [
+    "19 basic screens; no panel failure/input trace",
+    "14 equipped, 1 unlocked-not-equipped, 4 no-system",
+    "Base Rio and battle Aris are absent; battle Rio must not label base Rio",
+    "Hoshino battle #1 and #2 remain separate refs",
+    "Half-size replay must be marked derived, never actual 1280",
+    "No screenshot pixels copied into F0 fixtures; source files stay local",
+    "Only listed visual fields are truth; missing fields must not be filled with zero"
+  ]
+}

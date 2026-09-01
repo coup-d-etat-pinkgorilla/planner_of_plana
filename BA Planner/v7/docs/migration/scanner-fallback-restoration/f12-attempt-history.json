@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "evidence_partition": "f12_attempt_history",
+  "mutations": {
+    "review": 0,
+    "revalidate": 0,
+    "commit": 0,
+    "persistent_learning": 0,
+    "game_consumable_actions": 0
+  },
+  "superseded_or_expected_failures": [
+    {
+      "case": "student_full_1280_unbounded_probe",
+      "outcome": "operator_aborted",
+      "reason": "production candidates are emitted after the batch; the first probe had no time-bounded cancellation",
+      "resolution": "added time-bounded cancellation and retained the later 10-candidate cancelled trace"
+    },
+    {
+      "case": "inventory_process_missing_profile",
+      "outcome": "failed",
+      "error": "inventory_profile_required",
+      "resolution": "added an explicit typed inventory_scan_profile across Dart and Python without reusing account profile_id"
+    },
+    {
+      "case": "inventory_legacy_display_coordinates",
+      "outcome": "wrong_review_only_candidate",
+      "reason": "the current item display dialog no longer has the v6 category checkboxes; blank legacy coordinates left gifts visible and a profile-restricted matcher relabelled them",
+      "resolution": "removed legacy blank clicks and added global foreign-item rejection plus positive profile-membership gating"
+    },
+    {
+      "case": "inventory_allowed_only_uncertain_match",
+      "outcome": "wrong_review_only_candidate",
+      "reason": "restricting the ranking set alone could turn a foreign icon into an uncertain allowed identity",
+      "resolution": "an entry now requires positive global or verified-detail membership in the explicit profile"
+    },
+    {
+      "case": "inventory_tech_notes_global_scroll",
+      "outcome": "failed_safe",
+      "error": "inventory_scroll_unverified",
+      "reason": "ambiguous row overlap score=0.970 margin=0.007",
+      "resolution": "kept zero-fill disabled and did not commit a candidate"
+    },
+    {
+      "case": "inventory_2560_non_monotonic_visible_order",
+      "outcome": "failed_with_correct_review_candidate",
+      "error": "inventory_profile_unverified",
+      "reason": "the current mixed item page can be sorted by quantity or name, so visible profile members need not follow catalog order",
+      "resolution": "retain positively identified entries, mark profile coverage partial, and prohibit zero-fill; the replacement trace cancelled normally with three correct entries"
+    },
+    {
+      "case": "student_2560_started_from_inventory",
+      "outcome": "failed_safe",
+      "error": "panel_wrong_start",
+      "reason": "student scanning refused to input from an unverified inventory page",
+      "resolution": "manually returned to the student list and reran the same process probe successfully"
+    }
+  ]
+}

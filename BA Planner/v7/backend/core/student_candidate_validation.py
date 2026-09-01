@@ -6,8 +6,8 @@ from typing import Any, Mapping
 from core.student_stats import calculate_student_stats
 from core.student_stats_catalog import load_student_stat_catalog, student_stat_record
 from core.student_stats_types import (
-    EquipmentLevelV1, PotentialLevelsV1, RelationshipLevelsV1, StudentStatBuildV1,
-    UniqueWeaponLevelV1,
+    EquipmentAbsentV1, EquipmentLevelV1, PotentialLevelsV1, RelationshipLevelsV1,
+    StudentStatBuildV1, UniqueWeaponLevelV1,
 )
 
 
@@ -55,15 +55,25 @@ class StudentCandidateValidator:
         rank = values.get("bond_rank")
         level = values.get("level")
         star = values.get("student_star")
+        provenance = payload.get("provenance", {})
+        if isinstance(provenance, Mapping) and provenance.get("student_star") == "panel_value_conflict":
+            details["dependencies"].append({"kind": "candidate_field", "key": "student_star"})
+            return self._evidence("partial", details, "student star observations conflict; review required")
         for key, value in (("bond_rank", rank), ("level", level), ("student_star", star)):
             if not isinstance(value, int) or isinstance(value, bool):
                 details["dependencies"].append({"kind": "candidate_field", "key": key})
         passive_skill_level = values.get("skill2")
-        equipment: list[EquipmentLevelV1 | None] = []
+        if isinstance(provenance, Mapping) and provenance.get("skill2") == "panel_value_conflict":
+            details["dependencies"].append({"kind":"candidate_field","key":"skill2"})
+            return self._evidence("partial",details,"passive skill observations conflict; review required")
+        equipment: list[EquipmentLevelV1 | EquipmentAbsentV1 | None] = []
         for slot in range(1, 4):
-            tier = self._tier(values.get(f"equip{slot}"))
+            equipment_value = values.get(f"equip{slot}")
+            tier = self._tier(equipment_value)
             equip_level = values.get(f"equip{slot}_level")
-            if tier is None or not isinstance(equip_level, int):
+            if equipment_value in {"empty", "locked", "level_locked"}:
+                equipment.append(EquipmentAbsentV1())
+            elif tier is None or not isinstance(equip_level, int):
                 details["dependencies"].append({"kind": "candidate_field", "key": f"equip{slot}"})
                 equipment.append(None)
             else:
@@ -104,23 +114,70 @@ class StudentCandidateValidator:
         unowned = frozenset(set(student.relationship.alternate_ids) - owned_ids) if profile_id else frozenset()
 
         weapon = None
-        if values.get("weapon_state") == "weapon_equipped":
-            if isinstance(values.get("weapon_star"), int) and isinstance(values.get("weapon_level"), int):
-                weapon = UniqueWeaponLevelV1(values["weapon_star"], values["weapon_level"])
+        weapon_state = values.get("weapon_state")
+        weapon_dependencies: list[str] = []
+        if star >= 5:
+            if weapon_state == "weapon_equipped":
+                for field in ("weapon_star", "weapon_level"):
+                    value = values.get(field)
+                    if not isinstance(value, int) or isinstance(value, bool):
+                        weapon_dependencies.append(field)
+                if not weapon_dependencies:
+                    weapon = UniqueWeaponLevelV1(values["weapon_star"], values["weapon_level"])
+            elif weapon_state not in {
+                "no_weapon_system", "weapon_locked", "weapon_unlocked",
+                "weapon_unlocked_not_equipped",
+            }:
+                weapon_dependencies.append("weapon_state")
+        if weapon_dependencies:
+            details["dependencies"].extend(
+                {"kind": "candidate_field", "key": field}
+                for field in weapon_dependencies
+            )
+            details["suggestion"] = {"action": "provide_weapon_values"}
+            return self._evidence(
+                "dependency_missing",
+                details,
+                "exclusive weapon state or values are missing",
+            )
+        potential_values: dict[str, int] = {}
+        missing_potential_fields: list[str] = []
+        potential_is_unlocked = level >= 90 and star >= 5
+        potential_sources = {}
+        provenance = payload.get("provenance", {})
+        if not isinstance(provenance, Mapping):
+            provenance = {}
+        for field in ("stat_hp", "stat_atk", "stat_heal"):
+            candidate_value = values.get(field)
+            existing_value = existing_values.get(field)
+            conflicted = provenance.get(field) == "panel_value_conflict"
+            if not potential_is_unlocked:
+                potential_values[field] = 0
+                potential_sources[field] = "potential_gate"
+            elif type(candidate_value) is int and 0 <= candidate_value <= 25 and not conflicted:
+                potential_values[field] = candidate_value
+                potential_sources[field] = provenance.get(field, "candidate_value")
+            elif type(existing_value) is int and 0 <= existing_value <= 25:
+                potential_values[field] = existing_value
+                potential_sources[field] = "profile_fallback"
+                missing_potential_fields.append(field)
+            else:
+                potential_values[field] = 0
+                potential_sources[field] = "unresolved"
+                missing_potential_fields.append(field)
+        details["potential_inputs"] = {
+            field: {"value": potential_values[field] if potential_sources[field] != "unresolved" else None,
+                    "source": potential_sources[field], "fresh": field not in missing_potential_fields}
+            for field in potential_values
+        }
         build = StudentStatBuildV1(
             level=level, star=star, equipment=tuple(equipment),
             relationship=RelationshipLevelsV1(rank, alternate_ranks, unowned),
             weapon=weapon, favorite_gear_tier=self._tier(values.get("equip4")) or 0,
             potential=PotentialLevelsV1(
-                max_hp=values.get("stat_hp")
-                if isinstance(values.get("stat_hp"), int)
-                else existing_values.get("stat_hp") or 0,
-                attack=values.get("stat_atk")
-                if isinstance(values.get("stat_atk"), int)
-                else existing_values.get("stat_atk") or 0,
-                heal=values.get("stat_heal")
-                if isinstance(values.get("stat_heal"), int)
-                else existing_values.get("stat_heal") or 0,
+                max_hp=potential_values["stat_hp"],
+                attack=potential_values["stat_atk"],
+                heal=potential_values["stat_heal"],
             ),
             passive_skill_level=passive_skill_level if star >= 2 else None,
         )
@@ -136,6 +193,10 @@ class StudentCandidateValidator:
             details["suggestion"] = {"action": "review_candidate", "reason": str(exc)}
             return self._evidence("suspicious", details, str(exc))
         details["dependencies"].extend(asdict(item) for item in result.missing_dependencies)
+        details["dependencies"].extend(
+            {"kind": "candidate_field", "key": field}
+            for field in missing_potential_fields
+        )
         details["contributions"] = {
             name: asdict(modifier) for name, modifier in result.contributions.items()
         }
@@ -172,6 +233,13 @@ class StudentCandidateValidator:
             details["suggestion"] = {"action": "provide_alternate_relationship_ranks"}
             return self._evidence("dependency_missing", details, "alternate relationship rank is missing")
         details["expected"] = result.values
+        if missing_potential_fields:
+            details["suggestion"] = {"action": "provide_potential_levels"}
+            return self._evidence(
+                "dependency_missing",
+                details,
+                "ability release levels are missing",
+            )
         details["delta"] = {
             stat: details["observed"][stat] - expected
             for stat, expected in result.values.items() if stat in details["observed"]

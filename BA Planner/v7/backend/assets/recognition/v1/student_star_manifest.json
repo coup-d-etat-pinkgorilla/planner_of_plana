@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "source_version": "student-star-f5-v6-2026-08-31",
+  "assets": [
+    {
+      "path": "regions/student_star_regions.json",
+      "scan_kind": "student",
+      "purpose": "student-star-regions",
+      "required": true,
+      "bytes": 112,
+      "sha256": "7b58d4aa17cd4d84057668e59c7a90252f5bea19cb099988760402f4fd6d01f6",
+      "source_path": "../v6/regions/student_star_region.json",
+      "star_value": null
+    },
+    {
+      "path": "templates/student_star/star_1.png",
+      "scan_kind": "student",
+      "purpose": "student-star-template",
+      "required": true,
+      "bytes": 11997,
+      "sha256": "e18a9b8086703ea5227cdb8fd68ff357d612ec97cd926085d198ade041030e9e",
+      "source_path": "../v6/templates/star/star_1.png",
+      "star_value": "1"
+    },
+    {
+      "path": "templates/student_star/star_2.png",
+      "scan_kind": "student",
+      "purpose": "student-star-template",
+      "required": true,
+      "bytes": 13210,
+      "sha256": "0bcf1388491ee4192328bdecce08b93a04f18b2101ec220f7377a72f8a7f1daf",
+      "source_path": "../v6/templates/star/star_2.png",
+      "star_value": "2"
+    },
+    {
+      "path": "templates/student_star/star_3.png",
+      "scan_kind": "student",
+      "purpose": "student-star-template",
+      "required": true,
+      "bytes": 14303,
+      "sha256": "baf9a2dac98ee5694f4906e3d7e4e2beaea1a18e516c95798696f5b76fc62c63",
+      "source_path": "../v6/templates/star/star_3.png",
+      "star_value": "3"
+    },
+    {
+      "path": "templates/student_star/star_4.png",
+      "scan_kind": "student",
+      "purpose": "student-star-template",
+      "required": true,
+      "bytes": 15233,
+      "sha256": "23bcf9a19a6abdfc66032087fc3a47f6d60d3a6422b12241f8c06408ecd337d6",
+      "source_path": "../v6/templates/star/star_4.png",
+      "star_value": "4"
+    },
+    {
+      "path": "templates/student_star/star_5.png",
+      "scan_kind": "student",
+      "purpose": "student-star-template",
+      "required": true,
+      "bytes": 15684,
+      "sha256": "f930c98959c10daed9691c69630ef78fa934df2e3551a55c8ed26fea96517d53",
+      "source_path": "../v6/templates/star/star_5.png",
+      "star_value": "5"
+    }
+  ]
+}

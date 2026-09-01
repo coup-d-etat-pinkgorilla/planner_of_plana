@@ -1,0 +1,46 @@
+{
+  "diagnostic": {
+    "first_missing": false,
+    "form_template_tie": false,
+    "cancel_after_form_read": false
+  },
+  "identity": {
+    "student_ref": "mika",
+    "score": 0.9916066687091504,
+    "margin": 0.06082842569898339,
+    "source": "student_texture_template"
+  },
+  "attributes": {
+    "attack_type": "piercing",
+    "role": "dealer"
+  },
+  "returned_identity": {
+    "student_ref": "mika",
+    "score": 0.9914948994644154,
+    "margin": 0.06060885870551924,
+    "source": "student_texture_template"
+  },
+  "frames": [
+    "frame-00.png",
+    "frame-01.png",
+    "frame-02.png",
+    "frame-03.png"
+  ],
+  "inputs": [
+    {
+      "x": 0.106,
+      "y": 0.3985,
+      "cleanup": false
+    }
+  ],
+  "entry_trace": [
+    {
+      "input": "student_list",
+      "expected": "basic"
+    },
+    {
+      "state": "basic"
+    }
+  ],
+  "form_trace": []
+}

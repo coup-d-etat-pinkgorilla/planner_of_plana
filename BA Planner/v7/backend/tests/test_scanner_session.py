@@ -59,7 +59,7 @@ class FakeRepository:
 
 
 class ScannerSessionTests(unittest.TestCase):
-    def service(self, matcher, *, events=None, student_validator=None) -> ScannerSessionService:
+    def service(self, matcher, *, events=None, student_validator=None, candidate_review_hook=None) -> ScannerSessionService:
         ids = iter(["s1", "c1", "s2", "c2"])
         return ScannerSessionService(
             target_provider=lambda: [{"target_id": "w1", "title": "Blue Archive", "status": "ready"}],
@@ -70,6 +70,7 @@ class ScannerSessionTests(unittest.TestCase):
             event_sink=(events if events is not None else []).append,
             id_factory=lambda: next(ids),
             student_validator=student_validator,
+            candidate_review_hook=candidate_review_hook,
         )
 
     @staticmethod
@@ -109,7 +110,8 @@ class ScannerSessionTests(unittest.TestCase):
         self.assertFalse(service.cancel("s1", 1)["accepted"])
         snapshot = service.snapshot("s1", 1)
         self.assertEqual("cancelled", snapshot["terminal"])
-        self.assertEqual([], snapshot["candidates"])
+        self.assertEqual(1, len(snapshot["candidates"]))
+        self.assertEqual("candidate", snapshot["events"][-2]["payload"]["event_kind"])
         self.assertEqual("terminal", snapshot["events"][-1]["payload"]["event_kind"])
         service.close()
 
@@ -129,6 +131,64 @@ class ScannerSessionTests(unittest.TestCase):
         self.assertEqual(first, retry)
         self.assertEqual(1, first["revision"])
         self.assertEqual("p1", first["profile_id"])
+        service.close()
+
+    def test_only_explicit_student_revalidation_trains_hidden_candidate_specimen(self) -> None:
+        calls: list[tuple] = []
+
+        def matcher(target, *_args):
+            self.assertEqual("p1", target["profile_id"])
+            candidate = self.candidate(uncertain=True)[0]
+            candidate["_answer_specimen"] = {
+                "source_size": (1280, 720),
+                "numeric_groups": {},
+            }
+            return [candidate]
+
+        service = self.service(matcher, candidate_review_hook=lambda *args: calls.append(args))
+        service.start("student", "w1", profile_id="p1")
+        service.wait("s1")
+        wire = service.candidate("s1", 1, "c1")
+        self.assertNotIn("_answer_specimen", wire)
+        service.review(
+            "s1", 1, "c1", 1, STUDENT, approve=False,
+            reason="user checked OCR",
+        )
+        self.assertEqual([], calls)
+        service.review(
+            "s1", 1, "c1", 2, STUDENT, approve=False,
+            reason="edited_and_revalidated_in_scan_page",
+        )
+        self.assertEqual(1, len(calls))
+        self.assertEqual(("student", "p1", "c1"), calls[0][:3])
+        service.close()
+
+    def test_inventory_specimen_trains_only_on_explicit_approval(self) -> None:
+        calls: list[tuple] = []
+        inventory = {
+            "version": 1,
+            "entries": [{
+                "key": "item_1", "quantity": "12", "item_id": "item_1",
+                "name": None, "observed_slot": 0, "profile_id": "visible-grid",
+            }],
+        }
+
+        def matcher(*_args):
+            return [{
+                "payload": inventory,
+                "evidence": [],
+                "review_required": True,
+                "_answer_specimen": {"source_size": (1280, 720), "slot_crops": {}},
+            }]
+
+        service = self.service(matcher, candidate_review_hook=lambda *args: calls.append(args))
+        service.start("inventory", "w1", profile_id="p1")
+        service.wait("s1")
+        service.review("s1", 1, "c1", 1, inventory, approve=False, reason="looked_only")
+        self.assertEqual([], calls)
+        service.review("s1", 1, "c1", 2, inventory, approve=True, reason="approved_in_inventory_page")
+        self.assertEqual(1, len(calls))
+        self.assertEqual(("inventory", "p1", "c1"), calls[0][:3])
         service.close()
 
     def test_student_matcher_can_stream_field_feedback_before_candidate(self) -> None:
@@ -224,6 +284,30 @@ class ScannerSessionTests(unittest.TestCase):
         self.assertFalse(revalidated["approved"])
         self.assertEqual("verified", revalidated["evidence"][0]["status"])
         self.assertEqual("user_review", revalidated["evidence"][0]["source"])
+        service.close()
+
+    def test_shadow_evidence_does_not_force_review(self) -> None:
+        def matcher(*_args):
+            return [{
+                "payload": STUDENT,
+                "evidence": [{
+                    "field": "equip1_level",
+                    "status": "shadow",
+                    "source": "equipment_binary_shadow",
+                }],
+                "review_required": False,
+            }]
+
+        validator = lambda _payload, _profile_id: {
+            "field": "student_stat_validation",
+            "status": "verified",
+            "source": "fixture",
+        }
+        service = self.service(matcher, student_validator=validator)
+        service.start("student", "w1", "p1")
+        service.wait("s1")
+        candidate = service.candidate("s1", 1, "c1")
+        self.assertFalse(candidate["review_required"])
         service.close()
 
     def test_single_scan_rank_context_revalidates_before_commit(self) -> None:
@@ -336,6 +420,37 @@ class ScannerSessionTests(unittest.TestCase):
         self.assertEqual("r1", listed["id"])
         self.assertEqual("ready", listed["payload"]["targets"][0]["status"])
         invalid = protocol.handle({"protocol": 1, "id": "r2", "type": "request", "method": "scanner.session.start", "payload": {"scan_kind": "student", "target_id": "w1", "extra": True}})
+        self.assertEqual("invalid_payload", invalid["payload"]["error"]["code"])
+        service.close()
+
+    def test_inventory_scan_profile_crosses_protocol_without_using_account_profile(self) -> None:
+        seen = {}
+
+        def matcher(target, *_args):
+            seen.update(target)
+            return self.candidate()
+
+        service = self.service(matcher)
+        protocol = ScannerProtocolV1(service)
+        response = protocol.handle({
+            "protocol": 1, "id": "inventory", "type": "request",
+            "method": "scanner.session.start",
+            "payload": {
+                "scan_kind": "inventory", "target_id": "w1",
+                "profile_id": "account-profile", "inventory_scan_profile": "tech_notes",
+            },
+        })
+        service.wait(response["payload"]["session_id"])
+        self.assertEqual("tech_notes", seen["inventory_scan_profile"])
+        self.assertEqual("account-profile", seen["profile_id"])
+        invalid = protocol.handle({
+            "protocol": 1, "id": "student", "type": "request",
+            "method": "scanner.session.start",
+            "payload": {
+                "scan_kind": "student", "target_id": "w1",
+                "inventory_scan_profile": "tech_notes",
+            },
+        })
         self.assertEqual("invalid_payload", invalid["payload"]["error"]["code"])
         service.close()
 

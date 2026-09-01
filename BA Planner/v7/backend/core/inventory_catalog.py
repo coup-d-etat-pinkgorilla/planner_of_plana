@@ -11,6 +11,7 @@ from core.equipment_items import (
     EQUIPMENT_ORDERED_ITEM_IDS,
     WEAPON_PART_ITEMS,
 )
+from core.inventory_present_items import PRESENT_ORDERED_ITEMS
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +106,9 @@ def _rows() -> list[InventoryCatalogRow]:
     for item_id, name in _WORKBOOKS:
         add(item_id, name, "workbook", "ooparts", index)
         index += 1
+
+    for index, (item_id, name) in enumerate(PRESENT_ORDERED_ITEMS):
+        add(item_id, name, "present", "presents", index)
 
     eleph_ids = ordered_student_eleph_ids(
         student_meta.all_ids(), student_meta.display_name, student_meta.is_jp_only

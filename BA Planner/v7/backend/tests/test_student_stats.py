@@ -15,6 +15,7 @@ from core.student_stats_catalog import (
     student_stat_record,
 )
 from core.student_stats_types import (
+    EquipmentAbsentV1,
     EquipmentLevelV1,
     PotentialLevelsV1,
     RelationshipLevelsV1,
@@ -188,6 +189,26 @@ class StudentStatCalculationTests(unittest.TestCase):
             {("equipment", "slot:2"), ("equipment", "slot:3"), ("current_relationship", "10000")},
             {(item.kind, item.key) for item in result.missing_dependencies},
         )
+
+    def test_observed_empty_equipment_is_not_a_missing_dependency(self) -> None:
+        student = student_stat_record("chise_swimsuit", catalog=self.catalog)
+        result = calculate_student_stats(
+            student,
+            StudentStatBuildV1(
+                level=90,
+                star=3,
+                equipment=(EquipmentAbsentV1(), EquipmentAbsentV1(), EquipmentAbsentV1()),
+                relationship=RelationshipLevelsV1(
+                    current_rank=14,
+                    alternate_ranks={},
+                    unowned_alternate_ids=frozenset(student.relationship.alternate_ids),
+                ),
+                passive_skill_level=1,
+            ),
+            self.catalog,
+        )
+        self.assertEqual("complete", result.status)
+        self.assertEqual((), result.missing_dependencies)
 
     def test_favorite_gear_primary_stat_is_a_multiplier_eligible_flat_contribution(self) -> None:
         student = student_stat_record("eimi", catalog=self.catalog)

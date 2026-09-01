@@ -17,7 +17,7 @@ from core.student_equipment_recognizer import (
     StudentEquipmentRecognizer,
     equipment_level_matches_tier,
 )
-from core.student_scan_recognizer import StudentBasicCropSet
+from core.student_scan_recognizer import Observation, StudentBasicCropSet
 
 
 BACKEND = Path(__file__).parents[1]
@@ -52,6 +52,9 @@ class OneMenuCapture:
 
     def close_equipment_menu(self, _target):
         return None
+
+    def recapture_equipment_menu(self, target, cancel):
+        return self.capture_equipment_menu(target, cancel)
 
 
 class ClickStableCapture:
@@ -199,7 +202,7 @@ class StudentEquipmentS3Tests(unittest.TestCase):
                     crops, student_ref="serika_new_year", student_level=1,
                     favorite_growth_active=False,
                 )
-            self.assertEqual("love_locked", values["equip4"].value)
+            self.assertIsNone(values["equip4"].value)  # Missing dot ROI is not confirmed absence (F7).
             crops.close()
             empty.close()
 
@@ -238,16 +241,21 @@ class StudentEquipmentS3Tests(unittest.TestCase):
     def test_fallback_captures_menu_once_and_reads_only_unresolved_slots(self) -> None:
         menu = OneMenuCapture()
         with patch("core.student_equipment_recognizer.student_meta.favorite_item_enabled", return_value=True):
-            result = StudentMatcherAdapter(
+            adapter = StudentMatcherAdapter(
                 StableCapture(), self.catalog, equipment_menu=menu,
-            )({"target_id": "fixture"}, Event(), lambda *_item: None)[0]
+            )
+            # F7 can now confirm the favorite lock in this native basic fixture.
+            # This test exercises unresolved-only fallback, not lock recognition.
+            with patch.object(adapter.equipment_controls, "read_growth", return_value=Observation(
+                    None, 0, "uncertain", "fixture_unknown_growth", "")), \
+                 patch.object(adapter.equipment_menu_recognizer, "recognize", wraps=adapter.equipment_menu_recognizer.recognize) as read:
+                result = adapter({"target_id": "fixture"}, Event(), lambda *_item: None)[0]
+            self.assertEqual((4,), read.call_args.args[1])
         self.assertEqual(1, menu.calls)
         self.assertEqual("empty", result["payload"]["values"]["equip1"])
         self.assertEqual("empty", result["payload"]["values"]["equip2"])
         self.assertEqual("level_locked", result["payload"]["values"]["equip3"])
-        menu_evidence = [item for item in result["evidence"] if item["source"].startswith("equipment_menu")]
-        self.assertTrue(menu_evidence)
-        self.assertEqual({"equip4"}, {item["field"] for item in menu_evidence})
+        self.assertTrue(any(item["field"] == "equipment_panel" and item["status"] == "partial" for item in result["evidence"]))
 
     def test_menu_recognizer_does_not_emit_resolved_neighbor_slots(self) -> None:
         recognizer = EquipmentMenuRecognizer(self.catalog)
@@ -258,15 +266,25 @@ class StudentEquipmentS3Tests(unittest.TestCase):
             frame.close()
         self.assertLessEqual(set(result), {"equip2", "equip2_level"})
 
-    def test_production_menu_orchestrator_opens_captures_once_and_closes(self) -> None:
+    def test_retained_basic_level_is_not_used_as_detail_calibration(self):
+        adapter = StudentMatcherAdapter(StableCapture(),self.catalog,equipment_menu=OneMenuCapture())
+        unknown = Observation(None,.1,"uncertain","fixture","")
+        known = Observation(70,1,"ok","basic_fixture","")
+        with (patch.object(adapter.equipment_recognizer,"recognize",return_value=({"equip1":unknown,"equip1_level":known},(1,))),
+              patch.object(adapter.equipment_menu_recognizer,"recognize",return_value={"equip1":unknown,"equip1_level":unknown}),
+              patch.object(adapter.equipment_recognizer,"learn_basic_level") as learn):
+            result = adapter({"target_id":"fixture"},Event(),lambda *_a:None)[0]
+        self.assertEqual(70,result["payload"]["values"]["equip1_level"])
+        learn.assert_not_called()
+
+    def test_production_menu_orchestrator_rejects_unverified_basic(self) -> None:
         capture = ClickStableCapture()
         orchestrator = EquipmentMenuCaptureAdapter(capture, self.catalog)
-        frame = orchestrator.capture_equipment_menu({"target_id": "fixture"}, Event())
-        frame.close()
-        orchestrator.close_equipment_menu({"target_id": "fixture"})
+        self.addCleanup(orchestrator.recovery.close)
+        with self.assertRaisesRegex(ScannerError, "verified basic"):
+            orchestrator.capture_equipment_menu({"target_id": "fixture"}, Event())
         self.assertEqual(1, capture.stable_calls)
-        self.assertEqual(2, len(capture.clicks))
-        self.assertNotEqual(capture.clicks[0], capture.clicks[1])
+        self.assertEqual([], capture.clicks)
 
     def test_benchmark_fixture_records_required_performance_and_data_gaps(self) -> None:
         report = json.loads(

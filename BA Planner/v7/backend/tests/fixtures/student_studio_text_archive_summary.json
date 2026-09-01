@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "screenshot_root": "C:/Users/brigh/Pictures/Screenshots/BA",
-  "screenshot_files": 290,
-  "resolved_answer_files": 146,
+  "screenshot_files": 313,
+  "resolved_answer_files": 163,
   "template_count": 160,
   "unsupported_layouts": {
     "equipment_one_digit": 9
@@ -26,18 +26,18 @@
       "confusion": {}
     },
     "relationship_rank_visual_ground_truth": {
-      "values": 24,
-      "correct": 24,
+      "values": 26,
+      "correct": 26,
       "accuracy": 1.0,
       "digit_accuracy": 1.0,
-      "digits": 48,
-      "digit_correct": 48,
+      "digits": 52,
+      "digit_correct": 52,
       "minimum_score": 0.6901408450704225,
       "minimum_margin": 0.032997987927565364,
       "confusion": {},
       "layouts": {
         "1": {"values": 1, "correct": 1, "digits": 1, "digit_correct": 1},
-        "2": {"values": 22, "correct": 22, "digits": 44, "digit_correct": 44},
+        "2": {"values": 24, "correct": 24, "digits": 48, "digit_correct": 48},
         "3": {"values": 1, "correct": 1, "digits": 3, "digit_correct": 3}
       }
     },
@@ -50,13 +50,24 @@
       "minimum_margin": 0.1446136663620673,
       "confusion": {}
     },
+    "weapon_level_visual_ground_truth": {
+      "values": 16,
+      "correct": 16,
+      "accuracy": 1.0,
+      "digit_accuracy": 1.0,
+      "digits": 32,
+      "digit_correct": 32,
+      "minimum_score": 0.7938931297709924,
+      "minimum_margin": 0.12212678762912865,
+      "confusion": {}
+    },
     "weapon_level_legacy_agreement": {
       "values": 89,
       "correct": 89,
       "accuracy": 1.0,
       "digit_accuracy": 1.0,
-      "minimum_score": 0.7968253968253968,
-      "minimum_margin": 0.13877471129379526,
+      "minimum_score": 0.7938931297709924,
+      "minimum_margin": 0.12212678762912865,
       "confusion": {}
     }
   }

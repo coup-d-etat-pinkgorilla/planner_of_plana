@@ -88,6 +88,18 @@ class StudentRelationshipS4Tests(unittest.TestCase):
                     self.assertEqual(record["rank"], observation.value, observation.note)
                     self.assertEqual("ok", observation.status)
 
+    def test_rank_28_and_30_are_independent_zero_eight_validation_samples(self) -> None:
+        records = {
+            record["rank"]: record
+            for record in self.manifest["records"]
+            if record["rank"] in {28, 30}
+        }
+        self.assertEqual({28, 30}, set(records))
+        self.assertEqual("studio_validation", records[28]["partition"])
+        self.assertEqual("studio_validation", records[30]["partition"])
+        self.assertEqual("mashiro", records[28]["student_ref"])
+        self.assertEqual("utaha", records[30]["student_ref"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "captured": "2026-08-31",
+  "partition": "independent_current_menu_validation_no_bank_training",
+  "limitations": [
+    "native1280 only",
+    "clean originals do not demonstrate naturally weak T10 recovery"
+  ],
+  "assets": [
+    {
+      "file": "shizuko.png",
+      "source": "debug/scanner_f7_followup/shizuko-panel/detail-0.png",
+      "tiers": [
+        "T8",
+        "T8",
+        "T5"
+      ],
+      "levels": [
+        60,
+        60,
+        45
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sha256": "d87437b91646b3582c7a1cbf5335c395a9c4c63326a34b53703220aef3c39ae3"
+    },
+    {
+      "file": "asuna.png",
+      "source": "debug/scanner_f7_followup/asuna-panel/detail-0.png",
+      "tiers": [
+        "T2",
+        "T1",
+        "T1"
+      ],
+      "levels": [
+        20,
+        10,
+        10
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sha256": "d8fa554bbfb946f815a3a532086d11527e761135905fd623e03b281faf00657b"
+    },
+    {
+      "file": "megu.png",
+      "source": "debug/scanner_f7_followup/megu-panel/detail-0.png",
+      "tiers": [
+        "T6",
+        "T6",
+        "T6"
+      ],
+      "levels": [
+        50,
+        50,
+        50
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sha256": "dcf863f206c6930c4fceb25d3a56615334a117bd6c9af26ce6d1668f88804b47"
+    },
+    {
+      "file": "toki.png",
+      "source": "debug/scanner_f7_followup/toki-panel/detail-0.png",
+      "tiers": [
+        "T10",
+        "T8",
+        "T10"
+      ],
+      "levels": [
+        70,
+        60,
+        70
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sha256": "be848a3dda3d8663a133fa2e702a781c7dde56b52ed185dab51f85923a3dd6ec"
+    },
+    {
+      "file": "toki-bunny.png",
+      "source": "debug/scanner_f7_followup/toki-bunny-panel/detail-0.png",
+      "tiers": [
+        "T4",
+        "T4",
+        "T4"
+      ],
+      "levels": [
+        40,
+        40,
+        40
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sha256": "8edd350f52670dfbba36dec424fa66d15c5937711ebe9083fea5db2616c2f143"
+    },
+    {
+      "file": "tomoe-qipao.png",
+      "source": "debug/scanner_f7_followup/tomoe-qipao-panel/detail-0.png",
+      "tiers": [
+        "T4",
+        "T7",
+        "T8"
+      ],
+      "levels": [
+        37,
+        54,
+        59
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sha256": "9e9a4c3e071b5231d6f9e9309f9f9d61ce30ebdd8aaaab9e25bb6667a2f3157b"
+    },
+    {
+      "file": "mimori.png",
+      "source": "debug/scanner_f7_followup/mimori-panel/detail-0.png",
+      "tiers": [
+        "T9",
+        "T10",
+        "T9"
+      ],
+      "levels": [
+        65,
+        70,
+        65
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sha256": "d8ae954b4ca21c0c8c022b21a7d8cdac9454da43ead5940936462e5fbaee80f2"
+    },
+    {
+      "file": "hasumi-swimsuit.png",
+      "source": "debug/scanner_f7_followup/hasumi-swimsuit-panel/detail-0.png",
+      "tiers": [
+        "T3",
+        "T3",
+        "T3"
+      ],
+      "levels": [
+        30,
+        30,
+        30
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sha256": "5a0d565c256afd9e61fd30c1f8265908fd74b52f644385bab64d735b419dc75b"
+    }
+  ]
+}

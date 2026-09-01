@@ -1,0 +1,29 @@
+test_1280_partial_basic_resolves_from_dedicated_detail (test_student_potential_f3.PotentialF3Tests.test_1280_partial_basic_resolves_from_dedicated_detail) ... ok
+test_actual_1280_2560_basic_detail_and_locked_regression (test_student_potential_f3.PotentialF3Tests.test_actual_1280_2560_basic_detail_and_locked_regression) ... ok
+test_blank_dark_or_ambiguous_badge_never_zero (test_student_potential_f3.PotentialF3Tests.test_blank_dark_or_ambiguous_badge_never_zero) ... ok
+test_cancellation_closes_without_read (test_student_potential_f3.PotentialF3Tests.test_cancellation_closes_without_read) ... ok
+test_confirmed_absence_all_zero_and_no_menu (test_student_potential_f3.PotentialF3Tests.test_confirmed_absence_all_zero_and_no_menu) ... ok
+test_confirmed_basic_intermediate_and_partial_max_skip_detail (test_student_potential_f3.PotentialF3Tests.test_confirmed_basic_intermediate_and_partial_max_skip_detail) ... ok
+test_conflict_keeps_first_value_and_review_source (test_student_potential_f3.PotentialF3Tests.test_conflict_keeps_first_value_and_review_source) ... ok
+test_locked_gate_no_panel (test_student_potential_f3.PotentialF3Tests.test_locked_gate_no_panel) ... ok
+test_matcher_integration_fresh_fields_even_with_profile (test_student_potential_f3.PotentialF3Tests.test_matcher_integration_fresh_fields_even_with_profile) ... ok
+test_parity_regions_and_all_template_labels (test_student_potential_f3.PotentialF3Tests.test_parity_regions_and_all_template_labels) ... ok
+test_present_badge_without_digits_does_not_infer_zero (test_student_potential_f3.PotentialF3Tests.test_present_badge_without_digits_does_not_infer_zero) ... ok
+test_readiness_and_locked_gate_do_not_decode_numeric_banks (test_student_potential_f3.PotentialF3Tests.test_readiness_and_locked_gate_do_not_decode_numeric_banks) ... ok
+test_safe_open_failure_retains_known_values (test_student_potential_f3.PotentialF3Tests.test_safe_open_failure_retains_known_values) ... ok
+test_stat_adapter_same_student_recovery (test_student_potential_f3.PotentialF3Tests.test_stat_adapter_same_student_recovery) ... ok
+test_unconfirmed_level_does_not_unlock (test_student_potential_f3.PotentialF3Tests.test_unconfirmed_level_does_not_unlock) ... ok
+test_unknown_detail_bounded_three_reads (test_student_potential_f3.PotentialF3Tests.test_unknown_detail_bounded_three_reads) ... ok
+test_unknown_gate_no_panel_or_zero (test_student_potential_f3.PotentialF3Tests.test_unknown_gate_no_panel_or_zero) ... ok
+test_unresolved_reads_detail_preserves_confirmed_and_closes (test_student_potential_f3.PotentialF3Tests.test_unresolved_reads_detail_preserves_confirmed_and_closes) ... ok
+test_unsafe_return_failure_propagates (test_student_potential_f3.PotentialF3Tests.test_unsafe_return_failure_propagates) ... ok
+test_conflict_cannot_be_verified_even_when_preserved_value_matches (test_student_potential_f3.PotentialProvenanceTests.test_conflict_cannot_be_verified_even_when_preserved_value_matches) ... ok
+test_fresh_values_override_stale_profile (test_student_potential_f3.PotentialProvenanceTests.test_fresh_values_override_stale_profile) ... ok
+test_locked_ignores_stale_profile_potential (test_student_potential_f3.PotentialProvenanceTests.test_locked_ignores_stale_profile_potential) ... ok
+test_out_of_range_or_bool_not_accepted_as_fresh (test_student_potential_f3.PotentialProvenanceTests.test_out_of_range_or_bool_not_accepted_as_fresh) ... ok
+test_profile_fallback_is_explicit_and_not_fresh (test_student_potential_f3.PotentialProvenanceTests.test_profile_fallback_is_explicit_and_not_fresh) ... ok
+
+----------------------------------------------------------------------
+Ran 24 tests in 12.361s
+
+OK

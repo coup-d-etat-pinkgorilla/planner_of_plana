@@ -1,0 +1,16 @@
+test_cancellation_and_import_safe_windows_boundary (test_scanner_production_adapters.ScannerProductionAdapterTests.test_cancellation_and_import_safe_windows_boundary) ... ok
+test_full_student_adapter_buffers_until_identity_repeats (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_buffers_until_identity_repeats) ... ok
+test_full_student_adapter_exits_card_before_student_navigation (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_exits_card_before_student_navigation) ... ok
+test_full_student_adapter_prefers_right_key_navigation (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_prefers_right_key_navigation) ... ok
+test_full_student_adapter_retries_button_after_unchanged_key (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_retries_button_after_unchanged_key) ... ok
+test_full_student_adapter_reverses_at_right_edge (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_reverses_at_right_edge) ... ok
+test_inventory_adapter_matches_real_icon_and_count_glyphs (test_scanner_production_adapters.ScannerProductionAdapterTests.test_inventory_adapter_matches_real_icon_and_count_glyphs) ... ok
+test_inventory_adapter_never_zero_fills_missing_count (test_scanner_production_adapters.ScannerProductionAdapterTests.test_inventory_adapter_never_zero_fills_missing_count) ... ok
+test_inventory_low_margin_uses_detail_fallback (test_scanner_production_adapters.ScannerProductionAdapterTests.test_inventory_low_margin_uses_detail_fallback) ... ok
+test_student_adapter_matches_real_production_template (test_scanner_production_adapters.ScannerProductionAdapterTests.test_student_adapter_matches_real_production_template) ... ok
+test_windows_diagnostics_capture_failure_timeout_and_cancel (test_scanner_production_adapters.ScannerProductionAdapterTests.test_windows_diagnostics_capture_failure_timeout_and_cancel) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 37.934s
+
+OK

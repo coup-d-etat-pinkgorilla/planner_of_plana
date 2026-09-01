@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "source": "v6 weapon-state and weapon-detail behavior characterized before adaptation",
+  "basic_state_region": {
+    "x1": 0.6009,
+    "y1": 0.7,
+    "x2": 0.6232,
+    "y2": 0.7381
+  },
+  "menu_regions": {
+    "weapon_info_menu_button": {
+      "x1": 0.8889,
+      "y1": 0.6551,
+      "x2": 0.9148,
+      "y2": 0.7062
+    },
+    "weapon_menu_quit_button": {
+      "x1": 0.873,
+      "y1": 0.123,
+      "x2": 0.895,
+      "y2": 0.17
+    },
+    "weapon_level_digit1": {
+      "x1": 0.192,
+      "y1": 0.6619,
+      "x2": 0.2,
+      "y2": 0.6865
+    },
+    "weapon_level_digit2": {
+      "x1": 0.2009,
+      "y1": 0.6611,
+      "x2": 0.2089,
+      "y2": 0.6857
+    },
+    "weapon_star_region": {
+      "x1": 0.35,
+      "y1": 0.5286,
+      "x2": 0.4522,
+      "y2": 0.5659
+    }
+  },
+  "state_visual_truth": [
+    {
+      "source_file": "feedback1/스크린샷 2026-08-29 233640.png",
+      "sha256": "d7ed8cc8542ced538ac8029f9b5e18ac47c801f4e83ba383945616246627d826",
+      "student_ref": "hiyori",
+      "expected": "weapon_equipped",
+      "fixture_crop": "student_weapon_s2w_v6_parity/state/weapon_equipped.png",
+      "fixture_crop_sha256": "e3a6c054feaed162b156f948aa751f95e423ade856acfee26936c84662ae712c"
+    },
+    {
+      "source_file": "feedback1/스크린샷 2026-08-29 233619.png",
+      "sha256": "890059dcf554dab84f31029477e5c7433492b654c5e252c6abe58f6d4121647e",
+      "student_ref": "wakamo_swimsuit",
+      "expected": "weapon_unlocked_not_equipped",
+      "fixture_crop": "student_weapon_s2w_v6_parity/state/weapon_unlocked_not_equipped.png",
+      "fixture_crop_sha256": "1b4a53d1648fe0b59f8ab54ee4e0d7a0edb46c06d651e6d4c36a1790d0d9ab32"
+    },
+    {
+      "source_file": "feedback1/스크린샷 2026-08-29 233808.png",
+      "sha256": "0b0700fee9dccc2b5e6ba5e5f061d604115df01a7c7403ece3d0b8a98e76b014",
+      "student_ref": "rio_battle",
+      "expected": "no_weapon_system",
+      "fixture_crop": "student_weapon_s2w_v6_parity/state/no_weapon_system.png",
+      "fixture_crop_sha256": "a79f24a19792b73b6b5f882c2ce7533d56b602b1eb07bf20e2eabb40627fc203"
+    }
+  ],
+  "menu_behavior": {
+    "open_when": "weapon state is confirmed equipped and either basic level or basic star is unconfirmed",
+    "skip_when": [
+      "weapon_unlocked_not_equipped",
+      "no_weapon_system",
+      "student_star_below_5"
+    ],
+    "stable_captures": 3,
+    "close_after_attempt": true,
+    "fields": [
+      "weapon_level",
+      "weapon_star"
+    ]
+  }
+}

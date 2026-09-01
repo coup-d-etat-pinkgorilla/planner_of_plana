@@ -1,0 +1,79 @@
+{
+  "phase": "F9 R19-R21",
+  "recorded_on": "2026-09-01",
+  "note": "F0-F8 snapshots retained; native1280 development calibration, no profile writes or learning",
+  "previous_snapshot": {
+    "path": "docs/migration/scanner-fallback-restoration/f8-source-manifest.json",
+    "sha256": "c2bf023fcbb74b8cd0b4b3926e5ad2840b82db4526f705d155b9442a413ae8e6"
+  },
+  "files": [
+    {
+      "path": "backend/core/inventory_detail_recovery.py",
+      "sha256": "f28f3363f6fc2f2a15dec6b8273992d6d8a4d74ae86cc6219f9316efc38a62b6"
+    },
+    {
+      "path": "backend/core/scanner_matchers.py",
+      "sha256": "ce173a29142365913b291cea9ad0b79fa8d2f954bc6037e0b95a5699761a4ca0"
+    },
+    {
+      "path": "backend/core/scanner_runtime.py",
+      "sha256": "c3203e2514f11132bd6e5d5bec783a3273ba6462645ca4ca173e877ae3e818dd"
+    },
+    {
+      "path": "backend/core/recognition_assets.py",
+      "sha256": "18d28e50916ef77212c0c50f2ee54b8b47e610a228efcae78f3251f626a36a73"
+    },
+    {
+      "path": "backend/tests/test_inventory_detail_f9.py",
+      "sha256": "a9f2fecc3a6fdf7d87cbef15ad6e7e52f480a8d53f8fc9444d971a58c153bf56"
+    },
+    {
+      "path": "backend/tests/test_recognition_assets.py",
+      "sha256": "cae77ce02f7e60139f52d3be7b22f51f36d0df0e518567e65b9ae035c1eb185d"
+    },
+    {
+      "path": "backend/tests/test_scanner_stdio_transport.py",
+      "sha256": "82a937c90bd7125e82eeda53c5f2aae97143936f167e6c47d2311e364a9a8020"
+    },
+    {
+      "path": "backend/tests/fixtures/inventory_detail_f9_v6_parity.json",
+      "sha256": "96af473bcfce774e410885807fe47a1e5f87c0a8ed4eb1b30f7881d6ade5e82f"
+    },
+    {
+      "path": "backend/tests/fixtures/inventory_detail_f9_live/manifest.json",
+      "sha256": "85b7d5f2c5b791188b6c19ea59b9fcd31503f1b91a2c1287646d029530dd2a91"
+    },
+    {
+      "path": "backend/assets/recognition/v1/inventory_detail_f9_manifest.json",
+      "sha256": "2c7176c170846bdbece8e77d0992b73bcd355a403f4aadc75839352156c16c97"
+    },
+    {
+      "path": "backend/assets/recognition/v1/regions/inventory_detail_f9_regions.json",
+      "sha256": "2a8acdb4c1a4b76f8de2bad7d2c5a6453dbc912ce4a3b2ea330b8fc68af87589"
+    },
+    {
+      "path": "backend/tools/sync_inventory_f9_assets.py",
+      "sha256": "9170378f794445b7b02f1fef06b737ca5c62921981ae88e2fc4b0537865b470f"
+    },
+    {
+      "path": "backend/tools/export_inventory_f9_fixtures.py",
+      "sha256": "5d1282f0d508f6dbadaa2f509c732488f219e47e61c449e9698b8b04506d4076"
+    },
+    {
+      "path": "backend/tools/verify_inventory_f9_live.py",
+      "sha256": "7ecc413ba6b5c259035c76f732d553e887ec76d2609679be55d2cb1ae44e57db"
+    },
+    {
+      "path": "../v6/core/scanner_components/inventory.py",
+      "sha256": "e0a3dcc5c3f3161f9a66f65f5aa71f5234265b8acc1e8e9ec2a202987dd9eceb"
+    },
+    {
+      "path": "../v6/core/inventory_count_matcher.py",
+      "sha256": "d189d9b7ab041b742565fccd099655b1ff96393f6ff793cfbd3583f3622067a8"
+    },
+    {
+      "path": "../v6/core/scanner_shared.py",
+      "sha256": "ba77711ec132a3646c32591499f89c525e41f78b3db7ac64ec9d8afcf6417a60"
+    }
+  ]
+}

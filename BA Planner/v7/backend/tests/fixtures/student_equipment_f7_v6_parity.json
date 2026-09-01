@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "source": "v6 scanner_components/student.py:read_equipment,_scan_equip_slot,_equipment_growth_button_active; matcher.py:read_equip_check_inside; characterized before F7 adaptation",
+  "checkbox_preclick_rechecks": 1,
+  "checkbox_click_limit": 1,
+  "additional_detail_reads": 1,
+  "retry_condition": "all targeted normal equipment tiers unresolved; exclude favorite-only and partial success",
+  "favorite_lock": "confirmed inactive growth button AND confirmed absence of empty dot",
+  "legacy_t10": {"minimum": 0.66, "normal": 0.72, "level": 70, "top1": "T10", "requires_scan_level": true},
+  "current_bank_t10_promotion": "disabled_pending_D2_independent_image_validation",
+  "safety": ["Unknown checkbox never false", "Require checked state before each read", "Preserve known values and conflicts", "No input beyond checkbox/navigation", "F2 verified same-student return"]
+}

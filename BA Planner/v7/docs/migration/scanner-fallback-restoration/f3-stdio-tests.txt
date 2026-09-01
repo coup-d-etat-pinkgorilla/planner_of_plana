@@ -1,0 +1,8 @@
+test_backpressure_coalesces_progress_but_preserves_reliable_events (test_scanner_stdio_transport.ScannerStdioTransportTests.test_backpressure_coalesces_progress_but_preserves_reliable_events) ... ok
+test_real_process_serves_asset_readiness_and_windows_target_list (test_scanner_stdio_transport.ScannerStdioTransportTests.test_real_process_serves_asset_readiness_and_windows_target_list) ... ok
+test_start_response_precedes_fast_worker_events (test_scanner_stdio_transport.ScannerStdioTransportTests.test_start_response_precedes_fast_worker_events) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 4.961s
+
+OK

@@ -1,0 +1,1046 @@
+{
+  "version": 1,
+  "source_version": "student-potential-f3-v6-2026-08-31",
+  "assets": [
+    {
+      "path": "regions/student_potential_regions.json",
+      "scan_kind": "student",
+      "purpose": "student-potential-regions",
+      "required": true,
+      "bytes": 764,
+      "sha256": "bc266efddaada83be9c33bb1acc044c007714aa0b69a8f86bb20b1fae94381d1",
+      "source_path": "adapted:../v6/regions/student_{normal_info,data,statmenu}_regions.json",
+      "potential_value": null
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/1.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 1606,
+      "sha256": "03485c0211bb1ca6600871209f91dc028c27faa97e0f9e1028d261141f7d5b6f",
+      "source_path": "../v6/templates/basic_additional_stat_values/1.png",
+      "potential_value": "basic:1"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/10.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2252,
+      "sha256": "291e1e57ff15d6278c9d9b62073af88f88f472ccf300c6291bb605996551c42b",
+      "source_path": "../v6/templates/basic_additional_stat_values/10.png",
+      "potential_value": "basic:10"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/11.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 1817,
+      "sha256": "5b9113444a85903e5c6cc26079f253782c1c243a90136433ef650ad98194f0aa",
+      "source_path": "../v6/templates/basic_additional_stat_values/11.png",
+      "potential_value": "basic:11"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/12.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2176,
+      "sha256": "662288723dd700e9c35dd6f17c93bd41e0b9a123872ea3cb11eb7743ef2b82b9",
+      "source_path": "../v6/templates/basic_additional_stat_values/12.png",
+      "potential_value": "basic:12"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/13.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2294,
+      "sha256": "e91262b659c61a9b70ad04638ebddcbacb77aa605c049cc7de7c992beba85c4c",
+      "source_path": "../v6/templates/basic_additional_stat_values/13.png",
+      "potential_value": "basic:13"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/14.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2025,
+      "sha256": "8e9dd821f4e0e4c03ccbc8fc02cbd87614f5657a5cc7ff6a55940404289903c2",
+      "source_path": "../v6/templates/basic_additional_stat_values/14.png",
+      "potential_value": "basic:14"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/15.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2122,
+      "sha256": "2ddfe5a15dad51b2c9ea771a770dc18c8f682fbe418735c13e2b8ceabd66f568",
+      "source_path": "../v6/templates/basic_additional_stat_values/15.png",
+      "potential_value": "basic:15"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/16.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2294,
+      "sha256": "1032a43134811b074ace0ec4a381a54324a9a699d915179f931667b9f8992c4a",
+      "source_path": "../v6/templates/basic_additional_stat_values/16.png",
+      "potential_value": "basic:16"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/17.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2026,
+      "sha256": "94c390239ae3159050cfd98e74016bdfe2a5c6148713719ffb9a414750151827",
+      "source_path": "../v6/templates/basic_additional_stat_values/17.png",
+      "potential_value": "basic:17"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/18.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2440,
+      "sha256": "2499e63f6e5fe595947339e594b87463899d3b94459bf746af556f7311a04590",
+      "source_path": "../v6/templates/basic_additional_stat_values/18.png",
+      "potential_value": "basic:18"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/19.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2335,
+      "sha256": "1cbe4a93c83b8f2287b26eeed7db5bf49044c9aad65c7978ddad1633b27174fb",
+      "source_path": "../v6/templates/basic_additional_stat_values/19.png",
+      "potential_value": "basic:19"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/2.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 1943,
+      "sha256": "a3d21e8c2e3180d81f630bf7f1b8782dec18ab76fab83e92aa62d52037d73db0",
+      "source_path": "../v6/templates/basic_additional_stat_values/2.png",
+      "potential_value": "basic:2"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/20.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2584,
+      "sha256": "6af975fad9d96ebf96c5c30b625ab8d292e12b9c03b6ab967f46fba3d187caa3",
+      "source_path": "../v6/templates/basic_additional_stat_values/20.png",
+      "potential_value": "basic:20"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/21.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2169,
+      "sha256": "afe9d7c28869f66c327b547ebec5c25cedf41314e190ad8861ffd0c256d1e4c2",
+      "source_path": "../v6/templates/basic_additional_stat_values/21.png",
+      "potential_value": "basic:21"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/22.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2503,
+      "sha256": "7a6aa209016dbee923ce6333e842a0eeb9238778e6b8f4ca60589cba190b89d5",
+      "source_path": "../v6/templates/basic_additional_stat_values/22.png",
+      "potential_value": "basic:22"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/23.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2611,
+      "sha256": "03f909cc9b3d0101f48677774bd53bdc4deec8f6f48f78f053f97d7221cffe17",
+      "source_path": "../v6/templates/basic_additional_stat_values/23.png",
+      "potential_value": "basic:23"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/24.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2348,
+      "sha256": "c8047d684454f9499e1a813151d5a12b3cb239e16435b356221986e1b5f7a914",
+      "source_path": "../v6/templates/basic_additional_stat_values/24.png",
+      "potential_value": "basic:24"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/25.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4736,
+      "sha256": "6739fac4cc211cb68e13c564e3c0db7dd530de3b7ec06c9cdc575554cc7fc07f",
+      "source_path": "../v6/templates/basic_additional_stat_values/25.png",
+      "potential_value": "basic:25"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/3.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2056,
+      "sha256": "9e087a6119c52aa5de226b17c3b5fa3cef5b2afe9817da39aa5fab7984071f40",
+      "source_path": "../v6/templates/basic_additional_stat_values/3.png",
+      "potential_value": "basic:3"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/4.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 1821,
+      "sha256": "f1ea8ca2e5a3d99ef046435d3820e67a3500d9a4377644a246c896e3eef07097",
+      "source_path": "../v6/templates/basic_additional_stat_values/4.png",
+      "potential_value": "basic:4"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/5.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 1891,
+      "sha256": "27a91edeb99941471f62ab89e77ddeb2ae3bf41a56658e045b90355ab9fe93f9",
+      "source_path": "../v6/templates/basic_additional_stat_values/5.png",
+      "potential_value": "basic:5"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/6.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2084,
+      "sha256": "db043f3dd3e36a16b7b5c0f4fcc30734ca65318d257be1f3ddbf9c7c4675cea3",
+      "source_path": "../v6/templates/basic_additional_stat_values/6.png",
+      "potential_value": "basic:6"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/7.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 1802,
+      "sha256": "90b22adb10bf47e924cacd6323f34a0f33a771e619455109aba45ac35f53ae16",
+      "source_path": "../v6/templates/basic_additional_stat_values/7.png",
+      "potential_value": "basic:7"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/8.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2217,
+      "sha256": "b86f2ae63076d05d83cdae2068404b568f6ced6d4aa55f75aa9e8b25d83cb6e1",
+      "source_path": "../v6/templates/basic_additional_stat_values/8.png",
+      "potential_value": "basic:8"
+    },
+    {
+      "path": "templates/student_potential/basic_additional_stat_values/9.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 2086,
+      "sha256": "cfa1f751efc78395b297e80d38fbf7d6928256ffc98c52666bb686043b6add31",
+      "source_path": "../v6/templates/basic_additional_stat_values/9.png",
+      "potential_value": "basic:9"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/0.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4931,
+      "sha256": "afeaf1aad4c1001e83fe62641759a456038fa629da0d12ec3201b78b35071fbf",
+      "source_path": "../v6/templates/stat_hp/0.png",
+      "potential_value": "hp:0"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/1.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4201,
+      "sha256": "2d425c2a6dc9d67588deabbf97c026cc681e1739dbd2d7c628099838dca4971d",
+      "source_path": "../v6/templates/stat_hp/1.png",
+      "potential_value": "hp:1"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/10.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5107,
+      "sha256": "12481d7d72b87a02f7b7a5d580a81eabf313dd966048c6de774b0d94d572f80c",
+      "source_path": "../v6/templates/stat_hp/10.png",
+      "potential_value": "hp:10"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/11.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4359,
+      "sha256": "0bd217b47c932e84acbfb449d4081457fa2d63d434584c6a30453a77152561ca",
+      "source_path": "../v6/templates/stat_hp/11.png",
+      "potential_value": "hp:11"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/12.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4899,
+      "sha256": "5b2489315e75cedc300cffb7a0cc7a138fa84be78f34ce3403270b2c6354f3a6",
+      "source_path": "../v6/templates/stat_hp/12.png",
+      "potential_value": "hp:12"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/13.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5082,
+      "sha256": "ed831cfa0d8c839da9b05fcb96f5255f37d9129ec3c2bb1b4449f54094da1b31",
+      "source_path": "../v6/templates/stat_hp/13.png",
+      "potential_value": "hp:13"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/14.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4625,
+      "sha256": "c09be6a055aa3b3ba5b2570ef1e57552f0a08490c11c32236139ce74ddcba953",
+      "source_path": "../v6/templates/stat_hp/14.png",
+      "potential_value": "hp:14"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/15.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4802,
+      "sha256": "e17869a1cb5a0d8a886199cdd3a09f963f3380590c4bf2a4a2c02da2f33b2f0c",
+      "source_path": "../v6/templates/stat_hp/15.png",
+      "potential_value": "hp:15"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/16.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5171,
+      "sha256": "b6d0ed827ff9a24771577d50dd70004a77443f608d50effc51dbeadecca2eb63",
+      "source_path": "../v6/templates/stat_hp/16.png",
+      "potential_value": "hp:16"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/17.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4648,
+      "sha256": "708bbe093b718804f3398201c5c8f11581c59361a889aa8de657e0dbd2a59486",
+      "source_path": "../v6/templates/stat_hp/17.png",
+      "potential_value": "hp:17"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/18.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5375,
+      "sha256": "653920e89b072398f682ca2346433935428f2c41fe1022db0db86126b114b5eb",
+      "source_path": "../v6/templates/stat_hp/18.png",
+      "potential_value": "hp:18"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/19.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5177,
+      "sha256": "28fe195490ad3861e5563ff30d7448dfe30cd9030521b9c506bc62773f1fc746",
+      "source_path": "../v6/templates/stat_hp/19.png",
+      "potential_value": "hp:19"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/2.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4714,
+      "sha256": "0fd03e136525e99ff66fbf66fb8082fa82728521547f95ee3dd649bd51543453",
+      "source_path": "../v6/templates/stat_hp/2.png",
+      "potential_value": "hp:2"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/20.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5643,
+      "sha256": "28109f2b8390b40405e8031c2f787e78cba59a5a4779a3d538231ed558e8d1ff",
+      "source_path": "../v6/templates/stat_hp/20.png",
+      "potential_value": "hp:20"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/21.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4912,
+      "sha256": "c25f1a11a53dea5f8ed44892d68ab35a6618824773ac37f1e49d5c0e14860fb9",
+      "source_path": "../v6/templates/stat_hp/21.png",
+      "potential_value": "hp:21"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/22.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5423,
+      "sha256": "c3bbda4b96e99bd006a086f5291057fdeafb1360beb4380a38762e6c73217794",
+      "source_path": "../v6/templates/stat_hp/22.png",
+      "potential_value": "hp:22"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/23.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5621,
+      "sha256": "ce1032178b87e31a70ae4b757de2e872ec477109e63390b75129193e5202b010",
+      "source_path": "../v6/templates/stat_hp/23.png",
+      "potential_value": "hp:23"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/24.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5177,
+      "sha256": "77d6bf3424b80c83a6b3599b82cd559e1a03cf08a6aa76bb0c239a2921004876",
+      "source_path": "../v6/templates/stat_hp/24.png",
+      "potential_value": "hp:24"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/25.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 8940,
+      "sha256": "37882c2c697257d0430af7e9cdf93e84939c39081ace2d778a498a835908223d",
+      "source_path": "../v6/templates/stat_hp/25.png",
+      "potential_value": "hp:25"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/3.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4933,
+      "sha256": "a4b5dcb39ca91bd86d5aa705a78c62edfd876f84e83f618646aa78cfe867a977",
+      "source_path": "../v6/templates/stat_hp/3.png",
+      "potential_value": "hp:3"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/4.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4494,
+      "sha256": "f3742693477d4b4bad967d6ec94a7745c61ae0015e60b47f0d76978936a3d69a",
+      "source_path": "../v6/templates/stat_hp/4.png",
+      "potential_value": "hp:4"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/5.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4646,
+      "sha256": "24be6512e9f355f504ead9636596fae7253ff03593906ca840f607b5e653402d",
+      "source_path": "../v6/templates/stat_hp/5.png",
+      "potential_value": "hp:5"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/6.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4981,
+      "sha256": "9a28164b264435304f3715c09e925e30e93b29e8693185847a5ed239470dd60a",
+      "source_path": "../v6/templates/stat_hp/6.png",
+      "potential_value": "hp:6"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/7.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4465,
+      "sha256": "1e1f138c2696dfc110381502fa3fb61e09bc79530610cf7513edb80cbeb7161a",
+      "source_path": "../v6/templates/stat_hp/7.png",
+      "potential_value": "hp:7"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/8.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5204,
+      "sha256": "30570bf68e683caaf2c8fbf7d785c01fecd8e9895347aa1e223cb5b7cae25961",
+      "source_path": "../v6/templates/stat_hp/8.png",
+      "potential_value": "hp:8"
+    },
+    {
+      "path": "templates/student_potential/stat_hp/9.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4989,
+      "sha256": "d792bddebf66a796d918afa2c9b1331f0c78d3eed421f07ed514244f259257d4",
+      "source_path": "../v6/templates/stat_hp/9.png",
+      "potential_value": "hp:9"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/0.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4825,
+      "sha256": "beb54a3c39377754bf5767213c8b90024e1d61e1e849fe8941614b8a6ff90d19",
+      "source_path": "../v6/templates/stat_atk/0.png",
+      "potential_value": "atk:0"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/1.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4050,
+      "sha256": "1583cf03d627809bfcc2c480fad5c5fe21bcfbdc58f4628df401e7691f55c481",
+      "source_path": "../v6/templates/stat_atk/1.png",
+      "potential_value": "atk:1"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/10.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4974,
+      "sha256": "5a8b9d2052ec0a61283d8191193308ff4c7edec12727a2773647fe708e41ce6d",
+      "source_path": "../v6/templates/stat_atk/10.png",
+      "potential_value": "atk:10"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/11.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4211,
+      "sha256": "97ccf84fe25e5ea6676574acb884440240b44b932260be7f80a3fc992493aeb3",
+      "source_path": "../v6/templates/stat_atk/11.png",
+      "potential_value": "atk:11"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/12.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4740,
+      "sha256": "e91c95470feb640946a6a449e4da7089a9d50efe9ec32423f9ee5b63722613af",
+      "source_path": "../v6/templates/stat_atk/12.png",
+      "potential_value": "atk:12"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/13.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4980,
+      "sha256": "4732593742073ebe865ef445c4f941ad8a6433313351211146dd4c3fe5ed4758",
+      "source_path": "../v6/templates/stat_atk/13.png",
+      "potential_value": "atk:13"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/14.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4522,
+      "sha256": "0339e305b1eceba2880cc26d23092b160a74e872d862bc4261deda2d6c8359fc",
+      "source_path": "../v6/templates/stat_atk/14.png",
+      "potential_value": "atk:14"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/15.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4687,
+      "sha256": "c563e850cee6efe134f54598c751922ccc494621db54e31f4f51ce6866cbc834",
+      "source_path": "../v6/templates/stat_atk/15.png",
+      "potential_value": "atk:15"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/16.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5071,
+      "sha256": "7a908aaa354ad268f1c49fda9dd03763dc755730bcc7d587c4b544d27dd0e0fd",
+      "source_path": "../v6/templates/stat_atk/16.png",
+      "potential_value": "atk:16"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/17.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4517,
+      "sha256": "a1d06c57b6094004df28ff3133b38f0380642f49dc1b37797e5a9c4e10e1b78d",
+      "source_path": "../v6/templates/stat_atk/17.png",
+      "potential_value": "atk:17"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/18.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5237,
+      "sha256": "43923015bd0cd41b290920531a5979fe6fd44dd832625197437313dc979f66fd",
+      "source_path": "../v6/templates/stat_atk/18.png",
+      "potential_value": "atk:18"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/19.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5030,
+      "sha256": "11aea212d9176b18aec6dbf9a6a7145f06ded710b1dd10701280d32df2d24e8e",
+      "source_path": "../v6/templates/stat_atk/19.png",
+      "potential_value": "atk:19"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/2.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4574,
+      "sha256": "047e1e2ed1dc323d0685c57d99c67a598c6e82dae4b86978fc26fac71c1d54ce",
+      "source_path": "../v6/templates/stat_atk/2.png",
+      "potential_value": "atk:2"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/20.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5514,
+      "sha256": "fece097d394f696234e84554801208e6934c60dddc0c7800c245b39707441289",
+      "source_path": "../v6/templates/stat_atk/20.png",
+      "potential_value": "atk:20"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/21.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4783,
+      "sha256": "062f4240d9f43b106241165fdd48d36bf8528d64c380456dfc11f53e35cc7717",
+      "source_path": "../v6/templates/stat_atk/21.png",
+      "potential_value": "atk:21"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/22.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5283,
+      "sha256": "1255beea484008637cb1006940d39f7aac4e785b0841242d1276b605d14262b9",
+      "source_path": "../v6/templates/stat_atk/22.png",
+      "potential_value": "atk:22"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/23.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5513,
+      "sha256": "1eef5a50ea9fb3295f4a8f998e8924d24628d70694c8d3a83451614ac8764363",
+      "source_path": "../v6/templates/stat_atk/23.png",
+      "potential_value": "atk:23"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/24.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5068,
+      "sha256": "5028872542745006ebbb57e2f32e592fd55d7ed01479290be0181efbb471a03c",
+      "source_path": "../v6/templates/stat_atk/24.png",
+      "potential_value": "atk:24"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/25.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 8696,
+      "sha256": "386235bd9d39913e02725afe09c044b8c0df413f738150fcd953f8167a58eecd",
+      "source_path": "../v6/templates/stat_atk/25.png",
+      "potential_value": "atk:25"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/3.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4804,
+      "sha256": "6b95c5120e78241a937fcbb7cf32eae12b8acbe9b5d6633f97d715b9953976e4",
+      "source_path": "../v6/templates/stat_atk/3.png",
+      "potential_value": "atk:3"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/4.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4382,
+      "sha256": "457048f98dfa7cda559fa7b552952bd16f8855ef8b8dcdf5d32b456bcc2a324c",
+      "source_path": "../v6/templates/stat_atk/4.png",
+      "potential_value": "atk:4"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/5.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4516,
+      "sha256": "c3316d17310eea5770f8aa8859a14daa3c042aef33d086767cf177f081762533",
+      "source_path": "../v6/templates/stat_atk/5.png",
+      "potential_value": "atk:5"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/6.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4864,
+      "sha256": "99fd65723cccf85f9e75bcc5eddd4d20c047868ed7567087d69569d7141a1fc1",
+      "source_path": "../v6/templates/stat_atk/6.png",
+      "potential_value": "atk:6"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/7.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4356,
+      "sha256": "3c083b4eea4996a19c70cb1cf050f5c0e1dfe43bd052179522e7dfc192cdd128",
+      "source_path": "../v6/templates/stat_atk/7.png",
+      "potential_value": "atk:7"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/8.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5100,
+      "sha256": "701561c17c60bd41d3b472a8c3389a74005d28d9761baac550da3fd46a7b064f",
+      "source_path": "../v6/templates/stat_atk/8.png",
+      "potential_value": "atk:8"
+    },
+    {
+      "path": "templates/student_potential/stat_atk/9.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4846,
+      "sha256": "02399864fbcb5d08302b948524989585ff2efe1333789b9aad8468045a94ea8d",
+      "source_path": "../v6/templates/stat_atk/9.png",
+      "potential_value": "atk:9"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/0.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4830,
+      "sha256": "dc12e376b9971cb73b3beee6ff5c4cfec703a82c34bdf55eade21b1d8837f5c4",
+      "source_path": "../v6/templates/stat_heal/0.png",
+      "potential_value": "heal:0"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/1.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4074,
+      "sha256": "ba3499c2d5c7098eb561e8e5365278e7fdf9638893170a46890cf790733654c1",
+      "source_path": "../v6/templates/stat_heal/1.png",
+      "potential_value": "heal:1"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/10.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5030,
+      "sha256": "e356a7eb8b8201153a8f98872149978dce6d01f2215846c3bde06e2bfed5a3e4",
+      "source_path": "../v6/templates/stat_heal/10.png",
+      "potential_value": "heal:10"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/11.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4283,
+      "sha256": "1b2bafdbc0710e1bd93042c3cf7c5cdd0052cb3d42090d7deb7170346842ffc0",
+      "source_path": "../v6/templates/stat_heal/11.png",
+      "potential_value": "heal:11"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/12.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4807,
+      "sha256": "bb85236d3e49d114899e4c00cd51378932e4e15250143cb41c905a28316f140f",
+      "source_path": "../v6/templates/stat_heal/12.png",
+      "potential_value": "heal:12"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/13.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4990,
+      "sha256": "2eba763b4ae47cd70499c0a81dbc971f2b6e2fb9fe1b1739443ac27ea9f227c3",
+      "source_path": "../v6/templates/stat_heal/13.png",
+      "potential_value": "heal:13"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/14.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4567,
+      "sha256": "8ee8832e573e91347110e3b6d31766bd4241225ba4b40552e23ca01fd0ca70f1",
+      "source_path": "../v6/templates/stat_heal/14.png",
+      "potential_value": "heal:14"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/15.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4719,
+      "sha256": "843397e003fad56967f84d4a5c1b9b4ea00c7aed5e35d545ba904b1568cf68be",
+      "source_path": "../v6/templates/stat_heal/15.png",
+      "potential_value": "heal:15"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/16.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5102,
+      "sha256": "c8ebceac0bfa70a772c0d20385854138e9042efba7b9754b2df6586b2517194e",
+      "source_path": "../v6/templates/stat_heal/16.png",
+      "potential_value": "heal:16"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/17.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4576,
+      "sha256": "80bc037df50957719f796c3266f24a9df25f4f8d5b3f1fba4436eb0a64cad55a",
+      "source_path": "../v6/templates/stat_heal/17.png",
+      "potential_value": "heal:17"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/18.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5267,
+      "sha256": "48715957af121f907f685e010a140f9969927b60201be0f93eac8c3716e0943d",
+      "source_path": "../v6/templates/stat_heal/18.png",
+      "potential_value": "heal:18"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/19.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5056,
+      "sha256": "7068cbaf79f87cc9b2af5f17d20bf0731a95979f09396a38e45b14f3a9c4f1ce",
+      "source_path": "../v6/templates/stat_heal/19.png",
+      "potential_value": "heal:19"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/2.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4616,
+      "sha256": "fa76dee35507c0b22e8286cc6a9cb99224bbe131e6d18e5a96c8db889a4e372e",
+      "source_path": "../v6/templates/stat_heal/2.png",
+      "potential_value": "heal:2"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/20.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5562,
+      "sha256": "4a416c2a2112a4bf2fb2b646d53214a9a454a2043b7672b1fd381697389d78c9",
+      "source_path": "../v6/templates/stat_heal/20.png",
+      "potential_value": "heal:20"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/21.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4820,
+      "sha256": "b8651d8e25e4b2730a5a657794f3d1498da2ba1d0f69bb464d1f776785bdbd09",
+      "source_path": "../v6/templates/stat_heal/21.png",
+      "potential_value": "heal:21"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/22.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5334,
+      "sha256": "4366227bc096b94bf04791f4c14aca9fe675b049da2f645fdd6ec62fac9338a0",
+      "source_path": "../v6/templates/stat_heal/22.png",
+      "potential_value": "heal:22"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/23.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5523,
+      "sha256": "903b584a04e5674a44c28d5e298c09f7889223a2d8d9ace7e769ee30527501ab",
+      "source_path": "../v6/templates/stat_heal/23.png",
+      "potential_value": "heal:23"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/24.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5109,
+      "sha256": "e4d18fff7700dac17b000cee9455a6a5285b9b776ee01dab9e0480d3446ecf82",
+      "source_path": "../v6/templates/stat_heal/24.png",
+      "potential_value": "heal:24"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/25.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 8816,
+      "sha256": "6bc70ac43f61fd11e91dba10149aa3bc9d8565e62b3a6ec1cb0aff041bdb9076",
+      "source_path": "../v6/templates/stat_heal/25.png",
+      "potential_value": "heal:25"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/3.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4794,
+      "sha256": "ed566e6320e2fd227a21fa61177152fbcb0801171e2428d0b71546691dc75884",
+      "source_path": "../v6/templates/stat_heal/3.png",
+      "potential_value": "heal:3"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/4.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4371,
+      "sha256": "b7a7fe0b97f6da3f3dc2c5736c301ffae0b953a71a1b49c81335b5269a670b5e",
+      "source_path": "../v6/templates/stat_heal/4.png",
+      "potential_value": "heal:4"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/5.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4514,
+      "sha256": "26e7fe9f242ff20a008b7b52fd51eada787c986913d381af4730d38a686be5e5",
+      "source_path": "../v6/templates/stat_heal/5.png",
+      "potential_value": "heal:5"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/6.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4869,
+      "sha256": "1d03010f967193ac8faaf4fd612b642299fe4a74be343ff345fae7086b560727",
+      "source_path": "../v6/templates/stat_heal/6.png",
+      "potential_value": "heal:6"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/7.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4381,
+      "sha256": "4b32b9ead8e2f3bc5d61966668323232150170cd206d48c5b100477a43fd7be3",
+      "source_path": "../v6/templates/stat_heal/7.png",
+      "potential_value": "heal:7"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/8.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 5075,
+      "sha256": "9f06ccea998f9c74bd02f9804cad5bd590ac2e65c1ec66575934d507b529891a",
+      "source_path": "../v6/templates/stat_heal/8.png",
+      "potential_value": "heal:8"
+    },
+    {
+      "path": "templates/student_potential/stat_heal/9.png",
+      "scan_kind": "student",
+      "purpose": "student-potential-template",
+      "required": true,
+      "bytes": 4853,
+      "sha256": "9a4301767baaf229f5efa19ffa7fe2014fd4f53103a576d578cfc448e8a1fa7d",
+      "source_path": "../v6/templates/stat_heal/9.png",
+      "potential_value": "heal:9"
+    }
+  ]
+}

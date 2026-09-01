@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-29",
+  "ground_truth": {
+    "method": "manual review of user-selected exclusive-weapon levels",
+    "full_screenshots_retained": false,
+    "template_leakage": false
+  },
+  "coverage": {
+    "verified_levels": [30, 40, 48, 50, 60],
+    "verified_trailing_digits": [0, 8],
+    "resolutions": ["2560x1440"]
+  },
+  "records": [
+    {
+      "source_file": "스크린샷 2026-06-20 170721.png",
+      "source_sha256": "3c462c9686ca97d447d383bb74573251e42ed5b4846316cf849d60058d8f9f6c",
+      "source_size": [2560, 1440],
+      "level": 48,
+      "student_ref": "toki_battle",
+      "partition": "studio_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-03-29 120712.png",
+      "source_sha256": "6ad2eda293e7c7cf2c50413b312e2280f4ce35f821a57404ec9a48d5f13ae964",
+      "source_size": [2560, 1440],
+      "level": 50,
+      "student_ref": "neru",
+      "partition": "studio_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233640.png",
+      "source_sha256": "d7ed8cc8542ced538ac8029f9b5e18ac47c801f4e83ba383945616246627d826",
+      "source_size": [2560, 1440],
+      "level": 40,
+      "student_ref": "hiyori",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233655.png",
+      "source_sha256": "6928c03ac078e49478519628f5f88b3cbcb1f514f6b6b25fc6820e4e70cee8ae",
+      "source_size": [2560, 1440],
+      "level": 30,
+      "student_ref": "hina_swimsuit",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233703.png",
+      "source_sha256": "e1eaf5e06bd1531bc4dd433bc6cf0904c8e922eaf092c22022ec58701878f95d",
+      "source_size": [2560, 1440],
+      "level": 40,
+      "student_ref": "suzumi_magical",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233712.png",
+      "source_sha256": "3bbc9753011f09405e5bdb6594f1b4104d940187abe428926aa4a1933491b351",
+      "source_size": [2560, 1440],
+      "level": 40,
+      "student_ref": "ritsu",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233719.png",
+      "source_sha256": "ab239416b9dd051912f1b82e663030877a3d26d128777dcb1f0d2d6a5c666fdc",
+      "source_size": [2560, 1440],
+      "level": 40,
+      "student_ref": "kurumi",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233730.png",
+      "source_sha256": "7bfc694982dc3780eb7cda67af56cd9633c041761bf0a722db461e88d2906e95",
+      "source_size": [2560, 1440],
+      "level": 60,
+      "student_ref": "aru",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233742.png",
+      "source_sha256": "6d42a637dbe2d4587773734acd109a519826b61f0ce1992de41d381114cde906",
+      "source_size": [2560, 1440],
+      "level": 50,
+      "student_ref": "izuna_swimsuit",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233755.png",
+      "source_sha256": "4004484bf7e48cb5bd6273b5009d7a98b76ea40090afe8ee504b10a71e7cd4f0",
+      "source_size": [2560, 1440],
+      "level": 60,
+      "student_ref": "hoshino_battle#1",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233758.png",
+      "source_sha256": "2033b6910a8046c07c59dc86cd045dbb490f8896aa877eb144aa54aef8217561",
+      "source_size": [2560, 1440],
+      "level": 60,
+      "student_ref": "hoshino_battle#2",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233825.png",
+      "source_sha256": "33c5fe33859550a8f45b0b7bdaff95044c5b4b89f657a69a64d434ff6d2389dd",
+      "source_size": [2560, 1440],
+      "level": 50,
+      "student_ref": "nagisa",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233831.png",
+      "source_sha256": "904f756c58800247c2c72a8794fdedca337b0dd97561afd3b64ef47faf1326f5",
+      "source_size": [2560, 1440],
+      "level": 60,
+      "student_ref": "neru_school_uniform",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233840.png",
+      "source_sha256": "bde2ded924e4db64573d159365eda325f4881b68423db868f9e08aaa8901de27",
+      "source_size": [2560, 1440],
+      "level": 60,
+      "student_ref": "eimi",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233852.png",
+      "source_sha256": "6dd4cca25b2ea0d112d2299b356929bfe1f186c0053d8cdb74d8d7b639089acf",
+      "source_size": [2560, 1440],
+      "level": 60,
+      "student_ref": "iori",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 233908.png",
+      "source_sha256": "3bd8011c1b0c4e99c839fc815901fe2188783bd284922ba15e26580543598991",
+      "source_size": [2560, 1440],
+      "level": 60,
+      "student_ref": "yuzu",
+      "partition": "feedback1_validation",
+      "review_status": "visual_verified"
+    }
+  ]
+}

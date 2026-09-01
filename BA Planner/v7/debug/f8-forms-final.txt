@@ -1,0 +1,15 @@
+test_already_seen_base_does_not_switch_forms_again (test_student_forms_f8.FormF8Tests.test_already_seen_base_does_not_switch_forms_again) ... ok
+test_cancel_uses_fresh_cleanup_token_and_restores (test_student_forms_f8.FormF8Tests.test_cancel_uses_fresh_cleanup_token_and_restores) ... ok
+test_full_navigation_deduplicates_base_not_form (test_student_forms_f8.FormF8Tests.test_full_navigation_deduplicates_base_not_form) ... ok
+test_ignored_input_is_not_form_success (test_student_forms_f8.FormF8Tests.test_ignored_input_is_not_form_success) ... ok
+test_original_form_two_is_not_replaced_with_default_one (test_student_forms_f8.FormF8Tests.test_original_form_two_is_not_replaced_with_default_one) ... ok
+test_other_form_has_own_combat_and_no_borrowed_answer_specimen (test_student_forms_f8.FormF8Tests.test_other_form_has_own_combat_and_no_borrowed_answer_specimen) ... ok
+test_other_form_read_and_original_return (test_student_forms_f8.FormF8Tests.test_other_form_read_and_original_return) ... ok
+test_read_failure_still_restores (test_student_forms_f8.FormF8Tests.test_read_failure_still_restores) ... ok
+test_unverified_return_hands_completed_candidate_to_session (test_student_forms_f8.FormF8Tests.test_unverified_return_hands_completed_candidate_to_session) ... ok
+test_wrong_student_never_receives_cleanup_form_click (test_student_forms_f8.FormF8Tests.test_wrong_student_never_receives_cleanup_form_click) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 8.037s
+
+OK

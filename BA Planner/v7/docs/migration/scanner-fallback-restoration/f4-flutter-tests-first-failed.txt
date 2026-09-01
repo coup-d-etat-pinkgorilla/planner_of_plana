@@ -1,0 +1,558 @@
+Resolving dependencies...
+Downloading packages...
+  clock 1.1.2 (1.1.3 available)
+  cross_file 0.3.5+4 (0.3.5+5 available)
+  file_selector_android 0.5.2+9 (0.5.2+10 available)
+  file_selector_ios 0.5.3+5 (0.5.3+6 available)
+  file_selector_linux 0.9.4 (0.9.4+1 available)
+  file_selector_macos 0.9.5 (0.9.5+1 available)
+  file_selector_windows 0.9.3+5 (0.9.3+6 available)
+  matcher 0.12.19 (0.12.20 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.0 (1.19.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.11 (0.7.13 available)
+  vector_math 2.2.0 (2.4.2 available)
+  vm_service 15.2.0 (15.3.0 available)
+Got dependencies!
+14 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart
+00:00 +0: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagnostics_service_test.dart: process diagnostics are bounded and redact secrets
+[backend] line 0 token=<redacted> password=<redacted>
+[backend] line 1 token=<redacted> password=<redacted>
+[backend] line 2 token=<redacted> password=<redacted>
+[backend] line 3 token=<redacted> password=<redacted>
+[backend] line 4 token=<redacted> password=<redacted>
+[backend] line 5 token=<redacted> password=<redacted>
+[backend] line 6 token=<redacted> password=<redacted>
+[backend] line 7 token=<redacted> password=<redacted>
+[backend] line 8 token=<redacted> password=<redacted>
+[backend] line 9 token=<redacted> password=<redacted>
+[backend] line 10 token=<redacted> password=<redacted>
+[backend] line 11 token=<redacted> password=<redacted>
+[backend] line 12 token=<redacted> password=<redacted>
+[backend] line 13 token=<redacted> password=<redacted>
+[backend] line 14 token=<redacted> password=<redacted>
+[backend] line 15 token=<redacted> password=<redacted>
+[backend] line 16 token=<redacted> password=<redacted>
+[backend] line 17 token=<redacted> password=<redacted>
+[backend] line 18 token=<redacted> password=<redacted>
+[backend] line 19 token=<redacted> password=<redacted>
+[backend] line 20 token=<redacted> password=<redacted>
+[backend] line 21 token=<redacted> password=<redacted>
+[backend] line 22 token=<redacted> password=<redacted>
+[backend] line 23 token=<redacted> password=<redacted>
+[backend] line 24 token=<redacted> password=<redacted>
+[backend] line 25 token=<redacted> password=<redacted>
+[backend] line 26 token=<redacted> password=<redacted>
+[backend] line 27 token=<redacted> password=<redacted>
+[backend] line 28 token=<redacted> password=<redacted>
+[backend] line 29 token=<redacted> password=<redacted>
+[backend] line 30 token=<redacted> password=<redacted>
+[backend] line 31 token=<redacted> password=<redacted>
+[backend] line 32 token=<redacted> password=<redacted>
+[backend] line 33 token=<redacted> password=<redacted>
+[backend] line 34 token=<redacted> password=<redacted>
+[backend] line 35 token=<redacted> password=<redacted>
+[backend] line 36 token=<redacted> password=<redacted>
+[backend] line 37 token=<redacted> password=<redacted>
+[backend] line 38 token=<redacted> password=<redacted>
+[backend] line 39 token=<redacted> password=<redacted>
+[backend] line 40 token=<redacted> password=<redacted>
+[backend] line 41 token=<redacted> password=<redacted>
+[backend] line 42 token=<redacted> password=<redacted>
+[backend] line 43 token=<redacted> password=<redacted>
+[backend] line 44 token=<redacted> password=<redacted>
+[backend] line 45 token=<redacted> password=<redacted>
+[backend] line 46 token=<redacted> password=<redacted>
+[backend] line 47 token=<redacted> password=<redacted>
+[backend] line 48 token=<redacted> password=<redacted>
+[backend] line 49 token=<redacted> password=<redacted>
+[backend] line 50 token=<redacted> password=<redacted>
+[backend] line 51 token=<redacted> password=<redacted>
+[backend] line 52 token=<redacted> password=<redacted>
+[backend] line 53 token=<redacted> password=<redacted>
+[backend] line 54 token=<redacted> password=<redacted>
+[backend] line 55 token=<redacted> password=<redacted>
+[backend] line 56 token=<redacted> password=<redacted>
+[backend] line 57 token=<redacted> password=<redacted>
+[backend] line 58 token=<redacted> password=<redacted>
+[backend] line 59 token=<redacted> password=<redacted>
+00:00 +6: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +7: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagonal_media_list_item_test.dart: renders reusable media data and colored value deltas
+00:00 +8: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagonal_media_list_item_test.dart: renders reusable media data and colored value deltas
+00:01 +9: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: real P6 flow holds then approves scan and restores every saved bucket
+00:01 +10: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: real P6 flow holds then approves scan and restores every saved bucket
+00:01 +11: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: real P6 flow holds then approves scan and restores every saved bucket
+00:01 +12: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +13: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +14: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +15: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +16: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +17: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +18: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +19: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +20: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +21: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +22: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +23: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:01 +24: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +25: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +26: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +27: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +28: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +29: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +30: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +31: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +32: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +33: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +34: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +35: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +36: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +37: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +38: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +39: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +40: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +41: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +42: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +43: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +44: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +45: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +46: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +47: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +48: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +49: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +50: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +51: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +52: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +53: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +54: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +55: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +56: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +57: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +58: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +59: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +60: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +61: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +62: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +63: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +64: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +65: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +66: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +67: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +68: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +69: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:02 +70: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +71: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +72: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +73: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +74: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +75: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +76: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +77: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +78: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +79: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +80: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +81: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +82: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +83: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +84: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +85: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +86: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +87: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +88: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +89: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +90: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +91: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +92: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +93: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +94: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +95: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +96: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +97: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +98: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +99: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +100: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +101: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +102: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +103: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +104: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +105: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +106: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +107: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +108: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +109: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +110: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:03 +111: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +112: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +113: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +114: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +115: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +116: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +117: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +118: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +119: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +120: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +121: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +122: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +123: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +124: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +125: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +126: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +127: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +128: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +129: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +130: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +131: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:04 +132: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:05 +133: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:05 +134: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:05 +135: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:05 +136: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:05 +137: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:05 +138: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:05 +139: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:06 +140: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:07 +141: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:07 +142: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:08 +143: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:08 +144: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:08 +145: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:08 +146: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:09 +147: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:09 +148: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:09 +149: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:09 +150: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:10 +151: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:10 +152: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:10 +153: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:10 +154: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:11 +155: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:11 +156: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:11 +157: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:11 +158: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:11 +159: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:12 +160: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:12 +161: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:12 +162: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:12 +163: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:12 +164: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:12 +165: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:12 +166: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:12 +167: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:13 +168: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:13 +169: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:13 +170: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:13 +171: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:13 +172: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:13 +173: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:13 +174: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:13 +175: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:13 +175 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:13 +175 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService [E]
+  TimeoutException after 0:00:10.000000: Backend request timed out: planning.student.get
+  dart:async                                                           _Completer.completeError
+  package:ba_planner_v7/services/planning_protocol_client.dart 293:26  PlanningProtocolClient._send.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                           new Timer
+  package:ba_planner_v7/services/planning_protocol_client.dart 291:19  PlanningProtocolClient._send
+  package:ba_planner_v7/services/planning_protocol_client.dart 271:9   PlanningProtocolClient.send
+  package:ba_planner_v7/services/process_app_service.dart 121:35       ProcessAppService.getStudent
+  test\planning_protocol_client_test.dart 567:39                       main.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                           _CustomZone.registerUnaryCallback
+  test\planning_protocol_client_test.dart 566:9                        main.<fn>
+  
+00:13 +176 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +177 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +178 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +179 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +180 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +181 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +182 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +183 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +184 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +185 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +186 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:14 +187 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:15 +188 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:15 +189 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +190 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +191 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +192 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:16 +193 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:17 +194 -1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+00:17 +194 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:17 +194 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart [E]
+  TimeoutException after 0:00:10.000000: Backend request timed out: planning.inventory.catalog
+  dart:async                                                           _Completer.completeError
+  package:ba_planner_v7/services/planning_protocol_client.dart 293:26  PlanningProtocolClient._send.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                           new Timer
+  package:ba_planner_v7/services/planning_protocol_client.dart 291:19  PlanningProtocolClient._send
+  package:ba_planner_v7/services/planning_protocol_client.dart 271:9   PlanningProtocolClient.send
+  package:ba_planner_v7/services/process_app_service.dart 146:35       ProcessAppService.listInventoryItems
+  test\repository_process_e2e_test.dart 45:53                          main.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                           _CustomZone.registerUnaryCallback
+  test\repository_process_e2e_test.dart 15:27                          main.<fn>
+  
+00:17 +195 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:17 +196 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:18 +197 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:19 +198 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:19 +199 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:19 +200 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:19 +201 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:19 +202 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:19 +203 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:19 +204 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:19 +205 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:19 +206 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:20 +207 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:20 +208 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:20 +209 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:20 +210 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:21 +211 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:21 +212 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:21 +213 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:21 +214 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:21 +215 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:21 +216 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:21 +217 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:21 +218 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:22 +219 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:22 +220 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:22 +221 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:22 +222 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:22 +223 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:23 +224 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:23 +225 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:23 +226 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:23 +227 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:23 +228 -2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+00:23 +228 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: container and feature layers add nested shapes and images
+00:23 +228 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated [E]
+  TimeoutException after 0:00:10.000000: Backend request timed out: repository.profile.create
+  dart:async                                                           _Completer.completeError
+  package:ba_planner_v7/services/planning_protocol_client.dart 293:26  PlanningProtocolClient._send.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                           new Timer
+  package:ba_planner_v7/services/planning_protocol_client.dart 291:19  PlanningProtocolClient._send
+  package:ba_planner_v7/services/planning_protocol_client.dart 271:9   PlanningProtocolClient.send
+  package:ba_planner_v7/services/process_app_service.dart 350:35       ProcessAppService.createProfile
+  test\scenario_process_e2e_test.dart 78:39                            main.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                           _CustomZone.registerUnaryCallback
+  test\scenario_process_e2e_test.dart 58:27                            main.<fn>
+  
+00:23 +229 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: container and feature layers add nested shapes and images
+00:23 +230 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: container and feature layers add nested shapes and images
+00:23 +231 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: container and feature layers add nested shapes and images
+00:24 +232 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: container and feature layers add nested shapes and images
+00:24 +233 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: container and feature layers add nested shapes and images
+00:24 +234 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: container and feature layers add nested shapes and images
+00:24 +235 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_app_shell_test.dart: statistics tab is service-backed and reloads on re-entry
+00:24 +236 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_app_shell_test.dart: statistics tab is service-backed and reloads on re-entry
+00:24 +237 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_app_shell_test.dart: statistics tab is service-backed and reloads on re-entry
+00:24 +238 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_app_shell_test.dart: statistics tab is service-backed and reloads on re-entry
+00:24 +239 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_app_shell_test.dart: statistics tab is service-backed and reloads on re-entry
+00:24 +240 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_app_shell_test.dart: statistics tab is service-backed and reloads on re-entry
+00:24 +241 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_app_shell_test.dart: statistics tab is service-backed and reloads on re-entry
+00:25 +242 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: bottleneck delayed-stage button highlights exact rows and list scrolls
+00:25 +243 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: bottleneck delayed-stage button highlights exact rows and list scrolls
+00:25 +244 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: bottleneck delayed-stage button highlights exact rows and list scrolls
+00:25 +245 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: bottleneck delayed-stage button highlights exact rows and list scrolls
+00:25 +246 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +247 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +248 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +249 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +250 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +251 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +252 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +253 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +254 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +255 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +256 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +257 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +258 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +259 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +260 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +261 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +262 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +263 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +264 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +265 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +266 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +267 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +268 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +269 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +270 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +271 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +272 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +273 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +274 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +275 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+00:25 +276 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:26 +277 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:26 +278 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:26 +279 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:26 +280 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:26 +281 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:26 +282 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:26 +283 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:26 +284 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:26 +285 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:27 +286 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:27 +287 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:27 +288 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:27 +289 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:27 +290 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:27 +291 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:27 +292 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:27 +293 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:28 +294 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:28 +295 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:28 +296 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:28 +297 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+00:28 +298 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:28 +299 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:28 +300 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:28 +301 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:28 +302 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:28 +303 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:28 +304 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:28 +305 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:29 +306 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:29 +307 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:30 +308 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:30 +309 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:30 +310 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:30 +311 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:30 +312 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:30 +313 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:30 +314 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:31 +315 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:31 +316 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:31 +317 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:31 +318 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:31 +319 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:31 +320 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:32 +321 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:32 +322 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:32 +323 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:32 +324 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:32 +325 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:32 +326 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:33 +327 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:33 +328 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:33 +329 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:34 +330 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:35 +331 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:36 +332 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:36 +333 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:36 +334 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:36 +335 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:37 +336 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:37 +337 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:37 +338 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:37 +339 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:38 +340 -3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+00:38 +340 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:38 +340 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart [E]
+  TimeoutException after 0:00:10.000000: Backend request timed out: repository.profile.create
+  dart:async                                                           _Completer.completeError
+  package:ba_planner_v7/services/planning_protocol_client.dart 293:26  PlanningProtocolClient._send.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                           new Timer
+  package:ba_planner_v7/services/planning_protocol_client.dart 291:19  PlanningProtocolClient._send
+  package:ba_planner_v7/services/planning_protocol_client.dart 271:9   PlanningProtocolClient.send
+  package:ba_planner_v7/services/process_app_service.dart 350:35       ProcessAppService.createProfile
+  test\tactical_process_e2e_test.dart 35:37                            main.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                           _CustomZone.registerUnaryCallback
+  test\tactical_process_e2e_test.dart 15:23                            main.<fn>
+  
+00:39 +341 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:39 +342 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:40 +343 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:40 +344 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:40 +345 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:40 +346 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:40 +347 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:40 +348 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:40 +349 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:40 +350 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:40 +351 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:41 +352 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:41 +353 -4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+00:41 +353 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:41 +353 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data [E]
+  TimeoutException after 0:00:10.000000: Backend request timed out: repository.profile.create
+  dart:async                                                           _Completer.completeError
+  package:ba_planner_v7/services/planning_protocol_client.dart 293:26  PlanningProtocolClient._send.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                           new Timer
+  package:ba_planner_v7/services/planning_protocol_client.dart 291:19  PlanningProtocolClient._send
+  package:ba_planner_v7/services/planning_protocol_client.dart 271:9   PlanningProtocolClient.send
+  package:ba_planner_v7/services/process_app_service.dart 350:35       ProcessAppService.createProfile
+  test\tactical_v2_process_e2e_test.dart 131:39                        main.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                           _CustomZone.registerUnaryCallback
+  test\tactical_v2_process_e2e_test.dart 84:23                         main.<fn>
+  
+00:41 +354 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:41 +355 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:42 +356 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:42 +357 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:42 +358 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:44 +359 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:45 +360 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:45 +361 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:46 +362 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:47 +363 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:48 +364 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:48 +365 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:49 +366 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: phase completion exits the builder and returns to plan main
+00:49 +367 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: phase completion exits the builder and returns to plan main
+00:49 +368 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: first run imports a v6 account and opens its repository plan
+00:49 +369 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: first run imports a v6 account and opens its repository plan
+00:50 +370 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: first run imports a v6 account and opens its repository plan
+00:51 +371 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: first run imports a v6 account and opens its repository plan
+00:51 +372 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: first run imports a v6 account and opens its repository plan
+00:51 +373 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor sections play their outro when the plan tab deactivates
+00:52 +374 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: initial home header and menu enter from 270 and 0 degrees
+00:52 +375 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: initial home header and menu enter from 270 and 0 degrees
+00:52 +376 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: initial home header and menu enter from 270 and 0 degrees
+00:53 +377 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: student selector keeps section 1 and resets search and filters on exit
+00:53 +378 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: student selector keeps section 1 and resets search and filters on exit
+00:54 +379 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: student selector keeps section 1 and resets search and filters on exit
+00:55 +380 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: student selector keeps section 1 and resets search and filters on exit
+00:56 +381 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: student selector keeps section 1 and resets search and filters on exit
+00:56 +382 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: mock state is reflected without replacing widgets
+00:57 +383 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: student selector panels play outro when the plan tab deactivates
+00:58 +384 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: scan tab is service-backed and requires an explicit target
+00:58 +385 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: student selection exits both panels before opening and reopening the builder
+01:00 +386 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: student selection exits both panels before opening and reopening the builder
+01:02 +387 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario comparison selects active plan and exposes side-by-side actions
+01:02 +388 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: comparison workspace incorporates a scenario after the active plan
+01:04 +389 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario list keeps section 1 and uses the 80 to 260 diagonal workspace
+01:05 +390 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario creation exits its selector before cancel and list handoffs
+01:08 +391 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: multi-select processes students in click order and reopens the selected student plan
+01:11 +392 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario creation reuses student builder and phase editor without bulk apply
+01:14 +393 -5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario selector accepts the upper-right of fourth-column portraits in rows 1-4
+01:15 +394 -5: Some tests failed.
+
+Failing tests:
+  C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+  C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+  C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+  C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+  C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data

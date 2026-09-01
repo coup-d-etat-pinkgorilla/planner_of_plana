@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "characterized_before_adaptation": true,
+  "legacy": {
+    "detail_score": 0.88,
+    "detail_margin": 0.015,
+    "icon_weight": 0.4,
+    "name_weight": 0.6,
+    "count_x_score": 0.72,
+    "count_digit_score": 0.66,
+    "equipment_bank_fallback_reasons": ["no_x_templates", "missing_digit_templates"],
+    "grid_count_fallback_reason": "weak_x_match",
+    "unsafe_grid_fallback": "legacy fallback may have failed fast visual/count gates"
+  },
+  "v7_contract": {
+    "fast_success_inputs": 0,
+    "detail_source": "inventory_detail_template",
+    "legacy_same_crop_source_retained": "detail_template_fallback",
+    "identity_conflict": "retain grid identity for review; do not attach another item's count",
+    "weak_x_fallback": "same slot, confirmed ID/count, separately verified scan profile only",
+    "unknown_quantity": null,
+    "zero_quantity": "0",
+    "return": "actual inventory has persistent left detail pane; restore original selected slot and verify unchanged grid, no invented close click",
+    "unknown_screen_or_selection": "no speculative input",
+    "profile_writes": false,
+    "filter_sort_scroll_restoration": "F10, not F9"
+  }
+}

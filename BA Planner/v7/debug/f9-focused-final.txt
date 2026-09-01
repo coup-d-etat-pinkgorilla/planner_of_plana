@@ -1,0 +1,22 @@
+test_grid_success_zero_detail_calls (test_inventory_detail_f9.F9AdapterTests.test_grid_success_zero_detail_calls) ... ok
+test_unknown_grid_count_uses_real_detail_and_preserves_zero (test_inventory_detail_f9.F9AdapterTests.test_unknown_grid_count_uses_real_detail_and_preserves_zero) ... ok
+test_unresolved_detail_does_not_silently_accept_weak_x_grid_quantity (test_inventory_detail_f9.F9AdapterTests.test_unresolved_detail_does_not_silently_accept_weak_x_grid_quantity) ... ok
+test_unverified_return_stops_session (test_inventory_detail_f9.F9AdapterTests.test_unverified_return_stops_session) ... ok
+test_actual_item_and_equipment_capture_identity_count_and_selection (test_inventory_detail_f9.F9RecognitionTests.test_actual_item_and_equipment_capture_identity_count_and_selection) ... ok
+test_equipment_bank_substitution_only_for_missing_templates (test_inventory_detail_f9.F9RecognitionTests.test_equipment_bank_substitution_only_for_missing_templates) ... ok
+test_missing_equipment_glyph_bank_uses_item_glyphs_at_equipment_geometry (test_inventory_detail_f9.F9RecognitionTests.test_missing_equipment_glyph_bank_uses_item_glyphs_at_equipment_geometry) ... ok
+test_unknown_page_and_uniform_digit_not_recognized (test_inventory_detail_f9.F9RecognitionTests.test_unknown_page_and_uniform_digit_not_recognized) ... ok
+test_cancel_after_read_uses_fresh_cleanup (test_inventory_detail_f9.F9RecoveryTests.test_cancel_after_read_uses_fresh_cleanup) ... ok
+test_confirmed_grid_id_conflict_never_receives_other_count (test_inventory_detail_f9.F9RecoveryTests.test_confirmed_grid_id_conflict_never_receives_other_count) ... ok
+test_ignored_click_never_reads_detail (test_inventory_detail_f9.F9RecoveryTests.test_ignored_click_never_reads_detail) ... ok
+test_non_weak_x_and_conflicting_detail_do_not_use_grid_count (test_inventory_detail_f9.F9RecoveryTests.test_non_weak_x_and_conflicting_detail_do_not_use_grid_count) ... ok
+test_page_change_never_clicks_cleanup_on_unknown_screen (test_inventory_detail_f9.F9RecoveryTests.test_page_change_never_clicks_cleanup_on_unknown_screen) ... ok
+test_read_failure_restores_selection (test_inventory_detail_f9.F9RecoveryTests.test_read_failure_restores_selection) ... ok
+test_select_read_restore_original_same_grid (test_inventory_detail_f9.F9RecoveryTests.test_select_read_restore_original_same_grid) ... ok
+test_unknown_selection_does_not_click (test_inventory_detail_f9.F9RecoveryTests.test_unknown_selection_does_not_click) ... ok
+test_weak_x_requires_prior_confirmed_same_profile_grid_evidence (test_inventory_detail_f9.F9RecoveryTests.test_weak_x_requires_prior_confirmed_same_profile_grid_evidence) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 4.902s
+
+OK

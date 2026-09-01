@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "partition": "development_regression_not_D2_holdout",
+  "review": "Human/model visual review; favorite template predictions used only to shortlist archive frames. No runtime learning.",
+  "assets": [
+    {
+      "file": "miyu-1280.png",
+      "source": "..\\debug\\scanner_f7_followup\\miyu-live\\basic.png",
+      "student": "miyu",
+      "level": 1,
+      "favorite": "love_locked",
+      "growth": false,
+      "dot": false,
+      "sha256": "636d27c83015e278d0d1453cdcdd898fbb201154c774fdb0b9896ea889025ee6"
+    },
+    {
+      "file": "miyu-2560.png",
+      "source": "tests\\fixtures\\student_potential_f3_live\\miyu-basic-2560.png",
+      "student": "miyu",
+      "level": 1,
+      "favorite": "love_locked",
+      "growth": false,
+      "dot": false,
+      "sha256": "22c2c831c0615413df808944641e78fb90fbe2741187c16ca0e09e26831d65bc"
+    },
+    {
+      "file": "toki-t2.png",
+      "source": "C:\\Users\\brigh\\Pictures\\Screenshots\\BA\\\uc2a4\ud06c\ub9b0\uc0f7 2026-03-28 214339.png",
+      "student": "toki",
+      "level": 90,
+      "favorite": "T2",
+      "growth": true,
+      "dot": null,
+      "sha256": "ee785e890e0441eec1b2aea9a8c662e0e0290e47d5037b9a5af97dfa011514a6"
+    },
+    {
+      "file": "serika-t2.png",
+      "source": "C:\\Users\\brigh\\Pictures\\Screenshots\\BA\\\uc2a4\ud06c\ub9b0\uc0f7 2026-03-28 214826.png",
+      "student": "serika",
+      "level": 90,
+      "favorite": "T2",
+      "growth": true,
+      "dot": null,
+      "sha256": "7341417148cd1136a766271b94493da7224a61a7231d344461eee925e7985d34"
+    },
+    {
+      "file": "momiji-t1.png",
+      "source": "C:\\Users\\brigh\\Pictures\\Screenshots\\BA\\\uc2a4\ud06c\ub9b0\uc0f7 2026-03-29 114509.png",
+      "student": "momiji",
+      "level": 1,
+      "favorite": "T1",
+      "growth": true,
+      "dot": null,
+      "sha256": "83eb5ae32030e1061530fa834a9dd1d2f541c439704a8f5599e8310c8d4aa99c"
+    },
+    {
+      "file": "shizuko-empty.png",
+      "source": "C:\\Users\\brigh\\Pictures\\Screenshots\\BA\\\uc2a4\ud06c\ub9b0\uc0f7 2026-03-28 214707.png",
+      "student": "shizuko",
+      "level": 90,
+      "favorite": "empty",
+      "growth": true,
+      "dot": true,
+      "sha256": "4e2589634a24874a2d3098445db192011964167f0b4361509dc358a01c8f16bb"
+    }
+  ]
+}

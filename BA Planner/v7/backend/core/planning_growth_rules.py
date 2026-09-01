@@ -17,9 +17,9 @@ EQUIPMENT_TIER_MAX_LEVEL = {
     10: 70,
 }
 WEAPON_STAR_MAX_LEVEL = {0: 0, 1: 30, 2: 40, 3: 50, 4: 60}
-STUDENT_STAR_MAX_BOND_RANK = {1: 10, 2: 10, 3: 20, 4: 20, 5: 100}
+STUDENT_STAR_MAX_BOND_RANK = {1: 10, 2: 10, 3: 20, 4: 30, 5: 100}
 EQUIPMENT_SLOT_UNLOCK_LEVEL = {2: 10, 3: 20}
-FAVORITE_ITEM_UNLOCK_BOND_RANK = {1: 20, 2: 25}
+FAVORITE_ITEM_UNLOCK_BOND_RANK = {1: 15, 2: 20}
 
 
 def growth_rule_violation(targets: Mapping[str, int]) -> str | None:

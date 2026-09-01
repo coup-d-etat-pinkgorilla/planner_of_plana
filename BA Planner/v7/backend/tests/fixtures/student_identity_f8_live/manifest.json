@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "actual_client_size": [
+    1280,
+    720
+  ],
+  "partition": "development_regression_not_holdout_or_runtime_learning",
+  "assets": [
+    {
+      "file": "lobby-calibration.png",
+      "source": "debug/scanner_f8_live/lobby-entry-stable/frame-00.png",
+      "state": "lobby",
+      "identity": null,
+      "combat": null,
+      "sha256": "e6bb2c2dcc17f63cc0b415930292aa6aad41e9b8f983d9cfff2f85df0ed3b661"
+    },
+    {
+      "file": "lobby-verification.png",
+      "source": "debug/scanner_f8_live/lobby-entry-bounded/frame-00.png",
+      "state": "lobby",
+      "identity": null,
+      "combat": null,
+      "sha256": "7d6f6107e23252a3dfc797b134cceeb43805bcd9291f9603842892279cbd2f8b"
+    },
+    {
+      "file": "lobby-hidden.png",
+      "source": "debug/scanner_f8_live/lobby-entry-corrected/frame-00.png",
+      "state": "unknown",
+      "identity": null,
+      "combat": null,
+      "sha256": "4e6f7a91b8d94e12d60e038ee01392b5ef7a1d936c2238f5de4be2ace3710b77"
+    },
+    {
+      "file": "student-list.png",
+      "source": "debug/scanner_f8_live/list-entry/frame-00.png",
+      "state": "student_list",
+      "identity": null,
+      "combat": null,
+      "sha256": "47e4902a1964a62686d576a14ba692c0416668d4efef77cf7359eb800a8c94df"
+    },
+    {
+      "file": "mika.png",
+      "source": "debug/scanner_f8_live/mika-retry/frame-01.png",
+      "state": "basic",
+      "identity": "mika",
+      "combat": null,
+      "sha256": "661e64a533a0993a9c51204381da9dc4b7a839f4ec9c57c4c34d19e59ac04cf8"
+    },
+    {
+      "file": "hoshino-form1.png",
+      "source": "debug/scanner_f8_live/hoshino-forms/frame-00.png",
+      "state": "basic",
+      "identity": "hoshino_battle",
+      "combat": [
+        106747,
+        3383,
+        2771,
+        4538
+      ],
+      "sha256": "8ea3effd149a5b766b0e3d757cdaf23815e947f9c6243ec88bc98138c90a4ca6"
+    },
+    {
+      "file": "hoshino-form2.png",
+      "source": "debug/scanner_f8_live/hoshino-original2-tie/frame-00.png",
+      "state": "basic",
+      "identity": "hoshino_battle#2",
+      "combat": [
+        48823,
+        8633,
+        1949,
+        5674
+      ],
+      "sha256": "48ae0272bad1dfedeebfb8346c88fa3c0aecab28a57ff1199b4b2129b91b6b63"
+    }
+  ]
+}

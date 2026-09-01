@@ -1,0 +1,8 @@
+test_default_and_environment_override_roots_are_separate (test_recognition_assets.RecognitionAssetTests.test_default_and_environment_override_roots_are_separate) ... ok
+test_missing_corrupt_and_version_mismatch_fail_readiness (test_recognition_assets.RecognitionAssetTests.test_missing_corrupt_and_version_mismatch_fail_readiness) ... ok
+test_production_manifest_hashes_and_runtime_resolution (test_recognition_assets.RecognitionAssetTests.test_production_manifest_hashes_and_runtime_resolution) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 36.865s
+
+OK

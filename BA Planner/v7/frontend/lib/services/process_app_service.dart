@@ -924,11 +924,13 @@ class ProcessAppService
     String targetId, {
     String? profileId,
     StudentScanMode studentScanMode = StudentScanMode.single,
+    InventoryScanProfile? inventoryScanProfile,
   }) => _scanner.startScannerSession(
     kind,
     targetId,
     profileId: profileId,
     studentScanMode: studentScanMode,
+    inventoryScanProfile: inventoryScanProfile,
   );
 
   @override

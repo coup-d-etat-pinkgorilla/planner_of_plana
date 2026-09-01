@@ -1,0 +1,57 @@
+{
+  "size": [
+    1280,
+    720
+  ],
+  "source": "equipment",
+  "original_selected": null,
+  "result": {
+    "identity": null,
+    "score": 0.6676714691790518,
+    "margin": 0.00766347685703872,
+    "count": {
+      "value": "1934",
+      "score": 0.9256763011850873,
+      "reason": "",
+      "source": "inventory_detail_count"
+    },
+    "source": "inventory_detail_template"
+  },
+  "frames": [
+    "frame-00.png",
+    "frame-01.png",
+    "frame-02.png",
+    "frame-03.png",
+    "frame-04.png",
+    "frame-05.png",
+    "frame-06.png",
+    "frame-07.png"
+  ],
+  "inputs": [
+    {
+      "x": 0.9234,
+      "y": 0.2875,
+      "cleanup": false
+    },
+    {
+      "x": 0.5828,
+      "y": 0.2875,
+      "cleanup": true
+    }
+  ],
+  "trace": [
+    {
+      "input": "select_slot",
+      "slot": 4,
+      "cleanup": false
+    },
+    {
+      "input": "select_slot",
+      "slot": 0,
+      "cleanup": true
+    },
+    {
+      "restored": 0
+    }
+  ]
+}

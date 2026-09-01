@@ -1,0 +1,101 @@
+test_cancellation_and_import_safe_windows_boundary (test_scanner_production_adapters.ScannerProductionAdapterTests.test_cancellation_and_import_safe_windows_boundary) ... ok
+test_full_student_adapter_buffers_until_identity_repeats (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_buffers_until_identity_repeats) ... FAIL
+test_full_student_adapter_exits_card_before_student_navigation (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_exits_card_before_student_navigation) ... FAIL
+test_full_student_adapter_prefers_right_key_navigation (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_prefers_right_key_navigation) ... FAIL
+test_full_student_adapter_retries_button_after_unchanged_key (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_retries_button_after_unchanged_key) ... FAIL
+test_full_student_adapter_reverses_at_right_edge (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_reverses_at_right_edge) ... FAIL
+test_inventory_adapter_matches_real_icon_and_count_glyphs (test_scanner_production_adapters.ScannerProductionAdapterTests.test_inventory_adapter_matches_real_icon_and_count_glyphs) ... ok
+test_inventory_adapter_never_zero_fills_missing_count (test_scanner_production_adapters.ScannerProductionAdapterTests.test_inventory_adapter_never_zero_fills_missing_count) ... ok
+test_inventory_low_margin_uses_detail_fallback (test_scanner_production_adapters.ScannerProductionAdapterTests.test_inventory_low_margin_uses_detail_fallback) ... ok
+test_student_adapter_matches_real_production_template (test_scanner_production_adapters.ScannerProductionAdapterTests.test_student_adapter_matches_real_production_template) ... ok
+test_windows_diagnostics_capture_failure_timeout_and_cancel (test_scanner_production_adapters.ScannerProductionAdapterTests.test_windows_diagnostics_capture_failure_timeout_and_cancel) ... ok
+
+======================================================================
+FAIL: test_full_student_adapter_buffers_until_identity_repeats (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_buffers_until_identity_repeats)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\brigh\planner_of_plana\BA Planner\v7\backend\tests\test_scanner_production_adapters.py", line 141, in test_full_student_adapter_buffers_until_identity_repeats
+    self.assertEqual(
+AssertionError: Lists differ: ['hoshino', 'hoshino_swimsuit'] != []
+
+First list contains 2 additional elements.
+First extra element 0:
+'hoshino'
+
+- ['hoshino', 'hoshino_swimsuit']
++ []
+
+======================================================================
+FAIL: test_full_student_adapter_exits_card_before_student_navigation (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_exits_card_before_student_navigation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\brigh\planner_of_plana\BA Planner\v7\backend\tests\test_scanner_production_adapters.py", line 236, in test_full_student_adapter_exits_card_before_student_navigation
+    self.assertEqual(
+AssertionError: Lists differ: ['scan:aru', 'exit:aru', 'navigate:right', 'scan:aru[51 chars]aru'] != ['scan:aru']
+
+First list contains 6 additional elements.
+First extra element 1:
+'exit:aru'
+
+- ['scan:aru',
+?            ^
+
++ ['scan:aru']
+?            ^
+
+-  'exit:aru',
+-  'navigate:right',
+-  'scan:aru_dress',
+-  'exit:aru_dress',
+-  'navigate:right',
+-  'scan:aru']
+
+======================================================================
+FAIL: test_full_student_adapter_prefers_right_key_navigation (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_prefers_right_key_navigation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\brigh\planner_of_plana\BA Planner\v7\backend\tests\test_scanner_production_adapters.py", line 179, in test_full_student_adapter_prefers_right_key_navigation
+    self.assertEqual(
+AssertionError: Lists differ: ['hoshino', 'hoshino_swimsuit'] != []
+
+First list contains 2 additional elements.
+First extra element 0:
+'hoshino'
+
+- ['hoshino', 'hoshino_swimsuit']
++ []
+
+======================================================================
+FAIL: test_full_student_adapter_retries_button_after_unchanged_key (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_retries_button_after_unchanged_key)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\brigh\planner_of_plana\BA Planner\v7\backend\tests\test_scanner_production_adapters.py", line 281, in test_full_student_adapter_retries_button_after_unchanged_key
+    self.assertEqual(
+AssertionError: Lists differ: ['aru', 'aru_dress'] != []
+
+First list contains 2 additional elements.
+First extra element 0:
+'aru'
+
+- ['aru', 'aru_dress']
++ []
+
+======================================================================
+FAIL: test_full_student_adapter_reverses_at_right_edge (test_scanner_production_adapters.ScannerProductionAdapterTests.test_full_student_adapter_reverses_at_right_edge)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\brigh\planner_of_plana\BA Planner\v7\backend\tests\test_scanner_production_adapters.py", line 324, in test_full_student_adapter_reverses_at_right_edge
+    self.assertEqual(
+AssertionError: Lists differ: ['last', 'middle', 'first'] != []
+
+First list contains 3 additional elements.
+First extra element 0:
+'last'
+
+- ['last', 'middle', 'first']
++ []
+
+----------------------------------------------------------------------
+Ran 11 tests in 20.026s
+
+FAILED (failures=5)

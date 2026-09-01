@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "partition": "development_regression_not_D2_validation_or_runtime_learning",
+  "expected": {
+    "tiers": [
+      "T10",
+      "T10",
+      "T10"
+    ],
+    "levels": [
+      70,
+      70,
+      70
+    ],
+    "growth_active": true
+  },
+  "assets": [
+    {
+      "file": "mika-off.png",
+      "source": "debug/scanner_f7_live/mika-off-on/check-0.png",
+      "state": "equipment",
+      "check": false,
+      "sha256": "39fc34cc739fb97a7a6c79922017ae3b0f11e32b2d69581f219a77b68c6cec43"
+    },
+    {
+      "file": "mika-on.png",
+      "source": "debug/scanner_f7_live/mika-off-on/check-2.png",
+      "state": "equipment",
+      "check": true,
+      "sha256": "fd0e81f130642643976c0a444bae26c2ec9dff4dfa9291baaa9087a1ea7f0f5d"
+    },
+    {
+      "file": "mika-basic.png",
+      "source": "debug/scanner_f7_live/mika-off-on/basic.png",
+      "state": "basic",
+      "check": null,
+      "sha256": "28a9fba6cce8f527d991a01023c690d5bc4ed9436f9357fde38f3ba93faf11c0"
+    },
+    {
+      "file": "mika-return.png",
+      "source": "debug/scanner_f7_live/mika-cancel/returned.png",
+      "state": "basic",
+      "check": null,
+      "sha256": "b70b101800188f3d9f5f770ebac6a9610341fffa0d05ee67e392dcf8a393037c"
+    }
+  ]
+}

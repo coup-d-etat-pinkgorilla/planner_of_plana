@@ -1,0 +1,13 @@
+test_independent_originals_cover_all_tiers_without_inference (test_student_equipment_f7_d2.EquipmentD2Tests.test_independent_originals_cover_all_tiers_without_inference) ... ok
+test_inferred_level_is_not_used_for_basic_level_learning (test_student_equipment_f7_d2.EquipmentD2Tests.test_inferred_level_is_not_used_for_basic_level_learning) ... ok
+test_numeric_cells_are_independent_of_any_tier_bank (test_student_equipment_f7_d2.EquipmentD2Tests.test_numeric_cells_are_independent_of_any_tier_bank) ... ok
+test_policy_boundaries_and_unvalidated_resolution (test_student_equipment_f7_d2.EquipmentD2Tests.test_policy_boundaries_and_unvalidated_resolution) ... ok
+test_real_crop_perturbations_use_inferred_provenance_and_can_be_disabled (test_student_equipment_f7_d2.EquipmentD2Tests.test_real_crop_perturbations_use_inferred_provenance_and_can_be_disabled) ... ok
+test_strong_70_never_overrules_other_real_tiers (test_student_equipment_f7_d2.EquipmentD2Tests.test_strong_70_never_overrules_other_real_tiers) ... ok
+test_synthetic_stress_never_promotes_lower_tiers_or_negative_images (test_student_equipment_f7_d2.EquipmentD2Tests.test_synthetic_stress_never_promotes_lower_tiers_or_negative_images) ... ok
+test_tied_tier_or_digit_evidence_never_promotes (test_student_equipment_f7_d2.EquipmentD2Tests.test_tied_tier_or_digit_evidence_never_promotes) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 10.573s
+
+OK

@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "source_version": "student-equipment-f7-v6-2026-08-31",
+  "assets": [
+    {
+      "path": "templates/student_equipment/f7/true.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-control-template",
+      "required": true,
+      "bytes": 4583,
+      "sha256": "493e9039a52ca1da52e12c1731929a04503b55dbeb990acc7554891e2fa13682",
+      "source_path": "../v6/templates/equipcheck/true.png",
+      "equipment_state": "true"
+    },
+    {
+      "path": "templates/student_equipment/f7/false.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-control-template",
+      "required": true,
+      "bytes": 1734,
+      "sha256": "554148caaf4af86cba8899ff327815394b858a425bd946b4e857f94a2c47ea7b",
+      "source_path": "../v6/templates/equipcheck/false.png",
+      "equipment_state": "false"
+    },
+    {
+      "path": "templates/student_equipment/f7/possible.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-control-template",
+      "required": true,
+      "bytes": 5574,
+      "sha256": "28d22a5f70188f8a7074b276d0941a98d3b242dd1147bebb9229c4118becc2a5",
+      "source_path": "../v6/templates/equipcheck/possible.png",
+      "equipment_state": "possible"
+    },
+    {
+      "path": "templates/student_equipment/f7/impossible.png",
+      "scan_kind": "student",
+      "purpose": "student-equipment-control-template",
+      "required": true,
+      "bytes": 4550,
+      "sha256": "631b9f15046417bfc2a5818c472d1302663385834d70c79c5d3a9e60f14c7e7a",
+      "source_path": "../v6/templates/equipcheck/impossible.png",
+      "equipment_state": "impossible"
+    }
+  ]
+}

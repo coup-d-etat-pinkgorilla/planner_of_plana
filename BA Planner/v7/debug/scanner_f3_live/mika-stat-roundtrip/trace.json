@@ -1,0 +1,89 @@
+{
+  "at": "2026-08-31T00:37:52.984066+09:00",
+  "panel": "stat",
+  "target": "hwnd:de0e88",
+  "status": "failed",
+  "error": {
+    "code": "panel_open_failed",
+    "message": "panel did not open; basic restored"
+  },
+  "trace": [
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.3129970442773791,
+        "equipment": 0.320179423646851,
+        "skill": 0.2554505470251865,
+        "stat": 0.32063510977812776,
+        "basic": 0.9552060384078725,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "open",
+      "panel": "stat"
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.31387097099676775,
+        "equipment": 0.32455679143001404,
+        "skill": 0.2529622885511157,
+        "stat": 0.32475760970477685,
+        "basic": 0.9552060384078725,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.31411832800907225,
+        "equipment": 0.31896096941117197,
+        "skill": 0.25561909128874694,
+        "stat": 0.31957814271432095,
+        "basic": 0.9552060384078725,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.31402503953644423,
+        "equipment": 0.3165932584668746,
+        "skill": 0.25623720621588153,
+        "stat": 0.31733580100993486,
+        "basic": 0.9552060384078725,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.3137618833558653,
+        "equipment": 0.32391571297273647,
+        "skill": 0.25394791164081043,
+        "stat": 0.3239272787939046,
+        "basic": 0.9552060384078725,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.3130811726080283,
+        "equipment": 0.32019106894444216,
+        "skill": 0.2553274552953861,
+        "stat": 0.32062503457200586,
+        "basic": 0.9552060384078725,
+        "level": 0,
+        "star": 0
+      }
+    }
+  ],
+  "seconds": 4.297000000020489
+}

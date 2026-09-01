@@ -110,7 +110,10 @@ class _ScanStudentReviewWorkspaceState
     'skipped',
     'verified',
     'deferred',
+    'shadow',
   };
+
+  static const _potentialFields = {'stat_hp', 'stat_atk', 'stat_heal'};
 
   bool _hasProblem(ScannerCandidate candidate) =>
       candidate.reviewRequired ||
@@ -245,8 +248,7 @@ class _ScanStudentReviewWorkspaceState
       final rank = int.tryParse(raw);
       if (rank == null || rank < 1 || rank > 100) {
         setState(
-          () =>
-              _localErrors[candidate.id] = '다른 보유 의상의 인연 랭크를 1~100으로 입력하세요.',
+          () => _localErrors[candidate.id] = '다른 보유 의상의 인연 랭크를 1~100으로 입력하세요.',
         );
         return;
       }
@@ -358,6 +360,10 @@ class _ScanStudentReviewWorkspaceState
     final delta = _delta(candidate);
     final relationshipContributions = _relationshipContributions(candidate);
     final fields = <String>{...current.keys, ...scanned.keys};
+    if ((scanned['level'] as int? ?? 0) >= 90 &&
+        (scanned['student_star'] as int? ?? 0) >= 5) {
+      fields.addAll(_potentialFields);
+    }
     const statToField = {
       'MaxHP': 'combat_hp',
       'AttackPower': 'combat_atk',
@@ -548,7 +554,7 @@ class _ScanStudentReviewWorkspaceState
   void _edit(ScannerCandidate candidate, String field, String text) {
     final original = _values(candidate)[field];
     dynamic value = text;
-    if (original is int) {
+    if (original is int || _potentialFields.contains(field)) {
       value = int.tryParse(text);
       if (value == null) {
         setState(() => _localErrors[candidate.id] = '$field 값은 정수여야 합니다.');

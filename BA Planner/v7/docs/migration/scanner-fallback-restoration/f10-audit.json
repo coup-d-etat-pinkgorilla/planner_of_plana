@@ -1,0 +1,932 @@
+{
+  "phase": "F10 R22-R23",
+  "asset_status": {
+    "ready": true,
+    "manifest_version": 1,
+    "source_version": "v6-catalog-v7-layout-2026-07-29",
+    "asset_count": 3051,
+    "missing": [],
+    "corrupt": [],
+    "supported_resolutions": [
+      [
+        1280,
+        720
+      ],
+      [
+        1920,
+        1080
+      ],
+      [
+        2560,
+        1440
+      ]
+    ]
+  },
+  "source_hashes_verified": 26,
+  "previous_snapshot": {
+    "path": "docs/migration/scanner-fallback-restoration/f9-source-manifest.json",
+    "sha256": "a804274b138a8c0e95ea6cd5067424925af30ab5c04ce2ad61dce0b6556a4457"
+  },
+  "catalog_revision": "171caccc05d444f1ef0b1116263adce5d55f1433bef65d3358238d0fe1cf6441",
+  "native_hashes_verified": 8,
+  "native_partition": "development_calibration_not_holdout",
+  "native_assets": [
+    {
+      "file": "item-page0.png",
+      "source": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-04.png",
+      "sha256": "d42e12ec09dfbf5509969089ef66008e9f49fc5ade05682458b6e5a8a47ff207"
+    },
+    {
+      "file": "item-page1.png",
+      "source": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-07.png",
+      "sha256": "d79eb20adb8ddc7f6495c025bd807d9f677f8a98530ab6d18b0aaf8f88075e3f"
+    },
+    {
+      "file": "item-pre-tail.png",
+      "source": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-16.png",
+      "sha256": "fa77d79702d4141a4c0d22a7f60cf3ec205e710ec297f41a2a036bfbddfde313"
+    },
+    {
+      "file": "item-tail.png",
+      "source": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-19.png",
+      "sha256": "059a67b7b4a80d49e99c6953e4cb6b242ce46e8fb98837cb41cdf8faae22bc9a"
+    },
+    {
+      "file": "equipment-page0.png",
+      "source": "debug/scanner_f10_live/equipment-three-pages-final/frame-04.png",
+      "sha256": "3cecc8502910c61054ccfae7a5845cd6713c49496456fcae7ef9bc0c29b4332a"
+    },
+    {
+      "file": "equipment-page1.png",
+      "source": "debug/scanner_f10_live/equipment-three-pages-final/frame-07.png",
+      "sha256": "f1c1063495d08cea846948f980495e5c81a90f80431a6bba9ebf2697e239ad3d"
+    },
+    {
+      "file": "equipment-page2.png",
+      "source": "debug/scanner_f10_live/equipment-three-pages-final/frame-10.png",
+      "sha256": "f405fede17f4d36dd2552e14cbb6635798d729695d1f0ed8dd4249623df5af16"
+    },
+    {
+      "file": "equipment-variable-drag.png",
+      "source": "debug/scanner_f10_live/equipment-three-pages-final/frame-13.png",
+      "sha256": "22af5fe10b6f8f7db824bef8c4019b276ffc5d3cfac8561c3630b545f96a8bdb"
+    }
+  ],
+  "native_pairs": [
+    {
+      "source_kind": "item",
+      "before": "item-page0.png",
+      "after": "item-page1.png",
+      "overlap_rows": 3,
+      "decision": "verified_row_overlap"
+    },
+    {
+      "source_kind": "item",
+      "before": "item-pre-tail.png",
+      "after": "item-tail.png",
+      "overlap_rows": 3,
+      "decision": "verified_tail_residual"
+    },
+    {
+      "source_kind": "equipment",
+      "before": "equipment-page0.png",
+      "after": "equipment-page1.png",
+      "overlap_rows": 4,
+      "decision": "verified_row_overlap"
+    },
+    {
+      "source_kind": "equipment",
+      "before": "equipment-page1.png",
+      "after": "equipment-page2.png",
+      "overlap_rows": 4,
+      "decision": "verified_row_overlap"
+    },
+    {
+      "source_kind": "equipment",
+      "before": "equipment-page2.png",
+      "after": "equipment-variable-drag.png",
+      "overlap_rows": 4,
+      "decision": "reject_ambiguous_overlap"
+    }
+  ],
+  "live_traces": {
+    "item_terminal": {
+      "path": "debug/scanner_f10_live/item-tech-notes-terminal-final/trace.json",
+      "sha256": "c693445ca6e30e2116a40f1d2a7d9a1581bf2b412fc132ed87cbaf171ace0f4c",
+      "prepared": {
+        "source": "item",
+        "profile_id": "tech_notes",
+        "filter_verified": true,
+        "sort_verified": true
+      },
+      "steps": [
+        {
+          "index": 1,
+          "overlap_rows": 3,
+          "slot_indices": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "terminal": false,
+          "reason": "verified_row_overlap",
+          "trace": [
+            {
+              "input": "filtermenu_button",
+              "cleanup": false
+            },
+            {
+              "input": "filter_tab",
+              "cleanup": false
+            },
+            {
+              "input": "filter_reset_button",
+              "cleanup": false
+            },
+            {
+              "input": "note_filter",
+              "cleanup": false
+            },
+            {
+              "input": "sort_tab",
+              "cleanup": false
+            },
+            {
+              "observe": "sort_rule_check",
+              "score": 0.9200774546916859,
+              "attempt": 1
+            },
+            {
+              "input": "filter_confirm_button",
+              "cleanup": false
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9804062556625887,
+              "margin": 0.11034154910040528
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "overlap_rows": 3,
+          "slot_indices": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "terminal": false,
+          "reason": "verified_row_overlap",
+          "trace": [
+            {
+              "input": "filtermenu_button",
+              "cleanup": false
+            },
+            {
+              "input": "filter_tab",
+              "cleanup": false
+            },
+            {
+              "input": "filter_reset_button",
+              "cleanup": false
+            },
+            {
+              "input": "note_filter",
+              "cleanup": false
+            },
+            {
+              "input": "sort_tab",
+              "cleanup": false
+            },
+            {
+              "observe": "sort_rule_check",
+              "score": 0.9200774546916859,
+              "attempt": 1
+            },
+            {
+              "input": "filter_confirm_button",
+              "cleanup": false
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9804062556625887,
+              "margin": 0.11034154910040528
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9940385819594176,
+              "margin": 0.07630842940633342
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "overlap_rows": 3,
+          "slot_indices": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "terminal": false,
+          "reason": "verified_row_overlap",
+          "trace": [
+            {
+              "input": "filtermenu_button",
+              "cleanup": false
+            },
+            {
+              "input": "filter_tab",
+              "cleanup": false
+            },
+            {
+              "input": "filter_reset_button",
+              "cleanup": false
+            },
+            {
+              "input": "note_filter",
+              "cleanup": false
+            },
+            {
+              "input": "sort_tab",
+              "cleanup": false
+            },
+            {
+              "observe": "sort_rule_check",
+              "score": 0.9200774546916859,
+              "attempt": 1
+            },
+            {
+              "input": "filter_confirm_button",
+              "cleanup": false
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9804062556625887,
+              "margin": 0.11034154910040528
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9940385819594176,
+              "margin": 0.07630842940633342
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9905400412320385,
+              "margin": 0.051342355156113184
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "overlap_rows": 3,
+          "slot_indices": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "terminal": false,
+          "reason": "verified_row_overlap",
+          "trace": [
+            {
+              "input": "filtermenu_button",
+              "cleanup": false
+            },
+            {
+              "input": "filter_tab",
+              "cleanup": false
+            },
+            {
+              "input": "filter_reset_button",
+              "cleanup": false
+            },
+            {
+              "input": "note_filter",
+              "cleanup": false
+            },
+            {
+              "input": "sort_tab",
+              "cleanup": false
+            },
+            {
+              "observe": "sort_rule_check",
+              "score": 0.9200774546916859,
+              "attempt": 1
+            },
+            {
+              "input": "filter_confirm_button",
+              "cleanup": false
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9804062556625887,
+              "margin": 0.11034154910040528
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9940385819594176,
+              "margin": 0.07630842940633342
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9905400412320385,
+              "margin": 0.051342355156113184
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9928139766764384,
+              "margin": 0.04496163596714131
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "overlap_rows": 3,
+          "slot_indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "terminal": false,
+          "reason": "verified_tail_residual",
+          "trace": [
+            {
+              "input": "filtermenu_button",
+              "cleanup": false
+            },
+            {
+              "input": "filter_tab",
+              "cleanup": false
+            },
+            {
+              "input": "filter_reset_button",
+              "cleanup": false
+            },
+            {
+              "input": "note_filter",
+              "cleanup": false
+            },
+            {
+              "input": "sort_tab",
+              "cleanup": false
+            },
+            {
+              "observe": "sort_rule_check",
+              "score": 0.9200774546916859,
+              "attempt": 1
+            },
+            {
+              "input": "filter_confirm_button",
+              "cleanup": false
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9804062556625887,
+              "margin": 0.11034154910040528
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9940385819594176,
+              "margin": 0.07630842940633342
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9905400412320385,
+              "margin": 0.051342355156113184
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9928139766764384,
+              "margin": 0.04496163596714131
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9071776948855319,
+              "margin": 0.037472952666294246
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "overlap_rows": 4,
+          "slot_indices": [],
+          "terminal": true,
+          "reason": "verified_no_motion",
+          "trace": [
+            {
+              "input": "filtermenu_button",
+              "cleanup": false
+            },
+            {
+              "input": "filter_tab",
+              "cleanup": false
+            },
+            {
+              "input": "filter_reset_button",
+              "cleanup": false
+            },
+            {
+              "input": "note_filter",
+              "cleanup": false
+            },
+            {
+              "input": "sort_tab",
+              "cleanup": false
+            },
+            {
+              "observe": "sort_rule_check",
+              "score": 0.9200774546916859,
+              "attempt": 1
+            },
+            {
+              "input": "filter_confirm_button",
+              "cleanup": false
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9804062556625887,
+              "margin": 0.11034154910040528
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9940385819594176,
+              "margin": 0.07630842940633342
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9905400412320385,
+              "margin": 0.051342355156113184
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9928139766764384,
+              "margin": 0.04496163596714131
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 3,
+              "score": 0.9071776948855319,
+              "margin": 0.037472952666294246
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.58
+              ],
+              "attempt": 2
+            }
+          ]
+        }
+      ],
+      "error": null,
+      "restored": {
+        "source": "item",
+        "profile_id": "tech_notes",
+        "filter_verified": true,
+        "sort_verified": true
+      },
+      "input_count": 19
+    },
+    "equipment_variable": {
+      "path": "debug/scanner_f10_live/equipment-three-pages-retry/trace.json",
+      "sha256": "fed87293f0500b7b9dd10cdc10835bc7d1326914e38797c75855c7c3b9b944bc",
+      "prepared": {
+        "source": "equipment",
+        "profile_id": "equipment",
+        "filter_verified": true,
+        "sort_verified": true
+      },
+      "steps": [
+        {
+          "index": 1,
+          "overlap_rows": 4,
+          "slot_indices": [
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "terminal": false,
+          "terminal_after_page": false,
+          "reason": "verified_row_overlap",
+          "trace": [
+            {
+              "input": "eq_filtermenu_button",
+              "cleanup": false
+            },
+            {
+              "observe": "eq_sort_rule_check",
+              "score": 0.8762262599268958,
+              "attempt": 1
+            },
+            {
+              "input": "eq_filter_confirm_button",
+              "cleanup": false
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 4,
+              "score": 0.9837705189151565,
+              "margin": 0.06624272490183813
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "overlap_rows": 4,
+          "slot_indices": [
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "terminal": false,
+          "terminal_after_page": false,
+          "reason": "verified_row_overlap",
+          "trace": [
+            {
+              "input": "eq_filtermenu_button",
+              "cleanup": false
+            },
+            {
+              "observe": "eq_sort_rule_check",
+              "score": 0.8762262599268958,
+              "attempt": 1
+            },
+            {
+              "input": "eq_filter_confirm_button",
+              "cleanup": false
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 4,
+              "score": 0.9837705189151565,
+              "margin": 0.06624272490183813
+            },
+            {
+              "input": "drag_scroll",
+              "start": [
+                0.78,
+                0.75
+              ],
+              "end": [
+                0.78,
+                0.65
+              ],
+              "attempt": 1
+            },
+            {
+              "overlap_rows": 4,
+              "score": 0.9886937641022285,
+              "margin": 0.026193323046099448
+            }
+          ]
+        }
+      ],
+      "error": {
+        "code": "inventory_scroll_unverified",
+        "message": "ambiguous row overlap score=0.876 margin=0.002"
+      },
+      "restored": {
+        "source": "equipment",
+        "profile_id": "equipment",
+        "filter_verified": true,
+        "sort_verified": true
+      },
+      "input_count": 8
+    }
+  },
+  "final_game_state": {
+    "client_size": [
+      1280,
+      720
+    ],
+    "source": "item",
+    "profile": "tech_notes",
+    "sort": "default_ascending",
+    "page": "first",
+    "selected": "Item_Icon_SkillBook_Hyakkiyako_0",
+    "quantity": "2347",
+    "gold": "409089809",
+    "gems": "24394",
+    "capture": "debug/scanner_f10_live/final-restored.png",
+    "sha256": "29e04a77f558f916eed9a7aa45020710c466ba96de84afcc1c985b1d029fb9e6"
+  },
+  "verification": {
+    "focused_f10": "13/13",
+    "production_adapters": "12/12",
+    "python_full": "521/521 (273.469s)",
+    "flutter_analyze": "no issues (2.2s)",
+    "flutter_tests": "399/399 sequential (2:50)",
+    "asset_count": 3051
+  },
+  "limits": [
+    "production navigation controller was exercised live; a full multi-page InventoryMatcherAdapter identity/count session remains F12 integration coverage",
+    "native1280 Korean UI only; other resolutions, DPI and locales remain F12",
+    "equipment variable drag safely stopped after two verified transitions; no threshold relaxation approved the ambiguous third movement"
+  ]
+}

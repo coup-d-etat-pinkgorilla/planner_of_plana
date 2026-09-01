@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "reviewed_at": "2026-08-24",
+  "reviewed_at": "2026-08-29",
   "ground_truth": {
     "method": "manual review of user-supplied relationship ranks",
     "full_screenshots_retained": false,
@@ -14,6 +14,8 @@
       20,
       23,
       26,
+      28,
+      30,
       34,
       37,
       39,
@@ -35,7 +37,7 @@
   },
   "atlas": {
     "path": "roi_atlas.png",
-    "sha256": "25287bdaf011b76af188a789f6da881d0449bb253d648741c4e2a8296ea418ea"
+    "sha256": "1df36a6fa94135a3c63d53607ddba62cafb1db1fafe358d20f54b1b91081d8f8"
   },
   "records": [
     {
@@ -453,6 +455,42 @@
       ]
     },
     {
+      "source_file": "스크린샷 2026-08-29 021908.png",
+      "source_sha256": "ec2a6df477e919194c804d7fa2cb28d4a4bf0ab6aab33e63276febfcbcf1051e",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 30,
+      "student_ref": "utaha",
+      "partition": "studio_validation",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        360,
+        288,
+        432,
+        384
+      ]
+    },
+    {
+      "source_file": "스크린샷 2026-08-29 021948.png",
+      "source_sha256": "a85e2d7f2fed26422f44f032f49275f79ccc2602c6982a33e5f572d0ff7cb421",
+      "source_size": [
+        2560,
+        1440
+      ],
+      "rank": 28,
+      "student_ref": "mashiro",
+      "partition": "studio_validation",
+      "review_status": "visual_verified",
+      "atlas_box": [
+        0,
+        384,
+        72,
+        480
+      ]
+    },
+    {
       "source_file": "스크린샷 2026-06-24 215236.png",
       "source_sha256": "fef8ab15f40fb2142fd69750dec421efb49a8f3398d631a6c5dddc96b5a4d00e",
       "source_size": [
@@ -464,10 +502,10 @@
       "partition": "calibration_only",
       "review_status": "visual_verified",
       "atlas_box": [
-        360,
-        288,
-        432,
-        384
+        72,
+        384,
+        144,
+        480
       ]
     }
   ]

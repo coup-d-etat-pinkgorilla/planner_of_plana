@@ -1,0 +1,111 @@
+{
+  "phase": "F5",
+  "recorded_on": "2026-08-31",
+  "note": "F0-F4 historical snapshots retained unchanged",
+  "files": [
+    {
+      "path": "backend/core/student_star_recognizer.py",
+      "sha256": "b602462fb1b00ec74e4fe2cacd7b2a7961f5891be2235bd89a177deeb0f5c08c"
+    },
+    {
+      "path": "backend/core/scanner_matchers.py",
+      "sha256": "506a63e0971c17a625d37efd2e5d2223502df84abc3154850e8aa149deb12bc3"
+    },
+    {
+      "path": "backend/core/scanner_runtime.py",
+      "sha256": "abcb7dfe03595477815bc618b67b2d59770d2ea696e3c4597a7afda2e146ab7b"
+    },
+    {
+      "path": "backend/core/recognition_assets.py",
+      "sha256": "9596a08c7b53cb1e41abbf1e4d83906d58758e66cf08be445b7c4481f825841a"
+    },
+    {
+      "path": "backend/core/student_candidate_validation.py",
+      "sha256": "7984c4576795d464f48d87e0e04c25e0e64771ba711dd6da8a0e7b188c1f0510"
+    },
+    {
+      "path": "backend/core/student_panel_recovery.py",
+      "sha256": "7a23a62ab0a8e3c3ed53eba47d43b58a4cda238f61df12da262cef06ad978b49"
+    },
+    {
+      "path": "backend/core/student_weapon_recognizer.py",
+      "sha256": "d9f7e00960e5eafc3dc1816e761f08bb8dd1b648a75b5e85868433c6343a8108"
+    },
+    {
+      "path": "backend/tests/test_student_star_f5.py",
+      "sha256": "b4e9fc4df64c51d05b9096e86a35136aa8f3cf256cc44ca49b8789ed61adaa1e"
+    },
+    {
+      "path": "backend/tests/test_recognition_assets.py",
+      "sha256": "d3912197f163de4f22f46297b5467a14c87b261690487281a8f7ffd42fee8206"
+    },
+    {
+      "path": "backend/tests/test_scanner_stdio_transport.py",
+      "sha256": "c2e5ca7300c79fdbae4ca1cc4ae23555b14054efd46a3f2fff9001d34aaae358"
+    },
+    {
+      "path": "backend/tests/fixtures/student_star_f5_v6_parity.json",
+      "sha256": "7c74c9c4783d37479ff19636f9d938cf75a287db024a8cca6f5943549448f7c7"
+    },
+    {
+      "path": "backend/tests/fixtures/student_star_f5_live/manifest.json",
+      "sha256": "b48778a2ab5ddf54112c9a8717fcb3e9fb29b183d50f8662b22b80d07527e35f"
+    },
+    {
+      "path": "backend/assets/recognition/v1/student_star_manifest.json",
+      "sha256": "9b57dd6bbaba2e7965e79b56868bdfa27ceebb68f3e42cae9ee729ac640c6154"
+    },
+    {
+      "path": "backend/assets/recognition/v1/regions/student_star_regions.json",
+      "sha256": "7b58d4aa17cd4d84057668e59c7a90252f5bea19cb099988760402f4fd6d01f6"
+    },
+    {
+      "path": "backend/tools/sync_student_star_f5_assets.py",
+      "sha256": "177652140c545177b07f954c48e1f359f12d01fa7232966ab34c631da16a2ddf"
+    },
+    {
+      "path": "backend/tools/export_student_star_f5_fixtures.py",
+      "sha256": "ac09adac7eba92e473ab49c3dee06321c8a55ac1b54ab5913f56c7cbcbfe9c76"
+    },
+    {
+      "path": "backend/tools/verify_student_panel_live.py",
+      "sha256": "aa656e5edd2c40a85499ce0d6c51682d3a200d187cca86cee0a5c88a76f4a5c9"
+    },
+    {
+      "path": "backend/tools/verify_student_star_live.py",
+      "sha256": "fb7c3bf6af22107cbe58d77d8692576287b03b94f99e236d5701cfdd3a89bf52"
+    },
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "sha256": "332e5488f90a2d9bc24e3c0e12167d777b1f810e35c5501db941e2d58407839c"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "sha256": "ce56ebf9ac4ab3c22398938d7c45973d7686785be5e0a2607ef94832290ad2a2"
+    },
+    {
+      "path": "../v6/regions/student_star_region.json",
+      "sha256": "7b58d4aa17cd4d84057668e59c7a90252f5bea19cb099988760402f4fd6d01f6"
+    }
+  ],
+  "symbols": [
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "name": "read_student_star",
+      "line": 2253,
+      "sha256": "a4f206b752b2fe2f7902b302852fecd9b306d44fc5bc02043723bb946f2b4e04"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "name": "read_star_result",
+      "line": 3124,
+      "sha256": "9771279738871925db5825ef1668a05ad92e5e7c2e05713c5e80ca72485c6933"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "name": "read_student_star_v5_result",
+      "line": 3955,
+      "sha256": "78d579f52deacf92d3ed6cea81eafd9ccb99be2a881d123ae53403a668af05e6"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "mode": "panel",
+  "diagnostic_missing_basic": false,
+  "status": "failed",
+  "size": [
+    1280,
+    720
+  ],
+  "error": {
+    "code": "panel_wrong_start",
+    "message": "open requires verified basic tab"
+  },
+  "seconds": 0.75,
+  "checks": [],
+  "skill_trace": [
+    {
+      "state": "stat",
+      "scores": {
+        "weapon": 0.5900430920190014,
+        "equipment": 0.8258209937338347,
+        "skill": 0.3270821489524881,
+        "stat": 0.9677687746177113,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    }
+  ]
+}

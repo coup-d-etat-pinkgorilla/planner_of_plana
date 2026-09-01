@@ -163,7 +163,7 @@ void main() {
       changedKeys: const {'student_star'},
     );
 
-    expect(normalized['bond_rank'], 20);
+    expect(normalized['bond_rank'], 30);
     expect(normalized['skill2'], 10);
     expect(normalized['skill3'], 10);
     expect(normalized['weapon_star'], 0);
@@ -198,10 +198,10 @@ void main() {
       changedKeys: const {'equip4_tier'},
     );
 
-    expect(bond['student_star'], 5);
+    expect(bond['student_star'], 4);
     expect(bond['bond_rank'], 21);
-    expect(favorite['bond_rank'], 25);
-    expect(favorite['student_star'], 5);
+    expect(favorite['bond_rank'], 20);
+    expect(favorite['student_star'], 3);
     expect(favorite['equip4_tier'], 2);
   });
 }

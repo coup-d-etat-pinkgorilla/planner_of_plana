@@ -1,0 +1,238 @@
+{
+  "phase": "F2",
+  "recorded_on": "2026-08-30",
+  "files": [
+    {
+      "path": "backend/core/student_panel_recovery.py",
+      "sha256": "7a23a62ab0a8e3c3ed53eba47d43b58a4cda238f61df12da262cef06ad978b49"
+    },
+    {
+      "path": "backend/core/scanner_matchers.py",
+      "sha256": "580b1935e4e064607e1af8f06de4ba526626227cd40b6e32194d7608f55418f4"
+    },
+    {
+      "path": "backend/core/windows_scanner_adapter.py",
+      "sha256": "4020c2ba145806653263bf51a4679b576adcf579b851e356e5c67a417a8c63e8"
+    },
+    {
+      "path": "backend/core/scanner_runtime.py",
+      "sha256": "81247b471b3f8e865a9d9e9c09c78399d6828cdc35d3d9b5101e0d62915d9ffa"
+    },
+    {
+      "path": "backend/core/recognition_assets.py",
+      "sha256": "62044b581c575163ee517f6193a32836cca36ead08147250ef28870e40e25c83"
+    },
+    {
+      "path": "backend/tools/sync_student_panel_f2_assets.py",
+      "sha256": "255aad15f5c71e5a8b30dd2c63c25b0e0ee243a75a99b40940bb562f0bb4021a"
+    },
+    {
+      "path": "backend/tools/verify_scanner_live_step.py",
+      "sha256": "94963cbbe7a73c08e6a0613b50a7604fd917f122ada653ebca214d21b7919c5c"
+    },
+    {
+      "path": "backend/tools/verify_student_panel_live.py",
+      "sha256": "613b25e891875577e6acf183e2697ab168479b18ce2a2aec35524094ff227a25"
+    },
+    {
+      "path": "backend/tests/test_student_panel_f2.py",
+      "sha256": "273e6977ca1e697075805e1e1ed4f89fe4a3917b63331c24544d4b0583a5d6ea"
+    },
+    {
+      "path": "backend/tests/test_student_weapon_s2w.py",
+      "sha256": "41fe38785d623b93603677852d9acabedcd1330c5648ea28f444bd71eef88bab"
+    },
+    {
+      "path": "backend/tests/test_student_equipment_s3.py",
+      "sha256": "a71020ee73efbe563846bc4a19b73fa82f1044170c3c5e260acc6842aa1c6589"
+    },
+    {
+      "path": "backend/tests/fixtures/scanner_fallback_restoration/f2-panel-parity.json",
+      "sha256": "acd8d287b559d0d044bd5227a406c736eb01dbc5b096b2a0d1fb66d6c40a4525"
+    },
+    {
+      "path": "backend/assets/recognition/v1/student_panel_manifest.json",
+      "sha256": "12c54f983b02eb8ac8f2e93098e4a44bf78e521097533687d8279b079b56f7d0"
+    },
+    {
+      "path": "backend/tests/fixtures/student_panel_f2_live/manifest.json",
+      "sha256": "1956c8a79d6fd9cd6100c421cf39813db107bcc9a4952e05df70b642d1bc48ea"
+    },
+    {
+      "path": "backend/tests/test_recognition_assets.py",
+      "sha256": "a7ff36249cee3a484da477dfc5799785ef394083e6c0db7717d0b7d2373a3042"
+    },
+    {
+      "path": "backend/tests/test_scanner_stdio_transport.py",
+      "sha256": "03679b80f6b6a89c64e2aa25f485824c0266b2179581b4043f67108e0ba6bed1"
+    }
+  ],
+  "v6_references": [
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "sha256": "332e5488f90a2d9bc24e3c0e12167d777b1f810e35c5501db941e2d58407839c"
+    },
+    {
+      "path": "../v6/core/scanner_shared.py",
+      "sha256": "ba77711ec132a3646c32591499f89c525e41f78b3db7ac64ec9d8afcf6417a60"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "sha256": "ce56ebf9ac4ab3c22398938d7c45973d7686785be5e0a2607ef94832290ad2a2"
+    },
+    {
+      "path": "../v6/regions/student_data_regions.json",
+      "sha256": "defacffbaafe6e25484479a4ee6fa024174e843f5445fca7c9f8a910831f11e5"
+    }
+  ],
+  "live_evidence": [
+    {
+      "path": "debug/scanner_f1_live/00-background.png",
+      "sha256": "d377a87d39ef80defa3e004dd150ce4b5bd802bc31ba1156c4be0b3070a41f5d"
+    },
+    {
+      "path": "debug/scanner_f1_live/01-student-list.json",
+      "sha256": "75e8c6ba40042ef991851b87a2ac32155ece6fb91a70dfcf51c398db42bb4b90"
+    },
+    {
+      "path": "debug/scanner_f1_live/01-student-list.png",
+      "sha256": "33fec0000ee9fed08d37eddf664bd19cbdd910657fd42217ded18bb0f26df540"
+    },
+    {
+      "path": "debug/scanner_f1_live/02-first-student.json",
+      "sha256": "28efbedfee324f0f3d5e0eadb4ede9aea3df699601264599b01c71c9c794026f"
+    },
+    {
+      "path": "debug/scanner_f1_live/02-first-student.png",
+      "sha256": "c02cb2c31d4ebac791511bb0cd0376c15388ca12c0a17a0d687ec973005e6b60"
+    },
+    {
+      "path": "debug/scanner_f1_live/03-right-key.json",
+      "sha256": "83b88051d13e7bb9bbc1073ab7f9425ec1e6a13b6d0366630e0db5b934e20404"
+    },
+    {
+      "path": "debug/scanner_f1_live/03-right-key.png",
+      "sha256": "6bb207ee490162c776a5da062999b16d19816dc8598425e98c655e5d7d0aedab"
+    },
+    {
+      "path": "debug/scanner_f1_live/04-left-key.json",
+      "sha256": "3bad30679b7bb6bcbfbfad5f017d18524f4ff7ace5434f4cb133af52a37c1275"
+    },
+    {
+      "path": "debug/scanner_f1_live/04-left-key.png",
+      "sha256": "702b0aa4e8616f830f40cf9e7b6f9bc39dc997919379e02809132f840b2a01a9"
+    },
+    {
+      "path": "debug/scanner_f1_live/05-right-button.json",
+      "sha256": "66da7ba26547a76fc780bd6a250ac27d086a1e0a05e2dce893b89924dca2bd49"
+    },
+    {
+      "path": "debug/scanner_f1_live/05-right-button.png",
+      "sha256": "cd8caec518d4dc776f35a580748b0e04010305122691399c272b13db3fdce85d"
+    },
+    {
+      "path": "debug/scanner_f1_live/06-left-button.json",
+      "sha256": "8d96ebe45d9606aaa9bad67289d8873141e402ce88c1d17fd6729e183dc0fdbc"
+    },
+    {
+      "path": "debug/scanner_f1_live/06-left-button.png",
+      "sha256": "d18a9e760bf69bb89ede83a17c3778cc87a1f755a7860e4f97cb66bff15afc88"
+    },
+    {
+      "path": "debug/scanner_f1_live/07-first-left-edge.json",
+      "sha256": "4e4f87e667529457d1a132d6ac5b3486a657c743e8c99eb8d1685f1bc0532d0f"
+    },
+    {
+      "path": "debug/scanner_f1_live/07-first-left-edge.png",
+      "sha256": "6a3289c488246df10350eb512ac0e8abb272ee68b699f56cc022b5cd742183fb"
+    },
+    {
+      "path": "debug/scanner_f1_live/08-last-right-edge.json",
+      "sha256": "84b1bc8b28183edc07d3ffef589ae6123af8d329f55e0fff49821f212e19e40d"
+    },
+    {
+      "path": "debug/scanner_f1_live/08-last-right-edge.png",
+      "sha256": "85bfde3bb8398e05cc9e88b176b9c5e79032b0da1f7fe678fef3c8bf78829893"
+    },
+    {
+      "path": "debug/scanner_f2_live/01-weapon-reference.json",
+      "sha256": "ef285a3bbdc2ce33678486ad9cdb8ace4f60f3dc821ef9615ed78c5d78f93669"
+    },
+    {
+      "path": "debug/scanner_f2_live/01-weapon-reference.png",
+      "sha256": "644bfec0afaf17954e1b2e51a12e549d2f73a6ceb6db14808c52402ce640a675"
+    },
+    {
+      "path": "debug/scanner_f2_live/02-basic-reference.json",
+      "sha256": "9acc225ac9f42324a0c5e2ecb65d138a63f9f02b2bdc1c6b812c066ba21ce0ce"
+    },
+    {
+      "path": "debug/scanner_f2_live/02-basic-reference.png",
+      "sha256": "2c41e3ed551191f1a49702c6e7181655f0d9fa58bb85d86abdef13a07cb9763e"
+    },
+    {
+      "path": "debug/scanner_f2_live/03-level-tab-negative.json",
+      "sha256": "938b4e05339a02bdfdb73591d6c14ea41ec53d512681f3f9436ff1bb4f8da995"
+    },
+    {
+      "path": "debug/scanner_f2_live/03-level-tab-negative.png",
+      "sha256": "96c189c79abce6ac053ec7abb1c0aaa57f10bbd0b788bbc37b22782ff157bee4"
+    },
+    {
+      "path": "debug/scanner_f2_live/04-star-tab-negative.json",
+      "sha256": "34da425c4074b51608fbc5d81cda5fd9bdf50a9aba3a316dc589bf3ed9bdadfc"
+    },
+    {
+      "path": "debug/scanner_f2_live/04-star-tab-negative.png",
+      "sha256": "625ad68a6291d7e59f12e6e0fb248a42d659b51fd359c65fd29d0a2406b64cc7"
+    },
+    {
+      "path": "debug/scanner_f2_live/05-basic-restored.json",
+      "sha256": "78f4983202a88c63f76cd07ad35aa4f716366279ac9f2554bd38e38c6f50ce57"
+    },
+    {
+      "path": "debug/scanner_f2_live/05-basic-restored.png",
+      "sha256": "4c7df0b3e373c776a6060fde33d91f1c8767047d4da6fb5ad13226779dc3f4da"
+    },
+    {
+      "path": "debug/scanner_f2_live/equipment-roundtrip/opened.png",
+      "sha256": "77f1df357cfa46df270a6b13c2ea46759fb99db7682d2c4a0ed2a42f450fc09b"
+    },
+    {
+      "path": "debug/scanner_f2_live/equipment-roundtrip/returned.png",
+      "sha256": "ce822ffe233c8ca9ef0cef1fe5eef56d92f37b4b4aa3b78780f0ce7820114b54"
+    },
+    {
+      "path": "debug/scanner_f2_live/equipment-roundtrip/trace.json",
+      "sha256": "1acb06c567c7c9f0089d529213194c4eb1dbc5bd382f352a9278fcf54356193c"
+    },
+    {
+      "path": "debug/scanner_f2_live/student-mika-single.json",
+      "sha256": "a98afb6874dad4f677fc69a300498728099fcef596d387bf8758afec07f64aaf"
+    },
+    {
+      "path": "debug/scanner_f2_live/weapon-cancel-roundtrip/opened.png",
+      "sha256": "c1cbd552b01cc9da573c3ab8480c1053a7c1b1e32572da5b4cfa50e702d2d84d"
+    },
+    {
+      "path": "debug/scanner_f2_live/weapon-cancel-roundtrip/returned.png",
+      "sha256": "c487087a539d5526a12cd77bb785a3989b47f174271797e24a5edca4947af1fb"
+    },
+    {
+      "path": "debug/scanner_f2_live/weapon-cancel-roundtrip/trace.json",
+      "sha256": "d29cbb9786a56b07a4cc027c8861ae58df57075c46376d1aad19082d800c7cfa"
+    },
+    {
+      "path": "debug/scanner_f2_live/weapon-roundtrip/opened.png",
+      "sha256": "ee907b0169adb3a2f296f5858f813923d5615a7346d5deea7894e62417a95219"
+    },
+    {
+      "path": "debug/scanner_f2_live/weapon-roundtrip/returned.png",
+      "sha256": "3e6196b9d44fdeb2ec54cec865bc92caefb7513a8ae70f923135ac1164ba7c8b"
+    },
+    {
+      "path": "debug/scanner_f2_live/weapon-roundtrip/trace.json",
+      "sha256": "d2e1d6b97c55bb1b80bb70822a413e104138508136562cbf792f0f58743cf031"
+    }
+  ]
+}

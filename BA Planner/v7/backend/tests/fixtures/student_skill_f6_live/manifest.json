@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "actual_client_size": [
+    1280,
+    720
+  ],
+  "partition": "development_regression_not_holdout_or_runtime_learning",
+  "assets": [
+    {
+      "file": "mika-on.png",
+      "source": "debug/scanner_f6_live/mika-off-on/check-1.png",
+      "check": true,
+      "values": [
+        5,
+        10,
+        10,
+        10
+      ],
+      "state": "skill",
+      "sha256": "0e14291155b9b1305ae94a692f752ceee1f48d14ddf9ce917ab7cc0aa8e095a3"
+    },
+    {
+      "file": "mika-off.png",
+      "source": "debug/scanner_f6_live/mika-off-on/check-0.png",
+      "check": false,
+      "values": null,
+      "state": "skill",
+      "sha256": "23b2bc1dbd8476507d61b6398cd51eec4bfdaaa2cfd973dd8cff8c4bdfee03e1"
+    },
+    {
+      "file": "mika-basic.png",
+      "source": "debug/scanner_f6_live/mika-panel/returned.png",
+      "check": null,
+      "values": null,
+      "state": "basic",
+      "sha256": "3d058da718838596a92571e1f52f61df88cc9a2a9a4cf3f5088f2e229942595b"
+    },
+    {
+      "file": "miyu-on.png",
+      "source": "debug/scanner_f6_live/miyu-panel/opened.png",
+      "check": true,
+      "values": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "state": "skill",
+      "sha256": "f7923b91a28bafbb110662c8b569388884eb39208970697fb1b1fcae96cdba41"
+    },
+    {
+      "file": "miyu-basic.png",
+      "source": "debug/scanner_f6_live/miyu-panel/returned.png",
+      "check": null,
+      "values": null,
+      "state": "basic",
+      "sha256": "784c27554e84283940f33b4f8ff728cdaa4d5a7bf1c67f3bb8abf32bbb3871d3"
+    }
+  ]
+}

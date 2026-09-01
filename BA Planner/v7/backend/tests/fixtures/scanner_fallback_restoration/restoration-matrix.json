@@ -1,0 +1,733 @@
+{
+  "schema_version": 1,
+  "phase": "F0",
+  "recorded_on": "2026-08-30",
+  "scope": "static source characterization and planned fixtures, not completed F1-F11 runtime work",
+  "rows": [
+    {
+      "id": "R01",
+      "phase": "F1",
+      "title": "캡처 대체와 재시도",
+      "v6_symbols": [
+        "../v6/core/capture.py:_print_window",
+        "../v6/core/scanner_components/runtime.py:_capture"
+      ],
+      "v7_symbols": [
+        "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.capture",
+        "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.wait_stable"
+      ],
+      "v6_call_path": "scan_students_v5/_scan_grid → _capture → capture_window_background → _print_window",
+      "v7_baseline": "PrintWindow(3) 실패시에만 BitBlt; 안정 캡처 중 예외는 재시도 없이 전파",
+      "dependency_group": "capture_input",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R01-positive",
+          "cases": "플래그 실패 후 대체 성공; 첫 캡처 실패 후 성공"
+        },
+        "negative": {
+          "id": "R01-negative",
+          "cases": "모든 방식 소진; blank 성공 반환; 창 소멸; 취소; 중첩 시도 상한"
+        }
+      },
+      "evidence_refs": [],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R02",
+      "phase": "F1",
+      "title": "전경 클릭과 좌우 이동",
+      "v6_symbols": [
+        "../v6/core/input.py:click_point",
+        "../v6/core/scanner_components/student.py:_send_student_arrow",
+        "../v6/core/scanner_components/student.py:go_next_student",
+        "../v6/core/scanner_components/student.py:go_previous_student_fast"
+      ],
+      "v7_symbols": [
+        "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.click",
+        "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.press_key",
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter.__call__"
+      ],
+      "v6_call_path": "production _click_r → click_region → click_point; go_next_student → _send_student_arrow(right) → send_key; go_previous_student_fast(left) exists but is not called by current full scan",
+      "v7_baseline": "마우스 메시지 전용; 오른쪽 키만 지원하지만 전체 순회는 left 요청",
+      "dependency_group": "capture_input",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R02-positive",
+          "cases": "메시지 무반응 후 실제 클릭; 좌/우 각각 키와 버튼으로 이동"
+        },
+        "negative": {
+          "id": "R02-negative",
+          "cases": "초점 강탈; 다른 HWND; 최소화; key 예외 후 버튼 경로; 끝과 입력 실패 구별"
+        }
+      },
+      "evidence_refs": [],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R03",
+      "phase": "F2",
+      "title": "목표 패널 열림 확인",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:_click_student_region_and_wait",
+        "../v6/core/scanner_components/student.py:_is_student_panel_title_capture"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:EquipmentMenuCaptureAdapter.capture_equipment_menu",
+        "backend/core/scanner_matchers.py:WeaponMenuCaptureAdapter.capture_weapon_menu"
+      ],
+      "v6_call_path": "read_level/read_student_star/read_skills/read_weapon/read_equipment/read_stats → _click_student_region_and_wait",
+      "v7_baseline": "픽셀 안정만 확인; 목표 제목/탭 predicate 없음",
+      "dependency_group": "panel",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R03-positive",
+          "cases": "목표 제목/탭 확인; 지연 열림 후 최종 확인 성공"
+        },
+        "negative": {
+          "id": "R03-negative",
+          "cases": "클릭 무반응; 잘못된 패널; timeout; 열기 중 취소"
+        }
+      },
+      "evidence_refs": [
+        "E-S3-LIVE"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R04",
+      "phase": "F2",
+      "title": "닫기와 기본 복귀",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:_close_student_panel",
+        "../v6/core/scanner_components/student.py:_restore_basic_tab"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:EquipmentMenuCaptureAdapter.close_equipment_menu",
+        "backend/core/scanner_matchers.py:WeaponMenuCaptureAdapter.close_weapon_menu"
+      ],
+      "v6_call_path": "read_skills/read_weapon/read_equipment/read_stats finally → _close_student_panel; _scan_student_fields → _restore_basic_tab",
+      "v7_baseline": "좌표 닫기만 수행; 복귀 확인 없음",
+      "dependency_group": "panel",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R04-positive",
+          "cases": "기본 닫기 실패 후 대체 좌표/ESC; 기본 화면 확인"
+        },
+        "negative": {
+          "id": "R04-negative",
+          "cases": "닫기 전부 실패시 D3 safe stop; 취소 후 새 탐색 금지; 기존 후보 보존"
+        }
+      },
+      "evidence_refs": [
+        "E-S3-LIVE"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R05",
+      "phase": "F2",
+      "title": "기존 전용무기 폴백 통합",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:read_weapon"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+        "backend/core/student_weapon_recognizer.py:StudentWeaponRecognizer.recognize_menu"
+      ],
+      "v6_call_path": "_scan_student_fields → read_weapon_state/read_student_star → read_weapon",
+      "v7_baseline": "S2W 장착 상태+미확정 필드에서 상세 최초+추가2회; update가 기본 확정값 덮어쓸 수 있음",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R05-positive",
+          "cases": "레벨만 실패/별만 실패 복구; 이미 확정한 값과 retry 결과 병합"
+        },
+        "negative": {
+          "id": "R05-negative",
+          "cases": "다른 확정값 충돌; unknown 덮어쓰기 금지; 비장착 열기0회; 열기 예외도 정리"
+        }
+      },
+      "evidence_refs": [
+        "E-FEEDBACK",
+        "E-S2W"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R06",
+      "phase": "F3",
+      "title": "능력 개방",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:read_basic_combat_stats",
+        "../v6/core/scanner_components/student.py:read_stats"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+        "backend/core/student_candidate_validation.py:StudentCandidateValidator.__call__"
+      ],
+      "v6_call_path": "_scan_student_fields → read_basic_combat_stats → read_multi_form_combat_stats → read_stats",
+      "v7_baseline": "combat 관측은 있으나 potential 숫자/배지 판독 없음; validator는 저장값 보완",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R06-positive",
+          "cases": "90/5성 배지 없음=0; 25와 중간값; 기본 실패 후 상세 복구"
+        },
+        "negative": {
+          "id": "R06-negative",
+          "cases": "해금 불충족; 배지 불명은 null; 기본/상세 충돌; 저장값 provenance 구분"
+        }
+      },
+      "evidence_refs": [
+        "E-FEEDBACK"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R07",
+      "phase": "F4",
+      "title": "레벨 탭",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:read_level"
+      ],
+      "v7_symbols": [
+        "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.read_level",
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current"
+      ],
+      "v6_call_path": "_scan_student_fields → read_level → _click_student_region_and_wait → read_student_level_v5",
+      "v7_baseline": "기본 Studio→glyph만 있음; 레벨 탭 없음",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R07-positive",
+          "cases": "기본 성공 클릭0; 상세 최초/두번째/세번째에서 성공; 1/90"
+        },
+        "negative": {
+          "id": "R07-negative",
+          "cases": "blank; 추가2회 소진; 기본 복귀 실패; 기존 값 유실 금지"
+        }
+      },
+      "evidence_refs": [
+        "E-LEVEL",
+        "E-FEEDBACK"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R08",
+      "phase": "F5",
+      "title": "독립 무기 증거의 5성 추론",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:read_weapon_state",
+        "../v6/core/scanner_components/student.py:read_student_star"
+      ],
+      "v7_symbols": [
+        "backend/core/student_weapon_recognizer.py:StudentWeaponRecognizer.read_state",
+        "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.read_student_star"
+      ],
+      "v6_call_path": "_scan_student_fields → read_weapon_state → read_student_star",
+      "v7_baseline": "무기 flag 인식 있음; 이를 학생5성으로 되돌리는 추론 없음",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R08-positive",
+          "cases": "독립 flag 장착/해금 후 미장착 + 별 미확정 → inferred5"
+        },
+        "negative": {
+          "id": "R08-negative",
+          "cases": "student_star_gate를 재사용하는 순환추론 금지; 직접 별과 충돌; flag 불명"
+        }
+      },
+      "evidence_refs": [
+        "E-FEEDBACK",
+        "E-S2W"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R09",
+      "phase": "F5",
+      "title": "성급 탭",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:read_student_star"
+      ],
+      "v7_symbols": [
+        "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.read_student_star"
+      ],
+      "v6_call_path": "_scan_student_fields → read_student_star → _click_student_region_and_wait → read_student_star_v5",
+      "v7_baseline": "기본 별만 판독",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R09-positive",
+          "cases": "독립 추론 불가 후 성급 탭의 1~5성 복구"
+        },
+        "negative": {
+          "id": "R09-negative",
+          "cases": "잘못 열린 탭; 별 ROI blank; 0성 오인; 기본 복귀 실패"
+        }
+      },
+      "evidence_refs": [
+        "E-FEEDBACK"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R10",
+      "phase": "F6",
+      "title": "스킬 상세와 전체 보기",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:read_skills"
+      ],
+      "v7_symbols": [
+        "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.read_skill"
+      ],
+      "v6_call_path": "_scan_student_fields → read_skills → _read_skills_from_basic 또는 상세+read_skill_check",
+      "v7_baseline": "기본 스킬 숫자/MAX만 판독",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R10-positive",
+          "cases": "전체 보기 off→on→새 프레임; EX1~5/일반1~10, MAX"
+        },
+        "negative": {
+          "id": "R10-negative",
+          "cases": "on 재클릭 금지; 체크 불명; 눌러도 off; 제목 불명; 기본 확정값 보존"
+        }
+      },
+      "evidence_refs": [
+        "E-FEEDBACK"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R11",
+      "phase": "F6",
+      "title": "성급 잠긴 스킬",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:_read_skills_from_basic",
+        "../v6/core/scanner_components/student.py:read_skills"
+      ],
+      "v7_symbols": [
+        "backend/core/student_scan_recognizer.py:StudentBasicRecognizer.recognize"
+      ],
+      "v6_call_path": "read_skills 두 경로에서 skill2<2성 / skill3<3성 skip",
+      "v7_baseline": "스킬 해금 조건이 기본 판독 호출에 연결되지 않음",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R11-positive",
+          "cases": "확정1성 skill2/3 skipped; 2성 skill3 skipped; 3성 모두 판독"
+        },
+        "negative": {
+          "id": "R11-negative",
+          "cases": "성급 불명/상충이면 잠김 단정 금지; 잠김 슬롯 숫자 오인 방지"
+        }
+      },
+      "evidence_refs": [],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R12",
+      "phase": "F7",
+      "title": "장비 전체 보기",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:read_equipment"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+        "backend/core/student_equipment_recognizer.py:EquipmentMenuRecognizer.recognize"
+      ],
+      "v6_call_path": "read_equipment → read_equip_check → 확인 캡처 → off면 클릭 → 재캡처",
+      "v7_baseline": "공유 메뉴 캡처와 unresolved 슬롯 판독은 있음; 체크 상태 없음",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R12-positive",
+          "cases": "초기 off 재확인 후 한 번 켜기; 이미 on이면 클릭0"
+        },
+        "negative": {
+          "id": "R12-negative",
+          "cases": "체크 불명/계속 off; 잘못된 메뉴; 확정 슬롯 변화 금지"
+        }
+      },
+      "evidence_refs": [
+        "E-S3-LIVE"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R13",
+      "phase": "F7",
+      "title": "장비 전부 미확정 재캡처",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:read_equipment"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current"
+      ],
+      "v6_call_path": "read_equipment → _scan_equip_slot; 대상 일반 슬롯 전부 None/unknown이면 추가1회",
+      "v7_baseline": "공유 메뉴 최초1회만",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R13-positive",
+          "cases": "대상 일반 슬롯 전부 실패→추가1회 성공"
+        },
+        "negative": {
+          "id": "R13-negative",
+          "cases": "일부 성공은 불필요 재시도 금지; 계속 실패/취소; 애용품만 대상일 때 구별"
+        }
+      },
+      "evidence_refs": [
+        "E-S3-LIVE"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R14",
+      "phase": "F7",
+      "title": "T10/70 제한 추론",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:_scan_equip_slot"
+      ],
+      "v7_symbols": [
+        "backend/core/student_equipment_recognizer.py:StudentEquipmentRecognizer.read_tier",
+        "backend/core/student_equipment_recognizer.py:StudentEquipmentRecognizer.recognize"
+      ],
+      "v6_call_path": "read_equipment → _scan_equip_slot → rank_equip_tier_candidates/read_equip_level",
+      "v7_baseline": "일반 tier gate + tier/level 호환성만 있음; legacy 0.66 승격 없음",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R14-positive",
+          "cases": "scan_level=true, level70, top1 T10, score[0.66,0.72) → legacy inferred; 현재 bank 독립 검증 계획"
+        },
+        "negative": {
+          "id": "R14-negative",
+          "cases": "69/null; T9 top1; 0.659999; blank/noise/동률; 다른 family; 실제 T1~9 음성"
+        }
+      },
+      "evidence_refs": [
+        "E-S3-LIVE",
+        "E-EQUIPMENT-ARCHIVE"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R15",
+      "phase": "F7",
+      "title": "애용품 성장 버튼 잠금",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:read_equipment",
+        "../v6/core/scanner_components/student.py:_equipment_growth_button_active"
+      ],
+      "v7_symbols": [
+        "backend/core/student_equipment_recognizer.py:StudentEquipmentRecognizer.recognize",
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current"
+      ],
+      "v6_call_path": "read_equipment → growth button active + favorite empty-dot → love_locked",
+      "v7_baseline": "favorite_growth_active 매개변수는 있으나 호출자가 전달 안 함; dot bool로 unknown 구별 못함",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R15-positive",
+          "cases": "빈 표시 부재 확정+버튼 비활성 확정 → love_locked; T1/T2 유지"
+        },
+        "negative": {
+          "id": "R15-negative",
+          "cases": "버튼/빈 표시 불명; 지원 안 함과 잠금 구별; 활성 버튼을 잠금으로 오인 금지"
+        }
+      },
+      "evidence_refs": [
+        "E-S3-LIVE"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R16",
+      "phase": "F8",
+      "title": "식별과 첫 진입 복구",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:identify_student",
+        "../v6/core/scanner_components/student.py:_recover_first_student_entry"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter.__call__"
+      ],
+      "v6_call_path": "scan_students_v5 → identify_student → _retry(_try); 첫 학생이면 _recover_first_student_entry 후 재시도",
+      "v7_baseline": "단일 매칭; 저신뢰 identity도 equipment context에 전달; 재진입 없음",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R16-positive",
+          "cases": "새 기본 캡처 후 식별; 첫 실패 로비→목록→첫 학생 복구"
+        },
+        "negative": {
+          "id": "R16-negative",
+          "cases": "전부 실패는 D3 중단; 저신뢰 ID의 필드 확정 금지; 이미 본 학생; 취소"
+        }
+      },
+      "evidence_refs": [
+        "E-FEEDBACK"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R17",
+      "phase": "F8",
+      "title": "식별 후보 확대",
+      "v6_symbols": [
+        "../v6/core/matcher.py:_match_student_texture_optimized",
+        "../v6/core/scanner_components/student.py:_student_attribute_candidates"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:TemplateMatcher.match",
+        "backend/core/scanner_matchers.py:TemplateMatcher._match_templates"
+      ],
+      "v6_call_path": "identify_student → match_student_texture → _match_student_texture_optimized → primary/fallback top-k + injected attributes",
+      "v7_baseline": "v7 전체 template 검색 유지; 속성 후보 주입 없음",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R17-positive",
+          "cases": "unseen pool 실패 후 전체 pool; 속성 보완으로 실제 정답 후보 회복"
+        },
+        "negative": {
+          "id": "R17-negative",
+          "cases": "같은 속성 다른 학생; 동률; 후보 누락; 전체 검색보다 오답 증가 금지"
+        }
+      },
+      "evidence_refs": [
+        "E-FEEDBACK"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R18",
+      "phase": "F8",
+      "title": "다중 폼",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:_current_student_form_index",
+        "../v6/core/scanner_components/student.py:read_multi_form_combat_stats"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter._canonical_student_ref",
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current"
+      ],
+      "v6_call_path": "read_basic_combat_stats → _current_student_form_index → template/attributes; read_multi_form_combat_stats → switch/read/restore",
+      "v7_baseline": "template suffix canonical form은 있음; 능동 폼 순회 없음",
+      "dependency_group": "student",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R18-positive",
+          "cases": "같은 canonical student의 #1/#2 별도 능력치 후 원래 폼 복귀"
+        },
+        "negative": {
+          "id": "R18-negative",
+          "cases": "폼 템플릿 실패/속성 동률; 전환 실패; 복귀 실패; 서로 다른 폼 병합 금지"
+        }
+      },
+      "evidence_refs": [
+        "E-FEEDBACK"
+      ],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R19",
+      "phase": "F9",
+      "title": "재고 실제 상세 ID/이름/수량",
+      "v6_symbols": [
+        "../v6/core/scanner_components/inventory.py:_verify_inventory_slot",
+        "../v6/core/scanner_components/inventory.py:_match_inventory_detail_crop"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:InventoryMatcherAdapter.__call__"
+      ],
+      "v6_call_path": "_scan_grid → _verify_inventory_slot → input.confirm_slot/safe_click → _capture → detail matching; caller owns close",
+      "v7_baseline": "detail_template_fallback는 동일 crop 재매칭; 실제 상세 UI 없음",
+      "dependency_group": "inventory",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R19-positive",
+          "cases": "grid 부족→실제 상세 복구→동일 슬롯 복귀; grid 충분이면 클릭0"
+        },
+        "negative": {
+          "id": "R19-negative",
+          "cases": "ID 충돌; 이름 미확정; 상세 캡처/복귀 실패; 수량0과 unknown; 자동 저장 금지"
+        }
+      },
+      "evidence_refs": [],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R20",
+      "phase": "F9",
+      "title": "재고 수량 bank 대체",
+      "v6_symbols": [
+        "../v6/core/scanner_components/inventory.py:_verify_inventory_slot"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:SlotCountMatcher.match",
+        "backend/core/scanner_matchers.py:InventoryMatcherAdapter.__call__"
+      ],
+      "v6_call_path": "_verify_inventory_slot → read_equipment_count_from_detail → missing templates일 때 read_item_count_from_detail",
+      "v7_baseline": "grid count bank만 있음",
+      "dependency_group": "inventory",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R20-positive",
+          "cases": "no_x_templates / missing_digit_templates에만 item bank 사용"
+        },
+        "negative": {
+          "id": "R20-negative",
+          "cases": "weak confidence/다른 이유에는 무조건 대체 금지; 값0 유지; 소진시 unknown"
+        }
+      },
+      "evidence_refs": [],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R21",
+      "phase": "F9",
+      "title": "weak_x grid 복귀",
+      "v6_symbols": [
+        "../v6/core/scanner_components/inventory.py:_verify_inventory_slot"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:InventoryMatcherAdapter.__call__"
+      ],
+      "v6_call_path": "_scan_grid → _verify_inventory_slot(count_fallback=...) → weak_x_match면 사전 fallback 반환",
+      "v7_baseline": "실제 상세와 grid 증거 병합 없음",
+      "dependency_group": "inventory",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R21-positive",
+          "cases": "같은 슬롯·유효 ID/수량·profile 검증 + weak_x → grid 증거 유지"
+        },
+        "negative": {
+          "id": "R21-negative",
+          "cases": "다른 슬롯/invalid grid/다른 실패 사유는 거부; legacy `if not count`의 0 오인 금지"
+        }
+      },
+      "evidence_refs": [],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R22",
+      "phase": "F10",
+      "title": "필터와 정렬",
+      "v6_symbols": [
+        "../v6/core/scanner_components/inventory.py:_open_item_inventory_filter_panel",
+        "../v6/core/scanner_components/inventory.py:_open_equipment_inventory_filter_panel",
+        "../v6/core/scanner_components/inventory.py:_ensure_region_matches_reference"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:InventoryMatcherAdapter.__call__"
+      ],
+      "v6_call_path": "scan_items/scan_equipment → _prepare_* → _open_*_filter_panel/_ensure_region_matches_reference",
+      "v7_baseline": "visible-grid만; 필터·정렬 상태 확인 없음",
+      "dependency_group": "inventory",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R22-positive",
+          "cases": "필터 재클릭 후 제목 확인; sort reference 불일치 후 설정·재확인"
+        },
+        "negative": {
+          "id": "R22-negative",
+          "cases": "재시도 소진; 모호한 상태에서 profile order/zero-fill 금지; 계정ID와 scan profile 혼용 금지"
+        }
+      },
+      "evidence_refs": [],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R23",
+      "phase": "F10",
+      "title": "재고 스크롤과 겹침",
+      "v6_symbols": [
+        "../v6/core/scanner_components/inventory.py:_scroll_inventory_page",
+        "../v6/core/scanner_components/inventory.py:_advance_inventory_page_with_input",
+        "../v6/core/scanner_components/inventory.py:_fill_missing_profile_entries"
+      ],
+      "v7_symbols": [
+        "backend/core/scanner_matchers.py:InventoryMatcherAdapter.__call__",
+        "backend/core/windows_scanner_adapter.py:WindowsCaptureInputAdapter.scroll"
+      ],
+      "v6_call_path": "_scan_grid → _scroll_inventory_page / _advance_inventory_page_with_input → motion/hash/digit overlap; profile completion → zero-fill",
+      "v7_baseline": "휠 -480; 전체 similarity>=.995는 tail-or-no-motion; 최대5페이지; no zero-fill",
+      "dependency_group": "inventory",
+      "fixture_plan": {
+        "status": "planned",
+        "positive": {
+          "id": "R23-positive",
+          "cases": "무이동 후 1회 이동; 행 overlap·잔여오차 안정화; 꼬리/중복 페이지"
+        },
+        "negative": {
+          "id": "R23-negative",
+          "cases": "near-zero/반쪽 행/입력 실패를 끝으로 오인 금지; 중복 이동·누락; 불완전 zero-fill 금지"
+        }
+      },
+      "evidence_refs": [],
+      "live_input_trace_available": false
+    },
+    {
+      "id": "R24",
+      "phase": "F11",
+      "title": "세션 보정 격리",
+      "v6_symbols": [
+        "../v6/core/scanner_components/student.py:_learn_basic_level_for_run",
+        "../v6/core/scanner_components/student.py:_learn_basic_equipment_slot"
+      ],
+      "v7_symbols": [
+        "backend/core/session_calibration.py:SessionCalibrationStore",
+        "backend/core/studio_numeric_bank.py:StudioNumericBank.add_session_template",
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter._scan_current",
+        "backend/core/scanner_matchers.py:StudentMatcherAdapter.train_user_answer",
+        "backend/core/student_equipment_recognizer.py:StudentEquipmentRecognizer.learn_basic_level"
+      ],
+      "v6_call_path": "read_level/read_equipment → _learn_basic_* → run template bank",
+      "v7_baseline": "장비 recognizer 수명 임시 bank 존재; 학생은 명시 확인 영구 bank; session 리셋 계약 필요",
+      "dependency_group": "calibration",
+      "fixture_plan": {
+        "status": "implemented_f11",
+        "positive": {
+          "id": "R24-positive",
+          "cases": "같은 ID/폼 + 확인된 상세값만 session bank; 사용자 정답 우선; session 종료 폐기"
+        },
+        "negative": {
+          "id": "R24-negative",
+          "cases": "상세 오류/충돌/자기 출력 학습 금지; 계정·해상도·session 누출 금지; 자동 영구 저장 금지"
+        }
+      },
+      "evidence_refs": [
+        "E-LEVEL",
+        "E-S3-LIVE"
+      ],
+      "live_input_trace_available": false
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "at": "2026-08-30T22:34:39.480950+09:00",
+  "panel": "weapon",
+  "target": "hwnd:470ffc",
+  "status": "returned_basic",
+  "size": [
+    1280,
+    720
+  ],
+  "cancel_recapture": "cancelled_before_capture",
+  "fields": {
+    "weapon_star": {
+      "value": 4,
+      "confidence": 0.8894662418362344,
+      "status": "ok",
+      "source": "weapon_menu_star_template",
+      "note": "value=4;margin=0.159533"
+    },
+    "weapon_level": {
+      "value": 60,
+      "confidence": 0.8580075945307921,
+      "status": "ok",
+      "source": "weapon_menu_level_template",
+      "note": "value=60;margin=0.230056"
+    }
+  },
+  "state": "basic",
+  "trace": [
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.3145023958849471,
+        "equipment": 0.31837178402122185,
+        "skill": 0.2545313432034748,
+        "stat": 0.31894613524469473,
+        "basic": 0.9530937890137329,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "open",
+      "panel": "weapon"
+    },
+    {
+      "state": "weapon",
+      "scores": {
+        "weapon": 0.95912343603928,
+        "equipment": 0.5155092174172631,
+        "skill": 0.318694391490717,
+        "stat": 0.5422329643872252,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "state": "weapon",
+      "scores": {
+        "weapon": 0.9591161783711994,
+        "equipment": 0.5158398452766886,
+        "skill": 0.31817064645041127,
+        "stat": 0.5423821766723155,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "restore",
+      "attempt": 1
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.3149684873058934,
+        "equipment": 0.317076803558789,
+        "skill": 0.2563986775981083,
+        "stat": 0.3178276659928716,
+        "basic": 0.9530937890137329,
+        "level": 0,
+        "star": 0
+      }
+    }
+  ],
+  "seconds": 2.8910000000614673
+}

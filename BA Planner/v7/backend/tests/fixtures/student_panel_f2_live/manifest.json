@@ -1,0 +1,89 @@
+{
+  "partition": "development regression; never runtime templates or calibration; active-tab scoring was characterized on these frames",
+  "actual_resolution": [
+    1280,
+    720
+  ],
+  "records": [
+    {
+      "file": "basic.png",
+      "source": "debug/scanner_f2_live/02-basic-reference.png",
+      "sha256": "2c41e3ed551191f1a49702c6e7181655f0d9fa58bb85d86abdef13a07cb9763e",
+      "size": [
+        1280,
+        720
+      ],
+      "expected": "basic"
+    },
+    {
+      "file": "weapon.png",
+      "source": "debug/scanner_f2_live/weapon-roundtrip/opened.png",
+      "sha256": "ee907b0169adb3a2f296f5858f813923d5615a7346d5deea7894e62417a95219",
+      "size": [
+        1280,
+        720
+      ],
+      "expected": "weapon"
+    },
+    {
+      "file": "equipment.png",
+      "source": "debug/scanner_f2_live/equipment-roundtrip/opened.png",
+      "sha256": "77f1df357cfa46df270a6b13c2ea46759fb99db7682d2c4a0ed2a42f450fc09b",
+      "size": [
+        1280,
+        720
+      ],
+      "expected": "equipment"
+    },
+    {
+      "file": "basic_return.png",
+      "source": "debug/scanner_f2_live/equipment-roundtrip/returned.png",
+      "sha256": "ce822ffe233c8ca9ef0cef1fe5eef56d92f37b4b4aa3b78780f0ce7820114b54",
+      "size": [
+        1280,
+        720
+      ],
+      "expected": "basic"
+    },
+    {
+      "file": "level.png",
+      "source": "debug/scanner_f2_live/03-level-tab-negative.png",
+      "sha256": "96c189c79abce6ac053ec7abb1c0aaa57f10bbd0b788bbc37b22782ff157bee4",
+      "size": [
+        1280,
+        720
+      ],
+      "expected": "level"
+    },
+    {
+      "file": "star.png",
+      "source": "debug/scanner_f2_live/04-star-tab-negative.png",
+      "sha256": "625ad68a6291d7e59f12e6e0fb248a42d659b51fd359c65fd29d0a2406b64cc7",
+      "size": [
+        1280,
+        720
+      ],
+      "expected": "star"
+    },
+    {
+      "file": "other_student.png",
+      "source": "debug/scanner_f1_live/03-right-key.png",
+      "sha256": "6bb207ee490162c776a5da062999b16d19816dc8598425e98c655e5d7d0aedab",
+      "size": [
+        1280,
+        720
+      ],
+      "expected": "basic"
+    },
+    {
+      "file": "lobby.png",
+      "source": "debug/scanner_f1_live/00-background.png",
+      "sha256": "d377a87d39ef80defa3e004dd150ce4b5bd802bc31ba1156c4be0b3070a41f5d",
+      "size": [
+        1280,
+        720
+      ],
+      "expected": "unknown"
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "profile": "equipment",
+  "frames": [
+    "frame-00.png",
+    "frame-01.png",
+    "frame-02.png",
+    "frame-03.png",
+    "frame-04.png",
+    "frame-05.png",
+    "frame-06.png",
+    "frame-07.png",
+    "frame-08.png",
+    "frame-09.png",
+    "frame-10.png",
+    "frame-11.png",
+    "frame-12.png",
+    "frame-13.png"
+  ],
+  "inputs": [
+    {
+      "kind": "click",
+      "x": 0.8404294999999999,
+      "y": 0.15833350000000002,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.593945,
+      "y": 0.834028,
+      "cleanup": false
+    },
+    {
+      "kind": "drag_scroll",
+      "start": [
+        0.78,
+        0.75
+      ],
+      "end": [
+        0.78,
+        0.65
+      ]
+    },
+    {
+      "kind": "drag_scroll",
+      "start": [
+        0.78,
+        0.75
+      ],
+      "end": [
+        0.78,
+        0.65
+      ]
+    },
+    {
+      "kind": "click",
+      "x": 0.8404294999999999,
+      "y": 0.15833350000000002,
+      "cleanup": false
+    },
+    {
+      "kind": "click",
+      "x": 0.593945,
+      "y": 0.834028,
+      "cleanup": false
+    }
+  ],
+  "steps": [
+    {
+      "index": 1,
+      "overlap_rows": 4,
+      "slot_indices": [
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "terminal": false,
+      "reason": "verified_row_overlap",
+      "trace": [
+        {
+          "input": "eq_filtermenu_button",
+          "cleanup": false
+        },
+        {
+          "observe": "eq_sort_rule_check",
+          "score": 0.8762262599268958,
+          "attempt": 1
+        },
+        {
+          "input": "eq_filter_confirm_button",
+          "cleanup": false
+        },
+        {
+          "input": "drag_scroll",
+          "start": [
+            0.78,
+            0.75
+          ],
+          "end": [
+            0.78,
+            0.65
+          ],
+          "attempt": 1
+        },
+        {
+          "overlap_rows": 4,
+          "score": 0.9780780725508109,
+          "margin": 0.06970725972995451
+        }
+      ]
+    }
+  ],
+  "source": "equipment",
+  "prepared": {
+    "source": "equipment",
+    "profile_id": "equipment",
+    "filter_verified": true,
+    "sort_verified": true
+  },
+  "prepare_trace": [
+    {
+      "input": "eq_filtermenu_button",
+      "cleanup": false
+    },
+    {
+      "observe": "eq_sort_rule_check",
+      "score": 0.8762262599268958,
+      "attempt": 1
+    },
+    {
+      "input": "eq_filter_confirm_button",
+      "cleanup": false
+    }
+  ],
+  "error": {
+    "code": "inventory_scroll_unverified",
+    "message": "ambiguous row overlap score=0.988 margin=0.028"
+  },
+  "restored": {
+    "source": "equipment",
+    "profile_id": "equipment",
+    "filter_verified": true,
+    "sort_verified": true
+  },
+  "restore_trace": [
+    {
+      "input": "eq_filtermenu_button",
+      "cleanup": false
+    },
+    {
+      "observe": "eq_sort_rule_check",
+      "score": 0.8762262599268958,
+      "attempt": 1
+    },
+    {
+      "input": "eq_filter_confirm_button",
+      "cleanup": false
+    }
+  ]
+}

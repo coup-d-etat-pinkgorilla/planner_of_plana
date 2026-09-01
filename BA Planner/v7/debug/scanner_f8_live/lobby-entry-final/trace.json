@@ -1,0 +1,28 @@
+{
+  "diagnostic": {
+    "first_missing": false,
+    "form_template_tie": false,
+    "cancel_after_form_read": false
+  },
+  "error": {
+    "code": "capture_timeout",
+    "message": "stable frame budget exhausted"
+  },
+  "frames": [
+    "frame-00.png"
+  ],
+  "inputs": [
+    {
+      "x": 0.2596,
+      "y": 0.9177,
+      "cleanup": false
+    }
+  ],
+  "entry_trace": [
+    {
+      "input": "lobby",
+      "expected": "student_list"
+    }
+  ],
+  "form_trace": []
+}

@@ -48,16 +48,19 @@ class ScannerProtocolV1:
             return self.service.recognition_status()
         if method == "scanner.session.start":
             if not {"scan_kind", "target_id"}.issubset(payload) or not set(payload).issubset({
-                "scan_kind", "target_id", "profile_id", "student_scan_mode",
+                "scan_kind", "target_id", "profile_id", "student_scan_mode", "inventory_scan_profile",
             }):
                 raise ScannerError("invalid_payload", "start payload has invalid fields")
             profile_id = payload.get("profile_id")
             student_scan_mode = payload.get("student_scan_mode", "single")
+            inventory_scan_profile = payload.get("inventory_scan_profile")
             return self.service.start(
                 self._text(payload["scan_kind"], "scan_kind"),
                 self._text(payload["target_id"], "target_id"),
                 self._text(profile_id, "profile_id") if profile_id is not None else None,
                 self._text(student_scan_mode, "student_scan_mode"),
+                self._text(inventory_scan_profile, "inventory_scan_profile")
+                if inventory_scan_profile is not None else None,
             )
         if method in {"scanner.session.cancel", "scanner.session.snapshot"}:
             self._exact(payload, {"session_id", "generation"})

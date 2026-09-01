@@ -1,0 +1,406 @@
+{
+  "version": 1,
+  "source_version": "student-skill-f6-v6-2026-08-31",
+  "assets": [
+    {
+      "path": "regions/student_skill_regions.json",
+      "scan_kind": "student",
+      "purpose": "student-skill-regions",
+      "required": true,
+      "bytes": 617,
+      "sha256": "be8836412e74fdc72fe05a2632c78b2688151a812762141c6b8644c6adec4b42",
+      "source_path": "../v6/regions/student_skillmenu_regions.json + student_data_regions.json:skill_menu_button",
+      "skill_value": null
+    },
+    {
+      "path": "templates/student_skill/ex_skill/1.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1497,
+      "sha256": "ea62a3e9ec71d86f0bfa8157b965ea65359ea65d92707404d8148e000a334676",
+      "source_path": "../v6/templates/EX_Skill/EX_Skill_1.png",
+      "skill_value": "ex_skill:1"
+    },
+    {
+      "path": "templates/student_skill/ex_skill/2.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1964,
+      "sha256": "47578d9443e17a0c00e51eebd1db487c1e2df29eb95c9091f03aeb8e1a70c742",
+      "source_path": "../v6/templates/EX_Skill/EX_Skill_2.png",
+      "skill_value": "ex_skill:2"
+    },
+    {
+      "path": "templates/student_skill/ex_skill/3.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2161,
+      "sha256": "dec1afd22e0a96b0a3e622678e32f885c190a6757742fc6037edb24f861627c9",
+      "source_path": "../v6/templates/EX_Skill/EX_Skill_3.png",
+      "skill_value": "ex_skill:3"
+    },
+    {
+      "path": "templates/student_skill/ex_skill/4.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1776,
+      "sha256": "8edfb877fccd108957687d5f43fd43e937e0bc7396d81f421db14e105d2c7f47",
+      "source_path": "../v6/templates/EX_Skill/EX_Skill_4.png",
+      "skill_value": "ex_skill:4"
+    },
+    {
+      "path": "templates/student_skill/ex_skill/5.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 7420,
+      "sha256": "7d71f752edb06d2be80b601ba02dd12d94a42f9dc625a69f5543163bc54e7775",
+      "source_path": "../v6/templates/EX_Skill/EX_Skill_5.png",
+      "skill_value": "ex_skill:5"
+    },
+    {
+      "path": "templates/student_skill/skill1/1.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1467,
+      "sha256": "a3ed47b504bb002ff4f2cdda9a9aefa438c9b188ecacc37f617a193b9f249401",
+      "source_path": "../v6/templates/Skill1/Skill_1_1.png",
+      "skill_value": "skill1:1"
+    },
+    {
+      "path": "templates/student_skill/skill1/2.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1985,
+      "sha256": "aed62805e653baa06d6a4f0425a2464c9aad445a1c7414535a2f15d10699d6ce",
+      "source_path": "../v6/templates/Skill1/Skill_1_2.png",
+      "skill_value": "skill1:2"
+    },
+    {
+      "path": "templates/student_skill/skill1/3.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2143,
+      "sha256": "044d2881b92a08423ccc17071cd4667f5c8e9bf304d0ce093e49711a62dd1853",
+      "source_path": "../v6/templates/Skill1/Skill_1_3.png",
+      "skill_value": "skill1:3"
+    },
+    {
+      "path": "templates/student_skill/skill1/4.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1745,
+      "sha256": "2df8f80ffe1c004f70a514cf793c8ca431ab734b716c9c2c8c09192bcf92949c",
+      "source_path": "../v6/templates/Skill1/Skill_1_4.png",
+      "skill_value": "skill1:4"
+    },
+    {
+      "path": "templates/student_skill/skill1/5.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1896,
+      "sha256": "1563cccd394f0e66e9714315bb15a7c9072320fc4cf6313bf6552ced9acaeffb",
+      "source_path": "../v6/templates/Skill1/Skill_1_5.png",
+      "skill_value": "skill1:5"
+    },
+    {
+      "path": "templates/student_skill/skill1/6.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2216,
+      "sha256": "401de72d29fc730c9f350d7b434ced5b8e0054cec34b4ee7832b4057de393b4b",
+      "source_path": "../v6/templates/Skill1/Skill_1_6.png",
+      "skill_value": "skill1:6"
+    },
+    {
+      "path": "templates/student_skill/skill1/7.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1779,
+      "sha256": "9d7a4badc981341f64341c4585efc236d7f116f59573c74f0aa2005a05ffae55",
+      "source_path": "../v6/templates/Skill1/Skill_1_7.png",
+      "skill_value": "skill1:7"
+    },
+    {
+      "path": "templates/student_skill/skill1/8.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2440,
+      "sha256": "1b03045a0b7c38240e4f9bb726ff55035267ee076faab18ff9adad1ee17105ee",
+      "source_path": "../v6/templates/Skill1/Skill_1_8.png",
+      "skill_value": "skill1:8"
+    },
+    {
+      "path": "templates/student_skill/skill1/9.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2197,
+      "sha256": "1386b74c052e18f61e3690c8f1c71b09e8d6452309eea5f11c8ace19db0cc896",
+      "source_path": "../v6/templates/Skill1/Skill_1_9.png",
+      "skill_value": "skill1:9"
+    },
+    {
+      "path": "templates/student_skill/skill1/10.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 7796,
+      "sha256": "5ac6f7290ce925cb577288ac377059f73c513bcb54d65c2b8551e49f571f867f",
+      "source_path": "../v6/templates/Skill1/Skill_1_10.png",
+      "skill_value": "skill1:10"
+    },
+    {
+      "path": "templates/student_skill/skill2/1.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1463,
+      "sha256": "abacbd2937746e7de63af80af987a30b397764e96a4181e370ddb58fd5b82f95",
+      "source_path": "../v6/templates/Skill2/Skill_2_1.png",
+      "skill_value": "skill2:1"
+    },
+    {
+      "path": "templates/student_skill/skill2/2.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1957,
+      "sha256": "3fcecd41f021ee0126342782348232b6f17af28f145ee602df59c223f1b8a285",
+      "source_path": "../v6/templates/Skill2/Skill_2_2.png",
+      "skill_value": "skill2:2"
+    },
+    {
+      "path": "templates/student_skill/skill2/3.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2128,
+      "sha256": "c9453a197e3dd7f81961700e2aa150779950c9906dca008576587dcf2d880ca1",
+      "source_path": "../v6/templates/Skill2/Skill_2_3.png",
+      "skill_value": "skill2:3"
+    },
+    {
+      "path": "templates/student_skill/skill2/4.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1706,
+      "sha256": "d0e358cca8d5a26d49dec8d34d3edf22ef2b35cfa6a56b9cb0b61a2b5d8300e5",
+      "source_path": "../v6/templates/Skill2/Skill_2_4.png",
+      "skill_value": "skill2:4"
+    },
+    {
+      "path": "templates/student_skill/skill2/5.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1889,
+      "sha256": "0bc598bae3801be1130f661498738975b89ae12d700155a0b858472f7faaaa10",
+      "source_path": "../v6/templates/Skill2/Skill_2_5.png",
+      "skill_value": "skill2:5"
+    },
+    {
+      "path": "templates/student_skill/skill2/6.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2208,
+      "sha256": "5fe71e7f0b28f23aeaeb1329bd2ffcc69c16264285c5befff763806ddcd288d4",
+      "source_path": "../v6/templates/Skill2/Skill_2_6.png",
+      "skill_value": "skill2:6"
+    },
+    {
+      "path": "templates/student_skill/skill2/7.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1729,
+      "sha256": "b1ad2a8814e0d1b63503db82077a08543bc8a117d811aa533bf6411e1918c0d4",
+      "source_path": "../v6/templates/Skill2/Skill_2_7.png",
+      "skill_value": "skill2:7"
+    },
+    {
+      "path": "templates/student_skill/skill2/8.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2435,
+      "sha256": "bcb9c269fd981ccf6e9b3722560ca98edecda65dc571867382e46e116f8d3524",
+      "source_path": "../v6/templates/Skill2/Skill_2_8.png",
+      "skill_value": "skill2:8"
+    },
+    {
+      "path": "templates/student_skill/skill2/9.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2173,
+      "sha256": "20eab2e8d3124d18780ddd524aba15246a89ec000f4a83f82771d1283f8abdab",
+      "source_path": "../v6/templates/Skill2/Skill_2_9.png",
+      "skill_value": "skill2:9"
+    },
+    {
+      "path": "templates/student_skill/skill2/10.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 7790,
+      "sha256": "669a176e5032f47ce855d5c0833abaee53d99bc36b50460cbc089202a01073aa",
+      "source_path": "../v6/templates/Skill2/Skill_2_10.png",
+      "skill_value": "skill2:10"
+    },
+    {
+      "path": "templates/student_skill/skill2/locked.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 4103,
+      "sha256": "9938482e75f696f177fd7284a2c11016c38000cd2698b31c1f156198a94e0966",
+      "source_path": "../v6/templates/Skill2/Skill_2_locked.png",
+      "skill_value": "skill2:locked"
+    },
+    {
+      "path": "templates/student_skill/skill3/1.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1445,
+      "sha256": "364e79b84a84e94a50bf18a5e42008105c643c8ff5dd83f47499c6633715c4a5",
+      "source_path": "../v6/templates/Skill3/Skill_3_1.png",
+      "skill_value": "skill3:1"
+    },
+    {
+      "path": "templates/student_skill/skill3/2.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1892,
+      "sha256": "cb84f08abc3f2959cb8f720329c2779e16ca19a0ff538b16ab364b24ec900bf7",
+      "source_path": "../v6/templates/Skill3/Skill_3_2.png",
+      "skill_value": "skill3:2"
+    },
+    {
+      "path": "templates/student_skill/skill3/3.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2099,
+      "sha256": "812290fa73153d00146b1ed4d91400aee813055db62f0394e5c874b6998a8247",
+      "source_path": "../v6/templates/Skill3/Skill_3_3.png",
+      "skill_value": "skill3:3"
+    },
+    {
+      "path": "templates/student_skill/skill3/4.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1730,
+      "sha256": "dc883291aeb0895082289fbdff92b87ca95cf5026eec6747dd18760f50f8ab36",
+      "source_path": "../v6/templates/Skill3/Skill_3_4.png",
+      "skill_value": "skill3:4"
+    },
+    {
+      "path": "templates/student_skill/skill3/5.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1868,
+      "sha256": "7c1e409cab79ae71da42e21b6b990e75b30c0b05b8caeff5c7b54243b84ca602",
+      "source_path": "../v6/templates/Skill3/Skill_3_5.png",
+      "skill_value": "skill3:5"
+    },
+    {
+      "path": "templates/student_skill/skill3/6.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2177,
+      "sha256": "f6ccb187b36466e9320b5f8f97df746675ea9c2d444bde5b537046115cd00b84",
+      "source_path": "../v6/templates/Skill3/Skill_3_6.png",
+      "skill_value": "skill3:6"
+    },
+    {
+      "path": "templates/student_skill/skill3/7.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 1723,
+      "sha256": "9161b6a858c18179f9fc24a4d1caff003fad8ee2937b80549637a9c8bd723b77",
+      "source_path": "../v6/templates/Skill3/Skill_3_7.png",
+      "skill_value": "skill3:7"
+    },
+    {
+      "path": "templates/student_skill/skill3/8.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2375,
+      "sha256": "410cfd4bdb30765fe57c8932cb98e133fad494cff82dd5846032aa600130ae11",
+      "source_path": "../v6/templates/Skill3/Skill_3_8.png",
+      "skill_value": "skill3:8"
+    },
+    {
+      "path": "templates/student_skill/skill3/9.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 2141,
+      "sha256": "6a5c255fbe8d8ec79ba68374fc27885e4d632ade7492dfcc200c75f9f575e096",
+      "source_path": "../v6/templates/Skill3/Skill_3_9.png",
+      "skill_value": "skill3:9"
+    },
+    {
+      "path": "templates/student_skill/skill3/10.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 7684,
+      "sha256": "f2497db3d9b627bfa0b1bf81d281ef49b64a3c6f2612032944c9d9699681569b",
+      "source_path": "../v6/templates/Skill3/Skill_3_10.png",
+      "skill_value": "skill3:10"
+    },
+    {
+      "path": "templates/student_skill/skill3/locked.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-template",
+      "required": true,
+      "bytes": 3650,
+      "sha256": "3a62c1e6c5df8ac493ad3d016d65fef3a3a308ec0b3cfb0f7c0763e80f4ff15c",
+      "source_path": "../v6/templates/Skill3/Skill_3_locked.png",
+      "skill_value": "skill3:locked"
+    },
+    {
+      "path": "templates/student_skill/check/true.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-check-template",
+      "required": true,
+      "bytes": 4364,
+      "sha256": "e0874ee72188ad4b6dcf993ba6e121c43fdde7cce1228abdb3cdd5ce0aa5b6db",
+      "source_path": "../v6/templates/skillcheck/true.png",
+      "skill_value": "true"
+    },
+    {
+      "path": "templates/student_skill/check/false.png",
+      "scan_kind": "student",
+      "purpose": "student-skill-check-template",
+      "required": true,
+      "bytes": 1562,
+      "sha256": "cc77a49ba1196dac003b9f041fc445f7f05e2c04c1edac6c3a859dfb5d624861",
+      "source_path": "../v6/templates/skillcheck/false.png",
+      "skill_value": "false"
+    }
+  ]
+}

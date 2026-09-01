@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "actual_client_size": [
+    1280,
+    720
+  ],
+  "partition": "development_regression_not_holdout_or_runtime_learning",
+  "assets": [
+    {
+      "file": "mika-star.png",
+      "source": "debug/scanner_f5_live/mika-star/opened.png",
+      "state": "star",
+      "student_star": 5,
+      "sha256": "0cb5c8b6983a1d580e82d1e8ff98b7e9b365c464f48e5b80c9998c88ef2f0831"
+    },
+    {
+      "file": "mika-basic.png",
+      "source": "debug/scanner_f5_live/mika-star/returned.png",
+      "state": "basic",
+      "student_star": 5,
+      "sha256": "9e24d1c84de8293197fac4e42fe4807f6f1357f8f924816672ea84a26ac9795d"
+    },
+    {
+      "file": "miyu-star.png",
+      "source": "debug/scanner_f5_live/miyu-star/opened.png",
+      "state": "star",
+      "student_star": 3,
+      "sha256": "390ca8bf47c13101b7c65f63e9b19732a92ba6fd7c455a606e325096f95c05c3"
+    },
+    {
+      "file": "miyu-basic.png",
+      "source": "debug/scanner_f5_live/miyu-star/returned.png",
+      "state": "basic",
+      "student_star": 3,
+      "sha256": "e8f08d84770cd2b73febea03ebd7135f7964084eae896fd5d109e367b9483da9"
+    }
+  ]
+}

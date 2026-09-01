@@ -1,0 +1,248 @@
+{
+  "status": "returned_basic",
+  "diagnostic_first_read_missing": true,
+  "size": [
+    1280,
+    720
+  ],
+  "growth": {
+    "value": true,
+    "confidence": 0.9022888321847042,
+    "status": "ok",
+    "source": "equipment_growth_template",
+    "note": "margin=0.110778"
+  },
+  "favorite_dot": null,
+  "fields": {
+    "equip1": {
+      "value": "T10",
+      "confidence": 0.9221503184158449,
+      "status": "ok",
+      "source": "equipment_menu_tier",
+      "note": "margin=0.285584"
+    },
+    "equip1_level": {
+      "value": 70,
+      "confidence": 0.8201892536305411,
+      "status": "ok",
+      "source": "equipment_menu_digit",
+      "note": "value=70;tier=T10"
+    },
+    "equip2": {
+      "value": "T10",
+      "confidence": 0.8824617341129066,
+      "status": "ok",
+      "source": "equipment_menu_tier",
+      "note": "margin=0.265196"
+    },
+    "equip2_level": {
+      "value": 70,
+      "confidence": 0.9068368002378979,
+      "status": "ok",
+      "source": "equipment_menu_digit",
+      "note": "value=70;tier=T10"
+    },
+    "equip3": {
+      "value": "T10",
+      "confidence": 0.9525088079110829,
+      "status": "ok",
+      "source": "equipment_menu_tier",
+      "note": "margin=0.313015"
+    },
+    "equip3_level": {
+      "value": 70,
+      "confidence": 0.8512501480664608,
+      "status": "ok",
+      "source": "equipment_menu_digit",
+      "note": "value=70;tier=T10"
+    }
+  },
+  "returned_state": "basic",
+  "seconds": 3.593000000109896,
+  "checks": [
+    {
+      "value": true,
+      "confidence": 0.9179465333265482,
+      "status": "ok",
+      "source": "equipment_show_all_template",
+      "note": "margin=0.408186"
+    },
+    {
+      "value": true,
+      "confidence": 0.9179465333265482,
+      "status": "ok",
+      "source": "equipment_show_all_template",
+      "note": "margin=0.408186"
+    }
+  ],
+  "reads": [
+    {
+      "equip1": {
+        "value": null,
+        "confidence": 0,
+        "status": "uncertain",
+        "source": "diagnostic_injected_missing",
+        "note": "F7 first read only"
+      },
+      "equip1_level": {
+        "value": null,
+        "confidence": 0,
+        "status": "uncertain",
+        "source": "diagnostic_injected_missing",
+        "note": "F7 first read only"
+      },
+      "equip2": {
+        "value": null,
+        "confidence": 0,
+        "status": "uncertain",
+        "source": "diagnostic_injected_missing",
+        "note": "F7 first read only"
+      },
+      "equip2_level": {
+        "value": null,
+        "confidence": 0,
+        "status": "uncertain",
+        "source": "diagnostic_injected_missing",
+        "note": "F7 first read only"
+      },
+      "equip3": {
+        "value": null,
+        "confidence": 0,
+        "status": "uncertain",
+        "source": "diagnostic_injected_missing",
+        "note": "F7 first read only"
+      },
+      "equip3_level": {
+        "value": null,
+        "confidence": 0,
+        "status": "uncertain",
+        "source": "diagnostic_injected_missing",
+        "note": "F7 first read only"
+      }
+    },
+    {
+      "equip1": {
+        "value": "T10",
+        "confidence": 0.9221503184158449,
+        "status": "ok",
+        "source": "equipment_menu_tier",
+        "note": "margin=0.285584"
+      },
+      "equip1_level": {
+        "value": 70,
+        "confidence": 0.8201892536305411,
+        "status": "ok",
+        "source": "equipment_menu_digit",
+        "note": "value=70;tier=T10"
+      },
+      "equip2": {
+        "value": "T10",
+        "confidence": 0.8824617341129066,
+        "status": "ok",
+        "source": "equipment_menu_tier",
+        "note": "margin=0.265196"
+      },
+      "equip2_level": {
+        "value": 70,
+        "confidence": 0.9068368002378979,
+        "status": "ok",
+        "source": "equipment_menu_digit",
+        "note": "value=70;tier=T10"
+      },
+      "equip3": {
+        "value": "T10",
+        "confidence": 0.9525088079110829,
+        "status": "ok",
+        "source": "equipment_menu_tier",
+        "note": "margin=0.313015"
+      },
+      "equip3_level": {
+        "value": 70,
+        "confidence": 0.8512501480664608,
+        "status": "ok",
+        "source": "equipment_menu_digit",
+        "note": "value=70;tier=T10"
+      }
+    }
+  ],
+  "trace": [
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.31471622857915177,
+        "equipment": 0.31681373543065217,
+        "skill": 0.2562122822693844,
+        "stat": 0.31756615145904343,
+        "basic": 0.9530937890137329,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "open",
+      "panel": "equipment"
+    },
+    {
+      "state": "equipment",
+      "scores": {
+        "weapon": 0.553426912214827,
+        "equipment": 0.9701296430207454,
+        "skill": 0.27190497313579637,
+        "stat": 0.8326965325727669,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "show_all": true,
+      "status": "ok",
+      "panel": "equipment"
+    },
+    {
+      "state": "equipment",
+      "scores": {
+        "weapon": 0.5527604501671759,
+        "equipment": 0.9700799875012782,
+        "skill": 0.2721310497028614,
+        "stat": 0.8324895449539281,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "show_all": true,
+      "status": "ok",
+      "panel": "equipment"
+    },
+    {
+      "state": "equipment",
+      "scores": {
+        "weapon": 0.5537649486992455,
+        "equipment": 0.9701593174281634,
+        "skill": 0.27177460023080463,
+        "stat": 0.8327859653262136,
+        "basic": 0,
+        "level": 0,
+        "star": 0
+      }
+    },
+    {
+      "input": "restore",
+      "attempt": 1
+    },
+    {
+      "state": "basic",
+      "scores": {
+        "weapon": 0.31470144601658673,
+        "equipment": 0.3163168779069945,
+        "skill": 0.2555507382598916,
+        "stat": 0.3170415717808165,
+        "basic": 0.9530937890137329,
+        "level": 0,
+        "star": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "phase": "F10 R22-R23",
+  "recorded_on": "2026-09-01",
+  "note": "F0-F9 snapshots retained; native1280 development calibration; no repository/profile writes, consumables, or learning",
+  "previous_snapshot": {
+    "path": "docs/migration/scanner-fallback-restoration/f9-source-manifest.json",
+    "sha256": "a804274b138a8c0e95ea6cd5067424925af30ab5c04ce2ad61dce0b6556a4457"
+  },
+  "files": [
+    {
+      "path": "backend/core/inventory_navigation.py",
+      "sha256": "681d5f8ef10ec59e9ebe8f82827327a94d17cc134ab9828685fa7fe704d8fefd"
+    },
+    {
+      "path": "backend/core/inventory_present_items.py",
+      "sha256": "391a2c7c0088bacba9e99c87422a4bc5b8afc8137bee72fb4e58b415bf0d8c55"
+    },
+    {
+      "path": "backend/core/inventory_catalog.py",
+      "sha256": "bf47a9f6d966dfc252639b90f1e7f78e22210386c3e93d31c4f0ceab95d3a79e"
+    },
+    {
+      "path": "backend/core/scanner_matchers.py",
+      "sha256": "c0176fe046aaea47e5d349ab53f987e4870bcd557162ca7b170789d69106aea7"
+    },
+    {
+      "path": "backend/core/scanner_runtime.py",
+      "sha256": "c110e3bfb42700381821b3226b858a22845072f1e4cae76d11e9224f75c9e39a"
+    },
+    {
+      "path": "backend/core/recognition_assets.py",
+      "sha256": "4ccbdd5307468af3609110bc154a69ffbe377b3181d1a4462259c43c91f51d1c"
+    },
+    {
+      "path": "backend/core/windows_scanner_adapter.py",
+      "sha256": "b4b3308cbeeff20ccc1f140a86f012aa94f5ec70f8f289cf9201f21c12d3b9ca"
+    },
+    {
+      "path": "backend/tests/test_inventory_navigation_f10.py",
+      "sha256": "a15ed11e96a9fb8996b61c16c077c2044ee97c15d786002cf4f07b16322b020c"
+    },
+    {
+      "path": "backend/tests/test_inventory_detail_f9.py",
+      "sha256": "2a5a3d59eadf3ee2178d3d80f0452b019db1fa59adbc19f7eff2ac2af2d1f25b"
+    },
+    {
+      "path": "backend/tests/test_scanner_production_adapters.py",
+      "sha256": "b30199c44c117f33ef18a386fa7f2a4b1368eb0f7b12cbe34d535ae26e88355a"
+    },
+    {
+      "path": "backend/tests/test_recognition_assets.py",
+      "sha256": "41001f175b928ef8683a0f35e92743c68ede114eb0c1fff5781327a8db387a74"
+    },
+    {
+      "path": "backend/tests/test_scanner_stdio_transport.py",
+      "sha256": "9f911f206bf6713582fdac5c4019e093ac9b7b2fd5d2dd0e6af823e8a0f99977"
+    },
+    {
+      "path": "backend/tests/fixtures/inventory_navigation_f10_v6_parity.json",
+      "sha256": "3e28db77a2f14a542eefc822946d83e1ceeecf4e34d003db671e58294f042b50"
+    },
+    {
+      "path": "backend/tests/fixtures/inventory_navigation_f10_live/manifest.json",
+      "sha256": "9f84cdb5d38b2d50cd09b88526060b5a863f7372086d624cad86df76cd5a2e25"
+    },
+    {
+      "path": "backend/assets/recognition/v1/inventory_navigation_f10_manifest.json",
+      "sha256": "d35475dfcf46d5dc5a856408929dc1ee882dec83f96f6d36dd60b644f2dc2ae2"
+    },
+    {
+      "path": "backend/assets/recognition/v1/regions/inventory_navigation_f10_regions.json",
+      "sha256": "4ec5e0f84ea76c40e358299576189320c319689540c253dfca08826c1921a1e6"
+    },
+    {
+      "path": "backend/tools/sync_inventory_f10_assets.py",
+      "sha256": "027893c24b67f0315fe112fb827f49b5f30136440393acf33c21cb3fd3409f28"
+    },
+    {
+      "path": "backend/tools/sync_inventory_f10_present_catalog.py",
+      "sha256": "0c1d415c3ca456b173424eb665fabdcb1d13a88bd87bf1e029dafb4c2121ddaf"
+    },
+    {
+      "path": "backend/tools/export_inventory_f10_fixtures.py",
+      "sha256": "5bbeb4c3c607a0549dda898e93559d3d4b1e96e04543f976b2231aa750438512"
+    },
+    {
+      "path": "backend/tools/verify_inventory_f10_live.py",
+      "sha256": "75ff788df2d5e60baf54082db96058fb631aa12d6dd65b7da4b91948fa3e24b6"
+    },
+    {
+      "path": "contracts/fixtures/inventory_catalog_v6_parity.json",
+      "sha256": "cfbb372377620fee4695a62019e64784128ac63634e28fdf0aa184e1602b25b1"
+    },
+    {
+      "path": "../v6/core/scanner_components/inventory.py",
+      "sha256": "e0a3dcc5c3f3161f9a66f65f5aa71f5234265b8acc1e8e9ec2a202987dd9eceb"
+    },
+    {
+      "path": "../v6/core/inventory_profiles.py",
+      "sha256": "031dcd5f3c6008f23af282caf4218a467dcd6be79fcade0946aaf0e474eb5949"
+    },
+    {
+      "path": "../v6/core/scanner_shared.py",
+      "sha256": "ba77711ec132a3646c32591499f89c525e41f78b3db7ac64ec9d8afcf6417a60"
+    },
+    {
+      "path": "../v6/docs/inventory_scan_algorithm.md",
+      "sha256": "e7b09b817716159b7f1c54beab0d29f9616901e05e9b8a64d4d54c35ae572b3f"
+    },
+    {
+      "path": "../v6/docs/inventory_sorting.md",
+      "sha256": "dfcfb7624fa91ee9a8e207fc1374e80dcf526928d94cb0c004eab1c753b308e8"
+    }
+  ]
+}

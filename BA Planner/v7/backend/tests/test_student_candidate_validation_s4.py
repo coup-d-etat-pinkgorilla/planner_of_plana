@@ -31,7 +31,8 @@ class StudentCandidateValidationS4Tests(unittest.TestCase):
                 "equip1": "T1", "equip1_level": 1,
                 "equip2": "T1", "equip2_level": 1,
                 "equip3": "T1", "equip3_level": 1,
-                "weapon_state": None, "stat_hp": 0, "stat_atk": 0, "stat_heal": 0,
+                "weapon_state": "weapon_unlocked_not_equipped",
+                "stat_hp": 0, "stat_atk": 0, "stat_heal": 0,
             },
         }
 
@@ -127,10 +128,10 @@ class StudentCandidateValidationS4Tests(unittest.TestCase):
             "weapon_level": 60,
         }
         cases = (
-            ("mika", 74, 95756, 6893, 121, 5948),
-            ("mika_swimsuit", 41, 61848, 8637, 93, 5820),
+            ("mika", 74, 95756, 6893, 121, 5948, (25,25,25)),
+            ("mika_swimsuit", 41, 61848, 8637, 93, 5820, (0,25,0)),
         )
-        for student_id, rank, hp, attack, defense, heal in cases:
+        for student_id, rank, hp, attack, defense, heal, potential in cases:
             payload = {
                 "version": 1,
                 "student_id": student_id,
@@ -144,6 +145,12 @@ class StudentCandidateValidationS4Tests(unittest.TestCase):
                 },
             }
             with self.subTest(student_id=student_id):
+                evidence = self.validator(payload, "profile-1")
+                # Stored potential still explains the calculation, but F3 requires
+                # fresh field evidence before calling the scan verified.
+                self.assertEqual("dependency_missing", evidence["status"])
+                self.assertTrue(all(row["source"] == "profile_fallback" for row in evidence["details"]["potential_inputs"].values()))
+                payload["values"].update(dict(zip(("stat_hp","stat_atk","stat_heal"), potential)))
                 evidence = self.validator(payload, "profile-1")
                 self.assertEqual("verified", evidence["status"])
                 self.assertEqual(
@@ -163,6 +170,117 @@ class StudentCandidateValidationS4Tests(unittest.TestCase):
         evidence = self.validator(payload, "profile-1")
         self.assertEqual("suspicious", evidence["status"])
         self.assertEqual(original, payload)
+
+    def test_confirmed_empty_equipment_is_calculated_as_no_contribution(self) -> None:
+        payload = {
+            "version": 1,
+            "student_id": "chise_swimsuit",
+            "values": {
+                "level": 90, "student_star": 3, "bond_rank": 14, "skill2": 1,
+                "equip1": "empty", "equip2": "empty", "equip3": "empty",
+                "combat_hp": 23564, "combat_atk": 2632,
+                "combat_def": 108, "combat_heal": 4657,
+            },
+        }
+        evidence = self.validator(payload, "profile-1", {13001: 27})
+        self.assertEqual("verified", evidence["status"])
+        self.assertEqual(
+            {"MaxHP": 0, "AttackPower": 0, "DefensePower": 0, "HealPower": 0},
+            evidence["details"]["delta"],
+        )
+        self.assertFalse(any(
+            item.get("kind") == "candidate_field" and item.get("key", "").startswith("equip")
+            for item in evidence["details"]["dependencies"]
+        ))
+
+    def test_level_locked_equipment_is_calculated_as_no_contribution(self) -> None:
+        payload = {
+            "version": 1,
+            "student_id": "cherino_hot_springs",
+            "values": {
+                "level": 1, "student_star": 5, "bond_rank": 22, "skill2": 1,
+                "equip1": "empty", "equip2": "level_locked", "equip3": "level_locked",
+                "weapon_state": "weapon_equipped", "weapon_star": 4, "weapon_level": 50,
+                "stat_hp": 0, "stat_atk": 0, "stat_heal": 0,
+                "combat_hp": 6922, "combat_atk": 1928,
+                "combat_def": 19, "combat_heal": 3392,
+            },
+        }
+        evidence = self.validator(payload, "profile-1")
+        self.assertNotEqual("partial", evidence["status"])
+        self.assertFalse(any(
+            item.get("kind") == "candidate_field" and item.get("key", "").startswith("equip")
+            for item in evidence["details"]["dependencies"]
+        ))
+
+    def test_unobserved_five_star_weapon_is_a_dependency_not_zero(self) -> None:
+        payload = {
+            "version": 1,
+            "student_id": "mika",
+            "values": {
+                "level": 90, "student_star": 5, "bond_rank": 74, "skill2": 10,
+                "equip1": "T10", "equip1_level": 70,
+                "equip2": "T10", "equip2_level": 70,
+                "equip3": "T10", "equip3_level": 70,
+                "stat_hp": 25, "stat_atk": 25, "stat_heal": 25,
+                "combat_hp": 95756, "combat_atk": 6893,
+                "combat_def": 121, "combat_heal": 5948,
+            },
+        }
+        evidence = self.validator(payload, "profile-1")
+        self.assertEqual("dependency_missing", evidence["status"])
+        self.assertIn(
+            {"kind": "candidate_field", "key": "weapon_state"},
+            evidence["details"]["dependencies"],
+        )
+        self.assertEqual("provide_weapon_values", evidence["details"]["suggestion"]["action"])
+
+    def test_equipped_weapon_with_missing_level_is_a_dependency(self) -> None:
+        payload = {
+            "version": 1,
+            "student_id": "mika",
+            "values": {
+                "level": 90, "student_star": 5, "bond_rank": 74, "skill2": 10,
+                "equip1": "T10", "equip1_level": 70,
+                "equip2": "T10", "equip2_level": 70,
+                "equip3": "T10", "equip3_level": 70,
+                "weapon_state": "weapon_equipped", "weapon_star": 4,
+                "stat_hp": 25, "stat_atk": 25, "stat_heal": 25,
+                "combat_hp": 95756, "combat_atk": 6893,
+                "combat_def": 121, "combat_heal": 5948,
+            },
+        }
+        evidence = self.validator(payload, "profile-1")
+        self.assertEqual("dependency_missing", evidence["status"])
+        self.assertIn(
+            {"kind": "candidate_field", "key": "weapon_level"},
+            evidence["details"]["dependencies"],
+        )
+
+    def test_unobserved_unstored_potential_is_not_silently_zero(self) -> None:
+        payload = {
+            "version": 1,
+            "student_id": "mika",
+            "values": {
+                "level": 90, "student_star": 5, "bond_rank": 74, "skill2": 10,
+                "equip1": "T10", "equip1_level": 70,
+                "equip2": "T10", "equip2_level": 70,
+                "equip3": "T10", "equip3_level": 70,
+                "weapon_state": "weapon_equipped", "weapon_star": 4, "weapon_level": 60,
+                "combat_hp": 95756, "combat_atk": 6893,
+                "combat_def": 121, "combat_heal": 5948,
+            },
+        }
+        evidence = self.validator(payload, "profile-1")
+        self.assertEqual("dependency_missing", evidence["status"])
+        self.assertEqual(
+            {"stat_hp", "stat_atk", "stat_heal"},
+            {
+                item["key"] for item in evidence["details"]["dependencies"]
+                if item.get("kind") == "candidate_field" and item.get("key", "").startswith("stat_")
+            },
+        )
+        self.assertEqual("provide_potential_levels", evidence["details"]["suggestion"]["action"])
 
 
 if __name__ == "__main__":

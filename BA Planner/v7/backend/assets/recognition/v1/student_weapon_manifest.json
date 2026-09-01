@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "source_version": "student-weapon-s2w-v6-parity-2026-08-30",
+  "assets": [
+    {
+      "path": "regions/student_weapon_regions.json",
+      "scan_kind": "student",
+      "purpose": "student-weapon-regions",
+      "required": true,
+      "bytes": 658,
+      "sha256": "904586bb4a163c71f2df4da1852690f62bdb7aa66bf2508440cbfc455128d2e7",
+      "source_path": "adapted:../v6/regions/student_weaponmenu_regions.json+student_data_regions.json"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit1/1_1.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 425,
+      "sha256": "3a52535142da407efba990dcb16097fcd3edcb56f99f2c26c23cf71a96465274",
+      "source_path": "../v6/templates/weaponlevel_digit1/1_1.png",
+      "weapon_value": "1:1"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit1/1_2.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 969,
+      "sha256": "e723d6090a3e8da70145785f482b63dce3df22701bbe987027f762b7da3b961d",
+      "source_path": "../v6/templates/weaponlevel_digit1/1_2.png",
+      "weapon_value": "1:2"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit1/1_3.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 1106,
+      "sha256": "a98420c1fc8ae12cf9ad6490852c6e2edbceaf95ca2342d9dbd64c7d533f249e",
+      "source_path": "../v6/templates/weaponlevel_digit1/1_3.png",
+      "weapon_value": "1:3"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit1/1_4.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 682,
+      "sha256": "94caa8e5ea3bbfc70b89528d80908e41853a0b199cd2ca87d5426b4b1aca0146",
+      "source_path": "../v6/templates/weaponlevel_digit1/1_4.png",
+      "weapon_value": "1:4"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit1/1_5.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 850,
+      "sha256": "177c62334370a8805ec795324b87e329d50e6cc782066711c39bb073066c0a0b",
+      "source_path": "../v6/templates/weaponlevel_digit1/1_5.png",
+      "weapon_value": "1:5"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit1/1_6.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 1174,
+      "sha256": "662ddbd32217ae28a357bbe3e5b78ff9076f5b900c22b15e524380e63384cf15",
+      "source_path": "../v6/templates/weaponlevel_digit1/1_6.png",
+      "weapon_value": "1:6"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit1/1_7.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 685,
+      "sha256": "667ed1f171346bdeb2e4656459b4d66a742ab49dd2233902496ad87685cdffaa",
+      "source_path": "../v6/templates/weaponlevel_digit1/1_7.png",
+      "weapon_value": "1:7"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit1/1_8.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 1297,
+      "sha256": "951c17e9296b1946e814d77587c1d1a8d677b17b940dc7219f9e510cf061e75e",
+      "source_path": "../v6/templates/weaponlevel_digit1/1_8.png",
+      "weapon_value": "1:8"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit1/1_9.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 1112,
+      "sha256": "f16862969284b9306277c126885473207d47f77c11efc4a2e9cd569b63ff844e",
+      "source_path": "../v6/templates/weaponlevel_digit1/1_9.png",
+      "weapon_value": "1:9"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit2/2_0.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 1008,
+      "sha256": "829b19ba3235f57b8296eea75d027cb9ac3b4aa77896a1a7afc56281e96d1265",
+      "source_path": "../v6/templates/weaponlevel_digit2/2_0.png",
+      "weapon_value": "2:0"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit2/2_1.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 412,
+      "sha256": "520012fc6ca42f1259497397b64770f7b68f14effa48ef6b7ae9361270786b5a",
+      "source_path": "../v6/templates/weaponlevel_digit2/2_1.png",
+      "weapon_value": "2:1"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit2/2_2.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 980,
+      "sha256": "57da50f69b78b8ba9c6371545a5c78ade6ddd4e10d92dc99b2a8fa108f64b05d",
+      "source_path": "../v6/templates/weaponlevel_digit2/2_2.png",
+      "weapon_value": "2:2"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit2/2_3.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 1132,
+      "sha256": "bf35e833baadb692a294c8773c15acac3187aae38b72cb8dd8b150741e28f3af",
+      "source_path": "../v6/templates/weaponlevel_digit2/2_3.png",
+      "weapon_value": "2:3"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit2/2_4.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 701,
+      "sha256": "aa7614f5abf5ab90d00ee6b16d31b1c38c68ea71ecd3de893a0447dee1e1d47d",
+      "source_path": "../v6/templates/weaponlevel_digit2/2_4.png",
+      "weapon_value": "2:4"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit2/2_5.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 830,
+      "sha256": "d016fd97ace1d3054c2f20eeb194e787290313fabc5bb039a9a55b3d6a178949",
+      "source_path": "../v6/templates/weaponlevel_digit2/2_5.png",
+      "weapon_value": "2:5"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit2/2_6.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 1118,
+      "sha256": "2e2ca0e8ef1d5c0b5831e84ca6f4c63e0ab27766749d8b754dd2dbf1305ef6cf",
+      "source_path": "../v6/templates/weaponlevel_digit2/2_6.png",
+      "weapon_value": "2:6"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit2/2_7.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 698,
+      "sha256": "a0a5f55541bed4dec358e60497a942129e6b9a1cc7094d4de5a361436b210adf",
+      "source_path": "../v6/templates/weaponlevel_digit2/2_7.png",
+      "weapon_value": "2:7"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit2/2_8.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 1244,
+      "sha256": "6cdd427e513cb70ebdb6303312dff32c55fcbf5c847d9bec52ebd25ec9b2320b",
+      "source_path": "../v6/templates/weaponlevel_digit2/2_8.png",
+      "weapon_value": "2:8"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit2/2_9.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 1099,
+      "sha256": "c8dbe191f987010f2851176f9329ac37b226717fa2e4deef05befb3684c0b2a2",
+      "source_path": "../v6/templates/weaponlevel_digit2/2_9.png",
+      "weapon_value": "2:9"
+    },
+    {
+      "path": "templates/student_weapon/menu/level_digit2/2_null.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-level-template",
+      "required": true,
+      "bytes": 112,
+      "sha256": "d5d5136dd43285300fde86c6d4c59157a447541aba248b6f25728068d413a0bb",
+      "source_path": "../v6/templates/weaponlevel_digit2/2_null.png",
+      "weapon_value": "2:null"
+    },
+    {
+      "path": "templates/student_weapon/menu/star/star_1.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-star-template",
+      "required": true,
+      "bytes": 3578,
+      "sha256": "af52aa9773a2934a9301b31a998ac6d8fbd04051896dd3682be756f9dbf3c7f9",
+      "source_path": "../v6/templates/weapon_star/star_1.png",
+      "weapon_value": "1"
+    },
+    {
+      "path": "templates/student_weapon/menu/star/star_2.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-star-template",
+      "required": true,
+      "bytes": 6249,
+      "sha256": "11071aa47357c0255c5c37019e8f1e4fee0d0564c8558c99b611f023f55570b5",
+      "source_path": "../v6/templates/weapon_star/star_2.png",
+      "weapon_value": "2"
+    },
+    {
+      "path": "templates/student_weapon/menu/star/star_3.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-star-template",
+      "required": true,
+      "bytes": 8863,
+      "sha256": "a01bd5b2aae8b0def508d9be5124c87281309f2fdfe624c398582ccb0fd070a5",
+      "source_path": "../v6/templates/weapon_star/star_3.png",
+      "weapon_value": "3"
+    },
+    {
+      "path": "templates/student_weapon/menu/star/star_4.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-menu-star-template",
+      "required": true,
+      "bytes": 11496,
+      "sha256": "2d9cb1c48c5f3d95999c15dee8a8b14dcdbe306a392692f410fd94ea4fe78420",
+      "source_path": "../v6/templates/weapon_star/star_4.png",
+      "weapon_value": "4"
+    },
+    {
+      "path": "templates/student_weapon/state/NO_WEAPON_SYSTEM.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-state-template",
+      "required": true,
+      "bytes": 2399,
+      "sha256": "048abce3d9ca796e6039957a9e32cecc798ad30463ea0e22dd0fa7385b70bdfc",
+      "source_path": "../v6/templates/weapon_state/NO_WEAPON_SYSTEM.png",
+      "weapon_value": "no_weapon_system"
+    },
+    {
+      "path": "templates/student_weapon/state/WEAPON_EQUIPPED.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-state-template",
+      "required": true,
+      "bytes": 3816,
+      "sha256": "aa651c9bf803a83fdd9c04816f6e827a44f3942a189f14b35e12a31068da0c97",
+      "source_path": "../v6/templates/weapon_state/WEAPON_EQUIPPED.png",
+      "weapon_value": "weapon_equipped"
+    },
+    {
+      "path": "templates/student_weapon/state/WEAPON_UNLOCKED_NOT_EQUIPPED.png",
+      "scan_kind": "student",
+      "purpose": "student-weapon-state-template",
+      "required": true,
+      "bytes": 3028,
+      "sha256": "155e42d07bd2692b495dcc6a4ac1c019ded113ee1ef66568a8a9aae9219fd66b",
+      "source_path": "../v6/templates/weapon_state/WEAPON_UNLOCKED_NOT_EQUIPPED.png",
+      "weapon_value": "weapon_unlocked_not_equipped"
+    }
+  ]
+}

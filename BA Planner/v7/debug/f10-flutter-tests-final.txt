@@ -1,0 +1,527 @@
+Resolving dependencies...
+Downloading packages...
+  clock 1.1.2 (1.1.3 available)
+  cross_file 0.3.5+4 (0.3.5+5 available)
+  file_selector_android 0.5.2+9 (0.5.2+10 available)
+  file_selector_ios 0.5.3+5 (0.5.3+6 available)
+  file_selector_linux 0.9.4 (0.9.4+1 available)
+  file_selector_macos 0.9.5 (0.9.5+1 available)
+  file_selector_windows 0.9.3+5 (0.9.3+6 available)
+  matcher 0.12.19 (0.12.20 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.0 (1.19.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.11 (0.7.13 available)
+  vector_math 2.2.0 (2.4.2 available)
+  vm_service 15.2.0 (15.3.0 available)
+Got dependencies!
+14 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart
+00:00 +0: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: template extractor is a standalone app surface
+00:00 +1: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: grid inspector is a standalone app surface
+00:00 +2: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: metadata editor lays out at 1200.0 px
+00:00 +3: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: metadata editor lays out at 700.0 px
+00:01 +4: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: metadata SchaleDB preview compares students and gifts visually
+00:01 +5: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: metadata editor duplicates drafts and saves multi-form JSON
+00:01 +6: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: metadata diagnostics shows server and asset status with details
+00:02 +7: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: single SchaleDB import previews minimal fields and gift results
+00:02 +8: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: SchaleDB merge paths show the primary and secondary slugs
+00:02 +9: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: item statistics separates unknown zero and planned shortage
+00:02 +10: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: metadata diagnostics explicitly changes KR and JP state
+00:03 +11: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/developer_tools_app_test.dart: developer tool client prefers the backend virtual environment
+00:03 +12: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagnostics_service_test.dart
+00:03 +12: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagnostics_service_test.dart: mock diagnostics report is deterministic and recovery is single flight
+00:04 +13: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagnostics_service_test.dart: process diagnostics are bounded and redact secrets
+[backend] line 0 token=<redacted> password=<redacted>
+[backend] line 1 token=<redacted> password=<redacted>
+[backend] line 2 token=<redacted> password=<redacted>
+[backend] line 3 token=<redacted> password=<redacted>
+[backend] line 4 token=<redacted> password=<redacted>
+[backend] line 5 token=<redacted> password=<redacted>
+[backend] line 6 token=<redacted> password=<redacted>
+[backend] line 7 token=<redacted> password=<redacted>
+[backend] line 8 token=<redacted> password=<redacted>
+[backend] line 9 token=<redacted> password=<redacted>
+[backend] line 10 token=<redacted> password=<redacted>
+[backend] line 11 token=<redacted> password=<redacted>
+[backend] line 12 token=<redacted> password=<redacted>
+[backend] line 13 token=<redacted> password=<redacted>
+[backend] line 14 token=<redacted> password=<redacted>
+[backend] line 15 token=<redacted> password=<redacted>
+[backend] line 16 token=<redacted> password=<redacted>
+[backend] line 17 token=<redacted> password=<redacted>
+[backend] line 18 token=<redacted> password=<redacted>
+[backend] line 19 token=<redacted> password=<redacted>
+[backend] line 20 token=<redacted> password=<redacted>
+[backend] line 21 token=<redacted> password=<redacted>
+[backend] line 22 token=<redacted> password=<redacted>
+[backend] line 23 token=<redacted> password=<redacted>
+[backend] line 24 token=<redacted> password=<redacted>
+[backend] line 25 token=<redacted> password=<redacted>
+[backend] line 26 token=<redacted> password=<redacted>
+[backend] line 27 token=<redacted> password=<redacted>
+[backend] line 28 token=<redacted> password=<redacted>
+[backend] line 29 token=<redacted> password=<redacted>
+[backend] line 30 token=<redacted> password=<redacted>
+[backend] line 31 token=<redacted> password=<redacted>
+[backend] line 32 token=<redacted> password=<redacted>
+[backend] line 33 token=<redacted> password=<redacted>
+[backend] line 34 token=<redacted> password=<redacted>
+[backend] line 35 token=<redacted> password=<redacted>
+[backend] line 36 token=<redacted> password=<redacted>
+[backend] line 37 token=<redacted> password=<redacted>
+[backend] line 38 token=<redacted> password=<redacted>
+[backend] line 39 token=<redacted> password=<redacted>
+[backend] line 40 token=<redacted> password=<redacted>
+[backend] line 41 token=<redacted> password=<redacted>
+[backend] line 42 token=<redacted> password=<redacted>
+[backend] line 43 token=<redacted> password=<redacted>
+[backend] line 44 token=<redacted> password=<redacted>
+[backend] line 45 token=<redacted> password=<redacted>
+[backend] line 46 token=<redacted> password=<redacted>
+[backend] line 47 token=<redacted> password=<redacted>
+[backend] line 48 token=<redacted> password=<redacted>
+[backend] line 49 token=<redacted> password=<redacted>
+[backend] line 50 token=<redacted> password=<redacted>
+[backend] line 51 token=<redacted> password=<redacted>
+[backend] line 52 token=<redacted> password=<redacted>
+[backend] line 53 token=<redacted> password=<redacted>
+[backend] line 54 token=<redacted> password=<redacted>
+[backend] line 55 token=<redacted> password=<redacted>
+[backend] line 56 token=<redacted> password=<redacted>
+[backend] line 57 token=<redacted> password=<redacted>
+[backend] line 58 token=<redacted> password=<redacted>
+[backend] line 59 token=<redacted> password=<redacted>
+00:04 +14: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagonal_media_list_item_test.dart
+00:04 +14: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagonal_media_list_item_test.dart: studio feature groups share exact vertical center lines
+00:04 +15: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagonal_media_list_item_test.dart: bond background tiers include the level 100 purple boundary
+00:04 +16: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagonal_media_list_item_test.dart: relationship heart follows the wide badge proportions
+00:04 +17: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagonal_media_list_item_test.dart: maximum skill levels render as M
+00:04 +18: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/diagonal_media_list_item_test.dart: renders reusable media data and colored value deltas
+00:05 +19: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart
+00:05 +19: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: real P6 flow holds then approves scan and restores every saved bucket
+00:05 +20: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/final_p6_process_e2e_test.dart: MockAppService mirrors the final P6 review and recovery flow
+00:06 +21: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart
+00:07 +21: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_app_shell_test.dart: AppShell keeps a held student candidate in the scan workspace
+00:11 +22: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_page_test.dart
+00:11 +22: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_page_test.dart: home contains only the menu section
+00:12 +23: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_page_test.dart: menu cards route to every primary destination
+00:12 +24: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_page_test.dart: menu remains scrollable at 1280.0x720.0
+00:12 +25: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_page_test.dart: menu remains scrollable at 1440.0x900.0
+00:12 +26: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/home_page_test.dart: menu remains scrollable at 1280.0x960.0
+00:12 +27: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/inventory_page_test.dart
+00:12 +27: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/inventory_page_test.dart: inventory wire distinguishes unknown, explicit zero, and malformed values
+00:12 +28: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/inventory_page_test.dart: inventory page loads, filters, saves zero, and exposes plan and scan callbacks
+00:13 +29: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/inventory_page_test.dart: candidate hold does not mutate and approve commits the inventory snapshot
+00:13 +30: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/inventory_page_test.dart: stale repository revision preserves candidate comparison and newer inventory
+00:14 +31: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/inventory_page_test.dart: large, long-name, and missing-metadata catalogs remain scrollable at required viewports
+00:14 +32: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/inventory_page_test.dart: disconnected and catalog error states are explicit
+00:14 +33: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/mock_scanner_service_test.dart
+00:15 +33: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/mock_scanner_service_test.dart: MockAppService exposes the scanner readiness and terminal flow
+00:15 +34: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/mock_scanner_service_test.dart: MockAppService exposes deterministic inventory unknown evidence
+00:15 +35: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/mock_scanner_service_test.dart: MockAppService keeps cancel acknowledgement separate from terminal
+00:15 +36: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/mock_scanner_service_test.dart: MockAppService emits a structured failed terminal
+00:15 +37: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/mock_student_fixture_test.dart
+00:15 +37: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/mock_student_fixture_test.dart: mock roster has 42 unique students and evenly spread progression
+00:15 +38: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/mock_student_fixture_test.dart: full-catalog mock seeds the selected profile with the roster
+00:15 +39: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/mock_student_fixture_test.dart: compact test mock keeps an empty repository by default
+00:15 +40: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_document_projection_test.dart
+00:16 +40: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_document_projection_test.dart: unknown inventory remains unknown in planning result previews
+00:16 +41: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart
+00:16 +41: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: equipment and weapon caps match the v6 growth tables
+00:16 +42: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: changing equipment level raises the tier required for that level
+00:16 +43: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: an explicit equipment tier clamps an impossible level
+00:16 +44: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: weapon level raises weapon and student stars
+00:16 +45: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: explicit weapon star clamps level and still requires student star 5
+00:16 +46: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: favorite equipment is removed for students without that slot
+00:16 +47: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: semantic validator rejects impossible growth combinations
+00:16 +48: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: legacy goal projection normalizes level-only equipment targets
+00:16 +49: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: legacy goal projection honors an explicit tier by clamping its level
+00:16 +50: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: skill targets raise the student star required to unlock them
+00:16 +51: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: lowering student star clamps bond, skills, weapon, and stats
+00:16 +52: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: equipment slots and ability release raise unlock prerequisites
+00:16 +53: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_growth_rules_test.dart: bond and favorite item targets enforce star and bond gates
+00:16 +54: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart
+00:17 +54: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: plan phase items use the expanded readable height
+00:17 +55: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: all section 3 tab bodies use intro 80 and outro 260
+00:17 +56: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: all plan student selector panels use intro 80 and outro 260
+00:17 +57: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario rows use the standard height-derived 80 degree silhouette
+00:17 +58: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario viewport fog is clipped to the same parallelogram
+00:17 +59: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: selector confirmation is bottom-right and shares the title texture
+00:17 +60: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario list card exposes identity calculation and portraits
+00:17 +61: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor uses the requested motions and responsive section sizes
+00:17 +62: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor detail contents follow main section 2 sizing
+00:17 +63: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor side lists use the short edge and equal margins
+00:17 +64: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor side-list gaps survive responsive resizing
+00:17 +65: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor detail rows reserve one full-height assign button
+00:17 +66: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor item surface is a bilateral 80 degree parallelogram
+00:17 +67: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor scrollbar follows the same 80 degree rail
+00:17 +68: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor facing sections preserve the explicit diagonal seam
+00:17 +69: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor controls preserve equal height and diagonal clearances
+00:17 +70: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor outer container is clipped as a parallelogram
+00:17 +71: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: regular equipment uses the v6 default item background at every tier
+00:17 +72: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: overall consumption is the exact sum of phase consumption
+00:17 +73: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: resource categories filter and sort the section 3 data
+00:17 +74: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: bottleneck filtering preserves calculated focus-step data
+00:17 +75: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: plan-phase-consumption clamps a stale scroll offset when satisfied items hide
+00:17 +76: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: plan-overall-consumption clamps a stale scroll offset when satisfied items hide
+00:17 +77: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: projects the five sections from the plan Studio document
+00:17 +78: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: uses the requested per-section intro and outro directions
+00:17 +79: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 controls and section 6 share the canonical geometry
+00:17 +80: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: dummy phases keep student steps in execution order
+00:17 +81: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase items follow the parent parallelogram edges
+00:17 +82: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: two-column resources keep their size and align to long control rails
+00:17 +83: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: resource header follows the section 5 parallelogram safe interval
+00:17 +84: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: bottleneck container is inset to 95 percent with a small top margin
+00:17 +85: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: places five sections and a diagonal phase preview
+00:18 +86: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: bottleneck is first and overall uses its dedicated two-line summary
+00:19 +87: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: resource summaries highlight their affected students in every tab
+00:20 +88: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase consumption cards reuse resources and overall aggregates one group
+00:21 +89: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 3 resources focus exact consuming plans in every resource tab
+00:23 +90: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: bottleneck delayed-stage button highlights exact rows and list scrolls
+00:23 +91: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: section 4 opens and operates the resource type filter
+00:25 +92: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase list scrolls while preserving its diagonal container
+00:25 +93: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor keeps lists and side controls interactive
+00:29 +94: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor bulk and phase-order controls update editor state
+00:29 +95: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor inserts and reorders items between phase rows
+00:30 +96: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor source rows follow the diagonal scroll rail
+00:30 +97: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: phase editor sections play their outro when the plan tab deactivates
+00:31 +98: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: student selector keeps section 1 and resets search and filters on exit
+00:32 +99: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: student selector panels play outro when the plan tab deactivates
+00:33 +100: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: student selection exits both panels before opening and reopening the builder
+00:35 +101: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario comparison selects active plan and exposes side-by-side actions
+00:35 +102: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: comparison workspace incorporates a scenario after the active plan
+00:36 +103: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario list keeps section 1 and uses the 80 to 260 diagonal workspace
+00:37 +104: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario creation exits its selector before cancel and list handoffs
+00:38 +105: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: multi-select processes students in click order and reopens the selected student plan
+00:40 +106: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario creation reuses student builder and phase editor without bulk apply
+00:42 +107: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_page_test.dart: scenario selector accepts the upper-right of fourth-column portraits in rows 1-4
+00:43 +108: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart
+00:43 +108: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: startup probe keeps the process connecting until it responds
+00:43 +109: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: matches multiple reversed responses by unique request id
+00:43 +110: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: student catalog response is typed and malformed entries fail closed
+00:43 +111: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: inventory catalog, shortages, and save use typed wire boundaries
+00:43 +112: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: inventory snapshot preserves catalog revision and observed slot
+00:43 +113: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: times out and reports a late response id without reconnecting
+00:43 +114: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: malformed JSON fails pending requests and disconnects
+00:43 +115: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: response method mismatch is fatal to the connection
+00:43 +116: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: invalid structured error is fatal to the connection
+00:43 +117: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: valid method error stays request-scoped
+00:43 +118: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: invalid success payload is fatal to the connection
+00:43 +119: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: malformed repository success is fatal and restart remains available
+00:43 +120: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: stdin write failure disconnects and fails the request
+00:43 +121: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: unexpected exit fails pending requests and updates connection
+00:43 +122: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: restart creates a new process and accepts new requests
+00:43 +123: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: dispose closes the process and fails pending requests
+00:43 +124: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: ProcessAppService reflects unexpected backend exit
+00:43 +125: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: ProcessAppService enables scanner from readiness and consumes terminal event
+00:43 +126: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: lazy launcher resolution leaves the shell disconnected
+00:43 +127: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: backend launcher prefers the bundled virtual environment
+00:43 +128: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_client_test.dart: real Python process serves every P0 planning method through AppService
+00:49 +129: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_contract_test.dart
+00:49 +129: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_contract_test.dart: planning schemas use JSON Schema draft 2020-12
+00:49 +130: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_contract_test.dart: Dart validates the shared planning protocol fixture
+00:49 +131: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/planning_protocol_contract_test.dart: request and response use the same non-empty ID
+00:49 +132: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart
+00:50 +132: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset builder sections use the requested motion directions
+00:50 +133: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: typed plan starter layout matches the saved Studio document
+00:50 +134: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: typed preset element layout matches the saved Studio document
+00:50 +135: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset panels halve row gaps but preserve edge and column gaps
+00:50 +136: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: condition preset layout reserves a diagonal header by compacting two rows
+00:50 +137: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset element projection keeps the compact vertical contract
+00:50 +138: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset list container follows the plan-main phase inset contract
+00:50 +139: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset loader owns a bilateral container inside Section 5
+00:50 +140: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: stage cards follow the 80 degree rail while scrolling
+00:50 +141: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset loader rows follow their 80 degree rail while scrolling
+00:50 +142: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: unassigned rows follow the same 80 degree scroll rail
+00:50 +143: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: builder controls and unassigned rows use exact 80 degree paths
+00:50 +144: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: right list and phase action reuse the requested blue-purple palettes
+00:50 +145: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: right action buttons stack inside the section diagonal
+00:50 +146: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: right list shrinks to 70 percent while action sizes stay fixed
+00:50 +147: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: stale diagonal-list offsets clamp to the shortened content extent
+00:50 +148: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset element envelope contains every panel path
+00:50 +149: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset element envelope is one exact 80 degree parallelogram
+00:50 +150: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset element paths are derived from their saved Studio specs
+00:51 +151: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: plan starter projection keeps the current Section 3 structure
+00:51 +152: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: Section 3 panels follow the resized outer rail
+00:51 +153: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: level and school split follows an exact 80 degree rail
+00:51 +154: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: unowned students use an explicit metadata-derived virtual baseline
+00:51 +155: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: planning seed opens the four-section element builder
+00:51 +156: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: portrait badges follow ownership, plan, and JP metadata
+00:51 +157: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: favorite item locks only when its metadata exists
+00:51 +158: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: raising an earlier stage propagates only upward
+00:52 +159: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: stage card wraps all nine surfaces at the scaled width
+00:52 +160: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: editable preset element card can be hosted outside the builder
+00:52 +161: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset cards use phase-style flow triangles between items
+00:52 +162: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: right section mirrors the phase panel with editable media rows
+00:53 +163: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: restored phase button opens only after plan elements exist
+00:53 +164: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: right list selection enables deletion for one stage
+00:54 +165: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: return button waits for the builder outro
+00:54 +166: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: blocked reason occupies the reserved strip above slanted controls
+00:54 +167: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset controls use indicator proportions and max badges
+00:55 +168: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: top-row steppers are centered in their compact panels
+00:55 +169: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: resized preset containers enclose their controls
+00:55 +170: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: equipment max badges keep explicit lower-edge clearance
+00:55 +171: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: star strip writes student and weapon star targets
+00:55 +172: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: tapping the selected star endpoint removes that endpoint
+00:56 +173: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: later star strips fill from the previous stage snapshot
+00:56 +174: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: adding to a reopened draft keeps stage ids unique
+00:56 +175: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: deleting a stage focuses the previous stage
+00:57 +176: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: deleting a scrolled stage restores the first card rail
+00:58 +177: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset overwrites the draft and confirmation creates unassigned items
+00:58 +178: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: preset clamps an explicit T9 equipment level to the v6 cap
+00:58 +179: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: level-only preset raises equipment tier to the required tier
+00:58 +180: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: builder deletes only the selected unassigned stage and return preserves the rest
+00:59 +181: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: phase completion exits the builder and returns to plan main
+01:01 +182: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_element_builder_test.dart: phase editor rejects a drop that reverses student stages
+01:01 +183: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_preset_manager_test.dart
+01:01 +183: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_preset_manager_test.dart: preset manager owns dedicated geometry and requested motions
+01:01 +184: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_preset_manager_test.dart: creates, edits, saves, and deletes a multi-stage preset
+01:03 +185: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_preset_manager_test.dart: unsaved return opens the compact confirmation section
+01:04 +186: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_preset_manager_test.dart: preset editor star endpoints toggle off when tapped again
+01:05 +187: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_preset_manager_test.dart: preset manager remains usable at the narrow viewport
+01:05 +188: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_student_step_tile_test.dart
+01:05 +188: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_student_step_tile_test.dart: renders from the standalone reusable tile API
+01:06 +189: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_student_step_tile_test.dart: projects ownership and taps through the reusable tile API
+01:06 +190: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/plan_student_step_tile_test.dart: current student state uses the catalog-only presentation
+01:06 +191: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/recovery_banner_test.dart
+01:06 +191: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/recovery_banner_test.dart: global recovery shows only valid owner actions
+01:07 +192: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/recovery_banner_test.dart: scan failure routes to scan without mutating candidate
+01:07 +193: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart
+01:07 +193: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_process_e2e_test.dart: real ProcessAppService restores repository state after Python restart
+01:20 +194: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_profile_panel_test.dart
+01:20 +194: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_profile_panel_test.dart: profile create select rename cancel and empty input are safe
+01:21 +195: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_protocol_contract_test.dart
+01:21 +195: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/repository_protocol_contract_test.dart: shared repository protocol fixture matches every expected validity
+01:21 +196: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scanner_process_e2e_test.dart
+01:22 +196: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scanner_process_e2e_test.dart: real ProcessAppService preserves scanner events across restart and dispose
+01:22 +197: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scanner_protocol_client_test.dart
+01:23 +197: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scanner_protocol_client_test.dart: typed scanner snapshot parses envelope history and reconciles cursor
+01:23 +198: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scanner_protocol_client_test.dart: typed scanner client buffers start race and filters duplicate stale gap
+01:23 +199: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scanner_protocol_client_test.dart: target readiness review and commit APIs use strict scanner methods
+01:23 +200: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_companion_dock_test.dart
+01:23 +200: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_companion_dock_test.dart: shows live scan progress and compact student feedback
+01:24 +201: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_companion_dock_test.dart: replaces students with sequential 0 and 180 degree motion
+01:24 +202: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_companion_dock_test.dart: exits, enters next identity, then applies scan values
+01:24 +203: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart
+01:24 +203: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: completed student scan exports a privacy-limited diagnostic JSON
+01:26 +204: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: full student scan docks before start and restores on terminal
+01:26 +205: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: loading, empty, error, disconnected and refresh are distinct
+01:26 +206: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: preparation keeps stable target IDs and blocks non-ready target
+01:26 +207: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: student problem result stays in scan workspace and revalidates green
+01:27 +208: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: green result applies in scan tab and discard is confirmed
+01:27 +209: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: apply conflict returns red and recovers through revalidation
+01:27 +210: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: publishes an immutable typed terminal recent projection
+01:28 +211: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: cancel acknowledgement remains cancelling until terminal and retry is new
+01:28 +212: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: stream error recovers authoritative snapshot without direct commit
+01:28 +213: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: candidate kind and payload mismatch is not handed off
+01:28 +214: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: single scan requires owned alternate rank before green
+01:29 +215: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: scan workspace remains reachable at 800.0x720.0
+01:29 +216: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: scan workspace remains reachable at 1280.0x720.0
+01:30 +217: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: scan workspace remains reachable at 1440.0x900.0
+01:30 +218: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_page_test.dart: scan workspace remains reachable at 1920.0x1080.0
+01:30 +219: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_student_review_workspace_test.dart
+01:30 +219: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_student_review_workspace_test.dart: full scan keeps every outfit of one character vertically adjacent
+01:30 +220: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_student_review_workspace_test.dart: new eligible student exposes missing potential fields for review
+01:31 +221: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scan_student_review_workspace_test.dart: shadow-only evidence remains an applicable result
+01:31 +222: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart
+01:32 +222: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_process_e2e_test.dart: real Dart to Python scenario lifecycle and comparison are isolated
+01:38 +223: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_service_test.dart
+01:39 +223: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_service_test.dart: scenario summary keeps calculation and portrait data typed
+01:39 +224: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/scenario_service_test.dart: scenario record keeps kind and profile staleness typed
+01:39 +225: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_studio_document_test.dart
+01:39 +225: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_studio_document_test.dart: versioned Studio JSON round-trips every editable value
+01:39 +226: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_studio_document_test.dart: current version preserves container and feature parent relationships
+01:39 +227: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_studio_document_test.dart: version 5 stores text and line features
+01:39 +228: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_studio_document_test.dart: version 1 section-only files remain importable
+01:39 +229: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_studio_document_test.dart: version 3 child grid rects migrate to parent-relative placement
+01:39 +230: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_studio_document_test.dart: version 4 files default new decoration fields safely
+01:39 +231: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_studio_document_test.dart: Studio JSON rejects incompatible or unsafe documents
+01:39 +232: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_studio_document_test.dart: Studio saves and atomically loads through the file service
+01:41 +233: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_studio_document_test.dart: invalid load keeps the current canvas unchanged
+01:41 +234: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_studio_document_test.dart: section import appends and remaps IDs instead of replacing
+01:42 +235: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart
+01:42 +235: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: user elements validate against the shared 96x96 board
+01:42 +236: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: left and right template cuts remove opposite corners
+01:42 +237: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: every diagonal uses the fixed upward-right 80 degree track
+01:42 +238: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: attached modes derive geometry from face grid and height
+01:42 +239: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: every selected attachment face is the actual outer boundary
+01:42 +240: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: elements share one canvas and are not clipped to footprint rects
+01:42 +241: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: move and resize operations snap and clamp to the 96x96 grid
+01:42 +242: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: child placement snaps to parent inset and sibling gap
+01:42 +243: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: child placement measures inset from a slanted parent edge
+01:42 +244: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: nested layers use parent-relative placement and keep image ratio
+01:42 +245: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: container and feature layers add nested shapes and images
+01:46 +246: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: rendered section polygons round every original corner
+01:46 +247: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: studio adds and edits elements on one shared 96x96 canvas
+01:46 +248: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: canvas drag moves and resizes the selected element on grid
+01:47 +249: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/section_template_studio_test.dart: development panel opens the section template studio
+01:49 +250: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/settings_page_test.dart
+01:49 +250: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/settings_page_test.dart: settings populated layout fits 1280.0x720.0
+01:50 +251: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/settings_page_test.dart: settings disconnected long-text layout fits 1280.0x720.0
+01:50 +252: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/settings_page_test.dart: settings populated layout fits 1440.0x900.0
+01:50 +253: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/settings_page_test.dart: settings disconnected long-text layout fits 1440.0x900.0
+01:51 +254: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/settings_page_test.dart: settings populated layout fits 1280.0x960.0
+01:51 +255: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/settings_page_test.dart: settings disconnected long-text layout fits 1280.0x960.0
+01:51 +256: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/settings_page_test.dart: create select rename and revision failure reload safely
+01:51 +257: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/settings_page_test.dart: settings imports and selects a v6 account
+01:52 +258: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/settings_page_test.dart: scanner and Adaptive-Sync are deep links and do not start scan
+01:52 +259: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/settings_page_test.dart: disconnected recovery failure remains actionable
+01:52 +260: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_app_shell_test.dart
+01:52 +260: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_app_shell_test.dart: statistics tab is service-backed and reloads on re-entry
+01:55 +261: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_page_test.dart
+01:56 +261: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_page_test.dart: disconnected connecting no profile and missing repository are distinct
+01:56 +262: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_page_test.dart: empty goals skip both calculation APIs and expose all modes
+01:56 +263: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_page_test.dart: saved goals send exact immutable current goals inventory to both APIs
+01:56 +264: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_page_test.dart: detail and data-owner actions navigate without mutation
+01:57 +265: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_page_test.dart: student source failure preserves inventory and refresh recovers
+01:57 +266: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_page_test.dart: late previous state cannot replace a newer reload
+01:57 +267: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_page_test.dart: statistics is scrollable at 1280.0x720.0
+01:57 +268: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_page_test.dart: statistics is scrollable at 1440.0x900.0
+01:57 +269: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_page_test.dart: statistics is scrollable at 1280.0x960.0
+01:57 +270: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_projection_test.dart
+01:58 +270: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_projection_test.dart: student projection uses stable full-profile denominators and known-only averages
+01:58 +271: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_projection_test.dart: zero denominator is finite and deterministic sorting uses label tie break
+01:58 +272: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_projection_test.dart: out-of-range student values remain unknown and leave averages
+01:58 +273: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_projection_test.dart: inventory projection separates absent unknown zero positive and missing category
+01:58 +274: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/statistics_projection_test.dart: plan projection preserves gross maps and bounds positive shortages to ten
+01:58 +275: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_page_test.dart
+01:58 +275: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_page_test.dart: catalog search and plan handoff use services
+01:59 +276: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_page_test.dart: disconnected state is explicit and retryable
+01:59 +277: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_page_test.dart: review-required candidate is unchanged on hold and committed after approval
+02:00 +278: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_page_test.dart: long names and missing metadata remain searchable
+02:00 +279: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_page_test.dart: empty and error catalog states are explicit
+02:00 +280: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_page_test.dart: legacy repository editor section is not rendered below canvas
+02:00 +281: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_page_test.dart: student page has no overflow at 1280.0x720.0
+02:00 +282: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_page_test.dart: student page has no overflow at 1440.0x900.0
+02:00 +283: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_page_test.dart: student page has no overflow at 1280.0x960.0
+02:00 +284: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart
+02:01 +284: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: student filter and condition sections preserve a 24 px visible gap
+02:01 +285: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition cards advance along the parent 80 degree rails
+02:01 +286: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition shell wraps the cards while preserving diagonal margins
+02:01 +287: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: student range conditions apply inclusive lower and upper bounds
+02:01 +288: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: condition section shows two editable cards without a scroll viewport
+02:02 +289: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_range_condition_section_test.dart: student filter close and reopen resets range conditions
+02:04 +290: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_scan_diagnostic_test.dart
+02:04 +290: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_scan_diagnostic_test.dart: student diagnostic preserves review evidence and limits repository context
+02:04 +291: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_scan_diagnostic_test.dart: diagnostic rejects incomplete sessions
+02:04 +292: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart
+02:04 +292: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student image compositing layer stays outside the visible asset rect
+02:04 +293: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student grid card path cuts both bottom canvas corners
+02:04 +294: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student grid active rows include one buffer and clamp to bounds
+02:04 +295: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student grid badges follow both top corners and the left rail
+02:04 +296: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student Studio action containers use one size and cadence
+02:04 +297: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 1 sort dropdown follows action cadence and search height
+02:04 +298: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student grid sorting supports known values and missing-last order
+02:04 +299: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student card name text is 1.5x larger with an 80 percent target
+02:04 +300: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Sections 1, 3, and 4 use their explicit intro and outro vectors
+02:04 +301: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 1 and 2 bevels keep an explicit parallel gap
+02:04 +302: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 4 and 3 left bevels share one 80 degree line
+02:04 +303: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: all student foundation sections remain translucent
+02:04 +304: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 3 detail placeholders share their 80 degree rails
+02:04 +305: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 3 stack and Container 4 use one visual gap
+02:04 +306: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 1 buttons preserve the right bevel inset
+02:04 +307: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: star segments and scrollbar track use 80 degree edges
+02:04 +308: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: v6 Korean aliases remain part of student search matching
+02:04 +309: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student containers use the requested shared texture roles
+02:04 +310: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student school names resolve to bundled logo assets
+02:04 +311: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 5 keeps the left rail and halves its previous width
+02:04 +312: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 5 container derives both diagonal edges from its parent
+02:04 +313: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 5 foundation does not repaint Section 2 legacy children
+02:04 +314: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: filter rows use their bottom edge once for diagonal placement
+02:04 +315: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: filter row widths align both right endpoints to one diagonal rail
+02:04 +316: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: viewport fog follows scroll range and both endpoints
+02:04 +317: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student attack and defense colors preserve the v6 mapping
+02:04 +318: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: unowned portrait API preserves the v6 overlay and badge contract
+02:04 +319: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: focused portrait uses the grid rendering and three-badge contract
+02:05 +320: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 1 scan action keeps its runtime handoff
+02:05 +321: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student sections use explicit motion paths and filter swap
+02:06 +322: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: catalog filters persist across the Section 5 toggle and reset
+02:07 +323: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student grid is a single eight-column image grid
+02:07 +324: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student grid only builds the visible rows and one-row buffer
+02:07 +325: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: four-column grid hit targets follow every visible card path
+02:07 +326: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 1 dropdown changes the Section 2 student order
+02:08 +327: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 1 view buttons switch Section 2 to reusable student rows
+02:08 +328: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: right detail indicators render the confirmed student state
+02:08 +329: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: locked weapon leaves the weapon status area empty
+02:08 +330: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: combat stat rows follow the 80 degree parallelogram rail
+02:08 +331: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: combat stat dividers follow the 80 degree parallelogram rail
+02:08 +332: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: skill and equipment separators follow an exact 80 degree line
+02:08 +333: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: bond rank is centered in the remaining right triangle
+02:08 +334: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: bond gauge derives its host from the actual rounded outer path
+02:08 +335: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: inverted bond rank follows the actual left triangle top span
+02:08 +336: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: student triangle texture uses the requested stronger contrast
+02:08 +337: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: Section 4 toggles student attribute and name overlays
+02:09 +338: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/student_studio_layout_test.dart: mock service exposes the complete bundled student catalog
+02:09 +339: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_lobby_scanner_service_test.dart
+02:09 +339: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_lobby_scanner_service_test.dart: decodes a typed P8 tactical lobby candidate
+02:09 +340: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_lobby_scanner_service_test.dart: rejects a non-tactical candidate at the boundary
+02:09 +341: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_page_test.dart
+02:09 +341: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_page_test.dart: tactical empty state fits 1280.0x720.0
+02:10 +342: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_page_test.dart: populated tactical actions fit 1280.0x720.0
+02:10 +343: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_page_test.dart: tactical empty state fits 1440.0x900.0
+02:10 +344: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_page_test.dart: populated tactical actions fit 1440.0x900.0
+02:10 +345: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_page_test.dart: tactical empty state fits 1280.0x960.0
+02:10 +346: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_page_test.dart: populated tactical actions fit 1280.0x960.0
+02:11 +347: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_page_test.dart: records and jokbo modes expose primary actions
+02:11 +348: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_page_test.dart: jokbo copy opens a new editable match draft without saving
+02:11 +349: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart
+02:11 +349: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_process_e2e_test.dart: real Dart to Python tactical save survives process restart
+02:22 +350: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_service_test.dart
+02:23 +350: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_service_test.dart: shared tactical fixture has matching Dart validation results
+02:23 +351: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_service_test.dart: deck preserves fixed slots order and nulls
+02:23 +352: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_service_test.dart: deck rejects wrong counts and duplicates
+02:23 +353: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_service_test.dart: match wire direction and nullable date remain explicit
+02:23 +354: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_service_test.dart: strict validator rejects malformed IDs, states, and errors
+02:23 +355: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_service_test.dart: MockAppService tactical CRUD and revision conflict are deterministic
+02:23 +356: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_share_v1_contract_test.dart
+02:23 +356: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_share_v1_contract_test.dart: P13 shared fixture matches the strict Dart validator
+02:23 +357: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart
+02:24 +357: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_process_e2e_test.dart: real Dart to Python process previews and commits v6 tactical data
+02:29 +358: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_service_test.dart
+02:30 +358: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_service_test.dart: shared tactical v2 fixture has matching Dart validation results
+02:30 +359: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_service_test.dart: slot observations preserve unknown, empty and wildcard separately
+02:30 +360: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_service_test.dart: observed slot requires a canonical ID and hidden slot rejects one
+02:30 +361: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_service_test.dart: deck enforces fixed ordered positions and unique student IDs
+02:30 +362: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tactical_v2_service_test.dart: P9 mutation results keep refresh and link ambiguity typed
+02:30 +363: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart
+02:30 +363: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: title reloads the selected account after backend connection
+02:31 +364: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: student grid warmup follows the initial name sort and viewport cap
+02:31 +365: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: student paint warmup uses the production grid painters
+02:31 +366: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: typed title layout combines the base and revised Studio documents
+02:31 +367: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: typed account layout matches the saved Studio document
+02:31 +368: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: portrait grid trajectory follows one straight 80 degree line
+02:31 +369: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: action palette stays near the softened title-logo pink
+02:31 +370: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: title follows the section studio placement and account state
+02:33 +371: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: title settings button opens the account manager section
+02:33 +372: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: title action textures use the softened logo-pink palette
+02:34 +373: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: account manager uses Studio paths and edits portrait through one painted grid
+02:35 +374: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: account rows follow the slanted list boundary while scrolling
+02:35 +375: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: nested account sections exit independently
+02:36 +376: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: first account editor back returns to the title
+02:36 +377: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: first run imports a v6 account and opens its repository plan
+02:37 +378: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: account deletion is confirmed and manager back reverses title motion
+02:37 +379: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: title text scales inside Studio boxes in a small window
+02:37 +380: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: account editor text remains inside Studio paths in a small window
+02:38 +381: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/title_page_test.dart: an account can be created from the title then enters home
+02:39 +382: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tool_backend_client_process_test.dart
+02:39 +382: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/tool_backend_client_process_test.dart: metadata JSON is decoded as UTF-8 across the Python process boundary
+02:39 +383: loading C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart
+02:40 +383: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: app shell reloads its selected profile after connection
+02:42 +384: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: section motion angles use monitor-space mathematical directions
+02:42 +385: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: lifted path shadow fades toward its lower-right extent
+02:42 +386: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: right-cut section and bilateral buttons share diagonal geometry
+02:42 +387: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: nested header keeps rounded corners and an 80 degree right cut
+02:42 +388: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: diagonal menu row keeps a constant visible seam gap
+02:42 +389: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: triangle texture is deterministic for a stable seed
+02:42 +390: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: all primary sections are reachable from the app shell
+02:44 +391: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: home glass section keeps its fixed aspect ratio
+02:45 +392: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: tabs live inside the aligned header surface
+02:46 +393: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: initial home header and menu enter from 270 and 0 degrees
+02:47 +394: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: selected account portrait is left of the student count
+02:47 +395: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: home menu captions preserve the v6 wash and typography
+02:48 +396: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: mock state is reflected without replacing widgets
+02:48 +397: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: scan tab is service-backed and requires an explicit target
+02:49 +398: C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/test/widget_test.dart: development panel opens as an overlay in a narrow window
+02:50 +399: All tests passed!

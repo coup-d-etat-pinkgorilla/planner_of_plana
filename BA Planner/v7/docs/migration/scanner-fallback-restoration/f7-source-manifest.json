@@ -1,0 +1,79 @@
+{
+  "note": "F7 in progress: D2/R14 unpromoted; F0-F6 historical snapshots unchanged",
+  "files": [
+    {
+      "path": "backend/core/student_equipment_recovery.py",
+      "sha256": "4344a671ce6a770d4861af0bcfacf789a98c9fe64042e0b00d31171760032784"
+    },
+    {
+      "path": "backend/core/student_equipment_recognizer.py",
+      "sha256": "5af320add9574e8f8c5fa789e3e1962282fbd2a97fdc5e2bdcf4d47942bb56d0"
+    },
+    {
+      "path": "backend/core/scanner_matchers.py",
+      "sha256": "2b2402c8bf4ec0c202b6a720bde0b555f86853873195e9ef3a6bf70ec91e40c0"
+    },
+    {
+      "path": "backend/core/scanner_runtime.py",
+      "sha256": "23652e458c0e8a4f47a3f09bf082ca937119ddedbe186bb5642217af907ee88c"
+    },
+    {
+      "path": "backend/core/student_panel_recovery.py",
+      "sha256": "3f69eead05f6a69bff51c7940db9c9e4c277933a094fb40f50a6f9e7452c4b83"
+    },
+    {
+      "path": "backend/core/recognition_assets.py",
+      "sha256": "0e7dfe9ca5bb545ef0199d02f44c5a3f6e9c6c2604c655b60aaa31dea944ff44"
+    },
+    {
+      "path": "backend/tests/test_student_equipment_f7.py",
+      "sha256": "48197c3d23fe8d64d29acf46615f6160c1e198d50f365b82dcaae713e497659f"
+    },
+    {
+      "path": "backend/tests/test_student_equipment_s3.py",
+      "sha256": "6664a8bc4ff7ad7781d52f83a9bedbe061389ea8ed658a2a7d2bd46e1ba2a531"
+    },
+    {
+      "path": "backend/tests/test_recognition_assets.py",
+      "sha256": "feeb94e27674875ecdcb240dc712a6934bce6f3bb7c6a328a01eb2dafe383597"
+    },
+    {
+      "path": "backend/tests/test_scanner_stdio_transport.py",
+      "sha256": "154804d05ba9f6c0128c832e71e5d070831cdf2010c7466b53fcb6f1bbcf104c"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_f7_v6_parity.json",
+      "sha256": "e85d8418f530850e3d05532f6843f6d454630b5f000f337f6fbfaae41453afc9"
+    },
+    {
+      "path": "backend/tests/fixtures/student_equipment_f7_live/manifest.json",
+      "sha256": "fd81cbca1161cb4e3a81a0937e9bdbb30247ae4da4c6877c6dc429f48ecdd05f"
+    },
+    {
+      "path": "backend/assets/recognition/v1/student_equipment_f7_manifest.json",
+      "sha256": "2bd43d8bd168d734c7dc0837ce917dbfcc9ee5e61b56c99aad3e4c63d45f7269"
+    },
+    {
+      "path": "backend/tools/sync_student_equipment_f7_assets.py",
+      "sha256": "8f2f020d7f084136bc7e1670ff509780a7c0aaf8531119aa16d242edb69a72b6"
+    },
+    {
+      "path": "backend/tools/export_student_equipment_f7_fixtures.py",
+      "sha256": "01d7d4d722fdd5ac7ab5cf4a78848c240b9b5808ac973f7b00de08ec2376e955"
+    },
+    {
+      "path": "backend/tools/verify_student_equipment_f7_live.py",
+      "sha256": "7e785a85bb53b585d1ed17d0af197a6c3ff1909a9e3a829eb6524ac510e1fa0b"
+    },
+    {
+      "path": "../v6/core/scanner_components/student.py",
+      "sha256": "332e5488f90a2d9bc24e3c0e12167d777b1f810e35c5501db941e2d58407839c"
+    },
+    {
+      "path": "../v6/core/matcher.py",
+      "sha256": "ce56ebf9ac4ab3c22398938d7c45973d7686785be5e0a2607ef94832290ad2a2"
+    }
+  ],
+  "phase": "F7 R12/R13/R15",
+  "recorded_on": "2026-08-31"
+}

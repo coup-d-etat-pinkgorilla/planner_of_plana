@@ -1,0 +1,602 @@
+{
+  "diagnostic": {
+    "first_missing": false,
+    "form_template_tie": true,
+    "cancel_after_form_read": false
+  },
+  "outcome": "completed",
+  "candidates": [
+    {
+      "payload": {
+        "version": 1,
+        "student_id": "hoshino_battle#2",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 48823,
+          "combat_atk": 8633,
+          "combat_def": 1949,
+          "combat_heal": 5674,
+          "weapon_state": "weapon_equipped",
+          "stat_heal": 0,
+          "equip1": "T10",
+          "equip1_level": 70,
+          "equip2": "T10",
+          "equip2_level": 70,
+          "equip3": "T10",
+          "equip3_level": 70
+        },
+        "provenance": {
+          "student_id": "student_texture_attribute_form",
+          "level": "student_level_studio_position_bank",
+          "bond_rank": "relationship_rank_studio_position_bank",
+          "student_star": "basic_star_color",
+          "ex_skill": "basic_skill_combined",
+          "skill1": "basic_skill_combined",
+          "skill2": "basic_skill_combined",
+          "skill3": "basic_skill_combined",
+          "weapon_level": "basic_weapon_level_glyph",
+          "weapon_star": "basic_weapon_star_color",
+          "combat_hp": "basic_combat_digit",
+          "combat_atk": "basic_combat_digit",
+          "combat_def": "basic_combat_digit",
+          "combat_heal": "basic_combat_digit",
+          "weapon_state": "basic_weapon_state_template",
+          "stat_heal": "potential_badge_absent",
+          "equip1": "equipment_direct_icon_tier",
+          "equip1_level": "equipment_position_binary",
+          "equip2": "equipment_direct_icon_tier",
+          "equip2_level": "equipment_position_binary",
+          "equip3": "equipment_direct_icon_tier",
+          "equip3_level": "equipment_position_binary"
+        }
+      },
+      "evidence": [
+        {
+          "field": "student_id",
+          "status": "ok",
+          "source": "student_texture_attribute_form",
+          "confidence": 0.9861302593954249,
+          "note": "margin=0.148092;form_ref=hoshino_battle#2"
+        },
+        {
+          "field": "level",
+          "status": "ok",
+          "source": "student_level_studio_position_bank",
+          "confidence": 0.6962025316455697,
+          "note": "value=90;labels=['9', '0'];margin=0.092169;shifts=[(0, 0), (0, 0)]"
+        },
+        {
+          "field": "bond_rank",
+          "status": "ok",
+          "source": "relationship_rank_studio_position_bank",
+          "confidence": 0.7096774193548387,
+          "note": "value=24;labels=['2', '4'];margin=0.175287;shifts=[(0, 0), (-1, 0)]"
+        },
+        {
+          "field": "student_star",
+          "status": "ok",
+          "source": "basic_star_color",
+          "confidence": 0.9380005166623597,
+          "note": "raw=4.978300"
+        },
+        {
+          "field": "ex_skill",
+          "status": "ok",
+          "source": "basic_skill_combined",
+          "confidence": 0.8699706014552434,
+          "note": "group=ex;label=max;margin=0.635699"
+        },
+        {
+          "field": "skill1",
+          "status": "ok",
+          "source": "basic_skill_combined",
+          "confidence": 0.9318928964912556,
+          "note": "group=normal;label=max;margin=0.687221"
+        },
+        {
+          "field": "skill2",
+          "status": "ok",
+          "source": "basic_skill_combined",
+          "confidence": 0.9179526293537776,
+          "note": "group=normal;label=max;margin=0.665417"
+        },
+        {
+          "field": "skill3",
+          "status": "ok",
+          "source": "basic_skill_combined",
+          "confidence": 0.7878969165890708,
+          "note": "group=normal;label=max;margin=0.535638"
+        },
+        {
+          "field": "weapon_level",
+          "status": "ok",
+          "source": "basic_weapon_level_glyph",
+          "confidence": 0.5748792270531401,
+          "note": "value=60;margin=0.079384"
+        },
+        {
+          "field": "weapon_star",
+          "status": "ok",
+          "source": "basic_weapon_star_color",
+          "confidence": 0.7892325315005726,
+          "note": "raw=3.894616"
+        },
+        {
+          "field": "combat_hp",
+          "status": "ok",
+          "source": "basic_combat_digit",
+          "confidence": 0.6962025316455697,
+          "note": "group=hp;margin=0.048840;stop=LV"
+        },
+        {
+          "field": "combat_atk",
+          "status": "ok",
+          "source": "basic_combat_digit",
+          "confidence": 0.7125506072874493,
+          "note": "group=atk;margin=0.090522;stop=LV"
+        },
+        {
+          "field": "combat_def",
+          "status": "ok",
+          "source": "basic_combat_digit",
+          "confidence": 0.6333333333333333,
+          "note": "group=def;margin=0.081399;stop=EMPTY"
+        },
+        {
+          "field": "combat_heal",
+          "status": "ok",
+          "source": "basic_combat_digit",
+          "confidence": 0.8145161290322581,
+          "note": "group=heal;margin=0.128267;stop=EMPTY"
+        },
+        {
+          "field": "weapon_state",
+          "status": "ok",
+          "source": "basic_weapon_state_template",
+          "confidence": 0.9561680791402154,
+          "note": "label=weapon_equipped;margin=0.199785"
+        },
+        {
+          "field": "potential_badge_hp",
+          "status": "ok",
+          "source": "potential_badge_color",
+          "confidence": 1,
+          "note": "present;blue_ratio=0.186432"
+        },
+        {
+          "field": "stat_hp",
+          "status": "dependency_missing",
+          "source": "potential_basic_template",
+          "confidence": 0.7045965742883091,
+          "note": "label=25;margin=0.018647"
+        },
+        {
+          "field": "potential_badge_atk",
+          "status": "ok",
+          "source": "potential_badge_color",
+          "confidence": 1,
+          "note": "present;blue_ratio=0.173513"
+        },
+        {
+          "field": "stat_atk",
+          "status": "dependency_missing",
+          "source": "potential_basic_template",
+          "confidence": 0.7113191503616396,
+          "note": "label=25;margin=0.021009"
+        },
+        {
+          "field": "potential_badge_heal",
+          "status": "ok",
+          "source": "potential_badge_color",
+          "confidence": 1.0,
+          "note": "absent;blue_ratio=0.000000"
+        },
+        {
+          "field": "stat_heal",
+          "status": "inferred",
+          "source": "potential_badge_absent",
+          "confidence": 1.0,
+          "note": "blue_ratio=0.000000"
+        },
+        {
+          "field": "equip1",
+          "status": "ok",
+          "source": "equipment_direct_icon_tier",
+          "confidence": 1.0,
+          "note": "family=Hat;tier=T10;margin=0.237652;production_enabled=true"
+        },
+        {
+          "field": "equip1_level",
+          "status": "ok",
+          "source": "equipment_position_binary",
+          "confidence": 0.6710872066637023,
+          "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.070470;production_enabled=true"
+        },
+        {
+          "field": "equip2",
+          "status": "ok",
+          "source": "equipment_direct_icon_tier",
+          "confidence": 1.0,
+          "note": "family=Bag;tier=T10;margin=0.237662;production_enabled=true"
+        },
+        {
+          "field": "equip2_level",
+          "status": "ok",
+          "source": "equipment_position_binary",
+          "confidence": 0.6527848768660847,
+          "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.054378;production_enabled=true"
+        },
+        {
+          "field": "equip3",
+          "status": "ok",
+          "source": "equipment_direct_icon_tier",
+          "confidence": 0.9999999299719888,
+          "note": "family=Watch;tier=T10;margin=0.191411;production_enabled=true"
+        },
+        {
+          "field": "equip3_level",
+          "status": "ok",
+          "source": "equipment_position_binary",
+          "confidence": 0.6508708595009477,
+          "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.054693;production_enabled=true"
+        },
+        {
+          "field": "equip4",
+          "status": "skipped",
+          "source": "favorite_metadata",
+          "confidence": 1.0,
+          "note": "favorite item unsupported on kr"
+        },
+        {
+          "field": "equip1_level",
+          "status": "shadow",
+          "source": "equipment_binary_shadow",
+          "confidence": 0.6240412424513507,
+          "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+        },
+        {
+          "field": "equip2_level",
+          "status": "shadow",
+          "source": "equipment_binary_shadow",
+          "confidence": 0.6021761616622364,
+          "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.068164;iou=0.541485;correlation=0.757976;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+        },
+        {
+          "field": "equip3_level",
+          "status": "shadow",
+          "source": "equipment_binary_shadow",
+          "confidence": 0.5294834965210129,
+          "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+        }
+      ],
+      "review_required": true
+    },
+    {
+      "payload": {
+        "version": 1,
+        "student_id": "hoshino_battle",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "weapon_state": "weapon_equipped",
+          "stat_heal": 0,
+          "equip1": "T10",
+          "equip1_level": 70,
+          "equip2": "T10",
+          "equip2_level": 70,
+          "equip3": "T10",
+          "equip3_level": 70,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771,
+          "combat_heal": 4538
+        },
+        "provenance": {
+          "student_id": "student_form_verified",
+          "level": "student_level_studio_position_bank",
+          "bond_rank": "relationship_rank_studio_position_bank",
+          "student_star": "basic_star_color",
+          "ex_skill": "basic_skill_combined",
+          "skill1": "basic_skill_combined",
+          "skill2": "basic_skill_combined",
+          "skill3": "basic_skill_combined",
+          "weapon_level": "basic_weapon_level_glyph",
+          "weapon_star": "basic_weapon_star_color",
+          "weapon_state": "basic_weapon_state_template",
+          "stat_heal": "potential_badge_absent",
+          "equip1": "equipment_direct_icon_tier",
+          "equip1_level": "equipment_position_binary",
+          "equip2": "equipment_direct_icon_tier",
+          "equip2_level": "equipment_position_binary",
+          "equip3": "equipment_direct_icon_tier",
+          "equip3_level": "equipment_position_binary",
+          "combat_hp": "basic_combat_digit",
+          "combat_atk": "basic_combat_digit",
+          "combat_def": "basic_combat_digit",
+          "combat_heal": "basic_combat_digit"
+        }
+      },
+      "evidence": [
+        {
+          "field": "level",
+          "status": "ok",
+          "source": "student_level_studio_position_bank",
+          "confidence": 0.6962025316455697,
+          "note": "value=90;labels=['9', '0'];margin=0.092169;shifts=[(0, 0), (0, 0)]"
+        },
+        {
+          "field": "bond_rank",
+          "status": "ok",
+          "source": "relationship_rank_studio_position_bank",
+          "confidence": 0.7096774193548387,
+          "note": "value=24;labels=['2', '4'];margin=0.175287;shifts=[(0, 0), (-1, 0)]"
+        },
+        {
+          "field": "student_star",
+          "status": "ok",
+          "source": "basic_star_color",
+          "confidence": 0.9380005166623597,
+          "note": "raw=4.978300"
+        },
+        {
+          "field": "ex_skill",
+          "status": "ok",
+          "source": "basic_skill_combined",
+          "confidence": 0.8699706014552434,
+          "note": "group=ex;label=max;margin=0.635699"
+        },
+        {
+          "field": "skill1",
+          "status": "ok",
+          "source": "basic_skill_combined",
+          "confidence": 0.9318928964912556,
+          "note": "group=normal;label=max;margin=0.687221"
+        },
+        {
+          "field": "skill2",
+          "status": "ok",
+          "source": "basic_skill_combined",
+          "confidence": 0.9179526293537776,
+          "note": "group=normal;label=max;margin=0.665417"
+        },
+        {
+          "field": "skill3",
+          "status": "ok",
+          "source": "basic_skill_combined",
+          "confidence": 0.7878969165890708,
+          "note": "group=normal;label=max;margin=0.535638"
+        },
+        {
+          "field": "weapon_level",
+          "status": "ok",
+          "source": "basic_weapon_level_glyph",
+          "confidence": 0.5748792270531401,
+          "note": "value=60;margin=0.079384"
+        },
+        {
+          "field": "weapon_star",
+          "status": "ok",
+          "source": "basic_weapon_star_color",
+          "confidence": 0.7892325315005726,
+          "note": "raw=3.894616"
+        },
+        {
+          "field": "weapon_state",
+          "status": "ok",
+          "source": "basic_weapon_state_template",
+          "confidence": 0.9561680791402154,
+          "note": "label=weapon_equipped;margin=0.199785"
+        },
+        {
+          "field": "potential_badge_hp",
+          "status": "ok",
+          "source": "potential_badge_color",
+          "confidence": 1,
+          "note": "present;blue_ratio=0.186432"
+        },
+        {
+          "field": "stat_hp",
+          "status": "dependency_missing",
+          "source": "potential_basic_template",
+          "confidence": 0.7045965742883091,
+          "note": "label=25;margin=0.018647"
+        },
+        {
+          "field": "potential_badge_atk",
+          "status": "ok",
+          "source": "potential_badge_color",
+          "confidence": 1,
+          "note": "present;blue_ratio=0.173513"
+        },
+        {
+          "field": "stat_atk",
+          "status": "dependency_missing",
+          "source": "potential_basic_template",
+          "confidence": 0.7113191503616396,
+          "note": "label=25;margin=0.021009"
+        },
+        {
+          "field": "potential_badge_heal",
+          "status": "ok",
+          "source": "potential_badge_color",
+          "confidence": 1.0,
+          "note": "absent;blue_ratio=0.000000"
+        },
+        {
+          "field": "stat_heal",
+          "status": "inferred",
+          "source": "potential_badge_absent",
+          "confidence": 1.0,
+          "note": "blue_ratio=0.000000"
+        },
+        {
+          "field": "equip1",
+          "status": "ok",
+          "source": "equipment_direct_icon_tier",
+          "confidence": 1.0,
+          "note": "family=Hat;tier=T10;margin=0.237652;production_enabled=true"
+        },
+        {
+          "field": "equip1_level",
+          "status": "ok",
+          "source": "equipment_position_binary",
+          "confidence": 0.6710872066637023,
+          "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.070470;production_enabled=true"
+        },
+        {
+          "field": "equip2",
+          "status": "ok",
+          "source": "equipment_direct_icon_tier",
+          "confidence": 1.0,
+          "note": "family=Bag;tier=T10;margin=0.237662;production_enabled=true"
+        },
+        {
+          "field": "equip2_level",
+          "status": "ok",
+          "source": "equipment_position_binary",
+          "confidence": 0.6527848768660847,
+          "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.054378;production_enabled=true"
+        },
+        {
+          "field": "equip3",
+          "status": "ok",
+          "source": "equipment_direct_icon_tier",
+          "confidence": 0.9999999299719888,
+          "note": "family=Watch;tier=T10;margin=0.191411;production_enabled=true"
+        },
+        {
+          "field": "equip3_level",
+          "status": "ok",
+          "source": "equipment_position_binary",
+          "confidence": 0.6508708595009477,
+          "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.054693;production_enabled=true"
+        },
+        {
+          "field": "equip4",
+          "status": "skipped",
+          "source": "favorite_metadata",
+          "confidence": 1.0,
+          "note": "favorite item unsupported on kr"
+        },
+        {
+          "field": "equip1_level",
+          "status": "shadow",
+          "source": "equipment_binary_shadow",
+          "confidence": 0.6240412424513507,
+          "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+        },
+        {
+          "field": "equip2_level",
+          "status": "shadow",
+          "source": "equipment_binary_shadow",
+          "confidence": 0.6021761616622364,
+          "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.068164;iou=0.541485;correlation=0.757976;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+        },
+        {
+          "field": "equip3_level",
+          "status": "shadow",
+          "source": "equipment_binary_shadow",
+          "confidence": 0.5294834965210129,
+          "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+        },
+        {
+          "field": "student_id",
+          "status": "ok",
+          "source": "student_form_verified",
+          "confidence": 0.9860687012073348,
+          "note": "form_ref=hoshino_battle;margin=0.146998"
+        },
+        {
+          "field": "combat_hp",
+          "status": "ok",
+          "source": "basic_combat_digit",
+          "confidence": 0.6813186813186813,
+          "note": "group=hp;margin=0.058673;stop=LV"
+        },
+        {
+          "field": "combat_atk",
+          "status": "ok",
+          "source": "basic_combat_digit",
+          "confidence": 0.7125506072874493,
+          "note": "group=atk;margin=0.096022;stop=LV"
+        },
+        {
+          "field": "combat_def",
+          "status": "ok",
+          "source": "basic_combat_digit",
+          "confidence": 0.6774193548387096,
+          "note": "group=def;margin=0.081643;stop=EMPTY"
+        },
+        {
+          "field": "combat_heal",
+          "status": "ok",
+          "source": "basic_combat_digit",
+          "confidence": 0.8154506437768241,
+          "note": "group=heal;margin=0.086174;stop=EMPTY"
+        }
+      ],
+      "review_required": true
+    }
+  ],
+  "returned_identity": {
+    "student_ref": "hoshino_battle#2",
+    "score": 0.9936451808732752,
+    "margin": 0.159550455019971,
+    "source": "student_texture_attribute_form"
+  },
+  "frames": [
+    "frame-00.png",
+    "frame-01.png",
+    "frame-02.png",
+    "frame-03.png",
+    "frame-04.png",
+    "frame-05.png"
+  ],
+  "inputs": [
+    {
+      "x": 0.08,
+      "y": 0.19,
+      "cleanup": false
+    },
+    {
+      "x": 0.08,
+      "y": 0.27,
+      "cleanup": true
+    }
+  ],
+  "entry_trace": [],
+  "form_trace": [
+    {
+      "input": "form",
+      "form": 1
+    },
+    {
+      "observed": "hoshino_battle"
+    },
+    {
+      "input": "form",
+      "form": 2
+    },
+    {
+      "observed": "hoshino_battle#2"
+    },
+    {
+      "restored": "hoshino_battle#2"
+    }
+  ]
+}

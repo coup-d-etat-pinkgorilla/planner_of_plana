@@ -14,6 +14,7 @@ from core import student_meta
 from core.recognition_assets import RecognitionAssetCatalog
 from core.student_scan_recognizer import Observation, StudentBasicCropSet
 from core.studio_numeric_bank import StudioNumericBank
+from core.student_equipment_recovery import favorite_dot_state
 
 
 EQUIPMENT_MAX_LEVEL = {
@@ -666,7 +667,13 @@ class StudentEquipmentRecognizer:
                 raw_studio.value,
                 raw_studio.score,
                 "ok",
-                "equipment_studio_position_bank",
+                (
+                    "equipment_studio_position_bank_user_confirmed"
+                    if raw_studio.used_user_sample
+                    else "equipment_studio_position_bank_session_calibrated"
+                    if raw_studio.used_session_sample
+                    else "equipment_studio_position_bank"
+                ),
                 (
                     f"slot={slot};tier={tier};candidate={raw_studio.value};"
                     f"labels={list(raw_studio.labels)};margin={raw_studio.margin:.6f};"
@@ -1465,9 +1472,10 @@ class StudentEquipmentRecognizer:
                 unresolved.append(slot)
         if not student_meta.favorite_item_enabled(student_id):
             observations["equip4"] = Observation(None, 1.0, "skipped", "favorite_metadata", "favorite item unsupported on kr")
-        elif self.empty_dot(crops.images.get("basic_favorite_empty_dot_region")):
+        elif favorite_dot_state(crops.images.get("basic_favorite_empty_dot_region"), self.empty_dot) is True:
             observations["equip4"] = Observation("empty", 1.0, "inferred", "equipment_empty_dot", "favorite orange dot present")
-        elif favorite_growth_active is False:
+        elif (favorite_growth_active is False and
+              favorite_dot_state(crops.images.get("basic_favorite_empty_dot_region"), self.empty_dot) is False):
             observations["equip4"] = Observation("love_locked", 1.0, "inferred", "favorite_growth_lock", "growth action inactive")
         else:
             favorite = self.read_favorite(crops.images.get("basic_favorite_tier_region"))
@@ -1499,8 +1507,11 @@ class StudentEquipmentRecognizer:
 class EquipmentMenuRecognizer:
     """Reads only requested slots from one already-open equipment-menu capture."""
 
-    def __init__(self, catalog: RecognitionAssetCatalog) -> None:
+    def __init__(self, catalog: RecognitionAssetCatalog, *, allow_t10_inference: bool = True) -> None:
         self.catalog = catalog
+        # D2-native1280-v1: independent original/stress audit is recorded in F7.
+        # Explicit opt-out preserves the baseline for offline comparisons.
+        self.allow_t10_inference = allow_t10_inference
         self.regions = catalog.region_for_purpose("student", "student-equipment-menu-regions")
         self.tiers = self._group("student-equipment-menu-tier-template")
         self.digits = self._group("student-equipment-menu-digit-template")
@@ -1525,7 +1536,31 @@ class EquipmentMenuRecognizer:
             return None, 0.0, 0.0
         return ranked[0][0], ranked[0][1], ranked[0][1] - (ranked[1][1] if len(ranked) > 1 else 0.0)
 
-    def recognize(self, frame: Image.Image, slots: Iterable[int]) -> dict[str, Observation]:
+    def read_level_cells(self, frame: Image.Image, slot: int) -> tuple[tuple[str | None, float, float], ...]:
+        """Rank numeric ROIs without conditioning either digit on a tier guess."""
+        cells = []
+        for position in (1, 2):
+            region = self.regions.get(f"equipment_{slot}_level_digit_{position}")
+            templates = {key.split(":", 2)[2]: value for key, value in self.digits.items()
+                         if key.startswith(f"{slot}:{position}:")}
+            if not isinstance(region, dict):
+                cells.append((None, 0.0, 0.0))
+                continue
+            with _ratio_crop(frame, region) as crop:
+                cells.append(self._rank(crop, templates))
+        return tuple(cells)
+
+    @staticmethod
+    def can_infer_t10(tier, score, margin, cells, *, source_size, scan_level=True):
+        # Current menu bank only; legacy .66/.72 scores are not interchangeable.
+        # Normal .60 tier threshold remains untouched. Each digit must independently
+        # establish 70, with no skipped/missing/v cell or tier-dependent filtering.
+        return (scan_level and source_size == (1280, 720) and tier == "T10"
+                and .55 <= score < .60 and margin >= .15 and len(cells) == 2
+                and tuple(cell[0] for cell in cells) == ("7", "0")
+                and all(cell[1] >= .80 and cell[2] >= .15 for cell in cells))
+
+    def recognize(self, frame: Image.Image, slots: Iterable[int], *, scan_level: bool = True) -> dict[str, Observation]:
         result: dict[str, Observation] = {}
         for slot in tuple(dict.fromkeys(slots)):
             flag_region = self.regions.get(f"equip{slot}_flag")
@@ -1542,14 +1577,18 @@ class EquipmentMenuRecognizer:
             tier, tier_score, tier_margin = self._rank(_ratio_crop(frame, tier_region), tier_templates) if isinstance(tier_region, dict) else (None, 0.0, 0.0)
             tier_ok = tier in EQUIPMENT_MAX_LEVEL and tier_score >= 0.60
             result[f"equip{slot}"] = Observation(tier if tier_ok else None, tier_score, "ok" if tier_ok else "uncertain", "equipment_menu_tier", f"margin={tier_margin:.6f}")
-            if slot > 3:
+            if slot > 3 or not scan_level:
+                continue
+            cells = self.read_level_cells(frame, slot)
+            if self.allow_t10_inference and self.can_infer_t10(
+                    tier, tier_score, tier_margin, cells, source_size=frame.size, scan_level=scan_level):
+                note = f"level70_implies_t10;policy=D2-native1280-v1;margin={tier_margin:.6f}"
+                result[f"equip{slot}"] = Observation("T10", tier_score, "inferred", "equipment_level70_t10", note)
+                result[f"equip{slot}_level"] = Observation(70, min(c[1] for c in cells), "inferred", "equipment_level70_t10", note)
                 continue
             digits: list[str] = []
             digit_scores: list[float] = []
-            for position in (1, 2):
-                region = self.regions.get(f"equipment_{slot}_level_digit_{position}")
-                templates = {key.split(":", 2)[2]: value for key, value in self.digits.items() if key.startswith(f"{slot}:{position}:")}
-                label, score, _margin = self._rank(_ratio_crop(frame, region), templates) if isinstance(region, dict) else (None, 0.0, 0.0)
+            for label, score, _margin in cells:
                 if label and label != "v":
                     digits.append(label)
                     digit_scores.append(score)

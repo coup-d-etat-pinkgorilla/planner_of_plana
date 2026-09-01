@@ -1,0 +1,2753 @@
+{
+  "schema_version": 1,
+  "evidence_partition": "new_f12_native_scan",
+  "mutations": {
+    "review": 0,
+    "revalidate": 0,
+    "commit": 0
+  },
+  "started_at_utc": "2026-09-01T06:42:22.598300Z",
+  "finished_at_utc": "2026-09-01T06:42:43.675676Z",
+  "elapsed_ms": 21077,
+  "kind": "student",
+  "student_scan_mode": "single",
+  "target": {
+    "id": "hwnd:10a0c5c",
+    "title": "Blue Archive",
+    "status": "ready",
+    "foreground": true
+  },
+  "readiness": {
+    "ready": true,
+    "manifest_version": 1,
+    "source_version": "v6-catalog-v7-layout-2026-07-29",
+    "asset_count": 3051,
+    "missing": [],
+    "corrupt": [],
+    "supported_resolutions": [
+      [
+        1280,
+        720
+      ],
+      [
+        1920,
+        1080
+      ],
+      [
+        2560,
+        1440
+      ]
+    ]
+  },
+  "session": {
+    "id": "7f0d19fa3b1849e28d87de64828450c3",
+    "generation": 1
+  },
+  "cancel_result": null,
+  "errors": [],
+  "events": [
+    {
+      "received_ms": 10253,
+      "sequence": 1,
+      "event_kind": "phase",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 1,
+        "scan_kind": "student",
+        "event_kind": "phase",
+        "phase": "capturing"
+      }
+    },
+    {
+      "received_ms": 10253,
+      "sequence": 2,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 2,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 0,
+        "total": 4,
+        "message_key": "scanner.student.capture"
+      }
+    },
+    {
+      "received_ms": 11459,
+      "sequence": 3,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 3,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 1,
+        "total": 4,
+        "message_key": "scanner.student.identify"
+      }
+    },
+    {
+      "received_ms": 11459,
+      "sequence": 4,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 4,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 1,
+        "total": 4,
+        "message_key": "scanner.student.identify"
+      }
+    },
+    {
+      "received_ms": 11459,
+      "sequence": 5,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 5,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "student_id",
+        "values": {}
+      }
+    },
+    {
+      "received_ms": 11459,
+      "sequence": 6,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 6,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17095,
+      "sequence": 7,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 7,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17095,
+      "sequence": 8,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 8,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "level",
+        "values": {
+          "level": 90
+        }
+      }
+    },
+    {
+      "received_ms": 17095,
+      "sequence": 9,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 9,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17095,
+      "sequence": 10,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 10,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "bond_rank",
+        "values": {
+          "level": 90,
+          "bond_rank": 24
+        }
+      }
+    },
+    {
+      "received_ms": 17095,
+      "sequence": 11,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 11,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17096,
+      "sequence": 12,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 12,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "student_star",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5
+        }
+      }
+    },
+    {
+      "received_ms": 17097,
+      "sequence": 13,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 13,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17097,
+      "sequence": 14,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 14,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "ex_skill",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5
+        }
+      }
+    },
+    {
+      "received_ms": 17097,
+      "sequence": 15,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 15,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17097,
+      "sequence": 16,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 16,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "skill1",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10
+        }
+      }
+    },
+    {
+      "received_ms": 17098,
+      "sequence": 17,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 17,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17098,
+      "sequence": 18,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 18,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "skill2",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10
+        }
+      }
+    },
+    {
+      "received_ms": 17099,
+      "sequence": 19,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 19,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17099,
+      "sequence": 20,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 20,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "skill3",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10
+        }
+      }
+    },
+    {
+      "received_ms": 17100,
+      "sequence": 21,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 21,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17100,
+      "sequence": 22,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 22,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "weapon_level",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60
+        }
+      }
+    },
+    {
+      "received_ms": 17100,
+      "sequence": 23,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 23,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17100,
+      "sequence": 24,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 24,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "weapon_star",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4
+        }
+      }
+    },
+    {
+      "received_ms": 17100,
+      "sequence": 25,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 25,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17101,
+      "sequence": 26,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 26,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "combat_hp",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747
+        }
+      }
+    },
+    {
+      "received_ms": 17101,
+      "sequence": 27,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 27,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17101,
+      "sequence": 28,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 28,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "combat_atk",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383
+        }
+      }
+    },
+    {
+      "received_ms": 17102,
+      "sequence": 29,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 29,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17102,
+      "sequence": 30,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 30,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "combat_def",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771
+        }
+      }
+    },
+    {
+      "received_ms": 17102,
+      "sequence": 31,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 31,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17102,
+      "sequence": 32,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 32,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "combat_heal",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771,
+          "combat_heal": 4538
+        }
+      }
+    },
+    {
+      "received_ms": 17103,
+      "sequence": 33,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 33,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17103,
+      "sequence": 34,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 34,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "weapon_state",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771,
+          "combat_heal": 4538,
+          "weapon_state": "weapon_equipped"
+        }
+      }
+    },
+    {
+      "received_ms": 17103,
+      "sequence": 35,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 35,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17105,
+      "sequence": 36,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 36,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "stat_hp",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771,
+          "combat_heal": 4538,
+          "weapon_state": "weapon_equipped",
+          "stat_hp": 25
+        }
+      }
+    },
+    {
+      "received_ms": 17106,
+      "sequence": 37,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 37,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17106,
+      "sequence": 38,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 38,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "stat_atk",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771,
+          "combat_heal": 4538,
+          "weapon_state": "weapon_equipped",
+          "stat_hp": 25,
+          "stat_atk": 25
+        }
+      }
+    },
+    {
+      "received_ms": 17106,
+      "sequence": 39,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 39,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 2,
+        "total": 4,
+        "message_key": "scanner.student.basic_fields"
+      }
+    },
+    {
+      "received_ms": 17106,
+      "sequence": 40,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 40,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "stat_heal",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771,
+          "combat_heal": 4538,
+          "weapon_state": "weapon_equipped",
+          "stat_hp": 25,
+          "stat_atk": 25,
+          "stat_heal": 0
+        }
+      }
+    },
+    {
+      "received_ms": 17214,
+      "sequence": 41,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 41,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 3,
+        "total": 4,
+        "message_key": "scanner.student.equipment_fields"
+      }
+    },
+    {
+      "received_ms": 17214,
+      "sequence": 42,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 42,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "equip1",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771,
+          "combat_heal": 4538,
+          "weapon_state": "weapon_equipped",
+          "stat_hp": 25,
+          "stat_atk": 25,
+          "stat_heal": 0,
+          "equip1": "T10"
+        }
+      }
+    },
+    {
+      "received_ms": 17214,
+      "sequence": 43,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 43,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 3,
+        "total": 4,
+        "message_key": "scanner.student.equipment_fields"
+      }
+    },
+    {
+      "received_ms": 17214,
+      "sequence": 44,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 44,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "equip1_level",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771,
+          "combat_heal": 4538,
+          "weapon_state": "weapon_equipped",
+          "stat_hp": 25,
+          "stat_atk": 25,
+          "stat_heal": 0,
+          "equip1": "T10",
+          "equip1_level": 70
+        }
+      }
+    },
+    {
+      "received_ms": 17214,
+      "sequence": 45,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 45,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 3,
+        "total": 4,
+        "message_key": "scanner.student.equipment_fields"
+      }
+    },
+    {
+      "received_ms": 17214,
+      "sequence": 46,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 46,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "equip2",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771,
+          "combat_heal": 4538,
+          "weapon_state": "weapon_equipped",
+          "stat_hp": 25,
+          "stat_atk": 25,
+          "stat_heal": 0,
+          "equip1": "T10",
+          "equip1_level": 70,
+          "equip2": "T10"
+        }
+      }
+    },
+    {
+      "received_ms": 17215,
+      "sequence": 47,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 47,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 3,
+        "total": 4,
+        "message_key": "scanner.student.equipment_fields"
+      }
+    },
+    {
+      "received_ms": 17215,
+      "sequence": 48,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 48,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "equip2_level",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771,
+          "combat_heal": 4538,
+          "weapon_state": "weapon_equipped",
+          "stat_hp": 25,
+          "stat_atk": 25,
+          "stat_heal": 0,
+          "equip1": "T10",
+          "equip1_level": 70,
+          "equip2": "T10",
+          "equip2_level": 70
+        }
+      }
+    },
+    {
+      "received_ms": 17215,
+      "sequence": 49,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 49,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 3,
+        "total": 4,
+        "message_key": "scanner.student.equipment_fields"
+      }
+    },
+    {
+      "received_ms": 17215,
+      "sequence": 50,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 50,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "equip3",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771,
+          "combat_heal": 4538,
+          "weapon_state": "weapon_equipped",
+          "stat_hp": 25,
+          "stat_atk": 25,
+          "stat_heal": 0,
+          "equip1": "T10",
+          "equip1_level": 70,
+          "equip2": "T10",
+          "equip2_level": 70,
+          "equip3": "T10"
+        }
+      }
+    },
+    {
+      "received_ms": 17215,
+      "sequence": 51,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 51,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 3,
+        "total": 4,
+        "message_key": "scanner.student.equipment_fields"
+      }
+    },
+    {
+      "received_ms": 17216,
+      "sequence": 52,
+      "event_kind": "feedback",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 52,
+        "scan_kind": "student",
+        "event_kind": "feedback",
+        "student_id": "hoshino_battle",
+        "field": "equip3_level",
+        "values": {
+          "level": 90,
+          "bond_rank": 24,
+          "student_star": 5,
+          "ex_skill": 5,
+          "skill1": 10,
+          "skill2": 10,
+          "skill3": 10,
+          "weapon_level": 60,
+          "weapon_star": 4,
+          "combat_hp": 106747,
+          "combat_atk": 3383,
+          "combat_def": 2771,
+          "combat_heal": 4538,
+          "weapon_state": "weapon_equipped",
+          "stat_hp": 25,
+          "stat_atk": 25,
+          "stat_heal": 0,
+          "equip1": "T10",
+          "equip1_level": 70,
+          "equip2": "T10",
+          "equip2_level": 70,
+          "equip3": "T10",
+          "equip3_level": 70
+        }
+      }
+    },
+    {
+      "received_ms": 17216,
+      "sequence": 53,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 53,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 3,
+        "total": 4,
+        "message_key": "scanner.student.equipment_fields"
+      }
+    },
+    {
+      "received_ms": 17216,
+      "sequence": 54,
+      "event_kind": "progress",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 54,
+        "scan_kind": "student",
+        "event_kind": "progress",
+        "current": 4,
+        "total": 4,
+        "message_key": "scanner.student.matched"
+      }
+    },
+    {
+      "received_ms": 21059,
+      "sequence": 55,
+      "event_kind": "candidate",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 55,
+        "scan_kind": "student",
+        "event_kind": "candidate",
+        "candidate": {
+          "candidate_id": "68776f90a593455f97be2586051ad4cc",
+          "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+          "generation": 1,
+          "revision": 1,
+          "scan_kind": "student",
+          "payload": {
+            "version": 1,
+            "student_id": "hoshino_battle",
+            "values": {
+              "level": 90,
+              "bond_rank": 24,
+              "student_star": 5,
+              "ex_skill": 5,
+              "skill1": 10,
+              "skill2": 10,
+              "skill3": 10,
+              "weapon_level": 60,
+              "weapon_star": 4,
+              "combat_hp": 106747,
+              "combat_atk": 3383,
+              "combat_def": 2771,
+              "combat_heal": 4538,
+              "weapon_state": "weapon_equipped",
+              "stat_hp": 25,
+              "stat_atk": 25,
+              "stat_heal": 0,
+              "equip1": "T10",
+              "equip1_level": 70,
+              "equip2": "T10",
+              "equip2_level": 70,
+              "equip3": "T10",
+              "equip3_level": 70
+            },
+            "provenance": {
+              "student_id": "student_texture_attribute_form",
+              "level": "student_level_studio_position_bank",
+              "bond_rank": "relationship_rank_studio_position_bank",
+              "student_star": "basic_star_color",
+              "ex_skill": "basic_skill_combined",
+              "skill1": "basic_skill_combined",
+              "skill2": "basic_skill_combined",
+              "skill3": "basic_skill_combined",
+              "weapon_level": "basic_weapon_level_glyph",
+              "weapon_star": "basic_weapon_star_color",
+              "combat_hp": "basic_combat_digit",
+              "combat_atk": "basic_combat_digit",
+              "combat_def": "basic_combat_digit",
+              "combat_heal": "basic_combat_digit",
+              "weapon_state": "basic_weapon_state_template",
+              "stat_hp": "potential_hp_template",
+              "stat_atk": "potential_atk_template",
+              "stat_heal": "potential_badge_absent",
+              "equip1": "equipment_direct_icon_tier",
+              "equip1_level": "equipment_position_binary",
+              "equip2": "equipment_direct_icon_tier",
+              "equip2_level": "equipment_position_binary",
+              "equip3": "equipment_direct_icon_tier",
+              "equip3_level": "equipment_position_binary"
+            }
+          },
+          "evidence": [
+            {
+              "field": "student_id",
+              "status": "ok",
+              "source": "student_texture_attribute_form",
+              "confidence": 0.9907708106390705,
+              "note": "margin=0.150651;form_ref=hoshino_battle"
+            },
+            {
+              "field": "level",
+              "status": "ok",
+              "source": "student_level_studio_position_bank",
+              "confidence": 0.6962025316455697,
+              "note": "value=90;labels=['9', '0'];margin=0.092169;shifts=[(0, 0), (0, 0)]"
+            },
+            {
+              "field": "bond_rank",
+              "status": "ok",
+              "source": "relationship_rank_studio_position_bank",
+              "confidence": 0.7096774193548387,
+              "note": "value=24;labels=['2', '4'];margin=0.175287;shifts=[(0, 0), (-1, 0)]"
+            },
+            {
+              "field": "student_star",
+              "status": "ok",
+              "source": "basic_star_color",
+              "confidence": 0.9380005166623597,
+              "note": "raw=4.978300"
+            },
+            {
+              "field": "ex_skill",
+              "status": "ok",
+              "source": "basic_skill_combined",
+              "confidence": 0.8699706014552434,
+              "note": "group=ex;label=max;margin=0.635699"
+            },
+            {
+              "field": "skill1",
+              "status": "ok",
+              "source": "basic_skill_combined",
+              "confidence": 0.9318928964912556,
+              "note": "group=normal;label=max;margin=0.687221"
+            },
+            {
+              "field": "skill2",
+              "status": "ok",
+              "source": "basic_skill_combined",
+              "confidence": 0.9179526293537776,
+              "note": "group=normal;label=max;margin=0.665417"
+            },
+            {
+              "field": "skill3",
+              "status": "ok",
+              "source": "basic_skill_combined",
+              "confidence": 0.7878969165890708,
+              "note": "group=normal;label=max;margin=0.535638"
+            },
+            {
+              "field": "weapon_level",
+              "status": "ok",
+              "source": "basic_weapon_level_glyph",
+              "confidence": 0.5748792270531401,
+              "note": "value=60;margin=0.079384"
+            },
+            {
+              "field": "weapon_star",
+              "status": "ok",
+              "source": "basic_weapon_star_color",
+              "confidence": 0.7892325315005726,
+              "note": "raw=3.894616"
+            },
+            {
+              "field": "combat_hp",
+              "status": "ok",
+              "source": "basic_combat_digit",
+              "confidence": 0.6813186813186813,
+              "note": "group=hp;margin=0.058673;stop=LV"
+            },
+            {
+              "field": "combat_atk",
+              "status": "ok",
+              "source": "basic_combat_digit",
+              "confidence": 0.7125506072874493,
+              "note": "group=atk;margin=0.096022;stop=LV"
+            },
+            {
+              "field": "combat_def",
+              "status": "ok",
+              "source": "basic_combat_digit",
+              "confidence": 0.6774193548387096,
+              "note": "group=def;margin=0.081643;stop=EMPTY"
+            },
+            {
+              "field": "combat_heal",
+              "status": "ok",
+              "source": "basic_combat_digit",
+              "confidence": 0.8154506437768241,
+              "note": "group=heal;margin=0.086174;stop=EMPTY"
+            },
+            {
+              "field": "weapon_state",
+              "status": "ok",
+              "source": "basic_weapon_state_template",
+              "confidence": 0.9561680791402154,
+              "note": "label=weapon_equipped;margin=0.199785"
+            },
+            {
+              "field": "potential_badge_hp",
+              "status": "ok",
+              "source": "potential_badge_color",
+              "confidence": 1,
+              "note": "present;blue_ratio=0.186432"
+            },
+            {
+              "field": "stat_hp",
+              "status": "ok",
+              "source": "potential_hp_template",
+              "confidence": 0.8146342872527663,
+              "note": "label=25;margin=0.101979"
+            },
+            {
+              "field": "potential_badge_atk",
+              "status": "ok",
+              "source": "potential_badge_color",
+              "confidence": 1,
+              "note": "present;blue_ratio=0.173513"
+            },
+            {
+              "field": "stat_atk",
+              "status": "ok",
+              "source": "potential_atk_template",
+              "confidence": 0.870223886419621,
+              "note": "label=25;margin=0.080233"
+            },
+            {
+              "field": "potential_badge_heal",
+              "status": "ok",
+              "source": "potential_badge_color",
+              "confidence": 1.0,
+              "note": "absent;blue_ratio=0.000000"
+            },
+            {
+              "field": "stat_heal",
+              "status": "inferred",
+              "source": "potential_badge_absent",
+              "confidence": 1.0,
+              "note": "blue_ratio=0.000000"
+            },
+            {
+              "field": "equip1",
+              "status": "ok",
+              "source": "equipment_direct_icon_tier",
+              "confidence": 1.0,
+              "note": "family=Hat;tier=T10;margin=0.237652;production_enabled=true"
+            },
+            {
+              "field": "equip1_level",
+              "status": "ok",
+              "source": "equipment_position_binary",
+              "confidence": 0.6710872066637023,
+              "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.070470;production_enabled=true"
+            },
+            {
+              "field": "equip2",
+              "status": "ok",
+              "source": "equipment_direct_icon_tier",
+              "confidence": 1.0,
+              "note": "family=Bag;tier=T10;margin=0.237662;production_enabled=true"
+            },
+            {
+              "field": "equip2_level",
+              "status": "ok",
+              "source": "equipment_position_binary",
+              "confidence": 0.6527848768660847,
+              "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.054378;production_enabled=true"
+            },
+            {
+              "field": "equip3",
+              "status": "ok",
+              "source": "equipment_direct_icon_tier",
+              "confidence": 0.9999999299719888,
+              "note": "family=Watch;tier=T10;margin=0.191411;production_enabled=true"
+            },
+            {
+              "field": "equip3_level",
+              "status": "ok",
+              "source": "equipment_position_binary",
+              "confidence": 0.6508708595009477,
+              "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.054693;production_enabled=true"
+            },
+            {
+              "field": "equip4",
+              "status": "skipped",
+              "source": "favorite_metadata",
+              "confidence": 1.0,
+              "note": "favorite item unsupported on kr"
+            },
+            {
+              "field": "equip1_level",
+              "status": "shadow",
+              "source": "equipment_binary_shadow",
+              "confidence": 0.6240412424513507,
+              "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+            },
+            {
+              "field": "equip2_level",
+              "status": "shadow",
+              "source": "equipment_binary_shadow",
+              "confidence": 0.6021761616622364,
+              "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.068164;iou=0.541485;correlation=0.757976;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+            },
+            {
+              "field": "equip3_level",
+              "status": "shadow",
+              "source": "equipment_binary_shadow",
+              "confidence": 0.5294834965210129,
+              "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+            },
+            {
+              "field": "student_stat_validation",
+              "status": "dependency_missing",
+              "source": "student_stats_v1",
+              "confidence": 0.0,
+              "note": "alternate relationship rank is missing",
+              "details": {
+                "calculation_version": 1,
+                "calculation_scope": "basic_info_primary_stats_with_alternate_relationships",
+                "expected": {
+                  "MaxHP": 104854,
+                  "AttackPower": 3243,
+                  "DefensePower": 2686,
+                  "HealPower": 4538
+                },
+                "observed": {
+                  "MaxHP": 106747,
+                  "AttackPower": 3383,
+                  "DefensePower": 2771,
+                  "HealPower": 4538
+                },
+                "delta": {},
+                "dependencies": [
+                  {
+                    "kind": "alternate_relationship",
+                    "key": "10005"
+                  },
+                  {
+                    "kind": "alternate_relationship",
+                    "key": "10045"
+                  }
+                ],
+                "suggestion": {
+                  "action": "provide_alternate_relationship_ranks"
+                },
+                "contributions": {
+                  "base": {
+                    "flat": {
+                      "MaxHP": 61115,
+                      "AttackPower": 1694,
+                      "DefensePower": 986,
+                      "HealPower": 4538
+                    },
+                    "coefficient_basis_points": {},
+                    "separated_flat": {}
+                  },
+                  "equipment_1": {
+                    "flat": {
+                      "CriticalDamageRate": 2000
+                    },
+                    "coefficient_basis_points": {
+                      "AttackPower": 5000
+                    },
+                    "separated_flat": {}
+                  },
+                  "equipment_2": {
+                    "flat": {
+                      "MaxHP": 14000,
+                      "DefensePower": 1700
+                    },
+                    "coefficient_basis_points": {
+                      "MaxHP": 500
+                    },
+                    "separated_flat": {}
+                  },
+                  "equipment_3": {
+                    "flat": {
+                      "CriticalPoint": 480,
+                      "CriticalDamageRate": 2600
+                    },
+                    "coefficient_basis_points": {
+                      "MaxHP": 1500
+                    },
+                    "separated_flat": {}
+                  },
+                  "unique_weapon": {
+                    "flat": {
+                      "AttackPower": 341,
+                      "MaxHP": 9020,
+                      "HealPower": 0
+                    },
+                    "coefficient_basis_points": {},
+                    "separated_flat": {}
+                  },
+                  "relationship_current_10098": {
+                    "flat": {
+                      "AttackPower": 72,
+                      "MaxHP": 979
+                    },
+                    "coefficient_basis_points": {},
+                    "separated_flat": {}
+                  },
+                  "potential": {
+                    "flat": {
+                      "MaxHP": 2264,
+                      "AttackPower": 55
+                    },
+                    "coefficient_basis_points": {},
+                    "separated_flat": {}
+                  }
+                },
+                "relationship_contributions": [
+                  {
+                    "kind": "current",
+                    "student_id": "hoshino_battle",
+                    "schaledb_id": 10098,
+                    "rank": 24,
+                    "owned": true,
+                    "applied": true,
+                    "modifier": {
+                      "flat": {
+                        "AttackPower": 72,
+                        "MaxHP": 979
+                      },
+                      "coefficient_basis_points": {},
+                      "separated_flat": {}
+                    }
+                  },
+                  {
+                    "kind": "alternate",
+                    "student_id": "hoshino",
+                    "schaledb_id": 10005,
+                    "rank": null,
+                    "owned": true,
+                    "applied": false,
+                    "modifier": null
+                  },
+                  {
+                    "kind": "alternate",
+                    "student_id": "hoshino_swimsuit",
+                    "schaledb_id": 10045,
+                    "rank": null,
+                    "owned": true,
+                    "applied": false,
+                    "modifier": null
+                  }
+                ],
+                "potential_inputs": {
+                  "stat_hp": {
+                    "value": 25,
+                    "source": "potential_hp_template",
+                    "fresh": true
+                  },
+                  "stat_atk": {
+                    "value": 25,
+                    "source": "potential_atk_template",
+                    "fresh": true
+                  },
+                  "stat_heal": {
+                    "value": 0,
+                    "source": "potential_badge_absent",
+                    "fresh": true
+                  }
+                },
+                "validation_status": "dependency_missing"
+              }
+            }
+          ],
+          "review_required": true,
+          "approved": false,
+          "audit": []
+        }
+      }
+    },
+    {
+      "received_ms": 21059,
+      "sequence": 56,
+      "event_kind": "candidate",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 56,
+        "scan_kind": "student",
+        "event_kind": "candidate",
+        "candidate": {
+          "candidate_id": "afdc325820fa4fb698a4f241a87363ab",
+          "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+          "generation": 1,
+          "revision": 1,
+          "scan_kind": "student",
+          "payload": {
+            "version": 1,
+            "student_id": "hoshino_battle#2",
+            "values": {
+              "level": 90,
+              "bond_rank": 24,
+              "student_star": 5,
+              "ex_skill": 5,
+              "skill1": 10,
+              "skill2": 10,
+              "skill3": 10,
+              "weapon_level": 60,
+              "weapon_star": 4,
+              "weapon_state": "weapon_equipped",
+              "stat_hp": 25,
+              "stat_atk": 25,
+              "stat_heal": 0,
+              "equip1": "T10",
+              "equip1_level": 70,
+              "equip2": "T10",
+              "equip2_level": 70,
+              "equip3": "T10",
+              "equip3_level": 70,
+              "combat_hp": 48823,
+              "combat_atk": 8633,
+              "combat_def": 1949,
+              "combat_heal": 5674
+            },
+            "provenance": {
+              "student_id": "student_form_verified",
+              "level": "student_level_studio_position_bank",
+              "bond_rank": "relationship_rank_studio_position_bank",
+              "student_star": "basic_star_color",
+              "ex_skill": "basic_skill_combined",
+              "skill1": "basic_skill_combined",
+              "skill2": "basic_skill_combined",
+              "skill3": "basic_skill_combined",
+              "weapon_level": "basic_weapon_level_glyph",
+              "weapon_star": "basic_weapon_star_color",
+              "weapon_state": "basic_weapon_state_template",
+              "stat_hp": "potential_hp_template",
+              "stat_atk": "potential_atk_template",
+              "stat_heal": "potential_badge_absent",
+              "equip1": "equipment_direct_icon_tier",
+              "equip1_level": "equipment_position_binary",
+              "equip2": "equipment_direct_icon_tier",
+              "equip2_level": "equipment_position_binary",
+              "equip3": "equipment_direct_icon_tier",
+              "equip3_level": "equipment_position_binary",
+              "combat_hp": "basic_combat_digit",
+              "combat_atk": "basic_combat_digit",
+              "combat_def": "basic_combat_digit",
+              "combat_heal": "basic_combat_digit"
+            }
+          },
+          "evidence": [
+            {
+              "field": "level",
+              "status": "ok",
+              "source": "student_level_studio_position_bank",
+              "confidence": 0.6962025316455697,
+              "note": "value=90;labels=['9', '0'];margin=0.092169;shifts=[(0, 0), (0, 0)]"
+            },
+            {
+              "field": "bond_rank",
+              "status": "ok",
+              "source": "relationship_rank_studio_position_bank",
+              "confidence": 0.7096774193548387,
+              "note": "value=24;labels=['2', '4'];margin=0.175287;shifts=[(0, 0), (-1, 0)]"
+            },
+            {
+              "field": "student_star",
+              "status": "ok",
+              "source": "basic_star_color",
+              "confidence": 0.9380005166623597,
+              "note": "raw=4.978300"
+            },
+            {
+              "field": "ex_skill",
+              "status": "ok",
+              "source": "basic_skill_combined",
+              "confidence": 0.8699706014552434,
+              "note": "group=ex;label=max;margin=0.635699"
+            },
+            {
+              "field": "skill1",
+              "status": "ok",
+              "source": "basic_skill_combined",
+              "confidence": 0.9318928964912556,
+              "note": "group=normal;label=max;margin=0.687221"
+            },
+            {
+              "field": "skill2",
+              "status": "ok",
+              "source": "basic_skill_combined",
+              "confidence": 0.9179526293537776,
+              "note": "group=normal;label=max;margin=0.665417"
+            },
+            {
+              "field": "skill3",
+              "status": "ok",
+              "source": "basic_skill_combined",
+              "confidence": 0.7878969165890708,
+              "note": "group=normal;label=max;margin=0.535638"
+            },
+            {
+              "field": "weapon_level",
+              "status": "ok",
+              "source": "basic_weapon_level_glyph",
+              "confidence": 0.5748792270531401,
+              "note": "value=60;margin=0.079384"
+            },
+            {
+              "field": "weapon_star",
+              "status": "ok",
+              "source": "basic_weapon_star_color",
+              "confidence": 0.7892325315005726,
+              "note": "raw=3.894616"
+            },
+            {
+              "field": "weapon_state",
+              "status": "ok",
+              "source": "basic_weapon_state_template",
+              "confidence": 0.9561680791402154,
+              "note": "label=weapon_equipped;margin=0.199785"
+            },
+            {
+              "field": "potential_badge_hp",
+              "status": "ok",
+              "source": "potential_badge_color",
+              "confidence": 1,
+              "note": "present;blue_ratio=0.186432"
+            },
+            {
+              "field": "stat_hp",
+              "status": "ok",
+              "source": "potential_hp_template",
+              "confidence": 0.8146342872527663,
+              "note": "label=25;margin=0.101979"
+            },
+            {
+              "field": "potential_badge_atk",
+              "status": "ok",
+              "source": "potential_badge_color",
+              "confidence": 1,
+              "note": "present;blue_ratio=0.173513"
+            },
+            {
+              "field": "stat_atk",
+              "status": "ok",
+              "source": "potential_atk_template",
+              "confidence": 0.870223886419621,
+              "note": "label=25;margin=0.080233"
+            },
+            {
+              "field": "potential_badge_heal",
+              "status": "ok",
+              "source": "potential_badge_color",
+              "confidence": 1.0,
+              "note": "absent;blue_ratio=0.000000"
+            },
+            {
+              "field": "stat_heal",
+              "status": "inferred",
+              "source": "potential_badge_absent",
+              "confidence": 1.0,
+              "note": "blue_ratio=0.000000"
+            },
+            {
+              "field": "equip1",
+              "status": "ok",
+              "source": "equipment_direct_icon_tier",
+              "confidence": 1.0,
+              "note": "family=Hat;tier=T10;margin=0.237652;production_enabled=true"
+            },
+            {
+              "field": "equip1_level",
+              "status": "ok",
+              "source": "equipment_position_binary",
+              "confidence": 0.6710872066637023,
+              "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.070470;production_enabled=true"
+            },
+            {
+              "field": "equip2",
+              "status": "ok",
+              "source": "equipment_direct_icon_tier",
+              "confidence": 1.0,
+              "note": "family=Bag;tier=T10;margin=0.237662;production_enabled=true"
+            },
+            {
+              "field": "equip2_level",
+              "status": "ok",
+              "source": "equipment_position_binary",
+              "confidence": 0.6527848768660847,
+              "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.054378;production_enabled=true"
+            },
+            {
+              "field": "equip3",
+              "status": "ok",
+              "source": "equipment_direct_icon_tier",
+              "confidence": 0.9999999299719888,
+              "note": "family=Watch;tier=T10;margin=0.191411;production_enabled=true"
+            },
+            {
+              "field": "equip3_level",
+              "status": "ok",
+              "source": "equipment_position_binary",
+              "confidence": 0.6508708595009477,
+              "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.054693;production_enabled=true"
+            },
+            {
+              "field": "equip4",
+              "status": "skipped",
+              "source": "favorite_metadata",
+              "confidence": 1.0,
+              "note": "favorite item unsupported on kr"
+            },
+            {
+              "field": "equip1_level",
+              "status": "shadow",
+              "source": "equipment_binary_shadow",
+              "confidence": 0.6240412424513507,
+              "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+            },
+            {
+              "field": "equip2_level",
+              "status": "shadow",
+              "source": "equipment_binary_shadow",
+              "confidence": 0.6021761616622364,
+              "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.068164;iou=0.541485;correlation=0.757976;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+            },
+            {
+              "field": "equip3_level",
+              "status": "shadow",
+              "source": "equipment_binary_shadow",
+              "confidence": 0.5294834965210129,
+              "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only"
+            },
+            {
+              "field": "student_id",
+              "status": "ok",
+              "source": "student_form_verified",
+              "confidence": 0.9840521741103849,
+              "note": "form_ref=hoshino_battle#2;margin=0.144164"
+            },
+            {
+              "field": "combat_hp",
+              "status": "ok",
+              "source": "basic_combat_digit",
+              "confidence": 0.6962025316455697,
+              "note": "group=hp;margin=0.048840;stop=LV"
+            },
+            {
+              "field": "combat_atk",
+              "status": "ok",
+              "source": "basic_combat_digit",
+              "confidence": 0.7125506072874493,
+              "note": "group=atk;margin=0.090522;stop=LV"
+            },
+            {
+              "field": "combat_def",
+              "status": "ok",
+              "source": "basic_combat_digit",
+              "confidence": 0.6333333333333333,
+              "note": "group=def;margin=0.081399;stop=EMPTY"
+            },
+            {
+              "field": "combat_heal",
+              "status": "ok",
+              "source": "basic_combat_digit",
+              "confidence": 0.8145161290322581,
+              "note": "group=heal;margin=0.128267;stop=EMPTY"
+            },
+            {
+              "field": "student_stat_validation",
+              "status": "partial",
+              "source": "student_stats_v1",
+              "confidence": 0.0,
+              "note": "'student stat data not found: hoshino_battle#2#1'",
+              "details": {
+                "calculation_version": 1,
+                "calculation_scope": "basic_info_primary_stats_with_alternate_relationships",
+                "expected": null,
+                "observed": {},
+                "delta": {},
+                "dependencies": [
+                  {
+                    "kind": "student_static_data",
+                    "key": "hoshino_battle#2"
+                  }
+                ],
+                "suggestion": null,
+                "contributions": {},
+                "relationship_contributions": [],
+                "validation_status": "partial"
+              }
+            }
+          ],
+          "review_required": true,
+          "approved": false,
+          "audit": []
+        }
+      }
+    },
+    {
+      "received_ms": 21059,
+      "sequence": 57,
+      "event_kind": "terminal",
+      "payload": {
+        "session_id": "7f0d19fa3b1849e28d87de64828450c3",
+        "generation": 1,
+        "sequence": 57,
+        "scan_kind": "student",
+        "event_kind": "terminal",
+        "outcome": "completed"
+      }
+    }
+  ],
+  "snapshot": {
+    "terminal": "completed",
+    "last_sequence": 57,
+    "candidate_count": 2,
+    "candidates": [
+      {
+        "id": "68776f90a593455f97be2586051ad4cc",
+        "revision": 1,
+        "review_required": true,
+        "approved": false,
+        "payload": {
+          "version": 1,
+          "student_id": "hoshino_battle",
+          "values": {
+            "level": 90,
+            "bond_rank": 24,
+            "student_star": 5,
+            "ex_skill": 5,
+            "skill1": 10,
+            "skill2": 10,
+            "skill3": 10,
+            "weapon_level": 60,
+            "weapon_star": 4,
+            "combat_hp": 106747,
+            "combat_atk": 3383,
+            "combat_def": 2771,
+            "combat_heal": 4538,
+            "weapon_state": "weapon_equipped",
+            "stat_hp": 25,
+            "stat_atk": 25,
+            "stat_heal": 0,
+            "equip1": "T10",
+            "equip1_level": 70,
+            "equip2": "T10",
+            "equip2_level": 70,
+            "equip3": "T10",
+            "equip3_level": 70
+          },
+          "provenance": {
+            "student_id": "student_texture_attribute_form",
+            "level": "student_level_studio_position_bank",
+            "bond_rank": "relationship_rank_studio_position_bank",
+            "student_star": "basic_star_color",
+            "ex_skill": "basic_skill_combined",
+            "skill1": "basic_skill_combined",
+            "skill2": "basic_skill_combined",
+            "skill3": "basic_skill_combined",
+            "weapon_level": "basic_weapon_level_glyph",
+            "weapon_star": "basic_weapon_star_color",
+            "combat_hp": "basic_combat_digit",
+            "combat_atk": "basic_combat_digit",
+            "combat_def": "basic_combat_digit",
+            "combat_heal": "basic_combat_digit",
+            "weapon_state": "basic_weapon_state_template",
+            "stat_hp": "potential_hp_template",
+            "stat_atk": "potential_atk_template",
+            "stat_heal": "potential_badge_absent",
+            "equip1": "equipment_direct_icon_tier",
+            "equip1_level": "equipment_position_binary",
+            "equip2": "equipment_direct_icon_tier",
+            "equip2_level": "equipment_position_binary",
+            "equip3": "equipment_direct_icon_tier",
+            "equip3_level": "equipment_position_binary"
+          }
+        },
+        "evidence": [
+          {
+            "field": "student_id",
+            "status": "ok",
+            "source": "student_texture_attribute_form",
+            "confidence": 0.9907708106390705,
+            "note": "margin=0.150651;form_ref=hoshino_battle",
+            "details": null
+          },
+          {
+            "field": "level",
+            "status": "ok",
+            "source": "student_level_studio_position_bank",
+            "confidence": 0.6962025316455697,
+            "note": "value=90;labels=['9', '0'];margin=0.092169;shifts=[(0, 0), (0, 0)]",
+            "details": null
+          },
+          {
+            "field": "bond_rank",
+            "status": "ok",
+            "source": "relationship_rank_studio_position_bank",
+            "confidence": 0.7096774193548387,
+            "note": "value=24;labels=['2', '4'];margin=0.175287;shifts=[(0, 0), (-1, 0)]",
+            "details": null
+          },
+          {
+            "field": "student_star",
+            "status": "ok",
+            "source": "basic_star_color",
+            "confidence": 0.9380005166623597,
+            "note": "raw=4.978300",
+            "details": null
+          },
+          {
+            "field": "ex_skill",
+            "status": "ok",
+            "source": "basic_skill_combined",
+            "confidence": 0.8699706014552434,
+            "note": "group=ex;label=max;margin=0.635699",
+            "details": null
+          },
+          {
+            "field": "skill1",
+            "status": "ok",
+            "source": "basic_skill_combined",
+            "confidence": 0.9318928964912556,
+            "note": "group=normal;label=max;margin=0.687221",
+            "details": null
+          },
+          {
+            "field": "skill2",
+            "status": "ok",
+            "source": "basic_skill_combined",
+            "confidence": 0.9179526293537776,
+            "note": "group=normal;label=max;margin=0.665417",
+            "details": null
+          },
+          {
+            "field": "skill3",
+            "status": "ok",
+            "source": "basic_skill_combined",
+            "confidence": 0.7878969165890708,
+            "note": "group=normal;label=max;margin=0.535638",
+            "details": null
+          },
+          {
+            "field": "weapon_level",
+            "status": "ok",
+            "source": "basic_weapon_level_glyph",
+            "confidence": 0.5748792270531401,
+            "note": "value=60;margin=0.079384",
+            "details": null
+          },
+          {
+            "field": "weapon_star",
+            "status": "ok",
+            "source": "basic_weapon_star_color",
+            "confidence": 0.7892325315005726,
+            "note": "raw=3.894616",
+            "details": null
+          },
+          {
+            "field": "combat_hp",
+            "status": "ok",
+            "source": "basic_combat_digit",
+            "confidence": 0.6813186813186813,
+            "note": "group=hp;margin=0.058673;stop=LV",
+            "details": null
+          },
+          {
+            "field": "combat_atk",
+            "status": "ok",
+            "source": "basic_combat_digit",
+            "confidence": 0.7125506072874493,
+            "note": "group=atk;margin=0.096022;stop=LV",
+            "details": null
+          },
+          {
+            "field": "combat_def",
+            "status": "ok",
+            "source": "basic_combat_digit",
+            "confidence": 0.6774193548387096,
+            "note": "group=def;margin=0.081643;stop=EMPTY",
+            "details": null
+          },
+          {
+            "field": "combat_heal",
+            "status": "ok",
+            "source": "basic_combat_digit",
+            "confidence": 0.8154506437768241,
+            "note": "group=heal;margin=0.086174;stop=EMPTY",
+            "details": null
+          },
+          {
+            "field": "weapon_state",
+            "status": "ok",
+            "source": "basic_weapon_state_template",
+            "confidence": 0.9561680791402154,
+            "note": "label=weapon_equipped;margin=0.199785",
+            "details": null
+          },
+          {
+            "field": "potential_badge_hp",
+            "status": "ok",
+            "source": "potential_badge_color",
+            "confidence": 1.0,
+            "note": "present;blue_ratio=0.186432",
+            "details": null
+          },
+          {
+            "field": "stat_hp",
+            "status": "ok",
+            "source": "potential_hp_template",
+            "confidence": 0.8146342872527663,
+            "note": "label=25;margin=0.101979",
+            "details": null
+          },
+          {
+            "field": "potential_badge_atk",
+            "status": "ok",
+            "source": "potential_badge_color",
+            "confidence": 1.0,
+            "note": "present;blue_ratio=0.173513",
+            "details": null
+          },
+          {
+            "field": "stat_atk",
+            "status": "ok",
+            "source": "potential_atk_template",
+            "confidence": 0.870223886419621,
+            "note": "label=25;margin=0.080233",
+            "details": null
+          },
+          {
+            "field": "potential_badge_heal",
+            "status": "ok",
+            "source": "potential_badge_color",
+            "confidence": 1.0,
+            "note": "absent;blue_ratio=0.000000",
+            "details": null
+          },
+          {
+            "field": "stat_heal",
+            "status": "inferred",
+            "source": "potential_badge_absent",
+            "confidence": 1.0,
+            "note": "blue_ratio=0.000000",
+            "details": null
+          },
+          {
+            "field": "equip1",
+            "status": "ok",
+            "source": "equipment_direct_icon_tier",
+            "confidence": 1.0,
+            "note": "family=Hat;tier=T10;margin=0.237652;production_enabled=true",
+            "details": null
+          },
+          {
+            "field": "equip1_level",
+            "status": "ok",
+            "source": "equipment_position_binary",
+            "confidence": 0.6710872066637023,
+            "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.070470;production_enabled=true",
+            "details": null
+          },
+          {
+            "field": "equip2",
+            "status": "ok",
+            "source": "equipment_direct_icon_tier",
+            "confidence": 1.0,
+            "note": "family=Bag;tier=T10;margin=0.237662;production_enabled=true",
+            "details": null
+          },
+          {
+            "field": "equip2_level",
+            "status": "ok",
+            "source": "equipment_position_binary",
+            "confidence": 0.6527848768660847,
+            "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.054378;production_enabled=true",
+            "details": null
+          },
+          {
+            "field": "equip3",
+            "status": "ok",
+            "source": "equipment_direct_icon_tier",
+            "confidence": 0.9999999299719888,
+            "note": "family=Watch;tier=T10;margin=0.191411;production_enabled=true",
+            "details": null
+          },
+          {
+            "field": "equip3_level",
+            "status": "ok",
+            "source": "equipment_position_binary",
+            "confidence": 0.6508708595009477,
+            "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.054693;production_enabled=true",
+            "details": null
+          },
+          {
+            "field": "equip4",
+            "status": "skipped",
+            "source": "favorite_metadata",
+            "confidence": 1.0,
+            "note": "favorite item unsupported on kr",
+            "details": null
+          },
+          {
+            "field": "equip1_level",
+            "status": "shadow",
+            "source": "equipment_binary_shadow",
+            "confidence": 0.6240412424513507,
+            "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only",
+            "details": null
+          },
+          {
+            "field": "equip2_level",
+            "status": "shadow",
+            "source": "equipment_binary_shadow",
+            "confidence": 0.6021761616622364,
+            "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.068164;iou=0.541485;correlation=0.757976;shift_retry=False;production_enabled=false;coverage=digits_7_0_only",
+            "details": null
+          },
+          {
+            "field": "equip3_level",
+            "status": "shadow",
+            "source": "equipment_binary_shadow",
+            "confidence": 0.5294834965210129,
+            "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only",
+            "details": null
+          },
+          {
+            "field": "student_stat_validation",
+            "status": "dependency_missing",
+            "source": "student_stats_v1",
+            "confidence": 0.0,
+            "note": "alternate relationship rank is missing",
+            "details": {
+              "calculation_version": 1,
+              "calculation_scope": "basic_info_primary_stats_with_alternate_relationships",
+              "expected": {
+                "MaxHP": 104854,
+                "AttackPower": 3243,
+                "DefensePower": 2686,
+                "HealPower": 4538
+              },
+              "observed": {
+                "MaxHP": 106747,
+                "AttackPower": 3383,
+                "DefensePower": 2771,
+                "HealPower": 4538
+              },
+              "delta": {},
+              "dependencies": [
+                {
+                  "kind": "alternate_relationship",
+                  "key": "10005"
+                },
+                {
+                  "kind": "alternate_relationship",
+                  "key": "10045"
+                }
+              ],
+              "suggestion": {
+                "action": "provide_alternate_relationship_ranks"
+              },
+              "contributions": {
+                "base": {
+                  "flat": {
+                    "MaxHP": 61115,
+                    "AttackPower": 1694,
+                    "DefensePower": 986,
+                    "HealPower": 4538
+                  },
+                  "coefficient_basis_points": {},
+                  "separated_flat": {}
+                },
+                "equipment_1": {
+                  "flat": {
+                    "CriticalDamageRate": 2000
+                  },
+                  "coefficient_basis_points": {
+                    "AttackPower": 5000
+                  },
+                  "separated_flat": {}
+                },
+                "equipment_2": {
+                  "flat": {
+                    "MaxHP": 14000,
+                    "DefensePower": 1700
+                  },
+                  "coefficient_basis_points": {
+                    "MaxHP": 500
+                  },
+                  "separated_flat": {}
+                },
+                "equipment_3": {
+                  "flat": {
+                    "CriticalPoint": 480,
+                    "CriticalDamageRate": 2600
+                  },
+                  "coefficient_basis_points": {
+                    "MaxHP": 1500
+                  },
+                  "separated_flat": {}
+                },
+                "unique_weapon": {
+                  "flat": {
+                    "AttackPower": 341,
+                    "MaxHP": 9020,
+                    "HealPower": 0
+                  },
+                  "coefficient_basis_points": {},
+                  "separated_flat": {}
+                },
+                "relationship_current_10098": {
+                  "flat": {
+                    "AttackPower": 72,
+                    "MaxHP": 979
+                  },
+                  "coefficient_basis_points": {},
+                  "separated_flat": {}
+                },
+                "potential": {
+                  "flat": {
+                    "MaxHP": 2264,
+                    "AttackPower": 55
+                  },
+                  "coefficient_basis_points": {},
+                  "separated_flat": {}
+                }
+              },
+              "relationship_contributions": [
+                {
+                  "kind": "current",
+                  "student_id": "hoshino_battle",
+                  "schaledb_id": 10098,
+                  "rank": 24,
+                  "owned": true,
+                  "applied": true,
+                  "modifier": {
+                    "flat": {
+                      "AttackPower": 72,
+                      "MaxHP": 979
+                    },
+                    "coefficient_basis_points": {},
+                    "separated_flat": {}
+                  }
+                },
+                {
+                  "kind": "alternate",
+                  "student_id": "hoshino",
+                  "schaledb_id": 10005,
+                  "rank": null,
+                  "owned": true,
+                  "applied": false,
+                  "modifier": null
+                },
+                {
+                  "kind": "alternate",
+                  "student_id": "hoshino_swimsuit",
+                  "schaledb_id": 10045,
+                  "rank": null,
+                  "owned": true,
+                  "applied": false,
+                  "modifier": null
+                }
+              ],
+              "potential_inputs": {
+                "stat_hp": {
+                  "value": 25,
+                  "source": "potential_hp_template",
+                  "fresh": true
+                },
+                "stat_atk": {
+                  "value": 25,
+                  "source": "potential_atk_template",
+                  "fresh": true
+                },
+                "stat_heal": {
+                  "value": 0,
+                  "source": "potential_badge_absent",
+                  "fresh": true
+                }
+              },
+              "validation_status": "dependency_missing"
+            }
+          }
+        ]
+      },
+      {
+        "id": "afdc325820fa4fb698a4f241a87363ab",
+        "revision": 1,
+        "review_required": true,
+        "approved": false,
+        "payload": {
+          "version": 1,
+          "student_id": "hoshino_battle#2",
+          "values": {
+            "level": 90,
+            "bond_rank": 24,
+            "student_star": 5,
+            "ex_skill": 5,
+            "skill1": 10,
+            "skill2": 10,
+            "skill3": 10,
+            "weapon_level": 60,
+            "weapon_star": 4,
+            "weapon_state": "weapon_equipped",
+            "stat_hp": 25,
+            "stat_atk": 25,
+            "stat_heal": 0,
+            "equip1": "T10",
+            "equip1_level": 70,
+            "equip2": "T10",
+            "equip2_level": 70,
+            "equip3": "T10",
+            "equip3_level": 70,
+            "combat_hp": 48823,
+            "combat_atk": 8633,
+            "combat_def": 1949,
+            "combat_heal": 5674
+          },
+          "provenance": {
+            "student_id": "student_form_verified",
+            "level": "student_level_studio_position_bank",
+            "bond_rank": "relationship_rank_studio_position_bank",
+            "student_star": "basic_star_color",
+            "ex_skill": "basic_skill_combined",
+            "skill1": "basic_skill_combined",
+            "skill2": "basic_skill_combined",
+            "skill3": "basic_skill_combined",
+            "weapon_level": "basic_weapon_level_glyph",
+            "weapon_star": "basic_weapon_star_color",
+            "weapon_state": "basic_weapon_state_template",
+            "stat_hp": "potential_hp_template",
+            "stat_atk": "potential_atk_template",
+            "stat_heal": "potential_badge_absent",
+            "equip1": "equipment_direct_icon_tier",
+            "equip1_level": "equipment_position_binary",
+            "equip2": "equipment_direct_icon_tier",
+            "equip2_level": "equipment_position_binary",
+            "equip3": "equipment_direct_icon_tier",
+            "equip3_level": "equipment_position_binary",
+            "combat_hp": "basic_combat_digit",
+            "combat_atk": "basic_combat_digit",
+            "combat_def": "basic_combat_digit",
+            "combat_heal": "basic_combat_digit"
+          }
+        },
+        "evidence": [
+          {
+            "field": "level",
+            "status": "ok",
+            "source": "student_level_studio_position_bank",
+            "confidence": 0.6962025316455697,
+            "note": "value=90;labels=['9', '0'];margin=0.092169;shifts=[(0, 0), (0, 0)]",
+            "details": null
+          },
+          {
+            "field": "bond_rank",
+            "status": "ok",
+            "source": "relationship_rank_studio_position_bank",
+            "confidence": 0.7096774193548387,
+            "note": "value=24;labels=['2', '4'];margin=0.175287;shifts=[(0, 0), (-1, 0)]",
+            "details": null
+          },
+          {
+            "field": "student_star",
+            "status": "ok",
+            "source": "basic_star_color",
+            "confidence": 0.9380005166623597,
+            "note": "raw=4.978300",
+            "details": null
+          },
+          {
+            "field": "ex_skill",
+            "status": "ok",
+            "source": "basic_skill_combined",
+            "confidence": 0.8699706014552434,
+            "note": "group=ex;label=max;margin=0.635699",
+            "details": null
+          },
+          {
+            "field": "skill1",
+            "status": "ok",
+            "source": "basic_skill_combined",
+            "confidence": 0.9318928964912556,
+            "note": "group=normal;label=max;margin=0.687221",
+            "details": null
+          },
+          {
+            "field": "skill2",
+            "status": "ok",
+            "source": "basic_skill_combined",
+            "confidence": 0.9179526293537776,
+            "note": "group=normal;label=max;margin=0.665417",
+            "details": null
+          },
+          {
+            "field": "skill3",
+            "status": "ok",
+            "source": "basic_skill_combined",
+            "confidence": 0.7878969165890708,
+            "note": "group=normal;label=max;margin=0.535638",
+            "details": null
+          },
+          {
+            "field": "weapon_level",
+            "status": "ok",
+            "source": "basic_weapon_level_glyph",
+            "confidence": 0.5748792270531401,
+            "note": "value=60;margin=0.079384",
+            "details": null
+          },
+          {
+            "field": "weapon_star",
+            "status": "ok",
+            "source": "basic_weapon_star_color",
+            "confidence": 0.7892325315005726,
+            "note": "raw=3.894616",
+            "details": null
+          },
+          {
+            "field": "weapon_state",
+            "status": "ok",
+            "source": "basic_weapon_state_template",
+            "confidence": 0.9561680791402154,
+            "note": "label=weapon_equipped;margin=0.199785",
+            "details": null
+          },
+          {
+            "field": "potential_badge_hp",
+            "status": "ok",
+            "source": "potential_badge_color",
+            "confidence": 1.0,
+            "note": "present;blue_ratio=0.186432",
+            "details": null
+          },
+          {
+            "field": "stat_hp",
+            "status": "ok",
+            "source": "potential_hp_template",
+            "confidence": 0.8146342872527663,
+            "note": "label=25;margin=0.101979",
+            "details": null
+          },
+          {
+            "field": "potential_badge_atk",
+            "status": "ok",
+            "source": "potential_badge_color",
+            "confidence": 1.0,
+            "note": "present;blue_ratio=0.173513",
+            "details": null
+          },
+          {
+            "field": "stat_atk",
+            "status": "ok",
+            "source": "potential_atk_template",
+            "confidence": 0.870223886419621,
+            "note": "label=25;margin=0.080233",
+            "details": null
+          },
+          {
+            "field": "potential_badge_heal",
+            "status": "ok",
+            "source": "potential_badge_color",
+            "confidence": 1.0,
+            "note": "absent;blue_ratio=0.000000",
+            "details": null
+          },
+          {
+            "field": "stat_heal",
+            "status": "inferred",
+            "source": "potential_badge_absent",
+            "confidence": 1.0,
+            "note": "blue_ratio=0.000000",
+            "details": null
+          },
+          {
+            "field": "equip1",
+            "status": "ok",
+            "source": "equipment_direct_icon_tier",
+            "confidence": 1.0,
+            "note": "family=Hat;tier=T10;margin=0.237652;production_enabled=true",
+            "details": null
+          },
+          {
+            "field": "equip1_level",
+            "status": "ok",
+            "source": "equipment_position_binary",
+            "confidence": 0.6710872066637023,
+            "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.070470;production_enabled=true",
+            "details": null
+          },
+          {
+            "field": "equip2",
+            "status": "ok",
+            "source": "equipment_direct_icon_tier",
+            "confidence": 1.0,
+            "note": "family=Bag;tier=T10;margin=0.237662;production_enabled=true",
+            "details": null
+          },
+          {
+            "field": "equip2_level",
+            "status": "ok",
+            "source": "equipment_position_binary",
+            "confidence": 0.6527848768660847,
+            "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.054378;production_enabled=true",
+            "details": null
+          },
+          {
+            "field": "equip3",
+            "status": "ok",
+            "source": "equipment_direct_icon_tier",
+            "confidence": 0.9999999299719888,
+            "note": "family=Watch;tier=T10;margin=0.191411;production_enabled=true",
+            "details": null
+          },
+          {
+            "field": "equip3_level",
+            "status": "ok",
+            "source": "equipment_position_binary",
+            "confidence": 0.6508708595009477,
+            "note": "tier=T10;candidate=70;labels=['7', '0'];margin=0.054693;production_enabled=true",
+            "details": null
+          },
+          {
+            "field": "equip4",
+            "status": "skipped",
+            "source": "favorite_metadata",
+            "confidence": 1.0,
+            "note": "favorite item unsupported on kr",
+            "details": null
+          },
+          {
+            "field": "equip1_level",
+            "status": "shadow",
+            "source": "equipment_binary_shadow",
+            "confidence": 0.6240412424513507,
+            "note": "slot=1;tier=T10;value=70;labels=['7', '0'];margin=0.064205;iou=0.575163;correlation=0.770675;shift_retry=False;production_enabled=false;coverage=digits_7_0_only",
+            "details": null
+          },
+          {
+            "field": "equip2_level",
+            "status": "shadow",
+            "source": "equipment_binary_shadow",
+            "confidence": 0.6021761616622364,
+            "note": "slot=2;tier=T10;value=70;labels=['7', '0'];margin=0.068164;iou=0.541485;correlation=0.757976;shift_retry=False;production_enabled=false;coverage=digits_7_0_only",
+            "details": null
+          },
+          {
+            "field": "equip3_level",
+            "status": "shadow",
+            "source": "equipment_binary_shadow",
+            "confidence": 0.5294834965210129,
+            "note": "slot=3;tier=T10;value=70;labels=['7', '0'];margin=0.049391;iou=0.459459;correlation=0.737302;shift_retry=False;production_enabled=false;coverage=digits_7_0_only",
+            "details": null
+          },
+          {
+            "field": "student_id",
+            "status": "ok",
+            "source": "student_form_verified",
+            "confidence": 0.9840521741103849,
+            "note": "form_ref=hoshino_battle#2;margin=0.144164",
+            "details": null
+          },
+          {
+            "field": "combat_hp",
+            "status": "ok",
+            "source": "basic_combat_digit",
+            "confidence": 0.6962025316455697,
+            "note": "group=hp;margin=0.048840;stop=LV",
+            "details": null
+          },
+          {
+            "field": "combat_atk",
+            "status": "ok",
+            "source": "basic_combat_digit",
+            "confidence": 0.7125506072874493,
+            "note": "group=atk;margin=0.090522;stop=LV",
+            "details": null
+          },
+          {
+            "field": "combat_def",
+            "status": "ok",
+            "source": "basic_combat_digit",
+            "confidence": 0.6333333333333333,
+            "note": "group=def;margin=0.081399;stop=EMPTY",
+            "details": null
+          },
+          {
+            "field": "combat_heal",
+            "status": "ok",
+            "source": "basic_combat_digit",
+            "confidence": 0.8145161290322581,
+            "note": "group=heal;margin=0.128267;stop=EMPTY",
+            "details": null
+          },
+          {
+            "field": "student_stat_validation",
+            "status": "partial",
+            "source": "student_stats_v1",
+            "confidence": 0.0,
+            "note": "'student stat data not found: hoshino_battle#2#1'",
+            "details": {
+              "calculation_version": 1,
+              "calculation_scope": "basic_info_primary_stats_with_alternate_relationships",
+              "expected": null,
+              "observed": {},
+              "delta": {},
+              "dependencies": [
+                {
+                  "kind": "student_static_data",
+                  "key": "hoshino_battle#2"
+                }
+              ],
+              "suggestion": null,
+              "contributions": {},
+              "relationship_contributions": [],
+              "validation_status": "partial"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

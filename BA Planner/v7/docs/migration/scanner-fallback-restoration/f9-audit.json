@@ -1,0 +1,425 @@
+{
+  "asset_status": {
+    "ready": true,
+    "manifest_version": 1,
+    "source_version": "v6-catalog-v7-layout-2026-07-29",
+    "asset_count": 3046,
+    "missing": [],
+    "corrupt": [],
+    "supported_resolutions": [
+      [
+        1280,
+        720
+      ],
+      [
+        1920,
+        1080
+      ],
+      [
+        2560,
+        1440
+      ]
+    ]
+  },
+  "source_hashes_verified": 17,
+  "previous_snapshot": {
+    "path": "docs/migration/scanner-fallback-restoration/f8-source-manifest.json",
+    "sha256": "c2bf023fcbb74b8cd0b4b3926e5ad2840b82db4526f705d155b9442a413ae8e6"
+  },
+  "native_hashes_verified": 7,
+  "native_partition": "development_calibration_not_holdout",
+  "native_expectations": [
+    {
+      "file": "item.png",
+      "source": "debug/scanner_f9_live/item-initial/frame.png",
+      "source_kind": "item",
+      "identity": "Item_Icon_SkillBook_Hyakkiyako_0",
+      "count": "2344",
+      "selected_slot": 0,
+      "sha256": "cdf1c8ed02d6ef0bba5ba14d998490d84e220e11a8e6a90d62c4a997e0c782a2"
+    },
+    {
+      "file": "equipment.png",
+      "source": "debug/scanner_f9_live/equipment-initial/frame.png",
+      "source_kind": "equipment",
+      "identity": "Equipment_Icon_Exp_3",
+      "count": "116",
+      "selected_slot": 0,
+      "sha256": "f8f6aa8f9ba1c559f6fb9a4b7f4a5097018d327bc91ca3727b3bbd74ac5f14a2"
+    },
+    {
+      "file": "item-selected1.png",
+      "source": "debug/scanner_f9_live/item-slot1/frame-02.png",
+      "source_kind": "item",
+      "identity": "Item_Icon_SkillBook_Hyakkiyako_1",
+      "count": "843",
+      "selected_slot": 1,
+      "sha256": "4e9e9ae2f09c04d88e898e9ba5576621fd641902193097c115f0843e6618068e"
+    },
+    {
+      "file": "equipment-necklace10.png",
+      "source": "debug/scanner_f9_live/equipment-slot13/frame-04.png",
+      "source_kind": "equipment",
+      "identity": "Equipment_Icon_Necklace_Tier10",
+      "count": "306",
+      "selected_slot": 13,
+      "sha256": "0dcfcfccdea823c2f51d68b50b1ef07bc26df9ae9b69a52c52804eec0522def5"
+    },
+    {
+      "file": "equipment-weak-count.png",
+      "source": "debug/scanner_f9_live/equipment-slot1-retry/frame-04.png",
+      "source_kind": "equipment",
+      "identity": "Equipment_Icon_Exp_2",
+      "count": null,
+      "selected_slot": 1,
+      "sha256": "f3d8000a44560daacb39dfa0072ca9ffc40dff50053e74d05984e07b3c06ef24"
+    },
+    {
+      "file": "equipment-unknown-id.png",
+      "source": "debug/scanner_f9_live/equipment-slot4/frame-03.png",
+      "source_kind": "equipment",
+      "identity": null,
+      "count": "1934",
+      "selected_slot": 4,
+      "sha256": "3b252a54d74e211c2258a719544ad3bdbd499b96611d3d3616272b9d6555bc03"
+    },
+    {
+      "file": "equipment-faded-selection.png",
+      "source": "debug/scanner_f9_live/equipment-slot1/frame-00.png",
+      "source_kind": "equipment",
+      "identity": "Equipment_Icon_Exp_3",
+      "count": "116",
+      "selected_slot": null,
+      "sha256": "6ecb2760a2351d368df3246cff350615579f82cdb085c8fe30e384c7cd77ca74"
+    }
+  ],
+  "live_traces": {
+    "equipment-slot13": {
+      "size": [
+        1280,
+        720
+      ],
+      "source": "equipment",
+      "original_selected": 0,
+      "result": {
+        "identity": "Equipment_Icon_Necklace_Tier10",
+        "score": 0.9729674047435561,
+        "margin": 0.2385395467360043,
+        "count": {
+          "value": "306",
+          "score": 0.8589242069482202,
+          "reason": "",
+          "source": "inventory_detail_count"
+        },
+        "source": "inventory_detail_template"
+      },
+      "frames": [
+        "frame-00.png",
+        "frame-01.png",
+        "frame-02.png",
+        "frame-03.png",
+        "frame-04.png",
+        "frame-05.png",
+        "frame-06.png",
+        "frame-07.png"
+      ],
+      "inputs": [
+        {
+          "x": 0.8383,
+          "y": 0.5687,
+          "cleanup": false
+        },
+        {
+          "x": 0.5828,
+          "y": 0.2875,
+          "cleanup": true
+        }
+      ],
+      "trace": [
+        {
+          "input": "select_slot",
+          "slot": 13,
+          "cleanup": false
+        },
+        {
+          "input": "select_slot",
+          "slot": 0,
+          "cleanup": true
+        },
+        {
+          "restored": 0
+        }
+      ]
+    },
+    "equipment-cancel": {
+      "size": [
+        1280,
+        720
+      ],
+      "source": "equipment",
+      "original_selected": 0,
+      "error": {
+        "code": "cancelled",
+        "message": "inventory detail read cancelled after safe restore"
+      },
+      "frames": [
+        "frame-00.png",
+        "frame-01.png",
+        "frame-02.png",
+        "frame-03.png",
+        "frame-04.png",
+        "frame-05.png",
+        "frame-06.png"
+      ],
+      "inputs": [
+        {
+          "x": 0.8383,
+          "y": 0.5687,
+          "cleanup": false
+        },
+        {
+          "x": 0.5828,
+          "y": 0.2875,
+          "cleanup": true
+        }
+      ],
+      "trace": [
+        {
+          "input": "select_slot",
+          "slot": 13,
+          "cleanup": false
+        },
+        {
+          "input": "select_slot",
+          "slot": 0,
+          "cleanup": true
+        },
+        {
+          "restored": 0
+        }
+      ]
+    },
+    "item-slot1": {
+      "size": [
+        1280,
+        720
+      ],
+      "source": "item",
+      "original_selected": 0,
+      "result": {
+        "identity": "Item_Icon_SkillBook_Hyakkiyako_1",
+        "score": 0.957757343047234,
+        "margin": 0.019406677440464315,
+        "count": {
+          "value": "843",
+          "score": 0.855186739942553,
+          "reason": "",
+          "source": "inventory_detail_count"
+        },
+        "source": "inventory_detail_template"
+      },
+      "frames": [
+        "frame-00.png",
+        "frame-01.png",
+        "frame-02.png",
+        "frame-03.png",
+        "frame-04.png"
+      ],
+      "inputs": [
+        {
+          "x": 0.6695,
+          "y": 0.2875,
+          "cleanup": false
+        },
+        {
+          "x": 0.5844,
+          "y": 0.2875,
+          "cleanup": true
+        }
+      ],
+      "trace": [
+        {
+          "input": "select_slot",
+          "slot": 1,
+          "cleanup": false
+        },
+        {
+          "input": "select_slot",
+          "slot": 0,
+          "cleanup": true
+        },
+        {
+          "restored": 0
+        }
+      ]
+    },
+    "item-cancel": {
+      "size": [
+        1280,
+        720
+      ],
+      "source": "item",
+      "original_selected": 0,
+      "error": {
+        "code": "cancelled",
+        "message": "inventory detail read cancelled after safe restore"
+      },
+      "frames": [
+        "frame-00.png",
+        "frame-01.png",
+        "frame-02.png",
+        "frame-03.png",
+        "frame-04.png"
+      ],
+      "inputs": [
+        {
+          "x": 0.6695,
+          "y": 0.2875,
+          "cleanup": false
+        },
+        {
+          "x": 0.5844,
+          "y": 0.2875,
+          "cleanup": true
+        }
+      ],
+      "trace": [
+        {
+          "input": "select_slot",
+          "slot": 1,
+          "cleanup": false
+        },
+        {
+          "input": "select_slot",
+          "slot": 0,
+          "cleanup": true
+        },
+        {
+          "restored": 0
+        }
+      ]
+    },
+    "equipment-slot1-retry": {
+      "size": [
+        1280,
+        720
+      ],
+      "source": "equipment",
+      "original_selected": 0,
+      "result": {
+        "identity": "Equipment_Icon_Exp_2",
+        "score": 0.9723758595560734,
+        "margin": 0.11543567909390395,
+        "count": {
+          "value": null,
+          "score": 0.8575242288608245,
+          "reason": "weak_digit_match",
+          "source": "inventory_detail_count"
+        },
+        "source": "inventory_detail_template"
+      },
+      "frames": [
+        "frame-00.png",
+        "frame-01.png",
+        "frame-02.png",
+        "frame-03.png",
+        "frame-04.png",
+        "frame-05.png",
+        "frame-06.png",
+        "frame-07.png",
+        "frame-08.png"
+      ],
+      "inputs": [
+        {
+          "x": 0.668,
+          "y": 0.2875,
+          "cleanup": false
+        },
+        {
+          "x": 0.5828,
+          "y": 0.2875,
+          "cleanup": true
+        }
+      ],
+      "trace": [
+        {
+          "input": "select_slot",
+          "slot": 1,
+          "cleanup": false
+        },
+        {
+          "input": "select_slot",
+          "slot": 0,
+          "cleanup": true
+        },
+        {
+          "restored": 0
+        }
+      ]
+    },
+    "equipment-slot4": {
+      "size": [
+        1280,
+        720
+      ],
+      "source": "equipment",
+      "original_selected": null,
+      "result": {
+        "identity": null,
+        "score": 0.6676714691790518,
+        "margin": 0.00766347685703872,
+        "count": {
+          "value": "1934",
+          "score": 0.9256763011850873,
+          "reason": "",
+          "source": "inventory_detail_count"
+        },
+        "source": "inventory_detail_template"
+      },
+      "frames": [
+        "frame-00.png",
+        "frame-01.png",
+        "frame-02.png",
+        "frame-03.png",
+        "frame-04.png",
+        "frame-05.png",
+        "frame-06.png",
+        "frame-07.png"
+      ],
+      "inputs": [
+        {
+          "x": 0.9234,
+          "y": 0.2875,
+          "cleanup": false
+        },
+        {
+          "x": 0.5828,
+          "y": 0.2875,
+          "cleanup": true
+        }
+      ],
+      "trace": [
+        {
+          "input": "select_slot",
+          "slot": 4,
+          "cleanup": false
+        },
+        {
+          "input": "select_slot",
+          "slot": 0,
+          "cleanup": true
+        },
+        {
+          "restored": 0
+        }
+      ]
+    }
+  },
+  "limits": [
+    "fast grid zero-input verified by adapter regression, not full live scan",
+    "Exp2 actual24890 remains weak_digit_match; new blueprint ID remains unknown",
+    "filter/sort/profile validation/scroll F10; native2560 and broader coverage F12"
+  ],
+  "profile_writes": 0,
+  "permanent_learning": 0
+}

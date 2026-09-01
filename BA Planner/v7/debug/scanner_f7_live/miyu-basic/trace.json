@@ -1,0 +1,67 @@
+{
+  "state": "basic",
+  "visually_reviewed_student": "miyu",
+  "growth": {
+    "value": false,
+    "confidence": 0.9185525240580237,
+    "status": "ok",
+    "source": "equipment_growth_template",
+    "note": "margin=0.128846"
+  },
+  "favorite_dot": null,
+  "fields": {
+    "equip1": {
+      "value": "empty",
+      "confidence": 1.0,
+      "status": "inferred",
+      "source": "equipment_empty_dot",
+      "note": "orange dot present"
+    },
+    "equip1_level": {
+      "value": null,
+      "confidence": 1.0,
+      "status": "skipped",
+      "source": "equipment_empty_dot",
+      "note": "slot empty"
+    },
+    "equip2": {
+      "value": "level_locked",
+      "confidence": 1.0,
+      "status": "inferred",
+      "source": "student_level_unlock_rule",
+      "note": "student_level=1;unlock=10"
+    },
+    "equip2_level": {
+      "value": null,
+      "confidence": 1.0,
+      "status": "skipped",
+      "source": "student_level_unlock_rule",
+      "note": "slot locked"
+    },
+    "equip3": {
+      "value": "level_locked",
+      "confidence": 1.0,
+      "status": "inferred",
+      "source": "student_level_unlock_rule",
+      "note": "student_level=1;unlock=20"
+    },
+    "equip3_level": {
+      "value": null,
+      "confidence": 1.0,
+      "status": "skipped",
+      "source": "student_level_unlock_rule",
+      "note": "slot locked"
+    },
+    "equip4": {
+      "value": null,
+      "confidence": 0.0,
+      "status": "uncertain",
+      "source": "favorite_tier_template",
+      "note": "tier=T1;margin=0.000000"
+    }
+  },
+  "unresolved": [
+    4
+  ],
+  "inputs": 0
+}

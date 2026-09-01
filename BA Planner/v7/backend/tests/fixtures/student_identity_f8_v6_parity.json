@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "characterized_before_adaptation": true,
+  "legacy": {
+    "identity_attempts": 2,
+    "identity_retry_delay": 0.6,
+    "first_entry_recovery_cycles": 1,
+    "after_entry_attempts": 2,
+    "attribute_score": 0.90,
+    "attribute_margin": 0.10,
+    "attribute_pool_min_fields": 3,
+    "attribute_pool_max": 32,
+    "form_template_score": 0.60,
+    "form_template_margin": 0.025,
+    "unsafe_form_attribute_default": 1,
+    "form_return": "original form after other-form combat reads"
+  },
+  "v7_contract": {
+    "identity_attempts": 2,
+    "first_entry_recovery_cycles": 1,
+    "no_input_on_unknown_screen": true,
+    "attributes_never_identify_a_student_alone": true,
+    "form_attribute_ties": "unknown, never default form1",
+    "candidate_key": "canonical student form ref, e.g. hoshino_battle#2",
+    "navigation_dedup_key": "canonical base student id",
+    "other_form_payload": "shared growth fields plus independently read combat fields; no borrowed combat values or training crops",
+    "unverified_return": "safe stop; retain earlier completed candidates"
+  }
+}

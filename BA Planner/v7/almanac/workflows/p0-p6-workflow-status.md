@@ -10,6 +10,628 @@ sources:
 
 # P0-P6 Workflow Status
 
+### 2026-09-01 F12 and F0-F12 workflow complete; D2 limitation accepted as risk
+
+- Applied three arbitrary 16:9 game-window client sizes and ran the production Dart-to-Python student
+  probe after each change: 1280x720, DPI-scaled logical 1079x607 (integer-rounded 16:9), and 960x540.
+- All three runs completed on Mika and read equipment slots 1-3 as T10/Lv70. D2
+  `equipment_level70_t10` inference evidence was zero in every run; direct recognition was sufficient.
+  Review, revalidation, and commit mutations were also zero.
+- The user explicitly accepted the unobserved natural low-score T10/70 case and disabled native2560
+  special-inference branch as an acknowledged risk when these three checks passed. Synthetic damage
+  remains separate from natural evidence, native2560 inference stays disabled, and uncertain reads
+  remain partial.
+- F12 and the complete F0-F12 scanner-restoration workflow are now marked complete. Evidence:
+  `docs/migration/scanner-fallback-restoration/f12-d2-resize-validation.json` and `f12-results.md`.
+
+### 2026-09-01 F12 implementation/release complete; D2 natural-evidence gate remains open
+
+- Added and passed the R01-R24 closure audit (24/24), production Dart-to-Python live probe, typed
+  inventory scan profile, current item-display navigation, positive profile-membership gating, and
+  safe partial handling for non-monotonic current item order. Wrong/superseded review-only attempts
+  were never reviewed, revalidated, committed, learned, or written to a profile.
+- New native traces cover student single/full/multi-form and inventory at 1280 plus student single and
+  inventory at 2560. Final traces are completed 3 / bounded-cancelled 3. Mika values and presents
+  quantities matched the visible game; native2560 T10/70 used direct recognition and zero special
+  inference. No v7 backend Python process remained after probes.
+- Final Python 533/533 (289.278s), Flutter analyze clean (39.5s), sequential Flutter 400/400 (3:38),
+  Windows release build/fingerprint, and bundled recognition assets 3051/3051 passed. The launcher and
+  release executable were regenerated.
+- F12 is not marked workflow-complete: no naturally occurring low-score T10/70 was found in the 24
+  independent native1280 slots or new game scans, so synthetic damage is not promoted to live evidence
+  and native2560 special inference stays disabled. The safe implementation and release are complete;
+  overall F0-F12 closure waits only for this externally observable D2 sample. See `f12-results.md`.
+
+### 2026-09-01 F12 started: integrated validation, release and completion gate
+
+- User requested F12 after F11 completion. Re-read the active restoration and student-validation
+  workflows. F12 must separately report historical diagnostic replay, fixed-frame replay and new
+  native scans; synthetic evidence cannot be promoted to live coverage.
+- Scope is integration and closure: actual Python/Dart process single/full student, multi-form and
+  inventory paths; R01-R24 artifact/fixture/test/live-coverage audit; latency/resource cleanup;
+  native1280/2560 representative traces; final sequential regressions; Windows release build and
+  bundled asset integrity.
+- Preserve all F0-F11 snapshots. Scanner candidates remain review-only unless the user explicitly
+  approves them; no repository/profile commit, permanent learning, consumable, purchase, growth or
+  equipment change. Any important unverified path or confirmed wrong result blocks completion.
+- Freeze the F12 audit contract before implementation or live input. F12 in progress.
+
+### 2026-09-01 F11 complete: session-local calibration isolation R24
+
+- Added a bounded memory-only calibration store scoped by profile, actual capture resolution,
+  scanner session/generation, canonical student/form and field. Verified level/equipment detail
+  values can seed it; conflict, unverified detail and session-derived outputs cannot.
+- Replaced production use of the recognizer-lifetime equipment learner with the common session bank.
+  User-confirmed persistent templates keep higher precedence and distinct provenance. Automatic
+  samples are cleared on matcher terminal/cancel and profile/resolution changes and never write files.
+- Native1280 Hanako(swimsuit) injected level fallback read Lv90 from the verified level tab, retained
+  two session glyphs, then reread Lv90 from `student_level_studio_position_bank_session_calibrated`
+  with zero second-pass level-panel inputs. The game was restored to the original student list.
+- Focused lifecycle/answer/session regressions passed. Final Python529/529 (274.584s), Flutter analyze
+  clean (2.3s), sequential Flutter399/399 (3:39). No user answer/profile/repository write, consumable,
+  growth, equipment change, release build or commit.
+- F11 complete within native1280 level live coverage. Equipment session calibration, 2560/DPI and
+  cross-process integration remain bounded F12 coverage. F12 not started. Details:
+  docs/migration/scanner-fallback-restoration/f11-results.md.
+
+### 2026-09-01 F11 started: session-local calibration isolation R24
+
+- User requested F11 after F10 completion. Re-read README, migration baseline, active workflow,
+  approved D1 contract, current session lifecycle and v6 basic level/equipment run-learning paths.
+- Scope is R24 only: an in-memory bank keyed by profile, actual capture resolution,
+  session/generation, student/form and field. Only verified detail-panel confirmed values without
+  conflict may seed it; user-confirmed persistent samples retain precedence.
+- Freeze the parity fixture before implementation. Automatic samples must never write to the
+  persistent answer store, claim user-confirmed provenance, train from their own output, or survive
+  cancellation/terminal/profile/resolution changes. Preserve F0-F10 snapshots and user data.
+- F11 in progress; F12 not started.
+
+### 2026-09-01 F10 complete: inventory filter/sort/scroll recovery R22-R23
+
+- Added bounded verified item/equipment filter-panel preparation, explicit inventory scan profiles,
+  profile-specific sort repair, short foreground drag, row-overlap/tail/terminal verification and
+  conservative zero-fill. Account profile remains separate; partial/cancel/failure never zero-fills.
+- Restored the missing75 present identities in v6 natural order through a generated static v7 table.
+  Runtime has no v6 import. F10 navigation assets5 bring the recognition catalog to3051 ready assets.
+- Native1280 tech-notes passed four one-row transitions, residual tail page and verified no-motion end.
+  Equipment passed two one-row transitions across three screens; a variable third movement was rejected
+  at margin .002 and the same verified filter restored page1. Frozen8 development PNGs cover positive,
+  tail, equipment-specific margin and ambiguous multi-row negative decisions.
+- Final Python521/521 (273.469s), Flutter analyze clean (2.2s), sequential Flutter399/399 (2:50).
+  One preceding Python run hit an unrelated transient Windows `Invalid argument` copying the existing
+  Studio font; the test passed alone and the final whole suite passed.
+- Latest game window is restored to item/tech-notes/default ascending/page1, first item x2347.
+  Gold409,089,809 and gems24,394 visually confirmed. No consumable, purchase, growth, profile/repository
+  write, learning, release build or commit.
+- F10 complete within native1280 Korean navigation coverage. Full multi-page matcher identity/count process,
+  2560/DPI/locales/all profiles remain F12. F11-F12 not started. Next is F11 R24 only when requested.
+  Details: docs/migration/scanner-fallback-restoration/f10-results.md.
+
+### 2026-09-01 F10 started: inventory filter/sort/scroll recovery R22-R23
+
+- User requested F10 after F9 completion. Re-read README, migration baseline, this status, scanner
+  restoration workflow, v6 inventory flow/algorithm/sorting contract and source implementation.
+- Scope is R22/R23 only: bounded filter-panel open/retry, profile filter and sort verification, followed
+  by row-aware scroll motion/overlap/terminal handling. Account profile and inventory scan profile remain
+  separate. Unverified or incomplete coverage must never zero-fill.
+- Current v7 uses one raw wheel input and whole-frame similarity; it neither prepares filters/sort nor
+  proves row overlap. Production injection will be separated so historical adapter fixtures stay stable.
+- Freeze the parity fixture before implementation. Preserve F0-F9 snapshots; no profile writes, automatic
+  learning, repository commit, consumable action or release build. F10 in progress; F11-F12 not started.
+
+### 2026-09-01 F9 complete: inventory detail/count fallback R19-R21
+
+- User requested a fresh game-window check. Latest target was visible again; resumed through normal
+  current-window observation, without bypassing the earlier input guard.
+- Native1280 equipment T10 necklace306 and item Hyakkiyako ordinary note843 passed real selection,
+  detail read and original-slot0 return. Injected cancellation after read also restored0 in both sources.
+- Fading selection outline initially stopped with zero inputs. Added up to3 fresh observations before
+  input, preserving thresholds; normal and cancellation probes then passed. Each probe used two clicks.
+- Exp2 actual24890 stays unknown due to digit2/7 margin .0061; new blueprint ID stays unknown.
+  These conservative partial cases are frozen alongside positives in7 development PNGs, not holdout.
+- Final Python505/505 (281.977s), Flutter analyze clean (2.5s), Flutter sequential399/399 (3:20).
+  Asset3046/source17/native7 hashes verified. Earlier Python504/504 (260.275s) retained separately.
+- Latest game-window image confirms original item filter/basic ascending/first note2344 restored.
+  No purchase/use/growth/profile write/learning. Almanac validation/health and diff check pass.
+- F9 complete within recorded native1280 coverage. F10-F12 not started. Next is F10 R22/R23 only
+  when requested. Details: docs/migration/scanner-fallback-restoration/f9-results.md.
+
+### 2026-09-01 F9 implementation and native readback; live input gate pending
+
+- Implemented separate inventory detail recognizer/recovery, wired only into production runtime;
+  legacy same-crop diagnostic source retained for adapters without the detail port.
+- Native item Hyakkiyako T1 x2344 and equipment Exp3 x116 read correctly; fixed PNG2 are development
+  calibration, not holdout. Equipment glyph-bank removal diagnostic recovers116 using item glyphs at
+  equipment geometry. Unknown/tied counts stay None, genuine string0 remains distinct.
+- Fixed1041 F9 assets (total3046), lazy banks, whole-source icon/name ranking, verified source/selection,
+  one selection plus bounded3 confirmation captures, original selected-slot/grid cleanup implemented.
+  No invented close button for the persistent detail pane. Conflict cannot borrow another item's count.
+- Focused17/17 (4.902s) and legacy production adapters11/11 (37.934s) passed; added completed-slot
+  retention check and preserve original confidence on weak_x grid fallback. Full Python regression running.
+- Game was minimized during work; read-only probe returned no ready target with inputs0.
+  Computer Use re-selection/activation recovery still reports `user input was detected in this window;
+  call get_window_state before continuing`, while state capture reports minimized. Stopped UI input and
+  asked user to display the game while continuing automatic work. Do not bypass the guard with shell input.
+- Actual selection/return/cancel live gate remains pending. F9 not complete; F10-F12 not started.
+
+### 2026-09-01 F9 started: inventory real detail/count fallback
+
+- User requested F9 after F8 complete. Read v6 inventory flow/count matcher and freeze R19-R21 parity contract.
+- Existing detail_template_fallback rematches the same grid crop; preserve its diagnostic meaning and add
+  a separate real detail source. No profile writes or auto-learning, F10 filter/sort/scroll remains deferred.
+- Actual game already in filtered item inventory (tech notes), first slot Hyakkiyako T1 x2344 selected.
+  Detail is a persistent left pane, not a modal. Restore original selected slot and unchanged grid instead
+  of inventing a close click. Unknown page/selection must block input. Preserve this starting view at end.
+- Equipment count bank substitution only for missing templates; weak_x grid fallback requires prior
+  confirmed ID/count and independently verified scan profile. Account profile is not scan profile.
+- F9 in progress; preserve F0-F8 snapshots. F10-F12 not started.
+
+### 2026-09-01 F8 complete: R16-R18 identity, entry, forms
+
+- F8 identity13/form10 and production adapter11 pass. Full Python486/486 (246.584s), Flutter analyze
+  clean (2.3s), sequential Flutter399/399 (3:30). Full Python/Flutter suites did not overlap; no full-suite failures.
+- Native1280 first-identity diagnostic retry0 inputs, list entry1, verified lobby/list/basic entry2 pass.
+  Native lobby fixed3px ROI correction keeps the .90 gate; hidden/unknown UI never triggers entry input.
+- Natural Hoshino(battle) form portrait ambiguity resolved by strong base portrait plus unique role.
+  Both combat tuples independently verified; normal/cancel original1 and diagnostic original2 returns pass.
+  Shared growth only, no borrowed combat/learning crops; base navigation dedup retains canonical form DTOs.
+  Six live candidates pass production session DTO validation. Synthetic dim negatives9 remain unknown.
+- Assets2005 ready, source22/native7 SHA verified, previous F7 snapshot unchanged; Almanac/diff checks pass.
+  F8 source manifest/audit and full logs finalized in docs/migration/scanner-fallback-restoration/.
+- Game restored to original Hoshino form1 and then Mika basic with search cleared. No growth, purchases,
+  equipment changes, profile writes/learning, release build or commit. F0-F7 snapshots preserved.
+- F8 complete within the recorded native1280 evidence. Native2560/multi-DPI/Shun(swimsuit)/long traversal
+  are F12 additional coverage, not claimed here. F9-F12 not started; next slice F9 inventory detail/count.
+  Evidence: docs/migration/scanner-fallback-restoration/f8-results.md.
+
+### 2026-08-31 F8 implementation/live gate passed; full regression running
+
+- R16-R18 implemented with separate identity, entry and form controllers. Focused identity13/form10 pass;
+  production adapter11 pass after fixing the existing object.__new__ test seam's optional form controller.
+- Real1280 Mika injected first identity miss recaptured without input. List->Mika one click and
+  lobby->list->Mika two clicks passed, each transition confirmed. Native lobby fixed Lv ROI is3px higher;
+  only native1280 uses the calibrated ROI, unchanged .90 gate. Hidden lobby UI stays unknown/no input.
+  Transition capture timeout consumes the bounded poll budget, never repeats the navigation click.
+- Real Hoshino(battle) form1 and2 combat read independently:106747/3383/2771/4538 and48823/8633/1949/5674.
+  Natural portrait form ambiguity recovered via confirmed base portrait plus unique role attribute.
+  Normal/cancel form1 return and diagnostic tied-template original2 return passed, two clicks each.
+- Seven reviewed native development PNGs frozen; no runtime learning. Forms with tied attributes remain unknown.
+  Full portrait search keeps all rival bases; attribute cohort is supplemental, not a filtered acceptance set.
+- Game restored to original Hoshino form1, search cleared, then Mika basic. No growth/purchases/profile writes.
+  Python full regression running; Flutter follows sequentially. F8 remains in progress, F9-F12 not started.
+  Evidence: docs/migration/scanner-fallback-restoration/f8-results.md. F0-F7 snapshots preserved.
+
+### 2026-08-31 F8 started: identity, entry recovery, forms
+
+- User explicitly requested F8 after F7 completion. R16-R18 characterization and parity fixture started.
+- Keep low-confidence identities out of field context. At most two identity captures, one first-entry recovery;
+  known lobby/list/detail transitions only, unknown screen never causes speculative input.
+- Preserve full portrait search. Attributes supplement candidate/form evidence, never identify students alone.
+  Reject v6 form1-on-tie default. Keep separate canonical form-ref candidates and base-id navigation deduplication.
+- F8 in progress; F9-F12 not started. Preserve F0-F7 snapshots, no profile writes/growth/purchases/release.
+
+### 2026-08-31 F7 complete: R15 verified, D2 native1280 policy enabled
+
+- User requested continuation. R15 absence ROI includes a rounded card corner, not a uniform white patch.
+  Added positive light-background/neutral-card geometry; uniform/partial-orange/occluded crops stay unknown.
+- Production read-only basic scan now reads actual Miyu equip4=love_locked with growth=false and dot=false,
+  inputs0. Six visually reviewed native favorite fixtures cover lock1280/2560, empty, T1/T2.
+- Read-only scan of297 correctly sized archived screenshots found277 basic/14 level/4 star/2 unknown,
+  no equipment detail frames. Collected eight new native1280 menu frames /24 reviewed slots spanning T1-T10.
+- D2 independent originals24/24; synthetic tier stress120:5 positive recoveries/0 false inference;
+  blank/noise/wrong-family321:0 false inference. Genuine lower tiers plus counterfactual70 and ties rejected.
+  Enabled native1280-only T10 top1 score[.55,.60), margin>=.15, independently read7/0 each>=.80/margin>=.15.
+  Ordinary .60 unchanged; inferred source excluded from basic-level learning. Natural weak positives absent;
+  native2560 special inference stays disabled pending F12 evidence, not implied by resized screenshots.
+- Focused36/36 pass. Post-change normal Mika T10/70x3 and diagnostic in-memory noise passed same-student return:
+  slots1/3 inferred, below-floor slot2 unresolved/partial. Diagnostic is not a natural game failure.
+- Python463/463 final isolated pass (216.529s); existing S3 suite16/16 after making its intended unknown-growth
+  condition explicit. First full run463 had only that obsolete fixture assumption error (201.408s), retained.
+  Asset1983 ready and source24/native18 SHA verified; almanac/diff checks clean.
+  Flutter analyze clean (55.8s), sequential399/399 (2:34); Python and Flutter suites did not overlap.
+- F7 complete with the explicit native1280 D2 scope and F12 coverage limits above. No growth/profile writes.
+  Game restored to Mika basic with search cleared. F8 not started; next slice is F8 student identification/forms.
+  Initial F7 source snapshot and F0-F6 history are retained. Evidence: `docs/migration/scanner-fallback-restoration/f7-results.md`.
+
+### 2026-08-31 F7 started: equipment recovery, D2 promotion still gated
+
+- F6 full automatic/live gate passed before F7 changes. R12/R13 and R15 call wiring implemented.
+- R14 must remain unpromoted until independent current-bank positive/negative validation supports D2.
+- Implemented R12 checkbox tri-state/recheck/single enable, R13 all-normal-tier-missing one retry,
+  and R15 basic growth observation plus confirmed dot absence. Fixed controls4; asset total1983.
+- Native1280 Mika normal T10/70 x3, off/off->single enable->on, injected first-read failure->one retry,
+  and cancelled recapture->same-student basic return passed. Development PNG4 frozen; not D2 holdout.
+- Final Python452/452 isolated (186.396s), focused25/25, Flutter399/399 sequential (3:34), analyze clean.
+  Existing studio builder had one debug JSON I/O error during an earlier overlapping run; isolated6
+  and final whole452 passed without recurrence. Cause unconfirmed; failed log retained in F7 results.
+  Assets1983 ready; source18/native4 SHA verified; almanac and diff checks clean.
+- D2 still lacks independent T10/70 plus negative image validation;
+  existing direct-tier holdout covers T2 only. F7 remains in progress, F8-F12 pending.
+  Read-only Miyu basic probe: growth=false, equip1 empty/2-3 level_locked, favorite dot unknown safely
+  leaves equip4 unresolved; improve/validate R15 dot absence before claiming full favorite lock recovery.
+  Evidence: `docs/migration/scanner-fallback-restoration/f7-results.md`.
+- Preserve F0-F6 historical snapshots. No growth, purchases, equipment changes, profile writes or release.
+
+### 2026-08-31 F6 complete: skill panel and verified show-all
+
+- User requested F6 after F5 completion. R10/R11 and v6 basic/detail skill/check flows characterized;
+  parity fixed before adaptation. Passive unlock2-star, sub unlock3-star; unknown star never means locked.
+- Basic failure opens verified skill panel; only positively unchecked show-all may be clicked once,
+  followed by verified recapture. Unknown/still-off blocks detail reading and restores basic as partial.
+- F6 complete. Preserve F0-F5 snapshots. No growth/equipment/profile writes or learning.
+- Resumed after user's Escape stop, explicitly authorized automatic/live verification and F7 only on F6 pass.
+  Dedicated40 assets (total1979), lazy size variants, F2 check/return adapter and conflict validator implemented.
+- Focused22 pass; native1280 Mika5/10/10/10, Miyu1/1/1/1, off->on once, on no toggle, diagnostic fallback,
+  normal/cancel returns pass. Evidence and initial failed test/probe history: `docs/migration/scanner-fallback-restoration/f6-results.md`.
+- Final Python427/427 (193.933s), Flutter399/399 sequential (3:23), analyze clean (55.8s).
+  Assets1979 ready; snapshot20 SHA verified; almanac validate/health clean. F7 gate passed.
+
+### 2026-08-31 F5 complete: independent weapon inference and star tab
+
+- User requested F5 implementation after F4 completion. R08/R09 contract and v6 star ROI/template/read
+  flow characterized; parity fixture fixed before adaptation. Read independent flag before star-derived gates.
+- Confirmed equipped/unlocked-but-empty flag can infer5; direct star conflict requires review, never overwrite.
+  Basic and independent inference both unresolved -> one verified star-tab read and same-student basic return.
+- F5 complete; F6-F12 pending. Preserve F0-F4 snapshots. No growth/equipment/profile mutations or learning.
+- Implemented dedicated lazy star recognizer/adapter, sticky conflict and validator guard; six fixed assets
+  bring total to1939. Focused22/22 and existing weapon9/9 pass. Native1280 Mika5/Miyu3 tab reads,
+  normal/cancel returns and diagnostic basic/weapon failures pass; basic/inference success incurs0 star clicks.
+- Evidence: `docs/migration/scanner-fallback-restoration/f5-results.md`, native4 PNG fixture, parity fixture,
+  asset sync/export and read-only diagnostic tools. Injected failures are labeled, not natural failure claims.
+- Full Python405/405 pass in149.304s; asset1939 ready, source21/native4 PNG SHA and Almanac pass.
+- Flutter analyze clean (37.7s), sequential399/399 pass (2m53s). No failing run in F5; used concurrency1
+  after Python finished because of F4's parallel timeout history. F5 source/fixture/Almanac checks pass.
+- Next: F6 skill detail/show-all, not started. Actual1/2/4-star, newly captured unlocked-empty5-star,
+  actual2560/multi-DPI/long-duration checks remain F12 coverage and are not claimed as verified.
+
+### 2026-08-31 native1280 F3 recheck passed; F4 complete
+
+- User requested native1280 F3 verification and F4 only if normal. Existing game client is1280x720;
+  no resize was required. Mika full current-student scan recovered25/25/25 through the real stat panel;
+  independent Mika/Hina(dress) panel reads returned25/25/25 and25/25/0, with verified same-student returns.
+  Cancellation blocked recapture and restored basic. Screenshots were visually checked.
+- F3 native1280 gate passed without recognition changes; evidence is in `debug/scanner_f3_1280_live/`.
+  F4 R07 complete: fixed v6 digit/ROI parity, level-tab fallback after Studio/glyph failure,
+  first+two retry reads, basic return, no learning (F11), and no loss of prior confirmed fields.
+- F5-F12 pending. Keep historical F0-F3 snapshots unchanged. No growth/equipment/profile mutations.
+- F4 implemented: position-specific19 digit templates +1 ROI (total1933 assets), lazy glyph bank, strict
+  positive trailing blank,1-90 range, level fallback before potential/equipment dependencies, F2 shared return.
+  No F11 learning or protocol/UI change. F4-focused18 pass; full Python383 pass in234.887s,
+  Flutter analyze clean and sequential399 pass in3m30s (`flutter test --concurrency=1`).
+  Two default-parallel Flutter runs had the same5 real-process initial response timeouts; logs retained,
+  root cause not established, no timeout increase. Asset1933 ready; source19/native9 PNG SHA and Almanac pass.
+- Native1280 level tab reads Mika90 and Miyu1; normal/cancel returns pass. Diagnostic basic-level failure
+  injection in one Miyu scan recovers level1 from the real tab. It is not a naturally occurring basic failure.
+- Artifacts: `docs/migration/scanner-fallback-restoration/f4-results.md`, F4 parity/native9-frame fixtures,
+  new level recognizer/adapter and sync/export/probe tools. Next: F5 star inference/tab fallback; not started.
+  F4 actual2560/mid-level diversity/multi-DPI/long-duration checks remain F12 coverage, not claimed complete.
+
+### 2026-08-31 F3 complete: ability-potential basic/detail observation
+
+- User requested F3 implementation. F0-F3 are complete: F3 R06 implementation, live checks and final
+  Python365/365 regression in182.767s pass. F4-F12 remain pending.
+- Added fixed v6 parity fixture and104 recognition assets (total1913): basic25 labels, detail3x26 labels, ROI.
+  `StudentPotentialRecognizer` gates on observed level90/5-star, separates badge presence/value, requires
+  affirmative absence for zero, and opens the F2 stat panel only if any of the three values is unresolved.
+- Production stat/equipment/weapon adapters share F2 bounded title/return recovery. Confirmed values survive
+  weaker reads; conflicts keep the first value with review evidence. No combat stat is used as potential.
+- Validator details separate fresh sources from profile_fallback; stored potential cannot hide an unresolved
+  scan dependency or confirmed conflict. No profile writes or automatic learning were added.
+- F3-focused24/24 and Flutter399/399/analyze pass. Live2560 Mika basic/detail25/25/25, Hina(dress)25/25/0,
+  same-student normal/cancel returns, and Mika single scan with zero panel inputs pass. Miyu1/3-star stays locked.
+- Initial ignored open ended safely on verified basic; later independent opens succeeded. Native1280 detail,
+  real intermediate/all-zero panels and multi-DPI/long-duration coverage remain explicit limits.
+  Real1280 basic ambiguous HP/ATK are not guessed; synthetic1280 detail fallback regression passes.
+- Whole-Python first362 had obsolete S2/S4 expectations, updated for F3. Next364 run had only a pre-existing
+  Studio builder font.ttf write OSError22; unchanged isolated6/6 rerun passes. All failed logs are retained.
+- The next364 run passed Studio but exceeded the real stdio10s startup timeout. Potential banks now
+  initialize only on their first actual ROI read, not readiness/listing/locked gates. The exact timeout cause
+  is unconfirmed; the timeout and recognition thresholds remain unchanged. Stdio3/3 and lazy-gate tests pass.
+- Artifacts: `docs/migration/scanner-fallback-restoration/f3-results.md`, F3 source SHA snapshot,
+  `backend/tests/test_student_potential_f3.py`, six SHA-pinned development live fixtures and read-only probe tools.
+- Final recognition1913 assets, source24-file/5-symbol and live6-frame SHA, Almanac and diff checks pass.
+- Next: F4 level-tab fallback. No F4 implementation was started in this turn.
+  Historical F0-F2 manifests are retained unchanged; release remains F12 scope.
+
+### 2026-08-30 F2 complete: implementation, live return and regressions
+
+- F1 completed first, as requested. F2 R03-R05 code, actual1280 normal/cancel panel checks and final full
+  regressions passed; F2 is complete. F3-F12 remain pending.
+- New shared `student_panel_recovery.py` requires competing panel titles/active tabs, bounded open/final check,
+  primary/alternate X or Escape cleanup, and same-student nameplate/portrait on basic return. No unknown
+  screen is passed to dependent student reading; cancellation permits bounded cleanup only.
+- Runtime recognition assets add7 v6 title/tab templates and1 ROI manifest entry (total1809 assets).
+  Fixed active-tab color/NCC gates handle real1280 glyph antialiasing; no adaptive/persistent learning.
+  Live8-frame fixtures are development regressions, not unseen holdout accuracy or runtime templates.
+- Confirmed values survive weaker/unknown detail results. Conflicts preserve the first payload value with
+  sticky uncertain review evidence; preserved basic values/conflicts cannot become detail calibration.
+  Failed reads become partial only after verified basic return; unsafe return/target/input errors still fail.
+- Real traces: weapon60/4-star round trip2.765s, equipment round trip2.875s, cancel-after-open cleanup2.891s.
+  A real Mika single scan completed in1.250s with level90/bond74/5-star, weapon60/4 and T10/70x3,
+  with no unnecessary detail clicks. Game remains on Mika basic information. No profile writes or growth actions.
+- Tests: F2-focused19, weapon9 and equipment16 pass; final Python341/341 in128.195s, Flutter399/399 in3m15s
+  and analyze in2.2s pass. Recognition1809 assets have no missing/corrupt entries; F2 SHA and Almanac
+  validate/health/git diff checks pass. Release remains F12 scope.
+  First full Python340 run had2 stale asset-count expectations (1801 vs1809); both updated, then340 passed.
+  A later341 run had an unrelated Studio renderer_spec.json OSError22; focused6 and final341 reruns passed
+  without modifying that builder. Cause remains unconfirmed; all full logs are retained.
+- Artifacts: `docs/migration/scanner-fallback-restoration/f2-results.md`, source/evidence SHA manifest,
+  `debug/scanner_f2_live/`, `backend/tests/fixtures/student_panel_f2_live/`, `f2-panel-parity.json`,
+  `sync_student_panel_f2_assets.py`, live probe tools and `test_student_panel_f2.py`.
+- Next: F3 ability-potential basic badge/detail reading. Actual2560/multiple-DPI/long-duration native resource
+  coverage remains F12 work and is not inferred from current1280 live or synthetic cases.
+
+### 2026-08-30 F1 live gate passed; F2 started
+
+- User requested real-game validation, then F1 completion and F2 if no issues. F1 is now complete:
+  selected Blue Archive HWND at actual1280x720 captured successfully while background; eight safe
+  runtime-adapter inputs opened list/detail, moved Mika↔Hina(dress) with both keys and buttons, and
+  wrapped first Mika→last Miyu→first Mika. All used SendInput and PrintWindow3; screenshots inspected.
+- Evidence: `debug/scanner_f1_live/00-background.png`, steps01-08 PNG/JSON and F1 results.
+  Capture-only0.328s; action/settle/capture/cleanup1.156-1.688s. No repository writes, purchases,
+  growth, equipment changes or permanent samples. Existing failure/cancel tests cover negative paths;
+  actual2560/forced OS rejection/long-duration handle coverage remain explicit F12 limits.
+- F2 R03-R05 started: fixed panel-title/active-tab evidence, bounded open/recapture/close/basic verification,
+  safe cancellation cleanup and non-destructive confirmed-field merging. F3-F12 pending.
+
+### 2026-08-30 scanner fallback F1 implementation; live gate pending
+
+- Status: F1 R01/R02 and D3 internal handoff implemented; F1 is not fully complete because no Blue Archive
+  window was available for live capture/input verification. F2-F12 remain pending. D1/D3 approvals stand.
+- Capture now tries client PrintWindow3/1, full-window2/0 cropped to client, then foreground BitBlt,
+  with three rounds/15 methods per request. Stable capture shares a 2s default/5s maximum deadline,
+  12-frame request cap and three failed-request cap. A hidden capture-only subprocess is killed on
+  timeout/cancellation; GDI/PIL cleanup and pointer-sized Win32 signatures are covered by regression tests.
+- Selected HWND/PID/thread/title/visibility, client coordinates and foreground are checked before physical
+  input; activation denial falls back to same-HWND messages without cursor movement. Both arrows work.
+  Zero inserted events may fall back; partial insertion releases then stops. Key API failure and unchanged
+  identity can use the matching button. Unverified no-motion stops instead of claiming list completion.
+- `ScanBatchResult` retains collected student candidates/inventory slots before failed/cancelled terminal
+  events, with no zero-fill or automatic persistence. Existing completed-only commit remains enforced.
+  Low-confidence student identity stops before dependent recognition. F2 screen predicates are still pending.
+- Verification: F1-focused29/29 in2.350s; full Python319/319 in103.618s; Flutter analyze clean in44.1s.
+  Full Flutter399/399 passed in2m36s with concurrency1, including real Python process E2E. Almanac validate/
+  health, F1 SHA integrity and git diff check pass; release build remains F12 scope. Initial scanner-only59 run had one
+  obsolete error-message expectation; it was updated to assert the new15-method exhaustion contract.
+- Artifacts: `docs/migration/scanner-fallback-restoration/f1-results.md`, F1 source manifest and raw logs,
+  `f1-live-availability.json` (target list empty; game input0), fixture `f1-capture-input-parity.json`,
+  `backend/tests/test_scanner_fallback_f1.py`, and `backend/core/windows_capture_worker.py` plus adapter/session wiring.
+  The historical F0 manifest is not rewritten to match F1 source changes. No recognition assets/profiles were modified.
+- Next action: verify real game capture and safe left/right navigation
+  before closing the F1 gate and advancing to F2. Native fake tests are not live gameplay coverage.
+
+### 2026-08-30 scanner fallback F0 baseline and contracts complete
+
+- Status: F0 complete; F1-F12 pending. The user explicitly accepted D1/D3 in this task.
+  Automatic calibration remains session-local; only user-confirmed samples persist. Unknown screen
+  state stops safely; fully collected candidates remain reviewable in session memory without automatic
+  repository writes. Failed/cancelled retained candidates remain non-committable under the existing rule.
+- Artifacts: `docs/migration/scanner-fallback-restoration/` contains source SHA/function manifests,
+  dependency/decision records, F0 results, raw Python output and offline benchmark/replay reports.
+  `backend/tests/fixtures/scanner_fallback_restoration/` contains all 24 restoration rows with positive/
+  negative fixture plans, evidence availability, owner phases, 19 SHA-pinned feedback1 identities/forms,
+  and D1-D3 target contracts. Planned cases are not claimed as implemented F1-F11 tests.
+- Source audit pins 26 v6/v7 files and 65 symbols without importing v6. R22's live callers use the
+  item/equipment-specific filter openers rather than the unused generic helper. v6's left-arrow helper
+  is not called by its current full scan; v7's left reversal/right-only adapter mismatch remains an F1 target.
+  Existing weapon merging/cleanup, low-confidence identity context, and calibration lifetime gaps are recorded.
+- D2: characterized legacy `scan_level && level70 && top1 T10 && 0.66 <= score < 0.72` inference.
+  Current-bank promotion remains disabled pending independent positive/negative evidence in F7.
+- Fresh verification after approval: Python 290/290 in 95.973s; offline benchmark in 52.516s resolves
+  313 archive images/163 answer files/160 templates, with equipment307/307, relationship26/26 and
+  weapon16/16 visual values correct. Separate student-level frame replay is 10/10; independent weapon
+  state is 19/19 original and 19/19 derived half-size feedback1 frames. Frozen old JSON revalidation is
+  135 verified, 75 dependency-missing and 14 suspicious across 224 candidates, with no screenshot corrections.
+- Actual 1280 S3 basic/equipment-menu evidence is recorded separately from derived 1280 feedback1 images.
+  Nine one-digit equipment archive records remain unsupported; missing panel failure/checkbox-off/inventory
+  traces and independent R14 threshold validation remain explicit later-phase gates. No live game input,
+  runtime/protocol/UI/recognition asset changes or profile mutation occurred. Flutter/release were not rerun.
+- F0 manifest integrity, `codealmanac validate`, `codealmanac health`, and `git diff --check` pass.
+  Next action: F1 capture/input bounded parity slice and D3 failure/candidate handoff, then F2 panel recovery.
+  Do not re-request the already granted D1/D3 approval or treat offline replay as new live-game validation.
+
+### 2026-08-30 scanner fallback restoration workflow defined
+
+- The user requested a workflow to reintroduce all scanner fallbacks identified in the v6/v7 audit.
+  [Scanner Fallback Restoration Workflow](scanner-fallback-restoration-workflow) tracks R01-R24
+  across F0-F12: baseline/contracts, capture/input, panel recovery and existing weapon integration,
+  potential, level, star, skills, equipment, identity/forms, inventory detail/count, inventory
+  filter/order/scroll, session calibration, and integrated release verification.
+- Status: workflow document complete; F0 is pending and F1-F12 have not started. Existing S2W
+  implementation is retained, not declared missing or reimplemented. No runtime, user state,
+  recognition asset, game input, or scan was changed/executed for this documentation request.
+- Before implementation, resolve D1 (automatic session calibration versus permanent user-confirmed
+  samples) and D3 (safe failure and collected-candidate retention contract). D2 requires current-bank
+  parity/negative evidence before the legacy T10/level70 inference can be promoted. These are explicit
+  gates rather than silent exclusions from the requested scope.
+- Artifacts: the new workflow, its link in the student validation workflow, and the Almanac entry point.
+- Verification: `codealmanac validate`, `codealmanac health`, and `git diff --check` pass;
+  coverage check finds all 24 restoration rows and all 13 phase headings. No Python/Flutter runtime
+  tests were rerun because this turn only creates and connects workflow documentation.
+- Next action: on implementation instruction, complete F0 source/fixture manifest and measured baseline;
+  do not treat old diagnostic replay or synthetic menu frames as new live-game validation.
+
+### 2026-08-30 exclusive-weapon state and detail fallback introduced
+
+- The user explicitly requested immediate introduction of the three v6 behaviors that remained after
+  the basic-card resolution repair. The S2W vertical slice characterizes its regions, state truth,
+  panel-open condition, retry count and close guarantee in
+  `backend/tests/fixtures/student_weapon_s2w_v6_parity.json` before adapting the implementation.
+- Exclusive-weapon state is now independent evidence from the basic state-flag ROI. SHA-pinned
+  feedback1 crops cover equipped Hiyori, unlocked-but-not-equipped swimsuit Wakamo and no-system
+  four-star battle Rio at both 2560-derived and half-size raster scales. All 19 feedback1 screens
+  resolve consistently: 14 equipped, one unlocked-not-equipped and four no-system.
+- A versioned `student_weapon_manifest.json` packages one region document, three state templates,
+  twenty position-specific menu-level templates and four menu-star templates. The runtime does not
+  import v6; `sync_student_weapon_s2w_assets.py` is the explicit source-to-versioned-asset boundary.
+- When state is confirmed equipped but either basic-card level or star is unconfirmed, the Windows
+  input boundary opens the weapon panel, reads independent level and star ROIs, and performs at most
+  two additional stable captures. It always closes the panel. Unlocked-not-equipped, no-system and
+  below-five-star students skip detail fields and never open the panel.
+- Focused verification covers three-state real crops, half-size state parity, independent menu ROIs,
+  two retries, guaranteed close, non-equipped short circuit, blank-ROI rejection, runtime asset
+  integrity and the existing fixed basic screen. The complete Python suite passes 290/290.
+
+### 2026-08-30 supplied full-scan weapon and validation regressions repaired
+
+- Replayed `ba-planner-student-scan-2026-08-29T00-49-15.526282Z-full.json` and reviewed all
+  19 screenshots under the user's `BA/feedback1` folder. The folder covers the six missing-potential
+  rows and most named stat/weapon rows, but it does not contain a base Rio or battle Aris screen:
+  the Rio image is battle Rio at level 78/four stars, and two separate images are battle Hoshino's
+  two forms. Those images must not be used as ground truth for the differently identified candidates.
+- S4 now treats S3's confirmed `level_locked` equipment result as known absence. It also refuses to
+  calculate a five-star candidate as if its exclusive weapon contributed zero when weapon state is
+  unknown, or when an equipped weapon is missing star/level. These cases are explicit
+  `dependency_missing` rows with `provide_weapon_values` rather than false exact/suspicious results.
+- The weapon Studio bank now compares glyph shapes after foreground bounding-box normalization to a
+  fixed 32x32 mask. Non-weapon fields retain their existing shift matcher. SHA-pinned feedback1
+  evidence expands direct weapon ground truth from 48/50 to 30/40/48/50/60 across 16 values and
+  32 digits. The archive replay is 16/16 values and 32/32 digits, minimum score 0.793893 and minimum
+  runner-up margin 0.122127; all fourteen new 2560 captures and their 1280 reductions resolve exactly.
+- At the end of this slice, v6's explicit state recognition and detail-panel recovery were still
+  intentionally scoped as follow-up work. The immediately following S2W entry records their completed
+  DTO/input separation, parity fixture and v7 implementation.
+- feedback1 confirms zero potential for swimsuit Wakamo, Hiyori, swimsuit Hina, magical Suzumi,
+  Ritsu and Kurumi; Aru is HP25/ATK25, swimsuit Izuna is ATK25, and battle Hoshino is HP25/ATK25.
+  With those inputs, swimsuit Izuna is exact. The remaining one-to-two-point rows persist against the
+  current SchaleDB source and are not fixed by nearby relationship-rank changes; they remain calculation
+  or upstream game-display parity findings rather than OCR corrections. Battle Aris also remains an
+  invalid UE3/level60 combination pending an actual screenshot.
+- Current diagnostic replay after the validator fixes is 135 verified, 75 dependency-missing and
+  14 suspicious before applying the screenshot-only potential corrections to user data. Verification:
+  the 27 focused validation/recognition/archive tests and the complete Python suite pass 283/283;
+  the archive benchmark resolves 313 screenshots and 163 SHA-matched answer files.
+
+### 2026-08-29 user-confirmed recognition samples restored
+
+- The user chose both v6 correction behaviors: persistent account-and-resolution-scoped answer
+  samples and immediate process-local matcher updates after review. Student coverage is expanded to
+  student level, relationship rank, exclusive-weapon level, and equipment slots 1-3 level digits.
+- Automatic scan guesses never train the bank. A student sample is eligible only after the scan
+  review workspace submits an explicit edited/revalidated or applied review; an inventory grid
+  sample is eligible only after explicit approval. Candidate-owned crops remain backend-only and
+  are excluded from protocol payloads and diagnostic exports.
+- Numeric persistence stores only cleaned per-position glyph masks. Inventory persistence stores
+  only the reviewed slot crop. Both are isolated by stable profile ID and actual capture pixel size;
+  bundled recognition assets remain immutable fallback data.
+- `RecognitionAnswerSampleStore` now persists atomic PNG/JSON pairs under
+  `recognition_samples/{profile_id}/{width}x{height}`. Numeric records contain cleaned position glyphs;
+  inventory records contain only the reviewed grid slot. Existing Flutter review reasons already provide
+  the required explicit-confirmation boundary, so the protocol and UI wire shape did not change.
+- Student and equipment Studio banks clear prior user state and load only the active profile/resolution
+  before recognition. A corrected sample is also inserted immediately after review, with deterministic
+  local-sample tie precedence and bundled templates retained as fallback. Inventory samples are compared
+  against the complete bundled identity catalog before they can win the existing score/margin gates.
+- Candidate specimen images are backend-only, support repeated corrections, and close on approval,
+  discard, commit, or service shutdown. They are absent from candidate wire objects and diagnostics.
+- Verification: the complete Python suite passes 279/279, including new persistence/isolation,
+  tie-precedence, six-field coverage, explicit-review-only and inventory-approval-only tests.
+  `flutter analyze` reports no issues; the complete Flutter suite passes 399/399 when run with
+  `--concurrency=1`; and the Windows release build succeeds. The default concurrent Flutter run was
+  also attempted, but independent Python process E2E tests contended for host resources and hit their
+  10-second request timeouts, so it was rerun serially for an authoritative result.
+- Next action: validate the behavior with one real corrected 1280 capture and its subsequent rescan; the
+  implementation is complete, but no new live correction was performed during this code change.
+
+### 2026-08-29 v6/v7 weapon-resolution regression root cause analyzed
+
+- v6 did not rely on its compact basic-card weapon reader alone. When either basic weapon level or
+  star was uncertain, it opened the weapon detail panel, captured again up to two times, and read
+  two separate ratio-scaled digit ROIs with position-specific templates. `match_score_resized`
+  normalized every crop to its template dimensions before scoring. v7 migrated the compact basic
+  reader but not this weapon-menu fallback; only equipment has a migrated menu fallback.
+- v7 Studio coordinates scale correctly, but its matcher compares the source-sized binary cell to a
+  2560-derived template resized with nearest-neighbor and searches a fixed +/-2 source pixels. Thus
+  both rasterization and the effective reference-space shift change with resolution. Fixed score
+  0.65 / margin 0.05 gates were calibrated above the low-resolution behavior.
+- Downscaling the reviewed weapon screens reproduces the gate loss while retaining the correct
+  labels. Battle Toki 48 changes from score/margin 0.837500/0.134337 at 2560 to
+  0.700000/0.042857 at 1280, failing only the fixed margin gate. Neru 50 changes from
+  0.796825/0.145771 to 0.647059/0.078571, failing only the fixed score gate. At 1280 the cells are
+  16x17 rather than 30x32.
+- After Studio rejection, the compact fallback warps to 64x48 and normalizes each half to 20x28,
+  but it uses the exact provenance-free v6 `weaponlevel_glyph` assets. It is not the robust v6 menu
+  path. In the supplied 224-candidate diagnostic, only Karin 50 is Studio-confirmed; 45 uncertain
+  rows repeat `48/margin=0.028630` and 17 repeat `38/margin=0.021599`. Himari, Kurumi and swimsuit
+  Hina retain `weapon_level=null`; the apparent 48/38 values occur only in the evidence note.
+- A shape-normalized diagnostic comparison keeps the correct 4/8 labels at 1280 and raises their
+  per-digit margins to 0.247179/0.109751, supporting resolution normalization as a candidate repair.
+  This is exploratory evidence, not yet a production threshold or matcher change.
+- Root cause: the migration removed v6's independent detail-panel recovery while introducing a
+  fixed-pixel Studio comparison/gate calibrated from 2560 rasters. The correct repair should restore
+  resolution-invariant comparison and/or an independent weapon-detail fallback, then validate real
+  1280 and 2560 30/40/48/50 samples. Globally rewriting trailing 8 to 0 remains prohibited.
+
+### 2026-08-29 weapon-level 0/8 visual ground truth added
+
+- The user selected two 2560x1440 basic screens as direct exclusive-weapon evidence: battle Toki
+  at level 48 and Neru at level 50. Their SHA-256-pinned records live in the new
+  `student_weapon_level_s4` manifest as `studio_validation`; neither sample contributes a template.
+- The existing Studio position bank reads 48 and 50 exactly (2/2 values, 4/4 digits). The trailing
+  `8` scores 0.837500 with runner-up margin 0.134337; trailing `0` scores 0.835165 with margin
+  0.145771. This is independent visual ground truth that the weapon field can distinguish 8/0 at
+  2560x1440.
+- The legacy reader proposes 48 but rejects it with margin 0.011260, while it confirms 50 with margin
+  0.146574. The reported 30→38 and 40→48 diagnostics therefore point to an affected capture failing
+  the Studio confirmation gate and falling through to the fragile legacy matcher, not a missing 0/8
+  shape in the Studio bank.
+- The archive remains 294 screenshots and now resolves 149 unique reviewed sources. Weapon visual
+  ground truth is frozen separately from the existing 89/89 legacy-agreement set.
+- Verification: the 13 focused archive/relationship tests and the complete 273-test Python suite
+  pass. `codealmanac validate`, `codealmanac health`, and `git diff --check` pass.
+- Next action: reproduce or retain one of the affected scan frames/crops to determine why its Studio
+  cells fail confirmation, especially at its actual resolution. Do not convert low-confidence
+  trailing 8 to 0 globally: the new level-48 sample proves that 8 is also a valid real glyph.
+
+### 2026-08-29 relationship-rank 0/8 substitute evidence added
+
+- The user cannot provide ranks 38/48, so visually reviewed rank 30 (Utaha) and rank 28
+  (Mashiro) 2560x1440 captures were added to the relationship S4 `studio_validation` partition.
+  They are deliberately excluded from calibration/template generation to prevent answer leakage.
+- The existing Studio position bank reads both values exactly. The second digit reads `0` with
+  score 0.760563 / runner-up margin 0.120299 and `8` with score 0.817276 / margin 0.138587.
+  The archive is now 26/26 values and 52/52 digits with no confusion across all supported layouts.
+- These samples prove that the relationship-rank path can distinguish the real 0/8 shapes. They do
+  not independently validate weapon-level 0/8 because that field has separate ROI geometry,
+  foreground extraction and position templates; no cross-field template was promoted.
+- The ROI-only legacy whole-rank fallback reads both new atlas crops as 20. This does not affect the
+  full-frame Studio result, but it means the samples cannot join the legacy `validation` partition
+  and the fallback remains explicitly unverified for 28/30.
+- Verification: the 12 focused relationship/archive tests and the complete 272-test Python suite
+  pass. `codealmanac validate`, `codealmanac health`, and `git diff --check` pass. The regenerated
+  archive report resolves 148 reviewed sources among 294 screenshots without changing the 160
+  calibration-template count.
+- Next action: use the direct 48/50 weapon evidence above and obtain an affected scan crop to isolate
+  the Studio-confirmation failure. Until then the affected weapon values remain review-required.
+
+### 2026-08-28 real scan feedback corrections complete
+
+- Growth rules now use bond caps 10/10/20/30/100 for student stars 1..5 and favorite-item
+  unlock ranks 15/20 for T1/T2 in both backend validation and Flutter target normalization.
+- Student calculation input distinguishes observed `empty`/`locked` equipment from an unknown
+  slot. Known absence contributes zero; unknown equipment remains a dependency. On the supplied
+  full-scan diagnostic, this changes swimsuit Chise from `partial` to an exact four-stat match once
+  the batch relationship rank for original Chise is included.
+- Missing ability-release values for an eligible level-90 five-star student are no longer silently
+  replaced with zero. They produce `dependency_missing` with `provide_potential_levels`, and the scan
+  review workspace exposes HP/ATK/HEAL potential inputs even for a student absent from confirmed state.
+- Non-committing `shadow` evidence no longer forces backend or Flutter review state. Weapon-star
+  color recognition rejects values above the supported four-star maximum instead of accepting five.
+- Replaying the supplied 224-candidate diagnostic with the new rules changes validation from
+  82 verified / 96 suspicious / 46 partial to 112 verified / 79 suspicious / 27 partial /
+  6 dependency-missing before user field corrections. Confirmed weapon corrections make Himari an
+  exact match; Kurumi and swimsuit Hina also match at UE40 and UE30 respectively when their still-
+  unconfirmed potential levels are explicitly supplied as zero. Aru 25/25 potential removes the
+  large delta and leaves ATK -1; battle Aris UE4 leaves ATK -2.
+- Verification: 271/271 Python tests pass; the full Flutter suite passes 399/399 serially,
+  `flutter analyze` reports no issues, and the Windows release builds `ba_planner_v7.exe`.
+  `codealmanac validate`, `codealmanac health`, and `git diff --check` pass. The default parallel Flutter
+  run reproduced the known shared Python-process timeouts and was replaced by the serial gate.
+- Next action: use the 2026-08-29 relationship 28/30 evidence only as a glyph-shape diagnostic, then
+  obtain retained source crops for the repeated weapon-level 40→48 and 30→38 confusion before
+  changing that matcher. Do not infer weapon levels from combat-stat agreement alone. Review the
+  remaining unresolved equipment fields and the Aru/Aris one-to-two-point rounding residuals.
+
 ### 2026-08-28 student scan conversational diagnostic export complete
 
 - Completed student single/full sessions now expose `진단 JSON 추출`. The exporter refreshes the
@@ -206,8 +828,8 @@ sources:
 
 ### 2026-08-27 BA screenshot archive Studio-template replay
 
-- The root Studio geometry and 120 white position templates were replayed against all 290 image files
-  under `C:/Users/brigh/Pictures/Screenshots/BA`. SHA-256 provenance resolved 146 source files from the
+- The root Studio geometry and 120 white position templates were replayed against all 294 image files
+  under `C:/Users/brigh/Pictures/Screenshots/BA`. SHA-256 provenance resolved 148 source files from the
   reviewed equipment and relationship manifests, preventing same-name screenshots from being silently
   substituted.
 - Two-digit equipment is 307/307 value-correct and 614/614 digit-correct against visual ground truth.
@@ -228,6 +850,11 @@ sources:
 - Frozen summary: `backend/tests/fixtures/student_studio_text_archive_summary.json`. Full rows and visual
   audit are in `debug/student_suggestion_rois/suggestion_text_archive_benchmark.json` and
   `suggestion_text_archive_comparison.png`.
+- The 2026-08-29 replay adds relationship ranks 28 and 30 as validation-only evidence. Relationship
+  coverage is now 26/26 values and 52/52 digits; the real trailing 8 and 0 are both read correctly.
+- A second 2026-08-29 replay adds direct weapon levels 48 and 50 as validation-only evidence. Weapon
+  visual ground truth is 2/2 values and 4/4 digits, while the earlier 89/89 figure remains explicitly
+  labeled legacy agreement rather than independent truth.
 
 ### 2026-08-27 Studio text-driven white template bank
 

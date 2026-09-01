@@ -3,15 +3,17 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from threading import Event
+from tempfile import TemporaryDirectory
 import unittest
 
 from PIL import Image
 
 from core.recognition_assets import RecognitionAssetCatalog
+from core.recognition_answer_samples import RecognitionAnswerSampleStore
 from core.repository_dto import CONFIRMED_STUDENT_VALUE_FIELDS, ConfirmedStudent
 from core.scanner_matchers import StudentMatcherAdapter
 from core.scanner_session import ScannerError
-from core.student_scan_recognizer import StudentBasicCropSet
+from core.student_scan_recognizer import StudentBasicCropSet, StudentBasicRecognizer
 
 
 BACKEND = Path(__file__).parents[1]
@@ -62,12 +64,13 @@ class StudentScanS2Tests(unittest.TestCase):
         self.assertEqual("ok", evidence["skill2"]["status"])
         self.assertEqual("basic_skill_combined", evidence["skill2"]["source"])
         self.assertEqual("ok", evidence["combat_hp"]["status"])
-        self.assertEqual("inferred", evidence["weapon_state"]["status"])
+        self.assertEqual("ok", evidence["weapon_state"]["status"])
+        self.assertEqual("basic_weapon_state_template", evidence["weapon_state"]["source"])
         self.assertEqual("student_level_studio_position_bank", evidence["level"]["source"])
         self.assertEqual("relationship_rank_studio_position_bank", evidence["bond_rank"]["source"])
         self.assertEqual("weapon_level_studio_position_bank", evidence["weapon_level"]["source"])
 
-    def test_payload_uses_only_repository_dto_fields_and_excludes_later_slices(self) -> None:
+    def test_payload_uses_only_repository_dto_fields_and_excludes_unimplemented_slices(self) -> None:
         capture = CountingCapture(FIXTURES / "student_scan_s2_serika_new_year.png")
         payload = StudentMatcherAdapter(capture, self.catalog)(
             {"target_id": "fixture"}, Event(), lambda *_item: None
@@ -77,6 +80,7 @@ class StudentScanS2Tests(unittest.TestCase):
         self.assertLessEqual(set(payload["values"]), set(CONFIRMED_STUDENT_VALUE_FIELDS))
         s4_and_later = set(self.expected["excluded_s2_fields"]) - {
             "bond_rank", "equip1", "equip2", "equip3", "equip4",
+            "stat_hp", "stat_atk", "stat_heal",  # F3 ability-potential fields
         }
         self.assertTrue(s4_and_later.isdisjoint(payload["values"]))
 
@@ -110,6 +114,89 @@ class StudentScanS2Tests(unittest.TestCase):
             ),
         )
         crops.close()
+
+    def test_weapon_star_above_game_maximum_is_not_confirmed(self) -> None:
+        recognizer = StudentBasicRecognizer(self.catalog)
+        recognizer._color_bbox = lambda *_args: (0, 0, 49, 10)
+        observation = recognizer.read_weapon_star(Image.new("RGB", (60, 20)))
+        self.assertIsNone(observation.value)
+        self.assertEqual("uncertain", observation.status)
+
+    def test_weapon_studio_bank_is_resolution_invariant(self) -> None:
+        recognizer = StudentBasicRecognizer(self.catalog)
+        templates = recognizer.studio_numeric_bank.templates
+        cells = tuple(
+            templates[roi][digit].resize(
+                (max(1, templates[roi][digit].width // 2), max(1, templates[roi][digit].height // 2)),
+                Image.Resampling.NEAREST,
+            ).convert("RGB")
+            for roi, digit in (("weaponlevel_digit1", "4"), ("weaponlevel_digit2", "8"))
+        )
+        try:
+            match = recognizer.studio_numeric_bank.match(
+                cells,
+                field="weapon_level",
+                roi_names=("weaponlevel_digit1", "weaponlevel_digit2"),
+            )
+            self.assertEqual(48, match.value)
+            self.assertGreaterEqual(match.score, 0.65)
+            self.assertGreaterEqual(match.margin, 0.05)
+        finally:
+            for cell in cells:
+                cell.close()
+
+    def test_review_training_covers_all_requested_student_numeric_fields(self) -> None:
+        with TemporaryDirectory() as temporary:
+            store = RecognitionAnswerSampleStore(Path(temporary))
+            matcher = StudentMatcherAdapter(
+                CountingCapture(FIXTURES / "student_scan_s2_serika_new_year.png"),
+                self.catalog,
+                answer_samples=store,
+            )
+
+            def cells(field: str) -> tuple[Image.Image, Image.Image]:
+                color = (90, 110, 135) if field == "relationship_rank" else (255, 255, 255)
+                result = []
+                for x in (4, 7):
+                    image = Image.new("RGB", (12, 16))
+                    for y in range(3, 13):
+                        image.putpixel((x, y), color)
+                    result.append(image)
+                return tuple(result)  # type: ignore[return-value]
+
+            groups = {
+                "basic_student_level_studio_cells": cells("student_level"),
+                "basic_weapon_level_studio_cells": cells("weapon_level"),
+                "basic_relationship_rank_studio_2_cells": cells("relationship_rank"),
+                "basic_equipment_1_level_studio_cells": cells("equipment_level"),
+                "basic_equipment_2_level_studio_cells": cells("equipment_level"),
+                "basic_equipment_3_level_studio_cells": cells("equipment_level"),
+            }
+            specimen = {"source_size": (1280, 720), "numeric_groups": groups}
+            payload = {
+                "values": {
+                    "level": 12, "bond_rank": 28, "weapon_level": 48,
+                    "equip1_level": 10, "equip2_level": 20, "equip3_level": 30,
+                }
+            }
+            try:
+                self.assertEqual(
+                    12,
+                    matcher.train_user_answer("a" * 24, "candidate-1", specimen, payload),
+                )
+                loaded = store.load_numeric("a" * 24, (1280, 720))
+                try:
+                    self.assertEqual(12, len(loaded))
+                    self.assertEqual(
+                        {"student_level", "relationship_rank", "weapon_level", "equipment_level"},
+                        {sample.field for sample in loaded},
+                    )
+                finally:
+                    store.close(loaded)
+            finally:
+                for group in groups.values():
+                    for image in group:
+                        image.close()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "actual_client_size": [
+    1280,
+    720
+  ],
+  "partition": "development_calibration_not_holdout",
+  "assets": [
+    {
+      "file": "item-page0.png",
+      "source": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-04.png",
+      "sha256": "d42e12ec09dfbf5509969089ef66008e9f49fc5ade05682458b6e5a8a47ff207"
+    },
+    {
+      "file": "item-page1.png",
+      "source": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-07.png",
+      "sha256": "d79eb20adb8ddc7f6495c025bd807d9f677f8a98530ab6d18b0aaf8f88075e3f"
+    },
+    {
+      "file": "item-pre-tail.png",
+      "source": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-16.png",
+      "sha256": "fa77d79702d4141a4c0d22a7f60cf3ec205e710ec297f41a2a036bfbddfde313"
+    },
+    {
+      "file": "item-tail.png",
+      "source": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-19.png",
+      "sha256": "059a67b7b4a80d49e99c6953e4cb6b242ce46e8fb98837cb41cdf8faae22bc9a"
+    },
+    {
+      "file": "equipment-page0.png",
+      "source": "debug/scanner_f10_live/equipment-three-pages-final/frame-04.png",
+      "sha256": "3cecc8502910c61054ccfae7a5845cd6713c49496456fcae7ef9bc0c29b4332a"
+    },
+    {
+      "file": "equipment-page1.png",
+      "source": "debug/scanner_f10_live/equipment-three-pages-final/frame-07.png",
+      "sha256": "f1c1063495d08cea846948f980495e5c81a90f80431a6bba9ebf2697e239ad3d"
+    },
+    {
+      "file": "equipment-page2.png",
+      "source": "debug/scanner_f10_live/equipment-three-pages-final/frame-10.png",
+      "sha256": "f405fede17f4d36dd2552e14cbb6635798d729695d1f0ed8dd4249623df5af16"
+    },
+    {
+      "file": "equipment-variable-drag.png",
+      "source": "debug/scanner_f10_live/equipment-three-pages-final/frame-13.png",
+      "sha256": "22af5fe10b6f8f7db824bef8c4019b276ffc5d3cfac8561c3630b545f96a8bdb"
+    }
+  ],
+  "pairs": [
+    {
+      "source_kind": "item",
+      "before": "item-page0.png",
+      "after": "item-page1.png",
+      "overlap_rows": 3,
+      "decision": "verified_row_overlap"
+    },
+    {
+      "source_kind": "item",
+      "before": "item-pre-tail.png",
+      "after": "item-tail.png",
+      "overlap_rows": 3,
+      "decision": "verified_tail_residual"
+    },
+    {
+      "source_kind": "equipment",
+      "before": "equipment-page0.png",
+      "after": "equipment-page1.png",
+      "overlap_rows": 4,
+      "decision": "verified_row_overlap"
+    },
+    {
+      "source_kind": "equipment",
+      "before": "equipment-page1.png",
+      "after": "equipment-page2.png",
+      "overlap_rows": 4,
+      "decision": "verified_row_overlap"
+    },
+    {
+      "source_kind": "equipment",
+      "before": "equipment-page2.png",
+      "after": "equipment-variable-drag.png",
+      "overlap_rows": 4,
+      "decision": "reject_ambiguous_overlap"
+    }
+  ]
+}
