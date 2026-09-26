@@ -65,12 +65,6 @@ _ENTRIES = (
     Threshold("inventory.sort_check.equipment", 0.70, "score", "F10", F10, "sort", "eq_sort_rule_check"),
     Threshold("inventory.scroll.settled_same", 0.985, "similarity", "F10", F10, "scroll", "page_signature",
               note="consecutive captures this similar count toward a settled page"),
-    Threshold("inventory.scroll.no_motion_same", 0.97, "similarity", "F10", F10, "scroll_terminal", "verified_no_motion",
-              note="before/after page similarity that means the drag did not move the list"),
-    Threshold("inventory.scroll.overlap_score", 0.94, "score", "F10", F10, "scroll_overlap", "verified_row_overlap"),
-    Threshold("inventory.scroll.tail_residual_floor", 0.88, "score", "F10", F10, "scroll_overlap", "verified_tail_residual"),
-    Threshold("inventory.scroll.overlap_margin.item", 0.03, "margin", "F10", F10, "scroll_overlap", "verified_row_overlap"),
-    Threshold("inventory.scroll.overlap_margin.equipment", 0.025, "margin", "F10", F10, "scroll_overlap", "verified_row_overlap"),
     # Inventory detail panel (F9).
     Threshold("inventory.detail.source_title.correlation", 0.8, "score", "F9", F9, "source", "inventory_detail_title"),
     Threshold("inventory.detail.source_title.color", 0.95, "similarity", "F9", F9, "source", "inventory_detail_title"),
@@ -216,6 +210,11 @@ _ENTRIES = (
               note="grey check after reset means 'all categories' (live 0.19), never an empty box"),
     Threshold("inventory.menu.tab_active_white", 0.50, "ratio", "C5", C5, "menu", "display_tab",
               note="share of white pixels in a display-settings tab button when it is active (live 0.90 / 0.93; inactive 0)"),
+    # Inventory scrolling by measured pixel shift (C5, replaces F10 histogram row overlap).
+    Threshold("inventory.shift.max_residual", 20.0, "intensity", "C5", C5, "scroll", "verified_pixel_shift",
+              note="mean grey difference of the best shift; live good shifts 1.4-9.1"),
+    Threshold("inventory.shift.no_motion", 0.004, "ratio", "C5", C5, "scroll_terminal", "verified_no_motion",
+              note="shift at or below ~3px of 720 means the drag did not move the list"),
 )
 
 THRESHOLDS: dict[str, Threshold] = {entry.name: entry for entry in _ENTRIES}

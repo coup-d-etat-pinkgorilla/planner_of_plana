@@ -1264,7 +1264,8 @@ class _InventoryScan:
     observed_profile_ids: list[str] = field(default_factory=list)
     review_required: bool = False
     coverage_complete: bool = False
-    terminal_after_page: bool = False
+    offset: float = 0.0
+    read_until: int = -1
     completed: bool = False
 
     def skip(self, index: int, confidence: float, note: str) -> None:
@@ -1303,13 +1304,10 @@ class InventoryMatcherAdapter:
         scan = _InventoryScan(frame=frame, source_size=frame.size, target=target, slots=self.slots)
         try:
             self._prepare_scan(scan, cancel)
-            scan_indices = tuple(range(len(scan.slots)))
             for page in range(self.max_pages):
-                self._read_page(scan, page, scan_indices, cancel, progress)
-                next_indices = self._advance_page(scan, cancel)
-                if next_indices is None:
+                self._read_page(scan, page, cancel, progress)
+                if not self._advance_page(scan, cancel):
                     break
-                scan_indices = next_indices
             candidates = self._finalize(scan)
             scan.completed = True
             return candidates
@@ -1351,15 +1349,34 @@ class InventoryMatcherAdapter:
         finally:
             self.answer_samples.close(samples)
 
-    def _read_page(self, scan: "_InventoryScan", page: int, scan_indices, cancel: Event, progress) -> None:
+    def _visible_slots(self, scan: "_InventoryScan", page: int) -> dict[int, dict[str, Any]]:
+        """Content index -> slot region on the current frame.
+
+        With navigation the rows follow the measured scroll offset (C5), so an index names the same
+        tile on every page; the navigation-free fallback keeps one fixed grid per page.
+        """
+        navigation = getattr(self, 'navigation', None)
+        if navigation is not None and scan.prepared is not None:
+            return navigation.page_slots(scan.source_kind, scan.offset)
+        return {page * len(scan.slots) + position: slot for position, slot in enumerate(scan.slots)}
+
+    def _read_page(self, scan: "_InventoryScan", page: int, cancel: Event, progress) -> None:
         page_ids: list[str] = []
         page_unresolved = False
-        for slot_index in scan_indices:
+        visible = self._visible_slots(scan, page)
+        slots = [visible[index] for index in sorted(visible)]
+        unread = [index for index in visible if index > scan.read_until]
+        if scan.prepared is not None and unread and min(unread) != scan.read_until + 1:
+            # A tile row that was never fully visible would otherwise be skipped silently.
+            raise ScannerError("inventory_scroll_unverified", f"rows skipped: next visible index {min(unread)} after {scan.read_until}")
+        for position, index in enumerate(sorted(visible)):
+            if index <= scan.read_until:
+                continue
             if cancel.is_set():
                 raise ScannerError("cancelled", "inventory scan cancelled")
-            crop = ratio_crop(scan.frame, scan.slots[slot_index])
+            crop = ratio_crop(scan.frame, visible[index])
             try:
-                reading = self._read_slot(scan, page, slot_index, crop, cancel)
+                reading = self._read_slot(scan, index, position, slots, crop, cancel)
                 if reading is None or not self._record_entry(scan, reading, crop):
                     continue
                 if isinstance(reading.identity, str):
@@ -1369,6 +1386,8 @@ class InventoryMatcherAdapter:
                 progress(len(scan.entries), None, "scanner.inventory.grid")
             finally:
                 crop.close()
+        if visible:
+            scan.read_until = max(scan.read_until, max(visible))
         if scan.prepared is not None:
             if page_ids and not self.navigation.verify_profile_order(scan.prepared.profile_id, page_ids):
                 # The current client can sort the mixed item page by quantity/name,
@@ -1384,12 +1403,12 @@ class InventoryMatcherAdapter:
             scan.observed_profile_ids.extend(page_ids)
             scan.target = scan.target.replace(inventory_profile_verified=bool(page_ids) and not page_unresolved)
 
-    def _read_slot(self, scan: "_InventoryScan", page: int, slot_index: int, crop: Image.Image, cancel: Event) -> "_SlotReading | None":
+    def _read_slot(self, scan: "_InventoryScan", index: int, position: int, slots: list[dict[str, Any]],
+                   crop: Image.Image, cancel: Event) -> "_SlotReading | None":
         """Match one visible slot, consult the detail panel when needed and apply the profile gate."""
         if not image_has_visible_content(crop):
             return None
         detail_port = getattr(self, 'detail_recovery', None)
-        index = page * len(scan.slots) + slot_index
         allowed = scan.allowed_ids
         profile_confirmed = allowed is None
         if allowed is not None:
@@ -1429,7 +1448,7 @@ class InventoryMatcherAdapter:
             count_source='slot_count_glyph', note=f'margin={count.margin:.6f}', profile_confirmed=profile_confirmed,
         )
         if detail_port is not None and not (fast_confident and count.value is not None):
-            self._apply_detail(scan, reading, slot_index, match, count, confident, cancel)
+            self._apply_detail(scan, reading, position, slots, match, count, confident, cancel)
         if allowed is not None and reading.identity not in allowed:
             scan.skip(index, reading.score, "visible identity is outside the explicit scan profile")
             return None
@@ -1438,12 +1457,12 @@ class InventoryMatcherAdapter:
             return None
         return reading
 
-    def _apply_detail(self, scan: "_InventoryScan", reading: "_SlotReading", slot_index: int,
+    def _apply_detail(self, scan: "_InventoryScan", reading: "_SlotReading", position: int, slots: list[dict[str, Any]],
                       match: Match, count: CountMatch, confident: bool, cancel: Event) -> None:
         outcome = self.detail_recovery.resolve(
-            scan.target, cancel, scan.frame, slot_index, reading.identity, count.value, confident,
+            scan.target, cancel, scan.frame, position, reading.identity, count.value, confident,
             profile_verified=scan.target.inventory_profile_verified is True,
-            scan_profile=scan.target.get('inventory_scan_profile'))
+            scan_profile=scan.target.get('inventory_scan_profile'), slots=slots)
         if outcome.failure is not None:
             # Only a verified return to the original selection makes a failed read partial.
             if not outcome.restored or outcome.failure.code not in DETAIL_RECOVERABLE_CODES:
@@ -1489,50 +1508,48 @@ class InventoryMatcherAdapter:
         scan.review_required = scan.review_required or reading.status != 'ok' or not quantity_confident
         return True
 
-    def _advance_page(self, scan: "_InventoryScan", cancel: Event) -> tuple[int, ...] | None:
-        """Move to the next page; None ends the page loop."""
+    def _advance_page(self, scan: "_InventoryScan", cancel: Event) -> bool:
+        """Move to the next page; False ends the page loop.
+
+        With navigation the list end is two drags without measured motion after the last rows were
+        read, so a residual tail page is always followed by a no-motion check (X07, C2-2).
+        """
         navigation = getattr(self, 'navigation', None)
         if navigation is None and len(scan.entries) >= len(self.matcher.templates):
             scan.coverage_complete = True
-            return None
-        if scan.terminal_after_page:
-            # A residual tail page is only terminal when one more scroll shows no motion (X07).
-            scan.coverage_complete = navigation.confirm_terminal(scan.target, cancel, scan.frame, scan.source_kind)
-            scan.evidence.append({"field": "scroll_terminal", "status": "ok" if scan.coverage_complete else "partial",
-                "source": "verified_tail_residual" if scan.coverage_complete else "tail_recheck_moved",
-                "confidence": 1.0 if scan.coverage_complete else 0.0,
-                "note": "residual tail page scanned once; no-motion re-check " + ("passed" if scan.coverage_complete else "moved; no zero-fill")})
-            scan.review_required = scan.review_required or not scan.coverage_complete
-            return None
+            return False
         if cancel.is_set():
             raise ScannerError("cancelled", "inventory scan cancelled")
         if navigation is None:
             return self._wheel_page(scan, cancel)
         self._anchor_selection(scan, cancel)
         moved = navigation.advance(scan.target, cancel, scan.frame, scan.source_kind)
+        shift_px = round(moved.shift * scan.source_size[1])
         scan.evidence.append({"field": "scroll_overlap", "status": "ok", "source": moved.reason,
-            "confidence": 1.0, "note": f"rows={moved.overlap_rows};reason={moved.reason}"})
+            "confidence": 1.0, "note": f"shift_px={shift_px};reason={moved.reason}"})
         if moved.terminal:
             scan.coverage_complete = True
             moved.frame.close()
-            return None
-        scan.terminal_after_page = moved.terminal_after_page
+            return False
+        scan.offset += moved.shift
         scan.frame.close()
         scan.frame = moved.frame
-        return moved.slot_indices
+        return True
 
     def _anchor_selection(self, scan: "_InventoryScan", cancel: Event) -> None:
         """Keep a visible selection across the scroll: select the page's last filled slot (C5)."""
         detail_port = getattr(self, 'detail_recovery', None)
-        if detail_port is None or not hasattr(detail_port, 'anchor'):
+        if detail_port is None or not hasattr(detail_port, 'anchor') or scan.prepared is None:
             return
-        for slot_index in reversed(range(len(scan.slots))):
-            with ratio_crop(scan.frame, scan.slots[slot_index]) as crop:
+        visible = self._visible_slots(scan, 0)
+        slots = [visible[index] for index in sorted(visible)]
+        for position in reversed(range(len(slots))):
+            with ratio_crop(scan.frame, slots[position]) as crop:
                 if image_has_visible_content(crop):
-                    detail_port.anchor(scan.target, cancel, scan.frame, slot_index)
+                    detail_port.anchor(scan.target, cancel, scan.frame, position, slots=slots)
                     return
 
-    def _wheel_page(self, scan: "_InventoryScan", cancel: Event) -> tuple[int, ...] | None:
+    def _wheel_page(self, scan: "_InventoryScan", cancel: Event) -> bool:
         """Navigation-free fallback: wheel once and compare whole frames."""
         self.capture.scroll(scan.target, -480)
         next_frame = self.capture.wait_stable(scan.target, cancel)
@@ -1540,13 +1557,13 @@ class InventoryMatcherAdapter:
         if overlap >= rt.value("inventory.wheel.same_frame"):
             next_frame.close()
             scan.evidence.append({"field": "scroll_terminal", "status": "ok", "source": "stable_frame_overlap", "confidence": overlap, "note": "tail-or-no-motion"})
-            return None
+            return False
         if overlap <= rt.value("inventory.wheel.zero_overlap"):
             scan.evidence.append({"field": "scroll_overlap", "status": "uncertain", "source": "frame_overlap", "confidence": overlap, "note": "near-zero overlap; no zero-fill"})
             scan.review_required = True
         scan.frame.close()
         scan.frame = next_frame
-        return tuple(range(len(scan.slots)))
+        return True
 
     def _finalize(self, scan: "_InventoryScan") -> list[dict[str, Any]]:
         prepared = scan.prepared

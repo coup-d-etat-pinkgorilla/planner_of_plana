@@ -8,7 +8,8 @@ from PIL import Image
 
 from core.inventory_detail_recovery import InventoryDetailRecognizer
 from core.inventory_catalog import CATALOG
-from core.inventory_navigation import ALLOWED_CONTROLS, CATEGORY_BOXES, InventoryNavigation, PreparedInventory, ScrollResult
+from core.inventory_navigation import ALLOWED_CONTROLS, CATEGORY_BOXES, InventoryNavigation, PageMove, PreparedInventory
+from core import recognition_thresholds as rt
 from core.recognition_assets import RecognitionAssetCatalog
 from core.scanner_session import ScannerError
 
@@ -106,26 +107,41 @@ def sig(label):
     return tuple(v/norm for v in values)
 
 
-class SignatureNavigation(InventoryNavigation):
-    def __init__(self,before,afters):
-        self.capture=FakeCapture();self.before=before;self.afters=iter(afters);self.trace=[]
+class ShiftNavigation(InventoryNavigation):
+    """advance() with scripted settled frames and measured (shift, residual) pairs."""
+    def __init__(self,shifts):
+        self.capture=FakeCapture();self.shifts=iter(shifts);self.trace=[]
         self.regions={'scroll_track':dict(x=.975,start_y=.75,end_y=[.65,.58])}
-    def signatures(self,frame,source):return self.before
-    def settled_after(self,target,cancel,source):return self.capture.frame.copy(),next(self.afters)
+    def settled_after(self,target,cancel,source):return self.capture.frame.copy(),None
+    def measure_shift(self,before,after,source):return next(self.shifts)
 
 
 class ScrollTests(unittest.TestCase):
-    def test_row_overlap_recovers_three_rows_and_scans_only_new_two(self):
-        before=[sig(i) for i in range(25)];after=before[10:]+[sig(i) for i in range(30,40)]
-        nav=SignatureNavigation(before,[after]);result=nav.advance({},Event(),nav.capture.frame,'item')
-        self.assertEqual(3,result.overlap_rows);self.assertEqual(tuple(range(15,25)),result.slot_indices)
-        self.assertFalse(result.terminal);self.assertEqual([-240],nav.capture.scrolls)
+    def test_measured_shift_moves_the_page(self):
+        nav=ShiftNavigation([(110/720,2.0)]);result=nav.advance({},Event(),nav.capture.frame,'item')
+        self.assertAlmostEqual(110/720,result.shift);self.assertFalse(result.terminal)
+        self.assertEqual('verified_pixel_shift',result.reason);self.assertEqual([-240],nav.capture.scrolls)
 
     def test_no_motion_retries_once_then_is_verified_terminal(self):
-        before=[sig(i) for i in range(25)];nav=SignatureNavigation(before,[before,before])
-        result=nav.advance({},Event(),nav.capture.frame,'item')
+        nav=ShiftNavigation([(0.0,0.0),(0.002,0.5)]);result=nav.advance({},Event(),nav.capture.frame,'item')
         self.assertTrue(result.terminal);self.assertEqual('verified_no_motion',result.reason)
         self.assertEqual([-240,-360],nav.capture.scrolls)
+
+    def test_unmatched_shift_is_failure_not_terminal(self):
+        nav=ShiftNavigation([(.1,rt.value('inventory.shift.max_residual')+1)])
+        with self.assertRaises(ScannerError) as exc:nav.advance({},Event(),nav.capture.frame,'item')
+        self.assertEqual('inventory_scroll_unverified',exc.exception.code)
+
+    def test_page_slots_follow_the_measured_offset(self):
+        nav=InventoryNavigation(FakeCapture(),RecognitionAssetCatalog(),InventoryDetailRecognizer(RecognitionAssetCatalog()))
+        for source,count in (('item',20),('equipment',25)):
+            base=nav.detail_recognizer.regions['sources'][source]['grid_slots']
+            self.assertEqual({i:slot for i,slot in enumerate(base)},nav.page_slots(source,0.0))
+            self.assertEqual(count,len(base))
+        moved=nav.page_slots('item',110/720)
+        self.assertEqual(list(range(5,25)),sorted(moved))
+        base=nav.detail_recognizer.regions['sources']['item']['grid_slots'];pitch=base[5]['cy']-base[0]['cy']
+        self.assertAlmostEqual(base[0]['y1']+pitch-110/720,moved[5]['y1'],places=9)
 
     def test_tab_switch_is_verified_before_tab_specific_clicks(self):
         # C5 live: the menu reopened on the sort tab, the filter-tab click was lost, and the
@@ -185,7 +201,7 @@ class ScrollTests(unittest.TestCase):
 
     def test_drag_uses_the_scroll_track_outside_every_grid_slot(self):
         # C2 X08: the drag starts in the list padding, so a drag read as a tap selects nothing.
-        drags=[];before=[sig(i) for i in range(25)];nav=SignatureNavigation(before,[before,before])
+        drags=[];nav=ShiftNavigation([(0.0,0.0),(0.0,0.0)])
         nav.capture.drag_scroll=lambda target,start,end:drags.append((start,end))
         nav.advance({},Event(),nav.capture.frame,'item')
         self.assertEqual([((.975,.75),(.975,.65)),((.975,.75),(.975,.58))],drags)
@@ -194,18 +210,6 @@ class ScrollTests(unittest.TestCase):
         for source in ('item','equipment'):
             for slot in slots[source]['grid_slots']:
                 self.assertTrue(real['x']>slot['x2'] or real['x']<slot['x1'],(source,slot))
-
-    def test_residual_tail_recheck_requires_no_motion(self):
-        # C2 X07
-        before=[sig(i) for i in range(25)];moved=before[10:]+[sig(i) for i in range(30,40)]
-        self.assertTrue(SignatureNavigation(before,[before]).confirm_terminal({},Event(),None,'item'))
-        self.assertFalse(SignatureNavigation(before,[moved]).confirm_terminal({},Event(),None,'item'))
-
-    def test_ambiguous_overlap_is_failure_not_terminal(self):
-        before=[sig(i) for i in range(25)];unknown=[sig(i) for i in range(60,85)]
-        nav=SignatureNavigation(before,[unknown])
-        with self.assertRaises(ScannerError) as exc:nav.advance({},Event(),nav.capture.frame,'item')
-        self.assertEqual('inventory_scroll_unverified',exc.exception.code)
 
     def test_profile_order_requires_membership_monotonicity_and_unique_ids(self):
         nav=bare();a='Item_Icon_SkillBook_Hyakkiyako_0';b='Item_Icon_SkillBook_Hyakkiyako_1'
@@ -226,20 +230,24 @@ class NativeNavigationFixtureTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):cls.detail.close()
 
-    def test_reviewed_native_pairs_preserve_overlap_and_safe_decisions(self):
-        for pair in self.manifest['pairs']:
-            with self.subTest(pair=pair['after']), Image.open(self.root/pair['before']) as before, Image.open(self.root/pair['after']) as after:
-                overlap=self.nav.overlap(self.nav.signatures(before,pair['source_kind']),
-                                         self.nav.signatures(after,pair['source_kind']))
-                self.assertIsNotNone(overlap);rows,score,margin=overlap
-                self.assertEqual(pair['overlap_rows'],rows)
-                if pair['decision']=='verified_row_overlap':
-                    threshold=.025 if pair['source_kind']=='equipment' else .03
-                    self.assertGreaterEqual(score,.94);self.assertGreaterEqual(margin,threshold)
-                elif pair['decision']=='verified_tail_residual':
-                    self.assertGreaterEqual(score,.88);self.assertLess(score,.94);self.assertGreaterEqual(margin,.03)
-                else:
-                    self.assertLess(margin,.025)
+    def test_native_pairs_measure_exact_pixel_shifts(self):
+        # C5 (X20, C2-2): the measured shift replaces F10's histogram overlap. The F10 pair rejected as
+        # an ambiguous overlap and the sub-row tail both measure cleanly on the live 1280 frames.
+        nav=InventoryNavigation(FakeCapture(),RecognitionAssetCatalog(),self.detail)
+        expected={('item-page0.png','item-page1.png'):112,('item-pre-tail.png','item-tail.png'):31,
+                  ('equipment-page0.png','equipment-page1.png'):110,('equipment-page1.png','equipment-page2.png'):112,
+                  ('equipment-page2.png','equipment-variable-drag.png'):110}
+        live=Path(__file__).resolve().parents[2]/'debug/scanner_c2_live'
+        cases=[(self.root/pair['before'],self.root/pair['after'],pair['source_kind'],expected[(pair['before'],pair['after'])]) for pair in self.manifest['pairs']]
+        cases+=[(live/'tech-notes-full/frame-16.png',live/'tech-notes-full/frame-19.png','item',29),
+                (live/'presents-full-2/frame-31.png',live/'presents-full-2/frame-34.png','item',110),
+                (live/'equipment-full/frame-16.png',live/'equipment-full/frame-19.png','equipment',112),
+                (live/'tech-notes-full/frame-19.png',live/'tech-notes-full/frame-19.png','item',0)]
+        for before_path,after_path,source,pixels in cases:
+            with self.subTest(after=after_path.name),Image.open(before_path) as before,Image.open(after_path) as after:
+                shift,residual=nav.measure_shift(before.convert('RGB'),after.convert('RGB'),source)
+                self.assertLessEqual(abs(round(shift*720)-pixels),1)
+                self.assertLessEqual(residual,rt.value('inventory.shift.max_residual'))
 
     def test_fixture_hashes_are_immutable(self):
         for asset in self.manifest['assets']:

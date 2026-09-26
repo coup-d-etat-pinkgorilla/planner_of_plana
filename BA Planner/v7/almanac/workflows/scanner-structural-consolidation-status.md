@@ -22,7 +22,7 @@ sources:
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
 | C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
 | C4 임계값 레지스트리 | **완료** (2026-09-26, C4a~C4c) | `d4f030e` | — |
-| C5 인식 공통화 | **진행 중: C5a 완료** (2026-09-26) | `43c17b5` | C5b(오프셋 인식 grid: X20·C2-2·다중 페이지 선택) |
+| C5 인식 공통화 | **진행 중: C5a 완료, C5b 구현(실게임 대기)** (2026-09-26) | `43c17b5` | C5b 실게임 1280 세 프로필 tail |
 | C6~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -458,7 +458,7 @@ C5에서 gate **로직**을 고치고 값 변경은 C7. F9 "선택이 안 보이
 | Slice | 항목 | 상태 |
 |---|---|---|
 | C5a | C2-1 카테고리 필터, C0-1 gate, 탭 전환 검증, 실패 시 메뉴 취소, 스크롤 전 선택 anchor | **완료** |
-| C5b | 오프셋 인식 grid(실제 픽셀 이동 측정): X20 행 overlap, C2-2 1행 미만 tail, 스크롤 후 선택·클릭 정렬, X07 실게임 | 미착수 |
+| C5b | 오프셋 인식 grid(실제 픽셀 이동 측정): X20 행 overlap, C2-2 1행 미만 tail, 스크롤 후 선택·클릭 정렬, X07 실게임 | **구현·오프라인 검증 완료, 실게임 대기** |
 | C5c | X15 이미지 유틸 공통화(`_normalized_correlation` 두 변형 이름 분리, private import 제거) | 미착수 |
 | C5d | X18 상세 복구를 `StudentPanelRecovery` 계약에 정렬 | 미착수 |
 | C5e | X19 재고 수량을 `StudioNumericBank` 경로로(사용자 정답·세션 보정) | 미착수 |
@@ -490,3 +490,25 @@ C5에서 gate **로직**을 고치고 값 변경은 C7. F9 "선택이 안 보이
   replay에는 슬롯 선택 프레임이 없어 두 재고 golden은 첫 상세 읽기에서 멈춘다(`inventory_detail_unconfirmed`/`inventory_selection_unknown`) —
   **의도된 golden 재고정**, 실제 검증 근거는 실게임 trace.
 - 검증: Python 564 OK(+5: 탭 확인·카테고리 실프레임·유일 선택·reset 대기/취소·near-tie gate).
+
+### C5b 결과 (구현, 실게임 대기)
+
+- `InventoryNavigation.measure_shift`: 목록 viewport(새 region `list_viewport`: item y .2083–.8472, equipment .2083–.9583, 실측 150–610/150–690px)
+  안의 회색조 세로 상호상관으로 **실제 위쪽 이동(px)과 잔차**를 잰다(1/2 축소 탐색 후 ±4px 정밀, 약 0.05s). 기존 기록 전부에서 정확:
+  F10 fixture 112/31/110/112px, F10이 `reject_ambiguous_overlap`으로 거부한 쌍 **110px(잔차 2.37)**, C2 기술 노트 tail **29px**,
+  C2 선물·장비 모호 지점 110/112px, 동일 프레임 0px. 잔차는 좋은 이동에서 0.7~9.1.
+- `advance`는 drag 후 측정한 이동을 `PageMove(frame, shift)`로 돌려준다. 잔차 > `inventory.shift.max_residual`(20)이면
+  `inventory_scroll_unverified`, 이동 ≤ `inventory.shift.no_motion`(≈3px)이면 한 번 더 drag하고 두 번째도 무이동이면 `verified_no_motion` 종료.
+  **histogram 행 overlap(X20)·tail residual 판정·`confirm_terminal`은 제거**했다. 1행 미만 tail(C2-2)은 평범한 이동으로 읽히고, 그 뒤의
+  무이동 확인이 X07 재확인 역할을 항상 한다. 레지스트리에서 `inventory.scroll.no_motion_same`·`overlap_score`·`tail_residual_floor`·
+  `overlap_margin.*`를 제거하고 `inventory.shift.*` 두 항목을 추가했다(C4의 "같은 프레임" 셋 중 .97은 이 결정으로 대체).
+- `page_slots(source, offset)`: 누적 offset에서 **정수 행 + 위상**으로 슬롯 region을 옮겨, viewport 안에 완전히 보이는 타일만
+  `content index → region`으로 준다. offset 0은 기존 격자와 정확히 같다. adapter는 content index로 evidence·`observed_slot`을 매기고
+  `read_until` 이후만 읽으며, **새로 보이는 첫 index가 연속이 아니면 `inventory_scroll_unverified`**(건너뛴 행을 조용히 잃지 않음).
+- 상세 복구 `selected/same_grid/observe_selection/select/anchor/resolve`가 옮겨진 슬롯(`slots`)을 받는다 — 스크롤 뒤에도 선택
+  판정·클릭·복귀 확인이 실제 타일 위치에서 이뤄진다. F9 "보이는 선택 없으면 입력 금지" 규칙은 그대로다.
+- 정밀 drag 실험(drag hold)은 입력만으로 행 정렬이 안 돼 되돌렸다(C5a 기록). 측정 방식이라 drag 거리는 기존 `scroll_track` 그대로다
+  (drag당 약 1.08행, 목록 9행이면 약 5회).
+- replay: 두 재고 golden은 첫 페이지 상세 읽기에서 멈춰(선택 프레임 없음) **변화 없음** — C5b 경로는 단위 테스트(측정 이동·무이동 종료·
+  잔차 초과·tail 후 무이동·행 건너뜀)와 실프레임 이동 측정 테스트가 고정한다.
+- 검증: Python 전체 565 OK. **실게임 미검증**: 확인 시점에 게임 창이 최소화되어(`status: minimized`) 입력을 보내지 않았다.

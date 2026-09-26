@@ -13,6 +13,16 @@
       0.58
     ]
   },
+  "list_viewport": {
+    "item": {
+      "y1": 0.208333,
+      "y2": 0.847222
+    },
+    "equipment": {
+      "y1": 0.208333,
+      "y2": 0.958333
+    }
+  },
   "controls": {
     "filtermenu_button": {
       "x1": 0.766797,

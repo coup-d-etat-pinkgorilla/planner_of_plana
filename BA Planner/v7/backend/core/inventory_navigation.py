@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 import math
 from threading import Event
-from PIL import Image
+from PIL import Image, ImageChops, ImageStat
 from core.inventory_catalog import CATALOG, ITEM_SCAN_PROFILES
 from core import recognition_thresholds as rt
 from core.scanner_session import ScannerError
@@ -32,13 +32,12 @@ class PreparedInventory:
 
 
 @dataclass
-class ScrollResult:
+class PageMove:
+    """One verified scroll: the measured upward content shift as a fraction of frame height (C5)."""
     frame: Image.Image
-    overlap_rows: int
-    slot_indices: tuple[int,...]
+    shift: float
     terminal: bool=False
-    terminal_after_page: bool=False
-    reason: str='verified_row_overlap'
+    reason: str='verified_pixel_shift'
 
 
 def _center(region):return ((region['x1']+region['x2'])/2,(region['y1']+region['y2'])/2)
@@ -212,17 +211,6 @@ class InventoryNavigation:
     def page_similarity(left,right):
         return sum(_similarity(a,b) for a,b in zip(left,right))/len(left)
 
-    @staticmethod
-    def overlap(before,after,cols=5):
-        rows=min(len(before),len(after))//cols;candidates=[]
-        for overlap in range(1,rows):
-            left=before[(rows-overlap)*cols:rows*cols];right=after[:overlap*cols]
-            candidates.append((sum(_similarity(a,b) for a,b in zip(left,right))/len(left),overlap))
-        candidates.sort(reverse=True)
-        if not candidates:return None
-        best=candidates[0];margin=best[0]-(candidates[1][0] if len(candidates)>1 else 0)
-        return best[1],best[0],margin
-
     def settled_after(self,target,cancel,source):
         previous=None;stable=0
         if cancel.wait(.35):raise ScannerError('cancelled','inventory scroll cancelled')
@@ -255,41 +243,63 @@ class InventoryNavigation:
             self.capture.scroll(ScanContext.of(target).replace(cancel=cancel,scroll_point=(x,start_y)),delta)
             self.trace.append(dict(input='scroll',delta=delta,attempt=attempt,point=[x,start_y]))
 
-    def confirm_terminal(self,target,cancel,before,source):
-        """One more scroll after a residual tail page must show no motion (X07)."""
-        before_signatures=self.signatures(before,source)
-        self.scroll_once(target,cancel,2)
-        after,after_signatures=self.settled_after(target,cancel,source)
-        after.close()
-        same=self.page_similarity(before_signatures,after_signatures)
-        self.trace.append(dict(terminal_recheck=same))
-        return same>=rt.value('inventory.scroll.no_motion_same')
-
     def restore_first_page(self,target,cancel,frame):
         """Re-apply the verified display settings; the client then shows the first page (X10)."""
         return self.prepare(target,cancel,frame)
 
+    def page_slots(self,source,offset):
+        """{content index: slot region} for tiles fully inside the list viewport at a content offset.
+
+        offset is the total upward scroll (fraction of frame height) since the first page; rows keep
+        the first page's column geometry and move by whole content rows plus the measured phase.
+        """
+        base=self.detail_recognizer.regions['sources'][source]['grid_slots'];rows=len(base)//5
+        pitch=base[5]['cy']-base[0]['cy'];viewport=self.regions['list_viewport'][source]
+        # Whole rows scrolled plus a small phase; offset 0 reproduces the first-page grid exactly.
+        whole=round(offset/pitch);phase=whole*pitch-offset
+        result={}
+        for row in range(-1,rows+1):
+            template=base[min(max(row,0),rows-1)*5:min(max(row,0),rows-1)*5+5]
+            dy=phase+(row-min(max(row,0),rows-1))*pitch
+            if row+whole<0:continue
+            for col,slot in enumerate(template):
+                region=dict(x1=slot['x1'],x2=slot['x2'],cx=slot['cx'],y1=slot['y1']+dy,y2=slot['y2']+dy,cy=slot['cy']+dy)
+                if region['y1']>=viewport['y1'] and region['y2']<=viewport['y2']:result[(row+whole)*5+col]=region
+        return result
+
+    def measure_shift(self,before,after,source):
+        """(upward shift as a fraction of height, mean grey residual) of the list between two frames."""
+        base=self.detail_recognizer.regions['sources'][source]['grid_slots'];viewport=self.regions['list_viewport'][source]
+        w,h=before.size
+        box=(round(base[0]['x1']*w),round(viewport['y1']*h),round(base[4]['x2']*w),round(viewport['y2']*h))
+        with before.convert('L') as a_full,after.convert('L') as b_full:
+            a=a_full.crop(box);b=b_full.crop(box)
+        try:
+            height=a.height;limit=height-80
+            def cost(x,y,shift,span):
+                with x.crop((0,shift,x.width,span)) as top,y.crop((0,0,y.width,span-shift)) as bottom:
+                    with ImageChops.difference(top,bottom) as diff:return ImageStat.Stat(diff).mean[0]
+            with a.resize((a.width//2,height//2)) as a2,b.resize((b.width//2,height//2)) as b2:
+                coarse=min(range(0,limit//2),key=lambda shift:cost(a2,b2,shift,a2.height))
+            candidates=range(max(0,coarse*2-4),min(limit,coarse*2+4)+1)
+            best=min(candidates,key=lambda shift:cost(a,b,shift,height))
+            return best/h,cost(a,b,best,height)
+        finally:
+            a.close();b.close()
+
     def advance(self,target,cancel,before,source):
-        before_signatures=self.signatures(before,source);slots=len(before_signatures);cols=5;rows=slots//cols
+        """Scroll once and measure the real shift; two no-motion drags verify the end of the list."""
         for attempt in (1,2):
             self.scroll_once(target,cancel,attempt)
-            after,after_signatures=self.settled_after(target,cancel,source)
-            same=self.page_similarity(before_signatures,after_signatures)
-            if same>=rt.value('inventory.scroll.no_motion_same'):
-                if attempt==2:return ScrollResult(after,rows,(),terminal=True,reason='verified_no_motion')
+            after,_signatures=self.settled_after(target,cancel,source)
+            shift,residual=self.measure_shift(before,after,source)
+            self.trace.append(dict(shift_px=round(shift*after.height),residual=residual,attempt=attempt))
+            if residual>rt.value('inventory.shift.max_residual'):
+                after.close();raise ScannerError('inventory_scroll_unverified',f'list shift unmatched residual={residual:.2f}')
+            if shift<=rt.value('inventory.shift.no_motion'):
+                if attempt==2:return PageMove(after,0.0,True,'verified_no_motion')
                 after.close();continue
-            overlap=self.overlap(before_signatures,after_signatures,cols)
-            if overlap is None:
-                after.close();raise ScannerError('inventory_scroll_unverified','row overlap unavailable')
-            count,score,margin=overlap
-            self.trace.append(dict(overlap_rows=count,score=score,margin=margin))
-            margin_threshold = rt.value('inventory.scroll.overlap_margin.equipment' if source == 'equipment' else 'inventory.scroll.overlap_margin.item')
-            overlap_score=rt.value('inventory.scroll.overlap_score')
-            if rt.value('inventory.scroll.tail_residual_floor')<=score<overlap_score and margin>=margin_threshold:
-                return ScrollResult(after,count,tuple(range(slots)),False,True,'verified_tail_residual')
-            if score<overlap_score or margin<margin_threshold:
-                after.close();raise ScannerError('inventory_scroll_unverified',f'ambiguous row overlap score={score:.3f} margin={margin:.3f}')
-            return ScrollResult(after,count,tuple(range(count*cols,slots)))
+            return PageMove(after,shift)
         raise ScannerError('inventory_scroll_unverified','scroll recovery exhausted')
 
     def verify_profile_order(self,profile,item_ids):

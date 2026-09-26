@@ -76,9 +76,9 @@ class InventoryDetailRecognizer:
         matches=[s for s in ('item','equipment') if scores.get((s,'title')) and scores.get((s,'list_title'))]
         return matches[0] if len(matches)==1 else None
 
-    def selected(self,frame,source):
+    def selected(self,frame,source,slots=None):
         hits=[]
-        for i,slot in enumerate(self.regions['sources'][source]['grid_slots']):
+        for i,slot in enumerate(slots or self.regions['sources'][source]['grid_slots']):
             with ratio_crop(frame,slot) as crop:
                 band=max(2,round(frame.height*5/720));fractions=[]
                 for y in (0,crop.height-band):
@@ -168,9 +168,9 @@ class InventoryDetailRecovery:
     def __init__(self,capture,recognizer):
         self.capture,self.recognizer=capture,recognizer;self.trace=[]
 
-    def same_grid(self,baseline,current,source):
+    def same_grid(self,baseline,current,source,slots=None):
         if baseline.size!=current.size or self.recognizer.classify(current)!=source:return False
-        for slot in self.recognizer.regions['sources'][source]['grid_slots']:
+        for slot in slots or self.recognizer.regions['sources'][source]['grid_slots']:
             # Ignore selection edges; every slot interior must stay in the same place.
             dx=(slot['x2']-slot['x1'])*.18;dy=(slot['y2']-slot['y1'])*.18
             r=dict(x1=slot['x1']+dx,x2=slot['x2']-dx,y1=slot['y1']+dy,y2=slot['y2']-dy)
@@ -178,34 +178,34 @@ class InventoryDetailRecovery:
                 if color_similarity(a,b)<rt.value('inventory.detail.same_grid.color'):return False
         return True
 
-    def observe_selection(self,target,cancel,baseline,source,expected=None):
+    def observe_selection(self,target,cancel,baseline,source,expected=None,slots=None):
         for attempt in range(3):
             if attempt and cancel.wait(.25):raise ScannerError('cancelled','inventory selection cancelled')
             try:frame=self.capture.wait_stable(target,cancel)
             except ScannerError as exc:
                 if exc.code in {'capture_failed','capture_timeout'}:continue
                 raise
-            if not self.same_grid(baseline,frame,source):
+            if not self.same_grid(baseline,frame,source,slots):
                 frame.close();raise ScannerError('inventory_page_changed','unverified inventory page; no input')
-            selected=self.recognizer.selected(frame,source)
+            selected=self.recognizer.selected(frame,source,slots)
             if selected is not None and (expected is None or selected==expected):return frame,selected
             frame.close()
         raise ScannerError('inventory_selection_unknown' if expected is None else 'inventory_detail_unconfirmed','selection unresolved after three captures')
 
-    def select(self,target,cancel,baseline,source,slot_index):
-        frame,selected=self.observe_selection(target,cancel,baseline,source)
+    def select(self,target,cancel,baseline,source,slot_index,slots=None):
+        frame,selected=self.observe_selection(target,cancel,baseline,source,slots=slots)
         if selected==slot_index:return frame
         frame.close()
-        slot=self.recognizer.regions['sources'][source]['grid_slots'][slot_index]
+        slot=(slots or self.recognizer.regions['sources'][source]['grid_slots'])[slot_index]
         if cancel.is_set():raise ScannerError('cancelled','inventory selection cancelled')
         context=ScanContext.of(target)
         self.capture.click(context.replace(cancel=cancel),slot['cx'],slot['cy'])
         self.trace.append(dict(input='select_slot',slot=slot_index,cleanup=bool(context.cleanup)))
         if cancel.wait(.25):raise ScannerError('cancelled','inventory selection cancelled')
-        frame,_=self.observe_selection(target,cancel,baseline,source,slot_index)
+        frame,_=self.observe_selection(target,cancel,baseline,source,slot_index,slots)
         return frame
 
-    def anchor(self,target,cancel,baseline,slot_index):
+    def anchor(self,target,cancel,baseline,slot_index,slots=None):
         """Move the visible selection to slot_index before a scroll (C5).
 
         The next page overlaps this one by at least one row, so a selection anchored in the last
@@ -214,27 +214,27 @@ class InventoryDetailRecovery:
         source=self.recognizer.classify(baseline)
         if source is None:raise ScannerError('inventory_selection_unknown','page unconfirmed; no input')
         self.trace=[]
-        with self.select(ScanContext.of(target),cancel,baseline,source,slot_index):pass
+        with self.select(ScanContext.of(target),cancel,baseline,source,slot_index,slots):pass
         self.trace.append(dict(anchored=slot_index))
 
-    def resolve(self,target,cancel,baseline,slot_index,grid_id,grid_count,grid_confirmed,profile_verified=False,scan_profile=None):
+    def resolve(self,target,cancel,baseline,slot_index,grid_id,grid_count,grid_confirmed,profile_verified=False,scan_profile=None,slots=None):
         self.trace=[];source=self.recognizer.classify(baseline)
         if cancel.is_set():raise ScannerError('cancelled','inventory detail cancelled before input')
-        original=self.recognizer.selected(baseline,source) if source else None
+        original=self.recognizer.selected(baseline,source,slots) if source else None
         if source is None:raise ScannerError('inventory_selection_unknown','page unconfirmed; no input')
         if original is None:
-            frame,original=self.observe_selection(target,cancel,baseline,source)
+            frame,original=self.observe_selection(target,cancel,baseline,source,slots=slots)
             frame.close()
-        if not 0<=slot_index<len(self.recognizer.regions['sources'][source]['grid_slots']):
+        if not 0<=slot_index<len(slots or self.recognizer.regions['sources'][source]['grid_slots']):
             raise ScannerError('inventory_slot_invalid','slot is outside the verified visible grid')
         result=None;failure=None
         try:
-            with self.select(target,cancel,baseline,source,slot_index) as frame:result=self.recognizer.read(frame,source)
+            with self.select(target,cancel,baseline,source,slot_index,slots) as frame:result=self.recognizer.read(frame,source)
         except Exception as exc:failure=exc
         finally:
             cleanup=Event()
             try:
-                with self.select(ScanContext.of(target).replace(cleanup=True,cancel=cleanup),cleanup,baseline,source,original):pass
+                with self.select(ScanContext.of(target).replace(cleanup=True,cancel=cleanup),cleanup,baseline,source,original,slots):pass
                 self.trace.append(dict(restored=original))
             except Exception as exc:raise ScannerError('inventory_restore_failed','original page/selection unverified') from exc
         if failure:

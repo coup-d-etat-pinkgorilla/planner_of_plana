@@ -381,15 +381,18 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         slot = self.catalog.region("inventory")["item"]["grid_slots"][0]
         template = Image.open(ASSETS / "templates/inventory/ooparts/Item_Icon_Material_Mandragora_0.png")
         paste_ratio(frame, template, slot)
+        grid_slots = self.catalog.region("inventory")["item"]["grid_slots"]
 
         class Navigation:
             def prepare(self, _target, _cancel, _frame):
                 return type("Prepared", (), {"source": "item", "profile_id": "tech_notes"})()
 
+            def page_slots(self, _source, _offset):
+                return dict(enumerate(grid_slots))
+
             def advance(self, _target, _cancel, current, _source):
                 return type("Moved", (), {
-                    "frame": current.copy(), "overlap_rows": 5, "slot_indices": (),
-                    "terminal": True, "terminal_after_page": False,
+                    "frame": current.copy(), "shift": 0.0, "terminal": True,
                     "reason": "verified_no_motion",
                 })()
 

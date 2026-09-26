@@ -7,7 +7,7 @@ from PIL import Image
 from core.inventory_catalog import CATALOG_REVISION
 from core.recognition_assets import RecognitionAssetCatalog
 from core.inventory_detail_recovery import InventoryDetailRecognizer,InventoryDetailRecovery,DetailRecoveryResult,DetailResult,DetailCount
-from core.inventory_navigation import PreparedInventory,ScrollResult
+from core.inventory_navigation import PageMove,PreparedInventory
 from core.scanner_session import ScannerError,ScanBatchResult
 from core.scanner_matchers import InventoryMatcherAdapter,Match,CountMatch
 from test_student_panel_f2 import FastEvent
@@ -30,7 +30,7 @@ class GridUI:
     def reader(self):
         return SimpleNamespace(regions={'sources':{'item':{'grid_slots':SLOTS}}},
             classify=lambda f:'item' if f.getpixel((1,0))[0]==0 else None,
-            selected=lambda f,s:f.getpixel((0,0))[0],read=Mock(return_value=DetailResult(ITEM,.95,.1,DetailCount('42',.9))))
+            selected=lambda f,s,_slots=None:f.getpixel((0,0))[0],read=Mock(return_value=DetailResult(ITEM,.95,.1,DetailCount('42',.9))))
 
 class F9RecoveryTests(unittest.TestCase):
     def setUp(self):self.enterContext(patch('core.inventory_detail_recovery.Event',FastEvent))
@@ -63,9 +63,9 @@ class F9RecoveryTests(unittest.TestCase):
         self.assertEqual([],ui.clicks)
     def test_fading_selection_recaptures_before_any_click(self):
         ui=GridUI();reader=ui.reader();selected=reader.selected;reads=[0]
-        def fading(frame,source):
+        def fading(frame,source,slots=None):
             reads[0]+=1
-            return None if reads[0]<=2 else selected(frame,source)
+            return None if reads[0]<=2 else selected(frame,source,slots)
         reader.selected=fading
         result=self.resolve(ui,reader)
         self.assertEqual('42',result.count.value);self.assertEqual(2,len(ui.clicks));self.assertEqual(0,ui.selected)
@@ -172,10 +172,10 @@ class F9AdapterTests(unittest.TestCase):
         self.assertTrue(result.candidates[0]['review_required'])
 
     def test_f10_verified_terminal_enables_profile_zero_fill(self):
-        adapter=self.adapter();adapter.max_pages=2;nav=Mock()
+        adapter=self.adapter();adapter.max_pages=2;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
-        nav.advance.side_effect=lambda *_:ScrollResult(adapter.capture.wait_stable({},FastEvent()),5,(),terminal=True,reason='verified_no_motion')
+        nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')
         adapter.navigation=nav
         result=self.scan(adapter);entries=result[0]['payload']['entries']
         self.assertGreater(len(entries),1)
@@ -194,7 +194,7 @@ class F9AdapterTests(unittest.TestCase):
         self.assertEqual(CATALOG_REVISION,result[0]['payload']['catalog_revision'])
 
     def test_f10_scroll_failure_preserves_entry_and_never_zero_fills(self):
-        adapter=self.adapter();adapter.max_pages=2;nav=Mock()
+        adapter=self.adapter();adapter.max_pages=2;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
         nav.advance.side_effect=ScannerError('inventory_scroll_unverified','fixture')
@@ -211,7 +211,7 @@ class F9AdapterTests(unittest.TestCase):
         self.assertEqual([('ok','inventory_first_page_restore')],[(e['status'],e['source']) for e in restore])
 
     def test_f10_scroll_failure_reports_failed_first_page_restore(self):
-        adapter=self.adapter();adapter.max_pages=2;nav=Mock()
+        adapter=self.adapter();adapter.max_pages=2;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
         nav.advance.side_effect=ScannerError('inventory_scroll_unverified','fixture')
@@ -222,28 +222,33 @@ class F9AdapterTests(unittest.TestCase):
         restore=[e for e in result.candidates[0]['evidence'] if e['field']=='inventory_restore']
         self.assertEqual([('failed','inventory_prepare_unconfirmed')],[(e['status'],e['note']) for e in restore])
 
-    def test_f10_residual_tail_is_terminal_only_after_no_motion_recheck(self):
-        # C2 X07: a moved re-check keeps the observations but forbids zero-fill.
-        for confirmed in (True,False):
-            with self.subTest(confirmed=confirmed):
-                adapter=self.adapter();adapter.max_pages=3;nav=Mock()
-                nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
-                nav.verify_profile_order.return_value=True
-                nav.advance.side_effect=lambda *_:ScrollResult(adapter.capture.wait_stable({},FastEvent()),3,(0,),False,True,'verified_tail_residual')
-                nav.confirm_terminal.return_value=confirmed
-                adapter.navigation=nav
-                result=self.scan(adapter);entries=result[0]['payload']['entries']
-                nav.confirm_terminal.assert_called_once()
-                terminal=[e for e in result[0]['evidence'] if e['field']=='scroll_terminal']
-                coverage=[e for e in result[0]['evidence'] if e['field']=='scan_coverage'][0]
-                zero_filled=[e for e in entries if e['observed_slot'] is None]
-                if confirmed:
-                    self.assertEqual([('ok','verified_tail_residual')],[(e['status'],e['source']) for e in terminal])
-                    self.assertTrue(zero_filled);self.assertEqual('ok',coverage['status'])
-                else:
-                    self.assertEqual([('partial','tail_recheck_moved')],[(e['status'],e['source']) for e in terminal])
-                    self.assertEqual([],zero_filled);self.assertEqual('partial',coverage['status'])
-                    self.assertTrue(result[0]['review_required'])
+    def test_c5_tail_then_no_motion_is_the_verified_end(self):
+        # C5 (X07, C2-2): a short last move is read like any page; only a later no-motion drag ends
+        # coverage, so the residual tail is always followed by the re-check.
+        adapter=self.adapter();adapter.max_pages=4;nav=Mock()
+        nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+        nav.verify_profile_order.return_value=True
+        nav.page_slots.side_effect=lambda _source,offset:{0:SLOTS[0]} if offset==0 else {1:SLOTS[0]}
+        moves=iter([PageMove(adapter.capture.wait_stable({},FastEvent()),29/720),
+                    PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')])
+        nav.advance.side_effect=lambda *_:next(moves)
+        adapter.navigation=nav
+        result=self.scan(adapter);evidence=result[0]['evidence']
+        self.assertEqual(['verified_pixel_shift','verified_no_motion'],
+                         [e['source'] for e in evidence if e['field']=='scroll_overlap'])
+        self.assertEqual('ok',[e for e in evidence if e['field']=='scan_coverage'][0]['status'])
+        self.assertTrue(any(e['observed_slot'] is None for e in result[0]['payload']['entries']))
+
+    def test_c5_skipped_row_is_unverified_not_silently_lost(self):
+        adapter=self.adapter();adapter.max_pages=3;nav=Mock()
+        nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+        nav.verify_profile_order.return_value=True
+        nav.page_slots.side_effect=lambda _source,offset:{0:SLOTS[0]} if offset==0 else {2:SLOTS[0]}
+        nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),.3)
+        adapter.navigation=nav
+        result=self.scan(adapter)
+        self.assertEqual('failed',result.outcome);self.assertEqual('inventory_scroll_unverified',result.error.code)
+        self.assertEqual([],[e for e in result.candidates[0]['payload']['entries'] if e['observed_slot'] is None])
 
     def test_c5_outside_profile_near_tie_is_resolved_not_skipped(self):
         # C0-1: live 1280 tiles match outside identities at ~.69 with ~0 margin. Only a decisive
@@ -251,10 +256,10 @@ class F9AdapterTests(unittest.TestCase):
         outside='Equipment_Icon_WeaponExpGrowthZ_2'
         for margin,skipped in ((0.001,False),(0.10,True)):
             with self.subTest(margin=margin):
-                adapter=self.adapter(fast=False);adapter.max_pages=1;nav=Mock()
+                adapter=self.adapter(fast=False);adapter.max_pages=1;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
                 nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
                 nav.verify_profile_order.return_value=True
-                nav.advance.side_effect=lambda *_:ScrollResult(adapter.capture.wait_stable({},FastEvent()),5,(),terminal=True,reason='verified_no_motion')
+                nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')
                 adapter.navigation=nav
                 adapter.matcher.match.side_effect=lambda _crop,**kw:(Match(ITEM,.7,.01) if kw.get('allowed_identities') else Match(outside,.69,margin))
                 result=self.scan(adapter)

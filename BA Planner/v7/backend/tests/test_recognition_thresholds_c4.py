@@ -105,13 +105,13 @@ class RecognitionThresholdRegistryTests(unittest.TestCase):
                 self.assertIn(entry.resolution, {"*", "native1280", "native2560"})
 
     def test_same_frame_thresholds_are_distinct_named_decisions(self):
-        # C4 records why the three "same frame" values differ; unifying them is a C7 decision.
+        # C4 named the three "same frame" values; C5 replaced the drag no-motion similarity (.97) and the
+        # histogram row overlap with a measured pixel shift, so two remain plus the shift thresholds.
         self.assertEqual(0.995, rt.value("inventory.wheel.same_frame"))
         self.assertEqual(0.985, rt.value("inventory.scroll.settled_same"))
-        self.assertEqual(0.97, rt.value("inventory.scroll.no_motion_same"))
-        self.assertEqual([rt.THRESHOLDS["inventory.scroll.overlap_score"]],
-                         rt.lookup("scroll_overlap", "verified_row_overlap", "score", "native1280"))
-
+        self.assertNotIn("inventory.scroll.no_motion_same", rt.THRESHOLDS)
+        self.assertEqual([rt.THRESHOLDS["inventory.shift.no_motion"]],
+                         rt.lookup("scroll_terminal", "verified_no_motion", "ratio", "native1280"))
 
 if __name__ == "__main__":
     unittest.main()
