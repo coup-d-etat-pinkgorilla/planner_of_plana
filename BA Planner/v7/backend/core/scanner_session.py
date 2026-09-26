@@ -19,6 +19,10 @@ NON_REVIEW_EVIDENCE_STATUSES = {
 }
 
 
+# Entry fields that describe the scan, not the stored inventory (C1 X05).
+SCANNER_ONLY_ENTRY_FIELDS = frozenset({"inventory_scan_profile"})
+
+
 class ScannerError(RuntimeError):
     def __init__(self, code: str, message: str, *, details: dict[str, Any] | None = None) -> None:
         super().__init__(message)
@@ -476,6 +480,21 @@ class ScannerSessionService:
             return session
 
     @staticmethod
+    def _repository_inventory(payload: object) -> object:
+        """Drop scanner-only entry fields; the repository keeps its catalog-derived profile_id."""
+        if not isinstance(payload, dict) or not isinstance(payload.get("entries"), list):
+            return payload
+        entries = []
+        for entry in payload["entries"]:
+            if isinstance(entry, dict) and "inventory_scan_profile" in entry:
+                scan_profile = entry["inventory_scan_profile"]
+                if scan_profile is not None and scan_profile not in SCAN_PROFILES:
+                    raise RepositoryDTOError("inventory_entry.inventory_scan_profile is not a scan profile")
+                entry = {key: value for key, value in entry.items() if key not in SCANNER_ONLY_ENTRY_FIELDS}
+            entries.append(entry)
+        return {**payload, "entries": entries}
+
+    @staticmethod
     def _validated_payload(scan_kind: str, payload: object) -> ConfirmedStudent | InventorySnapshot | dict[str, Any]:
         if scan_kind == "tactical_lobby":
             from core.tactical_lobby_scanner import canonical_tactical_lobby_candidate
@@ -484,7 +503,7 @@ class ScannerSessionService:
             return (
                 ConfirmedStudent.from_dict(payload)
                 if scan_kind == "student"
-                else InventorySnapshot.from_dict(payload)
+                else InventorySnapshot.from_dict(ScannerSessionService._repository_inventory(payload))
             )
         except RepositoryDTOError as exc:
             raise ScannerError("invalid_candidate", str(exc)) from exc

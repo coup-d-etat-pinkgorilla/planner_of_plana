@@ -18,7 +18,7 @@ sources:
 | Phase | 상태 | 시작 기준 | 다음 행동 |
 |---|---|---|---|
 | C0 기준선·golden 고정 | **완료** (2026-09-26) | `3a96abe` (branch `scanner-consolidation`) | — |
-| C1 계약 드리프트·이름 정리 | C1a 완료, C1b·C1c 미착수 | `552ab99` | C1b/C1c 결정 질문 후 착수 |
+| C1 계약 드리프트·이름 정리 | C1a·C1b 완료, C1c 미착수 | `552ab99` | C1c(X06 + 재고 commit 병합 수정) |
 | C2~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -135,8 +135,8 @@ C1은 repository DTO와 Flutter decoder까지 걸치므로 세 조각으로 나�
 | Slice | 항목 | golden 기대 | 상태 |
 |---|---|---|---|
 | C1a | X01 `shadow` enum, X02 `session.start.inventory_scan_profile`, X03 프로필 집합 단일 소스 | diff 0 | **완료** (2026-09-26) |
-| C1b | X04 zero-fill 필드, X05 `inventory_scan_profile` 엔트리 필드, X21 source 이름 | 의도된 필드 추가·이름 변경 diff | 미착수 |
-| C1c | X06 후보 `catalog_revision`과 commit 검증 | 재고 golden에 `catalog_revision` 추가 | 미착수 |
+| C1b | X04 zero-fill 필드, X05 `inventory_scan_profile` 엔트리 필드, X21 source 이름 | 의도된 필드 추가·이름 변경 diff | **완료** (2026-09-26) |
+| C1c | X06 후보 `catalog_revision`과 commit 검증 + 재고 commit 전체 교체 버그(C1-1) 수정 | 재고 golden에 `catalog_revision` 추가 | 미착수 |
 
 ### C1a 결과 (2026-09-26)
 
@@ -159,4 +159,32 @@ C1은 repository DTO와 Flutter decoder까지 걸치므로 세 조각으로 나�
 | `cd frontend; flutter analyze` | 기존 info 2건(`app_shell.dart`)만 |
 | `cd frontend; flutter test` | 406 all passed (+1, Dart↔Python process E2E 포함) |
 
-C1b·C1c 착수 전 결정 필요: X05 필드를 repository DTO까지 영속할지, X06 `catalog_revision` 누락 후보 처리.
+
+### C1b·C1c 사용자 결정 (2026-09-26)
+
+- **C1-1 (신규 발견, 데이터 손실)**: scanner 재고 commit이 `update_inventory`로 계정 인벤토리 **전체를** 후보 엔트리로 교체한다.
+  재현: 임시 저장소에 ooparts `Mandragora_0 ×5` 저장 → `tech_notes` 후보 1건 commit → 저장 인벤토리에 tech note 1건만 남음.
+  Flutter `inventory_page._approveCandidate`는 후보 payload를 그대로 review/commit한다. 결정: **C1c에서 수정**(스캔 프로필의
+  catalog 엔트리만 교체하고 나머지 보존, 재현 회귀 테스트 선행).
+- X05: `inventory_scan_profile`은 **scanner 후보 전용**. repository DTO·스키마·Flutter repository 파서는 바꾸지 않는다.
+- X06: `catalog_revision` **누락도 거부**(`catalog_revision_missing`), 불일치는 `catalog_revision_mismatch`, details에 기대/수신 revision.
+
+### C1b 결과 (2026-09-26)
+
+- X04: zero-fill evidence field를 `entries[<리스트 인덱스>].quantity` → `zero_fill[<resource_key>].quantity`로 바꿨다
+  (zero-fill 대상 row는 전부 `resource_key == item_id` 확인).
+- X05: 스캔 엔트리(관측·zero-fill)에 `inventory_scan_profile`을 추가했다(`prepared.profile_id`, navigation 없는 경로는 `null`).
+  `profile_id`는 D11 기본안대로 병행 유지 — **제거 시점: C6**. `ScannerSessionService._repository_inventory`가 review/commit/후보
+  생성 검증 전에 이 필드를 떼어내며(`SCANNER_ONLY_ENTRY_FIELDS`), 값이 `SCAN_PROFILES` 밖이면 `invalid_candidate`로 거부한다.
+- X21: 같은 crop 재매칭 source `detail_template_fallback` → `grid_same_crop_rematch`. `scroll_overlap` evidence source를 항상
+  `verified_row_overlap`으로 쓰던 것을 실제 결정(`verified_row_overlap`/`verified_tail_residual`/`verified_no_motion`)으로 바꿨다.
+- 구 진단 호환: `scanner_matchers.LEGACY_INVENTORY_EVIDENCE_SOURCES`와 `canonical_inventory_evidence(evidence, entries)`가 세 가지 구 형식을
+  현재 계약으로 변환한다(비파괴·멱등). 테스트 `test_inventory_evidence_contract_c1.py`.
+- Flutter: 재고 evidence field/source 이름과 후보 엔트리 키를 엄격 파싱하는 곳이 없어(`inventory_page.dart:813`은 느슨한 List 읽기)
+  decoder/mock 변경이 필요 없었다. v6 parity fixture의 역사적 `detail_template_fallback` 표기는 그대로 둔다.
+
+| 검증 | 결과 |
+|---|---|
+| Python 전체 | 547 tests OK (+2) |
+| golden diff | **1건, 의도됨**: `inventory_item_tech_notes_1280`의 마지막 `scroll_overlap` source `verified_row_overlap` → `verified_tail_residual`(X21). `--write inventory_item_tech_notes_1280`으로 재고정. 나머지 7개 same. 재고 golden에 accepted entry가 없어 X04/X05는 golden에 나타나지 않고 단위 테스트로만 고정된다. |
+| Flutter analyze / test | 기존 info 2건 / 406 all passed |

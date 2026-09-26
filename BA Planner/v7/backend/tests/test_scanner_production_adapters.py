@@ -354,7 +354,7 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         self.assertNotIn("index", entries[0])
         self.assertFalse(result["review_required"])
         self.assertIn("slot_count_glyph", {item["source"] for item in result["evidence"]})
-        self.assertTrue(any(item["source"] in {"grid_icon_template", "detail_template_fallback"} for item in result["evidence"]))
+        self.assertTrue(any(item["source"] in {"grid_icon_template", "grid_same_crop_rematch"} for item in result["evidence"]))
         self.assertIn("stable_frame_overlap", {item["source"] for item in result["evidence"]})
 
     def test_inventory_adapter_never_zero_fills_missing_count(self) -> None:
@@ -373,7 +373,7 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         paste_ratio(frame, template, slot)
         result = InventoryMatcherAdapter(ScriptedCapture(frame), self.catalog, threshold=1.1)({"target_id": "fixture"}, Event(), lambda *_args: None)[0]
         item_evidence = next(item for item in result["evidence"] if item["field"].endswith(".item_id"))
-        self.assertEqual("detail_template_fallback", item_evidence["source"])
+        self.assertEqual("grid_same_crop_rematch", item_evidence["source"])
         self.assertTrue(result["review_required"])
 
     def test_inventory_profile_never_relabels_a_confident_foreign_item(self) -> None:

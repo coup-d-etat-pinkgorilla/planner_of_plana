@@ -445,7 +445,7 @@
      "confidence": 1.0,
      "field": "scroll_overlap",
      "note": "rows=3;reason=verified_tail_residual",
-     "source": "verified_row_overlap",
+     "source": "verified_tail_residual",
      "status": "ok"
     },
     {

@@ -1196,6 +1196,28 @@ class StudentMatcherAdapter:
         return False
 
 
+# Pre-C1 inventory evidence names, kept so old diagnostic JSON reads with current meaning.
+LEGACY_INVENTORY_EVIDENCE_SOURCES = {"detail_template_fallback": "grid_same_crop_rematch"}
+
+
+def canonical_inventory_evidence(evidence: list[dict[str, Any]], entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Rename pre-C1 inventory evidence to the current field/source contract."""
+    result = []
+    for item in evidence:
+        item = dict(item)
+        item["source"] = LEGACY_INVENTORY_EVIDENCE_SOURCES.get(item.get("source"), item.get("source"))
+        note = str(item.get("note", ""))
+        if item.get("field") == "scroll_overlap" and item["source"] == "verified_row_overlap" and ";reason=" in note:
+            item["source"] = note.rsplit(";reason=", 1)[1]
+        field = str(item.get("field", ""))
+        if item["source"] == "verified_profile_zero_fill" and field.startswith("entries[") and field.endswith("].quantity"):
+            position = field[len("entries["):-len("].quantity")]
+            if position.isdigit() and int(position) < len(entries):
+                item["field"] = f"zero_fill[{entries[int(position)]['key']}].quantity"
+        result.append(item)
+    return result
+
+
 class InventoryMatcherAdapter:
     def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = 0.80, margin: float = 0.03, max_pages: int = 60, answer_samples: RecognitionAnswerSampleStore | None = None, detail_recovery=None, navigation=None) -> None:
         self.capture = capture
@@ -1300,7 +1322,7 @@ class InventoryMatcherAdapter:
                         )
                         source = (
                             "user_confirmed_grid_sample" if match.source == "user_confirmed"
-                            else "grid_icon_template" if fast_confident else "detail_template_fallback"
+                            else "grid_icon_template" if fast_confident else "grid_same_crop_rematch"
                         )
                         if match.score < 0.55 and detail_port is None:
                             continue
@@ -1357,7 +1379,9 @@ class InventoryMatcherAdapter:
                             continue
                         quantity_confident = quantity is not None
                         entry_profile = prepared.profile_id if prepared is not None else "visible-grid"
-                        entries.append({"key": identity, "quantity": quantity, "item_id": identity, "name": None, "observed_slot": index, "profile_id": entry_profile})
+                        entries.append({"key": identity, "quantity": quantity, "item_id": identity, "name": None, "observed_slot": index,
+                                        "profile_id": entry_profile,
+                                        "inventory_scan_profile": prepared.profile_id if prepared is not None else None})
                         if isinstance(identity,str):page_ids.append(identity)
                         if item_status!='ok' or not quantity_confident:page_unresolved=True
                         slot_crops[index] = crop.copy()
@@ -1396,7 +1420,7 @@ class InventoryMatcherAdapter:
                 if navigation is not None:
                     moved=navigation.advance(target,cancel,frame,source_kind)
                     next_frame=moved.frame
-                    evidence.append({"field":"scroll_overlap","status":"ok","source":"verified_row_overlap",
+                    evidence.append({"field":"scroll_overlap","status":"ok","source":moved.reason,
                         "confidence":1.0,"note":f"rows={moved.overlap_rows};reason={moved.reason}"})
                     if moved.terminal:
                         coverage_complete=True;next_frame.close();break
@@ -1425,8 +1449,9 @@ class InventoryMatcherAdapter:
                     for item_id,row in sorted(known.items(),key=lambda pair:pair[1].order_index):
                         if item_id in present:continue
                         entries.append({"key":item_id,"quantity":"0","item_id":item_id,"name":row.display_name,
-                            "observed_slot":None,"profile_id":prepared.profile_id})
-                        evidence.append({"field":f"entries[{len(entries)-1}].quantity","status":"ok",
+                            "observed_slot":None,"profile_id":prepared.profile_id,
+                            "inventory_scan_profile":prepared.profile_id})
+                        evidence.append({"field":f"zero_fill[{row.resource_key}].quantity","status":"ok",
                             "source":"verified_profile_zero_fill","confidence":1.0,"note":"verified terminal and monotonic profile coverage"})
                 evidence.append({"field":"scan_coverage","status":"ok" if coverage_complete and not unresolved else "partial",
                     "source":"inventory_navigation","confidence":1.0 if coverage_complete and not unresolved else 0.0,

@@ -175,6 +175,16 @@ class F9AdapterTests(unittest.TestCase):
         self.assertGreater(len(entries),1)
         self.assertTrue(any(e['quantity']=='0' and e['item_id']!=ITEM for e in entries))
         self.assertFalse(result[0]['review_required'])
+        # C1 X04/X05/X21: zero-fill evidence names its resource, entries carry the scan profile,
+        # and the terminal scroll evidence names the real decision.
+        evidence=result[0]['evidence']
+        zero_fill=[e for e in evidence if e['source']=='verified_profile_zero_fill']
+        filled={e['key'] for e in entries if e['observed_slot'] is None}
+        self.assertEqual({f'zero_fill[{key}].quantity' for key in filled},{e['field'] for e in zero_fill})
+        self.assertFalse(any(e['field'].startswith('entries[') for e in zero_fill))
+        self.assertEqual({'tech_notes'},{e['inventory_scan_profile'] for e in entries})
+        self.assertEqual({'tech_notes'},{e['profile_id'] for e in entries})
+        self.assertIn('verified_no_motion',{e['source'] for e in evidence if e['field']=='scroll_overlap'})
 
     def test_f10_scroll_failure_preserves_entry_and_never_zero_fills(self):
         adapter=self.adapter();adapter.max_pages=2;nav=Mock()
