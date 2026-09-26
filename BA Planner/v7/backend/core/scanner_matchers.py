@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Event, RLock
 from typing import Any, Callable, Protocol
@@ -1218,6 +1218,58 @@ def canonical_inventory_evidence(evidence: list[dict[str, Any]], entries: list[d
     return result
 
 
+# Detail read failures that stay per-slot partial once the original selection is verified.
+DETAIL_RECOVERABLE_CODES = frozenset({"inventory_detail_unconfirmed", "capture_timeout", "capture_failed"})
+
+
+@dataclass(slots=True)
+class _SlotReading:
+    """One slot's identity/quantity observation before it becomes an entry."""
+    index: int
+    identity: str | None
+    score: float
+    margin: float
+    source: str
+    status: str
+    quantity: str | None
+    count_score: float
+    count_source: str
+    note: str
+    profile_confirmed: bool
+
+
+@dataclass
+class _InventoryScan:
+    """Mutable state of one inventory scan, owned by InventoryMatcherAdapter.__call__."""
+    frame: Image.Image
+    source_size: tuple[int, int]
+    target: dict[str, Any]
+    slots: list[dict[str, Any]]
+    source_kind: str | None = None
+    prepared: Any = None
+    allowed_ids: set[str] | None = None
+    entries: list[dict[str, Any]] = field(default_factory=list)
+    evidence: list[dict[str, Any]] = field(default_factory=list)
+    slot_crops: dict[int, Image.Image] = field(default_factory=dict)
+    observed_profile_ids: list[str] = field(default_factory=list)
+    review_required: bool = False
+    coverage_complete: bool = False
+    terminal_after_page: bool = False
+    completed: bool = False
+
+    def skip(self, index: int, confidence: float, note: str) -> None:
+        self.evidence.append({"field": f"slots[{index}]", "status": "skipped",
+                              "source": "inventory_profile_catalog", "confidence": confidence, "note": note})
+
+    def candidate(self, evidence: list[dict[str, Any]], review_required: bool) -> dict[str, Any]:
+        return {
+            "payload": {"version": 1, "catalog_revision": CATALOG_REVISION, "entries": self.entries},
+            "evidence": evidence,
+            "review_required": review_required,
+            "_answer_specimen": {"source_size": self.source_size, "slot_crops": self.slot_crops},
+        }
+
+
 class InventoryMatcherAdapter:
     def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = 0.80, margin: float = 0.03, max_pages: int = 60, answer_samples: RecognitionAnswerSampleStore | None = None, detail_recovery=None, navigation=None) -> None:
         self.capture = capture
@@ -1238,265 +1290,284 @@ class InventoryMatcherAdapter:
     def __call__(self, target: dict[str, Any], cancel: Event, progress: Callable[[int, int | None, str], None]) -> list[dict[str, Any]] | ScanBatchResult:
         target = {**target, "_scanner_cancel": cancel}
         frame = self.capture.wait_stable(target, cancel)
-        source_size = frame.size
-        entries: list[dict[str, Any]] = []
-        slot_crops: dict[int, Image.Image] = {}
-        evidence: list[dict[str, Any]] = []
-        review_required = False
-        completed = False
-        coverage_complete = False
+        scan = _InventoryScan(frame=frame, source_size=frame.size, target=target, slots=self.slots)
         try:
-            detail_port = getattr(self, 'detail_recovery', None)
-            navigation = getattr(self, 'navigation', None)
-            prepared = None
-            slots = self.slots
-            if detail_port is not None:
-                source_kind = detail_port.recognizer.classify(frame)
-                if source_kind is None:
-                    raise ScannerError('inventory_page_unknown', 'inventory detail input requires a verified item/equipment page')
-                slots = detail_port.recognizer.regions['sources'][source_kind]['grid_slots']
-            if navigation is not None:
-                prepared = navigation.prepare(target,cancel,frame)
-                frame.close();frame = self.capture.wait_stable(target,cancel)
-                source_kind = prepared.source
-                target = {**target,'inventory_scan_profile':prepared.profile_id}
-            profile_id = target.get("profile_id")
-            if self.answer_samples is not None and isinstance(profile_id, str):
-                samples = self.answer_samples.load_inventory(profile_id, source_size)
-                try:
-                    self.matcher.replace_user_templates([
-                        (sample.sample_id, sample.item_id, sample.image) for sample in samples
-                    ])
-                finally:
-                    self.answer_samples.close(samples)
-            else:
-                self.matcher.replace_user_templates([])
-            scan_indices = tuple(range(len(slots)))
-            allowed_profile_ids = None if prepared is None else {
-                row.item_id for row in CATALOG if row.profile_id == prepared.profile_id
-            }
-            observed_profile_ids: list[str] = []
-            terminal_after_page = False
+            self._prepare_scan(scan, cancel)
+            scan_indices = tuple(range(len(scan.slots)))
             for page in range(self.max_pages):
-                page_ids: list[str] = []
-                page_unresolved = False
-                for slot_index in scan_indices:
-                    region = slots[slot_index]
-                    if cancel.is_set():
-                        raise ScannerError("cancelled", "inventory scan cancelled")
-                    crop = ratio_crop(frame, region)
-                    try:
-                        if not image_has_visible_content(crop):
-                            continue
-                        profile_membership_confirmed = allowed_profile_ids is None
-                        if allowed_profile_ids is not None:
-                            global_match = self.matcher.match(
-                                crop, center_trim=0.15, prefer_user=True,
-                                threshold=self.threshold, margin=self.margin,
-                            )
-                            if (
-                                global_match.score >= 0.55
-                                and global_match.identity not in allowed_profile_ids
-                            ):
-                                evidence.append({
-                                    "field": f"slots[{page * len(slots) + slot_index}]",
-                                    "status": "skipped",
-                                    "source": "inventory_profile_catalog",
-                                    "confidence": global_match.score,
-                                    "note": "confident visible identity is outside the explicit scan profile",
-                                })
-                                continue
-                            profile_membership_confirmed = (
-                                global_match.score >= self.threshold
-                                and global_match.margin >= self.margin
-                                and global_match.identity in allowed_profile_ids
-                            )
-                        fast = self.matcher.match(
-                            crop, center_trim=0.15, prefer_user=True,
-                            threshold=self.threshold, margin=self.margin,
-                            allowed_identities=allowed_profile_ids,
-                        )
-                        fast_confident = fast.score >= self.threshold and fast.margin >= self.margin
-                        match = fast if fast_confident else self.matcher.match(
-                            crop, allowed_identities=allowed_profile_ids,
-                        )
-                        source = (
-                            "user_confirmed_grid_sample" if match.source == "user_confirmed"
-                            else "grid_icon_template" if fast_confident else "grid_same_crop_rematch"
-                        )
-                        if match.score < 0.55 and detail_port is None:
-                            continue
-                        confident = match.score >= self.threshold and match.margin >= self.margin
-                        index = page * len(slots) + slot_index
-                        count = self.count_matcher.match(crop)
-                        identity, score, match_margin = match.identity, match.score, match.margin
-                        quantity, count_score, count_source = count.value, count.score, 'slot_count_glyph'
-                        note = f'margin={count.margin:.6f}'
-                        item_status = 'ok' if confident else 'uncertain'
-                        if detail_port is not None and not (fast_confident and count.value is not None):
-                            try:
-                                detail = detail_port.resolve(target,cancel,frame,slot_index,identity,count.value,confident,
-                                    profile_verified=target.get('_inventory_profile_verified') is True,
-                                    scan_profile=target.get('inventory_scan_profile'))
-                            except ScannerError as exc:
-                                if not exc.details.get('inventory_restored') or exc.code not in {'inventory_detail_unconfirmed','capture_timeout','capture_failed'}:
-                                    raise
-                                detail = None;note = exc.code+';original selection restored'
-                                item_status = 'partial'
-                            if detail is not None:
-                                if detail.identity is not None:
-                                    identity,score,match_margin=detail.identity,detail.score,detail.margin
-                                    confident=True;source=detail.source;item_status='ok'
-                                    if detail.source=='verified_grid_detail_fallback':
-                                        score,match_margin=match.score,match.margin
-                                if detail.source=='inventory_detail_conflict':
-                                    item_status='conflict';quantity=None;count_source=detail.source
-                                elif detail.identity is not None:
-                                    quantity,count_score,count_source=detail.count.value,detail.count.score,detail.count.source
-                                    if detail.count.source=='verified_grid_count_fallback':count_score=count.score
-                                else:
-                                    quantity=None;item_status='partial'
-                                note=detail.count.reason
-                                if detail.identity is not None and allowed_profile_ids is not None:
-                                    profile_membership_confirmed = detail.identity in allowed_profile_ids
-                        if allowed_profile_ids is not None and identity not in allowed_profile_ids:
-                            evidence.append({
-                                "field": f"slots[{index}]", "status": "skipped",
-                                "source": "inventory_profile_catalog",
-                                "confidence": score,
-                                "note": "visible identity is outside the explicit scan profile",
-                            })
-                            continue
-                        if not profile_membership_confirmed:
-                            evidence.append({
-                                "field": f"slots[{index}]", "status": "skipped",
-                                "source": "inventory_profile_catalog",
-                                "confidence": score,
-                                "note": "profile membership was not positively verified",
-                            })
-                            continue
-                        if any(entry["item_id"] == identity for entry in entries):
-                            continue
-                        quantity_confident = quantity is not None
-                        entry_profile = prepared.profile_id if prepared is not None else "visible-grid"
-                        entries.append({"key": identity, "quantity": quantity, "item_id": identity, "name": None, "observed_slot": index,
-                                        "profile_id": entry_profile,
-                                        "inventory_scan_profile": prepared.profile_id if prepared is not None else None})
-                        if isinstance(identity,str):page_ids.append(identity)
-                        if item_status!='ok' or not quantity_confident:page_unresolved=True
-                        slot_crops[index] = crop.copy()
-                        evidence.extend([
-                            {"field": f"entries[{index}].item_id", "status": item_status, "source": source, "confidence": score, "note": f"margin={match_margin:.6f}"},
-                            {"field": f"entries[{index}].quantity", "status": "ok" if quantity_confident else "uncertain", "source": count_source, "confidence": count_score, "note": note},
-                        ])
-                        review_required = review_required or item_status!='ok' or not quantity_confident
-                        progress(len(entries), None, "scanner.inventory.grid")
-                    finally:
-                        crop.close()
-                if prepared is not None:
-                    if page_ids and not navigation.verify_profile_order(prepared.profile_id,page_ids):
-                        # The current client can sort the mixed item page by quantity/name,
-                        # so catalog order is not guaranteed even when every recognized
-                        # identity belongs to the explicit profile. Keep the observations,
-                        # but mark coverage partial and prohibit zero-fill below.
-                        evidence.append({
-                            "field": "profile_order", "status": "partial",
-                            "source": "inventory_profile_catalog", "confidence": 0.0,
-                            "note": "visible items do not match monotonic scan profile order; no zero-fill",
-                        })
-                        review_required = True
-                    observed_profile_ids.extend(page_ids)
-                    target={**target,'_inventory_profile_verified':bool(page_ids) and not page_unresolved}
-                if navigation is None and len(entries) >= len(self.matcher.templates):
-                    coverage_complete = True
+                self._read_page(scan, page, scan_indices, cancel, progress)
+                next_indices = self._advance_page(scan, cancel)
+                if next_indices is None:
                     break
-                if terminal_after_page:
-                    # A residual tail page is only terminal when one more scroll shows no motion (X07).
-                    coverage_complete=navigation.confirm_terminal(target,cancel,frame,source_kind)
-                    evidence.append({"field":"scroll_terminal","status":"ok" if coverage_complete else "partial",
-                        "source":"verified_tail_residual" if coverage_complete else "tail_recheck_moved",
-                        "confidence":1.0 if coverage_complete else 0.0,
-                        "note":"residual tail page scanned once; no-motion re-check "+("passed" if coverage_complete else "moved; no zero-fill")})
-                    review_required = review_required or not coverage_complete
-                    break
-                if cancel.is_set():
-                    raise ScannerError("cancelled", "inventory scan cancelled")
-                if navigation is not None:
-                    moved=navigation.advance(target,cancel,frame,source_kind)
-                    next_frame=moved.frame
-                    evidence.append({"field":"scroll_overlap","status":"ok","source":moved.reason,
-                        "confidence":1.0,"note":f"rows={moved.overlap_rows};reason={moved.reason}"})
-                    if moved.terminal:
-                        coverage_complete=True;next_frame.close();break
-                    scan_indices=moved.slot_indices
-                    terminal_after_page=moved.terminal_after_page
-                    frame.close();frame=next_frame
-                    continue
-                self.capture.scroll(target, -480)
-                next_frame = self.capture.wait_stable(target, cancel)
-                overlap = image_similarity(frame, next_frame)
-                if overlap >= 0.995:
-                    next_frame.close()
-                    evidence.append({"field": "scroll_terminal", "status": "ok", "source": "stable_frame_overlap", "confidence": overlap, "note": "tail-or-no-motion"})
-                    break
-                if overlap <= 0.05:
-                    evidence.append({"field": "scroll_overlap", "status": "uncertain", "source": "frame_overlap", "confidence": overlap, "note": "near-zero overlap; no zero-fill"})
-                    review_required = True
-                frame.close()
-                frame = next_frame
-            if prepared is not None:
-                ordered_ok=navigation.verify_profile_order(prepared.profile_id,observed_profile_ids)
-                unresolved=review_required or not ordered_ok
-                if coverage_complete and not unresolved:
-                    known={row.item_id:row for row in CATALOG if row.profile_id==prepared.profile_id and row.zero_fill_allowed}
-                    present={entry['item_id'] for entry in entries}
-                    for item_id,row in sorted(known.items(),key=lambda pair:pair[1].order_index):
-                        if item_id in present:continue
-                        entries.append({"key":item_id,"quantity":"0","item_id":item_id,"name":row.display_name,
-                            "observed_slot":None,"profile_id":prepared.profile_id,
-                            "inventory_scan_profile":prepared.profile_id})
-                        evidence.append({"field":f"zero_fill[{row.resource_key}].quantity","status":"ok",
-                            "source":"verified_profile_zero_fill","confidence":1.0,"note":"verified terminal and monotonic profile coverage"})
-                evidence.append({"field":"scan_coverage","status":"ok" if coverage_complete and not unresolved else "partial",
-                    "source":"inventory_navigation","confidence":1.0 if coverage_complete and not unresolved else 0.0,
-                    "note":f"profile={prepared.profile_id};terminal={coverage_complete};ordered={ordered_ok}"})
-                review_required = review_required or not coverage_complete or not ordered_ok
-            completed = True
-            return [{
-                "payload": {"version": 1, "catalog_revision": CATALOG_REVISION, "entries": entries},
-                "evidence": evidence,
-                "review_required": review_required,
-                "_answer_specimen": {"source_size": source_size, "slot_crops": slot_crops},
-            }]
+                scan_indices = next_indices
+            candidates = self._finalize(scan)
+            scan.completed = True
+            return candidates
         except Exception as exc:
-            error = exc if isinstance(exc, ScannerError) else ScannerError("matcher_failed", str(exc))
-            if error.code == "inventory_scroll_unverified" and prepared is not None and not cancel.is_set():
-                # Safe abort returns the list to its first page by re-applying verified settings (X10).
-                try:
-                    navigation.restore_first_page(target, Event(), frame)
-                    restored, restore_note = True, "display settings re-applied; first page shown"
-                except ScannerError as restore_error:
-                    restored, restore_note = False, restore_error.code
-                error.details["first_page_restored"] = restored
-                evidence.append({"field": "inventory_restore", "status": "ok" if restored else "failed",
-                                 "source": "inventory_first_page_restore", "confidence": 1.0 if restored else 0.0,
-                                 "note": restore_note})
-            retained = []
-            if entries:
-                retained = [{
-                    "payload": {"version": 1, "catalog_revision": CATALOG_REVISION, "entries": entries},
-                    "evidence": [*evidence, {"field": "scan_coverage", "status": "partial",
-                        "source": "scan_interrupted", "confidence": 0.0, "note": error.code}],
-                    "review_required": True,
-                    "_answer_specimen": {"source_size": source_size, "slot_crops": slot_crops},
-                }]
-                completed = True  # ownership of complete slot specimens transfers to the session
-            return ScanBatchResult(retained, "cancelled" if cancel.is_set() or error.code == "cancelled" else "failed", error)
+            return self._interrupted(scan, exc, cancel)
         finally:
-            frame.close()
-            if not completed:
-                for crop in slot_crops.values():
+            scan.frame.close()
+            if not scan.completed:
+                for crop in scan.slot_crops.values():
                     crop.close()
+
+    def _prepare_scan(self, scan: "_InventoryScan", cancel: Event) -> None:
+        detail_port = getattr(self, 'detail_recovery', None)
+        navigation = getattr(self, 'navigation', None)
+        if detail_port is not None:
+            scan.source_kind = detail_port.recognizer.classify(scan.frame)
+            if scan.source_kind is None:
+                raise ScannerError('inventory_page_unknown', 'inventory detail input requires a verified item/equipment page')
+            scan.slots = detail_port.recognizer.regions['sources'][scan.source_kind]['grid_slots']
+        if navigation is not None:
+            scan.prepared = navigation.prepare(scan.target, cancel, scan.frame)
+            scan.frame.close()
+            scan.frame = self.capture.wait_stable(scan.target, cancel)
+            scan.source_kind = scan.prepared.source
+            scan.target = {**scan.target, 'inventory_scan_profile': scan.prepared.profile_id}
+        self._load_answer_samples(scan.target.get("profile_id"), scan.source_size)
+        if scan.prepared is not None:
+            scan.allowed_ids = {row.item_id for row in CATALOG if row.profile_id == scan.prepared.profile_id}
+
+    def _load_answer_samples(self, profile_id: object, source_size: tuple[int, int]) -> None:
+        if self.answer_samples is None or not isinstance(profile_id, str):
+            self.matcher.replace_user_templates([])
+            return
+        samples = self.answer_samples.load_inventory(profile_id, source_size)
+        try:
+            self.matcher.replace_user_templates([
+                (sample.sample_id, sample.item_id, sample.image) for sample in samples
+            ])
+        finally:
+            self.answer_samples.close(samples)
+
+    def _read_page(self, scan: "_InventoryScan", page: int, scan_indices, cancel: Event, progress) -> None:
+        page_ids: list[str] = []
+        page_unresolved = False
+        for slot_index in scan_indices:
+            if cancel.is_set():
+                raise ScannerError("cancelled", "inventory scan cancelled")
+            crop = ratio_crop(scan.frame, scan.slots[slot_index])
+            try:
+                reading = self._read_slot(scan, page, slot_index, crop, cancel)
+                if reading is None or not self._record_entry(scan, reading, crop):
+                    continue
+                if isinstance(reading.identity, str):
+                    page_ids.append(reading.identity)
+                if reading.status != 'ok' or reading.quantity is None:
+                    page_unresolved = True
+                progress(len(scan.entries), None, "scanner.inventory.grid")
+            finally:
+                crop.close()
+        if scan.prepared is not None:
+            if page_ids and not self.navigation.verify_profile_order(scan.prepared.profile_id, page_ids):
+                # The current client can sort the mixed item page by quantity/name,
+                # so catalog order is not guaranteed even when every recognized
+                # identity belongs to the explicit profile. Keep the observations,
+                # but mark coverage partial and prohibit zero-fill below.
+                scan.evidence.append({
+                    "field": "profile_order", "status": "partial",
+                    "source": "inventory_profile_catalog", "confidence": 0.0,
+                    "note": "visible items do not match monotonic scan profile order; no zero-fill",
+                })
+                scan.review_required = True
+            scan.observed_profile_ids.extend(page_ids)
+            scan.target = {**scan.target, '_inventory_profile_verified': bool(page_ids) and not page_unresolved}
+
+    def _read_slot(self, scan: "_InventoryScan", page: int, slot_index: int, crop: Image.Image, cancel: Event) -> "_SlotReading | None":
+        """Match one visible slot, consult the detail panel when needed and apply the profile gate."""
+        if not image_has_visible_content(crop):
+            return None
+        detail_port = getattr(self, 'detail_recovery', None)
+        index = page * len(scan.slots) + slot_index
+        allowed = scan.allowed_ids
+        profile_confirmed = allowed is None
+        if allowed is not None:
+            global_match = self.matcher.match(
+                crop, center_trim=0.15, prefer_user=True,
+                threshold=self.threshold, margin=self.margin,
+            )
+            if global_match.score >= 0.55 and global_match.identity not in allowed:
+                scan.skip(index, global_match.score, "confident visible identity is outside the explicit scan profile")
+                return None
+            profile_confirmed = (
+                global_match.score >= self.threshold
+                and global_match.margin >= self.margin
+                and global_match.identity in allowed
+            )
+        fast = self.matcher.match(
+            crop, center_trim=0.15, prefer_user=True,
+            threshold=self.threshold, margin=self.margin,
+            allowed_identities=allowed,
+        )
+        fast_confident = fast.score >= self.threshold and fast.margin >= self.margin
+        match = fast if fast_confident else self.matcher.match(crop, allowed_identities=allowed)
+        source = (
+            "user_confirmed_grid_sample" if match.source == "user_confirmed"
+            else "grid_icon_template" if fast_confident else "grid_same_crop_rematch"
+        )
+        if match.score < 0.55 and detail_port is None:
+            return None
+        confident = match.score >= self.threshold and match.margin >= self.margin
+        count = self.count_matcher.match(crop)
+        reading = _SlotReading(
+            index=index, identity=match.identity, score=match.score, margin=match.margin, source=source,
+            status='ok' if confident else 'uncertain', quantity=count.value, count_score=count.score,
+            count_source='slot_count_glyph', note=f'margin={count.margin:.6f}', profile_confirmed=profile_confirmed,
+        )
+        if detail_port is not None and not (fast_confident and count.value is not None):
+            self._apply_detail(scan, reading, slot_index, match, count, confident, cancel)
+        if allowed is not None and reading.identity not in allowed:
+            scan.skip(index, reading.score, "visible identity is outside the explicit scan profile")
+            return None
+        if not reading.profile_confirmed:
+            scan.skip(index, reading.score, "profile membership was not positively verified")
+            return None
+        return reading
+
+    def _apply_detail(self, scan: "_InventoryScan", reading: "_SlotReading", slot_index: int,
+                      match: Match, count: CountMatch, confident: bool, cancel: Event) -> None:
+        outcome = self.detail_recovery.resolve(
+            scan.target, cancel, scan.frame, slot_index, reading.identity, count.value, confident,
+            profile_verified=scan.target.get('_inventory_profile_verified') is True,
+            scan_profile=scan.target.get('inventory_scan_profile'))
+        if outcome.failure is not None:
+            # Only a verified return to the original selection makes a failed read partial.
+            if not outcome.restored or outcome.failure.code not in DETAIL_RECOVERABLE_CODES:
+                raise outcome.failure
+            reading.note = outcome.failure.code + ';original selection restored'
+            reading.status = 'partial'
+            return
+        detail = outcome.detail
+        if detail.identity is not None:
+            reading.identity, reading.score, reading.margin = detail.identity, detail.score, detail.margin
+            reading.source, reading.status = detail.source, 'ok'
+            if detail.source == 'verified_grid_detail_fallback':
+                reading.score, reading.margin = match.score, match.margin
+        if detail.source == 'inventory_detail_conflict':
+            reading.status, reading.quantity, reading.count_source = 'conflict', None, detail.source
+        elif detail.identity is not None:
+            reading.quantity, reading.count_score, reading.count_source = detail.count.value, detail.count.score, detail.count.source
+            if detail.count.source == 'verified_grid_count_fallback':
+                reading.count_score = count.score
+        else:
+            reading.quantity, reading.status = None, 'partial'
+        reading.note = detail.count.reason
+        if detail.identity is not None and scan.allowed_ids is not None:
+            reading.profile_confirmed = detail.identity in scan.allowed_ids
+
+    @staticmethod
+    def _record_entry(scan: "_InventoryScan", reading: "_SlotReading", crop: Image.Image) -> bool:
+        if any(entry["item_id"] == reading.identity for entry in scan.entries):
+            return False
+        scan_profile = scan.prepared.profile_id if scan.prepared is not None else None
+        scan.entries.append({"key": reading.identity, "quantity": reading.quantity, "item_id": reading.identity,
+                             "name": None, "observed_slot": reading.index,
+                             "profile_id": scan_profile if scan_profile is not None else "visible-grid",
+                             "inventory_scan_profile": scan_profile})
+        scan.slot_crops[reading.index] = crop.copy()
+        quantity_confident = reading.quantity is not None
+        scan.evidence.extend([
+            {"field": f"entries[{reading.index}].item_id", "status": reading.status, "source": reading.source,
+             "confidence": reading.score, "note": f"margin={reading.margin:.6f}"},
+            {"field": f"entries[{reading.index}].quantity", "status": "ok" if quantity_confident else "uncertain",
+             "source": reading.count_source, "confidence": reading.count_score, "note": reading.note},
+        ])
+        scan.review_required = scan.review_required or reading.status != 'ok' or not quantity_confident
+        return True
+
+    def _advance_page(self, scan: "_InventoryScan", cancel: Event) -> tuple[int, ...] | None:
+        """Move to the next page; None ends the page loop."""
+        navigation = getattr(self, 'navigation', None)
+        if navigation is None and len(scan.entries) >= len(self.matcher.templates):
+            scan.coverage_complete = True
+            return None
+        if scan.terminal_after_page:
+            # A residual tail page is only terminal when one more scroll shows no motion (X07).
+            scan.coverage_complete = navigation.confirm_terminal(scan.target, cancel, scan.frame, scan.source_kind)
+            scan.evidence.append({"field": "scroll_terminal", "status": "ok" if scan.coverage_complete else "partial",
+                "source": "verified_tail_residual" if scan.coverage_complete else "tail_recheck_moved",
+                "confidence": 1.0 if scan.coverage_complete else 0.0,
+                "note": "residual tail page scanned once; no-motion re-check " + ("passed" if scan.coverage_complete else "moved; no zero-fill")})
+            scan.review_required = scan.review_required or not scan.coverage_complete
+            return None
+        if cancel.is_set():
+            raise ScannerError("cancelled", "inventory scan cancelled")
+        if navigation is None:
+            return self._wheel_page(scan, cancel)
+        moved = navigation.advance(scan.target, cancel, scan.frame, scan.source_kind)
+        scan.evidence.append({"field": "scroll_overlap", "status": "ok", "source": moved.reason,
+            "confidence": 1.0, "note": f"rows={moved.overlap_rows};reason={moved.reason}"})
+        if moved.terminal:
+            scan.coverage_complete = True
+            moved.frame.close()
+            return None
+        scan.terminal_after_page = moved.terminal_after_page
+        scan.frame.close()
+        scan.frame = moved.frame
+        return moved.slot_indices
+
+    def _wheel_page(self, scan: "_InventoryScan", cancel: Event) -> tuple[int, ...] | None:
+        """Navigation-free fallback: wheel once and compare whole frames."""
+        self.capture.scroll(scan.target, -480)
+        next_frame = self.capture.wait_stable(scan.target, cancel)
+        overlap = image_similarity(scan.frame, next_frame)
+        if overlap >= 0.995:
+            next_frame.close()
+            scan.evidence.append({"field": "scroll_terminal", "status": "ok", "source": "stable_frame_overlap", "confidence": overlap, "note": "tail-or-no-motion"})
+            return None
+        if overlap <= 0.05:
+            scan.evidence.append({"field": "scroll_overlap", "status": "uncertain", "source": "frame_overlap", "confidence": overlap, "note": "near-zero overlap; no zero-fill"})
+            scan.review_required = True
+        scan.frame.close()
+        scan.frame = next_frame
+        return tuple(range(len(scan.slots)))
+
+    def _finalize(self, scan: "_InventoryScan") -> list[dict[str, Any]]:
+        prepared = scan.prepared
+        if prepared is not None:
+            ordered_ok = self.navigation.verify_profile_order(prepared.profile_id, scan.observed_profile_ids)
+            verified = scan.coverage_complete and not (scan.review_required or not ordered_ok)
+            if verified:
+                self._zero_fill(scan)
+            scan.evidence.append({"field": "scan_coverage", "status": "ok" if verified else "partial",
+                "source": "inventory_navigation", "confidence": 1.0 if verified else 0.0,
+                "note": f"profile={prepared.profile_id};terminal={scan.coverage_complete};ordered={ordered_ok}"})
+            scan.review_required = scan.review_required or not scan.coverage_complete or not ordered_ok
+        return [scan.candidate(scan.evidence, scan.review_required)]
+
+    @staticmethod
+    def _zero_fill(scan: "_InventoryScan") -> None:
+        profile_id = scan.prepared.profile_id
+        known = {row.item_id: row for row in CATALOG if row.profile_id == profile_id and row.zero_fill_allowed}
+        present = {entry['item_id'] for entry in scan.entries}
+        for item_id, row in sorted(known.items(), key=lambda pair: pair[1].order_index):
+            if item_id in present:
+                continue
+            scan.entries.append({"key": item_id, "quantity": "0", "item_id": item_id, "name": row.display_name,
+                "observed_slot": None, "profile_id": profile_id, "inventory_scan_profile": profile_id})
+            scan.evidence.append({"field": f"zero_fill[{row.resource_key}].quantity", "status": "ok",
+                "source": "verified_profile_zero_fill", "confidence": 1.0, "note": "verified terminal and monotonic profile coverage"})
+
+    def _interrupted(self, scan: "_InventoryScan", exc: Exception, cancel: Event) -> ScanBatchResult:
+        error = exc if isinstance(exc, ScannerError) else ScannerError("matcher_failed", str(exc))
+        if error.code == "inventory_scroll_unverified" and scan.prepared is not None and not cancel.is_set():
+            # Safe abort returns the list to its first page by re-applying verified settings (X10).
+            try:
+                self.navigation.restore_first_page(scan.target, Event(), scan.frame)
+                restored, restore_note = True, "display settings re-applied; first page shown"
+            except ScannerError as restore_error:
+                restored, restore_note = False, restore_error.code
+            error.details["first_page_restored"] = restored
+            scan.evidence.append({"field": "inventory_restore", "status": "ok" if restored else "failed",
+                                  "source": "inventory_first_page_restore", "confidence": 1.0 if restored else 0.0,
+                                  "note": restore_note})
+        retained = []
+        if scan.entries:
+            retained = [scan.candidate([*scan.evidence, {"field": "scan_coverage", "status": "partial",
+                "source": "scan_interrupted", "confidence": 0.0, "note": error.code}], True)]
+            scan.completed = True  # ownership of complete slot specimens transfers to the session
+        return ScanBatchResult(retained, "cancelled" if cancel.is_set() or error.code == "cancelled" else "failed", error)
 
     def train_user_answer(
         self, profile_id: str, candidate_id: str, specimen: dict[str, Any],

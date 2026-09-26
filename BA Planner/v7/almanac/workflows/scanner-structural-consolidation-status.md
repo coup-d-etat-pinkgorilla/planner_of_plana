@@ -20,7 +20,7 @@ sources:
 | C0 기준선·golden 고정 | **완료** (2026-09-26) | `3a96abe` (branch `scanner-consolidation`) | — |
 | C1 계약 드리프트·이름 정리 | **완료** (2026-09-26, C1a~C1c) | `552ab99` | — |
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
-| C3 오케스트레이터 분해 | 미착수 | C2 golden | C3 착수(동작 보존, golden diff 0) |
+| C3 오케스트레이터 분해 | **진행 중: C3a 완료** (2026-09-26) | `3b20374` | C3b(`_scan_current`/`_scan_full`) |
 | C4~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -292,3 +292,32 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
 ### 다음 행동
 
 - C3 착수: 오케스트레이터 분해(동작 보존). 완료 조건은 golden diff 0, 전체 테스트 통과, 최대 함수 80줄 이하.
+
+## C3 — 오케스트레이터 분해 (동작 보존)
+
+시작 `3b20374`. **80줄 기준 범위(기본안)**: X11~X14가 지목한 오케스트레이션 모듈 — `scanner_matchers`, `scanner_session`,
+`inventory_navigation`, `inventory_detail_recovery`, `student_panel_recovery`, `student_identity_recovery`, `student_form_recovery`,
+`student_equipment_recovery`, `windows_scanner_adapter`. 인식 알고리즘(`student_*_recognizer`)과 tactical/planning 모듈의 80줄 초과
+함수(core 전체 21개)는 이 워크플로 범위 밖이다. 착수 시 범위 내 초과: 인벤토리 `__call__` 262, `_scan_current` 218, `_scan_full` 128,
+`scanner_session.review` 93.
+
+| Slice | 항목 | 상태 |
+|---|---|---|
+| C3a | X11 인벤토리 `__call__` 분해 + 상태 dataclass, X13 `DetailRecoveryResult` | **완료** |
+| C3b | X11 학생 `_scan_current`·`_scan_full` 분해 | 미착수 |
+| C3c | X14 `PanelMenu` Protocol·validator 단일 시그니처·`ProgressSink`, `scanner_session.review` 분해 | 미착수 |
+| C3d | X12 `ScanContext` frozen dataclass(target 컨텍스트 백 제거) | 미착수 |
+
+### C3a 결과
+
+- `InventoryMatcherAdapter.__call__`(262줄)을 `_prepare_scan`·`_load_answer_samples`·`_read_page`·`_read_slot`(식별+상세+프로필 gate)·
+  `_apply_detail`·`_record_entry`·`_advance_page`·`_wheel_page`·`_finalize`·`_zero_fill`·`_interrupted`로 나눴다. 흩어진 상태 플래그
+  9개(entries/evidence/slot_crops/review_required/completed/coverage_complete/terminal_after_page/observed ids/prepared)는
+  `_InventoryScan` dataclass, 슬롯 관측은 `_SlotReading`으로 모았다. 워크플로 예시의 "순수 함수"는 매칭·상세 클릭이 부수효과라
+  adapter 메서드로 두었다. 최장 `_read_slot` 50줄.
+- X13: `InventoryDetailRecovery.resolve`가 복귀 확인 뒤의 읽기 실패를 `details['inventory_restored']` 주입 후 raise하던 것을
+  `DetailRecoveryResult(detail, restored, failure)` 반환으로 바꿨다. 복귀 실패·취소·비-ScannerError는 이전처럼 raise한다. adapter의
+  partial 전환 코드 집합은 `DETAIL_RECOVERABLE_CODES`로 이름 붙였다(값 동일).
+  **관찰 가능한 차이 1건**: partial로 전환되지 않고 재발생한 상세 오류의 `error.details`에 `inventory_restored` 키가 더는 없다.
+  Flutter·protocol·진단 스키마에서 이 키를 읽는 곳은 없다(grep 확인).
+- 검증: inventory 50·scanner 73 tests OK, golden **8/8 same**.

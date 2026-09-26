@@ -154,6 +154,14 @@ class InventoryDetailRecognizer:
         self.images.clear()
 
 
+@dataclass(frozen=True)
+class DetailRecoveryResult:
+    """One detail read. A failure is returned only after the original selection was verified."""
+    detail: DetailResult|None=None
+    restored: bool=True
+    failure: ScannerError|None=None
+
+
 class InventoryDetailRecovery:
     def __init__(self,capture,recognizer):
         self.capture,self.recognizer=capture,recognizer;self.trace=[]
@@ -215,14 +223,14 @@ class InventoryDetailRecovery:
                 self.trace.append(dict(restored=original))
             except Exception as exc:raise ScannerError('inventory_restore_failed','original page/selection unverified') from exc
         if failure:
-            if isinstance(failure,ScannerError):failure.details['inventory_restored']=True
+            if isinstance(failure,ScannerError):return DetailRecoveryResult(restored=True,failure=failure)
             raise failure
         if cancel.is_set():raise ScannerError('cancelled','inventory detail read cancelled after safe restore')
         if grid_confirmed and result.identity and result.identity!=grid_id:
-            return DetailResult(grid_id,result.score,result.margin,DetailCount(None,reason='identity_conflict'),'inventory_detail_conflict')
+            return DetailRecoveryResult(DetailResult(grid_id,result.score,result.margin,DetailCount(None,reason='identity_conflict'),'inventory_detail_conflict'))
         profile=BY_KEY.get(grid_id)
         if (result.count.reason=='weak_x_match' and profile_verified and profile is not None
             and profile.profile_id==scan_profile and grid_confirmed and grid_count is not None
             and result.identity in (None,grid_id)):
-            return DetailResult(grid_id,result.score,result.margin,DetailCount(grid_count,0,'weak_x_match','verified_grid_count_fallback'),'verified_grid_detail_fallback')
-        return result
+            return DetailRecoveryResult(DetailResult(grid_id,result.score,result.margin,DetailCount(grid_count,0,'weak_x_match','verified_grid_count_fallback'),'verified_grid_detail_fallback'))
+        return DetailRecoveryResult(result)

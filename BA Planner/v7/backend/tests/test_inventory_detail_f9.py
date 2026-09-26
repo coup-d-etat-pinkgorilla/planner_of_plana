@@ -6,7 +6,7 @@ from unittest.mock import Mock,patch
 from PIL import Image
 from core.inventory_catalog import CATALOG_REVISION
 from core.recognition_assets import RecognitionAssetCatalog
-from core.inventory_detail_recovery import InventoryDetailRecognizer,InventoryDetailRecovery,DetailResult,DetailCount
+from core.inventory_detail_recovery import InventoryDetailRecognizer,InventoryDetailRecovery,DetailRecoveryResult,DetailResult,DetailCount
 from core.inventory_navigation import PreparedInventory,ScrollResult
 from core.scanner_session import ScannerError,ScanBatchResult
 from core.scanner_matchers import InventoryMatcherAdapter,Match,CountMatch
@@ -34,27 +34,32 @@ class GridUI:
 
 class F9RecoveryTests(unittest.TestCase):
     def setUp(self):self.enterContext(patch('core.inventory_detail_recovery.Event',FastEvent))
-    def resolve(self,ui,reader=None,**kwargs):
+    def outcome(self,ui,reader=None,**kwargs):
         reader=reader or ui.reader();recovery=InventoryDetailRecovery(ui,reader)
         with ui.wait_stable({},FastEvent()) as frame:
             return recovery.resolve({},kwargs.pop('cancel',FastEvent()),frame,1,kwargs.pop('grid_id',ITEM),kwargs.pop('grid_count',None),kwargs.pop('grid_confirmed',False),**kwargs)
+    def resolve(self,ui,reader=None,**kwargs):
+        outcome=self.outcome(ui,reader,**kwargs)
+        self.assertIsNone(outcome.failure);return outcome.detail
     def test_select_read_restore_original_same_grid(self):
         ui=GridUI();result=self.resolve(ui)
         self.assertEqual('42',result.count.value);self.assertEqual(0,ui.selected);self.assertEqual(2,len(ui.clicks))
         self.assertTrue(ui.clicks[-1]['_scanner_cleanup'])
     def test_ignored_click_never_reads_detail(self):
         ui=GridUI(ignored=True);reader=ui.reader()
-        with self.assertRaises(ScannerError) as exc:self.resolve(ui,reader)
-        self.assertEqual('inventory_detail_unconfirmed',exc.exception.code)
-        self.assertTrue(exc.exception.details['inventory_restored']);reader.read.assert_not_called()
+        # C3 X13: a failure after a verified restore is returned, not flagged on the exception.
+        outcome=self.outcome(ui,reader)
+        self.assertEqual('inventory_detail_unconfirmed',outcome.failure.code);self.assertIsNone(outcome.detail)
+        self.assertTrue(outcome.restored);self.assertNotIn('inventory_restored',outcome.failure.details)
+        reader.read.assert_not_called()
         self.assertEqual(1,len(ui.clicks))
     def test_page_change_never_clicks_cleanup_on_unknown_screen(self):
         ui=GridUI(changed=True)
-        with self.assertRaises(ScannerError) as exc:self.resolve(ui)
+        with self.assertRaises(ScannerError) as exc:self.outcome(ui)
         self.assertEqual('inventory_restore_failed',exc.exception.code);self.assertEqual(1,len(ui.clicks))
     def test_unknown_selection_does_not_click(self):
         ui=GridUI();reader=ui.reader();reader.selected=lambda *_:None
-        with self.assertRaises(ScannerError):self.resolve(ui,reader)
+        with self.assertRaises(ScannerError):self.outcome(ui,reader)
         self.assertEqual([],ui.clicks)
     def test_fading_selection_recaptures_before_any_click(self):
         ui=GridUI();reader=ui.reader();selected=reader.selected;reads=[0]
@@ -66,13 +71,13 @@ class F9RecoveryTests(unittest.TestCase):
         self.assertEqual('42',result.count.value);self.assertEqual(2,len(ui.clicks));self.assertEqual(0,ui.selected)
     def test_read_failure_restores_selection(self):
         ui=GridUI();reader=ui.reader();reader.read.side_effect=ScannerError('capture_failed','fixture')
-        with self.assertRaises(ScannerError) as exc:self.resolve(ui,reader)
-        self.assertTrue(exc.exception.details['inventory_restored']);self.assertEqual(0,ui.selected)
+        outcome=self.outcome(ui,reader)
+        self.assertEqual('capture_failed',outcome.failure.code);self.assertTrue(outcome.restored);self.assertEqual(0,ui.selected)
     def test_cancel_after_read_uses_fresh_cleanup(self):
         ui=GridUI();reader=ui.reader();cancel=FastEvent()
         def read(*a):cancel.set();return DetailResult(ITEM,.95,.1,DetailCount('42',.9))
         reader.read.side_effect=read
-        with self.assertRaises(ScannerError) as exc:self.resolve(ui,reader,cancel=cancel)
+        with self.assertRaises(ScannerError) as exc:self.outcome(ui,reader,cancel=cancel)
         self.assertEqual('cancelled',exc.exception.code);self.assertEqual(0,ui.selected)
         self.assertFalse(ui.clicks[-1]['_scanner_cancel'].is_set())
     def test_confirmed_grid_id_conflict_never_receives_other_count(self):
@@ -132,7 +137,7 @@ class F9AdapterTests(unittest.TestCase):
         adapter.count_matcher=Mock();adapter.count_matcher.match.return_value=CountMatch(count,.9,.1)
         reader=ui.reader();reader.regions={'sources':{'item':{'grid_slots':SLOTS[:1]}}}
         adapter.detail_recovery=Mock(recognizer=reader)
-        adapter.detail_recovery.resolve.return_value=DetailResult(ITEM,.95,.1,DetailCount('0',.9))
+        adapter.detail_recovery.resolve.return_value=DetailRecoveryResult(DetailResult(ITEM,.95,.1,DetailCount('0',.9)))
         self.enterContext(patch('core.scanner_matchers.image_has_visible_content',return_value=True))
         return adapter
     def scan(self,adapter):
@@ -149,7 +154,7 @@ class F9AdapterTests(unittest.TestCase):
         self.assertIn('inventory_detail_template',[e['source'] for e in result[0]['evidence']])
     def test_unresolved_detail_does_not_silently_accept_weak_x_grid_quantity(self):
         adapter=self.adapter(fast=False)
-        adapter.detail_recovery.resolve.return_value=DetailResult(None,.5,0,DetailCount(None,reason='weak_x_match'))
+        adapter.detail_recovery.resolve.return_value=DetailRecoveryResult(DetailResult(None,.5,0,DetailCount(None,reason='weak_x_match')))
         result=self.scan(adapter)
         self.assertIsNone(result[0]['payload']['entries'][0]['quantity']);self.assertTrue(result[0]['review_required'])
     def test_unverified_return_stops_session(self):
@@ -159,7 +164,7 @@ class F9AdapterTests(unittest.TestCase):
     def test_later_slot_restore_failure_preserves_completed_entry(self):
         adapter=self.adapter(count=None)
         adapter.detail_recovery.recognizer.regions={'sources':{'item':{'grid_slots':SLOTS}}}
-        adapter.detail_recovery.resolve.side_effect=[DetailResult(ITEM,.95,.1,DetailCount('42',.9)),ScannerError('inventory_restore_failed','later slot')]
+        adapter.detail_recovery.resolve.side_effect=[DetailRecoveryResult(DetailResult(ITEM,.95,.1,DetailCount('42',.9))),ScannerError('inventory_restore_failed','later slot')]
         result=self.scan(adapter)
         self.assertEqual('failed',result.outcome)
         self.assertEqual('42',result.candidates[0]['payload']['entries'][0]['quantity'])
