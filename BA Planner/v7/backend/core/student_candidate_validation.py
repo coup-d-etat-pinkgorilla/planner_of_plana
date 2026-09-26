@@ -15,6 +15,7 @@ STAT_FIELDS = {
     "MaxHP": "combat_hp", "AttackPower": "combat_atk",
     "DefensePower": "combat_def", "HealPower": "combat_heal",
 }
+STAT_SCAN_TOLERANCE = 2
 
 
 class StudentCandidateValidator:
@@ -246,9 +247,15 @@ class StudentCandidateValidator:
         }
         if len(details["observed"]) != len(STAT_FIELDS):
             return self._evidence("partial", details, "observed combat stats are incomplete")
-        if any(details["delta"].values()):
+        if any(abs(delta) > STAT_SCAN_TOLERANCE for delta in details["delta"].values()):
             details["suggestion"] = {"action": "review_candidate", "reason": "calculated stats differ"}
             return self._evidence("suspicious", details, "calculated stats differ from the screen")
+        if any(details["delta"].values()):
+            return self._evidence(
+                "verified",
+                details,
+                f"screen stats are within the accepted +/-{STAT_SCAN_TOLERANCE} scan tolerance",
+            )
         return self._evidence("verified", details, "calculated stats match the screen")
 
     @staticmethod

@@ -1,9 +1,21 @@
-"""Pure Schale-compatible HP/ATK/DEF/HEAL calculation for student builds."""
+"""Pure HP/ATK/DEF/HEAL calculation for student builds, using the in-client formulas.
+
+The formulas were read from the JP client (1.73) and are documented with their source methods in
+data/extracted/GAME_RULES.md section 4 (BattleEntityStatFactory.CalcLevelStat / CalcEquipmentLevelStat,
+StatService.StatPerLevel, StatService.HeroStatProcessorGetDefaultValueFloatCalculation).
+They replace the earlier SchaleDB-style four-decimal interpolation, which drifted from the game by 1-3
+points at mid equipment levels, with combined star+potential rounding and for non-Standard weapons
+(verified in game 2026-09-26: Bag T1 Lv2 MaxHP 418; SchaleDB style gave 400).
+
+Arithmetic mirrors the client: 32-bit float products, Math.Round(MidpointRounding.AwayFromZero)
+and a single ceiling for the star + potential bonus.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from decimal import Decimal, ROUND_CEILING, ROUND_HALF_UP
+import math
+import struct
 from typing import Iterable
 
 from core.planning_growth_rules import (
@@ -22,35 +34,79 @@ from core.student_stats_types import (
     StudentStatBuildV1,
     StudentStatCalculationV1,
     StudentStatCatalogV1,
+    StudentStatFormulaV1,
     StudentStatRecordV1,
 )
 
 
-_FOUR_PLACES = Decimal("0.0001")
-_STAR_TRANSCENDENCE_BASIS_POINTS = {
-    "AttackPower": (0, 1000, 1200, 1400, 1700),
-    "MaxHP": (0, 500, 700, 900, 1400),
-    "HealPower": (0, 750, 1000, 1200, 1500),
-    "DefensePower": (0, 0, 0, 0, 0),
-}
+_POTENTIAL_STAT_BY_BUILD_FIELD = {"max_hp": "MaxHP", "attack": "AttackPower", "heal": "HealPower"}
 
 
-def _decimal(value: int | str | Decimal) -> Decimal:
-    return value if isinstance(value, Decimal) else Decimal(str(value))
+def _f32(value: float) -> float:
+    """Round a Python float to IEEE-754 single precision (the client computes in float)."""
+
+    return struct.unpack("<f", struct.pack("<f", value))[0]
 
 
-def _fixed4(value: Decimal) -> Decimal:
-    return value.quantize(_FOUR_PLACES, rounding=ROUND_HALF_UP)
+_F32_TEN_THOUSANDTH = _f32(0.0001)
 
 
-def _js_round_positive(value: Decimal) -> int:
-    return int(value.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+def _round_away(value: float) -> int:
+    """C# Math.Round(value, MidpointRounding.AwayFromZero)."""
+
+    return int(math.floor(value + 0.5)) if value >= 0 else -int(math.floor(-value + 0.5))
 
 
-def _schale_scale(level: int, maximum: int) -> Decimal:
-    if maximum <= 1:
-        return Decimal(0)
-    return _fixed4(_decimal(level - 1) / _decimal(maximum - 1))
+def default_formula() -> StudentStatFormulaV1:
+    from core.student_stats_catalog import load_student_stat_formula
+
+    return load_student_stat_formula()
+
+
+def _growth_index(formula: StudentStatFormulaV1, growth_type: str) -> int:
+    try:
+        return formula.growth_types[growth_type]
+    except KeyError as exc:
+        raise ValueError(f"unknown stat growth type: {growth_type}") from exc
+
+
+def level_ratio(formula: StudentStatFormulaV1, growth_type: str, level: int) -> float:
+    """StatLevelInterpolationData.GetStatRatio: idx[level] / idx[end] as float, 0 if no row."""
+
+    column = _growth_index(formula, growth_type)
+    row = formula.level_interpolation.get(level)
+    end = formula.level_interpolation[formula.end_level]
+    if row is None or column >= len(row) or column >= len(end) or end[column] == 0:
+        return 0.0
+    return _f32(_f32(float(row[column])) / _f32(float(end[column])))
+
+
+def _level_stat(formula: StudentStatFormulaV1, growth_type: str, level_1: int, level_100: int, level: int) -> int:
+    if level == 1:
+        return level_1
+    ratio = level_ratio(formula, growth_type, level)
+    return level_1 + _round_away(_f32(_f32(float(level_100 - level_1)) * ratio))
+
+
+def _bonus_rate_basis_points(
+    formula: StudentStatFormulaV1, student_id: int, stat: str, star: int, potential_level: int
+) -> int:
+    trans = formula.transcendence.get(student_id, {}).get(stat, formula.transcendence_default.get(stat, ()))
+    rate = sum(trans[:star])
+    if potential_level:
+        levels = formula.potential.get(student_id, {}).get(stat, formula.potential_default.get(stat, ()))
+        if potential_level >= len(levels):
+            raise ValueError(f"potential level {potential_level} has no rate for {stat}")
+        rate += levels[potential_level]
+    return rate
+
+
+def _apply_bonus_rate(base: int, rate_basis_points: int) -> int:
+    """StatService.StatPerLevel: base + ceil(float(base * rate) * 0.0001f)."""
+
+    if not rate_basis_points:
+        return base
+    return base + int(math.ceil(_f32(_f32(float(base * rate_basis_points)) * _F32_TEN_THOUSANDTH)))
 
 
 def interpolate_student_stat(
@@ -58,45 +114,71 @@ def interpolate_student_stat(
     level_100: int,
     level: int,
     transcendence_basis_points: int = 0,
+    *,
+    growth_type: str = "Standard",
+    formula: StudentStatFormulaV1 | None = None,
 ) -> int:
-    """Match Schale's toFixed(4) -> Math.round -> multiplier -> ceil order."""
+    """In-client level stat with an optional star/potential bonus rate (basis points)."""
 
     if not 1 <= level <= 100:
         raise ValueError("student level must be from 1 to 100")
-    scale = _schale_scale(level, 100)
-    interpolated = _fixed4(_decimal(level_1) + _decimal(level_100 - level_1) * scale)
-    rounded = _js_round_positive(interpolated)
-    multiplier = Decimal(1) + _decimal(transcendence_basis_points) / Decimal(10000)
-    return int(_fixed4(_decimal(rounded) * multiplier).to_integral_value(rounding=ROUND_CEILING))
+    formula = formula or default_formula()
+    return _apply_bonus_rate(_level_stat(formula, growth_type, level_1, level_100, level), transcendence_basis_points)
 
 
-def interpolate_equipment_stat(stat: StatRangeV1, level: int, max_level: int) -> int:
-    """Interpolate a tier's start/end stat using Schale's four-decimal scale."""
+def _equipment_level_value(
+    formula: StudentStatFormulaV1, growth_type: str, minimum: int, maximum: int, level: int, max_level: int
+) -> int:
+    """BattleEntityStatFactory.CalcEquipmentLevelStat: the item level is mapped onto the 1..100
+    interpolation table with RoundAway(level * (end / max_level)) before the level ratio is used."""
+
+    if level == 1:
+        return minimum
+    step = _f32(_f32(float(formula.end_level)) / _f32(float(max_level)))
+    scaled_level = _round_away(_f32(_f32(float(level)) * step))
+    ratio = level_ratio(formula, growth_type, scaled_level)
+    return minimum + _round_away(_f32(_f32(float(maximum - minimum)) * ratio))
+
+
+def interpolate_equipment_stat(
+    stat: StatRangeV1, level: int, max_level: int, *, formula: StudentStatFormulaV1 | None = None
+) -> int:
+    """In-client equipment stat for an item level (equipment uses the Standard growth column)."""
 
     if not 1 <= level <= max_level:
         raise ValueError(f"equipment level must be from 1 to {max_level}")
-    scale = _schale_scale(level, max_level)
-    value = _fixed4(_decimal(stat.level_1) + _decimal(stat.level_max - stat.level_1) * scale)
-    return _js_round_positive(value)
+    formula = formula or default_formula()
+    return _equipment_level_value(formula, "Standard", stat.level_1, stat.level_max, level, max_level)
 
 
-def interpolate_weapon_stat(level_1: int, level_100: int, level: int, growth_type: str) -> int:
+def interpolate_weapon_stat(
+    level_1: int,
+    level_100: int,
+    level: int,
+    growth_type: str,
+    *,
+    formula: StudentStatFormulaV1 | None = None,
+) -> int:
+    """In-client unique weapon stat (the equipment formula with a 100-level scale)."""
+
     if not 1 <= level <= 100:
         raise ValueError("weapon level must be from 1 to 100")
-    scale = _decimal(level - 1) / Decimal(99)
-    if growth_type == "Standard":
-        scale = _fixed4(scale)
-    return _js_round_positive(_decimal(level_1) + _decimal(level_100 - level_1) * scale)
+    formula = formula or default_formula()
+    return _equipment_level_value(formula, growth_type, level_1, level_100, level, formula.end_level)
 
 
 def relationship_stat_values(student: StudentStatRecordV1, rank: int) -> dict[str, int]:
     if not 1 <= rank <= 100:
         raise ValueError("relationship rank must be from 1 to 100")
     totals = [0, 0]
+    increments = student.relationship.increments
     for index in range(1, min(rank, 50)):
-        range_index = index // 5 if index < 20 else 2 + index // 10
-        totals[0] += student.relationship.values[range_index][0]
-        totals[1] += student.relationship.values[range_index][1]
+        if increments is not None:
+            pair = increments[index - 1]          # reaching rank index + 1
+        else:
+            pair = student.relationship.values[index // 5 if index < 20 else 2 + index // 10]
+        totals[0] += pair[0]
+        totals[1] += pair[1]
     result: dict[str, int] = {}
     for stat, amount in zip(student.relationship.stat_types, totals, strict=True):
         result[stat] = result.get(stat, 0) + amount
@@ -142,20 +224,28 @@ def _add_values(modifier: _MutableModifier, values: dict[str, int], suffix: str 
         modifier.add(stat + suffix, amount)
 
 
-def _star_basis_points(stat: str, star: int) -> int:
-    return sum(_STAR_TRANSCENDENCE_BASIS_POINTS[stat][:star])
+def _potential_levels(build: StudentStatBuildV1) -> dict[str, int]:
+    return {stat: getattr(build.potential, field) for field, stat in _POTENTIAL_STAT_BY_BUILD_FIELD.items()}
 
 
-def _base_values(student: StudentStatRecordV1, build: StudentStatBuildV1) -> dict[str, int]:
-    return {
-        item.stat: interpolate_student_stat(
-            item.level_1,
-            item.level_max,
-            build.level,
-            _star_basis_points(item.stat, build.star),
+def _base_values(
+    student: StudentStatRecordV1,
+    build: StudentStatBuildV1,
+    formula: StudentStatFormulaV1,
+    *,
+    include_potential: bool,
+) -> dict[str, int]:
+    """Level stat plus the star bonus (and, when asked, the potential bonus) rounded up once."""
+
+    potential = _potential_levels(build) if include_potential else {}
+    result = {}
+    for item in student.base_stats:
+        level_value = _level_stat(formula, student.growth_type, item.level_1, item.level_max, build.level)
+        rate = _bonus_rate_basis_points(
+            formula, student.schaledb_id, item.stat, build.star, potential.get(item.stat, 0)
         )
-        for item in student.base_stats
-    }
+        result[item.stat] = _apply_bonus_rate(level_value, rate)
+    return result
 
 
 def _validate_build(student: StudentStatRecordV1, build: StudentStatBuildV1) -> None:
@@ -199,6 +289,7 @@ def _equipment_contributions(
     catalog: StudentStatCatalogV1,
     contributions: dict[str, _MutableModifier],
     missing: list[MissingStatDependencyV1],
+    formula: StudentStatFormulaV1,
 ) -> None:
     for slot, (category, equipped) in enumerate(zip(student.equipment, build.equipment, strict=True), 1):
         unlock_level = EQUIPMENT_SLOT_UNLOCK_LEVEL.get(slot, 1)
@@ -220,13 +311,14 @@ def _equipment_contributions(
             )
         target = _modifier(contributions, f"equipment_{slot}")
         for stat in record.stats:
-            target.add(stat.stat, interpolate_equipment_stat(stat, equipped.level, record.max_level))
+            target.add(stat.stat, interpolate_equipment_stat(stat, equipped.level, record.max_level, formula=formula))
 
 
 def _weapon_contribution(
     student: StudentStatRecordV1,
     build: StudentStatBuildV1,
     contributions: dict[str, _MutableModifier],
+    formula: StudentStatFormulaV1,
 ) -> None:
     if build.weapon is None:
         return
@@ -238,7 +330,7 @@ def _weapon_contribution(
         ("MaxHP_Base", weapon.max_hp),
         ("HealPower_Base", weapon.heal),
     ):
-        target.add(stat, interpolate_weapon_stat(values[0], values[1], level, weapon.growth_type))
+        target.add(stat, interpolate_weapon_stat(values[0], values[1], level, weapon.growth_type, formula=formula))
 
 
 def _relationship_contributions(
@@ -330,26 +422,32 @@ def _potential_contribution(
     student: StudentStatRecordV1,
     build: StudentStatBuildV1,
     contributions: dict[str, _MutableModifier],
+    formula: StudentStatFormulaV1,
+    base_without_potential: dict[str, int],
 ) -> None:
-    levels = {
-        "MaxHP": build.potential.max_hp,
-        "AttackPower": build.potential.attack,
-        "HealPower": build.potential.heal,
-    }
+    """Potential (ability release) adds its rate to the star rate before the single ceiling.
+
+    The combined base is split into ``base`` (star only) and this ``potential`` part so evidence
+    still shows the potential share; both land in the same multiplier-eligible flat bucket.
+    """
+
+    if not any(_potential_levels(build).values()):
+        return
+    combined = _base_values(student, build, formula, include_potential=True)
     target = _modifier(contributions, "potential")
-    base_by_stat = {item.stat: item for item in student.base_stats}
-    for stat, potential_level in levels.items():
-        if potential_level == 0:
-            continue
-        raw = base_by_stat[stat]
-        level_value = interpolate_student_stat(raw.level_1, raw.level_max, build.level)
-        amount = _js_round_positive(_decimal(level_value) * _decimal(potential_level) * Decimal("0.002"))
-        target.add(stat + "_Base", amount)
+    for stat, value in combined.items():
+        amount = value - base_without_potential[stat]
+        if amount:
+            target.add(stat + "_Base", amount)
 
 
 def _totals(contributions: Iterable[_MutableModifier]) -> dict[str, int]:
+    """HeroStatProcessorGetDefaultValueFloatCalculation, then RoundAway:
+    final = RoundAway(float((A + B) + float(C * (A + B)) * 0.0001f)) + separated flat,
+    with A + B the multiplier-eligible flat sum and C the coefficient sum above 100%."""
+
     flat = {stat: 0 for stat in PRIMARY_STAT_NAMES}
-    coefficient = {stat: 10000 for stat in PRIMARY_STAT_NAMES}
+    coefficient = {stat: 0 for stat in PRIMARY_STAT_NAMES}
     separated = {stat: 0 for stat in PRIMARY_STAT_NAMES}
     for source in contributions:
         for stat, value in source.flat.items():
@@ -361,16 +459,12 @@ def _totals(contributions: Iterable[_MutableModifier]) -> dict[str, int]:
         for stat, value in source.separated_flat.items():
             if stat in separated:
                 separated[stat] += value
-    return {
-        stat: max(
-            0,
-            _js_round_positive(
-                _fixed4(_decimal(flat[stat]) * _decimal(coefficient[stat]) / Decimal(10000))
-            )
-            + separated[stat],
-        )
-        for stat in PRIMARY_STAT_NAMES
-    }
+    result = {}
+    for stat in PRIMARY_STAT_NAMES:
+        total = _f32(float(flat[stat]))
+        value = _f32(_f32(_f32(float(coefficient[stat])) * total) * _F32_TEN_THOUSANDTH + total)
+        result[stat] = max(0, _round_away(value) + separated[stat])
+    return result
 
 
 def calculate_student_stats(
@@ -379,15 +473,18 @@ def calculate_student_stats(
     catalog: StudentStatCatalogV1,
     *,
     include_skill_buffs: bool = True,
+    formula: StudentStatFormulaV1 | None = None,
 ) -> StudentStatCalculationV1:
     """Calculate exact totals or an explicitly non-exact partial when inputs are missing."""
 
     _validate_build(student, build)
     contributions: dict[str, _MutableModifier] = {}
     missing: list[MissingStatDependencyV1] = []
-    _add_values(_modifier(contributions, "base"), _base_values(student, build))
-    _equipment_contributions(student, build, catalog, contributions, missing)
-    _weapon_contribution(student, build, contributions)
+    formula = formula or default_formula()
+    base = _base_values(student, build, formula, include_potential=False)
+    _add_values(_modifier(contributions, "base"), base)
+    _equipment_contributions(student, build, catalog, contributions, missing, formula)
+    _weapon_contribution(student, build, contributions, formula)
     _relationship_contributions(student, build, catalog, contributions, missing)
     _passive_skill_contribution(
         student,
@@ -397,7 +494,7 @@ def calculate_student_stats(
         include_skill_buffs=include_skill_buffs,
     )
     _favorite_gear_contribution(student, build, contributions)
-    _potential_contribution(student, build, contributions)
+    _potential_contribution(student, build, contributions, formula, base)
     partial_values = _totals(contributions.values())
     return StudentStatCalculationV1(
         status="dependency_missing" if missing else "complete",

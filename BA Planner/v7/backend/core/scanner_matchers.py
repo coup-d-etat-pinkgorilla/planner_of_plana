@@ -479,8 +479,6 @@ class SlotCountMatcher:
 
 
 class StudentMatcherAdapter:
-    _DOCK_CARD_TRANSITION_SECONDS = 0.32
-
     def __init__(
         self,
         capture: CapturePort,
@@ -784,6 +782,7 @@ class StudentMatcherAdapter:
             crops.images["equipment_growth_button"] = ratio_crop(frame, self.equipment_controls.regions["equipment_button"])
         finally:
             frame.close()
+        fallback_evidence: list[dict[str, Any]] = []
         try:
             student_ref = identity.student_ref
             self._activate_numeric_samples(
@@ -791,16 +790,11 @@ class StudentMatcherAdapter:
             )
             progress(1, 4, "scanner.student.identify")
             confident = True
-            self._report_student_feedback(
-                progress, 1, 4, "scanner.student.identify",
-                student_ref, "student_id", {},
-            )
-            if (
-                target.get("student_scan_mode") == "full"
-                and getattr(progress, "supports_feedback", False)
-                and cancel.wait(self._DOCK_CARD_TRANSITION_SECONDS)
-            ):
-                return []
+            if target.get("student_scan_mode") == "full":
+                self._report_student_feedback(
+                    progress, 1, 4, "scanner.student.identify",
+                    student_ref, "student_id", {},
+                )
             if cancel.is_set():
                 return []
             progress(2, 4, "scanner.student.basic_fields")
@@ -857,20 +851,32 @@ class StudentMatcherAdapter:
                 and not all(observations[field].confirmed for field in ("weapon_level", "weapon_star"))
                 and self.weapon_menu is not None
             ):
+                unresolved_weapon = {
+                    field: observations[field]
+                    for field in ("weapon_level", "weapon_star")
+                    if not observations[field].confirmed
+                }
                 fallback = read_panel_fields(
                     self.weapon_menu, "weapon", target, cancel, observations,
                     ("weapon_level", "weapon_star"), self.weapon_recognizer.recognize_menu,
                     attempts=3,
                 )
                 observations.update(fallback)
-            live_values: dict[str, Any] = {}
-            for field, observation in observations.items():
-                if observation.confirmed:
-                    live_values[field] = observation.value
-                    self._report_student_feedback(
-                        progress, 2, 4, "scanner.student.basic_fields",
-                        student_ref, field, dict(live_values),
-                    )
+                for field, trigger in unresolved_weapon.items():
+                    result = observations.get(field)
+                    recovered = result is not None and result.confirmed
+                    fallback_evidence.append({
+                        "field": f"{field}_fallback",
+                        "status": "ok" if recovered else "uncertain",
+                        "source": "weapon_panel_fallback",
+                        "confidence": result.confidence if result is not None else 0.0,
+                        "note": (
+                            f"trigger_status={trigger.status};trigger_source={trigger.source};"
+                            f"trigger_confidence={trigger.confidence:.6f};"
+                            f"trigger_note={trigger.note};result_source="
+                            f"{result.source if result is not None else 'missing'}"
+                        ),
+                    })
             equipment_observations, unresolved = self.equipment_recognizer.recognize(
                 crops,
                 student_ref=student_ref,
@@ -882,26 +888,12 @@ class StudentMatcherAdapter:
                 favorite_growth_active=self.equipment_controls.read_growth(crops.images.get("equipment_growth_button")).value,
             )
             observations.update(equipment_observations)
-            for field, observation in equipment_observations.items():
-                if observation.confirmed:
-                    live_values[field] = observation.value
-                    self._report_student_feedback(
-                        progress, 3, 4, "scanner.student.equipment_fields",
-                        student_ref, field, dict(live_values),
-                    )
             progress(3, 4, "scanner.student.equipment_fields")
             if unresolved and self.equipment_menu is not None and self.equipment_menu_recognizer is not None:
                 self.equipment_recognizer.metrics.menu_captures += 1
                 fallback = resolve_equipment_menu(self.equipment_menu, self.equipment_menu_recognizer,
                     target, cancel, observations, unresolved)
                 observations.update(fallback)
-                for field, observation in fallback.items():
-                    if observation.confirmed:
-                        live_values[field] = observation.value
-                        self._report_student_feedback(
-                            progress, 3, 4, "scanner.student.equipment_fields",
-                            student_ref, field, dict(live_values),
-                        )
                 for slot in unresolved:
                     learned = fallback.get(f"equip{slot}_level")
                     if (
@@ -950,6 +942,7 @@ class StudentMatcherAdapter:
             "confidence": observation.confidence,
             "note": observation.note,
         } for field, observation in observations.items())
+        evidence.extend(fallback_evidence)
         evidence.extend({
             "field": field,
             "status": observation.status,
@@ -1104,25 +1097,8 @@ class StudentMatcherAdapter:
                     0.53465,
                 )
 
-        def depart(student_id: str) -> bool:
-            self._report_student_feedback(
-                progress,
-                len(results),
-                None,
-                "scanner.student.transition.exit",
-                student_id,
-                "__student_exit__",
-                {},
-            )
-            if (
-                getattr(progress, "supports_feedback", False)
-                and cancel.wait(self._DOCK_CARD_TRANSITION_SECONDS)
-            ):
-                return False
-            return True
-
-        def depart_and_navigate(student_id: str) -> bool:
-            if not depart(student_id):
+        def navigate_next() -> bool:
+            if cancel.is_set():
                 return False
             navigate()
             return True
@@ -1169,8 +1145,6 @@ class StudentMatcherAdapter:
                     and pending_button_fallback
                 ):
                     progress(len(results), None, "scanner.student.full.navigation_retry")
-                    if not depart(student_id):
-                        break
                     if cancel.is_set():
                         break
                     click(
@@ -1188,7 +1162,7 @@ class StudentMatcherAdapter:
                         len(results), None,
                         "scanner.student.full.navigation_reverse",
                     )
-                    if not depart_and_navigate(student_id):
+                    if not navigate_next():
                         break
                     if cancel.wait(0.45):
                         break
@@ -1202,7 +1176,7 @@ class StudentMatcherAdapter:
                     )
                     return True
                 previous_student_id = student_id
-                if not depart_and_navigate(student_id):
+                if not navigate_next():
                     break
                 progress(len(results), None, "scanner.student.full.navigating")
                 if cancel.wait(0.45):
@@ -1212,7 +1186,7 @@ class StudentMatcherAdapter:
             previous_student_id = student_id
             results.extend(scanned)
             progress(len(results), None, "scanner.student.full.collected")
-            if not depart_and_navigate(student_id):
+            if not navigate_next():
                 break
             progress(len(results), None, "scanner.student.full.navigating")
             if cancel.wait(0.45):

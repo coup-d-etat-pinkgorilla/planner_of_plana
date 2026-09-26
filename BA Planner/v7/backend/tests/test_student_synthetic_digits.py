@@ -67,7 +67,7 @@ class StudentSyntheticDigitTests(unittest.TestCase):
         self.assertTrue(serika["observed"]["weapon_level"]["correct"])
         self.assertEqual(24, serika["observed"]["relationship_rank"]["value"])
 
-    def test_whole_value_bank_is_fast_but_remains_shadow_only(self) -> None:
+    def test_whole_value_bank_is_fast_and_promoted_only_for_weapon_fallback(self) -> None:
         report = json.loads(WHOLE_BENCHMARK.read_text(encoding="utf-8"))
         self.assertEqual(250, report["templates"]["count"])
         self.assertEqual(64000, report["templates"]["prepared_bytes"])
@@ -78,7 +78,7 @@ class StudentSyntheticDigitTests(unittest.TestCase):
         self.assertEqual(2, report["fields"]["student_level"]["correct"])
         self.assertEqual(3, report["fields"]["weapon_level"]["correct"])
         self.assertEqual(7, report["fields"]["relationship_rank"]["correct"])
-        self.assertEqual("not promoted", report["decision"]["production"])
+        self.assertEqual("weapon_level fallback only", report["decision"]["production"])
 
 
 if __name__ == "__main__":

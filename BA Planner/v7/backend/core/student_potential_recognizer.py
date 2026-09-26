@@ -1,10 +1,16 @@
 """Ability release levels, independent of combat numbers and stored profiles."""
 from __future__ import annotations
 
-from collections import Counter
-from PIL import Image
+from PIL import Image, ImageFilter, ImageOps
 
-from core.student_scan_recognizer import Observation, ratio_crop, _normalize_mask, _binary_iou
+from core.student_scan_recognizer import (
+    Observation,
+    ratio_crop,
+    _normalize_mask,
+    _binary_iou,
+    _ncc_difference_score,
+    _otsu_binary,
+)
 from core.student_weapon_recognizer import _normalized_correlation
 from core.student_panel_recovery import read_panel_fields
 
@@ -27,39 +33,35 @@ def _mask(image, predicate):
         rgb.close()
 
 
-def _glyph(image, *, detail=False):
-    """Normalize white/yellow level text inside the blue badge, excluding MAX outside it."""
+def _blue_ratio(image):
     rgb = image.convert("RGB")
     try:
-        colors = Counter(p for p in rgb.getdata() if _blue(p))
+        pixels = list(rgb.getdata())
     finally:
         rgb.close()
-    if not colors:
-        return None
-    background = colors.most_common(1)[0][0]
-    # MAX outlines and row dividers also satisfy the broad presence predicate.
-    # Bound text to the dominant badge surface, not those disconnected accents.
-    blue = _mask(image, lambda p: _blue(p) and max(abs(a-b) for a,b in zip(p,background)) <= 12)
+    return sum(_blue(pixel) for pixel in pixels) / max(1, len(pixels))
+
+
+def _basic_template_pattern(image):
+    """Normalize the complete v6 ``Lv.value`` pattern for 1..25 matching."""
+    blue = _mask(image, _blue)
     try:
         box = blue.getbbox()
     finally:
         blue.close()
     if box is None:
         return None
-    if detail:
-        # The cyan "ability" prefix is shared by all 26 labels and otherwise
-        # dominates the score. Keep the complete Lv.number text on its right.
-        box = (box[0]+round((box[2]-box[0])*.40), box[1], box[2], box[3])
     crop = image.crop(box)
-    text = _mask(crop, lambda p: (max(p) > 185 and max(p)-min(p) < 70)
-                 or (p[0] > 190 and p[1] > 185 and p[2] < 120))
+    text = _mask(crop, lambda p: max(p) > 185 and max(p)-min(p) < 70)
     crop.close()
-    # 8-connected components, with resolution-relative noise rejection.
+
+    # Preserve the v6 whole-pattern contract. In particular, retain the shared
+    # ``Lv`` prefix and compare the complete rendered label against each of the
+    # 25 value templates instead of classifying individual number glyphs.
     pixels = text.load()
     remaining = {(x, y) for y in range(text.height) for x in range(text.width) if pixels[x, y]}
     cleaned = Image.new("L", text.size)
     out = cleaned.load()
-    letters = []
     while remaining:
         seed = remaining.pop()
         component = [seed]
@@ -73,22 +75,58 @@ def _glyph(image, *, detail=False):
                     pending.append(point)
                     component.append(point)
         height = max(y for _, y in component)-min(y for _, y in component)+1
-        if len(component) >= max(2, round(text.height**2*.01)) and height >= text.height*.18:
-            letters.append(component)
+        if len(component) >= 20 and height >= 4:
+            for point in component:
+                out[point] = 255
     text.close()
-    # Every bundled badge contains Lv followed by one or two digits. Remove
-    # those two shared letters so they cannot outweigh a mismatching number.
-    letters.sort(key=lambda component: min(x for x,_ in component))
-    if len(letters) not in (3,4):
-        cleaned.close()
-        return None
-    for component in letters[2:]:
-        for point in component:
-            out[point] = 255
     try:
         return _normalize_mask(cleaned, size=(64, 32))
     finally:
         cleaned.close()
+
+
+def _detail_ui_feature(image, size):
+    """Reproduce the v6 full-ROI UI preprocessing with its center focus crop."""
+    gray = image.convert("L").resize(size, Image.Resampling.BILINEAR)
+    equalized = ImageOps.equalize(gray)
+    gray.close()
+    blurred = equalized.filter(ImageFilter.GaussianBlur(radius=.8))
+    binary = _otsu_binary(blurred)
+    blurred.close()
+    equalized.close()
+    box = (
+        int(binary.width * .18),
+        int(binary.height * .08),
+        int(binary.width * .82),
+        int(binary.height * .95),
+    )
+    focused = binary.crop(box)
+    binary.close()
+    return focused
+
+
+def _detail_text_feature(image, size):
+    """Reproduce the v6 text-only mask without splitting the numeric glyphs."""
+    gray = image.convert("L").resize(size, Image.Resampling.BILINEAR)
+    blurred = gray.filter(ImageFilter.GaussianBlur(radius=.8))
+    mask = _otsu_binary(blurred, inverse=True)
+    blurred.close()
+    gray.close()
+    box = mask.getbbox()
+    if box is None:
+        mask.close()
+        return Image.new("L", (96, 30))
+    padded = (
+        max(0, box[0] - 2),
+        max(0, box[1] - 2),
+        min(mask.width, box[2] + 2),
+        min(mask.height, box[3] + 2),
+    )
+    cropped = mask.crop(padded)
+    mask.close()
+    result = cropped.resize((96, 30), Image.Resampling.BILINEAR)
+    cropped.close()
+    return result
 
 
 class StudentPotentialRecognizer:
@@ -96,6 +134,7 @@ class StudentPotentialRecognizer:
         self.catalog = catalog
         self.regions = catalog.region_for_purpose("student", "student-potential-regions")
         self.templates = {}
+        self.detail_templates = {}
 
     def _bank(self, kind):
         # Readiness/target listing and locked students do not need glyph banks.
@@ -108,15 +147,31 @@ class StudentPotentialRecognizer:
             if asset_kind != kind:
                 continue
             with Image.open(self.catalog.resolve(asset.path)) as source:
-                # Recognition-only resolution variants from the fixed bundled
-                # reference. No observed game pixels are added to this bank.
-                half = source.resize((max(1,round(source.width/2)), max(1,round(source.height/2))), Image.Resampling.LANCZOS)
-                try:
-                    glyphs = [_glyph(sample, detail=kind != "basic") for sample in (source, half)]
-                finally:
-                    half.close()
+                # v6 compares one complete Lv.value pattern for every basic
+                # value 1..25. Do not synthesize resized glyph variants.
+                glyphs = [_basic_template_pattern(source)]
             bank[int(value)] = [glyph for glyph in glyphs if glyph is not None]
         self.templates[kind] = bank
+        return bank
+
+    def _detail_bank(self, kind):
+        # The v6 detail reader compares each complete field-specific ROI against
+        # the original 0..25 templates. It does not isolate or classify digits.
+        if kind in self.detail_templates:
+            return self.detail_templates[kind]
+        bank = {}
+        for asset in self.catalog.assets("student", "student-potential-template"):
+            asset_kind, value = asset.identity.split(":")
+            if asset_kind != kind:
+                continue
+            with Image.open(self.catalog.resolve(asset.path)) as source:
+                size = source.size
+                bank[int(value)] = (
+                    size,
+                    _detail_ui_feature(source, size),
+                    _detail_text_feature(source, size),
+                )
+        self.detail_templates[kind] = bank
         return bank
 
     @staticmethod
@@ -150,7 +205,9 @@ class StudentPotentialRecognizer:
         return Observation(None, 0, "dependency_missing", "potential_badge_color", note+";absence unconfirmed")
 
     def read_value(self, crop, kind):
-        glyph = _glyph(crop, detail=kind != "basic")
+        if kind != "basic":
+            return self._read_detail_value(crop, kind)
+        glyph = _basic_template_pattern(crop)
         if glyph is None:
             return Observation(None, 0, "dependency_missing", "potential_"+kind+"_template", "level glyph missing")
         try:
@@ -162,12 +219,54 @@ class StudentPotentialRecognizer:
             glyph.close()
         value, score = scores[0] if scores else (None, 0)
         margin = score-scores[1][1] if len(scores) > 1 else 0
-        # Dedicated, title-verified detail ROIs tolerate small-font antialiasing;
-        # basic badges retain the stricter v6 separation requirement.
-        minimum_margin = .035 if kind == "basic" else .025
-        confirmed = score >= .78 and margin >= minimum_margin and value is not None
+        # Basic uses the two v6 acceptance branches for whole-pattern matching.
+        minimum_margin = .035
+        blue_ratio = _blue_ratio(crop)
+        confirmed = value is not None and (
+            (score >= .78 and margin >= minimum_margin)
+            or (score >= .62 and margin >= .30 and blue_ratio >= .08)
+        )
         return Observation(value if confirmed else None, score, "ok" if confirmed else "dependency_missing",
-                           "potential_"+kind+"_template", f"label={value};margin={margin:.6f}")
+                           "potential_"+kind+"_template",
+                           f"label={value};margin={margin:.6f}"
+                           + f";blue_ratio={blue_ratio:.6f}")
+
+    def _read_detail_value(self, crop, kind):
+        bank = self._detail_bank(kind)
+        ui_cache = {}
+        text_cache = {}
+        scores = {}
+        try:
+            for value, (size, template_ui, template_text) in bank.items():
+                if size not in ui_cache:
+                    ui_cache[size] = _detail_ui_feature(crop, size)
+                    text_cache[size] = _detail_text_feature(crop, size)
+                ui = _ncc_difference_score(ui_cache[size], template_ui)
+                text = _ncc_difference_score(text_cache[size], template_text)
+                scores[value] = (.35 * ui + .65 * text, ui, text)
+        finally:
+            for image in (*ui_cache.values(), *text_cache.values()):
+                image.close()
+        ranked = sorted(scores.items(), key=lambda item: item[1][0], reverse=True)
+        if not ranked:
+            return Observation(None, 0, "dependency_missing", "potential_"+kind+"_template", "no templates")
+        value, (score, ui, text) = ranked[0]
+        margin = score-ranked[1][1][0] if len(ranked) > 1 else 0
+
+        # Preserve v6's narrow 4 -> 0 correction for low-confidence ties.
+        if value == 4 and 0 in scores:
+            zero_score, zero_ui, zero_text = scores[0]
+            if score < .72 and zero_score >= score-.03 and zero_text >= text:
+                value, score, ui, text = 0, zero_score, zero_ui, zero_text
+
+        confirmed = score >= .60
+        return Observation(
+            value if confirmed else None,
+            score,
+            "ok" if confirmed else "dependency_missing",
+            "potential_"+kind+"_template",
+            f"label={value};margin={margin:.6f};ui={ui:.6f};text={text:.6f}",
+        )
 
     def recognize_basic(self, images, observations):
         gate = self.gate(observations)
@@ -223,3 +322,9 @@ class StudentPotentialRecognizer:
                     image.close()
             bank.clear()
         self.templates.clear()
+        for bank in self.detail_templates.values():
+            for _, ui, text in bank.values():
+                ui.close()
+                text.close()
+            bank.clear()
+        self.detail_templates.clear()

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import colorsys
+import json
 from typing import Any
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps, ImageStat
@@ -449,6 +450,13 @@ def _luminance(pixel: tuple[int, int, int]) -> int:
     return round(0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2])
 
 
+def _is_weapon_star_cyan(pixel: tuple[int, int, int]) -> bool:
+    hue, saturation, value = colorsys.rgb_to_hsv(
+        pixel[0] / 255.0, pixel[1] / 255.0, pixel[2] / 255.0
+    )
+    return 160.0 <= hue * 360.0 <= 230.0 and saturation >= 0.235 and value >= 0.39
+
+
 class StudentBasicRecognizer:
     """Pure-Pillow port of the v6 compact student basic-info readers."""
 
@@ -459,6 +467,7 @@ class StudentBasicRecognizer:
         self.relationship_rank_templates = self._relationship_rank_templates()
         self.relationship_rank_digit_templates = self._relationship_rank_digit_templates()
         self.weapon_level_templates = self._digit_templates("student-basic-weapon-level-digit-template")
+        self.weapon_level_whole_templates = self._weapon_level_whole_templates()
         self.combat_templates, self.combat_position_templates = self._combat_templates()
         self.skill_templates = self._skill_templates()
 
@@ -496,6 +505,35 @@ class StudentBasicRecognizer:
             group: {label: tuple(samples) for label, samples in labels.items()}
             for group, labels in grouped.items()
         }
+
+    def _weapon_level_whole_templates(self) -> dict[int, Image.Image]:
+        """Load the bounded 1..60 bank used only after both digit readers reject."""
+        assets = self.catalog.assets("student", "student-synthetic-whole-value-bank")
+        if len(assets) != 1:
+            raise ScannerError("template_missing", "weapon whole-value bank is missing")
+        try:
+            payload = json.loads(
+                self.catalog.resolve(assets[0].path).read_text(encoding="utf-8")
+            )
+            width, height = (int(value) for value in payload["match_size"])
+            rows = payload["fields"]["weapon_level"]["templates"]
+            result: dict[int, Image.Image] = {}
+            for row in rows:
+                value = int(row["value"])
+                bits = int(str(row["bits_hex"]), 16)
+                mask = Image.new("L", (width, height))
+                mask.putdata([
+                    255 if bits & (1 << index) else 0
+                    for index in range(width * height)
+                ])
+                result[value] = mask
+        except (KeyError, OSError, TypeError, ValueError) as exc:
+            raise ScannerError("template_missing", "weapon whole-value bank is invalid") from exc
+        if set(result) != set(range(1, 61)):
+            for mask in result.values():
+                mask.close()
+            raise ScannerError("template_missing", "weapon whole-value bank is incomplete")
+        return result
 
     def _relationship_rank_templates(self) -> dict[str, tuple[Image.Image, ...]]:
         grouped: dict[str, list[Image.Image]] = {}
@@ -823,13 +861,14 @@ class StudentBasicRecognizer:
         crop: Image.Image | None,
         studio_cells: tuple[Image.Image, ...] | None = None,
     ) -> Observation:
+        studio_match = self.studio_numeric_bank.match(
+            studio_cells,
+            field="weapon_level",
+            roi_names=("weaponlevel_digit1", "weaponlevel_digit2"),
+            allow_trailing_blank=True,
+        )
         studio = self._studio_numeric_observation(
-            self.studio_numeric_bank.match(
-                studio_cells,
-                field="weapon_level",
-                roi_names=("weaponlevel_digit1", "weaponlevel_digit2"),
-                allow_trailing_blank=True,
-            ),
+            studio_match,
             minimum=1,
             maximum=60,
             score_gate=0.65,
@@ -850,28 +889,121 @@ class StudentBasicRecognizer:
                 break
             selected.append(_rank_glyph(_normalize_mask(cell), self.weapon_level_templates))
         if not selected or any(label is None for label, _score, _margin in selected):
-            return Observation(None, 0.0, "uncertain", "basic_weapon_level_glyph", "glyph missing")
-        value = int("".join(str(item[0]) for item in selected))
-        score = min(item[1] for item in selected)
-        margin = min(item[2] for item in selected)
+            legacy_value, score, margin = None, 0.0, 0.0
+        else:
+            legacy_value = int("".join(str(item[0]) for item in selected))
+            score = min(item[1] for item in selected)
+            margin = min(item[2] for item in selected)
         # Live UE60 glyphs in the 1280x720 basic screen score just below the
         # original generic cutoff while retaining a wide runner-up margin.
-        confident = 1 <= value <= 60 and score >= 0.57 and margin >= 0.04
-        return Observation(value if confident else None, score, "ok" if confident else "uncertain", "basic_weapon_level_glyph", f"value={value};margin={margin:.6f}")
+        confident = (
+            legacy_value is not None
+            and 1 <= legacy_value <= 60
+            and score >= 0.57
+            and margin >= 0.04
+        )
+        if confident:
+            return Observation(
+                legacy_value, score, "ok", "basic_weapon_level_glyph",
+                f"value={legacy_value};margin={margin:.6f}",
+            )
+
+        whole_mask = _mask_from_predicate(
+            crop,
+            lambda pixel: min(pixel) >= 238 and max(pixel) - min(pixel) <= 28,
+        )
+        normalized = _normalize_mask(whole_mask, size=(64, 32), padding=2)
+        whole_mask.close()
+        ranked = sorted(
+            (
+                (value, _binary_iou(normalized, template))
+                for value, template in self.weapon_level_whole_templates.items()
+            ),
+            key=lambda item: item[1],
+            reverse=True,
+        ) if normalized is not None else []
+        if normalized is not None:
+            normalized.close()
+        whole_value, whole_score = ranked[0] if ranked else (None, 0.0)
+        whole_margin = whole_score - ranked[1][1] if len(ranked) > 1 else 0.0
+        whole_confident = (
+            whole_value is not None
+            and whole_score >= 0.49
+            and whole_margin >= 0.01
+        )
+        note = (
+            f"value={whole_value};margin={whole_margin:.6f};"
+            f"studio_complete={studio_match.complete};studio_value={studio_match.value};"
+            f"studio_labels={list(studio_match.labels)};studio_score={studio_match.score:.6f};"
+            f"studio_margin={studio_match.margin:.6f};legacy_value={legacy_value};"
+            f"legacy_score={score:.6f};legacy_margin={margin:.6f}"
+        )
+        return Observation(
+            whole_value if whole_confident else None,
+            whole_score,
+            "ok" if whole_confident else "uncertain",
+            "basic_weapon_level_whole_value",
+            note,
+        )
 
     def read_weapon_star(self, crop: Image.Image | None) -> Observation:
         if crop is None:
-            return Observation(None, 0.0, "region_missing", "basic_weapon_star_color", "crop missing")
-        box = self._color_bbox(crop, 160.0, 230.0, 0.235, 0.39)
-        if box is None:
-            return Observation(None, 0.0, "uncertain", "basic_weapon_star_color", "cyan foreground missing")
-        width, height = box[2] - box[0], box[3] - box[1]
-        raw = width / max(1.0, 0.97 * height)
-        value = round(raw)
-        residual = abs(raw - value)
-        score = max(0.0, min(1.0, 1.0 - residual / 0.50))
-        confident = 1 <= value <= 4 and height >= 4 and residual <= 0.22
-        return Observation(value if confident else None, score, "ok" if confident else "uncertain", "basic_weapon_star_color", f"raw={raw:.6f}")
+            return Observation(None, 0.0, "region_missing", "basic_weapon_star_slots", "crop missing")
+
+        # The weapon illustration shares this ROI and can contain the same cyan as
+        # the stars.  Normalize the fixed UI strip and compare the three preceding
+        # slots with the always-present rightmost star instead of measuring one
+        # global cyan bounding box.
+        normalized = crop.convert("RGB").resize((205, 54), Image.Resampling.BILINEAR)
+        try:
+            mask = _mask_from_predicate(
+                normalized,
+                _is_weapon_star_cyan,
+            )
+        finally:
+            normalized.close()
+        try:
+            slots = tuple(
+                mask.crop((center - 17, 5, center + 18, 49))
+                for center in (178, 145, 112, 79)
+            )
+        finally:
+            mask.close()
+        try:
+            occupancy = tuple(
+                sum(value >= 127 for value in _pixels(slot))
+                / max(1, slot.width * slot.height)
+                for slot in slots
+            )
+            similarities = tuple(_binary_iou(slots[0], slot) for slot in slots)
+        finally:
+            for slot in slots:
+                slot.close()
+        reference_quality = max(0.0, 1.0 - abs(occupancy[0] - 0.40) / 0.25)
+        value = 1
+        for similarity in similarities[1:]:
+            if similarity < 0.65:
+                break
+            value += 1
+        next_similarity = similarities[value] if value < 4 else 0.0
+        active_similarity = min(similarities[:value])
+        score = min(reference_quality, active_similarity, 1.0 - next_similarity)
+        confident = (
+            0.25 <= occupancy[0] <= 0.55
+            and active_similarity >= 0.65
+            and (value == 4 or next_similarity <= 0.45)
+        )
+        return Observation(
+            value if confident else None,
+            score,
+            "ok" if confident else "uncertain",
+            "basic_weapon_star_slots",
+            (
+                f"value={value};occupancy={[round(item, 6) for item in occupancy]};"
+                f"similarity={[round(item, 6) for item in similarities]};"
+                f"next={next_similarity:.6f}"
+            ),
+        )
 
     @staticmethod
     def _combat_state(crop: Image.Image) -> str:

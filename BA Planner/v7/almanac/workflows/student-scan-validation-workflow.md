@@ -9,6 +9,9 @@ sources:
   - id: p0-p6-status
     type: file
     path: almanac/workflows/p0-p6-workflow-status.md
+  - id: fallback-restoration
+    type: file
+    path: almanac/workflows/scanner-fallback-restoration-workflow.md
   - id: scanner-session
     type: file
     path: backend/core/scanner_session.py
@@ -31,15 +34,67 @@ sources:
 
 # Student Scan Validation Workflow
 
-## v6 fallback restoration follow-up (2026-08-30)
+## Basic weapon value fallback gate (2026-09-05)
+
+The independent basic weapon-state template is authoritative before panel fallback. `no_weapon_system`
+and `weapon_unlocked_not_equipped` replace basic level/star observations with `skipped`; blank values in
+those states are not recognition failures. Only a confirmed `weapon_equipped` state with an unresolved
+level or star can open the bounded weapon detail panel.
+
+Weapon level retains the Studio position bank first and the legacy split glyph reader second. If both
+reject, only this field may use the bundled 1..60 whole-value bank against the fixed 64x48 quad, with
+score 0.49 and margin 0.01. This field-specific promotion must not implicitly promote the shadow whole
+bank for student level or relationship rank. The final note preserves Studio and legacy attempt details.
+
+Weapon star is a normalized right-anchored four-slot strip. It compares preceding slots to the rightmost
+reference star, requires contiguous activation, and never derives the count from a global cyan bounding
+box. Tests must retain cyan weapon-body, marking and tag-line negatives as well as true 1..4 stars.
+
+When the detail path is used, candidate evidence must include one `<field>_fallback` row per unresolved
+basic weapon field. It preserves the trigger status/source/confidence/note and final detail source even
+though the merged value observation is replaced by the recovered panel result.
+
+## Ability-release whole-template restoration (2026-09-04)
+
+The basic ability-release reader follows the user-approved v6 behavior: retain the complete rendered
+`Lv.value` label, normalize it as one binary pattern, and compare it with the 25 bundled templates for
+values 1 through 25. It must not remove `Lv` and classify only the remaining number glyphs. The basic
+bank contains one immutable original template per value; runtime half-size template synthesis is not
+part of this path. The v6 alternate high-margin acceptance branch is preserved for native small-font
+captures. Badge absence remains a separate color decision.
+
+The bounded field-specific detail panel follows v6 as well. Each HP/ATK/HEAL ROI is compared whole
+against that field's 26 original templates for values 0 through 25; it is not cropped to the numeric
+suffix, component-split, or classified as an isolated glyph. The final score combines the center-focused
+full-UI comparison at 35% and the full-ROI text-only mask comparison at 65%, accepts at 0.60, and keeps
+v6's narrow low-confidence `4 -> 0` tie correction. Safe panel return and the maximum three reads remain
+unchanged.
+
+The native 1280 Mika regression is a no-fallback gate: HP/ATK/HEAL must resolve as 25/25/25 from the
+basic screen and the stat panel must not open. The previous test expectation that deliberately accepted
+HP/ATK rejection and detail fallback is obsolete. [@p0-p6-status] [@fallback-restoration]
+
+The adjacent workflow audit found only one other confirmed historical whole-template-to-glyph
+regression: skill levels. It was restored on 2026-08-26 to the v6 weighted UI/text matcher. Relationship
+rank is a distinct, intentional hybrid: v6 has no relationship reader, the finite whole-rank bank cannot
+represent unseen values, and the original whole-rank matcher remains its conservative fallback. Other
+numeric readers audited here already used position/digit templates in v6 or were introduced under that
+contract, so they are not additional whole-template-to-character-recognition regressions.
+
+## v6 fallback restoration follow-up (2026-08-30, completed 2026-09-01)
 
 The user requested restoration of all omitted scanner fallback behaviors after the v6/v7 audit.
 [Scanner Fallback Restoration Workflow](scanner-fallback-restoration-workflow) is the execution
 contract for R01-R24 and F0-F12, including common capture/input/panel recovery, student detail paths,
 identity/forms, inventory recovery and isolated calibration. Existing S2W remains the starting
-implementation; the new workflow's F0 baseline/contracts are complete and F1-F12 remain pending. Actual phase outcomes
-remain in [P0-P6 Workflow Status](p0-p6-workflow-status). The permanent user-confirmed sample policy
-below remains in force; automatic session calibration has a decision gate before implementation.
+implementation. F0-F12 are complete: the final gates passed Python 533 tests, Flutter 400 tests,
+`flutter analyze`, Windows release and recognition-asset verification, plus three 16:9 game-window
+resize checks. The missing naturally occurring low-score T10/Lv70 sample is an accepted D2 risk;
+native2560 special inference remains disabled and uncertain reads remain partial. Actual phase outcomes
+remain in [P0-P6 Workflow Status](p0-p6-workflow-status) and the restoration workflow's resume point.
+The permanent user-confirmed sample policy below remains in force. Automatic calibration is implemented
+as an isolated session-local bank that is discarded at its scope boundaries; it does not replace the
+explicit-review requirement for persistent samples. [@p0-p6-status] [@fallback-restoration]
 
 ## User-confirmed answer samples (2026-08-29)
 
@@ -98,13 +153,13 @@ the foreground mask.
   전환된다. 도크는 게임 창과 같은 외곽 높이, 가로:세로 3:8이며 우측을 우선하되 여유가 더
   큰 쪽에 붙는다. 위치 이동만으로 함께 배치할 수 없을 때만 게임 외곽 크기를 1280x720으로
   맞춘다. 종료·실패·취소 시 두 창의 원래 위치와 크기를 복원하고 메인 결과 검토 화면을 연다.
-- protocol v1의 `feedback` 이벤트는 최종 candidate 이전에 확정된 학생 필드를 실시간으로
-  전달한다. 도크 상단은 대상·모드·단계·진행·인식 수·취소를 표시하고, 하단 80도 사다리꼴은
-  학생 탭 상세 정보 구조를 축약해 표시한다. 학생 교체는 `기존 카드 0도 퇴장 완료 → 게임의
-  학생 이동 → 다음 학생 ID 카드 180도 입장 완료 → 인식 필드 실시간 반영` 순서로 실행한다.
-  이를 위해 matcher는 이동 전에 `__student_exit__` 피드백을 보내고, 다음 화면에서는 학생
-  ID를 값 없는 카드로 먼저 보낸다. 같은 학생의 후속 필드 갱신에는 교체 애니메이션을
-  재시작하지 않는다.
+- 전체 스캔 중 protocol v1의 `feedback` 이벤트는 현재 학생 identity만 학생당 한 번 전달한다.
+  확정 필드·장비·스탯은 실시간으로 보내거나 도크에 표시하지 않고, 반복 종료 후 생성되는
+  candidate와 교차 검증 결과를 기존 결과 화면에서 일괄 표시한다. 도크는 대상·모드·단계·완료
+  인원·취소와 현재 학생 이름/ID만 표시하며 초상 이미지, 불확정 진행 막대와 학생 전환
+  애니메이션을 사용하지 않는다. matcher는 UI 전환을 위해 대기하지 않고 다음 학생 탐색을
+  즉시 계속한다. 동반 창 갱신은 AppShell 전체 재빌드와 분리하고, 동반 창이 표시되는 동안
+  가려진 스캔 화면의 진행 애니메이션은 만들지 않는다.
 
 - 실제 Steam Windows 클라이언트에서 백그라운드 캡처와 학생 인식은 가능하지만 마우스
   클릭과 드래그 메시지는 소비되지 않는다. 전체 스캔의 방향키 이동은 성공하더라도 게임
@@ -138,7 +193,11 @@ the foreground mask.
   결정론적 합성 템플릿을 평가한다. 실제 게임 캡처는 ROI와 renderer 파라미터를 고정하는
   calibration 및 독립 validation 답지로만 사용하며 runtime template에는 포함하지 않는다.
 
-## 현재 기준선
+## 착수 당시 기준선
+
+이 절과 아래 순차 구현 단계는 워크플로 착수 시 동결한 기준선과 단계별 gate를 보존한다.
+최신 완료 상태는 문서 첫머리의 follow-up과 연결된 scanner fallback restoration 기록을
+우선한다. [@fallback-restoration]
 
 학생 identity portrait의 `student_texture_region`은 상단 자원 바와 AP 아이콘을 포함하지
 않는다. 2560x1440 기준 기존 crop 시작 y=12에서 상단 82px를 제거해 새 시작점을 y=94
@@ -147,12 +206,13 @@ the foreground mask.
 추출은 이 ROI를 그대로 사용한다. 따라서 AP 아이콘의 수평 배치나 상단 바 UI 변경은 학생
 identity similarity에 들어가지 않는다.
 
-v7의 `StudentMatcherAdapter`는 현재 안정 프레임에서 학생 이미지 템플릿만 매칭하고
-`values: {}` 후보를 반환한다. 반면 repository DTO와 recognition region에는 레벨,
+착수 당시 v7의 `StudentMatcherAdapter`는 안정 프레임에서 학생 이미지 템플릿만 매칭하고
+`values: {}` 후보를 반환했다. 반면 repository DTO와 recognition region에는 레벨,
 성급, 무기, 장비, HP, ATK, DEF, HEAL 필드의 자리가 이미 있다. Flutter는 candidate를
-학생 탭으로 넘기고 승인·보류·commit할 수 있지만 현재 검토 표면은 raw map과 evidence
-문자열을 나열하는 수준이다. 현재 구현 및 단계 상태는 matcher와 P0-P6 상태 문서를
-기준으로 한다. [@scanner-matcher] [@p0-p6-status]
+학생 탭으로 넘기고 승인·보류·commit할 수 있었지만 당시 검토 표면은 raw map과 evidence
+문자열을 나열하는 수준이었다. 최신 구현 및 단계 상태는 matcher, P0-P6 상태 문서와
+scanner fallback restoration 기록을 기준으로 한다. [@scanner-matcher] [@p0-p6-status]
+[@fallback-restoration]
 
 v6는 학생 기본 화면과 추가 패널을 이동하며 다음 값을 읽는다.
 
@@ -690,8 +750,43 @@ Mika(수영복) 캡처 parity로 기본 정보의 네 값에는 패시브/전용
 포함하지 않으며, 장비·전용무기·인연·능력 개방의 `*_Base` 값은 장비 계수 적용 전의
 multiplier-eligible flat 합계에 들어감을 확정했다.
 
+### 2026-09-26 개정: 게임 클라이언트 공식으로 교체
+
+아래의 SchaleDB 번들 공식은 장비 중간 레벨, 능력 개방, Premature/LateBloom 전용무기에서 게임과
+1~3 차이가 났다. 일섭 1.73 클라이언트 코드에서 스탯 계산 함수를 직접 확인해 계산 코어를 게임 공식으로
+바꿨다. 공식과 근거가 된 메서드 이름은 `data/extracted/GAME_RULES.md` 4절에 있다.
+
+1. 레벨 스탯은 `s1 + RoundAway(float(s100 − s1) × idx[L][g] / idx[100][g])`로 계산한다.
+   `idx`는 `StatLevelInterpolationExcel`이고 g는 성장 타입 열이다.
+2. 성급 비율과 능력 개방 비율(레벨당 20bp)을 **합친 뒤 한 번만** 올림해 더한다:
+   `+ ceil(float(레벨 스탯 × 비율 합) × 0.0001f)`.
+3. 장비는 레벨을 `RoundAway(레벨 × 100/최대레벨)`로 1~100 구간에 옮긴 뒤 같은 표로 보간한다.
+   전용무기는 최대레벨 100인 같은 함수를 쓴다.
+4. 최종값은 `RoundAway(float((A + B) + float(C × (A + B)) × 0.0001f)) + BaseOuter`이다.
+   A는 기본값, B는 multiplier-eligible `Base` 합, C는 장비 `Coefficient` 합이다.
+   능력 개방 몫은 evidence에서 보이도록 `potential` contribution으로 분리해 B에 넣는다.
+
+정적 데이터는 SchaleDB 대신 일섭 ExcelDB에서 만든다.
+- `data/extracted/pipeline/build_stat_catalog.py`가 `backend/data/student_stats/v1/catalog.json`과
+  같은 형식의 카탈로그를 만들고, 새로 `formula.json`(레벨 비율 표, 성급·능력 개방 비율)을 만든다.
+- `backend/tools/sync_student_stats_from_extracted.py`가 두 파일을 DTO로 검증한 뒤 설치한다.
+- 게임 표에 없는 값(경로 이름, 다른 의상 인연 ID, 패시브 스탯, 글로벌/중섭 애용품 출시 여부)은
+  이전 SchaleDB 카탈로그에서 그대로 가져온다.
+- 인연 증가량이 7구간으로 표현되지 않는 학생(미네(아이돌) 랭크 41)은 `relationship.increments`에
+  랭크별 49개 증가량을 둔다.
+
+검증 기록은 다음과 같다.
+- 게임 화면의 가방 T1 Lv1→Lv2 최대 체력이 375 → 418로 나온다. 게임 공식 계산값과 같고 SchaleDB 방식은 400이다.
+- 기존 실캡처 parity(Mika, Mika(수영복), Chise(수영복))는 모두 계속 정확히 일치한다.
+- Hoshino(무장) form 1 실캡처는 SchaleDB 방식에서 −1/+2였는데 이제 0으로 정확히 일치한다.
+  스캔 허용 오차 ±2 정책은 바꾸지 않았고, 테스트의 허용 오차 사례는 정확값에서 합성한 오프셋으로 바꿨다.
+- `stat_formula_check.py`로 독립 구현과 전 학생·전 레벨을 대조했다. 레벨 333,000건, 장비 9,730건,
+  무기 40,980건, 능력 개방 20,625건에서 차이는 0건이다.
+
+### 이전 기록: SchaleDB 번들 공식 (2026-08-26, 더 이상 계산 계약이 아님)
+
 이 계산 계약은 과거 GitHub 저장소가 아니라 2026-08-26 현재 `https://schaledb.com/`가
-실제로 내려주는 브라우저 번들에서도 다시 확인했다. 현재 사이트는 계산을 원격 API에만
+실제로 내려주는 브라우저 번들에서도 다시 확인했었다. 현재 사이트는 계산을 원격 API에만
 위임하지 않는 Vite/Vue SPA이며, HTML이 로드하는 `assets/index-57036167.js`, 학생 화면의
 `assets/StudentView-6410470d.js`, 스탯 조립 코드가 있는
 `assets/StudentListModal-fd52132b.js`에 계산 코드가 포함되어 있다. 배포 번들의 누적기는
@@ -756,7 +851,7 @@ dependency, review/approval 상태와 audit을 보존한다. 계정명, profile 
 
 - SchaleDB 원본을 v7 전용 versioned DTO로 정규화한다.
 - 학생/장비/전용무기/인연/애용품/능력 개방 계산을 UI·scanner 없이 구현한다.
-- 장비 중간 레벨 보간과 Schale 반올림 순서를 parity fixture로 고정한다.
+- 장비 중간 레벨 보간과 반올림 순서를 parity fixture로 고정한다. (2026-09-26부터 게임 클라이언트 공식 기준)
 - 다른 의상 인연 dependency를 입력으로 명시한다.
 - 생성 데이터는 `student_meta_data.py`를 광범위하게 손수 수정하지 않는다.
 

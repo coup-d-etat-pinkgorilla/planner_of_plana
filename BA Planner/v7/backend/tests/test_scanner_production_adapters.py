@@ -183,14 +183,18 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         self.assertEqual(["right", "right"], adapter.capture.keys)
         self.assertEqual([], adapter.capture.points)
 
-    def test_full_student_adapter_exits_card_before_student_navigation(self) -> None:
+    def test_full_student_adapter_navigates_without_visual_transition_feedback_or_wait(self) -> None:
         timeline: list[str] = []
 
-        class ImmediateCancel:
+        class RecordingCancel:
+            def __init__(self) -> None:
+                self.waits: list[float] = []
+
             def is_set(self) -> bool:
                 return False
 
-            def wait(self, _timeout: float) -> bool:
+            def wait(self, timeout: float) -> bool:
+                self.waits.append(timeout)
                 return False
 
         class Inputs:
@@ -205,8 +209,8 @@ class ScannerProductionAdapterTests(unittest.TestCase):
             supports_feedback = True
 
             def __call__(self, _current, _total, _message, feedback=None):
-                if feedback and feedback.get("field") == "__student_exit__":
-                    timeline.append(f"exit:{feedback['student_id']}")
+                if feedback:
+                    timeline.append(f"feedback:{feedback['field']}")
 
         adapter = object.__new__(StudentMatcherAdapter)
         adapter.capture = Inputs()
@@ -227,24 +231,24 @@ class ScannerProductionAdapterTests(unittest.TestCase):
             }]
 
         adapter._scan_current = MethodType(scan_current, adapter)
+        cancel = RecordingCancel()
         adapter(
             {"student_scan_mode": "full"},
-            ImmediateCancel(),
+            cancel,
             FeedbackProgress(),
         )
 
         self.assertEqual(
             [
                 "scan:aru",
-                "exit:aru",
                 "navigate:right",
                 "scan:aru_dress",
-                "exit:aru_dress",
                 "navigate:right",
                 "scan:aru",
             ],
             timeline,
         )
+        self.assertNotIn(0.32, cancel.waits)
 
     def test_full_student_adapter_retries_button_after_unchanged_key(self) -> None:
         class Inputs:

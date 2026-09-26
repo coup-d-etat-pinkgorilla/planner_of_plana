@@ -61,6 +61,12 @@ class PotentialF3Tests(unittest.TestCase):
         parity = json.loads((FIXTURES/"student_potential_f3_v6_parity.json").read_text())
         self.assertEqual(parity["basic_regions"], self.recognizer.regions["basic"])
         self.assertEqual(parity["detail_regions"], self.recognizer.regions["detail"])
+        basic_bank = self.recognizer._bank("basic")
+        self.assertEqual(set(range(1, 26)), set(basic_bank))
+        self.assertTrue(all(len(variants) == 1 for variants in basic_bank.values()))
+        for kind in ("hp", "atk", "heal"):
+            detail_bank = self.recognizer._detail_bank(kind)
+            self.assertEqual(set(range(26)), set(detail_bank))
         for asset in self.catalog.assets("student", "student-potential-template"):
             kind, value = asset.identity.split(":")
             with self.subTest(kind=kind, value=value), Image.open(self.catalog.resolve(asset.path)) as crop:
@@ -76,7 +82,16 @@ class PotentialF3Tests(unittest.TestCase):
             self.assertEqual(0, menu.opens)
 
     def test_readiness_and_locked_gate_do_not_decode_numeric_banks(self):
-        with patch("core.student_potential_recognizer._glyph", side_effect=AssertionError("unneeded glyph decode")):
+        with patch(
+            "core.student_potential_recognizer._basic_template_pattern",
+            side_effect=AssertionError("unneeded template decode"),
+        ), patch(
+            "core.student_potential_recognizer._detail_ui_feature",
+            side_effect=AssertionError("unneeded detail decode"),
+        ), patch(
+            "core.student_potential_recognizer._detail_text_feature",
+            side_effect=AssertionError("unneeded detail decode"),
+        ):
             recognizer = StudentPotentialRecognizer(self.catalog)
             self.addCleanup(recognizer.close)
             result = recognizer.resolve({}, self.gate(1,3), Menu(), {}, Event())
@@ -209,41 +224,18 @@ class PotentialF3Tests(unittest.TestCase):
                             result = self.recognizer.recognize_basic(images,self.gate(row["level"],row["student_star"]))
                         finally:
                             for crop in images.values(): crop.close()
-                if row["file"] == "mika-basic-1280.png":
-                    # This real small-font sample cannot reliably separate 23/25
-                    # in HP/ATK. The contract is to request detail, never guess.
-                    self.assertTrue(any(not result[f].confirmed for f in POTENTIAL_FIELDS))
-                    for field, expected in zip(POTENTIAL_FIELDS, row["potential"]):
-                        if result[field].confirmed:
-                            self.assertEqual(expected, result[field].value)
-                        else:
-                            self.assertIsNone(result[field].value)
-                            self.assertEqual("dependency_missing", result[field].status)
-                else:
-                    self.assertEqual(row["potential"], [result[f].value for f in POTENTIAL_FIELDS])
-                    self.assertTrue(all(result[f].confirmed for f in POTENTIAL_FIELDS))
+                self.assertEqual(row["potential"], [result[f].value for f in POTENTIAL_FIELDS])
+                self.assertTrue(all(result[f].confirmed for f in POTENTIAL_FIELDS))
 
-    def test_1280_partial_basic_resolves_from_dedicated_detail(self):
+    def test_native_1280_basic_uses_all_25_templates_without_detail(self):
         root = FIXTURES/"student_potential_f3_live"
         with Image.open(root/"mika-basic-1280.png") as frame:
             images = {"potential_badge_"+k:ratio_crop(frame,v) for k,v in self.recognizer.regions["basic"].items()}
         self.addCleanup(lambda: [crop.close() for crop in images.values()])
-        # Explicitly synthetic resized detail, not claimed as a native 1280 capture.
-        with Image.open(root/"mika-stat-2560.png") as source:
-            detail = source.resize((1280,720), Image.Resampling.LANCZOS)
-        self.addCleanup(detail.close)
         menu = Menu()
-        def capture(target, cancel):
-            menu.opens += 1
-            return detail.copy()
-        menu.capture_stat_menu = capture
-        def recapture(target, cancel):
-            menu.recaptures += 1
-            return detail.copy()
-        menu.recapture_stat_menu = recapture
         result = self.recognizer.resolve(images, self.gate(), menu, {}, Event())
         self.assertEqual([25,25,25], [result[f].value for f in POTENTIAL_FIELDS])
-        self.assertEqual((1,0,1), (menu.opens,menu.recaptures,menu.closes))
+        self.assertEqual((0,0,0), (menu.opens,menu.recaptures,menu.closes))
 
 
 class PotentialProvenanceTests(unittest.TestCase):

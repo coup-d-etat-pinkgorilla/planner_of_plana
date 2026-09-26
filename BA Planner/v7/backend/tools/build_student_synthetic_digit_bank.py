@@ -439,7 +439,7 @@ def build() -> dict[str, Any]:
         _entry(
             WHOLE_BANK_TARGET,
             purpose=WHOLE_PURPOSE,
-            asset_role="shadow_whole_value_bank",
+            asset_role="weapon_level_fallback_other_fields_shadow",
             source_path="generated:complete-string-64x32-bitset-shadow-v1",
         ),
     ])
