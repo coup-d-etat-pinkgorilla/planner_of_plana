@@ -47,8 +47,8 @@
       "scan_kind": "inventory",
       "purpose": "inventory-navigation-regions",
       "required": true,
-      "bytes": 2127,
-      "sha256": "4ec5e0f84ea76c40e358299576189320c319689540c253dfca08826c1921a1e6",
+      "bytes": 2241,
+      "sha256": "6cc59911416a852ce7b46986577cf0ca6afbab72011459f74ddf6d6e53422b1f",
       "identity_value": "regions",
       "source_path": "../v6/debug/region_captures/filtermenu_button.region.json,../v6/debug/region_captures/eq_filtermenu_button.region.json,../v6/debug/region_captures/filter_tab.region.json,../v6/debug/region_captures/sort_tab.region.json,../v6/debug/region_captures/filter_reset_button.region.json,../v6/debug/region_captures/filter_confirm_button.region.json,../v6/debug/region_captures/eq_filter_confirm_button.region.json,../v6/debug/region_captures/eleph_filter.region.json,../v6/debug/region_captures/note_filter.region.json,../v6/debug/region_captures/bd_filter.region.json,../v6/debug/region_captures/ooparts_filter.region.json,../v6/debug/region_captures/reports_filter.region.json"
     }

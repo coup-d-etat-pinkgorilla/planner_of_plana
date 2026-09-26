@@ -8,7 +8,7 @@ from PIL import Image
 
 from core.inventory_detail_recovery import InventoryDetailRecognizer
 from core.inventory_catalog import CATALOG
-from core.inventory_navigation import InventoryNavigation, PreparedInventory, ScrollResult
+from core.inventory_navigation import ALLOWED_CONTROLS, InventoryNavigation, PreparedInventory, ScrollResult
 from core.recognition_assets import RecognitionAssetCatalog
 from core.scanner_session import ScannerError
 
@@ -33,6 +33,7 @@ def bare(source='item'):
     names=['filtermenu_button','eq_filtermenu_button','filter_tab','filter_reset_button','note_filter','sort_tab',
            'filter_confirm_button','eq_filter_confirm_button','sort_rule_check','eq_sort_rule_check']
     for i,name in enumerate(names):nav.regions['controls'][name]=dict(x1=i/20,y1=.1,x2=i/20+.02,y2=.12)
+    nav.regions['scroll_track']=dict(x=.975,start_y=.75,end_y=[.65,.58])
     nav.templates={};nav.images={};nav.trace=[]
     return nav
 
@@ -55,7 +56,25 @@ class PreparationTests(unittest.TestCase):
         result=nav.prepare({'inventory_scan_profile':'tech_notes'},Event(),nav.capture.frame)
         self.assertEqual(PreparedInventory('item','tech_notes',True,True),result)
         names=[row['input'] for row in nav.trace if 'input' in row]
-        self.assertEqual(['filtermenu_button','filter_tab','sort_rule_check','sort_tab','filter_confirm_button'],names)
+        self.assertEqual(['filtermenu_button','filter_tab','sort_tab','filter_confirm_button'],names)
+
+    def test_sort_radio_is_clicked_only_after_it_is_observed_off(self):
+        # C2 X09: the radio lives on the sort tab; an already selected radio is never clicked.
+        nav=bare();nav.menu_ready=lambda *_:True;scores=iter([.3,.8]);nav.score=lambda *_:next(scores)
+        nav.prepare({'inventory_scan_profile':'tech_notes'},Event(),nav.capture.frame)
+        names=[row['input'] for row in nav.trace if 'input' in row]
+        self.assertEqual(['filtermenu_button','filter_tab','sort_tab','sort_rule_check','filter_confirm_button'],names)
+        observed=[row['observe'] for row in nav.trace if 'observe' in row]
+        self.assertEqual(['sort_rule_check','sort_rule_check'],observed)
+
+    def test_only_allowlisted_controls_can_be_clicked(self):
+        nav=bare()
+        for name in ('note_filter','filter_reset_button'):
+            with self.subTest(name=name),self.assertRaises(ScannerError) as exc:nav.click({},Event(),name)
+            self.assertEqual('control_not_allowed',exc.exception.code)
+        self.assertEqual([],nav.capture.clicks)
+        real=InventoryNavigation(FakeCapture(),RecognitionAssetCatalog(),Detail())
+        self.assertLessEqual(ALLOWED_CONTROLS,set(real.regions['controls'])|set(real.regions))
 
     def test_filter_open_retries_once_and_exhausts_without_later_inputs(self):
         nav=bare();ready=iter([False]*3+[True]);nav.menu_ready=lambda *_:next(ready)
@@ -88,6 +107,7 @@ def sig(label):
 class SignatureNavigation(InventoryNavigation):
     def __init__(self,before,afters):
         self.capture=FakeCapture();self.before=before;self.afters=iter(afters);self.trace=[]
+        self.regions={'scroll_track':dict(x=.975,start_y=.75,end_y=[.65,.58])}
     def signatures(self,frame,source):return self.before
     def settled_after(self,target,cancel,source):return self.capture.frame.copy(),next(self.afters)
 
@@ -104,6 +124,24 @@ class ScrollTests(unittest.TestCase):
         result=nav.advance({},Event(),nav.capture.frame,'item')
         self.assertTrue(result.terminal);self.assertEqual('verified_no_motion',result.reason)
         self.assertEqual([-240,-360],nav.capture.scrolls)
+
+    def test_drag_uses_the_scroll_track_outside_every_grid_slot(self):
+        # C2 X08: the drag starts in the list padding, so a drag read as a tap selects nothing.
+        drags=[];before=[sig(i) for i in range(25)];nav=SignatureNavigation(before,[before,before])
+        nav.capture.drag_scroll=lambda target,start,end:drags.append((start,end))
+        nav.advance({},Event(),nav.capture.frame,'item')
+        self.assertEqual([((.975,.75),(.975,.65)),((.975,.75),(.975,.58))],drags)
+        real=RecognitionAssetCatalog().region_for_purpose('inventory','inventory-navigation-regions')['scroll_track']
+        slots=InventoryDetailRecognizer(RecognitionAssetCatalog()).regions['sources']
+        for source in ('item','equipment'):
+            for slot in slots[source]['grid_slots']:
+                self.assertTrue(real['x']>slot['x2'] or real['x']<slot['x1'],(source,slot))
+
+    def test_residual_tail_recheck_requires_no_motion(self):
+        # C2 X07
+        before=[sig(i) for i in range(25)];moved=before[10:]+[sig(i) for i in range(30,40)]
+        self.assertTrue(SignatureNavigation(before,[before]).confirm_terminal({},Event(),None,'item'))
+        self.assertFalse(SignatureNavigation(before,[moved]).confirm_terminal({},Event(),None,'item'))
 
     def test_ambiguous_overlap_is_failure_not_terminal(self):
         before=[sig(i) for i in range(25)];unknown=[sig(i) for i in range(60,85)]

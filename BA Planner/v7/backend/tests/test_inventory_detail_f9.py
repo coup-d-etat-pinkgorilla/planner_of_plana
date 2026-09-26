@@ -199,5 +199,45 @@ class F9AdapterTests(unittest.TestCase):
         self.assertEqual(1,len(result.candidates[0]['payload']['entries']))
         self.assertEqual('42',result.candidates[0]['payload']['entries'][0]['quantity'])
         self.assertEqual(CATALOG_REVISION,result.candidates[0]['payload']['catalog_revision'])
+        # C2 X10: the safe abort re-applies verified settings so the list is back on its first page.
+        nav.restore_first_page.assert_called_once()
+        self.assertTrue(result.error.details['first_page_restored'])
+        restore=[e for e in result.candidates[0]['evidence'] if e['field']=='inventory_restore']
+        self.assertEqual([('ok','inventory_first_page_restore')],[(e['status'],e['source']) for e in restore])
+
+    def test_f10_scroll_failure_reports_failed_first_page_restore(self):
+        adapter=self.adapter();adapter.max_pages=2;nav=Mock()
+        nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+        nav.verify_profile_order.return_value=True
+        nav.advance.side_effect=ScannerError('inventory_scroll_unverified','fixture')
+        nav.restore_first_page.side_effect=ScannerError('inventory_prepare_unconfirmed','fixture')
+        adapter.navigation=nav
+        result=self.scan(adapter)
+        self.assertFalse(result.error.details['first_page_restored'])
+        restore=[e for e in result.candidates[0]['evidence'] if e['field']=='inventory_restore']
+        self.assertEqual([('failed','inventory_prepare_unconfirmed')],[(e['status'],e['note']) for e in restore])
+
+    def test_f10_residual_tail_is_terminal_only_after_no_motion_recheck(self):
+        # C2 X07: a moved re-check keeps the observations but forbids zero-fill.
+        for confirmed in (True,False):
+            with self.subTest(confirmed=confirmed):
+                adapter=self.adapter();adapter.max_pages=3;nav=Mock()
+                nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+                nav.verify_profile_order.return_value=True
+                nav.advance.side_effect=lambda *_:ScrollResult(adapter.capture.wait_stable({},FastEvent()),3,(0,),False,True,'verified_tail_residual')
+                nav.confirm_terminal.return_value=confirmed
+                adapter.navigation=nav
+                result=self.scan(adapter);entries=result[0]['payload']['entries']
+                nav.confirm_terminal.assert_called_once()
+                terminal=[e for e in result[0]['evidence'] if e['field']=='scroll_terminal']
+                coverage=[e for e in result[0]['evidence'] if e['field']=='scan_coverage'][0]
+                zero_filled=[e for e in entries if e['observed_slot'] is None]
+                if confirmed:
+                    self.assertEqual([('ok','verified_tail_residual')],[(e['status'],e['source']) for e in terminal])
+                    self.assertTrue(zero_filled);self.assertEqual('ok',coverage['status'])
+                else:
+                    self.assertEqual([('partial','tail_recheck_moved')],[(e['status'],e['source']) for e in terminal])
+                    self.assertEqual([],zero_filled);self.assertEqual('partial',coverage['status'])
+                    self.assertTrue(result[0]['review_required'])
 
 if __name__=='__main__':unittest.main()

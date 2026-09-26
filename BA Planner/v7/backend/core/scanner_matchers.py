@@ -1411,9 +1411,13 @@ class InventoryMatcherAdapter:
                     coverage_complete = True
                     break
                 if terminal_after_page:
-                    coverage_complete=True
-                    evidence.append({"field":"scroll_terminal","status":"ok","source":"verified_tail_residual",
-                        "confidence":1.0,"note":"residual tail page scanned once"})
+                    # A residual tail page is only terminal when one more scroll shows no motion (X07).
+                    coverage_complete=navigation.confirm_terminal(target,cancel,frame,source_kind)
+                    evidence.append({"field":"scroll_terminal","status":"ok" if coverage_complete else "partial",
+                        "source":"verified_tail_residual" if coverage_complete else "tail_recheck_moved",
+                        "confidence":1.0 if coverage_complete else 0.0,
+                        "note":"residual tail page scanned once; no-motion re-check "+("passed" if coverage_complete else "moved; no zero-fill")})
+                    review_required = review_required or not coverage_complete
                     break
                 if cancel.is_set():
                     raise ScannerError("cancelled", "inventory scan cancelled")
@@ -1466,6 +1470,17 @@ class InventoryMatcherAdapter:
             }]
         except Exception as exc:
             error = exc if isinstance(exc, ScannerError) else ScannerError("matcher_failed", str(exc))
+            if error.code == "inventory_scroll_unverified" and prepared is not None and not cancel.is_set():
+                # Safe abort returns the list to its first page by re-applying verified settings (X10).
+                try:
+                    navigation.restore_first_page(target, Event(), frame)
+                    restored, restore_note = True, "display settings re-applied; first page shown"
+                except ScannerError as restore_error:
+                    restored, restore_note = False, restore_error.code
+                error.details["first_page_restored"] = restored
+                evidence.append({"field": "inventory_restore", "status": "ok" if restored else "failed",
+                                 "source": "inventory_first_page_restore", "confidence": 1.0 if restored else 0.0,
+                                 "note": restore_note})
             retained = []
             if entries:
                 retained = [{

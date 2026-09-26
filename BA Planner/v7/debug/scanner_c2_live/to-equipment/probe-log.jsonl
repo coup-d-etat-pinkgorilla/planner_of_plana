@@ -1,0 +1,3 @@
+[{"step": "key:escape"}]
+[{"shot": "00-lobby", "source": null, "scores": {"filter_title": 0.106, "sort_rule_check": 0.138, "sort_name_rule_check": 0.378, "eq_sort_rule_check": 0.139}}, {"step": "shot:00-lobby"}]
+[{"step": "tap:0.41,0.472"}]

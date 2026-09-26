@@ -1,0 +1,168 @@
+{
+ "profile": "tech_notes",
+ "cancel_after": null,
+ "size": [
+  1280,
+  720
+ ],
+ "scrolled_similarity_to_page0": 0.8639337329161922,
+ "restored_similarity_to_page0": 0.9999880840028748,
+ "prepared": "tech_notes",
+ "navigation_trace": [
+  {
+   "input": "filtermenu_button",
+   "cleanup": false
+  },
+  {
+   "input": "filter_tab",
+   "cleanup": false
+  },
+  {
+   "input": "sort_tab",
+   "cleanup": false
+  },
+  {
+   "observe": "sort_rule_check",
+   "score": 0.9200738870119383,
+   "attempt": 1
+  },
+  {
+   "input": "filter_confirm_button",
+   "cleanup": false
+  }
+ ],
+ "inputs_and_captures": [
+  {
+   "capture": "frame-00.png"
+  },
+  {
+   "input": "click",
+   "x": 0.841015,
+   "y": 0.159027,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-01.png"
+  },
+  {
+   "input": "click",
+   "x": 0.113281,
+   "y": 0.21493,
+   "cleanup": false
+  },
+  {
+   "input": "click",
+   "x": 0.117383,
+   "y": 0.289583,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-02.png"
+  },
+  {
+   "input": "click",
+   "x": 0.595898,
+   "y": 0.827778,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-03.png"
+  },
+  {
+   "capture": "frame-04.png"
+  },
+  {
+   "input": "drag_scroll",
+   "start": [
+    0.975,
+    0.75
+   ],
+   "end": [
+    0.975,
+    0.65
+   ]
+  },
+  {
+   "capture": "frame-05.png"
+  },
+  {
+   "capture": "frame-06.png"
+  },
+  {
+   "capture": "frame-07.png"
+  },
+  {
+   "input": "drag_scroll",
+   "start": [
+    0.975,
+    0.75
+   ],
+   "end": [
+    0.975,
+    0.65
+   ]
+  },
+  {
+   "capture": "frame-08.png"
+  },
+  {
+   "capture": "frame-09.png"
+  },
+  {
+   "capture": "frame-10.png"
+  },
+  {
+   "input": "click",
+   "x": 0.841015,
+   "y": 0.159027,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-11.png"
+  },
+  {
+   "input": "click",
+   "x": 0.113281,
+   "y": 0.21493,
+   "cleanup": false
+  },
+  {
+   "input": "click",
+   "x": 0.117383,
+   "y": 0.289583,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-12.png"
+  },
+  {
+   "input": "click",
+   "x": 0.595898,
+   "y": 0.827778,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-13.png"
+  },
+  {
+   "capture": "frame-14.png"
+  }
+ ],
+ "frames": {
+  "frame-00.png": "c0fd430ad6d915ef73f59f0679dcb5c4b012f7d8e2007593668e820d56c41b17",
+  "frame-01.png": "65e98e6ffbde96c47f51c450cbacda6dfcd3005dfaf14807c0e2ceb253236bb2",
+  "frame-02.png": "f9ab6ece71865978daf6720687d8f49e67a0629454f466f45253787498902a70",
+  "frame-03.png": "af3fc62e7fbd35fb3b1116d35d2819420b47fd6c78eeebc168badd3f073b63c4",
+  "frame-04.png": "5904dee29ef2af0c2409be8d411d1d8802ec3cdd0130fcacd4450a371f16c0cc",
+  "frame-05.png": "5e1855a51953fba45d11eedcdd0c5cf07e1bba382862c810332e77f2c418c59f",
+  "frame-06.png": "910b0a7ce77d4bd49be2e01773cbf12d2e056d37cf491d6b964437d64283fcc8",
+  "frame-07.png": "9b30a6b9e4357e56fc0331728d825b1c783973ae47e51a9b44f86ab85d217622",
+  "frame-08.png": "1d22d0f76a7925d71e3b4b361291631194413c40c4499b2fc7e2052532fdb1b3",
+  "frame-09.png": "f0721eb49d7aa8fd9af27e985799abd4effd6a244c767c2b567d30355c9e8ab5",
+  "frame-10.png": "d575ecb9c73e303a9d2f6cc53c85fb20246ae79f9236f1741b5b98a77dfd25e5",
+  "frame-11.png": "7fbdbb22fb92f0d7d04667171f7c231ce1c520f9bca8a3824f605f8c73ed2a48",
+  "frame-12.png": "7ea5e3aa0690e8b9f8f5c74a1792523d616340958bf938bd2e7f4030edada9c3",
+  "frame-13.png": "dbad662f4708073298deb9bcd7bb03e16fac15dd2092cd7f4e5c2e8e61adee26",
+  "frame-14.png": "fa4de2bdc5c927c36b1dfd260fa75f2a8328b01f8568793680fb7502efa6d25e"
+ }
+}

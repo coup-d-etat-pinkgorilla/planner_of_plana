@@ -27,18 +27,6 @@
    "from": "menu_filter",
    "input": "click",
    "names": [
-    "sort_rule_check"
-   ],
-   "to": "menu_filter",
-   "unmapped": true,
-   "x": 0.228125,
-   "y": 0.254167
-  },
-  {
-   "cleanup": false,
-   "from": "menu_filter",
-   "input": "click",
-   "names": [
     "sort_tab"
    ],
    "to": "menu_sort",
@@ -58,65 +46,78 @@
   },
   {
    "end": [
-    0.78,
+    0.975,
     0.65
    ],
    "from": "page0",
    "input": "drag_scroll",
    "start": [
-    0.78,
+    0.975,
     0.75
    ],
    "to": "page1"
   },
   {
    "end": [
-    0.78,
+    0.975,
     0.65
    ],
    "from": "page1",
    "input": "drag_scroll",
    "start": [
-    0.78,
+    0.975,
     0.75
    ],
    "to": "page2"
   },
   {
    "end": [
-    0.78,
+    0.975,
     0.65
    ],
    "from": "page2",
    "input": "drag_scroll",
    "start": [
-    0.78,
+    0.975,
     0.75
    ],
    "to": "page3"
   },
   {
    "end": [
-    0.78,
+    0.975,
     0.65
    ],
    "from": "page3",
    "input": "drag_scroll",
    "start": [
-    0.78,
+    0.975,
     0.75
    ],
    "to": "page4"
   },
   {
    "end": [
-    0.78,
+    0.975,
     0.65
    ],
    "from": "page4",
    "input": "drag_scroll",
    "start": [
-    0.78,
+    0.975,
+    0.75
+   ],
+   "to": "page5"
+  },
+  {
+   "end": [
+    0.975,
+    0.58
+   ],
+   "from": "page5",
+   "input": "drag_scroll",
+   "start": [
+    0.975,
     0.75
    ],
    "to": "page5"
@@ -591,7 +592,7 @@
     {
      "confidence": 1.0,
      "field": "scroll_terminal",
-     "note": "residual tail page scanned once",
+     "note": "residual tail page scanned once; no-motion re-check passed",
      "source": "verified_tail_residual",
      "status": "ok"
     },

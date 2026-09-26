@@ -36,42 +36,64 @@
   },
   {
    "end": [
-    0.78,
+    0.975,
     0.65
    ],
    "from": "page0",
    "input": "drag_scroll",
    "start": [
-    0.78,
+    0.975,
     0.75
    ],
    "to": "page1"
   },
   {
    "end": [
-    0.78,
+    0.975,
     0.65
    ],
    "from": "page1",
    "input": "drag_scroll",
    "start": [
-    0.78,
+    0.975,
     0.75
    ],
    "to": "page2"
   },
   {
    "end": [
-    0.78,
+    0.975,
     0.65
    ],
    "from": "page2",
    "input": "drag_scroll",
    "start": [
-    0.78,
+    0.975,
     0.75
    ],
    "to": "page3"
+  },
+  {
+   "cleanup": false,
+   "from": "page3",
+   "input": "click",
+   "names": [
+    "eq_filtermenu_button"
+   ],
+   "to": "menu_filter",
+   "x": 0.840429,
+   "y": 0.158334
+  },
+  {
+   "cleanup": false,
+   "from": "menu_filter",
+   "input": "click",
+   "names": [
+    "eq_filter_confirm_button"
+   ],
+   "to": "page0",
+   "x": 0.593945,
+   "y": 0.834028
   }
  ],
  "progress": [],
@@ -80,7 +102,9 @@
   "coverage_complete": false,
   "error": {
    "code": "inventory_scroll_unverified",
-   "details": {},
+   "details": {
+    "first_page_restored": true
+   },
    "message": "ambiguous row overlap score=0.984 margin=0.002"
   },
   "outcome": "failed",
@@ -93,6 +117,8 @@
   "page0",
   "page1",
   "page2",
-  "page3"
+  "page3",
+  "menu_filter",
+  "page0"
  ]
 }

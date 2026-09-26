@@ -8,6 +8,12 @@ from core.student_scan_recognizer import ratio_crop
 from core.student_weapon_recognizer import _normalized_correlation as correlation, _color_similarity as color_similarity
 
 
+# Region assets locate controls, but only these names may be clicked (C2): a new asset
+# entry can never make the scanner press an unreviewed button.
+ALLOWED_CONTROLS=frozenset({'filtermenu_button','eq_filtermenu_button','filter_tab','sort_tab',
+    'sort_rule_check','sort_name_rule_check','eq_sort_rule_check','filter_confirm_button','eq_filter_confirm_button'})
+
+
 @dataclass(frozen=True)
 class PreparedInventory:
     source: str
@@ -66,6 +72,7 @@ class InventoryNavigation:
 
     def click(self,target,cancel,name,cleanup=False):
         if cancel.is_set():raise ScannerError('cancelled','inventory preparation cancelled')
+        if name not in ALLOWED_CONTROLS:raise ScannerError('control_not_allowed',f'inventory control {name} is not allowlisted')
         region=self.regions['controls'].get(name) or self.regions.get(name)
         if not isinstance(region,dict):raise ScannerError('region_missing',f'inventory control {name} is missing')
         x,y=_center(region)
@@ -112,8 +119,8 @@ class InventoryNavigation:
             # The current display panel has basic/name/quantity/expiry plus sort direction;
             # v6 category checkboxes are no longer present. Profile filtering is enforced
             # by the matcher catalog, never by clicking blank legacy coordinates.
-            self.click(target,cancel,'filter_tab');self.click(target,cancel,'sort_rule_check')
-            self.click(target,cancel,'sort_tab')
+            # The sort radio lives on the sort tab; ensure_sort observes it before any click.
+            self.click(target,cancel,'filter_tab');self.click(target,cancel,'sort_tab')
         self.ensure_sort(target,cancel,source,profile)
         self.click(target,cancel,'eq_filter_confirm_button' if source=='equipment' else 'filter_confirm_button')
         frame=self.observe(target,cancel,lambda f:self.detail_recognizer.classify(f)==source,'inventory_prepare_unconfirmed')
@@ -163,19 +170,38 @@ class InventoryNavigation:
             if cancel.wait(.08):raise ScannerError('cancelled','inventory scroll cancelled')
         raise ScannerError('inventory_scroll_unsettled','scroll did not stabilize')
 
+    def scroll_once(self,target,cancel,attempt):
+        """Drag inside the list's right padding: it scrolls, but a mis-read tap selects nothing."""
+        if cancel.is_set():raise ScannerError('cancelled','inventory scroll cancelled')
+        track=self.regions['scroll_track'];x,start_y=track['x'],track['start_y'];end_y=track['end_y'][attempt-1]
+        drag=getattr(self.capture,'drag_scroll',None)
+        if callable(drag):
+            drag({**target,'_scanner_cancel':cancel},(x,start_y),(x,end_y))
+            self.trace.append(dict(input='drag_scroll',start=[x,start_y],end=[x,end_y],attempt=attempt))
+        else:
+            # Two wheel notches keep at least two complete overlap rows in the five-row viewport.
+            delta=(-240,-360)[attempt-1]
+            self.capture.scroll({**target,'_scanner_cancel':cancel,'_scanner_scroll_point':(x,start_y)},delta)
+            self.trace.append(dict(input='scroll',delta=delta,attempt=attempt,point=[x,start_y]))
+
+    def confirm_terminal(self,target,cancel,before,source):
+        """One more scroll after a residual tail page must show no motion (X07)."""
+        before_signatures=self.signatures(before,source)
+        self.scroll_once(target,cancel,2)
+        after,after_signatures=self.settled_after(target,cancel,source)
+        after.close()
+        same=self.page_similarity(before_signatures,after_signatures)
+        self.trace.append(dict(terminal_recheck=same))
+        return same>=.97
+
+    def restore_first_page(self,target,cancel,frame):
+        """Re-apply the verified display settings; the client then shows the first page (X10)."""
+        return self.prepare(target,cancel,frame)
+
     def advance(self,target,cancel,before,source):
         before_signatures=self.signatures(before,source);slots=len(before_signatures);cols=5;rows=slots//cols
-        # Two wheel notches keep at least two complete overlap rows in the five-row viewport.
-        for attempt,delta in enumerate((-240,-360),1):
-            if cancel.is_set():raise ScannerError('cancelled','inventory scroll cancelled')
-            drag=getattr(self.capture,'drag_scroll',None)
-            if callable(drag):
-                end_y=.65 if attempt==1 else .58
-                drag({**target,'_scanner_cancel':cancel},(.78,.75),(.78,end_y))
-                self.trace.append(dict(input='drag_scroll',start=[.78,.75],end=[.78,end_y],attempt=attempt))
-            else:
-                self.capture.scroll({**target,'_scanner_cancel':cancel,'_scanner_scroll_point':(.78,.55)},delta)
-                self.trace.append(dict(input='scroll',delta=delta,attempt=attempt,point=[.78,.55]))
+        for attempt in (1,2):
+            self.scroll_once(target,cancel,attempt)
             after,after_signatures=self.settled_after(target,cancel,source)
             same=self.page_similarity(before_signatures,after_signatures)
             if same>=.97:

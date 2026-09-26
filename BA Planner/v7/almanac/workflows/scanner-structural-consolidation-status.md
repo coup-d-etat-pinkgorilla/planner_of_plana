@@ -19,7 +19,7 @@ sources:
 |---|---|---|---|
 | C0 기준선·golden 고정 | **완료** (2026-09-26) | `3a96abe` (branch `scanner-consolidation`) | — |
 | C1 계약 드리프트·이름 정리 | **완료** (2026-09-26, C1a~C1c) | `552ab99` | — |
-| C2 재고 끝 판정·입력 보강 | 미착수 | C1 golden | C2 착수(실게임 1280 필요) |
+| C2 재고 끝 판정·입력 보강 | **구현·실게임 확인 완료, 완료 판정 보류** (2026-09-26) | `35768a2` | tail 미도달 2건(C2-2·X20) 처리 결정 |
 | C3~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -220,3 +220,59 @@ C1은 repository DTO와 Flutter decoder까지 걸치므로 세 조각으로 나�
 
 - C2 착수. X07·X09·X10·allowlist는 fixture 선행이 가능하나 X08과 완료 조건은 **실게임 1280에서 item/equipment/gift tail**
   확인이 필요하다. 게임 실행 가능 시점을 사용자와 맞춘다. D4 기본안(안전 드래그 영역 없으면 `review_required` 강등)은 그대로.
+
+## C2 — 재고 끝 판정·입력 보강
+
+시작 `35768a2`. 게임 창 1280×720(사용자가 띄움), 계정 화면 입력은 표시 설정·목록 조작만 했고 사용/판매 버튼은 누르지 않았다.
+
+### 구현
+
+| 항목 | 변경 |
+|---|---|
+| X07 | `InventoryNavigation.confirm_terminal`: `verified_tail_residual` 페이지를 읽은 뒤 drag 1회 + settle 후 `page_similarity >= .97`(기존 값)일 때만 terminal. 움직이면 `scroll_terminal partial / tail_recheck_moved`, `coverage_complete=False`, review_required, zero-fill 없음 |
+| X08 | region 자산 `inventory_navigation_f10_regions.json`에 `scroll_track {x: 0.975, start_y: .75, end_y: [.65, .58]}` 추가(매니페스트 sha/bytes 갱신, CRLF 유지). `scroll_once`가 drag·wheel 모두 이 값을 쓰고 코드의 `.78` 리터럴을 제거했다. x=.975는 목록 오른쪽 여백으로 item·equipment 모든 grid slot 밖(테스트로 고정) |
+| X09 | prepare에서 filter 탭의 무조건 `sort_rule_check` 클릭 제거. 정렬 라디오는 정렬 탭에서 `ensure_sort`가 관측 후 꺼져 있을 때만 클릭 |
+| X10 | `inventory_scroll_unverified` 안전 중단(취소 아님) 시 `restore_first_page`(= 검증된 표시 설정 재적용)를 호출하고 `error.details.first_page_restored`, evidence `inventory_restore`(`inventory_first_page_restore`)를 남긴다. 문서 수정이 아니라 **구현**을 택했다 |
+| allowlist | `inventory_navigation.ALLOWED_CONTROLS`(filter/sort 메뉴·탭·정렬 체크·확인 9개) 밖의 이름은 `control_not_allowed`로 클릭 전 거부. 카테고리 필터 체크박스·`filter_reset_button`은 목록에 없다 |
+
+D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 적용하지 않았다.
+
+### 실게임 1280 확인 (`debug/scanner_c2_live/`)
+
+각 디렉터리의 `trace.json`에 입력·캡처 순서, 중복 제거된 프레임 파일명→SHA-256, 결과 후보가 있다. 실행 도구
+`backend/tools/verify_inventory_c2_live.py`(production adapter, 저장소 쓰기 없음).
+
+| 실행 | 결과 |
+|---|---|
+| `menu/` 표시 설정 관찰 | filter 탭에 **카테고리 체크박스가 존재**(엘레프·기술 노트·선물 등, F10 `*_filter` 좌표와 일치). 정렬 탭 라디오 `기본` = `sort_rule_check` 위치, 선택 시 score .92 |
+| `track/`, `eq-track/` | x=.975 탭: 선택 항목 이름·수량 불변(item/equipment). drag: item에서 3행 overlap .985로 스크롤 |
+| `presents-full-2` | prepare 정상(정렬 관측 .92, 클릭 없음), drag 5회 검증 후 6번째 `ambiguous row overlap .983 margin .019` → failed, **first_page_restored=true**, entries 3(모두 상세 fallback) |
+| `tech-notes-full` | drag 4회 검증 후 **실제 목록 끝**에서 1행 미만 이동 → `.922 margin .019` → failed, first_page_restored=true, entries 0 |
+| `equipment-full` | drag 2회 후 `.982 margin .006` → failed, first_page_restored=true (F10 기록과 같은 지점) |
+| `*-cancel` 3개 | 세 프로필 모두 `cancelled`, 보존 후보는 `scan_interrupted partial`, zero-fill 없음, 게임은 같은 페이지 |
+| `tech-notes-restore-probe` | 2페이지 이동(유사도 .864) 후 restore → page0 유사도 **.99999** (X10 실측) |
+| `presents-full`(첫 시도) | filtermenu 클릭 2회가 게임에 반영되지 않아 `inventory_filter_unconfirmed`. 직후 같은 클릭은 정상 — 창 포커스 전환 직후 입력 누락으로 추정, 재현 안 됨 |
+
+사용자 표시 설정은 시작 상태(선물 필터)로 되돌렸다. 주의: 인벤토리 화면에서 Escape는 메뉴가 아니라 화면 자체를 닫고
+로비 메뉴 모음으로 나간다(진단 중 1회 발생, 로비 메뉴 `아이템`으로 복귀).
+
+### 완료 판정 — 보류
+
+완료 조건 중 "실게임 1280 세 프로필 **tail까지**"를 충족하지 못했다. 세 프로필 모두 안전하게(복귀·zero-fill 없음) 중단됐지만:
+
+- **C2-2 (신규, 끝 판정)**: 목록 끝에서 마지막 drag가 1행 미만만 움직이면 정수 행 overlap(1~4행) 후보만 비교하므로
+  tail-residual band(.88~.94)에는 들어가도 margin(.03)을 못 넘겨 `inventory_scroll_unverified`가 된다(`tech-notes-full`).
+  X07 재확인은 이 경로에 도달하지 못해 **실게임에서 미실행**(단위 테스트로만 확인). 임계 변경은 C4 전 금지이므로 C2에서 고치지 않았다.
+- **X20 실측**: 선물·장비 청사진처럼 배경이 비슷한 타일에서 24차원 히스토그램 overlap이 목록 중간에 모호해진다 → C5 소관.
+- **C0-1 실측 재현**: 선물 45칸 중 42칸이 `confident visible identity is outside the explicit scan profile`로 skip, 3칸만 상세 fallback으로 인식.
+- **C2-1 (신규)**: 현재 클라이언트에 카테고리 필터 체크박스가 있다. `f12-inventory-current-display-contract.json`의
+  `category_checkboxes_available: false`와 모순. prepare가 프로필 필터를 걸지 않아 사용자가 걸어 둔 필터에 따라 목록이 달라진다.
+
+### 검증
+
+| 검증 | 결과 |
+|---|---|
+| Python 전체 | 555 tests OK (+6: allowlist, 정렬 관측 후 클릭, scroll_track 좌표·slot 밖, tail 재확인 2, restore 성공/실패) |
+| golden diff | **2건, 의도됨** → 재고정. `inventory_item_tech_notes_1280`: 무조건 정렬 클릭 입력 삭제, drag x .78→.975, tail 재확인 drag 1회 추가·evidence note. `inventory_equipment_1280`: drag x, 스크롤 실패 뒤 설정 재적용 입력 2개와 `first_page_restored: true`. 학생 6개 same |
+| Flutter analyze | 기존 info 2건 |
+| Flutter test | 403 pass / 3 fail — real-process E2E 첫 요청 10초 timeout(게임 실행 중 병렬 부하). 3개 파일 단독 재실행 23/23 pass |
