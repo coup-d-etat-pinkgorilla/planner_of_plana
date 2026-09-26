@@ -26,15 +26,15 @@ class Menu:
         self.opens = self.retries = self.closes = 0
         self.cancel, self.error = cancel, error
         self.recovery = SimpleNamespace(state='basic')
-    def capture_equipment_menu(self, target, cancel):
+    def capture(self, target, cancel):
         self.opens += 1
         if self.cancel: self.cancel.set()
         return Image.new('RGB', (8,8), 'white')
-    def recapture_equipment_menu(self, target, cancel):
+    def recapture(self, target, cancel):
         self.retries += 1
         if self.error: raise self.error
         return Image.new('RGB', (8,8), 'white')
-    def close_equipment_menu(self, target): self.closes += 1
+    def close(self, target): self.closes += 1
 
 
 class EquipmentF7Tests(unittest.TestCase):
@@ -78,20 +78,20 @@ class EquipmentF7Tests(unittest.TestCase):
         return ui,recovery,adapter
     def test_on_no_toggle(self):
         ui,r,a = self.adapter(['basic','equipment','equipment','basic'],[True])
-        a.capture_equipment_menu({},FastEvent()).close();a.close_equipment_menu({})
+        a.capture({},FastEvent()).close();a.close({})
         self.assertEqual(2,len(ui.actions));self.assertEqual('basic',r.state)
     def test_off_rechecked_before_single_toggle(self):
         ui,r,a = self.adapter(['basic']+['equipment']*4+['basic'],[False,False,True])
-        a.capture_equipment_menu({},FastEvent()).close();a.close_equipment_menu({})
+        a.capture({},FastEvent()).close();a.close({})
         self.assertEqual(3,len(ui.actions));self.assertEqual('basic',r.state)
         self.assertEqual(1,sum(t.get('input')=='enable_show_all' for t in r.trace))
     def test_delayed_on_recheck_does_not_click(self):
         ui,r,a = self.adapter(['basic']+['equipment']*3+['basic'],[False,True])
-        a.capture_equipment_menu({},FastEvent()).close();a.close_equipment_menu({})
+        a.capture({},FastEvent()).close();a.close({})
         self.assertEqual(2,len(ui.actions))
     def test_unknown_no_toggle_restores(self):
         ui,r,a = self.adapter(['basic','equipment','equipment','basic'],[None])
-        with self.assertRaises(ScannerError): a.capture_equipment_menu({},FastEvent())
+        with self.assertRaises(ScannerError): a.capture({},FastEvent())
         self.assertEqual(2,len(ui.actions));self.assertEqual('basic',r.state)
     def test_ignored_check_safe_partial_without_numeric_read(self):
         ui,r,a = self.adapter(['basic']+['equipment']*4+['basic'],[False,False,False])
@@ -102,13 +102,13 @@ class EquipmentF7Tests(unittest.TestCase):
     def test_cancel_during_recheck_no_toggle(self):
         cancel=FastEvent()
         ui,r,a=self.adapter(['basic']+['equipment']*3+['basic'],[False],cancel=cancel,cancel_on=3)
-        with self.assertRaises(ScannerError): a.capture_equipment_menu({},cancel)
+        with self.assertRaises(ScannerError): a.capture({},cancel)
         self.assertEqual(2,len(ui.actions));self.assertEqual('basic',r.state)
     def test_retry_rechecks_without_retoggling(self):
         ui,r,a=self.adapter(['basic']+['equipment']*3+['basic'],[True,False])
-        a.capture_equipment_menu({},FastEvent()).close()
-        with self.assertRaises(ScannerError): a.recapture_equipment_menu({},FastEvent())
-        a.close_equipment_menu({});self.assertEqual(2,len(ui.actions))
+        a.capture({},FastEvent()).close()
+        with self.assertRaises(ScannerError): a.recapture({},FastEvent())
+        a.close({});self.assertEqual(2,len(ui.actions))
     def run_reads(self, reads, slots=(1,2,3), initial=None, menu=None):
         menu=menu or Menu();reader=SimpleNamespace(recognize=Mock(side_effect=reads))
         result=resolve_equipment_menu(menu,reader,{},Event(),initial or {},slots)

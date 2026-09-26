@@ -44,17 +44,17 @@ class OneMenuCapture:
     def __init__(self) -> None:
         self.calls = 0
 
-    def capture_equipment_menu(self, _target, cancel):
+    def capture(self, _target, cancel):
         if cancel.is_set():
             raise ScannerError("cancelled", "cancelled")
         self.calls += 1
         return Image.new("RGB", (2560, 1440), "black")
 
-    def close_equipment_menu(self, _target):
+    def close(self, _target):
         return None
 
-    def recapture_equipment_menu(self, target, cancel):
-        return self.capture_equipment_menu(target, cancel)
+    def recapture(self, target, cancel):
+        return self.capture(target, cancel)
 
 
 class ClickStableCapture:
@@ -282,7 +282,7 @@ class StudentEquipmentS3Tests(unittest.TestCase):
         orchestrator = EquipmentMenuCaptureAdapter(capture, self.catalog)
         self.addCleanup(orchestrator.recovery.close)
         with self.assertRaisesRegex(ScannerError, "verified basic"):
-            orchestrator.capture_equipment_menu({"target_id": "fixture"}, Event())
+            orchestrator.capture({"target_id": "fixture"}, Event())
         self.assertEqual(1, capture.stable_calls)
         self.assertEqual([], capture.clicks)
 

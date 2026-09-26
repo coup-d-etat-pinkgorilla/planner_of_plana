@@ -30,12 +30,12 @@ class Menu:
         self.opens = self.closes = 0
         self.error, self.cancel = error, cancel
         self.recovery = type("Recovery", (), {"state": "basic"})()
-    def capture_star_menu(self, target, cancel):
+    def capture(self, target, cancel):
         self.opens += 1
         if self.error: raise self.error
         if self.cancel: self.cancel.set()
         return Image.new("RGB", (8,8))
-    def close_star_menu(self, target): self.closes += 1
+    def close(self, target): self.closes += 1
 
 
 class StarF5Tests(unittest.TestCase):
@@ -181,7 +181,7 @@ class StarF5Tests(unittest.TestCase):
     def test_restore_failure_is_not_partial_success(self):
         menu = Menu()
         with patch.object(self.reader,"recognize_menu",return_value={"student_star":obs(3)}), \
-             patch.object(menu,"close_star_menu",side_effect=ScannerError("panel_restore_failed","unsafe")):
+             patch.object(menu,"close",side_effect=ScannerError("panel_restore_failed","unsafe")):
             with self.assertRaises(ScannerError) as caught:
                 self.reader.resolve({"student_star":obs(None)},obs(None),menu,{},Event())
         self.assertEqual("panel_restore_failed",caught.exception.code)
@@ -192,7 +192,7 @@ class StarF5Tests(unittest.TestCase):
         self.addCleanup(recovery.close)
         menu = StarMenuCaptureAdapter(ui,self.catalog,recovery=recovery)
         with patch("core.student_panel_recovery.Event",FastEvent):
-            menu.capture_star_menu({},FastEvent()).close();menu.close_star_menu({})
+            menu.capture({},FastEvent()).close();menu.close({})
         self.assertEqual(("click",*recovery._center(recovery.regions["basic_info_button"])),ui.actions[-1])
         self.assertEqual("basic",recovery.state)
 
@@ -202,8 +202,8 @@ class StarF5Tests(unittest.TestCase):
         self.addCleanup(recovery.close)
         menu = StarMenuCaptureAdapter(ui,self.catalog,recovery=recovery)
         with patch("core.student_panel_recovery.Event",FastEvent):
-            menu.capture_star_menu({},FastEvent()).close()
-            with self.assertRaises(ScannerError): menu.close_star_menu({})
+            menu.capture({},FastEvent()).close()
+            with self.assertRaises(ScannerError): menu.close({})
 
     def test_conflicting_star_cannot_be_validated_as_confirmed_stats(self):
         validator = StudentCandidateValidator(None)

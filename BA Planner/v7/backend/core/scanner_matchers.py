@@ -14,7 +14,7 @@ from core.scanner_session import ScanBatchResult, ScannerError
 from core.student_scan_recognizer import Observation, StudentBasicCropSet, StudentBasicRecognizer
 from core.student_equipment_recognizer import EquipmentMenuRecognizer, StudentEquipmentRecognizer
 from core.student_weapon_recognizer import StudentWeaponRecognizer
-from core.student_panel_recovery import StudentPanelRecovery, read_panel_fields
+from core.student_panel_recovery import PanelMenu, StudentPanelRecovery, read_panel_fields
 from core.student_potential_recognizer import StudentPotentialRecognizer
 from core.student_level_recognizer import StudentLevelRecognizer
 from core.student_star_recognizer import StudentStarRecognizer
@@ -33,58 +33,20 @@ class CapturePort(Protocol):
     def wait_stable(self, target: dict[str, Any], cancel: Event, timeout: float = 2.0) -> Image.Image: ...
 
 
-class EquipmentMenuCapturePort(Protocol):
-    """One shared detail frame and one conditional F7 retry."""
-
-    def capture_equipment_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def recapture_equipment_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def close_equipment_menu(self, target: dict[str, Any]) -> None: ...
-
-
-class WeaponMenuCapturePort(Protocol):
-    """Input boundary for one opened weapon panel and its bounded retries."""
-
-    def capture_weapon_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def recapture_weapon_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def close_weapon_menu(self, target: dict[str, Any]) -> None: ...
-
-
-class StatMenuCapturePort(Protocol):
-    def capture_stat_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def recapture_stat_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def close_stat_menu(self, target: dict[str, Any]) -> None: ...
-
-
-class LevelMenuCapturePort(Protocol):
-    def capture_level_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def recapture_level_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def close_level_menu(self, target: dict[str, Any]) -> None: ...
-
-
 class ClickCapturePort(CapturePort, Protocol):
     def click(self, target: dict[str, Any], x_ratio: float, y_ratio: float) -> None: ...
     def press_key(self, target: dict[str, Any], key: str) -> bool: ...
-
-
-class StarMenuCapturePort(Protocol):
-    def capture_star_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def close_star_menu(self, target: dict[str, Any]) -> None: ...
-
-
-class SkillMenuCapturePort(Protocol):
-    def capture_skill_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def close_skill_menu(self, target: dict[str, Any]) -> None: ...
 
 
 class SkillMenuCaptureAdapter:
     """Open, positively enable show-all once, then return one verified skill frame."""
 
     def __init__(self, capture, catalog, *, recovery=None, recognizer=None):
-        self.capture = capture
+        self.port = capture
         self.recovery = recovery or StudentPanelRecovery(capture,catalog)
         self.recognizer = recognizer or StudentSkillRecognizer(catalog)
 
-    def capture_skill_menu(self, target, cancel):
+    def capture(self, target, cancel):
         frame = self.recovery.open(target,cancel,"skill",self.recognizer.regions["skill_menu_button"])
         try:
             if cancel.is_set(): raise ScannerError("cancelled","skill open cancelled")
@@ -94,7 +56,7 @@ class SkillMenuCaptureAdapter:
                 raise ScannerError("panel_read_failed","skill show-all state is unknown")
             if check.value is False:
                 if cancel.is_set(): raise ScannerError("cancelled","skill check cancelled")
-                self.capture.click({**target,"_scanner_cancel":cancel},
+                self.port.click({**target,"_scanner_cancel":cancel},
                     *self.recovery._center(self.recognizer.regions["skill_all_view_check_region"]))
                 self.recovery.trace.append({"input":"enable_show_all","panel":"skill"})
                 frame.close()
@@ -111,7 +73,7 @@ class SkillMenuCaptureAdapter:
             self.recovery.restore(target)
             raise
 
-    def close_skill_menu(self, target):
+    def close(self, target):
         self.recovery.restore(target)
 
 
@@ -121,10 +83,10 @@ class StarMenuCaptureAdapter:
     def __init__(self, capture, catalog, *, recovery=None):
         self.recovery = recovery or StudentPanelRecovery(capture, catalog)
 
-    def capture_star_menu(self, target, cancel):
+    def capture(self, target, cancel):
         return self.recovery.open(target, cancel, "star", self.recovery.regions["star_menu_button"])
 
-    def close_star_menu(self, target):
+    def close(self, target):
         self.recovery.restore(target)
 
 
@@ -132,7 +94,7 @@ class EquipmentMenuCaptureAdapter:
     """Equipment detail transport backed by verified panel transitions."""
 
     def __init__(self, capture: ClickCapturePort, catalog: RecognitionAssetCatalog, *, recovery=None, controls=None) -> None:
-        self.capture = capture
+        self.port = capture
         self.regions = catalog.region_for_purpose("student", "student-equipment-menu-regions")
         self.recovery = recovery or StudentPanelRecovery(capture, catalog)
         self.controls = controls or EquipmentControlRecognizer(catalog)
@@ -146,7 +108,7 @@ class EquipmentMenuCaptureAdapter:
             raise ScannerError("panel_read_failed", "equipment show-all state unknown")
         return check.value
 
-    def capture_equipment_menu(self, target, cancel):
+    def capture(self, target, cancel):
         frame = self.recovery.open(target, cancel, "equipment", self.regions["equipment_button"])
         try:
             checked = self._check(frame, cancel)
@@ -157,7 +119,7 @@ class EquipmentMenuCaptureAdapter:
                 checked = self._check(frame, cancel)
             if checked is False:
                 if cancel.is_set(): raise ScannerError("cancelled", "equipment enable cancelled")
-                self.capture.click({**target, "_scanner_cancel": cancel},
+                self.port.click({**target, "_scanner_cancel": cancel},
                     *self.recovery._center(self.regions["equipment_all_view_check_region"]))
                 self.recovery.trace.append({"input": "enable_show_all", "panel": "equipment"})
                 frame.close()
@@ -171,7 +133,7 @@ class EquipmentMenuCaptureAdapter:
             self.recovery.restore(target)
             raise
 
-    def recapture_equipment_menu(self, target, cancel):
+    def recapture(self, target, cancel):
         frame = self.recovery.recapture(target, cancel, "equipment")
         try:
             if self._check(frame, cancel) is not True:
@@ -181,7 +143,7 @@ class EquipmentMenuCaptureAdapter:
             frame.close()
             raise
 
-    def close_equipment_menu(self, target):
+    def close(self, target):
         self.recovery.restore(target)
 
 
@@ -189,17 +151,17 @@ class WeaponMenuCaptureAdapter:
     """Weapon detail transport backed by the same panel state contract."""
 
     def __init__(self, capture: ClickCapturePort, catalog: RecognitionAssetCatalog, *, recovery=None) -> None:
-        self.capture = capture
+        self.port = capture
         self.regions = catalog.region_for_purpose("student", "student-weapon-regions")
         self.recovery = recovery or StudentPanelRecovery(capture, catalog)
 
-    def capture_weapon_menu(self, target, cancel):
+    def capture(self, target, cancel):
         return self.recovery.open(target, cancel, "weapon", self.regions["weapon_info_menu_button"])
 
-    def recapture_weapon_menu(self, target, cancel):
+    def recapture(self, target, cancel):
         return self.recovery.recapture(target, cancel, "weapon")
 
-    def close_weapon_menu(self, target):
+    def close(self, target):
         self.recovery.restore(target)
 
 
@@ -210,13 +172,13 @@ class StatMenuCaptureAdapter:
         self.regions = catalog.region_for_purpose("student", "student-potential-regions")
         self.recovery = recovery or StudentPanelRecovery(capture, catalog)
 
-    def capture_stat_menu(self, target, cancel):
+    def capture(self, target, cancel):
         return self.recovery.open(target, cancel, "stat", self.regions["stat_menu_button"])
 
-    def recapture_stat_menu(self, target, cancel):
+    def recapture(self, target, cancel):
         return self.recovery.recapture(target, cancel, "stat")
 
-    def close_stat_menu(self, target):
+    def close(self, target):
         self.recovery.restore(target)
 
 
@@ -226,14 +188,33 @@ class LevelMenuCaptureAdapter:
     def __init__(self, capture: ClickCapturePort, catalog: RecognitionAssetCatalog, *, recovery=None):
         self.recovery = recovery or StudentPanelRecovery(capture,catalog)
 
-    def capture_level_menu(self, target, cancel):
+    def capture(self, target, cancel):
         return self.recovery.open(target,cancel,"level",self.recovery.regions["levelcheck_button"])
 
-    def recapture_level_menu(self, target, cancel):
+    def recapture(self, target, cancel):
         return self.recovery.recapture(target,cancel,"level")
 
-    def close_level_menu(self, target):
+    def close(self, target):
         self.recovery.restore(target)
+
+
+# Kind-named aliases of the PanelMenu methods, kept until C6 for tools and the F12 audit matrix.
+SkillMenuCaptureAdapter.capture_skill_menu = SkillMenuCaptureAdapter.capture
+SkillMenuCaptureAdapter.close_skill_menu = SkillMenuCaptureAdapter.close
+StarMenuCaptureAdapter.capture_star_menu = StarMenuCaptureAdapter.capture
+StarMenuCaptureAdapter.close_star_menu = StarMenuCaptureAdapter.close
+EquipmentMenuCaptureAdapter.capture_equipment_menu = EquipmentMenuCaptureAdapter.capture
+EquipmentMenuCaptureAdapter.recapture_equipment_menu = EquipmentMenuCaptureAdapter.recapture
+EquipmentMenuCaptureAdapter.close_equipment_menu = EquipmentMenuCaptureAdapter.close
+WeaponMenuCaptureAdapter.capture_weapon_menu = WeaponMenuCaptureAdapter.capture
+WeaponMenuCaptureAdapter.recapture_weapon_menu = WeaponMenuCaptureAdapter.recapture
+WeaponMenuCaptureAdapter.close_weapon_menu = WeaponMenuCaptureAdapter.close
+StatMenuCaptureAdapter.capture_stat_menu = StatMenuCaptureAdapter.capture
+StatMenuCaptureAdapter.recapture_stat_menu = StatMenuCaptureAdapter.recapture
+StatMenuCaptureAdapter.close_stat_menu = StatMenuCaptureAdapter.close
+LevelMenuCaptureAdapter.capture_level_menu = LevelMenuCaptureAdapter.capture
+LevelMenuCaptureAdapter.recapture_level_menu = LevelMenuCaptureAdapter.recapture
+LevelMenuCaptureAdapter.close_level_menu = LevelMenuCaptureAdapter.close
 
 
 def image_pixels(image: Image.Image):
@@ -478,6 +459,21 @@ class SlotCountMatcher:
         return CountMatch(value, score, match_margin)
 
 
+class _CollectedProgress:
+    """Full-scan ProgressSink: every step reports the number of students collected so far."""
+
+    def __init__(self, progress, results: list[dict[str, Any]]) -> None:
+        self._progress, self._results = progress, results
+        self.supports_feedback = getattr(progress, "supports_feedback", False)
+
+    def __call__(self, _current: int, _total: int | None, message: str,
+                 feedback: dict[str, Any] | None = None) -> None:
+        if feedback is None:
+            self._progress(len(self._results), None, message)
+        else:
+            self._progress(len(self._results), None, message, feedback)
+
+
 class _StudentWalker:
     """Moves to the next student by arrow key, falling back to the on-screen arrow button."""
 
@@ -526,12 +522,12 @@ class StudentMatcherAdapter:
         *,
         threshold: float = 0.82,
         margin: float = 0.04,
-        equipment_menu: EquipmentMenuCapturePort | None = None,
-        weapon_menu: WeaponMenuCapturePort | None = None,
-        stat_menu: StatMenuCapturePort | None = None,
-        level_menu: LevelMenuCapturePort | None = None,
-        star_menu: StarMenuCapturePort | None = None,
-        skill_menu: SkillMenuCapturePort | None = None,
+        equipment_menu: PanelMenu | None = None,
+        weapon_menu: PanelMenu | None = None,
+        stat_menu: PanelMenu | None = None,
+        level_menu: PanelMenu | None = None,
+        star_menu: PanelMenu | None = None,
+        skill_menu: PanelMenu | None = None,
         answer_samples: RecognitionAnswerSampleStore | None = None,
         entry_recovery=None,
         form_recovery=None,
@@ -1154,20 +1150,7 @@ class StudentMatcherAdapter:
 
     def _scan_full_student(self, target, cancel, progress, results, seen):
         """Scan the student on screen; (base student id, rows), or None when cancelled without a candidate."""
-        def current_progress(
-            _current: int,
-            _total: int | None,
-            message: str,
-            feedback: dict[str, Any] | None = None,
-        ) -> None:
-            if feedback is None:
-                progress(len(results), None, message)
-            else:
-                progress(len(results), None, message, feedback)
-
-        current_progress.supports_feedback = getattr(  # type: ignore[attr-defined]
-            progress, "supports_feedback", False
-        )
+        current_progress = _CollectedProgress(progress, results)
         try:
             scanned = self._scan_with_forms({**target, '_first_student': not seen, '_seen_students': tuple(seen)}, cancel, current_progress)
         except ScannerError as exc:

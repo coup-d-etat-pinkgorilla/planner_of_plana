@@ -255,7 +255,7 @@ class ScannerSessionTests(unittest.TestCase):
         service.close()
 
     def test_scan_workspace_revalidation_is_distinct_from_hold(self) -> None:
-        validator = lambda _payload, _profile_id: {
+        validator = lambda _payload, _profile_id, _relationship_ranks=None: {
             "field": "student_stat_validation",
             "status": "verified",
             "source": "fixture",
@@ -298,7 +298,7 @@ class ScannerSessionTests(unittest.TestCase):
                 "review_required": False,
             }]
 
-        validator = lambda _payload, _profile_id: {
+        validator = lambda _payload, _profile_id, _relationship_ranks=None: {
             "field": "student_stat_validation",
             "status": "verified",
             "source": "fixture",
@@ -482,7 +482,7 @@ class ScannerSessionTests(unittest.TestCase):
     def test_profile_scoped_second_pass_revalidation_replaces_only_stat_evidence(self) -> None:
         calls: list[str | None] = []
 
-        def validator(_payload, profile_id):
+        def validator(_payload, profile_id, _relationship_ranks=None):
             calls.append(profile_id)
             status = "dependency_missing" if len(calls) == 1 else "verified"
             return {

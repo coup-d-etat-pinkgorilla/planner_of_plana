@@ -31,14 +31,14 @@ class Menu:
         self.opens = self.recaptures = self.closes = 0
         self.error = error
         self.recovery = SimpleNamespace(state="basic", recognizer=SimpleNamespace(classify=lambda frame:"basic"))
-    def capture_stat_menu(self, target, cancel):
+    def capture(self, target, cancel):
         self.opens += 1
         if self.error: raise self.error
         return Image.new("RGB", (4,4))
-    def recapture_stat_menu(self, target, cancel):
+    def recapture(self, target, cancel):
         self.recaptures += 1
         return Image.new("RGB", (4,4))
-    def close_stat_menu(self, target): self.closes += 1
+    def close(self, target): self.closes += 1
 
 
 class PotentialF3Tests(unittest.TestCase):
@@ -186,8 +186,8 @@ class PotentialF3Tests(unittest.TestCase):
         self.addCleanup(recovery.close)
         menu = StatMenuCaptureAdapter(ui, self.catalog, recovery=recovery)
         with patch("core.student_panel_recovery.Event", FastEvent):
-            menu.capture_stat_menu({}, FastEvent()).close()
-            menu.close_stat_menu({})
+            menu.capture({}, FastEvent()).close()
+            menu.close({})
         self.assertEqual("basic", recovery.state)
         self.assertEqual(2, len(ui.actions))
 

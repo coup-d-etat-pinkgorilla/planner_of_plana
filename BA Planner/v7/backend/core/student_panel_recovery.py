@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from threading import Event
 from time import monotonic
+from typing import Any, Protocol
 
 from PIL import Image, ImageStat
 
@@ -14,6 +15,17 @@ from core.student_weapon_recognizer import _color_similarity, _normalized_correl
 PANEL_CLOSE_KEYS = {"weapon": "weapon_menu_quit_button", "equipment": "equipmentmenu_quit_button",
                     "skill": "skillmenu_quit_button", "stat": "statmenu_quit_button"}
 TAB_KEYS = {"basic": "basic_info_button", "level": "levelcheck_button", "star": "star_menu_button"}
+
+
+class PanelMenu(Protocol):
+    """One student detail panel: open and return a verified frame, re-read it, close back to basic.
+
+    ``recapture`` is needed only by callers that read with ``attempts > 1``.
+    """
+
+    def capture(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
+    def recapture(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
+    def close(self, target: dict[str, Any]) -> None: ...
 
 
 def merge_observation(previous: Observation | None, current: Observation) -> Observation:
@@ -38,14 +50,14 @@ def read_panel_fields(menu, kind, target, cancel, initial, fields, read, *, atte
     frame = None
     try:
         try:
-            frame = getattr(menu, f"capture_{kind}_menu")(target, cancel)
+            frame = menu.capture(target, cancel)
             for attempt in range(attempts):
                 if cancel.is_set():
                     raise ScannerError("cancelled", "panel reading cancelled")
                 if attempt:
                     frame.close()
                     frame = None
-                    frame = getattr(menu, f"recapture_{kind}_menu")(target, cancel)
+                    frame = menu.recapture(target, cancel)
                 try:
                     observed = read(frame)
                 except (ValueError, OSError) as exc:
@@ -60,7 +72,7 @@ def read_panel_fields(menu, kind, target, cancel, initial, fields, read, *, atte
         finally:
             if frame is not None:
                 frame.close()
-            getattr(menu, f"close_{kind}_menu")(target)
+            menu.close(target)
     except ScannerError as exc:
         safe = (exc.details.get("screen_state") == "basic"
                 or getattr(getattr(menu, "recovery", None), "state", None) == "basic")

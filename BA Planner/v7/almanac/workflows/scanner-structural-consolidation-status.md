@@ -20,7 +20,7 @@ sources:
 | C0 기준선·golden 고정 | **완료** (2026-09-26) | `3a96abe` (branch `scanner-consolidation`) | — |
 | C1 계약 드리프트·이름 정리 | **완료** (2026-09-26, C1a~C1c) | `552ab99` | — |
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
-| C3 오케스트레이터 분해 | **진행 중: C3a·C3b 완료** (2026-09-26) | `3b20374` | C3c(X14 + `review`) |
+| C3 오케스트레이터 분해 | **진행 중: C3a~C3c 완료** (2026-09-26) | `3b20374` | C3d(X12 `ScanContext`) |
 | C4~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -305,7 +305,7 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
 |---|---|---|
 | C3a | X11 인벤토리 `__call__` 분해 + 상태 dataclass, X13 `DetailRecoveryResult` | **완료** |
 | C3b | X11 학생 `_scan_current`·`_scan_full` 분해 | **완료** |
-| C3c | X14 `PanelMenu` Protocol·validator 단일 시그니처·`ProgressSink`, `scanner_session.review` 분해 | 미착수 |
+| C3c | X14 `PanelMenu` Protocol·validator 단일 시그니처·`ProgressSink`, `scanner_session.review` 분해 | **완료** |
 | C3d | X12 `ScanContext` frozen dataclass(target 컨텍스트 백 제거) | 미착수 |
 
 ### C3a 결과
@@ -331,3 +331,18 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
 - `_scan_full`(128줄) → 순회 제어 `_scan_full` + 학생 1명 `_scan_full_student` + 재방문 판정 `_revisit`(retry/reverse/complete/move)
   + 키·버튼 이동 `_StudentWalker`(버튼 좌표 상수화, 값 동일). break/continue·progress 순서 유지.
 - 검증: student 265·scanner 73 tests OK, golden **8/8 same**(학생 단일·다중 폼·전체 ring 포함). 범위 내 최장 함수는 이제 `scanner_session.review` 93.
+
+### C3c 결과
+
+- `PanelMenu` Protocol(`capture`/`recapture`/`close`, `student_panel_recovery`)로 `read_panel_fields`의
+  `getattr(menu, f"capture_{kind}_menu")` 문자열 디스패치를 없앴다. 메뉴 adapter 6개는 일반 메서드를 구현하고, 종류별 Protocol 6개는
+  삭제했다. 메서드 이름 충돌을 피하려 adapter의 capture port 속성은 `self.port`로 바꿨다. **종류별 이름(`capture_weapon_menu` 등)은
+  클래스 별칭으로 C6까지 유지**한다(도구·F12 audit matrix가 참조). 테스트 fake 8개 파일은 일반 이름으로 바꿨다.
+- student validator는 항상 `(payload, profile_id, relationship_ranks)`로 호출한다(`inspect.signature` 판별 제거). 2인자 테스트
+  validator 4개와 `tests/scanner_e2e_backend.py`에 3번째 인자를 추가했다. production `StudentCandidateValidator`는 이미 3인자다.
+- `ProgressSink` Protocol(`supports_feedback` 속성 + 호출)을 두고, 세션의 함수 속성 주입을 `_SessionProgress` 클래스로, 전체 스캔의
+  `current_progress.supports_feedback = ...`를 `_CollectedProgress`로 바꿨다. plain callable은 feedback 없는 sink로 계속 허용한다.
+- `scanner_session.review`(93줄) → `_train_answer_sample`·`_mark_user_verified`·`_revalidate_student`.
+- 검증: Python 555 OK(golden 8/8 same 포함), Flutter 406 all passed.
+- 범위 내 상위 5개 함수 길이: `windows_scanner_adapter._render` 65, `scanner_session.commit` 62, `_read_slot` 50,
+  `_scan_with_forms` 49, `_resolve_weapon` 48 — **80줄 조건 충족**.

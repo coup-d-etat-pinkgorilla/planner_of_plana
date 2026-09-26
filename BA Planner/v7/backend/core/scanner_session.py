@@ -3,7 +3,6 @@ from __future__ import annotations
 from concurrent.futures import Future, ThreadPoolExecutor
 from copy import deepcopy
 from dataclasses import dataclass, field
-from inspect import Parameter, signature
 from threading import Event, RLock
 from typing import Any, Callable, Mapping, Protocol
 from uuid import uuid4
@@ -21,6 +20,15 @@ NON_REVIEW_EVIDENCE_STATUSES = {
 
 # Entry fields that describe the scan, not the stored inventory (C1 X05).
 SCANNER_ONLY_ENTRY_FIELDS = frozenset({"inventory_scan_profile"})
+
+
+class ProgressSink(Protocol):
+    """Matcher progress callback. ``supports_feedback`` sinks also take per-field feedback."""
+
+    supports_feedback: bool
+
+    def __call__(self, current: int, total: int | None, message_key: str,
+                 feedback: Mapping[str, Any] | None = None) -> None: ...
 
 
 class ScannerError(RuntimeError):
@@ -142,13 +150,6 @@ class ScannerSessionService:
         self._student_validator = student_validator
         self._candidate_review_hook = candidate_review_hook
         self._resource_close_hook = resource_close_hook
-        self._student_validator_accepts_context = False
-        if student_validator is not None:
-            parameters = signature(student_validator).parameters.values()
-            self._student_validator_accepts_context = (
-                any(item.kind == Parameter.VAR_POSITIONAL for item in parameters)
-                or len(tuple(signature(student_validator).parameters.values())) >= 3
-            )
         self._owns_executor = executor is None
         self._lock = RLock()
         self._generation = 0
@@ -297,30 +298,7 @@ class ScannerSessionService:
             if item.revision != expected_candidate_revision:
                 raise ScannerError("candidate_revision_conflict", "candidate revision is stale")
             self._validated_payload(item.scan_kind, payload)
-            if (
-                self._candidate_review_hook is not None
-                and session.profile_id is not None
-                and item.answer_specimen
-                and (
-                    (item.scan_kind == "student" and reason == "edited_and_revalidated_in_scan_page")
-                    or (item.scan_kind == "inventory" and approve)
-                )
-            ):
-                try:
-                    sample_count = self._candidate_review_hook(
-                        item.scan_kind, session.profile_id, item.candidate_id,
-                        item.answer_specimen, payload, reason, approve,
-                    )
-                    item.audit.append({
-                        "source": "user_confirmed_answer_sample",
-                        "sample_count": sample_count or 0,
-                    })
-                except (OSError, ValueError) as exc:
-                    item.audit.append({
-                        "source": "user_confirmed_answer_sample",
-                        "status": "storage_failed",
-                        "message": str(exc),
-                    })
+            self._train_answer_sample(session, item, payload, reason, approve)
             if item.answer_specimen and (
                 approve or reason in {"discarded_in_scan_page", "discarded_in_student_page"}
             ):
@@ -330,25 +308,7 @@ class ScannerSessionService:
                 item.scan_kind == "student"
                 and reason == "edited_and_revalidated_in_scan_page"
             ):
-                values = payload.get("values") if isinstance(payload, dict) else None
-                if isinstance(values, dict):
-                    reviewed: list[dict[str, Any]] = []
-                    for evidence in item.evidence:
-                        replacement = deepcopy(evidence)
-                        if (
-                            isinstance(replacement, dict)
-                            and replacement.get("field") in values
-                            and replacement.get("status")
-                            not in {"ok", "inferred", "skipped", "verified", "deferred"}
-                        ):
-                            replacement.update({
-                                "status": "verified",
-                                "source": "user_review",
-                                "confidence": 1.0,
-                                "note": "field confirmed in scanner review workspace",
-                            })
-                        reviewed.append(replacement)
-                    item.evidence = reviewed
+                self._mark_user_verified(item, payload)
             item.audit.append({
                 "from_revision": item.revision,
                 "reason": reason,
@@ -357,19 +317,74 @@ class ScannerSessionService:
             })
             item.payload = deepcopy(payload)
             if item.scan_kind == "student" and self._student_validator is not None:
-                if relationship_ranks is not None:
-                    item.validation_relationship_ranks.update(relationship_ranks)
-                item.evidence = [entry for entry in item.evidence if entry.get("field") != "student_stat_validation"]
-                item.evidence.append(self._validate_student(
-                    item.payload, session.profile_id, item.validation_relationship_ranks,
-                ))
-                item.review_required = any(
-                    entry.get("status") not in NON_REVIEW_EVIDENCE_STATUSES
-                    for entry in item.evidence if isinstance(entry, dict)
-                )
+                self._revalidate_student(session, item, relationship_ranks)
             item.revision += 1
             item.approved = approve
             return item.to_wire()
+
+    def _train_answer_sample(self, session, item, payload, reason: str, approve: bool) -> None:
+        """Only an explicit user answer becomes a stored recognition sample."""
+        if not (
+            self._candidate_review_hook is not None
+            and session.profile_id is not None
+            and item.answer_specimen
+            and (
+                (item.scan_kind == "student" and reason == "edited_and_revalidated_in_scan_page")
+                or (item.scan_kind == "inventory" and approve)
+            )
+        ):
+            return
+        try:
+            sample_count = self._candidate_review_hook(
+                item.scan_kind, session.profile_id, item.candidate_id,
+                item.answer_specimen, payload, reason, approve,
+            )
+            item.audit.append({
+                "source": "user_confirmed_answer_sample",
+                "sample_count": sample_count or 0,
+            })
+        except (OSError, ValueError) as exc:
+            item.audit.append({
+                "source": "user_confirmed_answer_sample",
+                "status": "storage_failed",
+                "message": str(exc),
+            })
+
+    @staticmethod
+    def _mark_user_verified(item, payload) -> None:
+        """Fields the user edited and revalidated no longer count as unresolved evidence."""
+        values = payload.get("values") if isinstance(payload, dict) else None
+        if not isinstance(values, dict):
+            return
+        reviewed: list[dict[str, Any]] = []
+        for evidence in item.evidence:
+            replacement = deepcopy(evidence)
+            if (
+                isinstance(replacement, dict)
+                and replacement.get("field") in values
+                and replacement.get("status")
+                not in {"ok", "inferred", "skipped", "verified", "deferred"}
+            ):
+                replacement.update({
+                    "status": "verified",
+                    "source": "user_review",
+                    "confidence": 1.0,
+                    "note": "field confirmed in scanner review workspace",
+                })
+            reviewed.append(replacement)
+        item.evidence = reviewed
+
+    def _revalidate_student(self, session, item, relationship_ranks) -> None:
+        if relationship_ranks is not None:
+            item.validation_relationship_ranks.update(relationship_ranks)
+        item.evidence = [entry for entry in item.evidence if entry.get("field") != "student_stat_validation"]
+        item.evidence.append(self._validate_student(
+            item.payload, session.profile_id, item.validation_relationship_ranks,
+        ))
+        item.review_required = any(
+            entry.get("status") not in NON_REVIEW_EVIDENCE_STATUSES
+            for entry in item.evidence if isinstance(entry, dict)
+        )
 
     def commit(
         self,
@@ -542,33 +557,7 @@ class ScannerSessionService:
                 self._terminal(session, "cancelled")
                 return
 
-            def progress(
-                current: int,
-                total: int | None,
-                message_key: str,
-                feedback: Mapping[str, Any] | None = None,
-            ) -> None:
-                if not session.cancel.is_set():
-                    self._emit(session, "progress", {
-                        "current": current, "total": total, "message_key": message_key,
-                    })
-                    if feedback is not None:
-                        student_id = feedback.get("student_id")
-                        values = feedback.get("values")
-                        field = feedback.get("field")
-                        if (
-                            isinstance(student_id, str)
-                            and student_id
-                            and isinstance(values, Mapping)
-                            and isinstance(field, str)
-                            and field
-                        ):
-                            self._emit(session, "feedback", {
-                                "student_id": student_id,
-                                "field": field,
-                                "values": dict(values),
-                            })
-            progress.supports_feedback = True  # type: ignore[attr-defined]
+            progress = _SessionProgress(self, session)
 
             result = self._matchers[session.scan_kind](session.target, session.cancel, progress)
             batch = result if isinstance(result, ScanBatchResult) else ScanBatchResult(result)
@@ -666,9 +655,7 @@ class ScannerSessionService:
     ) -> dict[str, Any]:
         if self._student_validator is None:
             raise ScannerError("revalidation_unavailable", "student revalidation is unavailable")
-        if self._student_validator_accepts_context:
-            return self._student_validator(payload, profile_id, relationship_ranks)
-        return self._student_validator(payload, profile_id)  # type: ignore[call-arg]
+        return self._student_validator(payload, profile_id, relationship_ranks)
 
     def _emit(self, session: _Session, event_kind: str, data: dict[str, Any]) -> None:
         with self._lock:
@@ -718,6 +705,41 @@ class ScannerSessionService:
             if self._active is session:
                 self._active = None
         self._event_sink(deepcopy(event))
+
+
+class _SessionProgress:
+    """Emits progress and per-field feedback events for one running session."""
+
+    supports_feedback = True
+
+    def __init__(self, service: "ScannerSessionService", session: "_Session") -> None:
+        self._service, self._session = service, session
+
+    def __call__(self, current: int, total: int | None, message_key: str,
+                 feedback: Mapping[str, Any] | None = None) -> None:
+        session = self._session
+        if session.cancel.is_set():
+            return
+        self._service._emit(session, "progress", {
+            "current": current, "total": total, "message_key": message_key,
+        })
+        if feedback is None:
+            return
+        student_id = feedback.get("student_id")
+        values = feedback.get("values")
+        field = feedback.get("field")
+        if (
+            isinstance(student_id, str)
+            and student_id
+            and isinstance(values, Mapping)
+            and isinstance(field, str)
+            and field
+        ):
+            self._service._emit(session, "feedback", {
+                "student_id": student_id,
+                "field": field,
+                "values": dict(values),
+            })
 
 
 @dataclass(slots=True)

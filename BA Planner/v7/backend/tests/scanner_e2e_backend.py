@@ -30,7 +30,7 @@ def _student_matcher(_target, _cancel, progress):
     }]
 
 
-def _student_validator(payload, profile_id):
+def _student_validator(payload, profile_id, _relationship_ranks=None):
     level = payload.get("values", {}).get("level")
     verified = level == 91
     return {

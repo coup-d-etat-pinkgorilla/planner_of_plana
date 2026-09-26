@@ -166,8 +166,8 @@ class PanelValues(unittest.TestCase):
         frames, closes = [], []
         def frame(*_a):
             image = Image.new("RGB", (8,8)); frames.append(image); return image
-        menu = SimpleNamespace(capture_weapon_menu=frame, recapture_weapon_menu=frame,
-                               close_weapon_menu=lambda *_a: closes.append(1))
+        menu = SimpleNamespace(capture=frame, recapture=frame,
+                               close=lambda *_a: closes.append(1))
         reads = iter([{"level":observation(60,.7),"star":observation(None)},
                       {"level":observation(None,.99),"star":observation(4)}])
         result = read_panel_fields(menu,"weapon",TARGET,FastEvent(),{},("level","star"),lambda _f:next(reads),attempts=3)
@@ -177,13 +177,13 @@ class PanelValues(unittest.TestCase):
     def test_read_failure_is_partial_only_after_verified_return(self):
         def fail(_frame): raise ValueError("bad digits")
         def frame(*_a): return Image.new("RGB", (8,8))
-        menu = SimpleNamespace(capture_weapon_menu=frame, close_weapon_menu=lambda *_a:None,
+        menu = SimpleNamespace(capture=frame, close=lambda *_a:None,
                                recovery=SimpleNamespace(state="basic"))
         result=read_panel_fields(menu,"weapon",TARGET,FastEvent(),{"level":observation(60)},("level",),fail)
         self.assertEqual(60,result["level"].value)
         self.assertEqual("partial",result["weapon_panel"].status)
         def bad_close(*_a): raise ScannerError("panel_restore_failed","lost")
-        menu.close_weapon_menu=bad_close
+        menu.close=bad_close
         with self.assertRaises(ScannerError): read_panel_fields(menu,"weapon",TARGET,FastEvent(),{},("level",),fail)
 
     def test_escape_is_not_an_extended_key(self):

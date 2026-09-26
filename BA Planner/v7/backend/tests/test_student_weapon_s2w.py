@@ -51,15 +51,15 @@ class ScriptedWeaponMenu:
         self.recaptures = 0
         self.closes = 0
 
-    def capture_weapon_menu(self, _target, _cancel):
+    def capture(self, _target, _cancel):
         self.captures += 1
         return self.frames[0].copy()
 
-    def recapture_weapon_menu(self, _target, _cancel):
+    def recapture(self, _target, _cancel):
         self.recaptures += 1
         return self.frames[self.recaptures].copy()
 
-    def close_weapon_menu(self, _target):
+    def close(self, _target):
         self.closes += 1
 
 
@@ -276,7 +276,7 @@ class StudentWeaponS2WTests(unittest.TestCase):
         adapter = WeaponMenuCaptureAdapter(capture, self.catalog)
         self.addCleanup(adapter.recovery.close)
         with self.assertRaisesRegex(Exception, "verified basic"):
-            adapter.capture_weapon_menu({"target_id": "fixture"}, Event())
+            adapter.capture({"target_id": "fixture"}, Event())
         self.assertEqual(1, capture.waits)
         self.assertEqual([], capture.clicks)
 
