@@ -478,6 +478,46 @@ class SlotCountMatcher:
         return CountMatch(value, score, match_margin)
 
 
+class _StudentWalker:
+    """Moves to the next student by arrow key, falling back to the on-screen arrow button."""
+
+    BUTTON_X = {"right": 0.9777, "left": 0.0223}
+    BUTTON_Y = 0.53465
+
+    def __init__(self, capture, click, target, cancel: Event) -> None:
+        self.capture, self.click, self.target, self.cancel = capture, click, target, cancel
+        self.direction = "right"
+        self.pending_button_fallback = False
+
+    def navigate(self) -> None:
+        if self.cancel.is_set():
+            raise ScannerError("cancelled", "navigation cancelled")
+        press_key = getattr(self.capture, "press_key", None)
+        try:
+            used_key = callable(press_key) and bool(press_key(self.target, self.direction))
+        except ScannerError as exc:
+            # Only an API failure before insertion is safe to retry as a click.
+            if exc.code != "input_failed":
+                raise
+            used_key = False
+        self.pending_button_fallback = used_key
+        if not used_key:
+            if self.cancel.is_set():
+                raise ScannerError("cancelled", "navigation cancelled")
+            self.click(self.target, self.BUTTON_X[self.direction], self.BUTTON_Y)
+
+    def step(self) -> bool:
+        if self.cancel.is_set():
+            return False
+        self.navigate()
+        return True
+
+    def retry_button(self) -> None:
+        """A key that did not move the list is retried once with the button."""
+        self.click(self.target, self.BUTTON_X[self.direction], self.BUTTON_Y)
+        self.pending_button_fallback = False
+
+
 class StudentMatcherAdapter:
     def __init__(
         self,
@@ -724,9 +764,7 @@ class StudentMatcherAdapter:
         })
 
     def _capture_identified(self, target, cancel):
-        recovery = (getattr(self.weapon_menu, "recovery", None) or getattr(self.equipment_menu, "recovery", None)
-                    or getattr(self.stat_menu, "recovery", None) or getattr(self.level_menu, "recovery", None)
-                    or getattr(self.star_menu, "recovery", None) or getattr(self.skill_menu, "recovery", None))
+        recovery = self._panel_recovery()
         attempts, entered = 0, False
         while attempts < 2:
             if cancel.is_set():
@@ -757,7 +795,14 @@ class StudentMatcherAdapter:
                 raise ScannerError('cancelled', 'identity retry cancelled')
         raise ScannerError('identity_unconfirmed', 'student identity unresolved after two independent captures')
 
+    def _panel_recovery(self):
+        """The shared StudentPanelRecovery behind whichever panel menus are wired."""
+        return (getattr(self.weapon_menu, "recovery", None) or getattr(self.equipment_menu, "recovery", None)
+                or getattr(self.stat_menu, "recovery", None) or getattr(self.level_menu, "recovery", None)
+                or getattr(self.star_menu, "recovery", None) or getattr(self.skill_menu, "recovery", None))
+
     def _scan_current(self, target: dict[str, Any], cancel: Event, progress: Callable[..., None]) -> list[dict[str, Any]]:
+        """identify -> basic reads -> panel fallbacks -> assemble, for the student on screen."""
         if cancel.is_set():
             return []
         progress(0, 4, "scanner.student.capture")
@@ -765,10 +810,39 @@ class StudentMatcherAdapter:
         if cancel.is_set():
             frame.close()
             return []
+        crops = self._basic_crops(frame)
+        fallback_evidence: list[dict[str, Any]] = []
         try:
-            recovery = (getattr(self.weapon_menu, "recovery", None) or getattr(self.equipment_menu, "recovery", None)
-                        or getattr(self.stat_menu, "recovery", None) or getattr(self.level_menu, "recovery", None)
-                        or getattr(self.star_menu, "recovery", None) or getattr(self.skill_menu, "recovery", None))
+            student_ref = identity.student_ref
+            self._activate_numeric_samples(
+                target.get("profile_id"), crops.source_size, student_ref,
+            )
+            progress(1, 4, "scanner.student.identify")
+            if target.get("student_scan_mode") == "full":
+                self._report_student_feedback(
+                    progress, 1, 4, "scanner.student.identify",
+                    student_ref, "student_id", {},
+                )
+            if cancel.is_set():
+                return []
+            progress(2, 4, "scanner.student.basic_fields")
+            observations, independent_weapon = self._read_growth_fields(crops, student_ref, target, cancel)
+            fallback_evidence = self._resolve_weapon(observations, independent_weapon, target, cancel)
+            self._resolve_equipment(crops, observations, student_ref, target, cancel, progress)
+            answer_specimen = {
+                "source_size": crops.source_size,
+                "numeric_groups": self._numeric_groups(crops),
+            }
+        finally:
+            crops.close()
+        candidate = self._assemble_student(identity, student_ref, observations, fallback_evidence, answer_specimen)
+        progress(4, 4, "scanner.student.matched")
+        return [candidate]
+
+    def _basic_crops(self, frame: Image.Image) -> StudentBasicCropSet:
+        """Verify the basic tab and cut every basic-screen crop; the frame is closed here."""
+        try:
+            recovery = self._panel_recovery()
             if recovery is not None:
                 recovery.state = recovery.recognizer.classify(frame)
                 if recovery.state != "basic":
@@ -780,201 +854,175 @@ class StudentMatcherAdapter:
             if isinstance(state_region, dict):
                 crops.images["basic_weapon_state_region"] = ratio_crop(frame, state_region)
             crops.images["equipment_growth_button"] = ratio_crop(frame, self.equipment_controls.regions["equipment_button"])
+            return crops
         finally:
             frame.close()
-        fallback_evidence: list[dict[str, Any]] = []
-        try:
-            student_ref = identity.student_ref
-            self._activate_numeric_samples(
-                target.get("profile_id"), crops.source_size, student_ref,
+
+    def _read_growth_fields(self, crops, student_ref, target, cancel):
+        """Basic fields, then level/star/skill/potential with their own panel fallbacks, in that order."""
+        observations = self.basic_recognizer.recognize(crops)
+        basic_level = observations.get("level")
+        observations.update(self.level_recognizer.resolve(
+            observations, self.level_menu, target, cancel,
+        ))
+        resolved_level = observations.get("level")
+        if (
+            (basic_level is None or not basic_level.confirmed)
+            and resolved_level is not None
+            and resolved_level.confirmed
+            and resolved_level.source == "level_tab_template"
+        ):
+            self._add_session_numeric_sample(
+                target=target,
+                source_size=crops.source_size,
+                student_ref=student_ref,
+                field="student_level",
+                value=int(resolved_level.value),
+                cells=crops.cell_groups.get("basic_student_level_studio_cells"),
+                roi_names=("studentlevel_digit1", "studentlevel_digit2"),
+                detail_source=resolved_level.source,
             )
-            progress(1, 4, "scanner.student.identify")
-            confident = True
-            if target.get("student_scan_mode") == "full":
-                self._report_student_feedback(
-                    progress, 1, 4, "scanner.student.identify",
-                    student_ref, "student_id", {},
+        independent_weapon = self.weapon_recognizer.read_state(
+            crops.images.get("basic_weapon_state_region"), student_star=None,
+        )
+        observations.update(self.star_recognizer.resolve(
+            observations, independent_weapon, self.star_menu, target, cancel,
+        ))
+        observations.update(self.skill_recognizer.resolve(observations,self.skill_menu,target,cancel))
+        observations.update(self.potential_recognizer.resolve(
+            crops.images, observations, self.stat_menu, target, cancel,
+        ))
+        return observations, independent_weapon
+
+    def _resolve_weapon(self, observations, independent_weapon, target, cancel) -> list[dict[str, Any]]:
+        """Gate weapon fields by weapon state; open the weapon panel only for an equipped, unresolved weapon."""
+        student_star = observations.get("student_star")
+        observations["weapon_state"] = independent_weapon
+        if student_star is not None and student_star.confirmed and int(student_star.value) < 5:
+            observations["weapon_state"] = Observation(
+                "no_weapon_system", 1.0, "inferred", "student_star_gate",
+                f"student_star={student_star.value}",
+            )
+        weapon_state = observations["weapon_state"]
+        fields = ("weapon_level", "weapon_star")
+        if weapon_state.confirmed and weapon_state.value != "weapon_equipped":
+            for field in fields:
+                observations[field] = Observation(
+                    None, weapon_state.confidence, "skipped",
+                    "basic_weapon_state_template", f"state={weapon_state.value}",
                 )
-            if cancel.is_set():
-                return []
-            progress(2, 4, "scanner.student.basic_fields")
-            observations = self.basic_recognizer.recognize(crops)
-            basic_level = observations.get("level")
-            level_fallback = self.level_recognizer.resolve(
-                observations, self.level_menu, target, cancel,
-            )
-            observations.update(level_fallback)
-            resolved_level = observations.get("level")
+            return []
+        if not (
+            weapon_state.confirmed
+            and weapon_state.value == "weapon_equipped"
+            and not all(observations[field].confirmed for field in fields)
+            and self.weapon_menu is not None
+        ):
+            return []
+        unresolved_weapon = {field: observations[field] for field in fields if not observations[field].confirmed}
+        observations.update(read_panel_fields(
+            self.weapon_menu, "weapon", target, cancel, observations,
+            fields, self.weapon_recognizer.recognize_menu,
+            attempts=3,
+        ))
+        evidence = []
+        for field, trigger in unresolved_weapon.items():
+            result = observations.get(field)
+            recovered = result is not None and result.confirmed
+            evidence.append({
+                "field": f"{field}_fallback",
+                "status": "ok" if recovered else "uncertain",
+                "source": "weapon_panel_fallback",
+                "confidence": result.confidence if result is not None else 0.0,
+                "note": (
+                    f"trigger_status={trigger.status};trigger_source={trigger.source};"
+                    f"trigger_confidence={trigger.confidence:.6f};"
+                    f"trigger_note={trigger.note};result_source="
+                    f"{result.source if result is not None else 'missing'}"
+                ),
+            })
+        return evidence
+
+    def _resolve_equipment(self, crops, observations, student_ref, target, cancel, progress) -> None:
+        """Basic equipment reads, then the equipment panel for unresolved slots (learning confirmed digits)."""
+        equipment_observations, unresolved = self.equipment_recognizer.recognize(
+            crops,
+            student_ref=student_ref,
+            student_level=(
+                int(observations["level"].value)
+                if observations.get("level") is not None and observations["level"].confirmed
+                else None
+            ),
+            favorite_growth_active=self.equipment_controls.read_growth(crops.images.get("equipment_growth_button")).value,
+        )
+        observations.update(equipment_observations)
+        progress(3, 4, "scanner.student.equipment_fields")
+        if not (unresolved and self.equipment_menu is not None and self.equipment_menu_recognizer is not None):
+            return
+        self.equipment_recognizer.metrics.menu_captures += 1
+        fallback = resolve_equipment_menu(self.equipment_menu, self.equipment_menu_recognizer,
+            target, cancel, observations, unresolved)
+        observations.update(fallback)
+        for slot in unresolved:
+            learned = fallback.get(f"equip{slot}_level")
             if (
-                (basic_level is None or not basic_level.confirmed)
-                and resolved_level is not None
-                and resolved_level.confirmed
-                and resolved_level.source == "level_tab_template"
+                slot <= 3
+                and learned is not None
+                and learned.confirmed
+                and learned.source == "equipment_menu_digit"
             ):
                 self._add_session_numeric_sample(
                     target=target,
                     source_size=crops.source_size,
                     student_ref=student_ref,
-                    field="student_level",
-                    value=int(resolved_level.value),
-                    cells=crops.cell_groups.get("basic_student_level_studio_cells"),
-                    roi_names=("studentlevel_digit1", "studentlevel_digit2"),
-                    detail_source=resolved_level.source,
+                    field="equipment_level",
+                    value=int(learned.value),
+                    cells=crops.cell_groups.get(
+                        f"basic_equipment_{slot}_level_studio_cells"
+                    ),
+                    roi_names=(
+                        f"equip{slot}level_digit1",
+                        f"equip{slot}level_digit2",
+                    ),
+                    detail_source=learned.source,
                 )
-            independent_weapon = self.weapon_recognizer.read_state(
-                crops.images.get("basic_weapon_state_region"), student_star=None,
-            )
-            observations.update(self.star_recognizer.resolve(
-                observations, independent_weapon, self.star_menu, target, cancel,
-            ))
-            observations.update(self.skill_recognizer.resolve(observations,self.skill_menu,target,cancel))
-            observations.update(self.potential_recognizer.resolve(
-                crops.images, observations, self.stat_menu, target, cancel,
-            ))
-            student_star = observations.get("student_star")
-            observations["weapon_state"] = independent_weapon
-            if student_star is not None and student_star.confirmed and int(student_star.value) < 5:
-                observations["weapon_state"] = Observation(
-                    "no_weapon_system", 1.0, "inferred", "student_star_gate",
-                    f"student_star={student_star.value}",
-                )
-            weapon_state = observations["weapon_state"]
-            if weapon_state.confirmed and weapon_state.value != "weapon_equipped":
-                for field in ("weapon_level", "weapon_star"):
-                    observations[field] = Observation(
-                        None, weapon_state.confidence, "skipped",
-                        "basic_weapon_state_template", f"state={weapon_state.value}",
-                    )
-            elif (
-                weapon_state.confirmed
-                and weapon_state.value == "weapon_equipped"
-                and not all(observations[field].confirmed for field in ("weapon_level", "weapon_star"))
-                and self.weapon_menu is not None
-            ):
-                unresolved_weapon = {
-                    field: observations[field]
-                    for field in ("weapon_level", "weapon_star")
-                    if not observations[field].confirmed
-                }
-                fallback = read_panel_fields(
-                    self.weapon_menu, "weapon", target, cancel, observations,
-                    ("weapon_level", "weapon_star"), self.weapon_recognizer.recognize_menu,
-                    attempts=3,
-                )
-                observations.update(fallback)
-                for field, trigger in unresolved_weapon.items():
-                    result = observations.get(field)
-                    recovered = result is not None and result.confirmed
-                    fallback_evidence.append({
-                        "field": f"{field}_fallback",
-                        "status": "ok" if recovered else "uncertain",
-                        "source": "weapon_panel_fallback",
-                        "confidence": result.confidence if result is not None else 0.0,
-                        "note": (
-                            f"trigger_status={trigger.status};trigger_source={trigger.source};"
-                            f"trigger_confidence={trigger.confidence:.6f};"
-                            f"trigger_note={trigger.note};result_source="
-                            f"{result.source if result is not None else 'missing'}"
-                        ),
-                    })
-            equipment_observations, unresolved = self.equipment_recognizer.recognize(
-                crops,
-                student_ref=student_ref,
-                student_level=(
-                    int(observations["level"].value)
-                    if observations.get("level") is not None and observations["level"].confirmed
-                    else None
-                ),
-                favorite_growth_active=self.equipment_controls.read_growth(crops.images.get("equipment_growth_button")).value,
-            )
-            observations.update(equipment_observations)
-            progress(3, 4, "scanner.student.equipment_fields")
-            if unresolved and self.equipment_menu is not None and self.equipment_menu_recognizer is not None:
-                self.equipment_recognizer.metrics.menu_captures += 1
-                fallback = resolve_equipment_menu(self.equipment_menu, self.equipment_menu_recognizer,
-                    target, cancel, observations, unresolved)
-                observations.update(fallback)
-                for slot in unresolved:
-                    learned = fallback.get(f"equip{slot}_level")
-                    if (
-                        slot <= 3
-                        and learned is not None
-                        and learned.confirmed
-                        and learned.source == "equipment_menu_digit"
-                    ):
-                        self._add_session_numeric_sample(
-                            target=target,
-                            source_size=crops.source_size,
-                            student_ref=student_ref,
-                            field="equipment_level",
-                            value=int(learned.value),
-                            cells=crops.cell_groups.get(
-                                f"basic_equipment_{slot}_level_studio_cells"
-                            ),
-                            roi_names=(
-                                f"equip{slot}level_digit1",
-                                f"equip{slot}level_digit2",
-                            ),
-                            detail_source=learned.source,
-                        )
-            answer_specimen = {
-                "source_size": crops.source_size,
-                "numeric_groups": self._numeric_groups(crops),
-            }
-        finally:
-            crops.close()
-        values = {
-            field: observation.value
-            for field, observation in observations.items()
-            if observation.confirmed or observation.source == "panel_value_conflict"
-        }
+
+    @staticmethod
+    def _evidence_rows(observations: dict[str, Observation]) -> list[dict[str, Any]]:
+        return [{
+            "field": field,
+            "status": observation.status,
+            "source": observation.source,
+            "confidence": observation.confidence,
+            "note": observation.note,
+        } for field, observation in observations.items()]
+
+    def _assemble_student(self, identity, student_ref, observations, fallback_evidence, answer_specimen) -> dict[str, Any]:
+        kept = {field: observation for field, observation in observations.items()
+                if observation.confirmed or observation.source == "panel_value_conflict"}
+        values = {field: observation.value for field, observation in kept.items()}
         provenance = {"student_id": identity.source}
-        provenance.update({field: observation.source for field, observation in observations.items() if observation.confirmed or observation.source == "panel_value_conflict"})
+        provenance.update({field: observation.source for field, observation in kept.items()})
         evidence = [{
-            "field": "student_id", "status": "ok" if confident else "uncertain",
+            "field": "student_id", "status": "ok",
             "source": identity.source, "confidence": identity.score,
             "note": f"margin={identity.margin:.6f};form_ref={student_ref}",
         }]
-        evidence.extend({
-            "field": field,
-            "status": observation.status,
-            "source": observation.source,
-            "confidence": observation.confidence,
-            "note": observation.note,
-        } for field, observation in observations.items())
+        evidence.extend(self._evidence_rows(observations))
         evidence.extend(fallback_evidence)
-        evidence.extend({
-            "field": field,
-            "status": observation.status,
-            "source": observation.source,
-            "confidence": observation.confidence,
-            "note": observation.note,
-        } for field, observation in self.equipment_recognizer.last_binary_shadow.items())
-        evidence.extend({
-            "field": field,
-            "status": observation.status,
-            "source": observation.source,
-            "confidence": observation.confidence,
-            "note": observation.note,
-        } for field, observation in self.equipment_recognizer.last_generated_binary_shadow.items())
-        evidence.extend({
-            "field": field,
-            "status": observation.status,
-            "source": observation.source,
-            "confidence": observation.confidence,
-            "note": observation.note,
-        } for field, observation in self.equipment_recognizer.last_position_binary_shadow.items())
-        review_required = (not confident) or any(
+        evidence.extend(self._evidence_rows(self.equipment_recognizer.last_binary_shadow))
+        evidence.extend(self._evidence_rows(self.equipment_recognizer.last_generated_binary_shadow))
+        evidence.extend(self._evidence_rows(self.equipment_recognizer.last_position_binary_shadow))
+        review_required = any(
             observation.status not in {"ok", "inferred", "skipped"}
             for observation in observations.values()
         )
-        progress(4, 4, "scanner.student.matched")
-        return [{
+        return {
             "payload": {"version": 1, "student_id": student_ref, "values": values, "provenance": provenance},
             "evidence": evidence,
             "review_required": review_required,
             "_answer_specimen": answer_specimen,
-        }]
+        }
 
     def _scan_with_forms(self, target, cancel, progress):
         rows = self._scan_current(target, cancel, progress)
@@ -1067,126 +1115,35 @@ class StudentMatcherAdapter:
             self.session_calibration = None
 
     def _scan_full(self, target, cancel, progress, results) -> bool:
+        """Walk the student list until the first student comes around again (True) or the walk stops."""
         click = getattr(self.capture, "click", None)
         if not callable(click):
             raise ScannerError("input_unavailable", "full student scan requires click input")
+        walker = _StudentWalker(self.capture, click, target, cancel)
         seen: set[str] = set()
         previous_student_id: str | None = None
-        pending_button_fallback = False
-        direction = "right"
-
-        def navigate() -> None:
-            nonlocal pending_button_fallback
-            if cancel.is_set():
-                raise ScannerError("cancelled", "navigation cancelled")
-            press_key = getattr(self.capture, "press_key", None)
-            try:
-                used_key = callable(press_key) and bool(press_key(target, direction))
-            except ScannerError as exc:
-                # Only an API failure before insertion is safe to retry as a click.
-                if exc.code != "input_failed":
-                    raise
-                used_key = False
-            pending_button_fallback = used_key
-            if not used_key:
-                if cancel.is_set():
-                    raise ScannerError("cancelled", "navigation cancelled")
-                click(
-                    target,
-                    0.9777 if direction == "right" else 0.0223,
-                    0.53465,
-                )
-
-        def navigate_next() -> bool:
-            if cancel.is_set():
-                return False
-            navigate()
-            return True
-
         for _index in range(500):
             if cancel.is_set():
                 break
-            def current_progress(
-                _current: int,
-                _total: int | None,
-                message: str,
-                feedback: dict[str, Any] | None = None,
-            ) -> None:
-                if feedback is None:
-                    progress(len(results), None, message)
-                else:
-                    progress(len(results), None, message, feedback)
-
-            current_progress.supports_feedback = getattr(  # type: ignore[attr-defined]
-                progress, "supports_feedback", False
-            )
-            try:
-                scanned = self._scan_with_forms({**target, '_first_student': not seen, '_seen_students': tuple(seen)}, cancel, current_progress)
-            except ScannerError as exc:
-                results.extend(getattr(exc, 'completed_candidates', []))
-                raise
-            if not scanned:
-                if cancel.is_set():
-                    break
-                raise ScannerError("identity_unconfirmed", "student capture returned no candidate")
-            student_id = scanned[0].get("payload", {}).get("student_id")
-            if not isinstance(student_id, str):
-                self._close_answer_specimens(scanned)
-                raise ScannerError("matcher_failed", "student candidate identity is missing")
-            if any(e.get("field") == "student_id" and e.get("status") != "ok"
-                   for item in scanned for e in item.get("evidence", [])):
-                self._close_answer_specimens(scanned)
-                raise ScannerError("identity_unconfirmed", "student identity is not confirmed")
-            student_id, _form = student_meta.split_form_ref(student_id)
+            scanned = self._scan_full_student(target, cancel, progress, results, seen)
+            if scanned is None:
+                break
+            student_id, rows = scanned
             if student_id in seen:
-                self._close_answer_specimens(scanned)
-                if (
-                    student_id == previous_student_id
-                    and pending_button_fallback
-                ):
-                    progress(len(results), None, "scanner.student.full.navigation_retry")
-                    if cancel.is_set():
-                        break
-                    click(
-                        target,
-                        0.9777 if direction == "right" else 0.0223,
-                        0.53465,
-                    )
-                    pending_button_fallback = False
-                    if cancel.wait(0.45):
-                        break
-                    continue
-                if student_id == previous_student_id and direction == "right":
-                    direction = "left"
-                    progress(
-                        len(results), None,
-                        "scanner.student.full.navigation_reverse",
-                    )
-                    if not navigate_next():
-                        break
-                    if cancel.wait(0.45):
-                        break
-                    continue
-                if student_id == previous_student_id:
-                    raise ScannerError("navigation_unconfirmed", "no movement after key/button; edge is not verified")
-                if direction == "right":
-                    progress(
-                        len(results), len(results),
-                        "scanner.student.full.complete",
-                    )
+                self._close_answer_specimens(rows)
+                action = self._revisit(walker, student_id, previous_student_id, progress, results)
+                if action == "complete":
                     return True
-                previous_student_id = student_id
-                if not navigate_next():
+                if action == "break":
                     break
-                progress(len(results), None, "scanner.student.full.navigating")
-                if cancel.wait(0.45):
-                    break
+                if action == "moved":
+                    previous_student_id = student_id
                 continue
             seen.add(student_id)
             previous_student_id = student_id
-            results.extend(scanned)
+            results.extend(rows)
             progress(len(results), None, "scanner.student.full.collected")
-            if not navigate_next():
+            if not walker.step():
                 break
             progress(len(results), None, "scanner.student.full.navigating")
             if cancel.wait(0.45):
@@ -1194,6 +1151,74 @@ class StudentMatcherAdapter:
         else:
             raise ScannerError("navigation_limit", "student navigation budget exhausted")
         return False
+
+    def _scan_full_student(self, target, cancel, progress, results, seen):
+        """Scan the student on screen; (base student id, rows), or None when cancelled without a candidate."""
+        def current_progress(
+            _current: int,
+            _total: int | None,
+            message: str,
+            feedback: dict[str, Any] | None = None,
+        ) -> None:
+            if feedback is None:
+                progress(len(results), None, message)
+            else:
+                progress(len(results), None, message, feedback)
+
+        current_progress.supports_feedback = getattr(  # type: ignore[attr-defined]
+            progress, "supports_feedback", False
+        )
+        try:
+            scanned = self._scan_with_forms({**target, '_first_student': not seen, '_seen_students': tuple(seen)}, cancel, current_progress)
+        except ScannerError as exc:
+            results.extend(getattr(exc, 'completed_candidates', []))
+            raise
+        if not scanned:
+            if cancel.is_set():
+                return None
+            raise ScannerError("identity_unconfirmed", "student capture returned no candidate")
+        student_id = scanned[0].get("payload", {}).get("student_id")
+        if not isinstance(student_id, str):
+            self._close_answer_specimens(scanned)
+            raise ScannerError("matcher_failed", "student candidate identity is missing")
+        if any(e.get("field") == "student_id" and e.get("status") != "ok"
+               for item in scanned for e in item.get("evidence", [])):
+            self._close_answer_specimens(scanned)
+            raise ScannerError("identity_unconfirmed", "student identity is not confirmed")
+        student_id, _form = student_meta.split_form_ref(student_id)
+        return student_id, scanned
+
+    @staticmethod
+    def _revisit(walker: "_StudentWalker", student_id, previous_student_id, progress, results) -> str:
+        """Decide what an already-seen student means: retry, reverse, completion or a plain move."""
+        cancel = walker.cancel
+        if student_id == previous_student_id and walker.pending_button_fallback:
+            progress(len(results), None, "scanner.student.full.navigation_retry")
+            if cancel.is_set():
+                return "break"
+            walker.retry_button()
+            return "break" if cancel.wait(0.45) else "retried"
+        if student_id == previous_student_id and walker.direction == "right":
+            walker.direction = "left"
+            progress(
+                len(results), None,
+                "scanner.student.full.navigation_reverse",
+            )
+            if not walker.step():
+                return "break"
+            return "break" if cancel.wait(0.45) else "reversed"
+        if student_id == previous_student_id:
+            raise ScannerError("navigation_unconfirmed", "no movement after key/button; edge is not verified")
+        if walker.direction == "right":
+            progress(
+                len(results), len(results),
+                "scanner.student.full.complete",
+            )
+            return "complete"
+        if not walker.step():
+            return "break"
+        progress(len(results), None, "scanner.student.full.navigating")
+        return "break" if cancel.wait(0.45) else "moved"
 
 
 # Pre-C1 inventory evidence names, kept so old diagnostic JSON reads with current meaning.

@@ -20,7 +20,7 @@ sources:
 | C0 기준선·golden 고정 | **완료** (2026-09-26) | `3a96abe` (branch `scanner-consolidation`) | — |
 | C1 계약 드리프트·이름 정리 | **완료** (2026-09-26, C1a~C1c) | `552ab99` | — |
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
-| C3 오케스트레이터 분해 | **진행 중: C3a 완료** (2026-09-26) | `3b20374` | C3b(`_scan_current`/`_scan_full`) |
+| C3 오케스트레이터 분해 | **진행 중: C3a·C3b 완료** (2026-09-26) | `3b20374` | C3c(X14 + `review`) |
 | C4~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -304,7 +304,7 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
 | Slice | 항목 | 상태 |
 |---|---|---|
 | C3a | X11 인벤토리 `__call__` 분해 + 상태 dataclass, X13 `DetailRecoveryResult` | **완료** |
-| C3b | X11 학생 `_scan_current`·`_scan_full` 분해 | 미착수 |
+| C3b | X11 학생 `_scan_current`·`_scan_full` 분해 | **완료** |
 | C3c | X14 `PanelMenu` Protocol·validator 단일 시그니처·`ProgressSink`, `scanner_session.review` 분해 | 미착수 |
 | C3d | X12 `ScanContext` frozen dataclass(target 컨텍스트 백 제거) | 미착수 |
 
@@ -321,3 +321,13 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
   **관찰 가능한 차이 1건**: partial로 전환되지 않고 재발생한 상세 오류의 `error.details`에 `inventory_restored` 키가 더는 없다.
   Flutter·protocol·진단 스키마에서 이 키를 읽는 곳은 없다(grep 확인).
 - 검증: inventory 50·scanner 73 tests OK, golden **8/8 same**.
+
+### C3b 결과
+
+- `_scan_current`(218줄) → `_basic_crops`(basic 탭 확인·crop) · `_read_growth_fields`(basic + level/star/skill/potential, 기존 호출 순서)
+  · `_resolve_weapon`(무기 상태 gate와 무기 패널 fallback evidence) · `_resolve_equipment`(장비 basic + 장비 패널, 확정 digit 세션 학습)
+  · `_assemble_student`(values/provenance/evidence, shadow 3종은 `_evidence_rows`로 통일). 무기 패널 복구 체인은 `_panel_recovery()`로
+  `_capture_identified`와 공유. 항상 `True`였던 `confident` 변수는 제거(evidence `ok`·review 조건 동일).
+- `_scan_full`(128줄) → 순회 제어 `_scan_full` + 학생 1명 `_scan_full_student` + 재방문 판정 `_revisit`(retry/reverse/complete/move)
+  + 키·버튼 이동 `_StudentWalker`(버튼 좌표 상수화, 값 동일). break/continue·progress 순서 유지.
+- 검증: student 265·scanner 73 tests OK, golden **8/8 same**(학생 단일·다중 폼·전체 ring 포함). 범위 내 최장 함수는 이제 `scanner_session.review` 93.
