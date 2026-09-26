@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from PIL import Image
 
+from core.inventory_catalog import SCAN_PROFILES
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, RepositoryDTOError
 
 
@@ -183,11 +184,7 @@ class ScannerSessionService:
             raise ScannerError("target_not_found", "capture target was not found")
         if student_scan_mode not in {"single", "full"}:
             raise ScannerError("invalid_payload", "student_scan_mode must be single or full")
-        inventory_profiles = {
-            "student_elephs", "tech_notes", "tactical_bd", "ooparts",
-            "activity_reports", "presents", "equipment",
-        }
-        if inventory_scan_profile is not None and inventory_scan_profile not in inventory_profiles:
+        if inventory_scan_profile is not None and inventory_scan_profile not in SCAN_PROFILES:
             raise ScannerError("invalid_payload", "inventory_scan_profile is not supported")
         if scan_kind != "inventory" and inventory_scan_profile is not None:
             raise ScannerError("invalid_payload", "inventory_scan_profile is only valid for inventory scans")

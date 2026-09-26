@@ -124,6 +124,10 @@ def _rows() -> list[InventoryCatalogRow]:
 
 CATALOG: tuple[InventoryCatalogRow, ...] = tuple(_rows())
 BY_KEY = {row.resource_key: row for row in CATALOG}
+# Single source for inventory scan profiles: the protocol enum, session validation and
+# item-page navigation all derive from catalog profile ids. Equipment has its own page.
+SCAN_PROFILES: tuple[str, ...] = tuple(dict.fromkeys(row.profile_id for row in CATALOG))
+ITEM_SCAN_PROFILES: tuple[str, ...] = tuple(profile for profile in SCAN_PROFILES if profile != "equipment")
 
 
 def planning_aliases() -> dict[str, str]:

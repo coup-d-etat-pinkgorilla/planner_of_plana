@@ -2,14 +2,10 @@
 from dataclasses import dataclass
 import math
 from PIL import Image
-from core.inventory_catalog import CATALOG
+from core.inventory_catalog import CATALOG, ITEM_SCAN_PROFILES
 from core.scanner_session import ScannerError
 from core.student_scan_recognizer import ratio_crop
 from core.student_weapon_recognizer import _normalized_correlation as correlation, _color_similarity as color_similarity
-
-
-ITEM_FILTERS={'student_elephs':'eleph_filter','tech_notes':'note_filter','tactical_bd':'bd_filter',
-              'ooparts':'ooparts_filter','activity_reports':'reports_filter','presents':'presents_filter'}
 
 
 @dataclass(frozen=True)
@@ -107,7 +103,7 @@ class InventoryNavigation:
         self.trace=[];source=self.detail_recognizer.classify(baseline)
         if source not in {'item','equipment'}:raise ScannerError('inventory_page_unknown','inventory page is unverified')
         profile=target.get('inventory_scan_profile') or ('equipment' if source=='equipment' else None)
-        if source=='item' and profile not in ITEM_FILTERS:
+        if source=='item' and profile not in ITEM_SCAN_PROFILES:
             raise ScannerError('inventory_profile_required','item scan requires one explicit inventory scan profile')
         if source=='equipment' and profile!='equipment':
             raise ScannerError('inventory_profile_mismatch','equipment page requires equipment scan profile')

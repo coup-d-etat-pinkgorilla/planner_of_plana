@@ -18,7 +18,7 @@ sources:
 | Phase | 상태 | 시작 기준 | 다음 행동 |
 |---|---|---|---|
 | C0 기준선·golden 고정 | **완료** (2026-09-26) | `3a96abe` (branch `scanner-consolidation`) | — |
-| C1 계약 드리프트·이름 정리 | 미착수 | C0 golden | C1 착수 |
+| C1 계약 드리프트·이름 정리 | C1a 완료, C1b·C1c 미착수 | `552ab99` | C1b/C1c 결정 질문 후 착수 |
 | C2~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -125,3 +125,38 @@ Golden 형식: `{scenario, result, inputs, screens_captured, progress}`. `result
 2. C1 착수: `student_single_shizuko_skill_panel_unopened_1280` golden의 shadow evidence를 X01 스키마 검증의 실제 후보
    샘플로 사용한다. C1의 필드 추가·이름 변경은 golden diff로 드러나며 status에 사유를 적고 `--write`로 재고정한다.
 3. C0-1/C0-2는 C2 실게임 1280 확인 때 현재 클라이언트 프레임으로 재현 여부를 먼저 확인한다.
+
+## C1 — 계약 드리프트·이름 정리
+
+### Sub-slice 분할 (2026-09-26)
+
+C1은 repository DTO와 Flutter decoder까지 걸치므로 세 조각으로 나눈다.
+
+| Slice | 항목 | golden 기대 | 상태 |
+|---|---|---|---|
+| C1a | X01 `shadow` enum, X02 `session.start.inventory_scan_profile`, X03 프로필 집합 단일 소스 | diff 0 | **완료** (2026-09-26) |
+| C1b | X04 zero-fill 필드, X05 `inventory_scan_profile` 엔트리 필드, X21 source 이름 | 의도된 필드 추가·이름 변경 diff | 미착수 |
+| C1c | X06 후보 `catalog_revision`과 commit 검증 | 재고 golden에 `catalog_revision` 추가 | 미착수 |
+
+### C1a 결과 (2026-09-26)
+
+- X03: `inventory_catalog.SCAN_PROFILES`(CATALOG profile id 등장 순서)·`ITEM_SCAN_PROFILES`(equipment 제외)를 단일 소스로 두었다.
+  `scanner_session.start`의 하드코딩 집합과 `inventory_navigation.ITEM_FILTERS`(값인 filter control 이름은 F12 이후
+  클릭하지 않는 죽은 매핑이었고 membership만 쓰였다)를 제거하고 이 둘을 import한다.
+- X02: `scanner.session.start` 요청에 optional `inventory_scan_profile` enum(7개, CATALOG 순서)을 정의했다. 정적 JSON이라
+  생성 대신 동기화 테스트로 묶었다: Python `test_inventory_scan_profile_enum_is_the_catalog_single_source`(schema == `SCAN_PROFILES`),
+  Dart `inventory scan profiles match the shared scanner schema enum`(`InventoryScanProfile.wireName` 집합 == schema).
+  공용 fixture에 유효/무효 start 2건을 추가했다(15→17건, 유효 9→10).
+- X01: `fieldEvidence.status` enum에 `shadow`를 추가했다. `test_real_replay_candidates_including_shadow_evidence_match_schema`가
+  C0 golden 8개의 실제 후보 전부를 `$defs/candidate`로 검증한다. 구 스키마에서는 hoshino/mika/shizuko 등 학생 후보가
+  `'shadow' is not one of [...]`로 실패함을 확인했다(학생 후보 대부분이 shadow를 포함 — 기존 스키마는 실제 후보를 거부하고 있었다).
+- 응답 `scanner.session.start`에는 `inventory_scan_profile`을 싣지 않으므로 응답 스키마는 바꾸지 않았다.
+
+| 검증 | 결과 |
+|---|---|
+| `cd backend; py -3.11 -m unittest discover -s tests -v` | 545 tests OK (+2 contract) |
+| golden diff | **0** (`test_scanner_consolidation_golden` OK) |
+| `cd frontend; flutter analyze` | 기존 info 2건(`app_shell.dart`)만 |
+| `cd frontend; flutter test` | 406 all passed (+1, Dart↔Python process E2E 포함) |
+
+C1b·C1c 착수 전 결정 필요: X05 필드를 repository DTO까지 영속할지, X06 `catalog_revision` 누락 후보 처리.

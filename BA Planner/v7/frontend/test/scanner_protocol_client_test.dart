@@ -8,6 +8,31 @@ import 'package:ba_planner_v7/services/scanner_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('inventory scan profiles match the shared scanner schema enum', () {
+    final schema =
+        jsonDecode(
+              File(
+                '../contracts/scanner-protocol-v1.schema.json',
+              ).readAsStringSync(),
+            )
+            as Map<String, dynamic>;
+    final requests =
+        ((schema[r'$defs']['request']['allOf'] as List)[1]['oneOf'] as List)
+            .cast<Map<String, dynamic>>();
+    final start = requests.firstWhere(
+      (item) =>
+          item['properties']['method']['const'] == 'scanner.session.start',
+    );
+    final wire =
+        (start['properties']['payload']['properties']['inventory_scan_profile']['enum']
+                as List)
+            .cast<String>();
+    expect(
+      InventoryScanProfile.values.map((item) => item.wireName).toSet(),
+      wire.toSet(),
+    );
+  });
+
   test(
     'typed scanner snapshot parses envelope history and reconciles cursor',
     () {
