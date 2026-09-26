@@ -10,6 +10,7 @@ from uuid import uuid4
 from PIL import Image
 
 from core.inventory_catalog import CATALOG_REVISION, SCAN_PROFILES
+from core.scan_context import ScanContext
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, RepositoryDTOError
 
 
@@ -206,9 +207,6 @@ class ScannerSessionService:
                 student_scan_mode if scan_kind == "student" else "single",
             )
             self._active = session
-            session.target["_scanner_cancel"] = session.cancel
-            session.target["_scanner_session_id"] = session.session_id
-            session.target["_scanner_generation"] = session.generation
             self._sessions[session.session_id] = session
             # The session is registered before the worker can publish its first event.
             session.future = self._executor.submit(self._run, session)
@@ -559,7 +557,10 @@ class ScannerSessionService:
 
             progress = _SessionProgress(self, session)
 
-            result = self._matchers[session.scan_kind](session.target, session.cancel, progress)
+            context = ScanContext.of(session.target).replace(
+                cancel=session.cancel, session_id=session.session_id, generation=session.generation,
+            )
+            result = self._matchers[session.scan_kind](context, session.cancel, progress)
             batch = result if isinstance(result, ScanBatchResult) else ScanBatchResult(result)
             if not isinstance(batch.candidates, list):
                 raise ScannerError("matcher_failed", "matcher returned invalid candidates")

@@ -5,6 +5,7 @@ from threading import Event
 from PIL import Image
 from core import student_meta
 from core.scanner_session import ScannerError
+from core.scan_context import ScanContext
 from core.student_scan_recognizer import ratio_crop
 from core.student_weapon_recognizer import _normalized_correlation, _color_similarity
 
@@ -134,7 +135,7 @@ class StudentEntryRecovery:
                 button, expected = self.panels.regions['basic_info_button'], 'basic'
             else:
                 raise ScannerError('panel_wrong_start', 'unverified first-entry state; no input')
-            self.capture.click({**target, '_scanner_cancel': cancel},
+            self.capture.click(ScanContext.of(target).replace(cancel=cancel),
                                (button['x1']+button['x2'])/2, (button['y1']+button['y2'])/2)
             self.trace.append(dict(input=state, expected=expected))
             for _poll in range(3):

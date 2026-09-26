@@ -8,6 +8,7 @@ from typing import Any, Protocol
 from PIL import Image, ImageStat
 
 from core.scanner_session import ScannerError
+from core.scan_context import ScanContext
 from core.student_scan_recognizer import Observation, ratio_crop
 from core.student_weapon_recognizer import _color_similarity, _normalized_correlation
 
@@ -201,7 +202,7 @@ class StudentPanelRecovery:
         if self.baseline is not None:
             raise ScannerError("panel_active", "previous panel has not returned safely")
         self.trace = []
-        target = {**target, "_scanner_cancel": cancel}
+        target = ScanContext.of(target).replace(cancel=cancel)
         deadline = monotonic() + self.OPEN_SECONDS
         frame = self._observe(target, cancel, deadline)
         try:
@@ -227,7 +228,7 @@ class StudentPanelRecovery:
     def recapture(self, target, cancel, panel):
         if self.baseline is None or target.get("target_id") != self.target_id:
             raise ScannerError("panel_not_active", "recapture has no matching open panel")
-        return self._poll({**target, "_scanner_cancel": cancel}, cancel, panel, monotonic() + 2.0, 2)
+        return self._poll(ScanContext.of(target).replace(cancel=cancel), cancel, panel, monotonic() + 2.0, 2)
 
     def _clear_baseline(self):
         for image in self.baseline or ():
@@ -240,8 +241,8 @@ class StudentPanelRecovery:
             return
         if target.get("target_id") != self.target_id:
             raise ScannerError("panel_target_changed", "cleanup target differs from open target")
-        cleanup = {**target, "_scanner_cleanup": True, "_scanner_cancel": Event()}
-        cancel = cleanup["_scanner_cancel"]
+        cleanup = ScanContext.of(target).replace(cleanup=True, cancel=Event())
+        cancel = cleanup.cancel
         deadline = monotonic() + self.CLOSE_SECONDS
         try:
             for attempt in range(4):

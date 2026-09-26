@@ -4,6 +4,7 @@ import math
 from PIL import Image
 from core.inventory_catalog import CATALOG, ITEM_SCAN_PROFILES
 from core.scanner_session import ScannerError
+from core.scan_context import ScanContext
 from core.student_scan_recognizer import ratio_crop
 from core.student_weapon_recognizer import _normalized_correlation as correlation, _color_similarity as color_similarity
 
@@ -76,7 +77,7 @@ class InventoryNavigation:
         region=self.regions['controls'].get(name) or self.regions.get(name)
         if not isinstance(region,dict):raise ScannerError('region_missing',f'inventory control {name} is missing')
         x,y=_center(region)
-        self.capture.click({**target,'_scanner_cancel':cancel,'_scanner_cleanup':cleanup},x,y)
+        self.capture.click(ScanContext.of(target).replace(cancel=cancel,cleanup=cleanup),x,y)
         self.trace.append(dict(input=name,cleanup=cleanup))
 
     def observe(self,target,cancel,predicate,code,attempts=3):
@@ -176,12 +177,12 @@ class InventoryNavigation:
         track=self.regions['scroll_track'];x,start_y=track['x'],track['start_y'];end_y=track['end_y'][attempt-1]
         drag=getattr(self.capture,'drag_scroll',None)
         if callable(drag):
-            drag({**target,'_scanner_cancel':cancel},(x,start_y),(x,end_y))
+            drag(ScanContext.of(target).replace(cancel=cancel),(x,start_y),(x,end_y))
             self.trace.append(dict(input='drag_scroll',start=[x,start_y],end=[x,end_y],attempt=attempt))
         else:
             # Two wheel notches keep at least two complete overlap rows in the five-row viewport.
             delta=(-240,-360)[attempt-1]
-            self.capture.scroll({**target,'_scanner_cancel':cancel,'_scanner_scroll_point':(x,start_y)},delta)
+            self.capture.scroll(ScanContext.of(target).replace(cancel=cancel,scroll_point=(x,start_y)),delta)
             self.trace.append(dict(input='scroll',delta=delta,attempt=attempt,point=[x,start_y]))
 
     def confirm_terminal(self,target,cancel,before,source):

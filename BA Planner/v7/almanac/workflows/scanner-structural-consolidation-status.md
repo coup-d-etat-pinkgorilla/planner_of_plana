@@ -20,8 +20,9 @@ sources:
 | C0 기준선·golden 고정 | **완료** (2026-09-26) | `3a96abe` (branch `scanner-consolidation`) | — |
 | C1 계약 드리프트·이름 정리 | **완료** (2026-09-26, C1a~C1c) | `552ab99` | — |
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
-| C3 오케스트레이터 분해 | **진행 중: C3a~C3c 완료** (2026-09-26) | `3b20374` | C3d(X12 `ScanContext`) |
-| C4~C7 | 미착수 | — | 순서대로 |
+| C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
+| C4 임계값 레지스트리 | 미착수 | C3 golden | C4 착수(동작 보존, golden diff 0) |
+| C5~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
 
@@ -306,7 +307,7 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
 | C3a | X11 인벤토리 `__call__` 분해 + 상태 dataclass, X13 `DetailRecoveryResult` | **완료** |
 | C3b | X11 학생 `_scan_current`·`_scan_full` 분해 | **완료** |
 | C3c | X14 `PanelMenu` Protocol·validator 단일 시그니처·`ProgressSink`, `scanner_session.review` 분해 | **완료** |
-| C3d | X12 `ScanContext` frozen dataclass(target 컨텍스트 백 제거) | 미착수 |
+| C3d | X12 `ScanContext` frozen dataclass(target 컨텍스트 백 제거) | **완료** |
 
 ### C3a 결과
 
@@ -346,3 +347,27 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
 - 검증: Python 555 OK(golden 8/8 same 포함), Flutter 406 all passed.
 - 범위 내 상위 5개 함수 길이: `windows_scanner_adapter._render` 65, `scanner_session.commit` 62, `_read_slot` 50,
   `_scan_with_forms` 49, `_resolve_weapon` 48 — **80줄 조건 충족**.
+
+### C3d 결과
+
+- `core/scan_context.py`의 `ScanContext`(frozen dataclass): 공개 target 키는 `target`, 스캐너 상태는 타입 필드
+  `cancel`/`cleanup`/`scroll_point`/`session_id`/`generation`/`inventory_profile_verified`/`first_student`/`seen_students`.
+  `ScanContext.of()`가 dict·context를 모두 받고, 변형은 `replace()`로만 만든다.
+- core의 `{**target, '_scanner_*': ...}` 생성과 `target.get('_scanner_*')`·`'_first_student'`·`'_seen_students'`·
+  `'_inventory_profile_verified'` 조회를 전부 타입 필드로 바꿨다(인벤토리 상세·navigation·메뉴 adapter·학생 식별/폼/패널 복구·
+  학생/인벤토리 adapter). 세션은 `session.target` dict에 private 키를 주입하지 않고 matcher 호출 시 context를 만든다.
+- **어댑터 경계**: `ScanContext`는 읽기 전용 `Mapping`이기도 해서 capture/input port(`windows_scanner_adapter`)와 테스트 fake는
+  기존처럼 `target.get("_scanner_cancel")` 등 legacy 키로 읽는다. 이 이름이 남는 곳은 `scan_context.LEGACY_KEYS`와 port 구현뿐이다.
+  capture worker 전송은 기존대로 새 dict(`target_id`, `_window_identity`)를 만든다.
+- 검증: Python 555 OK(golden 8/8 same), Flutter 406 all passed. **미검증**: 실제 Windows adapter와의 실게임 smoke — 게임 창이 닫혀
+  있어(`target_not_ready`, 입력 없음) 실행하지 못했다. port의 Mapping 사용은 F1 fake-user32 테스트가 덮는다.
+
+### C3 완료 판정
+
+- golden diff **0**(C3a~C3d 매 slice), 전체 테스트 통과, 범위 내 최대 함수 65줄(`windows_scanner_adapter._render`) — 완료.
+- 관찰 가능한 차이는 C3a의 `inventory_restored` error details 키 제거 1건(소비자 없음).
+- C6로 넘기는 정리: 메뉴 adapter의 종류별 별칭(`capture_weapon_menu` 등), `profile_id` 병행 필드(D11).
+
+### 다음 행동
+
+- C4 착수: `recognition_thresholds.py` 레지스트리로 리터럴을 옮긴다(값 불변, golden diff 0).

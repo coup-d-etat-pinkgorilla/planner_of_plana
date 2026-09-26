@@ -4,6 +4,7 @@ from threading import Event
 from PIL import Image
 from core.inventory_catalog import BY_KEY
 from core.scanner_session import ScannerError
+from core.scan_context import ScanContext
 from core.student_scan_recognizer import ratio_crop, quad_crop
 from core.student_weapon_recognizer import _normalized_correlation as correlation, _color_similarity as color_similarity
 
@@ -196,8 +197,9 @@ class InventoryDetailRecovery:
         frame.close()
         slot=self.recognizer.regions['sources'][source]['grid_slots'][slot_index]
         if cancel.is_set():raise ScannerError('cancelled','inventory selection cancelled')
-        self.capture.click({**target,'_scanner_cancel':cancel},slot['cx'],slot['cy'])
-        self.trace.append(dict(input='select_slot',slot=slot_index,cleanup=target.get('_scanner_cleanup',False)))
+        context=ScanContext.of(target)
+        self.capture.click(context.replace(cancel=cancel),slot['cx'],slot['cy'])
+        self.trace.append(dict(input='select_slot',slot=slot_index,cleanup=bool(context.cleanup)))
         if cancel.wait(.25):raise ScannerError('cancelled','inventory selection cancelled')
         frame,_=self.observe_selection(target,cancel,baseline,source,slot_index)
         return frame
@@ -219,7 +221,7 @@ class InventoryDetailRecovery:
         finally:
             cleanup=Event()
             try:
-                with self.select({**target,'_scanner_cleanup':True,'_scanner_cancel':cleanup},cleanup,baseline,source,original):pass
+                with self.select(ScanContext.of(target).replace(cleanup=True,cancel=cleanup),cleanup,baseline,source,original):pass
                 self.trace.append(dict(restored=original))
             except Exception as exc:raise ScannerError('inventory_restore_failed','original page/selection unverified') from exc
         if failure:

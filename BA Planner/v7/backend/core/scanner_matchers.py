@@ -11,6 +11,7 @@ from core.recognition_assets import RecognitionAssetCatalog
 from core.recognition_answer_samples import RecognitionAnswerSampleStore
 from core.inventory_catalog import CATALOG, CATALOG_REVISION
 from core.scanner_session import ScanBatchResult, ScannerError
+from core.scan_context import ScanContext
 from core.student_scan_recognizer import Observation, StudentBasicCropSet, StudentBasicRecognizer
 from core.student_equipment_recognizer import EquipmentMenuRecognizer, StudentEquipmentRecognizer
 from core.student_weapon_recognizer import StudentWeaponRecognizer
@@ -56,7 +57,7 @@ class SkillMenuCaptureAdapter:
                 raise ScannerError("panel_read_failed","skill show-all state is unknown")
             if check.value is False:
                 if cancel.is_set(): raise ScannerError("cancelled","skill check cancelled")
-                self.port.click({**target,"_scanner_cancel":cancel},
+                self.port.click(ScanContext.of(target).replace(cancel=cancel),
                     *self.recovery._center(self.recognizer.regions["skill_all_view_check_region"]))
                 self.recovery.trace.append({"input":"enable_show_all","panel":"skill"})
                 frame.close()
@@ -119,7 +120,7 @@ class EquipmentMenuCaptureAdapter:
                 checked = self._check(frame, cancel)
             if checked is False:
                 if cancel.is_set(): raise ScannerError("cancelled", "equipment enable cancelled")
-                self.port.click({**target, "_scanner_cancel": cancel},
+                self.port.click(ScanContext.of(target).replace(cancel=cancel),
                     *self.recovery._center(self.regions["equipment_all_view_check_region"]))
                 self.recovery.trace.append({"input": "enable_show_all", "panel": "equipment"})
                 frame.close()
@@ -773,7 +774,7 @@ class StudentMatcherAdapter:
                     recovery.state = state
                 if state != 'basic':
                     frame.close()
-                    if not entered and attempts == 0 and target.get('_first_student', True) and self.entry_recovery is not None:
+                    if not entered and attempts == 0 and ScanContext.of(target).first_student is not False and self.entry_recovery is not None:
                         entered = True
                         self.entry_recovery.recover(target, cancel, state)
                         continue
@@ -1027,7 +1028,7 @@ class StudentMatcherAdapter:
         original = rows[0]
         original_ref = original['payload']['student_id']
         base, _ = student_meta.split_form_ref(original_ref)
-        if not student_meta.is_multi_form(base) or base in target.get('_seen_students', ()):
+        if not student_meta.is_multi_form(base) or base in (ScanContext.of(target).seen_students or ()):
             return rows
         combat = {'combat_hp': ('hp', 4), 'combat_atk': ('atk', 2),
                   'combat_def': ('def', 1), 'combat_heal': ('heal', 2)}
@@ -1071,9 +1072,9 @@ class StudentMatcherAdapter:
         return rows
 
     def __call__(self, target: dict[str, Any], cancel: Event, progress: Callable[..., None]) -> list[dict[str, Any]] | ScanBatchResult:
-        target = {**target, "_scanner_cancel": cancel}
-        session_id = str(target.get("_scanner_session_id") or "standalone")
-        generation = target.get("_scanner_generation", 1)
+        target = ScanContext.of(target).replace(cancel=cancel)
+        session_id = str(target.session_id or "standalone")
+        generation = target.generation if target.generation is not None else 1
         self.session_calibration = SessionCalibrationStore(
             session_id,
             int(generation) if isinstance(generation, int) and not isinstance(generation, bool) else 1,
@@ -1152,7 +1153,7 @@ class StudentMatcherAdapter:
         """Scan the student on screen; (base student id, rows), or None when cancelled without a candidate."""
         current_progress = _CollectedProgress(progress, results)
         try:
-            scanned = self._scan_with_forms({**target, '_first_student': not seen, '_seen_students': tuple(seen)}, cancel, current_progress)
+            scanned = self._scan_with_forms(ScanContext.of(target).replace(first_student=not seen, seen_students=tuple(seen)), cancel, current_progress)
         except ScannerError as exc:
             results.extend(getattr(exc, 'completed_candidates', []))
             raise
@@ -1296,7 +1297,7 @@ class InventoryMatcherAdapter:
             raise ScannerError("region_missing", "inventory grid slots are missing")
 
     def __call__(self, target: dict[str, Any], cancel: Event, progress: Callable[[int, int | None, str], None]) -> list[dict[str, Any]] | ScanBatchResult:
-        target = {**target, "_scanner_cancel": cancel}
+        target = ScanContext.of(target).replace(cancel=cancel)
         frame = self.capture.wait_stable(target, cancel)
         scan = _InventoryScan(frame=frame, source_size=frame.size, target=target, slots=self.slots)
         try:
@@ -1332,7 +1333,7 @@ class InventoryMatcherAdapter:
             scan.frame.close()
             scan.frame = self.capture.wait_stable(scan.target, cancel)
             scan.source_kind = scan.prepared.source
-            scan.target = {**scan.target, 'inventory_scan_profile': scan.prepared.profile_id}
+            scan.target = scan.target.replace(inventory_scan_profile=scan.prepared.profile_id)
         self._load_answer_samples(scan.target.get("profile_id"), scan.source_size)
         if scan.prepared is not None:
             scan.allowed_ids = {row.item_id for row in CATALOG if row.profile_id == scan.prepared.profile_id}
@@ -1380,7 +1381,7 @@ class InventoryMatcherAdapter:
                 })
                 scan.review_required = True
             scan.observed_profile_ids.extend(page_ids)
-            scan.target = {**scan.target, '_inventory_profile_verified': bool(page_ids) and not page_unresolved}
+            scan.target = scan.target.replace(inventory_profile_verified=bool(page_ids) and not page_unresolved)
 
     def _read_slot(self, scan: "_InventoryScan", page: int, slot_index: int, crop: Image.Image, cancel: Event) -> "_SlotReading | None":
         """Match one visible slot, consult the detail panel when needed and apply the profile gate."""
@@ -1437,7 +1438,7 @@ class InventoryMatcherAdapter:
                       match: Match, count: CountMatch, confident: bool, cancel: Event) -> None:
         outcome = self.detail_recovery.resolve(
             scan.target, cancel, scan.frame, slot_index, reading.identity, count.value, confident,
-            profile_verified=scan.target.get('_inventory_profile_verified') is True,
+            profile_verified=scan.target.inventory_profile_verified is True,
             scan_profile=scan.target.get('inventory_scan_profile'))
         if outcome.failure is not None:
             # Only a verified return to the original selection makes a failed read partial.
