@@ -17,6 +17,15 @@ MIGRATED = (
     "core/scanner_matchers.py",
     "core/inventory_navigation.py",
     "core/inventory_detail_recovery.py",
+    "core/student_panel_recovery.py",
+    "core/student_identity_recovery.py",
+    "core/student_equipment_recovery.py",
+    "core/student_weapon_recognizer.py",
+    "core/student_level_recognizer.py",
+    "core/student_star_recognizer.py",
+    "core/student_skill_recognizer.py",
+    "core/student_potential_recognizer.py",
+    "core/studio_numeric_bank.py",
 )
 NAMES = ("threshold", "margin", "floor", "minimum", "min_score", "min_margin", "score", "tolerance")
 # (file, value, detector) -> reason. Not thresholds: neutral defaults, blend weights, geometry.
@@ -25,6 +34,13 @@ ALLOWLIST = {
     ("core/scanner_matchers.py", 0.0, "default:margin"): "TemplateMatcher.match: 0 means no gate; callers pass registry values",
     ("core/inventory_detail_recovery.py", 0.4, "assign"): "visual/name blend weight of the detail identity score",
     ("core/inventory_detail_recovery.py", 0.6, "assign"): "visual/name blend weight of the detail identity score",
+    ("core/student_identity_recovery.py", 0.7, "assign"): "correlation/colour blend weight of the attribute score",
+    ("core/student_identity_recovery.py", 0.3, "assign"): "correlation/colour blend weight of the attribute score",
+    ("core/student_identity_recovery.py", 0.35, "assign"): "correlation/colour blend weight of the entry-screen flag score",
+    ("core/student_identity_recovery.py", 0.65, "assign"): "correlation/colour blend weight of the entry-screen flag score",
+    ("core/student_weapon_recognizer.py", 0.0, "assign"): "min(..., default=0.0): no digit read means zero score",
+    ("core/student_potential_recognizer.py", 0.55, "assign"): "IoU/correlation blend weight of the basic potential glyph score",
+    ("core/student_potential_recognizer.py", 0.45, "assign"): "IoU/correlation blend weight of the basic potential glyph score",
 }
 
 
@@ -73,8 +89,8 @@ class RecognitionThresholdRegistryTests(unittest.TestCase):
     def test_every_entry_is_named_typed_and_traceable(self):
         for entry in rt.THRESHOLDS.values():
             with self.subTest(name=entry.name):
-                self.assertIn(entry.kind, {"score", "margin", "similarity", "ratio"})
-                self.assertTrue(0 <= entry.value <= 1)
+                self.assertIn(entry.kind, {"score", "margin", "similarity", "ratio", "intensity"})
+                self.assertTrue(0 <= entry.value <= (255 if entry.kind == "intensity" else 1))
                 self.assertRegex(entry.phase, r"^(P\d+|F\d+|S\d+[a-z]?|D\d+|C\d+)$")
                 self.assertTrue((V7 / entry.doc).exists(), entry.doc)
                 self.assertIn(entry.resolution, {"*", "native1280", "native2560"})

@@ -6,6 +6,7 @@ from core.student_scan_recognizer import (
 )
 from core.student_weapon_recognizer import StudentWeaponRecognizer
 from core.student_panel_recovery import read_panel_fields
+from core import recognition_thresholds as rt
 
 SKILL_REGIONS = {"ex_skill":"EX_skill", "skill1":"Skill_1", "skill2":"Skill_2", "skill3":"Skill_3"}
 SKILL_UNLOCKS = {"skill2":2, "skill3":3}
@@ -28,7 +29,7 @@ class StudentSkillRecognizer:
             with crop.convert("L") as gray:
                 signal = ImageStat.Stat(gray)
             label,score,margin = StudentWeaponRecognizer._rank(crop,self.check_templates)
-            ok = label in {"true","false"} and score >= .75 and margin >= .10 and signal.stddev[0] >= 8
+            ok = label in {"true","false"} and score >= rt.value("student.skill.show_all.score") and margin >= rt.value("student.skill.show_all.margin") and signal.stddev[0] >= 8
             return Observation(label == "true" if ok else None,score,"ok" if ok else "uncertain",
                                "skill_show_all_template",f"label={label};margin={margin:.6f}")
 
@@ -73,7 +74,7 @@ class StudentSkillRecognizer:
         ranked.sort(reverse=True)
         score,label = ranked[0] if ranked else (0,None)
         margin = score-ranked[1][0] if len(ranked)>1 else score
-        ok = label is not None and label.isdigit() and score >= .70 and margin >= .035
+        ok = label is not None and label.isdigit() and score >= rt.value("student.skill.menu_digit.score") and margin >= rt.value("student.skill.menu_digit.margin")
         return Observation(int(label) if ok else None,score,"ok" if ok else "uncertain",
                            "skill_menu_template",f"field={field};label={label};margin={margin:.6f}")
 

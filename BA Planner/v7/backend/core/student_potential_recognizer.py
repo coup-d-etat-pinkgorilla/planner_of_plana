@@ -13,6 +13,7 @@ from core.student_scan_recognizer import (
 )
 from core.student_weapon_recognizer import _normalized_correlation
 from core.student_panel_recovery import read_panel_fields
+from core import recognition_thresholds as rt
 
 
 POTENTIAL_FIELDS = ("stat_hp", "stat_atk", "stat_heal")
@@ -196,12 +197,13 @@ class StudentPotentialRecognizer:
         count = max(1, len(pixels))
         ratio = sum(_blue(p) for p in pixels)/count
         note = f"blue_ratio={ratio:.6f}"
-        if ratio >= .08:
+        if ratio >= rt.value("student.potential.badge.blue_present"):
             return Observation("present", min(1, ratio/.15), "ok", "potential_badge_color", note)
         light = sum(min(p) >= 180 and max(p)-min(p) < 55 for p in pixels)/count
         dark = sum(max(p) < 150 for p in pixels)/count
-        if ratio <= .02 and light >= .65 and dark >= .005:
-            return Observation("absent", 1-ratio/.02, "ok", "potential_badge_color", note)
+        absent_ratio = rt.value("student.potential.badge.blue_absent")
+        if ratio <= absent_ratio and light >= rt.value("student.potential.badge.light_absent") and dark >= rt.value("student.potential.badge.dark_absent"):
+            return Observation("absent", 1-ratio/absent_ratio, "ok", "potential_badge_color", note)
         return Observation(None, 0, "dependency_missing", "potential_badge_color", note+";absence unconfirmed")
 
     def read_value(self, crop, kind):
@@ -220,11 +222,11 @@ class StudentPotentialRecognizer:
         value, score = scores[0] if scores else (None, 0)
         margin = score-scores[1][1] if len(scores) > 1 else 0
         # Basic uses the two v6 acceptance branches for whole-pattern matching.
-        minimum_margin = .035
+        minimum_margin = rt.value("student.potential.basic.margin")
         blue_ratio = _blue_ratio(crop)
         confirmed = value is not None and (
-            (score >= .78 and margin >= minimum_margin)
-            or (score >= .62 and margin >= .30 and blue_ratio >= .08)
+            (score >= rt.value("student.potential.basic.score") and margin >= minimum_margin)
+            or (score >= rt.value("student.potential.basic_badge.score") and margin >= rt.value("student.potential.basic_badge.margin") and blue_ratio >= rt.value("student.potential.badge.blue_present"))
         )
         return Observation(value if confirmed else None, score, "ok" if confirmed else "dependency_missing",
                            "potential_"+kind+"_template",
@@ -256,10 +258,10 @@ class StudentPotentialRecognizer:
         # Preserve v6's narrow 4 -> 0 correction for low-confidence ties.
         if value == 4 and 0 in scores:
             zero_score, zero_ui, zero_text = scores[0]
-            if score < .72 and zero_score >= score-.03 and zero_text >= text:
+            if score < rt.value("student.potential.zero_correction.below") and zero_score >= score-rt.value("student.potential.zero_correction.tolerance") and zero_text >= text:
                 value, score, ui, text = 0, zero_score, zero_ui, zero_text
 
-        confirmed = score >= .60
+        confirmed = score >= rt.value("student.potential.menu.score")
         return Observation(
             value if confirmed else None,
             score,

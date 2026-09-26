@@ -21,7 +21,7 @@ sources:
 | C1 계약 드리프트·이름 정리 | **완료** (2026-09-26, C1a~C1c) | `552ab99` | — |
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
 | C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
-| C4 임계값 레지스트리 | **진행 중: C4a 완료** (2026-09-26) | `d4f030e` | C4b(학생 패널·복구·보조 recognizer) |
+| C4 임계값 레지스트리 | **진행 중: C4a·C4b 완료** (2026-09-26) | `d4f030e` | C4c(`student_scan_recognizer`·`student_equipment_recognizer`) |
 | C5~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -390,7 +390,7 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
 | Slice | 파일 | 상태 |
 |---|---|---|
 | C4a | `scanner_matchers`, `inventory_navigation`, `inventory_detail_recovery` (29 항목) | **완료** |
-| C4b | `student_panel_recovery`, `student_identity_recovery`, `student_equipment_recovery`, weapon/level/star/skill/potential recognizer, `studio_numeric_bank` | 미착수 |
+| C4b | `student_panel_recovery`, `student_identity_recovery`, `student_equipment_recovery`, weapon/level/star/skill/potential recognizer, `studio_numeric_bank` (46 항목) | **완료** |
 | C4c | `student_scan_recognizer`, `student_equipment_recognizer` | 미착수 |
 
 ### "같은 프레임" 임계 세 가지 (값 유지, 통일은 C7 결정)
@@ -407,3 +407,16 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
   `inventory.profile_gate.outside_score`(.55, F12)와 `inventory.grid_icon.floor_without_detail`(.55, P5)은 값은 같지만 다른 결정이라
   이름을 나눴다. C2의 tail 재확인은 `inventory.scroll.no_motion_same`을 공유한다.
 - 검증: 검사기 4 tests OK(허용 목록 stale 없음), inventory 50·scanner 73 tests OK, golden **8/8 same**.
+
+### C4b 결과
+
+- 46개 항목 추가(누적 75): 패널 전환 F2, 엔트리 복구 F8, 장비 메뉴 컨트롤 F7, 무기 basic S2(2026-09-05 보고서), level F4, star F5,
+  skill F6, potential F3, studio glyph 높이 비 S3b. 8비트 밝기 gate(`student.weapon.signal.min_mean` 35, `min_stddev` 8)는
+  `kind="intensity"`(0~255)로 등록했다. 정수 밝기 gate(`>= 210`, `>= 80` 등)는 float 규칙 밖이라 그대로 두었다 — C7 감사 대상.
+- X23 특수 사례 중 potential `4→0` 보정의 두 값(`zero_correction.below` .72, `.tolerance` .03)은 규칙에 잡히지 않는 산술식
+  (`score-.03`)이지만 명시적으로 등록해 C7 표의 근거로 쓴다. 무기 0.57·whole-bank 0.49·인연 0.38/0.005는 C4c 파일에 있다.
+- 허용 목록 추가: 식별 복구 가중치 .7/.3·.35/.65, potential basic glyph 가중치 .55/.45, 무기 `min(default=0.0)`.
+- 검증: 검사기 OK, Python 전체 559 OK(golden 8/8 same). 레지스트리 조회는 1백만 회 0.11s — 전체 테스트 시간 변동(255→431s)은
+  동일 커밋에서도 나타나는 시스템 부하 차이로 판단했다(potential 테스트 24개에서 조회 213회).
+- 작업 사고 기록: 시간 비교 중 `git stash`로 작업 트리 전체(사용자 미커밋 frontend 변경 포함)를 잠시 stash했다가 즉시 pop했다.
+  stash 목록 0, frontend·almanac 미커밋 diff 11 files +1383/−620이 그대로임을 확인했다.

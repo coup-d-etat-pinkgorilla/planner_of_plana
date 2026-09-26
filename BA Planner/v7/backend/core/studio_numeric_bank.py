@@ -10,6 +10,7 @@ from PIL import Image, ImageChops
 
 from core.recognition_assets import RecognitionAssetCatalog
 from core.scanner_session import ScannerError
+from core import recognition_thresholds as rt
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,7 +63,7 @@ def _keep_component(mask: Image.Image, *, prefer_largest_tall: bool) -> Image.Im
     if not components:
         return result
     if prefer_largest_tall:
-        minimum_height = max(3, round(mask.height * 0.30))
+        minimum_height = max(3, round(mask.height * rt.value("studio.glyph.min_height_ratio")))
         tall = [
             component
             for component in components

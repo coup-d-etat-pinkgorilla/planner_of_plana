@@ -4,7 +4,7 @@ Each entry keeps the value it had when it was introduced; C4 only moves values h
 value is a C7 decision recorded in the scanner consolidation status document.
 
 ``field`` / ``source`` / ``resolution`` describe where a threshold applies ("*" = any,
-"native1280" / "native2560" = resolution-specific). ``kind`` is score, margin, similarity or ratio.
+"native1280" / "native2560" = resolution-specific). ``kind`` is score, margin, similarity, ratio, or intensity (8-bit luminance).
 """
 from __future__ import annotations
 
@@ -12,6 +12,15 @@ from dataclasses import dataclass
 
 
 P5 = "docs/migration/p5-scanner-matcher/scanner-runtime.md"
+F2 = "docs/migration/scanner-fallback-restoration/f2-results.md"
+F3 = "docs/migration/scanner-fallback-restoration/f3-results.md"
+F4 = "docs/migration/scanner-fallback-restoration/f4-results.md"
+F5 = "docs/migration/scanner-fallback-restoration/f5-results.md"
+F6 = "docs/migration/scanner-fallback-restoration/f6-results.md"
+F7 = "docs/migration/scanner-fallback-restoration/f7-results.md"
+F8 = "docs/migration/scanner-fallback-restoration/f8-results.md"
+S2W = "docs/migration/student-weapon-basic-recognition-2026-09-05.md"
+S3B_POSITION = "docs/migration/student-scan-v7-session-s3b-position-bank-handoff"
 F9 = "docs/migration/scanner-fallback-restoration/f9-results.md"
 F10 = "docs/migration/scanner-fallback-restoration/f10-results.md"
 F12 = "docs/migration/scanner-fallback-restoration/f12-results.md"
@@ -69,6 +78,68 @@ _ENTRIES = (
     # Student adapter identity defaults (P5).
     Threshold("student.identity.template.score", 0.82, "score", "P5", P5, "student_id", "student_texture_template"),
     Threshold("student.identity.template.margin", 0.04, "margin", "P5", P5, "student_id", "student_texture_template"),
+    # Student panel transitions (F2).
+    Threshold("student.panel.tab.correlation_floor", 0.75, "score", "F2", F2, "panel_state", "active_tab",
+              note="an active tab needs this glyph correlation before its colour score counts"),
+    Threshold("student.panel.title.score", 0.86, "score", "F2", F2, "panel_state", "panel_title"),
+    Threshold("student.panel.title.margin", 0.04, "margin", "F2", F2, "panel_state", "panel_title"),
+    Threshold("student.panel.title.ambiguous", 0.70, "score", "F2", F2, "panel_state", "panel_title",
+              note="a panel title this strong but not decisive blocks reading the dimmed tab underneath"),
+    Threshold("student.panel.tab.score", 0.90, "score", "F2", F2, "panel_state", "active_tab"),
+    Threshold("student.panel.same_student.name_color", 0.985, "similarity", "F2", F2, "student_id", "panel_return"),
+    Threshold("student.panel.same_student.portrait_color", 0.90, "similarity", "F2", F2, "student_id", "panel_return"),
+    # Student entry / list recovery (F8).
+    Threshold("student.entry.screen.score", 0.90, "score", "F8", F8, "screen_state", "entry_screen"),
+    Threshold("student.entry.screen.margin", 0.10, "margin", "F8", F8, "screen_state", "entry_screen"),
+    Threshold("student.entry.list_card.score", 0.90, "score", "F8", F8, "screen_state", "student_list_card"),
+    # Equipment menu controls (F7).
+    Threshold("student.equipment.show_all.score", 0.75, "score", "F7", F7, "equipment_show_all", "equipment_show_all_template"),
+    Threshold("student.equipment.show_all.margin", 0.10, "margin", "F7", F7, "equipment_show_all", "equipment_show_all_template"),
+    Threshold("student.equipment.growth_off.light", 0.90, "ratio", "F7", F7, "equipment_growth", "equipment_growth_template"),
+    Threshold("student.equipment.growth_off.neutral_card", 0.90, "ratio", "F7", F7, "equipment_growth", "equipment_growth_template"),
+    # Student weapon basic reads (S2 weapon).
+    Threshold("student.weapon.signal.min_mean", 35.0, "intensity", "S2", S2W, "weapon_level", "basic_weapon_level_glyph"),
+    Threshold("student.weapon.signal.min_stddev", 8.0, "intensity", "S2", S2W, "weapon_level", "basic_weapon_level_glyph"),
+    Threshold("student.weapon.state.score", 0.72, "score", "S2", S2W, "weapon_state", "basic_weapon_state_template"),
+    Threshold("student.weapon.state.margin", 0.10, "margin", "S2", S2W, "weapon_state", "basic_weapon_state_template"),
+    Threshold("student.weapon.menu_star.score", 0.60, "score", "S2", S2W, "weapon_star", "weapon_menu_star"),
+    Threshold("student.weapon.menu_star.margin", 0.02, "margin", "S2", S2W, "weapon_star", "weapon_menu_star"),
+    Threshold("student.weapon.menu_level.null_second_digit", 0.60, "score", "S2", S2W, "weapon_level", "weapon_menu_level",
+              note="a blank second digit this confident means a one-digit level"),
+    Threshold("student.weapon.menu_level.score", 0.55, "score", "S2", S2W, "weapon_level", "weapon_menu_level"),
+    Threshold("student.weapon.menu_level.margin", 0.015, "margin", "S2", S2W, "weapon_level", "weapon_menu_level"),
+    # Student level tab (F4).
+    Threshold("student.level.blank_occupancy", 0.005, "ratio", "F4", F4, "level", "level_tab_template"),
+    Threshold("student.level.glyph_occupancy.min", 0.025, "ratio", "F4", F4, "level", "level_tab_template"),
+    Threshold("student.level.glyph_occupancy.max", 0.75, "ratio", "F4", F4, "level", "level_tab_template"),
+    Threshold("student.level.tab.score", 0.58, "score", "F4", F4, "level", "level_tab_template"),
+    Threshold("student.level.tab.margin", 0.035, "margin", "F4", F4, "level", "level_tab_template"),
+    # Student star tab (F5).
+    Threshold("student.star.tab.score", 0.60, "score", "F5", F5, "student_star", "star_tab_template"),
+    Threshold("student.star.tab.margin", 0.035, "margin", "F5", F5, "student_star", "star_tab_template"),
+    # Student skill panel (F6).
+    Threshold("student.skill.show_all.score", 0.75, "score", "F6", F6, "skill_show_all", "skill_show_all_template"),
+    Threshold("student.skill.show_all.margin", 0.10, "margin", "F6", F6, "skill_show_all", "skill_show_all_template"),
+    Threshold("student.skill.menu_digit.score", 0.70, "score", "F6", F6, "skill", "skill_menu_digit"),
+    Threshold("student.skill.menu_digit.margin", 0.035, "margin", "F6", F6, "skill", "skill_menu_digit"),
+    # Student potential (F3).
+    Threshold("student.potential.badge.blue_present", 0.08, "ratio", "F3", F3, "stat_*", "potential_badge"),
+    Threshold("student.potential.badge.blue_absent", 0.02, "ratio", "F3", F3, "stat_*", "potential_badge_absent"),
+    Threshold("student.potential.badge.light_absent", 0.65, "ratio", "F3", F3, "stat_*", "potential_badge_absent"),
+    Threshold("student.potential.badge.dark_absent", 0.005, "ratio", "F3", F3, "stat_*", "potential_badge_absent"),
+    Threshold("student.potential.basic.margin", 0.035, "margin", "F3", F3, "stat_*", "potential_basic_template"),
+    Threshold("student.potential.basic.score", 0.78, "score", "F3", F3, "stat_*", "potential_basic_template"),
+    Threshold("student.potential.basic_badge.score", 0.62, "score", "F3", F3, "stat_*", "potential_basic_template",
+              note="weaker glyph score accepted only with a wide margin and a present blue badge"),
+    Threshold("student.potential.basic_badge.margin", 0.30, "margin", "F3", F3, "stat_*", "potential_basic_template"),
+    Threshold("student.potential.zero_correction.below", 0.72, "score", "F3", F3, "stat_*", "potential_basic_template",
+              note="X23 '4->0' correction applies only under this score"),
+    Threshold("student.potential.zero_correction.tolerance", 0.03, "margin", "F3", F3, "stat_*", "potential_basic_template",
+              note="X23: zero may trail the best label by this much"),
+    Threshold("student.potential.menu.score", 0.60, "score", "F3", F3, "stat_*", "potential_menu"),
+    # Studio numeric bank (S3b position bank).
+    Threshold("studio.glyph.min_height_ratio", 0.30, "ratio", "S3b", S3B_POSITION, "digit", "studio_numeric_bank",
+              note="connected components shorter than this share of the cell are not digits"),
 )
 
 THRESHOLDS: dict[str, Threshold] = {entry.name: entry for entry in _ENTRIES}

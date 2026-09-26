@@ -4,6 +4,7 @@ from PIL import Image, ImageStat
 from core.student_scan_recognizer import Observation, ratio_crop
 from core.student_panel_recovery import merge_observation, read_panel_fields
 from core.student_weapon_recognizer import StudentWeaponRecognizer
+from core import recognition_thresholds as rt
 
 
 class StudentStarRecognizer:
@@ -28,7 +29,7 @@ class StudentStarRecognizer:
             with crop.convert("L") as gray:
                 signal = ImageStat.Stat(gray)
             label, score, margin = StudentWeaponRecognizer._rank(crop, self._bank())
-            confirmed = (label in {"1", "2", "3", "4", "5"} and score >= .60 and margin >= .035
+            confirmed = (label in {"1", "2", "3", "4", "5"} and score >= rt.value("student.star.tab.score") and margin >= rt.value("student.star.tab.margin")
                          and signal.mean[0] >= 80 and signal.stddev[0] >= 12)
             return {"student_star": Observation(int(label) if confirmed else None, score,
                     "ok" if confirmed else "uncertain", "star_tab_template",
