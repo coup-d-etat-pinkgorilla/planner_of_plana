@@ -26,6 +26,7 @@ S4 = "docs/migration/student-scan-v7-session-s4-input.md"
 D2 = "docs/migration/scanner-fallback-restoration/f12-d2-audit.json"
 S3B_POSITION = "docs/migration/student-scan-v7-session-s3b-position-bank-handoff"
 F9 = "docs/migration/scanner-fallback-restoration/f9-results.md"
+C5 = "almanac/workflows/scanner-structural-consolidation-status.md"
 F10 = "docs/migration/scanner-fallback-restoration/f10-results.md"
 F12 = "docs/migration/scanner-fallback-restoration/f12-results.md"
 
@@ -207,6 +208,14 @@ _ENTRIES = (
     Threshold("student.equipment.d2.candidate_margin", 0.15, "margin", "D2", D2, "equip*", "equipment_menu_tier_d2"),
     Threshold("student.equipment.d2.independent_digit_floor", 0.80, "score", "D2", D2, "equip*_level", "equipment_menu_tier_d2"),
     Threshold("student.equipment.d2.digit_margin", 0.15, "margin", "D2", D2, "equip*_level", "equipment_menu_tier_d2"),
+    # Inventory category filter boxes (C5, measured on the live 1280 client).
+    Threshold("inventory.category.selected_cyan", 0.20, "ratio", "C5", C5, "category", "category_box",
+              note="bright cyan check: the explicitly selected category (live 0.375; empty 0)"),
+    Threshold("inventory.category.empty_cyan_max", 0.02, "ratio", "C5", C5, "category", "category_box"),
+    Threshold("inventory.category.empty_grey_max", 0.05, "ratio", "C5", C5, "category", "category_box",
+              note="grey check after reset means 'all categories' (live 0.19), never an empty box"),
+    Threshold("inventory.menu.tab_active_white", 0.50, "ratio", "C5", C5, "menu", "display_tab",
+              note="share of white pixels in a display-settings tab button when it is active (live 0.90 / 0.93; inactive 0)"),
 )
 
 THRESHOLDS: dict[str, Threshold] = {entry.name: entry for entry in _ENTRIES}

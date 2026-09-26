@@ -159,7 +159,7 @@
   {
    "id": "inventory_item_tech_notes_1280",
    "scan_kind": "inventory",
-   "coverage": "inventory item profile tech_notes, prepare + 6 recorded pages ending in verified_tail_residual; detail slot selection has no recorded frames (stays on page)",
+   "coverage": "inventory item profile tech_notes, prepare + 6 recorded pages ending in verified_tail_residual; detail slot selection has no recorded frames (stays on page); C5: category reset/selection screens are live C5 frames (composite with F10 grid frames)",
    "target": {
     "inventory_scan_profile": "tech_notes"
    },
@@ -200,21 +200,35 @@
     "page5": {
      "path": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-19.png",
      "sha256": "059a67b7b4a80d49e99c6953e4cb6b242ce46e8fb98837cb41cdf8faae22bc9a"
+    },
+    "menu_reset": {
+     "path": "debug/scanner_c5_live/category/01-after-reset.png",
+     "sha256": "96a452b96194fef6da5203616e5e70bd258389b8749f028c68184ea7db07fa9d"
+    },
+    "menu_category": {
+     "path": "debug/scanner_c5_live/category/02-note-clicked.png",
+     "sha256": "4148ade6b13dee9b263a6011dd80d8c6807846458cb061a3129fc6af24c7e72a"
+    },
+    "menu_filter_tab": {
+     "path": "debug/scanner_c2_live/menu/02-filter-tab.png",
+     "sha256": "f3e1c2ca7b4a7bbc3fbdb87ad2f3361b972eb71a8db6e9443544e0c4ce41aad6"
     }
    },
    "transitions": {
     "grid_initial": {
-     "click:filtermenu_button": "menu_filter"
+     "click:filtermenu_button": "menu_sort"
     },
     "menu_filter": {
      "click:filter_confirm_button": "page0",
      "click:filter_tab": "menu_filter",
-     "click:sort_tab": "menu_sort"
+     "click:sort_tab": "menu_sort",
+     "click:filter_reset_button": "menu_reset"
     },
     "menu_sort": {
      "click:filter_confirm_button": "page0",
-     "click:filter_tab": "menu_filter",
-     "click:sort_tab": "menu_sort"
+     "click:filter_tab": "menu_filter_tab",
+     "click:sort_tab": "menu_sort",
+     "click:filter_cancel_button": "grid_initial"
     },
     "page0": {
      "drag": "page1",
@@ -245,6 +259,22 @@
      "drag": "page5",
      "scroll": "page5",
      "click:filtermenu_button": "menu_filter"
+    },
+    "menu_reset": {
+     "click:note_filter": "menu_category",
+     "click:filter_tab": "menu_reset",
+     "click:filter_cancel_button": "grid_initial"
+    },
+    "menu_category": {
+     "click:sort_tab": "menu_sort",
+     "click:filter_tab": "menu_category",
+     "click:filter_cancel_button": "grid_initial"
+    },
+    "menu_filter_tab": {
+     "click:filter_reset_button": "menu_reset",
+     "click:filter_tab": "menu_filter_tab",
+     "click:sort_tab": "menu_sort",
+     "click:filter_cancel_button": "grid_initial"
     }
    }
   },

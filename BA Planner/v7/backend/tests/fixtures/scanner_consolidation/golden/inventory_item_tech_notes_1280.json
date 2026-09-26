@@ -7,24 +7,46 @@
    "names": [
     "filtermenu_button"
    ],
-   "to": "menu_filter",
+   "to": "menu_sort",
    "x": 0.841015,
    "y": 0.159027
   },
   {
    "cleanup": false,
-   "from": "menu_filter",
+   "from": "menu_sort",
    "input": "click",
    "names": [
     "filter_tab"
    ],
-   "to": "menu_filter",
+   "to": "menu_filter_tab",
    "x": 0.113281,
    "y": 0.21493
   },
   {
    "cleanup": false,
-   "from": "menu_filter",
+   "from": "menu_filter_tab",
+   "input": "click",
+   "names": [
+    "filter_reset_button"
+   ],
+   "to": "menu_reset",
+   "x": 0.867773,
+   "y": 0.226042
+  },
+  {
+   "cleanup": false,
+   "from": "menu_reset",
+   "input": "click",
+   "names": [
+    "note_filter"
+   ],
+   "to": "menu_category",
+   "x": 0.227149,
+   "y": 0.488889
+  },
+  {
+   "cleanup": false,
+   "from": "menu_category",
    "input": "click",
    "names": [
     "sort_tab"
@@ -45,583 +67,434 @@
    "y": 0.827778
   },
   {
-   "end": [
-    0.975,
-    0.65
-   ],
+   "cleanup": false,
    "from": "page0",
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
+   "input": "click",
+   "names": [
+    "grid_slots[1]"
    ],
-   "to": "page1"
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.6695,
+   "y": 0.2875
   },
   {
-   "end": [
-    0.975,
-    0.65
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[2]"
    ],
-   "from": "page1",
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
-   ],
-   "to": "page2"
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.7547,
+   "y": 0.2875
   },
   {
-   "end": [
-    0.975,
-    0.65
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[3]"
    ],
-   "from": "page2",
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
-   ],
-   "to": "page3"
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.8398,
+   "y": 0.2875
   },
   {
-   "end": [
-    0.975,
-    0.65
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[4]"
    ],
-   "from": "page3",
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
-   ],
-   "to": "page4"
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.925,
+   "y": 0.2875
   },
   {
-   "end": [
-    0.975,
-    0.65
-   ],
-   "from": "page4",
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
-   ],
-   "to": "page5"
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.5844,
+   "y": 0.4285
   },
   {
-   "end": [
-    0.975,
-    0.58
-   ],
-   "from": "page5",
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
-   ],
-   "to": "page5"
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.6695,
+   "y": 0.4285
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.7547,
+   "y": 0.4285
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.8398,
+   "y": 0.4285
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.925,
+   "y": 0.4285
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.5844,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.6695,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.7547,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.8398,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.925,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.5844,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.6695,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.7547,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.8398,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.925,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.925,
+   "y": 0.709
   }
  ],
- "progress": [],
- "result": [
-  {
-   "_answer_specimen": {
-    "slot_crops": {},
-    "source_size": [
-     1280,
-     720
-    ]
-   },
-   "evidence": [
-    {
-     "confidence": 0.6849274634622367,
-     "field": "slots[0]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6905587611201889,
-     "field": "slots[1]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6908011642156863,
-     "field": "slots[2]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6912958991466958,
-     "field": "slots[3]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6736499750363107,
-     "field": "slots[4]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6800008226670298,
-     "field": "slots[5]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6986528118191722,
-     "field": "slots[6]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6839873536220044,
-     "field": "slots[7]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6767512878994191,
-     "field": "slots[8]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6802239356390705,
-     "field": "slots[9]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6936942572167757,
-     "field": "slots[10]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6869580326343501,
-     "field": "slots[11]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.676237688362382,
-     "field": "slots[12]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.681473822167756,
-     "field": "slots[13]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.689396247503631,
-     "field": "slots[14]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6823359204793029,
-     "field": "slots[15]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.683629067946623,
-     "field": "slots[16]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6893090164306463,
-     "field": "slots[17]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6944844430827887,
-     "field": "slots[18]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.689152567855846,
-     "field": "slots[19]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 1.0,
-     "field": "scroll_overlap",
-     "note": "rows=3;reason=verified_row_overlap",
-     "source": "verified_row_overlap",
-     "status": "ok"
-    },
-    {
-     "confidence": 0.6523216230936819,
-     "field": "slots[35]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6495336328976036,
-     "field": "slots[36]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6478787956154684,
-     "field": "slots[37]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.646084814133987,
-     "field": "slots[38]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6549443706880901,
-     "field": "slots[39]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 1.0,
-     "field": "scroll_overlap",
-     "note": "rows=3;reason=verified_row_overlap",
-     "source": "verified_row_overlap",
-     "status": "ok"
-    },
-    {
-     "confidence": 0.669048287717865,
-     "field": "slots[55]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6474973901597676,
-     "field": "slots[56]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6587574323710966,
-     "field": "slots[57]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6587821123819899,
-     "field": "slots[58]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6514409438543936,
-     "field": "slots[59]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 1.0,
-     "field": "scroll_overlap",
-     "note": "rows=3;reason=verified_row_overlap",
-     "source": "verified_row_overlap",
-     "status": "ok"
-    },
-    {
-     "confidence": 0.6419675074891068,
-     "field": "slots[75]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6455872424201162,
-     "field": "slots[76]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6555714415395788,
-     "field": "slots[77]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6499224139887436,
-     "field": "slots[78]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6464531703885258,
-     "field": "slots[79]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 1.0,
-     "field": "scroll_overlap",
-     "note": "rows=3;reason=verified_row_overlap",
-     "source": "verified_row_overlap",
-     "status": "ok"
-    },
-    {
-     "confidence": 0.6479707073801744,
-     "field": "slots[95]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6549612495461148,
-     "field": "slots[96]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6542434016430647,
-     "field": "slots[97]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6473542744644154,
-     "field": "slots[98]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6460479359567901,
-     "field": "slots[99]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 1.0,
-     "field": "scroll_overlap",
-     "note": "rows=3;reason=verified_tail_residual",
-     "source": "verified_tail_residual",
-     "status": "ok"
-    },
-    {
-     "confidence": 0.7008386948529413,
-     "field": "slots[100]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6980393575254176,
-     "field": "slots[101]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7055524350944081,
-     "field": "slots[102]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7053565552378359,
-     "field": "slots[103]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7079137731481482,
-     "field": "slots[104]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6914245472494553,
-     "field": "slots[105]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7144485861474219,
-     "field": "slots[106]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.702923162899419,
-     "field": "slots[107]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7085889274691358,
-     "field": "slots[108]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6943391998002905,
-     "field": "slots[109]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7061239050018155,
-     "field": "slots[110]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7008771332607118,
-     "field": "slots[111]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7025247367465506,
-     "field": "slots[112]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.6964903322440087,
-     "field": "slots[113]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7045988505355847,
-     "field": "slots[114]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7024939576525056,
-     "field": "slots[115]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7040540463870734,
-     "field": "slots[116]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.696060985157952,
-     "field": "slots[117]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7070963541666666,
-     "field": "slots[118]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 0.7132143019244734,
-     "field": "slots[119]",
-     "note": "confident visible identity is outside the explicit scan profile",
-     "source": "inventory_profile_catalog",
-     "status": "skipped"
-    },
-    {
-     "confidence": 1.0,
-     "field": "scroll_terminal",
-     "note": "residual tail page scanned once; no-motion re-check passed",
-     "source": "verified_tail_residual",
-     "status": "ok"
-    },
-    {
-     "confidence": 0.0,
-     "field": "scan_coverage",
-     "note": "profile=tech_notes;terminal=True;ordered=False",
-     "source": "inventory_navigation",
-     "status": "partial"
-    }
-   ],
-   "payload": {
-    "catalog_revision": "171caccc05d444f1ef0b1116263adce5d55f1433bef65d3358238d0fe1cf6441",
-    "entries": [],
-    "version": 1
-   },
-   "review_required": true
-  }
+ "progress": [
+  [
+   1,
+   null,
+   "scanner.inventory.grid",
+   null
+  ]
  ],
+ "result": {
+  "candidates": [
+   {
+    "_answer_specimen": {
+     "slot_crops": {
+      "0": {
+       "image": {
+        "mode": "RGB",
+        "sha256": "472f225a23baea0b39d69864988dfe08653f37cd59f4afd0518fc3fb72a735f3",
+        "size": [
+         117,
+         96
+        ]
+       }
+      }
+     },
+     "source_size": [
+      1280,
+      720
+     ]
+    },
+    "evidence": [
+     {
+      "confidence": 0.9595773470408853,
+      "field": "entries[0].item_id",
+      "note": "margin=0.034808",
+      "source": "inventory_detail_template",
+      "status": "ok"
+     },
+     {
+      "confidence": 0.846605368373429,
+      "field": "entries[0].quantity",
+      "note": "",
+      "source": "inventory_detail_count",
+      "status": "ok"
+     },
+     {
+      "confidence": 0.6459894982298475,
+      "field": "slots[1]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6548274952342048,
+      "field": "slots[2]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.645365122322077,
+      "field": "slots[3]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6411149124001453,
+      "field": "slots[4]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6415513514433551,
+      "field": "slots[5]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6535841333061003,
+      "field": "slots[6]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6445783405954975,
+      "field": "slots[7]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6406730834694989,
+      "field": "slots[8]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6385893246187364,
+      "field": "slots[9]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6536228553921568,
+      "field": "slots[10]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6452949119462601,
+      "field": "slots[11]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6457926254992739,
+      "field": "slots[12]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6449435763888889,
+      "field": "slots[13]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6518101511437908,
+      "field": "slots[14]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6469135802469136,
+      "field": "slots[15]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6507764274691359,
+      "field": "slots[16]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6516280296840959,
+      "field": "slots[17]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6594664862472767,
+      "field": "slots[18]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.6492756274963689,
+      "field": "slots[19]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.0,
+      "field": "scan_coverage",
+      "note": "inventory_detail_unconfirmed",
+      "source": "scan_interrupted",
+      "status": "partial"
+     }
+    ],
+    "payload": {
+     "catalog_revision": "171caccc05d444f1ef0b1116263adce5d55f1433bef65d3358238d0fe1cf6441",
+     "entries": [
+      {
+       "inventory_scan_profile": "tech_notes",
+       "item_id": "Item_Icon_SkillBook_Hyakkiyako_0",
+       "key": "Item_Icon_SkillBook_Hyakkiyako_0",
+       "name": null,
+       "observed_slot": 0,
+       "profile_id": "tech_notes",
+       "quantity": "2347"
+      }
+     ],
+     "version": 1
+    },
+    "review_required": true
+   }
+  ],
+  "coverage_complete": false,
+  "error": {
+   "code": "inventory_detail_unconfirmed",
+   "details": {},
+   "message": "selection unresolved after three captures"
+  },
+  "outcome": "failed",
+  "screen_state": "unknown"
+ },
  "scenario": "inventory_item_tech_notes_1280",
  "screens_captured": [
   "grid_initial",
-  "menu_filter",
   "menu_sort",
-  "page0",
-  "page1",
-  "page2",
-  "page3",
-  "page4",
-  "page5"
+  "menu_filter_tab",
+  "menu_reset",
+  "menu_category",
+  "menu_sort",
+  "page0"
  ]
 }

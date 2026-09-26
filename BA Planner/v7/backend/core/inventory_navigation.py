@@ -1,6 +1,7 @@
 """F10 verified inventory filter/sort preparation and row-aware scrolling."""
 from dataclasses import dataclass
 import math
+from threading import Event
 from PIL import Image
 from core.inventory_catalog import CATALOG, ITEM_SCAN_PROFILES
 from core import recognition_thresholds as rt
@@ -12,8 +13,14 @@ from core.student_weapon_recognizer import _normalized_correlation as correlatio
 
 # Region assets locate controls, but only these names may be clicked (C2): a new asset
 # entry can never make the scanner press an unreviewed button.
+# Category checkbox per item scan profile (C5): prepare shows exactly one category.
+CATEGORY_FILTERS={'student_elephs':'eleph_filter','tech_notes':'note_filter','tactical_bd':'bd_filter',
+                  'ooparts':'ooparts_filter','activity_reports':'reports_filter','presents':'presents_filter'}
+CATEGORY_BOXES=(*CATEGORY_FILTERS.values(),'coin_filter','consumable_filter','collectible_filter','crafting_filter','other_filter')
+if set(CATEGORY_FILTERS)!=set(ITEM_SCAN_PROFILES):raise RuntimeError('category filters must cover every item scan profile')
 ALLOWED_CONTROLS=frozenset({'filtermenu_button','eq_filtermenu_button','filter_tab','sort_tab',
-    'sort_rule_check','sort_name_rule_check','eq_sort_rule_check','filter_confirm_button','eq_filter_confirm_button'})
+    'sort_rule_check','sort_name_rule_check','eq_sort_rule_check','filter_confirm_button','eq_filter_confirm_button',
+    'filter_reset_button','filter_cancel_button',*CATEGORY_FILTERS.values()})
 
 
 @dataclass(frozen=True)
@@ -97,6 +104,62 @@ class InventoryNavigation:
                 if exc.code!='inventory_filter_unconfirmed' or attempt==1:raise
         raise ScannerError('inventory_filter_unconfirmed','inventory filter did not open')
 
+    def category_state(self,frame,name):
+        """'selected' (cyan check), 'empty', 'all' (grey check after reset) or None when unclear."""
+        region=self.regions['controls'][name];w,h=frame.size
+        box=(round(region['x1']*w)+4,round(region['y1']*h)+4,round(region['x2']*w)-4,round(region['y2']*h)-4)
+        with frame.crop(box) as crop:
+            pixels=list(crop.convert('RGB').getdata())
+        count=max(1,len(pixels))
+        cyan=sum(1 for r,g,b in pixels if b>200 and g>180 and r<150)/count
+        grey=sum(1 for r,g,b in pixels if 170<r<225 and abs(r-g)<15 and b-r>8 and b<240)/count
+        if cyan>=rt.value('inventory.category.selected_cyan'):return 'selected'
+        if cyan<=rt.value('inventory.category.empty_cyan_max') and grey<=rt.value('inventory.category.empty_grey_max'):return 'empty'
+        if cyan<=rt.value('inventory.category.empty_cyan_max'):return 'all'
+        return None
+
+    def tab_active(self,frame,tab):
+        region=self.regions['controls'][tab];w,h=frame.size
+        box=(round(region['x1']*w),round(region['y1']*h),round(region['x2']*w),round(region['y2']*h))
+        with frame.crop(box) as crop:
+            pixels=list(crop.convert('RGB').getdata())
+        white=sum(1 for r,g,b in pixels if r>235 and g>235 and b>235)/max(1,len(pixels))
+        return white>=rt.value('inventory.menu.tab_active_white')
+
+    def switch_tab(self,target,cancel,tab):
+        """The menu reopens on the last-used tab; tab-specific clicks wait until this tab is shown."""
+        for click_attempt in range(2):
+            self.click(target,cancel,tab)
+            for attempt in range(3):
+                if attempt and cancel.wait(.15):raise ScannerError('cancelled','inventory preparation cancelled')
+                with self.capture.wait_stable(target,cancel) as frame:
+                    active=self.tab_active(frame,tab)
+                self.trace.append(dict(observe=tab,active=active,attempt=click_attempt*3+attempt+1))
+                if active:return True
+        raise ScannerError('inventory_tab_unconfirmed',f'{tab} did not become active')
+
+    def observe_categories(self,target,cancel,step,accept):
+        for attempt in range(3):
+            if attempt and cancel.wait(.15):raise ScannerError('cancelled','inventory preparation cancelled')
+            with self.capture.wait_stable(target,cancel) as frame:
+                states={name:self.category_state(frame,name) for name in CATEGORY_BOXES}
+            self.trace.append(dict(observe='category',step=step,states=states,attempt=attempt+1))
+            if accept(states):return True
+        return False
+
+    def ensure_category(self,target,cancel,profile):
+        """Reset, wait for the reset to show, tick the profile category, and verify it is the only one."""
+        wanted=CATEGORY_FILTERS[profile]
+        self.click(target,cancel,'filter_reset_button')
+        # The reset animates; a category click before it lands is overwritten by the reset.
+        if not self.observe_categories(target,cancel,'reset',lambda states:set(states.values())=={'all'}):
+            raise ScannerError('inventory_category_unconfirmed','category reset did not show')
+        self.click(target,cancel,wanted)
+        if not self.observe_categories(target,cancel,wanted,lambda states:states[wanted]=='selected'
+                and all(state=='empty' for name,state in states.items() if name!=wanted)):
+            raise ScannerError('inventory_category_unconfirmed',f'{wanted} is not the only selected category')
+        return True
+
     def ensure_sort(self,target,cancel,source,profile):
         name='eq_sort_rule_check' if source=='equipment' else ('sort_name_rule_check' if profile=='student_elephs' else 'sort_rule_check')
         threshold=rt.value('inventory.sort_check.equipment' if source=='equipment' else 'inventory.sort_check.item')
@@ -118,12 +181,18 @@ class InventoryNavigation:
             raise ScannerError('inventory_profile_mismatch','equipment page requires equipment scan profile')
         with self.open_menu(target,cancel,source):pass
         if source=='item':
-            # The current display panel has basic/name/quantity/expiry plus sort direction;
-            # v6 category checkboxes are no longer present. Profile filtering is enforced
-            # by the matcher catalog, never by clicking blank legacy coordinates.
-            # The sort radio lives on the sort tab; ensure_sort observes it before any click.
-            self.click(target,cancel,'filter_tab');self.click(target,cancel,'sort_tab')
-        self.ensure_sort(target,cancel,source,profile)
+            # The filter tab has one checkbox per category (C2-1 corrected the F12 contract);
+            # only the scan profile's category is shown. The sort radio lives on the sort tab
+            # and ensure_sort observes it before any click.
+            try:
+                self.switch_tab(target,cancel,'filter_tab');self.ensure_category(target,cancel,profile)
+                self.switch_tab(target,cancel,'sort_tab');self.ensure_sort(target,cancel,source,profile)
+            except ScannerError:
+                # Leave the display settings unchanged: cancel the menu before reporting.
+                self.click(target,Event(),'filter_cancel_button',cleanup=True)
+                raise
+        else:
+            self.ensure_sort(target,cancel,source,profile)
         self.click(target,cancel,'eq_filter_confirm_button' if source=='equipment' else 'filter_confirm_button')
         frame=self.observe(target,cancel,lambda f:self.detail_recognizer.classify(f)==source,'inventory_prepare_unconfirmed')
         frame.close()

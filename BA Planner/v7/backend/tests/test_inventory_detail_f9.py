@@ -245,4 +245,25 @@ class F9AdapterTests(unittest.TestCase):
                     self.assertEqual([],zero_filled);self.assertEqual('partial',coverage['status'])
                     self.assertTrue(result[0]['review_required'])
 
+    def test_c5_outside_profile_near_tie_is_resolved_not_skipped(self):
+        # C0-1: live 1280 tiles match outside identities at ~.69 with ~0 margin. Only a decisive
+        # outside match skips; a near-tie goes to profile matching and the detail panel.
+        outside='Equipment_Icon_WeaponExpGrowthZ_2'
+        for margin,skipped in ((0.001,False),(0.10,True)):
+            with self.subTest(margin=margin):
+                adapter=self.adapter(fast=False);adapter.max_pages=1;nav=Mock()
+                nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+                nav.verify_profile_order.return_value=True
+                nav.advance.side_effect=lambda *_:ScrollResult(adapter.capture.wait_stable({},FastEvent()),5,(),terminal=True,reason='verified_no_motion')
+                adapter.navigation=nav
+                adapter.matcher.match.side_effect=lambda _crop,**kw:(Match(ITEM,.7,.01) if kw.get('allowed_identities') else Match(outside,.69,margin))
+                result=self.scan(adapter)
+                notes=[e['note'] for e in result[0]['evidence'] if e['field'].startswith('slots[')]
+                if skipped:
+                    self.assertEqual(['confident visible identity is outside the explicit scan profile'],notes)
+                    adapter.detail_recovery.resolve.assert_not_called()
+                else:
+                    self.assertEqual([],notes);adapter.detail_recovery.resolve.assert_called_once()
+                    self.assertEqual(ITEM,result[0]['payload']['entries'][0]['item_id'])
+
 if __name__=='__main__':unittest.main()

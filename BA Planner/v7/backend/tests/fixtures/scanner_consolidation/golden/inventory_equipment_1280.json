@@ -27,6 +27,18 @@
    "from": "page0",
    "input": "click",
    "names": [
+    "grid_slots[1]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.668,
+   "y": 0.2875
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
     "grid_slots[2]"
    ],
    "to": "page0",
@@ -35,77 +47,495 @@
    "y": 0.2875
   },
   {
-   "end": [
-    0.975,
-    0.65
-   ],
+   "cleanup": false,
    "from": "page0",
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
-   ],
-   "to": "page1"
-  },
-  {
-   "end": [
-    0.975,
-    0.65
-   ],
-   "from": "page1",
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
-   ],
-   "to": "page2"
-  },
-  {
-   "end": [
-    0.975,
-    0.65
-   ],
-   "from": "page2",
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
-   ],
-   "to": "page3"
-  },
-  {
-   "cleanup": false,
-   "from": "page3",
    "input": "click",
    "names": [
-    "eq_filtermenu_button"
-   ],
-   "to": "menu_filter",
-   "x": 0.840429,
-   "y": 0.158334
-  },
-  {
-   "cleanup": false,
-   "from": "menu_filter",
-   "input": "click",
-   "names": [
-    "eq_filter_confirm_button"
+    "grid_slots[3]"
    ],
    "to": "page0",
-   "x": 0.593945,
-   "y": 0.834028
+   "unmapped": true,
+   "x": 0.8383,
+   "y": 0.2875
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[4]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.9234,
+   "y": 0.2875
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[5]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.5828,
+   "y": 0.4278
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[6]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.668,
+   "y": 0.4278
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[7]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.7531,
+   "y": 0.4278
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[8]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.8383,
+   "y": 0.4278
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[9]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.9234,
+   "y": 0.4278
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.5828,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.668,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.7531,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.8383,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.9234,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.5828,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.668,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.7531,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.9234,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[20]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.5828,
+   "y": 0.8493
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[21]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.668,
+   "y": 0.8493
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[22]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.7531,
+   "y": 0.8493
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[23]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.8383,
+   "y": 0.8493
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[24]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.9234,
+   "y": 0.8493
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[24]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.9234,
+   "y": 0.8493
   }
  ],
- "progress": [],
+ "progress": [
+  [
+   1,
+   null,
+   "scanner.inventory.grid",
+   null
+  ]
+ ],
  "result": {
-  "candidates": [],
+  "candidates": [
+   {
+    "_answer_specimen": {
+     "slot_crops": {
+      "0": {
+       "image": {
+        "mode": "RGB",
+        "sha256": "fe425c0479baf85bd1ae1e597affd1e4cc2f4138978b7ec13a9b6829edbb4c9e",
+        "size": [
+         117,
+         96
+        ]
+       }
+      }
+     },
+     "source_size": [
+      1280,
+      720
+     ]
+    },
+    "evidence": [
+     {
+      "confidence": 0.9763771331153757,
+      "field": "entries[0].item_id",
+      "note": "margin=0.180020",
+      "source": "inventory_detail_template",
+      "status": "ok"
+     },
+     {
+      "confidence": 0.8770543462450184,
+      "field": "entries[0].quantity",
+      "note": "",
+      "source": "inventory_detail_count",
+      "status": "ok"
+     },
+     {
+      "confidence": 0.6885714528867102,
+      "field": "slots[1]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7215943003358751,
+      "field": "slots[2]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7346840674927378,
+      "field": "slots[3]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7251672283496732,
+      "field": "slots[4]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7263267633442265,
+      "field": "slots[5]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.725783519426289,
+      "field": "slots[6]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7292480823347858,
+      "field": "slots[7]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7267511460602759,
+      "field": "slots[8]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7225563952432825,
+      "field": "slots[9]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7271356719771241,
+      "field": "slots[10]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7270229098583878,
+      "field": "slots[11]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7271090062182279,
+      "field": "slots[12]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7187867363380538,
+      "field": "slots[13]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7146402108297023,
+      "field": "slots[14]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7135697508169935,
+      "field": "slots[15]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7244519335511983,
+      "field": "slots[16]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7172558664669572,
+      "field": "slots[17]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7920632489106754,
+      "field": "slots[18]",
+      "note": "confident visible identity is outside the explicit scan profile",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7148128290668119,
+      "field": "slots[19]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7115031545025418,
+      "field": "slots[20]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.722761494644154,
+      "field": "slots[21]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7266244837055192,
+      "field": "slots[22]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7192230335421206,
+      "field": "slots[23]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.7182215073529412,
+      "field": "slots[24]",
+      "note": "profile membership was not positively verified",
+      "source": "inventory_profile_catalog",
+      "status": "skipped"
+     },
+     {
+      "confidence": 0.0,
+      "field": "scan_coverage",
+      "note": "inventory_detail_unconfirmed",
+      "source": "scan_interrupted",
+      "status": "partial"
+     }
+    ],
+    "payload": {
+     "catalog_revision": "171caccc05d444f1ef0b1116263adce5d55f1433bef65d3358238d0fe1cf6441",
+     "entries": [
+      {
+       "inventory_scan_profile": "equipment",
+       "item_id": "Equipment_Icon_Exp_3",
+       "key": "Equipment_Icon_Exp_3",
+       "name": null,
+       "observed_slot": 0,
+       "profile_id": "equipment",
+       "quantity": "131"
+      }
+     ],
+     "version": 1
+    },
+    "review_required": true
+   }
+  ],
   "coverage_complete": false,
   "error": {
-   "code": "inventory_scroll_unverified",
-   "details": {
-    "first_page_restored": true
-   },
-   "message": "ambiguous row overlap score=0.984 margin=0.002"
+   "code": "inventory_detail_unconfirmed",
+   "details": {},
+   "message": "selection unresolved after three captures"
   },
   "outcome": "failed",
   "screen_state": "unknown"
@@ -113,11 +543,6 @@
  "scenario": "inventory_equipment_1280",
  "screens_captured": [
   "grid_initial",
-  "menu_filter",
-  "page0",
-  "page1",
-  "page2",
-  "page3",
   "menu_filter",
   "page0"
  ]

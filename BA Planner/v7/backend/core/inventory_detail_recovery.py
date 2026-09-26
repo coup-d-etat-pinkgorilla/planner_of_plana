@@ -205,6 +205,18 @@ class InventoryDetailRecovery:
         frame,_=self.observe_selection(target,cancel,baseline,source,slot_index)
         return frame
 
+    def anchor(self,target,cancel,baseline,slot_index):
+        """Move the visible selection to slot_index before a scroll (C5).
+
+        The next page overlaps this one by at least one row, so a selection anchored in the last
+        row stays visible there and later detail reads keep F9's restore-to-visible-selection rule.
+        """
+        source=self.recognizer.classify(baseline)
+        if source is None:raise ScannerError('inventory_selection_unknown','page unconfirmed; no input')
+        self.trace=[]
+        with self.select(ScanContext.of(target),cancel,baseline,source,slot_index):pass
+        self.trace.append(dict(anchored=slot_index))
+
     def resolve(self,target,cancel,baseline,slot_index,grid_id,grid_count,grid_confirmed,profile_verified=False,scan_profile=None):
         self.trace=[];source=self.recognizer.classify(baseline)
         if cancel.is_set():raise ScannerError('cancelled','inventory detail cancelled before input')

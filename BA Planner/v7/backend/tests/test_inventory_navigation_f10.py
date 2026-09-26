@@ -8,7 +8,7 @@ from PIL import Image
 
 from core.inventory_detail_recovery import InventoryDetailRecognizer
 from core.inventory_catalog import CATALOG
-from core.inventory_navigation import ALLOWED_CONTROLS, InventoryNavigation, PreparedInventory, ScrollResult
+from core.inventory_navigation import ALLOWED_CONTROLS, CATEGORY_BOXES, InventoryNavigation, PreparedInventory, ScrollResult
 from core.recognition_assets import RecognitionAssetCatalog
 from core.scanner_session import ScannerError
 
@@ -31,10 +31,12 @@ def bare(source='item'):
     nav=object.__new__(InventoryNavigation);nav.capture=FakeCapture();nav.catalog=None;nav.detail_recognizer=Detail(source)
     nav.regions={'filter_title':dict(x1=0,y1=0,x2=.1,y2=.1),'controls':{}}
     names=['filtermenu_button','eq_filtermenu_button','filter_tab','filter_reset_button','note_filter','sort_tab',
-           'filter_confirm_button','eq_filter_confirm_button','sort_rule_check','eq_sort_rule_check']
+           'filter_confirm_button','eq_filter_confirm_button','sort_rule_check','eq_sort_rule_check','filter_cancel_button']
     for i,name in enumerate(names):nav.regions['controls'][name]=dict(x1=i/20,y1=.1,x2=i/20+.02,y2=.12)
     nav.regions['scroll_track']=dict(x=.975,start_y=.75,end_y=[.65,.58])
     nav.templates={};nav.images={};nav.trace=[]
+    nav.tab_active=lambda _frame,_tab:True
+    nav.category_state=lambda _frame,name:('selected' if name=='note_filter' else 'empty') if 'note_filter' in [row.get('input') for row in nav.trace] else 'all'
     return nav
 
 
@@ -56,20 +58,20 @@ class PreparationTests(unittest.TestCase):
         result=nav.prepare({'inventory_scan_profile':'tech_notes'},Event(),nav.capture.frame)
         self.assertEqual(PreparedInventory('item','tech_notes',True,True),result)
         names=[row['input'] for row in nav.trace if 'input' in row]
-        self.assertEqual(['filtermenu_button','filter_tab','sort_tab','filter_confirm_button'],names)
+        self.assertEqual(['filtermenu_button','filter_tab','filter_reset_button','note_filter','sort_tab','filter_confirm_button'],names)
 
     def test_sort_radio_is_clicked_only_after_it_is_observed_off(self):
         # C2 X09: the radio lives on the sort tab; an already selected radio is never clicked.
         nav=bare();nav.menu_ready=lambda *_:True;scores=iter([.3,.8]);nav.score=lambda *_:next(scores)
         nav.prepare({'inventory_scan_profile':'tech_notes'},Event(),nav.capture.frame)
         names=[row['input'] for row in nav.trace if 'input' in row]
-        self.assertEqual(['filtermenu_button','filter_tab','sort_tab','sort_rule_check','filter_confirm_button'],names)
+        self.assertEqual(['filtermenu_button','filter_tab','filter_reset_button','note_filter','sort_tab','sort_rule_check','filter_confirm_button'],names)
         observed=[row['observe'] for row in nav.trace if 'observe' in row]
-        self.assertEqual(['sort_rule_check','sort_rule_check'],observed)
+        self.assertEqual(['filter_tab','category','category','sort_tab','sort_rule_check','sort_rule_check'],observed)
 
     def test_only_allowlisted_controls_can_be_clicked(self):
         nav=bare()
-        for name in ('note_filter','filter_reset_button'):
+        for name in ('coin_filter','other_filter','collectible_filter'):
             with self.subTest(name=name),self.assertRaises(ScannerError) as exc:nav.click({},Event(),name)
             self.assertEqual('control_not_allowed',exc.exception.code)
         self.assertEqual([],nav.capture.clicks)
@@ -124,6 +126,62 @@ class ScrollTests(unittest.TestCase):
         result=nav.advance({},Event(),nav.capture.frame,'item')
         self.assertTrue(result.terminal);self.assertEqual('verified_no_motion',result.reason)
         self.assertEqual([-240,-360],nav.capture.scrolls)
+
+    def test_tab_switch_is_verified_before_tab_specific_clicks(self):
+        # C5 live: the menu reopened on the sort tab, the filter-tab click was lost, and the
+        # reset click landed on a sort radio. Tabs are now observed active before any tab click.
+        nav=InventoryNavigation(FakeCapture(),RecognitionAssetCatalog(),Detail())
+        root=Path(__file__).resolve().parents[2]/'debug'
+        for frame_path,filter_active in (('scanner_c5_live/safety/01-menu.png',False),('scanner_c5_live/category/02-note-clicked.png',True)):
+            with self.subTest(frame=frame_path),Image.open(root/frame_path) as frame:
+                self.assertEqual(filter_active,nav.tab_active(frame,'filter_tab'))
+                self.assertEqual(not filter_active,nav.tab_active(frame,'sort_tab'))
+        nav=bare();nav.menu_ready=lambda *_:True;nav.tab_active=lambda _f,tab:tab=='sort_tab'
+        with self.assertRaises(ScannerError) as exc:nav.prepare({'inventory_scan_profile':'tech_notes'},Event(),nav.capture.frame)
+        self.assertEqual('inventory_tab_unconfirmed',exc.exception.code)
+        clicks=[row['input'] for row in nav.trace if 'input' in row]
+        self.assertEqual(['filtermenu_button','filter_tab','filter_tab','filter_cancel_button'],clicks)
+
+    def test_category_boxes_read_live_1280_states(self):
+        # C5 (C2-1): selected cyan / empty / grey 'all' after reset, from the live client.
+        nav=InventoryNavigation(FakeCapture(),RecognitionAssetCatalog(),Detail())
+        root=Path(__file__).resolve().parents[2]/'debug/scanner_c5_live/category'
+        expected={'00-filter-tab':'note','01-after-reset':None,'02-note-clicked':'note'}
+        for name,selected in expected.items():
+            with self.subTest(frame=name),Image.open(root/f'{name}.png') as frame:
+                states={box:nav.category_state(frame,box) for box in CATEGORY_BOXES}
+                if selected is None:self.assertEqual({'all'},set(states.values()))
+                else:
+                    self.assertEqual('selected',states['note_filter'])
+                    self.assertEqual({'empty'},{v for k,v in states.items() if k!='note_filter'})
+
+    def test_category_must_be_the_only_selected_box(self):
+        cases=(({'note_filter':'selected'},'empty',True),
+               ({'note_filter':'selected','presents_filter':'selected'},'empty',False),
+               ({},'all',False),
+               ({'note_filter':None},'empty',False))
+        for overrides,default,ok in cases:
+            with self.subTest(overrides=overrides,default=default):
+                nav=bare();observed=[]
+                def state(_f,name,o=overrides,d=default):
+                    # Before the category click every box shows the reset ('all') state.
+                    return 'all' if 'note_filter' not in [row.get('input') for row in nav.trace] else o.get(name,d)
+                nav.category_state=state
+                if ok:self.assertTrue(nav.ensure_category({},Event(),'tech_notes'))
+                else:
+                    with self.assertRaises(ScannerError) as exc:nav.ensure_category({},Event(),'tech_notes')
+                    self.assertEqual('inventory_category_unconfirmed',exc.exception.code)
+                clicks=[row['input'] for row in nav.trace if 'input' in row]
+                self.assertEqual(['filter_reset_button','note_filter'],clicks)
+
+    def test_category_click_waits_for_reset_and_failure_cancels_menu(self):
+        nav=bare();nav.menu_ready=lambda *_:True;nav.score=lambda *_:.8
+        nav.category_state=lambda *_:'selected'  # never shows the reset
+        with self.assertRaises(ScannerError) as exc:nav.prepare({'inventory_scan_profile':'tech_notes'},Event(),nav.capture.frame)
+        self.assertEqual('inventory_category_unconfirmed',exc.exception.code)
+        clicks=[row['input'] for row in nav.trace if 'input' in row]
+        self.assertEqual(['filtermenu_button','filter_tab','filter_reset_button','filter_cancel_button'],clicks)
+        self.assertTrue(nav.capture.clicks[-1][2])
 
     def test_drag_uses_the_scroll_track_outside_every_grid_slot(self):
         # C2 X08: the drag starts in the list padding, so a drag read as a tap selects nothing.

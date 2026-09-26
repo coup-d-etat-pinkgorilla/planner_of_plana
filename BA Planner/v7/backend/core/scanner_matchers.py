@@ -1397,7 +1397,10 @@ class InventoryMatcherAdapter:
                 crop, center_trim=0.15, prefer_user=True,
                 threshold=self.threshold, margin=self.margin,
             )
-            if global_match.score >= rt.value("inventory.profile_gate.outside_score") and global_match.identity not in allowed:
+            # A near-tie with an outside identity is not evidence of membership either way (C0-1):
+            # it falls through to profile-restricted matching and the detail panel.
+            if (global_match.score >= rt.value("inventory.profile_gate.outside_score")
+                    and global_match.margin >= self.margin and global_match.identity not in allowed):
                 scan.skip(index, global_match.score, "confident visible identity is outside the explicit scan profile")
                 return None
             profile_confirmed = (
@@ -1505,6 +1508,7 @@ class InventoryMatcherAdapter:
             raise ScannerError("cancelled", "inventory scan cancelled")
         if navigation is None:
             return self._wheel_page(scan, cancel)
+        self._anchor_selection(scan, cancel)
         moved = navigation.advance(scan.target, cancel, scan.frame, scan.source_kind)
         scan.evidence.append({"field": "scroll_overlap", "status": "ok", "source": moved.reason,
             "confidence": 1.0, "note": f"rows={moved.overlap_rows};reason={moved.reason}"})
@@ -1516,6 +1520,17 @@ class InventoryMatcherAdapter:
         scan.frame.close()
         scan.frame = moved.frame
         return moved.slot_indices
+
+    def _anchor_selection(self, scan: "_InventoryScan", cancel: Event) -> None:
+        """Keep a visible selection across the scroll: select the page's last filled slot (C5)."""
+        detail_port = getattr(self, 'detail_recovery', None)
+        if detail_port is None or not hasattr(detail_port, 'anchor'):
+            return
+        for slot_index in reversed(range(len(scan.slots))):
+            with ratio_crop(scan.frame, scan.slots[slot_index]) as crop:
+                if image_has_visible_content(crop):
+                    detail_port.anchor(scan.target, cancel, scan.frame, slot_index)
+                    return
 
     def _wheel_page(self, scan: "_InventoryScan", cancel: Event) -> tuple[int, ...] | None:
         """Navigation-free fallback: wheel once and compare whole frames."""
