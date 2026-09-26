@@ -15,6 +15,7 @@ from core.recognition_assets import RecognitionAssetCatalog
 from core.student_scan_recognizer import Observation, StudentBasicCropSet
 from core.studio_numeric_bank import StudioNumericBank
 from core.student_equipment_recovery import favorite_dot_state
+from core import recognition_thresholds as rt
 
 
 EQUIPMENT_MAX_LEVEL = {
@@ -117,7 +118,7 @@ def _retain_tall_components(mask: Image.Image) -> Image.Image:
     pixels = binary.load()
     seen: set[tuple[int, int]] = set()
     retained: list[list[tuple[int, int]]] = []
-    minimum_height = max(6, round(height * 0.45))
+    minimum_height = max(6, round(height * rt.value("student.equipment.glyph.min_height_ratio")))
     for y in range(height):
         for x in range(width):
             if not pixels[x, y] or (x, y) in seen:
@@ -393,12 +394,12 @@ class StudentEquipmentRecognizer:
         catalog: RecognitionAssetCatalog,
         *,
         cache_size: int = 384,
-        level_threshold: float = 0.60,
-        level_margin: float = 0.025,
-        binary_shadow_threshold: float = 0.52,
-        binary_shadow_margin: float = 0.04,
-        direct_tier_threshold: float = 0.65,
-        direct_tier_margin: float = 0.08,
+        level_threshold: float = rt.value("student.equipment.level.score"),
+        level_margin: float = rt.value("student.equipment.level.margin"),
+        binary_shadow_threshold: float = rt.value("student.equipment.binary_shadow.score"),
+        binary_shadow_margin: float = rt.value("student.equipment.binary_shadow.margin"),
+        direct_tier_threshold: float = rt.value("student.equipment.direct_tier.score"),
+        direct_tier_margin: float = rt.value("student.equipment.direct_tier.margin"),
     ) -> None:
         started = perf_counter()
         self.catalog = catalog
@@ -657,8 +658,8 @@ class StudentEquipmentRecognizer:
             and raw_studio.value is not None
             and raw_studio.value >= 10
             and equipment_level_matches_tier(raw_studio.value, tier)
-            and raw_studio.score >= 0.60
-            and raw_studio.margin >= 0.04
+            and raw_studio.score >= rt.value("student.equipment.position_binary.raw_studio.score")
+            and raw_studio.margin >= rt.value("student.equipment.position_binary.raw_studio.margin")
         )
         if raw_confident:
             self.metrics.position_binary_shadow_hits += 1
@@ -1250,7 +1251,7 @@ class StudentEquipmentRecognizer:
                 scores.append(score)
                 margins.append(margin)
             value = int("".join(label for label in labels if label != "blank"))
-            confident = equipment_level_matches_tier(value, tier) and min(scores) >= 0.74 and min(margins) >= 0.015
+            confident = equipment_level_matches_tier(value, tier) and min(scores) >= rt.value("student.equipment.empirical_level.score") and min(margins) >= rt.value("student.equipment.empirical_level.margin")
             if confident:
                 self.metrics.empirical_hits += 1
             return Observation(
@@ -1296,7 +1297,7 @@ class StudentEquipmentRecognizer:
             red > 230 and 145 < green < 220 and blue < 100 and red - green > 25
             for red, green, blue in pixels
         )
-        return matches >= 40 and matches / max(1, len(pixels)) >= 0.035
+        return matches >= 40 and matches / max(1, len(pixels)) >= rt.value("student.equipment.empty_dot.orange_ratio")
 
     @staticmethod
     def _inner_icon(crop: Image.Image, region: dict[str, Any]) -> Image.Image:
@@ -1371,7 +1372,7 @@ class StudentEquipmentRecognizer:
             return Observation(None, 0.0, "uncertain", "equipment_icon_tier", "family templates missing")
         tier, score = ranked[0]
         margin = score - (ranked[1][1] if len(ranked) > 1 else 0.0)
-        confident = score >= 0.35 and margin >= 0.08
+        confident = score >= rt.value("student.equipment.synthesized_tier.score") and margin >= rt.value("student.equipment.synthesized_tier.margin")
         return Observation(tier if confident else None, score, "ok" if confident else "uncertain", "equipment_icon_tier", f"family={family};tier={tier};margin={margin:.6f}")
 
     def read_tier(self, crop: Image.Image | None, family: str, region: dict[str, Any]) -> Observation:
@@ -1393,7 +1394,7 @@ class StudentEquipmentRecognizer:
         )
         tier, score = ranked[0]
         margin = score - (ranked[1][1] if len(ranked) > 1 else 0.0)
-        confident = score >= 0.70 and margin >= 0.10
+        confident = score >= rt.value("student.equipment.favorite.score") and margin >= rt.value("student.equipment.favorite.margin")
         return Observation(tier if confident else None, score, "ok" if confident else "uncertain", "favorite_tier_template", f"tier={tier};margin={margin:.6f}")
 
     def recognize(
@@ -1556,9 +1557,9 @@ class EquipmentMenuRecognizer:
         # Normal .60 tier threshold remains untouched. Each digit must independently
         # establish 70, with no skipped/missing/v cell or tier-dependent filtering.
         return (scan_level and source_size == (1280, 720) and tier == "T10"
-                and .55 <= score < .60 and margin >= .15 and len(cells) == 2
+                and rt.value("student.equipment.d2.candidate_tier_floor") <= score < rt.value("student.equipment.menu.tier.score") and margin >= rt.value("student.equipment.d2.candidate_margin") and len(cells) == 2
                 and tuple(cell[0] for cell in cells) == ("7", "0")
-                and all(cell[1] >= .80 and cell[2] >= .15 for cell in cells))
+                and all(cell[1] >= rt.value("student.equipment.d2.independent_digit_floor") and cell[2] >= rt.value("student.equipment.d2.digit_margin") for cell in cells))
 
     def recognize(self, frame: Image.Image, slots: Iterable[int], *, scan_level: bool = True) -> dict[str, Observation]:
         result: dict[str, Observation] = {}
@@ -1567,7 +1568,7 @@ class EquipmentMenuRecognizer:
             flag_templates = {key.split(":", 1)[1]: value for key, value in self.flags.items() if key.startswith(f"{slot}:")}
             if isinstance(flag_region, dict) and flag_templates:
                 flag, score, margin = self._rank(_ratio_crop(frame, flag_region), flag_templates)
-                if flag is not None and score >= 0.60:
+                if flag is not None and score >= rt.value("student.equipment.menu.flag.score"):
                     result[f"equip{slot}"] = Observation(flag, score, "inferred", "equipment_menu_flag", f"margin={margin:.6f}")
                     if slot <= 3:
                         result[f"equip{slot}_level"] = Observation(None, score, "skipped", "equipment_menu_flag", f"flag={flag}")
@@ -1575,7 +1576,7 @@ class EquipmentMenuRecognizer:
             tier_region = self.regions.get(f"equipment_{slot}")
             tier_templates = {key.split(":", 1)[1]: value for key, value in self.tiers.items() if key.startswith(f"{slot}:")}
             tier, tier_score, tier_margin = self._rank(_ratio_crop(frame, tier_region), tier_templates) if isinstance(tier_region, dict) else (None, 0.0, 0.0)
-            tier_ok = tier in EQUIPMENT_MAX_LEVEL and tier_score >= 0.60
+            tier_ok = tier in EQUIPMENT_MAX_LEVEL and tier_score >= rt.value("student.equipment.menu.tier.score")
             result[f"equip{slot}"] = Observation(tier if tier_ok else None, tier_score, "ok" if tier_ok else "uncertain", "equipment_menu_tier", f"margin={tier_margin:.6f}")
             if slot > 3 or not scan_level:
                 continue
@@ -1593,7 +1594,7 @@ class EquipmentMenuRecognizer:
                     digits.append(label)
                     digit_scores.append(score)
             value = int("".join(digits)) if digits else 0
-            valid = tier_ok and equipment_level_matches_tier(value, str(tier)) and min(digit_scores, default=0.0) >= 0.55
+            valid = tier_ok and equipment_level_matches_tier(value, str(tier)) and min(digit_scores, default=0.0) >= rt.value("student.equipment.menu.digit.score")
             result[f"equip{slot}_level"] = Observation(value if valid else None, min(digit_scores, default=0.0), "ok" if valid else "uncertain", "equipment_menu_digit", f"value={value};tier={tier}")
         return result
 

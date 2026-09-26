@@ -21,8 +21,9 @@ sources:
 | C1 계약 드리프트·이름 정리 | **완료** (2026-09-26, C1a~C1c) | `552ab99` | — |
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
 | C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
-| C4 임계값 레지스트리 | **진행 중: C4a·C4b 완료** (2026-09-26) | `d4f030e` | C4c(`student_scan_recognizer`·`student_equipment_recognizer`) |
-| C5~C7 | 미착수 | — | 순서대로 |
+| C4 임계값 레지스트리 | **완료** (2026-09-26, C4a~C4c) | `d4f030e` | — |
+| C5 인식 공통화 | 미착수 | C4 golden | C2-1 결정 후 착수(실게임 1280 필요) |
+| C6~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
 
@@ -391,7 +392,7 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
 |---|---|---|
 | C4a | `scanner_matchers`, `inventory_navigation`, `inventory_detail_recovery` (29 항목) | **완료** |
 | C4b | `student_panel_recovery`, `student_identity_recovery`, `student_equipment_recovery`, weapon/level/star/skill/potential recognizer, `studio_numeric_bank` (46 항목) | **완료** |
-| C4c | `student_scan_recognizer`, `student_equipment_recognizer` | 미착수 |
+| C4c | `student_scan_recognizer`, `student_equipment_recognizer` (59 항목) | **완료** |
 
 ### "같은 프레임" 임계 세 가지 (값 유지, 통일은 C7 결정)
 
@@ -420,3 +421,30 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
   동일 커밋에서도 나타나는 시스템 부하 차이로 판단했다(potential 테스트 24개에서 조회 213회).
 - 작업 사고 기록: 시간 비교 중 `git stash`로 작업 트리 전체(사용자 미커밋 frontend 변경 포함)를 잠시 stash했다가 즉시 pop했다.
   stash 목록 0, frontend·almanac 미커밋 diff 11 files +1383/−620이 그대로임을 확인했다.
+
+### C4c 결과
+
+- 59개 항목 추가(누적 **134**): basic skill/level bank(S3b)/relationship(S4)/star/combat(S2), 무기 basic(S2 무기 보고서),
+  무기 성급 cyan 색상 gate(`kind="hue"` 160~230°), 장비 basic(S3/S3b), 장비 메뉴·favorite·empty dot(F7), D2 T10 추론(D2).
+- **X22·X23 값이 이름으로 드러났다**: `student.relationship.whole_bank.score/.margin`(.38/.005),
+  `student.weapon.basic.digit.score`(.57), `student.weapon.basic.whole_bank.score`(.49), potential `zero_correction.*`,
+  D2 `student.equipment.d2.*`. D2의 "normal tier" 상한은 메뉴 tier 기준 `student.equipment.menu.tier.score`(.60)와 같은 항목을 공유해
+  두 결정이 묶여 있음을 보이게 했다. 로비 3px·`EQUIPMENT_SLOT_*` 2560 절대좌표는 float 임계가 아니라 C7 표에서 다룬다.
+- 허용 목록 추가: 2개 미만 순위 margin fallback `0.0`, 신뢰도 clamp·보수 `1.0`, star 잔차→신뢰도 스케일 `.35`,
+  normalized correlation 0-분모 guard, synthesized tier 가중치 `.85/.15`.
+
+### C4 완료 판정
+
+- 범위 14개 파일에서 **등록 안 된 임계 리터럴 0건**(검사기 `test_recognition_thresholds_c4`, 허용 목록 20항목 명시·stale 검사 포함).
+- golden diff **0**(C4a~C4c 매 slice), Python 559 OK.
+- Flutter: analyze 기존 info 2건. test 403 pass / 4 fail → 4파일 단독 재실행 22 pass / 2 fail, 모두 real-process E2E의 첫 요청
+  10초 timeout. **발견 C4-1**: backend 첫 응답까지 5.5초이며 `build_scanner_service`(6.4s)가 템플릿 773장 decode·asset hash 검증에
+  쓰인다(cProfile). C3/C4 코드(레지스트리 조회·ScanContext)는 프로파일에 나타나지 않아 회귀가 아니라 **기존 기동 지연이 병렬 E2E 부하에서
+  드러난 것**으로 판단했다. 템플릿 lazy load는 C6(모듈 import 시점 전역·초기화 정리) 후보.
+- 변경 금지 확인: 모든 항목은 기존 리터럴과 같은 float(검사기가 대상 파일에 리터럴이 남지 않았음을, golden·기존 benchmark 테스트가
+  동작 동일성을 확인).
+
+### 다음 행동
+
+- C5는 동작 변경 phase이고 실게임 1280(재고 세 프로필 tail 포함)이 필요하다. 착수 전 **C2-1 결정**(prepare가 카테고리 필터를
+  걸지)과 C0-1(기술 노트·선물 전량 skip)의 처리 방향을 사용자와 정한다.

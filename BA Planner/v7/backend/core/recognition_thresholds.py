@@ -4,7 +4,7 @@ Each entry keeps the value it had when it was introduced; C4 only moves values h
 value is a C7 decision recorded in the scanner consolidation status document.
 
 ``field`` / ``source`` / ``resolution`` describe where a threshold applies ("*" = any,
-"native1280" / "native2560" = resolution-specific). ``kind`` is score, margin, similarity, ratio, or intensity (8-bit luminance).
+"native1280" / "native2560" = resolution-specific). ``kind`` is score, margin, similarity, ratio, intensity (8-bit luminance) or hue (degrees).
 """
 from __future__ import annotations
 
@@ -20,6 +20,10 @@ F6 = "docs/migration/scanner-fallback-restoration/f6-results.md"
 F7 = "docs/migration/scanner-fallback-restoration/f7-results.md"
 F8 = "docs/migration/scanner-fallback-restoration/f8-results.md"
 S2W = "docs/migration/student-weapon-basic-recognition-2026-09-05.md"
+S2 = "docs/migration/student-scan-v7-session-s2-handoff"
+S3 = "docs/migration/student-scan-v7-session-s3-handoff"
+S4 = "docs/migration/student-scan-v7-session-s4-input.md"
+D2 = "docs/migration/scanner-fallback-restoration/f12-d2-audit.json"
 S3B_POSITION = "docs/migration/student-scan-v7-session-s3b-position-bank-handoff"
 F9 = "docs/migration/scanner-fallback-restoration/f9-results.md"
 F10 = "docs/migration/scanner-fallback-restoration/f10-results.md"
@@ -140,6 +144,69 @@ _ENTRIES = (
     # Studio numeric bank (S3b position bank).
     Threshold("studio.glyph.min_height_ratio", 0.30, "ratio", "S3b", S3B_POSITION, "digit", "studio_numeric_bank",
               note="connected components shorter than this share of the cell are not digits"),
+    # Student basic screen (S2 basic reads, S3b level bank, S4 relationship, 2026-09-05 weapon report).
+    Threshold("student.skill.basic.score", 0.70, "score", "S2", S2, "skill*", "basic_skill_combined"),
+    Threshold("student.skill.basic.margin", 0.04, "margin", "S2", S2, "skill*", "basic_skill_combined"),
+    Threshold("student.level.basic_bank.score", 0.55, "score", "S3b", S3B_POSITION, "level", "student_level_studio_position_bank"),
+    Threshold("student.level.basic_bank.margin", 0.02, "margin", "S3b", S3B_POSITION, "level", "student_level_studio_position_bank"),
+    Threshold("student.level.basic.second_digit_occupancy", 0.025, "ratio", "S3b", S3B_POSITION, "level", "student_level_studio_position_bank"),
+    Threshold("student.level.basic.score", 0.58, "score", "S3b", S3B_POSITION, "level", "student_level_studio_position_bank"),
+    Threshold("student.level.basic.margin", 0.02, "margin", "S3b", S3B_POSITION, "level", "student_level_studio_position_bank"),
+    Threshold("student.relationship.glyph.min_column_ink", 0.11, "ratio", "S4", S4, "bond_rank", "relationship_rank_glyph"),
+    Threshold("student.relationship.bank.score", 0.60, "score", "S4", S4, "bond_rank", "relationship_rank_studio_position_bank"),
+    Threshold("student.relationship.bank.margin", 0.025, "margin", "S4", S4, "bond_rank", "relationship_rank_studio_position_bank"),
+    Threshold("student.relationship.pink_ratio_min", 0.08, "ratio", "S4", S4, "bond_rank", "relationship_rank_badge"),
+    Threshold("student.relationship.digit.score", 0.65, "score", "S4", S4, "bond_rank", "relationship_rank_digit"),
+    Threshold("student.relationship.digit.margin", 0.10, "margin", "S4", S4, "bond_rank", "relationship_rank_digit"),
+    Threshold("student.relationship.whole_bank.score", 0.38, "score", "S4", S4, "bond_rank", "relationship_rank_whole_bank",
+              note="X22: effectively always confirms; D10 default demotes to uncertain until other-account samples"),
+    Threshold("student.relationship.whole_bank.margin", 0.005, "margin", "S4", S4, "bond_rank", "relationship_rank_whole_bank", note="X22"),
+    Threshold("student.star.basic.max_residual", 0.20, "ratio", "S2", S2, "student_star", "basic_star_color"),
+    Threshold("student.weapon.basic_bank.score", 0.65, "score", "S2", S2W, "weapon_level", "basic_weapon_level_glyph"),
+    Threshold("student.weapon.basic_bank.margin", 0.05, "margin", "S2", S2W, "weapon_level", "basic_weapon_level_glyph"),
+    Threshold("student.weapon.basic.second_digit_occupancy", 0.012, "ratio", "S2", S2W, "weapon_level", "basic_weapon_level_glyph"),
+    Threshold("student.weapon.basic.digit.score", 0.57, "score", "S2", S2W, "weapon_level", "basic_weapon_level_glyph", note="X23 special case (C7 audit)"),
+    Threshold("student.weapon.basic.digit.margin", 0.04, "margin", "S2", S2W, "weapon_level", "basic_weapon_level_glyph"),
+    Threshold("student.weapon.basic.whole_bank.score", 0.49, "score", "S2", S2W, "weapon_level", "basic_weapon_level_whole_bank", note="X23 special case (C7 audit)"),
+    Threshold("student.weapon.basic.whole_bank.margin", 0.01, "margin", "S2", S2W, "weapon_level", "basic_weapon_level_whole_bank"),
+    Threshold("student.weapon_star.cyan.hue_min", 160.0, "hue", "S2", S2W, "weapon_star", "basic_weapon_star_color"),
+    Threshold("student.weapon_star.cyan.hue_max", 230.0, "hue", "S2", S2W, "weapon_star", "basic_weapon_star_color"),
+    Threshold("student.weapon_star.cyan.saturation_min", 0.235, "ratio", "S2", S2W, "weapon_star", "basic_weapon_star_color"),
+    Threshold("student.weapon_star.cyan.value_min", 0.39, "ratio", "S2", S2W, "weapon_star", "basic_weapon_star_color"),
+    Threshold("student.weapon_star.basic.reference_similarity", 0.65, "similarity", "S2", S2W, "weapon_star", "basic_weapon_star_slots"),
+    Threshold("student.weapon_star.basic.occupancy_min", 0.25, "ratio", "S2", S2W, "weapon_star", "basic_weapon_star_slots"),
+    Threshold("student.weapon_star.basic.occupancy_max", 0.55, "ratio", "S2", S2W, "weapon_star", "basic_weapon_star_slots"),
+    Threshold("student.weapon_star.basic.active_similarity", 0.65, "similarity", "S2", S2W, "weapon_star", "basic_weapon_star_slots"),
+    Threshold("student.weapon_star.basic.next_similarity_max", 0.45, "similarity", "S2", S2W, "weapon_star", "basic_weapon_star_slots"),
+    Threshold("student.combat.state.blue_present", 0.08, "ratio", "S2", S2, "combat_*", "basic_combat_digit"),
+    Threshold("student.combat.state.dark_empty", 0.02, "ratio", "S2", S2, "combat_*", "basic_combat_digit"),
+    Threshold("student.combat.digit.score", 0.58, "score", "S2", S2, "combat_*", "basic_combat_digit"),
+    Threshold("student.combat.digit.margin", 0.015, "margin", "S2", S2, "combat_*", "basic_combat_digit"),
+    # Student equipment (S3/S3b basic, F7 menu, D2 T10 inference).
+    Threshold("student.equipment.glyph.min_height_ratio", 0.45, "ratio", "S3b", S3B_POSITION, "equip*_level", "equipment_position_binary"),
+    Threshold("student.equipment.level.score", 0.60, "score", "S3", S3, "equip*_level", "equipment_level"),
+    Threshold("student.equipment.level.margin", 0.025, "margin", "S3", S3, "equip*_level", "equipment_level"),
+    Threshold("student.equipment.binary_shadow.score", 0.52, "score", "S3b", S3B_POSITION, "equip*_level", "equipment_binary_shadow"),
+    Threshold("student.equipment.binary_shadow.margin", 0.04, "margin", "S3b", S3B_POSITION, "equip*_level", "equipment_binary_shadow"),
+    Threshold("student.equipment.direct_tier.score", 0.65, "score", "S3b", S3B_POSITION, "equip*", "equipment_direct_icon_tier"),
+    Threshold("student.equipment.direct_tier.margin", 0.08, "margin", "S3b", S3B_POSITION, "equip*", "equipment_direct_icon_tier"),
+    Threshold("student.equipment.position_binary.raw_studio.score", 0.60, "score", "S3b", S3B_POSITION, "equip*_level", "equipment_position_binary"),
+    Threshold("student.equipment.position_binary.raw_studio.margin", 0.04, "margin", "S3b", S3B_POSITION, "equip*_level", "equipment_position_binary"),
+    Threshold("student.equipment.empirical_level.score", 0.74, "score", "S3b", S3B_POSITION, "equip*_level", "equipment_empirical_level"),
+    Threshold("student.equipment.empirical_level.margin", 0.015, "margin", "S3b", S3B_POSITION, "equip*_level", "equipment_empirical_level"),
+    Threshold("student.equipment.synthesized_tier.score", 0.35, "score", "S3b", S3B_POSITION, "equip*", "equipment_synthesized_tier"),
+    Threshold("student.equipment.synthesized_tier.margin", 0.08, "margin", "S3b", S3B_POSITION, "equip*", "equipment_synthesized_tier"),
+    Threshold("student.equipment.empty_dot.orange_ratio", 0.035, "ratio", "F7", F7, "equip4", "equipment_empty_dot"),
+    Threshold("student.equipment.favorite.score", 0.70, "score", "F7", F7, "equip4", "equipment_favorite"),
+    Threshold("student.equipment.favorite.margin", 0.10, "margin", "F7", F7, "equip4", "equipment_favorite"),
+    Threshold("student.equipment.menu.flag.score", 0.60, "score", "F7", F7, "equip*", "equipment_menu_flag"),
+    Threshold("student.equipment.menu.tier.score", 0.60, "score", "F7", F7, "equip*", "equipment_menu_tier",
+              note="also the D2 normal-tier bound: D2 applies only below it"),
+    Threshold("student.equipment.menu.digit.score", 0.55, "score", "F7", F7, "equip*_level", "equipment_menu_digit"),
+    Threshold("student.equipment.d2.candidate_tier_floor", 0.55, "score", "D2", D2, "equip*", "equipment_menu_tier_d2"),
+    Threshold("student.equipment.d2.candidate_margin", 0.15, "margin", "D2", D2, "equip*", "equipment_menu_tier_d2"),
+    Threshold("student.equipment.d2.independent_digit_floor", 0.80, "score", "D2", D2, "equip*_level", "equipment_menu_tier_d2"),
+    Threshold("student.equipment.d2.digit_margin", 0.15, "margin", "D2", D2, "equip*_level", "equipment_menu_tier_d2"),
 )
 
 THRESHOLDS: dict[str, Threshold] = {entry.name: entry for entry in _ENTRIES}

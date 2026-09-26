@@ -26,6 +26,8 @@ MIGRATED = (
     "core/student_skill_recognizer.py",
     "core/student_potential_recognizer.py",
     "core/studio_numeric_bank.py",
+    "core/student_scan_recognizer.py",
+    "core/student_equipment_recognizer.py",
 )
 NAMES = ("threshold", "margin", "floor", "minimum", "min_score", "min_margin", "score", "tolerance")
 # (file, value, detector) -> reason. Not thresholds: neutral defaults, blend weights, geometry.
@@ -41,6 +43,13 @@ ALLOWLIST = {
     ("core/student_weapon_recognizer.py", 0.0, "assign"): "min(..., default=0.0): no digit read means zero score",
     ("core/student_potential_recognizer.py", 0.55, "assign"): "IoU/correlation blend weight of the basic potential glyph score",
     ("core/student_potential_recognizer.py", 0.45, "assign"): "IoU/correlation blend weight of the basic potential glyph score",
+    ("core/student_scan_recognizer.py", 0.0, "assign"): "margin/score fallback when fewer than two labels ranked, and clamp floor",
+    ("core/student_scan_recognizer.py", 1.0, "assign"): "confidence clamp / 1 - similarity complement",
+    ("core/student_scan_recognizer.py", 0.35, "assign"): "star residual -> confidence scaling, not an acceptance gate",
+    ("core/student_equipment_recognizer.py", 0.0, "assign"): "margin fallback when fewer than two labels ranked",
+    ("core/student_equipment_recognizer.py", 0.0, "compare"): "zero-denominator guard in normalized correlation",
+    ("core/student_equipment_recognizer.py", 0.85, "assign"): "correlation/mean-difference blend weight of the synthesized tier score",
+    ("core/student_equipment_recognizer.py", 0.15, "assign"): "correlation/mean-difference blend weight of the synthesized tier score",
 }
 
 
@@ -89,8 +98,8 @@ class RecognitionThresholdRegistryTests(unittest.TestCase):
     def test_every_entry_is_named_typed_and_traceable(self):
         for entry in rt.THRESHOLDS.values():
             with self.subTest(name=entry.name):
-                self.assertIn(entry.kind, {"score", "margin", "similarity", "ratio", "intensity"})
-                self.assertTrue(0 <= entry.value <= (255 if entry.kind == "intensity" else 1))
+                self.assertIn(entry.kind, {"score", "margin", "similarity", "ratio", "intensity", "hue"})
+                self.assertTrue(0 <= entry.value <= {"intensity": 255, "hue": 360}.get(entry.kind, 1))
                 self.assertRegex(entry.phase, r"^(P\d+|F\d+|S\d+[a-z]?|D\d+|C\d+)$")
                 self.assertTrue((V7 / entry.doc).exists(), entry.doc)
                 self.assertIn(entry.resolution, {"*", "native1280", "native2560"})
