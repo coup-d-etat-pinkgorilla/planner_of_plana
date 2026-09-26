@@ -139,9 +139,11 @@ class ScrollTests(unittest.TestCase):
             self.assertEqual({i:slot for i,slot in enumerate(base)},nav.page_slots(source,0.0))
             self.assertEqual(count,len(base))
         moved=nav.page_slots('item',110/720)
-        self.assertEqual(list(range(5,25)),sorted(moved))
+        # Row 1 now sits ~1px under the list top: its selection border would be clipped, so it is not readable.
+        self.assertEqual(list(range(10,25)),sorted(moved))
+        self.assertEqual(list(range(5,25)),sorted(nav.page_slots('item',110/720,readable=False)))
         base=nav.detail_recognizer.regions['sources']['item']['grid_slots'];pitch=base[5]['cy']-base[0]['cy']
-        self.assertAlmostEqual(base[0]['y1']+pitch-110/720,moved[5]['y1'],places=9)
+        self.assertAlmostEqual(base[0]['y1']+2*pitch-110/720,moved[10]['y1'],places=9)
 
     def test_tab_switch_is_verified_before_tab_specific_clicks(self):
         # C5 live: the menu reopened on the sort tab, the filter-tab click was lost, and the

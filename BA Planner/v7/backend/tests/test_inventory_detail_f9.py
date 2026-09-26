@@ -199,6 +199,7 @@ class F9AdapterTests(unittest.TestCase):
         nav.verify_profile_order.return_value=True
         nav.advance.side_effect=ScannerError('inventory_scroll_unverified','fixture')
         adapter.navigation=nav
+        adapter.detail_recovery.resolve.return_value=DetailRecoveryResult(DetailResult(ITEM,.95,.1,DetailCount('42',.9)))
         result=self.scan(adapter)
         self.assertEqual('failed',result.outcome)
         self.assertEqual(1,len(result.candidates[0]['payload']['entries']))
@@ -228,7 +229,7 @@ class F9AdapterTests(unittest.TestCase):
         adapter=self.adapter();adapter.max_pages=4;nav=Mock()
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
-        nav.page_slots.side_effect=lambda _source,offset:{0:SLOTS[0]} if offset==0 else {1:SLOTS[0]}
+        nav.page_slots.side_effect=lambda _source,offset,**_kw:{0:SLOTS[0]} if offset==0 else {1:SLOTS[0]}
         moves=iter([PageMove(adapter.capture.wait_stable({},FastEvent()),29/720),
                     PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')])
         nav.advance.side_effect=lambda *_:next(moves)
@@ -243,32 +244,53 @@ class F9AdapterTests(unittest.TestCase):
         adapter=self.adapter();adapter.max_pages=3;nav=Mock()
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
-        nav.page_slots.side_effect=lambda _source,offset:{0:SLOTS[0]} if offset==0 else {2:SLOTS[0]}
+        nav.page_slots.side_effect=lambda _source,offset,**_kw:{0:SLOTS[0]} if offset==0 else {2:SLOTS[0]}
         nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),.3)
         adapter.navigation=nav
         result=self.scan(adapter)
         self.assertEqual('failed',result.outcome);self.assertEqual('inventory_scroll_unverified',result.error.code)
         self.assertEqual([],[e for e in result.candidates[0]['payload']['entries'] if e['observed_slot'] is None])
 
-    def test_c5_outside_profile_near_tie_is_resolved_not_skipped(self):
-        # C0-1: live 1280 tiles match outside identities at ~.69 with ~0 margin. Only a decisive
-        # outside match skips; a near-tie goes to profile matching and the detail panel.
-        outside='Equipment_Icon_WeaponExpGrowthZ_2'
-        for margin,skipped in ((0.001,False),(0.10,True)):
-            with self.subTest(margin=margin):
+    def test_c5_profile_scans_take_identity_from_the_detail_panel(self):
+        # C0-1 / C2-1 / C5 live: bundled icon art does not match current tiles (tech notes all rank as one
+        # icon, real equipment ranks as its blueprint piece at .80), so a grid match to an outside
+        # identity never skips a slot on a profile scan; the detail identity decides membership.
+        outside_of_notes='Equipment_Icon_WeaponExpGrowthZ_2'
+        exp='Equipment_Icon_Exp_0'
+        cases=(('item','tech_notes',outside_of_notes,ITEM,0.001,False),('item','tech_notes',outside_of_notes,ITEM,0.10,False),
+               ('equipment','equipment',ITEM,exp,0.001,False),('equipment','equipment',ITEM,exp,0.10,False))
+        for source,profile,outside,member,margin,skipped in cases:
+            with self.subTest(source=source,margin=margin):
                 adapter=self.adapter(fast=False);adapter.max_pages=1;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
-                nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+                adapter.detail_recovery.recognizer.regions={'sources':{source:{'grid_slots':SLOTS[:1]}}}
+                adapter.detail_recovery.resolve.return_value=DetailRecoveryResult(DetailResult(member,.95,.1,DetailCount('7',.9)))
+                nav.prepare.return_value=PreparedInventory(source,profile,True,True)
                 nav.verify_profile_order.return_value=True
                 nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')
                 adapter.navigation=nav
-                adapter.matcher.match.side_effect=lambda _crop,**kw:(Match(ITEM,.7,.01) if kw.get('allowed_identities') else Match(outside,.69,margin))
-                result=self.scan(adapter)
+                adapter.matcher.match.side_effect=lambda _crop,_m=member,_o=outside,_g=margin,**kw:(Match(_m,.7,.01) if kw.get('allowed_identities') else Match(_o,.69,_g))
+                with patch.object(adapter.detail_recovery.recognizer,'classify',return_value=source):
+                    result=self.scan(adapter)
                 notes=[e['note'] for e in result[0]['evidence'] if e['field'].startswith('slots[')]
                 if skipped:
                     self.assertEqual(['confident visible identity is outside the explicit scan profile'],notes)
                     adapter.detail_recovery.resolve.assert_not_called()
                 else:
                     self.assertEqual([],notes);adapter.detail_recovery.resolve.assert_called_once()
-                    self.assertEqual(ITEM,result[0]['payload']['entries'][0]['item_id'])
+                    self.assertEqual(member,result[0]['payload']['entries'][0]['item_id'])
+
+    def test_c5_unresolved_detail_identity_is_never_recorded_from_the_grid(self):
+        adapter=self.adapter(fast=True);adapter.max_pages=1;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
+        nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+        nav.verify_profile_order.return_value=True
+        nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')
+        adapter.navigation=nav
+        adapter.detail_recovery.resolve.return_value=DetailRecoveryResult(DetailResult(None,.4,0,DetailCount(None,reason='weak_x_match')))
+        result=self.scan(adapter)
+        self.assertEqual([],result[0]['payload']['entries'])
+        slot=[e for e in result[0]['evidence'] if e['field']=='slots[0]']
+        self.assertEqual([('partial','inventory_detail_panel')],[(e['status'],e['source']) for e in slot])
+        self.assertTrue(result[0]['review_required'])
+        self.assertEqual('partial',[e for e in result[0]['evidence'] if e['field']=='scan_coverage'][0]['status'])
 
 if __name__=='__main__':unittest.main()

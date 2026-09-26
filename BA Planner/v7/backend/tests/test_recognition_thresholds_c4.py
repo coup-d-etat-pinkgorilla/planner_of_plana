@@ -48,6 +48,7 @@ ALLOWLIST = {
     ("core/student_scan_recognizer.py", 0.35, "assign"): "star residual -> confidence scaling, not an acceptance gate",
     ("core/student_equipment_recognizer.py", 0.0, "assign"): "margin fallback when fewer than two labels ranked",
     ("core/student_equipment_recognizer.py", 0.0, "compare"): "zero-denominator guard in normalized correlation",
+    ("core/inventory_navigation.py", 0.0, "assign"): "clipped (unreadable) page view uses no edge margin; geometry, not a gate",
     ("core/student_equipment_recognizer.py", 0.85, "assign"): "correlation/mean-difference blend weight of the synthesized tier score",
     ("core/student_equipment_recognizer.py", 0.15, "assign"): "correlation/mean-difference blend weight of the synthesized tier score",
 }

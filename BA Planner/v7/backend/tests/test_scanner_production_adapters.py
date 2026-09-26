@@ -387,7 +387,7 @@ class ScannerProductionAdapterTests(unittest.TestCase):
             def prepare(self, _target, _cancel, _frame):
                 return type("Prepared", (), {"source": "item", "profile_id": "tech_notes"})()
 
-            def page_slots(self, _source, _offset):
+            def page_slots(self, _source, _offset, readable=True):
                 return dict(enumerate(grid_slots))
 
             def advance(self, _target, _cancel, current, _source):

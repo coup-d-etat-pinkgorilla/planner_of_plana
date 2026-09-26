@@ -81,9 +81,14 @@ class InventoryDetailRecognizer:
         for i,slot in enumerate(slots or self.regions['sources'][source]['grid_slots']):
             with ratio_crop(frame,slot) as crop:
                 band=max(2,round(frame.height*5/720));fractions=[]
-                for y in (0,crop.height-band):
-                    with crop.crop((0,y,crop.width,y+band)) as edge:
-                        fractions.append(sum(r>220 and g>190 and b<185 and r-b>55 for r,g,b in edge.getdata())/(edge.width*edge.height))
+                # The border can sit a few pixels off a scrolled or re-aligned slot; take each edge's best band.
+                reach=max(1,round(frame.height*3/720))
+                for starts in (range(0,reach+1),range(crop.height-band-reach,crop.height-band+1)):
+                    best=0.0
+                    for y in starts:
+                        with crop.crop((0,y,crop.width,y+band)) as edge:
+                            best=max(best,sum(r>220 and g>190 and b<185 and r-b>55 for r,g,b in edge.getdata())/(edge.width*edge.height))
+                    fractions.append(best)
                 if min(fractions)>=rt.value('inventory.detail.selection.edge_fraction'):hits.append(i)
         return hits[0] if len(hits)==1 else None
 
@@ -168,9 +173,11 @@ class InventoryDetailRecovery:
     def __init__(self,capture,recognizer):
         self.capture,self.recognizer=capture,recognizer;self.trace=[]
 
-    def same_grid(self,baseline,current,source,slots=None):
+    def same_grid(self,baseline,current,source,slots=None,ignore=()):
         if baseline.size!=current.size or self.recognizer.classify(current)!=source:return False
-        for slot in slots or self.recognizer.regions['sources'][source]['grid_slots']:
+        for index,slot in enumerate(slots or self.recognizer.regions['sources'][source]['grid_slots']):
+            # A tile whose selection changes also tints its interior (live gifts: .972); the others verify the page.
+            if index in ignore:continue
             # Ignore selection edges; every slot interior must stay in the same place.
             dx=(slot['x2']-slot['x1'])*.18;dy=(slot['y2']-slot['y1'])*.18
             r=dict(x1=slot['x1']+dx,x2=slot['x2']-dx,y1=slot['y1']+dy,y2=slot['y2']-dy)
@@ -185,9 +192,10 @@ class InventoryDetailRecovery:
             except ScannerError as exc:
                 if exc.code in {'capture_failed','capture_timeout'}:continue
                 raise
-            if not self.same_grid(baseline,frame,source,slots):
-                frame.close();raise ScannerError('inventory_page_changed','unverified inventory page; no input')
             selected=self.recognizer.selected(frame,source,slots)
+            changing={index for index in (expected,selected,self.recognizer.selected(baseline,source,slots)) if index is not None}
+            if not self.same_grid(baseline,frame,source,slots,changing):
+                frame.close();raise ScannerError('inventory_page_changed','unverified inventory page; no input')
             if selected is not None and (expected is None or selected==expected):return frame,selected
             frame.close()
         raise ScannerError('inventory_selection_unknown' if expected is None else 'inventory_detail_unconfirmed','selection unresolved after three captures')

@@ -1246,6 +1246,7 @@ class _SlotReading:
     count_source: str
     note: str
     profile_confirmed: bool
+    detail_identity: bool = False
 
 
 @dataclass
@@ -1266,6 +1267,7 @@ class _InventoryScan:
     coverage_complete: bool = False
     offset: float = 0.0
     read_until: int = -1
+    anchored: int | None = None
     completed: bool = False
 
     def skip(self, index: int, confidence: float, note: str) -> None:
@@ -1411,7 +1413,15 @@ class InventoryMatcherAdapter:
         detail_port = getattr(self, 'detail_recovery', None)
         allowed = scan.allowed_ids
         profile_confirmed = allowed is None
-        if allowed is not None:
+        # Bundled icon art does not match current-client tiles (C5 live: tech notes all rank as one icon,
+        # equipment ranks as its blueprint piece), so a profile scan with a detail panel never skips or
+        # labels from the grid alone: identity and membership come from the detail panel.
+        detail_required = scan.prepared is not None and detail_port is not None
+        # On the item page the verified category filter is the membership evidence, but only when the
+        # detail panel names the tile; without it the F12 gate below still applies.
+        category_filtered = detail_required and scan.prepared.source == "item"
+        profile_confirmed = profile_confirmed or category_filtered
+        if allowed is not None and not detail_required:
             global_match = self.matcher.match(
                 crop, center_trim=0.15, prefer_user=True,
                 threshold=self.threshold, margin=self.margin,
@@ -1447,8 +1457,14 @@ class InventoryMatcherAdapter:
             status='ok' if confident else 'uncertain', quantity=count.value, count_score=count.score,
             count_source='slot_count_glyph', note=f'margin={count.margin:.6f}', profile_confirmed=profile_confirmed,
         )
-        if detail_port is not None and not (fast_confident and count.value is not None):
+        if detail_port is not None and (detail_required or not (fast_confident and count.value is not None)):
             self._apply_detail(scan, reading, position, slots, match, count, confident, cancel)
+        if detail_required and not reading.detail_identity:
+            # Never record a grid-guessed identity on a profile scan: keep the slot as unresolved evidence.
+            scan.evidence.append({"field": f"slots[{index}]", "status": "partial", "source": "inventory_detail_panel",
+                                  "confidence": 0.0, "note": f"identity unresolved by detail panel;{reading.note}"})
+            scan.review_required = True
+            return None
         if allowed is not None and reading.identity not in allowed:
             scan.skip(index, reading.score, "visible identity is outside the explicit scan profile")
             return None
@@ -1471,6 +1487,7 @@ class InventoryMatcherAdapter:
             reading.status = 'partial'
             return
         detail = outcome.detail
+        reading.detail_identity = detail.identity is not None
         if detail.identity is not None:
             reading.identity, reading.score, reading.margin = detail.identity, detail.score, detail.margin
             reading.source, reading.status = detail.source, 'ok'
@@ -1528,13 +1545,48 @@ class InventoryMatcherAdapter:
         scan.evidence.append({"field": "scroll_overlap", "status": "ok", "source": moved.reason,
             "confidence": 1.0, "note": f"shift_px={shift_px};reason={moved.reason}"})
         if moved.terminal:
-            scan.coverage_complete = True
             moved.frame.close()
+            self._require_tail_read(scan)
+            scan.coverage_complete = True
             return False
         scan.offset += moved.shift
         scan.frame.close()
         scan.frame = moved.frame
+        self._align_to_anchor(scan)
         return True
+
+    def _require_tail_read(self, scan: "_InventoryScan") -> None:
+        """At the verified end, a filled tile that never became readable is a coverage gap, not an end."""
+        clipped = self.navigation.page_slots(scan.source_kind, scan.offset, readable=False)
+        for index in sorted(clipped):
+            if index <= scan.read_until:
+                continue
+            with ratio_crop(scan.frame, clipped[index]) as crop:
+                if image_has_visible_content(crop):
+                    raise ScannerError("inventory_scroll_unverified", f"tile {index} is filled but never readable at the list end")
+
+    def _align_to_anchor(self, scan: "_InventoryScan") -> None:
+        """Remove accumulated shift rounding: re-centre the offset where the anchored selection is detected.
+
+        Each measured move is exact to about a pixel, but several moves drift past the few pixels the
+        selection-border check tolerates (live tail page: ~3px). The anchor is visible by construction.
+        """
+        detail_port = getattr(self, 'detail_recovery', None)
+        if scan.anchored is None or detail_port is None:
+            return
+        height = scan.source_size[1]
+        valid = []
+        for correction in range(-10, 11):
+            visible = self.navigation.page_slots(scan.source_kind, scan.offset + correction / height)
+            order = sorted(visible)
+            position = detail_port.recognizer.selected(scan.frame, scan.source_kind, [visible[i] for i in order])
+            if position is not None and 0 <= position < len(order) and order[position] == scan.anchored:
+                valid.append(correction)
+        scan.evidence.append({"field": "scroll_alignment", "status": "ok" if valid else "uncertain",
+            "source": "anchored_selection", "confidence": 1.0 if valid else 0.0,
+            "note": f"anchor={scan.anchored};window_px={valid[0]}..{valid[-1]}" if valid else f"anchor={scan.anchored};not found"})
+        if valid:
+            scan.offset += (valid[0] + valid[-1]) / 2 / height
 
     def _anchor_selection(self, scan: "_InventoryScan", cancel: Event) -> None:
         """Keep a visible selection across the scroll: select the page's last filled slot (C5)."""
@@ -1542,11 +1594,17 @@ class InventoryMatcherAdapter:
         if detail_port is None or not hasattr(detail_port, 'anchor') or scan.prepared is None:
             return
         visible = self._visible_slots(scan, 0)
-        slots = [visible[index] for index in sorted(visible)]
-        for position in reversed(range(len(slots))):
+        order = sorted(visible)
+        slots = [visible[index] for index in order]
+        # The bottom readable row can sit a few pixels from the list edge once offsets drift, clipping
+        # its selection border; one row higher still stays visible after a ~1-row drag.
+        rows = sorted({index // 5 for index in order})
+        preferred = [position for position in range(len(order)) if len(rows) > 1 and order[position] // 5 == rows[-2]]
+        for position in [*reversed(preferred), *reversed(range(len(slots)))]:
             with ratio_crop(scan.frame, slots[position]) as crop:
                 if image_has_visible_content(crop):
                     detail_port.anchor(scan.target, cancel, scan.frame, position, slots=slots)
+                    scan.anchored = order[position]
                     return
 
     def _wheel_page(self, scan: "_InventoryScan", cancel: Event) -> bool:

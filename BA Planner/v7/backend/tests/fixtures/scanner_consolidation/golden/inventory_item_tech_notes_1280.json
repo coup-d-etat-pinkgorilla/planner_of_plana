@@ -272,7 +272,7 @@
    "to": "page0",
    "unmapped": true,
    "x": 0.925,
-   "y": 0.709
+   "y": 0.5687
   }
  ],
  "progress": [
@@ -320,137 +320,137 @@
       "status": "ok"
      },
      {
-      "confidence": 0.6459894982298475,
+      "confidence": 0.0,
       "field": "slots[1]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6548274952342048,
+      "confidence": 0.0,
       "field": "slots[2]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.645365122322077,
+      "confidence": 0.0,
       "field": "slots[3]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6411149124001453,
+      "confidence": 0.0,
       "field": "slots[4]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6415513514433551,
+      "confidence": 0.0,
       "field": "slots[5]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6535841333061003,
+      "confidence": 0.0,
       "field": "slots[6]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6445783405954975,
+      "confidence": 0.0,
       "field": "slots[7]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6406730834694989,
+      "confidence": 0.0,
       "field": "slots[8]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6385893246187364,
+      "confidence": 0.0,
       "field": "slots[9]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6536228553921568,
+      "confidence": 0.0,
       "field": "slots[10]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6452949119462601,
+      "confidence": 0.0,
       "field": "slots[11]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6457926254992739,
+      "confidence": 0.0,
       "field": "slots[12]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6449435763888889,
+      "confidence": 0.0,
       "field": "slots[13]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6518101511437908,
+      "confidence": 0.0,
       "field": "slots[14]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6469135802469136,
+      "confidence": 0.0,
       "field": "slots[15]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6507764274691359,
+      "confidence": 0.0,
       "field": "slots[16]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6516280296840959,
+      "confidence": 0.0,
       "field": "slots[17]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6594664862472767,
+      "confidence": 0.0,
       "field": "slots[18]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
-      "confidence": 0.6492756274963689,
+      "confidence": 0.0,
       "field": "slots[19]",
-      "note": "profile membership was not positively verified",
-      "source": "inventory_profile_catalog",
-      "status": "skipped"
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
      },
      {
       "confidence": 0.0,

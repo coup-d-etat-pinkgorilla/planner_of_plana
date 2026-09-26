@@ -247,7 +247,7 @@ class InventoryNavigation:
         """Re-apply the verified display settings; the client then shows the first page (X10)."""
         return self.prepare(target,cancel,frame)
 
-    def page_slots(self,source,offset):
+    def page_slots(self,source,offset,readable=True):
         """{content index: slot region} for tiles fully inside the list viewport at a content offset.
 
         offset is the total upward scroll (fraction of frame height) since the first page; rows keep
@@ -255,6 +255,8 @@ class InventoryNavigation:
         """
         base=self.detail_recognizer.regions['sources'][source]['grid_slots'];rows=len(base)//5
         pitch=base[5]['cy']-base[0]['cy'];viewport=self.regions['list_viewport'][source]
+        # A readable tile keeps its selection border inside the list; the panel edge clips it otherwise.
+        margin=self.regions['list_viewport']['edge_margin'] if readable else 0.0
         # Whole rows scrolled plus a small phase; offset 0 reproduces the first-page grid exactly.
         whole=round(offset/pitch);phase=whole*pitch-offset
         result={}
@@ -264,7 +266,7 @@ class InventoryNavigation:
             if row+whole<0:continue
             for col,slot in enumerate(template):
                 region=dict(x1=slot['x1'],x2=slot['x2'],cx=slot['cx'],y1=slot['y1']+dy,y2=slot['y2']+dy,cy=slot['cy']+dy)
-                if region['y1']>=viewport['y1'] and region['y2']<=viewport['y2']:result[(row+whole)*5+col]=region
+                if region['y1']>=viewport['y1']+margin and region['y2']<=viewport['y2']-margin:result[(row+whole)*5+col]=region
         return result
 
     def measure_shift(self,before,after,source):
