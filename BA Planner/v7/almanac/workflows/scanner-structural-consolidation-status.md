@@ -19,8 +19,9 @@ sources:
 |---|---|---|---|
 | C0 기준선·golden 고정 | **완료** (2026-09-26) | `3a96abe` (branch `scanner-consolidation`) | — |
 | C1 계약 드리프트·이름 정리 | **완료** (2026-09-26, C1a~C1c) | `552ab99` | — |
-| C2 재고 끝 판정·입력 보강 | **구현·실게임 확인 완료, 완료 판정 보류** (2026-09-26) | `35768a2` | tail 미도달 2건(C2-2·X20) 처리 결정 |
-| C3~C7 | 미착수 | — | 순서대로 |
+| C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
+| C3 오케스트레이터 분해 | 미착수 | C2 golden | C3 착수(동작 보존, golden diff 0) |
+| C4~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
 
@@ -276,3 +277,18 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
 | golden diff | **2건, 의도됨** → 재고정. `inventory_item_tech_notes_1280`: 무조건 정렬 클릭 입력 삭제, drag x .78→.975, tail 재확인 drag 1회 추가·evidence note. `inventory_equipment_1280`: drag x, 스크롤 실패 뒤 설정 재적용 입력 2개와 `first_page_restored: true`. 학생 6개 same |
 | Flutter analyze | 기존 info 2건 |
 | Flutter test | 403 pass / 3 fail — real-process E2E 첫 요청 10초 timeout(게임 실행 중 병렬 부하). 3개 파일 단독 재실행 23/23 pass |
+
+### C2 종료 결정 (2026-09-26, 사용자)
+
+- C2를 **완료**로 닫는다. 완료 조건 중 "실게임 1280 세 프로필 tail"은 **미충족으로 기록**하고 C5로 이관한다:
+  C5의 행 overlap 재설계(X20, slot identity 병합)에 **C2-2 1행 미만 tail 이동 판정**과 **X07 no-motion 재확인의 실게임 실행**을 추가한다.
+  C5 완료 조건의 "실게임 1280 재고 세 프로필"은 tail 도달까지 포함한다.
+- 프레임: 판단 근거가 되는 **핵심 프레임 18개(7.7 MB)만 커밋**했다 — `menu/`·`track/`·`eq-track/` 관찰과 각 중단 지점의
+  전후 쌍(`presents-full-2/frame-31,34`, `tech-notes-full/frame-16,19`, `equipment-full/frame-16,19`). 나머지 153개는 로컬 미추적이며
+  각 `trace.json`의 `frames`(파일명→SHA-256)로 식별한다.
+- C2-1(카테고리 체크박스 존재)은 프로필 필터를 prepare가 걸도록 할지의 **기능 결정**이라 이 워크플로 범위 밖이다. C5 착수 전
+  사용자 결정 항목으로 남긴다(C0-1 전량 skip과 함께 재고 item 프로필 스캔이 실사용 불가인 원인 후보).
+
+### 다음 행동
+
+- C3 착수: 오케스트레이터 분해(동작 보존). 완료 조건은 golden diff 0, 전체 테스트 통과, 최대 함수 80줄 이하.
