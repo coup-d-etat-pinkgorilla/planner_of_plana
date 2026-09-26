@@ -21,7 +21,7 @@ sources:
 | C1 계약 드리프트·이름 정리 | **완료** (2026-09-26, C1a~C1c) | `552ab99` | — |
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
 | C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
-| C4 임계값 레지스트리 | 미착수 | C3 golden | C4 착수(동작 보존, golden diff 0) |
+| C4 임계값 레지스트리 | **진행 중: C4a 완료** (2026-09-26) | `d4f030e` | C4b(학생 패널·복구·보조 recognizer) |
 | C5~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -371,3 +371,39 @@ D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 �
 ### 다음 행동
 
 - C4 착수: `recognition_thresholds.py` 레지스트리로 리터럴을 옮긴다(값 불변, golden diff 0).
+
+## C4 — 임계값 레지스트리 (동작 보존)
+
+시작 `d4f030e`.
+
+### 정의와 범위 (기본안)
+
+- **임계값 리터럴** = float 상수가 비교식(`>=`, `<` 등)에 쓰이거나, 이름에 threshold/margin/floor/minimum/score/tolerance가 들어간
+  인자·기본값·대입에 쓰인 것. 검사기 `tests/test_recognition_thresholds_c4.py`가 AST로 찾는다.
+- **허용 목록(명시)**: 같은 테스트의 `ALLOWLIST`에 (파일, 값, 탐지 유형) → 사유로 적는다. 중립 기본값(0 = gate 없음)과 가중치
+  (`.4*visual+.6*name`)만 둔다. 크롭 비율·좌표·가중치 곱·대기 시간처럼 비교에 쓰이지 않는 float는 정의상 대상이 아니다.
+- **범위**: 인식·오케스트레이션 모듈(`scanner_matchers`, `inventory_*`, `student_*recognizer`, `student_*recovery`,
+  `studio_numeric_bank`). tactical lobby·windows adapter 타이밍은 워크플로 범위 밖. 착수 시 AST 기준 164건.
+- 레지스트리 `backend/core/recognition_thresholds.py`: `Threshold(name, value, kind, phase, doc, field, source, resolution, note)`,
+  `value(name)`, `lookup(field, source, kind, resolution)`. 도입 phase는 `git log -S`로 확인한 커밋 기준(P5 `8f4ffd4`, F12 `b19da65` 등).
+
+| Slice | 파일 | 상태 |
+|---|---|---|
+| C4a | `scanner_matchers`, `inventory_navigation`, `inventory_detail_recovery` (29 항목) | **완료** |
+| C4b | `student_panel_recovery`, `student_identity_recovery`, `student_equipment_recovery`, weapon/level/star/skill/potential recognizer, `studio_numeric_bank` | 미착수 |
+| C4c | `student_scan_recognizer`, `student_equipment_recognizer` | 미착수 |
+
+### "같은 프레임" 임계 세 가지 (값 유지, 통일은 C7 결정)
+
+| 이름 | 값 | 비교 대상 | 왜 다른가 |
+|---|---|---|---|
+| `inventory.wheel.same_frame` | .995 | 한 번 wheel 후 **전체 프레임** 픽셀 유사도(`image_similarity`) | navigation 없는 P5 fallback. 전체 프레임에는 애니메이션 배경·선택 테두리가 섞여 있어 거의 완전 일치만 "무이동"으로 본다 |
+| `inventory.scroll.settled_same` | .985 | 연속 캡처 간 **slot 내부 24차원 히스토그램** 평균 유사도 | 스크롤 관성이 멈췄는지 판단. 테두리·수량 기준선을 잘라낸 서명이라 전체 프레임보다 잡음이 적지만, 멈춘 뒤에도 반짝임 효과가 남아 1.0이 아니다 |
+| `inventory.scroll.no_motion_same` | .97 | drag **전후** 페이지 서명 유사도 | 1행 이동도 서명 평균을 크게 바꾸므로 낮은 값이어도 "안 움직임"을 가르기에 충분하다. 동시에 settle 판정보다 느슨해야 settle 직후 잔여 효과로 무이동을 놓치지 않는다. C2 tail 재확인(`confirm_terminal`)도 같은 값을 쓴다 |
+
+### C4a 결과
+
+- 29개 항목 등록(inventory grid/profile gate/slot count/wheel, navigation 메뉴·정렬·스크롤, 상세 패널, 학생 식별 기본값).
+  `inventory.profile_gate.outside_score`(.55, F12)와 `inventory.grid_icon.floor_without_detail`(.55, P5)은 값은 같지만 다른 결정이라
+  이름을 나눴다. C2의 tail 재확인은 `inventory.scroll.no_motion_same`을 공유한다.
+- 검증: 검사기 4 tests OK(허용 목록 stale 없음), inventory 50·scanner 73 tests OK, golden **8/8 same**.

@@ -9,6 +9,7 @@ from PIL import Image, ImageChops, ImageStat
 
 from core.recognition_assets import RecognitionAssetCatalog
 from core.recognition_answer_samples import RecognitionAnswerSampleStore
+from core import recognition_thresholds as rt
 from core.inventory_catalog import CATALOG, CATALOG_REVISION
 from core.scanner_session import ScanBatchResult, ScannerError
 from core.scan_context import ScanContext
@@ -250,7 +251,7 @@ def image_has_visible_content(image: Image.Image) -> bool:
     luminance = image.convert("L")
     histogram = luminance.histogram()
     visible = sum(histogram[13:])
-    return visible / max(1, luminance.width * luminance.height) >= 0.12
+    return visible / max(1, luminance.width * luminance.height) >= rt.value("inventory.visible_content.ratio")
 
 
 @dataclass(frozen=True, slots=True)
@@ -391,7 +392,7 @@ class SlotCountMatcher:
     _INK = (45, 70, 99)
     _REFERENCE_SIZE = (234.0, 190.0)
 
-    def __init__(self, catalog: RecognitionAssetCatalog, *, threshold: float = 0.70, margin: float = 0.04) -> None:
+    def __init__(self, catalog: RecognitionAssetCatalog, *, threshold: float = rt.value("inventory.slot_count.score"), margin: float = rt.value("inventory.slot_count.margin")) -> None:
         self.threshold = threshold
         self.margin = margin
         self.templates = {
@@ -521,8 +522,8 @@ class StudentMatcherAdapter:
         capture: CapturePort,
         catalog: RecognitionAssetCatalog,
         *,
-        threshold: float = 0.82,
-        margin: float = 0.04,
+        threshold: float = rt.value("student.identity.template.score"),
+        margin: float = rt.value("student.identity.template.margin"),
         equipment_menu: PanelMenu | None = None,
         weapon_menu: PanelMenu | None = None,
         stat_menu: PanelMenu | None = None,
@@ -1280,7 +1281,7 @@ class _InventoryScan:
 
 
 class InventoryMatcherAdapter:
-    def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = 0.80, margin: float = 0.03, max_pages: int = 60, answer_samples: RecognitionAnswerSampleStore | None = None, detail_recovery=None, navigation=None) -> None:
+    def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = rt.value("inventory.grid_icon.score"), margin: float = rt.value("inventory.grid_icon.margin"), max_pages: int = 60, answer_samples: RecognitionAnswerSampleStore | None = None, detail_recovery=None, navigation=None) -> None:
         self.capture = capture
         self.catalog = catalog
         self.threshold = threshold
@@ -1396,7 +1397,7 @@ class InventoryMatcherAdapter:
                 crop, center_trim=0.15, prefer_user=True,
                 threshold=self.threshold, margin=self.margin,
             )
-            if global_match.score >= 0.55 and global_match.identity not in allowed:
+            if global_match.score >= rt.value("inventory.profile_gate.outside_score") and global_match.identity not in allowed:
                 scan.skip(index, global_match.score, "confident visible identity is outside the explicit scan profile")
                 return None
             profile_confirmed = (
@@ -1415,7 +1416,7 @@ class InventoryMatcherAdapter:
             "user_confirmed_grid_sample" if match.source == "user_confirmed"
             else "grid_icon_template" if fast_confident else "grid_same_crop_rematch"
         )
-        if match.score < 0.55 and detail_port is None:
+        if match.score < rt.value("inventory.grid_icon.floor_without_detail") and detail_port is None:
             return None
         confident = match.score >= self.threshold and match.margin >= self.margin
         count = self.count_matcher.match(crop)
@@ -1521,11 +1522,11 @@ class InventoryMatcherAdapter:
         self.capture.scroll(scan.target, -480)
         next_frame = self.capture.wait_stable(scan.target, cancel)
         overlap = image_similarity(scan.frame, next_frame)
-        if overlap >= 0.995:
+        if overlap >= rt.value("inventory.wheel.same_frame"):
             next_frame.close()
             scan.evidence.append({"field": "scroll_terminal", "status": "ok", "source": "stable_frame_overlap", "confidence": overlap, "note": "tail-or-no-motion"})
             return None
-        if overlap <= 0.05:
+        if overlap <= rt.value("inventory.wheel.zero_overlap"):
             scan.evidence.append({"field": "scroll_overlap", "status": "uncertain", "source": "frame_overlap", "confidence": overlap, "note": "near-zero overlap; no zero-fill"})
             scan.review_required = True
         scan.frame.close()

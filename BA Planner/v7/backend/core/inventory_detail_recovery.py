@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from threading import Event
 from PIL import Image
 from core.inventory_catalog import BY_KEY
+from core import recognition_thresholds as rt
 from core.scanner_session import ScannerError
 from core.scan_context import ScanContext
 from core.student_scan_recognizer import ratio_crop, quad_crop
@@ -71,7 +72,7 @@ class InventoryDetailRecognizer:
         for asset in self.catalog.assets('inventory','inventory-page-template'):
             source,key=asset.identity.split(':');template=self.image(asset.path)
             with ratio_crop(frame,self.regions[key]) as crop:
-                scores[(source,key)]=template is not None and correlation(crop,template)>=.8 and color_similarity(crop,template)>=.95
+                scores[(source,key)]=template is not None and correlation(crop,template)>=rt.value('inventory.detail.source_title.correlation') and color_similarity(crop,template)>=rt.value('inventory.detail.source_title.color')
         matches=[s for s in ('item','equipment') if scores.get((s,'title')) and scores.get((s,'list_title'))]
         return matches[0] if len(matches)==1 else None
 
@@ -83,7 +84,7 @@ class InventoryDetailRecognizer:
                 for y in (0,crop.height-band):
                     with crop.crop((0,y,crop.width,y+band)) as edge:
                         fractions.append(sum(r>220 and g>190 and b<185 and r-b>55 for r,g,b in edge.getdata())/(edge.width*edge.height))
-                if min(fractions)>=.15:hits.append(i)
+                if min(fractions)>=rt.value('inventory.detail.selection.edge_fraction'):hits.append(i)
         return hits[0] if len(hits)==1 else None
 
     def count(self,frame,source,bank=None):
@@ -102,7 +103,7 @@ class InventoryDetailRecognizer:
             if ranked:lengths.append((n,ranked[0][1]))
         if not lengths:return DetailCount(None,reason='no_x_templates')
         lengths.sort(key=lambda x:x[1],reverse=True);n,xscore=lengths[0]
-        if xscore<.72 or (len(lengths)>1 and xscore-lengths[1][1]<.025):
+        if xscore<rt.value('inventory.detail.x_mark.score') or (len(lengths)>1 and xscore-lengths[1][1]<rt.value('inventory.detail.x_mark.margin')):
             return DetailCount(None,xscore,'weak_x_match')
         digits=[];score=xscore
         for i,cell in enumerate(geometry[n]['digits']):
@@ -110,7 +111,7 @@ class InventoryDetailRecognizer:
             ranked=rank(cell,banks[i] if i<len(banks) else {})
             if not ranked:return DetailCount(None,score,'missing_digit_templates')
             value,confidence=ranked[0];score=min(score,confidence)
-            if confidence<.66 or (len(ranked)>1 and confidence-ranked[1][1]<.025):
+            if confidence<rt.value('inventory.detail.digit.score') or (len(ranked)>1 and confidence-ranked[1][1]<rt.value('inventory.detail.digit.margin')):
                 return DetailCount(None,score,'weak_digit_match')
             value=str(int(value)%10)
             if i==0 and value=='0' and int(n)>1:return DetailCount(None,score,'leading_zero')
@@ -174,7 +175,7 @@ class InventoryDetailRecovery:
             dx=(slot['x2']-slot['x1'])*.18;dy=(slot['y2']-slot['y1'])*.18
             r=dict(x1=slot['x1']+dx,x2=slot['x2']-dx,y1=slot['y1']+dy,y2=slot['y2']-dy)
             with ratio_crop(baseline,r) as a,ratio_crop(current,r) as b:
-                if color_similarity(a,b)<.975:return False
+                if color_similarity(a,b)<rt.value('inventory.detail.same_grid.color'):return False
         return True
 
     def observe_selection(self,target,cancel,baseline,source,expected=None):

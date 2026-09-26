@@ -1,0 +1,92 @@
+"""C4: recognition thresholds live in core.recognition_thresholds, not as literals.
+
+A threshold literal is a float constant that is compared, passed as a threshold/margin-like
+argument or default, or assigned to a threshold/margin-like name. Every remaining one in a
+migrated file must be on the explicit allowlist below.
+"""
+import ast
+from pathlib import Path
+import unittest
+
+from core import recognition_thresholds as rt
+
+
+BACKEND = Path(__file__).resolve().parents[1]
+V7 = BACKEND.parent
+MIGRATED = (
+    "core/scanner_matchers.py",
+    "core/inventory_navigation.py",
+    "core/inventory_detail_recovery.py",
+)
+NAMES = ("threshold", "margin", "floor", "minimum", "min_score", "min_margin", "score", "tolerance")
+# (file, value, detector) -> reason. Not thresholds: neutral defaults, blend weights, geometry.
+ALLOWLIST = {
+    ("core/scanner_matchers.py", 0.0, "default:threshold"): "TemplateMatcher.match: 0 means no gate; callers pass registry values",
+    ("core/scanner_matchers.py", 0.0, "default:margin"): "TemplateMatcher.match: 0 means no gate; callers pass registry values",
+    ("core/inventory_detail_recovery.py", 0.4, "assign"): "visual/name blend weight of the detail identity score",
+    ("core/inventory_detail_recovery.py", 0.6, "assign"): "visual/name blend weight of the detail identity score",
+}
+
+
+def threshold_literals(path: str) -> set[tuple[str, float, str, int]]:
+    tree = ast.parse((BACKEND / path).read_text(encoding="utf-8"))
+
+    def floats(node):
+        return [item for item in ast.walk(node) if isinstance(item, ast.Constant) and isinstance(item.value, float)]
+
+    def named(name: str) -> bool:
+        return any(part in name.lower() for part in NAMES)
+
+    hits = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Compare):
+            for side in (node.left, *node.comparators):
+                if isinstance(side, ast.Constant) and isinstance(side.value, float):
+                    hits.add((path, side.value, "compare", side.lineno))
+        elif isinstance(node, ast.keyword) and node.arg and named(node.arg):
+            hits.update((path, item.value, f"kwarg:{node.arg}", item.lineno) for item in floats(node.value))
+        elif isinstance(node, ast.FunctionDef):
+            arguments = node.args
+            positional = arguments.args[-len(arguments.defaults):] if arguments.defaults else []
+            pairs = list(zip(positional, arguments.defaults)) + [
+                (arg, default) for arg, default in zip(arguments.kwonlyargs, arguments.kw_defaults) if default is not None]
+            for arg, default in pairs:
+                if named(arg.arg):
+                    hits.update((path, item.value, f"default:{arg.arg}", item.lineno) for item in floats(default))
+        elif isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and named(target.id) for target in node.targets):
+            hits.update((path, item.value, "assign", item.lineno) for item in floats(node.value))
+    return hits
+
+
+class RecognitionThresholdRegistryTests(unittest.TestCase):
+    def test_migrated_files_have_no_unregistered_threshold_literals(self):
+        for path in MIGRATED:
+            with self.subTest(path=path):
+                unexpected = sorted((value, detector, line) for file, value, detector, line in threshold_literals(path)
+                                    if (file, value, detector) not in ALLOWLIST)
+                self.assertEqual([], unexpected)
+
+    def test_allowlist_has_no_stale_entries(self):
+        present = {(file, value, detector) for path in MIGRATED for file, value, detector, _ in threshold_literals(path)}
+        self.assertEqual(set(), set(ALLOWLIST) - present)
+
+    def test_every_entry_is_named_typed_and_traceable(self):
+        for entry in rt.THRESHOLDS.values():
+            with self.subTest(name=entry.name):
+                self.assertIn(entry.kind, {"score", "margin", "similarity", "ratio"})
+                self.assertTrue(0 <= entry.value <= 1)
+                self.assertRegex(entry.phase, r"^(P\d+|F\d+|S\d+[a-z]?|D\d+|C\d+)$")
+                self.assertTrue((V7 / entry.doc).exists(), entry.doc)
+                self.assertIn(entry.resolution, {"*", "native1280", "native2560"})
+
+    def test_same_frame_thresholds_are_distinct_named_decisions(self):
+        # C4 records why the three "same frame" values differ; unifying them is a C7 decision.
+        self.assertEqual(0.995, rt.value("inventory.wheel.same_frame"))
+        self.assertEqual(0.985, rt.value("inventory.scroll.settled_same"))
+        self.assertEqual(0.97, rt.value("inventory.scroll.no_motion_same"))
+        self.assertEqual([rt.THRESHOLDS["inventory.scroll.overlap_score"]],
+                         rt.lookup("scroll_overlap", "verified_row_overlap", "score", "native1280"))
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import math
 from PIL import Image
 from core.inventory_catalog import CATALOG, ITEM_SCAN_PROFILES
+from core import recognition_thresholds as rt
 from core.scanner_session import ScannerError
 from core.scan_context import ScanContext
 from core.student_scan_recognizer import ratio_crop
@@ -67,9 +68,9 @@ class InventoryNavigation:
             return .7*max(0,correlation(crop,template))+.3*color_similarity(crop,template)
 
     def menu_ready(self,frame,source):
-        if self.score(frame,'filter_title')>=.85:return True
+        if self.score(frame,'filter_title')>=rt.value('inventory.menu.filter_title'):return True
         names=('eq_sort_rule_check',) if source=='equipment' else ('sort_rule_check','sort_name_rule_check')
-        return any(self.score(frame,n)>=.68 for n in names)
+        return any(self.score(frame,n)>=rt.value('inventory.menu.sort_check_visible') for n in names)
 
     def click(self,target,cancel,name,cleanup=False):
         if cancel.is_set():raise ScannerError('cancelled','inventory preparation cancelled')
@@ -98,7 +99,7 @@ class InventoryNavigation:
 
     def ensure_sort(self,target,cancel,source,profile):
         name='eq_sort_rule_check' if source=='equipment' else ('sort_name_rule_check' if profile=='student_elephs' else 'sort_rule_check')
-        threshold=.70 if source=='equipment' else .68
+        threshold=rt.value('inventory.sort_check.equipment' if source=='equipment' else 'inventory.sort_check.item')
         for attempt in range(3):
             with self.capture.wait_stable(target,cancel) as frame:
                 score=self.score(frame,name)
@@ -164,7 +165,7 @@ class InventoryNavigation:
                     capture_failures+=1;continue
                 raise
             signatures=self.signatures(frame,source)
-            if previous is not None and self.page_similarity(previous,signatures)>=.985:stable+=1
+            if previous is not None and self.page_similarity(previous,signatures)>=rt.value('inventory.scroll.settled_same'):stable+=1
             else:stable=0
             if stable>=2:return frame,signatures
             previous=signatures;frame.close()
@@ -193,7 +194,7 @@ class InventoryNavigation:
         after.close()
         same=self.page_similarity(before_signatures,after_signatures)
         self.trace.append(dict(terminal_recheck=same))
-        return same>=.97
+        return same>=rt.value('inventory.scroll.no_motion_same')
 
     def restore_first_page(self,target,cancel,frame):
         """Re-apply the verified display settings; the client then shows the first page (X10)."""
@@ -205,7 +206,7 @@ class InventoryNavigation:
             self.scroll_once(target,cancel,attempt)
             after,after_signatures=self.settled_after(target,cancel,source)
             same=self.page_similarity(before_signatures,after_signatures)
-            if same>=.97:
+            if same>=rt.value('inventory.scroll.no_motion_same'):
                 if attempt==2:return ScrollResult(after,rows,(),terminal=True,reason='verified_no_motion')
                 after.close();continue
             overlap=self.overlap(before_signatures,after_signatures,cols)
@@ -213,10 +214,11 @@ class InventoryNavigation:
                 after.close();raise ScannerError('inventory_scroll_unverified','row overlap unavailable')
             count,score,margin=overlap
             self.trace.append(dict(overlap_rows=count,score=score,margin=margin))
-            margin_threshold = .025 if source == 'equipment' else .03
-            if .88<=score<.94 and margin>=margin_threshold:
+            margin_threshold = rt.value('inventory.scroll.overlap_margin.equipment' if source == 'equipment' else 'inventory.scroll.overlap_margin.item')
+            overlap_score=rt.value('inventory.scroll.overlap_score')
+            if rt.value('inventory.scroll.tail_residual_floor')<=score<overlap_score and margin>=margin_threshold:
                 return ScrollResult(after,count,tuple(range(slots)),False,True,'verified_tail_residual')
-            if score<.94 or margin<margin_threshold:
+            if score<overlap_score or margin<margin_threshold:
                 after.close();raise ScannerError('inventory_scroll_unverified',f'ambiguous row overlap score={score:.3f} margin={margin:.3f}')
             return ScrollResult(after,count,tuple(range(count*cols,slots)))
         raise ScannerError('inventory_scroll_unverified','scroll recovery exhausted')
