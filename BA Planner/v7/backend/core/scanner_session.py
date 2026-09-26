@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from PIL import Image
 
-from core.inventory_catalog import SCAN_PROFILES
+from core.inventory_catalog import CATALOG_REVISION, SCAN_PROFILES
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, RepositoryDTOError
 
 
@@ -394,6 +394,8 @@ class ScannerSessionService:
             if item.review_required and not item.approved:
                 raise ScannerError("review_required", "candidate requires explicit review approval")
             payload = self._validated_payload(item.scan_kind, item.payload)
+            if item.scan_kind == "inventory":
+                self._require_catalog_revision(item, payload)
 
         if item.scan_kind == "student":
             state = self._repository.get_state(profile_id)
@@ -407,8 +409,11 @@ class ScannerSessionService:
                 profile_id, students, expected_repository_revision, idempotency_key
             )
         elif item.scan_kind == "inventory":
+            inventory = self._merged_inventory(
+                self._repository.get_state(profile_id)["inventory"], payload.to_dict()
+            )
             result = self._repository.update_inventory(
-                profile_id, payload.to_dict(), expected_repository_revision, idempotency_key
+                profile_id, inventory, expected_repository_revision, idempotency_key
             )
         else:
             if self._tactical_lobby_committer is None:
@@ -478,6 +483,26 @@ class ScannerSessionService:
             if session.generation != generation:
                 raise ScannerError("stale_generation", "scanner generation is stale")
             return session
+
+    @staticmethod
+    def _require_catalog_revision(item: SessionCandidate, payload: InventorySnapshot) -> None:
+        """A scan is only meaningful against the catalog order it was recognized with."""
+        if payload.catalog_revision == CATALOG_REVISION:
+            return
+        code = "catalog_revision_missing" if payload.catalog_revision is None else "catalog_revision_mismatch"
+        details = {"expected": CATALOG_REVISION, "received": payload.catalog_revision}
+        item.audit.append({"source": "catalog_revision_check", "status": "rejected", "code": code, **details})
+        raise ScannerError(code, "inventory candidate catalog revision does not match the current catalog", details=details)
+
+    @staticmethod
+    def _merged_inventory(saved: dict[str, Any], scanned: dict[str, Any]) -> dict[str, Any]:
+        """Upsert scanned entries by identity; a scan never deletes entries it did not observe."""
+        def identity(entry: dict[str, Any]) -> str:
+            return entry.get("item_id") or entry["key"]
+        updates = {identity(entry): entry for entry in scanned["entries"]}
+        entries = [updates.pop(identity(entry), entry) for entry in saved.get("entries", [])]
+        entries.extend(updates.values())
+        return {"version": 1, "catalog_revision": scanned.get("catalog_revision"), "entries": entries}
 
     @staticmethod
     def _repository_inventory(payload: object) -> object:

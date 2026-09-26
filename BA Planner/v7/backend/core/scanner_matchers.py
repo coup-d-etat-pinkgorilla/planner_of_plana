@@ -9,7 +9,7 @@ from PIL import Image, ImageChops, ImageStat
 
 from core.recognition_assets import RecognitionAssetCatalog
 from core.recognition_answer_samples import RecognitionAnswerSampleStore
-from core.inventory_catalog import CATALOG
+from core.inventory_catalog import CATALOG, CATALOG_REVISION
 from core.scanner_session import ScanBatchResult, ScannerError
 from core.student_scan_recognizer import Observation, StudentBasicCropSet, StudentBasicRecognizer
 from core.student_equipment_recognizer import EquipmentMenuRecognizer, StudentEquipmentRecognizer
@@ -1459,7 +1459,7 @@ class InventoryMatcherAdapter:
                 review_required = review_required or not coverage_complete or not ordered_ok
             completed = True
             return [{
-                "payload": {"version": 1, "entries": entries},
+                "payload": {"version": 1, "catalog_revision": CATALOG_REVISION, "entries": entries},
                 "evidence": evidence,
                 "review_required": review_required,
                 "_answer_specimen": {"source_size": source_size, "slot_crops": slot_crops},
@@ -1469,7 +1469,7 @@ class InventoryMatcherAdapter:
             retained = []
             if entries:
                 retained = [{
-                    "payload": {"version": 1, "entries": entries},
+                    "payload": {"version": 1, "catalog_revision": CATALOG_REVISION, "entries": entries},
                     "evidence": [*evidence, {"field": "scan_coverage", "status": "partial",
                         "source": "scan_interrupted", "confidence": 0.0, "note": error.code}],
                     "review_required": True,

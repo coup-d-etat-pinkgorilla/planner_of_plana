@@ -18,8 +18,9 @@ sources:
 | Phase | 상태 | 시작 기준 | 다음 행동 |
 |---|---|---|---|
 | C0 기준선·golden 고정 | **완료** (2026-09-26) | `3a96abe` (branch `scanner-consolidation`) | — |
-| C1 계약 드리프트·이름 정리 | C1a·C1b 완료, C1c 미착수 | `552ab99` | C1c(X06 + 재고 commit 병합 수정) |
-| C2~C7 | 미착수 | — | 순서대로 |
+| C1 계약 드리프트·이름 정리 | **완료** (2026-09-26, C1a~C1c) | `552ab99` | — |
+| C2 재고 끝 판정·입력 보강 | 미착수 | C1 golden | C2 착수(실게임 1280 필요) |
+| C3~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
 
@@ -136,7 +137,7 @@ C1은 repository DTO와 Flutter decoder까지 걸치므로 세 조각으로 나�
 |---|---|---|---|
 | C1a | X01 `shadow` enum, X02 `session.start.inventory_scan_profile`, X03 프로필 집합 단일 소스 | diff 0 | **완료** (2026-09-26) |
 | C1b | X04 zero-fill 필드, X05 `inventory_scan_profile` 엔트리 필드, X21 source 이름 | 의도된 필드 추가·이름 변경 diff | **완료** (2026-09-26) |
-| C1c | X06 후보 `catalog_revision`과 commit 검증 + 재고 commit 전체 교체 버그(C1-1) 수정 | 재고 golden에 `catalog_revision` 추가 | 미착수 |
+| C1c | X06 후보 `catalog_revision`과 commit 검증 + 재고 commit 전체 교체 버그(C1-1) 수정 | 재고 golden에 `catalog_revision` 추가 | **완료** (2026-09-26) |
 
 ### C1a 결과 (2026-09-26)
 
@@ -188,3 +189,34 @@ C1은 repository DTO와 Flutter decoder까지 걸치므로 세 조각으로 나�
 | Python 전체 | 547 tests OK (+2) |
 | golden diff | **1건, 의도됨**: `inventory_item_tech_notes_1280`의 마지막 `scroll_overlap` source `verified_row_overlap` → `verified_tail_residual`(X21). `--write inventory_item_tech_notes_1280`으로 재고정. 나머지 7개 same. 재고 golden에 accepted entry가 없어 X04/X05는 golden에 나타나지 않고 단위 테스트로만 고정된다. |
 | Flutter analyze / test | 기존 info 2건 / 406 all passed |
+
+### C1c 결과 (2026-09-26)
+
+- 병합 규칙 사용자 결정: **identity upsert**. 착수 전 선택지는 "스캔 프로필 엔트리 교체"였으나, 부분 스캔(zero-fill 불가)에서
+  관측 못 한 같은 프로필 항목을 지우는 손실이 남아 재질문했고 upsert로 확정했다. 관측 못 한 항목은 이전 수량을 유지한다.
+- C1-1 수정: `ScannerSessionService._merged_inventory`가 commit 시점의 저장 인벤토리에 스캔 엔트리(명시 zero-fill `"0"` 포함)를
+  `item_id or key` 기준으로 덮어쓰고 나머지는 순서를 유지해 보존한다. revision 충돌 검사는 기존 `update_inventory` 그대로다.
+  회귀 테스트 `test_scanner_inventory_commit_c1c.py`는 수정 전 실제 `JsonRepository`에서 ooparts·미관측 노트가 사라지는 것을 재현했다.
+- X06: `InventoryMatcherAdapter` 후보 payload(정상·중단 보존 후보 모두)에 `catalog_revision`(= `inventory_catalog.CATALOG_REVISION`)을
+  싣는다. commit은 누락 `catalog_revision_missing`, 불일치 `catalog_revision_mismatch`로 거부하고 저장소를 쓰지 않는다. error
+  details와 후보 `audit`에 `{expected, received}`를 남긴다. Flutter는 후보 payload를 그대로 review/commit하므로 값이 보존된다.
+- 스키마: 후보 payload는 v1에서 generic object라 변경 없음. repository `inventorySnapshot.catalog_revision`은 기존 optional 필드.
+
+| 검증 | 결과 |
+|---|---|
+| Python 전체 | 549 tests OK (+2) |
+| golden diff | **1건, 의도됨**: `inventory_item_tech_notes_1280` payload에 `catalog_revision` 추가(X06). `--write`로 재고정. 나머지 7개 same |
+| Flutter analyze / test | 기존 info 2건 / 406 all passed (Dart↔Python process E2E 포함) |
+| `codealmanac validate` | 기존 workflow `unused_sources` 6건만 |
+
+### C1 완료 판정
+
+- 스키마 테스트가 C0 golden 실제 후보 전체를 통과(C1a), Dart enum 동기화 테스트 통과, golden diff는 X21·X06의 의도된 2줄뿐.
+- **미검증**: 실제 앱 UI에서 재고 스캔 승인→commit 병합을 실게임으로 확인하지 않았다(commit 경로는 게임 입력과 무관해 저장소
+  통합 테스트로 확인). 실게임 1280 확인은 C2에서 재고 스캔 실측과 함께 한다.
+- 남은 발견: C0-1(기술 노트 전량 skip), C0-2(entries 0일 때 중단 결과가 evidence를 버림) — C2 실게임 확인 시 먼저 재현한다.
+
+### 다음 행동
+
+- C2 착수. X07·X09·X10·allowlist는 fixture 선행이 가능하나 X08과 완료 조건은 **실게임 1280에서 item/equipment/gift tail**
+  확인이 필요하다. 게임 실행 가능 시점을 사용자와 맞춘다. D4 기본안(안전 드래그 영역 없으면 `review_required` 강등)은 그대로.

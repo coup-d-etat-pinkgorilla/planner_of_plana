@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock,patch
 from PIL import Image
+from core.inventory_catalog import CATALOG_REVISION
 from core.recognition_assets import RecognitionAssetCatalog
 from core.inventory_detail_recovery import InventoryDetailRecognizer,InventoryDetailRecovery,DetailResult,DetailCount
 from core.inventory_navigation import PreparedInventory,ScrollResult
@@ -185,6 +186,7 @@ class F9AdapterTests(unittest.TestCase):
         self.assertEqual({'tech_notes'},{e['inventory_scan_profile'] for e in entries})
         self.assertEqual({'tech_notes'},{e['profile_id'] for e in entries})
         self.assertIn('verified_no_motion',{e['source'] for e in evidence if e['field']=='scroll_overlap'})
+        self.assertEqual(CATALOG_REVISION,result[0]['payload']['catalog_revision'])
 
     def test_f10_scroll_failure_preserves_entry_and_never_zero_fills(self):
         adapter=self.adapter();adapter.max_pages=2;nav=Mock()
@@ -196,5 +198,6 @@ class F9AdapterTests(unittest.TestCase):
         self.assertEqual('failed',result.outcome)
         self.assertEqual(1,len(result.candidates[0]['payload']['entries']))
         self.assertEqual('42',result.candidates[0]['payload']['entries'][0]['quantity'])
+        self.assertEqual(CATALOG_REVISION,result.candidates[0]['payload']['catalog_revision'])
 
 if __name__=='__main__':unittest.main()
