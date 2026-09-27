@@ -6,6 +6,7 @@ from threading import Event, RLock
 from typing import Any, Callable, Protocol
 
 from PIL import Image, ImageChops, ImageStat
+from statistics import median
 
 from core.recognition_assets import RecognitionAssetCatalog
 from core.recognition_answer_samples import RecognitionAnswerSampleStore
@@ -1272,7 +1273,7 @@ class _InventoryScan:
     coverage_complete: bool = False
     offset: float = 0.0
     read_until: int = -1
-    anchored: int | None = None
+    gutter_calibration: float | None = None
     completed: bool = False
     page_open: bool = False
     input_stopped: ScannerError | None = None
@@ -1342,6 +1343,7 @@ class InventoryMatcherAdapter:
             scan.frame = self.capture.wait_stable(scan.target, cancel)
             scan.source_kind = scan.prepared.source
             scan.target = scan.target.replace(inventory_scan_profile=scan.prepared.profile_id)
+            scan.gutter_calibration = self._gutter_phase(scan, 0.0)
         self._load_answer_samples(scan.target.get("profile_id"), scan.source_size)
         if scan.prepared is not None:
             scan.allowed_ids = {row.item_id for row in CATALOG if row.profile_id == scan.prepared.profile_id}
@@ -1398,6 +1400,11 @@ class InventoryMatcherAdapter:
                 if scan.input_stopped is not None:
                     # C5d: an unconfirmed selection already made its verified return; no further input.
                     raise scan.input_stopped
+            if scan.page_open:
+                # C5e-1: the last verified selection sits in the bottom rows and stays visible after the
+                # next ~one-row drag, so a completed page keeps it instead of returning (no anchor click).
+                scan.page_open = False
+                self.detail_recovery.end_page(scan.target, keep_selection=True)
         finally:
             if scan.page_open:
                 scan.page_open = False
@@ -1530,7 +1537,13 @@ class InventoryMatcherAdapter:
 
     @staticmethod
     def _record_entry(scan: "_InventoryScan", reading: "_SlotReading", crop: Image.Image) -> bool:
-        if any(entry["item_id"] == reading.identity for entry in scan.entries):
+        previous = next((entry for entry in scan.entries if entry["item_id"] == reading.identity), None)
+        if previous is not None:
+            if scan.prepared is not None and previous["observed_slot"] != reading.index:
+                # Every tile is read once by content index, so one identity at two indices means the
+                # page's rows were mapped to the wrong content rows (C5e-1 live: a one-row shift alias).
+                raise ScannerError("inventory_scroll_unverified",
+                                   f"{reading.identity} seen at slots {previous['observed_slot']} and {reading.index}")
             return False
         scan_profile = scan.prepared.profile_id if scan.prepared is not None else None
         scan.entries.append({"key": reading.identity, "quantity": reading.quantity, "item_id": reading.identity,
@@ -1562,7 +1575,6 @@ class InventoryMatcherAdapter:
             raise ScannerError("cancelled", "inventory scan cancelled")
         if navigation is None:
             return self._wheel_page(scan, cancel)
-        self._anchor_selection(scan, cancel)
         moved = navigation.advance(scan.target, cancel, scan.frame, scan.source_kind)
         shift_px = round(moved.shift * scan.source_size[1])
         scan.evidence.append({"field": "scroll_overlap", "status": "ok", "source": moved.reason,
@@ -1575,7 +1587,7 @@ class InventoryMatcherAdapter:
         scan.offset += moved.shift
         scan.frame.close()
         scan.frame = moved.frame
-        self._align_to_anchor(scan)
+        self._align_to_gutters(scan)
         return True
 
     def _require_tail_read(self, scan: "_InventoryScan") -> None:
@@ -1588,47 +1600,30 @@ class InventoryMatcherAdapter:
                 if image_has_visible_content(crop):
                     raise ScannerError("inventory_scroll_unverified", f"tile {index} is filled but never readable at the list end")
 
-    def _align_to_anchor(self, scan: "_InventoryScan") -> None:
-        """Remove accumulated shift rounding: re-centre the offset where the anchored selection is detected.
+    def _gutter_phase(self, scan: "_InventoryScan", calibration: float) -> float | None:
+        """Median row-phase error of the gutters that agree with it, or None with fewer than two (C5e-1)."""
+        errors = self.navigation.phase_residuals(scan.frame, scan.source_kind, scan.offset, calibration)
+        if len(errors) < 2:
+            return None
+        middle = median(errors)
+        tolerance = rt.value("inventory.gutter.agreement") * scan.source_size[1]
+        agreeing = [error for error in errors if abs(error - middle) <= tolerance]
+        return median(agreeing) if len(agreeing) >= 2 else None
 
-        Each measured move is exact to about a pixel, but several moves drift past the few pixels the
-        selection-border check tolerates (live tail page: ~3px). The anchor is visible by construction.
+    def _align_to_gutters(self, scan: "_InventoryScan") -> None:
+        """Re-phase the measured offset on the observed tile rows (C5e-1, E1).
+
+        Measured shifts are each exact to about a pixel but drift over several moves; the gutters
+        between tile rows give the absolute phase, so no selection has to be moved before a scroll.
         """
-        detail_port = getattr(self, 'detail_recovery', None)
-        if scan.anchored is None or detail_port is None:
-            return
         height = scan.source_size[1]
-        valid = []
-        for correction in range(-10, 11):
-            visible = self.navigation.page_slots(scan.source_kind, scan.offset + correction / height)
-            order = sorted(visible)
-            position = detail_port.recognizer.selected(scan.frame, scan.source_kind, [visible[i] for i in order])
-            if position is not None and 0 <= position < len(order) and order[position] == scan.anchored:
-                valid.append(correction)
-        scan.evidence.append({"field": "scroll_alignment", "status": "ok" if valid else "uncertain",
-            "source": "anchored_selection", "confidence": 1.0 if valid else 0.0,
-            "note": f"anchor={scan.anchored};window_px={valid[0]}..{valid[-1]}" if valid else f"anchor={scan.anchored};not found"})
-        if valid:
-            scan.offset += (valid[0] + valid[-1]) / 2 / height
-
-    def _anchor_selection(self, scan: "_InventoryScan", cancel: Event) -> None:
-        """Keep a visible selection across the scroll: select the page's last filled slot (C5)."""
-        detail_port = getattr(self, 'detail_recovery', None)
-        if detail_port is None or not hasattr(detail_port, 'anchor') or scan.prepared is None:
-            return
-        visible = self._visible_slots(scan, 0)
-        order = sorted(visible)
-        slots = [visible[index] for index in order]
-        # The bottom readable row can sit a few pixels from the list edge once offsets drift, clipping
-        # its selection border; one row higher still stays visible after a ~1-row drag.
-        rows = sorted({index // 5 for index in order})
-        preferred = [position for position in range(len(order)) if len(rows) > 1 and order[position] // 5 == rows[-2]]
-        for position in [*reversed(preferred), *reversed(range(len(slots)))]:
-            with ratio_crop(scan.frame, slots[position]) as crop:
-                if image_has_visible_content(crop):
-                    detail_port.anchor(scan.target, cancel, scan.frame, position, slots=slots)
-                    scan.anchored = order[position]
-                    return
+        error = None if scan.gutter_calibration is None else self._gutter_phase(scan, scan.gutter_calibration)
+        if error is None or abs(error) > rt.value("inventory.gutter.max_correction") * height:
+            note = "no calibration" if scan.gutter_calibration is None else "fewer than two agreeing gutters" if error is None else f"correction_px={error:.1f}"
+            raise ScannerError("inventory_scroll_unverified", f"tile row phase unverified: {note}")
+        scan.offset -= error / height
+        scan.evidence.append({"field": "scroll_alignment", "status": "ok", "source": "gutter_phase", "confidence": 1.0,
+                              "note": f"correction_px={error:.1f}"})
 
     def _wheel_page(self, scan: "_InventoryScan", cancel: Event) -> bool:
         """Navigation-free fallback: wheel once and compare whole frames."""

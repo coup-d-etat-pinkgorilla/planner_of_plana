@@ -390,6 +390,9 @@ class ScannerProductionAdapterTests(unittest.TestCase):
             def page_slots(self, _source, _offset, readable=True):
                 return dict(enumerate(grid_slots))
 
+            def phase_residuals(self, _frame, _source, _offset, _calibration=0.0):
+                return []
+
             def advance(self, _target, _cancel, current, _source):
                 return type("Moved", (), {
                     "frame": current.copy(), "shift": 0.0, "terminal": True,

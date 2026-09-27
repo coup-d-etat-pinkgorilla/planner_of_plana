@@ -78,6 +78,11 @@ class F9RecoveryTests(unittest.TestCase):
         outcome=self.outcome(ui,reader)
         self.assertTrue(outcome.stop);self.assertEqual(0,ui.selected)
         self.assertEqual([False,True],[bool(c.get('_scanner_cleanup')) for c in ui.clicks])
+    def test_completed_page_keeps_the_last_verified_selection(self):
+        ui=GridUI(slots=SLOTS3);recovery=InventoryDetailRecovery(ui,ui.reader())
+        with ui.wait_stable({},FastEvent()) as frame:recovery.begin_page({},FastEvent(),frame)
+        recovery.read({},FastEvent(),2,ITEM,None,False);recovery.end_page({},keep_selection=True)
+        self.assertEqual(2,ui.selected);self.assertEqual(1,len(ui.clicks));self.assertIsNone(recovery.page)
     def test_page_change_never_clicks_cleanup_on_unknown_screen(self):
         ui=GridUI(changed=True)
         with self.assertRaises(ScannerError) as exc:self.outcome(ui)
@@ -181,6 +186,10 @@ class F9AdapterTests(unittest.TestCase):
         adapter.detail_recovery.read.return_value=DetailRecoveryResult(DetailResult(ITEM,.95,.1,DetailCount('0',.9)))
         self.enterContext(patch('core.scanner_matchers.image_has_visible_content',return_value=True))
         return adapter
+    @staticmethod
+    def nav():
+        # C5e-1: two agreeing gutters at the predicted phase (no correction).
+        nav=Mock();nav.phase_residuals.return_value=[0.0,0.0];return nav
     def scan(self,adapter):
         result=adapter({},FastEvent(),lambda *_:None)
         for row in result.candidates if isinstance(result,ScanBatchResult) else result:
@@ -233,8 +242,57 @@ class F9AdapterTests(unittest.TestCase):
         entry=result.candidates[0]['evidence'][0]
         self.assertEqual('partial',entry['status']);self.assertTrue(result.candidates[0]['review_required'])
 
+    def test_c5e1_gutter_phase_corrects_the_offset_without_an_anchor_click(self):
+        adapter=self.adapter();adapter.max_pages=3;nav=self.nav()
+        nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+        nav.verify_profile_order.return_value=True
+        offsets=[]
+        def page_slots(_source,offset,**_kw):
+            offsets.append(offset);return {0:SLOTS[0]} if offset==0 else {1:SLOTS[0]}
+        nav.page_slots.side_effect=page_slots
+        # Fixture frames are 40px tall. Page 0 calibrates at -0.2px; after the move two gutters sit 0.5px
+        # lower than predicted and one disagrees (a selection shadow) and is ignored.
+        nav.phase_residuals.side_effect=lambda _f,_s,offset,calibration:[-0.2,-0.2] if offset==0 else [0.5,0.5,9.0]
+        moves=iter([PageMove(adapter.capture.wait_stable({},FastEvent()),101/720),
+                    PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')])
+        nav.advance.side_effect=lambda *_:next(moves)
+        adapter.detail_recovery.read.side_effect=[DetailRecoveryResult(DetailResult(ITEM,.95,.1,DetailCount('0',.9))),DetailRecoveryResult(DetailResult(OTHER,.95,.1,DetailCount('3',.9)))]
+        adapter.navigation=nav
+        result=self.scan(adapter);evidence=result[0]['evidence']
+        self.assertEqual(['correction_px=0.5'],[e['note'] for e in evidence if e['source']=='gutter_phase'])
+        self.assertAlmostEqual(101/720-0.5/40,max(offsets))
+        # the calibration passed on later pages is the first page's agreeing median
+        self.assertEqual(-0.2,nav.phase_residuals.call_args_list[-1].args[3])
+        adapter.detail_recovery.anchor.assert_not_called()
+        # completed pages keep their last verified selection (no return click before the drag)
+        self.assertEqual([{'keep_selection':True}]*2,[c.kwargs for c in adapter.detail_recovery.end_page.call_args_list])
+    def test_c5e1_one_identity_at_two_content_indices_is_unverified(self):
+        # Live: a one-row shift alias mapped rows 55-59 to indices 50-54; the next page read them again.
+        adapter=self.adapter();adapter.max_pages=3;nav=self.nav()
+        nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+        nav.verify_profile_order.return_value=True
+        nav.page_slots.side_effect=lambda _source,offset,**_kw:{0:SLOTS[0]} if offset==0 else {1:SLOTS[0]}
+        nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),101/720)
+        adapter.navigation=nav
+        result=self.scan(adapter)
+        self.assertEqual('inventory_scroll_unverified',result.error.code)
+        self.assertEqual(1,len(result.candidates[0]['payload']['entries']))
+    def test_c5e1_unobserved_row_phase_is_unverified(self):
+        for residuals in ([],[3.0],[0.0,9.0],[40.0,40.5]):
+            with self.subTest(residuals=residuals):
+                adapter=self.adapter();adapter.max_pages=3;nav=self.nav()
+                nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+                nav.verify_profile_order.return_value=True
+                nav.page_slots.side_effect=lambda _source,offset,**_kw:{0:SLOTS[0]} if offset==0 else {1:SLOTS[0]}
+                nav.phase_residuals.side_effect=lambda _f,_s,offset,calibration,_r=residuals:[0.0,0.0] if offset==0 else _r
+                nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),101/720)
+                adapter.navigation=nav
+                result=self.scan(adapter)
+                self.assertEqual('inventory_scroll_unverified',result.error.code)
+                self.assertEqual([],[e for e in result.candidates[0]['payload']['entries'] if e['observed_slot'] is None])
+
     def test_f10_verified_terminal_enables_profile_zero_fill(self):
-        adapter=self.adapter();adapter.max_pages=2;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
+        adapter=self.adapter();adapter.max_pages=2;nav=self.nav();nav.page_slots.return_value={0:SLOTS[0]}
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
         nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')
@@ -256,7 +314,7 @@ class F9AdapterTests(unittest.TestCase):
         self.assertEqual(CATALOG_REVISION,result[0]['payload']['catalog_revision'])
 
     def test_f10_scroll_failure_preserves_entry_and_never_zero_fills(self):
-        adapter=self.adapter();adapter.max_pages=2;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
+        adapter=self.adapter();adapter.max_pages=2;nav=self.nav();nav.page_slots.return_value={0:SLOTS[0]}
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
         nav.advance.side_effect=ScannerError('inventory_scroll_unverified','fixture')
@@ -274,7 +332,7 @@ class F9AdapterTests(unittest.TestCase):
         self.assertEqual([('ok','inventory_first_page_restore')],[(e['status'],e['source']) for e in restore])
 
     def test_f10_scroll_failure_reports_failed_first_page_restore(self):
-        adapter=self.adapter();adapter.max_pages=2;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
+        adapter=self.adapter();adapter.max_pages=2;nav=self.nav();nav.page_slots.return_value={0:SLOTS[0]}
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
         nav.advance.side_effect=ScannerError('inventory_scroll_unverified','fixture')
@@ -288,13 +346,14 @@ class F9AdapterTests(unittest.TestCase):
     def test_c5_tail_then_no_motion_is_the_verified_end(self):
         # C5 (X07, C2-2): a short last move is read like any page; only a later no-motion drag ends
         # coverage, so the residual tail is always followed by the re-check.
-        adapter=self.adapter();adapter.max_pages=4;nav=Mock()
+        adapter=self.adapter();adapter.max_pages=4;nav=self.nav()
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
         nav.page_slots.side_effect=lambda _source,offset,**_kw:{0:SLOTS[0]} if offset==0 else {1:SLOTS[0]}
         moves=iter([PageMove(adapter.capture.wait_stable({},FastEvent()),29/720),
                     PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')])
         nav.advance.side_effect=lambda *_:next(moves)
+        adapter.detail_recovery.read.side_effect=[DetailRecoveryResult(DetailResult(ITEM,.95,.1,DetailCount('0',.9))),DetailRecoveryResult(DetailResult(OTHER,.95,.1,DetailCount('3',.9)))]
         adapter.navigation=nav
         result=self.scan(adapter);evidence=result[0]['evidence']
         self.assertEqual(['verified_pixel_shift','verified_no_motion'],
@@ -303,7 +362,7 @@ class F9AdapterTests(unittest.TestCase):
         self.assertTrue(any(e['observed_slot'] is None for e in result[0]['payload']['entries']))
 
     def test_c5_skipped_row_is_unverified_not_silently_lost(self):
-        adapter=self.adapter();adapter.max_pages=3;nav=Mock()
+        adapter=self.adapter();adapter.max_pages=3;nav=self.nav()
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
         nav.page_slots.side_effect=lambda _source,offset,**_kw:{0:SLOTS[0]} if offset==0 else {2:SLOTS[0]}
@@ -323,7 +382,7 @@ class F9AdapterTests(unittest.TestCase):
                ('equipment','equipment',ITEM,exp,0.001,False),('equipment','equipment',ITEM,exp,0.10,False))
         for source,profile,outside,member,margin,skipped in cases:
             with self.subTest(source=source,margin=margin):
-                adapter=self.adapter(fast=False);adapter.max_pages=1;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
+                adapter=self.adapter(fast=False);adapter.max_pages=1;nav=self.nav();nav.page_slots.return_value={0:SLOTS[0]}
                 adapter.detail_recovery.recognizer.regions={'sources':{source:{'grid_slots':SLOTS[:1]}}}
                 adapter.detail_recovery.read.return_value=DetailRecoveryResult(DetailResult(member,.95,.1,DetailCount('7',.9)))
                 nav.prepare.return_value=PreparedInventory(source,profile,True,True)
@@ -342,7 +401,7 @@ class F9AdapterTests(unittest.TestCase):
                     self.assertEqual(member,result[0]['payload']['entries'][0]['item_id'])
 
     def test_c5_unresolved_detail_identity_is_never_recorded_from_the_grid(self):
-        adapter=self.adapter(fast=True);adapter.max_pages=1;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
+        adapter=self.adapter(fast=True);adapter.max_pages=1;nav=self.nav();nav.page_slots.return_value={0:SLOTS[0]}
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
         nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')

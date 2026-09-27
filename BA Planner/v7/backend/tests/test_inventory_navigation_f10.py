@@ -245,11 +245,38 @@ class NativeNavigationFixtureTests(unittest.TestCase):
                 (live/'presents-full-2/frame-31.png',live/'presents-full-2/frame-34.png','item',110),
                 (live/'equipment-full/frame-16.png',live/'equipment-full/frame-19.png','equipment',112),
                 (live/'tech-notes-full/frame-19.png',live/'tech-notes-full/frame-19.png','item',0)]
+        # C5e-1 live: the half-size search preferred the one-row alias (10px) of this 111px move.
+        c5e1=live.parent/'scanner_c5e1_live/equipment-full-alias'
+        cases+=[(c5e1/'frame-96.png',c5e1/'frame-108.png','equipment',111)]
         for before_path,after_path,source,pixels in cases:
             with self.subTest(after=after_path.name),Image.open(before_path) as before,Image.open(after_path) as after:
                 shift,residual=nav.measure_shift(before.convert('RGB'),after.convert('RGB'),source)
                 self.assertLessEqual(abs(round(shift*720)-pixels),1)
                 self.assertLessEqual(residual,rt.value('inventory.shift.max_residual'))
+
+    def test_native_gutters_give_the_row_phase_the_shift_measured(self):
+        # C5e-1 (E1): gutter bands are one row pitch apart and, after the page-0 calibration, place the
+        # next page's rows where the measured pixel shift does, within two pixels.
+        nav=InventoryNavigation(FakeCapture(),RecognitionAssetCatalog(),self.detail)
+        for page0,page1,source in (('item-page0.png','item-page1.png','item'),('equipment-page0.png','equipment-page1.png','equipment')):
+            with self.subTest(source=source),Image.open(self.root/page0) as first,Image.open(self.root/page1) as second:
+                first,second=first.convert('RGB'),second.convert('RGB')
+                tops=nav.gutter_tops(first,source)
+                self.assertGreaterEqual(len(tops),3)
+                self.assertTrue(all(abs(b-a-101)<=1 for a,b in zip(tops,tops[1:])),tops)
+                calibration=sorted(nav.phase_residuals(first,source,0.0))[len(tops)//2]
+                self.assertLessEqual(abs(calibration),3)
+                shift,_residual=nav.measure_shift(first,second,source)
+                errors=nav.phase_residuals(second,source,shift,calibration)
+                self.assertGreaterEqual(len(errors),2)
+                self.assertTrue(all(abs(error)<=2 for error in errors),errors)
+
+    def test_uniform_or_tile_only_view_has_no_gutter(self):
+        nav=InventoryNavigation(FakeCapture(),RecognitionAssetCatalog(),self.detail)
+        for colour in ((204,204,204),(40,60,90)):
+            with self.subTest(colour=colour),Image.new('RGB',(1280,720),colour) as frame:
+                # a view that is all gutter grey is one band touching both edges: not a phase
+                self.assertEqual([],nav.gutter_tops(frame,'item'))
 
     def test_fixture_hashes_are_immutable(self):
         for asset in self.manifest['assets']:

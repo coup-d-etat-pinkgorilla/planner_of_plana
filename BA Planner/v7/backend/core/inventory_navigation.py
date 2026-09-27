@@ -269,6 +269,35 @@ class InventoryNavigation:
                 if region['y1']>=viewport['y1']+margin and region['y2']<=viewport['y2']-margin:result[(row+whole)*5+col]=region
         return result
 
+    def gutter_tops(self,frame,source):
+        """Tile top edges (px) read from the horizontal grey gutters inside the list viewport (C5e-1, E1).
+
+        A gutter row is almost entirely gutter grey across the grid columns; bands touching the viewport
+        edge are cut off and one- or two-pixel bands are selection shadows, so both are dropped.
+        """
+        base=self.detail_recognizer.regions['sources'][source]['grid_slots'];viewport=self.regions['list_viewport'][source]
+        w,h=frame.size;top=round(viewport['y1']*h)
+        box=(round(base[0]['x1']*w),top,round(base[4]['x2']*w),round(viewport['y2']*h))
+        low,high=rt.value('inventory.gutter.grey_low'),rt.value('inventory.gutter.grey_high')
+        with frame.convert('L') as grey,grey.crop(box) as view,view.point(lambda v:1 if low<=v<=high else 0) as mask:
+            data,width=mask.tobytes(),mask.width
+            rows=[data[y*width:(y+1)*width].count(1)>=rt.value('inventory.gutter.row_ratio')*width for y in range(mask.height)]
+        bands=[];start=None
+        for y,gutter in enumerate([*rows,False]):
+            if gutter and start is None:start=y
+            elif not gutter and start is not None:bands.append((start,y-1));start=None
+        return [top+end+3 for start,end in bands if start>0 and end<len(rows)-1 and end-start+1>=3]
+
+    def phase_residuals(self,frame,source,offset,calibration=0.0):
+        """Observed minus predicted tile-row phase (px, within half a row) for every detected gutter.
+
+        calibration is the first page's residual (offset 0 is exact there): the fixed distance between
+        a gutter's end and the slot region's top edge, removed before wrapping.
+        """
+        base=self.detail_recognizer.regions['sources'][source]['grid_slots'];h=frame.height
+        pitch=(base[5]['cy']-base[0]['cy'])*h;origin=(base[0]['y1']-offset)*h+calibration
+        return [(top-origin+pitch/2)%pitch-pitch/2 for top in self.gutter_tops(frame,source)]
+
     def measure_shift(self,before,after,source):
         """(upward shift as a fraction of height, mean grey residual) of the list between two frames."""
         base=self.detail_recognizer.regions['sources'][source]['grid_slots'];viewport=self.regions['list_viewport'][source]
@@ -282,9 +311,14 @@ class InventoryNavigation:
                 with x.crop((0,shift,x.width,span)) as top,y.crop((0,0,y.width,span-shift)) as bottom:
                     with ImageChops.difference(top,bottom) as diff:return ImageStat.Stat(diff).mean[0]
             with a.resize((a.width//2,height//2)) as a2,b.resize((b.width//2,height//2)) as b2:
-                coarse=min(range(0,limit//2),key=lambda shift:cost(a2,b2,shift,a2.height))
-            candidates=range(max(0,coarse*2-4),min(limit,coarse*2+4)+1)
-            best=min(candidates,key=lambda shift:cost(a,b,shift,height))
+                coarse=[cost(a2,b2,shift,a2.height) for shift in range(0,limit//2)]
+            # The grid repeats every row, so the half-size search can prefer a basin one pitch away
+            # (C5e-1 live: 10px chosen for a 111px move); refine the three best coarse minima at full size.
+            minima=[shift for shift in range(len(coarse)) if (shift==0 or coarse[shift]<=coarse[shift-1])
+                    and (shift==len(coarse)-1 or coarse[shift]<=coarse[shift+1])]
+            candidates={fine for shift in sorted(minima,key=coarse.__getitem__)[:3]
+                        for fine in range(max(0,shift*2-4),min(limit,shift*2+4)+1)}
+            best=min(sorted(candidates),key=lambda shift:cost(a,b,shift,height))
             return best/h,cost(a,b,best,height)
         finally:
             a.close();b.close()

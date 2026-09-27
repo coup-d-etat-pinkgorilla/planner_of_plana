@@ -188,9 +188,10 @@ class InventoryDetailRecovery:
     """Batch detail reads on one verified page (C5d, X18: the StudentPanelRecovery open/restore contract).
 
     ``begin_page`` records the page's visible selection, ``read`` selects slots in order (1, 2, ... N)
-    with the last verified selection frame as the baseline, and ``end_page`` makes the one verified
-    return to the original selection. F9 holds for every click: a visible selection before it and the
-    same grid after it.
+    with the last verified selection frame as the baseline, and ``end_page`` either keeps the last
+    verified selection (completed page, C5e-1) or makes the one verified return to the original
+    selection (failure, cancel). F9 holds for every click: a visible selection before it and the same
+    grid after it.
     """
     SELECT_RETRIES=2
 
@@ -249,19 +250,6 @@ class InventoryDetailRecovery:
         frame.close()
         return self._click_until(target,cancel,baseline,source,slot_index,selected,slots)
 
-    def anchor(self,target,cancel,baseline,slot_index,slots=None):
-        """Move the visible selection to slot_index before a scroll (C5).
-
-        The next page overlaps this one by at least one row, so a selection anchored in the last
-        row stays visible there and later detail reads keep F9's restore-to-visible-selection rule.
-        """
-        if self.page is not None:raise ScannerError('inventory_page_active','page selection has not returned safely')
-        source=self.recognizer.classify(baseline)
-        if source is None:raise ScannerError('inventory_selection_unknown','page unconfirmed; no input')
-        self.trace=[]
-        with self.select(ScanContext.of(target),cancel,baseline,source,slot_index,slots):pass
-        self.trace.append(dict(anchored=slot_index))
-
     def begin_page(self,target,cancel,frame,slots=None):
         if self.page is not None:raise ScannerError('inventory_page_active','previous page selection has not returned safely')
         self.trace=[];source=self.recognizer.classify(frame)
@@ -298,10 +286,19 @@ class InventoryDetailRecovery:
             return DetailRecoveryResult(DetailResult(grid_id,result.score,result.margin,DetailCount(grid_count,0,'weak_x_match','verified_grid_count_fallback'),'verified_grid_detail_fallback'))
         return DetailRecoveryResult(result)
 
-    def end_page(self,target):
-        """The one verified return to the page's original selection, with a fresh cleanup token."""
+    def end_page(self,target,keep_selection=False):
+        """Close the page session.
+
+        keep_selection ends a completed page on its last verified selection without input (C5e-1);
+        otherwise this is the one verified return to the page's original selection, with a fresh
+        cleanup token.
+        """
         page=self.page
         if page is None:return
+        if keep_selection:
+            self.trace.append(dict(kept=page.selected))
+            page.baseline.close();self.page=None
+            return
         cleanup=Event();context=ScanContext.of(target).replace(cleanup=True,cancel=cleanup)
         try:
             # F9 (a): observe the visible selection on the same grid before any cleanup click.

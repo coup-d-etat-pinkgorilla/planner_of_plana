@@ -22,7 +22,7 @@ sources:
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
 | C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
 | C4 임계값 레지스트리 | **완료** (2026-09-26, C4a~C4c) | `d4f030e` | — |
-| C5 인식 공통화 | **진행 중: C5a~C5d 완료** (2026-09-27) | `43c17b5` | C5e-1(gutter 위상) |
+| C5 인식 공통화 | **진행 중: C5a~C5d·C5e-1 완료** (2026-09-27) | `43c17b5` | C5e-2(타일 은행 fast path) |
 | C6~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -675,3 +675,52 @@ C5에서 gate **로직**을 고치고 값 변경은 C7. F9 "선택이 안 보이
 ### 다음 행동
 
 - **C5e-1** gutter 위상 검출(`_align_to_anchor`·스크롤 전 anchor 클릭 대체). 실게임 1280 세 프로필 tail + 학생 단일 스캔 회귀.
+
+## C5e-1 — gutter 위상 검출 (동작 변경) — 완료 (2026-09-27, 시작 `a775b05`)
+
+- `InventoryNavigation.gutter_tops`: viewport의 그리드 x 범위에서 회색(198~210) 비율 ≥ .8 행의 band, viewport 경계에 닿는 band·길이 < 3px band 제외,
+  band 끝 + 3px = 타일 상단(E1 그대로, Pillow만). `phase_residuals(frame, source, offset, calibration)`은 예측 행 위상과의 차이(px, ±반 행).
+- 어댑터: 첫 페이지(offset 0)의 위상 차이 중앙값을 **보정값**으로 저장(gutter 끝과 slot region 상단 사이의 고정 거리). 이동 후에는
+  보정값을 뺀 차이 중 중앙값 ±3px 안에 드는 gutter가 2개 이상이면 그 중앙값만큼 offset을 고친다. 2개 미만·보정값 없음·25px 초과는
+  `inventory_scroll_unverified`. `measure_shift`는 행 수·끝 판정용으로 유지.
+- 제거: 스크롤 전 anchor 클릭(`_anchor_selection`, `InventoryDetailRecovery.anchor`)과 21회 탐색(`_align_to_anchor`).
+- **결정(C5e-1, C5d 계약 조정)**: anchor가 없으면 C5d의 "페이지 끝 원선택 복귀"가 선택을 첫 행으로 되돌려 다음 페이지에서 보이지 않게 만든다
+  (F9 a 위반 → `inventory_selection_unknown`). 그래서 **정상 완료 페이지는 마지막 검증 선택을 유지**(`end_page(keep_selection=True)`, 입력 없음) —
+  그 칸은 마지막 읽기 행에 있어 ~1행 drag 뒤에도 보인다. 원선택 검증 복귀는 실패·취소·예외 경로에 그대로 남는다.
+- 신규 임계(C5): `inventory.gutter.grey_low` 198, `.grey_high` 210, `.row_ratio` .80, `.agreement` .0042(≈3px), `.max_correction` .035(≈25px).
+- 녹화 대조(C5d 실게임 프레임, 입력 없음): 세 프로필 모든 페이지에서 band 간격 101px, 한 프레임 안 gutter 간 차이 ≤ 1.1px,
+  첫 페이지 보정값 item −1.0 / equipment +1.5px.
+
+### C5e-1 실게임에서 드러난 한 행 alias (같은 slice에서 수정)
+
+- 첫 장비 실행이 **90/95**로 끝났다(Bag T8~T4 5종, evidence 없음). 원인: 여섯 번째 drag가 실제 111px 움직였는데 `measure_shift`가 **10px**를 돌려줬다
+  (잔차 11.5 ≤ 20 통과). 격자가 행마다 반복돼 반 크기 탐색이 한 pitch(101px) 떨어진 골을 고르고, 전체 크기 정밀화는 그 주변 ±4px만 봤다
+  (전체 크기 비용 111px 6.3 vs 10px 11.8). gutter 위상은 행 단위 오차를 볼 수 없고(±반 행), 다음 페이지는 행 55~59를 index 50~54로 읽은 뒤
+  다시 읽은 55~59를 `_record_entry`가 **조용히 중복 제거**했다. 이 alias는 C5b부터의 잠재 결함이다(C5b anchor 검사는 `uncertain`만 남기고 계속했다).
+- 수정 1 `measure_shift`: 반 크기 비용의 **국소 최소 3개**를 전체 크기에서 정밀화해 가장 낮은 것을 고른다. 같은 프레임 쌍 → 111px(잔차 6.6).
+  native 테스트에 이 쌍(`debug/scanner_c5e1_live/equipment-full-alias/frame-96·108`, 커밋)을 추가.
+- 수정 2(방어): 탐색 스캔에서 **같은 identity가 다른 content index에 다시 나오면** `inventory_scroll_unverified`(행 매핑 오류의 직접 증거) —
+  중복 제거로 조용히 넘기지 않는다. zero-fill 스캔(선물 등)에서 누락이 0으로 기록될 수 있었던 경로를 막는다.
+- alias 실행은 `debug/scanner_c5e1_live/equipment-full-alias`에 보존.
+
+### C5e-1 실게임 1280 결과 (2026-09-27)
+
+| 실행 | 결과 | 클릭(cleanup) | 캡처 | 소요 | C5d 대비 |
+|---|---|---|---|---|---|
+| 기술 노트 (`debug/scanner_c5_replay/tech-notes-detail-c5e1`) | **45/45**, 슬롯 44 Ultimate, `scan_coverage ok` | 50 (0) | 74 | 120 s | entry 동일. 클릭 62→50, 캡처 99→74 |
+| 선물 (`debug/scanner_c5e1_live/presents-full`) | **56 관측 + 19 zero-fill**, `ok` | 61 (0) | 94 | 150 s | entry 동일. 클릭 77→61, 캡처 123→94 |
+| 장비 (`debug/scanner_c5e1_live/equipment-full`) | 95 관측, 말단 도달, `partial`(C5-1·K 표기·C5d-1 — 같은 사유) | 105 (0) | 253 | 199 s | entry 동일. 클릭 137→105 |
+| 학생 단일(미카, `debug/scanner_c5e1_live/student-single`) | 전 필드 확정, review 없음, 입력 1회 | — | — | 3.1 s | C5b와 값 동일(**학생 회귀 통과**) |
+
+- gutter 보정 |correction| ≤ 1.0px(장비 15회·기술 노트 5회·선물 8회), 실패 0. 페이지 선택 유지로 cleanup 클릭 0, anchor 클릭 0.
+- 누적 개선(C5b → C5e-1): 기술 노트 클릭 100→50·캡처 220→74, 선물 128→61·301→94, 장비 225→105·916→253(약 10분 → 199 s).
+
+### C5e-1 golden
+
+- 화면 상태 재고 golden 2건 **same**(슬롯 1 미확인에서 멈추므로 스크롤 경로에 닿지 않음). 학생 6건 same.
+- locked 상세 경로: 녹화를 `tech-notes-detail-c5e1`(trace sha `964dbeb1…`)로 교체, 재생이 입력을 전부 그대로 소비함을 확인하고 고정.
+- 검증: Python **582 OK**(+ gutter native 2, 어댑터 gutter 보정·위상 미확인·중복 identity, 선택 유지). Flutter 변경 없음 — 미실행.
+
+### 다음 행동
+
+- **C5e-2** 타일 은행 fast path(M4 ≥ .90·margin ≥ .015면 상세 생략, session bank). numpy 의존성 여부는 속도 측정 후 사용자 결정.

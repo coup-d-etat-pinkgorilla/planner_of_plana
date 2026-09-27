@@ -215,6 +215,15 @@ _ENTRIES = (
               note="mean grey difference of the best shift; live good shifts 1.4-9.1"),
     Threshold("inventory.empty_tile.stddev", 8.0, "intensity", "C5", C5, "slot", "inventory_grid",
               note="grey stddev of a tile interior at or below this is an empty tile (live empty 0.0 at mean 204; filled min 34.8)"),
+    # Row phase from the grey gutters between tile rows (C5e-1, E1: gutter rows 1.00, tile rows <= .21).
+    Threshold("inventory.gutter.grey_low", 198.0, "intensity", "C5", C5, "scroll", "gutter_phase"),
+    Threshold("inventory.gutter.grey_high", 210.0, "intensity", "C5", C5, "scroll", "gutter_phase"),
+    Threshold("inventory.gutter.row_ratio", 0.80, "ratio", "C5", C5, "scroll", "gutter_phase",
+              note="share of gutter-grey pixels that makes a viewport row part of a gutter band"),
+    Threshold("inventory.gutter.agreement", 0.0042, "ratio", "C5", C5, "scroll", "gutter_phase",
+              note="gutters within ~3px of 720 of the median phase agree; at least two must"),
+    Threshold("inventory.gutter.max_correction", 0.035, "ratio", "C5", C5, "scroll", "gutter_phase",
+              note="a gutter phase more than ~25px of 720 from the measured shift is not trusted"),
     Threshold("inventory.shift.no_motion", 0.004, "ratio", "C5", C5, "scroll_terminal", "verified_no_motion",
               note="shift at or below ~3px of 720 means the drag did not move the list"),
 )
