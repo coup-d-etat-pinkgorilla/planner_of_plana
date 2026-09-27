@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from threading import Event
@@ -19,6 +20,7 @@ from core.student_scan_recognizer import StudentBasicCropSet, StudentBasicRecogn
 BACKEND = Path(__file__).parents[1]
 ASSETS = BACKEND / "assets" / "recognition" / "v1"
 FIXTURES = Path(__file__).parent / "fixtures"
+WEAPON_REGRESSION = FIXTURES / "student_weapon_basic_regression"
 
 
 class CountingCapture:
@@ -115,9 +117,8 @@ class StudentScanS2Tests(unittest.TestCase):
         )
         crops.close()
 
-    def test_weapon_star_above_game_maximum_is_not_confirmed(self) -> None:
+    def test_blank_weapon_star_strip_is_not_confirmed(self) -> None:
         recognizer = StudentBasicRecognizer(self.catalog)
-        recognizer._color_bbox = lambda *_args: (0, 0, 49, 10)
         observation = recognizer.read_weapon_star(Image.new("RGB", (60, 20)))
         self.assertIsNone(observation.value)
         self.assertEqual("uncertain", observation.status)
@@ -144,6 +145,49 @@ class StudentScanS2Tests(unittest.TestCase):
         finally:
             for cell in cells:
                 cell.close()
+
+    def test_weapon_star_slots_ignore_weapon_and_tag_cyan(self) -> None:
+        recognizer = StudentBasicRecognizer(self.catalog)
+        manifest = json.loads(
+            (WEAPON_REGRESSION / "manifest.json").read_text(encoding="utf-8")
+        )
+        for row in manifest["records"]:
+            if row["kind"] != "star":
+                continue
+            path = WEAPON_REGRESSION / row["file"]
+            with self.subTest(case=row["case"]), Image.open(path) as crop:
+                self.assertEqual(row["sha256"], hashlib.sha256(path.read_bytes()).hexdigest())
+                observation = recognizer.read_weapon_star(crop)
+                self.assertEqual(row["expected"], observation.value)
+                self.assertEqual("ok", observation.status)
+                self.assertEqual("basic_weapon_star_slots", observation.source)
+
+    def test_native_1280_weapon_level_failures_use_bounded_whole_value_reader(self) -> None:
+        recognizer = StudentBasicRecognizer(self.catalog)
+        manifest = json.loads(
+            (WEAPON_REGRESSION / "manifest.json").read_text(encoding="utf-8")
+        )
+        for row in manifest["records"]:
+            if row["kind"] != "level":
+                continue
+            paths = [WEAPON_REGRESSION / name for name in row["files"]]
+            with self.subTest(case=row["case"]):
+                self.assertEqual(
+                    row["sha256"],
+                    [hashlib.sha256(path.read_bytes()).hexdigest() for path in paths],
+                )
+                with Image.open(paths[0]) as crop, Image.open(paths[1]) as first, Image.open(paths[2]) as second:
+                    cells = (first.copy(), second.copy())
+                    try:
+                        observation = recognizer.read_weapon_level(crop, cells)
+                    finally:
+                        for cell in cells:
+                            cell.close()
+                self.assertEqual(row["expected"], observation.value)
+                self.assertEqual("ok", observation.status)
+                self.assertEqual("basic_weapon_level_whole_value", observation.source)
+                self.assertIn("studio_labels=", observation.note)
+                self.assertIn("legacy_value=", observation.note)
 
     def test_review_training_covers_all_requested_student_numeric_fields(self) -> None:
         with TemporaryDirectory() as temporary:

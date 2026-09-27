@@ -4,6 +4,7 @@ from PIL import Image, ImageStat
 from core.planning import MAX_TARGET_LEVEL
 from core.student_scan_recognizer import Observation, ratio_crop, _mask_from_predicate, _normalize_mask, _rank_glyph
 from core.student_panel_recovery import read_panel_fields
+from core import recognition_thresholds as rt
 
 
 def _ink(image):
@@ -47,15 +48,15 @@ class StudentLevelRecognizer:
             occupancy = sum(v >= 127 for v in mask.getdata())/max(1,mask.width*mask.height)
             # A failed second digit is never interpreted as a one-digit level.
             # Only the bright, uniform unused cell explicitly ends the number.
-            if position == 2 and occupancy <= .005 and stats.mean[0] >= 210 and stats.stddev[0] <= 12:
+            if position == 2 and occupancy <= rt.value("student.level.blank_occupancy") and stats.mean[0] >= 210 and stats.stddev[0] <= 12:
                 return Observation("blank",1,"ok","level_tab_blank",f"ink={occupancy:.6f}")
-            if not .025 <= occupancy <= .75 or stats.stddev[0] < 12 or stats.mean[0] < 80:
+            if not rt.value("student.level.glyph_occupancy.min") <= occupancy <= rt.value("student.level.glyph_occupancy.max") or stats.stddev[0] < 12 or stats.mean[0] < 80:
                 return Observation(None,0,"uncertain","level_tab_digit",f"invalid UI signal;ink={occupancy:.6f}")
             glyph = _normalize_mask(mask)
             try: label,score,margin = _rank_glyph(glyph,self._bank(position))
             finally:
                 if glyph is not None: glyph.close()
-            confirmed = label is not None and score >= .58 and margin >= .035
+            confirmed = label is not None and score >= rt.value("student.level.tab.score") and margin >= rt.value("student.level.tab.margin")
             return Observation(label if confirmed else None,score,"ok" if confirmed else "uncertain",
                                "level_tab_digit",f"label={label};margin={margin:.6f};ink={occupancy:.6f}")
         finally:

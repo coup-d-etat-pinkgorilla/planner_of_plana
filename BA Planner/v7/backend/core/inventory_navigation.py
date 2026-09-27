@@ -1,15 +1,26 @@
 """F10 verified inventory filter/sort preparation and row-aware scrolling."""
 from dataclasses import dataclass
 import math
-from PIL import Image
-from core.inventory_catalog import CATALOG
+from threading import Event
+from PIL import Image, ImageChops, ImageStat
+from core.inventory_catalog import CATALOG, ITEM_SCAN_PROFILES
+from core import recognition_thresholds as rt
 from core.scanner_session import ScannerError
+from core.scan_context import ScanContext
 from core.student_scan_recognizer import ratio_crop
 from core.student_weapon_recognizer import _normalized_correlation as correlation, _color_similarity as color_similarity
 
 
-ITEM_FILTERS={'student_elephs':'eleph_filter','tech_notes':'note_filter','tactical_bd':'bd_filter',
-              'ooparts':'ooparts_filter','activity_reports':'reports_filter','presents':'presents_filter'}
+# Region assets locate controls, but only these names may be clicked (C2): a new asset
+# entry can never make the scanner press an unreviewed button.
+# Category checkbox per item scan profile (C5): prepare shows exactly one category.
+CATEGORY_FILTERS={'student_elephs':'eleph_filter','tech_notes':'note_filter','tactical_bd':'bd_filter',
+                  'ooparts':'ooparts_filter','activity_reports':'reports_filter','presents':'presents_filter'}
+CATEGORY_BOXES=(*CATEGORY_FILTERS.values(),'coin_filter','consumable_filter','collectible_filter','crafting_filter','other_filter')
+if set(CATEGORY_FILTERS)!=set(ITEM_SCAN_PROFILES):raise RuntimeError('category filters must cover every item scan profile')
+ALLOWED_CONTROLS=frozenset({'filtermenu_button','eq_filtermenu_button','filter_tab','sort_tab',
+    'sort_rule_check','sort_name_rule_check','eq_sort_rule_check','filter_confirm_button','eq_filter_confirm_button',
+    'filter_reset_button','filter_cancel_button',*CATEGORY_FILTERS.values()})
 
 
 @dataclass(frozen=True)
@@ -21,13 +32,12 @@ class PreparedInventory:
 
 
 @dataclass
-class ScrollResult:
+class PageMove:
+    """One verified scroll: the measured upward content shift as a fraction of frame height (C5)."""
     frame: Image.Image
-    overlap_rows: int
-    slot_indices: tuple[int,...]
+    shift: float
     terminal: bool=False
-    terminal_after_page: bool=False
-    reason: str='verified_row_overlap'
+    reason: str='verified_pixel_shift'
 
 
 def _center(region):return ((region['x1']+region['x2'])/2,(region['y1']+region['y2'])/2)
@@ -64,16 +74,17 @@ class InventoryNavigation:
             return .7*max(0,correlation(crop,template))+.3*color_similarity(crop,template)
 
     def menu_ready(self,frame,source):
-        if self.score(frame,'filter_title')>=.85:return True
+        if self.score(frame,'filter_title')>=rt.value('inventory.menu.filter_title'):return True
         names=('eq_sort_rule_check',) if source=='equipment' else ('sort_rule_check','sort_name_rule_check')
-        return any(self.score(frame,n)>=.68 for n in names)
+        return any(self.score(frame,n)>=rt.value('inventory.menu.sort_check_visible') for n in names)
 
     def click(self,target,cancel,name,cleanup=False):
         if cancel.is_set():raise ScannerError('cancelled','inventory preparation cancelled')
+        if name not in ALLOWED_CONTROLS:raise ScannerError('control_not_allowed',f'inventory control {name} is not allowlisted')
         region=self.regions['controls'].get(name) or self.regions.get(name)
         if not isinstance(region,dict):raise ScannerError('region_missing',f'inventory control {name} is missing')
         x,y=_center(region)
-        self.capture.click({**target,'_scanner_cancel':cancel,'_scanner_cleanup':cleanup},x,y)
+        self.capture.click(ScanContext.of(target).replace(cancel=cancel,cleanup=cleanup),x,y)
         self.trace.append(dict(input=name,cleanup=cleanup))
 
     def observe(self,target,cancel,predicate,code,attempts=3):
@@ -92,9 +103,65 @@ class InventoryNavigation:
                 if exc.code!='inventory_filter_unconfirmed' or attempt==1:raise
         raise ScannerError('inventory_filter_unconfirmed','inventory filter did not open')
 
+    def category_state(self,frame,name):
+        """'selected' (cyan check), 'empty', 'all' (grey check after reset) or None when unclear."""
+        region=self.regions['controls'][name];w,h=frame.size
+        box=(round(region['x1']*w)+4,round(region['y1']*h)+4,round(region['x2']*w)-4,round(region['y2']*h)-4)
+        with frame.crop(box) as crop:
+            pixels=list(crop.convert('RGB').getdata())
+        count=max(1,len(pixels))
+        cyan=sum(1 for r,g,b in pixels if b>200 and g>180 and r<150)/count
+        grey=sum(1 for r,g,b in pixels if 170<r<225 and abs(r-g)<15 and b-r>8 and b<240)/count
+        if cyan>=rt.value('inventory.category.selected_cyan'):return 'selected'
+        if cyan<=rt.value('inventory.category.empty_cyan_max') and grey<=rt.value('inventory.category.empty_grey_max'):return 'empty'
+        if cyan<=rt.value('inventory.category.empty_cyan_max'):return 'all'
+        return None
+
+    def tab_active(self,frame,tab):
+        region=self.regions['controls'][tab];w,h=frame.size
+        box=(round(region['x1']*w),round(region['y1']*h),round(region['x2']*w),round(region['y2']*h))
+        with frame.crop(box) as crop:
+            pixels=list(crop.convert('RGB').getdata())
+        white=sum(1 for r,g,b in pixels if r>235 and g>235 and b>235)/max(1,len(pixels))
+        return white>=rt.value('inventory.menu.tab_active_white')
+
+    def switch_tab(self,target,cancel,tab):
+        """The menu reopens on the last-used tab; tab-specific clicks wait until this tab is shown."""
+        for click_attempt in range(2):
+            self.click(target,cancel,tab)
+            for attempt in range(3):
+                if attempt and cancel.wait(.15):raise ScannerError('cancelled','inventory preparation cancelled')
+                with self.capture.wait_stable(target,cancel) as frame:
+                    active=self.tab_active(frame,tab)
+                self.trace.append(dict(observe=tab,active=active,attempt=click_attempt*3+attempt+1))
+                if active:return True
+        raise ScannerError('inventory_tab_unconfirmed',f'{tab} did not become active')
+
+    def observe_categories(self,target,cancel,step,accept):
+        for attempt in range(3):
+            if attempt and cancel.wait(.15):raise ScannerError('cancelled','inventory preparation cancelled')
+            with self.capture.wait_stable(target,cancel) as frame:
+                states={name:self.category_state(frame,name) for name in CATEGORY_BOXES}
+            self.trace.append(dict(observe='category',step=step,states=states,attempt=attempt+1))
+            if accept(states):return True
+        return False
+
+    def ensure_category(self,target,cancel,profile):
+        """Reset, wait for the reset to show, tick the profile category, and verify it is the only one."""
+        wanted=CATEGORY_FILTERS[profile]
+        self.click(target,cancel,'filter_reset_button')
+        # The reset animates; a category click before it lands is overwritten by the reset.
+        if not self.observe_categories(target,cancel,'reset',lambda states:set(states.values())=={'all'}):
+            raise ScannerError('inventory_category_unconfirmed','category reset did not show')
+        self.click(target,cancel,wanted)
+        if not self.observe_categories(target,cancel,wanted,lambda states:states[wanted]=='selected'
+                and all(state=='empty' for name,state in states.items() if name!=wanted)):
+            raise ScannerError('inventory_category_unconfirmed',f'{wanted} is not the only selected category')
+        return True
+
     def ensure_sort(self,target,cancel,source,profile):
         name='eq_sort_rule_check' if source=='equipment' else ('sort_name_rule_check' if profile=='student_elephs' else 'sort_rule_check')
-        threshold=.70 if source=='equipment' else .68
+        threshold=rt.value('inventory.sort_check.equipment' if source=='equipment' else 'inventory.sort_check.item')
         for attempt in range(3):
             with self.capture.wait_stable(target,cancel) as frame:
                 score=self.score(frame,name)
@@ -107,18 +174,24 @@ class InventoryNavigation:
         self.trace=[];source=self.detail_recognizer.classify(baseline)
         if source not in {'item','equipment'}:raise ScannerError('inventory_page_unknown','inventory page is unverified')
         profile=target.get('inventory_scan_profile') or ('equipment' if source=='equipment' else None)
-        if source=='item' and profile not in ITEM_FILTERS:
+        if source=='item' and profile not in ITEM_SCAN_PROFILES:
             raise ScannerError('inventory_profile_required','item scan requires one explicit inventory scan profile')
         if source=='equipment' and profile!='equipment':
             raise ScannerError('inventory_profile_mismatch','equipment page requires equipment scan profile')
         with self.open_menu(target,cancel,source):pass
         if source=='item':
-            # The current display panel has basic/name/quantity/expiry plus sort direction;
-            # v6 category checkboxes are no longer present. Profile filtering is enforced
-            # by the matcher catalog, never by clicking blank legacy coordinates.
-            self.click(target,cancel,'filter_tab');self.click(target,cancel,'sort_rule_check')
-            self.click(target,cancel,'sort_tab')
-        self.ensure_sort(target,cancel,source,profile)
+            # The filter tab has one checkbox per category (C2-1 corrected the F12 contract);
+            # only the scan profile's category is shown. The sort radio lives on the sort tab
+            # and ensure_sort observes it before any click.
+            try:
+                self.switch_tab(target,cancel,'filter_tab');self.ensure_category(target,cancel,profile)
+                self.switch_tab(target,cancel,'sort_tab');self.ensure_sort(target,cancel,source,profile)
+            except ScannerError:
+                # Leave the display settings unchanged: cancel the menu before reporting.
+                self.click(target,Event(),'filter_cancel_button',cleanup=True)
+                raise
+        else:
+            self.ensure_sort(target,cancel,source,profile)
         self.click(target,cancel,'eq_filter_confirm_button' if source=='equipment' else 'filter_confirm_button')
         frame=self.observe(target,cancel,lambda f:self.detail_recognizer.classify(f)==source,'inventory_prepare_unconfirmed')
         frame.close()
@@ -138,17 +211,6 @@ class InventoryNavigation:
     def page_similarity(left,right):
         return sum(_similarity(a,b) for a,b in zip(left,right))/len(left)
 
-    @staticmethod
-    def overlap(before,after,cols=5):
-        rows=min(len(before),len(after))//cols;candidates=[]
-        for overlap in range(1,rows):
-            left=before[(rows-overlap)*cols:rows*cols];right=after[:overlap*cols]
-            candidates.append((sum(_similarity(a,b) for a,b in zip(left,right))/len(left),overlap))
-        candidates.sort(reverse=True)
-        if not candidates:return None
-        best=candidates[0];margin=best[0]-(candidates[1][0] if len(candidates)>1 else 0)
-        return best[1],best[0],margin
-
     def settled_after(self,target,cancel,source):
         previous=None;stable=0
         if cancel.wait(.35):raise ScannerError('cancelled','inventory scroll cancelled')
@@ -160,42 +222,86 @@ class InventoryNavigation:
                     capture_failures+=1;continue
                 raise
             signatures=self.signatures(frame,source)
-            if previous is not None and self.page_similarity(previous,signatures)>=.985:stable+=1
+            if previous is not None and self.page_similarity(previous,signatures)>=rt.value('inventory.scroll.settled_same'):stable+=1
             else:stable=0
             if stable>=2:return frame,signatures
             previous=signatures;frame.close()
             if cancel.wait(.08):raise ScannerError('cancelled','inventory scroll cancelled')
         raise ScannerError('inventory_scroll_unsettled','scroll did not stabilize')
 
+    def scroll_once(self,target,cancel,attempt):
+        """Drag inside the list's right padding: it scrolls, but a mis-read tap selects nothing."""
+        if cancel.is_set():raise ScannerError('cancelled','inventory scroll cancelled')
+        track=self.regions['scroll_track'];x,start_y=track['x'],track['start_y'];end_y=track['end_y'][attempt-1]
+        drag=getattr(self.capture,'drag_scroll',None)
+        if callable(drag):
+            drag(ScanContext.of(target).replace(cancel=cancel),(x,start_y),(x,end_y))
+            self.trace.append(dict(input='drag_scroll',start=[x,start_y],end=[x,end_y],attempt=attempt))
+        else:
+            # Two wheel notches keep at least two complete overlap rows in the five-row viewport.
+            delta=(-240,-360)[attempt-1]
+            self.capture.scroll(ScanContext.of(target).replace(cancel=cancel,scroll_point=(x,start_y)),delta)
+            self.trace.append(dict(input='scroll',delta=delta,attempt=attempt,point=[x,start_y]))
+
+    def restore_first_page(self,target,cancel,frame):
+        """Re-apply the verified display settings; the client then shows the first page (X10)."""
+        return self.prepare(target,cancel,frame)
+
+    def page_slots(self,source,offset,readable=True):
+        """{content index: slot region} for tiles fully inside the list viewport at a content offset.
+
+        offset is the total upward scroll (fraction of frame height) since the first page; rows keep
+        the first page's column geometry and move by whole content rows plus the measured phase.
+        """
+        base=self.detail_recognizer.regions['sources'][source]['grid_slots'];rows=len(base)//5
+        pitch=base[5]['cy']-base[0]['cy'];viewport=self.regions['list_viewport'][source]
+        # A readable tile keeps its selection border inside the list; the panel edge clips it otherwise.
+        margin=self.regions['list_viewport']['edge_margin'] if readable else 0.0
+        # Whole rows scrolled plus a small phase; offset 0 reproduces the first-page grid exactly.
+        whole=round(offset/pitch);phase=whole*pitch-offset
+        result={}
+        for row in range(-1,rows+1):
+            template=base[min(max(row,0),rows-1)*5:min(max(row,0),rows-1)*5+5]
+            dy=phase+(row-min(max(row,0),rows-1))*pitch
+            if row+whole<0:continue
+            for col,slot in enumerate(template):
+                region=dict(x1=slot['x1'],x2=slot['x2'],cx=slot['cx'],y1=slot['y1']+dy,y2=slot['y2']+dy,cy=slot['cy']+dy)
+                if region['y1']>=viewport['y1']+margin and region['y2']<=viewport['y2']-margin:result[(row+whole)*5+col]=region
+        return result
+
+    def measure_shift(self,before,after,source):
+        """(upward shift as a fraction of height, mean grey residual) of the list between two frames."""
+        base=self.detail_recognizer.regions['sources'][source]['grid_slots'];viewport=self.regions['list_viewport'][source]
+        w,h=before.size
+        box=(round(base[0]['x1']*w),round(viewport['y1']*h),round(base[4]['x2']*w),round(viewport['y2']*h))
+        with before.convert('L') as a_full,after.convert('L') as b_full:
+            a=a_full.crop(box);b=b_full.crop(box)
+        try:
+            height=a.height;limit=height-80
+            def cost(x,y,shift,span):
+                with x.crop((0,shift,x.width,span)) as top,y.crop((0,0,y.width,span-shift)) as bottom:
+                    with ImageChops.difference(top,bottom) as diff:return ImageStat.Stat(diff).mean[0]
+            with a.resize((a.width//2,height//2)) as a2,b.resize((b.width//2,height//2)) as b2:
+                coarse=min(range(0,limit//2),key=lambda shift:cost(a2,b2,shift,a2.height))
+            candidates=range(max(0,coarse*2-4),min(limit,coarse*2+4)+1)
+            best=min(candidates,key=lambda shift:cost(a,b,shift,height))
+            return best/h,cost(a,b,best,height)
+        finally:
+            a.close();b.close()
+
     def advance(self,target,cancel,before,source):
-        before_signatures=self.signatures(before,source);slots=len(before_signatures);cols=5;rows=slots//cols
-        # Two wheel notches keep at least two complete overlap rows in the five-row viewport.
-        for attempt,delta in enumerate((-240,-360),1):
-            if cancel.is_set():raise ScannerError('cancelled','inventory scroll cancelled')
-            drag=getattr(self.capture,'drag_scroll',None)
-            if callable(drag):
-                end_y=.65 if attempt==1 else .58
-                drag({**target,'_scanner_cancel':cancel},(.78,.75),(.78,end_y))
-                self.trace.append(dict(input='drag_scroll',start=[.78,.75],end=[.78,end_y],attempt=attempt))
-            else:
-                self.capture.scroll({**target,'_scanner_cancel':cancel,'_scanner_scroll_point':(.78,.55)},delta)
-                self.trace.append(dict(input='scroll',delta=delta,attempt=attempt,point=[.78,.55]))
-            after,after_signatures=self.settled_after(target,cancel,source)
-            same=self.page_similarity(before_signatures,after_signatures)
-            if same>=.97:
-                if attempt==2:return ScrollResult(after,rows,(),terminal=True,reason='verified_no_motion')
+        """Scroll once and measure the real shift; two no-motion drags verify the end of the list."""
+        for attempt in (1,2):
+            self.scroll_once(target,cancel,attempt)
+            after,_signatures=self.settled_after(target,cancel,source)
+            shift,residual=self.measure_shift(before,after,source)
+            self.trace.append(dict(shift_px=round(shift*after.height),residual=residual,attempt=attempt))
+            if residual>rt.value('inventory.shift.max_residual'):
+                after.close();raise ScannerError('inventory_scroll_unverified',f'list shift unmatched residual={residual:.2f}')
+            if shift<=rt.value('inventory.shift.no_motion'):
+                if attempt==2:return PageMove(after,0.0,True,'verified_no_motion')
                 after.close();continue
-            overlap=self.overlap(before_signatures,after_signatures,cols)
-            if overlap is None:
-                after.close();raise ScannerError('inventory_scroll_unverified','row overlap unavailable')
-            count,score,margin=overlap
-            self.trace.append(dict(overlap_rows=count,score=score,margin=margin))
-            margin_threshold = .025 if source == 'equipment' else .03
-            if .88<=score<.94 and margin>=margin_threshold:
-                return ScrollResult(after,count,tuple(range(slots)),False,True,'verified_tail_residual')
-            if score<.94 or margin<margin_threshold:
-                after.close();raise ScannerError('inventory_scroll_unverified',f'ambiguous row overlap score={score:.3f} margin={margin:.3f}')
-            return ScrollResult(after,count,tuple(range(count*cols,slots)))
+            return PageMove(after,shift)
         raise ScannerError('inventory_scroll_unverified','scroll recovery exhausted')
 
     def verify_profile_order(self,profile,item_ids):

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Event, RLock
 from typing import Any, Callable, Protocol
@@ -9,12 +9,14 @@ from PIL import Image, ImageChops, ImageStat
 
 from core.recognition_assets import RecognitionAssetCatalog
 from core.recognition_answer_samples import RecognitionAnswerSampleStore
-from core.inventory_catalog import CATALOG
+from core import recognition_thresholds as rt
+from core.inventory_catalog import CATALOG, CATALOG_REVISION
 from core.scanner_session import ScanBatchResult, ScannerError
+from core.scan_context import ScanContext
 from core.student_scan_recognizer import Observation, StudentBasicCropSet, StudentBasicRecognizer
 from core.student_equipment_recognizer import EquipmentMenuRecognizer, StudentEquipmentRecognizer
 from core.student_weapon_recognizer import StudentWeaponRecognizer
-from core.student_panel_recovery import StudentPanelRecovery, read_panel_fields
+from core.student_panel_recovery import PanelMenu, StudentPanelRecovery, read_panel_fields
 from core.student_potential_recognizer import StudentPotentialRecognizer
 from core.student_level_recognizer import StudentLevelRecognizer
 from core.student_star_recognizer import StudentStarRecognizer
@@ -33,58 +35,20 @@ class CapturePort(Protocol):
     def wait_stable(self, target: dict[str, Any], cancel: Event, timeout: float = 2.0) -> Image.Image: ...
 
 
-class EquipmentMenuCapturePort(Protocol):
-    """One shared detail frame and one conditional F7 retry."""
-
-    def capture_equipment_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def recapture_equipment_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def close_equipment_menu(self, target: dict[str, Any]) -> None: ...
-
-
-class WeaponMenuCapturePort(Protocol):
-    """Input boundary for one opened weapon panel and its bounded retries."""
-
-    def capture_weapon_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def recapture_weapon_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def close_weapon_menu(self, target: dict[str, Any]) -> None: ...
-
-
-class StatMenuCapturePort(Protocol):
-    def capture_stat_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def recapture_stat_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def close_stat_menu(self, target: dict[str, Any]) -> None: ...
-
-
-class LevelMenuCapturePort(Protocol):
-    def capture_level_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def recapture_level_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def close_level_menu(self, target: dict[str, Any]) -> None: ...
-
-
 class ClickCapturePort(CapturePort, Protocol):
     def click(self, target: dict[str, Any], x_ratio: float, y_ratio: float) -> None: ...
     def press_key(self, target: dict[str, Any], key: str) -> bool: ...
-
-
-class StarMenuCapturePort(Protocol):
-    def capture_star_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def close_star_menu(self, target: dict[str, Any]) -> None: ...
-
-
-class SkillMenuCapturePort(Protocol):
-    def capture_skill_menu(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
-    def close_skill_menu(self, target: dict[str, Any]) -> None: ...
 
 
 class SkillMenuCaptureAdapter:
     """Open, positively enable show-all once, then return one verified skill frame."""
 
     def __init__(self, capture, catalog, *, recovery=None, recognizer=None):
-        self.capture = capture
+        self.port = capture
         self.recovery = recovery or StudentPanelRecovery(capture,catalog)
         self.recognizer = recognizer or StudentSkillRecognizer(catalog)
 
-    def capture_skill_menu(self, target, cancel):
+    def capture(self, target, cancel):
         frame = self.recovery.open(target,cancel,"skill",self.recognizer.regions["skill_menu_button"])
         try:
             if cancel.is_set(): raise ScannerError("cancelled","skill open cancelled")
@@ -94,7 +58,7 @@ class SkillMenuCaptureAdapter:
                 raise ScannerError("panel_read_failed","skill show-all state is unknown")
             if check.value is False:
                 if cancel.is_set(): raise ScannerError("cancelled","skill check cancelled")
-                self.capture.click({**target,"_scanner_cancel":cancel},
+                self.port.click(ScanContext.of(target).replace(cancel=cancel),
                     *self.recovery._center(self.recognizer.regions["skill_all_view_check_region"]))
                 self.recovery.trace.append({"input":"enable_show_all","panel":"skill"})
                 frame.close()
@@ -111,7 +75,7 @@ class SkillMenuCaptureAdapter:
             self.recovery.restore(target)
             raise
 
-    def close_skill_menu(self, target):
+    def close(self, target):
         self.recovery.restore(target)
 
 
@@ -121,10 +85,10 @@ class StarMenuCaptureAdapter:
     def __init__(self, capture, catalog, *, recovery=None):
         self.recovery = recovery or StudentPanelRecovery(capture, catalog)
 
-    def capture_star_menu(self, target, cancel):
+    def capture(self, target, cancel):
         return self.recovery.open(target, cancel, "star", self.recovery.regions["star_menu_button"])
 
-    def close_star_menu(self, target):
+    def close(self, target):
         self.recovery.restore(target)
 
 
@@ -132,7 +96,7 @@ class EquipmentMenuCaptureAdapter:
     """Equipment detail transport backed by verified panel transitions."""
 
     def __init__(self, capture: ClickCapturePort, catalog: RecognitionAssetCatalog, *, recovery=None, controls=None) -> None:
-        self.capture = capture
+        self.port = capture
         self.regions = catalog.region_for_purpose("student", "student-equipment-menu-regions")
         self.recovery = recovery or StudentPanelRecovery(capture, catalog)
         self.controls = controls or EquipmentControlRecognizer(catalog)
@@ -146,7 +110,7 @@ class EquipmentMenuCaptureAdapter:
             raise ScannerError("panel_read_failed", "equipment show-all state unknown")
         return check.value
 
-    def capture_equipment_menu(self, target, cancel):
+    def capture(self, target, cancel):
         frame = self.recovery.open(target, cancel, "equipment", self.regions["equipment_button"])
         try:
             checked = self._check(frame, cancel)
@@ -157,7 +121,7 @@ class EquipmentMenuCaptureAdapter:
                 checked = self._check(frame, cancel)
             if checked is False:
                 if cancel.is_set(): raise ScannerError("cancelled", "equipment enable cancelled")
-                self.capture.click({**target, "_scanner_cancel": cancel},
+                self.port.click(ScanContext.of(target).replace(cancel=cancel),
                     *self.recovery._center(self.regions["equipment_all_view_check_region"]))
                 self.recovery.trace.append({"input": "enable_show_all", "panel": "equipment"})
                 frame.close()
@@ -171,7 +135,7 @@ class EquipmentMenuCaptureAdapter:
             self.recovery.restore(target)
             raise
 
-    def recapture_equipment_menu(self, target, cancel):
+    def recapture(self, target, cancel):
         frame = self.recovery.recapture(target, cancel, "equipment")
         try:
             if self._check(frame, cancel) is not True:
@@ -181,7 +145,7 @@ class EquipmentMenuCaptureAdapter:
             frame.close()
             raise
 
-    def close_equipment_menu(self, target):
+    def close(self, target):
         self.recovery.restore(target)
 
 
@@ -189,17 +153,17 @@ class WeaponMenuCaptureAdapter:
     """Weapon detail transport backed by the same panel state contract."""
 
     def __init__(self, capture: ClickCapturePort, catalog: RecognitionAssetCatalog, *, recovery=None) -> None:
-        self.capture = capture
+        self.port = capture
         self.regions = catalog.region_for_purpose("student", "student-weapon-regions")
         self.recovery = recovery or StudentPanelRecovery(capture, catalog)
 
-    def capture_weapon_menu(self, target, cancel):
+    def capture(self, target, cancel):
         return self.recovery.open(target, cancel, "weapon", self.regions["weapon_info_menu_button"])
 
-    def recapture_weapon_menu(self, target, cancel):
+    def recapture(self, target, cancel):
         return self.recovery.recapture(target, cancel, "weapon")
 
-    def close_weapon_menu(self, target):
+    def close(self, target):
         self.recovery.restore(target)
 
 
@@ -210,13 +174,13 @@ class StatMenuCaptureAdapter:
         self.regions = catalog.region_for_purpose("student", "student-potential-regions")
         self.recovery = recovery or StudentPanelRecovery(capture, catalog)
 
-    def capture_stat_menu(self, target, cancel):
+    def capture(self, target, cancel):
         return self.recovery.open(target, cancel, "stat", self.regions["stat_menu_button"])
 
-    def recapture_stat_menu(self, target, cancel):
+    def recapture(self, target, cancel):
         return self.recovery.recapture(target, cancel, "stat")
 
-    def close_stat_menu(self, target):
+    def close(self, target):
         self.recovery.restore(target)
 
 
@@ -226,14 +190,33 @@ class LevelMenuCaptureAdapter:
     def __init__(self, capture: ClickCapturePort, catalog: RecognitionAssetCatalog, *, recovery=None):
         self.recovery = recovery or StudentPanelRecovery(capture,catalog)
 
-    def capture_level_menu(self, target, cancel):
+    def capture(self, target, cancel):
         return self.recovery.open(target,cancel,"level",self.recovery.regions["levelcheck_button"])
 
-    def recapture_level_menu(self, target, cancel):
+    def recapture(self, target, cancel):
         return self.recovery.recapture(target,cancel,"level")
 
-    def close_level_menu(self, target):
+    def close(self, target):
         self.recovery.restore(target)
+
+
+# Kind-named aliases of the PanelMenu methods, kept until C6 for tools and the F12 audit matrix.
+SkillMenuCaptureAdapter.capture_skill_menu = SkillMenuCaptureAdapter.capture
+SkillMenuCaptureAdapter.close_skill_menu = SkillMenuCaptureAdapter.close
+StarMenuCaptureAdapter.capture_star_menu = StarMenuCaptureAdapter.capture
+StarMenuCaptureAdapter.close_star_menu = StarMenuCaptureAdapter.close
+EquipmentMenuCaptureAdapter.capture_equipment_menu = EquipmentMenuCaptureAdapter.capture
+EquipmentMenuCaptureAdapter.recapture_equipment_menu = EquipmentMenuCaptureAdapter.recapture
+EquipmentMenuCaptureAdapter.close_equipment_menu = EquipmentMenuCaptureAdapter.close
+WeaponMenuCaptureAdapter.capture_weapon_menu = WeaponMenuCaptureAdapter.capture
+WeaponMenuCaptureAdapter.recapture_weapon_menu = WeaponMenuCaptureAdapter.recapture
+WeaponMenuCaptureAdapter.close_weapon_menu = WeaponMenuCaptureAdapter.close
+StatMenuCaptureAdapter.capture_stat_menu = StatMenuCaptureAdapter.capture
+StatMenuCaptureAdapter.recapture_stat_menu = StatMenuCaptureAdapter.recapture
+StatMenuCaptureAdapter.close_stat_menu = StatMenuCaptureAdapter.close
+LevelMenuCaptureAdapter.capture_level_menu = LevelMenuCaptureAdapter.capture
+LevelMenuCaptureAdapter.recapture_level_menu = LevelMenuCaptureAdapter.recapture
+LevelMenuCaptureAdapter.close_level_menu = LevelMenuCaptureAdapter.close
 
 
 def image_pixels(image: Image.Image):
@@ -268,7 +251,7 @@ def image_has_visible_content(image: Image.Image) -> bool:
     luminance = image.convert("L")
     histogram = luminance.histogram()
     visible = sum(histogram[13:])
-    return visible / max(1, luminance.width * luminance.height) >= 0.12
+    return visible / max(1, luminance.width * luminance.height) >= rt.value("inventory.visible_content.ratio")
 
 
 @dataclass(frozen=True, slots=True)
@@ -409,7 +392,7 @@ class SlotCountMatcher:
     _INK = (45, 70, 99)
     _REFERENCE_SIZE = (234.0, 190.0)
 
-    def __init__(self, catalog: RecognitionAssetCatalog, *, threshold: float = 0.70, margin: float = 0.04) -> None:
+    def __init__(self, catalog: RecognitionAssetCatalog, *, threshold: float = rt.value("inventory.slot_count.score"), margin: float = rt.value("inventory.slot_count.margin")) -> None:
         self.threshold = threshold
         self.margin = margin
         self.templates = {
@@ -478,22 +461,75 @@ class SlotCountMatcher:
         return CountMatch(value, score, match_margin)
 
 
-class StudentMatcherAdapter:
-    _DOCK_CARD_TRANSITION_SECONDS = 0.32
+class _CollectedProgress:
+    """Full-scan ProgressSink: every step reports the number of students collected so far."""
 
+    def __init__(self, progress, results: list[dict[str, Any]]) -> None:
+        self._progress, self._results = progress, results
+        self.supports_feedback = getattr(progress, "supports_feedback", False)
+
+    def __call__(self, _current: int, _total: int | None, message: str,
+                 feedback: dict[str, Any] | None = None) -> None:
+        if feedback is None:
+            self._progress(len(self._results), None, message)
+        else:
+            self._progress(len(self._results), None, message, feedback)
+
+
+class _StudentWalker:
+    """Moves to the next student by arrow key, falling back to the on-screen arrow button."""
+
+    BUTTON_X = {"right": 0.9777, "left": 0.0223}
+    BUTTON_Y = 0.53465
+
+    def __init__(self, capture, click, target, cancel: Event) -> None:
+        self.capture, self.click, self.target, self.cancel = capture, click, target, cancel
+        self.direction = "right"
+        self.pending_button_fallback = False
+
+    def navigate(self) -> None:
+        if self.cancel.is_set():
+            raise ScannerError("cancelled", "navigation cancelled")
+        press_key = getattr(self.capture, "press_key", None)
+        try:
+            used_key = callable(press_key) and bool(press_key(self.target, self.direction))
+        except ScannerError as exc:
+            # Only an API failure before insertion is safe to retry as a click.
+            if exc.code != "input_failed":
+                raise
+            used_key = False
+        self.pending_button_fallback = used_key
+        if not used_key:
+            if self.cancel.is_set():
+                raise ScannerError("cancelled", "navigation cancelled")
+            self.click(self.target, self.BUTTON_X[self.direction], self.BUTTON_Y)
+
+    def step(self) -> bool:
+        if self.cancel.is_set():
+            return False
+        self.navigate()
+        return True
+
+    def retry_button(self) -> None:
+        """A key that did not move the list is retried once with the button."""
+        self.click(self.target, self.BUTTON_X[self.direction], self.BUTTON_Y)
+        self.pending_button_fallback = False
+
+
+class StudentMatcherAdapter:
     def __init__(
         self,
         capture: CapturePort,
         catalog: RecognitionAssetCatalog,
         *,
-        threshold: float = 0.82,
-        margin: float = 0.04,
-        equipment_menu: EquipmentMenuCapturePort | None = None,
-        weapon_menu: WeaponMenuCapturePort | None = None,
-        stat_menu: StatMenuCapturePort | None = None,
-        level_menu: LevelMenuCapturePort | None = None,
-        star_menu: StarMenuCapturePort | None = None,
-        skill_menu: SkillMenuCapturePort | None = None,
+        threshold: float = rt.value("student.identity.template.score"),
+        margin: float = rt.value("student.identity.template.margin"),
+        equipment_menu: PanelMenu | None = None,
+        weapon_menu: PanelMenu | None = None,
+        stat_menu: PanelMenu | None = None,
+        level_menu: PanelMenu | None = None,
+        star_menu: PanelMenu | None = None,
+        skill_menu: PanelMenu | None = None,
         answer_samples: RecognitionAnswerSampleStore | None = None,
         entry_recovery=None,
         form_recovery=None,
@@ -726,9 +762,7 @@ class StudentMatcherAdapter:
         })
 
     def _capture_identified(self, target, cancel):
-        recovery = (getattr(self.weapon_menu, "recovery", None) or getattr(self.equipment_menu, "recovery", None)
-                    or getattr(self.stat_menu, "recovery", None) or getattr(self.level_menu, "recovery", None)
-                    or getattr(self.star_menu, "recovery", None) or getattr(self.skill_menu, "recovery", None))
+        recovery = self._panel_recovery()
         attempts, entered = 0, False
         while attempts < 2:
             if cancel.is_set():
@@ -741,7 +775,7 @@ class StudentMatcherAdapter:
                     recovery.state = state
                 if state != 'basic':
                     frame.close()
-                    if not entered and attempts == 0 and target.get('_first_student', True) and self.entry_recovery is not None:
+                    if not entered and attempts == 0 and ScanContext.of(target).first_student is not False and self.entry_recovery is not None:
                         entered = True
                         self.entry_recovery.recover(target, cancel, state)
                         continue
@@ -759,7 +793,14 @@ class StudentMatcherAdapter:
                 raise ScannerError('cancelled', 'identity retry cancelled')
         raise ScannerError('identity_unconfirmed', 'student identity unresolved after two independent captures')
 
+    def _panel_recovery(self):
+        """The shared StudentPanelRecovery behind whichever panel menus are wired."""
+        return (getattr(self.weapon_menu, "recovery", None) or getattr(self.equipment_menu, "recovery", None)
+                or getattr(self.stat_menu, "recovery", None) or getattr(self.level_menu, "recovery", None)
+                or getattr(self.star_menu, "recovery", None) or getattr(self.skill_menu, "recovery", None))
+
     def _scan_current(self, target: dict[str, Any], cancel: Event, progress: Callable[..., None]) -> list[dict[str, Any]]:
+        """identify -> basic reads -> panel fallbacks -> assemble, for the student on screen."""
         if cancel.is_set():
             return []
         progress(0, 4, "scanner.student.capture")
@@ -767,10 +808,39 @@ class StudentMatcherAdapter:
         if cancel.is_set():
             frame.close()
             return []
+        crops = self._basic_crops(frame)
+        fallback_evidence: list[dict[str, Any]] = []
         try:
-            recovery = (getattr(self.weapon_menu, "recovery", None) or getattr(self.equipment_menu, "recovery", None)
-                        or getattr(self.stat_menu, "recovery", None) or getattr(self.level_menu, "recovery", None)
-                        or getattr(self.star_menu, "recovery", None) or getattr(self.skill_menu, "recovery", None))
+            student_ref = identity.student_ref
+            self._activate_numeric_samples(
+                target.get("profile_id"), crops.source_size, student_ref,
+            )
+            progress(1, 4, "scanner.student.identify")
+            if target.get("student_scan_mode") == "full":
+                self._report_student_feedback(
+                    progress, 1, 4, "scanner.student.identify",
+                    student_ref, "student_id", {},
+                )
+            if cancel.is_set():
+                return []
+            progress(2, 4, "scanner.student.basic_fields")
+            observations, independent_weapon = self._read_growth_fields(crops, student_ref, target, cancel)
+            fallback_evidence = self._resolve_weapon(observations, independent_weapon, target, cancel)
+            self._resolve_equipment(crops, observations, student_ref, target, cancel, progress)
+            answer_specimen = {
+                "source_size": crops.source_size,
+                "numeric_groups": self._numeric_groups(crops),
+            }
+        finally:
+            crops.close()
+        candidate = self._assemble_student(identity, student_ref, observations, fallback_evidence, answer_specimen)
+        progress(4, 4, "scanner.student.matched")
+        return [candidate]
+
+    def _basic_crops(self, frame: Image.Image) -> StudentBasicCropSet:
+        """Verify the basic tab and cut every basic-screen crop; the frame is closed here."""
+        try:
+            recovery = self._panel_recovery()
             if recovery is not None:
                 recovery.state = recovery.recognizer.classify(frame)
                 if recovery.state != "basic":
@@ -782,206 +852,175 @@ class StudentMatcherAdapter:
             if isinstance(state_region, dict):
                 crops.images["basic_weapon_state_region"] = ratio_crop(frame, state_region)
             crops.images["equipment_growth_button"] = ratio_crop(frame, self.equipment_controls.regions["equipment_button"])
+            return crops
         finally:
             frame.close()
-        try:
-            student_ref = identity.student_ref
-            self._activate_numeric_samples(
-                target.get("profile_id"), crops.source_size, student_ref,
+
+    def _read_growth_fields(self, crops, student_ref, target, cancel):
+        """Basic fields, then level/star/skill/potential with their own panel fallbacks, in that order."""
+        observations = self.basic_recognizer.recognize(crops)
+        basic_level = observations.get("level")
+        observations.update(self.level_recognizer.resolve(
+            observations, self.level_menu, target, cancel,
+        ))
+        resolved_level = observations.get("level")
+        if (
+            (basic_level is None or not basic_level.confirmed)
+            and resolved_level is not None
+            and resolved_level.confirmed
+            and resolved_level.source == "level_tab_template"
+        ):
+            self._add_session_numeric_sample(
+                target=target,
+                source_size=crops.source_size,
+                student_ref=student_ref,
+                field="student_level",
+                value=int(resolved_level.value),
+                cells=crops.cell_groups.get("basic_student_level_studio_cells"),
+                roi_names=("studentlevel_digit1", "studentlevel_digit2"),
+                detail_source=resolved_level.source,
             )
-            progress(1, 4, "scanner.student.identify")
-            confident = True
-            self._report_student_feedback(
-                progress, 1, 4, "scanner.student.identify",
-                student_ref, "student_id", {},
+        independent_weapon = self.weapon_recognizer.read_state(
+            crops.images.get("basic_weapon_state_region"), student_star=None,
+        )
+        observations.update(self.star_recognizer.resolve(
+            observations, independent_weapon, self.star_menu, target, cancel,
+        ))
+        observations.update(self.skill_recognizer.resolve(observations,self.skill_menu,target,cancel))
+        observations.update(self.potential_recognizer.resolve(
+            crops.images, observations, self.stat_menu, target, cancel,
+        ))
+        return observations, independent_weapon
+
+    def _resolve_weapon(self, observations, independent_weapon, target, cancel) -> list[dict[str, Any]]:
+        """Gate weapon fields by weapon state; open the weapon panel only for an equipped, unresolved weapon."""
+        student_star = observations.get("student_star")
+        observations["weapon_state"] = independent_weapon
+        if student_star is not None and student_star.confirmed and int(student_star.value) < 5:
+            observations["weapon_state"] = Observation(
+                "no_weapon_system", 1.0, "inferred", "student_star_gate",
+                f"student_star={student_star.value}",
             )
+        weapon_state = observations["weapon_state"]
+        fields = ("weapon_level", "weapon_star")
+        if weapon_state.confirmed and weapon_state.value != "weapon_equipped":
+            for field in fields:
+                observations[field] = Observation(
+                    None, weapon_state.confidence, "skipped",
+                    "basic_weapon_state_template", f"state={weapon_state.value}",
+                )
+            return []
+        if not (
+            weapon_state.confirmed
+            and weapon_state.value == "weapon_equipped"
+            and not all(observations[field].confirmed for field in fields)
+            and self.weapon_menu is not None
+        ):
+            return []
+        unresolved_weapon = {field: observations[field] for field in fields if not observations[field].confirmed}
+        observations.update(read_panel_fields(
+            self.weapon_menu, "weapon", target, cancel, observations,
+            fields, self.weapon_recognizer.recognize_menu,
+            attempts=3,
+        ))
+        evidence = []
+        for field, trigger in unresolved_weapon.items():
+            result = observations.get(field)
+            recovered = result is not None and result.confirmed
+            evidence.append({
+                "field": f"{field}_fallback",
+                "status": "ok" if recovered else "uncertain",
+                "source": "weapon_panel_fallback",
+                "confidence": result.confidence if result is not None else 0.0,
+                "note": (
+                    f"trigger_status={trigger.status};trigger_source={trigger.source};"
+                    f"trigger_confidence={trigger.confidence:.6f};"
+                    f"trigger_note={trigger.note};result_source="
+                    f"{result.source if result is not None else 'missing'}"
+                ),
+            })
+        return evidence
+
+    def _resolve_equipment(self, crops, observations, student_ref, target, cancel, progress) -> None:
+        """Basic equipment reads, then the equipment panel for unresolved slots (learning confirmed digits)."""
+        equipment_observations, unresolved = self.equipment_recognizer.recognize(
+            crops,
+            student_ref=student_ref,
+            student_level=(
+                int(observations["level"].value)
+                if observations.get("level") is not None and observations["level"].confirmed
+                else None
+            ),
+            favorite_growth_active=self.equipment_controls.read_growth(crops.images.get("equipment_growth_button")).value,
+        )
+        observations.update(equipment_observations)
+        progress(3, 4, "scanner.student.equipment_fields")
+        if not (unresolved and self.equipment_menu is not None and self.equipment_menu_recognizer is not None):
+            return
+        self.equipment_recognizer.metrics.menu_captures += 1
+        fallback = resolve_equipment_menu(self.equipment_menu, self.equipment_menu_recognizer,
+            target, cancel, observations, unresolved)
+        observations.update(fallback)
+        for slot in unresolved:
+            learned = fallback.get(f"equip{slot}_level")
             if (
-                target.get("student_scan_mode") == "full"
-                and getattr(progress, "supports_feedback", False)
-                and cancel.wait(self._DOCK_CARD_TRANSITION_SECONDS)
-            ):
-                return []
-            if cancel.is_set():
-                return []
-            progress(2, 4, "scanner.student.basic_fields")
-            observations = self.basic_recognizer.recognize(crops)
-            basic_level = observations.get("level")
-            level_fallback = self.level_recognizer.resolve(
-                observations, self.level_menu, target, cancel,
-            )
-            observations.update(level_fallback)
-            resolved_level = observations.get("level")
-            if (
-                (basic_level is None or not basic_level.confirmed)
-                and resolved_level is not None
-                and resolved_level.confirmed
-                and resolved_level.source == "level_tab_template"
+                slot <= 3
+                and learned is not None
+                and learned.confirmed
+                and learned.source == "equipment_menu_digit"
             ):
                 self._add_session_numeric_sample(
                     target=target,
                     source_size=crops.source_size,
                     student_ref=student_ref,
-                    field="student_level",
-                    value=int(resolved_level.value),
-                    cells=crops.cell_groups.get("basic_student_level_studio_cells"),
-                    roi_names=("studentlevel_digit1", "studentlevel_digit2"),
-                    detail_source=resolved_level.source,
+                    field="equipment_level",
+                    value=int(learned.value),
+                    cells=crops.cell_groups.get(
+                        f"basic_equipment_{slot}_level_studio_cells"
+                    ),
+                    roi_names=(
+                        f"equip{slot}level_digit1",
+                        f"equip{slot}level_digit2",
+                    ),
+                    detail_source=learned.source,
                 )
-            independent_weapon = self.weapon_recognizer.read_state(
-                crops.images.get("basic_weapon_state_region"), student_star=None,
-            )
-            observations.update(self.star_recognizer.resolve(
-                observations, independent_weapon, self.star_menu, target, cancel,
-            ))
-            observations.update(self.skill_recognizer.resolve(observations,self.skill_menu,target,cancel))
-            observations.update(self.potential_recognizer.resolve(
-                crops.images, observations, self.stat_menu, target, cancel,
-            ))
-            student_star = observations.get("student_star")
-            observations["weapon_state"] = independent_weapon
-            if student_star is not None and student_star.confirmed and int(student_star.value) < 5:
-                observations["weapon_state"] = Observation(
-                    "no_weapon_system", 1.0, "inferred", "student_star_gate",
-                    f"student_star={student_star.value}",
-                )
-            weapon_state = observations["weapon_state"]
-            if weapon_state.confirmed and weapon_state.value != "weapon_equipped":
-                for field in ("weapon_level", "weapon_star"):
-                    observations[field] = Observation(
-                        None, weapon_state.confidence, "skipped",
-                        "basic_weapon_state_template", f"state={weapon_state.value}",
-                    )
-            elif (
-                weapon_state.confirmed
-                and weapon_state.value == "weapon_equipped"
-                and not all(observations[field].confirmed for field in ("weapon_level", "weapon_star"))
-                and self.weapon_menu is not None
-            ):
-                fallback = read_panel_fields(
-                    self.weapon_menu, "weapon", target, cancel, observations,
-                    ("weapon_level", "weapon_star"), self.weapon_recognizer.recognize_menu,
-                    attempts=3,
-                )
-                observations.update(fallback)
-            live_values: dict[str, Any] = {}
-            for field, observation in observations.items():
-                if observation.confirmed:
-                    live_values[field] = observation.value
-                    self._report_student_feedback(
-                        progress, 2, 4, "scanner.student.basic_fields",
-                        student_ref, field, dict(live_values),
-                    )
-            equipment_observations, unresolved = self.equipment_recognizer.recognize(
-                crops,
-                student_ref=student_ref,
-                student_level=(
-                    int(observations["level"].value)
-                    if observations.get("level") is not None and observations["level"].confirmed
-                    else None
-                ),
-                favorite_growth_active=self.equipment_controls.read_growth(crops.images.get("equipment_growth_button")).value,
-            )
-            observations.update(equipment_observations)
-            for field, observation in equipment_observations.items():
-                if observation.confirmed:
-                    live_values[field] = observation.value
-                    self._report_student_feedback(
-                        progress, 3, 4, "scanner.student.equipment_fields",
-                        student_ref, field, dict(live_values),
-                    )
-            progress(3, 4, "scanner.student.equipment_fields")
-            if unresolved and self.equipment_menu is not None and self.equipment_menu_recognizer is not None:
-                self.equipment_recognizer.metrics.menu_captures += 1
-                fallback = resolve_equipment_menu(self.equipment_menu, self.equipment_menu_recognizer,
-                    target, cancel, observations, unresolved)
-                observations.update(fallback)
-                for field, observation in fallback.items():
-                    if observation.confirmed:
-                        live_values[field] = observation.value
-                        self._report_student_feedback(
-                            progress, 3, 4, "scanner.student.equipment_fields",
-                            student_ref, field, dict(live_values),
-                        )
-                for slot in unresolved:
-                    learned = fallback.get(f"equip{slot}_level")
-                    if (
-                        slot <= 3
-                        and learned is not None
-                        and learned.confirmed
-                        and learned.source == "equipment_menu_digit"
-                    ):
-                        self._add_session_numeric_sample(
-                            target=target,
-                            source_size=crops.source_size,
-                            student_ref=student_ref,
-                            field="equipment_level",
-                            value=int(learned.value),
-                            cells=crops.cell_groups.get(
-                                f"basic_equipment_{slot}_level_studio_cells"
-                            ),
-                            roi_names=(
-                                f"equip{slot}level_digit1",
-                                f"equip{slot}level_digit2",
-                            ),
-                            detail_source=learned.source,
-                        )
-            answer_specimen = {
-                "source_size": crops.source_size,
-                "numeric_groups": self._numeric_groups(crops),
-            }
-        finally:
-            crops.close()
-        values = {
-            field: observation.value
-            for field, observation in observations.items()
-            if observation.confirmed or observation.source == "panel_value_conflict"
-        }
+
+    @staticmethod
+    def _evidence_rows(observations: dict[str, Observation]) -> list[dict[str, Any]]:
+        return [{
+            "field": field,
+            "status": observation.status,
+            "source": observation.source,
+            "confidence": observation.confidence,
+            "note": observation.note,
+        } for field, observation in observations.items()]
+
+    def _assemble_student(self, identity, student_ref, observations, fallback_evidence, answer_specimen) -> dict[str, Any]:
+        kept = {field: observation for field, observation in observations.items()
+                if observation.confirmed or observation.source == "panel_value_conflict"}
+        values = {field: observation.value for field, observation in kept.items()}
         provenance = {"student_id": identity.source}
-        provenance.update({field: observation.source for field, observation in observations.items() if observation.confirmed or observation.source == "panel_value_conflict"})
+        provenance.update({field: observation.source for field, observation in kept.items()})
         evidence = [{
-            "field": "student_id", "status": "ok" if confident else "uncertain",
+            "field": "student_id", "status": "ok",
             "source": identity.source, "confidence": identity.score,
             "note": f"margin={identity.margin:.6f};form_ref={student_ref}",
         }]
-        evidence.extend({
-            "field": field,
-            "status": observation.status,
-            "source": observation.source,
-            "confidence": observation.confidence,
-            "note": observation.note,
-        } for field, observation in observations.items())
-        evidence.extend({
-            "field": field,
-            "status": observation.status,
-            "source": observation.source,
-            "confidence": observation.confidence,
-            "note": observation.note,
-        } for field, observation in self.equipment_recognizer.last_binary_shadow.items())
-        evidence.extend({
-            "field": field,
-            "status": observation.status,
-            "source": observation.source,
-            "confidence": observation.confidence,
-            "note": observation.note,
-        } for field, observation in self.equipment_recognizer.last_generated_binary_shadow.items())
-        evidence.extend({
-            "field": field,
-            "status": observation.status,
-            "source": observation.source,
-            "confidence": observation.confidence,
-            "note": observation.note,
-        } for field, observation in self.equipment_recognizer.last_position_binary_shadow.items())
-        review_required = (not confident) or any(
+        evidence.extend(self._evidence_rows(observations))
+        evidence.extend(fallback_evidence)
+        evidence.extend(self._evidence_rows(self.equipment_recognizer.last_binary_shadow))
+        evidence.extend(self._evidence_rows(self.equipment_recognizer.last_generated_binary_shadow))
+        evidence.extend(self._evidence_rows(self.equipment_recognizer.last_position_binary_shadow))
+        review_required = any(
             observation.status not in {"ok", "inferred", "skipped"}
             for observation in observations.values()
         )
-        progress(4, 4, "scanner.student.matched")
-        return [{
+        return {
             "payload": {"version": 1, "student_id": student_ref, "values": values, "provenance": provenance},
             "evidence": evidence,
             "review_required": review_required,
             "_answer_specimen": answer_specimen,
-        }]
+        }
 
     def _scan_with_forms(self, target, cancel, progress):
         rows = self._scan_current(target, cancel, progress)
@@ -990,7 +1029,7 @@ class StudentMatcherAdapter:
         original = rows[0]
         original_ref = original['payload']['student_id']
         base, _ = student_meta.split_form_ref(original_ref)
-        if not student_meta.is_multi_form(base) or base in target.get('_seen_students', ()):
+        if not student_meta.is_multi_form(base) or base in (ScanContext.of(target).seen_students or ()):
             return rows
         combat = {'combat_hp': ('hp', 4), 'combat_atk': ('atk', 2),
                   'combat_def': ('def', 1), 'combat_heal': ('heal', 2)}
@@ -1034,9 +1073,9 @@ class StudentMatcherAdapter:
         return rows
 
     def __call__(self, target: dict[str, Any], cancel: Event, progress: Callable[..., None]) -> list[dict[str, Any]] | ScanBatchResult:
-        target = {**target, "_scanner_cancel": cancel}
-        session_id = str(target.get("_scanner_session_id") or "standalone")
-        generation = target.get("_scanner_generation", 1)
+        target = ScanContext.of(target).replace(cancel=cancel)
+        session_id = str(target.session_id or "standalone")
+        generation = target.generation if target.generation is not None else 1
         self.session_calibration = SessionCalibrationStore(
             session_id,
             int(generation) if isinstance(generation, int) and not isinstance(generation, bool) else 1,
@@ -1074,145 +1113,35 @@ class StudentMatcherAdapter:
             self.session_calibration = None
 
     def _scan_full(self, target, cancel, progress, results) -> bool:
+        """Walk the student list until the first student comes around again (True) or the walk stops."""
         click = getattr(self.capture, "click", None)
         if not callable(click):
             raise ScannerError("input_unavailable", "full student scan requires click input")
+        walker = _StudentWalker(self.capture, click, target, cancel)
         seen: set[str] = set()
         previous_student_id: str | None = None
-        pending_button_fallback = False
-        direction = "right"
-
-        def navigate() -> None:
-            nonlocal pending_button_fallback
-            if cancel.is_set():
-                raise ScannerError("cancelled", "navigation cancelled")
-            press_key = getattr(self.capture, "press_key", None)
-            try:
-                used_key = callable(press_key) and bool(press_key(target, direction))
-            except ScannerError as exc:
-                # Only an API failure before insertion is safe to retry as a click.
-                if exc.code != "input_failed":
-                    raise
-                used_key = False
-            pending_button_fallback = used_key
-            if not used_key:
-                if cancel.is_set():
-                    raise ScannerError("cancelled", "navigation cancelled")
-                click(
-                    target,
-                    0.9777 if direction == "right" else 0.0223,
-                    0.53465,
-                )
-
-        def depart(student_id: str) -> bool:
-            self._report_student_feedback(
-                progress,
-                len(results),
-                None,
-                "scanner.student.transition.exit",
-                student_id,
-                "__student_exit__",
-                {},
-            )
-            if (
-                getattr(progress, "supports_feedback", False)
-                and cancel.wait(self._DOCK_CARD_TRANSITION_SECONDS)
-            ):
-                return False
-            return True
-
-        def depart_and_navigate(student_id: str) -> bool:
-            if not depart(student_id):
-                return False
-            navigate()
-            return True
-
         for _index in range(500):
             if cancel.is_set():
                 break
-            def current_progress(
-                _current: int,
-                _total: int | None,
-                message: str,
-                feedback: dict[str, Any] | None = None,
-            ) -> None:
-                if feedback is None:
-                    progress(len(results), None, message)
-                else:
-                    progress(len(results), None, message, feedback)
-
-            current_progress.supports_feedback = getattr(  # type: ignore[attr-defined]
-                progress, "supports_feedback", False
-            )
-            try:
-                scanned = self._scan_with_forms({**target, '_first_student': not seen, '_seen_students': tuple(seen)}, cancel, current_progress)
-            except ScannerError as exc:
-                results.extend(getattr(exc, 'completed_candidates', []))
-                raise
-            if not scanned:
-                if cancel.is_set():
-                    break
-                raise ScannerError("identity_unconfirmed", "student capture returned no candidate")
-            student_id = scanned[0].get("payload", {}).get("student_id")
-            if not isinstance(student_id, str):
-                self._close_answer_specimens(scanned)
-                raise ScannerError("matcher_failed", "student candidate identity is missing")
-            if any(e.get("field") == "student_id" and e.get("status") != "ok"
-                   for item in scanned for e in item.get("evidence", [])):
-                self._close_answer_specimens(scanned)
-                raise ScannerError("identity_unconfirmed", "student identity is not confirmed")
-            student_id, _form = student_meta.split_form_ref(student_id)
+            scanned = self._scan_full_student(target, cancel, progress, results, seen)
+            if scanned is None:
+                break
+            student_id, rows = scanned
             if student_id in seen:
-                self._close_answer_specimens(scanned)
-                if (
-                    student_id == previous_student_id
-                    and pending_button_fallback
-                ):
-                    progress(len(results), None, "scanner.student.full.navigation_retry")
-                    if not depart(student_id):
-                        break
-                    if cancel.is_set():
-                        break
-                    click(
-                        target,
-                        0.9777 if direction == "right" else 0.0223,
-                        0.53465,
-                    )
-                    pending_button_fallback = False
-                    if cancel.wait(0.45):
-                        break
-                    continue
-                if student_id == previous_student_id and direction == "right":
-                    direction = "left"
-                    progress(
-                        len(results), None,
-                        "scanner.student.full.navigation_reverse",
-                    )
-                    if not depart_and_navigate(student_id):
-                        break
-                    if cancel.wait(0.45):
-                        break
-                    continue
-                if student_id == previous_student_id:
-                    raise ScannerError("navigation_unconfirmed", "no movement after key/button; edge is not verified")
-                if direction == "right":
-                    progress(
-                        len(results), len(results),
-                        "scanner.student.full.complete",
-                    )
+                self._close_answer_specimens(rows)
+                action = self._revisit(walker, student_id, previous_student_id, progress, results)
+                if action == "complete":
                     return True
-                previous_student_id = student_id
-                if not depart_and_navigate(student_id):
+                if action == "break":
                     break
-                progress(len(results), None, "scanner.student.full.navigating")
-                if cancel.wait(0.45):
-                    break
+                if action == "moved":
+                    previous_student_id = student_id
                 continue
             seen.add(student_id)
             previous_student_id = student_id
-            results.extend(scanned)
+            results.extend(rows)
             progress(len(results), None, "scanner.student.full.collected")
-            if not depart_and_navigate(student_id):
+            if not walker.step():
                 break
             progress(len(results), None, "scanner.student.full.navigating")
             if cancel.wait(0.45):
@@ -1221,9 +1150,141 @@ class StudentMatcherAdapter:
             raise ScannerError("navigation_limit", "student navigation budget exhausted")
         return False
 
+    def _scan_full_student(self, target, cancel, progress, results, seen):
+        """Scan the student on screen; (base student id, rows), or None when cancelled without a candidate."""
+        current_progress = _CollectedProgress(progress, results)
+        try:
+            scanned = self._scan_with_forms(ScanContext.of(target).replace(first_student=not seen, seen_students=tuple(seen)), cancel, current_progress)
+        except ScannerError as exc:
+            results.extend(getattr(exc, 'completed_candidates', []))
+            raise
+        if not scanned:
+            if cancel.is_set():
+                return None
+            raise ScannerError("identity_unconfirmed", "student capture returned no candidate")
+        student_id = scanned[0].get("payload", {}).get("student_id")
+        if not isinstance(student_id, str):
+            self._close_answer_specimens(scanned)
+            raise ScannerError("matcher_failed", "student candidate identity is missing")
+        if any(e.get("field") == "student_id" and e.get("status") != "ok"
+               for item in scanned for e in item.get("evidence", [])):
+            self._close_answer_specimens(scanned)
+            raise ScannerError("identity_unconfirmed", "student identity is not confirmed")
+        student_id, _form = student_meta.split_form_ref(student_id)
+        return student_id, scanned
+
+    @staticmethod
+    def _revisit(walker: "_StudentWalker", student_id, previous_student_id, progress, results) -> str:
+        """Decide what an already-seen student means: retry, reverse, completion or a plain move."""
+        cancel = walker.cancel
+        if student_id == previous_student_id and walker.pending_button_fallback:
+            progress(len(results), None, "scanner.student.full.navigation_retry")
+            if cancel.is_set():
+                return "break"
+            walker.retry_button()
+            return "break" if cancel.wait(0.45) else "retried"
+        if student_id == previous_student_id and walker.direction == "right":
+            walker.direction = "left"
+            progress(
+                len(results), None,
+                "scanner.student.full.navigation_reverse",
+            )
+            if not walker.step():
+                return "break"
+            return "break" if cancel.wait(0.45) else "reversed"
+        if student_id == previous_student_id:
+            raise ScannerError("navigation_unconfirmed", "no movement after key/button; edge is not verified")
+        if walker.direction == "right":
+            progress(
+                len(results), len(results),
+                "scanner.student.full.complete",
+            )
+            return "complete"
+        if not walker.step():
+            return "break"
+        progress(len(results), None, "scanner.student.full.navigating")
+        return "break" if cancel.wait(0.45) else "moved"
+
+
+# Pre-C1 inventory evidence names, kept so old diagnostic JSON reads with current meaning.
+LEGACY_INVENTORY_EVIDENCE_SOURCES = {"detail_template_fallback": "grid_same_crop_rematch"}
+
+
+def canonical_inventory_evidence(evidence: list[dict[str, Any]], entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Rename pre-C1 inventory evidence to the current field/source contract."""
+    result = []
+    for item in evidence:
+        item = dict(item)
+        item["source"] = LEGACY_INVENTORY_EVIDENCE_SOURCES.get(item.get("source"), item.get("source"))
+        note = str(item.get("note", ""))
+        if item.get("field") == "scroll_overlap" and item["source"] == "verified_row_overlap" and ";reason=" in note:
+            item["source"] = note.rsplit(";reason=", 1)[1]
+        field = str(item.get("field", ""))
+        if item["source"] == "verified_profile_zero_fill" and field.startswith("entries[") and field.endswith("].quantity"):
+            position = field[len("entries["):-len("].quantity")]
+            if position.isdigit() and int(position) < len(entries):
+                item["field"] = f"zero_fill[{entries[int(position)]['key']}].quantity"
+        result.append(item)
+    return result
+
+
+# Detail read failures that stay per-slot partial once the original selection is verified.
+DETAIL_RECOVERABLE_CODES = frozenset({"inventory_detail_unconfirmed", "capture_timeout", "capture_failed"})
+
+
+@dataclass(slots=True)
+class _SlotReading:
+    """One slot's identity/quantity observation before it becomes an entry."""
+    index: int
+    identity: str | None
+    score: float
+    margin: float
+    source: str
+    status: str
+    quantity: str | None
+    count_score: float
+    count_source: str
+    note: str
+    profile_confirmed: bool
+    detail_identity: bool = False
+
+
+@dataclass
+class _InventoryScan:
+    """Mutable state of one inventory scan, owned by InventoryMatcherAdapter.__call__."""
+    frame: Image.Image
+    source_size: tuple[int, int]
+    target: dict[str, Any]
+    slots: list[dict[str, Any]]
+    source_kind: str | None = None
+    prepared: Any = None
+    allowed_ids: set[str] | None = None
+    entries: list[dict[str, Any]] = field(default_factory=list)
+    evidence: list[dict[str, Any]] = field(default_factory=list)
+    slot_crops: dict[int, Image.Image] = field(default_factory=dict)
+    observed_profile_ids: list[str] = field(default_factory=list)
+    review_required: bool = False
+    coverage_complete: bool = False
+    offset: float = 0.0
+    read_until: int = -1
+    anchored: int | None = None
+    completed: bool = False
+
+    def skip(self, index: int, confidence: float, note: str) -> None:
+        self.evidence.append({"field": f"slots[{index}]", "status": "skipped",
+                              "source": "inventory_profile_catalog", "confidence": confidence, "note": note})
+
+    def candidate(self, evidence: list[dict[str, Any]], review_required: bool) -> dict[str, Any]:
+        return {
+            "payload": {"version": 1, "catalog_revision": CATALOG_REVISION, "entries": self.entries},
+            "evidence": evidence,
+            "review_required": review_required,
+            "_answer_specimen": {"source_size": self.source_size, "slot_crops": self.slot_crops},
+        }
+
 
 class InventoryMatcherAdapter:
-    def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = 0.80, margin: float = 0.03, max_pages: int = 60, answer_samples: RecognitionAnswerSampleStore | None = None, detail_recovery=None, navigation=None) -> None:
+    def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = rt.value("inventory.grid_icon.score"), margin: float = rt.value("inventory.grid_icon.margin"), max_pages: int = 60, answer_samples: RecognitionAnswerSampleStore | None = None, detail_recovery=None, navigation=None) -> None:
         self.capture = capture
         self.catalog = catalog
         self.threshold = threshold
@@ -1240,249 +1301,373 @@ class InventoryMatcherAdapter:
             raise ScannerError("region_missing", "inventory grid slots are missing")
 
     def __call__(self, target: dict[str, Any], cancel: Event, progress: Callable[[int, int | None, str], None]) -> list[dict[str, Any]] | ScanBatchResult:
-        target = {**target, "_scanner_cancel": cancel}
+        target = ScanContext.of(target).replace(cancel=cancel)
         frame = self.capture.wait_stable(target, cancel)
-        source_size = frame.size
-        entries: list[dict[str, Any]] = []
-        slot_crops: dict[int, Image.Image] = {}
-        evidence: list[dict[str, Any]] = []
-        review_required = False
-        completed = False
-        coverage_complete = False
+        scan = _InventoryScan(frame=frame, source_size=frame.size, target=target, slots=self.slots)
         try:
-            detail_port = getattr(self, 'detail_recovery', None)
-            navigation = getattr(self, 'navigation', None)
-            prepared = None
-            slots = self.slots
-            if detail_port is not None:
-                source_kind = detail_port.recognizer.classify(frame)
-                if source_kind is None:
-                    raise ScannerError('inventory_page_unknown', 'inventory detail input requires a verified item/equipment page')
-                slots = detail_port.recognizer.regions['sources'][source_kind]['grid_slots']
-            if navigation is not None:
-                prepared = navigation.prepare(target,cancel,frame)
-                frame.close();frame = self.capture.wait_stable(target,cancel)
-                source_kind = prepared.source
-                target = {**target,'inventory_scan_profile':prepared.profile_id}
-            profile_id = target.get("profile_id")
-            if self.answer_samples is not None and isinstance(profile_id, str):
-                samples = self.answer_samples.load_inventory(profile_id, source_size)
-                try:
-                    self.matcher.replace_user_templates([
-                        (sample.sample_id, sample.item_id, sample.image) for sample in samples
-                    ])
-                finally:
-                    self.answer_samples.close(samples)
-            else:
-                self.matcher.replace_user_templates([])
-            scan_indices = tuple(range(len(slots)))
-            allowed_profile_ids = None if prepared is None else {
-                row.item_id for row in CATALOG if row.profile_id == prepared.profile_id
-            }
-            observed_profile_ids: list[str] = []
-            terminal_after_page = False
+            self._prepare_scan(scan, cancel)
             for page in range(self.max_pages):
-                page_ids: list[str] = []
-                page_unresolved = False
-                for slot_index in scan_indices:
-                    region = slots[slot_index]
-                    if cancel.is_set():
-                        raise ScannerError("cancelled", "inventory scan cancelled")
-                    crop = ratio_crop(frame, region)
-                    try:
-                        if not image_has_visible_content(crop):
-                            continue
-                        profile_membership_confirmed = allowed_profile_ids is None
-                        if allowed_profile_ids is not None:
-                            global_match = self.matcher.match(
-                                crop, center_trim=0.15, prefer_user=True,
-                                threshold=self.threshold, margin=self.margin,
-                            )
-                            if (
-                                global_match.score >= 0.55
-                                and global_match.identity not in allowed_profile_ids
-                            ):
-                                evidence.append({
-                                    "field": f"slots[{page * len(slots) + slot_index}]",
-                                    "status": "skipped",
-                                    "source": "inventory_profile_catalog",
-                                    "confidence": global_match.score,
-                                    "note": "confident visible identity is outside the explicit scan profile",
-                                })
-                                continue
-                            profile_membership_confirmed = (
-                                global_match.score >= self.threshold
-                                and global_match.margin >= self.margin
-                                and global_match.identity in allowed_profile_ids
-                            )
-                        fast = self.matcher.match(
-                            crop, center_trim=0.15, prefer_user=True,
-                            threshold=self.threshold, margin=self.margin,
-                            allowed_identities=allowed_profile_ids,
-                        )
-                        fast_confident = fast.score >= self.threshold and fast.margin >= self.margin
-                        match = fast if fast_confident else self.matcher.match(
-                            crop, allowed_identities=allowed_profile_ids,
-                        )
-                        source = (
-                            "user_confirmed_grid_sample" if match.source == "user_confirmed"
-                            else "grid_icon_template" if fast_confident else "detail_template_fallback"
-                        )
-                        if match.score < 0.55 and detail_port is None:
-                            continue
-                        confident = match.score >= self.threshold and match.margin >= self.margin
-                        index = page * len(slots) + slot_index
-                        count = self.count_matcher.match(crop)
-                        identity, score, match_margin = match.identity, match.score, match.margin
-                        quantity, count_score, count_source = count.value, count.score, 'slot_count_glyph'
-                        note = f'margin={count.margin:.6f}'
-                        item_status = 'ok' if confident else 'uncertain'
-                        if detail_port is not None and not (fast_confident and count.value is not None):
-                            try:
-                                detail = detail_port.resolve(target,cancel,frame,slot_index,identity,count.value,confident,
-                                    profile_verified=target.get('_inventory_profile_verified') is True,
-                                    scan_profile=target.get('inventory_scan_profile'))
-                            except ScannerError as exc:
-                                if not exc.details.get('inventory_restored') or exc.code not in {'inventory_detail_unconfirmed','capture_timeout','capture_failed'}:
-                                    raise
-                                detail = None;note = exc.code+';original selection restored'
-                                item_status = 'partial'
-                            if detail is not None:
-                                if detail.identity is not None:
-                                    identity,score,match_margin=detail.identity,detail.score,detail.margin
-                                    confident=True;source=detail.source;item_status='ok'
-                                    if detail.source=='verified_grid_detail_fallback':
-                                        score,match_margin=match.score,match.margin
-                                if detail.source=='inventory_detail_conflict':
-                                    item_status='conflict';quantity=None;count_source=detail.source
-                                elif detail.identity is not None:
-                                    quantity,count_score,count_source=detail.count.value,detail.count.score,detail.count.source
-                                    if detail.count.source=='verified_grid_count_fallback':count_score=count.score
-                                else:
-                                    quantity=None;item_status='partial'
-                                note=detail.count.reason
-                                if detail.identity is not None and allowed_profile_ids is not None:
-                                    profile_membership_confirmed = detail.identity in allowed_profile_ids
-                        if allowed_profile_ids is not None and identity not in allowed_profile_ids:
-                            evidence.append({
-                                "field": f"slots[{index}]", "status": "skipped",
-                                "source": "inventory_profile_catalog",
-                                "confidence": score,
-                                "note": "visible identity is outside the explicit scan profile",
-                            })
-                            continue
-                        if not profile_membership_confirmed:
-                            evidence.append({
-                                "field": f"slots[{index}]", "status": "skipped",
-                                "source": "inventory_profile_catalog",
-                                "confidence": score,
-                                "note": "profile membership was not positively verified",
-                            })
-                            continue
-                        if any(entry["item_id"] == identity for entry in entries):
-                            continue
-                        quantity_confident = quantity is not None
-                        entry_profile = prepared.profile_id if prepared is not None else "visible-grid"
-                        entries.append({"key": identity, "quantity": quantity, "item_id": identity, "name": None, "observed_slot": index, "profile_id": entry_profile})
-                        if isinstance(identity,str):page_ids.append(identity)
-                        if item_status!='ok' or not quantity_confident:page_unresolved=True
-                        slot_crops[index] = crop.copy()
-                        evidence.extend([
-                            {"field": f"entries[{index}].item_id", "status": item_status, "source": source, "confidence": score, "note": f"margin={match_margin:.6f}"},
-                            {"field": f"entries[{index}].quantity", "status": "ok" if quantity_confident else "uncertain", "source": count_source, "confidence": count_score, "note": note},
-                        ])
-                        review_required = review_required or item_status!='ok' or not quantity_confident
-                        progress(len(entries), None, "scanner.inventory.grid")
-                    finally:
-                        crop.close()
-                if prepared is not None:
-                    if page_ids and not navigation.verify_profile_order(prepared.profile_id,page_ids):
-                        # The current client can sort the mixed item page by quantity/name,
-                        # so catalog order is not guaranteed even when every recognized
-                        # identity belongs to the explicit profile. Keep the observations,
-                        # but mark coverage partial and prohibit zero-fill below.
-                        evidence.append({
-                            "field": "profile_order", "status": "partial",
-                            "source": "inventory_profile_catalog", "confidence": 0.0,
-                            "note": "visible items do not match monotonic scan profile order; no zero-fill",
-                        })
-                        review_required = True
-                    observed_profile_ids.extend(page_ids)
-                    target={**target,'_inventory_profile_verified':bool(page_ids) and not page_unresolved}
-                if navigation is None and len(entries) >= len(self.matcher.templates):
-                    coverage_complete = True
+                self._read_page(scan, page, cancel, progress)
+                if not self._advance_page(scan, cancel):
                     break
-                if terminal_after_page:
-                    coverage_complete=True
-                    evidence.append({"field":"scroll_terminal","status":"ok","source":"verified_tail_residual",
-                        "confidence":1.0,"note":"residual tail page scanned once"})
-                    break
-                if cancel.is_set():
-                    raise ScannerError("cancelled", "inventory scan cancelled")
-                if navigation is not None:
-                    moved=navigation.advance(target,cancel,frame,source_kind)
-                    next_frame=moved.frame
-                    evidence.append({"field":"scroll_overlap","status":"ok","source":"verified_row_overlap",
-                        "confidence":1.0,"note":f"rows={moved.overlap_rows};reason={moved.reason}"})
-                    if moved.terminal:
-                        coverage_complete=True;next_frame.close();break
-                    scan_indices=moved.slot_indices
-                    terminal_after_page=moved.terminal_after_page
-                    frame.close();frame=next_frame
-                    continue
-                self.capture.scroll(target, -480)
-                next_frame = self.capture.wait_stable(target, cancel)
-                overlap = image_similarity(frame, next_frame)
-                if overlap >= 0.995:
-                    next_frame.close()
-                    evidence.append({"field": "scroll_terminal", "status": "ok", "source": "stable_frame_overlap", "confidence": overlap, "note": "tail-or-no-motion"})
-                    break
-                if overlap <= 0.05:
-                    evidence.append({"field": "scroll_overlap", "status": "uncertain", "source": "frame_overlap", "confidence": overlap, "note": "near-zero overlap; no zero-fill"})
-                    review_required = True
-                frame.close()
-                frame = next_frame
-            if prepared is not None:
-                ordered_ok=navigation.verify_profile_order(prepared.profile_id,observed_profile_ids)
-                unresolved=review_required or not ordered_ok
-                if coverage_complete and not unresolved:
-                    known={row.item_id:row for row in CATALOG if row.profile_id==prepared.profile_id and row.zero_fill_allowed}
-                    present={entry['item_id'] for entry in entries}
-                    for item_id,row in sorted(known.items(),key=lambda pair:pair[1].order_index):
-                        if item_id in present:continue
-                        entries.append({"key":item_id,"quantity":"0","item_id":item_id,"name":row.display_name,
-                            "observed_slot":None,"profile_id":prepared.profile_id})
-                        evidence.append({"field":f"entries[{len(entries)-1}].quantity","status":"ok",
-                            "source":"verified_profile_zero_fill","confidence":1.0,"note":"verified terminal and monotonic profile coverage"})
-                evidence.append({"field":"scan_coverage","status":"ok" if coverage_complete and not unresolved else "partial",
-                    "source":"inventory_navigation","confidence":1.0 if coverage_complete and not unresolved else 0.0,
-                    "note":f"profile={prepared.profile_id};terminal={coverage_complete};ordered={ordered_ok}"})
-                review_required = review_required or not coverage_complete or not ordered_ok
-            completed = True
-            return [{
-                "payload": {"version": 1, "entries": entries},
-                "evidence": evidence,
-                "review_required": review_required,
-                "_answer_specimen": {"source_size": source_size, "slot_crops": slot_crops},
-            }]
+            candidates = self._finalize(scan)
+            scan.completed = True
+            return candidates
         except Exception as exc:
-            error = exc if isinstance(exc, ScannerError) else ScannerError("matcher_failed", str(exc))
-            retained = []
-            if entries:
-                retained = [{
-                    "payload": {"version": 1, "entries": entries},
-                    "evidence": [*evidence, {"field": "scan_coverage", "status": "partial",
-                        "source": "scan_interrupted", "confidence": 0.0, "note": error.code}],
-                    "review_required": True,
-                    "_answer_specimen": {"source_size": source_size, "slot_crops": slot_crops},
-                }]
-                completed = True  # ownership of complete slot specimens transfers to the session
-            return ScanBatchResult(retained, "cancelled" if cancel.is_set() or error.code == "cancelled" else "failed", error)
+            return self._interrupted(scan, exc, cancel)
         finally:
-            frame.close()
-            if not completed:
-                for crop in slot_crops.values():
+            scan.frame.close()
+            if not scan.completed:
+                for crop in scan.slot_crops.values():
                     crop.close()
+
+    def _prepare_scan(self, scan: "_InventoryScan", cancel: Event) -> None:
+        detail_port = getattr(self, 'detail_recovery', None)
+        navigation = getattr(self, 'navigation', None)
+        if detail_port is not None:
+            scan.source_kind = detail_port.recognizer.classify(scan.frame)
+            if scan.source_kind is None:
+                raise ScannerError('inventory_page_unknown', 'inventory detail input requires a verified item/equipment page')
+            scan.slots = detail_port.recognizer.regions['sources'][scan.source_kind]['grid_slots']
+        if navigation is not None:
+            scan.prepared = navigation.prepare(scan.target, cancel, scan.frame)
+            scan.frame.close()
+            scan.frame = self.capture.wait_stable(scan.target, cancel)
+            scan.source_kind = scan.prepared.source
+            scan.target = scan.target.replace(inventory_scan_profile=scan.prepared.profile_id)
+        self._load_answer_samples(scan.target.get("profile_id"), scan.source_size)
+        if scan.prepared is not None:
+            scan.allowed_ids = {row.item_id for row in CATALOG if row.profile_id == scan.prepared.profile_id}
+
+    def _load_answer_samples(self, profile_id: object, source_size: tuple[int, int]) -> None:
+        if self.answer_samples is None or not isinstance(profile_id, str):
+            self.matcher.replace_user_templates([])
+            return
+        samples = self.answer_samples.load_inventory(profile_id, source_size)
+        try:
+            self.matcher.replace_user_templates([
+                (sample.sample_id, sample.item_id, sample.image) for sample in samples
+            ])
+        finally:
+            self.answer_samples.close(samples)
+
+    def _visible_slots(self, scan: "_InventoryScan", page: int) -> dict[int, dict[str, Any]]:
+        """Content index -> slot region on the current frame.
+
+        With navigation the rows follow the measured scroll offset (C5), so an index names the same
+        tile on every page; the navigation-free fallback keeps one fixed grid per page.
+        """
+        navigation = getattr(self, 'navigation', None)
+        if navigation is not None and scan.prepared is not None:
+            return navigation.page_slots(scan.source_kind, scan.offset)
+        return {page * len(scan.slots) + position: slot for position, slot in enumerate(scan.slots)}
+
+    def _read_page(self, scan: "_InventoryScan", page: int, cancel: Event, progress) -> None:
+        page_ids: list[str] = []
+        page_unresolved = False
+        visible = self._visible_slots(scan, page)
+        slots = [visible[index] for index in sorted(visible)]
+        unread = [index for index in visible if index > scan.read_until]
+        if scan.prepared is not None and unread and min(unread) != scan.read_until + 1:
+            # A tile row that was never fully visible would otherwise be skipped silently.
+            raise ScannerError("inventory_scroll_unverified", f"rows skipped: next visible index {min(unread)} after {scan.read_until}")
+        for position, index in enumerate(sorted(visible)):
+            if index <= scan.read_until:
+                continue
+            if cancel.is_set():
+                raise ScannerError("cancelled", "inventory scan cancelled")
+            crop = ratio_crop(scan.frame, visible[index])
+            try:
+                reading = self._read_slot(scan, index, position, slots, crop, cancel)
+                if reading is None or not self._record_entry(scan, reading, crop):
+                    continue
+                if isinstance(reading.identity, str):
+                    page_ids.append(reading.identity)
+                if reading.status != 'ok' or reading.quantity is None:
+                    page_unresolved = True
+                progress(len(scan.entries), None, "scanner.inventory.grid")
+            finally:
+                crop.close()
+        if visible:
+            scan.read_until = max(scan.read_until, max(visible))
+        if scan.prepared is not None:
+            if page_ids and not self.navigation.verify_profile_order(scan.prepared.profile_id, page_ids):
+                # The current client can sort the mixed item page by quantity/name,
+                # so catalog order is not guaranteed even when every recognized
+                # identity belongs to the explicit profile. Keep the observations,
+                # but mark coverage partial and prohibit zero-fill below.
+                scan.evidence.append({
+                    "field": "profile_order", "status": "partial",
+                    "source": "inventory_profile_catalog", "confidence": 0.0,
+                    "note": "visible items do not match monotonic scan profile order; no zero-fill",
+                })
+                scan.review_required = True
+            scan.observed_profile_ids.extend(page_ids)
+            scan.target = scan.target.replace(inventory_profile_verified=bool(page_ids) and not page_unresolved)
+
+    def _read_slot(self, scan: "_InventoryScan", index: int, position: int, slots: list[dict[str, Any]],
+                   crop: Image.Image, cancel: Event) -> "_SlotReading | None":
+        """Match one visible slot, consult the detail panel when needed and apply the profile gate."""
+        if not image_has_visible_content(crop):
+            return None
+        detail_port = getattr(self, 'detail_recovery', None)
+        allowed = scan.allowed_ids
+        profile_confirmed = allowed is None
+        # Bundled icon art does not match current-client tiles (C5 live: tech notes all rank as one icon,
+        # equipment ranks as its blueprint piece), so a profile scan with a detail panel never skips or
+        # labels from the grid alone: identity and membership come from the detail panel.
+        detail_required = scan.prepared is not None and detail_port is not None
+        # On the item page the verified category filter is the membership evidence, but only when the
+        # detail panel names the tile; without it the F12 gate below still applies.
+        category_filtered = detail_required and scan.prepared.source == "item"
+        profile_confirmed = profile_confirmed or category_filtered
+        if allowed is not None and not detail_required:
+            global_match = self.matcher.match(
+                crop, center_trim=0.15, prefer_user=True,
+                threshold=self.threshold, margin=self.margin,
+            )
+            # A near-tie with an outside identity is not evidence of membership either way (C0-1):
+            # it falls through to profile-restricted matching and the detail panel.
+            if (global_match.score >= rt.value("inventory.profile_gate.outside_score")
+                    and global_match.margin >= self.margin and global_match.identity not in allowed):
+                scan.skip(index, global_match.score, "confident visible identity is outside the explicit scan profile")
+                return None
+            profile_confirmed = (
+                global_match.score >= self.threshold
+                and global_match.margin >= self.margin
+                and global_match.identity in allowed
+            )
+        fast = self.matcher.match(
+            crop, center_trim=0.15, prefer_user=True,
+            threshold=self.threshold, margin=self.margin,
+            allowed_identities=allowed,
+        )
+        fast_confident = fast.score >= self.threshold and fast.margin >= self.margin
+        match = fast if fast_confident else self.matcher.match(crop, allowed_identities=allowed)
+        source = (
+            "user_confirmed_grid_sample" if match.source == "user_confirmed"
+            else "grid_icon_template" if fast_confident else "grid_same_crop_rematch"
+        )
+        if match.score < rt.value("inventory.grid_icon.floor_without_detail") and detail_port is None:
+            return None
+        confident = match.score >= self.threshold and match.margin >= self.margin
+        count = self.count_matcher.match(crop)
+        reading = _SlotReading(
+            index=index, identity=match.identity, score=match.score, margin=match.margin, source=source,
+            status='ok' if confident else 'uncertain', quantity=count.value, count_score=count.score,
+            count_source='slot_count_glyph', note=f'margin={count.margin:.6f}', profile_confirmed=profile_confirmed,
+        )
+        if detail_port is not None and (detail_required or not (fast_confident and count.value is not None)):
+            self._apply_detail(scan, reading, position, slots, match, count, confident, cancel)
+        if detail_required and not reading.detail_identity:
+            # Never record a grid-guessed identity on a profile scan: keep the slot as unresolved evidence.
+            scan.evidence.append({"field": f"slots[{index}]", "status": "partial", "source": "inventory_detail_panel",
+                                  "confidence": 0.0, "note": f"identity unresolved by detail panel;{reading.note}"})
+            scan.review_required = True
+            return None
+        if allowed is not None and reading.identity not in allowed:
+            scan.skip(index, reading.score, "visible identity is outside the explicit scan profile")
+            return None
+        if not reading.profile_confirmed:
+            scan.skip(index, reading.score, "profile membership was not positively verified")
+            return None
+        return reading
+
+    def _apply_detail(self, scan: "_InventoryScan", reading: "_SlotReading", position: int, slots: list[dict[str, Any]],
+                      match: Match, count: CountMatch, confident: bool, cancel: Event) -> None:
+        outcome = self.detail_recovery.resolve(
+            scan.target, cancel, scan.frame, position, reading.identity, count.value, confident,
+            profile_verified=scan.target.inventory_profile_verified is True,
+            scan_profile=scan.target.get('inventory_scan_profile'), slots=slots)
+        if outcome.failure is not None:
+            # Only a verified return to the original selection makes a failed read partial.
+            if not outcome.restored or outcome.failure.code not in DETAIL_RECOVERABLE_CODES:
+                raise outcome.failure
+            reading.note = outcome.failure.code + ';original selection restored'
+            reading.status = 'partial'
+            return
+        detail = outcome.detail
+        reading.detail_identity = detail.identity is not None
+        if detail.identity is not None:
+            reading.identity, reading.score, reading.margin = detail.identity, detail.score, detail.margin
+            reading.source, reading.status = detail.source, 'ok'
+            if detail.source == 'verified_grid_detail_fallback':
+                reading.score, reading.margin = match.score, match.margin
+        if detail.source == 'inventory_detail_conflict':
+            reading.status, reading.quantity, reading.count_source = 'conflict', None, detail.source
+        elif detail.identity is not None:
+            reading.quantity, reading.count_score, reading.count_source = detail.count.value, detail.count.score, detail.count.source
+            if detail.count.source == 'verified_grid_count_fallback':
+                reading.count_score = count.score
+        else:
+            reading.quantity, reading.status = None, 'partial'
+        reading.note = detail.count.reason
+        if detail.identity is not None and scan.allowed_ids is not None:
+            reading.profile_confirmed = detail.identity in scan.allowed_ids
+
+    @staticmethod
+    def _record_entry(scan: "_InventoryScan", reading: "_SlotReading", crop: Image.Image) -> bool:
+        if any(entry["item_id"] == reading.identity for entry in scan.entries):
+            return False
+        scan_profile = scan.prepared.profile_id if scan.prepared is not None else None
+        scan.entries.append({"key": reading.identity, "quantity": reading.quantity, "item_id": reading.identity,
+                             "name": None, "observed_slot": reading.index,
+                             "profile_id": scan_profile if scan_profile is not None else "visible-grid",
+                             "inventory_scan_profile": scan_profile})
+        scan.slot_crops[reading.index] = crop.copy()
+        quantity_confident = reading.quantity is not None
+        scan.evidence.extend([
+            {"field": f"entries[{reading.index}].item_id", "status": reading.status, "source": reading.source,
+             "confidence": reading.score, "note": f"margin={reading.margin:.6f}"},
+            {"field": f"entries[{reading.index}].quantity", "status": "ok" if quantity_confident else "uncertain",
+             "source": reading.count_source, "confidence": reading.count_score, "note": reading.note},
+        ])
+        scan.review_required = scan.review_required or reading.status != 'ok' or not quantity_confident
+        return True
+
+    def _advance_page(self, scan: "_InventoryScan", cancel: Event) -> bool:
+        """Move to the next page; False ends the page loop.
+
+        With navigation the list end is two drags without measured motion after the last rows were
+        read, so a residual tail page is always followed by a no-motion check (X07, C2-2).
+        """
+        navigation = getattr(self, 'navigation', None)
+        if navigation is None and len(scan.entries) >= len(self.matcher.templates):
+            scan.coverage_complete = True
+            return False
+        if cancel.is_set():
+            raise ScannerError("cancelled", "inventory scan cancelled")
+        if navigation is None:
+            return self._wheel_page(scan, cancel)
+        self._anchor_selection(scan, cancel)
+        moved = navigation.advance(scan.target, cancel, scan.frame, scan.source_kind)
+        shift_px = round(moved.shift * scan.source_size[1])
+        scan.evidence.append({"field": "scroll_overlap", "status": "ok", "source": moved.reason,
+            "confidence": 1.0, "note": f"shift_px={shift_px};reason={moved.reason}"})
+        if moved.terminal:
+            moved.frame.close()
+            self._require_tail_read(scan)
+            scan.coverage_complete = True
+            return False
+        scan.offset += moved.shift
+        scan.frame.close()
+        scan.frame = moved.frame
+        self._align_to_anchor(scan)
+        return True
+
+    def _require_tail_read(self, scan: "_InventoryScan") -> None:
+        """At the verified end, a filled tile that never became readable is a coverage gap, not an end."""
+        clipped = self.navigation.page_slots(scan.source_kind, scan.offset, readable=False)
+        for index in sorted(clipped):
+            if index <= scan.read_until:
+                continue
+            with ratio_crop(scan.frame, clipped[index]) as crop:
+                if image_has_visible_content(crop):
+                    raise ScannerError("inventory_scroll_unverified", f"tile {index} is filled but never readable at the list end")
+
+    def _align_to_anchor(self, scan: "_InventoryScan") -> None:
+        """Remove accumulated shift rounding: re-centre the offset where the anchored selection is detected.
+
+        Each measured move is exact to about a pixel, but several moves drift past the few pixels the
+        selection-border check tolerates (live tail page: ~3px). The anchor is visible by construction.
+        """
+        detail_port = getattr(self, 'detail_recovery', None)
+        if scan.anchored is None or detail_port is None:
+            return
+        height = scan.source_size[1]
+        valid = []
+        for correction in range(-10, 11):
+            visible = self.navigation.page_slots(scan.source_kind, scan.offset + correction / height)
+            order = sorted(visible)
+            position = detail_port.recognizer.selected(scan.frame, scan.source_kind, [visible[i] for i in order])
+            if position is not None and 0 <= position < len(order) and order[position] == scan.anchored:
+                valid.append(correction)
+        scan.evidence.append({"field": "scroll_alignment", "status": "ok" if valid else "uncertain",
+            "source": "anchored_selection", "confidence": 1.0 if valid else 0.0,
+            "note": f"anchor={scan.anchored};window_px={valid[0]}..{valid[-1]}" if valid else f"anchor={scan.anchored};not found"})
+        if valid:
+            scan.offset += (valid[0] + valid[-1]) / 2 / height
+
+    def _anchor_selection(self, scan: "_InventoryScan", cancel: Event) -> None:
+        """Keep a visible selection across the scroll: select the page's last filled slot (C5)."""
+        detail_port = getattr(self, 'detail_recovery', None)
+        if detail_port is None or not hasattr(detail_port, 'anchor') or scan.prepared is None:
+            return
+        visible = self._visible_slots(scan, 0)
+        order = sorted(visible)
+        slots = [visible[index] for index in order]
+        # The bottom readable row can sit a few pixels from the list edge once offsets drift, clipping
+        # its selection border; one row higher still stays visible after a ~1-row drag.
+        rows = sorted({index // 5 for index in order})
+        preferred = [position for position in range(len(order)) if len(rows) > 1 and order[position] // 5 == rows[-2]]
+        for position in [*reversed(preferred), *reversed(range(len(slots)))]:
+            with ratio_crop(scan.frame, slots[position]) as crop:
+                if image_has_visible_content(crop):
+                    detail_port.anchor(scan.target, cancel, scan.frame, position, slots=slots)
+                    scan.anchored = order[position]
+                    return
+
+    def _wheel_page(self, scan: "_InventoryScan", cancel: Event) -> bool:
+        """Navigation-free fallback: wheel once and compare whole frames."""
+        self.capture.scroll(scan.target, -480)
+        next_frame = self.capture.wait_stable(scan.target, cancel)
+        overlap = image_similarity(scan.frame, next_frame)
+        if overlap >= rt.value("inventory.wheel.same_frame"):
+            next_frame.close()
+            scan.evidence.append({"field": "scroll_terminal", "status": "ok", "source": "stable_frame_overlap", "confidence": overlap, "note": "tail-or-no-motion"})
+            return False
+        if overlap <= rt.value("inventory.wheel.zero_overlap"):
+            scan.evidence.append({"field": "scroll_overlap", "status": "uncertain", "source": "frame_overlap", "confidence": overlap, "note": "near-zero overlap; no zero-fill"})
+            scan.review_required = True
+        scan.frame.close()
+        scan.frame = next_frame
+        return True
+
+    def _finalize(self, scan: "_InventoryScan") -> list[dict[str, Any]]:
+        prepared = scan.prepared
+        if prepared is not None:
+            ordered_ok = self.navigation.verify_profile_order(prepared.profile_id, scan.observed_profile_ids)
+            verified = scan.coverage_complete and not (scan.review_required or not ordered_ok)
+            if verified:
+                self._zero_fill(scan)
+            scan.evidence.append({"field": "scan_coverage", "status": "ok" if verified else "partial",
+                "source": "inventory_navigation", "confidence": 1.0 if verified else 0.0,
+                "note": f"profile={prepared.profile_id};terminal={scan.coverage_complete};ordered={ordered_ok}"})
+            scan.review_required = scan.review_required or not scan.coverage_complete or not ordered_ok
+        return [scan.candidate(scan.evidence, scan.review_required)]
+
+    @staticmethod
+    def _zero_fill(scan: "_InventoryScan") -> None:
+        profile_id = scan.prepared.profile_id
+        known = {row.item_id: row for row in CATALOG if row.profile_id == profile_id and row.zero_fill_allowed}
+        present = {entry['item_id'] for entry in scan.entries}
+        for item_id, row in sorted(known.items(), key=lambda pair: pair[1].order_index):
+            if item_id in present:
+                continue
+            scan.entries.append({"key": item_id, "quantity": "0", "item_id": item_id, "name": row.display_name,
+                "observed_slot": None, "profile_id": profile_id, "inventory_scan_profile": profile_id})
+            scan.evidence.append({"field": f"zero_fill[{row.resource_key}].quantity", "status": "ok",
+                "source": "verified_profile_zero_fill", "confidence": 1.0, "note": "verified terminal and monotonic profile coverage"})
+
+    def _interrupted(self, scan: "_InventoryScan", exc: Exception, cancel: Event) -> ScanBatchResult:
+        error = exc if isinstance(exc, ScannerError) else ScannerError("matcher_failed", str(exc))
+        if error.code == "inventory_scroll_unverified" and scan.prepared is not None and not cancel.is_set():
+            # Safe abort returns the list to its first page by re-applying verified settings (X10).
+            try:
+                self.navigation.restore_first_page(scan.target, Event(), scan.frame)
+                restored, restore_note = True, "display settings re-applied; first page shown"
+            except ScannerError as restore_error:
+                restored, restore_note = False, restore_error.code
+            error.details["first_page_restored"] = restored
+            scan.evidence.append({"field": "inventory_restore", "status": "ok" if restored else "failed",
+                                  "source": "inventory_first_page_restore", "confidence": 1.0 if restored else 0.0,
+                                  "note": restore_note})
+        retained = []
+        if scan.entries:
+            retained = [scan.candidate([*scan.evidence, {"field": "scan_coverage", "status": "partial",
+                "source": "scan_interrupted", "confidence": 0.0, "note": error.code}], True)]
+            scan.completed = True  # ownership of complete slot specimens transfers to the session
+        return ScanBatchResult(retained, "cancelled" if cancel.is_set() or error.code == "cancelled" else "failed", error)
 
     def train_user_answer(
         self, profile_id: str, candidate_id: str, specimen: dict[str, Any],

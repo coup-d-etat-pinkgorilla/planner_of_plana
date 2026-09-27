@@ -1,0 +1,452 @@
+{
+ "inputs": [],
+ "progress": [
+  [
+   0,
+   4,
+   "scanner.student.capture",
+   null
+  ],
+  [
+   1,
+   4,
+   "scanner.student.identify",
+   null
+  ],
+  [
+   2,
+   4,
+   "scanner.student.basic_fields",
+   null
+  ],
+  [
+   3,
+   4,
+   "scanner.student.equipment_fields",
+   null
+  ],
+  [
+   4,
+   4,
+   "scanner.student.matched",
+   null
+  ]
+ ],
+ "result": [
+  {
+   "_answer_specimen": {
+    "numeric_groups": {
+     "basic_equipment_1_level_studio_cells": [
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "7fb0590adcb9b42de621e37d856858ecd8926c14cb1000f21f22798f69cfdbcc",
+        "size": [
+         13,
+         13
+        ]
+       }
+      },
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "df98bdf4259f3da84e91f5b255e2027d9e7eaab2d8a9344674e011fc62a8f119",
+        "size": [
+         13,
+         13
+        ]
+       }
+      }
+     ],
+     "basic_equipment_2_level_studio_cells": [
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "f36c1d901b6d2db5a6437036fc5f0cbf0882c6c6b707b7158bb1b35fa14fc1c7",
+        "size": [
+         13,
+         13
+        ]
+       }
+      },
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "cf1654e5f2f5e44df8dd3eb4d0bd3490c5e2d27451f2aea94842b75694239fc9",
+        "size": [
+         13,
+         13
+        ]
+       }
+      }
+     ],
+     "basic_equipment_3_level_studio_cells": [
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "4cc82b9701e85a3531461ef21232cc7a537d4a726a6f48e2609f669fe9ae8fd3",
+        "size": [
+         13,
+         13
+        ]
+       }
+      },
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "c548d64bf4fa031a91c7cefbc6f905d312b839ce1cf5998c07b03ebd7c7a1723",
+        "size": [
+         13,
+         13
+        ]
+       }
+      }
+     ],
+     "basic_relationship_rank_studio_1_cells": [
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "4bf6966495a1270a3b44597327d3d6f0bb5f5f8a3bf2a06a73ec5de7b15cef27",
+        "size": [
+         9,
+         14
+        ]
+       }
+      }
+     ],
+     "basic_relationship_rank_studio_2_cells": [
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "06ce1ecbaa6fdd7cf81a2f2dcdb5b6f99682f502fe374d81e4daa0e3f65b417a",
+        "size": [
+         9,
+         14
+        ]
+       }
+      },
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "2d95159bfb9b24e88c60e85ffbae72379aa7c7e037a621d04d48c464cb6b0f9e",
+        "size": [
+         9,
+         14
+        ]
+       }
+      }
+     ],
+     "basic_relationship_rank_studio_3_cells": [
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "fc90b4d9808d024c4679d0966c7d6c906978f930e3687cdb4a532a3895d81743",
+        "size": [
+         9,
+         14
+        ]
+       }
+      },
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "4bf6966495a1270a3b44597327d3d6f0bb5f5f8a3bf2a06a73ec5de7b15cef27",
+        "size": [
+         9,
+         14
+        ]
+       }
+      },
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "5635c070924c3a189aac29960c12be0d2cae63919a3fbe8e97f13f19edffb0e2",
+        "size": [
+         9,
+         14
+        ]
+       }
+      }
+     ],
+     "basic_student_level_studio_cells": [
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "4aa2e215167db13b6ca90030bd05e05312d63a9e341f9d9e6610c316046c2bf2",
+        "size": [
+         13,
+         14
+        ]
+       }
+      },
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "255e1405387f7d154411ba73a457c1fe0cb24350291f05629c138e7b0e4c7d89",
+        "size": [
+         13,
+         14
+        ]
+       }
+      }
+     ],
+     "basic_weapon_level_studio_cells": [
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "7feb2c84b3185eea2ba85f2f8e2a815a3c84ecd48fd82c88456802bc6c75851e",
+        "size": [
+         16,
+         17
+        ]
+       }
+      },
+      {
+       "image": {
+        "mode": "RGBA",
+        "sha256": "bff61cef205008a4b165ad251f862a8f080d17ce0174b48b1da7ae988a7f6560",
+        "size": [
+         16,
+         17
+        ]
+       }
+      }
+     ]
+    },
+    "source_size": [
+     1280,
+     720
+    ]
+   },
+   "evidence": [
+    {
+     "confidence": 0.9893617805918664,
+     "field": "student_id",
+     "note": "margin=0.075423;form_ref=miyu",
+     "source": "student_texture_template",
+     "status": "ok"
+    },
+    {
+     "confidence": 0.76,
+     "field": "level",
+     "note": "value=1;labels=['1'];margin=0.220317;shifts=[(0, 0)]",
+     "source": "student_level_studio_position_bank",
+     "status": "ok"
+    },
+    {
+     "confidence": 0.8035714285714286,
+     "field": "bond_rank",
+     "note": "value=2;labels=['2'];margin=0.214286;shifts=[(0, 0)]",
+     "source": "relationship_rank_studio_position_bank",
+     "status": "ok"
+    },
+    {
+     "confidence": 0.9276672694394222,
+     "field": "student_star",
+     "note": "raw=3.025316",
+     "source": "basic_star_color",
+     "status": "ok"
+    },
+    {
+     "confidence": 0.9312715536927508,
+     "field": "ex_skill",
+     "note": "group=ex;label=1;margin=0.088036",
+     "source": "basic_skill_combined",
+     "status": "ok"
+    },
+    {
+     "confidence": 0.90359749764927,
+     "field": "skill1",
+     "note": "group=normal;label=1;margin=0.081343",
+     "source": "basic_skill_combined",
+     "status": "ok"
+    },
+    {
+     "confidence": 0.9194773879784514,
+     "field": "skill2",
+     "note": "group=normal;label=1;margin=0.088017",
+     "source": "basic_skill_combined",
+     "status": "ok"
+    },
+    {
+     "confidence": 0.8975123913335565,
+     "field": "skill3",
+     "note": "group=normal;label=1;margin=0.084340",
+     "source": "basic_skill_combined",
+     "status": "ok"
+    },
+    {
+     "confidence": 1.0,
+     "field": "weapon_level",
+     "note": "state=no_weapon_system",
+     "source": "basic_weapon_state_template",
+     "status": "skipped"
+    },
+    {
+     "confidence": 1.0,
+     "field": "weapon_star",
+     "note": "state=no_weapon_system",
+     "source": "basic_weapon_state_template",
+     "status": "skipped"
+    },
+    {
+     "confidence": 0.6518218623481782,
+     "field": "combat_hp",
+     "note": "group=hp;margin=0.058673;stop=EMPTY",
+     "source": "basic_combat_digit",
+     "status": "ok"
+    },
+    {
+     "confidence": 0.7597765363128491,
+     "field": "combat_atk",
+     "note": "group=atk;margin=0.129259;stop=EMPTY",
+     "source": "basic_combat_digit",
+     "status": "ok"
+    },
+    {
+     "confidence": 0.7189542483660131,
+     "field": "combat_def",
+     "note": "group=def;margin=0.055655;stop=EMPTY",
+     "source": "basic_combat_digit",
+     "status": "ok"
+    },
+    {
+     "confidence": 0.7119565217391305,
+     "field": "combat_heal",
+     "note": "group=heal;margin=0.180835;stop=EMPTY",
+     "source": "basic_combat_digit",
+     "status": "ok"
+    },
+    {
+     "confidence": 1.0,
+     "field": "weapon_state",
+     "note": "student_star=3",
+     "source": "student_star_gate",
+     "status": "inferred"
+    },
+    {
+     "confidence": 1,
+     "field": "stat_hp",
+     "note": "locked",
+     "source": "potential_gate",
+     "status": "inferred"
+    },
+    {
+     "confidence": 1,
+     "field": "stat_atk",
+     "note": "locked",
+     "source": "potential_gate",
+     "status": "inferred"
+    },
+    {
+     "confidence": 1,
+     "field": "stat_heal",
+     "note": "locked",
+     "source": "potential_gate",
+     "status": "inferred"
+    },
+    {
+     "confidence": 1.0,
+     "field": "equip1",
+     "note": "orange dot present",
+     "source": "equipment_empty_dot",
+     "status": "inferred"
+    },
+    {
+     "confidence": 1.0,
+     "field": "equip1_level",
+     "note": "slot empty",
+     "source": "equipment_empty_dot",
+     "status": "skipped"
+    },
+    {
+     "confidence": 1.0,
+     "field": "equip2",
+     "note": "student_level=1;unlock=10",
+     "source": "student_level_unlock_rule",
+     "status": "inferred"
+    },
+    {
+     "confidence": 1.0,
+     "field": "equip2_level",
+     "note": "slot locked",
+     "source": "student_level_unlock_rule",
+     "status": "skipped"
+    },
+    {
+     "confidence": 1.0,
+     "field": "equip3",
+     "note": "student_level=1;unlock=20",
+     "source": "student_level_unlock_rule",
+     "status": "inferred"
+    },
+    {
+     "confidence": 1.0,
+     "field": "equip3_level",
+     "note": "slot locked",
+     "source": "student_level_unlock_rule",
+     "status": "skipped"
+    },
+    {
+     "confidence": 1.0,
+     "field": "equip4",
+     "note": "growth action inactive",
+     "source": "favorite_growth_lock",
+     "status": "inferred"
+    }
+   ],
+   "payload": {
+    "provenance": {
+     "bond_rank": "relationship_rank_studio_position_bank",
+     "combat_atk": "basic_combat_digit",
+     "combat_def": "basic_combat_digit",
+     "combat_heal": "basic_combat_digit",
+     "combat_hp": "basic_combat_digit",
+     "equip1": "equipment_empty_dot",
+     "equip2": "student_level_unlock_rule",
+     "equip3": "student_level_unlock_rule",
+     "equip4": "favorite_growth_lock",
+     "ex_skill": "basic_skill_combined",
+     "level": "student_level_studio_position_bank",
+     "skill1": "basic_skill_combined",
+     "skill2": "basic_skill_combined",
+     "skill3": "basic_skill_combined",
+     "stat_atk": "potential_gate",
+     "stat_heal": "potential_gate",
+     "stat_hp": "potential_gate",
+     "student_id": "student_texture_template",
+     "student_star": "basic_star_color",
+     "weapon_state": "student_star_gate"
+    },
+    "student_id": "miyu",
+    "values": {
+     "bond_rank": 2,
+     "combat_atk": 407,
+     "combat_def": 18,
+     "combat_heal": 1734,
+     "combat_hp": 3051,
+     "equip1": "empty",
+     "equip2": "level_locked",
+     "equip3": "level_locked",
+     "equip4": "love_locked",
+     "ex_skill": 1,
+     "level": 1,
+     "skill1": 1,
+     "skill2": 1,
+     "skill3": 1,
+     "stat_atk": 0,
+     "stat_heal": 0,
+     "stat_hp": 0,
+     "student_star": 3,
+     "weapon_state": "no_weapon_system"
+    },
+    "version": 1
+   },
+   "review_required": false
+  }
+ ],
+ "scenario": "student_single_miyu_1280",
+ "screens_captured": [
+  "basic"
+ ]
+}

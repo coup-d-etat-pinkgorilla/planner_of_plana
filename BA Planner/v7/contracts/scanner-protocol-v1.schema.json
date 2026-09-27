@@ -46,7 +46,7 @@
       "required": ["field", "status", "source"],
       "properties": {
         "field": { "type": "string", "minLength": 1 },
-        "status": { "enum": ["ok", "inferred", "uncertain", "failed", "skipped", "region_missing", "verified", "deferred", "partial", "dependency_missing", "suspicious"] },
+        "status": { "enum": ["ok", "inferred", "uncertain", "failed", "skipped", "region_missing", "verified", "deferred", "partial", "dependency_missing", "suspicious", "shadow"] },
         "source": { "type": "string", "minLength": 1 },
         "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
         "note": { "type": "string" },
@@ -115,7 +115,7 @@
           "oneOf": [
             { "properties": { "method": { "const": "scanner.target.list" }, "payload": { "type": "object", "maxProperties": 0 } } },
             { "properties": { "method": { "const": "scanner.recognition.status" }, "payload": { "type": "object", "maxProperties": 0 } } },
-            { "properties": { "method": { "const": "scanner.session.start" }, "payload": { "type": "object", "required": ["scan_kind", "target_id"], "properties": { "scan_kind": { "enum": ["student", "inventory", "tactical_lobby"] }, "target_id": { "type": "string", "minLength": 1 }, "profile_id": { "type": "string", "minLength": 1 }, "student_scan_mode": { "enum": ["single", "full"] } }, "additionalProperties": false } } },
+            { "properties": { "method": { "const": "scanner.session.start" }, "payload": { "type": "object", "required": ["scan_kind", "target_id"], "properties": { "scan_kind": { "enum": ["student", "inventory", "tactical_lobby"] }, "target_id": { "type": "string", "minLength": 1 }, "profile_id": { "type": "string", "minLength": 1 }, "student_scan_mode": { "enum": ["single", "full"] }, "inventory_scan_profile": { "enum": ["equipment", "activity_reports", "tech_notes", "tactical_bd", "ooparts", "presents", "student_elephs"] } }, "additionalProperties": false } } },
             { "properties": { "method": { "const": "scanner.session.cancel" }, "payload": { "$ref": "#/$defs/sessionRef" } } },
             { "properties": { "method": { "const": "scanner.session.snapshot" }, "payload": { "$ref": "#/$defs/sessionRef" } } },
             { "properties": { "method": { "const": "scanner.candidate.get" }, "payload": { "type": "object", "required": ["session_id", "generation", "candidate_id"], "properties": { "session_id": { "type": "string", "minLength": 1 }, "generation": { "type": "integer", "minimum": 1 }, "candidate_id": { "type": "string", "minLength": 1 } }, "additionalProperties": false } } },

@@ -4,6 +4,7 @@ from PIL import Image, ImageChops, ImageStat
 
 from core.recognition_assets import RecognitionAssetCatalog
 from core.student_scan_recognizer import Observation, ratio_crop
+from core import recognition_thresholds as rt
 
 
 def _normalized_correlation(left: Image.Image, right: Image.Image) -> float:
@@ -96,7 +97,7 @@ class StudentWeaponRecognizer:
             luminance = ImageStat.Stat(gray)
         finally:
             gray.close()
-        if luminance.mean[0] < 35.0 or luminance.stddev[0] < 8.0:
+        if luminance.mean[0] < rt.value("student.weapon.signal.min_mean") or luminance.stddev[0] < rt.value("student.weapon.signal.min_stddev"):
             return Observation(
                 None, 0.0, "uncertain", "basic_weapon_state_template",
                 "state ROI has insufficient UI signal",
@@ -106,8 +107,8 @@ class StudentWeaponRecognizer:
             label in {
                 "weapon_equipped", "weapon_unlocked_not_equipped", "no_weapon_system",
             }
-            and score >= 0.72
-            and margin >= 0.10
+            and score >= rt.value("student.weapon.state.score")
+            and margin >= rt.value("student.weapon.state.margin")
         )
         return Observation(
             label if confirmed else None,
@@ -130,7 +131,7 @@ class StudentWeaponRecognizer:
         else:
             star_label, star_score, star_margin = None, 0.0, 0.0
         star = int(star_label) if star_label and star_label.isdigit() else None
-        star_ok = star in {1, 2, 3, 4} and star_score >= 0.60 and star_margin >= 0.02
+        star_ok = star in {1, 2, 3, 4} and star_score >= rt.value("student.weapon.menu_star.score") and star_margin >= rt.value("student.weapon.menu_star.margin")
 
         digits: list[str] = []
         digit_scores: list[float] = []
@@ -149,7 +150,7 @@ class StudentWeaponRecognizer:
                 label, score, margin = self._rank(crop, templates)
             finally:
                 crop.close()
-            if position == 2 and label == "null" and score >= 0.60:
+            if position == 2 and label == "null" and score >= rt.value("student.weapon.menu_level.null_second_digit"):
                 break
             if label is None or not label.isdigit():
                 digits.clear()
@@ -162,7 +163,7 @@ class StudentWeaponRecognizer:
         level_margin = min(digit_margins, default=0.0)
         level_ok = (
             level is not None and 1 <= level <= 60
-            and level_score >= 0.55 and level_margin >= 0.015
+            and level_score >= rt.value("student.weapon.menu_level.score") and level_margin >= rt.value("student.weapon.menu_level.margin")
         )
         return {
             "weapon_star": Observation(

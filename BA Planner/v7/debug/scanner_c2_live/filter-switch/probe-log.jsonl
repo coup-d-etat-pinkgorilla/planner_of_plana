@@ -1,0 +1,2 @@
+[{"step": "click:filtermenu_button"}, {"step": "click:filter_tab"}, {"step": "click:presents_filter"}, {"step": "click:note_filter"}, {"shot": "00-notes-checked", "source": null, "scores": {"filter_title": 0.949, "sort_rule_check": 0.278, "sort_name_rule_check": 0.338, "eq_sort_rule_check": 0.366}}, {"step": "shot:00-notes-checked"}]
+[{"step": "click:filter_confirm_button"}, {"shot": "01-notes-grid", "source": "item", "scores": {"filter_title": 0.248, "sort_rule_check": 0.279, "sort_name_rule_check": 0.261, "eq_sort_rule_check": 0.257}}, {"step": "shot:01-notes-grid"}]

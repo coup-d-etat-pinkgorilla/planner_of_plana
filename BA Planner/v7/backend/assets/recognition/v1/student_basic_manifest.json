@@ -11368,7 +11368,7 @@
       "required": true,
       "bytes": 131990,
       "sha256": "706f01041142aba44abc49651ee42fc2bfb3f375b089204fa61ab40008ecdd04",
-      "asset_role": "shadow_whole_value_bank",
+      "asset_role": "weapon_level_fallback_other_fields_shadow",
       "source_path": "generated:complete-string-64x32-bitset-shadow-v1"
     },
     {

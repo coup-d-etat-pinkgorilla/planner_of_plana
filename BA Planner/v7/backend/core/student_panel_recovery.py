@@ -3,17 +3,31 @@ from __future__ import annotations
 
 from threading import Event
 from time import monotonic
+from typing import Any, Protocol
 
 from PIL import Image, ImageStat
 
 from core.scanner_session import ScannerError
+from core.scan_context import ScanContext
 from core.student_scan_recognizer import Observation, ratio_crop
 from core.student_weapon_recognizer import _color_similarity, _normalized_correlation
+from core import recognition_thresholds as rt
 
 
 PANEL_CLOSE_KEYS = {"weapon": "weapon_menu_quit_button", "equipment": "equipmentmenu_quit_button",
                     "skill": "skillmenu_quit_button", "stat": "statmenu_quit_button"}
 TAB_KEYS = {"basic": "basic_info_button", "level": "levelcheck_button", "star": "star_menu_button"}
+
+
+class PanelMenu(Protocol):
+    """One student detail panel: open and return a verified frame, re-read it, close back to basic.
+
+    ``recapture`` is needed only by callers that read with ``attempts > 1``.
+    """
+
+    def capture(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
+    def recapture(self, target: dict[str, Any], cancel: Event) -> Image.Image: ...
+    def close(self, target: dict[str, Any]) -> None: ...
 
 
 def merge_observation(previous: Observation | None, current: Observation) -> Observation:
@@ -38,14 +52,14 @@ def read_panel_fields(menu, kind, target, cancel, initial, fields, read, *, atte
     frame = None
     try:
         try:
-            frame = getattr(menu, f"capture_{kind}_menu")(target, cancel)
+            frame = menu.capture(target, cancel)
             for attempt in range(attempts):
                 if cancel.is_set():
                     raise ScannerError("cancelled", "panel reading cancelled")
                 if attempt:
                     frame.close()
                     frame = None
-                    frame = getattr(menu, f"recapture_{kind}_menu")(target, cancel)
+                    frame = menu.recapture(target, cancel)
                 try:
                     observed = read(frame)
                 except (ValueError, OSError) as exc:
@@ -60,7 +74,7 @@ def read_panel_fields(menu, kind, target, cancel, initial, fields, read, *, atte
         finally:
             if frame is not None:
                 frame.close()
-            getattr(menu, f"close_{kind}_menu")(target)
+            menu.close(target)
     except ScannerError as exc:
         safe = (exc.details.get("screen_state") == "basic"
                 or getattr(getattr(menu, "recovery", None), "state", None) == "basic")
@@ -96,17 +110,17 @@ class StudentPanelRecognizer:
                 color = _color_similarity(crop, template)
                 # Active tabs depend on both light surface and dark glyphs. A separate
                 # NCC floor tolerates 1280 glyph antialiasing without accepting blank UI.
-                scores[state] = (color if correlation >= .75 else 0) if state in TAB_KEYS else .7 * correlation + .3 * color
+                scores[state] = (color if correlation >= rt.value("student.panel.tab.correlation_floor") else 0) if state in TAB_KEYS else .7 * correlation + .3 * color
             finally:
                 crop.close()
         self.scores = scores
         titles = sorted(PANEL_CLOSE_KEYS, key=lambda name: scores[name], reverse=True)
-        if scores[titles[0]] >= .86 and scores[titles[0]] - scores[titles[1]] >= .04:
+        if scores[titles[0]] >= rt.value("student.panel.title.score") and scores[titles[0]] - scores[titles[1]] >= rt.value("student.panel.title.margin"):
             return titles[0]
         # Do not accept a dimmed underlying tab when a panel title is ambiguous.
-        if scores[titles[0]] >= .70:
+        if scores[titles[0]] >= rt.value("student.panel.title.ambiguous"):
             return "unknown"
-        tabs = [name for name in TAB_KEYS if scores[name] >= .90]
+        tabs = [name for name in TAB_KEYS if scores[name] >= rt.value("student.panel.tab.score")]
         return tabs[0] if len(tabs) == 1 else "unknown"
 
     def identity(self, frame):
@@ -120,7 +134,7 @@ class StudentPanelRecognizer:
                 signal = ImageStat.Stat(gray).stddev[0] >= 8
             finally:
                 gray.close()
-            return signal and _color_similarity(current[0], baseline[0]) >= .985 and _color_similarity(current[1], baseline[1]) >= .90
+            return signal and _color_similarity(current[0], baseline[0]) >= rt.value("student.panel.same_student.name_color") and _color_similarity(current[1], baseline[1]) >= rt.value("student.panel.same_student.portrait_color")
         finally:
             for image in current:
                 image.close()
@@ -189,7 +203,7 @@ class StudentPanelRecovery:
         if self.baseline is not None:
             raise ScannerError("panel_active", "previous panel has not returned safely")
         self.trace = []
-        target = {**target, "_scanner_cancel": cancel}
+        target = ScanContext.of(target).replace(cancel=cancel)
         deadline = monotonic() + self.OPEN_SECONDS
         frame = self._observe(target, cancel, deadline)
         try:
@@ -215,7 +229,7 @@ class StudentPanelRecovery:
     def recapture(self, target, cancel, panel):
         if self.baseline is None or target.get("target_id") != self.target_id:
             raise ScannerError("panel_not_active", "recapture has no matching open panel")
-        return self._poll({**target, "_scanner_cancel": cancel}, cancel, panel, monotonic() + 2.0, 2)
+        return self._poll(ScanContext.of(target).replace(cancel=cancel), cancel, panel, monotonic() + 2.0, 2)
 
     def _clear_baseline(self):
         for image in self.baseline or ():
@@ -228,8 +242,8 @@ class StudentPanelRecovery:
             return
         if target.get("target_id") != self.target_id:
             raise ScannerError("panel_target_changed", "cleanup target differs from open target")
-        cleanup = {**target, "_scanner_cleanup": True, "_scanner_cancel": Event()}
-        cancel = cleanup["_scanner_cancel"]
+        cleanup = ScanContext.of(target).replace(cleanup=True, cancel=Event())
+        cancel = cleanup.cancel
         deadline = monotonic() + self.CLOSE_SECONDS
         try:
             for attempt in range(4):

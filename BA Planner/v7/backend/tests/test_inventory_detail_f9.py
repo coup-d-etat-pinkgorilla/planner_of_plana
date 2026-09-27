@@ -4,9 +4,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock,patch
 from PIL import Image
+from core.inventory_catalog import CATALOG_REVISION
 from core.recognition_assets import RecognitionAssetCatalog
-from core.inventory_detail_recovery import InventoryDetailRecognizer,InventoryDetailRecovery,DetailResult,DetailCount
-from core.inventory_navigation import PreparedInventory,ScrollResult
+from core.inventory_detail_recovery import InventoryDetailRecognizer,InventoryDetailRecovery,DetailRecoveryResult,DetailResult,DetailCount
+from core.inventory_navigation import PageMove,PreparedInventory
 from core.scanner_session import ScannerError,ScanBatchResult
 from core.scanner_matchers import InventoryMatcherAdapter,Match,CountMatch
 from test_student_panel_f2 import FastEvent
@@ -29,49 +30,54 @@ class GridUI:
     def reader(self):
         return SimpleNamespace(regions={'sources':{'item':{'grid_slots':SLOTS}}},
             classify=lambda f:'item' if f.getpixel((1,0))[0]==0 else None,
-            selected=lambda f,s:f.getpixel((0,0))[0],read=Mock(return_value=DetailResult(ITEM,.95,.1,DetailCount('42',.9))))
+            selected=lambda f,s,_slots=None:f.getpixel((0,0))[0],read=Mock(return_value=DetailResult(ITEM,.95,.1,DetailCount('42',.9))))
 
 class F9RecoveryTests(unittest.TestCase):
     def setUp(self):self.enterContext(patch('core.inventory_detail_recovery.Event',FastEvent))
-    def resolve(self,ui,reader=None,**kwargs):
+    def outcome(self,ui,reader=None,**kwargs):
         reader=reader or ui.reader();recovery=InventoryDetailRecovery(ui,reader)
         with ui.wait_stable({},FastEvent()) as frame:
             return recovery.resolve({},kwargs.pop('cancel',FastEvent()),frame,1,kwargs.pop('grid_id',ITEM),kwargs.pop('grid_count',None),kwargs.pop('grid_confirmed',False),**kwargs)
+    def resolve(self,ui,reader=None,**kwargs):
+        outcome=self.outcome(ui,reader,**kwargs)
+        self.assertIsNone(outcome.failure);return outcome.detail
     def test_select_read_restore_original_same_grid(self):
         ui=GridUI();result=self.resolve(ui)
         self.assertEqual('42',result.count.value);self.assertEqual(0,ui.selected);self.assertEqual(2,len(ui.clicks))
         self.assertTrue(ui.clicks[-1]['_scanner_cleanup'])
     def test_ignored_click_never_reads_detail(self):
         ui=GridUI(ignored=True);reader=ui.reader()
-        with self.assertRaises(ScannerError) as exc:self.resolve(ui,reader)
-        self.assertEqual('inventory_detail_unconfirmed',exc.exception.code)
-        self.assertTrue(exc.exception.details['inventory_restored']);reader.read.assert_not_called()
+        # C3 X13: a failure after a verified restore is returned, not flagged on the exception.
+        outcome=self.outcome(ui,reader)
+        self.assertEqual('inventory_detail_unconfirmed',outcome.failure.code);self.assertIsNone(outcome.detail)
+        self.assertTrue(outcome.restored);self.assertNotIn('inventory_restored',outcome.failure.details)
+        reader.read.assert_not_called()
         self.assertEqual(1,len(ui.clicks))
     def test_page_change_never_clicks_cleanup_on_unknown_screen(self):
         ui=GridUI(changed=True)
-        with self.assertRaises(ScannerError) as exc:self.resolve(ui)
+        with self.assertRaises(ScannerError) as exc:self.outcome(ui)
         self.assertEqual('inventory_restore_failed',exc.exception.code);self.assertEqual(1,len(ui.clicks))
     def test_unknown_selection_does_not_click(self):
         ui=GridUI();reader=ui.reader();reader.selected=lambda *_:None
-        with self.assertRaises(ScannerError):self.resolve(ui,reader)
+        with self.assertRaises(ScannerError):self.outcome(ui,reader)
         self.assertEqual([],ui.clicks)
     def test_fading_selection_recaptures_before_any_click(self):
         ui=GridUI();reader=ui.reader();selected=reader.selected;reads=[0]
-        def fading(frame,source):
+        def fading(frame,source,slots=None):
             reads[0]+=1
-            return None if reads[0]<=2 else selected(frame,source)
+            return None if reads[0]<=2 else selected(frame,source,slots)
         reader.selected=fading
         result=self.resolve(ui,reader)
         self.assertEqual('42',result.count.value);self.assertEqual(2,len(ui.clicks));self.assertEqual(0,ui.selected)
     def test_read_failure_restores_selection(self):
         ui=GridUI();reader=ui.reader();reader.read.side_effect=ScannerError('capture_failed','fixture')
-        with self.assertRaises(ScannerError) as exc:self.resolve(ui,reader)
-        self.assertTrue(exc.exception.details['inventory_restored']);self.assertEqual(0,ui.selected)
+        outcome=self.outcome(ui,reader)
+        self.assertEqual('capture_failed',outcome.failure.code);self.assertTrue(outcome.restored);self.assertEqual(0,ui.selected)
     def test_cancel_after_read_uses_fresh_cleanup(self):
         ui=GridUI();reader=ui.reader();cancel=FastEvent()
         def read(*a):cancel.set();return DetailResult(ITEM,.95,.1,DetailCount('42',.9))
         reader.read.side_effect=read
-        with self.assertRaises(ScannerError) as exc:self.resolve(ui,reader,cancel=cancel)
+        with self.assertRaises(ScannerError) as exc:self.outcome(ui,reader,cancel=cancel)
         self.assertEqual('cancelled',exc.exception.code);self.assertEqual(0,ui.selected)
         self.assertFalse(ui.clicks[-1]['_scanner_cancel'].is_set())
     def test_confirmed_grid_id_conflict_never_receives_other_count(self):
@@ -131,7 +137,7 @@ class F9AdapterTests(unittest.TestCase):
         adapter.count_matcher=Mock();adapter.count_matcher.match.return_value=CountMatch(count,.9,.1)
         reader=ui.reader();reader.regions={'sources':{'item':{'grid_slots':SLOTS[:1]}}}
         adapter.detail_recovery=Mock(recognizer=reader)
-        adapter.detail_recovery.resolve.return_value=DetailResult(ITEM,.95,.1,DetailCount('0',.9))
+        adapter.detail_recovery.resolve.return_value=DetailRecoveryResult(DetailResult(ITEM,.95,.1,DetailCount('0',.9)))
         self.enterContext(patch('core.scanner_matchers.image_has_visible_content',return_value=True))
         return adapter
     def scan(self,adapter):
@@ -148,7 +154,7 @@ class F9AdapterTests(unittest.TestCase):
         self.assertIn('inventory_detail_template',[e['source'] for e in result[0]['evidence']])
     def test_unresolved_detail_does_not_silently_accept_weak_x_grid_quantity(self):
         adapter=self.adapter(fast=False)
-        adapter.detail_recovery.resolve.return_value=DetailResult(None,.5,0,DetailCount(None,reason='weak_x_match'))
+        adapter.detail_recovery.resolve.return_value=DetailRecoveryResult(DetailResult(None,.5,0,DetailCount(None,reason='weak_x_match')))
         result=self.scan(adapter)
         self.assertIsNone(result[0]['payload']['entries'][0]['quantity']);self.assertTrue(result[0]['review_required'])
     def test_unverified_return_stops_session(self):
@@ -158,7 +164,7 @@ class F9AdapterTests(unittest.TestCase):
     def test_later_slot_restore_failure_preserves_completed_entry(self):
         adapter=self.adapter(count=None)
         adapter.detail_recovery.recognizer.regions={'sources':{'item':{'grid_slots':SLOTS}}}
-        adapter.detail_recovery.resolve.side_effect=[DetailResult(ITEM,.95,.1,DetailCount('42',.9)),ScannerError('inventory_restore_failed','later slot')]
+        adapter.detail_recovery.resolve.side_effect=[DetailRecoveryResult(DetailResult(ITEM,.95,.1,DetailCount('42',.9))),ScannerError('inventory_restore_failed','later slot')]
         result=self.scan(adapter)
         self.assertEqual('failed',result.outcome)
         self.assertEqual('42',result.candidates[0]['payload']['entries'][0]['quantity'])
@@ -166,25 +172,125 @@ class F9AdapterTests(unittest.TestCase):
         self.assertTrue(result.candidates[0]['review_required'])
 
     def test_f10_verified_terminal_enables_profile_zero_fill(self):
-        adapter=self.adapter();adapter.max_pages=2;nav=Mock()
+        adapter=self.adapter();adapter.max_pages=2;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
-        nav.advance.side_effect=lambda *_:ScrollResult(adapter.capture.wait_stable({},FastEvent()),5,(),terminal=True,reason='verified_no_motion')
+        nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')
         adapter.navigation=nav
         result=self.scan(adapter);entries=result[0]['payload']['entries']
         self.assertGreater(len(entries),1)
         self.assertTrue(any(e['quantity']=='0' and e['item_id']!=ITEM for e in entries))
         self.assertFalse(result[0]['review_required'])
+        # C1 X04/X05/X21: zero-fill evidence names its resource, entries carry the scan profile,
+        # and the terminal scroll evidence names the real decision.
+        evidence=result[0]['evidence']
+        zero_fill=[e for e in evidence if e['source']=='verified_profile_zero_fill']
+        filled={e['key'] for e in entries if e['observed_slot'] is None}
+        self.assertEqual({f'zero_fill[{key}].quantity' for key in filled},{e['field'] for e in zero_fill})
+        self.assertFalse(any(e['field'].startswith('entries[') for e in zero_fill))
+        self.assertEqual({'tech_notes'},{e['inventory_scan_profile'] for e in entries})
+        self.assertEqual({'tech_notes'},{e['profile_id'] for e in entries})
+        self.assertIn('verified_no_motion',{e['source'] for e in evidence if e['field']=='scroll_overlap'})
+        self.assertEqual(CATALOG_REVISION,result[0]['payload']['catalog_revision'])
 
     def test_f10_scroll_failure_preserves_entry_and_never_zero_fills(self):
-        adapter=self.adapter();adapter.max_pages=2;nav=Mock()
+        adapter=self.adapter();adapter.max_pages=2;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
         nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
         nav.verify_profile_order.return_value=True
         nav.advance.side_effect=ScannerError('inventory_scroll_unverified','fixture')
         adapter.navigation=nav
+        adapter.detail_recovery.resolve.return_value=DetailRecoveryResult(DetailResult(ITEM,.95,.1,DetailCount('42',.9)))
         result=self.scan(adapter)
         self.assertEqual('failed',result.outcome)
         self.assertEqual(1,len(result.candidates[0]['payload']['entries']))
         self.assertEqual('42',result.candidates[0]['payload']['entries'][0]['quantity'])
+        self.assertEqual(CATALOG_REVISION,result.candidates[0]['payload']['catalog_revision'])
+        # C2 X10: the safe abort re-applies verified settings so the list is back on its first page.
+        nav.restore_first_page.assert_called_once()
+        self.assertTrue(result.error.details['first_page_restored'])
+        restore=[e for e in result.candidates[0]['evidence'] if e['field']=='inventory_restore']
+        self.assertEqual([('ok','inventory_first_page_restore')],[(e['status'],e['source']) for e in restore])
+
+    def test_f10_scroll_failure_reports_failed_first_page_restore(self):
+        adapter=self.adapter();adapter.max_pages=2;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
+        nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+        nav.verify_profile_order.return_value=True
+        nav.advance.side_effect=ScannerError('inventory_scroll_unverified','fixture')
+        nav.restore_first_page.side_effect=ScannerError('inventory_prepare_unconfirmed','fixture')
+        adapter.navigation=nav
+        result=self.scan(adapter)
+        self.assertFalse(result.error.details['first_page_restored'])
+        restore=[e for e in result.candidates[0]['evidence'] if e['field']=='inventory_restore']
+        self.assertEqual([('failed','inventory_prepare_unconfirmed')],[(e['status'],e['note']) for e in restore])
+
+    def test_c5_tail_then_no_motion_is_the_verified_end(self):
+        # C5 (X07, C2-2): a short last move is read like any page; only a later no-motion drag ends
+        # coverage, so the residual tail is always followed by the re-check.
+        adapter=self.adapter();adapter.max_pages=4;nav=Mock()
+        nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+        nav.verify_profile_order.return_value=True
+        nav.page_slots.side_effect=lambda _source,offset,**_kw:{0:SLOTS[0]} if offset==0 else {1:SLOTS[0]}
+        moves=iter([PageMove(adapter.capture.wait_stable({},FastEvent()),29/720),
+                    PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')])
+        nav.advance.side_effect=lambda *_:next(moves)
+        adapter.navigation=nav
+        result=self.scan(adapter);evidence=result[0]['evidence']
+        self.assertEqual(['verified_pixel_shift','verified_no_motion'],
+                         [e['source'] for e in evidence if e['field']=='scroll_overlap'])
+        self.assertEqual('ok',[e for e in evidence if e['field']=='scan_coverage'][0]['status'])
+        self.assertTrue(any(e['observed_slot'] is None for e in result[0]['payload']['entries']))
+
+    def test_c5_skipped_row_is_unverified_not_silently_lost(self):
+        adapter=self.adapter();adapter.max_pages=3;nav=Mock()
+        nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+        nav.verify_profile_order.return_value=True
+        nav.page_slots.side_effect=lambda _source,offset,**_kw:{0:SLOTS[0]} if offset==0 else {2:SLOTS[0]}
+        nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),.3)
+        adapter.navigation=nav
+        result=self.scan(adapter)
+        self.assertEqual('failed',result.outcome);self.assertEqual('inventory_scroll_unverified',result.error.code)
+        self.assertEqual([],[e for e in result.candidates[0]['payload']['entries'] if e['observed_slot'] is None])
+
+    def test_c5_profile_scans_take_identity_from_the_detail_panel(self):
+        # C0-1 / C2-1 / C5 live: bundled icon art does not match current tiles (tech notes all rank as one
+        # icon, real equipment ranks as its blueprint piece at .80), so a grid match to an outside
+        # identity never skips a slot on a profile scan; the detail identity decides membership.
+        outside_of_notes='Equipment_Icon_WeaponExpGrowthZ_2'
+        exp='Equipment_Icon_Exp_0'
+        cases=(('item','tech_notes',outside_of_notes,ITEM,0.001,False),('item','tech_notes',outside_of_notes,ITEM,0.10,False),
+               ('equipment','equipment',ITEM,exp,0.001,False),('equipment','equipment',ITEM,exp,0.10,False))
+        for source,profile,outside,member,margin,skipped in cases:
+            with self.subTest(source=source,margin=margin):
+                adapter=self.adapter(fast=False);adapter.max_pages=1;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
+                adapter.detail_recovery.recognizer.regions={'sources':{source:{'grid_slots':SLOTS[:1]}}}
+                adapter.detail_recovery.resolve.return_value=DetailRecoveryResult(DetailResult(member,.95,.1,DetailCount('7',.9)))
+                nav.prepare.return_value=PreparedInventory(source,profile,True,True)
+                nav.verify_profile_order.return_value=True
+                nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')
+                adapter.navigation=nav
+                adapter.matcher.match.side_effect=lambda _crop,_m=member,_o=outside,_g=margin,**kw:(Match(_m,.7,.01) if kw.get('allowed_identities') else Match(_o,.69,_g))
+                with patch.object(adapter.detail_recovery.recognizer,'classify',return_value=source):
+                    result=self.scan(adapter)
+                notes=[e['note'] for e in result[0]['evidence'] if e['field'].startswith('slots[')]
+                if skipped:
+                    self.assertEqual(['confident visible identity is outside the explicit scan profile'],notes)
+                    adapter.detail_recovery.resolve.assert_not_called()
+                else:
+                    self.assertEqual([],notes);adapter.detail_recovery.resolve.assert_called_once()
+                    self.assertEqual(member,result[0]['payload']['entries'][0]['item_id'])
+
+    def test_c5_unresolved_detail_identity_is_never_recorded_from_the_grid(self):
+        adapter=self.adapter(fast=True);adapter.max_pages=1;nav=Mock();nav.page_slots.return_value={0:SLOTS[0]}
+        nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+        nav.verify_profile_order.return_value=True
+        nav.advance.side_effect=lambda *_:PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')
+        adapter.navigation=nav
+        adapter.detail_recovery.resolve.return_value=DetailRecoveryResult(DetailResult(None,.4,0,DetailCount(None,reason='weak_x_match')))
+        result=self.scan(adapter)
+        self.assertEqual([],result[0]['payload']['entries'])
+        slot=[e for e in result[0]['evidence'] if e['field']=='slots[0]']
+        self.assertEqual([('partial','inventory_detail_panel')],[(e['status'],e['source']) for e in slot])
+        self.assertTrue(result[0]['review_required'])
+        self.assertEqual('partial',[e for e in result[0]['evidence'] if e['field']=='scan_coverage'][0]['status'])
 
 if __name__=='__main__':unittest.main()

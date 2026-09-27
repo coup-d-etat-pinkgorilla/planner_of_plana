@@ -183,14 +183,18 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         self.assertEqual(["right", "right"], adapter.capture.keys)
         self.assertEqual([], adapter.capture.points)
 
-    def test_full_student_adapter_exits_card_before_student_navigation(self) -> None:
+    def test_full_student_adapter_navigates_without_visual_transition_feedback_or_wait(self) -> None:
         timeline: list[str] = []
 
-        class ImmediateCancel:
+        class RecordingCancel:
+            def __init__(self) -> None:
+                self.waits: list[float] = []
+
             def is_set(self) -> bool:
                 return False
 
-            def wait(self, _timeout: float) -> bool:
+            def wait(self, timeout: float) -> bool:
+                self.waits.append(timeout)
                 return False
 
         class Inputs:
@@ -205,8 +209,8 @@ class ScannerProductionAdapterTests(unittest.TestCase):
             supports_feedback = True
 
             def __call__(self, _current, _total, _message, feedback=None):
-                if feedback and feedback.get("field") == "__student_exit__":
-                    timeline.append(f"exit:{feedback['student_id']}")
+                if feedback:
+                    timeline.append(f"feedback:{feedback['field']}")
 
         adapter = object.__new__(StudentMatcherAdapter)
         adapter.capture = Inputs()
@@ -227,24 +231,24 @@ class ScannerProductionAdapterTests(unittest.TestCase):
             }]
 
         adapter._scan_current = MethodType(scan_current, adapter)
+        cancel = RecordingCancel()
         adapter(
             {"student_scan_mode": "full"},
-            ImmediateCancel(),
+            cancel,
             FeedbackProgress(),
         )
 
         self.assertEqual(
             [
                 "scan:aru",
-                "exit:aru",
                 "navigate:right",
                 "scan:aru_dress",
-                "exit:aru_dress",
                 "navigate:right",
                 "scan:aru",
             ],
             timeline,
         )
+        self.assertNotIn(0.32, cancel.waits)
 
     def test_full_student_adapter_retries_button_after_unchanged_key(self) -> None:
         class Inputs:
@@ -350,7 +354,7 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         self.assertNotIn("index", entries[0])
         self.assertFalse(result["review_required"])
         self.assertIn("slot_count_glyph", {item["source"] for item in result["evidence"]})
-        self.assertTrue(any(item["source"] in {"grid_icon_template", "detail_template_fallback"} for item in result["evidence"]))
+        self.assertTrue(any(item["source"] in {"grid_icon_template", "grid_same_crop_rematch"} for item in result["evidence"]))
         self.assertIn("stable_frame_overlap", {item["source"] for item in result["evidence"]})
 
     def test_inventory_adapter_never_zero_fills_missing_count(self) -> None:
@@ -369,7 +373,7 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         paste_ratio(frame, template, slot)
         result = InventoryMatcherAdapter(ScriptedCapture(frame), self.catalog, threshold=1.1)({"target_id": "fixture"}, Event(), lambda *_args: None)[0]
         item_evidence = next(item for item in result["evidence"] if item["field"].endswith(".item_id"))
-        self.assertEqual("detail_template_fallback", item_evidence["source"])
+        self.assertEqual("grid_same_crop_rematch", item_evidence["source"])
         self.assertTrue(result["review_required"])
 
     def test_inventory_profile_never_relabels_a_confident_foreign_item(self) -> None:
@@ -377,15 +381,18 @@ class ScannerProductionAdapterTests(unittest.TestCase):
         slot = self.catalog.region("inventory")["item"]["grid_slots"][0]
         template = Image.open(ASSETS / "templates/inventory/ooparts/Item_Icon_Material_Mandragora_0.png")
         paste_ratio(frame, template, slot)
+        grid_slots = self.catalog.region("inventory")["item"]["grid_slots"]
 
         class Navigation:
             def prepare(self, _target, _cancel, _frame):
                 return type("Prepared", (), {"source": "item", "profile_id": "tech_notes"})()
 
+            def page_slots(self, _source, _offset, readable=True):
+                return dict(enumerate(grid_slots))
+
             def advance(self, _target, _cancel, current, _source):
                 return type("Moved", (), {
-                    "frame": current.copy(), "overlap_rows": 5, "slot_indices": (),
-                    "terminal": True, "terminal_after_page": False,
+                    "frame": current.copy(), "shift": 0.0, "terminal": True,
                     "reason": "verified_no_motion",
                 })()
 

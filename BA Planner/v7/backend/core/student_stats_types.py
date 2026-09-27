@@ -56,11 +56,14 @@ class RelationshipStatsV1:
     stat_types: tuple[str, str]
     values: tuple[tuple[int, int], ...]
     alternate_ids: tuple[int, ...]
+    # Exact per-rank increments for ranks 2..50 (FavorLevelRewardExcel). Present only when the
+    # game table cannot be expressed by the seven SchaleDB ranges (e.g. Mine (Idol) rank 41).
+    increments: tuple[tuple[int, int], ...] | None = None
 
     @classmethod
     def from_dict(cls, value: object, label: str) -> "RelationshipStatsV1":
         data = _object(value, label)
-        _strict(data, {"stat_types", "values", "alternate_ids"}, label)
+        _strict(data, {"stat_types", "values", "alternate_ids"}, label, optional={"increments"})
         stat_types_raw = data["stat_types"]
         values_raw = data["values"]
         alternate_ids_raw = data["alternate_ids"]
@@ -78,10 +81,17 @@ class RelationshipStatsV1:
             for item in alternate_ids_raw
         ):
             raise StudentStatsDataError(f"{label}.alternate_ids must contain positive integers")
+        increments = None
+        if "increments" in data:
+            raw = data["increments"]
+            if not isinstance(raw, list) or len(raw) != 49:
+                raise StudentStatsDataError(f"{label}.increments must contain 49 rank increments (ranks 2..50)")
+            increments = tuple(_int_pair(item, f"{label}.increments") for item in raw)
         return cls(
             stat_types=(stat_types_raw[0], stat_types_raw[1]),
             values=values,
             alternate_ids=tuple(alternate_ids_raw),
+            increments=increments,
         )
 
 
@@ -247,6 +257,82 @@ class StudentStatCatalogV1:
         return cls(students=students, equipment=equipment, paths=paths, source=dict(source_raw))
 
 
+STAT_FORMULA_DTO_VERSION = 1
+BONUS_STAT_NAMES = ("MaxHP", "AttackPower", "HealPower")
+
+
+@dataclass(frozen=True, slots=True)
+class StudentStatFormulaV1:
+    """Game-side tables for the in-client stat formulas (see data/extracted/GAME_RULES.md §4).
+
+    level_interpolation[level][growth_index] is StatLevelInterpolationExcel.StatTypeIndex; the level
+    ratio is idx[level] / idx[end_level]. Star (transcendence) and potential rates are basis points.
+    """
+
+    end_level: int
+    growth_types: Mapping[str, int]
+    level_interpolation: Mapping[int, tuple[int, ...]]
+    transcendence_default: Mapping[str, tuple[int, ...]]
+    transcendence: Mapping[int, Mapping[str, tuple[int, ...]]]
+    potential_default: Mapping[str, tuple[int, ...]]
+    potential: Mapping[int, Mapping[str, tuple[int, ...]]]
+    source: Mapping[str, str]
+    version: int = STAT_FORMULA_DTO_VERSION
+
+    @classmethod
+    def from_dict(cls, value: object) -> "StudentStatFormulaV1":
+        label = "student_stat_formula"
+        data = _object(value, label)
+        _strict(data, {"version", "source", "end_level", "growth_types", "level_interpolation",
+                       "transcendence", "potential"}, label)
+        if data["version"] != STAT_FORMULA_DTO_VERSION or isinstance(data["version"], bool):
+            raise StudentStatsDataError(f"{label}.version must be {STAT_FORMULA_DTO_VERSION}")
+        source = _object(data["source"], f"{label}.source")
+        if not all(isinstance(k, str) and isinstance(v, str) for k, v in source.items()):
+            raise StudentStatsDataError(f"{label}.source must map strings to strings")
+        growth = _object(data["growth_types"], f"{label}.growth_types")
+        if not all(isinstance(k, str) and isinstance(v, int) and not isinstance(v, bool) and v >= 0
+                   for k, v in growth.items()):
+            raise StudentStatsDataError(f"{label}.growth_types must map names to column indexes")
+        table: dict[int, tuple[int, ...]] = {}
+        for key, row in _object(data["level_interpolation"], f"{label}.level_interpolation").items():
+            if not key.isdigit() or not isinstance(row, list) or not all(
+                isinstance(item, int) and not isinstance(item, bool) for item in row
+            ):
+                raise StudentStatsDataError(f"{label}.level_interpolation[{key}] must be a list of integers")
+            table[int(key)] = tuple(row)
+        end_level = _positive_int(data["end_level"], f"{label}.end_level")
+        if end_level not in table:
+            raise StudentStatsDataError(f"{label}.level_interpolation must contain the end level")
+
+        def rates(raw: object, where: str) -> dict[str, tuple[int, ...]]:
+            obj = _object(raw, where)
+            out: dict[str, tuple[int, ...]] = {}
+            for stat, values in obj.items():
+                if stat not in BONUS_STAT_NAMES or not isinstance(values, list) or not all(
+                    isinstance(item, int) and not isinstance(item, bool) for item in values
+                ):
+                    raise StudentStatsDataError(f"{where}.{stat} must be a list of integers")
+                out[stat] = tuple(values)
+            return out
+
+        def section(raw: object, where: str) -> tuple[dict, dict]:
+            obj = _object(raw, where)
+            _strict(obj, {"default", "students"}, where)
+            per = {}
+            for key, item in _object(obj["students"], f"{where}.students").items():
+                if not key.isdigit():
+                    raise StudentStatsDataError(f"{where}.students keys must be student ids")
+                per[int(key)] = rates(item, f"{where}.students[{key}]")
+            return rates(obj["default"], f"{where}.default"), per
+
+        trans_default, trans = section(data["transcendence"], f"{label}.transcendence")
+        pot_default, pot = section(data["potential"], f"{label}.potential")
+        return cls(end_level=end_level, growth_types=dict(growth), level_interpolation=table,
+                   transcendence_default=trans_default, transcendence=trans,
+                   potential_default=pot_default, potential=pot, source=dict(source))
+
+
 @dataclass(frozen=True, slots=True)
 class EquipmentLevelV1:
     tier: int
@@ -332,8 +418,10 @@ def _array(value: object, label: str) -> list[object]:
     return value
 
 
-def _strict(data: Mapping[str, object], fields: set[str], label: str) -> None:
-    unknown = set(data) - fields
+def _strict(
+    data: Mapping[str, object], fields: set[str], label: str, *, optional: set[str] = frozenset()
+) -> None:
+    unknown = set(data) - fields - optional
     missing = fields - set(data)
     if unknown:
         raise StudentStatsDataError(f"{label} contains unknown fields: {sorted(unknown)}")

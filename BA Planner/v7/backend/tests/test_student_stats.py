@@ -7,11 +7,15 @@ import unittest
 from core.student_stats import (
     calculate_student_stats,
     interpolate_equipment_stat,
+    interpolate_student_stat,
+    interpolate_weapon_stat,
     relationship_stat_values,
 )
 from core.student_stats_catalog import (
     DEFAULT_STUDENT_STAT_CATALOG_PATH,
+    DEFAULT_STUDENT_STAT_FORMULA_PATH,
     load_student_stat_catalog,
+    load_student_stat_formula,
     student_stat_record,
 )
 from core.student_stats_types import (
@@ -21,6 +25,7 @@ from core.student_stats_types import (
     RelationshipLevelsV1,
     StudentStatBuildV1,
     StudentStatCatalogV1,
+    StudentStatFormulaV1,
     StudentStatsDataError,
     UniqueWeaponLevelV1,
 )
@@ -44,6 +49,10 @@ class StudentStatCalculationTests(unittest.TestCase):
         self.assertEqual(
             10099,
             student_stat_record("hoshino_battle", 2, catalog=self.catalog).schaledb_id,
+        )
+        self.assertEqual(
+            10099,
+            student_stat_record("hoshino_battle#2", catalog=self.catalog).schaledb_id,
         )
         raw_text = DEFAULT_STUDENT_STAT_CATALOG_PATH.read_text(encoding="utf-8")
         self.assertNotIn('"Skills"', raw_text)
@@ -268,6 +277,51 @@ class StudentStatCalculationTests(unittest.TestCase):
             {"DefensePower": 380},
             result.contributions["weapon_passive_skill"].flat,
         )
+
+
+class StudentStatGameFormulaTests(unittest.TestCase):
+    """In-client formula details (data/extracted/GAME_RULES.md section 4)."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.catalog = load_student_stat_catalog()
+        cls.formula = load_student_stat_formula()
+
+    def test_formula_tables_load_and_reject_unknown_version(self) -> None:
+        self.assertEqual(100, self.formula.end_level)
+        self.assertEqual({"Standard": 0, "Premature": 1, "LateBloom": 2}, dict(self.formula.growth_types))
+        self.assertEqual(10000, self.formula.level_interpolation[100][0])
+        raw = json.loads(DEFAULT_STUDENT_STAT_FORMULA_PATH.read_text(encoding="utf-8"))
+        raw["version"] = 2
+        with self.assertRaisesRegex(StudentStatsDataError, "version must be 1"):
+            StudentStatFormulaV1.from_dict(raw)
+
+    def test_equipment_level_maps_onto_the_hundred_level_table(self) -> None:
+        # Lv2 of a 10-level item reads table level 20 (ratio 0.1919), not (2-1)/(10-1).
+        record = self.catalog.equipment[("Bag", 1)]
+        stat = next(item for item in record.stats if item.stat == "MaxHP_Base")
+        self.assertEqual([375, 418], [interpolate_equipment_stat(stat, level, 10) for level in (1, 2)])
+        self.assertEqual(stat.level_max, interpolate_equipment_stat(stat, 10, 10))
+
+    def test_star_and_potential_bonus_share_one_ceiling(self) -> None:
+        aru = student_stat_record("aru", catalog=self.catalog)
+        hp = next(item for item in aru.base_stats if item.stat == "MaxHP")
+        star = sum(self.formula.transcendence_default["MaxHP"][:5])
+        potential_one = self.formula.potential_default["MaxHP"][1]
+        self.assertEqual(23873, interpolate_student_stat(hp.level_1, hp.level_max, 90, star + potential_one))
+
+    def test_non_standard_weapon_growth_uses_its_table_column(self) -> None:
+        hina = student_stat_record("hina", catalog=self.catalog)
+        self.assertEqual("LateBloom", hina.weapon.growth_type)
+        low, high = hina.weapon.attack
+        self.assertEqual(472, interpolate_weapon_stat(low, high, 22, "LateBloom"))
+        self.assertEqual(1031, interpolate_weapon_stat(low, high, 60, "LateBloom"))
+
+    def test_exact_relationship_increments_cover_mine_idol_rank_41(self) -> None:
+        mine = self.catalog.students[16016]
+        self.assertIsNotNone(mine.relationship.increments)
+        before = relationship_stat_values(mine, 40)["AttackPower"]
+        self.assertEqual(3, relationship_stat_values(mine, 41)["AttackPower"] - before)
 
 
 if __name__ == "__main__":

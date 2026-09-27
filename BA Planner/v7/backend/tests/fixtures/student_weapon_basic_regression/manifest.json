@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "kind": "star",
+      "file": "star_3_weapon_cyan.png",
+      "expected": 3,
+      "case": "native2560-connected-weapon-cyan",
+      "sha256": "cb13f3b34c5696bdec0539863280c1b391e23be5c8adbbfef00c981ecd691875"
+    },
+    {
+      "kind": "star",
+      "file": "star_1_weapon_marking.png",
+      "expected": 1,
+      "case": "native2560-left-weapon-marking",
+      "sha256": "622c18e66e75082c9ca821892f54b510793f9afc20c34582908f956f3cfb6872"
+    },
+    {
+      "kind": "star",
+      "file": "star_4_tag_line.png",
+      "expected": 4,
+      "case": "native2560-tag-line-noise",
+      "sha256": "004cfe365db05fbfc1ee6ae060c3a4f59ff3b0784d71de1155892ed13a2c0fe6"
+    },
+    {
+      "kind": "star",
+      "file": "star_4_old_width_misread.png",
+      "expected": 4,
+      "case": "native2560-global-width-under-count",
+      "sha256": "b017a8156ded5487037a4d38364b42b84d735544c1fc737f609f036dc20e9cd6"
+    },
+    {
+      "kind": "level",
+      "files": ["level_30_crop.png", "level_30_cell1.png", "level_30_cell2.png"],
+      "expected": 30,
+      "case": "native1280-leading-three-and-zero",
+      "sha256": [
+        "075c1849391c623318a72f07619ec4e9cacdab6762bcca49ad7dbd73d264df02",
+        "1205f29bca331a503d3fbd9d35061b473ab89ebf40a7cef2032782b592cfd73c",
+        "36e30d27de525ffa1eb2b80f7a71eebb514d563e3f918b2551f3b32354c591d2"
+      ]
+    },
+    {
+      "kind": "level",
+      "files": ["level_40_crop.png", "level_40_cell1.png", "level_40_cell2.png"],
+      "expected": 40,
+      "case": "native1280-background-connected-four-and-zero",
+      "sha256": [
+        "03c5b338c9a604a2f723c3048e3fbe2d02d314c26ba91e6bf31fe237afd12d9a",
+        "5491d79c89224c00c260603bb9badaffecf6eabb4125fe692623b32fe25bccc0",
+        "4826bec279b98b765a3cddd7dd7bb318c6bc3c41197a7805c9329e6f8a56318a"
+      ]
+    }
+  ]
+}

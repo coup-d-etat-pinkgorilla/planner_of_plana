@@ -2,6 +2,7 @@
 from threading import Event
 from core import student_meta
 from core.scanner_session import ScannerError
+from core.scan_context import ScanContext
 
 
 class StudentFormRecovery:
@@ -23,7 +24,7 @@ class StudentFormRecovery:
             raise ScannerError('region_missing', 'requested form button is unavailable')
         if cancel.is_set():
             raise ScannerError('cancelled', 'form switch cancelled')
-        self.capture.click({**target, '_scanner_cancel': cancel},
+        self.capture.click(ScanContext.of(target).replace(cancel=cancel),
                            (button['x1']+button['x2'])/2, (button['y1']+button['y2'])/2)
         self.trace.append(dict(input='form', form=form))
         for _ in range(2):
@@ -42,7 +43,7 @@ class StudentFormRecovery:
     def collect(self, target, cancel, original_ref, observe, read_form):
         base, original = student_meta.split_form_ref(original_ref)
         self.trace = []
-        target = {**target, '_first_student': False}
+        target = ScanContext.of(target).replace(first_student=False)
         failure = None
         try:
             for form in student_meta.form_indexes(base):
@@ -58,9 +59,9 @@ class StudentFormRecovery:
         except Exception as exc:
             failure = exc if isinstance(exc, ScannerError) else ScannerError('form_read_failed', str(exc))
         finally:
-            cleanup = {**target, '_scanner_cleanup': True, '_scanner_cancel': Event()}
+            cleanup = target.replace(cleanup=True, cancel=Event())
             try:
-                frame, _identity = self._switch(cleanup, cleanup['_scanner_cancel'], base, original, observe)
+                frame, _identity = self._switch(cleanup, cleanup.cancel, base, original, observe)
                 frame.close()
                 self.trace.append(dict(restored=original_ref))
             except Exception as exc:

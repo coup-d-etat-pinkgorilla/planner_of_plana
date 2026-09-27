@@ -3,7 +3,9 @@ from dataclasses import dataclass
 from threading import Event
 from PIL import Image
 from core.inventory_catalog import BY_KEY
+from core import recognition_thresholds as rt
 from core.scanner_session import ScannerError
+from core.scan_context import ScanContext
 from core.student_scan_recognizer import ratio_crop, quad_crop
 from core.student_weapon_recognizer import _normalized_correlation as correlation, _color_similarity as color_similarity
 
@@ -70,19 +72,24 @@ class InventoryDetailRecognizer:
         for asset in self.catalog.assets('inventory','inventory-page-template'):
             source,key=asset.identity.split(':');template=self.image(asset.path)
             with ratio_crop(frame,self.regions[key]) as crop:
-                scores[(source,key)]=template is not None and correlation(crop,template)>=.8 and color_similarity(crop,template)>=.95
+                scores[(source,key)]=template is not None and correlation(crop,template)>=rt.value('inventory.detail.source_title.correlation') and color_similarity(crop,template)>=rt.value('inventory.detail.source_title.color')
         matches=[s for s in ('item','equipment') if scores.get((s,'title')) and scores.get((s,'list_title'))]
         return matches[0] if len(matches)==1 else None
 
-    def selected(self,frame,source):
+    def selected(self,frame,source,slots=None):
         hits=[]
-        for i,slot in enumerate(self.regions['sources'][source]['grid_slots']):
+        for i,slot in enumerate(slots or self.regions['sources'][source]['grid_slots']):
             with ratio_crop(frame,slot) as crop:
                 band=max(2,round(frame.height*5/720));fractions=[]
-                for y in (0,crop.height-band):
-                    with crop.crop((0,y,crop.width,y+band)) as edge:
-                        fractions.append(sum(r>220 and g>190 and b<185 and r-b>55 for r,g,b in edge.getdata())/(edge.width*edge.height))
-                if min(fractions)>=.15:hits.append(i)
+                # The border can sit a few pixels off a scrolled or re-aligned slot; take each edge's best band.
+                reach=max(1,round(frame.height*3/720))
+                for starts in (range(0,reach+1),range(crop.height-band-reach,crop.height-band+1)):
+                    best=0.0
+                    for y in starts:
+                        with crop.crop((0,y,crop.width,y+band)) as edge:
+                            best=max(best,sum(r>220 and g>190 and b<185 and r-b>55 for r,g,b in edge.getdata())/(edge.width*edge.height))
+                    fractions.append(best)
+                if min(fractions)>=rt.value('inventory.detail.selection.edge_fraction'):hits.append(i)
         return hits[0] if len(hits)==1 else None
 
     def count(self,frame,source,bank=None):
@@ -101,7 +108,7 @@ class InventoryDetailRecognizer:
             if ranked:lengths.append((n,ranked[0][1]))
         if not lengths:return DetailCount(None,reason='no_x_templates')
         lengths.sort(key=lambda x:x[1],reverse=True);n,xscore=lengths[0]
-        if xscore<.72 or (len(lengths)>1 and xscore-lengths[1][1]<.025):
+        if xscore<rt.value('inventory.detail.x_mark.score') or (len(lengths)>1 and xscore-lengths[1][1]<rt.value('inventory.detail.x_mark.margin')):
             return DetailCount(None,xscore,'weak_x_match')
         digits=[];score=xscore
         for i,cell in enumerate(geometry[n]['digits']):
@@ -109,7 +116,7 @@ class InventoryDetailRecognizer:
             ranked=rank(cell,banks[i] if i<len(banks) else {})
             if not ranked:return DetailCount(None,score,'missing_digit_templates')
             value,confidence=ranked[0];score=min(score,confidence)
-            if confidence<.66 or (len(ranked)>1 and confidence-ranked[1][1]<.025):
+            if confidence<rt.value('inventory.detail.digit.score') or (len(ranked)>1 and confidence-ranked[1][1]<rt.value('inventory.detail.digit.margin')):
                 return DetailCount(None,score,'weak_digit_match')
             value=str(int(value)%10)
             if i==0 and value=='0' and int(n)>1:return DetailCount(None,score,'leading_zero')
@@ -154,75 +161,99 @@ class InventoryDetailRecognizer:
         self.images.clear()
 
 
+@dataclass(frozen=True)
+class DetailRecoveryResult:
+    """One detail read. A failure is returned only after the original selection was verified."""
+    detail: DetailResult|None=None
+    restored: bool=True
+    failure: ScannerError|None=None
+
+
 class InventoryDetailRecovery:
     def __init__(self,capture,recognizer):
         self.capture,self.recognizer=capture,recognizer;self.trace=[]
 
-    def same_grid(self,baseline,current,source):
+    def same_grid(self,baseline,current,source,slots=None,ignore=()):
         if baseline.size!=current.size or self.recognizer.classify(current)!=source:return False
-        for slot in self.recognizer.regions['sources'][source]['grid_slots']:
+        for index,slot in enumerate(slots or self.recognizer.regions['sources'][source]['grid_slots']):
+            # A tile whose selection changes also tints its interior (live gifts: .972); the others verify the page.
+            if index in ignore:continue
             # Ignore selection edges; every slot interior must stay in the same place.
             dx=(slot['x2']-slot['x1'])*.18;dy=(slot['y2']-slot['y1'])*.18
             r=dict(x1=slot['x1']+dx,x2=slot['x2']-dx,y1=slot['y1']+dy,y2=slot['y2']-dy)
             with ratio_crop(baseline,r) as a,ratio_crop(current,r) as b:
-                if color_similarity(a,b)<.975:return False
+                if color_similarity(a,b)<rt.value('inventory.detail.same_grid.color'):return False
         return True
 
-    def observe_selection(self,target,cancel,baseline,source,expected=None):
+    def observe_selection(self,target,cancel,baseline,source,expected=None,slots=None):
         for attempt in range(3):
             if attempt and cancel.wait(.25):raise ScannerError('cancelled','inventory selection cancelled')
             try:frame=self.capture.wait_stable(target,cancel)
             except ScannerError as exc:
                 if exc.code in {'capture_failed','capture_timeout'}:continue
                 raise
-            if not self.same_grid(baseline,frame,source):
+            selected=self.recognizer.selected(frame,source,slots)
+            changing={index for index in (expected,selected,self.recognizer.selected(baseline,source,slots)) if index is not None}
+            if not self.same_grid(baseline,frame,source,slots,changing):
                 frame.close();raise ScannerError('inventory_page_changed','unverified inventory page; no input')
-            selected=self.recognizer.selected(frame,source)
             if selected is not None and (expected is None or selected==expected):return frame,selected
             frame.close()
         raise ScannerError('inventory_selection_unknown' if expected is None else 'inventory_detail_unconfirmed','selection unresolved after three captures')
 
-    def select(self,target,cancel,baseline,source,slot_index):
-        frame,selected=self.observe_selection(target,cancel,baseline,source)
+    def select(self,target,cancel,baseline,source,slot_index,slots=None):
+        frame,selected=self.observe_selection(target,cancel,baseline,source,slots=slots)
         if selected==slot_index:return frame
         frame.close()
-        slot=self.recognizer.regions['sources'][source]['grid_slots'][slot_index]
+        slot=(slots or self.recognizer.regions['sources'][source]['grid_slots'])[slot_index]
         if cancel.is_set():raise ScannerError('cancelled','inventory selection cancelled')
-        self.capture.click({**target,'_scanner_cancel':cancel},slot['cx'],slot['cy'])
-        self.trace.append(dict(input='select_slot',slot=slot_index,cleanup=target.get('_scanner_cleanup',False)))
+        context=ScanContext.of(target)
+        self.capture.click(context.replace(cancel=cancel),slot['cx'],slot['cy'])
+        self.trace.append(dict(input='select_slot',slot=slot_index,cleanup=bool(context.cleanup)))
         if cancel.wait(.25):raise ScannerError('cancelled','inventory selection cancelled')
-        frame,_=self.observe_selection(target,cancel,baseline,source,slot_index)
+        frame,_=self.observe_selection(target,cancel,baseline,source,slot_index,slots)
         return frame
 
-    def resolve(self,target,cancel,baseline,slot_index,grid_id,grid_count,grid_confirmed,profile_verified=False,scan_profile=None):
+    def anchor(self,target,cancel,baseline,slot_index,slots=None):
+        """Move the visible selection to slot_index before a scroll (C5).
+
+        The next page overlaps this one by at least one row, so a selection anchored in the last
+        row stays visible there and later detail reads keep F9's restore-to-visible-selection rule.
+        """
+        source=self.recognizer.classify(baseline)
+        if source is None:raise ScannerError('inventory_selection_unknown','page unconfirmed; no input')
+        self.trace=[]
+        with self.select(ScanContext.of(target),cancel,baseline,source,slot_index,slots):pass
+        self.trace.append(dict(anchored=slot_index))
+
+    def resolve(self,target,cancel,baseline,slot_index,grid_id,grid_count,grid_confirmed,profile_verified=False,scan_profile=None,slots=None):
         self.trace=[];source=self.recognizer.classify(baseline)
         if cancel.is_set():raise ScannerError('cancelled','inventory detail cancelled before input')
-        original=self.recognizer.selected(baseline,source) if source else None
+        original=self.recognizer.selected(baseline,source,slots) if source else None
         if source is None:raise ScannerError('inventory_selection_unknown','page unconfirmed; no input')
         if original is None:
-            frame,original=self.observe_selection(target,cancel,baseline,source)
+            frame,original=self.observe_selection(target,cancel,baseline,source,slots=slots)
             frame.close()
-        if not 0<=slot_index<len(self.recognizer.regions['sources'][source]['grid_slots']):
+        if not 0<=slot_index<len(slots or self.recognizer.regions['sources'][source]['grid_slots']):
             raise ScannerError('inventory_slot_invalid','slot is outside the verified visible grid')
         result=None;failure=None
         try:
-            with self.select(target,cancel,baseline,source,slot_index) as frame:result=self.recognizer.read(frame,source)
+            with self.select(target,cancel,baseline,source,slot_index,slots) as frame:result=self.recognizer.read(frame,source)
         except Exception as exc:failure=exc
         finally:
             cleanup=Event()
             try:
-                with self.select({**target,'_scanner_cleanup':True,'_scanner_cancel':cleanup},cleanup,baseline,source,original):pass
+                with self.select(ScanContext.of(target).replace(cleanup=True,cancel=cleanup),cleanup,baseline,source,original,slots):pass
                 self.trace.append(dict(restored=original))
             except Exception as exc:raise ScannerError('inventory_restore_failed','original page/selection unverified') from exc
         if failure:
-            if isinstance(failure,ScannerError):failure.details['inventory_restored']=True
+            if isinstance(failure,ScannerError):return DetailRecoveryResult(restored=True,failure=failure)
             raise failure
         if cancel.is_set():raise ScannerError('cancelled','inventory detail read cancelled after safe restore')
         if grid_confirmed and result.identity and result.identity!=grid_id:
-            return DetailResult(grid_id,result.score,result.margin,DetailCount(None,reason='identity_conflict'),'inventory_detail_conflict')
+            return DetailRecoveryResult(DetailResult(grid_id,result.score,result.margin,DetailCount(None,reason='identity_conflict'),'inventory_detail_conflict'))
         profile=BY_KEY.get(grid_id)
         if (result.count.reason=='weak_x_match' and profile_verified and profile is not None
             and profile.profile_id==scan_profile and grid_confirmed and grid_count is not None
             and result.identity in (None,grid_id)):
-            return DetailResult(grid_id,result.score,result.margin,DetailCount(grid_count,0,'weak_x_match','verified_grid_count_fallback'),'verified_grid_detail_fallback')
-        return result
+            return DetailRecoveryResult(DetailResult(grid_id,result.score,result.margin,DetailCount(grid_count,0,'weak_x_match','verified_grid_count_fallback'),'verified_grid_detail_fallback'))
+        return DetailRecoveryResult(result)

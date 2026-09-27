@@ -31,15 +31,15 @@ class Menu:
         self.opens = self.recaptures = self.closes = 0
         self.error,self.cancel = error,cancel
         self.recovery = SimpleNamespace(state="basic",recognizer=SimpleNamespace(classify=lambda _:"basic"))
-    def capture_level_menu(self,target,cancel):
+    def capture(self,target,cancel):
         self.opens += 1
         if self.error: raise self.error
         if self.cancel: self.cancel.set()
         return Image.new("RGB",(8,8))
-    def recapture_level_menu(self,target,cancel):
+    def recapture(self,target,cancel):
         self.recaptures += 1
         return Image.new("RGB",(8,8))
-    def close_level_menu(self,target): self.closes += 1
+    def close(self,target): self.closes += 1
 
 
 class LevelF4Tests(unittest.TestCase):
@@ -125,7 +125,7 @@ class LevelF4Tests(unittest.TestCase):
 
     def test_restore_failure_propagates_even_after_successful_read(self):
         menu = Menu()
-        menu.close_level_menu = lambda _: (_ for _ in ()).throw(ScannerError("panel_restore_failed","unsafe"))
+        menu.close = lambda _: (_ for _ in ()).throw(ScannerError("panel_restore_failed","unsafe"))
         with patch.object(self.reader,"recognize_menu",return_value={"level":obs(90)}):
             with self.assertRaises(ScannerError) as caught:
                 self.reader.resolve({"level":obs(None)},menu,{},Event())
@@ -152,7 +152,7 @@ class LevelF4Tests(unittest.TestCase):
         self.addCleanup(recovery.close)
         adapter = LevelMenuCaptureAdapter(ui,self.catalog,recovery=recovery)
         with patch("core.student_panel_recovery.Event",FastEvent):
-            adapter.capture_level_menu({},FastEvent()).close();adapter.close_level_menu({})
+            adapter.capture({},FastEvent()).close();adapter.close({})
         self.assertEqual("basic",recovery.state)
         self.assertEqual(2,len(ui.actions))
         self.assertEqual(("click",*recovery._center(recovery.regions["basic_info_button"])),ui.actions[-1])
@@ -163,8 +163,8 @@ class LevelF4Tests(unittest.TestCase):
         self.addCleanup(recovery.close)
         adapter = LevelMenuCaptureAdapter(ui,self.catalog,recovery=recovery)
         with patch("core.student_panel_recovery.Event",FastEvent):
-            adapter.capture_level_menu({},FastEvent()).close()
-            with self.assertRaises(ScannerError) as caught: adapter.close_level_menu({})
+            adapter.capture({},FastEvent()).close()
+            with self.assertRaises(ScannerError) as caught: adapter.close({})
         self.assertEqual("panel_restore_failed",caught.exception.code)
 
     def test_matcher_resolves_level_before_dependent_potential_and_equipment(self):

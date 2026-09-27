@@ -155,8 +155,11 @@ def benchmark(repeats: int = 200) -> dict[str, Any]:
         },
         "fields": fields,
         "decision": {
-            "production": "not promoted",
-            "reason": "runtime cost is bounded, but student and relationship validation accuracy is insufficient",
+            "production": "weapon_level fallback only",
+            "reason": (
+                "weapon level passed the original 3/3 probe and the native 1280 "
+                "Lv.30/Lv.40 regression; student and relationship remain shadow-only"
+            ),
         },
     }
 

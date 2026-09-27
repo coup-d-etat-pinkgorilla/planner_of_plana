@@ -163,6 +163,71 @@ class StudentCandidateValidationS4Tests(unittest.TestCase):
                     evidence["details"]["expected"],
                 )
 
+    def test_hoshino_battle_forms_accept_scan_tolerance_and_resolve_form_ref(self) -> None:
+        self.repository.students = [
+            student("hoshino", 29),
+            student("hoshino_swimsuit", 37),
+        ]
+        common = {
+            "level": 90,
+            "bond_rank": 24,
+            "student_star": 5,
+            "skill2": 10,
+            "weapon_state": "weapon_equipped",
+            "weapon_star": 4,
+            "weapon_level": 60,
+            "stat_hp": 25,
+            "stat_atk": 25,
+            "stat_heal": 0,
+            "equip1": "T10",
+            "equip1_level": 70,
+            "equip2": "T10",
+            "equip2_level": 70,
+            "equip3": "T10",
+            "equip3_level": 70,
+        }
+        # 106747/3383/2771/4538 is the in-game capture. The SchaleDB-style formula was off by
+        # -1/+2 here; the in-client formula (GAME_RULES.md section 4) reproduces it exactly, so the
+        # tolerance cases below are synthetic offsets from the exact value.
+        cases = (
+            (
+                "form-1-exact-game-capture", "hoshino_battle",
+                106747, 3383, 2771, 4538, "verified",
+                {"MaxHP": 0, "AttackPower": 0, "DefensePower": 0, "HealPower": 0},
+            ),
+            (
+                "form-1-tolerance", "hoshino_battle",
+                106746, 3385, 2771, 4538, "verified",
+                {"MaxHP": -1, "AttackPower": 2, "DefensePower": 0, "HealPower": 0},
+            ),
+            (
+                "form-1-outside-tolerance", "hoshino_battle",
+                106746, 3386, 2771, 4538, "suspicious",
+                {"MaxHP": -1, "AttackPower": 3, "DefensePower": 0, "HealPower": 0},
+            ),
+            (
+                "form-2-exact", "hoshino_battle#2",
+                48823, 8633, 1949, 5674, "verified",
+                {"MaxHP": 0, "AttackPower": 0, "DefensePower": 0, "HealPower": 0},
+            ),
+        )
+        for case, student_id, hp, attack, defense, heal, status, delta in cases:
+            payload = {
+                "version": 1,
+                "student_id": student_id,
+                "values": {
+                    **common,
+                    "combat_hp": hp,
+                    "combat_atk": attack,
+                    "combat_def": defense,
+                    "combat_heal": heal,
+                },
+            }
+            with self.subTest(case=case):
+                evidence = self.validator(payload, "profile-1")
+                self.assertEqual(status, evidence["status"])
+                self.assertEqual(delta, evidence["details"]["delta"])
+
     def test_rank_above_star_semantic_cap_is_suspicious_without_mutation(self) -> None:
         payload = deepcopy(self.payload)
         payload["values"]["student_star"] = 1

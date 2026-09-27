@@ -26,12 +26,12 @@ class Menu:
     def __init__(self,cancel=None,error=None):
         self.opens=self.closes=0;self.cancel=cancel;self.error=error
         self.recovery=type('Recovery',(),{'state':'basic','recognizer':type('Classifier',(),{'classify':lambda self,frame:'basic'})()})()
-    def capture_skill_menu(self,target,cancel):
+    def capture(self,target,cancel):
         self.opens+=1
         if self.error: raise self.error
         if self.cancel: self.cancel.set()
         return Image.new('RGB',(8,8),'white')
-    def close_skill_menu(self,target): self.closes+=1
+    def close(self,target): self.closes+=1
 
 
 class SkillF6Tests(unittest.TestCase):
@@ -125,7 +125,7 @@ class SkillF6Tests(unittest.TestCase):
         self.assertEqual(1,menu.closes)
     def test_restore_failure_propagates(self):
         menu=Menu()
-        with patch.object(menu,'close_skill_menu',side_effect=ScannerError('panel_restore_failed','unsafe')):
+        with patch.object(menu,'close',side_effect=ScannerError('panel_restore_failed','unsafe')):
             with self.assertRaises(ScannerError): self.reader.resolve(self.initial(),menu,{},Event())
     def test_conflicting_locked_value_is_retained_for_review(self):
         initial=self.initial(1);initial['skill2']=obs(7)
@@ -144,15 +144,15 @@ class SkillF6Tests(unittest.TestCase):
         return ui,recovery,adapter
     def test_show_all_on_never_toggled(self):
         ui,r,a=self.adapter(['basic','skill','skill','basic'],[True])
-        a.capture_skill_menu({},FastEvent()).close();a.close_skill_menu({})
+        a.capture({},FastEvent()).close();a.close({})
         self.assertEqual(2,len(ui.actions));self.assertEqual('basic',r.state)
     def test_show_all_off_click_once_recheck_then_return(self):
         ui,r,a=self.adapter(['basic','skill','skill','skill','basic'],[False,True])
-        a.capture_skill_menu({},FastEvent()).close();a.close_skill_menu({})
+        a.capture({},FastEvent()).close();a.close({})
         self.assertEqual(3,len(ui.actions));self.assertEqual(1,sum(t.get('input')=='enable_show_all' for t in r.trace))
     def test_unknown_checkbox_no_click_and_restores(self):
         ui,r,a=self.adapter(['basic','skill','skill','basic'],[None])
-        with self.assertRaises(ScannerError): a.capture_skill_menu({},FastEvent())
+        with self.assertRaises(ScannerError): a.capture({},FastEvent())
         self.assertEqual(2,len(ui.actions));self.assertEqual('basic',r.state)
     def test_ignored_checkbox_no_retoggle_and_partial(self):
         ui,r,a=self.adapter(['basic','skill','skill','skill','basic'],[False,False])
@@ -160,12 +160,12 @@ class SkillF6Tests(unittest.TestCase):
         self.assertEqual('partial',result['skill_panel'].status);self.assertEqual(3,len(ui.actions))
     def test_cancel_after_checkbox_recapture_restores_without_read(self):
         cancel=FastEvent();ui,r,a=self.adapter(['basic','skill','skill','skill','basic'],[False],cancel,3)
-        with self.assertRaises(ScannerError): a.capture_skill_menu({},cancel)
+        with self.assertRaises(ScannerError): a.capture({},cancel)
         self.assertEqual('basic',r.state);self.assertEqual(3,len(ui.actions))
     def test_wrong_student_return_fails(self):
         ui,r,a=self.adapter(['basic','skill','other-student'],[True])
-        a.capture_skill_menu({},FastEvent()).close()
-        with self.assertRaises(ScannerError): a.close_skill_menu({})
+        a.capture({},FastEvent()).close()
+        with self.assertRaises(ScannerError): a.close({})
     def test_matcher_resolves_skills_after_star_before_downstream(self):
         matcher=StudentMatcherAdapter(StableBasicCapture(),self.catalog,skill_menu=Menu())
         for r in (matcher.skill_recognizer,matcher.star_recognizer,matcher.level_recognizer,matcher.potential_recognizer,matcher.weapon_recognizer): self.addCleanup(r.close)

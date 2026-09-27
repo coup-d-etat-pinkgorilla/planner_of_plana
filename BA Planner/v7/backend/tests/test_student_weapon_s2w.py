@@ -10,6 +10,7 @@ from unittest.mock import patch
 from PIL import Image
 
 from core.recognition_assets import RecognitionAssetCatalog
+from core.repository_dto import FieldEvidence
 from core.scanner_matchers import Match, StudentMatcherAdapter, WeaponMenuCaptureAdapter
 from core.student_scan_recognizer import Observation
 from core.student_weapon_recognizer import StudentWeaponRecognizer
@@ -50,15 +51,15 @@ class ScriptedWeaponMenu:
         self.recaptures = 0
         self.closes = 0
 
-    def capture_weapon_menu(self, _target, _cancel):
+    def capture(self, _target, _cancel):
         self.captures += 1
         return self.frames[0].copy()
 
-    def recapture_weapon_menu(self, _target, _cancel):
+    def recapture(self, _target, _cancel):
         self.recaptures += 1
         return self.frames[self.recaptures].copy()
 
-    def close_weapon_menu(self, _target):
+    def close(self, _target):
         self.closes += 1
 
 
@@ -190,6 +191,18 @@ class StudentWeaponS2WTests(unittest.TestCase):
         self.assertEqual(1, menu.closes)
         self.assertEqual(60, result["payload"]["values"]["weapon_level"])
         self.assertEqual(4, result["payload"]["values"]["weapon_star"])
+        fallback_evidence = {
+            item["field"]: item
+            for item in result["evidence"]
+            if item["field"].endswith("_fallback")
+        }
+        self.assertEqual(
+            {"weapon_level_fallback", "weapon_star_fallback"},
+            set(fallback_evidence),
+        )
+        self.assertTrue(all(item["status"] == "ok" for item in fallback_evidence.values()))
+        self.assertTrue(all("trigger_source=fixture" in item["note"] for item in fallback_evidence.values()))
+        self.assertTrue(all(FieldEvidence.from_dict(item) for item in fallback_evidence.values()))
 
     def test_non_equipped_states_skip_details_without_opening_panel(self) -> None:
         for state in ("weapon_unlocked_not_equipped", "no_weapon_system"):
@@ -263,7 +276,7 @@ class StudentWeaponS2WTests(unittest.TestCase):
         adapter = WeaponMenuCaptureAdapter(capture, self.catalog)
         self.addCleanup(adapter.recovery.close)
         with self.assertRaisesRegex(Exception, "verified basic"):
-            adapter.capture_weapon_menu({"target_id": "fixture"}, Event())
+            adapter.capture({"target_id": "fixture"}, Event())
         self.assertEqual(1, capture.waits)
         self.assertEqual([], capture.clicks)
 

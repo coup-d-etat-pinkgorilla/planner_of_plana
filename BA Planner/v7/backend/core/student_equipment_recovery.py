@@ -4,6 +4,7 @@ from PIL import Image, ImageStat
 from core.student_scan_recognizer import Observation, ratio_crop
 from core.student_weapon_recognizer import _normalized_correlation, _color_similarity
 from core.student_panel_recovery import read_panel_fields
+from core import recognition_thresholds as rt
 
 
 class EquipmentControlRecognizer:
@@ -28,7 +29,7 @@ class EquipmentControlRecognizer:
             return Observation(None, 0, 'uncertain', source, 'templates missing')
         (value, score), (_, second) = scores
         margin = score-second
-        ok = signal and score >= .75 and margin >= .10
+        ok = signal and score >= rt.value("student.equipment.show_all.score") and margin >= rt.value("student.equipment.show_all.margin")
         return Observation(value if ok else None, score, 'ok' if ok else 'uncertain', source, f'margin={margin:.6f}')
 
     def read_check(self, frame):
@@ -64,7 +65,7 @@ def favorite_dot_state(crop, present):
     neutral_card = sum(70 <= min(p) and max(p) <= 215 and max(p)-min(p) <= 40 for p in card)/len(card)
     # Uniform white/gray/black and arbitrary texture do not establish the corner.
     card_spread = max(max(p[i] for p in card)-min(p[i] for p in card) for i in range(3))
-    return False if light >= .90 and neutral_card >= .90 and card_spread <= 35 else None
+    return False if light >= rt.value("student.equipment.growth_off.light") and neutral_card >= rt.value("student.equipment.growth_off.neutral_card") and card_spread <= 35 else None
 
 
 def resolve_equipment_menu(menu, reader, target, cancel, initial, slots):

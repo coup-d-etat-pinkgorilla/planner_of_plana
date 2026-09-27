@@ -1,0 +1,356 @@
+{
+ "schema_version": 1,
+ "purpose": "C0 scanner consolidation golden replay inputs (screen-state replay over tracked debug frames)",
+ "gaps": [
+  {
+   "combination": "inventory presents (gift)",
+   "reason": "no recorded frames in debug/scanner_f*"
+  },
+  {
+   "combination": "inventory student_elephs",
+   "reason": "no recorded frames in debug/scanner_f*"
+  }
+ ],
+ "scenarios": [
+  {
+   "id": "student_single_mika_1280",
+   "scan_kind": "student",
+   "coverage": "student single, native 1280, all basic reads confident",
+   "target": {
+    "student_scan_mode": "single"
+   },
+   "initial": "basic",
+   "screens": {
+    "basic": {
+     "path": "debug/scanner_f7_followup/mika-final/basic.png",
+     "sha256": "1d6cdddd87e2ffe4dac82ceca92a136997493ea1c266ead5d4e9e4c916b7455a"
+    }
+   },
+   "transitions": {}
+  },
+  {
+   "id": "student_single_mika_2560",
+   "scan_kind": "student",
+   "coverage": "student single, native 2560",
+   "target": {
+    "student_scan_mode": "single"
+   },
+   "initial": "basic",
+   "screens": {
+    "basic": {
+     "path": "debug/scanner_f3_live/00-initial.png",
+     "sha256": "de8ba7fb1e5e88cb9dedc85d435c10b1a1acb3fca1b9b6c22f7aa334026c76ef"
+    }
+   },
+   "transitions": {}
+  },
+  {
+   "id": "student_single_miyu_1280",
+   "scan_kind": "student",
+   "coverage": "student single, native 1280, skipped potential evidence",
+   "target": {
+    "student_scan_mode": "single"
+   },
+   "initial": "basic",
+   "screens": {
+    "basic": {
+     "path": "debug/scanner_f7_live/miyu-basic/basic.png",
+     "sha256": "906b99d3c2796e1e3d4d6d63720f60c7fee82d6b28de492ee76780f14f51f2ba"
+    }
+   },
+   "transitions": {}
+  },
+  {
+   "id": "student_single_shizuko_skill_panel_unopened_1280",
+   "scan_kind": "student",
+   "coverage": "student single, uncertain basic skill -> skill panel fallback; no recorded shizuko skill panel frame, so the panel never opens and basic is restored",
+   "target": {
+    "student_scan_mode": "single"
+   },
+   "initial": "basic",
+   "screens": {
+    "basic": {
+     "path": "debug/scanner_f7_followup/shizuko-panel/basic.png",
+     "sha256": "6e72ab450254341c2e393c30ff1774fbdad9eba50c00d55959e6e17c83ddf41c"
+    }
+   },
+   "transitions": {}
+  },
+  {
+   "id": "student_forms_hoshino_1280",
+   "scan_kind": "student",
+   "coverage": "student single, multi-form (hoshino_battle #1/#2) form switch and restore",
+   "target": {
+    "student_scan_mode": "single"
+   },
+   "initial": "form1",
+   "screens": {
+    "form1": {
+     "path": "debug/scanner_f8_live/hoshino-forms/frame-00.png",
+     "sha256": "8ea3effd149a5b766b0e3d757cdaf23815e947f9c6243ec88bc98138c90a4ca6"
+    },
+    "form2": {
+     "path": "debug/scanner_f8_live/hoshino-forms/frame-02.png",
+     "sha256": "d9616016a9f254025178c5e112916f3e69e8c401b8f7eff5a195bbfdaf748e2a"
+    }
+   },
+   "transitions": {
+    "form1": {
+     "click:style_form_2_button": "form2",
+     "click:style_form_1_button": "form1"
+    },
+    "form2": {
+     "click:style_form_1_button": "form1",
+     "click:style_form_2_button": "form2"
+    }
+   }
+  },
+  {
+   "id": "student_full_ring_1280",
+   "scan_kind": "student",
+   "coverage": "student full scan from the student list; composite ring mika -> hina_dress -> miyu -> mika from F1 frames (hina_dress->miyu edge is synthetic)",
+   "target": {
+    "student_scan_mode": "full"
+   },
+   "initial": "list",
+   "screens": {
+    "list": {
+     "path": "debug/scanner_f1_live/01-student-list.png",
+     "sha256": "33fec0000ee9fed08d37eddf664bd19cbdd910657fd42217ded18bb0f26df540"
+    },
+    "mika": {
+     "path": "debug/scanner_f1_live/02-first-student.png",
+     "sha256": "c02cb2c31d4ebac791511bb0cd0376c15388ca12c0a17a0d687ec973005e6b60"
+    },
+    "hina_dress": {
+     "path": "debug/scanner_f1_live/03-right-key.png",
+     "sha256": "6bb207ee490162c776a5da062999b16d19816dc8598425e98c655e5d7d0aedab"
+    },
+    "miyu": {
+     "path": "debug/scanner_f1_live/07-first-left-edge.png",
+     "sha256": "6a3289c488246df10350eb512ac0e8abb272ee68b699f56cc022b5cd742183fb"
+    }
+   },
+   "transitions": {
+    "list": {
+     "click:first_student_button": "mika",
+     "click:*": "list"
+    },
+    "mika": {
+     "key:right": "hina_dress",
+     "click@0.9777,0.5347": "hina_dress",
+     "key:left": "miyu",
+     "click@0.0223,0.5347": "miyu"
+    },
+    "hina_dress": {
+     "key:right": "miyu",
+     "click@0.9777,0.5347": "miyu",
+     "key:left": "mika",
+     "click@0.0223,0.5347": "mika"
+    },
+    "miyu": {
+     "key:right": "mika",
+     "click@0.9777,0.5347": "mika",
+     "key:left": "hina_dress",
+     "click@0.0223,0.5347": "hina_dress"
+    }
+   }
+  },
+  {
+   "id": "inventory_item_tech_notes_1280",
+   "scan_kind": "inventory",
+   "coverage": "inventory item profile tech_notes, prepare + 6 recorded pages ending in verified_tail_residual; detail slot selection has no recorded frames (stays on page); C5: category reset/selection screens are live C5 frames (composite with F10 grid frames)",
+   "target": {
+    "inventory_scan_profile": "tech_notes"
+   },
+   "initial": "grid_initial",
+   "screens": {
+    "grid_initial": {
+     "path": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-00.png",
+     "sha256": "c7b6a75729215bdaf2c8d2ce61449f8f6fc29858109efc0b800cbd727d60f7d3"
+    },
+    "menu_filter": {
+     "path": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-01.png",
+     "sha256": "0ea2b30575fe418a4a86dfe6d70c6471b1ba88447eae0ec220c5026242fd3abe"
+    },
+    "menu_sort": {
+     "path": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-02.png",
+     "sha256": "e12ae445f67789951a4dd7ce8089bcfb071f746f529d9bcc2f9c0cde3020953c"
+    },
+    "page0": {
+     "path": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-03.png",
+     "sha256": "dbf92d98d19ffacdc164dd4bc34f83680419b5820c9ee9f9f7cbf5ecc9d7f553"
+    },
+    "page1": {
+     "path": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-07.png",
+     "sha256": "d79eb20adb8ddc7f6495c025bd807d9f677f8a98530ab6d18b0aaf8f88075e3f"
+    },
+    "page2": {
+     "path": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-10.png",
+     "sha256": "245d319fbb3151125bc05383e9202eceb5e0c9a45e2f57039e9c3802fc3ab992"
+    },
+    "page3": {
+     "path": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-13.png",
+     "sha256": "9e5090298622adc9c3b9e91f07c7e3b92173ec43021234997b8793e95f148132"
+    },
+    "page4": {
+     "path": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-16.png",
+     "sha256": "fa77d79702d4141a4c0d22a7f60cf3ec205e710ec297f41a2a036bfbddfde313"
+    },
+    "page5": {
+     "path": "debug/scanner_f10_live/item-tech-notes-terminal-final/frame-19.png",
+     "sha256": "059a67b7b4a80d49e99c6953e4cb6b242ce46e8fb98837cb41cdf8faae22bc9a"
+    },
+    "menu_reset": {
+     "path": "debug/scanner_c5_live/category/01-after-reset.png",
+     "sha256": "96a452b96194fef6da5203616e5e70bd258389b8749f028c68184ea7db07fa9d"
+    },
+    "menu_category": {
+     "path": "debug/scanner_c5_live/category/02-note-clicked.png",
+     "sha256": "4148ade6b13dee9b263a6011dd80d8c6807846458cb061a3129fc6af24c7e72a"
+    },
+    "menu_filter_tab": {
+     "path": "debug/scanner_c2_live/menu/02-filter-tab.png",
+     "sha256": "f3e1c2ca7b4a7bbc3fbdb87ad2f3361b972eb71a8db6e9443544e0c4ce41aad6"
+    }
+   },
+   "transitions": {
+    "grid_initial": {
+     "click:filtermenu_button": "menu_sort"
+    },
+    "menu_filter": {
+     "click:filter_confirm_button": "page0",
+     "click:filter_tab": "menu_filter",
+     "click:sort_tab": "menu_sort",
+     "click:filter_reset_button": "menu_reset"
+    },
+    "menu_sort": {
+     "click:filter_confirm_button": "page0",
+     "click:filter_tab": "menu_filter_tab",
+     "click:sort_tab": "menu_sort",
+     "click:filter_cancel_button": "grid_initial"
+    },
+    "page0": {
+     "drag": "page1",
+     "scroll": "page1",
+     "click:filtermenu_button": "menu_filter"
+    },
+    "page1": {
+     "drag": "page2",
+     "scroll": "page2",
+     "click:filtermenu_button": "menu_filter"
+    },
+    "page2": {
+     "drag": "page3",
+     "scroll": "page3",
+     "click:filtermenu_button": "menu_filter"
+    },
+    "page3": {
+     "drag": "page4",
+     "scroll": "page4",
+     "click:filtermenu_button": "menu_filter"
+    },
+    "page4": {
+     "drag": "page5",
+     "scroll": "page5",
+     "click:filtermenu_button": "menu_filter"
+    },
+    "page5": {
+     "drag": "page5",
+     "scroll": "page5",
+     "click:filtermenu_button": "menu_filter"
+    },
+    "menu_reset": {
+     "click:note_filter": "menu_category",
+     "click:filter_tab": "menu_reset",
+     "click:filter_cancel_button": "grid_initial"
+    },
+    "menu_category": {
+     "click:sort_tab": "menu_sort",
+     "click:filter_tab": "menu_category",
+     "click:filter_cancel_button": "grid_initial"
+    },
+    "menu_filter_tab": {
+     "click:filter_reset_button": "menu_reset",
+     "click:filter_tab": "menu_filter_tab",
+     "click:sort_tab": "menu_sort",
+     "click:filter_cancel_button": "grid_initial"
+    }
+   }
+  },
+  {
+   "id": "inventory_equipment_1280",
+   "scan_kind": "inventory",
+   "coverage": "inventory equipment profile, prepare + 4 recorded pages; last recorded move was an ambiguous overlap in the live run",
+   "target": {
+    "inventory_scan_profile": "equipment"
+   },
+   "initial": "grid_initial",
+   "screens": {
+    "grid_initial": {
+     "path": "debug/scanner_f10_live/equipment-three-pages-final/frame-00.png",
+     "sha256": "1c6966eb5d6c6393300e4352fa05139c3b9dd1d5c20266b9fbd81b859ee14d67"
+    },
+    "menu_filter": {
+     "path": "debug/scanner_f10_live/equipment-three-pages-final/frame-01.png",
+     "sha256": "bbc93118aece2aa74e3a2e8f10cb1fdcf5ad95f88d8b153a6f1a00cf670582b7"
+    },
+    "menu_sort": {
+     "path": "debug/scanner_f10_live/equipment-three-pages-final/frame-02.png",
+     "sha256": "a04cc0f53665cf623b35856e1fbad1ae7c26d6b3aee6272a79a249dacc31ae92"
+    },
+    "page0": {
+     "path": "debug/scanner_f10_live/equipment-three-pages-final/frame-03.png",
+     "sha256": "afe725a94c359ae99d3d67b6464c953bd51bc4f75a5118ef857c4269fefd681b"
+    },
+    "page1": {
+     "path": "debug/scanner_f10_live/equipment-three-pages-final/frame-07.png",
+     "sha256": "f1c1063495d08cea846948f980495e5c81a90f80431a6bba9ebf2697e239ad3d"
+    },
+    "page2": {
+     "path": "debug/scanner_f10_live/equipment-three-pages-final/frame-10.png",
+     "sha256": "f405fede17f4d36dd2552e14cbb6635798d729695d1f0ed8dd4249623df5af16"
+    },
+    "page3": {
+     "path": "debug/scanner_f10_live/equipment-three-pages-final/frame-13.png",
+     "sha256": "22af5fe10b6f8f7db824bef8c4019b276ffc5d3cfac8561c3630b545f96a8bdb"
+    }
+   },
+   "transitions": {
+    "grid_initial": {
+     "click:eq_filtermenu_button": "menu_filter"
+    },
+    "menu_filter": {
+     "click:eq_filter_confirm_button": "page0",
+     "click:filter_tab": "menu_filter",
+     "click:sort_tab": "menu_sort"
+    },
+    "menu_sort": {
+     "click:eq_filter_confirm_button": "page0",
+     "click:filter_tab": "menu_filter",
+     "click:sort_tab": "menu_sort"
+    },
+    "page0": {
+     "drag": "page1",
+     "scroll": "page1",
+     "click:eq_filtermenu_button": "menu_filter"
+    },
+    "page1": {
+     "drag": "page2",
+     "scroll": "page2",
+     "click:eq_filtermenu_button": "menu_filter"
+    },
+    "page2": {
+     "drag": "page3",
+     "scroll": "page3",
+     "click:eq_filtermenu_button": "menu_filter"
+    },
+    "page3": {
+     "drag": "page3",
+     "scroll": "page3",
+     "click:eq_filtermenu_button": "menu_filter"
+    }
+   }
+  }
+ ]
+}

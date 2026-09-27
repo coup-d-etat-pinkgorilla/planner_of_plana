@@ -1,0 +1,543 @@
+---
+title: "Scanner Structural Consolidation Status"
+summary: "C0~C7 스캐너 구조 정리 워크플로의 실제 진행 상태, 기준선 수치, golden 결과, 발견 사항과 다음 행동을 기록합니다."
+topics: [workflow, architecture, migration, data]
+sources:
+  - id: workflow
+    type: file
+    path: almanac/workflows/scanner-structural-consolidation-workflow.md
+---
+
+# Scanner Structural Consolidation Status
+
+단계 정의·불변식·gate는 [Scanner Structural Consolidation Workflow](scanner-structural-consolidation-workflow)가
+소유한다. 이 문서는 실제 완료 사실, 검증 수치, 발견 사항과 다음 행동만 기록한다. [@workflow]
+
+## 현재 현황
+
+| Phase | 상태 | 시작 기준 | 다음 행동 |
+|---|---|---|---|
+| C0 기준선·golden 고정 | **완료** (2026-09-26) | `3a96abe` (branch `scanner-consolidation`) | — |
+| C1 계약 드리프트·이름 정리 | **완료** (2026-09-26, C1a~C1c) | `552ab99` | — |
+| C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
+| C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
+| C4 임계값 레지스트리 | **완료** (2026-09-26, C4a~C4c) | `d4f030e` | — |
+| C5 인식 공통화 | **진행 중: C5a·C5b 완료(실게임 tail 3종 확인)** (2026-09-26) | `43c17b5` | C5c(X15)·C5d(X18)·C5e(X19) |
+| C6~C7 | 미착수 | — | 순서대로 |
+
+## C0 — 기준선·golden 고정
+
+### 시작 기준
+
+- 시작 커밋: `b19da65df9507c44913b99d351fac5a96744bd47`
+- 작업 트리: 미커밋 변경 포함(사용자 결정 2026-09-26: 현재 dirty tree 기준으로 고정).
+  스캐너 관련 변경 지문:
+  `git diff b19da65 -- backend/core backend/assets/recognition backend/data | sha256sum`
+  (저장소 루트 `planner_of_plana` 기준 경로 출력) =
+  `82d4b7284c23839c22536898a896e64cb227d58d4429492d3c5743d34e258b9a`
+  — 9 files, +633/−218, 미추적 `backend/data/student_stats/v1/formula.json` 별도 존재.
+- **Golden 기준 커밋(2026-09-26 사용자 승인 커밋)**: 위 스캐너·스탯 미커밋 변경을 branch `scanner-consolidation`의
+  `3a96abe`로 커밋했다. golden은 이 커밋 + C0 산출물 커밋에서 재현된다. frontend UI 변경, `data/`, `debug/` 신규 파일,
+  `section-template-studio.md`, `p0-p6-workflow-status.md`는 이 워크플로 범위 밖이라 미커밋으로 남겼다.
+
+### 사용자 결정 (C0 착수 전)
+
+- Replay 방식: **화면 상태 기계**. 기록 프레임에 화면 라벨을 붙이고, 클릭은 control 이름으로,
+  드래그는 페이지 전진으로 해석한다. 순차 replay는 채택하지 않는다(현재 prepare 입력이 기록 당시와 달라
+  — `filter_reset_button`·`note_filter` 없음, `sort_rule_check` 선클릭 — 기록 순서의 프레임이 다른 입력에 대응된다).
+  정정: 착수 전 질문에서 순차 replay의 전량 `outside profile` skip을 오정렬 탓으로 설명했으나, 상태 기계 replay에서도
+  같은 skip이 재현되어 원인은 인식 gate(아래 C0-1)다.
+- 기준선: 현재 dirty tree.
+- 결손 조합: 학생 전체 스캔은 F1 1280 이동 프레임을 상태 기계로 연결해 구성, gift(`presents`)·
+  `student_elephs`는 결손으로 기록.
+
+### 기준선 수치 (2026-09-26 신규 실행, 과거 533/400 재사용 안 함)
+
+| 검증 | 명령 | 결과 |
+|---|---|---|
+| Python 전체(착수 시) | `cd backend; py -3.11 -m unittest discover -s tests -v` | 541 tests OK (234.9s) |
+| Python 전체(C0 산출물 포함) | 동일 | **543 tests OK** (258.4s, golden 2건 추가) |
+| Flutter analyze | `cd frontend; flutter analyze` | 2 issues(info `unnecessary_const`, `lib/ui/app_shell.dart:690,700` — 미커밋 UI 변경), exit 1 |
+| Flutter test(전체) | `cd frontend; flutter test` | 403 pass / 2 fail — Python 전체 테스트와 **동시 실행** 중 real-process E2E 10초 timeout(`planning_protocol_client_test`, `repository_process_e2e_test`) |
+| Flutter test(실패 2파일 단독 재실행) | `flutter test test/planning_protocol_client_test.dart test/repository_process_e2e_test.dart` | 22/22 pass → 부하 경합 timeout으로 판정 |
+| golden 비교 | `cd backend; py -3.11 -m unittest tests.test_scanner_consolidation_golden -v` / `py -3.11 -m tools.scanner_consolidation_replay` | 2 tests OK, 8/8 `same` |
+| 결정성 | 같은 프로세스 2회 + 새 프로세스 비교 | 8/8 바이트 동일 |
+| `git diff --check` (C0 신규 파일) | — | 0 |
+| `codealmanac validate` | — | 6 issues, 전부 기존 workflow 문서의 `unused_sources`(boundaries/detail/matchers/navigation/schema/session). status 문서 신규 issue 없음 |
+
+### 산출물
+
+- Replay harness: `backend/tools/scanner_consolidation_replay.py` (테스트·도구 전용, 런타임 import 없음).
+  `core.scanner_runtime.build_scanner_service`와 같은 matcher/recovery 배선에 `ReplayCapture`만 교체한다.
+  답안 샘플 저장소는 빈 임시 디렉터리의 실제 `RecognitionAnswerSampleStore`, 진행 콜백은 production과 같이
+  `supports_feedback=True`.
+- 입력 manifest: `backend/tests/fixtures/scanner_consolidation/scenarios.json` — 화면별 프레임 경로(추적 중인
+  `debug/scanner_f*`)와 SHA-256, 화면 전이표. 프레임은 복사하지 않고 digest로 고정한다(불일치 시 테스트 실패).
+- Golden: `backend/tests/fixtures/scanner_consolidation/golden/<scenario>.json` 8개(합계 164K).
+- 비교 테스트: `backend/tests/test_scanner_consolidation_golden.py`.
+- 재고정: `cd backend; py -3.11 -m tools.scanner_consolidation_replay --write [scenario...]` — 동작 변경 phase에서
+  status에 의도된 diff를 적은 뒤에만 사용한다.
+
+Golden 형식: `{scenario, result, inputs, screens_captured, progress}`. `result`는 adapter 반환값
+(list 또는 `ScanBatchResult` → `candidates/outcome/error/screen_state/coverage_complete`, 예외는 `raised`).
+이미지(`_answer_specimen` crop 등)는 `{mode,size,sha256}`로 바꾼다. dict 키는 정렬하고 **리스트 순서(evidence 포함)는
+보존**한다. 입력 로그는 클릭을 region 이름으로 해석한 결과와 화면 전이를 담으므로 C2의 입력 변경(X08/X09)은
+의도된 golden diff가 된다. 줄바꿈은 autocrlf 대비 LF로 정규화해 비교한다.
+
+### Golden 세트
+
+| Scenario | 해상도 | 입력 프레임 | 결과 요약 |
+|---|---|---|---|
+| `student_single_mika_1280` | 1280 | `scanner_f7_followup/mika-final/basic.png` | mika 1건, review 없음, 입력 0 |
+| `student_single_mika_2560` | 2560 | `scanner_f3_live/00-initial.png` | mika 1건, review 없음 |
+| `student_single_miyu_1280` | 1280 | `scanner_f7_live/miyu-basic/basic.png` | miyu 1건, skipped evidence 포함 |
+| `student_single_shizuko_skill_panel_unopened_1280` | 1280 | `scanner_f7_followup/shizuko-panel/basic.png` | skill1/2 uncertain → `skill_menu_button` 클릭 → 패널 프레임 없음 → `skill_panel partial (panel_open_failed;same-student basic restored)`; `status:"shadow"` evidence 3건 포함(X01 실제 샘플) |
+| `student_forms_hoshino_1280` | 1280 | `scanner_f8_live/hoshino-forms/frame-00,02` | `hoshino_battle`, `hoshino_battle#2` 2건, form2→form1 복원 |
+| `student_full_ring_1280` | 1280 | `scanner_f1_live/01,02,03,07` | 학생 목록 진입 → mika→hina_dress→miyu→mika, `completed`, `coverage_complete=true` (**합성 ring**: hina_dress→miyu 전이는 기록 없음) |
+| `inventory_item_tech_notes_1280` | 1280 | `scanner_f10_live/item-tech-notes-terminal-final` frame 00~03,07,10,13,16,19 | prepare → 5회 drag → `verified_tail_residual` 종료, entries 0, 60칸 `skipped`, `scan_coverage partial (ordered=False)` |
+| `inventory_equipment_1280` | 1280 | `scanner_f10_live/equipment-three-pages-final` frame 00~03,07,10,13 | 3번째 이동에서 `inventory_scroll_unverified`(score .984, margin .002) → `failed`, 후보 0 |
+
+### 결손 (C0에서 golden 없음)
+
+- 재고 `presents`(gift)·`student_elephs`: `debug/scanner_f*`에 프레임 없음.
+- 학생 패널 **열림 성공** 경로(level/star/skill/equipment/weapon/stat): 기록 basic 프레임이 fallback을 자연 유발하지 않거나
+  (mika/miyu 등) 유발해도 같은 학생의 패널 프레임이 없다(shizuko). 기존 F2~F7 단위 테스트만 보호한다.
+- 실프레임 재고 **accepted entry·zero-fill** 경로: 두 재고 scenario 모두 entries 0. entry 조립·X04/X05 필드는 기존
+  `test_scanner_production_adapters` 합성 프레임 테스트만 보호한다.
+- 학생 2560은 단일 스캔 1건만, 전체 스캔은 합성 ring 1건만. 다른 계정 표본 없음(X25).
+
+### 미검증
+
+- 실게임 확인 없음(C0 범위 아님). Replay는 기록 프레임의 화면 상태 기계이며 실게임 검증으로 표기하지 않는다.
+- 재고 두 scenario의 전량 skip이 현재 클라이언트에서도 재현되는지(아래 발견 사항 C0-1/C0-2) 미확인.
+
+### 발견 사항 (다른 phase 소관, C0에서 손대지 않음)
+
+| ID | 발견 | 소관 후보 |
+|---|---|---|
+| C0-1 | 1280 tech_notes 실프레임의 기술 노트 아이콘이 전역 매칭에서 장비 조각(`*_Piece`)·`Vajra` 등에 score≈.67~.69, margin≈0으로 붙는다. 전역 gate는 `score>=0.55`만 보고 margin을 보지 않아 **실제 기술 노트 60칸 전부를 `outside the explicit scan profile`로 skip**한다. zero-fill은 `ordered=False`로 막히지만 item 프로필 스캔이 사실상 무결과다. | C5(인식 공통화)/C7(임계 결정), X17 |
+| C0-2 | equipment 실프레임도 가시 슬롯 top 매칭이 `equipment` 프로필 밖의 `*_Piece` identity라 entries 0. 이어진 스크롤 실패 시 entries가 비어 있으면 `ScanBatchResult`가 **evidence 전체를 버린다**(skip·overlap evidence가 진단에 남지 않음). | C1/C2(X10 인접), C3 |
+| C0-3 | X09 재현: 현재 prepare는 `filter_tab` 화면에서 `sort_rule_check`를 무조건 클릭한다(replay 입력 로그상 `menu_filter`에서 unmapped 클릭). | C2 |
+| C0-4 | X08 재현: 모든 drag가 `(.78,.75)→(.78,.65)`로 그리드 내부에서 시작한다. | C2 |
+| C0-5 | `scanner_runtime.build_scanner_service`가 `WindowsCaptureInputAdapter`를 직접 생성해 replay harness가 배선을 복제한다. 배선이 바뀌면 harness가 조용히 어긋날 수 있다. capture port 주입형 factory가 필요하다. | C3/C6 |
+| C0-6 | `codealmanac validate`의 workflow 문서 `unused_sources` 6건(기존). | 문서 정리 시 |
+| C0-7 | Flutter analyze info 2건(`app_shell.dart` 미커밋 UI 변경). | 별도 UI 워크플로 |
+
+### 다음 행동
+
+1. (완료) 사용자 승인으로 기준 변경(`3a96abe`)과 C0 산출물을 별도 커밋했다.
+2. C1 착수: `student_single_shizuko_skill_panel_unopened_1280` golden의 shadow evidence를 X01 스키마 검증의 실제 후보
+   샘플로 사용한다. C1의 필드 추가·이름 변경은 golden diff로 드러나며 status에 사유를 적고 `--write`로 재고정한다.
+3. C0-1/C0-2는 C2 실게임 1280 확인 때 현재 클라이언트 프레임으로 재현 여부를 먼저 확인한다.
+
+## C1 — 계약 드리프트·이름 정리
+
+### Sub-slice 분할 (2026-09-26)
+
+C1은 repository DTO와 Flutter decoder까지 걸치므로 세 조각으로 나눈다.
+
+| Slice | 항목 | golden 기대 | 상태 |
+|---|---|---|---|
+| C1a | X01 `shadow` enum, X02 `session.start.inventory_scan_profile`, X03 프로필 집합 단일 소스 | diff 0 | **완료** (2026-09-26) |
+| C1b | X04 zero-fill 필드, X05 `inventory_scan_profile` 엔트리 필드, X21 source 이름 | 의도된 필드 추가·이름 변경 diff | **완료** (2026-09-26) |
+| C1c | X06 후보 `catalog_revision`과 commit 검증 + 재고 commit 전체 교체 버그(C1-1) 수정 | 재고 golden에 `catalog_revision` 추가 | **완료** (2026-09-26) |
+
+### C1a 결과 (2026-09-26)
+
+- X03: `inventory_catalog.SCAN_PROFILES`(CATALOG profile id 등장 순서)·`ITEM_SCAN_PROFILES`(equipment 제외)를 단일 소스로 두었다.
+  `scanner_session.start`의 하드코딩 집합과 `inventory_navigation.ITEM_FILTERS`(값인 filter control 이름은 F12 이후
+  클릭하지 않는 죽은 매핑이었고 membership만 쓰였다)를 제거하고 이 둘을 import한다.
+- X02: `scanner.session.start` 요청에 optional `inventory_scan_profile` enum(7개, CATALOG 순서)을 정의했다. 정적 JSON이라
+  생성 대신 동기화 테스트로 묶었다: Python `test_inventory_scan_profile_enum_is_the_catalog_single_source`(schema == `SCAN_PROFILES`),
+  Dart `inventory scan profiles match the shared scanner schema enum`(`InventoryScanProfile.wireName` 집합 == schema).
+  공용 fixture에 유효/무효 start 2건을 추가했다(15→17건, 유효 9→10).
+- X01: `fieldEvidence.status` enum에 `shadow`를 추가했다. `test_real_replay_candidates_including_shadow_evidence_match_schema`가
+  C0 golden 8개의 실제 후보 전부를 `$defs/candidate`로 검증한다. 구 스키마에서는 hoshino/mika/shizuko 등 학생 후보가
+  `'shadow' is not one of [...]`로 실패함을 확인했다(학생 후보 대부분이 shadow를 포함 — 기존 스키마는 실제 후보를 거부하고 있었다).
+- 응답 `scanner.session.start`에는 `inventory_scan_profile`을 싣지 않으므로 응답 스키마는 바꾸지 않았다.
+
+| 검증 | 결과 |
+|---|---|
+| `cd backend; py -3.11 -m unittest discover -s tests -v` | 545 tests OK (+2 contract) |
+| golden diff | **0** (`test_scanner_consolidation_golden` OK) |
+| `cd frontend; flutter analyze` | 기존 info 2건(`app_shell.dart`)만 |
+| `cd frontend; flutter test` | 406 all passed (+1, Dart↔Python process E2E 포함) |
+
+
+### C1b·C1c 사용자 결정 (2026-09-26)
+
+- **C1-1 (신규 발견, 데이터 손실)**: scanner 재고 commit이 `update_inventory`로 계정 인벤토리 **전체를** 후보 엔트리로 교체한다.
+  재현: 임시 저장소에 ooparts `Mandragora_0 ×5` 저장 → `tech_notes` 후보 1건 commit → 저장 인벤토리에 tech note 1건만 남음.
+  Flutter `inventory_page._approveCandidate`는 후보 payload를 그대로 review/commit한다. 결정: **C1c에서 수정**(스캔 프로필의
+  catalog 엔트리만 교체하고 나머지 보존, 재현 회귀 테스트 선행).
+- X05: `inventory_scan_profile`은 **scanner 후보 전용**. repository DTO·스키마·Flutter repository 파서는 바꾸지 않는다.
+- X06: `catalog_revision` **누락도 거부**(`catalog_revision_missing`), 불일치는 `catalog_revision_mismatch`, details에 기대/수신 revision.
+
+### C1b 결과 (2026-09-26)
+
+- X04: zero-fill evidence field를 `entries[<리스트 인덱스>].quantity` → `zero_fill[<resource_key>].quantity`로 바꿨다
+  (zero-fill 대상 row는 전부 `resource_key == item_id` 확인).
+- X05: 스캔 엔트리(관측·zero-fill)에 `inventory_scan_profile`을 추가했다(`prepared.profile_id`, navigation 없는 경로는 `null`).
+  `profile_id`는 D11 기본안대로 병행 유지 — **제거 시점: C6**. `ScannerSessionService._repository_inventory`가 review/commit/후보
+  생성 검증 전에 이 필드를 떼어내며(`SCANNER_ONLY_ENTRY_FIELDS`), 값이 `SCAN_PROFILES` 밖이면 `invalid_candidate`로 거부한다.
+- X21: 같은 crop 재매칭 source `detail_template_fallback` → `grid_same_crop_rematch`. `scroll_overlap` evidence source를 항상
+  `verified_row_overlap`으로 쓰던 것을 실제 결정(`verified_row_overlap`/`verified_tail_residual`/`verified_no_motion`)으로 바꿨다.
+- 구 진단 호환: `scanner_matchers.LEGACY_INVENTORY_EVIDENCE_SOURCES`와 `canonical_inventory_evidence(evidence, entries)`가 세 가지 구 형식을
+  현재 계약으로 변환한다(비파괴·멱등). 테스트 `test_inventory_evidence_contract_c1.py`.
+- Flutter: 재고 evidence field/source 이름과 후보 엔트리 키를 엄격 파싱하는 곳이 없어(`inventory_page.dart:813`은 느슨한 List 읽기)
+  decoder/mock 변경이 필요 없었다. v6 parity fixture의 역사적 `detail_template_fallback` 표기는 그대로 둔다.
+
+| 검증 | 결과 |
+|---|---|
+| Python 전체 | 547 tests OK (+2) |
+| golden diff | **1건, 의도됨**: `inventory_item_tech_notes_1280`의 마지막 `scroll_overlap` source `verified_row_overlap` → `verified_tail_residual`(X21). `--write inventory_item_tech_notes_1280`으로 재고정. 나머지 7개 same. 재고 golden에 accepted entry가 없어 X04/X05는 golden에 나타나지 않고 단위 테스트로만 고정된다. |
+| Flutter analyze / test | 기존 info 2건 / 406 all passed |
+
+### C1c 결과 (2026-09-26)
+
+- 병합 규칙 사용자 결정: **identity upsert**. 착수 전 선택지는 "스캔 프로필 엔트리 교체"였으나, 부분 스캔(zero-fill 불가)에서
+  관측 못 한 같은 프로필 항목을 지우는 손실이 남아 재질문했고 upsert로 확정했다. 관측 못 한 항목은 이전 수량을 유지한다.
+- C1-1 수정: `ScannerSessionService._merged_inventory`가 commit 시점의 저장 인벤토리에 스캔 엔트리(명시 zero-fill `"0"` 포함)를
+  `item_id or key` 기준으로 덮어쓰고 나머지는 순서를 유지해 보존한다. revision 충돌 검사는 기존 `update_inventory` 그대로다.
+  회귀 테스트 `test_scanner_inventory_commit_c1c.py`는 수정 전 실제 `JsonRepository`에서 ooparts·미관측 노트가 사라지는 것을 재현했다.
+- X06: `InventoryMatcherAdapter` 후보 payload(정상·중단 보존 후보 모두)에 `catalog_revision`(= `inventory_catalog.CATALOG_REVISION`)을
+  싣는다. commit은 누락 `catalog_revision_missing`, 불일치 `catalog_revision_mismatch`로 거부하고 저장소를 쓰지 않는다. error
+  details와 후보 `audit`에 `{expected, received}`를 남긴다. Flutter는 후보 payload를 그대로 review/commit하므로 값이 보존된다.
+- 스키마: 후보 payload는 v1에서 generic object라 변경 없음. repository `inventorySnapshot.catalog_revision`은 기존 optional 필드.
+
+| 검증 | 결과 |
+|---|---|
+| Python 전체 | 549 tests OK (+2) |
+| golden diff | **1건, 의도됨**: `inventory_item_tech_notes_1280` payload에 `catalog_revision` 추가(X06). `--write`로 재고정. 나머지 7개 same |
+| Flutter analyze / test | 기존 info 2건 / 406 all passed (Dart↔Python process E2E 포함) |
+| `codealmanac validate` | 기존 workflow `unused_sources` 6건만 |
+
+### C1 완료 판정
+
+- 스키마 테스트가 C0 golden 실제 후보 전체를 통과(C1a), Dart enum 동기화 테스트 통과, golden diff는 X21·X06의 의도된 2줄뿐.
+- **미검증**: 실제 앱 UI에서 재고 스캔 승인→commit 병합을 실게임으로 확인하지 않았다(commit 경로는 게임 입력과 무관해 저장소
+  통합 테스트로 확인). 실게임 1280 확인은 C2에서 재고 스캔 실측과 함께 한다.
+- 남은 발견: C0-1(기술 노트 전량 skip), C0-2(entries 0일 때 중단 결과가 evidence를 버림) — C2 실게임 확인 시 먼저 재현한다.
+
+### 다음 행동
+
+- C2 착수. X07·X09·X10·allowlist는 fixture 선행이 가능하나 X08과 완료 조건은 **실게임 1280에서 item/equipment/gift tail**
+  확인이 필요하다. 게임 실행 가능 시점을 사용자와 맞춘다. D4 기본안(안전 드래그 영역 없으면 `review_required` 강등)은 그대로.
+
+## C2 — 재고 끝 판정·입력 보강
+
+시작 `35768a2`. 게임 창 1280×720(사용자가 띄움), 계정 화면 입력은 표시 설정·목록 조작만 했고 사용/판매 버튼은 누르지 않았다.
+
+### 구현
+
+| 항목 | 변경 |
+|---|---|
+| X07 | `InventoryNavigation.confirm_terminal`: `verified_tail_residual` 페이지를 읽은 뒤 drag 1회 + settle 후 `page_similarity >= .97`(기존 값)일 때만 terminal. 움직이면 `scroll_terminal partial / tail_recheck_moved`, `coverage_complete=False`, review_required, zero-fill 없음 |
+| X08 | region 자산 `inventory_navigation_f10_regions.json`에 `scroll_track {x: 0.975, start_y: .75, end_y: [.65, .58]}` 추가(매니페스트 sha/bytes 갱신, CRLF 유지). `scroll_once`가 drag·wheel 모두 이 값을 쓰고 코드의 `.78` 리터럴을 제거했다. x=.975는 목록 오른쪽 여백으로 item·equipment 모든 grid slot 밖(테스트로 고정) |
+| X09 | prepare에서 filter 탭의 무조건 `sort_rule_check` 클릭 제거. 정렬 라디오는 정렬 탭에서 `ensure_sort`가 관측 후 꺼져 있을 때만 클릭 |
+| X10 | `inventory_scroll_unverified` 안전 중단(취소 아님) 시 `restore_first_page`(= 검증된 표시 설정 재적용)를 호출하고 `error.details.first_page_restored`, evidence `inventory_restore`(`inventory_first_page_restore`)를 남긴다. 문서 수정이 아니라 **구현**을 택했다 |
+| allowlist | `inventory_navigation.ALLOWED_CONTROLS`(filter/sort 메뉴·탭·정렬 체크·확인 9개) 밖의 이름은 `control_not_allowed`로 클릭 전 거부. 카테고리 필터 체크박스·`filter_reset_button`은 목록에 없다 |
+
+D4: 안전 드래그 영역이 있으므로(아래 실측) 강등 기본안은 적용하지 않았다.
+
+### 실게임 1280 확인 (`debug/scanner_c2_live/`)
+
+각 디렉터리의 `trace.json`에 입력·캡처 순서, 중복 제거된 프레임 파일명→SHA-256, 결과 후보가 있다. 실행 도구
+`backend/tools/verify_inventory_c2_live.py`(production adapter, 저장소 쓰기 없음).
+
+| 실행 | 결과 |
+|---|---|
+| `menu/` 표시 설정 관찰 | filter 탭에 **카테고리 체크박스가 존재**(엘레프·기술 노트·선물 등, F10 `*_filter` 좌표와 일치). 정렬 탭 라디오 `기본` = `sort_rule_check` 위치, 선택 시 score .92 |
+| `track/`, `eq-track/` | x=.975 탭: 선택 항목 이름·수량 불변(item/equipment). drag: item에서 3행 overlap .985로 스크롤 |
+| `presents-full-2` | prepare 정상(정렬 관측 .92, 클릭 없음), drag 5회 검증 후 6번째 `ambiguous row overlap .983 margin .019` → failed, **first_page_restored=true**, entries 3(모두 상세 fallback) |
+| `tech-notes-full` | drag 4회 검증 후 **실제 목록 끝**에서 1행 미만 이동 → `.922 margin .019` → failed, first_page_restored=true, entries 0 |
+| `equipment-full` | drag 2회 후 `.982 margin .006` → failed, first_page_restored=true (F10 기록과 같은 지점) |
+| `*-cancel` 3개 | 세 프로필 모두 `cancelled`, 보존 후보는 `scan_interrupted partial`, zero-fill 없음, 게임은 같은 페이지 |
+| `tech-notes-restore-probe` | 2페이지 이동(유사도 .864) 후 restore → page0 유사도 **.99999** (X10 실측) |
+| `presents-full`(첫 시도) | filtermenu 클릭 2회가 게임에 반영되지 않아 `inventory_filter_unconfirmed`. 직후 같은 클릭은 정상 — 창 포커스 전환 직후 입력 누락으로 추정, 재현 안 됨 |
+
+사용자 표시 설정은 시작 상태(선물 필터)로 되돌렸다. 주의: 인벤토리 화면에서 Escape는 메뉴가 아니라 화면 자체를 닫고
+로비 메뉴 모음으로 나간다(진단 중 1회 발생, 로비 메뉴 `아이템`으로 복귀).
+
+### 완료 판정 — 보류
+
+완료 조건 중 "실게임 1280 세 프로필 **tail까지**"를 충족하지 못했다. 세 프로필 모두 안전하게(복귀·zero-fill 없음) 중단됐지만:
+
+- **C2-2 (신규, 끝 판정)**: 목록 끝에서 마지막 drag가 1행 미만만 움직이면 정수 행 overlap(1~4행) 후보만 비교하므로
+  tail-residual band(.88~.94)에는 들어가도 margin(.03)을 못 넘겨 `inventory_scroll_unverified`가 된다(`tech-notes-full`).
+  X07 재확인은 이 경로에 도달하지 못해 **실게임에서 미실행**(단위 테스트로만 확인). 임계 변경은 C4 전 금지이므로 C2에서 고치지 않았다.
+- **X20 실측**: 선물·장비 청사진처럼 배경이 비슷한 타일에서 24차원 히스토그램 overlap이 목록 중간에 모호해진다 → C5 소관.
+- **C0-1 실측 재현**: 선물 45칸 중 42칸이 `confident visible identity is outside the explicit scan profile`로 skip, 3칸만 상세 fallback으로 인식.
+- **C2-1 (신규)**: 현재 클라이언트에 카테고리 필터 체크박스가 있다. `f12-inventory-current-display-contract.json`의
+  `category_checkboxes_available: false`와 모순. prepare가 프로필 필터를 걸지 않아 사용자가 걸어 둔 필터에 따라 목록이 달라진다.
+
+### 검증
+
+| 검증 | 결과 |
+|---|---|
+| Python 전체 | 555 tests OK (+6: allowlist, 정렬 관측 후 클릭, scroll_track 좌표·slot 밖, tail 재확인 2, restore 성공/실패) |
+| golden diff | **2건, 의도됨** → 재고정. `inventory_item_tech_notes_1280`: 무조건 정렬 클릭 입력 삭제, drag x .78→.975, tail 재확인 drag 1회 추가·evidence note. `inventory_equipment_1280`: drag x, 스크롤 실패 뒤 설정 재적용 입력 2개와 `first_page_restored: true`. 학생 6개 same |
+| Flutter analyze | 기존 info 2건 |
+| Flutter test | 403 pass / 3 fail — real-process E2E 첫 요청 10초 timeout(게임 실행 중 병렬 부하). 3개 파일 단독 재실행 23/23 pass |
+
+### C2 종료 결정 (2026-09-26, 사용자)
+
+- C2를 **완료**로 닫는다. 완료 조건 중 "실게임 1280 세 프로필 tail"은 **미충족으로 기록**하고 C5로 이관한다:
+  C5의 행 overlap 재설계(X20, slot identity 병합)에 **C2-2 1행 미만 tail 이동 판정**과 **X07 no-motion 재확인의 실게임 실행**을 추가한다.
+  C5 완료 조건의 "실게임 1280 재고 세 프로필"은 tail 도달까지 포함한다.
+- 프레임: 판단 근거가 되는 **핵심 프레임 18개(7.7 MB)만 커밋**했다 — `menu/`·`track/`·`eq-track/` 관찰과 각 중단 지점의
+  전후 쌍(`presents-full-2/frame-31,34`, `tech-notes-full/frame-16,19`, `equipment-full/frame-16,19`). 나머지 153개는 로컬 미추적이며
+  각 `trace.json`의 `frames`(파일명→SHA-256)로 식별한다.
+- C2-1(카테고리 체크박스 존재)은 프로필 필터를 prepare가 걸도록 할지의 **기능 결정**이라 이 워크플로 범위 밖이다. C5 착수 전
+  사용자 결정 항목으로 남긴다(C0-1 전량 skip과 함께 재고 item 프로필 스캔이 실사용 불가인 원인 후보).
+
+### 다음 행동
+
+- C3 착수: 오케스트레이터 분해(동작 보존). 완료 조건은 golden diff 0, 전체 테스트 통과, 최대 함수 80줄 이하.
+
+## C3 — 오케스트레이터 분해 (동작 보존)
+
+시작 `3b20374`. **80줄 기준 범위(기본안)**: X11~X14가 지목한 오케스트레이션 모듈 — `scanner_matchers`, `scanner_session`,
+`inventory_navigation`, `inventory_detail_recovery`, `student_panel_recovery`, `student_identity_recovery`, `student_form_recovery`,
+`student_equipment_recovery`, `windows_scanner_adapter`. 인식 알고리즘(`student_*_recognizer`)과 tactical/planning 모듈의 80줄 초과
+함수(core 전체 21개)는 이 워크플로 범위 밖이다. 착수 시 범위 내 초과: 인벤토리 `__call__` 262, `_scan_current` 218, `_scan_full` 128,
+`scanner_session.review` 93.
+
+| Slice | 항목 | 상태 |
+|---|---|---|
+| C3a | X11 인벤토리 `__call__` 분해 + 상태 dataclass, X13 `DetailRecoveryResult` | **완료** |
+| C3b | X11 학생 `_scan_current`·`_scan_full` 분해 | **완료** |
+| C3c | X14 `PanelMenu` Protocol·validator 단일 시그니처·`ProgressSink`, `scanner_session.review` 분해 | **완료** |
+| C3d | X12 `ScanContext` frozen dataclass(target 컨텍스트 백 제거) | **완료** |
+
+### C3a 결과
+
+- `InventoryMatcherAdapter.__call__`(262줄)을 `_prepare_scan`·`_load_answer_samples`·`_read_page`·`_read_slot`(식별+상세+프로필 gate)·
+  `_apply_detail`·`_record_entry`·`_advance_page`·`_wheel_page`·`_finalize`·`_zero_fill`·`_interrupted`로 나눴다. 흩어진 상태 플래그
+  9개(entries/evidence/slot_crops/review_required/completed/coverage_complete/terminal_after_page/observed ids/prepared)는
+  `_InventoryScan` dataclass, 슬롯 관측은 `_SlotReading`으로 모았다. 워크플로 예시의 "순수 함수"는 매칭·상세 클릭이 부수효과라
+  adapter 메서드로 두었다. 최장 `_read_slot` 50줄.
+- X13: `InventoryDetailRecovery.resolve`가 복귀 확인 뒤의 읽기 실패를 `details['inventory_restored']` 주입 후 raise하던 것을
+  `DetailRecoveryResult(detail, restored, failure)` 반환으로 바꿨다. 복귀 실패·취소·비-ScannerError는 이전처럼 raise한다. adapter의
+  partial 전환 코드 집합은 `DETAIL_RECOVERABLE_CODES`로 이름 붙였다(값 동일).
+  **관찰 가능한 차이 1건**: partial로 전환되지 않고 재발생한 상세 오류의 `error.details`에 `inventory_restored` 키가 더는 없다.
+  Flutter·protocol·진단 스키마에서 이 키를 읽는 곳은 없다(grep 확인).
+- 검증: inventory 50·scanner 73 tests OK, golden **8/8 same**.
+
+### C3b 결과
+
+- `_scan_current`(218줄) → `_basic_crops`(basic 탭 확인·crop) · `_read_growth_fields`(basic + level/star/skill/potential, 기존 호출 순서)
+  · `_resolve_weapon`(무기 상태 gate와 무기 패널 fallback evidence) · `_resolve_equipment`(장비 basic + 장비 패널, 확정 digit 세션 학습)
+  · `_assemble_student`(values/provenance/evidence, shadow 3종은 `_evidence_rows`로 통일). 무기 패널 복구 체인은 `_panel_recovery()`로
+  `_capture_identified`와 공유. 항상 `True`였던 `confident` 변수는 제거(evidence `ok`·review 조건 동일).
+- `_scan_full`(128줄) → 순회 제어 `_scan_full` + 학생 1명 `_scan_full_student` + 재방문 판정 `_revisit`(retry/reverse/complete/move)
+  + 키·버튼 이동 `_StudentWalker`(버튼 좌표 상수화, 값 동일). break/continue·progress 순서 유지.
+- 검증: student 265·scanner 73 tests OK, golden **8/8 same**(학생 단일·다중 폼·전체 ring 포함). 범위 내 최장 함수는 이제 `scanner_session.review` 93.
+
+### C3c 결과
+
+- `PanelMenu` Protocol(`capture`/`recapture`/`close`, `student_panel_recovery`)로 `read_panel_fields`의
+  `getattr(menu, f"capture_{kind}_menu")` 문자열 디스패치를 없앴다. 메뉴 adapter 6개는 일반 메서드를 구현하고, 종류별 Protocol 6개는
+  삭제했다. 메서드 이름 충돌을 피하려 adapter의 capture port 속성은 `self.port`로 바꿨다. **종류별 이름(`capture_weapon_menu` 등)은
+  클래스 별칭으로 C6까지 유지**한다(도구·F12 audit matrix가 참조). 테스트 fake 8개 파일은 일반 이름으로 바꿨다.
+- student validator는 항상 `(payload, profile_id, relationship_ranks)`로 호출한다(`inspect.signature` 판별 제거). 2인자 테스트
+  validator 4개와 `tests/scanner_e2e_backend.py`에 3번째 인자를 추가했다. production `StudentCandidateValidator`는 이미 3인자다.
+- `ProgressSink` Protocol(`supports_feedback` 속성 + 호출)을 두고, 세션의 함수 속성 주입을 `_SessionProgress` 클래스로, 전체 스캔의
+  `current_progress.supports_feedback = ...`를 `_CollectedProgress`로 바꿨다. plain callable은 feedback 없는 sink로 계속 허용한다.
+- `scanner_session.review`(93줄) → `_train_answer_sample`·`_mark_user_verified`·`_revalidate_student`.
+- 검증: Python 555 OK(golden 8/8 same 포함), Flutter 406 all passed.
+- 범위 내 상위 5개 함수 길이: `windows_scanner_adapter._render` 65, `scanner_session.commit` 62, `_read_slot` 50,
+  `_scan_with_forms` 49, `_resolve_weapon` 48 — **80줄 조건 충족**.
+
+### C3d 결과
+
+- `core/scan_context.py`의 `ScanContext`(frozen dataclass): 공개 target 키는 `target`, 스캐너 상태는 타입 필드
+  `cancel`/`cleanup`/`scroll_point`/`session_id`/`generation`/`inventory_profile_verified`/`first_student`/`seen_students`.
+  `ScanContext.of()`가 dict·context를 모두 받고, 변형은 `replace()`로만 만든다.
+- core의 `{**target, '_scanner_*': ...}` 생성과 `target.get('_scanner_*')`·`'_first_student'`·`'_seen_students'`·
+  `'_inventory_profile_verified'` 조회를 전부 타입 필드로 바꿨다(인벤토리 상세·navigation·메뉴 adapter·학생 식별/폼/패널 복구·
+  학생/인벤토리 adapter). 세션은 `session.target` dict에 private 키를 주입하지 않고 matcher 호출 시 context를 만든다.
+- **어댑터 경계**: `ScanContext`는 읽기 전용 `Mapping`이기도 해서 capture/input port(`windows_scanner_adapter`)와 테스트 fake는
+  기존처럼 `target.get("_scanner_cancel")` 등 legacy 키로 읽는다. 이 이름이 남는 곳은 `scan_context.LEGACY_KEYS`와 port 구현뿐이다.
+  capture worker 전송은 기존대로 새 dict(`target_id`, `_window_identity`)를 만든다.
+- 검증: Python 555 OK(golden 8/8 same), Flutter 406 all passed. **미검증**: 실제 Windows adapter와의 실게임 smoke — 게임 창이 닫혀
+  있어(`target_not_ready`, 입력 없음) 실행하지 못했다. port의 Mapping 사용은 F1 fake-user32 테스트가 덮는다.
+
+### C3 완료 판정
+
+- golden diff **0**(C3a~C3d 매 slice), 전체 테스트 통과, 범위 내 최대 함수 65줄(`windows_scanner_adapter._render`) — 완료.
+- 관찰 가능한 차이는 C3a의 `inventory_restored` error details 키 제거 1건(소비자 없음).
+- C6로 넘기는 정리: 메뉴 adapter의 종류별 별칭(`capture_weapon_menu` 등), `profile_id` 병행 필드(D11).
+
+### 다음 행동
+
+- C4 착수: `recognition_thresholds.py` 레지스트리로 리터럴을 옮긴다(값 불변, golden diff 0).
+
+## C4 — 임계값 레지스트리 (동작 보존)
+
+시작 `d4f030e`.
+
+### 정의와 범위 (기본안)
+
+- **임계값 리터럴** = float 상수가 비교식(`>=`, `<` 등)에 쓰이거나, 이름에 threshold/margin/floor/minimum/score/tolerance가 들어간
+  인자·기본값·대입에 쓰인 것. 검사기 `tests/test_recognition_thresholds_c4.py`가 AST로 찾는다.
+- **허용 목록(명시)**: 같은 테스트의 `ALLOWLIST`에 (파일, 값, 탐지 유형) → 사유로 적는다. 중립 기본값(0 = gate 없음)과 가중치
+  (`.4*visual+.6*name`)만 둔다. 크롭 비율·좌표·가중치 곱·대기 시간처럼 비교에 쓰이지 않는 float는 정의상 대상이 아니다.
+- **범위**: 인식·오케스트레이션 모듈(`scanner_matchers`, `inventory_*`, `student_*recognizer`, `student_*recovery`,
+  `studio_numeric_bank`). tactical lobby·windows adapter 타이밍은 워크플로 범위 밖. 착수 시 AST 기준 164건.
+- 레지스트리 `backend/core/recognition_thresholds.py`: `Threshold(name, value, kind, phase, doc, field, source, resolution, note)`,
+  `value(name)`, `lookup(field, source, kind, resolution)`. 도입 phase는 `git log -S`로 확인한 커밋 기준(P5 `8f4ffd4`, F12 `b19da65` 등).
+
+| Slice | 파일 | 상태 |
+|---|---|---|
+| C4a | `scanner_matchers`, `inventory_navigation`, `inventory_detail_recovery` (29 항목) | **완료** |
+| C4b | `student_panel_recovery`, `student_identity_recovery`, `student_equipment_recovery`, weapon/level/star/skill/potential recognizer, `studio_numeric_bank` (46 항목) | **완료** |
+| C4c | `student_scan_recognizer`, `student_equipment_recognizer` (59 항목) | **완료** |
+
+### "같은 프레임" 임계 세 가지 (값 유지, 통일은 C7 결정)
+
+| 이름 | 값 | 비교 대상 | 왜 다른가 |
+|---|---|---|---|
+| `inventory.wheel.same_frame` | .995 | 한 번 wheel 후 **전체 프레임** 픽셀 유사도(`image_similarity`) | navigation 없는 P5 fallback. 전체 프레임에는 애니메이션 배경·선택 테두리가 섞여 있어 거의 완전 일치만 "무이동"으로 본다 |
+| `inventory.scroll.settled_same` | .985 | 연속 캡처 간 **slot 내부 24차원 히스토그램** 평균 유사도 | 스크롤 관성이 멈췄는지 판단. 테두리·수량 기준선을 잘라낸 서명이라 전체 프레임보다 잡음이 적지만, 멈춘 뒤에도 반짝임 효과가 남아 1.0이 아니다 |
+| `inventory.scroll.no_motion_same` | .97 | drag **전후** 페이지 서명 유사도 | 1행 이동도 서명 평균을 크게 바꾸므로 낮은 값이어도 "안 움직임"을 가르기에 충분하다. 동시에 settle 판정보다 느슨해야 settle 직후 잔여 효과로 무이동을 놓치지 않는다. C2 tail 재확인(`confirm_terminal`)도 같은 값을 쓴다 |
+
+### C4a 결과
+
+- 29개 항목 등록(inventory grid/profile gate/slot count/wheel, navigation 메뉴·정렬·스크롤, 상세 패널, 학생 식별 기본값).
+  `inventory.profile_gate.outside_score`(.55, F12)와 `inventory.grid_icon.floor_without_detail`(.55, P5)은 값은 같지만 다른 결정이라
+  이름을 나눴다. C2의 tail 재확인은 `inventory.scroll.no_motion_same`을 공유한다.
+- 검증: 검사기 4 tests OK(허용 목록 stale 없음), inventory 50·scanner 73 tests OK, golden **8/8 same**.
+
+### C4b 결과
+
+- 46개 항목 추가(누적 75): 패널 전환 F2, 엔트리 복구 F8, 장비 메뉴 컨트롤 F7, 무기 basic S2(2026-09-05 보고서), level F4, star F5,
+  skill F6, potential F3, studio glyph 높이 비 S3b. 8비트 밝기 gate(`student.weapon.signal.min_mean` 35, `min_stddev` 8)는
+  `kind="intensity"`(0~255)로 등록했다. 정수 밝기 gate(`>= 210`, `>= 80` 등)는 float 규칙 밖이라 그대로 두었다 — C7 감사 대상.
+- X23 특수 사례 중 potential `4→0` 보정의 두 값(`zero_correction.below` .72, `.tolerance` .03)은 규칙에 잡히지 않는 산술식
+  (`score-.03`)이지만 명시적으로 등록해 C7 표의 근거로 쓴다. 무기 0.57·whole-bank 0.49·인연 0.38/0.005는 C4c 파일에 있다.
+- 허용 목록 추가: 식별 복구 가중치 .7/.3·.35/.65, potential basic glyph 가중치 .55/.45, 무기 `min(default=0.0)`.
+- 검증: 검사기 OK, Python 전체 559 OK(golden 8/8 same). 레지스트리 조회는 1백만 회 0.11s — 전체 테스트 시간 변동(255→431s)은
+  동일 커밋에서도 나타나는 시스템 부하 차이로 판단했다(potential 테스트 24개에서 조회 213회).
+- 작업 사고 기록: 시간 비교 중 `git stash`로 작업 트리 전체(사용자 미커밋 frontend 변경 포함)를 잠시 stash했다가 즉시 pop했다.
+  stash 목록 0, frontend·almanac 미커밋 diff 11 files +1383/−620이 그대로임을 확인했다.
+
+### C4c 결과
+
+- 59개 항목 추가(누적 **134**): basic skill/level bank(S3b)/relationship(S4)/star/combat(S2), 무기 basic(S2 무기 보고서),
+  무기 성급 cyan 색상 gate(`kind="hue"` 160~230°), 장비 basic(S3/S3b), 장비 메뉴·favorite·empty dot(F7), D2 T10 추론(D2).
+- **X22·X23 값이 이름으로 드러났다**: `student.relationship.whole_bank.score/.margin`(.38/.005),
+  `student.weapon.basic.digit.score`(.57), `student.weapon.basic.whole_bank.score`(.49), potential `zero_correction.*`,
+  D2 `student.equipment.d2.*`. D2의 "normal tier" 상한은 메뉴 tier 기준 `student.equipment.menu.tier.score`(.60)와 같은 항목을 공유해
+  두 결정이 묶여 있음을 보이게 했다. 로비 3px·`EQUIPMENT_SLOT_*` 2560 절대좌표는 float 임계가 아니라 C7 표에서 다룬다.
+- 허용 목록 추가: 2개 미만 순위 margin fallback `0.0`, 신뢰도 clamp·보수 `1.0`, star 잔차→신뢰도 스케일 `.35`,
+  normalized correlation 0-분모 guard, synthesized tier 가중치 `.85/.15`.
+
+### C4 완료 판정
+
+- 범위 14개 파일에서 **등록 안 된 임계 리터럴 0건**(검사기 `test_recognition_thresholds_c4`, 허용 목록 20항목 명시·stale 검사 포함).
+- golden diff **0**(C4a~C4c 매 slice), Python 559 OK.
+- Flutter: analyze 기존 info 2건. test 403 pass / 4 fail → 4파일 단독 재실행 22 pass / 2 fail, 모두 real-process E2E의 첫 요청
+  10초 timeout. **발견 C4-1**: backend 첫 응답까지 5.5초이며 `build_scanner_service`(6.4s)가 템플릿 773장 decode·asset hash 검증에
+  쓰인다(cProfile). C3/C4 코드(레지스트리 조회·ScanContext)는 프로파일에 나타나지 않아 회귀가 아니라 **기존 기동 지연이 병렬 E2E 부하에서
+  드러난 것**으로 판단했다. 템플릿 lazy load는 C6(모듈 import 시점 전역·초기화 정리) 후보.
+- 변경 금지 확인: 모든 항목은 기존 리터럴과 같은 float(검사기가 대상 파일에 리터럴이 남지 않았음을, golden·기존 benchmark 테스트가
+  동작 동일성을 확인).
+
+### 다음 행동
+
+- C5는 동작 변경 phase이고 실게임 1280(재고 세 프로필 tail 포함)이 필요하다. 착수 전 **C2-1 결정**(prepare가 카테고리 필터를
+  걸지)과 C0-1(기술 노트·선물 전량 skip)의 처리 방향을 사용자와 정한다.
+
+## C5 — 인식 공통화 (동작 변경)
+
+시작 `43c17b5`. 게임 1280(사용자가 띄움). 사용자 결정(2026-09-26): **C2-1 스캐너가 프로필 카테고리를 체크**, C0-1은 권장안 —
+C5에서 gate **로직**을 고치고 값 변경은 C7. F9 "선택이 안 보이면 입력 금지" 규칙은 **유지**(사용자: v6처럼 1행 겹침으로 선택을
+다음 페이지에 보이게 하는 방식을 권장).
+
+| Slice | 항목 | 상태 |
+|---|---|---|
+| C5a | C2-1 카테고리 필터, C0-1 gate, 탭 전환 검증, 실패 시 메뉴 취소, 스크롤 전 선택 anchor | **완료** |
+| C5b | 오프셋 인식 grid(실제 픽셀 이동 측정): X20 행 overlap, C2-2 1행 미만 tail, 스크롤 후 선택·클릭 정렬, X07 실게임 | **완료** (실게임 1280 세 프로필 tail·취소·학생 회귀) |
+| C5c | X15 이미지 유틸 공통화(`_normalized_correlation` 두 변형 이름 분리, private import 제거) | 미착수 |
+| C5d | X18 상세 복구를 `StudentPanelRecovery` 계약에 정렬 | 미착수 |
+| C5e | X19 재고 수량을 `StudioNumericBank` 경로로(사용자 정답·세션 보정) | 미착수 |
+
+### C5a 결과
+
+- **C2-1**: item prepare = 메뉴 열기 → `filter_tab` **활성 확인** → `filter_reset_button` → 모든 상자 회색 'all' **확인** →
+  프로필 카테고리 클릭 → 그 상자만 'selected'·나머지 10개 'empty' **확인** → `sort_tab` 활성 확인 → 정렬 관측 → 확인.
+  상자 상태는 청록 체크 비율/회색 체크 비율로 판정(실측 selected .375, 전체 회색 .19, empty 0). 판정에 쓰는 코인·소모품·수집품·
+  제조 재료·그 외 상자 5개와 `filter_cancel_button`을 region 자산에 추가(매니페스트 갱신). allowlist에 reset·카테고리 6개·cancel 추가.
+  **실패하면 항상 `filter_cancel_button`(취소)을 cleanup 입력으로 눌러 표시 설정을 바꾸지 않는다.**
+- **안전 사고 1건(실게임)**: 메뉴는 마지막 탭(정렬)으로 다시 열리는데 첫 구현은 `filter_tab` 클릭이 먹혔는지 보지 않았고, 그 사이
+  reset 좌표 클릭이 정렬 탭의 "사용 기간" 라디오에 떨어졌다. 곧이어 실패 경로의 취소로 변경은 적용되지 않았고 정렬은 `기본` 그대로임을
+  재확인했다(`debug/scanner_c5_live/safety/`). 이후 탭 활성(흰색 비율 ≥ .5, 실측 .90/.93 vs 0)을 확인하기 전에는 탭별 클릭을 하지 않는다.
+  또 reset 직후 카테고리를 누르면 reset 애니메이션이 덮어써서, reset 상태 확인 후 클릭한다.
+- **C0-1 gate**: 전역 매칭이 프로필 밖 identity를 가리켜도 margin이 `inventory.grid_icon.margin` 이상일 때만 skip한다(값 불변, 로직 변경).
+  근본 원인도 확인했다: 번들 템플릿은 **아이콘 원화(어두운 배경)**이고 실제 타일은 등급 색 카드 배경·수량 글자라 전체 이미지 유사도가
+  배경에 지배된다 — 프로필로 제한해도 기술 노트 45종 전부 `SkillBook_Ultimate_Piece` ~.65/margin≈0. 따라서 카테고리 필터 후 대부분의
+  슬롯은 **상세 패널로 식별**된다(느리지만 정확). 빠른 grid 식별기는 C5e 은행 작업과 함께 다룬다.
+- **실게임 결과** `debug/scanner_c5_live/tech-notes-full`: 카테고리·탭·정렬 모두 확인, **1페이지 20종 전부 정확한 identity와 수량**
+  (예: Hyakkiyako_0 ×2365, Abydos_0 ×3994; 상세 패널 margin 대 .4~.5). 2페이지 첫 상세 읽기에서 `inventory_restore_failed`로 중단 — C5b 대상.
+- **스크롤 전 선택 anchor**: 사용자 권장 방식대로 스크롤 전 현재 페이지 마지막 채워진 슬롯을 선택해 다음 페이지에 보이는 선택을
+  남긴다(F9 규칙 유지). 단 drag 후 행이 슬롯 격자와 **1행 미만 어긋나** 선택 판정이 틀린 슬롯/None을 준다(2페이지 실패 원인).
+- **정밀 스크롤 실측(C5b 근거)**: drag 끝에서 0.35s 고정 후 놓아도 이동이 선형이 아니다(첫 페이지 기준 150px→165, 200→235,
+  250→306, 304→178). 입력으로 행 정렬을 보장할 수 없으므로 C5b는 **스크롤 후 실제 픽셀 이동을 측정**(세로 상호상관, 정답 위치 평균차 4~5)해
+  슬롯 region을 행 위상만큼 옮기고, overlap·tail·무이동을 그 측정으로 판정하는 설계로 간다(X20·C2-2·다중 페이지 선택을 함께 해결).
+  실험용 drag hold 코드는 되돌렸다.
+- replay: tech_notes 시나리오에 C5 실측 메뉴 프레임(정렬 탭으로 열림·필터 탭·reset·기술 노트 선택)을 합성해 prepare 경로를 고정했다.
+  replay에는 슬롯 선택 프레임이 없어 두 재고 golden은 첫 상세 읽기에서 멈춘다(`inventory_detail_unconfirmed`/`inventory_selection_unknown`) —
+  **의도된 golden 재고정**, 실제 검증 근거는 실게임 trace.
+- 검증: Python 564 OK(+5: 탭 확인·카테고리 실프레임·유일 선택·reset 대기/취소·near-tie gate).
+
+### C5b 결과 (구현, 실게임 대기)
+
+- `InventoryNavigation.measure_shift`: 목록 viewport(새 region `list_viewport`: item y .2083–.8472, equipment .2083–.9583, 실측 150–610/150–690px)
+  안의 회색조 세로 상호상관으로 **실제 위쪽 이동(px)과 잔차**를 잰다(1/2 축소 탐색 후 ±4px 정밀, 약 0.05s). 기존 기록 전부에서 정확:
+  F10 fixture 112/31/110/112px, F10이 `reject_ambiguous_overlap`으로 거부한 쌍 **110px(잔차 2.37)**, C2 기술 노트 tail **29px**,
+  C2 선물·장비 모호 지점 110/112px, 동일 프레임 0px. 잔차는 좋은 이동에서 0.7~9.1.
+- `advance`는 drag 후 측정한 이동을 `PageMove(frame, shift)`로 돌려준다. 잔차 > `inventory.shift.max_residual`(20)이면
+  `inventory_scroll_unverified`, 이동 ≤ `inventory.shift.no_motion`(≈3px)이면 한 번 더 drag하고 두 번째도 무이동이면 `verified_no_motion` 종료.
+  **histogram 행 overlap(X20)·tail residual 판정·`confirm_terminal`은 제거**했다. 1행 미만 tail(C2-2)은 평범한 이동으로 읽히고, 그 뒤의
+  무이동 확인이 X07 재확인 역할을 항상 한다. 레지스트리에서 `inventory.scroll.no_motion_same`·`overlap_score`·`tail_residual_floor`·
+  `overlap_margin.*`를 제거하고 `inventory.shift.*` 두 항목을 추가했다(C4의 "같은 프레임" 셋 중 .97은 이 결정으로 대체).
+- `page_slots(source, offset)`: 누적 offset에서 **정수 행 + 위상**으로 슬롯 region을 옮겨, viewport 안에 완전히 보이는 타일만
+  `content index → region`으로 준다. offset 0은 기존 격자와 정확히 같다. adapter는 content index로 evidence·`observed_slot`을 매기고
+  `read_until` 이후만 읽으며, **새로 보이는 첫 index가 연속이 아니면 `inventory_scroll_unverified`**(건너뛴 행을 조용히 잃지 않음).
+- 상세 복구 `selected/same_grid/observe_selection/select/anchor/resolve`가 옮겨진 슬롯(`slots`)을 받는다 — 스크롤 뒤에도 선택
+  판정·클릭·복귀 확인이 실제 타일 위치에서 이뤄진다. F9 "보이는 선택 없으면 입력 금지" 규칙은 그대로다.
+- 정밀 drag 실험(drag hold)은 입력만으로 행 정렬이 안 돼 되돌렸다(C5a 기록). 측정 방식이라 drag 거리는 기존 `scroll_track` 그대로다
+  (drag당 약 1.08행, 목록 9행이면 약 5회).
+- replay: 두 재고 golden은 첫 페이지 상세 읽기에서 멈춰(선택 프레임 없음) **변화 없음** — C5b 경로는 단위 테스트(측정 이동·무이동 종료·
+  잔차 초과·tail 후 무이동·행 건너뜀)와 실프레임 이동 측정 테스트가 고정한다.
+- 검증: Python 전체 565 OK. **실게임 미검증**: 확인 시점에 게임 창이 최소화되어(`status: minimized`) 입력을 보내지 않았다.
+
+### C5b 실게임 1280 결과 (2026-09-26, 사용자가 창 복원)
+
+| 실행 (`debug/scanner_c5_live/`) | 결과 |
+|---|---|
+| `tech-notes-full-c` | **완료**. 기술 노트 **45/45** identity·수량(예: Hyakkiyako_0 ×2365 … Ultimate_Piece ×71). 이동 108×4 → **31px tail** → 무이동 2회 = `verified_no_motion`(**X07 재확인 실게임 실행**). 정렬 확인, `scan_coverage ok`, zero-fill 0(카탈로그 45종 모두 보유) |
+| `presents-full` | **완료**. 선물 **56종 관측 + 19종 zero-fill**(말단·순서 검증). 이동 ~110×7 → 2px×2(무이동) |
+| `equipment-full` | 말단 도달. **95종** 관측(이전 실행에서 조각 아이콘으로 잘못 skip된 Necklace T4·Gloves T1 등 포함). 이동 110~114×15 → **45px tail** → 무이동. `partial`: 수량 판독 불가 4건(강화석 `25K/27K/29K` 표기 등, 추정 없음) + 범용 설계도 9칸·104번(상세 패널 identity 없음) → zero-fill 없음 |
+| `equipment-cancel` | `cancelled`, 보존 후보 partial, zero-fill 없음, 메뉴 열린 채 남지 않음 |
+| `student-single` | 학생 목록에서 진입 클릭 1회 → mika 단일 스캔 전 필드 확정, review 없음, 3.1s(**학생 회귀 통과**) |
+
+실게임에서 드러나 고친 것(모두 이 slice 안):
+- **anchor 기반 정렬**: 측정 이동을 누적하면 5회 후 약 3px 어긋나 선택 테두리 판정 허용폭(수 px)을 벗어났다. 이동 후 스크롤 전에 선택해 둔
+  anchor 타일이 감지되는 보정 창(±10px)의 중앙으로 offset을 다시 맞춘다(evidence `scroll_alignment`, 실측 창 예: −2..2, −1..3).
+- **판독 가능 여백**: viewport 가장자리 8px(`list_viewport.edge_margin`) 안쪽 타일만 판독 대상으로 한다(아래 행 선택 테두리가 패널에 잘림).
+  목록 말단에서 한 번도 판독 가능해지지 않은 채워진 타일이 있으면 `inventory_scroll_unverified`로 실패한다(조용한 누락 금지).
+- **anchor 행**: 맨 아래 판독 행 대신 그 위 행을 anchor로 쓴다(맨 아래는 오차에 따라 테두리가 잘림, 1행 drag 후에도 위 행은 보임).
+- **same-grid 예외**: 선택 상태가 바뀌는 타일은 내부 색도 변한다(선물 .972 < .975) — 기대/현재/기준 선택 타일은 페이지 동일성 비교에서 제외,
+  나머지 타일이 페이지를 검증한다.
+- **선택 테두리 위치 허용**: 위/아래 band를 ±3px 범위에서 가장 강한 위치로 읽는다(장비 첫 페이지 .14 → 검출). 값(.15)은 그대로.
+- **식별 규칙(C0-1 후속)**: 번들 아이콘은 현재 타일과 맞지 않아(기술 노트 전부 한 아이콘, 장비는 자기 조각 아이콘에 .80) **상세 패널이 있는
+  프로필 스캔은 grid만으로 skip·명명하지 않는다** — 전역 outside gate와 grid fast path를 끄고 상세 identity가 프로필 카탈로그에 있어야 기록한다.
+  item 페이지는 검증된 카테고리 필터가 소속 근거. 상세 패널이 identity를 못 주면 기록하지 않고 `partial` evidence + review(zero-fill 금지).
+  상세 패널이 없으면 F12 gate가 그대로 적용된다(`test_inventory_profile_never_relabels_a_confident_foreign_item` 통과).
+- 검증: Python 566 OK. Flutter 402 pass / 4 fail → 4파일 단독 24/24(부하 timeout, C4-1). golden: 재고 2개 재고정(첫 슬롯부터 상세 패널 경로).
+
+발견(다른 slice/phase): **C5-1** 장비 페이지 범용 설계도(조각)는 상세 패널 identity가 없어 장비 스캔이 항상 partial — 조각 식별 또는
+카탈로그 결정 필요. **C5-2** 강화석 `25K` 같은 축약 수량은 상세 패널 판독 불가 → C5e(수량 은행) 대상. **C5-3** 상세 패널 판독이라
+느리다(장비 105칸 약 10분) — 빠른 grid 식별기는 C5e에서 현재 UI 기준 은행으로.

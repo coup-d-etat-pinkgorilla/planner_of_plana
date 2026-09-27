@@ -1,0 +1,209 @@
+{
+ "profile": "tech_notes",
+ "cancel_after": 14,
+ "size": [
+  1280,
+  720
+ ],
+ "result": {
+  "outcome": "cancelled",
+  "coverage_complete": false,
+  "error": {
+   "code": "cancelled",
+   "message": "inventory scan cancelled",
+   "details": {}
+  },
+  "candidates": []
+ },
+ "navigation_trace": [
+  {
+   "input": "filtermenu_button",
+   "cleanup": false
+  },
+  {
+   "input": "filter_tab",
+   "cleanup": false
+  },
+  {
+   "input": "sort_tab",
+   "cleanup": false
+  },
+  {
+   "observe": "sort_rule_check",
+   "score": 0.9200774546916859,
+   "attempt": 1
+  },
+  {
+   "input": "filter_confirm_button",
+   "cleanup": false
+  },
+  {
+   "input": "drag_scroll",
+   "start": [
+    0.975,
+    0.75
+   ],
+   "end": [
+    0.975,
+    0.65
+   ],
+   "attempt": 1
+  },
+  {
+   "overlap_rows": 3,
+   "score": 0.9870174918101934,
+   "margin": 0.12162848576596064
+  },
+  {
+   "input": "drag_scroll",
+   "start": [
+    0.975,
+    0.75
+   ],
+   "end": [
+    0.975,
+    0.65
+   ],
+   "attempt": 1
+  },
+  {
+   "overlap_rows": 3,
+   "score": 0.9922997826620492,
+   "margin": 0.08297182171248751
+  },
+  {
+   "input": "drag_scroll",
+   "start": [
+    0.975,
+    0.75
+   ],
+   "end": [
+    0.975,
+    0.65
+   ],
+   "attempt": 1
+  },
+  {
+   "overlap_rows": 3,
+   "score": 0.9899965966571338,
+   "margin": 0.04810122707975917
+  }
+ ],
+ "inputs_and_captures": [
+  {
+   "capture": "frame-00.png"
+  },
+  {
+   "input": "click",
+   "x": 0.841015,
+   "y": 0.159027,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-01.png"
+  },
+  {
+   "input": "click",
+   "x": 0.113281,
+   "y": 0.21493,
+   "cleanup": false
+  },
+  {
+   "input": "click",
+   "x": 0.117383,
+   "y": 0.289583,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-02.png"
+  },
+  {
+   "input": "click",
+   "x": 0.595898,
+   "y": 0.827778,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-03.png"
+  },
+  {
+   "capture": "frame-04.png"
+  },
+  {
+   "input": "drag_scroll",
+   "start": [
+    0.975,
+    0.75
+   ],
+   "end": [
+    0.975,
+    0.65
+   ]
+  },
+  {
+   "capture": "frame-05.png"
+  },
+  {
+   "capture": "frame-06.png"
+  },
+  {
+   "capture": "frame-07.png"
+  },
+  {
+   "input": "drag_scroll",
+   "start": [
+    0.975,
+    0.75
+   ],
+   "end": [
+    0.975,
+    0.65
+   ]
+  },
+  {
+   "capture": "frame-08.png"
+  },
+  {
+   "capture": "frame-09.png"
+  },
+  {
+   "capture": "frame-10.png"
+  },
+  {
+   "input": "drag_scroll",
+   "start": [
+    0.975,
+    0.75
+   ],
+   "end": [
+    0.975,
+    0.65
+   ]
+  },
+  {
+   "capture": "frame-11.png"
+  },
+  {
+   "capture": "frame-12.png"
+  },
+  {
+   "capture": "frame-13.png"
+  }
+ ],
+ "frames": {
+  "frame-00.png": "86a1e24fcc23b41bd89c6a75594e27179815c032f74b5cac1ea75d3e028d6e23",
+  "frame-01.png": "47ccbbe8bc5b2dd97c34829c3619a6eed9cb54bc74021da6ca4c8b091dd79621",
+  "frame-02.png": "e6522ca9843a24a2f6b4482af7b6361e91c523113c639c73b413d86da903090d",
+  "frame-03.png": "ec4b823f088193ad130a1220a76e0c6a9bb85960d460e08e1c4e59b6cd91a598",
+  "frame-04.png": "cc52f45401c804d2c5f5046abd4d6fdef2f99d0b24e94ae322f6a392df318d66",
+  "frame-05.png": "ded17e56d2539d6b93d930a43664621e2c2935136ce00669a33f8cd223333421",
+  "frame-06.png": "723ce45f7d497dc494a876bc011bf95126a57a5389f20365826d74c58d5155ba",
+  "frame-07.png": "a6b3c169cb5ee1674954cff60f43c4b8281638e1b518b3d4caffdf41fc1e7ab4",
+  "frame-08.png": "74a8206bf759bd0a1070d56cfa30fe034979f0d208f821772a1f8c93094d8323",
+  "frame-09.png": "515601f9a450021a0416d8a971d36973d57cbf493f4928465f611a0d77ae940d",
+  "frame-10.png": "28fad91c16bfc1e5b50dc4def1e3da037b078dbad9fa5f6b77b24f571e660d4b",
+  "frame-11.png": "1a7101a5aff65c10ece7de5b7e83461365047ab0d3f0e90a04a0e887a4a67b34",
+  "frame-12.png": "de0d43a678acd239507b67c7b716ead436efcbe6262616884c4c8caa47d547a2",
+  "frame-13.png": "23aa1b90e2db3fe95cab356784d37e4d6938f0dc00abe418d12dcc08bfec3916"
+ }
+}

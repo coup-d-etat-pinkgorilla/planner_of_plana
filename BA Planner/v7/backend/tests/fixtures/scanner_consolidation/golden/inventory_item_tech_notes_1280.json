@@ -1,0 +1,500 @@
+{
+ "inputs": [
+  {
+   "cleanup": false,
+   "from": "grid_initial",
+   "input": "click",
+   "names": [
+    "filtermenu_button"
+   ],
+   "to": "menu_sort",
+   "x": 0.841015,
+   "y": 0.159027
+  },
+  {
+   "cleanup": false,
+   "from": "menu_sort",
+   "input": "click",
+   "names": [
+    "filter_tab"
+   ],
+   "to": "menu_filter_tab",
+   "x": 0.113281,
+   "y": 0.21493
+  },
+  {
+   "cleanup": false,
+   "from": "menu_filter_tab",
+   "input": "click",
+   "names": [
+    "filter_reset_button"
+   ],
+   "to": "menu_reset",
+   "x": 0.867773,
+   "y": 0.226042
+  },
+  {
+   "cleanup": false,
+   "from": "menu_reset",
+   "input": "click",
+   "names": [
+    "note_filter"
+   ],
+   "to": "menu_category",
+   "x": 0.227149,
+   "y": 0.488889
+  },
+  {
+   "cleanup": false,
+   "from": "menu_category",
+   "input": "click",
+   "names": [
+    "sort_tab"
+   ],
+   "to": "menu_sort",
+   "x": 0.117383,
+   "y": 0.289583
+  },
+  {
+   "cleanup": false,
+   "from": "menu_sort",
+   "input": "click",
+   "names": [
+    "filter_confirm_button"
+   ],
+   "to": "page0",
+   "x": 0.595898,
+   "y": 0.827778
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[1]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.6695,
+   "y": 0.2875
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[2]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.7547,
+   "y": 0.2875
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[3]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.8398,
+   "y": 0.2875
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [
+    "grid_slots[4]"
+   ],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.925,
+   "y": 0.2875
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.5844,
+   "y": 0.4285
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.6695,
+   "y": 0.4285
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.7547,
+   "y": 0.4285
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.8398,
+   "y": 0.4285
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.925,
+   "y": 0.4285
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.5844,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.6695,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.7547,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.8398,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.925,
+   "y": 0.5687
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.5844,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.6695,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.7547,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.8398,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.925,
+   "y": 0.709
+  },
+  {
+   "cleanup": false,
+   "from": "page0",
+   "input": "click",
+   "names": [],
+   "to": "page0",
+   "unmapped": true,
+   "x": 0.925,
+   "y": 0.5687
+  }
+ ],
+ "progress": [
+  [
+   1,
+   null,
+   "scanner.inventory.grid",
+   null
+  ]
+ ],
+ "result": {
+  "candidates": [
+   {
+    "_answer_specimen": {
+     "slot_crops": {
+      "0": {
+       "image": {
+        "mode": "RGB",
+        "sha256": "472f225a23baea0b39d69864988dfe08653f37cd59f4afd0518fc3fb72a735f3",
+        "size": [
+         117,
+         96
+        ]
+       }
+      }
+     },
+     "source_size": [
+      1280,
+      720
+     ]
+    },
+    "evidence": [
+     {
+      "confidence": 0.9595773470408853,
+      "field": "entries[0].item_id",
+      "note": "margin=0.034808",
+      "source": "inventory_detail_template",
+      "status": "ok"
+     },
+     {
+      "confidence": 0.846605368373429,
+      "field": "entries[0].quantity",
+      "note": "",
+      "source": "inventory_detail_count",
+      "status": "ok"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[1]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[2]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[3]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[4]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[5]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[6]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[7]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[8]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[9]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[10]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[11]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[12]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[13]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[14]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[15]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[16]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[17]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[18]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "slots[19]",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "source": "inventory_detail_panel",
+      "status": "partial"
+     },
+     {
+      "confidence": 0.0,
+      "field": "scan_coverage",
+      "note": "inventory_detail_unconfirmed",
+      "source": "scan_interrupted",
+      "status": "partial"
+     }
+    ],
+    "payload": {
+     "catalog_revision": "171caccc05d444f1ef0b1116263adce5d55f1433bef65d3358238d0fe1cf6441",
+     "entries": [
+      {
+       "inventory_scan_profile": "tech_notes",
+       "item_id": "Item_Icon_SkillBook_Hyakkiyako_0",
+       "key": "Item_Icon_SkillBook_Hyakkiyako_0",
+       "name": null,
+       "observed_slot": 0,
+       "profile_id": "tech_notes",
+       "quantity": "2347"
+      }
+     ],
+     "version": 1
+    },
+    "review_required": true
+   }
+  ],
+  "coverage_complete": false,
+  "error": {
+   "code": "inventory_detail_unconfirmed",
+   "details": {},
+   "message": "selection unresolved after three captures"
+  },
+  "outcome": "failed",
+  "screen_state": "unknown"
+ },
+ "scenario": "inventory_item_tech_notes_1280",
+ "screens_captured": [
+  "grid_initial",
+  "menu_sort",
+  "menu_filter_tab",
+  "menu_reset",
+  "menu_category",
+  "menu_sort",
+  "page0"
+ ]
+}
