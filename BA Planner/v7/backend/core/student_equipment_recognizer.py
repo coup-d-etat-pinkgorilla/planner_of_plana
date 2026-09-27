@@ -16,6 +16,11 @@ from core.student_scan_recognizer import Observation, StudentBasicCropSet
 from core.studio_numeric_bank import StudioNumericBank
 from core.student_equipment_recovery import favorite_dot_state
 from core import recognition_thresholds as rt
+from core.recognition_image_ops import ncc_unit_bilinear, mean_difference
+
+# Private aliases kept until C6 for tools/tests that import the old names (C5c).
+_normalized_correlation = ncc_unit_bilinear
+_mean_difference = mean_difference
 
 
 EQUIPMENT_MAX_LEVEL = {
@@ -38,28 +43,6 @@ def _pixels(image: Image.Image):
 def equipment_level_matches_tier(level: int, tier: str) -> bool:
     maximum = EQUIPMENT_MAX_LEVEL.get(tier)
     return maximum is not None and 1 <= level <= maximum
-
-
-def _mean_difference(left: Image.Image, right: Image.Image) -> float:
-    right = right.resize(left.size, Image.Resampling.BILINEAR)
-    stat = ImageStat.Stat(ImageChops.difference(left, right))
-    return max(0.0, 1.0 - sum(stat.mean) / (len(stat.mean) * 255.0))
-
-
-def _normalized_correlation(left: Image.Image, right: Image.Image) -> float:
-    right = right.resize(left.size, Image.Resampling.BILINEAR)
-    a = list(_pixels(left.convert("L")))
-    b = list(_pixels(right.convert("L")))
-    if not a:
-        return 0.0
-    mean_a = sum(a) / len(a)
-    mean_b = sum(b) / len(b)
-    numerator = sum((x - mean_a) * (y - mean_b) for x, y in zip(a, b))
-    denominator_a = sum((x - mean_a) ** 2 for x in a) ** 0.5
-    denominator_b = sum((y - mean_b) ** 2 for y in b) ** 0.5
-    if denominator_a == 0.0 or denominator_b == 0.0:
-        return 0.0
-    return max(0.0, min(1.0, numerator / (denominator_a * denominator_b)))
 
 
 def _normalize_gray(image: Image.Image) -> Image.Image:

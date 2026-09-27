@@ -12,6 +12,15 @@ from core.recognition_assets import RecognitionAssetCatalog
 from core.scanner_session import ScannerError
 from core.studio_numeric_bank import StudioNumericBank, StudioNumericMatch
 from core import recognition_thresholds as rt
+from core.recognition_image_ops import pixels, mask_from_predicate, normalize_mask, binary_iou, otsu_binary, ncc_difference_score
+
+# Private aliases kept until C6 for tools/tests that import the old names (C5c).
+_pixels = pixels
+_mask_from_predicate = mask_from_predicate
+_normalize_mask = normalize_mask
+_binary_iou = binary_iou
+_otsu_binary = otsu_binary
+_ncc_difference_score = ncc_difference_score
 
 
 S2_VALUE_FIELDS = (
@@ -19,11 +28,6 @@ S2_VALUE_FIELDS = (
     "weapon_state", "weapon_star", "weapon_level", "combat_hp", "combat_atk",
     "combat_def", "combat_heal",
 )
-
-
-def _pixels(image: Image.Image):
-    flattened = getattr(image, "get_flattened_data", None)
-    return flattened() if flattened is not None else image.getdata()
 
 
 def ratio_crop(image: Image.Image, region: dict[str, Any]) -> Image.Image:
@@ -191,103 +195,14 @@ class _SkillTemplateSample:
     text: Image.Image
 
 
-def _mask_from_predicate(image: Image.Image, predicate) -> Image.Image:
-    rgb = image.convert("RGB")
-    result = Image.new("L", rgb.size)
-    result.putdata([255 if predicate(pixel) else 0 for pixel in _pixels(rgb)])
-    return result
-
-
-def _normalize_mask(mask: Image.Image, *, size: tuple[int, int] = (20, 28), padding: int = 2) -> Image.Image | None:
-    source = mask.convert("L").point(lambda value: 255 if value >= 127 else 0)
-    box = source.getbbox()
-    if box is None:
-        return None
-    glyph = source.crop(box)
-    target_width = max(1, size[0] - padding * 2)
-    target_height = max(1, size[1] - padding * 2)
-    scale = min(target_width / glyph.width, target_height / glyph.height)
-    resized = glyph.resize(
-        (max(1, round(glyph.width * scale)), max(1, round(glyph.height * scale))),
-        Image.Resampling.NEAREST,
-    )
-    result = Image.new("L", size)
-    result.paste(resized, ((size[0] - resized.width) // 2, (size[1] - resized.height) // 2))
-    return result
-
-
-def _binary_iou(left: Image.Image, right: Image.Image) -> float:
-    a = left.convert("L")
-    b = right.convert("L").resize(a.size, Image.Resampling.NEAREST)
-    left_bits = [value >= 127 for value in _pixels(a)]
-    right_bits = [value >= 127 for value in _pixels(b)]
-    intersection = sum(x and y for x, y in zip(left_bits, right_bits))
-    union = sum(x or y for x, y in zip(left_bits, right_bits))
-    return intersection / union if union else 0.0
-
-
-def _otsu_binary(image: Image.Image, *, inverse: bool = False) -> Image.Image:
-    gray = image.convert("L")
-    histogram = gray.histogram()
-    pixel_count = sum(histogram)
-    weighted_total = sum(index * count for index, count in enumerate(histogram))
-    background_weight = 0
-    background_total = 0
-    best_variance = -1.0
-    threshold = 0
-    for index, count in enumerate(histogram):
-        background_weight += count
-        if background_weight == 0:
-            continue
-        foreground_weight = pixel_count - background_weight
-        if foreground_weight == 0:
-            break
-        background_total += index * count
-        background_mean = background_total / background_weight
-        foreground_mean = (weighted_total - background_total) / foreground_weight
-        variance = (
-            background_weight
-            * foreground_weight
-            * (background_mean - foreground_mean) ** 2
-        )
-        if variance > best_variance:
-            best_variance = variance
-            threshold = index
-    return gray.point(
-        lambda value: 255
-        if (value <= threshold if inverse else value > threshold)
-        else 0
-    )
-
-
-def _ncc_difference_score(left: Image.Image, right: Image.Image) -> float:
-    right = right.resize(left.size, Image.Resampling.BILINEAR).convert("L")
-    left = left.convert("L")
-    left_values = list(_pixels(left))
-    right_values = list(_pixels(right))
-    if not left_values:
-        return 0.0
-    left_mean = sum(left_values) / len(left_values)
-    right_mean = sum(right_values) / len(right_values)
-    numerator = sum(
-        (left_value - left_mean) * (right_value - right_mean)
-        for left_value, right_value in zip(left_values, right_values)
-    )
-    left_norm = sum((value - left_mean) ** 2 for value in left_values) ** 0.5
-    right_norm = sum((value - right_mean) ** 2 for value in right_values) ** 0.5
-    correlation = numerator / (left_norm * right_norm) if left_norm and right_norm else 0.0
-    difference = ImageStat.Stat(ImageChops.difference(left, right)).mean[0] / 255.0
-    return 0.70 * correlation + 0.30 * (1.0 - difference)
-
-
-def _skill_ui_feature(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+def skill_ui_feature(image: Image.Image, size: tuple[int, int]) -> Image.Image:
     gray = image.convert("L").resize(size, Image.Resampling.BILINEAR)
     equalized = ImageOps.equalize(gray)
     blurred = equalized.filter(ImageFilter.GaussianBlur(radius=0.8))
     return _otsu_binary(blurred)
 
 
-def _skill_text_feature(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+def skill_text_feature(image: Image.Image, size: tuple[int, int]) -> Image.Image:
     gray = image.convert("L").resize(size, Image.Resampling.BILINEAR)
     mask = _otsu_binary(
         gray.filter(ImageFilter.GaussianBlur(radius=0.8)),
@@ -305,7 +220,7 @@ def _skill_text_feature(image: Image.Image, size: tuple[int, int]) -> Image.Imag
     return mask.crop(padded).resize((96, 30), Image.Resampling.BILINEAR)
 
 
-def _rank_glyph(glyph: Image.Image | None, templates: dict[str, tuple[Image.Image, ...]]) -> tuple[str | None, float, float]:
+def rank_glyph(glyph: Image.Image | None, templates: dict[str, tuple[Image.Image, ...]]) -> tuple[str | None, float, float]:
     if glyph is None:
         return None, 0.0, 0.0
     ranked = sorted(
@@ -319,6 +234,12 @@ def _rank_glyph(glyph: Image.Image | None, templates: dict[str, tuple[Image.Imag
     if not ranked:
         return None, 0.0, 0.0
     return ranked[0][0], ranked[0][1], ranked[0][1] - (ranked[1][1] if len(ranked) > 1 else 0.0)
+
+
+# Private aliases kept until C6 for tools/tests that import the old names (C5c).
+_rank_glyph = rank_glyph
+_skill_ui_feature = skill_ui_feature
+_skill_text_feature = skill_text_feature
 
 
 def relationship_rank_glyphs(crop: Image.Image) -> tuple[Image.Image, ...]:
@@ -496,8 +417,8 @@ class StudentBasicRecognizer:
             grouped[group].setdefault(label, []).append(
                 _SkillTemplateSample(
                     size=rgb.size,
-                    ui=_skill_ui_feature(rgb, rgb.size),
-                    text=_skill_text_feature(rgb, rgb.size),
+                    ui=skill_ui_feature(rgb, rgb.size),
+                    text=skill_text_feature(rgb, rgb.size),
                 )
             )
         if not grouped["ex"] or not grouped["normal"]:
@@ -610,8 +531,8 @@ class StudentBasicRecognizer:
                 crop_features.setdefault(
                     sample.size,
                     (
-                        _skill_ui_feature(crop, sample.size),
-                        _skill_text_feature(crop, sample.size),
+                        skill_ui_feature(crop, sample.size),
+                        skill_text_feature(crop, sample.size),
                     ),
                 )
         ranked = sorted(
@@ -708,7 +629,7 @@ class StudentBasicRecognizer:
         )
         midpoint = mask.width // 2
         cells = (mask.crop((0, 0, max(1, midpoint - 3), mask.height)), mask.crop((midpoint + 3, 0, mask.width, mask.height)))
-        results = [_rank_glyph(_normalize_mask(cell), self.level_templates) for cell in cells]
+        results = [rank_glyph(_normalize_mask(cell), self.level_templates) for cell in cells]
         second_occupancy = sum(value >= 127 for value in _pixels(cells[1])) / max(1, cells[1].width * cells[1].height)
         selected = results if second_occupancy >= rt.value("student.level.basic.second_digit_occupancy") else results[:1]
         if any(label is None for label, _score, _margin in selected):
@@ -771,7 +692,7 @@ class StudentBasicRecognizer:
         ) / max(1, crop.width * crop.height)
         if pink_ratio < rt.value("student.relationship.pink_ratio_min"):
             return Observation(None, 0.0, "uncertain", "relationship_rank_glyph", "rank heart missing")
-        label, score, margin = _rank_glyph(relationship_rank_mask(crop), self.relationship_rank_templates)
+        label, score, margin = rank_glyph(relationship_rank_mask(crop), self.relationship_rank_templates)
         if label is None:
             return Observation(None, 0.0, "uncertain", "relationship_rank_glyph", "glyph missing")
         whole_value = int(label)
@@ -782,7 +703,7 @@ class StudentBasicRecognizer:
             if len(glyphs) != digit_count:
                 continue
             ranked_digits = [
-                _rank_glyph(glyph, self.relationship_rank_digit_templates)
+                rank_glyph(glyph, self.relationship_rank_digit_templates)
                 for glyph in glyphs
             ]
             if any(item[0] is None for item in ranked_digits):
@@ -888,7 +809,7 @@ class StudentBasicRecognizer:
             occupancy = sum(value >= 127 for value in _pixels(cell)) / max(1, cell.width * cell.height)
             if index == 1 and occupancy < rt.value("student.weapon.basic.second_digit_occupancy"):
                 break
-            selected.append(_rank_glyph(_normalize_mask(cell), self.weapon_level_templates))
+            selected.append(rank_glyph(_normalize_mask(cell), self.weapon_level_templates))
         if not selected or any(label is None for label, _score, _margin in selected):
             legacy_value, score, margin = None, 0.0, 0.0
         else:
@@ -1038,7 +959,7 @@ class StudentBasicRecognizer:
                 label: local.get(label, samples)
                 for label, samples in self.combat_templates.items()
             }
-            label, score, margin = _rank_glyph(_normalize_mask(mask), templates)
+            label, score, margin = rank_glyph(_normalize_mask(mask), templates)
             if label is None or score < rt.value("student.combat.digit.score") or margin < rt.value("student.combat.digit.margin"):
                 return Observation(None, score, "uncertain", "basic_combat_digit", f"group={group};position={position + 1};label={label};margin={margin:.6f}")
             digits.append(label)

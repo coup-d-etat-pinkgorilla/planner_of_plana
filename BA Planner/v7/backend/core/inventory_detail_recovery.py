@@ -7,7 +7,7 @@ from core import recognition_thresholds as rt
 from core.scanner_session import ScannerError
 from core.scan_context import ScanContext
 from core.student_scan_recognizer import ratio_crop, quad_crop
-from core.student_weapon_recognizer import _normalized_correlation as correlation, _color_similarity as color_similarity
+from core.recognition_image_ops import ncc_signed_lanczos as correlation, color_similarity
 
 
 def binary(image):

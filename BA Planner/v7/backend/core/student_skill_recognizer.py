@@ -1,9 +1,8 @@
 """F6 skill observation, independent show-all state and star unlock gates."""
 from PIL import Image, ImageStat
 
-from core.student_scan_recognizer import (
-    Observation, ratio_crop, _skill_ui_feature, _skill_text_feature, _ncc_difference_score,
-)
+from core.recognition_image_ops import ncc_difference_score
+from core.student_scan_recognizer import Observation, ratio_crop, skill_text_feature, skill_ui_feature
 from core.student_weapon_recognizer import StudentWeaponRecognizer
 from core.student_panel_recovery import read_panel_fields
 from core import recognition_thresholds as rt
@@ -48,7 +47,7 @@ class StudentSkillRecognizer:
                     variants = []
                     for size in sorted(sizes):
                         with source.resize(size,Image.Resampling.LANCZOS) as scaled:
-                            variants.append((size,_skill_ui_feature(scaled,size),_skill_text_feature(scaled,size)))
+                            variants.append((size,skill_ui_feature(scaled,size),skill_text_feature(scaled,size)))
                     bank[label] = variants
             self.templates[field] = bank
         return self.templates[field]
@@ -65,9 +64,9 @@ class StudentSkillRecognizer:
                 scores = []
                 for size,ui,text in variants:
                     if size not in features:
-                        features[size] = (_skill_ui_feature(crop,size),_skill_text_feature(crop,size))
+                        features[size] = (skill_ui_feature(crop,size),skill_text_feature(crop,size))
                     current_ui,current_text = features[size]
-                    scores.append(.15*_ncc_difference_score(current_ui,ui)+.85*_ncc_difference_score(current_text,text))
+                    scores.append(.15*ncc_difference_score(current_ui,ui)+.85*ncc_difference_score(current_text,text))
                 ranked.append((max(scores),label))
         finally:
             for ui,text in features.values(): ui.close();text.close()

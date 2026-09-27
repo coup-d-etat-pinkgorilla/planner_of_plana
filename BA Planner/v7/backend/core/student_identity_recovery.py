@@ -7,7 +7,7 @@ from core import student_meta
 from core.scanner_session import ScannerError
 from core.scan_context import ScanContext
 from core.student_scan_recognizer import ratio_crop
-from core.student_weapon_recognizer import _normalized_correlation, _color_similarity
+from core.recognition_image_ops import color_similarity, ncc_signed_lanczos
 from core import recognition_thresholds as rt
 
 
@@ -38,8 +38,8 @@ class StudentIdentityRecognizer:
         result = {}
         for field in ('attack_type', 'defense_type', 'position', 'combat_class', 'role'):
             with ratio_crop(frame, self.regions['basic_attribute_'+field]) as crop:
-                scores = sorted(((key.split(':')[1], .7*_normalized_correlation(crop, template)
-                    + .3*_color_similarity(crop, template)) for key, template in self.templates.items()
+                scores = sorted(((key.split(':')[1], .7*ncc_signed_lanczos(crop, template)
+                    + .3*color_similarity(crop, template)) for key, template in self.templates.items()
                     if key.startswith(field+':')), key=lambda x: x[1], reverse=True)
             if len(scores) >= 2 and scores[0][1] >= rt.value("student.entry.screen.score") and scores[0][1]-scores[1][1] >= rt.value("student.entry.screen.margin"):
                 result[field] = scores[0][0]
@@ -115,7 +115,7 @@ class StudentEntryRecovery:
         for state, template in self.templates.items():
             region = state+'_flag_native_1280' if state == 'lobby' and frame.size == (1280, 720) else state+'_flag'
             with ratio_crop(frame, self.regions[region]) as crop:
-                score = .35*_normalized_correlation(crop, template)+.65*_color_similarity(crop, template)
+                score = .35*ncc_signed_lanczos(crop, template)+.65*color_similarity(crop, template)
             if score >= rt.value("student.entry.list_card.score"):
                 states.append(state)
         return states[0] if len(states) == 1 else 'unknown'

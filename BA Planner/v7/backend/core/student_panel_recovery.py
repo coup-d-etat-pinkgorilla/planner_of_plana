@@ -10,7 +10,7 @@ from PIL import Image, ImageStat
 from core.scanner_session import ScannerError
 from core.scan_context import ScanContext
 from core.student_scan_recognizer import Observation, ratio_crop
-from core.student_weapon_recognizer import _color_similarity, _normalized_correlation
+from core.recognition_image_ops import color_similarity, ncc_signed_lanczos
 from core import recognition_thresholds as rt
 
 
@@ -106,8 +106,8 @@ class StudentPanelRecognizer:
         for state, template in self.templates.items():
             crop = ratio_crop(frame, self.regions[TAB_KEYS.get(state, "title")])
             try:
-                correlation = _normalized_correlation(crop, template)
-                color = _color_similarity(crop, template)
+                correlation = ncc_signed_lanczos(crop, template)
+                color = color_similarity(crop, template)
                 # Active tabs depend on both light surface and dark glyphs. A separate
                 # NCC floor tolerates 1280 glyph antialiasing without accepting blank UI.
                 scores[state] = (color if correlation >= rt.value("student.panel.tab.correlation_floor") else 0) if state in TAB_KEYS else .7 * correlation + .3 * color
@@ -134,7 +134,7 @@ class StudentPanelRecognizer:
                 signal = ImageStat.Stat(gray).stddev[0] >= 8
             finally:
                 gray.close()
-            return signal and _color_similarity(current[0], baseline[0]) >= rt.value("student.panel.same_student.name_color") and _color_similarity(current[1], baseline[1]) >= rt.value("student.panel.same_student.portrait_color")
+            return signal and color_similarity(current[0], baseline[0]) >= rt.value("student.panel.same_student.name_color") and color_similarity(current[1], baseline[1]) >= rt.value("student.panel.same_student.portrait_color")
         finally:
             for image in current:
                 image.close()

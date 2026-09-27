@@ -22,7 +22,7 @@ sources:
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
 | C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
 | C4 임계값 레지스트리 | **완료** (2026-09-26, C4a~C4c) | `d4f030e` | — |
-| C5 인식 공통화 | **진행 중: C5a·C5b 완료(실게임 tail 3종 확인)** (2026-09-26) | `43c17b5` | C5c(X15)·C5d(X18)·C5e(X19) |
+| C5 인식 공통화 | **진행 중: C5a·C5b·C5c 완료** (2026-09-27) | `43c17b5` | C5d(배치 선택) |
 | C6~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -600,3 +600,27 @@ C5에서 gate **로직**을 고치고 값 변경은 C7. F9 "선택이 안 보이
   주고, 코드가 보내는 입력이 녹화와 하나라도 다르거나 남거나 모자라면 `ReplayDivergence`로 실패. 시나리오 `replay: "locked"`,
   `frames_local_only: true`면 프레임이 없는 PC에서 skip, 있으면 pixel sha로 검증. `debug/scanner_c5_replay/**/frame-*.png`는 `.gitignore`.
 - 남은 일: 게임을 1280 아이템 화면으로 띄워 기술 노트를 녹화 → 시나리오·golden 추가 → C5c.
+
+### 상세 경로 locked replay (2026-09-27)
+
+- 게임 1280 아이템 화면에서 `3533b11` 코드로 기술 노트를 새로 녹화(`debug/scanner_c5_replay/tech-notes-detail/`, 캡처 220·이벤트 327).
+  결과 45/45, **슬롯 44 = `Item_Icon_SkillBook_Ultimate` ×71**(D18 교정 확인), 말단 검증·순서 확인 `scan_coverage ok`.
+- 시나리오 `inventory_item_tech_notes_detail_locked_1280`(`replay: locked`, `frames_local_only`, trace sha 고정): 재생이 녹화 이벤트
+  327개를 입력 하나 틀리지 않고 전부 소비함을 확인하고 golden을 고정했다(`72feb3f`). trace.json만 추적, 프레임 PNG는 `.gitignore`.
+- replay cancel 토큰(`ReplayCancel`)은 대기를 즉시 반환해 시간만 줄인다(기존 8개 golden same). 남은 재생 시간 ~110s는 순수 파이썬 NCC 비용 —
+  바이트 보존이 필요한 동안 numpy 전환은 하지 않는다(런타임 의존성은 Pillow뿐, `pyproject.toml`).
+
+## C5c — 이미지 유틸 공통화 (X15, 동작 보존) — 완료 (2026-09-27)
+
+- `core/recognition_image_ops.py`: 모듈 간 private import 대상이던 이미지 연산을 **AST로 원문 그대로 추출해** 옮겼다 — `pixels`,
+  `ncc_signed_lanczos`(구 weapon `_normalized_correlation`: 회색, 템플릿 크기로 LANCZOS, 부호 있음 [-1,1]), `color_similarity`,
+  `ncc_unit_bilinear`(구 equipment `_normalized_correlation`: crop 크기로 BILINEAR, [0,1]), `mean_difference`, `mask_from_predicate`,
+  `normalize_mask`, `binary_iou`, `otsu_binary`, `ncc_difference_score`. 산술·평가 순서 동일.
+- E2 **M4** `ncc_per_channel_icon`(타일 아이콘 영역 x 12–88 %·y 6–76 %, 48×48 BILINEAR, 채널별 NCC 평균)을 추가. 아직 인식에 쓰지 않는다(C5e-2).
+  런타임이 Pillow 전용이라 순수 파이썬 구현이다(쌍당 수 ms). C5e-2 fast path 속도가 부족하면 numpy 의존성 추가를 그때 사용자 결정으로 올린다.
+- 인식기 전용 도우미는 `student_scan_recognizer`의 공개 이름으로(`rank_glyph`, `skill_ui_feature`, `skill_text_feature`).
+- core 모듈의 **다른 모듈 private import 0건**(AST 확인). 옛 private 이름은 원 모듈에 alias로 남겨 tools/tests 호환(C6에서 제거) —
+  `test_recognition_image_ops_c5c`가 alias가 이동한 함수와 동일 객체임을 고정.
+- C4 검사기: `recognition_image_ops.py`를 대상에 추가, 0-분모 guard 허용 항목을 equipment에서 옮김.
+- 검증: Python 567+3 OK(golden 9/9 same — **locked 상세 경로 replay 포함, 입력 327개 동일**). Flutter 377 pass / 5 fail → 5파일 단독 25/25(C4-1 부하 timeout).
+- 다음: **C5d** 배치 선택(동작 변경).
