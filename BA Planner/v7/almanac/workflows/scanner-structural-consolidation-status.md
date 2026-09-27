@@ -22,7 +22,7 @@ sources:
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
 | C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
 | C4 임계값 레지스트리 | **완료** (2026-09-26, C4a~C4c) | `d4f030e` | — |
-| C5 인식 공통화 | **진행 중: C5a·C5b·C5c 완료** (2026-09-27) | `43c17b5` | C5d(배치 선택) |
+| C5 인식 공통화 | **진행 중: C5a~C5d 완료** (2026-09-27) | `43c17b5` | C5e-1(gutter 위상) |
 | C6~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -624,3 +624,54 @@ C5에서 gate **로직**을 고치고 값 변경은 C7. F9 "선택이 안 보이
 - C4 검사기: `recognition_image_ops.py`를 대상에 추가, 0-분모 guard 허용 항목을 equipment에서 옮김.
 - 검증: Python 567+3 OK(golden 9/9 same — **locked 상세 경로 replay 포함, 입력 327개 동일**). Flutter 377 pass / 5 fail → 5파일 단독 25/25(C4-1 부하 timeout).
 - 다음: **C5d** 배치 선택(동작 변경).
+
+## C5d — 배치 선택 + X18 계약 정렬 (동작 변경) — 완료 (2026-09-27, 시작 `8e35f72`)
+
+- 계약(`StudentPanelRecovery`의 open/restore 대응): `begin_page(target, cancel, frame, slots)` → `read(...)` × N → `end_page(target)`.
+  `begin_page`는 페이지의 보이는 선택을 기록(안 보이면 관측, 없으면 입력 없이 실패), 열린 세션이 있으면 `inventory_page_active`.
+  `read`는 필요할 때만 클릭(이미 선택된 슬롯은 마지막 검증 프레임으로 읽음), 성공 프레임이 새 baseline.
+  `end_page`는 새 cleanup 토큰으로 **선택을 먼저 관측(F9 a·b)**하고 원선택과 다를 때만 복귀 클릭 — 페이지당 한 번.
+- 재시도: 클릭 후 3캡처 관측이 원선택(직전 선택)을 그대로 보이면(클릭 유실) 최대 2회 재클릭. 다른 슬롯이 선택되면 재시도하지 않는다.
+  선택 미확인 → 그 자리에서 검증 복귀 → 결과 `stop=True` → 어댑터가 슬롯을 partial로 남기고 입력 중단(`failed`, 기존 entry 보존, zero-fill 없음).
+  선택이 확인된 뒤 패널 읽기만 실패하면 슬롯 partial, 배치 계속(C5c까지와 같은 슬롯 결과).
+- 어댑터: `_read_page`가 첫 상세 읽기에서 세션을 열고 `finally`에서 닫는다(취소·예외도 같은 경로). scroll anchor는 세션 밖에서 그대로(C5e-1에서 제거).
+- `resolve()`(슬롯마다 선택→읽기→복귀)는 제거. 호출자는 어댑터와 F9 테스트뿐이었다.
+- **빈 타일 판정(실게임에서 발견, 같은 slice에서 수정)**: 선물 첫 실행이 마지막 행(56번 1칸 + 빈칸 4)에서 빈 타일을 채워진 칸으로 보고
+  클릭 → 선택 불변 3회 → `inventory_detail_unconfirmed`로 중단했다. `image_has_visible_content`는 캡처 여백(검정)만 거르고 빈 타일(단색 회색)은
+  통과시켰다 — C5b까지는 모든 tail이 꽉 찬 행으로 끝나 드러나지 않았고, 걸렸다면 partial·review·zero-fill 없음이 됐을 잠재 결함.
+  타일 안쪽(18~82 %) 회색 표준편차 ≤ `inventory.empty_tile.stddev`(**신규 8.0**, intensity, C5; 실측 빈칸 0.0·평균 204, 채움 최소 34.8)이면 빈칸.
+  같은 함수를 쓰는 anchor 선택·`_require_tail_read`도 함께 바로잡힌다. 기존 임계값 변경 없음.
+
+### C5d 실게임 1280 결과 (2026-09-27)
+
+| 실행 | 결과 | 클릭(cleanup) | 캡처 | 소요 | C5b 대비 |
+|---|---|---|---|---|---|
+| 기술 노트 (`debug/scanner_c5_replay/tech-notes-detail-c5d`) | **45/45**, 슬롯 44 = `SkillBook_Ultimate`, `scan_coverage ok`, zero-fill 0 | 62 (6) | 99 | 130 s | 녹화 `3533b11`과 entry 45개 identity·수량 동일. 클릭 100→62, 캡처 220→99 |
+| 선물 (`debug/scanner_c5d_live/presents-full`) | **56 관측 + 19 zero-fill**, `scan_coverage ok` | 77 (8) | 123 | 162 s | C5b와 entry 75개 동일. 클릭 128→77, 캡처 301→123 |
+| 장비 (`debug/scanner_c5d_live/equipment-full`) | 95 관측, 말단 도달, `partial`(C5-1 범용 설계도 9칸·K 표기 수량 — C5b와 같은 사유) | 137 (16) | 272 | **205 s** | C5b 약 10분. 클릭 225→137, 캡처 916→272 |
+| 장비 취소 (`equipment-cancel`, 30캡처 후) | `cancelled`, 보존 후보 partial, zero-fill 없음 | cleanup 1회로 원선택 검증 복귀 | 33 | 26 s | — |
+
+- 장비 수량 차이 5건 중 4건(Exp_3 34, C_2 227, C_3 5, Z_1 1251)은 상세 패널·타일 표기와 일치 — C5b 이후 실제 보유량 변화.
+  1건(`WeaponExpGrowthC_1` 상세 ×11223)은 `weak_digit_match`로 미확정(C5b는 ×11193 판독) → **발견 C5d-1**.
+- 선물 첫 실행(빈 타일 결함)은 `debug/scanner_c5d_live/presents-full-failed`에 보존.
+- 페이지 끝 복귀가 anchor 클릭 직전에 원선택으로 돌아가므로 페이지당 cleanup 1회 + anchor 1회가 남는다 — anchor는 C5e-1에서 제거.
+
+### C5d golden
+
+- 의도된 diff 3건(재고 golden 전부), 학생 golden 6/6 same.
+  - `inventory_item_tech_notes_1280`, `inventory_equipment_1280`(화면 상태 replay): 정지 프레임이라 선택이 바뀌지 않는다. C5c까지는 슬롯마다
+    클릭→미확인→복귀를 반복해 모든 칸을 partial로 남겼고, C5d는 원선택 슬롯 0을 클릭 없이 읽은 뒤 슬롯 1을 3회(1+재시도 2) 클릭하고
+    `inventory_detail_unconfirmed`로 **입력 중단**(`failed`, entry 1개 보존, zero-fill 없음). 계약대로의 변화.
+  - `inventory_item_tech_notes_detail_locked_1280`: 녹화를 C5d 코드의 실게임 기록(`tech-notes-detail-c5d`, trace sha `62f68e0f…`)으로 교체하고
+    재생이 녹화 입력을 전부 그대로 소비함을 확인한 뒤 고정(45/45, 슬롯 44 Ultimate, coverage ok). 옛 녹화 trace는 비교 기록으로 남긴다.
+- 검증: Python **576 OK**(C5d 테스트 +7: 순차 선택·한 번 복귀, 재시도 2회 뒤 중단, 다른 슬롯 선택 시 재시도 없음, 두 번째 세션 거부,
+  읽기 실패 시 배치 유지, 어댑터 세션 1회 열고 닫기, 미확인 시 partial·입력 중단 + 빈 타일). Flutter는 변경 없음(프로토콜·코드 매핑 영향 없음) — 미실행.
+- 미검증: 학생 단일 스캔 회귀(학생 코드 미변경) — C5e-1 실게임 검증 때 함께.
+
+### C5d 발견 사항 (다른 slice)
+
+- **C5d-1** (C5e-3): 장비 상세 5자리 수량 `x11223`이 `weak_digit_match` — 수량 은행 경로에서 다룬다.
+
+### 다음 행동
+
+- **C5e-1** gutter 위상 검출(`_align_to_anchor`·스크롤 전 anchor 클릭 대체). 실게임 1280 세 프로필 tail + 학생 단일 스캔 회귀.

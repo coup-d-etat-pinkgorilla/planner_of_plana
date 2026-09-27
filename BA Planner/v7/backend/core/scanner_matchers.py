@@ -251,7 +251,12 @@ def image_has_visible_content(image: Image.Image) -> bool:
     luminance = image.convert("L")
     histogram = luminance.histogram()
     visible = sum(histogram[13:])
-    return visible / max(1, luminance.width * luminance.height) >= rt.value("inventory.visible_content.ratio")
+    if visible / max(1, luminance.width * luminance.height) < rt.value("inventory.visible_content.ratio"):
+        return False
+    # C5d: an empty grid tile at the list end is one flat grey; filled tiles carry icon and count texture.
+    width, height = luminance.size
+    with luminance.crop((int(width * .18), int(height * .18), int(width * .82), int(height * .82))) as inner:
+        return ImageStat.Stat(inner).stddev[0] > rt.value("inventory.empty_tile.stddev")
 
 
 @dataclass(frozen=True, slots=True)
@@ -1269,6 +1274,8 @@ class _InventoryScan:
     read_until: int = -1
     anchored: int | None = None
     completed: bool = False
+    page_open: bool = False
+    input_stopped: ScannerError | None = None
 
     def skip(self, index: int, confidence: float, note: str) -> None:
         self.evidence.append({"field": f"slots[{index}]", "status": "skipped",
@@ -1371,23 +1378,30 @@ class InventoryMatcherAdapter:
         if scan.prepared is not None and unread and min(unread) != scan.read_until + 1:
             # A tile row that was never fully visible would otherwise be skipped silently.
             raise ScannerError("inventory_scroll_unverified", f"rows skipped: next visible index {min(unread)} after {scan.read_until}")
-        for position, index in enumerate(sorted(visible)):
-            if index <= scan.read_until:
-                continue
-            if cancel.is_set():
-                raise ScannerError("cancelled", "inventory scan cancelled")
-            crop = ratio_crop(scan.frame, visible[index])
-            try:
-                reading = self._read_slot(scan, index, position, slots, crop, cancel)
-                if reading is None or not self._record_entry(scan, reading, crop):
+        try:
+            for position, index in enumerate(sorted(visible)):
+                if index <= scan.read_until:
                     continue
-                if isinstance(reading.identity, str):
-                    page_ids.append(reading.identity)
-                if reading.status != 'ok' or reading.quantity is None:
-                    page_unresolved = True
-                progress(len(scan.entries), None, "scanner.inventory.grid")
-            finally:
-                crop.close()
+                if cancel.is_set():
+                    raise ScannerError("cancelled", "inventory scan cancelled")
+                crop = ratio_crop(scan.frame, visible[index])
+                try:
+                    reading = self._read_slot(scan, index, position, slots, crop, cancel)
+                    if reading is not None and self._record_entry(scan, reading, crop):
+                        if isinstance(reading.identity, str):
+                            page_ids.append(reading.identity)
+                        if reading.status != 'ok' or reading.quantity is None:
+                            page_unresolved = True
+                        progress(len(scan.entries), None, "scanner.inventory.grid")
+                finally:
+                    crop.close()
+                if scan.input_stopped is not None:
+                    # C5d: an unconfirmed selection already made its verified return; no further input.
+                    raise scan.input_stopped
+        finally:
+            if scan.page_open:
+                scan.page_open = False
+                self.detail_recovery.end_page(scan.target)
         if visible:
             scan.read_until = max(scan.read_until, max(visible))
         if scan.prepared is not None:
@@ -1475,15 +1489,24 @@ class InventoryMatcherAdapter:
 
     def _apply_detail(self, scan: "_InventoryScan", reading: "_SlotReading", position: int, slots: list[dict[str, Any]],
                       match: Match, count: CountMatch, confident: bool, cancel: Event) -> None:
-        outcome = self.detail_recovery.resolve(
-            scan.target, cancel, scan.frame, position, reading.identity, count.value, confident,
+        if not scan.page_open:
+            # C5d batch selection: one page session, slots selected in order, one verified return at the end.
+            self.detail_recovery.begin_page(scan.target, cancel, scan.frame, slots)
+            scan.page_open = True
+        outcome = self.detail_recovery.read(
+            scan.target, cancel, position, reading.identity, count.value, confident,
             profile_verified=scan.target.inventory_profile_verified is True,
-            scan_profile=scan.target.get('inventory_scan_profile'), slots=slots)
+            scan_profile=scan.target.get('inventory_scan_profile'))
         if outcome.failure is not None:
-            # Only a verified return to the original selection makes a failed read partial.
-            if not outcome.restored or outcome.failure.code not in DETAIL_RECOVERABLE_CODES:
+            if outcome.failure.code not in DETAIL_RECOVERABLE_CODES:
                 raise outcome.failure
-            reading.note = outcome.failure.code + ';original selection restored'
+            if outcome.stop:
+                # The session made its verified return already; this slot is partial and input stops.
+                scan.page_open = False
+                scan.input_stopped = outcome.failure
+                reading.note = outcome.failure.code + ';original selection restored;input stopped'
+            else:
+                reading.note = outcome.failure.code + ';selection confirmed;detail unread'
             reading.status = 'partial'
             return
         detail = outcome.detail

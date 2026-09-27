@@ -213,6 +213,8 @@ _ENTRIES = (
     # Inventory scrolling by measured pixel shift (C5, replaces F10 histogram row overlap).
     Threshold("inventory.shift.max_residual", 20.0, "intensity", "C5", C5, "scroll", "verified_pixel_shift",
               note="mean grey difference of the best shift; live good shifts 1.4-9.1"),
+    Threshold("inventory.empty_tile.stddev", 8.0, "intensity", "C5", C5, "slot", "inventory_grid",
+              note="grey stddev of a tile interior at or below this is an empty tile (live empty 0.0 at mean 204; filled min 34.8)"),
     Threshold("inventory.shift.no_motion", 0.004, "ratio", "C5", C5, "scroll_terminal", "verified_no_motion",
               note="shift at or below ~3px of 720 means the drag did not move the list"),
 )

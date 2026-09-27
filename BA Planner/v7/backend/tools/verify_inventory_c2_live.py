@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import sys
+import time
 from pathlib import Path
 from threading import Event
 
@@ -118,7 +119,9 @@ def main() -> None:
         else:
             adapter = InventoryMatcherAdapter(capture, catalog, detail_recovery=InventoryDetailRecovery(capture, detail),
                                               navigation=navigation)
+            started = time.monotonic()
             report["result"] = summarize(adapter(target, cancel, lambda *_args: None))
+            report["elapsed_seconds"] = round(time.monotonic() - started, 1)
         report["navigation_trace"] = navigation.trace
     except ScannerError as exc:
         report["error"] = {"code": exc.code, "message": exc.message, "details": exc.details}
@@ -131,7 +134,7 @@ def main() -> None:
         native.close()
     result = report.get("result", {})
     print(json.dumps({key: report.get(key) for key in ("profile", "error", "scrolled_similarity_to_page0",
-                                                         "restored_similarity_to_page0")} | {
+                                                         "restored_similarity_to_page0", "elapsed_seconds")} | {
         "outcome": result.get("outcome"), "coverage_complete": result.get("coverage_complete"),
         "result_error": result.get("error"),
         "entries": [len(row["payload"]["entries"]) for row in result.get("candidates", [])],

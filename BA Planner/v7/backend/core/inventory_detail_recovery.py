@@ -163,15 +163,39 @@ class InventoryDetailRecognizer:
 
 @dataclass(frozen=True)
 class DetailRecoveryResult:
-    """One detail read. A failure is returned only after the original selection was verified."""
+    """One detail read inside a page session (C5d).
+
+    ``failure`` with ``stop`` means the selection was unconfirmed: the session already made its one
+    verified return and no further input is allowed. Without ``stop`` the selection was confirmed and
+    only the panel read failed, so the batch may continue.
+    """
     detail: DetailResult|None=None
     restored: bool=True
     failure: ScannerError|None=None
+    stop: bool=False
+
+
+@dataclass
+class _PageSelection:
+    source: str
+    slots: list|None
+    original: int
+    selected: int
+    baseline: Image.Image
 
 
 class InventoryDetailRecovery:
+    """Batch detail reads on one verified page (C5d, X18: the StudentPanelRecovery open/restore contract).
+
+    ``begin_page`` records the page's visible selection, ``read`` selects slots in order (1, 2, ... N)
+    with the last verified selection frame as the baseline, and ``end_page`` makes the one verified
+    return to the original selection. F9 holds for every click: a visible selection before it and the
+    same grid after it.
+    """
+    SELECT_RETRIES=2
+
     def __init__(self,capture,recognizer):
-        self.capture,self.recognizer=capture,recognizer;self.trace=[]
+        self.capture,self.recognizer=capture,recognizer;self.trace=[];self.page=None
 
     def same_grid(self,baseline,current,source,slots=None,ignore=()):
         if baseline.size!=current.size or self.recognizer.classify(current)!=source:return False
@@ -186,6 +210,7 @@ class InventoryDetailRecovery:
         return True
 
     def observe_selection(self,target,cancel,baseline,source,expected=None,slots=None):
+        observed=None
         for attempt in range(3):
             if attempt and cancel.wait(.25):raise ScannerError('cancelled','inventory selection cancelled')
             try:frame=self.capture.wait_stable(target,cancel)
@@ -197,21 +222,32 @@ class InventoryDetailRecovery:
             if not self.same_grid(baseline,frame,source,slots,changing):
                 frame.close();raise ScannerError('inventory_page_changed','unverified inventory page; no input')
             if selected is not None and (expected is None or selected==expected):return frame,selected
+            observed=selected if selected is not None else observed
             frame.close()
-        raise ScannerError('inventory_selection_unknown' if expected is None else 'inventory_detail_unconfirmed','selection unresolved after three captures')
+        raise ScannerError('inventory_selection_unknown' if expected is None else 'inventory_detail_unconfirmed',
+                           'selection unresolved after three captures',details={'observed':observed})
+
+    def _click_until(self,target,cancel,baseline,source,slot_index,previous,slots):
+        """Click slot_index until it is the visible selection; re-click only while the previous one still shows."""
+        slot=(slots or self.recognizer.regions['sources'][source]['grid_slots'])[slot_index]
+        context=ScanContext.of(target)
+        for attempt in range(1+self.SELECT_RETRIES):
+            if cancel.is_set():raise ScannerError('cancelled','inventory selection cancelled')
+            self.capture.click(context.replace(cancel=cancel),slot['cx'],slot['cy'])
+            self.trace.append(dict(input='select_slot',slot=slot_index,attempt=attempt+1,cleanup=bool(context.cleanup)))
+            if cancel.wait(.25):raise ScannerError('cancelled','inventory selection cancelled')
+            try:
+                frame,_=self.observe_selection(target,cancel,baseline,source,slot_index,slots)
+                return frame
+            except ScannerError as exc:
+                # A lost click leaves the previous selection visible (F9 a); anything else stops input.
+                if exc.code!='inventory_detail_unconfirmed' or exc.details.get('observed')!=previous or attempt==self.SELECT_RETRIES:raise
 
     def select(self,target,cancel,baseline,source,slot_index,slots=None):
         frame,selected=self.observe_selection(target,cancel,baseline,source,slots=slots)
         if selected==slot_index:return frame
         frame.close()
-        slot=(slots or self.recognizer.regions['sources'][source]['grid_slots'])[slot_index]
-        if cancel.is_set():raise ScannerError('cancelled','inventory selection cancelled')
-        context=ScanContext.of(target)
-        self.capture.click(context.replace(cancel=cancel),slot['cx'],slot['cy'])
-        self.trace.append(dict(input='select_slot',slot=slot_index,cleanup=bool(context.cleanup)))
-        if cancel.wait(.25):raise ScannerError('cancelled','inventory selection cancelled')
-        frame,_=self.observe_selection(target,cancel,baseline,source,slot_index,slots)
-        return frame
+        return self._click_until(target,cancel,baseline,source,slot_index,selected,slots)
 
     def anchor(self,target,cancel,baseline,slot_index,slots=None):
         """Move the visible selection to slot_index before a scroll (C5).
@@ -219,36 +255,40 @@ class InventoryDetailRecovery:
         The next page overlaps this one by at least one row, so a selection anchored in the last
         row stays visible there and later detail reads keep F9's restore-to-visible-selection rule.
         """
+        if self.page is not None:raise ScannerError('inventory_page_active','page selection has not returned safely')
         source=self.recognizer.classify(baseline)
         if source is None:raise ScannerError('inventory_selection_unknown','page unconfirmed; no input')
         self.trace=[]
         with self.select(ScanContext.of(target),cancel,baseline,source,slot_index,slots):pass
         self.trace.append(dict(anchored=slot_index))
 
-    def resolve(self,target,cancel,baseline,slot_index,grid_id,grid_count,grid_confirmed,profile_verified=False,scan_profile=None,slots=None):
-        self.trace=[];source=self.recognizer.classify(baseline)
+    def begin_page(self,target,cancel,frame,slots=None):
+        if self.page is not None:raise ScannerError('inventory_page_active','previous page selection has not returned safely')
+        self.trace=[];source=self.recognizer.classify(frame)
         if cancel.is_set():raise ScannerError('cancelled','inventory detail cancelled before input')
-        original=self.recognizer.selected(baseline,source,slots) if source else None
         if source is None:raise ScannerError('inventory_selection_unknown','page unconfirmed; no input')
-        if original is None:
-            frame,original=self.observe_selection(target,cancel,baseline,source,slots=slots)
-            frame.close()
-        if not 0<=slot_index<len(slots or self.recognizer.regions['sources'][source]['grid_slots']):
+        original=self.recognizer.selected(frame,source,slots)
+        if original is None:baseline,original=self.observe_selection(target,cancel,frame,source,slots=slots)
+        else:baseline=frame.copy()
+        self.page=_PageSelection(source,slots,original,original,baseline)
+
+    def read(self,target,cancel,slot_index,grid_id,grid_count,grid_confirmed,profile_verified=False,scan_profile=None):
+        page=self.page
+        if page is None:raise ScannerError('inventory_page_inactive','detail read has no open page')
+        if cancel.is_set():raise ScannerError('cancelled','inventory detail cancelled before input')
+        if not 0<=slot_index<len(page.slots or self.recognizer.regions['sources'][page.source]['grid_slots']):
             raise ScannerError('inventory_slot_invalid','slot is outside the verified visible grid')
-        result=None;failure=None
-        try:
-            with self.select(target,cancel,baseline,source,slot_index,slots) as frame:result=self.recognizer.read(frame,source)
-        except Exception as exc:failure=exc
-        finally:
-            cleanup=Event()
-            try:
-                with self.select(ScanContext.of(target).replace(cleanup=True,cancel=cleanup),cleanup,baseline,source,original,slots):pass
-                self.trace.append(dict(restored=original))
-            except Exception as exc:raise ScannerError('inventory_restore_failed','original page/selection unverified') from exc
-        if failure:
-            if isinstance(failure,ScannerError):return DetailRecoveryResult(restored=True,failure=failure)
-            raise failure
-        if cancel.is_set():raise ScannerError('cancelled','inventory detail read cancelled after safe restore')
+        if page.selected!=slot_index:
+            try:frame=self._click_until(target,cancel,page.baseline,page.source,slot_index,page.selected,page.slots)
+            except ScannerError as exc:
+                if exc.code!='inventory_detail_unconfirmed':raise
+                # The one verified return happens at the failure; the caller stops input (C5d).
+                self.end_page(target)
+                return DetailRecoveryResult(restored=True,failure=exc,stop=True)
+            page.baseline.close();page.baseline,page.selected=frame,slot_index
+        try:result=self.recognizer.read(page.baseline,page.source)
+        except ScannerError as exc:return DetailRecoveryResult(restored=False,failure=exc)
+        if cancel.is_set():raise ScannerError('cancelled','inventory detail read cancelled')
         if grid_confirmed and result.identity and result.identity!=grid_id:
             return DetailRecoveryResult(DetailResult(grid_id,result.score,result.margin,DetailCount(None,reason='identity_conflict'),'inventory_detail_conflict'))
         profile=BY_KEY.get(grid_id)
@@ -257,3 +297,23 @@ class InventoryDetailRecovery:
             and result.identity in (None,grid_id)):
             return DetailRecoveryResult(DetailResult(grid_id,result.score,result.margin,DetailCount(grid_count,0,'weak_x_match','verified_grid_count_fallback'),'verified_grid_detail_fallback'))
         return DetailRecoveryResult(result)
+
+    def end_page(self,target):
+        """The one verified return to the page's original selection, with a fresh cleanup token."""
+        page=self.page
+        if page is None:return
+        cleanup=Event();context=ScanContext.of(target).replace(cleanup=True,cancel=cleanup)
+        try:
+            # F9 (a): observe the visible selection on the same grid before any cleanup click.
+            frame,current=self.observe_selection(context,cleanup,page.baseline,page.source,slots=page.slots)
+            frame.close()
+            if current!=page.original:
+                with self._click_until(context,cleanup,page.baseline,page.source,page.original,current,page.slots):pass
+            self.trace.append(dict(restored=page.original))
+        except Exception as exc:raise ScannerError('inventory_restore_failed','original page/selection unverified') from exc
+        finally:
+            page.baseline.close();self.page=None
+
+    def close(self):
+        if self.page is not None:
+            self.page.baseline.close();self.page=None

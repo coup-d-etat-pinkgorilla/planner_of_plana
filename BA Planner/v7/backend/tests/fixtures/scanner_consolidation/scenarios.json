@@ -357,9 +357,9 @@
    "scan_kind": "inventory",
    "replay": "locked",
    "frames_local_only": true,
-   "recording": "debug/scanner_c5_replay/tech-notes-detail",
-   "trace_sha256": "35f61425412bec1ec98eaa6849ec371f8cc02d41a66efab125cc1e93a7476271",
-   "coverage": "C5: live 1280 tech notes recorded at 3533b11 with every detail-panel read, anchor re-alignment, measured shifts, 31px-class tail and no-motion end; input-locked (any input difference fails); frames local only",
+   "recording": "debug/scanner_c5_replay/tech-notes-detail-c5d",
+   "trace_sha256": "62f68e0f54d514002537c26e69297ba53859df7b64fa55f18f5a7ad8fcda72be",
+   "coverage": "C5d: live 1280 tech notes re-recorded with batch selection (one page session, one verified return per page) and every detail-panel read, anchor re-alignment, measured shifts, 31px-class tail and no-motion end; input-locked (any input difference fails); frames local only",
    "target": {
     "inventory_scan_profile": "tech_notes"
    }
