@@ -10,7 +10,7 @@ import time
 from typing import Any, Callable
 import uuid
 
-from core.inventory_catalog import BY_KEY as INVENTORY_CATALOG_BY_KEY, CATALOG_REVISION
+from core.inventory_catalog import BY_KEY as INVENTORY_CATALOG_BY_KEY, CATALOG_REVISION, canonical_resource_key
 from core.planning import GrowthPlan, StudentGoal
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, StudentGoalRecord, canonical_json
 from core.repository_merge import resolve_inventory_snapshot
@@ -27,7 +27,11 @@ def rebase_inventory_snapshot(inventory: dict[str, Any]) -> dict[str, Any]:
     entries: list[dict[str, Any]] = []
     for item in snapshot.entries:
         entry = item.to_dict()
-        identity = item.item_id or item.key
+        # D18: an old catalog key (e.g. 비의서 stored as *_Ultimate_Piece) is rebased to the current key.
+        entry["key"] = canonical_resource_key(entry["key"])
+        if entry.get("item_id") is not None:
+            entry["item_id"] = canonical_resource_key(entry["item_id"])
+        identity = entry.get("item_id") or entry["key"]
         catalog_row = INVENTORY_CATALOG_BY_KEY.get(identity)
         if catalog_row is not None:
             if (

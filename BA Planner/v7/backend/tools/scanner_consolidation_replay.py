@@ -135,6 +135,73 @@ class ReplayCapture:
         self.images.clear()
 
 
+class ReplayDivergence(AssertionError):
+    """The code under replay sent an input the locked recording did not contain."""
+
+
+class LockedReplayCapture:
+    """Serves a live recording's captures in order and requires the exact recorded inputs.
+
+    The recording is ``verify_inventory_c2_live.py`` output: ``inputs_and_captures`` in order and
+    the distinct frames it saved. Any different, extra or missing input fails the replay, so a
+    behavior-preserving change must reproduce the live session exactly (C5 detail-path scenario).
+    """
+
+    def __init__(self, recording: Path) -> None:
+        trace = json.loads((recording / "trace.json").read_text(encoding="utf-8"))
+        self.recording = recording
+        self.events = list(trace["inputs_and_captures"])
+        self.position = 0
+        self.inputs: list[dict[str, Any]] = []
+        self.captures: list[str] = []
+
+    def _next(self, kind: str) -> dict[str, Any]:
+        if self.position >= len(self.events):
+            raise ReplayDivergence(f"recording exhausted at event {self.position} ({kind})")
+        event = self.events[self.position]
+        self.position += 1
+        return event
+
+    def _frame(self) -> Image.Image:
+        event = self._next("capture")
+        if "capture" not in event:
+            raise ReplayDivergence(f"event {self.position - 1}: code captured, recording has {event}")
+        self.captures.append(event["capture"])
+        with Image.open(self.recording / event["capture"]) as source:
+            return source.convert("RGB")
+
+    def _input(self, record: dict[str, Any]) -> None:
+        event = self._next(record["input"])
+        expected = {key: event.get(key) for key in record}
+        if expected != record:
+            raise ReplayDivergence(f"event {self.position - 1}: code sent {record}, recording has {event}")
+        self.inputs.append(record)
+
+    def capture(self, _target, *, cancel=None, timeout=2.0):
+        return self._frame()
+
+    def wait_stable(self, _target, cancel: Event, timeout: float = 2.0):
+        return self._frame()
+
+    def click(self, target, x_ratio, y_ratio):
+        self._input({"input": "click", "x": round(float(x_ratio), 6), "y": round(float(y_ratio), 6),
+                     "cleanup": bool(target.get("_scanner_cleanup", False))})
+
+    def scroll(self, _target, delta):
+        self._input({"input": "scroll", "delta": delta})
+
+    def drag_scroll(self, _target, start, end):
+        self._input({"input": "drag_scroll", "start": list(start), "end": list(end)})
+
+    def press_key(self, _target, key):
+        self._input({"input": "key", "key": key})
+        return True
+
+    def close(self) -> None:
+        if self.position != len(self.events):
+            raise ReplayDivergence(f"code stopped at event {self.position} of {len(self.events)}")
+
+
 def build_student_matcher(capture, catalog, answer_samples):
     """Same graph as core.scanner_runtime.build_scanner_service with the replay port."""
     panels = StudentPanelRecovery(capture, catalog)
@@ -209,6 +276,21 @@ def _close_images(value: Any) -> None:
 
 def verify_inputs(scenario: dict[str, Any]) -> list[str]:
     """Return screen names whose recorded frame is missing or differs from its pinned digest."""
+    if scenario.get("replay") == "locked":
+        recording = V7_ROOT / scenario["recording"]
+        trace = recording / "trace.json"
+        if not trace.is_file() or file_sha256(trace) != scenario["trace_sha256"]:
+            return ["trace.json"]
+        problems = []
+        for name, digest in json.loads(trace.read_text(encoding="utf-8"))["frames"].items():
+            path = recording / name
+            if not path.is_file():
+                problems.append(name)
+                continue
+            with Image.open(path) as image:
+                if hashlib.sha256(image.convert("RGB").tobytes()).hexdigest() != digest:
+                    problems.append(name)
+        return problems
     problems = []
     for name, screen in scenario["screens"].items():
         path = V7_ROOT / screen["path"]
@@ -219,7 +301,8 @@ def verify_inputs(scenario: dict[str, Any]) -> list[str]:
 
 def run_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
     catalog = RecognitionAssetCatalog()
-    capture = ReplayCapture(scenario, control_index(catalog, scenario["scan_kind"]))
+    capture = (LockedReplayCapture(V7_ROOT / scenario["recording"]) if scenario.get("replay") == "locked"
+               else ReplayCapture(scenario, control_index(catalog, scenario["scan_kind"])))
     progress_log: list[Any] = []
 
     def progress(current, total, message, feedback=None):

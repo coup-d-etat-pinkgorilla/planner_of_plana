@@ -83,5 +83,16 @@ class ScannerInventoryCommitC1cTests(unittest.TestCase):
                 self.assertEqual(before, self.repository.get_state(self.profile_id))
 
 
+    def test_d18_legacy_ultimate_key_rebases_and_is_replaced_by_a_scan(self) -> None:
+        # 비의서 is Item_Icon_SkillBook_Ultimate (ExcelDB 9999); v6 stored it as *_Ultimate_Piece.
+        legacy, current = "Item_Icon_SkillBook_Ultimate_Piece", "Item_Icon_SkillBook_Ultimate"
+        revision = self.repository.get_state(self.profile_id)["revision"]
+        self.repository.update_inventory(self.profile_id, {"version": 1, "entries": [
+            saved(MANDRAGORA, "5"), saved(legacy, "70"),
+        ]}, revision, "legacy")
+        self.assertEqual({MANDRAGORA: "5", current: "70"}, self.quantities())
+        self.commit({"version": 1, "catalog_revision": CATALOG_REVISION, "entries": [scanned(current, "71", 44)]})
+        self.assertEqual({MANDRAGORA: "5", current: "71"}, self.quantities())
+
 if __name__ == "__main__":
     unittest.main()

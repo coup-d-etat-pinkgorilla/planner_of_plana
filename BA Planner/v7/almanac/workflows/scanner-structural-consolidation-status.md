@@ -541,3 +541,62 @@ C5에서 gate **로직**을 고치고 값 변경은 C7. F9 "선택이 안 보이
 발견(다른 slice/phase): **C5-1** 장비 페이지 범용 설계도(조각)는 상세 패널 identity가 없어 장비 스캔이 항상 partial — 조각 식별 또는
 카탈로그 결정 필요. **C5-2** 강화석 `25K` 같은 축약 수량은 상세 패널 판독 불가 → C5e(수량 은행) 대상. **C5-3** 상세 패널 판독이라
 느리다(장비 105칸 약 10분) — 빠른 grid 식별기는 C5e에서 현재 UI 기준 은행으로.
+
+### 사용자 방향 결정 및 사전 실험 (2026-09-27, 오케스트레이터 세션)
+
+- 사용자 판정: C5b의 "모든 슬롯 상세 패널 + 1→N→1 복귀"는 정확하지만 방법론적으로 퇴보(batch가 기본이어야 함). C5c~C5e를 워크플로
+  문서의 새 표대로 재정의했다. C5b의 정확도·안전 규칙은 유지한다.
+- 기록 프레임만으로 실험(게임 입력 없음): `docs/migration/scanner-consolidation/c5e-experiments-2026-09-27.md`,
+  스크립트 `debug/scanner_c5e_experiments/`.
+  - E1 gutter 위상: `tech-notes-full-c`/`presents-full`/`equipment-full` 28 페이지 프레임에서 pitch 101px, anchor 클릭 대비 ≤1.5px, 13~23ms.
+  - E2 지표: 타일 crop 템플릿 + 채널별 NCC(아이콘 영역) → tech notes 100%/margin min .016, presents 100%/.282, equipment 99.4%/.003.
+    C0-1의 근본 원인은 원화 템플릿 도메인이며, 그리드 식별 자체는 가능하다.
+- 코드 확인: `_read_slot`의 `detail_required`(`scanner_matchers.py:1419`)가 참이면 `user_templates`로 fast_confident가 나와도 무시된다 —
+  학습된 은행이 identity 결정에 기여하지 못하는 구조. C5e-2에서 완화한다.
+- 1→N→1 복귀는 `inventory_detail_recovery.resolve:231-247`의 구현 선택이며 F9 불변식이 요구하지 않는다(C5d에서 배치화).
+- 다음 세션 시작점: 워크플로 재개 지점 참조. C5c 착수 전에 상세 경로가 끝까지 도는 재고 replay 시나리오 1개를 추가한다.
+- 추가 결정(2026-09-27): C5-1(조각·범용 설계도)과 미보유 이벤트 선물의 상세 템플릿 부재는 **C5e-6**으로 다룬다 — E3(asset 원화→상세 템플릿) 실험,
+  카탈로그·템플릿의 asset/DB 파생, 사용자 라벨링 폴백. 장비 identity는 상세 패널 카테고리 라벨×T 배지를 1차 키로(C5e-4). D13~D15 추가.
+- 추가 결정(2026-09-27): C5e-6은 **asset 원화 + 레이아웃 지식 기반 템플릿 생성기**(해상도별 그리드 타일·상세 아이콘·학생 화면)로 확정.
+  글자는 합성하지 않음. 합성 타일의 그리드 은행 편입은 E4(보유 아이템 합성-실물 M4 비교) 통과 프로필로 제한(D16).
+  C5e-6c 리뷰 UI 변경은 이 워크플로 안에서 허용(사용자 승인).
+- 2026-09-27 (오케스트레이터): JP 클라이언트에서 템플릿 생성 명세 추출 완료 — NGUI 2960×1440, 스케일 법칙 `s=H/round(2960·H/W)`(1280×720 → .43243),
+  아이템/장비 타일·상세 패널·학생 화면 위젯 기하, 아틀라스 스프라이트(Card_Item_Bg_N/R/SR/SSR 등), 아이콘 텍스처(304×240 BC7).
+  E3(상세 9/9)·E4(그리드 top-1 99 %, 정답 점수 med .975) 통과. 산출물은 워크플로 C5e-6 항목 참조.
+  **Opus 전제 변경**: C5e-6 생성기 구현은 Opus 범위에서 제외. Opus는 생성된 템플릿이 인식 자산에 있다는 전제로 (c)(d)(e)(f)만 한다.
+  남은 외부 입력: ItemExcelTable.Rarity(등급 표). 실패 사례 `SkillBook_Ultimate_Piece`(KR/JP 아트 차이 의심)는 D17로 등록.
+- 2026-09-27 (오케스트레이터, 후속): Steam ExcelDB.db를 공개 키로 복호화·FlatBuffers 디코드해 `backend/assets/recognition/spec/item-rarity-v1.json`
+  (items 1068, equipment 200, Rarity/Category/NameKr·Jp) 확보. E4 등급 적용 재실행 top-1 100 %. 생성기 외부 입력 없음.
+  D18: 인벤토리 설계도 아이템은 `*_Piece` identity — 카탈로그 명명 정리 필요.
+- 사용자 결정(2026-09-27): 템플릿은 **런타임 생성**(asset 팩 배포 + 스캔 시 합성·캐시, D19). 텍스트는 현재 캡처 은행만 사용 중이며 생성은 seed/3차 키로 제한(D20, E5 대기).
+- 2026-09-27 (오케스트레이터, E5): 폰트 렌더링 실험 완료. **KR 클라이언트 UI 폰트는 GyeonggiTitle(MainFont/MainFont_Bold)** — Steam 카탈로그 `ui/font/bundlefontkr`,
+  Preload 번들 `prologdepengroup-assets-_mx-uis-_mxcommon-_mxprolog-2024-11-18_*`. JP의 LINE Seed KR은 글리프가 달라 사용 불가(D17 폰트 예외).
+  Gyeonggi Bold, em 20px @720p, shear .10, 팽창 .5px로 문자열 top-1 100/100이나 margin min .001 → 단독 키 금지, `StudioNumericBank` synth seed 계층으로만(D20 확정).
+  명세 §8·JSON `fonts` 블록 추가. Opus 영향: C5e-3에 synth 계층 로더(우선순위 최하위 + 프로필 gate) 1항목 추가, 나머지 전제 불변.
+- 2026-09-27 (오케스트레이터, asset 팩): KR/Steam 클라이언트에서 배포 asset 팩 추출 완료 — `backend/assets/recognition/asset_pack/`
+  (아이콘 1068+200 `icons-01..03.zip`, KR 아틀라스 스프라이트 12 + 설계도 배경 `Card_Item_Bg_C`, GyeonggiTitle 폰트 2, `manifest.json` sha/출처).
+  KR/JP 프리팹 기하 동일 확인(아틀라스 rect·폰트만 다름). E4 재실행 KR 팩 top-1 100 %.
+  **C5b 오라벨 발견**: `tech-notes-full-c` 슬롯 44 `SkillBook_Ultimate_Piece` → 실물은 `SkillBook_Ultimate`(D18 갱신). Opus는 C5e-4에서 아이템 `_Piece` 매핑과
+  golden 기대값을 ExcelDB id 기준으로 재검한다. 추출 도구 `backend/tools/asset_spec/ba_extract_pack.py`.
+- 2026-09-27 (오케스트레이터, 워크플로 확정): C5e-6을 6a(생성기)·6b(캐시·드리프트)·6c(로더 계층+D18 교정)·6d(상세 폴백 순서)·6e(라벨링 UI)·6f(E4 gate 확장)로
+  분해해 워크플로에 계약·완료 조건을 적었다. 오케스트레이터 입력(명세·팩·등급표·폰트·E1~E5)은 모두 확보됐고, 이후는 Opus가 C5c부터 재개 지점 순서대로 진행한다.
+  다음 세션: **C5c** (착수 전 상세 경로 replay 시나리오 1개 추가, 슬롯 44 기대값 `SkillBook_Ultimate`).
+
+### C5c 착수 전 작업 (2026-09-27, Opus)
+
+사용자 결정: 상세 경로 replay는 **현재 코드로 새로 녹화한 기술 노트 실행**, 프레임은 **로컬 전용**(sha 고정, 없으면 테스트 skip),
+슬롯 44는 **D18 매핑을 지금 교정**.
+
+- **D18 교정**: 비의서는 ExcelDB 9999 `Item_Icon_SkillBook_Ultimate`, v6가 비의서 조각(9998) 아이콘 이름 `*_Ultimate_Piece`로 잘못 부르고 있었다.
+  상세 아이콘 템플릿(비의서 노트 그림)과 이름 템플릿("비의서")이 실물과 같음을 asset 팩 아이콘과 대조해 확인했다. 카탈로그 항목,
+  상세 아이콘·이름 템플릿 파일명과 `identity_value`, `item_regions.json`·`inventory_detail_f9_regions.json`의 tech_notes 배경 규칙을
+  `Item_Icon_SkillBook_Ultimate`로 바꾸고 매니페스트 sha를 갱신했다. 저장 인벤토리·v6 가져오기의 구 키는
+  `inventory_catalog.LEGACY_RESOURCE_KEYS` → repository rebase·스캔 commit upsert·계획 alias에서 새 키로 옮긴다(중복 생성 없음, 테스트 추가).
+  `CATALOG_REVISION` 변경 → `contracts/fixtures/inventory_catalog_v6_parity.json` revision 갱신, 재고 golden 2개는 `catalog_revision` 줄만 diff로 재고정.
+  실제 비의서 조각은 기술 노트 목록 소속이 검증되지 않아 카탈로그에 넣지 않았다.
+- **D18 재검(ExcelDB 기준)**: 엘레프를 제외한 카탈로그 키 전부가 `item-rarity-v1.json`에 있고 한국어 이름이 일치한다. 엘레프 258종은 학생 slug
+  기반 키라 ExcelDB 아이콘 이름과 체계가 다르다 — 오라벨이 아니라 C5e-6 합성 시 매핑이 필요한 명명 차이로 기록한다.
+- **잠긴(locked) replay**: `scanner_consolidation_replay.LockedReplayCapture` — 실게임 녹화(`verify_inventory_c2_live.py` trace)의 캡처를 순서대로
+  주고, 코드가 보내는 입력이 녹화와 하나라도 다르거나 남거나 모자라면 `ReplayDivergence`로 실패. 시나리오 `replay: "locked"`,
+  `frames_local_only: true`면 프레임이 없는 PC에서 skip, 있으면 pixel sha로 검증. `debug/scanner_c5_replay/**/frame-*.png`는 `.gitignore`.
+- 남은 일: 게임을 1280 아이템 화면으로 띄워 기술 노트를 녹화 → 시나리오·golden 추가 → C5c.

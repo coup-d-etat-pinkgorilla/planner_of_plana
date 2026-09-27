@@ -96,7 +96,7 @@ def _rows() -> list[InventoryCatalogRow]:
                 add(f"{prefix}_{school}_{tier}", f"{school} {kind} T{tier + 1}", profile, profile, index)
                 index += 1
         if profile == "tech_notes":
-            add("Item_Icon_SkillBook_Ultimate_Piece", "비의서", profile, profile, index)
+            add("Item_Icon_SkillBook_Ultimate", "비의서", profile, profile, index)
 
     index = 0
     for display_base, icon_key in _OPARTS:
@@ -124,6 +124,14 @@ def _rows() -> list[InventoryCatalogRow]:
 
 CATALOG: tuple[InventoryCatalogRow, ...] = tuple(_rows())
 BY_KEY = {row.resource_key: row for row in CATALOG}
+# D18: v6 stored 비의서 (ExcelDB 9999, Item_Icon_SkillBook_Ultimate) under the icon name of
+# 비의서 조각 (9998, *_Piece). Stored inventories and v6 imports keep the old key; map it forward.
+LEGACY_RESOURCE_KEYS = {"Item_Icon_SkillBook_Ultimate_Piece": "Item_Icon_SkillBook_Ultimate"}
+
+
+def canonical_resource_key(key: str) -> str:
+    """Current catalog key for a stored or imported inventory key."""
+    return LEGACY_RESOURCE_KEYS.get(key, key)
 # Single source for inventory scan profiles: the protocol enum, session validation and
 # item-page navigation all derive from catalog profile ids. Equipment has its own page.
 SCAN_PROFILES: tuple[str, ...] = tuple(dict.fromkeys(row.profile_id for row in CATALOG))
@@ -133,6 +141,7 @@ ITEM_SCAN_PROFILES: tuple[str, ...] = tuple(profile for profile in SCAN_PROFILES
 def planning_aliases() -> dict[str, str]:
     aliases = {row.resource_key: row.resource_key for row in CATALOG}
     aliases.update({row.display_name: row.resource_key for row in CATALOG})
+    aliases.update(LEGACY_RESOURCE_KEYS)
     for tier in range(1, 5):
         aliases[f"Item_Icon_ExpItem_0 T{tier}"] = f"Item_Icon_ExpItem_{tier - 1}"
         aliases[f"Equipment_Icon_Exp_0 T{tier}"] = f"Equipment_Icon_Exp_{tier - 1}"

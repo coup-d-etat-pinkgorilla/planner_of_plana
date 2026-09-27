@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from PIL import Image
 
-from core.inventory_catalog import CATALOG_REVISION, SCAN_PROFILES
+from core.inventory_catalog import CATALOG_REVISION, SCAN_PROFILES, canonical_resource_key
 from core.scan_context import ScanContext
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, RepositoryDTOError
 
@@ -511,7 +511,7 @@ class ScannerSessionService:
     def _merged_inventory(saved: dict[str, Any], scanned: dict[str, Any]) -> dict[str, Any]:
         """Upsert scanned entries by identity; a scan never deletes entries it did not observe."""
         def identity(entry: dict[str, Any]) -> str:
-            return entry.get("item_id") or entry["key"]
+            return canonical_resource_key(entry.get("item_id") or entry["key"])
         updates = {identity(entry): entry for entry in scanned["entries"]}
         entries = [updates.pop(identity(entry), entry) for entry in saved.get("entries", [])]
         entries.extend(updates.values())
