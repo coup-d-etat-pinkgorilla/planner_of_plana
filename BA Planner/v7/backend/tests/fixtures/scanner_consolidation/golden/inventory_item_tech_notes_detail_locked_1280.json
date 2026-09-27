@@ -151,230 +151,257 @@
    "y": 0.709
   },
   {
-   "end": [
-    0.975,
-    0.65
-   ],
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
+   "hold": 0.8,
+   "input": "drag_path",
+   "path": [
+    [
+     0.975,
+     0.75
+    ],
+    [
+     0.975,
+     0.738889
+    ],
+    [
+     0.975,
+     0.607731
+    ],
+    [
+     0.975,
+     0.476574
+    ],
+    [
+     0.975,
+     0.345416
+    ]
    ]
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.5844,
-   "y": 0.697528
+   "y": 0.457639
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.6695,
-   "y": 0.697528
+   "y": 0.457639
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.7547,
-   "y": 0.697528
+   "y": 0.457639
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.8398,
-   "y": 0.697528
+   "y": 0.457639
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.925,
-   "y": 0.697528
+   "y": 0.457639
   },
   {
-   "end": [
-    0.975,
-    0.65
-   ],
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
+   "cleanup": false,
+   "input": "click",
+   "x": 0.5844,
+   "y": 0.597839
+  },
+  {
+   "cleanup": false,
+   "input": "click",
+   "x": 0.6695,
+   "y": 0.597839
+  },
+  {
+   "cleanup": false,
+   "input": "click",
+   "x": 0.7547,
+   "y": 0.597839
+  },
+  {
+   "cleanup": false,
+   "input": "click",
+   "x": 0.8398,
+   "y": 0.597839
+  },
+  {
+   "cleanup": false,
+   "input": "click",
+   "x": 0.925,
+   "y": 0.597839
+  },
+  {
+   "cleanup": false,
+   "input": "click",
+   "x": 0.5844,
+   "y": 0.738139
+  },
+  {
+   "cleanup": false,
+   "input": "click",
+   "x": 0.6695,
+   "y": 0.738139
+  },
+  {
+   "cleanup": false,
+   "input": "click",
+   "x": 0.7547,
+   "y": 0.738139
+  },
+  {
+   "cleanup": false,
+   "input": "click",
+   "x": 0.8398,
+   "y": 0.738139
+  },
+  {
+   "cleanup": false,
+   "input": "click",
+   "x": 0.925,
+   "y": 0.738139
+  },
+  {
+   "hold": 0.8,
+   "input": "drag_path",
+   "path": [
+    [
+     0.975,
+     0.75
+    ],
+    [
+     0.975,
+     0.738889
+    ],
+    [
+     0.975,
+     0.598018
+    ],
+    [
+     0.975,
+     0.457148
+    ],
+    [
+     0.975,
+     0.316278
+    ]
    ]
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.5844,
-   "y": 0.687444
+   "y": 0.628089
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.6695,
-   "y": 0.687444
+   "y": 0.628089
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.7547,
-   "y": 0.687444
+   "y": 0.628089
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.8398,
-   "y": 0.687444
+   "y": 0.628089
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.925,
-   "y": 0.687444
-  },
-  {
-   "end": [
-    0.975,
-    0.65
-   ],
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
-   ]
+   "y": 0.628089
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.5844,
-   "y": 0.676
+   "y": 0.768389
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.6695,
-   "y": 0.676
+   "y": 0.768389
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.7547,
-   "y": 0.676
+   "y": 0.768389
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.8398,
-   "y": 0.676
+   "y": 0.768389
   },
   {
    "cleanup": false,
    "input": "click",
    "x": 0.925,
-   "y": 0.676
+   "y": 0.768389
   },
   {
-   "end": [
-    0.975,
-    0.65
-   ],
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
+   "hold": 0.8,
+   "input": "drag_path",
+   "path": [
+    [
+     0.975,
+     0.75
+    ],
+    [
+     0.975,
+     0.738889
+    ],
+    [
+     0.975,
+     0.587935
+    ],
+    [
+     0.975,
+     0.436981
+    ],
+    [
+     0.975,
+     0.286027
+    ]
    ]
   },
   {
-   "cleanup": false,
-   "input": "click",
-   "x": 0.5844,
-   "y": 0.666611
-  },
-  {
-   "cleanup": false,
-   "input": "click",
-   "x": 0.6695,
-   "y": 0.666611
-  },
-  {
-   "cleanup": false,
-   "input": "click",
-   "x": 0.7547,
-   "y": 0.666611
-  },
-  {
-   "cleanup": false,
-   "input": "click",
-   "x": 0.8398,
-   "y": 0.666611
-  },
-  {
-   "cleanup": false,
-   "input": "click",
-   "x": 0.925,
-   "y": 0.666611
-  },
-  {
-   "end": [
-    0.975,
-    0.65
-   ],
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
-   ]
-  },
-  {
-   "cleanup": false,
-   "input": "click",
-   "x": 0.5844,
-   "y": 0.768056
-  },
-  {
-   "cleanup": false,
-   "input": "click",
-   "x": 0.6695,
-   "y": 0.768056
-  },
-  {
-   "cleanup": false,
-   "input": "click",
-   "x": 0.7547,
-   "y": 0.768056
-  },
-  {
-   "cleanup": false,
-   "input": "click",
-   "x": 0.8398,
-   "y": 0.768056
-  },
-  {
-   "cleanup": false,
-   "input": "click",
-   "x": 0.925,
-   "y": 0.768056
-  },
-  {
-   "end": [
-    0.975,
-    0.65
-   ],
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
-   ]
-  },
-  {
-   "end": [
-    0.975,
-    0.58
-   ],
-   "input": "drag_scroll",
-   "start": [
-    0.975,
-    0.75
+   "hold": 0.8,
+   "input": "drag_path",
+   "path": [
+    [
+     0.975,
+     0.75
+    ],
+    [
+     0.975,
+     0.738889
+    ],
+    [
+     0.975,
+     0.587935
+    ],
+    [
+     0.975,
+     0.436981
+    ],
+    [
+     0.975,
+     0.286027
+    ]
    ]
   }
  ],
@@ -657,7 +684,7 @@
      "0": {
       "image": {
        "mode": "RGB",
-       "sha256": "31895b87034b9ca4ee996b20a93e3b44c7f1e1b4343578d1f5cc9beb0c08af5f",
+       "sha256": "98ce206294eded7a0ed741b478f42eebdc529685c34bf4f292a5879c0c759249",
        "size": [
         117,
         96
@@ -667,7 +694,7 @@
      "1": {
       "image": {
        "mode": "RGB",
-       "sha256": "2b06ba24f52298482cf5a0d169de0ef5f505e1c5422d46908a1908fdd0066089",
+       "sha256": "94345520bd574a172ce1429d2c28accb22cabb8b0cb0ecb5da38118b5f90aba0",
        "size": [
         117,
         96
@@ -677,7 +704,7 @@
      "10": {
       "image": {
        "mode": "RGB",
-       "sha256": "a2e32e0c3513eda59ba3205f4d2c1f939abd01797d943200e5ae51c4e98b0abf",
+       "sha256": "c32f53a0633c21bcab6035358d6d92b88d08f56afc2d5fb76bf340cbe2d0020a",
        "size": [
         117,
         95
@@ -687,7 +714,7 @@
      "11": {
       "image": {
        "mode": "RGB",
-       "sha256": "7ba813f41ab2c2d8630c3ce97cf9daef47258cbc7b86b6005d50c5f7eb3eab9d",
+       "sha256": "0f373d578e4111d5940da2effdd59c58cea4b70385d6a9189549e1e9e508214d",
        "size": [
         117,
         95
@@ -697,7 +724,7 @@
      "12": {
       "image": {
        "mode": "RGB",
-       "sha256": "98e9d0e402307ccf590462e5b0080d2684f8f206b4975f8da9b3a0fd19b99986",
+       "sha256": "3179507bbec863e23e3c8efac0dbbfd794bc1e322511dc5643c7ee69196e6043",
        "size": [
         117,
         95
@@ -707,7 +734,7 @@
      "13": {
       "image": {
        "mode": "RGB",
-       "sha256": "bbf3948ad4fdcac62b2bbc82b52f236dc15c7594ecd09686d6adac05021feeff",
+       "sha256": "0aadd31b8237b5bae06a2974a57cffb37ae9cc8b942bb9d644f7b6aab1dcc517",
        "size": [
         117,
         95
@@ -717,7 +744,7 @@
      "14": {
       "image": {
        "mode": "RGB",
-       "sha256": "308fd17c81759a155e153fbcd937f2c784b0ad781f1f866271f09983f332c0f9",
+       "sha256": "d9989041acd1cba05ccf81538bf54ad2fe732a4ccec3d8324a57d778efd2e95c",
        "size": [
         116,
         95
@@ -727,7 +754,7 @@
      "15": {
       "image": {
        "mode": "RGB",
-       "sha256": "91445f5f797941284f6feec469cdc623bcdf4d5df76fb6118110c9c7e6521c32",
+       "sha256": "3755593f73c7411366f4f8e75a0b480e511ac0370b7574ba1e787ff832ac9f98",
        "size": [
         117,
         95
@@ -737,7 +764,7 @@
      "16": {
       "image": {
        "mode": "RGB",
-       "sha256": "69b848ed61d2ba043fa59d37a70fa5c44269a31f7897d7a335e886d83a0fc441",
+       "sha256": "52d1897d6dff0fe223116b8549322b6e8360e4aebb335c5b267e1a138415c4b9",
        "size": [
         117,
         95
@@ -747,7 +774,7 @@
      "17": {
       "image": {
        "mode": "RGB",
-       "sha256": "d259afe5adee92b1bfcc091ba1d9ec507ee7a816df9434fd228ad03c1c0ad6b5",
+       "sha256": "02a1c0b27a18e7ef847378fda1506ebf24dd8d01f7966174342597c00be727b6",
        "size": [
         117,
         95
@@ -757,7 +784,7 @@
      "18": {
       "image": {
        "mode": "RGB",
-       "sha256": "0ad38683429567bd9f9aaeee92c9e6b88f60fd34218204291b5193c18d9a12bc",
+       "sha256": "30c94d19a9307e9bee9bdbefecbf3ede402cb059cf1426a2b0b1819855de7e19",
        "size": [
         117,
         95
@@ -767,7 +794,7 @@
      "19": {
       "image": {
        "mode": "RGB",
-       "sha256": "bcc7cbc35f135f7ef0b5d660b84ff475a2a731f87ce9d968e9b7da20b74feb71",
+       "sha256": "09e7972ce547a2d7909bfb338c9eb5ff36b8d5f0201e0ca8cddb05f5a57df29d",
        "size": [
         116,
         95
@@ -777,7 +804,7 @@
      "2": {
       "image": {
        "mode": "RGB",
-       "sha256": "6ecf8e494f8ccebd9d2efb8cddcd293819830c4dde56193922ab6b3c6895dd9e",
+       "sha256": "66057f19fe59a208fd86e791997545974971754d290fd6ba73b2ae2d800d4323",
        "size": [
         117,
         96
@@ -787,7 +814,7 @@
      "20": {
       "image": {
        "mode": "RGB",
-       "sha256": "f390040775ceb1f93e59463505514f1fc1d432e1456e15cf6d9d4f9b3c74a5f2",
+       "sha256": "ac170080f8ecac9ad73c81f6217b068af65a0c685db1dcfe4f1acd6fa65a1242",
        "size": [
         117,
         95
@@ -797,7 +824,7 @@
      "21": {
       "image": {
        "mode": "RGB",
-       "sha256": "e0b9be7f26244b409b5f665271d7bc2f934e0a6b6c9f0fc05b9f3a6401be2946",
+       "sha256": "a809547e1e68f733802e42e78e7ad539f6089c1aa7fe1f49ec57827b3b15e10b",
        "size": [
         117,
         95
@@ -807,7 +834,7 @@
      "22": {
       "image": {
        "mode": "RGB",
-       "sha256": "9fca7f59cb8a1106436777a3090998c041b1924401738638af83647ad4363019",
+       "sha256": "4dd1be174ef94ade36a46aa5a519d084cd890f6e780bfa890918acd4b84d7427",
        "size": [
         117,
         95
@@ -817,7 +844,7 @@
      "23": {
       "image": {
        "mode": "RGB",
-       "sha256": "bb97acdcd1dc15f1299f1c650882f5e307308dd95b97e27e9072c6e4b5b23375",
+       "sha256": "115b9f8f9342a5d59118939a3a7751994939fccae5b0e43cad00ff354179526e",
        "size": [
         117,
         95
@@ -827,7 +854,7 @@
      "24": {
       "image": {
        "mode": "RGB",
-       "sha256": "82b56adb49cad75e3ddab407ca98a3387409347f85c4f8384f01fc4e10724376",
+       "sha256": "38c024794d9efff875a9f733ed95ffd0876526f69e9037586be24de0c88600b2",
        "size": [
         116,
         95
@@ -837,57 +864,57 @@
      "25": {
       "image": {
        "mode": "RGB",
-       "sha256": "0110d1edfba4e84f67344a5a46f55a9001108b4eb4c1b68df628063dc9c2cc73",
+       "sha256": "0427b5fcd092c51276f5cb33eae7efb492b153d4877f7869e003cf311b58d9ee",
        "size": [
         117,
-        94
+        95
        ]
       }
      },
      "26": {
       "image": {
        "mode": "RGB",
-       "sha256": "5fc9c8260e8d60a94ae55badb686476a7f3027c71270c67aec9905224c56f0eb",
+       "sha256": "3923650e56d2821f0fee70fc8bd199b674d1a38068b0acd3ae7394fa815ad60b",
        "size": [
         117,
-        94
+        95
        ]
       }
      },
      "27": {
       "image": {
        "mode": "RGB",
-       "sha256": "0163d72d4647578ec3b89b861b5bda33102315ea13c8c4545b0ca66bf6ff9a57",
+       "sha256": "63d38143728a9aa01227261d243fba4e12c18d874e29c6fdcf39f7fc3d41e728",
        "size": [
         117,
-        94
+        95
        ]
       }
      },
      "28": {
       "image": {
        "mode": "RGB",
-       "sha256": "bbabcbd7cd96f4cc83c605b97d47f629d208e304789ddb1cd9cfc0fc15f49f9a",
+       "sha256": "da6959649fad25479d9009d3570f62c8ef52642549b13e7a59cfa1546726cec7",
        "size": [
         117,
-        94
+        95
        ]
       }
      },
      "29": {
       "image": {
        "mode": "RGB",
-       "sha256": "53743a38209dcad884fde246b5b0453f13cefffe60316f3091b753d259a9bd83",
+       "sha256": "eb43e2a04b728b3e4e7097c9f6e3b40ebc7ebcdb411c2108af4e8ecf27bcba12",
        "size": [
         116,
-        94
+        95
        ]
       }
      },
      "3": {
       "image": {
        "mode": "RGB",
-       "sha256": "19ad3554cf16d25d320a45a538e309a3b65332be0becd4753b1c254002126200",
+       "sha256": "7b422d3358ba4991dedc2b5812f4599e9b87dc75c8ed6f38fa38d1ec0fcefb68",
        "size": [
         117,
         96
@@ -897,7 +924,7 @@
      "30": {
       "image": {
        "mode": "RGB",
-       "sha256": "008efde5286197e8d84420ed4bc74add2ba5fe748604a8618655fa563cb8b945",
+       "sha256": "91b71dd8e5595395fecd02ad8d477e42bd50a37b916a54b5a7adda65cf1e41a1",
        "size": [
         117,
         95
@@ -907,7 +934,7 @@
      "31": {
       "image": {
        "mode": "RGB",
-       "sha256": "3e0efe45b764ef91d8ea2875394d5a994f357dbdc9d7fac162607d1aa5c4570f",
+       "sha256": "45d5b83a322d43d7c36131f6e9afafc5dbbef1ae33dba0f7dd2c56367e2f2215",
        "size": [
         117,
         95
@@ -917,7 +944,7 @@
      "32": {
       "image": {
        "mode": "RGB",
-       "sha256": "1cf5fb82b484e01947841f21e4c9f9f5ed66abdb7c3a38df822a1df3956c94b1",
+       "sha256": "3528f8e313ba178d59e4e5c4da6d5045ae894b81781b41224bf54a1970026395",
        "size": [
         117,
         95
@@ -927,7 +954,7 @@
      "33": {
       "image": {
        "mode": "RGB",
-       "sha256": "2e7f37530b17d1b708a2810e3e6eeeedb33e7abcb8febdc1d6e9dea47c198844",
+       "sha256": "8392438f053f60bcfbfb176aa800349e3bbeab011d6e30f8bc33ac60692ac826",
        "size": [
         117,
         95
@@ -937,7 +964,7 @@
      "34": {
       "image": {
        "mode": "RGB",
-       "sha256": "84f9688b7d2a33673a3d1dbb0f8558afb14583f779f2565fdc3f65cd3aa686a5",
+       "sha256": "aded9c78539c1bc1507878744d5368eaeed4955657b447344e44a9e1897e0ab8",
        "size": [
         116,
         95
@@ -947,57 +974,57 @@
      "35": {
       "image": {
        "mode": "RGB",
-       "sha256": "d82e4573691de6882356e5c5da8fc24288e6839b6611c3c4e207d7638333a912",
+       "sha256": "e903484f64b4dccb3391fd16a35205a1cccc2c21c35379007f41997b339df3c8",
        "size": [
         117,
-        94
+        95
        ]
       }
      },
      "36": {
       "image": {
        "mode": "RGB",
-       "sha256": "28e6151f46c005ee5729d5c7246ca206777596b17d49cdbbc3eca787db639490",
+       "sha256": "904594b5a2ec93917f898e2a3f7a24f55c96153f57819be8b6213f9af34f341c",
        "size": [
         117,
-        94
+        95
        ]
       }
      },
      "37": {
       "image": {
        "mode": "RGB",
-       "sha256": "0694be0c1f185ec8c3f99cb1e7e06678cebe1655490256bb7af0dc103f6f6b02",
+       "sha256": "be9bace43ce84b1488fe3ec778b21adb7496db8407c0b4a008078038924bc641",
        "size": [
         117,
-        94
+        95
        ]
       }
      },
      "38": {
       "image": {
        "mode": "RGB",
-       "sha256": "3c7836d2785def17a59dd3d2a17c8dcca293ed8e738fbf805e535565db276c89",
+       "sha256": "4517e68fc50a5ba4a513ce6d39a043cfa5fb9fc47077afbb874f36c1f9bbd593",
        "size": [
         117,
-        94
+        95
        ]
       }
      },
      "39": {
       "image": {
        "mode": "RGB",
-       "sha256": "5e1ed6679a894e04043555921ac5e7ef37f752fbf16b484ebd913b590a75fac2",
+       "sha256": "27237e9b1ae153d9d6c8c58d8abbe5975d816626cd27352628016afbd46c33d0",
        "size": [
         116,
-        94
+        95
        ]
       }
      },
      "4": {
       "image": {
        "mode": "RGB",
-       "sha256": "3a81e52d4cc39abf0c8dd42c94dae1217fe3a3ec36b92c628393cdd9ed4314f0",
+       "sha256": "8ace43447d73e354a66fbb9e69f6b3f0fabf7c536b2886eefdb15f630634ecff",
        "size": [
         116,
         96
@@ -1007,7 +1034,7 @@
      "40": {
       "image": {
        "mode": "RGB",
-       "sha256": "672eadf42aea6d6bcc5aa30e04f57bc9458c22e3fd3f83ddfc15f12a3f1e53ec",
+       "sha256": "e3c14aeda0226e90ea8a552d05ff89fcb651ccc3e4d48c005d0ab059ce67c8d8",
        "size": [
         117,
         95
@@ -1017,7 +1044,7 @@
      "41": {
       "image": {
        "mode": "RGB",
-       "sha256": "934e3c73ade73f8529714f832a0a07dfff616213376bd66b3d63de8135f7c970",
+       "sha256": "5c95250bf5049e403d9d9028666c79d7db972cb51a4f8fcf09bee1c79dcad333",
        "size": [
         117,
         95
@@ -1027,7 +1054,7 @@
      "42": {
       "image": {
        "mode": "RGB",
-       "sha256": "3f428d3c8a87681c05359369a324a08e2c72844a55cc66fdb3f76db289767031",
+       "sha256": "81afdae85edf9508e960998ab355100115abcdc2d4c811845ef6d3f60c06b0f6",
        "size": [
         117,
         95
@@ -1037,7 +1064,7 @@
      "43": {
       "image": {
        "mode": "RGB",
-       "sha256": "3fc0cb22efe1f4171ced07606b42ac81ebc21a1a5f7efcd400240b220d42623e",
+       "sha256": "7d31619a7d22a0aaa4e1e5fd04d1e67551358281a3606df6dad44e81d5f46ba3",
        "size": [
         117,
         95
@@ -1047,7 +1074,7 @@
      "44": {
       "image": {
        "mode": "RGB",
-       "sha256": "6d6390d9edaf0191f50a9bda1695e970f18f1f30f658b69026c635c34808380f",
+       "sha256": "3294e07e1950d5cf2eb0248ae0d01e06a8380d44e67cd194aa1197978fbafa42",
        "size": [
         116,
         95
@@ -1057,7 +1084,7 @@
      "5": {
       "image": {
        "mode": "RGB",
-       "sha256": "87f0f9b2238bb7a029334ae283005e049c5059ebbb87ccaa1262fcc9faa08c56",
+       "sha256": "a055d0ba88a8808a75b7ec1a9a5982b5577a09f247324742403d1ff372140584",
        "size": [
         117,
         95
@@ -1067,7 +1094,7 @@
      "6": {
       "image": {
        "mode": "RGB",
-       "sha256": "08f8238cecc87c75dc718be1af533afab515b8139b6ef1fa08cc790fa30cbf85",
+       "sha256": "c1a73d5a4711dab1292f3c7e7619e2d33fd1a9bf6617b6f17a2dc676526f51fc",
        "size": [
         117,
         95
@@ -1077,7 +1104,7 @@
      "7": {
       "image": {
        "mode": "RGB",
-       "sha256": "2b17acf2d19381266f139d76360e3aae44a9332fa1d56243e92da30b5d779261",
+       "sha256": "65c50cb8e9c68b0896f5fdc23948e7cfe386e8acecbf171f3de7772a7be572d4",
        "size": [
         117,
         95
@@ -1087,7 +1114,7 @@
      "8": {
       "image": {
        "mode": "RGB",
-       "sha256": "4b91fefbe6b5ab074cf20b831b88932ffffc06456946a8c6e8df744812c177af",
+       "sha256": "db1d412f2992ddd1dcec0af29a0f81b02111b9b6aa7d9d21a65c813a400652fd",
        "size": [
         117,
         95
@@ -1097,7 +1124,7 @@
      "9": {
       "image": {
        "mode": "RGB",
-       "sha256": "6e1f3c144ba58f3b093ca198413a8fe3cc37c22257cc1261fa09d4fec4c065ff",
+       "sha256": "03c3c217496020cdd81014c840d68e0d7a641ccbbd022cd241f3c628df2b9a7f",
        "size": [
         116,
         95
@@ -1112,9 +1139,9 @@
    },
    "evidence": [
     {
-     "confidence": 0.9596206083183136,
+     "confidence": 0.9596019317513029,
      "field": "entries[0].item_id",
-     "note": "margin=0.034727",
+     "note": "margin=0.034567",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1126,9 +1153,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9577845907588901,
+     "confidence": 0.9577583947858409,
      "field": "entries[1].item_id",
-     "note": "margin=0.019457",
+     "note": "margin=0.019438",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1140,9 +1167,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9556682368284579,
+     "confidence": 0.955480879758205,
      "field": "entries[2].item_id",
-     "note": "margin=0.018280",
+     "note": "margin=0.018304",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1154,9 +1181,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9535407738763592,
+     "confidence": 0.9541365627118209,
      "field": "entries[3].item_id",
-     "note": "margin=0.072538",
+     "note": "margin=0.072792",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1168,9 +1195,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9612077151222247,
+     "confidence": 0.9611872089014151,
      "field": "entries[4].item_id",
-     "note": "margin=0.035405",
+     "note": "margin=0.035223",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1182,9 +1209,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9588503845132994,
+     "confidence": 0.9586383762536327,
      "field": "entries[5].item_id",
-     "note": "margin=0.020473",
+     "note": "margin=0.020132",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1196,9 +1223,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9557825027943281,
+     "confidence": 0.9558160039193264,
      "field": "entries[6].item_id",
-     "note": "margin=0.018106",
+     "note": "margin=0.018328",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1210,9 +1237,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9545831556958893,
+     "confidence": 0.9543191697151567,
      "field": "entries[7].item_id",
-     "note": "margin=0.073001",
+     "note": "margin=0.072907",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1224,9 +1251,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9639355622178065,
+     "confidence": 0.9639163616423525,
      "field": "entries[8].item_id",
-     "note": "margin=0.036740",
+     "note": "margin=0.036767",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1238,9 +1265,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9619742957453006,
+     "confidence": 0.9619795929089409,
      "field": "entries[9].item_id",
-     "note": "margin=0.020500",
+     "note": "margin=0.020508",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1252,9 +1279,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9598555660864821,
+     "confidence": 0.9599205967730838,
      "field": "entries[10].item_id",
-     "note": "margin=0.020224",
+     "note": "margin=0.020250",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1266,7 +1293,7 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9579086689187626,
+     "confidence": 0.9578889917113081,
      "field": "entries[11].item_id",
      "note": "margin=0.076765",
      "source": "inventory_detail_template",
@@ -1280,9 +1307,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9641331272003983,
+     "confidence": 0.9642301563340163,
      "field": "entries[12].item_id",
-     "note": "margin=0.038040",
+     "note": "margin=0.038213",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1294,9 +1321,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9617662924612578,
+     "confidence": 0.9619339107547124,
      "field": "entries[13].item_id",
-     "note": "margin=0.022322",
+     "note": "margin=0.022532",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1308,9 +1335,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9593221083012985,
+     "confidence": 0.9592887212116025,
      "field": "entries[14].item_id",
-     "note": "margin=0.020349",
+     "note": "margin=0.019995",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1322,9 +1349,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9578901205390971,
+     "confidence": 0.9581034358878407,
      "field": "entries[15].item_id",
-     "note": "margin=0.078644",
+     "note": "margin=0.078564",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1336,9 +1363,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9583276939865886,
+     "confidence": 0.9583963550129706,
      "field": "entries[16].item_id",
-     "note": "margin=0.036342",
+     "note": "margin=0.036403",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1350,9 +1377,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9579296762968275,
+     "confidence": 0.9579465587064865,
      "field": "entries[17].item_id",
-     "note": "margin=0.021106",
+     "note": "margin=0.021121",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1364,9 +1391,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9559318211434267,
+     "confidence": 0.9558355863408876,
      "field": "entries[18].item_id",
-     "note": "margin=0.020114",
+     "note": "margin=0.020066",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1378,9 +1405,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9544653473118645,
+     "confidence": 0.9543263589518111,
      "field": "entries[19].item_id",
-     "note": "margin=0.066338",
+     "note": "margin=0.066890",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1394,21 +1421,28 @@
     {
      "confidence": 1.0,
      "field": "scroll_overlap",
-     "note": "shift_px=109;reason=verified_pixel_shift",
+     "note": "shift_px=283;reason=verified_pixel_shift;requested_px=283.3",
      "source": "verified_pixel_shift",
      "status": "ok"
     },
     {
      "confidence": 1.0,
      "field": "scroll_alignment",
-     "note": "correction_px=-0.8",
+     "note": "correction_px=-0.6",
      "source": "gutter_phase",
      "status": "ok"
     },
     {
-     "confidence": 0.9602331670949841,
+     "confidence": 0.99708,
+     "field": "overlap_identity",
+     "note": "compared=4",
+     "source": "overlap_identity",
+     "status": "ok"
+    },
+    {
+     "confidence": 0.9601267540815678,
      "field": "entries[20].item_id",
-     "note": "margin=0.035954",
+     "note": "margin=0.036045",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1420,9 +1454,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9577175440741289,
+     "confidence": 0.9578578110213543,
      "field": "entries[21].item_id",
-     "note": "margin=0.021579",
+     "note": "margin=0.021755",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1434,9 +1468,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.956144921779093,
+     "confidence": 0.9561070423392428,
      "field": "entries[22].item_id",
-     "note": "margin=0.022666",
+     "note": "margin=0.022329",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1448,9 +1482,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.954374276187561,
+     "confidence": 0.9544027747024146,
      "field": "entries[23].item_id",
-     "note": "margin=0.073083",
+     "note": "margin=0.073076",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1462,9 +1496,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9598736060333277,
+     "confidence": 0.9598712383543369,
      "field": "entries[24].item_id",
-     "note": "margin=0.036794",
+     "note": "margin=0.036805",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1476,23 +1510,9 @@
      "status": "ok"
     },
     {
-     "confidence": 1.0,
-     "field": "scroll_overlap",
-     "note": "shift_px=108;reason=verified_pixel_shift",
-     "source": "verified_pixel_shift",
-     "status": "ok"
-    },
-    {
-     "confidence": 1.0,
-     "field": "scroll_alignment",
-     "note": "correction_px=-0.8",
-     "source": "gutter_phase",
-     "status": "ok"
-    },
-    {
-     "confidence": 0.9581237708890873,
+     "confidence": 0.9581373958113197,
      "field": "entries[25].item_id",
-     "note": "margin=0.020883",
+     "note": "margin=0.020767",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1504,9 +1524,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9555203004143329,
+     "confidence": 0.9557237578717832,
      "field": "entries[26].item_id",
-     "note": "margin=0.019411",
+     "note": "margin=0.019597",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1518,9 +1538,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9549952751713382,
+     "confidence": 0.9549427159318973,
      "field": "entries[27].item_id",
-     "note": "margin=0.065017",
+     "note": "margin=0.064921",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1532,9 +1552,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9598062496901564,
+     "confidence": 0.9597633344608028,
      "field": "entries[28].item_id",
-     "note": "margin=0.038154",
+     "note": "margin=0.038102",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1546,9 +1566,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.95816258152431,
+     "confidence": 0.9584270450937242,
      "field": "entries[29].item_id",
-     "note": "margin=0.020512",
+     "note": "margin=0.020478",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1560,23 +1580,9 @@
      "status": "ok"
     },
     {
-     "confidence": 1.0,
-     "field": "scroll_overlap",
-     "note": "shift_px=110;reason=verified_pixel_shift",
-     "source": "verified_pixel_shift",
-     "status": "ok"
-    },
-    {
-     "confidence": 1.0,
-     "field": "scroll_alignment",
-     "note": "correction_px=0.2",
-     "source": "gutter_phase",
-     "status": "ok"
-    },
-    {
-     "confidence": 0.956216598577008,
+     "confidence": 0.9564535102689156,
      "field": "entries[30].item_id",
-     "note": "margin=0.019278",
+     "note": "margin=0.019526",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1588,9 +1594,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9561920336829324,
+     "confidence": 0.9560724295040242,
      "field": "entries[31].item_id",
-     "note": "margin=0.056919",
+     "note": "margin=0.056982",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1602,7 +1608,7 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9648506533675713,
+     "confidence": 0.9648503301802926,
      "field": "entries[32].item_id",
      "note": "margin=0.036937",
      "source": "inventory_detail_template",
@@ -1616,9 +1622,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9621411813942666,
+     "confidence": 0.962198835197514,
      "field": "entries[33].item_id",
-     "note": "margin=0.019758",
+     "note": "margin=0.019786",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1630,9 +1636,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9605012016371018,
+     "confidence": 0.9606692578634283,
      "field": "entries[34].item_id",
-     "note": "margin=0.020652",
+     "note": "margin=0.020494",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1646,7 +1652,7 @@
     {
      "confidence": 1.0,
      "field": "scroll_overlap",
-     "note": "shift_px=108;reason=verified_pixel_shift",
+     "note": "shift_px=181;reason=verified_pixel_shift;requested_px=304.3",
      "source": "verified_pixel_shift",
      "status": "ok"
     },
@@ -1658,9 +1664,16 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9594951863318182,
+     "confidence": 0.994113,
+     "field": "overlap_identity",
+     "note": "compared=9",
+     "source": "overlap_identity",
+     "status": "ok"
+    },
+    {
+     "confidence": 0.9593589694033722,
      "field": "entries[35].item_id",
-     "note": "margin=0.054634",
+     "note": "margin=0.054748",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1672,9 +1685,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9596981100001127,
+     "confidence": 0.9595956550126425,
      "field": "entries[36].item_id",
-     "note": "margin=0.035302",
+     "note": "margin=0.035291",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1686,9 +1699,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9575844596734315,
+     "confidence": 0.9575442290969249,
      "field": "entries[37].item_id",
-     "note": "margin=0.019783",
+     "note": "margin=0.019843",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1700,9 +1713,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9559629700276663,
+     "confidence": 0.9557474054400448,
      "field": "entries[38].item_id",
-     "note": "margin=0.019020",
+     "note": "margin=0.018978",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1714,9 +1727,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9553102287475201,
+     "confidence": 0.955305693772003,
      "field": "entries[39].item_id",
-     "note": "margin=0.071478",
+     "note": "margin=0.071744",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1728,23 +1741,9 @@
      "status": "ok"
     },
     {
-     "confidence": 1.0,
-     "field": "scroll_overlap",
-     "note": "shift_px=28;reason=verified_pixel_shift",
-     "source": "verified_pixel_shift",
-     "status": "ok"
-    },
-    {
-     "confidence": 1.0,
-     "field": "scroll_alignment",
-     "note": "correction_px=-0.5",
-     "source": "gutter_phase",
-     "status": "ok"
-    },
-    {
-     "confidence": 0.9573124278909781,
+     "confidence": 0.957444093015817,
      "field": "entries[40].item_id",
-     "note": "margin=0.032839",
+     "note": "margin=0.032951",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1756,9 +1755,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9562181178146698,
+     "confidence": 0.9562470205899745,
      "field": "entries[41].item_id",
-     "note": "margin=0.019107",
+     "note": "margin=0.019134",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1770,9 +1769,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9537296033601427,
+     "confidence": 0.9537514856422054,
      "field": "entries[42].item_id",
-     "note": "margin=0.016628",
+     "note": "margin=0.016575",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1784,9 +1783,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9538416679126253,
+     "confidence": 0.953760108310346,
      "field": "entries[43].item_id",
-     "note": "margin=0.070107",
+     "note": "margin=0.070053",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1798,9 +1797,9 @@
      "status": "ok"
     },
     {
-     "confidence": 0.9459654137288145,
+     "confidence": 0.9459559997243981,
      "field": "entries[44].item_id",
-     "note": "margin=0.473207",
+     "note": "margin=0.472965",
      "source": "inventory_detail_template",
      "status": "ok"
     },
@@ -1814,7 +1813,7 @@
     {
      "confidence": 1.0,
      "field": "scroll_overlap",
-     "note": "shift_px=0;reason=verified_no_motion",
+     "note": "shift_px=0;reason=verified_no_motion;requested_px=326.1",
      "source": "verified_no_motion",
      "status": "ok"
     },
@@ -2299,22 +2298,6 @@
   "frame-54.png",
   "frame-55.png",
   "frame-56.png",
-  "frame-57.png",
-  "frame-58.png",
-  "frame-59.png",
-  "frame-60.png",
-  "frame-61.png",
-  "frame-62.png",
-  "frame-63.png",
-  "frame-64.png",
-  "frame-65.png",
-  "frame-66.png",
-  "frame-67.png",
-  "frame-68.png",
-  "frame-69.png",
-  "frame-70.png",
-  "frame-71.png",
-  "frame-72.png",
-  "frame-73.png"
+  "frame-57.png"
  ]
 }

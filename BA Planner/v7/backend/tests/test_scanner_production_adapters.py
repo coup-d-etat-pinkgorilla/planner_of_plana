@@ -393,7 +393,13 @@ class ScannerProductionAdapterTests(unittest.TestCase):
             def phase_residuals(self, _frame, _source, _offset, _calibration=0.0):
                 return []
 
-            def advance(self, _target, _cancel, current, _source):
+            def row_centering(self, _source):
+                return 0.0
+
+            def page_distance(self, _source, _offset, _rows, _centering):
+                return 0.0
+
+            def advance(self, _target, _cancel, current, _source, _rows=None):
                 return type("Moved", (), {
                     "frame": current.copy(), "shift": 0.0, "terminal": True,
                     "reason": "verified_no_motion",

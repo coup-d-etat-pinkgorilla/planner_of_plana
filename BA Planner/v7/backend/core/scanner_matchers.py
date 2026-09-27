@@ -7,6 +7,7 @@ from typing import Any, Callable, Protocol
 
 from PIL import Image, ImageChops, ImageStat
 from statistics import median
+from core.recognition_image_ops import ncc_per_channel_icon
 
 from core.recognition_assets import RecognitionAssetCatalog
 from core.recognition_answer_samples import RecognitionAnswerSampleStore
@@ -1274,6 +1275,11 @@ class _InventoryScan:
     offset: float = 0.0
     read_until: int = -1
     gutter_calibration: float | None = None
+    rows_per_move: int = 1
+    row_centering: float = 0.0
+    first_page: Image.Image | None = None
+    seen_crops: dict[int, Image.Image] = field(default_factory=dict)
+    selected_index: int | None = None
     completed: bool = False
     page_open: bool = False
     input_stopped: ScannerError | None = None
@@ -1325,6 +1331,10 @@ class InventoryMatcherAdapter:
             return self._interrupted(scan, exc, cancel)
         finally:
             scan.frame.close()
+            if scan.first_page is not None:
+                scan.first_page.close()
+            for crop in scan.seen_crops.values():
+                crop.close()
             if not scan.completed:
                 for crop in scan.slot_crops.values():
                     crop.close()
@@ -1344,6 +1354,11 @@ class InventoryMatcherAdapter:
             scan.source_kind = scan.prepared.source
             scan.target = scan.target.replace(inventory_scan_profile=scan.prepared.profile_id)
             scan.gutter_calibration = self._gutter_phase(scan, 0.0)
+            # C5e-1 (E6): move one row less than the fully readable rows, so one read row overlaps.
+            first_rows = {index // 5 for index in navigation.page_slots(scan.source_kind, 0.0)}
+            scan.rows_per_move = max(1, len(first_rows) - 1)
+            scan.row_centering = navigation.row_centering(scan.source_kind)
+            scan.first_page = scan.frame.copy()
         self._load_answer_samples(scan.target.get("profile_id"), scan.source_size)
         if scan.prepared is not None:
             scan.allowed_ids = {row.item_id for row in CATALOG if row.profile_id == scan.prepared.profile_id}
@@ -1388,6 +1403,8 @@ class InventoryMatcherAdapter:
                     raise ScannerError("cancelled", "inventory scan cancelled")
                 crop = ratio_crop(scan.frame, visible[index])
                 try:
+                    if scan.prepared is not None and image_has_visible_content(crop):
+                        scan.seen_crops[index] = crop.copy()
                     reading = self._read_slot(scan, index, position, slots, crop, cancel)
                     if reading is not None and self._record_entry(scan, reading, crop):
                         if isinstance(reading.identity, str):
@@ -1411,6 +1428,9 @@ class InventoryMatcherAdapter:
                 self.detail_recovery.end_page(scan.target)
         if visible:
             scan.read_until = max(scan.read_until, max(visible))
+            # Only the rows a move can keep on screen are needed for the next overlap check.
+            for index in [index for index in scan.seen_crops if index < scan.read_until - 10 * 5]:
+                scan.seen_crops.pop(index).close()
         if scan.prepared is not None:
             if page_ids and not self.navigation.verify_profile_order(scan.prepared.profile_id, page_ids):
                 # The current client can sort the mixed item page by quantity/name,
@@ -1504,6 +1524,8 @@ class InventoryMatcherAdapter:
             scan.target, cancel, position, reading.identity, count.value, confident,
             profile_verified=scan.target.inventory_profile_verified is True,
             scan_profile=scan.target.get('inventory_scan_profile'))
+        if not outcome.stop:
+            scan.selected_index = reading.index
         if outcome.failure is not None:
             if outcome.failure.code not in DETAIL_RECOVERABLE_CODES:
                 raise outcome.failure
@@ -1575,10 +1597,13 @@ class InventoryMatcherAdapter:
             raise ScannerError("cancelled", "inventory scan cancelled")
         if navigation is None:
             return self._wheel_page(scan, cancel)
-        moved = navigation.advance(scan.target, cancel, scan.frame, scan.source_kind)
+        moved = navigation.advance(scan.target, cancel, scan.frame, scan.source_kind, 
+            self.navigation.page_distance(scan.source_kind, scan.offset, scan.rows_per_move, scan.row_centering))
         shift_px = round(moved.shift * scan.source_size[1])
+        requested = getattr(moved, "requested", None)
+        requested_note = "" if requested is None else f";requested_px={requested * scan.source_size[1]:.1f}"
         scan.evidence.append({"field": "scroll_overlap", "status": "ok", "source": moved.reason,
-            "confidence": 1.0, "note": f"shift_px={shift_px};reason={moved.reason}"})
+            "confidence": 1.0, "note": f"shift_px={shift_px};reason={moved.reason}{requested_note}"})
         if moved.terminal:
             moved.frame.close()
             self._require_tail_read(scan)
@@ -1587,7 +1612,8 @@ class InventoryMatcherAdapter:
         scan.offset += moved.shift
         scan.frame.close()
         scan.frame = moved.frame
-        self._align_to_gutters(scan)
+        self._align_to_gutters(scan, cancel)
+        self._verify_overlap(scan)
         return True
 
     def _require_tail_read(self, scan: "_InventoryScan") -> None:
@@ -1610,20 +1636,52 @@ class InventoryMatcherAdapter:
         agreeing = [error for error in errors if abs(error - middle) <= tolerance]
         return median(agreeing) if len(agreeing) >= 2 else None
 
-    def _align_to_gutters(self, scan: "_InventoryScan") -> None:
-        """Re-phase the measured offset on the observed tile rows (C5e-1, E1).
+    def _align_to_gutters(self, scan: "_InventoryScan", cancel: Event) -> None:
+        """Verify the measured offset on the observed tile rows (C5e-1, E1/E6).
 
-        Measured shifts are each exact to about a pixel but drift over several moves; the gutters
-        between tile rows give the absolute phase, so no selection has to be moved before a scroll.
+        A deterministic drag keeps the row phase, so the gutters normally confirm it within the phase
+        tolerance; beyond it the frame is captured again before the gutters' phase is trusted.
         """
         height = scan.source_size[1]
+        tolerance = rt.value("inventory.scroll.phase_tolerance_px") / 720 * height
         error = None if scan.gutter_calibration is None else self._gutter_phase(scan, scan.gutter_calibration)
+        remeasured = False
+        if error is not None and abs(error) > tolerance:
+            scan.frame.close()
+            scan.frame = self.capture.wait_stable(scan.target, cancel)
+            error, remeasured = self._gutter_phase(scan, scan.gutter_calibration), True
         if error is None or abs(error) > rt.value("inventory.gutter.max_correction") * height:
             note = "no calibration" if scan.gutter_calibration is None else "fewer than two agreeing gutters" if error is None else f"correction_px={error:.1f}"
             raise ScannerError("inventory_scroll_unverified", f"tile row phase unverified: {note}")
+        # Within the tolerance the move is verified; the observed phase still refines the offset, since a
+        # row ending about a pixel from the list edge decides whether the last row is readable (live tail).
         scan.offset -= error / height
         scan.evidence.append({"field": "scroll_alignment", "status": "ok", "source": "gutter_phase", "confidence": 1.0,
-                              "note": f"correction_px={error:.1f}"})
+                              "note": f"correction_px={error:.1f}{';remeasured' if remeasured else ''}"})
+
+    def _verify_overlap(self, scan: "_InventoryScan") -> None:
+        """Cross-check the content index of re-seen tiles against their first reading (C5e-1).
+
+        The kept selection tints its own tile, so it is left out; a row mapped one row off scores like a
+        different tile (live: <= .814 vs >= .905 for the same tile).
+        """
+        visible = self.navigation.page_slots(scan.source_kind, scan.offset)
+        scores = []
+        for index in sorted(visible):
+            if index > scan.read_until or index == scan.selected_index or index not in scan.seen_crops:
+                continue
+            with ratio_crop(scan.frame, visible[index]) as crop:
+                if image_has_visible_content(crop):
+                    scores.append(ncc_per_channel_icon(scan.seen_crops[index], crop))
+        if len(scores) < 2:
+            scan.evidence.append({"field": "overlap_identity", "status": "uncertain", "source": "overlap_identity",
+                                  "confidence": 0.0, "note": f"compared={len(scores)}"})
+            return
+        middle = median(scores)
+        if middle < rt.value("inventory.scroll.overlap_icon"):
+            raise ScannerError("inventory_scroll_unverified", f"re-seen tiles do not match their first reading: median={middle:.3f}")
+        scan.evidence.append({"field": "overlap_identity", "status": "ok", "source": "overlap_identity",
+                              "confidence": round(middle, 6), "note": f"compared={len(scores)}"})
 
     def _wheel_page(self, scan: "_InventoryScan", cancel: Event) -> bool:
         """Navigation-free fallback: wheel once and compare whole frames."""
@@ -1672,7 +1730,7 @@ class InventoryMatcherAdapter:
         if error.code == "inventory_scroll_unverified" and scan.prepared is not None and not cancel.is_set():
             # Safe abort returns the list to its first page by re-applying verified settings (X10).
             try:
-                self.navigation.restore_first_page(scan.target, Event(), scan.frame)
+                self.navigation.restore_first_page(scan.target, Event(), scan.frame, scan.first_page, scan.read_until // 5 + 1)
                 restored, restore_note = True, "display settings re-applied; first page shown"
             except ScannerError as restore_error:
                 restored, restore_note = False, restore_error.code

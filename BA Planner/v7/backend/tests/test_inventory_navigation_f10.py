@@ -4,6 +4,7 @@ from pathlib import Path
 from threading import Event
 import unittest
 from unittest.mock import Mock
+from types import SimpleNamespace
 from PIL import Image
 
 from core.inventory_detail_recovery import InventoryDetailRecognizer
@@ -116,7 +117,71 @@ class ShiftNavigation(InventoryNavigation):
     def measure_shift(self,before,after,source):return next(self.shifts)
 
 
+class DragCapture(FakeCapture):
+    def __init__(self):super().__init__();self.drags=[]
+    def drag_path(self,target,path,hold):self.drags.append((path,hold))
+
+
+class DragNavigation(ShiftNavigation):
+    """C5e-1: deterministic drags with scripted (shift, residual) measurements."""
+    def __init__(self,shifts):
+        super().__init__(shifts);self.capture=DragCapture();self.expected=[]
+        slots=[dict(cy=.3+row*.14) for row in range(4) for _col in range(5)]
+        self.detail_recognizer=SimpleNamespace(regions={'sources':{'item':{'grid_slots':slots}}},classify=lambda _f:'item')
+    def measure_shift(self,before,after,source,expected=None):self.expected.append(expected);return next(self.shifts)
+    def gutter_tops(self,frame,source):return [10,111]
+
+
 class ScrollTests(unittest.TestCase):
+    def test_c5e1_deterministic_drag_primes_moves_rows_and_holds(self):
+        nav=DragNavigation([(3*.14,1.0)]);result=nav.advance({},Event(),nav.capture.frame,'item',3*.14)
+        (path,hold),=nav.capture.drags
+        self.assertEqual(rt.value('inventory.scroll.hold_s'),hold)
+        priming=rt.value('inventory.scroll.priming_px')/720
+        self.assertEqual([(.975,.75),(.975,round(.75-priming,6))],path[:2])
+        self.assertAlmostEqual(.75-priming-3*.14,path[-1][1],places=5)
+        self.assertEqual(5,len(path))
+        self.assertAlmostEqual(3*.14,result.requested);self.assertAlmostEqual(3*.14,nav.expected[0])
+        self.assertFalse(result.terminal);self.assertEqual([],nav.capture.scrolls)
+
+    def test_c5e1_page_moves_overlap_one_row_at_the_centred_phase(self):
+        # The first page's top row is ~1px from the readable edge; moves land rows centred instead, so the
+        # overlap row (and the kept selection in it) stays readable after every move.
+        nav=InventoryNavigation(FakeCapture(),RecognitionAssetCatalog(),InventoryDetailRecognizer(RecognitionAssetCatalog()))
+        for source,k,centre_px in (('item',3,21.3),('equipment',4,10.8)):
+            with self.subTest(source=source):
+                base=nav.detail_recognizer.regions['sources'][source]['grid_slots'];pitch=base[5]['cy']-base[0]['cy']
+                centering=nav.row_centering(source);self.assertAlmostEqual(centre_px,centering*720,places=1)
+                offset=0.0;last_rows=sorted({i//5 for i in nav.page_slots(source,0.0)})
+                self.assertEqual(k+1,len(last_rows))
+                for move in range(3):
+                    distance=nav.page_distance(source,offset,k,centering)
+                    self.assertAlmostEqual(k*pitch-(centering if move==0 else 0),distance,places=9)
+                    offset+=distance;rows=sorted({i//5 for i in nav.page_slots(source,offset)})
+                    self.assertEqual(last_rows[-1],rows[0]);self.assertEqual(k+1,len(rows));last_rows=rows
+
+    def test_c5e1_short_move_is_read_and_no_motion_twice_is_the_end(self):
+        nav=DragNavigation([(.1,1.0)]);short=nav.advance({},Event(),nav.capture.frame,'item',3*.14)
+        self.assertFalse(short.terminal);self.assertAlmostEqual(.1,short.shift)
+        nav=DragNavigation([(0.0,.1),(0.001,.1)]);end=nav.advance({},Event(),nav.capture.frame,'item',3*.14)
+        self.assertTrue(end.terminal);self.assertEqual(2,len(nav.capture.drags))
+
+    def test_c5e1_wheel_restore_waits_for_the_spring_and_verifies_the_first_page(self):
+        slots=[dict(cx=.1*i,cy=.3) for i in range(5)]
+        def navigation(shifts):
+            nav=DragNavigation(shifts);nav.regions['list_viewport']={'item':dict(y1=.2,y2=.8)}
+            nav.detail_recognizer.regions['sources']['item']['grid_slots']=slots;return nav
+        # 12 rows: ceil(12/5)+1 = 4 ticks; the first poll still sees the spring, the second the first page
+        nav=navigation([(.3,2.0),(0.0,1.0)])
+        with Image.new('RGB',(1280,720),'#789abc') as first:self.assertIsNone(nav.restore_first_page({},Event(),first,first,rows=12))
+        self.assertEqual([120]*4,nav.capture.scrolls)
+        # settled away from the top twice: a second round of 10 ticks, then failure
+        nav=navigation([(.3,2.0)]*4)
+        with Image.new('RGB',(1280,720),'#789abc') as first,self.assertRaises(ScannerError) as exc:
+            nav.restore_first_page({},Event(),first,first,rows=3)
+        self.assertEqual('inventory_prepare_unconfirmed',exc.exception.code);self.assertEqual([120]*12,nav.capture.scrolls)
+
+
     def test_measured_shift_moves_the_page(self):
         nav=ShiftNavigation([(110/720,2.0)]);result=nav.advance({},Event(),nav.capture.frame,'item')
         self.assertAlmostEqual(110/720,result.shift);self.assertFalse(result.terminal)
@@ -281,6 +346,29 @@ class NativeNavigationFixtureTests(unittest.TestCase):
     def test_fixture_hashes_are_immutable(self):
         for asset in self.manifest['assets']:
             self.assertEqual(asset['sha256'],hashlib.sha256((self.root/asset['file']).read_bytes()).hexdigest())
+
+
+class ViewportSpecTests(unittest.TestCase):
+    SPEC=Path(__file__).resolve().parents[1]/'assets/recognition/spec/ba-ui-template-spec-v1.json'
+
+    @unittest.skipUnless(SPEC.is_file(),'template spec is not present')
+    def test_c5e1_list_viewport_matches_the_spec_and_covers_the_clip_softness(self):
+        # The spec keeps the measured viewport (the prefab clip is re-anchored at runtime); the readable
+        # edge margin must exceed the 12-unit soft clip, where rows fade out.
+        spec=json.loads(self.SPEC.read_text(encoding='utf-8'))
+        layout=next(value for value in _walk(spec) if isinstance(value,dict) and 'list_viewport_item' in value)
+        regions=RecognitionAssetCatalog().region_for_purpose('inventory','inventory-navigation-regions')['list_viewport']
+        for source in ('item','equipment'):
+            self.assertEqual([round(regions[source]['y1'],4),round(regions[source]['y2'],4)],layout[f'list_viewport_{source}'])
+        scale=720/round(2960*720/1280)
+        softness=next(value for value in _walk(spec) if isinstance(value,dict) and 'softness' in value)['softness'][1]
+        self.assertGreater(regions['edge_margin']*720,softness*scale)
+
+
+def _walk(value):
+    yield value
+    children=value.values() if isinstance(value,dict) else value if isinstance(value,list) else ()
+    for child in children:yield from _walk(child)
 
 
 class AssetTests(unittest.TestCase):

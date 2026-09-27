@@ -224,6 +224,16 @@ _ENTRIES = (
               note="gutters within ~3px of 720 of the median phase agree; at least two must"),
     Threshold("inventory.gutter.max_correction", 0.035, "ratio", "C5", C5, "scroll", "gutter_phase",
               note="a gutter phase more than ~25px of 720 from the measured shift is not trusted"),
+    # Deterministic page drag (C5e-1, E6; live 1280 re-measured 2026-09-27: hold .2s overshot ~40px,
+    # .35s ~10px, .5s ~2px, .8s exact to 1px over two moves each).
+    Threshold("inventory.scroll.priming_px", 8.0, "pixels", "C5", C5, "scroll", "deterministic_drag", resolution="native1280",
+              note="first move past the client's 4px drag threshold; it is consumed as the drag anchor"),
+    Threshold("inventory.scroll.hold_s", 0.8, "seconds", "C5", C5, "scroll", "deterministic_drag",
+              note="stillness before release so the list keeps no momentum (E6 said .2; this client needs .8)"),
+    Threshold("inventory.scroll.phase_tolerance_px", 3.0, "pixels", "C5", C5, "scroll", "gutter_phase", resolution="native1280",
+              note="gutter phase within this of the prediction verifies the move; beyond it the frame is re-measured"),
+    Threshold("inventory.scroll.overlap_icon", 0.86, "similarity", "C5", C5, "scroll", "overlap_identity",
+              note="median per-channel icon NCC of re-seen tiles vs their first reading; live same row >= .905, one row off <= .814"),
     Threshold("inventory.shift.no_motion", 0.004, "ratio", "C5", C5, "scroll_terminal", "verified_no_motion",
               note="shift at or below ~3px of 720 means the drag did not move the list"),
 )

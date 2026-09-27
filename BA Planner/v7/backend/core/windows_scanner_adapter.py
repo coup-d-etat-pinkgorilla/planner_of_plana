@@ -510,6 +510,50 @@ class WindowsCaptureInputAdapter:
             self._send(u,[up])
         self.last_input_trace.update(method='send_input',screen_start=[first.x,first.y],screen_end=[last.x,last.y])
 
+    def drag_path(self,target,path,hold_seconds):
+        """Press at path[0], move through the other points, hold still, release (C5e-1, E6).
+
+        Absolute cursor positions keep the distance exact regardless of pointer acceleration; holding
+        still before the release leaves the list without momentum, so it stops where the drag ended.
+        """
+        if len(path)<2 or any(len(point)!=2 for point in path):raise ScannerError('input_failed','invalid drag path')
+        values=[v for point in path for v in point]
+        if any(not isinstance(v,(int,float)) or not math.isfinite(v) or not 0<=v<=1 for v in values):
+            raise ScannerError('input_failed','invalid drag ratios')
+        if not isinstance(hold_seconds,(int,float)) or not 0<=hold_seconds<=1:raise ScannerError('input_failed','invalid drag hold')
+        self._cancel(target);u,_=self._libraries();hwnd=self._checked_hwnd(target)
+        if not self._foreground(u,target,hwnd):raise ScannerError('input_focus_changed','drag target is not foreground')
+        if not self._modifiers_clear(u):raise ScannerError('input_busy','user input is held')
+        width,height=self._client(u,hwnd);points=[]
+        for rx,ry in path:
+            point=wintypes.POINT(min(width-1,round(width*rx)),min(height-1,round(height*ry)))
+            if not u.ClientToScreen(hwnd,ctypes.byref(point)):raise ScannerError('input_failed','drag ClientToScreen failed')
+            points.append(point)
+        self.last_input_trace={'kind':'drag_path','client_path':[list(p) for p in path],'hold':hold_seconds,'method':None}
+        wait=target.get('_scanner_cancel',Event()).wait
+        if not u.SetCursorPos(points[0].x,points[0].y):raise ScannerError('input_failed','drag cursor placement failed')
+        hit=u.WindowFromPoint(points[0])
+        if int(u.GetForegroundWindow() or 0)!=hwnd or int(u.GetAncestor(hit,2) or hit or 0)!=hwnd:
+            raise ScannerError('input_focus_changed','drag target lost foreground or is occluded')
+        down=_INPUT(type=0,mi=_MOUSEINPUT(dwFlags=0x0002));up=_INPUT(type=0,mi=_MOUSEINPUT(dwFlags=0x0004))
+        if not self._send(u,[down]):raise ScannerError('input_failed','drag press insertion failed')
+        try:
+            # Real mouse-move events (the client reads raw input, not the cursor position), absolute on the
+            # virtual desktop so pointer acceleration cannot change the distance; one game frame per step.
+            left,top=u.GetSystemMetrics(76),u.GetSystemMetrics(77)
+            span_x,span_y=max(1,u.GetSystemMetrics(78)-1),max(1,u.GetSystemMetrics(79)-1)
+            wait(.03)
+            for point in points[1:]:
+                move=_INPUT(type=0,mi=_MOUSEINPUT(dx=round((point.x-left)*65535/span_x),dy=round((point.y-top)*65535/span_y),
+                                                  dwFlags=0x0001|0x8000|0x4000))
+                if not self._send(u,[move]):raise ScannerError('input_failed','drag move insertion failed')
+                wait(.03)
+            wait(hold_seconds)
+            self._cancel(target);self._checked_hwnd(target)
+        finally:
+            self._send(u,[up])
+        self.last_input_trace.update(method='send_input',screen_path=[[p.x,p.y] for p in points])
+
     def close(self):
         if self._worker is not None:
             self._worker.close()

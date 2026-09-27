@@ -1,0 +1,210 @@
+{
+ "profile": "tech_notes",
+ "cancel_after": null,
+ "size": [
+  1280,
+  720
+ ],
+ "scrolled_similarity_to_page0": 0.7735877841914008,
+ "error": {
+  "code": "inventory_prepare_unconfirmed",
+  "message": "list did not return to its first page",
+  "details": {}
+ },
+ "inputs_and_captures": [
+  {
+   "capture": "frame-00.png"
+  },
+  {
+   "input": "click",
+   "x": 0.841015,
+   "y": 0.159027,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-01.png"
+  },
+  {
+   "input": "click",
+   "x": 0.113281,
+   "y": 0.21493,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-02.png"
+  },
+  {
+   "input": "click",
+   "x": 0.867773,
+   "y": 0.226042,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-03.png"
+  },
+  {
+   "input": "click",
+   "x": 0.227149,
+   "y": 0.488889,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-04.png"
+  },
+  {
+   "input": "click",
+   "x": 0.117383,
+   "y": 0.289583,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-05.png"
+  },
+  {
+   "capture": "frame-06.png"
+  },
+  {
+   "input": "click",
+   "x": 0.595898,
+   "y": 0.827778,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-07.png"
+  },
+  {
+   "capture": "frame-08.png"
+  },
+  {
+   "input": "drag_path",
+   "path": [
+    [
+     0.975,
+     0.75
+    ],
+    [
+     0.975,
+     0.738889
+    ],
+    [
+     0.975,
+     0.597889
+    ],
+    [
+     0.975,
+     0.456889
+    ],
+    [
+     0.975,
+     0.315889
+    ]
+   ],
+   "hold": 0.8
+  },
+  {
+   "capture": "frame-09.png"
+  },
+  {
+   "input": "drag_path",
+   "path": [
+    [
+     0.975,
+     0.75
+    ],
+    [
+     0.975,
+     0.738889
+    ],
+    [
+     0.975,
+     0.597889
+    ],
+    [
+     0.975,
+     0.456889
+    ],
+    [
+     0.975,
+     0.315889
+    ]
+   ],
+   "hold": 0.8
+  },
+  {
+   "capture": "frame-10.png"
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "capture": "frame-11.png"
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "input": "scroll",
+   "delta": 120
+  },
+  {
+   "capture": "frame-12.png"
+  }
+ ],
+ "frames": {
+  "frame-00.png": "2853b615104604703d0851c6d291e3c2585db8aab89f0e3d84eb74241716b4cb",
+  "frame-01.png": "ac9e124494ec4692557e44191acce6b4e0f22551b7044c21e9d2a1e058f77573",
+  "frame-02.png": "6b60576633cdf036270dfcb34511861f632dc0959772c695d67b1c4512cb871c",
+  "frame-03.png": "eeaab7886259720fc007d82db4f4fdeb96809d84c82d3e92ab675a4644e577d2",
+  "frame-04.png": "800eeb3e7ac606dc86500fb90732ba1a7634972695754a86150d0c2d35653928",
+  "frame-05.png": "02157ffcd05905f3edf20182d03522fadfbfaa4f37eed887fcecb643df23dc4d",
+  "frame-06.png": "8d49f8f1ca2e7479ac8b0e26fa067b677784ec060e0b181c467046ba6fe043c5",
+  "frame-07.png": "4fd4b5cf3b1b794130be7e57b8d808cd219c270809bcff975557e0bced7c4e53",
+  "frame-08.png": "14181ffad575ac64dde6d80cf3dcbf771cd492864bb15983c6ff3831159373b6",
+  "frame-09.png": "2b803314f2c03c448dab4a840925a2a1c7485b3645dd61f04357ffbddf89d068",
+  "frame-10.png": "87eea9aff98e0eb3eec979ac8ff9c44cf7b6e0f991f07c9b566843776fe9c9cf",
+  "frame-11.png": "fc5842f3f32a3d863b1fc9ea644e45a798439aeb1efb97628f976309b9283937",
+  "frame-12.png": "f132e426edc57e0fd694aea313d1903038168522867b32c7ba3d49a701129f9d"
+ }
+}

@@ -63,6 +63,10 @@ class RecordingCapture:
         self.log.append({"input": "drag_scroll", "start": list(start), "end": list(end)})
         self.native.drag_scroll(target, start, end)
 
+    def drag_path(self, target, path, hold):
+        self.log.append({"input": "drag_path", "path": [list(point) for point in path], "hold": hold})
+        self.native.drag_path(target, path, hold)
+
     def press_key(self, target, key):
         self.log.append({"input": "key", "key": key})
         return self.native.press_key(target, key)
@@ -107,11 +111,11 @@ def main() -> None:
             source = detail.classify(first)
             prepared = navigation.prepare(target, cancel, first)
             page0 = capture.wait_stable(target, cancel)
-            moved = navigation.advance(target, cancel, page0, source)
-            moved = navigation.advance(target, cancel, moved.frame, source)
+            moved = navigation.advance(target, cancel, page0, source, 3)
+            moved = navigation.advance(target, cancel, moved.frame, source, 3)
             report["scrolled_similarity_to_page0"] = navigation.page_similarity(
                 navigation.signatures(page0, source), navigation.signatures(moved.frame, source))
-            navigation.restore_first_page(target, Event(), moved.frame)
+            navigation.restore_first_page(target, Event(), moved.frame, page0, rows=10)
             back = capture.wait_stable(target, Event())
             report["restored_similarity_to_page0"] = navigation.page_similarity(
                 navigation.signatures(page0, source), navigation.signatures(back, source))

@@ -129,6 +129,10 @@ class ReplayCapture:
         self._move({"input": "drag_scroll", "start": [round(v, 6) for v in start],
                     "end": [round(v, 6) for v in end]}, ["drag"])
 
+    def drag_path(self, _target, path, hold):
+        self._move({"input": "drag_path", "path": [[round(v, 6) for v in point] for point in path],
+                    "hold": hold}, ["drag"])
+
     def close(self) -> None:
         for image in self.images.values():
             image.close()
@@ -199,6 +203,9 @@ class LockedReplayCapture:
 
     def drag_scroll(self, _target, start, end):
         self._input({"input": "drag_scroll", "start": list(start), "end": list(end)})
+
+    def drag_path(self, _target, path, hold):
+        self._input({"input": "drag_path", "path": [list(point) for point in path], "hold": hold})
 
     def press_key(self, _target, key):
         self._input({"input": "key", "key": key})

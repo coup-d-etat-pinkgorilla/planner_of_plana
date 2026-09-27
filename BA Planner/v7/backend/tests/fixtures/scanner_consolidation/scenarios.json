@@ -357,9 +357,9 @@
    "scan_kind": "inventory",
    "replay": "locked",
    "frames_local_only": true,
-   "recording": "debug/scanner_c5_replay/tech-notes-detail-c5e1",
-   "trace_sha256": "964dbeb12ead3ccf1c84f3c7e825caabac231c11c5d12a5d77cd24fad636c96d",
-   "coverage": "C5e-1: live 1280 tech notes re-recorded with batch selection (completed pages keep their last verified selection) and gutter row phase instead of anchor clicks, every detail-panel read, measured shifts, a sub-row tail and no-motion end; input-locked (any input difference fails); frames local only",
+   "recording": "debug/scanner_c5_replay/tech-notes-detail-c5e1b",
+   "trace_sha256": "ba2a71843d648b40853f2a80fae3ca4bc8558bb4d99286361a4331c95b0662b6",
+   "coverage": "C5e-1: live 1280 tech notes re-recorded with batch selection (completed pages keep their last verified selection) deterministic held drags of k rows at a centred phase, gutter phase verification and overlap-row identity checks, every detail-panel read, measured shifts, a sub-row tail and no-motion end; input-locked (any input difference fails); frames local only",
    "target": {
     "inventory_scan_profile": "tech_notes"
    }

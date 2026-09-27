@@ -259,7 +259,7 @@ class F9AdapterTests(unittest.TestCase):
         adapter.detail_recovery.read.side_effect=[DetailRecoveryResult(DetailResult(ITEM,.95,.1,DetailCount('0',.9))),DetailRecoveryResult(DetailResult(OTHER,.95,.1,DetailCount('3',.9)))]
         adapter.navigation=nav
         result=self.scan(adapter);evidence=result[0]['evidence']
-        self.assertEqual(['correction_px=0.5'],[e['note'] for e in evidence if e['source']=='gutter_phase'])
+        self.assertEqual(['correction_px=0.5;remeasured'],[e['note'] for e in evidence if e['source']=='gutter_phase'])
         self.assertAlmostEqual(101/720-0.5/40,max(offsets))
         # the calibration passed on later pages is the first page's agreeing median
         self.assertEqual(-0.2,nav.phase_residuals.call_args_list[-1].args[3])
@@ -277,6 +277,25 @@ class F9AdapterTests(unittest.TestCase):
         result=self.scan(adapter)
         self.assertEqual('inventory_scroll_unverified',result.error.code)
         self.assertEqual(1,len(result.candidates[0]['payload']['entries']))
+    def test_c5e1_phase_within_tolerance_refines_without_recapture(self):
+        adapter=self.adapter();adapter.max_pages=3;nav=self.nav()
+        nav.prepare.return_value=PreparedInventory('item','tech_notes',True,True)
+        nav.verify_profile_order.return_value=True
+        offsets=[]
+        def page_slots(_source,offset,**_kw):
+            offsets.append(offset);return {0:SLOTS[0]} if offset==0 else {1:SLOTS[0]}
+        nav.page_slots.side_effect=page_slots
+        # 0.1px on a 40px frame is inside the 3px-of-720 tolerance: refined, not recaptured
+        nav.phase_residuals.side_effect=lambda _f,_s,offset,calibration:[0.0,0.0] if offset==0 else [0.1,0.1]
+        moves=iter([PageMove(adapter.capture.wait_stable({},FastEvent()),101/720,requested=101/720),
+                    PageMove(adapter.capture.wait_stable({},FastEvent()),0.0,True,'verified_no_motion')])
+        nav.advance.side_effect=lambda *_:next(moves)
+        adapter.detail_recovery.read.side_effect=[DetailRecoveryResult(DetailResult(ITEM,.95,.1,DetailCount('0',.9))),DetailRecoveryResult(DetailResult(OTHER,.95,.1,DetailCount('3',.9)))]
+        adapter.navigation=nav
+        result=self.scan(adapter);evidence=result[0]['evidence']
+        self.assertEqual(['correction_px=0.1'],[e['note'] for e in evidence if e['source']=='gutter_phase'])
+        self.assertAlmostEqual(101/720-0.1/40,max(offsets))
+        self.assertIn('requested_px=5.6',[e['note'] for e in evidence if e['field']=='scroll_overlap'][0])
     def test_c5e1_unobserved_row_phase_is_unverified(self):
         for residuals in ([],[3.0],[0.0,9.0],[40.0,40.5]):
             with self.subTest(residuals=residuals):

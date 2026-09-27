@@ -164,15 +164,18 @@ C5a·C5b는 2026-09-26 완료(status 참조). C5b가 남긴 방식 — 프로필
 |---|---|---|
 | C5c | X15 이미지 유틸 공통화 — `recognition_image_ops.py`, `_normalized_correlation` 두 변형을 `ncc_signed_lanczos`/`ncc_unit_bilinear`로 분리, private import 제거. **E2의 채널별 NCC(아이콘 영역)도 여기 둔다** | 동작 보존 |
 | C5d | X18 `InventoryDetailRecovery`를 `StudentPanelRecovery` 계약에 정렬 + **배치 선택**: 슬롯별 원선택 복귀를 제거하고 1→2→…→N 순차 선택, baseline은 마지막 선택 프레임으로 갱신(`same_grid`의 ignore에 이전/현재 선택 포함), 페이지 끝 또는 실패 시점에 **한 번** 검증 복귀. F9 (a) 클릭 전 보이는 선택, (b) 클릭 전후 같은 격자는 그대로. 슬롯당 재시도 ≤ 2, 선택 미확인이면 그 슬롯 partial·입력 중단 | 동작 변경 |
-| C5e-1 | **gutter 위상 검출**로 `_align_to_anchor`와 스크롤 전 anchor 클릭을 대체. viewport 행별 gutter-회색(198~210) 비율 ≥ .8 band(길이 ≥ 3px, 경계 band 제외), band 끝+3 = 타일 상단. `measure_shift`는 행 수·끝 판정용으로 유지. 위상 검출 실패(band < 2개)면 `inventory_scroll_unverified` | 동작 변경 |
+| C5e-1 | **결정론적 스크롤 + gutter 위상 검증**(E1·E6). 스크롤은 `press → priming 8px → k·itemSize·s 이동(2~3 스텝) → 0.2s 정지 → release`, **k = 완전히 보이는 행 수 − 1(한 행 겹침; 720p 아이템·장비 모두 4행)** — 겹친 행은 앞 페이지 판독과 identity 대조로 이동량을 교차 확인(관성 0, 이동량 = 요청량, 위상 보존 ≤2px). 릴리스 후 즉시 캡처(고정 0.5s 대기 제거). gutter 위상(viewport 행별 gutter-회색 198~215 비율 ≥ .8 band, 길이 ≥ 3px, 경계 band 제외, band 끝+3 = 타일 상단)은 **검증**으로: 예상 위상과 3px 초과 차이면 재측정 후 실제 값 사용. `measure_shift`는 실제 이동량·끝 판정용 유지(요청 < 관측이면 끝). `_align_to_anchor`·anchor 클릭 제거. 첫 페이지 복귀는 휠 up N tick(≤10) 후 위상 확인. viewport 사각형은 spec clip 범위(684/872 units)·softness 12 units에서 파생, 페이드 구간에 걸친 행은 다음 페이지로. 레지스트리 신규: `inventory.scroll.priming_px`(8), `inventory.scroll.hold_s`(.2), `inventory.scroll.phase_tolerance_px`(3). 위상 검출 실패(band < 2개)면 `inventory_scroll_unverified`. **포그라운드 유지(사용자 결정 2026-09-27)**: 그리드 스캔은 스캔 동안 게임 창을 계속 앞에 둔다(입력 버스트로 띄웠다 숨기지 않음). 백그라운드·최소화 입력은 불가(확정). 사용자 입력 충돌은 D21 | 동작 변경 |
 | C5e-2 | **타일 은행 fast path 복원**: `detail_required`를 "은행 출처가 타일 crop이고 M4 score ≥ `inventory.tile_bank.score`(.90) & margin ≥ `.margin`(.015)이면 상세 생략"으로 완화(`scanner_matchers.py:1419, 1460`). 상세 확정 (identity, 타일 crop, 해상도)를 **session bank**에 넣되 영구 저장은 사용자 승인 슬롯만(D1). 원화 아이콘 템플릿은 후순위로 강등(제거는 C7 결정). 페이지 진입 시 visible 슬롯 전부를 먼저 매칭하고 모호 슬롯만 C5d 배치 선택으로 넘긴다 | 동작 변경 |
 | C5e-3 | X19 수량을 `StudioNumericBank` 경로로(사용자 정답·세션 보정), `K` 축약 표기(C5-2) 처리. 기존 잉크마스크 경로는 parity 후 fallback. **synth seed 계층 추가**(D20/E5): 런타임 생성기가 KR 폰트로 만든 `x0-9K` 자릿수 템플릿을 최하위 우선순위로 공급, 프로필 gate(자릿수 top-1 ≥ .95) 통과 전에는 evidence만 기록 | 동작 변경 |
 | C5e-4 | equipment identity: **상세 패널의 카테고리 라벨(11장) × `T#` 배지(10장)를 1차 키**로, 상세 아이콘은 보조. 그리드에서는 icon M4 + 타일 좌하단 `T#` 배지. 라벨·배지 템플릿은 아이템과 무관해 현재 보유분으로 전부 캡처되며 미보유 (카테고리,티어)도 확정된다. 조각·범용 설계도·강화석은 카탈로그 항목 추가 + 상세 이름 템플릿(보유분 캡처) — C5-1 결정 | 동작 변경 |
 | C5e-5 | (선택, D12) 사용자 1280 프레임에서 추출한 타일 은행을 배포 asset으로 export하는 도구. 다른 PC 유효성은 X25 표본 확보 후 판단 | 도구 |
+| C5f | **학생 스캔 백그라운드 탐색 (게이트 통과 2026-09-27)**: `probe_background_key.py` 2회 — 다른 창 포그라운드 유지(`0x1b0bb2` 불변), 프레임 41~47 % 변화 = 키 소비. 즉 Unity는 `WM_KEYDOWN/UP`을 백그라운드에서 처리하며 스스로 활성화하지 않는다(08-26 기록의 포그라운드 전환은 어댑터의 `_foreground()` 선행 호출이 원인). 구현: `press_key` 순서를 **PostMessage 키 → PrintWindow 프레임 변화(identity 또는 diff ≥ 2 %)로 소비 확인 → 미변화 시에만 포그라운드 SendInput**으로. 학생 전체 스캔의 좌우 이동·캡처·판독은 전부 백그라운드. **클릭이 필요한 폴백**(패널 열기/닫기, 상세 복구)만 `이전 포그라운드 HWND 기록 → 게임 포그라운드 → 클릭·판정 → 이전 창 복원(SetForegroundWindow, 실패 시 evidence)` 순서로 잠깐 띄웠다 되돌린다(사용자 결정). 재고 그리드 스캔에는 적용하지 않음(포그라운드 유지) | 동작 변경 |
 | C5e-6 | **템플릿 합성 계층(synth tier)** — 런타임 생성기·로더·수량 seed·라벨링 폴백·E4 gate. 입력(명세·asset 팩·등급표)은 오케스트레이터가 확보 완료. 상세는 아래 "C5e-6 상세" 절의 6a~6f | 동작 변경·UI |
 
 - 실측 근거(E1): gutter 위상은 세 프로필·28 페이지 프레임에서 pitch 101px, anchor 클릭 대비 ≤ 1.5px, 13~23 ms, 누적 없음.
   세로 gutter는 타일 사선 모서리 때문에 쓰지 않는다(x는 region 자산 고정).
+- 실측 근거(E6, 실게임): 정지 후 릴리스 드래그는 관성 0·이동량 = 요청량 − 임계 초과 첫 move(→ priming으로 흡수), 4행 요청 시 위상 오차 ≤ 2px.
+  스크롤바는 숨김·비활성(thumb 없음, 트랙 클릭 무반응)이라 쓰지 않는다. 휠 1 tick은 536~709px로 가변(관성)이라 페이지 이동에 쓰지 않고 맨 위 복귀에만 쓴다.
 - 실측 근거(E2): 타일 crop 템플릿이면 현재 지표(M1)도 top-1 97~100%이나 margin .002~.006으로 `.03` gate를 못 넘긴다.
   채널별 NCC(아이콘 영역 x 12~88 %, y 6~76 %)는 tech notes 100 % / margin min .016, presents 100 % / .282, equipment 99.4 % / .003.
   M1 오답은 다른 학교(배경 지배), 그레이 NCC 오답은 같은 학교 다른 티어(색 손실) — 채널별 NCC만 둘 다 가른다.
@@ -244,6 +247,8 @@ C5a·C5b는 2026-09-26 완료(status 참조). C5b가 남긴 방식 — 프로필
 | D17 | 스캔 대상 클라이언트(KR/Steam)와 asset 출처(JP)의 아트 차이 처리 | 생성기에 클라이언트 인자, 기본은 스캔 대상과 같은 클라이언트의 asset; 불일치 항목은 E4 gate에서 partial. **폰트는 예외 없이 지역별**(E5: JP LINE Seed ≠ KR GyeonggiTitle) — asset 팩의 폰트는 스캔 대상 클라이언트에서 추출 | C5e-6 |
 | D16 | 합성 그리드 타일을 은행에 넣는 조건 | E4에서 프로필별로 합성-실물 M4 점수가 실물-실물 분포 안에 들 때만. 미달 프로필은 상세 패널 템플릿만 합성 | C5e-6 |
 | D15 | 미보유·미식별 아이템의 최종 폴백 | 사용자 라벨링(C5e-6e). 자동 추정 금지, partial 유지 | C5e-6 |
+| D22 | 4:3 화면 비율 지원 | 게임 옵션은 4:3/16:9 둘뿐. 같은 창 폭이면 `s`·타일 크기·열 x·행 pitch가 16:9와 **동일**(실측 1280폭: pitch 101.5px, 6행+α 표시), 세로 앵커 요소만 이동. region 자산의 높이 비율 상수를 버리고 프리팹 앵커 트리에서 ROI를 계산하는 **레이아웃 리졸버**(`recognition_layout.py`, 입력: `spec/debug/*prefab*.json` 앵커)로 파생 — 16:9·4:3 모두 같은 데이터. 실게임 4:3 검증(E7)은 리졸버 구현 후 | **보류(사용자 결정 2026-09-27): 이 워크플로 완료 후 재검토** |
+| D21 | 스캔 중 사용자 입력 충돌 처리 | 기본: 현재의 사후 검출(`input_focus_changed`·`_modifiers_clear`) 유지 + 저수준 훅으로 비주입 입력 감지 시 해당 스텝 `input_busy` 후 재시도(≤2회, 초과 시 `partial`). 입력 삼킴·입력 버스트·DLL 주입은 채택하지 않음 | C5e-1 |
 
 기본안은 사용자가 달리 말하지 않으면 채택한다. D1~D3은 재질문하지 않는다.
 
@@ -284,7 +289,7 @@ AGENTS.md → README.md → almanac/workflows/scanner-structural-consolidation-w
   C5d와 C5e-1은 함께 실게임 1280 세 프로필 tail 검증을 한 번에 받아도 된다.
 - 재고 golden 두 시나리오는 첫 상세 읽기에서 멈추므로 C5c 이전에 `scanner_c5_live` 프레임(선택 프레임 포함)으로
   **상세 경로가 끝까지 도는 재고 replay 시나리오 1개**를 추가한다(C6 리팩토링 보호). 이때 슬롯 44 기대값은 D18대로 `SkillBook_Ultimate`.
-- 실험 산출물: `docs/migration/scanner-consolidation/c5e-experiments-2026-09-27.md`(E1/E2/E5), `debug/scanner_c5e_experiments/`.
+- 실험 산출물: `docs/migration/scanner-consolidation/c5e-experiments-2026-09-27.md`(E1/E2/E5/E6), `debug/scanner_c5e_experiments/`.
 - 합성 입력: `docs/migration/scanner-consolidation/template-generation-spec-2026-09-27.md`, `backend/assets/recognition/spec/`,
   `backend/assets/recognition/asset_pack/`, 도구 `backend/tools/asset_spec/`. 팩 재추출이 필요하면(게임 패치) `ba_extract_pack.py` — 오케스트레이터 몫.
-- 사용자 확인 대기: 경기천년제목 폰트 재배포 조건(팩 `README.md`).
+- 사용자 확인 대기: 경기천년제목 폰트 재배포 조건(팩 `README.md`). C5f 게이트는 통과(2026-09-27).
