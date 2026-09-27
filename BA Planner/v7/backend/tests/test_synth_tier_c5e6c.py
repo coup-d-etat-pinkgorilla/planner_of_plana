@@ -149,6 +149,61 @@ class AdapterSynthTests(unittest.TestCase):
         self.assertIn("synth_bank", [e["source"] for e in row["evidence"] if e["field"].endswith(".item_id")])
 
 
+class SynthDetailFallbackTests(unittest.TestCase):
+    """C5e-6d: after the captured templates, the synthetic detail icon names the tile."""
+
+    def test_detail_panel_falls_back_to_synthetic_icons(self):
+        from core.inventory_detail_recovery import InventoryDetailRecognizer
+        from core.recognition_assets import RecognitionAssetCatalog
+        from core.recognition_image_ops import icon_vectors
+        from core.recognition_synth import DETAIL_ROI, normalize_detail
+        frame = Image.new("RGB", (1280, 720), (181, 227, 244))
+        x1, y1, x2, y2 = (round(DETAIL_ROI[0] * 1280), round(DETAIL_ROI[1] * 720), round(DETAIL_ROI[2] * 1280), round(DETAIL_ROI[3] * 720))
+        draw = ImageDraw.Draw(frame)
+        draw.polygon([(x1 + 20, y1 + 30), (x2 - 30, y1 + 40), (x2 - 40, y2 - 20), (x1 + 30, y2 - 30)], fill=(200, 60, 160))
+        draw.ellipse((x1 + 50, y1 + 60, x1 + 90, y1 + 100), fill=(20, 20, 20))
+        with frame.crop((x1, y1, x2, y2)) as crop, normalize_detail(crop) as own:
+            own_vectors = icon_vectors(own)
+        other = Image.new("RGB", (128, 128), (60, 200, 80))
+        ImageDraw.Draw(other).rectangle((20, 20, 100, 70), fill=(250, 250, 250))
+        reader = InventoryDetailRecognizer(RecognitionAssetCatalog())
+        try:
+            reader.synth_details["equipment"] = {"Equipment_Icon_Hat_Useall_Piece": own_vectors, "other": icon_vectors(other)}
+            result = reader.read(frame, "equipment")
+            self.assertEqual(("Equipment_Icon_Hat_Useall_Piece", "synth_detail_icon"), (result.identity, result.source))
+            reader.synth_details["equipment"] = {"a": own_vectors, "b": own_vectors}  # no margin: unidentified
+            self.assertIsNone(reader.read(frame, "equipment").identity)
+        finally:
+            reader.close()
+
+
+@unittest.skipUnless(find_game_dir() and RARITY.is_file() and any((V7 / "debug/scanner_c5e1d_live/equipment").glob("frame-*.png")),
+                     "local Steam client, rarity snapshot and recording frames required")
+class UniversalBlueprintReplayTests(unittest.TestCase):
+    def test_universal_blueprints_are_identified_by_synthetic_detail_icons(self):
+        from core.inventory_count_bank import CountBank, CountRead
+        from core.recognition_assets import RecognitionAssetCatalog
+        from core.recognition_synth_provider import SynthProvider
+        from tools.scanner_consolidation_replay import LockedReplayCapture, ReplayCancel, build_inventory_matcher
+        with tempfile.TemporaryDirectory() as root:
+            capture = LockedReplayCapture(V7 / "debug/scanner_c5e1d_live/equipment")
+            matcher, close = build_inventory_matcher(capture, RecognitionAssetCatalog(), None)
+            matcher.synth_provider = SynthProvider(Path(root) / "assets", Path(root) / "synth", RARITY)
+            try:
+                with patch.object(CountBank, "read", return_value=CountRead(None, "", 0.0, 0.0)):
+                    result = matcher({"inventory_scan_profile": "equipment"}, ReplayCancel(), lambda *_: None)
+                capture.close()
+            finally:
+                close()
+        row = (result.candidates if hasattr(result, "candidates") else result)[0]
+        useall = [e["item_id"] for e in sorted(row["payload"]["entries"], key=lambda e: e["observed_slot"] or 0) if "Useall" in e["item_id"]]
+        self.assertEqual(9, len(useall))
+        self.assertEqual("Equipment_Icon_Necklace_Useall_Piece", useall[0])
+        self.assertEqual("Equipment_Icon_Hat_Useall_Piece", useall[-1])
+        note = next(e["note"] for e in row["evidence"] if e["field"] == "tile_bank")
+        self.assertIn("unknown_new=0", note)
+
+
 @unittest.skipUnless(find_game_dir() and RARITY.is_file() and any(RECORDING.glob("frame-*.png")),
                      "local Steam client, rarity snapshot and recording frames required")
 class BankEmptySynthOnReplayTests(unittest.TestCase):

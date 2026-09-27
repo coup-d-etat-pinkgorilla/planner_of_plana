@@ -1406,11 +1406,13 @@ class InventoryMatcherAdapter:
         if provider is None:
             return
         if profile not in SYNTH_ENABLED_PROFILES:
-            # Count glyph seeds do not depend on the tile gate (C5e-3); the tiles stay out of the bank.
+            # Count glyph seeds and detail icons do not depend on the grid-tile gate (C5e-3, 6d); tiles stay out.
             try:
-                scan.glyph_seeds = dict(provider(profile, scan.source_size).glyphs)
+                templates = provider(profile, scan.source_size)
             except SynthUnavailable:
-                pass
+                return
+            scan.glyph_seeds = dict(templates.glyphs)
+            self._load_synth_details(scan, templates)
             return
         if not self._synth_guard().enabled(profile):
             scan.evidence.append({"field": "synth_tier", "status": "uncertain", "source": "synth_bank", "confidence": 0.0,
@@ -1425,9 +1427,20 @@ class InventoryMatcherAdapter:
         for identity, tile in templates.tiles.items():
             scan.bank.add_synth(identity, tile)
         scan.glyph_seeds = dict(templates.glyphs)
+        self._load_synth_details(scan, templates)
         scan.allow_synth = True
         scan.evidence.append({"field": "synth_tier", "status": "ok", "source": "synth_bank", "confidence": 1.0,
                               "note": f"profile={profile};tiles={len(templates.tiles)}"})
+
+    def _load_synth_details(self, scan: "_InventoryScan", templates) -> None:
+        recognizer = getattr(getattr(self, "detail_recovery", None), "recognizer", None)
+        if recognizer is None or not hasattr(recognizer, "synth_details") or not templates.details:
+            return
+        from core.recognition_image_ops import icon_vectors
+        allowed = scan.allowed_ids
+        recognizer.synth_details[scan.source_kind] = {
+            identity: icon_vectors(image) for identity, image in templates.details.items()
+            if allowed is None or identity in allowed}
 
     def _load_answer_samples(self, profile_id: object, source_size: tuple[int, int]) -> None:
         if self.answer_samples is None or not isinstance(profile_id, str):
@@ -1661,7 +1674,7 @@ class InventoryMatcherAdapter:
             scan.bank_stats["skipped_detail"] += 1
         elif detail_port is not None and (detail_required or not (fast_confident and count.value is not None)):
             self._apply_detail(scan, reading, position, slots, match, count, confident, cancel)
-            if detail_required and reading.detail_identity and reading.source == "inventory_detail_template":
+            if detail_required and reading.detail_identity and reading.source in ("inventory_detail_template", "synth_detail_icon"):
                 if banked is not None:
                     scan.bank_stats["agree" if banked.identity == reading.identity else "disagree"] += 1
                 if scan.bank is not None:

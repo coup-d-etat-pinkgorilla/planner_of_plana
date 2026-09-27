@@ -58,6 +58,8 @@ class InventoryDetailRecognizer:
         self.catalog=catalog
         self.regions=catalog.region_for_purpose('inventory','inventory-detail-regions')
         self.images={}
+        # C5e-6d: synthetic detail-icon vectors per source ({source: {identity: vectors}}), set by the scan.
+        self.synth_details={}
         self.last_ranking=[]
 
     def image(self,path):
@@ -154,7 +156,24 @@ class InventoryDetailRecognizer:
         margin=score-(ranked[1][1] if len(ranked)>1 else 0)
         threshold,min_margin=(.92,.03) if identity and identity.startswith('Equipment_Icon_WeaponExpGrowth') else (.88,.015)
         if score<threshold or margin<min_margin:identity=None
+        if identity is None and self.synth_details.get(source):
+            synthetic=self.synth_identity(frame,source)
+            if synthetic is not None:
+                return DetailResult(synthetic[0],synthetic[1],synthetic[2],self.read_count(frame,source),'synth_detail_icon')
         return DetailResult(identity,score,margin,self.read_count(frame,source))
+
+    def synth_identity(self,frame,source):
+        """C5e-6d fallback: the detail ROI against synthetic detail icons (after the captured templates)."""
+        from core.recognition_image_ops import icon_vector_similarity,icon_vectors
+        from core.recognition_synth import DETAIL_ROI,normalize_detail
+        w,h=frame.size
+        with frame.crop((round(DETAIL_ROI[0]*w),round(DETAIL_ROI[1]*h),round(DETAIL_ROI[2]*w),round(DETAIL_ROI[3]*h))) as crop,normalize_detail(crop) as normal:
+            query=icon_vectors(normal)
+        ranked=sorted(((icon_vector_similarity(query,vectors),identity) for identity,vectors in self.synth_details[source].items()),reverse=True)
+        if not ranked:return None
+        score,identity=ranked[0];margin=score-(ranked[1][0] if len(ranked)>1 else 0)
+        if score<rt.value('inventory.synth_detail.score') or margin<rt.value('inventory.synth_detail.margin'):return None
+        return identity,score,margin
 
     def close(self):
         for image in self.images.values():image.close()

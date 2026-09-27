@@ -255,6 +255,10 @@ _ENTRIES = (
               note="ink map level of label rows and final trim"),
     Threshold("inventory.count_label.ink_soft", 80.0, "intensity", "C5", C5, "quantity", "count_bank_session",
               note="ink map level of label columns (keeps thin diagonal strokes connected)"),
+    # C5e-6d synthetic detail-icon fallback (E3: items 101/101 true min .973, equipment 95/95 true min .931,
+    # universal blueprints .95-.97 with margin >= .12).
+    Threshold("inventory.synth_detail.score", 0.90, "similarity", "C5", C5, "item_id", "synth_detail_icon"),
+    Threshold("inventory.synth_detail.margin", 0.05, "margin", "C5", C5, "item_id", "synth_detail_icon"),
     Threshold("inventory.shift.no_motion", 0.004, "ratio", "C5", C5, "scroll_terminal", "verified_no_motion",
               note="shift at or below ~3px of 720 means the drag did not move the list"),
 )

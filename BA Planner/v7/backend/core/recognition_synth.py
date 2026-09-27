@@ -23,7 +23,7 @@ SPEC_VERSION = "1.0.0"
 # D16 gate (C5e-6c initial set): profiles whose synthetic grid tiles may decide an identity. Equipment and the
 # student screen join after the C5e-6f gate.
 SYNTH_ENABLED_PROFILES = frozenset({"tech_notes", "presents"})
-GENERATOR_VERSION = 1
+GENERATOR_VERSION = 2  # 2: equipment detail icons (C5e-4)
 DESIGN = (2960, 1440)
 RARITIES = ("N", "R", "SR", "SSR")
 TILE_SIZE = (96, 96)
@@ -43,6 +43,10 @@ ITEM_CARD_EQUIPMENT = ("Exp", "WeaponExpGrowthZ", "WeaponExpGrowthC", "WeaponExp
 # window). Fit on 101 live detail crops: prefab scale over a flat panel colour -> 101/101, true M4 median .995.
 DETAIL_ICON = (551, 435)
 DETAIL_CENTRE = (-717.0, 261.0)
+# Equipment detail panel: 649x512 units at (-717, 141), same planner ROI (fit on 95 live detail frames: prefab
+# scale -> 95/95 top-1, true M4 median .968; the 9 universal blueprints the templates cannot name match .95-.97).
+EQUIPMENT_DETAIL_ICON = (649, 512)
+EQUIPMENT_DETAIL_CENTRE = (-717.0, 141.0)
 DETAIL_ROI = (0.203516, 0.238194, 0.310937, 0.440972)
 DETAIL_BG = (181, 227, 244)
 GUTTER = (204, 204, 204)
@@ -127,15 +131,16 @@ def slot_crop(tile: Image.Image, s: float) -> Image.Image:
     return tile.crop((1 + round(x * k), 1 + round(y * k), 1 + round((x + w) * k), 1 + round((y + h) * k)))
 
 
-def compose_detail_icon(icon: Image.Image, window: tuple[int, int]) -> Image.Image:
-    """The planner's detail ROI of the item detail panel: the big icon over the panel colour (spec 3.3)."""
+def compose_detail_icon(icon: Image.Image, window: tuple[int, int], *, equipment: bool = False) -> Image.Image:
+    """The planner's detail ROI of the detail panel: the big icon over the panel colour (spec 3.3)."""
     width, height = window
     s = ui_scale(width, height)
     x1, y1 = round(DETAIL_ROI[0] * width), round(DETAIL_ROI[1] * height)
     x2, y2 = round(DETAIL_ROI[2] * width), round(DETAIL_ROI[3] * height)
     canvas = Image.new("RGBA", (x2 - x1, y2 - y1), DETAIL_BG + (255,))
-    icon_w, icon_h = DETAIL_ICON[0] * s, DETAIL_ICON[1] * s
-    centre_x, centre_y = width / 2 + DETAIL_CENTRE[0] * s, height / 2 - DETAIL_CENTRE[1] * s
+    size, centre = (EQUIPMENT_DETAIL_ICON, EQUIPMENT_DETAIL_CENTRE) if equipment else (DETAIL_ICON, DETAIL_CENTRE)
+    icon_w, icon_h = size[0] * s, size[1] * s
+    centre_x, centre_y = width / 2 + centre[0] * s, height / 2 - centre[1] * s
     with _scaled(icon.convert("RGBA"), (icon_w, icon_h)) as scaled:
         canvas.alpha_composite(scaled, (round(centre_x - icon_w / 2) - x1, round(centre_y - icon_h / 2) - y1))
     return canvas.convert("RGB")
@@ -157,7 +162,9 @@ def profile_universe(profile: str, rarity: dict[str, Any]) -> list[str]:
     catalog = {row.item_id for row in CATALOG if row.profile_id == profile}
     if profile == "equipment":
         table = rarity.get("equipment", {})
-        universe = {identity for identity in table if not identity.endswith("_Piece")}
+        # A tier blueprint folds into its equipment identity; universal blueprints have no other identity.
+        universe = {identity for identity in table
+                    if not identity.endswith("_Piece") or identity.removesuffix("_Piece") not in table}
     else:
         table = rarity.get("items", {})
         if profile == "presents":
@@ -211,9 +218,8 @@ def synthesize(cache: Any, rarity: dict[str, Any], *, profile: str, identities=N
                     tile = compose_equipment_tile(icon, sprites["Card_Item_Bg_C"], S_NORMAL)
                 else:
                     tile = compose_item_tile(icon, sprites[f"Card_Item_Bg_{row['rarity']}"], S_NORMAL)
-                if not equipment:
-                    with compose_detail_icon(icon, (1920, 1080)) as detail:
-                        result.details[identity] = normalize_detail(detail)
+                with compose_detail_icon(icon, (1920, 1080), equipment=equipment) as detail:
+                    result.details[identity] = normalize_detail(detail)
             with tile, slot_crop(tile, S_NORMAL) as crop:
                 result.tiles[identity] = normalize_tile(crop)
             parts.append(f"{identity}={icon_name}:{entry.get('pixel_sha256')}:{row.get('rarity')}")

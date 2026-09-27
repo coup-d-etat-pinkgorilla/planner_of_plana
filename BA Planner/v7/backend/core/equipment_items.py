@@ -238,8 +238,23 @@ def _ordered_equipment_series_names() -> list[str]:
     return ordered
 
 
+# Universal blueprints (EquipmentExcel 50x000, "<category> 만능 설계도"), listed after the enhancement stones in
+# series order (live 1280 equipment list, C5e-4 / C5-1 decision).
+EQUIPMENT_USEALL_ITEMS: tuple[tuple[str, str], ...] = (
+    ("Equipment_Icon_Necklace_Useall_Piece", "목걸이 만능 설계도"),
+    ("Equipment_Icon_Watch_Useall_Piece", "손목시계 만능 설계도"),
+    ("Equipment_Icon_Charm_Useall_Piece", "부적 만능 설계도"),
+    ("Equipment_Icon_Hairpin_Useall_Piece", "헤어핀 만능 설계도"),
+    ("Equipment_Icon_Badge_Useall_Piece", "배지 만능 설계도"),
+    ("Equipment_Icon_Bag_Useall_Piece", "가방 만능 설계도"),
+    ("Equipment_Icon_Shoes_Useall_Piece", "신발 만능 설계도"),
+    ("Equipment_Icon_Gloves_Useall_Piece", "장갑 만능 설계도"),
+    ("Equipment_Icon_Hat_Useall_Piece", "모자 만능 설계도"),
+)
+
 EQUIPMENT_ORDERED_ITEM_IDS: tuple[str, ...] = tuple(
     [item_id for item_id, _name in EQUIPMENT_EXP_ITEMS]
+    + [item_id for item_id, _name in EQUIPMENT_USEALL_ITEMS]
     + _ordered_equipment_series_item_ids()
     + [
         f"Equipment_Icon_WeaponExpGrowth{key}_{tier - 1}"
@@ -249,7 +264,7 @@ EQUIPMENT_ORDERED_ITEM_IDS: tuple[str, ...] = tuple(
 )
 
 EQUIPMENT_ITEM_ID_TO_NAME: dict[str, str] = {
-    item_id: name for item_id, name in EQUIPMENT_EXP_ITEMS
+    item_id: name for item_id, name in (*EQUIPMENT_EXP_ITEMS, *EQUIPMENT_USEALL_ITEMS)
 }
 EQUIPMENT_ITEM_ID_TO_NAME.update(
     {
