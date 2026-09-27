@@ -200,8 +200,31 @@ def ncc_per_channel_icon(left: Image.Image, right: Image.Image) -> float:
 
     Separates same-shape/different-colour tiers (grey NCC fails) and same-tier/different-school
     tiles (background-dominated mean difference fails); see c5e-experiments-2026-09-27 E2.
-    Not used by recognition yet (C5e-2 tile bank).
+    Used by the scroll overlap check (C5e-1); the tile bank uses the precomputed form below (C5e-2).
     """
     left_channels = _tile_icon_channels(left)
     right_channels = _tile_icon_channels(right)
     return sum(_ncc_values(a, b) for a, b in zip(left_channels, right_channels)) / 3.0
+
+
+def icon_vectors(image: Image.Image) -> tuple[list[float] | None, ...]:
+    """Per-channel icon vectors, mean-removed and unit-length, so M4 becomes three dot products.
+
+    A flat channel (no variance) is None and contributes 0, as in ``_ncc_values``.
+    """
+    vectors = []
+    for values in _tile_icon_channels(image):
+        mean = sum(values) / len(values)
+        centred = [value - mean for value in values]
+        norm = sum(value * value for value in centred) ** 0.5
+        vectors.append([value / norm for value in centred] if norm > 0 else None)
+    return tuple(vectors)
+
+
+def icon_vector_similarity(left: tuple[list[float] | None, ...], right: tuple[list[float] | None, ...]) -> float:
+    """M4 (``ncc_per_channel_icon``) from two ``icon_vectors`` results."""
+    total = 0.0
+    for a, b in zip(left, right):
+        if a is not None and b is not None:
+            total += sum(map(float.__mul__, a, b))
+    return total / 3.0

@@ -1819,6 +1819,13 @@
     },
     {
      "confidence": 1.0,
+     "field": "tile_bank",
+     "note": "confident=0;order_prior=0;order_conflict=0;unknown_new=0;skipped_detail=0;agree=0;disagree=0;learned=45;bank=45",
+     "source": "tile_bank",
+     "status": "ok"
+    },
+    {
+     "confidence": 1.0,
      "field": "scan_coverage",
      "note": "profile=tech_notes;terminal=True;ordered=True",
      "source": "inventory_navigation",

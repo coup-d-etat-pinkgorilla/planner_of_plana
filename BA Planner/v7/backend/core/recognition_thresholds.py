@@ -239,6 +239,11 @@ _ENTRIES = (
               note="user input more recent than this defers the next scanner input"),
     Threshold("input.guard.wait_s", 2.0, "seconds", "C5", C5, "input", "user_input_guard",
               note="a user still busy after this makes the step input_busy without sending it"),
+    # C5e-2 tile bank (M4 on detail-confirmed tile crops; E2 + live two-scan check: 196/196, margin >= .023).
+    Threshold("inventory.tile_bank.score", 0.90, "similarity", "C5", C5, "item_id", "tile_bank",
+              note="per-channel icon NCC to a banked tile of the same identity"),
+    Threshold("inventory.tile_bank.margin", 0.015, "margin", "C5", C5, "item_id", "tile_bank",
+              note="lead over the next banked identity (E2 min correct margin .016)"),
     Threshold("inventory.shift.no_motion", 0.004, "ratio", "C5", C5, "scroll_terminal", "verified_no_motion",
               note="shift at or below ~3px of 720 means the drag did not move the list"),
 )

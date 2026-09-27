@@ -8,6 +8,8 @@ from typing import Any, Callable, Protocol
 from PIL import Image, ImageChops, ImageStat
 from statistics import median
 from core.recognition_image_ops import ncc_per_channel_icon
+from core.inventory_tile_bank import TileBank
+from core.inventory_order_rules import increasing_run
 
 from core.recognition_assets import RecognitionAssetCatalog
 from core.recognition_answer_samples import RecognitionAnswerSampleStore
@@ -1254,6 +1256,7 @@ class _SlotReading:
     note: str
     profile_confirmed: bool
     detail_identity: bool = False
+    detail_read: bool = False
 
 
 @dataclass
@@ -1280,6 +1283,14 @@ class _InventoryScan:
     first_page: Image.Image | None = None
     seen_crops: dict[int, Image.Image] = field(default_factory=dict)
     selected_index: int | None = None
+    bank: Any = None
+    order: dict[str, int] = field(default_factory=dict)
+    bank_guesses: dict[int, Any] = field(default_factory=dict)
+    bank_anchors: set[int] = field(default_factory=set)
+    bank_stats: dict[str, int] = field(default_factory=lambda: {"confident": 0, "order_prior": 0, "order_conflict": 0,
+                                                                 "unknown_new": 0, "skipped_detail": 0, "agree": 0,
+                                                                 "disagree": 0, "learned": 0})
+    unknown_new: set[int] = field(default_factory=set)
     completed: bool = False
     page_open: bool = False
     input_stopped: ScannerError | None = None
@@ -1362,6 +1373,13 @@ class InventoryMatcherAdapter:
         self._load_answer_samples(scan.target.get("profile_id"), scan.source_size)
         if scan.prepared is not None:
             scan.allowed_ids = {row.item_id for row in CATALOG if row.profile_id == scan.prepared.profile_id}
+            scan.order = {row.item_id: row.order_index for row in CATALOG if row.profile_id == scan.prepared.profile_id}
+            scan.bank = self._tile_bank(scan.source_size)
+
+    def _tile_bank(self, source_size: tuple[int, int]) -> TileBank:
+        """C5e-2 session bank for this client size; it outlives one scan so later scans start from it."""
+        banks = self.__dict__.setdefault("tile_banks", {})
+        return banks.setdefault(tuple(source_size), TileBank())
 
     def _load_answer_samples(self, profile_id: object, source_size: tuple[int, int]) -> None:
         if self.answer_samples is None or not isinstance(profile_id, str):
@@ -1372,6 +1390,10 @@ class InventoryMatcherAdapter:
             self.matcher.replace_user_templates([
                 (sample.sample_id, sample.item_id, sample.image) for sample in samples
             ])
+            # User-approved tile samples (D1) are the bank's persistent tier.
+            bank = self._tile_bank(source_size)
+            for sample in samples:
+                bank.add(sample.item_id, sample.image, "user_confirmed")
         finally:
             self.answer_samples.close(samples)
 
@@ -1395,6 +1417,7 @@ class InventoryMatcherAdapter:
         if scan.prepared is not None and unread and min(unread) != scan.read_until + 1:
             # A tile row that was never fully visible would otherwise be skipped silently.
             raise ScannerError("inventory_scroll_unverified", f"rows skipped: next visible index {min(unread)} after {scan.read_until}")
+        self._match_page_bank(scan, visible)
         try:
             for position, index in enumerate(sorted(visible)):
                 if index <= scan.read_until:
@@ -1432,19 +1455,72 @@ class InventoryMatcherAdapter:
             for index in [index for index in scan.seen_crops if index < scan.read_until - 10 * 5]:
                 scan.seen_crops.pop(index).close()
         if scan.prepared is not None:
-            if page_ids and not self.navigation.verify_profile_order(scan.prepared.profile_id, page_ids):
-                # The current client can sort the mixed item page by quantity/name,
-                # so catalog order is not guaranteed even when every recognized
-                # identity belongs to the explicit profile. Keep the observations,
-                # but mark coverage partial and prohibit zero-fill below.
-                scan.evidence.append({
-                    "field": "profile_order", "status": "partial",
-                    "source": "inventory_profile_catalog", "confidence": 0.0,
-                    "note": "visible items do not match monotonic scan profile order; no zero-fill",
-                })
-                scan.review_required = True
+            # D23: order is judged once per scan at the end (longest increasing run); a page out of order only
+            # withholds the verified-profile flag that permits grid-count fallbacks.
+            ordered_page = bool(page_ids) and self.navigation.verify_profile_order(scan.prepared.profile_id, page_ids)
             scan.observed_profile_ids.extend(page_ids)
-            scan.target = scan.target.replace(inventory_profile_verified=bool(page_ids) and not page_unresolved)
+            scan.target = scan.target.replace(inventory_profile_verified=ordered_page and not page_unresolved)
+
+    def _match_page_bank(self, scan: "_InventoryScan", visible: dict[int, dict[str, Any]]) -> None:
+        """C5e-2 pass 1: match every new tile against the bank; confident tiles in catalog order are anchors."""
+        scan.bank_guesses, scan.bank_anchors = {}, set()
+        if scan.bank is None or not len(scan.bank):
+            return
+        previous = self._last_confirmed_order(scan)
+        candidates = self._bank_candidates(scan, scan.allowed_ids)
+        for index in sorted(visible):
+            if index <= scan.read_until:
+                continue
+            with ratio_crop(scan.frame, visible[index]) as crop:
+                if not image_has_visible_content(crop):
+                    continue
+                guess = scan.bank.match(crop, candidates)
+            scan.bank_guesses[index] = guess
+            order = scan.order.get(guess.identity)
+            # An anchor must continue the sorted order; a confident tile out of order goes to the detail panel.
+            if guess.confident and order is not None and (previous is None or order > previous):
+                scan.bank_anchors.add(index)
+                previous = order
+
+    @staticmethod
+    def _bank_candidates(scan: "_InventoryScan", pool) -> set[str]:
+        """Bank candidates for a new tile: each item appears once in the list, so identities already recorded
+        in this scan cannot be it (live first scans: 14 of 14 confident wrong matches were such identities)."""
+        recorded = {entry["item_id"] for entry in scan.entries}
+        return set(pool if pool is not None else scan.bank.entries) - recorded
+
+    @staticmethod
+    def _last_confirmed_order(scan: "_InventoryScan") -> int | None:
+        for entry in reversed(scan.entries):
+            if entry.get("observed_slot") is not None and entry["item_id"] in scan.order:
+                return scan.order[entry["item_id"]]
+        return None
+
+    def _bank_identity(self, scan: "_InventoryScan", index: int, crop: Image.Image) -> "Any | None":
+        """C5e-2 pass 2: a confident bank identity for this tile, using the order prior when needed."""
+        guess = scan.bank_guesses.get(index)
+        if guess is None:
+            return None
+        if index in scan.bank_anchors:
+            scan.bank_stats["confident"] += 1
+            return guess
+        low = self._last_confirmed_order(scan)
+        later = [scan.order[scan.bank_guesses[i].identity] for i in sorted(scan.bank_anchors) if i > index]
+        high = later[0] if later else None
+        if low is None and high is None:
+            return None
+        overall, between = scan.bank.match_between(crop, self._bank_candidates(scan, scan.allowed_ids), scan.order, low, high)
+        # The best candidate overall must itself lie between the neighbours; otherwise the detail panel decides.
+        if between.confident and overall.identity == between.identity:
+            scan.bank_stats["order_prior"] += 1
+            return between
+        # D23: the prior only narrows. A tile that confidently looks like a banked item (any profile) which
+        # cannot sit between its neighbours is an order conflict; either way the detail panel decides.
+        full = scan.bank.match(crop, self._bank_candidates(scan, None))
+        order = scan.order.get(full.identity)
+        if full.confident and (order is None or (low is not None and order <= low) or (high is not None and order >= high)):
+            scan.bank_stats["order_conflict"] += 1
+        return None
 
     def _read_slot(self, scan: "_InventoryScan", index: int, position: int, slots: list[dict[str, Any]],
                    crop: Image.Image, cancel: Event) -> "_SlotReading | None":
@@ -1458,6 +1534,7 @@ class InventoryMatcherAdapter:
         # equipment ranks as its blueprint piece), so a profile scan with a detail panel never skips or
         # labels from the grid alone: identity and membership come from the detail panel.
         detail_required = scan.prepared is not None and detail_port is not None
+        banked = self._bank_identity(scan, index, crop) if detail_required else None
         # On the item page the verified category filter is the membership evidence, but only when the
         # detail panel names the tile; without it the F12 gate below still applies.
         category_filtered = detail_required and scan.prepared.source == "item"
@@ -1498,12 +1575,31 @@ class InventoryMatcherAdapter:
             status='ok' if confident else 'uncertain', quantity=count.value, count_score=count.score,
             count_source='slot_count_glyph', note=f'margin={count.margin:.6f}', profile_confirmed=profile_confirmed,
         )
-        if detail_port is not None and (detail_required or not (fast_confident and count.value is not None)):
+        if banked is not None and count.value is not None:
+            # C5e-2 fast path: a banked identity with a confident grid count needs no detail panel.
+            reading.identity, reading.score, reading.margin = banked.identity, banked.score, banked.margin
+            reading.source, reading.status, reading.detail_identity = f"tile_bank_{banked.tier}", "ok", True
+            reading.profile_confirmed = banked.identity in (scan.allowed_ids or ())
+            scan.bank_stats["skipped_detail"] += 1
+        elif detail_port is not None and (detail_required or not (fast_confident and count.value is not None)):
             self._apply_detail(scan, reading, position, slots, match, count, confident, cancel)
+            if detail_required and reading.detail_identity and reading.source == "inventory_detail_template":
+                if banked is not None:
+                    scan.bank_stats["agree" if banked.identity == reading.identity else "disagree"] += 1
+                if scan.bank is not None:
+                    scan.bank.add(reading.identity, crop)
+                    scan.bank_stats["learned"] += 1
         if detail_required and not reading.detail_identity:
             # Never record a grid-guessed identity on a profile scan: keep the slot as unresolved evidence.
+            # D23: a tile the detail panel read but could not name is not a catalog item (new, or not yet in the
+            # catalog like blueprint pieces); it waits for labeling (6e). A failed read is not a new item.
+            flag = ""
+            if reading.detail_read:
+                scan.unknown_new.add(index)
+                scan.bank_stats["unknown_new"] += 1
+                flag = "unknown_new;"
             scan.evidence.append({"field": f"slots[{index}]", "status": "partial", "source": "inventory_detail_panel",
-                                  "confidence": 0.0, "note": f"identity unresolved by detail panel;{reading.note}"})
+                                  "confidence": 0.0, "note": f"{flag}identity unresolved by detail panel;{reading.note}"})
             scan.review_required = True
             return None
         if allowed is not None and reading.identity not in allowed:
@@ -1538,6 +1634,7 @@ class InventoryMatcherAdapter:
                 reading.note = outcome.failure.code + ';selection confirmed;detail unread'
             reading.status = 'partial'
             return
+        reading.detail_read = True
         detail = outcome.detail
         reading.detail_identity = detail.identity is not None
         if detail.identity is not None:
@@ -1701,11 +1798,19 @@ class InventoryMatcherAdapter:
 
     def _finalize(self, scan: "_InventoryScan") -> list[dict[str, Any]]:
         prepared = scan.prepared
+        if prepared is not None and scan.bank is not None:
+            stats = scan.bank_stats
+            scan.evidence.append({"field": "tile_bank", "status": "ok" if not stats["disagree"] else "uncertain",
+                "source": "tile_bank", "confidence": 1.0 if not stats["disagree"] else 0.0,
+                "note": ";".join(f"{key}={value}" for key, value in stats.items()) + f";bank={len(scan.bank)}"})
         if prepared is not None:
-            ordered_ok = self.navigation.verify_profile_order(prepared.profile_id, scan.observed_profile_ids)
-            verified = scan.coverage_complete and not (scan.review_required or not ordered_ok)
+            excluded = self._order_outliers(scan)
+            # A scan that observed no catalog item has no order evidence at all: never zero-fill from it.
+            observed = any(entry.get("observed_slot") is not None and entry["item_id"] in scan.order for entry in scan.entries)
+            ordered_ok = observed and not excluded
+            verified = scan.coverage_complete and not scan.review_required and observed
             if verified:
-                self._zero_fill(scan)
+                self._zero_fill(scan, excluded)
             scan.evidence.append({"field": "scan_coverage", "status": "ok" if verified else "partial",
                 "source": "inventory_navigation", "confidence": 1.0 if verified else 0.0,
                 "note": f"profile={prepared.profile_id};terminal={scan.coverage_complete};ordered={ordered_ok}"})
@@ -1713,12 +1818,37 @@ class InventoryMatcherAdapter:
         return [scan.candidate(scan.evidence, scan.review_required)]
 
     @staticmethod
-    def _zero_fill(scan: "_InventoryScan") -> None:
+    def _order_outliers(scan: "_InventoryScan") -> list[tuple[int | None, int | None]]:
+        """D23: flag observed entries outside the longest increasing catalog-order run.
+
+        Returns, per flagged entry, the open catalog-order window between its in-run neighbours: a flagged
+        tile may really be any item in that window, so those items are not zero-filled.
+        """
+        observed = [entry for entry in scan.entries if entry.get("observed_slot") is not None]
+        orders = [scan.order.get(entry["item_id"]) for entry in observed]
+        run = increasing_run(orders)
+        windows = []
+        for position, entry in enumerate(observed):
+            if position in run:
+                continue
+            low = max((orders[i] for i in run if i < position), default=None)
+            high = min((orders[i] for i in run if i > position), default=None)
+            windows.append((low, high))
+            scan.evidence.append({"field": f"entries[{entry['observed_slot']}].order", "status": "uncertain",
+                "source": "inventory_order_run", "confidence": 0.0,
+                "note": "outside the longest increasing catalog-order run" if orders[position] is not None
+                        else "not in the profile catalog"})
+        return windows
+
+    @staticmethod
+    def _zero_fill(scan: "_InventoryScan", excluded=()) -> None:
         profile_id = scan.prepared.profile_id
         known = {row.item_id: row for row in CATALOG if row.profile_id == profile_id and row.zero_fill_allowed}
         present = {entry['item_id'] for entry in scan.entries}
         for item_id, row in sorted(known.items(), key=lambda pair: pair[1].order_index):
             if item_id in present:
+                continue
+            if any((low is None or row.order_index > low) and (high is None or row.order_index < high) for low, high in excluded):
                 continue
             scan.entries.append({"key": item_id, "quantity": "0", "item_id": item_id, "name": row.display_name,
                 "observed_slot": None, "profile_id": profile_id, "inventory_scan_profile": profile_id})
