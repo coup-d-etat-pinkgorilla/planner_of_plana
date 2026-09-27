@@ -135,6 +135,13 @@ class ReplayCapture:
         self.images.clear()
 
 
+class ReplayCancel(Event):
+    """A cancel token that is never set; its settle/retry pauses return at once in replay."""
+
+    def wait(self, timeout=None):
+        return self.is_set()
+
+
 class ReplayDivergence(AssertionError):
     """The code under replay sent an input the locked recording did not contain."""
 
@@ -318,7 +325,7 @@ def run_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
         result: Any = None
         try:
             try:
-                result = matcher(target, Event(), progress)
+                result = matcher(target, ReplayCancel(), progress)
                 output = normalize(result)
             except ScannerError as exc:
                 output = {"raised": normalize(exc)}

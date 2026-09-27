@@ -351,6 +351,18 @@
      "click:eq_filtermenu_button": "menu_filter"
     }
    }
+  },
+  {
+   "id": "inventory_item_tech_notes_detail_locked_1280",
+   "scan_kind": "inventory",
+   "replay": "locked",
+   "frames_local_only": true,
+   "recording": "debug/scanner_c5_replay/tech-notes-detail",
+   "trace_sha256": "35f61425412bec1ec98eaa6849ec371f8cc02d41a66efab125cc1e93a7476271",
+   "coverage": "C5: live 1280 tech notes recorded at 3533b11 with every detail-panel read, anchor re-alignment, measured shifts, 31px-class tail and no-motion end; input-locked (any input difference fails); frames local only",
+   "target": {
+    "inventory_scan_profile": "tech_notes"
+   }
   }
  ]
 }
