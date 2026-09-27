@@ -15,3 +15,10 @@ release/
 
 # Locked live replay recordings keep frames local (scanner consolidation C5); trace.json is tracked.
 debug/scanner_c5_replay/**/frame-*.png
+
+# D24: development copy of the game asset pack; runtime extracts it from the local client (C5e-6a-0).
+# manifest.json and README.md stay tracked as the extractor answer key.
+backend/assets/recognition/asset_pack/icons-*.zip
+backend/assets/recognition/asset_pack/icons/
+backend/assets/recognition/asset_pack/fonts/
+backend/assets/recognition/asset_pack/sprites/

@@ -22,7 +22,7 @@ sources:
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
 | C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
 | C4 임계값 레지스트리 | **완료** (2026-09-26, C4a~C4c) | `d4f030e` | — |
-| C5 인식 공통화 | **진행 중: C5a~C5d·C5e-1·C5e-2 완료**(D21 실입력 확인·C5e-2 실게임 두 번째 스캔은 사용자 대기) (2026-09-27) | `43c17b5` | C5e-6a-0 → 6a~6c |
+| C5 인식 공통화 | **진행 중: C5a~C5d·C5e-1·C5e-2·C5e-6a-0 완료**(D21 실입력 확인·C5e-2 실게임 두 번째 스캔은 사용자 대기) (2026-09-27) | `43c17b5` | C5e-6a 생성기 |
 | C6~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -863,3 +863,28 @@ HEAD 내용에 오케스트레이터의 새 기록 4줄을 합쳐 복원했다.)
 - 미검증: 실게임 두 번째 스캔(모니터 꺼짐) — replay로 대신.
 - (기록) status가 18:04에 다시 오래된 사본으로 덮여 `b3f46b0`에 들어갔다. `df2255d` 내용 + 오케스트레이터 새 항목 + 이 절로 복원.
 - 다음: 워크플로 순서 **C5e-6a-0(D24 로컬 추출기) → 6a → 6b → 6c** → C5e-3.
+
+## C5e-6a-0 — 로컬 asset 추출기 (D24) — 완료, UI 폴더 선택은 이월 (2026-09-27, 시작 `21fc9a9`)
+
+- `core/recognition_asset_extract.py`: `find_game_dir()`(레지스트리 SteamPath → `libraryfolders.vdf` → `appmanifest_3557620.acf` installdir, 카탈로그 존재 확인),
+  `extract(game_dir, out_root, rarity_path) -> AssetCache`. 카탈로그 파서는 **자체 구현**한 최소 CCDB v1 리더(`AddressablesCatalog`, 주소 → 첫 의존 번들) —
+  `tools/asset_spec/ccdb_catalog_reference.py`는 "BA Viewer 0.1에서 가져옴"이라 라이선스가 기록돼 있지 않아 코어로 복사하지 않았다(**사용자 확인 필요: 그 파일의 출처·라이선스**).
+  읽는 것은 키가 필요 없는 파일뿐(카탈로그, 아이콘 Texture2D, `NGUIAtlas Common` 스프라이트 rect, `Card_Item_Bg_C` 텍스처, Font `m_FontData`). 등급표는 배포 스냅샷을 캐시에 복사.
+- 대상: 스냅샷 아이콘 1268 + **카탈로그에만 있는 아이콘 61**(`03_NonEquipment`/`02_Equipment` 폴더 × `Item_Icon_`/`Equipment_Icon_` 접두 — 스냅샷이 뒤처진 신규 항목, D24;
+  `@` 없이 텍스처 이름으로 저장, manifest `snapshot:false`) + 아틀라스 스프라이트 12 + `Card_Item_Bg_C` + 폰트 2. 아틀라스·폰트 번들은 날짜 접미가 바뀌어도 되게 glob + 이름으로 찾는다
+  (현재 atlas 번들 2개 중 `Common`이 든 쪽).
+- 캐시: `runtime_paths.resolve_extracted_asset_root()` = `%LOCALAPPDATA%/BA Planner/recognition-assets/<catalog sha[:16]>/`(`BA_PLANNER_USER_DIR`·`BA_PLANNER_EXTRACTED_ASSET_DIR` 재정의).
+  staging에 만든 뒤 교체(실패 시 이전 캐시 유지), 성공하면 이전 카탈로그 캐시 삭제.
+- **증분(번들 단위)**: 이전 manifest의 번들 (이름, 크기, mtime)이 같으면 열지 않고 그 번들 항목을 이전 캐시에서 **하드링크**(실패 시 복사). 복사로 했을 때 1345 파일에 9 s
+  (거의 전부 파일 open — 백신 검사로 추정) → 하드링크로 1.3~2.0 s.
+- **정답지(실측, 이 PC의 Steam 클라이언트 2026-09-15 카탈로그)**: 첫 추출 **9.0 s**, 아이콘 1329(스냅샷 1268 전부)·스프라이트 13·폰트 2, missing 0.
+  **아이콘 1268/1268·스프라이트 13/13 픽셀 동일, 폰트 2/2 바이트 동일**. PNG 파일 sha는 인코더(Pillow 12 vs 오케스트레이터 환경)마다 달라 정답지 비교는
+  디코드 픽셀 sha(`pixel_sha`)로 한다 — manifest에 `pixel_sha256`과 파일 `sha256`을 함께 기록. 캐시 적중 0.08 s, 카탈로그만 바뀐 증분 1.3~2.0 s(32/33 번들 재사용).
+- 실패: 폴더·카탈로그·스냅샷 없음, 손상·잘린 카탈로그(엔트리 블록이 파일 끝을 넘는 경우 포함), UnityPy 없음, 추출 중 예외 → 모두 `asset_extract_failed`, 캐시는 건드리지 않음.
+- 의존성: `pyproject.toml`에 `UnityPy>=1.24,<2` 추가(워크플로 명시; texture2ddecoder 등은 UnityPy 의존으로 설치됨, 이 PC 1.24.2 휠 확인).
+  `.gitignore`: `asset_pack`의 zip·icons·fonts·sprites(개발용, D24). `manifest.json`·`README.md`는 정답지로 추적.
+- 테스트 +5: 합성 CCDB 카탈로그 해석, 손상 카탈로그, vdf/acf 폴더 탐지, 폴더 없음 → 실패·캐시 무변경, **실 클라이언트 정답지 + 증분**(클라이언트·팩이 있는 PC에서만, ~11 s).
+  Python **619 OK**.
+- 이월: ① 탐지 실패 시 **UI 폴더 선택**(워크플로의 UI 예외, protocol + Flutter) — 6e 라벨링 UI 세션에 합친다. ② 추출 실행 시점(백엔드 시작 시 백그라운드/첫 스캔 전)과 진행 표시는
+  6c 로더가 소비할 때 연결. ③ `spec/`(등급 스냅샷·기하 명세)는 아직 미추적 — 배포 스냅샷이므로 추적 여부는 오케스트레이터 결정.
+- 다음: **C5e-6a 생성기**(`recognition_synth.py`).
