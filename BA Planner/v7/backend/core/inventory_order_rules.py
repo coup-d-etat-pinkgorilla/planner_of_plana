@@ -1,9 +1,11 @@
 """D23: the client's default inventory order, computed from ExcelDB item metadata.
 
-The client's sorting code (``ItemSortingService.GetDefaultSortingOrder``) is not in the dumps, so these
-rules are induced from the live C5b scans (tech notes 45, presents 56, equipment 95 + 9 universal blueprints
-identified in C5e-4, all monotonic) and are
-re-verified on every scan by the order check. Metadata comes from ``spec/item-rarity-v1.json``.
+Read from the disassembled comparers (orchestrator log 2026-09-27): the item "default" comparer orders by
+ItemExcel Id and ``UINonEquipmentInventory.OnSort`` then groups by tag (school), groups ordered by their first
+(smallest) Id; equipment uses ``EquipmentSortingService.CompareCategory``'s static category ranks. The grouping
+LINQ body has no symbols, so group order and in-group Quality order are still checked against the live C5b scans
+(tech notes 45, presents 56, equipment 95 + 9 universal blueprints) and re-verified on every scan by the order
+check. Metadata comes from ``spec/item-rarity-v1.json``.
 """
 from __future__ import annotations
 
@@ -14,8 +16,6 @@ from typing import Any
 
 SPEC = Path(__file__).resolve().parents[1] / "assets/recognition/spec/item-rarity-v1.json"
 RARITY = {"N": 0, "R": 1, "SR": 2, "SSR": 3}
-SCHOOLS = ("Hyakkiyako", "RedWinter", "Trinity", "Gehenna", "Abydos", "Millennium", "Arius",
-           "Shanhaijing", "Valkyrie", "Highlander", "Wildhunt")
 EQUIPMENT_CATEGORIES = ("Necklace", "Watch", "Charm", "Hairpin", "Badge", "Bag", "Shoes", "Gloves", "Hat")
 WEAPON_GROWTH = "ZCBA"
 
@@ -28,17 +28,36 @@ def load_metadata(path: Path = SPEC) -> dict[str, dict[str, Any]]:
     return {**data.get("items", {}), **data.get("equipment", {})}
 
 
-def order_key(profile: str, item_id: str, meta: dict[str, Any]) -> tuple:
-    """Sort key of item_id in the profile's default list order; raises KeyError/ValueError when unknown."""
+def _tech_note_group(item_id: str) -> str:
+    """School tag of a tech note (secret notes form their own group); the spec carries no tags, the icon does."""
+    if item_id.startswith("Item_Icon_SkillBook_Ultimate"):
+        return "Ultimate"
+    return re.fullmatch(r"Item_Icon_SkillBook_(\w+?)_\d+", item_id).group(1)
+
+
+def _group_firsts(metadata: dict[str, dict[str, Any]]) -> dict[str, int]:
+    firsts: dict[str, int] = {}
+    for item_id, row in metadata.items():
+        if re.fullmatch(r"Item_Icon_SkillBook_(\w+?_\d+|Ultimate(_Piece)?)", item_id):
+            group = _tech_note_group(item_id)
+            firsts[group] = min(firsts.get(group, row["id"]), row["id"])
+    return firsts
+
+
+def order_key(profile: str, item_id: str, metadata: dict[str, dict[str, Any]]) -> tuple:
+    """Sort key of item_id in the profile's default list order; raises KeyError/ValueError when unknown.
+
+    ``metadata`` is the whole ``load_metadata()`` table: tech-note groups are ordered by their smallest Id.
+    """
+    meta = metadata[item_id]
     if profile == "tech_notes":
-        # School enum x tier; secret notes last. New T1 notes (id 6001x) sit with their school, so the key
-        # is the school in the icon name, not the ExcelDB id.
-        if item_id.startswith("Item_Icon_SkillBook_Ultimate"):
-            return (len(SCHOOLS), 0 if item_id.endswith("_Piece") else 1)
-        school, tier = re.fullmatch(r"Item_Icon_SkillBook_(\w+?)_(\d+)", item_id).groups()
-        return (SCHOOLS.index(school), int(tier))
+        # School group (by its first Id) x Quality; new T1 notes (Id 6001x) sit inside their school's group,
+        # which is why the key is the group, not the item's own Id. Secret notes (9998/9999) are the last group.
+        group = _tech_note_group(item_id)
+        return (_group_firsts(metadata)[group], meta["quality"], meta["id"])
     if profile == "presents":
-        return (RARITY[meta["rarity"]], meta["id"])
+        # Id only: SR (5000s) < SSR (5100s) < 91000xxx is an Id coincidence, not a rarity key.
+        return (meta["id"],)
     if profile == "equipment":
         category, rarity = meta["category"], RARITY[meta["rarity"]]
         if category == "Exp":

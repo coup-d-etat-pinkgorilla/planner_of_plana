@@ -1,11 +1,13 @@
 """Generate the static v7 present order/name table from the reviewed v6 assets."""
 import ast
+import json
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 V6 = ROOT.parent / 'v6'
 OUTPUT = ROOT / 'backend/core/inventory_present_items.py'
+SPEC = ROOT / 'backend/assets/recognition/spec/item-rarity-v1.json'
 
 
 def natural_key(value: str):
@@ -30,6 +32,13 @@ def main():
                         key=natural_key)
     if len(identities) != len(set(identities)) or not identities:
         raise RuntimeError('v6 present identity set is empty or duplicated')
+    # D23: the client's default item comparer orders presents by ItemExcel Id (no tag grouping).
+    excel_ids = {identity: row['id'] for identity, row in
+                 json.loads(SPEC.read_text(encoding='utf-8'))['items'].items()}
+    missing = [identity for identity in identities if identity not in excel_ids]
+    if missing:
+        raise RuntimeError(f'presents without an ExcelDB id: {missing}')
+    identities.sort(key=excel_ids.__getitem__)
     rows = []
     for identity in identities:
         display = names.get(identity, identity)

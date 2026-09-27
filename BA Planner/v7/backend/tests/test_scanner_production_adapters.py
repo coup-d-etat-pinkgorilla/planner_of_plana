@@ -12,6 +12,17 @@ from core.recognition_assets import RecognitionAssetCatalog
 from core.scanner_matchers import InventoryMatcherAdapter, SlotCountMatcher, StudentMatcherAdapter
 from core.scanner_session import ScannerError
 from core.windows_scanner_adapter import WindowsCaptureInputAdapter
+from input_guard_stub import patch_input_guard
+
+_GUARD = patch_input_guard()
+
+
+def setUpModule():
+    _GUARD.start()
+
+
+def tearDownModule():
+    _GUARD.stop()
 
 
 ASSETS = Path(__file__).parents[1] / "assets" / "recognition" / "v1"

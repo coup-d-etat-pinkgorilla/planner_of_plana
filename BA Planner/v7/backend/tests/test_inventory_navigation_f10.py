@@ -48,11 +48,12 @@ class PreparationTests(unittest.TestCase):
         self.assertEqual(2,value['contracts']['filter_open']['max_attempts'])
         self.assertFalse(value['contracts']['coverage']['cancel_or_partial_or_scroll_failure_zero_fill'])
 
-    def test_present_profile_has_the_v6_natural_order_for_all_templates(self):
+    def test_present_profile_has_the_excel_id_order_for_all_templates(self):
+        # D23: the client orders presents by ItemExcel Id (v6 used the icon names' natural order).
         rows=[row for row in CATALOG if row.profile_id=='presents']
         self.assertEqual(75,len(rows))
         self.assertEqual('Item_Icon_Favor_0',rows[0].item_id)
-        self.assertEqual('Item_Icon_Favor_SSR_GL_20',rows[-1].item_id)
+        self.assertEqual('Item_Icon_Favor_SSR_GL_19',rows[-1].item_id)
         nav=bare();self.assertTrue(nav.verify_profile_order('presents',[row.item_id for row in rows]))
 
     def test_item_prepare_orders_filter_then_verified_sort_then_confirm(self):

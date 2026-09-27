@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "catalog_revision": "d26456217a0dc36adea3a9ca049615d38e45bae630ae5dc47f28ed44a929ba72",
+  "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99",
   "representative_rows": [
     {"resource_key":"Equipment_Icon_Exp_0","item_id":"Equipment_Icon_Exp_0","display_name":"하급 강화석","category":"equipment","profile_id":"equipment","order_index":3,"zero_fill_allowed":true},
     {"resource_key":"Item_Icon_ExpItem_0","item_id":"Item_Icon_ExpItem_0","display_name":"초급 활동 보고서","category":"activity_report","profile_id":"activity_reports","order_index":0,"zero_fill_allowed":true},

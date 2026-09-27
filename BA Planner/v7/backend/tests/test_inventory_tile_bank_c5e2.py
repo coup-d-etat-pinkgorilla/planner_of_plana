@@ -303,17 +303,15 @@ class OrderRulesTests(unittest.TestCase):
         meta = load_metadata()
         if not meta:
             self.skipTest("item rarity spec is not installed")
-        for profile in ("tech_notes", "equipment"):
+        for profile in ("tech_notes", "presents", "equipment"):
             rows = sorted([row for row in CATALOG if row.profile_id == profile], key=lambda row: row.order_index)
-            ruled = sorted(rows, key=lambda row: order_key(profile, row.item_id, meta.get(row.item_id, {})))
+            ruled = sorted(rows, key=lambda row: order_key(profile, row.item_id, meta))
             self.assertEqual([row.item_id for row in rows], [row.item_id for row in ruled], profile)
-        # Presents: the rule orders every live-observed present monotonically in scan order; it differs from
-        # the catalog only for items no scan has shown (Favor_Random/Selection, Lv2_Package/Special, SSR_1/2,
-        # parts of SSR_GL) - see status D23.
+        # The catalog is generated in rule order, so also hold the rule to a live scan's slot order.
         trace = Path(__file__).resolve().parents[2] / "debug/scanner_c5e1d_live/presents/trace.json"
         entries = json.loads(trace.read_text(encoding="utf-8"))["result"]["candidates"][0]["payload"]["entries"]
         observed = [e["item_id"] for e in sorted((e for e in entries if e["observed_slot"] is not None), key=lambda e: e["observed_slot"])]
-        keys = [order_key("presents", item, meta[item]) for item in observed]
+        keys = [order_key("presents", item, meta) for item in observed]
         self.assertEqual(56, len(observed))
         self.assertEqual(sorted(keys), keys)
 
