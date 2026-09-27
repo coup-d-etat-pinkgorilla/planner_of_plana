@@ -19,6 +19,8 @@ from core.inventory_navigation import InventoryNavigation
 from core.tactical_lobby_scanner import TacticalLobbyMatcherAdapter
 from core.tactical_v2 import TacticalV2Store
 from core.windows_scanner_adapter import WindowsCaptureInputAdapter
+from core.recognition_synth_provider import SynthProvider
+from core.runtime_paths import BACKEND_DIR, resolve_extracted_asset_root, resolve_synth_cache_root
 
 
 def build_scanner_service(storage_root: Path) -> ScannerSessionService:
@@ -45,6 +47,9 @@ def build_scanner_service(storage_root: Path) -> ScannerSessionService:
         windows, catalog, answer_samples=answer_samples,
         detail_recovery=InventoryDetailRecovery(windows,inventory_detail),
         navigation=InventoryNavigation(windows,catalog,inventory_detail),
+        # C5e-6c: synthetic tier from the user's own client (D24); unavailable -> scans continue without it.
+        synth_provider=SynthProvider(resolve_extracted_asset_root(), resolve_synth_cache_root(),
+                                     BACKEND_DIR / "assets" / "recognition" / "spec" / "item-rarity-v1.json"),
     )
 
     def train_answer(

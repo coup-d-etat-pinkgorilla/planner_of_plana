@@ -20,6 +20,9 @@ from typing import Any
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 SPEC_VERSION = "1.0.0"
+# D16 gate (C5e-6c initial set): profiles whose synthetic grid tiles may decide an identity. Equipment and the
+# student screen join after the C5e-6f gate.
+SYNTH_ENABLED_PROFILES = frozenset({"tech_notes", "presents"})
 GENERATOR_VERSION = 1
 DESIGN = (2960, 1440)
 RARITIES = ("N", "R", "SR", "SSR")

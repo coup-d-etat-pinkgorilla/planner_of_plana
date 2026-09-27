@@ -10,6 +10,8 @@ from statistics import median
 from core.recognition_image_ops import ncc_per_channel_icon
 from core.inventory_tile_bank import TileBank
 from core.inventory_order_rules import increasing_run
+from core.recognition_synth import SYNTH_ENABLED_PROFILES, SynthUnavailable
+from core.recognition_synth_cache import SynthDriftGuard
 
 from core.recognition_assets import RecognitionAssetCatalog
 from core.recognition_answer_samples import RecognitionAnswerSampleStore
@@ -1291,6 +1293,8 @@ class _InventoryScan:
                                                                  "unknown_new": 0, "skipped_detail": 0, "agree": 0,
                                                                  "disagree": 0, "learned": 0})
     unknown_new: set[int] = field(default_factory=set)
+    allow_synth: bool = False
+    detail_confirmed: list[tuple[str, Image.Image]] = field(default_factory=list)
     completed: bool = False
     page_open: bool = False
     input_stopped: ScannerError | None = None
@@ -1309,7 +1313,7 @@ class _InventoryScan:
 
 
 class InventoryMatcherAdapter:
-    def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = rt.value("inventory.grid_icon.score"), margin: float = rt.value("inventory.grid_icon.margin"), max_pages: int = 60, answer_samples: RecognitionAnswerSampleStore | None = None, detail_recovery=None, navigation=None) -> None:
+    def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = rt.value("inventory.grid_icon.score"), margin: float = rt.value("inventory.grid_icon.margin"), max_pages: int = 60, answer_samples: RecognitionAnswerSampleStore | None = None, detail_recovery=None, navigation=None, synth_provider=None) -> None:
         self.capture = capture
         self.catalog = catalog
         self.threshold = threshold
@@ -1319,6 +1323,7 @@ class InventoryMatcherAdapter:
         self.count_matcher = SlotCountMatcher(catalog)
         self.answer_samples = answer_samples
         self.detail_recovery = detail_recovery
+        self.synth_provider = synth_provider
         self.navigation = navigation
         regions = catalog.region("inventory").get("item", {})
         self.slots = regions.get("grid_slots")
@@ -1345,6 +1350,8 @@ class InventoryMatcherAdapter:
             if scan.first_page is not None:
                 scan.first_page.close()
             for crop in scan.seen_crops.values():
+                crop.close()
+            for _identity, crop in scan.detail_confirmed:
                 crop.close()
             if not scan.completed:
                 for crop in scan.slot_crops.values():
@@ -1375,11 +1382,37 @@ class InventoryMatcherAdapter:
             scan.allowed_ids = {row.item_id for row in CATALOG if row.profile_id == scan.prepared.profile_id}
             scan.order = {row.item_id: row.order_index for row in CATALOG if row.profile_id == scan.prepared.profile_id}
             scan.bank = self._tile_bank(scan.source_size)
+            self._load_synth(scan)
 
     def _tile_bank(self, source_size: tuple[int, int]) -> TileBank:
         """C5e-2 session bank for this client size; it outlives one scan so later scans start from it."""
         banks = self.__dict__.setdefault("tile_banks", {})
         return banks.setdefault(tuple(source_size), TileBank())
+
+    def _synth_guard(self) -> SynthDriftGuard:
+        return self.__dict__.setdefault("synth_guard", SynthDriftGuard())
+
+    def _load_synth(self, scan: "_InventoryScan") -> None:
+        """C5e-6c: the synthetic tier below the session bank, for D16-gated profiles only."""
+        provider = getattr(self, "synth_provider", None)
+        profile = scan.prepared.profile_id
+        if provider is None or profile not in SYNTH_ENABLED_PROFILES:
+            return
+        if not self._synth_guard().enabled(profile):
+            scan.evidence.append({"field": "synth_tier", "status": "uncertain", "source": "synth_bank", "confidence": 0.0,
+                                  "note": f"profile={profile};disabled after synth_drift_detected"})
+            return
+        try:
+            templates = provider(profile, scan.source_size)
+        except SynthUnavailable as exc:
+            scan.evidence.append({"field": "synth_tier", "status": "uncertain", "source": "synth_bank", "confidence": 0.0,
+                                  "note": f"profile={profile};unavailable;{exc.reason}"})
+            return
+        for identity, tile in templates.tiles.items():
+            scan.bank.add_synth(identity, tile)
+        scan.allow_synth = True
+        scan.evidence.append({"field": "synth_tier", "status": "ok", "source": "synth_bank", "confidence": 1.0,
+                              "note": f"profile={profile};tiles={len(templates.tiles)}"})
 
     def _load_answer_samples(self, profile_id: object, source_size: tuple[int, int]) -> None:
         if self.answer_samples is None or not isinstance(profile_id, str):
@@ -1474,7 +1507,7 @@ class InventoryMatcherAdapter:
             with ratio_crop(scan.frame, visible[index]) as crop:
                 if not image_has_visible_content(crop):
                     continue
-                guess = scan.bank.match(crop, candidates)
+                guess = scan.bank.match(crop, candidates, allow_synth=scan.allow_synth)
             scan.bank_guesses[index] = guess
             order = scan.order.get(guess.identity)
             # An anchor must continue the sorted order; a confident tile out of order goes to the detail panel.
@@ -1509,14 +1542,15 @@ class InventoryMatcherAdapter:
         high = later[0] if later else None
         if low is None and high is None:
             return None
-        overall, between = scan.bank.match_between(crop, self._bank_candidates(scan, scan.allowed_ids), scan.order, low, high)
+        overall, between = scan.bank.match_between(crop, self._bank_candidates(scan, scan.allowed_ids), scan.order, low, high,
+                                                   scan.allow_synth)
         # The best candidate overall must itself lie between the neighbours; otherwise the detail panel decides.
         if between.confident and overall.identity == between.identity:
             scan.bank_stats["order_prior"] += 1
             return between
         # D23: the prior only narrows. A tile that confidently looks like a banked item (any profile) which
         # cannot sit between its neighbours is an order conflict; either way the detail panel decides.
-        full = scan.bank.match(crop, self._bank_candidates(scan, None))
+        full = scan.bank.match(crop, self._bank_candidates(scan, None), allow_synth=scan.allow_synth)
         order = scan.order.get(full.identity)
         if full.confident and (order is None or (low is not None and order <= low) or (high is not None and order >= high)):
             scan.bank_stats["order_conflict"] += 1
@@ -1578,7 +1612,9 @@ class InventoryMatcherAdapter:
         if banked is not None and count.value is not None:
             # C5e-2 fast path: a banked identity with a confident grid count needs no detail panel.
             reading.identity, reading.score, reading.margin = banked.identity, banked.score, banked.margin
-            reading.source, reading.status, reading.detail_identity = f"tile_bank_{banked.tier}", "ok", True
+            # A slot confirmed by a synthetic tile alone is recorded as such (C5e-6 principle).
+            reading.source = "synth_bank" if banked.tier == "synth" else f"tile_bank_{banked.tier}"
+            reading.status, reading.detail_identity = "ok", True
             reading.profile_confirmed = banked.identity in (scan.allowed_ids or ())
             scan.bank_stats["skipped_detail"] += 1
         elif detail_port is not None and (detail_required or not (fast_confident and count.value is not None)):
@@ -1589,6 +1625,8 @@ class InventoryMatcherAdapter:
                 if scan.bank is not None:
                     scan.bank.add(reading.identity, crop)
                     scan.bank_stats["learned"] += 1
+                    if scan.allow_synth:
+                        scan.detail_confirmed.append((reading.identity, crop.copy()))
         if detail_required and not reading.detail_identity:
             # Never record a grid-guessed identity on a profile scan: keep the slot as unresolved evidence.
             # D23: a tile the detail panel read but could not name is not a catalog item (new, or not yet in the
@@ -1798,6 +1836,11 @@ class InventoryMatcherAdapter:
 
     def _finalize(self, scan: "_InventoryScan") -> list[dict[str, Any]]:
         prepared = scan.prepared
+        if prepared is not None and scan.allow_synth:
+            # C5e-6b/D19: synth vs real on detail-confirmed tiles; two low scans switch the tier off.
+            scores = [score for identity, crop in scan.detail_confirmed
+                      if (score := scan.bank.synth_score(identity, crop)) is not None]
+            scan.evidence.append(self._synth_guard().record(prepared.profile_id, scores))
         if prepared is not None and scan.bank is not None:
             stats = scan.bank_stats
             scan.evidence.append({"field": "tile_bank", "status": "ok" if not stats["disagree"] else "uncertain",

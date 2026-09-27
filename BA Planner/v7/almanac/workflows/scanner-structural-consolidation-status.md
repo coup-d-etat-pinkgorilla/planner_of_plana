@@ -22,7 +22,7 @@ sources:
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
 | C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
 | C4 임계값 레지스트리 | **완료** (2026-09-26, C4a~C4c) | `d4f030e` | — |
-| C5 인식 공통화 | **진행 중: C5a~C5d·C5e-1·C5e-2·C5e-6a-0·6a·6b 완료**(D21 실입력·C5e-2 실게임 두 번째 스캔 사용자 대기, 6a 학생 화면 spec 대기) (2026-09-27) | `43c17b5` | C5e-6c 로더 계층 |
+| C5 인식 공통화 | **진행 중: C5a~C5d·C5e-1·C5e-2·C5e-6a-0·6a·6b·6c 완료**(D21 실입력·C5e-2 실게임 두 번째 스캔 사용자 대기, 6a 학생 화면 spec 대기) (2026-09-27) | `43c17b5` | C5e-3 수량 은행 |
 | C6~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -929,3 +929,32 @@ HEAD 내용에 오케스트레이터의 새 기록 4줄을 합쳐 복원했다.)
 - 테스트 +5: 드리프트 2회 연속·초기화·1회 보고, 확정 0건, drift 점수, **실 자산으로 적중/미스·변경 1건만 재합성·blob 손상 복구·index 손상 전체 재생성·창 크기별 글리프(720p 19~21, 1440p 38~40)**.
   Python **630 OK**.
 - 다음: **C5e-6c** 로더 계층(은행 계층 `user_confirmed → session → synth → bundled`, D16 gate 프로필, drift 연결).
+
+## C5e-6c — 합성 로더 계층 (동작 변경) — 완료 (2026-09-27, 시작 `6d35acc`)
+
+- **은행 계층** `TileBank`: `synth < session < user_confirmed`. `add_synth(identity, tile)`는 그 identity에 실물 계층이 없을 때만 항목이 되고, 실물 타일이 들어오면
+  synth 항목을 대체한다(워크플로 "상위 계층에 있으면 synth 제외"). 합성 벡터는 드리프트 채점용으로 따로 보존(`bank.synth`, `synth_score`).
+  합성 타일은 데이터셋 창(카드 좌+2/상+2, 98×91)이라 런타임 슬롯 crop(117×95)을 그 창으로 잘라 비교한다 — 실측 창 민감도(1px 안쪽: 아이템 med .957/.946,
+  2px: 장비 .935)가 있어 **inset 1·2 중 높은 값**. 두 스캔 녹화 196타일 모두 top-1 100 %.
+  (`TemplateMatcher`가 아니라 C5e-2 타일 은행에 계층을 둔 것은, 이제 그리드 identity의 출처가 은행이기 때문이다. `bundled` 원화는 기존대로 은행 뒤.)
+- **D16 gate**: `recognition_synth.SYNTH_ENABLED_PROFILES = {tech_notes, presents}`(초기값), equipment·학생은 6f 통과 후. gate 밖 프로필은 합성을 읽지도 않는다.
+- **어댑터**: `synth_provider`(프로필, 창 → `SynthTemplateSet`)로 스캔 준비 때 합성 계층을 싣고 evidence `synth_tier`(ok/uncertain + 사유). 합성만으로 확정된 슬롯은
+  source `synth_bank`. 상세로 확정된 타일은 그 identity의 합성 점수로 드리프트 기록(`synth_drift`), `SynthDriftGuard`가 2회 연속 저점이면 세션 동안 그 프로필 차단.
+- **런타임** `core/recognition_synth_provider.py` `SynthProvider`: 세션당 한 번 `find_game_dir` → 6a-0 추출 → 6b 캐시, 실패는 세션 동안 기억(`asset_extract_failed`/폴더 없음 → 계층 없이 스캔).
+  `scanner_runtime`이 운영 어댑터에 연결(등급 스냅샷은 `assets/recognition/spec/item-rarity-v1.json` — 아직 미추적이라 없는 PC에선 계층이 꺼진다).
+  첫 사용 때 추출(~9 s)이 스캔 준비 안에서 한 번 돈다 — 진행 표시·백그라운드 선추출은 폴더 선택 UI와 함께 이월.
+- **"은행 비어 있음 + synth 켜짐" replay**(새 어댑터, 실게임 녹화 locked replay, 입력 완전 일치): **tech notes 45/45 확신, 상세와 45/45 일치, 불일치 0**, drift p10 .914 / med .958.
+  presents 49/56 확신·49 일치·불일치 0, drift p10 .886(나머지 7개는 임계 미달 → 상세). equipment는 gate로 꺼짐.
+  **상세 클릭 0회 슬롯 비율은 여전히 0 %** — 생략 조건의 그리드 수량이 C5e-3 전에는 없다(C5e-2 기록과 같음). synth만으로 identity는 첫 스캔부터 확정된다.
+- 기존 golden: locked replay는 합성 공급자 없이 돌아 **diff 0**(워크플로 조건). 화면 상태·학생 same.
+- 이월: 상세 recognizer의 합성 계층 → **6d**(폴백 순서와 함께), `StudioNumericBank` 합성 계층·`numeric_synth_agree` → **C5e-3**(인벤토리 수량을 그 은행으로 옮길 때).
+- 테스트 +6: 계층 대체·gate·차단·`synth_bank` source·불가 사유 evidence, **실 자산 "은행 비어 있음 + synth" tech notes replay**(클라이언트·녹화 프레임 있는 PC). Python **636 OK**.
+
+### D18 후속 — 상세 템플릿 identity 교차 확인 (합성 상세 아이콘 기준)
+
+- 캡처 상세 아이콘 템플릿(`inventory_detail_f9_manifest`, v6 출처) 중 아이템 251장을 합성 상세 아이콘 1058종과 M4로 대조: **250/251 일치**.
+  불일치 1: `presents:Item_Icon_Favor_SSR_GL_4` 템플릿이 `SSR_GL_10`에 .732(자기 라벨 .697) — 템플릿이 ROI보다 큰 창(275×292/298×327)이라 점수가 전반적으로 낮아(일치 min .341)
+  확정하지 않는다. **실물 확인 후보**로 남긴다(해당 선물을 보유한 스캔의 상세 프레임으로).
+- 엘레프 258종은 기존 기록대로 학생 slug 키 ↔ ExcelDB `SecretStone_*` 이름 체계 차이라 이 비교에서 제외(오라벨 아님, C5e-6 합성 매핑 과제).
+- `tech-notes-full-c` 슬롯 44의 D18 교정은 C5c 때 끝났고(golden·카탈로그), 이 녹화를 쓰는 C5e-6a 테스트는 라벨을 `SkillBook_Ultimate`로 바꿔 읽는다.
+- 다음: 워크플로 순서 **C5e-3**(수량 은행 + synth seed) → C5e-4 → C5e-6d → C5e-6f(아이템 gate) → C5e-6e → …

@@ -75,10 +75,10 @@ class ScriptedBank:
     def __len__(self):
         return 1
 
-    def match(self, crop, candidates=None, vectors=None):
+    def match(self, crop, candidates=None, vectors=None, allow_synth=True):
         return self.guesses.pop(0)
 
-    def match_between(self, crop, allowed, order, low, high):
+    def match_between(self, crop, allowed, order, low, high, allow_synth=True):
         return self.between
 
     def add(self, identity, crop, tier="session"):
@@ -212,7 +212,7 @@ class AnchorAndPriorTests(unittest.TestCase):
         with patch.object(ScriptedBank, "match_between", return_value=(BankMatch("b", .85, .005), BankMatch("b", .93, .04))) as between:
             self.assertEqual("b", adapter._bank_identity(scan, 1, Image.new("RGB", (4, 4))).identity)
         # "a" is already recorded in this scan, so it is no candidate for another tile
-        self.assertEqual(({"b", "c", "d"}, scan.order, 1, 4), between.call_args.args[1:])
+        self.assertEqual(({"b", "c", "d"}, scan.order, 1, 4, False), between.call_args.args[1:])
         # D23: the prior only narrows. A failed prior asks the whole bank: a confident match to an item that
         # cannot sit here is an order conflict; a weak or in-window match is not. The detail panel decides.
         scan.bank.guesses = [BankMatch("c", .88, .01), BankMatch("zzz_other_profile", .95, .1), BankMatch("zzz", .6, .1)]
