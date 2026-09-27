@@ -591,6 +591,9 @@ C5에서 gate **로직**을 고치고 값 변경은 C7. F9 "선택이 안 보이
 - 2026-09-27 (오케스트레이터, 정렬): 정렬 규칙 반영 현황 점검 — X09(기본 정렬 강제)·카탈로그 `order_index`·`verify_profile_order`(사후 단조 검사, zero-fill gate)는 있음. 식별 단계의 사전(prior)으로는 미사용 → C5e-2에 "order prior" 추가.
   게임 기본 정렬 로직은 `ItemSortingService.GetDefaultSortingOrder`(타입 덤프에 이름만)라 ExcelDB 컬럼만으로 재현 안 됨(기술 노트 T1 6001x가 학교 그룹 안에 정렬됨). 현재의 실측 기반 `order_index` 유지.
   D18 원인: `inventory_catalog.py`가 `SkillBook_Ultimate_Piece`를 "비의서"로 등록(실제 9998=비의서 조각, 9999=비의서).
+- 2026-09-27 (오케스트레이터): 사용자 우려(신규 아이템 시 정렬 사전 고장) → D23 추가: 사전은 좁히기만, 실패 시 전체 은행→합성 상세(팩 전체)→라벨링으로 강등, LIS 기반 단조 검사, 카탈로그 identity는 ExcelDB 파생·순서만 관측 계층.
+- 2026-09-27 (오케스트레이터): 정렬 규칙을 세 스캔(tech notes 45, presents 56, equipment 95)에서 귀납 — 기술 노트: 학교 enum × 티어↑(신형 T1도 학교 자리), 선물: 등급↑ × id↑, 장비: 강화석 등급↓ → 카테고리 × 티어↓(T2+) → 전 카테고리 T1 → 무기 성장. D23에 기록.
+  신규 아이템 후보 우주는 프로필 필터 범주(ExcelDB ItemCategory/Tags)로 제한(사용자 제안) 후 팩 전체로 확대.
 
 
 ### C5c 착수 전 작업 (2026-09-27, Opus)
