@@ -12,6 +12,7 @@ from core.inventory_tile_bank import TileBank
 from core.inventory_order_rules import increasing_run
 from core.recognition_synth import SYNTH_ENABLED_PROFILES, SynthUnavailable
 from core.recognition_synth_cache import SynthDriftGuard
+from core.inventory_count_bank import CountBank
 
 from core.recognition_assets import RecognitionAssetCatalog
 from core.recognition_answer_samples import RecognitionAnswerSampleStore
@@ -1291,9 +1292,13 @@ class _InventoryScan:
     bank_anchors: set[int] = field(default_factory=set)
     bank_stats: dict[str, int] = field(default_factory=lambda: {"confident": 0, "order_prior": 0, "order_conflict": 0,
                                                                  "unknown_new": 0, "skipped_detail": 0, "agree": 0,
-                                                                 "disagree": 0, "learned": 0})
+                                                                 "disagree": 0, "learned": 0, "count_read": 0,
+                                                                 "count_checked": 0, "count_agree": 0, "count_disagree": 0,
+                                                                 "numeric_synth_checked": 0, "numeric_synth_agree": 0})
     unknown_new: set[int] = field(default_factory=set)
     allow_synth: bool = False
+    count_bank: Any = None
+    glyph_seeds: dict[int, Any] = field(default_factory=dict)
     detail_confirmed: list[tuple[str, Image.Image]] = field(default_factory=list)
     completed: bool = False
     page_open: bool = False
@@ -1382,6 +1387,8 @@ class InventoryMatcherAdapter:
             scan.allowed_ids = {row.item_id for row in CATALOG if row.profile_id == scan.prepared.profile_id}
             scan.order = {row.item_id: row.order_index for row in CATALOG if row.profile_id == scan.prepared.profile_id}
             scan.bank = self._tile_bank(scan.source_size)
+            scan.count_bank = self.__dict__.setdefault("count_banks", {}).setdefault(
+                tuple(scan.source_size), CountBank(scale=scan.source_size[1] / 720))
             self._load_synth(scan)
 
     def _tile_bank(self, source_size: tuple[int, int]) -> TileBank:
@@ -1396,7 +1403,14 @@ class InventoryMatcherAdapter:
         """C5e-6c: the synthetic tier below the session bank, for D16-gated profiles only."""
         provider = getattr(self, "synth_provider", None)
         profile = scan.prepared.profile_id
-        if provider is None or profile not in SYNTH_ENABLED_PROFILES:
+        if provider is None:
+            return
+        if profile not in SYNTH_ENABLED_PROFILES:
+            # Count glyph seeds do not depend on the tile gate (C5e-3); the tiles stay out of the bank.
+            try:
+                scan.glyph_seeds = dict(provider(profile, scan.source_size).glyphs)
+            except SynthUnavailable:
+                pass
             return
         if not self._synth_guard().enabled(profile):
             scan.evidence.append({"field": "synth_tier", "status": "uncertain", "source": "synth_bank", "confidence": 0.0,
@@ -1410,6 +1424,7 @@ class InventoryMatcherAdapter:
             return
         for identity, tile in templates.tiles.items():
             scan.bank.add_synth(identity, tile)
+        scan.glyph_seeds = dict(templates.glyphs)
         scan.allow_synth = True
         scan.evidence.append({"field": "synth_tier", "status": "ok", "source": "synth_bank", "confidence": 1.0,
                               "note": f"profile={profile};tiles={len(templates.tiles)}"})
@@ -1516,6 +1531,25 @@ class InventoryMatcherAdapter:
                 previous = order
 
     @staticmethod
+    def _learn_count(scan: "_InventoryScan", crop: Image.Image, quantity: str) -> None:
+        """Check the grid read against the detail quantity (evidence), then learn the label's glyphs."""
+        bank, stats = scan.count_bank, scan.bank_stats
+        if scan.glyph_seeds and not bank.seed:
+            bank.set_seeds(scan.glyph_seeds)
+        if quantity.isdigit() and int(quantity) < 10000:
+            if bank.ready():
+                read = bank.read(crop)
+                stats["count_checked"] += 1
+                if read.confident:
+                    stats["count_agree" if read.value == quantity else "count_disagree"] += 1
+            if bank.seed:
+                # D20: synthetic digits are evidence only until the profile passes the numeric gate.
+                seed_read = bank.read(crop, use_seed=True)
+                stats["numeric_synth_checked"] += 1
+                stats["numeric_synth_agree"] += seed_read.value == quantity
+        bank.learn(crop, quantity)
+
+    @staticmethod
     def _bank_candidates(scan: "_InventoryScan", pool) -> set[str]:
         """Bank candidates for a new tile: each item appears once in the list, so identities already recorded
         in this scan cannot be it (live first scans: 14 of 14 confident wrong matches were such identities)."""
@@ -1604,10 +1638,18 @@ class InventoryMatcherAdapter:
             return None
         confident = match.score >= self.threshold and match.margin >= self.margin
         count = self.count_matcher.match(crop)
+        count_source = 'slot_count_glyph'
+        count_bank = getattr(scan, "count_bank", None)
+        if count.value is None and count_bank is not None and count_bank.ready():
+            # C5e-3: the session glyph bank reads the current client's labels (the v6 glyphs never do).
+            read = count_bank.read(crop)
+            if read.confident:
+                count, count_source = CountMatch(read.value, read.score, read.margin), read.source
+                scan.bank_stats["count_read"] += 1
         reading = _SlotReading(
             index=index, identity=match.identity, score=match.score, margin=match.margin, source=source,
             status='ok' if confident else 'uncertain', quantity=count.value, count_score=count.score,
-            count_source='slot_count_glyph', note=f'margin={count.margin:.6f}', profile_confirmed=profile_confirmed,
+            count_source=count_source, note=f'margin={count.margin:.6f}', profile_confirmed=profile_confirmed,
         )
         if banked is not None and count.value is not None:
             # C5e-2 fast path: a banked identity with a confident grid count needs no detail panel.
@@ -1625,6 +1667,8 @@ class InventoryMatcherAdapter:
                 if scan.bank is not None:
                     scan.bank.add(reading.identity, crop)
                     scan.bank_stats["learned"] += 1
+                if scan.count_bank is not None and reading.quantity:
+                    self._learn_count(scan, crop, reading.quantity)
                     if scan.allow_synth:
                         scan.detail_confirmed.append((reading.identity, crop.copy()))
         if detail_required and not reading.detail_identity:
@@ -1843,8 +1887,9 @@ class InventoryMatcherAdapter:
             scan.evidence.append(self._synth_guard().record(prepared.profile_id, scores))
         if prepared is not None and scan.bank is not None:
             stats = scan.bank_stats
-            scan.evidence.append({"field": "tile_bank", "status": "ok" if not stats["disagree"] else "uncertain",
-                "source": "tile_bank", "confidence": 1.0 if not stats["disagree"] else 0.0,
+            trusted = not stats["disagree"] and not stats["count_disagree"]
+            scan.evidence.append({"field": "tile_bank", "status": "ok" if trusted else "uncertain",
+                "source": "tile_bank", "confidence": 1.0 if trusted else 0.0,
                 "note": ";".join(f"{key}={value}" for key, value in stats.items()) + f";bank={len(scan.bank)}"})
         if prepared is not None:
             excluded = self._order_outliers(scan)

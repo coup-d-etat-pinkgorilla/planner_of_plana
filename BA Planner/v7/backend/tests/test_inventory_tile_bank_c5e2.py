@@ -166,6 +166,43 @@ class AdapterBankTests(unittest.TestCase):
         slot, = [e for e in row["evidence"] if e["field"] == "slots[0]"]
         self.assertFalse(slot["note"].startswith("unknown_new;"))
 
+    def count_bank(self, read, ready=True):
+        from core.inventory_count_bank import CountRead
+        bank = Mock()
+        bank.ready.return_value = ready
+        bank.read.return_value = CountRead(*read) if read else CountRead(None, "", 0.0, 0.0)
+        bank.seed = {}
+        bank.learn.return_value = 1
+        return bank
+
+    def test_c5e3_confident_count_bank_read_feeds_the_fast_path(self):
+        adapter = self.adapter(None, ScriptedBank([BankMatch(ITEM, .96, .05, "session")]))
+        adapter.count_banks = {(40, 40): self.count_bank(("42", "x42", .95, .2))}
+        row = self.scan(adapter)
+        adapter.detail_recovery.read.assert_not_called()
+        quantity = [e for e in row["evidence"] if e["field"].endswith(".quantity")][0]
+        self.assertEqual("count_bank_session", quantity["source"])
+        self.assertEqual("42", [e for e in row["payload"]["entries"] if e["observed_slot"] == 0][0]["quantity"])
+        self.assertIn("count_read=1", self.bank_note(row))
+
+    def test_c5e3_unconfident_count_read_keeps_the_detail_panel(self):
+        adapter = self.adapter(None, ScriptedBank([BankMatch(ITEM, .96, .05, "session")]))
+        adapter.count_banks = {(40, 40): self.count_bank(("42", "x42", .7, .2))}
+        self.scan(adapter)
+        adapter.detail_recovery.read.assert_called_once()
+
+    def test_c5e3_detail_quantities_check_the_grid_read_then_teach_it(self):
+        bank = self.count_bank(("9", "x9", .95, .2))
+        adapter = self.adapter(None, ScriptedBank([BankMatch(OTHER, .5, .0, "session")]))
+        adapter.count_banks = {(40, 40): bank}
+        row = self.scan(adapter)  # grid says 9 (not used: identity unconfident); detail says 7
+        note = self.bank_note(row)
+        self.assertIn("count_checked=1", note)
+        self.assertIn("count_disagree=1", note)
+        bank.learn.assert_called_once()
+        self.assertEqual("7", bank.learn.call_args.args[1])
+        self.assertEqual("uncertain", next(e["status"] for e in row["evidence"] if e["field"] == "tile_bank"))
+
     def test_an_unconfident_bank_match_never_skips_the_detail_panel(self):
         adapter = self.adapter("42", ScriptedBank([BankMatch(ITEM, .80, .05, "session")]))
         self.scan(adapter)

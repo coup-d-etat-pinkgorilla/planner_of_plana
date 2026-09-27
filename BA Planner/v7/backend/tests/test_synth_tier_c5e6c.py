@@ -116,9 +116,12 @@ class AdapterSynthTests(unittest.TestCase):
 
     def test_gated_profiles_and_unavailable_tier_scan_without_it(self):
         provider = Provider({ITEM: Image.new("RGB", (96, 96), (200, 200, 200))})
-        row = self.scan(self.adapter(provider, profile="equipment"))
-        self.assertEqual([], provider.calls)
+        adapter = self.adapter(provider, profile="equipment")
+        row = self.scan(adapter)
+        # A gated profile asks only for count glyph seeds (C5e-3); its tiles never enter the bank.
+        self.assertEqual(["equipment"], provider.calls)
         self.assertEqual([], self.evidence(row, "synth_tier"))
+        self.assertEqual({}, adapter.tile_banks[(40, 40)].synth)
         row = self.scan(self.adapter(Provider(error="game client folder not found")))
         tier, = self.evidence(row, "synth_tier")
         self.assertEqual("uncertain", tier["status"])
@@ -158,7 +161,11 @@ class BankEmptySynthOnReplayTests(unittest.TestCase):
             matcher, close = build_inventory_matcher(capture, RecognitionAssetCatalog(), None)
             matcher.synth_provider = SynthProvider(Path(root) / "assets", Path(root) / "synth", RARITY)
             try:
-                result = matcher({"inventory_scan_profile": "tech_notes"}, ReplayCancel(), lambda *_: None)
+                # With learned counts the first scan already skips detail clicks (C5e-3), which a locked replay
+                # cannot follow; counts are kept out here so every detail read still checks the identity.
+                from core.inventory_count_bank import CountBank, CountRead
+                with patch.object(CountBank, "read", return_value=CountRead(None, "", 0.0, 0.0)):
+                    result = matcher({"inventory_scan_profile": "tech_notes"}, ReplayCancel(), lambda *_: None)
                 capture.close()  # the synthetic tier sends no input: the recording replays exactly
             finally:
                 close()

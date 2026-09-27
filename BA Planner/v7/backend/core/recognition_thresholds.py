@@ -247,6 +247,14 @@ _ENTRIES = (
     # C5e-6b synth drift guard (D19): p10 of detail-confirmed tiles' synthetic score; two low scans disable the tier.
     Threshold("inventory.synth.drift_floor", 0.85, "similarity", "C5", C5, "item_id", "synth_bank",
               note="live E4: tech notes p10 .939, equipment true min .829 - UI patches fall far below"),
+    # C5e-3 grid count bank (session glyphs from detail-confirmed quantities; live 1280 two-scan check).
+    Threshold("inventory.count_bank.score", 0.85, "score", "C5", C5, "quantity", "count_bank_session",
+              note="minimum digit NCC of a grid count read; live 77 confident reads, 0 wrong"),
+    Threshold("inventory.count_bank.margin", 0.08, "margin", "C5", C5, "quantity", "count_bank_session"),
+    Threshold("inventory.count_label.ink_strong", 160.0, "intensity", "C5", C5, "quantity", "count_bank_session",
+              note="ink map level of label rows and final trim"),
+    Threshold("inventory.count_label.ink_soft", 80.0, "intensity", "C5", C5, "quantity", "count_bank_session",
+              note="ink map level of label columns (keeps thin diagonal strokes connected)"),
     Threshold("inventory.shift.no_motion", 0.004, "ratio", "C5", C5, "scroll_terminal", "verified_no_motion",
               note="shift at or below ~3px of 720 means the drag did not move the list"),
 )
