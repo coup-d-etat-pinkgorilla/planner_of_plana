@@ -47,7 +47,7 @@
       "source": "debug/scanner_f9_live/equipment-slot1-retry/frame-04.png",
       "source_kind": "equipment",
       "identity": "Equipment_Icon_Exp_2",
-      "count": null,
+      "count": "24890",
       "selected_slot": 1,
       "sha256": "f3d8000a44560daacb39dfa0072ca9ffc40dff50053e74d05984e07b3c06ef24"
     },

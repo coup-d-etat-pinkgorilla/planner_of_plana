@@ -150,7 +150,7 @@ class F9RecognitionTests(unittest.TestCase):
     def tearDownClass(cls):cls.reader.close()
     def test_equipment_bank_substitution_only_for_missing_templates(self):
         for reason in ['no_x_templates','missing_digit_templates','weak_x_match','weak_digit_match']:
-            with self.subTest(reason=reason),patch.object(self.reader,'count',side_effect=[DetailCount(None,reason=reason),DetailCount('0',.9)]) as read:
+            with self.subTest(reason=reason),patch.object(self.reader,'count',side_effect=[DetailCount(None,reason=reason),DetailCount('0',.9)]) as read,                  patch.object(self.reader,'pitch_count',return_value=DetailCount(None,reason='no_count_ink')):
                 result=self.reader.read_count(None,'equipment')
                 self.assertEqual(2 if reason in {'no_x_templates','missing_digit_templates'} else 1,read.call_count)
                 self.assertEqual('0' if read.call_count==2 else None,result.value)

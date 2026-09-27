@@ -259,6 +259,17 @@ _ENTRIES = (
     # universal blueprints .95-.97 with margin >= .12).
     Threshold("inventory.synth_detail.score", 0.90, "similarity", "C5", C5, "item_id", "synth_detail_icon"),
     Threshold("inventory.synth_detail.margin", 0.05, "margin", "C5", C5, "item_id", "synth_detail_icon"),
+    # C5d-1 detail count on the label's digit pitch (fallback when the v6 per-length cells fail; live 1280:
+    # 350 frames agree with v6, 5-digit counts 5/5 - digit min .774 / margin min .044, pitch/height .75).
+    Threshold("inventory.detail.pitch.shear", 0.29, "ratio", "C5", C5, "quantity", "inventory_detail_pitch",
+              note="italic slant (px/px) removed before splitting; live .28-.30 best, v6 cells .27-.31"),
+    Threshold("inventory.detail.pitch.ink", 197.0, "intensity", "C5", C5, "quantity", "inventory_detail_pitch",
+              note="green level of the cyan count glyphs that separates touching digits"),
+    Threshold("inventory.detail.pitch.ratio_low", 0.62, "ratio", "C5", C5, "quantity", "inventory_detail_pitch",
+              note="digit pitch / glyph height lower bound of a length hypothesis (live .75)"),
+    Threshold("inventory.detail.pitch.ratio_high", 0.88, "ratio", "C5", C5, "quantity", "inventory_detail_pitch"),
+    Threshold("inventory.detail.pitch.digit.score", 0.72, "score", "C5", C5, "quantity", "inventory_detail_pitch"),
+    Threshold("inventory.detail.pitch.digit.margin", 0.03, "margin", "C5", C5, "quantity", "inventory_detail_pitch"),
     Threshold("inventory.shift.no_motion", 0.004, "ratio", "C5", C5, "scroll_terminal", "verified_no_motion",
               note="shift at or below ~3px of 720 means the drag did not move the list"),
 )

@@ -1,0 +1,128 @@
+{
+ "frame_size": [
+  1280,
+  720
+ ],
+ "cases": [
+  {
+   "file": "equipment-frame-05.png",
+   "source": "equipment",
+   "offset": [
+    460,
+    580
+   ],
+   "value": "25946",
+   "recording": "debug/scanner_c5e1d_live/equipment/frame-05.png"
+  },
+  {
+   "file": "equipment-frame-06.png",
+   "source": "equipment",
+   "offset": [
+    460,
+    580
+   ],
+   "value": "27078",
+   "recording": "debug/scanner_c5e1d_live/equipment/frame-06.png"
+  },
+  {
+   "file": "equipment-frame-07.png",
+   "source": "equipment",
+   "offset": [
+    460,
+    580
+   ],
+   "value": "29514",
+   "recording": "debug/scanner_c5e1d_live/equipment/frame-07.png"
+  },
+  {
+   "file": "equipment-frame-117.png",
+   "source": "equipment",
+   "offset": [
+    460,
+    580
+   ],
+   "value": "11223",
+   "recording": "debug/scanner_c5e1d_live/equipment/frame-117.png"
+  },
+  {
+   "file": "equipment-frame-124.png",
+   "source": "equipment",
+   "offset": [
+    460,
+    580
+   ],
+   "value": "21569",
+   "recording": "debug/scanner_c5e1d_live/equipment/frame-124.png"
+  },
+  {
+   "file": "equipment-frame-30.png",
+   "source": "equipment",
+   "offset": [
+    460,
+    580
+   ],
+   "value": "699",
+   "recording": "debug/scanner_c5e1d_live/equipment/frame-30.png"
+  },
+  {
+   "file": "equipment-frame-46.png",
+   "source": "equipment",
+   "offset": [
+    460,
+    580
+   ],
+   "value": "209",
+   "recording": "debug/scanner_c5e1d_live/equipment/frame-46.png"
+  },
+  {
+   "file": "equipment-frame-77.png",
+   "source": "equipment",
+   "offset": [
+    460,
+    580
+   ],
+   "value": "1160",
+   "recording": "debug/scanner_c5e1d_live/equipment/frame-77.png"
+  },
+  {
+   "file": "presents-frame-61.png",
+   "source": "item",
+   "offset": [
+    460,
+    500
+   ],
+   "value": "2",
+   "recording": "debug/scanner_c5e1d_live/presents/frame-61.png"
+  },
+  {
+   "file": "presents-frame-07.png",
+   "source": "item",
+   "offset": [
+    460,
+    500
+   ],
+   "value": "72",
+   "recording": "debug/scanner_c5e1d_live/presents/frame-07.png"
+  },
+  {
+   "file": "tech_notes-frame-23.png",
+   "source": "item",
+   "offset": [
+    460,
+    500
+   ],
+   "value": "742",
+   "recording": "debug/scanner_c5e1d_live/tech_notes/frame-23.png"
+  },
+  {
+   "file": "tech_notes-frame-12.png",
+   "source": "item",
+   "offset": [
+    460,
+    500
+   ],
+   "value": "27",
+   "recording": "debug/scanner_c5e1d_live/tech_notes/frame-12.png"
+  }
+ ]
+}

@@ -30,10 +30,46 @@ def glyph_score(crop,template):
         return max(0,(correlation(a,b)+1)/2) if len(set(a.getdata()))>1 else 0
 
 
+def binary_bits(image,size):
+    """glyph_score's resize + Otsu binarization of image as an int bitmask (for popcount NCC)."""
+    with image.resize(size) as scaled, binary(scaled) as bits:
+        return int(''.join('1' if value else '0' for value in bits.getdata()),2)
+
+
+def bits_score(left,right,count):
+    """glyph_score of two binary images given as bitmasks of count pixels (same NCC, popcount arithmetic)."""
+    a,b=left.bit_count(),right.bit_count();den=(count*a-a*a)*(count*b-b*b)
+    return max(0,((count*(left&right).bit_count()-a*b)/den**.5+1)/2) if den>0 else 0
+
+
 def icon_score(crop,template):
     with template.copy() as small:
         small.thumbnail((80,80))
         return max(0,correlation(crop,small))
+
+
+def deskewed_ink(crop,shear):
+    """Count-label ink (green level of the cyan glyphs; white badges and grey panels are not ink), slant removed."""
+    width,height=crop.size;pad=round(shear*height)+1
+    out=Image.new('L',(width+pad,height),0);src=crop.load();dst=out.load()
+    for y in range(height):
+        dx=round(shear*(y-height))+pad
+        for x in range(width):
+            r,g,b=src[x,y]
+            if r<=170 and b>=150 and g>dst[x+dx,y]:dst[x+dx,y]=g
+    return out
+
+
+def ink_runs(mask,level):
+    """(x1, y1, x2, y2) of each run of columns holding ink at or above level."""
+    width,height=mask.size;px=mask.load();runs=[];start=None
+    for x in range(width+1):
+        column=x<width and any(px[x,y]>=level for y in range(height))
+        if column and start is None:start=x
+        if not column and start is not None:
+            ys=[y for y in range(height) for i in range(start,x) if px[i,y]>=level]
+            runs.append((start,min(ys),x,max(ys)+1));start=None
+    return runs
 
 
 @dataclass(frozen=True)
@@ -130,7 +166,74 @@ class InventoryDetailRecognizer:
         count=self.count(frame,source)
         if source=='equipment' and count.reason in {'no_x_templates','missing_digit_templates'}:
             count=self.count(frame,source,'item')
+        if count.value is None:
+            pitched=self.pitch_count(frame,source)
+            if pitched.value is not None:return pitched
         return count
+
+    def digit_templates(self):
+        """{digit: [(size, bitmask)]} of the v6 4-digit cells (all ten digits at every position, both sources), binarized once.
+
+        The 5-digit cells are the misaligned layout (C5d-1); shorter lengths only add near-duplicates that thin margins.
+        """
+        if not hasattr(self,'_digit_templates'):
+            self._digit_templates={}
+            for rows in self.regions['counts'].values():
+                for cell in rows.get('4',{}).get('digits',[]):
+                    for label,path in cell.get('templates',{}).items():
+                        image=self.image(path)
+                        if image is not None:
+                            self._digit_templates.setdefault(str(int(label)%10),[]).append((image.size,binary_bits(image,image.size)))
+        return self._digit_templates
+
+    def pitch_count(self,frame,source):
+        """C5d-1: read the label on its fixed digit pitch.
+
+        The label is tabular italic and the client shrinks 5-digit counts, so the v6 per-length cells no longer
+        line up. The strip is deskewed by the font's slant, anchored on the x mark (it starts lower than the
+        digits), the digit span is split into n equal cells with n fixed by pitch/height, and each cell is ranked
+        against every v6 digit template.
+        """
+        geometry=self.regions['counts'].get(source,{});templates=self.digit_templates()
+        if not geometry or not templates:return DetailCount(None,reason='no_pitch_templates')
+        width,height=frame.size
+        points=[p for row in geometry.values() for cell in (row['x'],*row['digits']) for p in cell['region']['points_ratio']]
+        digit_ys=[p['y'] for row in geometry.values() for cell in row['digits'] for p in cell['region']['points_ratio']]
+        box=(round((min(p['x'] for p in points)-.02)*width),round((min(digit_ys)-.006)*height),
+             round((max(p['x'] for p in points)+.03)*width),round((max(digit_ys)+.006)*height))
+        with frame.crop(box) as crop:mask=deskewed_ink(crop,rt.value('inventory.detail.pitch.shear'))
+        runs=ink_runs(mask,rt.value('inventory.detail.pitch.ink'))
+        tall=max((y2-y1 for _,y1,_,y2 in runs),default=0)
+        runs=[r for r in runs if r[3]-r[1]>=.5*tall]
+        if not runs:mask.close();return DetailCount(None,reason='no_count_ink')
+        top=min(r[1] for r in runs);bottom=max(r[3] for r in runs);glyph=bottom-top
+        marks=[i for i,r in enumerate(runs) if r[1]-top>.25*glyph]
+        digits=[r for r in runs[marks[0]+1:] if r[1]-top<=.25*glyph] if marks else []
+        if not digits:mask.close();return DetailCount(None,reason='no_x_mark')
+        left,right=digits[0][0],digits[-1][2];reach=max(1,round(height/720))
+        best=None
+        for n in range(1,8):
+            pitch=(right-left+1.5)/n
+            if not rt.value('inventory.detail.pitch.ratio_low')<=pitch/glyph<=rt.value('inventory.detail.pitch.ratio_high'):continue
+            read=[]
+            for i in range(n):
+                x1=round(left-.75+i*pitch);x2=round(left-.75+(i+1)*pitch);ranked=None
+                for dx in range(-reach,reach+1):
+                    with mask.crop((x1+dx,top,x2+dx,bottom)) as cell:
+                        bits={size:binary_bits(cell,size) for size in {size for images in templates.values() for size,_ in images}}
+                        scores=sorted(((max(bits_score(bits[size],template,size[0]*size[1]) for size,template in images),digit)
+                                       for digit,images in templates.items()),reverse=True)
+                    if ranked is None or scores[0][0]>ranked[0][0]:ranked=scores
+                read.append((ranked[0][1],ranked[0][0],ranked[0][0]-ranked[1][0]))
+            text,score,margin=''.join(r[0] for r in read),min(r[1] for r in read),min(r[2] for r in read)
+            if best is None or score>best[1]:best=(text,score,margin)
+        mask.close()
+        if best is None:return DetailCount(None,reason='no_pitch_fit')
+        text,score,margin=best
+        if score<rt.value('inventory.detail.pitch.digit.score') or margin<rt.value('inventory.detail.pitch.digit.margin'):
+            return DetailCount(None,score,'weak_pitch_digit')
+        if len(text)>1 and text[0]=='0':return DetailCount(None,score,'leading_zero')
+        return DetailCount(text,score,source='inventory_detail_pitch')
 
     def read(self,frame,source):
         names={asset.identity:asset.path for asset in self.catalog.assets('inventory','inventory-detail-name')}
