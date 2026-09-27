@@ -22,7 +22,7 @@ sources:
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
 | C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
 | C4 임계값 레지스트리 | **완료** (2026-09-26, C4a~C4c) | `d4f030e` | — |
-| C5 인식 공통화 | **진행 중: C5a~C5d·C5e-1·C5e-2·C5e-6a-0·C5e-6a 완료**(D21 실입력·C5e-2 실게임 두 번째 스캔 사용자 대기, 6a 학생 화면 spec 대기) (2026-09-27) | `43c17b5` | C5e-6b 캐시·드리프트 |
+| C5 인식 공통화 | **진행 중: C5a~C5d·C5e-1·C5e-2·C5e-6a-0·6a·6b 완료**(D21 실입력·C5e-2 실게임 두 번째 스캔 사용자 대기, 6a 학생 화면 spec 대기) (2026-09-27) | `43c17b5` | C5e-6c 로더 계층 |
 | C6~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -911,3 +911,21 @@ HEAD 내용에 오케스트레이터의 새 기록 4줄을 합쳐 복원했다.)
   (클라이언트·로컬 프레임이 있는 PC에서만). Python **625 OK**.
 - 대기: **학생 화면(D26)** — 무기·스킬 아이콘·이름 localize의 카탈로그 키를 오케스트레이터가 spec에 추가하기로 했으나 아직 없다(`prefabs.student_detail`에는 위젯 기하만).
 - 다음: **C5e-6b** 캐시·드리프트(항목 단위 증분 index).
+
+## C5e-6b — 합성 캐시·드리프트 (D19/D25) — 완료 (2026-09-27, 시작 `858cf18`)
+
+- `core/recognition_synth_cache.py` `SynthCache(root, client="kr")`: `<root>/kr/<spec_version>/{pack.bin, index.json}`,
+  `runtime_paths.resolve_synth_cache_root()` = `%LOCALAPPDATA%/BA Planner/recognition-synth-cache`.
+  **창 크기 단계는 두지 않았다** — 워크플로 6b 경로의 `<WxH>`는 D25(정규화 한 벌, 글리프만 창별 즉석) 이전 표기라 D25를 따랐다. 프로필도 경로에 넣지 않았다:
+  이미지가 프로필과 무관하고 identity 네임스페이스가 겹치지 않으므로 프로필은 후보 우주(`profile_universe`)만 고른다.
+- **항목 단위 증분**: identity마다 입력 튜플(아이콘 이름·아이콘 pixel sha·카드 스프라이트 pixel sha·등급·생성기 버전)을 index에 기록, 튜플이 바뀐 항목·손상 blob만 재합성.
+  index 손상·생성기 버전 변경이면 전부 재생성.
+- **저장 형식**: 처음엔 identity별 PNG였는데 캐시 적중이 미스보다 느렸다(presents 152파일 open ≈ 1 s — 6a-0과 같은 파일당 비용). zlib 원시 RGB blob을 **한 pack 파일**에 이어 붙이고
+  index에 (offset, length) → 적중 **69~83 ms**(글리프 3벌 30 ms 포함, 목표 < 200 ms 충족), 미스 0.47~0.63 s(tech notes 54·presents 76·equipment 110), pack 7.8 MB.
+  재합성분은 append, 죽은 blob이 절반을 넘으면 압축 재작성. 쓰기는 임시 파일 후 교체.
+- **드리프트**: `drift_scores(synth, confirmed)` = 상세로 확정된 타일의 자기 합성 타일 M4, `SynthDriftGuard.record(profile, scores)` → evidence `synth_drift`(p10·median),
+  p10 < `inventory.synth.drift_floor`(**신규 .85**; 실측 E4 p10 .939, 장비 정답 min .829)가 **연속 2회**면 그 프로필 synth 계층을 세션 동안 끄고 note에 `synth_drift_detected`(한 번만).
+  정상 스캔이 끼면 연속 횟수 초기화. 연결(스캔마다 기록·계층 차단)은 6c에서 어댑터에 붙인다.
+- 테스트 +5: 드리프트 2회 연속·초기화·1회 보고, 확정 0건, drift 점수, **실 자산으로 적중/미스·변경 1건만 재합성·blob 손상 복구·index 손상 전체 재생성·창 크기별 글리프(720p 19~21, 1440p 38~40)**.
+  Python **630 OK**.
+- 다음: **C5e-6c** 로더 계층(은행 계층 `user_confirmed → session → synth → bundled`, D16 gate 프로필, drift 연결).

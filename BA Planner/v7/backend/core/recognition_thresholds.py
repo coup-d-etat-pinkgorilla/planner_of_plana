@@ -244,6 +244,9 @@ _ENTRIES = (
               note="per-channel icon NCC to a banked tile of the same identity"),
     Threshold("inventory.tile_bank.margin", 0.015, "margin", "C5", C5, "item_id", "tile_bank",
               note="lead over the next banked identity (E2 min correct margin .016)"),
+    # C5e-6b synth drift guard (D19): p10 of detail-confirmed tiles' synthetic score; two low scans disable the tier.
+    Threshold("inventory.synth.drift_floor", 0.85, "similarity", "C5", C5, "item_id", "synth_bank",
+              note="live E4: tech notes p10 .939, equipment true min .829 - UI patches fall far below"),
     Threshold("inventory.shift.no_motion", 0.004, "ratio", "C5", C5, "scroll_terminal", "verified_no_motion",
               note="shift at or below ~3px of 720 means the drag did not move the list"),
 )

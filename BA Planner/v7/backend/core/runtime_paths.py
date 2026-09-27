@@ -72,6 +72,11 @@ def resolve_extracted_asset_root() -> Path:
     return Path.home() / ".ba-planner" / "recognition-assets"
 
 
+def resolve_synth_cache_root() -> Path:
+    """C5e-6b: synthetic recognition templates made from the extracted assets."""
+    return resolve_extracted_asset_root().parent / "recognition-synth-cache"
+
+
 def resolve_repository_root() -> Path:
     override = os.environ.get("BA_PLANNER_STORAGE_ROOT")
     if override:
