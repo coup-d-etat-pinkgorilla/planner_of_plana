@@ -41,6 +41,8 @@ class UserInputGuard:
         self.count = 0
         self.last_input = 0.0
         self.last_step = 0.0
+        self.waits = 0
+        self.busy = 0
         self.available = False
         self._lock = Lock()
         self._ready = Event()
@@ -118,8 +120,11 @@ class UserInputGuard:
             return
         idle, budget = rt.value("input.guard.idle_s"), rt.value("input.guard.wait_s")
         deadline = monotonic() + budget
+        if monotonic() - self.last_input < idle:
+            self.waits += 1
         while monotonic() - self.last_input < idle:
             if monotonic() >= deadline:
+                self.busy += 1
                 raise ScannerError("input_busy", "user input in progress; scanner input not sent",
                                    details={"performed": False})
             if cancel is not None and cancel.wait(.05):
@@ -154,6 +159,7 @@ class _Step:
 
     def __exit__(self, exc_type, exc, tb) -> bool:
         if exc_type is None and self.guard.available and self.guard.count != self.before:
+            self.guard.busy += 1
             raise ScannerError("input_busy", "user input arrived while the scanner was sending input",
                                details={"performed": True})
         return False
