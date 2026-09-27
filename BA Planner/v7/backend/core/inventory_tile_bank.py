@@ -56,6 +56,25 @@ def synth_query_vectors(crop: Image.Image) -> list[tuple[list[float] | None, ...
     return vectors
 
 
+def shifted_query_vectors(crop: Image.Image) -> list[tuple[list[float] | None, ...]]:
+    """Query vectors of a slot crop moved by up to ``inventory.tile_bank.shift`` px (720p units) each way.
+
+    The same tile read in another scan can sit a pixel off (scroll phase, 95/96 px slot rows); near-identical
+    families such as the universal blueprints differ only in a small mark that one pixel of offset erases
+    (live 2026-09-28: Charm read as Gloves at .933 vs .897 unshifted, identical at dy=-1).
+    """
+    reach = round(rt.value("inventory.tile_bank.shift") * crop.height / SLOT_REGION_720[1])
+    width, height = crop.size
+    vectors = []
+    for dy in range(-reach, reach + 1):
+        for dx in range(-(reach // 2), reach // 2 + 1):
+            if dx == dy == 0:
+                continue
+            with crop.crop((dx, dy, width + dx, height + dy)) as moved:
+                vectors.append(icon_vectors(moved))
+    return vectors
+
+
 class TileBank:
     def __init__(self) -> None:
         self.entries: dict[str, _Entry] = {}
@@ -109,6 +128,16 @@ class TileBank:
         if not scores:
             return BankMatch(None, 0.0, 0.0)
         scores.sort(key=lambda item: item[1], reverse=True)
+        # Real-tier contenders near the top are re-scored at small offsets (their best alignment counts).
+        window = scores[0][1] - rt.value("inventory.tile_bank.rescore_window")
+        contenders = [identity for identity, score in scores if score >= window and self.entries[identity].tier != "synth"]
+        if contenders:
+            shifted = shifted_query_vectors(crop)
+            best = dict(scores)
+            for identity in contenders:
+                best[identity] = max(best[identity], *(icon_vector_similarity(sample, query)
+                                                       for sample in self.entries[identity].samples for query in shifted))
+            scores = sorted(best.items(), key=lambda item: item[1], reverse=True)
         best, score = scores[0]
         margin = score - (scores[1][1] if len(scores) > 1 else 0.0)
         return BankMatch(best, score, margin, self.entries[best].tier, tuple(scores[:3]))

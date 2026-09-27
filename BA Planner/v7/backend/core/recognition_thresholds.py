@@ -67,7 +67,9 @@ _ENTRIES = (
               note="consecutive captures this similar count toward a settled page"),
     # Inventory detail panel (F9).
     Threshold("inventory.detail.source_title.correlation", 0.8, "score", "F9", F9, "source", "inventory_detail_title"),
-    Threshold("inventory.detail.source_title.color", 0.95, "similarity", "F9", F9, "source", "inventory_detail_title"),
+    # C5 live 1920x1080: the item list title resamples to .948 (2560x1440 .963, 1280 1.0); non-inventory
+    # screens stay <= .86, and the item/equipment decision rests on the title correlation (.92 vs .47).
+    Threshold("inventory.detail.source_title.color", 0.93, "similarity", "F9", F9, "source", "inventory_detail_title"),
     Threshold("inventory.detail.selection.edge_fraction", 0.15, "ratio", "F9", F9, "selection", "selection_border"),
     Threshold("inventory.detail.x_mark.score", 0.72, "score", "F9", F9, "quantity", "inventory_detail_count"),
     Threshold("inventory.detail.x_mark.margin", 0.025, "margin", "F9", F9, "quantity", "inventory_detail_count"),
@@ -242,6 +244,10 @@ _ENTRIES = (
     # C5e-2 tile bank (M4 on detail-confirmed tile crops; E2 + live two-scan check: 196/196, margin >= .023).
     Threshold("inventory.tile_bank.score", 0.90, "similarity", "C5", C5, "item_id", "tile_bank",
               note="per-channel icon NCC to a banked tile of the same identity"),
+    Threshold("inventory.tile_bank.shift", 2.0, "pixels", "C5", C5, "item_id", "tile_bank", resolution="native1280",
+              note="rows (half in columns) a banked tile may sit off in a later scan, scaled by crop height; live: 1 px"),
+    Threshold("inventory.tile_bank.rescore_window", 0.15, "margin", "C5", C5, "item_id", "tile_bank",
+              note="real-tier candidates within this of the unshifted best are re-scored at the shifts"),
     Threshold("inventory.tile_bank.margin", 0.015, "margin", "C5", C5, "item_id", "tile_bank",
               note="lead over the next banked identity (E2 min correct margin .016)"),
     # C5e-6b synth drift guard (D19): p10 of detail-confirmed tiles' synthetic score; two low scans disable the tier.

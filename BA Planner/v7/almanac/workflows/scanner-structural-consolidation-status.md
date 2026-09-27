@@ -1055,3 +1055,37 @@ HEAD 내용에 오케스트레이터의 새 기록 4줄을 합쳐 복원했다.)
 - 앞 커밋(`d2832ac`) 부수: 어댑터 단위 테스트(F1·F2·운영 어댑터)는 no-op 입력 가드(`tests/input_guard_stub.py`) — 사람이 PC를 쓰면 `input_busy`로 실패하던 문제(2026-09-28 새벽 재현).
 - Python **649 OK**.
 - 다음: C5e-6e(라벨링 UI, Flutter) — 또는 오케스트레이터의 D16 기준 결정 후 equipment 합성 편입.
+
+## 실게임 확인 3건 (2026-09-28, 사용자 실행) + 발견 2건 수정 (동작 변경) — 시작 `629f5f0`
+
+기록: `debug/scanner_c5e_live/<run>/trace.json` + 프레임(`verify_inventory_c2_live.py`, 합성 공급자 연결, `--repeat`).
+`1440-presents`·`1440-equipment`는 실행 때 `1080-*` 이름으로 저장된 2560×1440 run이라 폴더 이름을 고쳤다(trace `size`로 확인).
+
+| 확인 | run | 결과 |
+|---|---|---|
+| ② D21 입력 가드 실입력 | `guard-tech-notes` (1280) | 사용자 입력 2034건, idle 대기 1회, `input_busy` 0 — 스캔 두 번 다 완료, **entry가 방해 없는 run·두 번째 run과 동일**, 오답 없음 |
+| ① 두 번째 스캔 생략 | `second-scan-tech-notes` (1280) | 120.9 s → **92.9 s**, 상세 생략 7 → **18/45**(40 %), entry 동일 |
+| ① 〃 장비 | `second-scan-equipment` (1280) | 첫 스캔 196 s 완료. **두 번째 스캔 실패** `inventory_scroll_unverified`("Gloves 만능 설계도가 슬롯 6·11") — 첫 페이지 복원됨, 오답 entry 없음 → 아래 수정 A |
+| ③ 1080p | `1080-tech-notes` (1920×1080 전체 화면) | **`inventory_page_unknown` 0.4 s** → 아래 수정 B |
+| ③ 1440p | `1440-*` (2560×1440) | 세 프로필 완료, entry가 1280 run과 동일(tech notes·equipment 수량 포함). gate 수치는 아래 |
+
+- **수정 A — 세션 은행 픽셀 오프셋 내성**: 두 번째 스캔의 슬롯 crop이 첫 스캔보다 1 px 아래(117×96 vs 95)였고, 만능 설계도 9종은 카테고리 표식만 달라
+  비이동 M4에서 Charm이 Gloves로(.933 vs .897, 확신) 읽혔다(오프라인 locked replay로 재현: 12칸 중 확신 오답 2, 비확신 오답 2).
+  `TileBank.match`는 비이동 점수 상위 `inventory.tile_bank.rescore_window`(.15) 안의 실물 계층 후보를 ±`inventory.tile_bank.shift`(2 px 행·1 px 열 @720p, crop 높이 비례)
+  이동 query로 다시 채점해 최고값을 쓴다(합성 계층은 기존 inset 방식 그대로). 결과: 같은 12칸 **12/12 정답 .993~.999**, 실측 교차 스캔(tech notes 45·presents 56·equipment 104)
+  확신 오답 0, 인위 이동(±2 px) 확신 오답 0(.10 창에서는 (−1,−2) 이동 1건 → .15). 타일당 ~40 → ~70 ms.
+  시도했다 버린 안: 후보별 최적 오프셋(오답도 부풀려 (0,−1)에서 확신 오답 2), 테두리 링 정합(비용면이 평탄해 같은 crop끼리 .90까지 떨어짐).
+  parity fixture `tests/fixtures/inventory_tile_bank_shift_c5e/`(첫 스캔 20칸 + 두 번째 스캔 12칸, 514 KB) + 테스트 4.
+- **수정 B — 1920×1080 페이지 판정**: 아이템 목록 제목의 색 유사도가 1.5배 리샘플에서 .948(< .95; 2560 .963, 1280 1.0). 아이템/장비 구분은 제목 상관(.92 vs .47)이
+  하고 비인벤토리 화면(학생 녹화 228장)은 색 ≤ .86 · 상관 ≤ .36이라 `inventory.detail.source_title.color` .95 → **.93**. 해당 프레임 `item` 판정 확인. 1080 스캔 자체는 재실행 필요.
+- **③ 1440 D16 gate(개정 기준)** — 한 스캔의 상세 확정 타일 vs 합성 계층:
+
+| 프로필 | n | top-1 | 확신 / 확신 오답 | 정답 p10 | 정답 min / 오답 max | (a) | (b) | (c) p10≥.90 | (d) 전역 | (d) 타일별 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| tech_notes | 45 | 100 % | 45 / 0 | .942 | .924 / .937 | ✓ | ✓ | ✓ | ✗ | 45/45 |
+| presents | 56 | 100 % | 50 / 0 | .894 | .863 / .827 | ✓ | ✓ | ✗ | ✓ | 56/56 |
+| equipment | 104 | 100 % | 37 / 0 | .832 | .781 / .912 | ✓ | ✓ | ✗ | ✗ | 104/104 |
+
+  1280의 6f 수치도 개정 기준으로는 presents (c) .879 ✗, tech_notes·equipment (d) 전역 ✗ — 오케스트레이터가 적은 "세 프로필 모두 통과"와 다르다.
+  **(d)의 해석(전역 / 타일별)과 presents (c) 처리 결정 전까지 `SYNTH_ENABLED_PROFILES`는 그대로(tech_notes·presents)**. equipment 합성은 1440에서 확신 37/104로 약하다.
+- 남은 실게임: 1920×1080 세 프로필 첫 스캔(수정 B 후), 장비 두 번째 스캔 재실행(수정 A 후).
