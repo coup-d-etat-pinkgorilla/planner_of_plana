@@ -12,6 +12,16 @@ from typing import Any
 from PIL import Image, ImageStat
 from core.scanner_matchers import image_similarity
 from core.scanner_session import ScannerError
+from core.user_input_guard import UserInputGuard
+
+
+def _guarded(method):
+    """D21: one scanner input is one guarded step (wait for user idleness; user input during it is input_busy)."""
+    def wrapper(self, target, *args):
+        with self._guard.step(target.get("_scanner_cancel")):
+            return method(self, target, *args)
+    wrapper.__name__, wrapper.__doc__ = method.__name__, method.__doc__
+    return wrapper
 
 
 class _BITMAPINFOHEADER(ctypes.Structure):
@@ -64,6 +74,7 @@ class WindowsCaptureInputAdapter:
         self._isolate_capture = isolate_capture
         self.last_capture_trace: list[dict[str, Any]] = []
         self.last_input_trace: dict[str, Any] = {}
+        self._guard = UserInputGuard()
 
     @staticmethod
     @lru_cache(maxsize=1)
@@ -364,6 +375,7 @@ class WindowsCaptureInputAdapter:
     def _modifiers_clear(u):
         return not any(u.GetAsyncKeyState(k) & 0x8000 for k in (0x10, 0x11, 0x12, 0x5B, 0x5C, 0x01, 0x02))
 
+    @_guarded
     def click(self, target, x_ratio, y_ratio):
         if any(not isinstance(v, (int, float)) or not math.isfinite(v) or not 0 <= v <= 1 for v in (x_ratio, y_ratio)):
             raise ScannerError("input_failed", "invalid click ratios")
@@ -409,6 +421,7 @@ class WindowsCaptureInputAdapter:
             raise ScannerError("input_partial", "mouse up rejected")
         self.last_input_trace["method"] = "post_message"
 
+    @_guarded
     def press_key(self, target, key):
         if key not in {"left", "right", "escape"}:
             raise ScannerError("input_failed", f"unsupported scanner key: {key}")
@@ -443,6 +456,7 @@ class WindowsCaptureInputAdapter:
         self.last_input_trace["method"] = "post_message"
         return True
 
+    @_guarded
     def scroll(self, target, delta):
         if not isinstance(delta, int) or not -1200 <= delta <= 1200 or delta == 0:
             raise ScannerError("input_failed", "invalid scanner scroll delta")
@@ -477,6 +491,7 @@ class WindowsCaptureInputAdapter:
             raise ScannerError("input_failed", "mouse wheel rejected")
         self.last_input_trace['method']='post_message'
 
+    @_guarded
     def drag_scroll(self,target,start,end):
         values=(*start,*end)
         if any(not isinstance(v,(int,float)) or not math.isfinite(v) or not 0<=v<=1 for v in values):
@@ -510,6 +525,7 @@ class WindowsCaptureInputAdapter:
             self._send(u,[up])
         self.last_input_trace.update(method='send_input',screen_start=[first.x,first.y],screen_end=[last.x,last.y])
 
+    @_guarded
     def drag_path(self,target,path,hold_seconds):
         """Press at path[0], move through the other points, hold still, release (C5e-1, E6).
 
@@ -555,6 +571,7 @@ class WindowsCaptureInputAdapter:
         self.last_input_trace.update(method='send_input',screen_path=[[p.x,p.y] for p in points])
 
     def close(self):
+        self._guard.stop()
         if self._worker is not None:
             self._worker.close()
             self._worker = None

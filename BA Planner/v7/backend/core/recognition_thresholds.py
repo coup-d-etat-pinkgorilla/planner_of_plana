@@ -234,6 +234,11 @@ _ENTRIES = (
               note="gutter phase within this of the prediction verifies the move; beyond it the frame is re-measured"),
     Threshold("inventory.scroll.overlap_icon", 0.86, "similarity", "C5", C5, "scroll", "overlap_identity",
               note="median per-channel icon NCC of re-seen tiles vs their first reading; live same row >= .905, one row off <= .814"),
+    # D21 user-input guard (C5e-1d): a scanner step waits for this much user idleness, at most wait_s.
+    Threshold("input.guard.idle_s", 0.25, "seconds", "C5", C5, "input", "user_input_guard",
+              note="user input more recent than this defers the next scanner input"),
+    Threshold("input.guard.wait_s", 2.0, "seconds", "C5", C5, "input", "user_input_guard",
+              note="a user still busy after this makes the step input_busy without sending it"),
     Threshold("inventory.shift.no_motion", 0.004, "ratio", "C5", C5, "scroll_terminal", "verified_no_motion",
               note="shift at or below ~3px of 720 means the drag did not move the list"),
 )

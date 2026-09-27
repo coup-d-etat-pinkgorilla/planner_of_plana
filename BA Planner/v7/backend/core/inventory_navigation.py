@@ -264,8 +264,13 @@ class InventoryNavigation:
         for _round in (1,2):
             for _tick in range(ticks):
                 if cancel.is_set():raise ScannerError('cancelled','inventory restore cancelled')
-                self.capture.scroll(context,120)
-                self.trace.append(dict(input='wheel_up'))
+                try:
+                    self.capture.scroll(context,120)
+                    self.trace.append(dict(input='wheel_up'))
+                except ScannerError as exc:
+                    # D21: the result is verified against the first page below, so a disturbed tick is only noted.
+                    if exc.code!='input_busy':raise
+                    self.trace.append(dict(input_busy='wheel_up',performed=exc.details.get('performed')))
                 if cancel.wait(.1):raise ScannerError('cancelled','inventory restore cancelled')
             # The wheel overshoots past the top and springs back (live: an empty list for a moment), so
             # poll until the rows are back and either match the first page or have settled elsewhere.
@@ -401,8 +406,17 @@ class InventoryNavigation:
         moves by the requested distance and is read right after the release; a shorter move is the end.
         """
         if distance and callable(getattr(self.capture,'drag_path',None)):
-            for attempt in (1,2):
-                requested=self.drag_distance(target,cancel,distance)
+            busy=0;attempt=0
+            while attempt<2:
+                attempt+=1
+                try:requested=self.drag_distance(target,cancel,distance)
+                except ScannerError as exc:
+                    # D21: a drag the user's input overlapped is measured like any other move (the overlap
+                    # check verifies it); one that did not move is retried, at most twice.
+                    if exc.code!='input_busy' or busy>=2:raise
+                    busy+=1;attempt-=1;requested=distance
+                    self.trace.append(dict(input_busy='drag',performed=exc.details.get('performed')))
+                    if not exc.details.get('performed'):continue
                 after=self.capture.wait_stable(target,cancel,timeout=4)
                 shift,residual=self.measure_shift(before,after,source,expected=requested)
                 self.trace.append(dict(shift_px=round(shift*after.height),requested_px=round(requested*after.height,1),residual=residual,attempt=attempt))

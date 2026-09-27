@@ -234,8 +234,14 @@ class InventoryDetailRecovery:
         context=ScanContext.of(target)
         for attempt in range(1+self.SELECT_RETRIES):
             if cancel.is_set():raise ScannerError('cancelled','inventory selection cancelled')
-            self.capture.click(context.replace(cancel=cancel),slot['cx'],slot['cy'])
-            self.trace.append(dict(input='select_slot',slot=slot_index,attempt=attempt+1,cleanup=bool(context.cleanup)))
+            try:
+                self.capture.click(context.replace(cancel=cancel),slot['cx'],slot['cy'])
+                self.trace.append(dict(input='select_slot',slot=slot_index,attempt=attempt+1,cleanup=bool(context.cleanup)))
+            except ScannerError as exc:
+                # D21: the user's own input overlapped this click; the observation below decides what happened,
+                # and the disturbed click counts as one of the retries.
+                if exc.code!='input_busy':raise
+                self.trace.append(dict(input_busy=slot_index,attempt=attempt+1,performed=exc.details.get('performed')))
             if cancel.wait(.25):raise ScannerError('cancelled','inventory selection cancelled')
             try:
                 frame,_=self.observe_selection(target,cancel,baseline,source,slot_index,slots)
