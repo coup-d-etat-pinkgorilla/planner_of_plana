@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
+import '../geometry/diagonal_geometry.dart';
 import '../studio/account_studio_layout.dart';
 import '../studio/section_template.dart';
 import 'asset_image_grid.dart';
@@ -34,7 +35,7 @@ double squareAssetImageSideLength(Rect targetBounds) {
 double portraitGridTrajectoryOffset(double viewportY, double viewportHeight) {
   if (viewportHeight <= 0) return 0;
   final y = viewportY.clamp(0.0, viewportHeight);
-  return (viewportHeight - y) / math.tan(80 * math.pi / 180);
+  return diagonalCutDepth(viewportHeight - y);
 }
 
 Offset portraitScrollbarTrackPoint(
@@ -769,7 +770,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
     final centeredRowLeft = (listBounds.width - rowBounds.width) / 2;
     final rowTop = math.max(0.0, rowBounds.top - listBounds.top);
     const rowGap = 7.0;
-    final diagonalRun = math.tan(80 * math.pi / 180);
+    final diagonalRun = diagonalTan80;
     return _DirectionalAccountMotion(
       key: const ValueKey('account-manager-motion'),
       progress: _managerMotion.value,
@@ -942,8 +943,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
         sectionRect.height * (originalRect.top + originalRect.height / 2);
     final centerX =
         portraitBounds.center.dx -
-        (changeCenterY - portraitBounds.center.dy) /
-            math.tan(80 * math.pi / 180);
+        diagonalCutDepth(changeCenterY - portraitBounds.center.dy);
     var projectedRect = originalRect.copyWith(
       width: squareSide / sectionRect.width,
     );

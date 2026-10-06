@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../geometry/diagonal_geometry.dart';
 import 'bond_rank_portrait.dart';
 import 'section_template_surface.dart';
 import 'student_portrait_status_overlay.dart';
@@ -154,7 +155,7 @@ abstract final class DiagonalMediaListItemLayout {
 Path diagonalMediaListItemPath(Size size) {
   final depth = math.min(
     size.width * 0.08,
-    size.height / math.tan(80 * math.pi / 180),
+    diagonalCutDepth(size.height),
   );
   return buildRoundedSectionPolygon([
     Offset(depth, 0),
@@ -509,7 +510,7 @@ class _CatalogStatusBadgePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final depth = math.min(
       size.width * 0.18,
-      size.height / math.tan(80 * math.pi / 180),
+      diagonalCutDepth(size.height),
     );
     final path = buildRoundedSectionPolygon([
       Offset(depth, 0),
@@ -924,7 +925,7 @@ class _StarIndicatorPainter extends CustomPainter {
       );
       final depth = math.min(
         rect.width * 0.45,
-        rect.height / math.tan(80 * math.pi / 180),
+        diagonalCutDepth(rect.height),
       );
       final path = buildRoundedSectionPolygon([
         Offset(rect.left + depth, rect.top),

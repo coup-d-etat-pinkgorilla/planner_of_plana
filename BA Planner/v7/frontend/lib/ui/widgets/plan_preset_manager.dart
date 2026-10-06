@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../geometry/diagonal_geometry.dart';
 import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
 import '../studio/preset_management_studio_layout.dart';
@@ -46,10 +47,10 @@ double _presetManagerEditorShift(Size size) {
     _presetManagerElement('element-2'),
   );
   final diagonalDepth =
-      (editorRect.bottom - listRect.top) / math.tan(80 * math.pi / 180);
+      diagonalCutDepth(editorRect.bottom - listRect.top);
   final currentHorizontalGap = editorRect.left - listRect.right + diagonalDepth;
   final targetHorizontalGap =
-      planPresetManagerPanelGap / math.sin(80 * math.pi / 180);
+      diagonalNormalInset(planPresetManagerPanelGap);
   return targetHorizontalGap - currentHorizontalGap;
 }
 
@@ -71,9 +72,9 @@ double planPresetManagerFacingSeamDistance(Size size) {
   final listRect = planPresetManagerSectionRect(size, 'element-1');
   final editorRect = planPresetManagerSectionRect(size, 'element-2');
   final diagonalDepth =
-      (editorRect.bottom - listRect.top) / math.tan(80 * math.pi / 180);
+      diagonalCutDepth(editorRect.bottom - listRect.top);
   final horizontalGap = editorRect.left - listRect.right + diagonalDepth;
-  return horizontalGap * math.sin(80 * math.pi / 180);
+  return horizontalGap * diagonalSin80;
 }
 
 class PlanPresetManager extends StatefulWidget {
@@ -497,7 +498,7 @@ class _PlanPresetManagerState extends State<PlanPresetManager>
     );
     final localListPath = listPath.shift(-sectionBounds.topLeft);
     final buttonHeight = phaseEditorControlHeight(sectionRect);
-    final horizontalGap = phaseEditorControlGap / math.sin(80 * math.pi / 180);
+    final horizontalGap = diagonalNormalInset(phaseEditorControlGap);
     final buttons = <String, Path>{};
     for (var index = 0; index < 4; index++) {
       final top =
@@ -578,7 +579,7 @@ class _PlanPresetManagerState extends State<PlanPresetManager>
 
   double _presetListLeftBoundary(Rect rect, double y) =>
       rect.left +
-      (rect.bottom - y).clamp(0.0, rect.height) / math.tan(80 * math.pi / 180);
+      diagonalCutDepth((rect.bottom - y).clamp(0.0, rect.height));
 
   Widget _positionedListSurface({
     required Key key,
@@ -648,8 +649,8 @@ class _PlanPresetManagerState extends State<PlanPresetManager>
       searchInterval.$2 - 12,
       searchBottom,
     );
-    final tangent = math.tan(80 * math.pi / 180);
-    final railInset = planElementBuilderGap / math.sin(80 * math.pi / 180);
+    final tangent = diagonalTan80;
+    final railInset = diagonalNormalInset(planElementBuilderGap);
     final containerTop =
         searchRect.bottom + planStudentSelectorFilterControlGap;
     final containerBottom =
@@ -830,7 +831,7 @@ class _PresetManagerDiagonalListState
         animation: _controller,
         builder: (context, _) {
           final scroll = _controller.hasClients ? _controller.offset : 0.0;
-          final tangent = math.tan(80 * math.pi / 180);
+          final tangent = diagonalTan80;
           final cards = <Widget>[];
           var top = _inset;
           for (final preset in widget.presets) {

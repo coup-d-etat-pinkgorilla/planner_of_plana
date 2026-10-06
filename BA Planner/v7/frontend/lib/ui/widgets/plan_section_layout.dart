@@ -6,6 +6,7 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scenario_service.dart';
+import '../geometry/diagonal_geometry.dart';
 import '../models/planning_models.dart';
 import '../models/planning_resource_assets.dart';
 import '../studio/plan_studio_layout.dart';
@@ -1075,7 +1076,7 @@ double planStudentSelectorSection1RightAtReference(Size size) {
 (double, double) planResourceHorizontalInterval(Size size, double y) {
   final bounds = planSectionPath(size, 'element-5').getBounds();
   final localY = (y - bounds.top).clamp(0.0, bounds.height).toDouble();
-  final depth = bounds.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(bounds.height);
   return (
     bounds.left + depth * (1 - localY / bounds.height),
     bounds.right - depth * localY / bounds.height,
@@ -1202,7 +1203,7 @@ Path planResourceFilterResetPath(Size size) {
     resetSize,
     resetSize,
   );
-  final depth = rect.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(rect.height);
   return buildRoundedSectionPolygon([
     Offset(rect.left + depth, rect.top),
     rect.topRight,
@@ -1220,7 +1221,7 @@ Path planPhaseContainerPath(Size size) {
     sectionBounds.right - 10,
     sectionBounds.bottom - 10,
   );
-  final depth = rect.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(rect.height);
   final raw = buildRoundedSectionPolygon([
     Offset(rect.left + depth, rect.top),
     rect.topRight,
@@ -1241,7 +1242,7 @@ Path planBottleneckContainerPath(Size size) {
     width,
     height,
   );
-  final depth = rect.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(rect.height);
   final raw = buildRoundedSectionPolygon([
     Offset(rect.left + depth, rect.top),
     rect.topRight,
@@ -1258,7 +1259,10 @@ double planPhaseRowHorizontalOffset({
   required double scrollOffset,
 }) {
   final bottomViewportY = rowTop + rowHeight - scrollOffset;
-  return (viewportHeight - bottomViewportY) / math.tan(80 * math.pi / 180);
+  return diagonalRowTranslateOffset(
+    viewportHeight: viewportHeight,
+    rowBottomInViewport: bottomViewportY,
+  );
 }
 
 double planPhaseRowWidth({
@@ -1273,7 +1277,10 @@ double planPhaseRowWidth({
     viewportWidth -
         horizontalInset * 2 -
         scrollbarReserve -
-        (viewportHeight - rowHeight) / math.tan(80 * math.pi / 180),
+        diagonalRowResizeReduction(
+          viewportHeight: viewportHeight,
+          rowHeight: rowHeight,
+        ),
   );
 }
 
@@ -3323,7 +3330,7 @@ Rect planScenarioListSectionRect(Size size, Rect section1Bounds) {
 
 Path planScenarioListSectionPath(Size size, Rect section1Bounds) {
   final rect = planScenarioListSectionRect(size, section1Bounds);
-  final depth = rect.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(rect.height);
   return roundedPolygonPath([
     Offset(rect.left + depth, rect.top),
     Offset(rect.right, rect.top),
@@ -5462,7 +5469,7 @@ class _PlanScenarioListSectionPainter extends CustomPainter {
 }
 
 double planScenarioParallelogramDepth(double height) =>
-    height / math.tan(80 * math.pi / 180);
+    diagonalCutDepth(height);
 
 Path planScenarioParallelogramPath(Size size) {
   final depth = planScenarioParallelogramDepth(size.height);
@@ -5918,7 +5925,7 @@ class _PlanResourceFilterGroupCard extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final inset =
-              constraints.maxHeight / math.tan(80 * math.pi / 180) + 8;
+              diagonalCutDepth(constraints.maxHeight) + 8;
           final titleHeight = constraints.maxHeight < 100 ? 24.0 : 31.0;
           final checkboxHeight = math.max(
             1.0,
@@ -6000,7 +6007,7 @@ class _PlanResourceFilterGroupPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final depth = size.height / math.tan(80 * math.pi / 180);
+    final depth = diagonalCutDepth(size.height);
     final path = buildRoundedSectionPolygon([
       Offset(depth, 0),
       Offset(size.width, 0),
@@ -6897,7 +6904,7 @@ Rect planDiagonalTwoColumnTileRect({
   final tileWidth = math.max(1.0, (rowRight - rowLeft - gap) / 2);
   final railAlignmentShift =
       longControlInset +
-      longControlHeight / math.tan(80 * math.pi / 180) -
+      diagonalCutDepth(longControlHeight) -
       previousGridInset;
   final previousLeft = rowLeft + column * (tileWidth + gap);
   final alignedLeft =
@@ -7899,7 +7906,7 @@ class _PlanBottleneckActionClipper extends CustomClipper<Path> {
 
   @override
   Path getClip(Size size) {
-    final depth = size.height / math.tan(80 * math.pi / 180);
+    final depth = diagonalCutDepth(size.height);
     return buildRoundedSectionPolygon([
       Offset(depth, 0),
       Offset(size.width, 0),
@@ -7948,7 +7955,7 @@ class _PlanBottleneckCardPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final depth = size.height / math.tan(80 * math.pi / 180);
+    final depth = diagonalCutDepth(size.height);
     final path = buildRoundedSectionPolygon([
       Offset(depth, 0),
       Offset(size.width, 0),
@@ -7976,7 +7983,7 @@ class _PlanBottleneckResourceTilePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final depth = size.height / math.tan(80 * math.pi / 180);
+    final depth = diagonalCutDepth(size.height);
     final path = buildRoundedSectionPolygon([
       Offset(depth, 0),
       Offset(size.width, 0),
@@ -8196,12 +8203,12 @@ class PlanPhaseCard extends StatelessWidget {
 }
 
 double planPhaseLeftBoundary(Size size, double y) {
-  final depth = size.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(size.height);
   return depth * (1 - y / size.height);
 }
 
 double planPhaseRightBoundary(Size size, double y) {
-  final depth = size.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(size.height);
   return size.width - depth * y / size.height;
 }
 
@@ -8219,7 +8226,7 @@ class _PlanPhaseCardPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final depth = size.height / math.tan(80 * math.pi / 180);
+    final depth = diagonalCutDepth(size.height);
     final path = buildRoundedSectionPolygon([
       Offset(depth, 0),
       Offset(size.width, 0),
@@ -8294,7 +8301,7 @@ class PlanDiagonalScrollbar extends StatelessWidget {
             handleTop + handleHeight / 2,
             trackInset: trackInset,
           );
-          final trajectoryDepth = size.height / math.tan(80 * math.pi / 180);
+          final trajectoryDepth = diagonalCutDepth(size.height);
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -8366,13 +8373,13 @@ class PlanDiagonalScrollbar extends StatelessWidget {
 }
 
 Offset planScrollbarTrackPoint(Size size, double y, {double trackInset = 10}) {
-  final depth = size.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(size.height);
   final clampedY = y.clamp(0.0, size.height);
   return Offset(
     size.width -
         trackInset -
         depth +
-        (size.height - clampedY) / math.tan(80 * math.pi / 180),
+        diagonalCutDepth(size.height - clampedY),
     clampedY,
   );
 }

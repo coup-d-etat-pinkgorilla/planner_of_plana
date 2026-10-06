@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../geometry/diagonal_geometry.dart';
 import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
 import 'lifted_path_shadow.dart';
@@ -282,8 +283,8 @@ StudentRangeConditionGeometry studentRangeConditionGeometry(Size size) {
     studentRangeConditionArrowHeight,
   );
 
-  final tangent = math.tan(80 * math.pi / 180);
-  final sine = math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final sine = diagonalSin80;
   final normalRailInset = studentRangeConditionSectionInset / sine;
   final rawTop = rawLowerCard.top - studentRangeConditionSectionInset;
   final rawBottom = rawUpperCard.bottom + studentRangeConditionSectionInset;
@@ -343,7 +344,7 @@ Size studentRangeConditionCardDesignSize() => Size(
       ? 0.0
       : clampedY / sectionSize.height;
   final depth = sectionTemplateCutDepth(sectionSize.height);
-  final railInset = normalInset / math.sin(80 * math.pi / 180);
+  final railInset = diagonalNormalInset(normalInset);
   return (
     depth * (1 - progress) + railInset,
     sectionSize.width - depth * progress - railInset,
@@ -356,8 +357,8 @@ Rect studentRangeConditionFittedCardRect({
   required Size designSize,
   double normalInset = studentRangeConditionSectionInset,
 }) {
-  final tangent = math.tan(80 * math.pi / 180);
-  final sine = math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final sine = diagonalSin80;
   final sectionDepth = sectionSize.height / tangent;
   final railInset = normalInset / sine;
   final availableRailLength = math.max(

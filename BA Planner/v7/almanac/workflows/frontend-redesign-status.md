@@ -20,6 +20,10 @@ sources:
 
 ## 현재 상태
 
+**FE1-b DiagonalGeometry(동작 보존): 코드·단위 테스트 작성 완료, gate 미실행(사용자 PC 실행 대기).** 시작 커밋 `180f5551cc4d63621612c9b454fc2ede32159d1a`. 커밋하지 않았다. 자세한 내용은 아래 "FE1-b" 절.
+
+FE1-g는 커밋됐다(`8e95d946` golden PNG, `1ac37eeb` 코드; 아래 "FE1-g 커밋 기록"). 아래 FE1-g·FE1-a 문단은 당시 기록이다.
+
 **FE1-g golden 기준선 + 게이트 스크립트: golden 17장 생성·비교 통과(사용자 PC). gate는 RED였다(Python E2E 4건 시간 초과, almanac 인용 1건). 수정 후 재실행 대기.** 시작 커밋 `691e5213eb4b88ac1a6ce611e79b694ec247570c`(FE1-a 변경은 아직 작업트리에만 있다). lib/는 바꾸지 않았다. 커밋하지 않았다. 자세한 내용은 아래 "FE1-g" 절.
 
 **FE1-a 토큰(동작 보존): 코드 변경 완료, 자동 gate 미실행(사용자 실행 대기).** 시작 커밋 `691e5213eb4b88ac1a6ce611e79b694ec247570c` (브랜치 `scanner-consolidation`, 2026-10-06). 커밋하지 않았다.
@@ -310,3 +314,8 @@ FE1-g에 걸린 워커 재량 FD는 없다.
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261006_224319\summary.txt (result         : GREEN)
 - 커밋 방식: 고치기 전 사본·HEAD·현재 파일 3-way 병합 결과를 index에만 올림. 작업트리에 남긴 기존 변경: 없음
+
+### FE1-b commit record (2026-10-06 23:18, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261006_231705\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

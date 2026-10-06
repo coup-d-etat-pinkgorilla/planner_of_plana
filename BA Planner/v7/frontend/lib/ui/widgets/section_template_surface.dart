@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../geometry/diagonal_geometry.dart';
 import '../studio/section_template.dart';
 import 'ba_triangle_background.dart';
 
@@ -95,12 +96,12 @@ List<Offset> buildAttachedSectionPolygon(
     (SectionShapeMode.triangle, SectionAttachmentFace.top) => <Offset>[
       Offset(faceStart, 0),
       Offset(faceEnd, 0),
-      Offset(faceStart, span * math.tan(80 * math.pi / 180)),
+      Offset(faceStart, diagonalRiseForRun(span)),
     ],
     (SectionShapeMode.triangle, SectionAttachmentFace.bottom) => <Offset>[
       Offset(faceStart, size.height),
       Offset(faceEnd, size.height),
-      Offset(faceEnd, size.height - span * math.tan(80 * math.pi / 180)),
+      Offset(faceEnd, size.height - diagonalRiseForRun(span)),
     ],
     (SectionShapeMode.trapezoid, SectionAttachmentFace.left) => <Offset>[
       Offset(0, faceStart),
@@ -1133,72 +1134,13 @@ class LayeredStudioPainter extends CustomPainter {
   }
 }
 
-Path buildRoundedSectionPolygon(List<Offset> points, {double radius = 14}) {
-  if (points.length < 3) return Path()..addPolygon(points, true);
-  final entries = <({Offset start, Offset end, double radius})>[];
-  for (var index = 0; index < points.length; index++) {
-    final previous = points[(index - 1 + points.length) % points.length];
-    final current = points[index];
-    final next = points[(index + 1) % points.length];
-    final towardPrevious = previous - current;
-    final towardNext = next - current;
-    final previousLength = towardPrevious.distance;
-    final nextLength = towardNext.distance;
-    if (previousLength == 0 || nextLength == 0) {
-      entries.add((start: current, end: current, radius: 0));
-      continue;
-    }
-    final previousUnit = towardPrevious / previousLength;
-    final nextUnit = towardNext / nextLength;
-    final cosine =
-        (previousUnit.dx * nextUnit.dx + previousUnit.dy * nextUnit.dy)
-            .clamp(-1.0, 1.0)
-            .toDouble();
-    final cornerAngle = math.acos(cosine);
-    final halfAngleTangent = math.tan(cornerAngle / 2).abs();
-    final requestedCut = halfAngleTangent < 1e-6
-        ? double.infinity
-        : radius / halfAngleTangent;
-    // Keep more of each straight edge visible before an acute corner starts to
-    // turn. The circular fillet below still removes substantially more of the
-    // sharp tip than the former quadratic curve through the original vertex.
-    final availableCut = math.min(previousLength, nextLength) * 0.36;
-    final cut = math.min(requestedCut, availableCut);
-    entries.add((
-      start: current + towardPrevious / previousLength * cut,
-      end: current + towardNext / nextLength * cut,
-      radius: cut * halfAngleTangent,
-    ));
-  }
-
-  var twiceSignedArea = 0.0;
-  for (var index = 0; index < points.length; index++) {
-    final current = points[index];
-    final next = points[(index + 1) % points.length];
-    twiceSignedArea += current.dx * next.dy - current.dy * next.dx;
-  }
-  // Follow the polygon winding so arcToPoint chooses the convex fillet. Using
-  // the opposite sweep selects the other circle center and carves a concave
-  // notch into the surface.
-  final clockwise = twiceSignedArea > 0;
-  final path = Path()..moveTo(entries.first.start.dx, entries.first.start.dy);
-  for (var index = 0; index < points.length; index++) {
-    final entry = entries[index];
-    if (index > 0) path.lineTo(entry.start.dx, entry.start.dy);
-    if (entry.radius <= 1e-6) {
-      path.lineTo(entry.end.dx, entry.end.dy);
-    } else {
-      path.arcToPoint(
-        entry.end,
-        radius: Radius.circular(entry.radius),
-        clockwise: clockwise,
-      );
-    }
-  }
-  return path
-    ..lineTo(entries.first.start.dx, entries.first.start.dy)
-    ..close();
-}
+/// 원호 필렛 둥근 다각형. FD-016 단일 API [diagonalRoundedPolygon]의 호환 래퍼다.
+Path buildRoundedSectionPolygon(List<Offset> points, {double radius = 14}) =>
+    diagonalRoundedPolygon(
+      points,
+      radius: radius,
+      corner: DiagonalCornerStyle.arc,
+    );
 
 List<Offset> _sideParallelogramPoints(
   Size size,
@@ -1209,7 +1151,7 @@ List<Offset> _sideParallelogramPoints(
 ) {
   final isLeft = spec.face == SectionAttachmentFace.left;
   final depth = signedDepth.abs();
-  final rise = depth * math.tan(80 * math.pi / 180);
+  final rise = diagonalRiseForRun(depth);
   if (isLeft) {
     final attachedTop = Offset(0, faceStart);
     final attachedBottom = Offset(0, faceEnd);
@@ -1390,7 +1332,7 @@ Path buildSectionTemplatePath(Size size, SectionShape shape) {
 }
 
 double sectionTemplateCutDepth(double height) =>
-    height / math.tan(80 * math.pi / 180);
+    diagonalCutDepth(height);
 
 class _SectionTemplateBorderPainter extends CustomPainter {
   const _SectionTemplateBorderPainter({

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../geometry/diagonal_geometry.dart';
 import '../studio/section_template.dart';
 import '../studio/student_studio_layout.dart';
 import 'animated_section_stack.dart';
@@ -313,7 +314,7 @@ bool studentMatchesCatalogFilters(
 }
 
 double studentStarSegmentDepth(Rect rect) =>
-    math.min(rect.width * 0.45, rect.height / math.tan(80 * math.pi / 180));
+    math.min(rect.width * 0.45, diagonalCutDepth(rect.height));
 
 Path studentStarSegmentPath(Rect rect) {
   final depth = studentStarSegmentDepth(rect);
@@ -466,7 +467,7 @@ Rect studentSectionRect(Size size, String id) {
     size,
     studentStudioDocument.elements.firstWhere((item) => item.id == 'element-3'),
   );
-  final tangent = math.tan(80 * math.pi / 180);
+  final tangent = diagonalTan80;
   final left = detail.left + (detail.bottom - rect.bottom) / tangent;
   return Rect.fromLTRB(left, rect.top, rect.right, rect.bottom);
 }
@@ -497,7 +498,7 @@ Path studentSectionPath(Size size, String id) {
   );
   final actionRect = sectionCanvasElementRect(size, actionSection);
   final rect = sectionCanvasElementRect(size, element);
-  final depth = rect.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(rect.height);
   final leftTop = actionRect.right + studentSectionBevelGap;
   final raw = buildRoundedSectionPolygon([
     Offset(leftTop, rect.top),
@@ -521,7 +522,7 @@ List<Offset> studentFilterSectionPolygon(Size size) {
   );
   final actionRect = sectionCanvasElementRect(size, actionSection);
   final rect = sectionCanvasElementRect(size, filterSection);
-  final depth = rect.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(rect.height);
   final leftTop = actionRect.right + studentSectionBevelGap;
   final originalTopRight = Offset(rect.right + depth, rect.top);
   final bottomLeft = Offset(leftTop - depth, rect.bottom);
@@ -543,7 +544,7 @@ double studentListSectionEdgeLength(Size size) {
   );
   final actionRect = sectionCanvasElementRect(size, actionSection);
   final rect = sectionCanvasElementRect(size, listSection);
-  final depth = rect.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(rect.height);
   return rect.right + depth - (actionRect.right + studentSectionBevelGap);
 }
 
@@ -562,7 +563,7 @@ Path studentFilterSectionPath(Size size) {
 Rect studentFilterCompanionSectionRect(Size size) {
   final filterBounds = studentFilterSectionPath(size).getBounds();
   final fullBounds = studentSectionPath(size, 'element-2').getBounds();
-  final depth = filterBounds.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(filterBounds.height);
   final left = filterBounds.right + studentFilterCompanionSectionGap - depth;
   return Rect.fromLTRB(
     left,
@@ -576,7 +577,7 @@ Rect studentFilterCompanionSectionRect(Size size) {
   final polygon = studentFilterSectionPolygon(size);
   final bottom = polygon[3].dy;
   final clampedY = y.clamp(polygon[0].dy, bottom);
-  final shift = (bottom - clampedY) / math.tan(80 * math.pi / 180);
+  final shift = diagonalCutDepth(bottom - clampedY);
   return (polygon[3].dx + shift, polygon[2].dx + shift);
 }
 
@@ -615,7 +616,10 @@ double studentDiagonalRowHorizontalOffset({
   required double scrollOffset,
 }) {
   final bottomViewportY = rowTop + rowHeight - scrollOffset;
-  return (viewportHeight - bottomViewportY) / math.tan(80 * math.pi / 180);
+  return diagonalRowTranslateOffset(
+    viewportHeight: viewportHeight,
+    rowBottomInViewport: bottomViewportY,
+  );
 }
 
 double studentDiagonalFilterRowWidth({
@@ -625,7 +629,7 @@ double studentDiagonalFilterRowWidth({
   required double horizontalInset,
   required double scrollbarReserve,
 }) {
-  final tangent = math.tan(80 * math.pi / 180);
+  final tangent = diagonalTan80;
   return math.max(
     120.0,
     viewportWidth -
@@ -636,7 +640,7 @@ double studentDiagonalFilterRowWidth({
 }
 
 double studentFilterGroupContentInset(double height) =>
-    height / math.tan(80 * math.pi / 180) + 8;
+    diagonalCutDepth(height) + 8;
 
 bool studentFoundationUsesLegacySectionChildren({
   required bool filterSection,
@@ -653,7 +657,7 @@ Path studentFilterResetPath(Size size) {
     studentFilterResetButtonSize,
     studentFilterResetButtonSize,
   );
-  final depth = rect.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(rect.height);
   return buildRoundedSectionPolygon([
     Offset(rect.left + depth, rect.top),
     rect.topRight,
@@ -669,7 +673,7 @@ List<StudioContainerElement> studentRuntimeContainers(Size size) {
   final detailRect = sectionCanvasElementRect(size, detailSection);
   final aspect = detailRect.height / detailRect.width;
   final source = studentStudioDocument.containers;
-  final tangent = math.tan(80 * math.pi / 180);
+  final tangent = diagonalTan80;
   const stackIds = ['container-5', 'container-6', 'container-7', 'container-9'];
   final sourceById = {for (final item in source) item.id: item};
   final firstStackRect = sourceById[stackIds.first]!.rect;
@@ -692,7 +696,7 @@ List<StudioContainerElement> studentRuntimeContainers(Size size) {
   final detailGapPixels = stackGap * detailRect.height;
   final c4Source = sourceById['container-4']!.rect;
   final c4RailGap =
-      detailGapPixels / (detailRect.width * math.sin(80 * math.pi / 180));
+      detailGapPixels / (detailRect.width * diagonalSin80);
   final c4Left =
       stackRightRail + c4RailGap - c4Source.bottom * aspect / tangent;
   final c4Rect = c4Source.copyWith(
@@ -703,7 +707,7 @@ List<StudioContainerElement> studentRuntimeContainers(Size size) {
   const actionInset = _studentSection1ControlInset;
   const actionGap = _studentSection1ControlGap;
   const actionLeft = _studentSection1ControlLeft;
-  final actionRightInset = actionLeft / math.sin(80 * math.pi / 180);
+  final actionRightInset = diagonalNormalInset(actionLeft);
   const actionIds = ['container-16', 'container-13', 'container-11'];
   final actionSection = studentStudioDocument.elements.firstWhere(
     (item) => item.id == 'element-1',
@@ -779,7 +783,7 @@ List<StudioContainerElement> studentRuntimeContainers(Size size) {
 
 StudioPlacementRect _studentSection1ControlRowPlacement(Size size, double top) {
   const actionLeft = _studentSection1ControlLeft;
-  final tangent = math.tan(80 * math.pi / 180);
+  final tangent = diagonalTan80;
   final actionSection = studentStudioDocument.elements.firstWhere(
     (item) => item.id == 'element-1',
   );
@@ -799,7 +803,7 @@ StudioPlacementRect _studentSection1ControlRowPlacement(Size size, double top) {
       searchRect.height / sectionRect.height,
     ),
   );
-  final rightInset = actionLeft / math.sin(80 * math.pi / 180);
+  final rightInset = diagonalNormalInset(actionLeft);
   final sectionAspect = sectionRect.height / sectionRect.width;
   final rightEdgeAtTop = 1 - top * sectionAspect / tangent;
   return StudioPlacementRect(
@@ -857,8 +861,7 @@ List<List<Offset>> studentViewTogglePolygons(Size size) {
     rowRect.bottom - 0.001,
   );
   final rightInset =
-      _studentSection1ControlLeft /
-      math.sin(80 * math.pi / 180) *
+      diagonalNormalInset(_studentSection1ControlLeft) *
       sectionRect.width;
   final rightTop = topSpan.right - rightInset;
   final rightBottom = bottomSpan.right - rightInset;
@@ -1935,7 +1938,7 @@ class _StudentViewModeButtonPainter extends CustomPainter {
 
 Offset studentActionIconCenter(Rect bounds) {
   final y = bounds.height / 2;
-  final cutAtY = y / math.tan(80 * math.pi / 180);
+  final cutAtY = diagonalCutDepth(y);
   final horizontalLength = math.max(0.0, bounds.width - cutAtY);
   return Offset(horizontalLength / 2, y);
 }
@@ -2187,7 +2190,7 @@ class StudentLevelStatus extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final size = Size(constraints.maxWidth, constraints.maxHeight);
-      final railInset = size.height / math.tan(80 * math.pi / 180);
+      final railInset = diagonalCutDepth(size.height);
       return CustomPaint(
         key: ValueKey(
           showSchool
@@ -2320,7 +2323,7 @@ class _StudentLevelSplitPainter extends CustomPainter {
 
 List<Offset> studentLevelSplitEndpoints(Size size) {
   final splitTop = size.width * 0.73;
-  final run = size.height / math.tan(80 * math.pi / 180);
+  final run = diagonalCutDepth(size.height);
   return [Offset(splitTop, 0), Offset(splitTop - run, size.height)];
 }
 
@@ -2411,9 +2414,9 @@ class StudentSkillStatus extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) => Padding(
       padding: EdgeInsets.fromLTRB(
-        constraints.maxHeight / math.tan(80 * math.pi / 180) + 9,
+        diagonalCutDepth(constraints.maxHeight) + 9,
         7,
-        constraints.maxHeight / math.tan(80 * math.pi / 180) + 9,
+        diagonalCutDepth(constraints.maxHeight) + 9,
         4,
       ),
       child: Column(
@@ -2580,7 +2583,7 @@ class _StudentDiagonalDivider extends StatelessWidget {
 List<Offset> studentDiagonalDividerEndpoints(Size size) {
   final top = math.min(2.0, size.height);
   final bottom = math.max(top, size.height - 2);
-  final run = (bottom - top) / math.tan(80 * math.pi / 180);
+  final run = diagonalCutDepth(bottom - top);
   return [
     Offset((size.width + run) / 2, top),
     Offset((size.width - run) / 2, bottom),
@@ -2621,7 +2624,7 @@ class StudentAbilityStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final railInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final railInset = diagonalCutDepth(constraints.maxHeight);
       final contentWidth = math.max(0.0, constraints.maxWidth - railInset - 18);
       final titleWidth = math.min(90.0, contentWidth * 0.36);
       final titleGap = math.min(12.0, contentWidth * 0.06);
@@ -2702,7 +2705,7 @@ class StudentEquipmentStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final railInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final railInset = diagonalCutDepth(constraints.maxHeight);
       return Padding(
         padding: EdgeInsets.fromLTRB(railInset + 9, 7, railInset + 9, 3),
         child: Column(
@@ -2943,7 +2946,7 @@ double studentCombatRowOffset({
   int itemCount = 4,
 }) {
   if (height <= 0 || itemCount <= 0) return 0;
-  final railRun = height / math.tan(80 * math.pi / 180);
+  final railRun = diagonalCutDepth(height);
   final normalizedCenter = (index + 0.5) / itemCount;
   return -railRun * normalizedCenter;
 }
@@ -2954,7 +2957,7 @@ double studentCombatDividerOffset({
   int itemCount = 4,
 }) {
   if (height <= 0 || itemCount <= 0) return 0;
-  final railRun = height / math.tan(80 * math.pi / 180);
+  final railRun = diagonalCutDepth(height);
   final normalizedBoundary = (index + 1) / itemCount;
   return -railRun * normalizedBoundary;
 }
@@ -2968,7 +2971,7 @@ class _StudentCombatStatus extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final entries = values.entries.toList(growable: false);
-      final railRun = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final railRun = diagonalCutDepth(constraints.maxHeight);
       return Padding(
         padding: EdgeInsets.fromLTRB(railRun + 9, 9, 9, 9),
         child: Column(
@@ -3840,7 +3843,7 @@ class _StudentFilterGroupPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final depth = size.height / math.tan(80 * math.pi / 180);
+    final depth = diagonalCutDepth(size.height);
     final path = buildRoundedSectionPolygon([
       Offset(depth, 0),
       Offset(size.width, 0),
@@ -3906,7 +3909,7 @@ class _StudentDiagonalListState extends State<StudentDiagonalList> {
           ),
         );
       }
-      final tangent = math.tan(80 * math.pi / 180);
+      final tangent = diagonalTan80;
       final trajectoryDepth = constraints.maxHeight / tangent;
       final rowWidth = math.max(
         116.0,
@@ -4037,7 +4040,7 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
     builder: (context, constraints) {
       final columns = math.max(1, widget.columns);
       final rows = math.max(1, (widget.students.length / columns).ceil());
-      final tangent = math.tan(80 * math.pi / 180);
+      final tangent = diagonalTan80;
       final trajectoryDepth = constraints.maxHeight / tangent;
       final cellSize = math.max(
         1.0,
@@ -4281,7 +4284,7 @@ const studentGridCardSelectionWidthFraction = 0.02;
   final jpWidth = (card.width * 0.18).clamp(24.0, 44.0);
   final depth = math.min(
     card.width * 0.25,
-    card.height / math.tan(80 * math.pi / 180),
+    diagonalCutDepth(card.height),
   );
   final cornerRadius = math.min(12.0, card.shortestSide * 0.1);
   final outlineGap = card.shortestSide * studentGridCardOutlineWidthFraction;
@@ -4299,7 +4302,7 @@ const studentGridCardSelectionWidthFraction = 0.02;
     badgeHeight,
   );
   final plan = Rect.fromLTWH(
-    unowned.left - (badgeHeight + outlineGap) / math.tan(80 * math.pi / 180),
+    unowned.left - diagonalCutDepth(badgeHeight + outlineGap),
     unowned.bottom + outlineGap,
     planWidth,
     badgeHeight,
@@ -4310,7 +4313,7 @@ const studentGridCardSelectionWidthFraction = 0.02;
 Path studentGridCardPath(Rect rect) {
   final depth = math.min(
     rect.width * 0.25,
-    rect.height / math.tan(80 * math.pi / 180),
+    diagonalCutDepth(rect.height),
   );
   return buildRoundedSectionPolygon([
     Offset(rect.left + depth, rect.top),
@@ -4328,7 +4331,7 @@ Rect studentGridCardFittedRect(Rect cell) => Alignment.center.inscribe(
 Path studentGridCardHitPath(Rect rect) {
   final depth = math.min(
     rect.width * 0.25,
-    rect.height / math.tan(80 * math.pi / 180),
+    diagonalCutDepth(rect.height),
   );
   return Path()
     ..moveTo(rect.left + depth, rect.top)
@@ -4544,7 +4547,7 @@ class StudentGridCardOverlayPainter extends CustomPainter {
 
   (double, double) _rowBounds(Rect card, double y) {
     final progress = ((y - card.top) / card.height).clamp(0.0, 1.0);
-    final depth = card.height / math.tan(80 * math.pi / 180);
+    final depth = diagonalCutDepth(card.height);
     return (card.left + (1 - progress) * depth, card.right - progress * depth);
   }
 
@@ -4734,7 +4737,7 @@ Offset studentScrollbarTrackPoint(
   double y, {
   double trackInset = 10,
 }) {
-  final tangent = math.tan(80 * math.pi / 180);
+  final tangent = diagonalTan80;
   final depth = size.height / tangent;
   final clampedY = y.clamp(0.0, size.height);
   return Offset(

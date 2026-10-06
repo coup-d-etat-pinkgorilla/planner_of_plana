@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../geometry/diagonal_geometry.dart';
 import 'lifted_path_shadow.dart';
 
 const _defaultSectionShadow = LiftedPathShadowSpec(
@@ -32,41 +33,13 @@ double diagonalSlant(
   return math.min(requested, math.min(size.width * 0.24, size.height * 0.48));
 }
 
-Path roundedPolygonPath(List<Offset> points, double radius) {
-  assert(points.length >= 3);
-  final path = Path();
-  final starts = <Offset>[];
-  final ends = <Offset>[];
-
-  for (var index = 0; index < points.length; index++) {
-    final previous = points[(index - 1 + points.length) % points.length];
-    final current = points[index];
-    final next = points[(index + 1) % points.length];
-    final before = (previous - current).distance;
-    final after = (next - current).distance;
-    final resolvedRadius = math.min(radius, math.min(before, after) / 2);
-    starts.add(
-      current +
-          (previous - current) * (resolvedRadius / math.max(0.001, before)),
+/// Q 곡선 둥근 다각형. FD-016 단일 API [diagonalRoundedPolygon]의 호환 래퍼다.
+Path roundedPolygonPath(List<Offset> points, double radius) =>
+    diagonalRoundedPolygon(
+      points,
+      radius: radius,
+      corner: DiagonalCornerStyle.quadratic,
     );
-    ends.add(
-      current + (next - current) * (resolvedRadius / math.max(0.001, after)),
-    );
-  }
-
-  path.moveTo(ends.last.dx, ends.last.dy);
-  for (var index = 0; index < points.length; index++) {
-    path
-      ..lineTo(starts[index].dx, starts[index].dy)
-      ..quadraticBezierTo(
-        points[index].dx,
-        points[index].dy,
-        ends[index].dx,
-        ends[index].dy,
-      );
-  }
-  return path..close();
-}
 
 Path buildRightCutSectionPath(
   Size size, {

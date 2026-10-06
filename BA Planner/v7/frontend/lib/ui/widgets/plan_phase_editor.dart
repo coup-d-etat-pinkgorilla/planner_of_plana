@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../geometry/diagonal_geometry.dart';
 import '../studio/section_template.dart';
 import 'ba_triangle_background.dart';
 import 'diagonal_media_list_item.dart';
@@ -724,9 +725,9 @@ double phaseEditorFacingSeamDistance(
   final leftRect = sectionCanvasElementRect(size, left);
   final rightRect = sectionCanvasElementRect(size, right);
   final diagonalDepth =
-      (rightRect.bottom - leftRect.top) / math.tan(80 * math.pi / 180);
+      diagonalCutDepth(rightRect.bottom - leftRect.top);
   final horizontalGap = rightRect.left - leftRect.right + diagonalDepth;
-  return horizontalGap * math.sin(80 * math.pi / 180);
+  return horizontalGap * diagonalSin80;
 }
 
 @immutable
@@ -757,7 +758,7 @@ PhaseEditorResponsivePaths phaseEditorResponsivePaths(
   final sectionRect = sectionCanvasElementRect(size, section);
   final buttonHeight = phaseEditorControlHeight(sectionRect);
   final horizontalNormalGap =
-      phaseEditorControlGap / math.sin(80 * math.pi / 180);
+      diagonalNormalInset(phaseEditorControlGap);
   final buttons = <String, Path>{};
 
   if (sectionId == 'element-1') {
@@ -802,7 +803,7 @@ PhaseEditorResponsivePaths phaseEditorResponsivePaths(
           Offset(leftBottom, bottom),
         ], sectionPath);
       } else if (index == 2) {
-        final depth = buttonHeight / math.tan(80 * math.pi / 180);
+        final depth = diagonalCutDepth(buttonHeight);
         final createRight =
             (right + leftBottom + depth * 2 - horizontalNormalGap) / 2;
         buttons['add'] = _phaseEditorControlPath([
@@ -850,11 +851,11 @@ double phaseEditorControlHeight(Rect sectionRect) =>
 
 double _phaseEditorListLeftBoundary(Rect rect, double y) =>
     rect.left +
-    (rect.bottom - y).clamp(0.0, rect.height) / math.tan(80 * math.pi / 180);
+    diagonalCutDepth((rect.bottom - y).clamp(0.0, rect.height));
 
 double _phaseEditorListRightBoundary(Rect rect, double y) =>
     rect.right -
-    (y - rect.top).clamp(0.0, rect.height) / math.tan(80 * math.pi / 180);
+    diagonalCutDepth((y - rect.top).clamp(0.0, rect.height));
 
 Path _phaseEditorControlPath(List<Offset> points, Path parentPath) {
   final shape = buildRoundedSectionPolygon(points, radius: 8);
@@ -892,12 +893,12 @@ Rect phaseEditorCenteredTrapezoidListRect(
   final bottom = bounds.bottom - phaseEditorContainerInset;
   final height = math.max(1.0, bottom - top);
   final horizontalGap =
-      phaseEditorCompactListNormalGap / math.sin(80 * math.pi / 180);
+      diagonalNormalInset(phaseEditorCompactListNormalGap);
   final targetBottomEdge = math.max(
     1.0,
     phaseEditorShortTrapezoidEdgeLength(size, element) - horizontalGap * 2,
   );
-  final diagonalDepth = height / math.tan(80 * math.pi / 180);
+  final diagonalDepth = diagonalCutDepth(height);
   final width = math.min(bounds.width, targetBottomEdge + diagonalDepth);
   return Rect.fromLTWH(bounds.center.dx - width / 2, top, width, height);
 }
@@ -908,7 +909,7 @@ double phaseEditorCompactListDiagonalNormalGap(
 ) {
   final sectionRect = sectionCanvasElementRect(size, element);
   final listRect = phaseEditorCenteredTrapezoidListRect(size, element);
-  final slope = 1 / math.tan(80 * math.pi / 180);
+  final slope = 1 / diagonalTan80;
   final listDepth = listRect.height * slope;
   final horizontalGap = switch (element.spec.face) {
     SectionAttachmentFace.left =>
@@ -921,7 +922,7 @@ double phaseEditorCompactListDiagonalNormalGap(
           (sectionRect.left + (sectionRect.bottom - listRect.top) * slope),
     _ => throw ArgumentError.value(element.spec.face, 'element.spec.face'),
   };
-  return horizontalGap * math.sin(80 * math.pi / 180);
+  return horizontalGap * diagonalSin80;
 }
 
 double phaseEditorCompactListStraightSideGap(
@@ -980,7 +981,7 @@ Path _phaseEditorSubpath(Rect rect, AttachedSectionSpec spec, Path parentPath) {
 Path phaseEditorParallelogramPath(Rect rect, {double radius = 9}) {
   final maximumDepth = math.max(0.0, (rect.width - radius * 2) / 2);
   final depth = math.min(
-    rect.height / math.tan(80 * math.pi / 180),
+    diagonalCutDepth(rect.height),
     maximumDepth,
   );
   return buildRoundedSectionPolygon([
@@ -1615,7 +1616,7 @@ double phaseEditorDiagonalListItemHostWidth(Size size, double itemHeight) {
         size.width -
             phaseEditorDiagonalListInset * 2 -
             phaseEditorDiagonalListRailClearance -
-            (size.height - itemHeight) / math.tan(80 * math.pi / 180),
+            diagonalCutDepth(size.height - itemHeight),
       )
       .clamp(116.0, maximumWidth)
       .toDouble();
@@ -2042,12 +2043,12 @@ class _PhaseAssignmentCard<T> extends StatelessWidget {
 }
 
 double _phaseEditorItemLeftBoundary(Size size, double y) {
-  final depth = size.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(size.height);
   return depth * (1 - y / size.height);
 }
 
 double _phaseEditorItemRightBoundary(Size size, double y) {
-  final depth = size.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(size.height);
   return size.width - depth * y / size.height;
 }
 
@@ -2189,8 +2190,7 @@ class _PhaseEditorDiagonalListState extends State<_PhaseEditorDiagonalList> {
             final height = heights[index];
             final bottomViewportY = top + height - scroll;
             final offset =
-                (constraints.maxHeight - bottomViewportY) /
-                math.tan(80 * math.pi / 180);
+                diagonalCutDepth(constraints.maxHeight - bottomViewportY);
             final maximumWidth = math.max(
               116.0,
               constraints.maxWidth - _inset * 2 - 14,
@@ -2201,8 +2201,7 @@ class _PhaseEditorDiagonalListState extends State<_PhaseEditorDiagonalList> {
                   constraints.maxWidth -
                       _inset * 2 -
                       14 -
-                      (constraints.maxHeight - height) /
-                          math.tan(80 * math.pi / 180),
+                      diagonalCutDepth(constraints.maxHeight - height),
                 )
                 .clamp(116.0, maximumWidth)
                 .toDouble();
@@ -2308,13 +2307,13 @@ Offset phaseEditorScrollbarTrackPoint(
   double y, {
   double trackInset = 10,
 }) {
-  final depth = size.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(size.height);
   final clampedY = y.clamp(0.0, size.height);
   return Offset(
     size.width -
         trackInset -
         depth +
-        (size.height - clampedY) / math.tan(80 * math.pi / 180),
+        diagonalCutDepth(size.height - clampedY),
     clampedY,
   );
 }

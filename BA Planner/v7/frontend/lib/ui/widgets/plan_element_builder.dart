@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../geometry/diagonal_geometry.dart';
 import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
 import '../studio/plan_starter_studio_layout.dart';
@@ -199,8 +200,8 @@ List<Offset> planPresetLoaderContainerVertices(Size canvasSize) {
     canvasSize,
     'element-5',
   ).getBounds();
-  final tangent = math.tan(80 * math.pi / 180);
-  final railInset = normalGap / math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final railInset = diagonalNormalInset(normalGap);
   final top = sectionBounds.top + headerHeight;
   final bottom = sectionBounds.bottom - normalGap;
   final leftRail = sectionBounds.left + railInset + bottom / tangent;
@@ -220,8 +221,8 @@ List<Offset> planPresetListContainerVertices(Size canvasSize) {
     canvasSize,
     'element-6',
   ).getBounds();
-  final tangent = math.tan(80 * math.pi / 180);
-  final railDelta = normalGap / math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final railDelta = diagonalNormalInset(normalGap);
   final top = sectionBounds.top + normalGap;
   final bottom =
       sectionBounds.bottom -
@@ -243,8 +244,8 @@ List<Offset> planPresetListContainerVertices(Size canvasSize) {
 double planPresetListCardWidth(Size viewportSize) {
   const normalGap = planElementBuilderGap;
   const scrollbarReserve = 14.0;
-  final tangent = math.tan(80 * math.pi / 180);
-  final railInset = normalGap / math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final railInset = diagonalNormalInset(normalGap);
   final unwrappedAspect =
       presetElementUnwrappedReferenceBounds.height /
       presetElementUnwrappedReferenceBounds.width;
@@ -351,10 +352,9 @@ double planStageDiagonalCardLeft({
   required double cardWidth,
   double normalGap = planElementBuilderGap,
 }) =>
-    normalGap / math.sin(80 * math.pi / 180) +
+    diagonalNormalInset(normalGap) +
     (cardWidth / planPresetElementWidthScale - cardWidth) / 2 +
-    (viewportHeight - (itemTop + itemHeight - scrollOffset)) /
-        math.tan(80 * math.pi / 180);
+    diagonalCutDepth(viewportHeight - (itemTop + itemHeight - scrollOffset));
 
 double planStageEffectiveScrollOffset({
   required double rawOffset,
@@ -425,9 +425,9 @@ PlanStarterRightSectionGeometry planStarterRightSectionGeometry(
   final shortEdge = horizontalEdges.isEmpty
       ? sectionBounds.width
       : horizontalEdges.reduce(math.min);
-  final tangent = math.tan(80 * math.pi / 180);
+  final tangent = diagonalTan80;
   final horizontalGap =
-      planStarterRightSectionInset / math.sin(80 * math.pi / 180);
+      diagonalNormalInset(planStarterRightSectionInset);
   final listTop = sectionBounds.top + planStarterRightSectionInset;
   final listBottom = sectionBounds.bottom - planStarterRightSectionInset;
   final listHeight = math.max(1.0, listBottom - listTop);
@@ -573,8 +573,8 @@ Rect planPresetElementRect(
   PlanPresetElementLayout layout = PlanPresetElementLayout.standard,
 }) {
   if (id == 'element-5') return Offset.zero & size;
-  final tangent = math.tan(80 * math.pi / 180);
-  final sine = math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final sine = diagonalSin80;
   const rowGap = planPresetElementPanelGap;
   const edgeGap = planPresetElementEdgeGap;
   final railInset = edgeGap / sine;
@@ -675,8 +675,8 @@ List<Offset> planPresetElementEnvelopeVertices(
   Size size, {
   double padding = 0,
 }) {
-  final tangent = math.tan(80 * math.pi / 180);
-  final sine = math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final sine = diagonalSin80;
   final railInset = padding / sine;
   final top = padding;
   final bottom = size.height - padding;
@@ -1549,7 +1549,7 @@ class _PlanWeaponLevelStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final railInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final railInset = diagonalCutDepth(constraints.maxHeight);
       return Padding(
         padding: EdgeInsets.fromLTRB(railInset + 8, 2, railInset + 8, 2),
         child: Row(
@@ -2116,8 +2116,8 @@ class _PlanPresetLoaderDiagonalListState
             maxScrollExtent: maxScroll,
             pixels: scroll,
           );
-          final tangent = math.tan(80 * math.pi / 180);
-          final horizontalGap = _normalGap / math.sin(80 * math.pi / 180);
+          final tangent = diagonalTan80;
+          final horizontalGap = diagonalNormalInset(_normalGap);
           final rowWidth = math.max(
             1.0,
             constraints.maxWidth -
@@ -2499,7 +2499,7 @@ class _PlanPresetDiagonalListState extends State<PlanPresetDiagonalList> {
                   left: math.max(
                     0,
                     constraints.maxWidth -
-                        constraints.maxHeight / math.tan(80 * math.pi / 180) -
+                        diagonalCutDepth(constraints.maxHeight) -
                         24,
                   ),
                   right: 0,
@@ -2557,7 +2557,7 @@ class _PlanPresetDiagonalScrollbarPainter extends CustomPainter {
         inset +
         (maxScroll <= 0 ? 0 : travel * (offset / maxScroll).clamp(0.0, 1.0));
     Offset point(double y) =>
-        Offset(size.width - inset - y / math.tan(80 * math.pi / 180), y);
+        Offset(diagonalRightRailX(right: size.width - inset, y: y), y);
     final trackPaint = Paint()
       ..color = AppColors.outline.withValues(alpha: 0.48)
       ..strokeWidth = 3
@@ -2914,7 +2914,7 @@ class _PresetRegionContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final cutInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final cutInset = diagonalCutDepth(constraints.maxHeight);
       return Padding(
         padding: EdgeInsets.fromLTRB(
           cutInset + 1.5,
@@ -2996,7 +2996,7 @@ class _PresetEquipmentEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final cutInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final cutInset = diagonalCutDepth(constraints.maxHeight);
       return Padding(
         padding: EdgeInsets.fromLTRB(cutInset + 2, 2, cutInset + 2, 1),
         child: Column(
@@ -3385,7 +3385,7 @@ class _LockedTargetRegion extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final cutInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final cutInset = diagonalCutDepth(constraints.maxHeight);
       return Padding(
         padding: EdgeInsets.symmetric(horizontal: cutInset + 6),
         child: const Row(
@@ -3910,8 +3910,8 @@ double planUnassignedRowWidth({
 }) {
   const normalGap = planElementBuilderGap;
   const scrollbarReserve = 14.0;
-  final tangent = math.tan(80 * math.pi / 180);
-  final railInset = normalGap / math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final railInset = diagonalNormalInset(normalGap);
   final railSpan =
       viewportSize.width -
       viewportSize.height / tangent -
@@ -3926,9 +3926,8 @@ double planUnassignedRowLeft({
   required double rowHeight,
   required double scrollOffset,
 }) =>
-    planElementBuilderGap / math.sin(80 * math.pi / 180) +
-    (viewportHeight - (rowTop + rowHeight - scrollOffset)) /
-        math.tan(80 * math.pi / 180);
+    diagonalNormalInset(planElementBuilderGap) +
+    diagonalCutDepth(viewportHeight - (rowTop + rowHeight - scrollOffset));
 
 class _UnassignedPlanElementRow extends StatefulWidget {
   const _UnassignedPlanElementRow({
@@ -4121,7 +4120,7 @@ class _PlanUnassignedItemPainter extends CustomPainter {
 }
 
 Path _bilateralPath(Size size, {double radius = 9}) {
-  final depth = size.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(size.height);
   return buildRoundedSectionPolygon([
     Offset(depth, 0),
     Offset(size.width, 0),

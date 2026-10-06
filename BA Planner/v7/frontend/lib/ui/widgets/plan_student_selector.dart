@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
+import '../geometry/diagonal_geometry.dart';
 import '../models/planning_models.dart';
 import '../studio/section_template.dart';
 import 'animated_section_stack.dart';
@@ -58,7 +59,7 @@ Rect planStudentSelectorSelectionSectionRect(
 Path planStudentSelectorSelectionSectionPath(Size size) {
   final depth = math.min(
     size.width * 0.32,
-    size.height / math.tan(80 * math.pi / 180),
+    diagonalCutDepth(size.height),
   );
   return buildRoundedSectionPolygon([
     Offset(depth, 0),
@@ -112,7 +113,7 @@ Path planStudentSelectorInnerPath(Size size) {
 }
 
 double planStudentSelectorDiagonalDepth(Size size) =>
-    math.min(size.width * 0.42, size.height / math.tan(80 * math.pi / 180));
+    math.min(size.width * 0.42, diagonalCutDepth(size.height));
 
 (double, double) planStudentSelectorOuterHorizontalInterval(
   Size size,
@@ -585,7 +586,7 @@ class _PlanStudentSelectionSection extends StatelessWidget {
             clipper: _PlanStudentSelectorPathClipper(path),
             child: Padding(
               padding: EdgeInsets.fromLTRB(
-                constraints.maxHeight / math.tan(80 * math.pi / 180) + 14,
+                diagonalCutDepth(constraints.maxHeight) + 14,
                 12,
                 12,
                 12,
