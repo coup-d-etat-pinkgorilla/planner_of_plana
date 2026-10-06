@@ -129,10 +129,16 @@ status에 FD ID로 보고한다. 워커가 새 모호점을 찾으면 status의 
   modified, added, status)을 쓴다. 사용자는 `fe_gate.ps1`(GREEN) → `fe_commit.ps1 -Slice <slice> -DryRun` → `fe_commit.ps1 -Slice <slice>`만
   실행한다. 스크립트는 사본과 현재 파일의 차이만 index에 올리므로 기존 미커밋 변경과 섞이지 않는다. 사본이나 commit.json이 없으면
   그 slice는 완료가 아니다.
-- **기존 미커밋 변경이 있는 파일을 고칠 때.** C 인계의 `unrelated-changes.json`에 있는 파일(예: `theme.dart`, `app_shell.dart`,
-  `plan_section_layout.dart`)을 고치면, 착수 전에 그 파일의 현재 사본을 `debug/frontend_<slice>/pre/`에 저장하고 status에 적는다.
-  커밋은 오케스트레이터가 사본과 비교해 만든 "slice 변경만 담은 패치"를 index에만 적용하는 방식으로 한다(FE1-a 선례:
-  `debug/frontend_fe1a_commit_20261006/`). 파일째 `git add` 하지 않는다.
+- **기존 미커밋 변경이 있는 파일을 고칠 때.** C 인계의 `unrelated-changes.json`에 있는 파일을 고칠 때도 같은 사본 규칙을 따르고,
+  status에 "기존 미커밋 변경 있음"으로 적는다. `fe_commit.ps1`은 사본(base)·HEAD(ours)·slice 끝 내용(theirs)을 `git merge-file`로
+  3-way 병합해 index에만 올린다. 기존 변경과 slice 변경이 같은 줄이면 충돌로 멈추고, 오케스트레이터가 처리한다(선례: FE0-base
+  `36702c28` — slice가 기존 미커밋 작업 위에서 줄을 고친 경우 그 작업을 원래 내용 그대로 먼저 커밋했다, 사용자 승인). 파일째
+  `git add` 하지 않는다. 스캐너 소유 미커밋 변경(서비스 4개, scan_page·scan_companion_dock, 스캐너 테스트)은 작업트리에 남아 있다.
+- **PowerShell 도구 파일은 ASCII로만 쓴다(2026-10-06).** Windows PowerShell 5.1은 BOM 없는 파일을 CP949로 읽고, 기기 파일 전송에서
+  BOM이 빠질 수 있다. 한글 메시지가 필요하면 별도 UTF-8 데이터 파일에서 읽는다.
+- **golden PNG 갱신(시각 변경 slice).** 갱신된 `frontend/test/goldens/baseline/*.png`는 commit.json의 `whole`에
+  `"frontend/test/goldens/baseline"`으로 넣는다(바이너리라 병합하지 않는다). 사용자 순서: `fe_gate.ps1`(비교, golden만 RED 예상)
+  → 오케스트레이터가 `failures/` 차이 이미지를 검토 → `fe_gate.ps1 -UpdateGoldens` → `fe_gate.ps1`(비교 GREEN) → `fe_commit.ps1`.
 - **워커 환경에 셸·Flutter가 없을 수 있다.** 그때 워커는 코드와 테스트만 쓰고, gate 실행은 사용자가 `fe_gate.ps1`
   (FE1-g 이후)로 한다. 통과를 주장하지 않는다.
 - **테스트를 같이 옮긴다.** 화면을 재작성하면 그 화면의 widget test(ValueKey 의존)를 같은 slice에서 다시 쓴다.
@@ -190,9 +196,9 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 
 | slice | 범위 | gate |
 |---|---|---|
-| FE1-a 토큰 (동작 보존) | `AppColors` 확장(accent·accentText·onAccent·scrollThumb·textSecondary·textDim·popover·rowSurface·indicatorSurface·scrim, 칩 6색 tone 쌍, 공격·방어 타입 5색), `AppMotion`(360/460/970/220/180ms), `AppRadii`, 컨트롤 높이 토큰, `AppType` 개정(FD-008·FD-010). 하드코딩된 같은 값을 토큰으로 바꾸기만 한다 | golden diff 0, 하드코딩 핑크 6곳 → 토큰 |
+| FE1-a 토큰 (동작 보존) | `AppColors` 확장(accent·accentText·onAccent·scrollThumb·textSecondary·textDim·popover·rowSurface·indicatorSurface·scrim, 칩 6색 tone 쌍, 공격·방어 타입 5색), `AppMotion`(360/460/970/220/180ms), `AppRadii`, 컨트롤 높이 토큰, `AppType` 개정(FD-008·FD-010). 하드코딩된 같은 값을 토큰으로 바꾸기만 한다 | golden diff 0, 하드코딩 핑크 6곳 → 토큰 — **완료 2026-10-06**: 커밋 `54ed8086`(기존 타이포·계획 작업은 FE0-base `36702c28`로 먼저 커밋) |
 | FE1-g golden 기준선 + 게이트 스크립트 (2026-10-06 추가, FE1-b 전 필수) | 저장소에 Flutter golden이 0개라 동작 보존 slice를 판정할 수 없다. 기준 viewport 2560×1392, DPR 1, 실제 폰트(Pretendard·GyeonggiTitle을 `FontLoader`로 asset에서 적재), mock fixture, 애니메이션 정착 후 `matchesGoldenFile`로 장면을 고정한다. 장면은 **인라인 80° 계산이 있는 파일을 모두 한 번 이상 그리도록** 고른다(최소: 타이틀, 계정 관리·편집·초상 선택, 홈, 학생 그리드·상세, 계획 메인 병목/페이즈별/전체, 요소 빌더, 페이즈 편집기, 학생 선택기, 프리셋 관리, 시나리오 목록·비교). 함께 FE1-d의 `frontend/tool/fe_gate.ps1`(analyze·test·golden·almanac validate·diff-check를 돌리고 요약 파일을 남김)을 만든다. golden PNG는 Windows 폰트 렌더 때문에 **사용자 PC에서** `flutter test --update-goldens test/goldens`로 한 번 생성하고 따로 커밋한다 | 사용자가 생성한 golden 커밋 + fe_gate 1회 녹색. 이후 FE1-b·FE2-a 등 동작 보존 slice는 이 golden diff 0이 완료 조건 — **완료 2026-10-06**: 17장, 비교 GREEN(`debug/frontend_gate/20261006_222432`), PNG 커밋 `8e95d946` |
-| FE1-b DiagonalGeometry (동작 보존) | `tan80` 상수, `cutDepth(h)`, 레일 x(y), 법선 inset(g/sin80), 둥근 다각형 단일 함수(Q 곡선 vs 원호는 FE1-b에서 둘 다 측정해 시안 path와 맞는 쪽, 다른 쪽은 호환 래퍼), 행 오프셋 2모드(translate/resize). 인라인 108곳 교체 | golden diff 0, 기하 단위 테스트. 스캐너 소유 `scan_student_review_workspace.dart`의 3곳은 바꾸지 않는다. 교체 전 `flutter test --coverage test/goldens`로 108곳이 golden 장면에서 실행되는지 줄 단위로 확인하고, 실행되지 않는 줄은 기하 단위 테스트로 덮는다. 고치는 파일마다 착수 전 사본을 `debug/frontend_fe1b/pre/`에 둔다 |
+| FE1-b DiagonalGeometry (동작 보존) | `tan80` 상수, `cutDepth(h)`, 레일 x(y), 법선 inset(g/sin80), 둥근 다각형 단일 함수(Q 곡선 vs 원호는 FE1-b에서 둘 다 측정해 시안 path와 맞는 쪽, 다른 쪽은 호환 래퍼), 행 오프셋 2모드(translate/resize). 인라인 108곳 교체 | golden diff 0, 기하 단위 테스트. 스캐너 소유 `scan_student_review_workspace.dart`의 3곳은 바꾸지 않는다. 교체 전 `flutter test --coverage test/goldens`로 108곳이 golden 장면에서 실행되는지 줄 단위로 확인하고, 실행되지 않는 줄은 기하 단위 테스트로 덮는다. 고치는 파일마다 착수 전 사본을 `debug/frontend_fe1b/pre/`에 둔다 — **완료 2026-10-06**: gate GREEN `20261006_231705`(419 + golden 17), 커밋 `d5f87b7b` |
 | FE1-c SectionSurface (시각 변경) | 섹션 표면 .76·무블러·무테 + lifted shadow 4층(FD-006, FD-007). `DiagonalSection`·`SectionTemplateSurface` 계열을 한 표면으로 | golden 갱신 사유 기록, 사용자 검수(아무 탭이나 캔버스와 표면 비교) |
 | FE1-d 게이트 스크립트 | FE1-g로 앞당겨 합쳤다(2026-10-06) | — |
 
@@ -384,3 +390,4 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-06(저녁): 열림 23건 사용자 결정 — FD-166 (c) 계산기 목표 13행(애장품 포함), FD-096 (c) 크레딧·엘리그마 스캔 대상 추가(FB-10 요청에 포함), 나머지 21건 권장안. 열림 0건. 다음 행동 FE1-a.
 - 2026-10-06(밤): FE1-a 워커 종료(코드 15파일 + 토큰 테스트, gate 미실행). 오케스트레이터 검토: 값 동일 교체 확인, `theme.dart`·`app_shell.dart`·`plan_section_layout.dart`에 기존 미커밋 변경이 있어 index 전용 패치와 커밋 도우미를 `debug/frontend_fe1a_commit_20261006/`에 만들었다. golden 기준선이 없어 FE1-g(기준선 + fe_gate)를 FE1-b 앞에 넣었다. 다음 행동: 사용자 커밋 도우미 실행 → FE1-g.
 - 2026-10-06(밤 2): FE1-g 완료(golden 17장, fe_gate GREEN `20261006_222432`). 검증 명령을 `fe_gate.ps1`로 바꿨다(AGENTS.md, frontend/README.md; 루트 README.md는 C 이전 미커밋 변경이 있어 그 정리 때 같이 고친다). FE1-a·FE1-g 코드와 개편 문서는 아직 미커밋 — `commit-fe1a.ps1 -CommitRedesignDocs -IncludeFE1g -GateSummary …`로 FE1-b 전에 커밋한다. 다음 행동: FE1-b.
+- 2026-10-06(밤 3): FE1-g `1ac37eeb`, 개편 문서 `180f5551`, FE0-base `36702c28`(기존 미커밋 타이포·계획 자원 아이콘·시나리오 비교 작업을 원래 내용대로, 사용자 승인), FE1-a `54ed8086`, FE1-b `d5f87b7b`(gate `20261006_231705` GREEN, 419 + golden 17) 커밋. push 안 함. `fe_commit.ps1`을 3-way 병합 + snapshot/optional_added/post_dir/inspect, ASCII 전용으로 개정. 다음 행동: FE1-c SectionSurface(시각 변경, golden 갱신).
