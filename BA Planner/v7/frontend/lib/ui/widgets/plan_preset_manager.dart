@@ -22,7 +22,7 @@ import 'plan_phase_editor.dart'
 import 'plan_student_selector.dart' show planStudentSelectorFilterControlGap;
 import 'section_template_surface.dart';
 
-const planPresetManagerMotionDuration = Duration(milliseconds: 360);
+const planPresetManagerMotionDuration = AppMotion.section;
 const planPresetManagerListMotion = SectionMotionSpec(intro: 0, outro: 180);
 const planPresetManagerEditorMotion = SectionMotionSpec(intro: 80, outro: 260);
 const planPresetManagerConfirmMotion = SectionMotionSpec(intro: 80, outro: 260);
@@ -979,7 +979,7 @@ class _PresetManagerMotion extends StatelessWidget {
       animation: animation,
       child: child,
       builder: (context, child) {
-        final progress = Curves.easeInOutCubic.transform(animation.value);
+        final progress = AppMotion.sectionCurve.transform(animation.value);
         final exiting = animation.status == AnimationStatus.reverse;
         final full = sectionMotionOffset(
           constraints.biggest,

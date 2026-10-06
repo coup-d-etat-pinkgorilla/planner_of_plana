@@ -139,15 +139,15 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
     _portraitGridController = ScrollController();
     _managerMotion = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 460),
+      duration: AppMotion.shell,
     );
     _editorMotion = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 460),
+      duration: AppMotion.shell,
     );
     _pickerMotion = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 460),
+      duration: AppMotion.shell,
     );
     if (_view == _ClusterView.manager) {
       _managerMotion.forward();
@@ -1308,7 +1308,7 @@ class _DirectionalAccountMotion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final remaining = 1 - Curves.easeInOutCubic.transform(progress);
+    final remaining = 1 - AppMotion.sectionCurve.transform(progress);
     assert(
       (((introDegrees - outroDegrees).abs() % 360) - 180).abs() < 0.001,
       'Intro and outro must describe opposite directions on one trajectory.',

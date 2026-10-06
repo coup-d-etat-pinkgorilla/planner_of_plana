@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../app/theme.dart';
+
 double diagonalParallelogramBottomCenterX({
   required double width,
   required double height,
@@ -53,7 +55,7 @@ class _DiagonalFlowIndicatorPainter extends CustomPainter {
         ..lineTo(size.width, 0)
         ..lineTo(size.width / 2, size.height)
         ..close(),
-      Paint()..color = const Color(0xfff2b3ef).withValues(alpha: 0.88),
+      Paint()..color = AppColors.accent.withValues(alpha: 0.88),
     );
   }
 

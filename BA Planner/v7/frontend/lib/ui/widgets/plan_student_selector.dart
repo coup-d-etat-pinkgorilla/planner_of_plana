@@ -22,7 +22,7 @@ const planStudentSelectorInnerInset = 10.0;
 const planStudentSelectorFilterButtonHeight = 40.0;
 const planStudentSelectorFilterControlGap = 8.0;
 const planStudentSelectorFilterContentInset = 12.0;
-const planStudentSelectorMotionDuration = Duration(milliseconds: 360);
+const planStudentSelectorMotionDuration = AppMotion.section;
 const planStudentSelectorIntroDegrees = 80.0;
 const planStudentSelectorOutroDegrees = 260.0;
 const planStudentSelectorMotion = SectionMotionSpec(
@@ -759,7 +759,7 @@ class PlanStudentSelectorMotion extends StatelessWidget {
         animation: animation,
         child: child,
         builder: (context, child) {
-          final curved = Curves.easeInOutCubic.transform(
+          final curved = AppMotion.sectionCurve.transform(
             animation.value.clamp(0.0, 1.0).toDouble(),
           );
           final exiting = animation.status == AnimationStatus.reverse;

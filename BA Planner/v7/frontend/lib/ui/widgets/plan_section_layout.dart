@@ -1321,7 +1321,7 @@ class PlanSectionLayout extends StatefulWidget {
 
 class _PlanSectionLayoutState extends State<PlanSectionLayout>
     with TickerProviderStateMixin {
-  static const _motionDuration = Duration(milliseconds: 360);
+  static const _motionDuration = AppMotion.section;
   Set<String> _highlightedStudentIds = const {};
   Set<String> _highlightedStageKeys = const {};
   String? _selectedSection3ResourceKey;
@@ -3838,9 +3838,9 @@ class _PlanScenarioComparisonSectionState
                   child: ClipPath(
                     clipper: const PlanScenarioParallelogramClipper(),
                     child: const TabBar(
-                      labelColor: Color(0xfff2b3ef),
+                      labelColor: AppColors.accent,
                       unselectedLabelColor: AppColors.textMuted,
-                      indicatorColor: Color(0xfff2b3ef),
+                      indicatorColor: AppColors.accent,
                       dividerColor: Colors.transparent,
                       indicatorSize: TabBarIndicatorSize.tab,
                       labelStyle: TextStyle(fontWeight: FontWeight.w700),
@@ -4015,7 +4015,7 @@ class _ComparisonCandidateCard extends StatelessWidget {
   Widget build(BuildContext context) => CustomPaint(
     painter: _PlanScenarioListCardPainter(
       selectedIndex >= 0,
-      accent: selectedIndex == 1 ? const Color(0xfff2b3ef) : AppColors.primary,
+      accent: selectedIndex == 1 ? AppColors.accent : AppColors.primary,
     ),
     child: ClipPath(
       clipper: const PlanScenarioParallelogramClipper(),
@@ -4802,7 +4802,7 @@ class _ComparisonBadge extends StatelessWidget {
     final color = side == 'A'
         ? AppColors.primary
         : side == 'B'
-        ? const Color(0xfff2b3ef)
+        ? AppColors.accent
         : AppColors.textMuted;
     return Container(
       width: 30,
@@ -6566,7 +6566,7 @@ Offset planSectionMotionTranslation({
   required double progress,
   required bool exiting,
 }) {
-  final curved = Curves.easeInOutCubic.transform(
+  final curved = AppMotion.sectionCurve.transform(
     progress.clamp(0.0, 1.0).toDouble(),
   );
   final remaining = 1 - curved;
@@ -8419,7 +8419,7 @@ class _PlanDiagonalScrollbarPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 8
         ..strokeCap = StrokeCap.round
-        ..color = const Color(0xffe5a0ea),
+        ..color = AppColors.scrollThumb,
     );
   }
 

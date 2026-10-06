@@ -94,7 +94,7 @@ class _TitlePageState extends State<TitlePage>
     super.initState();
     _exitController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 460),
+      duration: AppMotion.shell,
     );
     _lastConnection = widget.service.state.value.connection;
     widget.service.state.addListener(_handleConnectionChanged);
@@ -1274,7 +1274,7 @@ class _DirectionalTitleExit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final eased = Curves.easeInOutCubic.transform(progress);
+    final eased = AppMotion.sectionCurve.transform(progress);
     final radians = degrees * math.pi / 180;
     final distance = math.max(size.width, size.height) * 1.12;
     return Transform.translate(

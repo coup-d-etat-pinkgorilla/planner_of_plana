@@ -1363,7 +1363,7 @@ class _MetadataEditorPageState extends State<MetadataEditorPage>
                   icon: Icons.card_giftcard,
                   label: '선물',
                   value: '${schaleGifts.length}',
-                  color: const Color(0xfff2b3ef),
+                  color: AppColors.accent,
                 ),
                 const Spacer(),
                 OutlinedButton.icon(

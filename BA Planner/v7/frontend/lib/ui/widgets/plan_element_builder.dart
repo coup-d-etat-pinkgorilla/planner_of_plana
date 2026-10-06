@@ -745,7 +745,7 @@ class PlanElementUnassignedItem {
 
 class _PlanElementBuilderState extends State<PlanElementBuilder>
     with SingleTickerProviderStateMixin {
-  static const _sectionMotionDuration = Duration(milliseconds: 360);
+  static const _sectionMotionDuration = AppMotion.section;
   late List<PlanElementStageDraft> _stages;
   String? _selectedStageId;
   String? _selectedPresetId;
@@ -1692,7 +1692,7 @@ class _PlanStudentStatusFoundationPainter extends CustomPainter {
       final path = planStarterFeaturePath(canvasSize, feature.id);
       canvas.drawPath(
         path,
-        Paint()..color = const Color(0xff203243).withValues(alpha: 0.98),
+        Paint()..color = AppColors.indicatorSurface.withValues(alpha: 0.98),
       );
     }
     _paintStarIndicator(canvas);
@@ -1757,7 +1757,7 @@ class _PlanElementSectionMotion extends StatelessWidget {
       animation: animation,
       child: child,
       builder: (context, child) {
-        final progress = Curves.easeInOutCubic.transform(
+        final progress = AppMotion.sectionCurve.transform(
           animation.value.clamp(0.0, 1.0).toDouble(),
         );
         final exiting = animation.status == AnimationStatus.reverse;
@@ -1911,9 +1911,9 @@ class _PlanStarterPhaseActionPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = const Color(
-          0xffe5a0ea,
-        ).withValues(alpha: enabled ? 0.82 : 0.42)
+        ..color = AppColors.scrollThumb.withValues(
+          alpha: enabled ? 0.82 : 0.42,
+        )
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
@@ -2563,7 +2563,7 @@ class _PlanPresetDiagonalScrollbarPainter extends CustomPainter {
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
     final handlePaint = Paint()
-      ..color = const Color(0xffe5a0ea)
+      ..color = AppColors.scrollThumb
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(point(inset), point(size.height - inset), trackPaint);
@@ -4108,7 +4108,7 @@ class _PlanUnassignedItemPainter extends CustomPainter {
       path,
       Paint()
         ..color = selected
-            ? const Color(0xffe5a0ea).withValues(alpha: 0.92)
+            ? AppColors.scrollThumb.withValues(alpha: 0.92)
             : AppColors.outline.withValues(alpha: 0.58)
         ..style = PaintingStyle.stroke
         ..strokeWidth = selected ? 1.4 : 0.9,

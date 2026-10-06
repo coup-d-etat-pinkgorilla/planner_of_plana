@@ -10,7 +10,7 @@ import 'lifted_path_shadow.dart';
 import 'scroll_viewport_fog.dart';
 import 'section_template_surface.dart';
 
-const phaseEditorMotionDuration = Duration(milliseconds: 360);
+const phaseEditorMotionDuration = AppMotion.section;
 const phaseEditorSectionSeamGap = 12.0;
 const phaseEditorCompactListNormalGap = phaseEditorSectionSeamGap;
 const phaseEditorSection1Width = 18;
@@ -24,8 +24,12 @@ const phaseEditorQuickAssignButtonWidth = phaseEditorDetailItemHeight;
 const phaseEditorDetailItemButtonGap = 6.0;
 const phaseEditorDragFeedbackOpacity = 0.72;
 const phaseEditorSelectionColor = diagonalMediaHighlightColor;
-const phaseEditorButtonHoverColor = Color(0x33f2b3ef);
-const phaseEditorButtonPressedColor = Color(0x4df2b3ef);
+final phaseEditorButtonHoverColor = AppColors.accent.withValues(
+  alpha: 0x33 / 255,
+);
+final phaseEditorButtonPressedColor = AppColors.accent.withValues(
+  alpha: 0x4d / 255,
+);
 const phaseEditorDiagonalListInset = 8.0;
 const phaseEditorDiagonalListRailClearance = 14.0;
 const phaseEditorSourceMediaSize = Size(44, 36);
@@ -656,7 +660,7 @@ class _PlanPhaseEditorState<T> extends State<PlanPhaseEditor<T>>
 }
 
 List<SectionCanvasElement> phaseEditorElements(double completionProgress) {
-  final progress = Curves.easeInOutCubic.transform(
+  final progress = AppMotion.sectionCurve.transform(
     completionProgress.clamp(0.0, 1.0),
   );
   final movingRect = _lerpGridRect(
@@ -1138,7 +1142,7 @@ class _PhaseEditorMotion extends StatelessWidget {
         child: child,
         builder: (context, child) {
           final exiting = animation.status == AnimationStatus.reverse;
-          final progress = Curves.easeInOutCubic.transform(animation.value);
+          final progress = AppMotion.sectionCurve.transform(animation.value);
           final degrees = exiting ? outroDegrees : introDegrees;
           final distance = math.sqrt(
             size.width * size.width + size.height * size.height,
@@ -1823,7 +1827,7 @@ class _EditablePhaseNameState<T> extends State<_EditablePhaseName<T>> {
             Text(
               '${widget.phase.items.length}',
               style: const TextStyle(
-                color: Color(0xfff2b3ef),
+                color: AppColors.accent,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -2106,12 +2110,12 @@ class _PhaseInsertionTarget<T> extends StatelessWidget {
           duration: const Duration(milliseconds: 100),
           height: active ? 4 : 1,
           decoration: BoxDecoration(
-            color: active ? const Color(0xfff2b3ef) : Colors.transparent,
+            color: active ? AppColors.accent : Colors.transparent,
             borderRadius: BorderRadius.circular(2),
             boxShadow: active
                 ? [
                     BoxShadow(
-                      color: const Color(0xfff2b3ef).withValues(alpha: 0.45),
+                      color: AppColors.accent.withValues(alpha: 0.45),
                       blurRadius: 5,
                     ),
                   ]
@@ -2282,7 +2286,7 @@ class _PhaseEditorDiagonalScrollbarPainter extends CustomPainter {
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
     final handlePaint = Paint()
-      ..color = const Color(0xfff2b3ef).withValues(alpha: 0.9)
+      ..color = AppColors.accent.withValues(alpha: 0.9)
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(point(inset), point(size.height - inset), trackPaint);

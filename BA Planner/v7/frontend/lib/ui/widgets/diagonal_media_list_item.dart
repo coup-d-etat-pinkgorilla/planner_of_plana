@@ -9,7 +9,7 @@ import 'student_portrait_status_overlay.dart';
 
 const diagonalMediaIncreaseColor = AppColors.success;
 const diagonalMediaDecreaseColor = AppColors.danger;
-const diagonalMediaHighlightColor = Color(0xfff2b3ef);
+const diagonalMediaHighlightColor = AppColors.accent;
 const diagonalMediaHighlightStrokeWidth = 1.8;
 
 @immutable
@@ -934,7 +934,7 @@ class _StarIndicatorPainter extends CustomPainter {
       ], radius: math.min(3, rect.height * 0.3));
       final active = index < 5 ? index < studentStars : index - 5 < weaponStars;
       final activeColor = index < 5
-          ? const Color(0xfff3c96b)
+          ? AppColors.starDisplay
           : AppColors.primary;
       canvas.drawPath(
         path,

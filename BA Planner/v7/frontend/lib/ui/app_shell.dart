@@ -109,7 +109,7 @@ class _AppShellState extends State<AppShell>
     _planTabActive = _section == AppSection.plan;
     _homeEntranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 460),
+      duration: AppMotion.shell,
       value:
           widget.animateHomeEntrance && widget.initialSection == AppSection.home
           ? 0
@@ -563,7 +563,7 @@ class _CompoundPageHeader extends StatelessWidget {
                       painter: BATriangleTexturePainter(_headerTriangleTexture),
                     ),
                     child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
+                      duration: AppMotion.header,
                       switchInCurve: Curves.easeOutCubic,
                       switchOutCurve: Curves.easeInCubic,
                       transitionBuilder: (child, animation) {
@@ -760,9 +760,9 @@ class _TopTab extends StatelessWidget {
             child: InkWell(
               onTap: onTap,
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+                duration: AppMotion.tab,
                 curve: Curves.easeOutCubic,
-                height: 44,
+                height: AppControlHeights.tab,
                 decoration: BoxDecoration(
                   color: selected
                       ? AppColors.primaryMuted.withValues(alpha: 0.34)

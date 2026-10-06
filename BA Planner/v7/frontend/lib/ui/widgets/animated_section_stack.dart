@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../app/theme.dart';
+
 @immutable
 class SectionMotionSpec {
   const SectionMotionSpec({required this.intro, required this.outro});
@@ -39,7 +41,7 @@ class DirectionalSectionEntrance extends StatelessWidget {
         animation: animation,
         child: child,
         builder: (context, child) {
-          final progress = Curves.easeOutCubic.transform(animation.value);
+          final progress = AppMotion.entranceCurve.transform(animation.value);
           return Transform.translate(
             key: key == null ? null : ValueKey('$key-transform'),
             offset: Offset.lerp(-fullOffset, Offset.zero, progress)!,
@@ -94,10 +96,10 @@ class AnimatedSectionStack extends StatefulWidget {
 
 class _AnimatedSectionStackState extends State<AnimatedSectionStack>
     with SingleTickerProviderStateMixin {
-  static const _pullDuration = Duration(milliseconds: 120);
-  static const _exitDuration = Duration(milliseconds: 300);
-  static const _enterDuration = Duration(milliseconds: 360);
-  static const _totalDuration = Duration(milliseconds: 120 + 300 + 360 + 190);
+  static const _pullDuration = AppMotion.tabBodyPull;
+  static const _exitDuration = AppMotion.tabBodyExit;
+  static const _enterDuration = AppMotion.tabBodyEnter;
+  static const _totalDuration = AppMotion.tabBody;
 
   late final AnimationController _controller;
   late int _settledIndex;

@@ -356,7 +356,7 @@ void paintStudentStarStatus(
     final currentValue = studentSegment ? studentStars : weaponStars;
     final targetValue = studentSegment ? targetStudentStars : targetWeaponStars;
     final activeColor = studentSegment
-        ? const Color(0xfff3c96b)
+        ? AppColors.starDisplay
         : AppColors.primary;
     final path = studentStarSegmentPath(rects[index]);
     canvas.drawPath(
@@ -998,7 +998,7 @@ class StudentSectionLayout extends StatefulWidget {
 
 class _StudentSectionLayoutState extends State<StudentSectionLayout>
     with TickerProviderStateMixin {
-  static const _motionDuration = Duration(milliseconds: 360);
+  static const _motionDuration = AppMotion.section;
   late final AnimationController _section1Controller;
   late final AnimationController _listController;
   late final AnimationController _section3Controller;
@@ -1632,7 +1632,7 @@ Offset studentSectionMotionTranslation({
   required double progress,
   required bool exiting,
 }) {
-  final curved = Curves.easeInOutCubic.transform(
+  final curved = AppMotion.sectionCurve.transform(
     progress.clamp(0.0, 1.0).toDouble(),
   );
   final remaining = 1 - curved;
@@ -2283,7 +2283,7 @@ class _StudentLevelSplitPainter extends CustomPainter {
     if (!showSchool) {
       canvas.drawRect(
         Offset.zero & size,
-        Paint()..color = const Color(0xff203243),
+        Paint()..color = AppColors.indicatorSurface,
       );
       return;
     }
@@ -2302,7 +2302,7 @@ class _StudentLevelSplitPainter extends CustomPainter {
       ..lineTo(size.width, size.height)
       ..lineTo(splitBottom, size.height)
       ..close();
-    canvas.drawPath(left, Paint()..color = const Color(0xff203243));
+    canvas.drawPath(left, Paint()..color = AppColors.indicatorSurface);
     canvas.drawPath(school, Paint()..color = const Color(0xff28445a));
     canvas.drawLine(
       Offset(splitTop, 0),
@@ -3538,7 +3538,7 @@ class _StudentSectionFoundationPainter extends CustomPainter {
       if (path == null) continue;
       canvas.drawPath(
         path,
-        Paint()..color = const Color(0xff203243).withValues(alpha: 0.98),
+        Paint()..color = AppColors.indicatorSurface.withValues(alpha: 0.98),
       );
     }
 
@@ -4350,10 +4350,10 @@ class _StudentGridCardHitClipper extends CustomClipper<Path> {
 }
 
 Color studentAttackTypeColor(String? attackType) => switch (attackType) {
-  'Explosive' => const Color(0xff920008),
-  'Piercing' => const Color(0xffbd8901),
-  'Mystic' => const Color(0xff226f9b),
-  'Sonic' => const Color(0xff9945a8),
+  'Explosive' => AppColors.typeExplosive,
+  'Piercing' => AppColors.typePiercing,
+  'Mystic' => AppColors.typeMystic,
+  'Sonic' => AppColors.typeSonic,
   'Break' ||
   'Demolition' ||
   'Disassembly' ||
@@ -4817,7 +4817,7 @@ class _StudentDiagonalScrollbarPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 8
         ..strokeCap = StrokeCap.round
-        ..color = const Color(0xffe5a0ea),
+        ..color = AppColors.scrollThumb,
     );
   }
 
