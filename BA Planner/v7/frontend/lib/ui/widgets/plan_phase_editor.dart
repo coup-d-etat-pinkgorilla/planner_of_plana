@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../kit/diagonal_scrollbar.dart';
 import '../studio/section_template.dart';
 import 'ba_triangle_background.dart';
 import 'diagonal_media_list_item.dart';
-import 'scroll_viewport_fog.dart';
 import 'section_surface.dart';
 import 'section_template_surface.dart';
 
@@ -2170,16 +2170,6 @@ class _PhaseEditorDiagonalListState extends State<_PhaseEditorDiagonalList> {
         animation: _controller,
         builder: (context, _) {
           final scroll = _controller.hasClients ? _controller.offset : 0.0;
-          final maxScroll = _controller.hasClients
-              ? _controller.position.maxScrollExtent
-              : math.max(0.0, contentHeight - constraints.maxHeight);
-          final fogVisibility = scrollViewportFogVisibility(
-            minScrollExtent: _controller.hasClients
-                ? _controller.position.minScrollExtent
-                : 0.0,
-            maxScrollExtent: maxScroll,
-            pixels: scroll,
-          );
           var top = _inset;
           final children = <Widget>[];
           for (var index = 0; index < widget.itemCount; index++) {
@@ -2212,40 +2202,21 @@ class _PhaseEditorDiagonalListState extends State<_PhaseEditorDiagonalList> {
             );
             top += height + widget.itemGap;
           }
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              ScrollConfiguration(
-                behavior: ScrollConfiguration.of(
-                  context,
-                ).copyWith(scrollbars: false),
-                child: SingleChildScrollView(
-                  controller: _controller,
-                  child: SizedBox(
-                    width: constraints.maxWidth,
-                    height: contentHeight,
-                    child: Stack(clipBehavior: Clip.none, children: children),
-                  ),
-                ),
+          return DiagonalScrollbar(
+            keyPrefix: widget.keyPrefix,
+            controller: _controller,
+            contentExtent: contentHeight,
+            thumbSizing: DiagonalScrollbarThumbSizing.contentRatio,
+            style: phaseEditorScrollbarStyle,
+            drag: DiagonalScrollbarDrag.none,
+            child: SingleChildScrollView(
+              controller: _controller,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: contentHeight,
+                child: Stack(clipBehavior: Clip.none, children: children),
               ),
-              Positioned.fill(
-                child: ScrollViewportFog(
-                  key: ValueKey('${widget.keyPrefix}-fog'),
-                  keyPrefix: '${widget.keyPrefix}-viewport-fog',
-                  showTop: fogVisibility.showTop,
-                  showBottom: fogVisibility.showBottom,
-                ),
-              ),
-              IgnorePointer(
-                child: CustomPaint(
-                  key: ValueKey('${widget.keyPrefix}-diagonal-scrollbar'),
-                  painter: _PhaseEditorDiagonalScrollbarPainter(
-                    offset: scroll,
-                    contentExtent: contentHeight,
-                  ),
-                ),
-              ),
-            ],
+            ),
           );
         },
       );
@@ -2253,63 +2224,22 @@ class _PhaseEditorDiagonalListState extends State<_PhaseEditorDiagonalList> {
   );
 }
 
-class _PhaseEditorDiagonalScrollbarPainter extends CustomPainter {
-  const _PhaseEditorDiagonalScrollbarPainter({
-    required this.offset,
-    required this.contentExtent,
-  });
+/// 페이즈 편집기 사선 스크롤바의 기존 렌더 값(FE2-a에서 공용 [DiagonalScrollbar]로 옮김).
+///
+/// 트랙 2px outline@.38, 썸 4px accent@.9, `drawLine`, 스크롤할 것이 없어도 썸을 그린다.
+/// 시안 스크롤바(트랙 3px, 썸 8px #e5a0ea)와 다르다. 페이즈 편집기 slice에서 캔버스와 대조해 정한다.
+final phaseEditorScrollbarStyle = DiagonalScrollbarStyle(
+  trackColor: AppColors.outline.withValues(alpha: 0.38),
+  trackWidth: 2,
+  thumbColor: AppColors.accent.withValues(alpha: 0.9),
+  thumbWidth: 4,
+  stroke: DiagonalScrollbarStroke.line,
+  paintThumbWhenIdle: true,
+);
 
-  final double offset;
-  final double contentExtent;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const inset = 10.0;
-    final trackHeight = math.max(1.0, size.height - inset * 2);
-    final maxScroll = math.max(0.0, contentExtent - size.height);
-    final handleHeight = maxScroll <= 0
-        ? trackHeight
-        : math.max(28.0, trackHeight * size.height / contentExtent);
-    final travel = math.max(0.0, trackHeight - handleHeight);
-    final handleTop =
-        inset +
-        (maxScroll <= 0 ? 0 : travel * (offset / maxScroll).clamp(0.0, 1.0));
-    Offset point(double y) =>
-        phaseEditorScrollbarTrackPoint(size, y, trackInset: inset);
-    final trackPaint = Paint()
-      ..color = AppColors.outline.withValues(alpha: 0.38)
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    final handlePaint = Paint()
-      ..color = AppColors.accent.withValues(alpha: 0.9)
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(point(inset), point(size.height - inset), trackPaint);
-    canvas.drawLine(
-      point(handleTop),
-      point(handleTop + handleHeight),
-      handlePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_PhaseEditorDiagonalScrollbarPainter oldDelegate) =>
-      oldDelegate.offset != offset ||
-      oldDelegate.contentExtent != contentExtent;
-}
-
+/// 페이즈 편집기 스크롤바 레일 점. 공용 [diagonalScrollbarTrackPoint]와 같은 식이다.
 Offset phaseEditorScrollbarTrackPoint(
   Size size,
   double y, {
   double trackInset = 10,
-}) {
-  final depth = diagonalCutDepth(size.height);
-  final clampedY = y.clamp(0.0, size.height);
-  return Offset(
-    size.width -
-        trackInset -
-        depth +
-        diagonalCutDepth(size.height - clampedY),
-    clampedY,
-  );
-}
+}) => diagonalScrollbarTrackPoint(size, y, trackInset: trackInset);

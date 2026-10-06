@@ -7,6 +7,7 @@ import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scenario_service.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../kit/diagonal_scrollbar.dart';
 import '../models/planning_models.dart';
 import '../models/planning_resource_assets.dart';
 import '../studio/plan_studio_layout.dart';
@@ -21,7 +22,6 @@ import 'plan_phase_editor.dart';
 import 'plan_preset_manager.dart';
 import 'plan_student_selector.dart';
 import 'plan_student_step_tile.dart';
-import 'scroll_viewport_fog.dart';
 import 'section_surface.dart';
 import 'section_template_surface.dart';
 
@@ -4117,7 +4117,7 @@ class _ComparisonCandidateDiagonalListState
           _inset * 2 +
           widget.cards.length * _rowHeight +
           math.max(0, widget.cards.length - 1) * _rowGap;
-      return PlanDiagonalScrollbar(
+      return DiagonalScrollbar(
         keyPrefix: 'plan-scenario-compare',
         controller: _controller,
         contentExtent: contentHeight,
@@ -4305,7 +4305,7 @@ class _ComparisonPaneDiagonalListState
           _inset * 2 +
           widget.entries.fold<double>(0, (sum, entry) => sum + entry.height) +
           math.max(0, widget.entries.length - 1) * _gap;
-      return PlanDiagonalScrollbar(
+      return DiagonalScrollbar(
         keyPrefix: widget.keyPrefix,
         controller: _controller,
         contentExtent: contentHeight,
@@ -5073,7 +5073,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
         const inset = 8.0;
         final contentHeight =
             inset * 2 + result.scenarios.length * (rowHeight + rowGap) - rowGap;
-        return PlanDiagonalScrollbar(
+        return DiagonalScrollbar(
           keyPrefix: 'plan-scenario',
           controller: _controller,
           contentExtent: contentHeight,
@@ -6771,7 +6771,7 @@ class _PlanConsumptionDiagonalListState
           _inset * 2 +
           heights.fold<double>(0, (sum, height) => sum + height) +
           math.max(0, widget.groups.length - 1) * _cardGap;
-      return PlanDiagonalScrollbar(
+      return DiagonalScrollbar(
         keyPrefix: widget.keyPrefix,
         controller: _controller,
         contentExtent: contentHeight,
@@ -7219,7 +7219,7 @@ class _PlanBottleneckDiagonalListState
           _inset * 2 +
           heights.fold<double>(0, (sum, height) => sum + height) +
           math.max(0, widget.bottlenecks.length - 1) * _cardGap;
-      return PlanDiagonalScrollbar(
+      return DiagonalScrollbar(
         keyPrefix: 'plan-bottleneck',
         controller: _controller,
         contentExtent: contentHeight,
@@ -8044,7 +8044,8 @@ class _PlanPhaseDiagonalListState extends State<PlanPhaseDiagonalList> {
           _inset * 2 +
           heights.fold<double>(0, (sum, height) => sum + height) +
           planPhaseFlowGap * math.max(0, widget.phases.length - 1);
-      return PlanDiagonalScrollbar(
+      return DiagonalScrollbar(
+        keyPrefix: 'plan-phase',
         controller: _controller,
         contentExtent: contentHeight,
         child: SingleChildScrollView(
@@ -8241,196 +8242,8 @@ class _PlanPhaseCardPainter extends CustomPainter {
   bool shouldRepaint(_PlanPhaseCardPainter oldDelegate) => false;
 }
 
-class PlanDiagonalScrollbar extends StatelessWidget {
-  const PlanDiagonalScrollbar({
-    super.key,
-    this.keyPrefix = 'plan-phase',
-    required this.controller,
-    required this.contentExtent,
-    required this.child,
-    this.fogClipper,
-  });
-
-  final String keyPrefix;
-  final ScrollController controller;
-  final double contentExtent;
-  final Widget child;
-  final CustomClipper<Path>? fogClipper;
-
-  @override
-  Widget build(BuildContext context) => ScrollConfiguration(
-    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-    child: LayoutBuilder(
-      builder: (context, constraints) => AnimatedBuilder(
-        animation: controller,
-        builder: (context, _) {
-          final size = constraints.biggest;
-          final hasClients = controller.hasClients;
-          final maxScroll = hasClients
-              ? controller.position.maxScrollExtent
-              : math.max(0.0, contentExtent - size.height);
-          final viewport = hasClients
-              ? controller.position.viewportDimension
-              : size.height;
-          final offset = hasClients ? controller.offset : 0.0;
-          final fogVisibility = scrollViewportFogVisibility(
-            minScrollExtent: hasClients
-                ? controller.position.minScrollExtent
-                : 0.0,
-            maxScrollExtent: maxScroll,
-            pixels: offset,
-          );
-          const trackInset = 10.0;
-          final trackHeight = math.max(1.0, size.height - trackInset * 2);
-          final handleHeight = maxScroll <= 0
-              ? trackHeight
-              : math.max(28.0, trackHeight * viewport / (viewport + maxScroll));
-          final travel = math.max(1.0, trackHeight - handleHeight);
-          final handleTop =
-              trackInset +
-              travel *
-                  (maxScroll <= 0 ? 0 : (offset / maxScroll).clamp(0.0, 1.0));
-          final handleCenter = planScrollbarTrackPoint(
-            size,
-            handleTop + handleHeight / 2,
-            trackInset: trackInset,
-          );
-          final trajectoryDepth = diagonalCutDepth(size.height);
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              child,
-              Positioned.fill(
-                child: fogClipper == null
-                    ? ScrollViewportFog(
-                        key: ValueKey('$keyPrefix-fog'),
-                        keyPrefix: '$keyPrefix-viewport-fog',
-                        showTop: fogVisibility.showTop,
-                        showBottom: fogVisibility.showBottom,
-                      )
-                    : ClipPath(
-                        key: ValueKey('$keyPrefix-fog-clip'),
-                        clipper: fogClipper,
-                        child: ScrollViewportFog(
-                          key: ValueKey('$keyPrefix-fog'),
-                          keyPrefix: '$keyPrefix-viewport-fog',
-                          showTop: fogVisibility.showTop,
-                          showBottom: fogVisibility.showBottom,
-                        ),
-                      ),
-              ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(
-                    key: ValueKey('$keyPrefix-diagonal-scrollbar'),
-                    painter: _PlanDiagonalScrollbarPainter(
-                      offset: offset,
-                      maxScrollExtent: maxScroll,
-                      handleHeight: handleHeight,
-                      trackInset: trackInset,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                key: ValueKey('$keyPrefix-scrollbar-handle-center'),
-                left: handleCenter.dx - 0.5,
-                top: handleCenter.dy - 0.5,
-                width: 1,
-                height: 1,
-                child: const IgnorePointer(),
-              ),
-              if (maxScroll > 0)
-                Positioned(
-                  left: math.max(0, size.width - trajectoryDepth - 24),
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: GestureDetector(
-                    key: ValueKey('$keyPrefix-scrollbar-drag'),
-                    behavior: HitTestBehavior.translucent,
-                    onVerticalDragUpdate: (details) {
-                      controller.jumpTo(
-                        (controller.offset +
-                                details.delta.dy * maxScroll / travel)
-                            .clamp(0.0, maxScroll),
-                      );
-                    },
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-    ),
-  );
-}
-
-Offset planScrollbarTrackPoint(Size size, double y, {double trackInset = 10}) {
-  final depth = diagonalCutDepth(size.height);
-  final clampedY = y.clamp(0.0, size.height);
-  return Offset(
-    size.width -
-        trackInset -
-        depth +
-        diagonalCutDepth(size.height - clampedY),
-    clampedY,
-  );
-}
-
-class _PlanDiagonalScrollbarPainter extends CustomPainter {
-  const _PlanDiagonalScrollbarPainter({
-    required this.offset,
-    required this.maxScrollExtent,
-    required this.handleHeight,
-    required this.trackInset,
-  });
-
-  final double offset;
-  final double maxScrollExtent;
-  final double handleHeight;
-  final double trackInset;
-
-  Path _segment(Size size, double top, double bottom) {
-    final start = planScrollbarTrackPoint(size, top, trackInset: trackInset);
-    final end = planScrollbarTrackPoint(size, bottom, trackInset: trackInset);
-    return Path()
-      ..moveTo(start.dx, start.dy)
-      ..lineTo(end.dx, end.dy);
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final trackBottom = size.height - trackInset;
-    canvas.drawPath(
-      _segment(size, trackInset, trackBottom),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round
-        ..color = AppColors.outline.withValues(alpha: 0.48),
-    );
-    if (maxScrollExtent <= 0) return;
-    final travel = math.max(0.0, trackBottom - trackInset - handleHeight);
-    final top =
-        trackInset + travel * (offset / maxScrollExtent).clamp(0.0, 1.0);
-    canvas.drawPath(
-      _segment(size, top, top + handleHeight),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 8
-        ..strokeCap = StrokeCap.round
-        ..color = AppColors.scrollThumb,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_PlanDiagonalScrollbarPainter oldDelegate) =>
-      oldDelegate.offset != offset ||
-      oldDelegate.maxScrollExtent != maxScrollExtent ||
-      oldDelegate.handleHeight != handleHeight ||
-      oldDelegate.trackInset != trackInset;
-}
+/// 계획 화면의 예전 이름. 구현은 공용 [DiagonalScrollbar](`ui/kit/`, FE2-a)로 옮겼다.
+typedef PlanDiagonalScrollbar = DiagonalScrollbar;
 
 class _PlanLocalPathClipper extends CustomClipper<Path> {
   const _PlanLocalPathClipper(this.path);

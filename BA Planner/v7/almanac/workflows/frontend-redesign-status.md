@@ -20,7 +20,16 @@ sources:
 
 ## 현재 상태
 
-**FE1-c SectionSurface(시각 변경): 코드·테스트 작성 완료, gate 미실행(사용자 PC ①~⑤ 대기).** 시작 커밋 `d5f87b7b21aa44081cc0fc3a419c6c24610ee05b`(FE1-b). 착수 시점 HEAD는 그 뒤 워크플로 문서 커밋 `b91c30ff156a378a1418bfc019497aa0d765bfa0`이며, lib/·test/는 `d5f87b7b`와 같다. 자세한 내용은 아래 "FE1-c" 절.
+**FE1 완료.** FE1-c SectionSurface(시각 변경) 결과는 다음과 같다(오케스트레이터 로그 2026-10-06 23:40).
+- gate ① `debug/frontend_gate/20261006_233307` RED: golden 6장 실패. 워커가 예상한 6장과 일치했고, 나머지 11장은 차이 0, 테스트 424 통과.
+- ② `233431` golden 갱신.
+- ③ `debug/frontend_gate/20261006_233605` GREEN(424 + golden 17).
+- 커밋 `99583757`.
+
+**진행 중: FE2-a 행·스크롤(동작 보존), 시작 커밋 `233fb3890a274cabea6e6b86f302cf492d3ff15f`.**
+- 이 커밋은 FE1-c 검토·FD-174 문서 커밋이다. lib/·test/는 `99583757`과 같다.
+- 코드·테스트 작성은 끝났고 gate는 아직 돌리지 않았다(사용자 PC ①~③ 대기).
+- 자세한 내용은 아래 "FE2-a" 절에 적는다.
 
 ### 커밋 기록
 
@@ -30,6 +39,7 @@ sources:
 | FE1-a | `54ed8086` | 디자인 토큰 추가, 같은 값 리터럴 교체(동작 보존) | 사용자 실행 analyze·test 통과(2026-10-06 21:32 보고) |
 | FE1-g | `8e95d946`(golden PNG 17장), `1ac37eeb`(테스트·`fe_gate.ps1`·`fe_commit.ps1`) | golden 기준선 + gate | `debug/frontend_gate/20261006_224319` GREEN |
 | FE1-b | `d5f87b7b` | 80° 기하 공용 API, 인라인 105/108곳 교체(동작 보존) | `debug/frontend_gate/20261006_231705` GREEN |
+| FE1-c | `99583757` | 공용 `SectionSurface`(surface@.76, 무블러·무테, lifted shadow 4층), golden 6장 갱신(시각 변경) | ① `20261006_233307` RED(golden 6, 예상 일치) → ③ `20261006_233605` GREEN(424 + golden 17) |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -555,3 +565,265 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261006_233605\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: almanac/design/section-template-studio.md
+
+## FE2-a 착수 기록 (2026-10-06)
+
+- 범위: 워크플로 FE2-a 행 그대로. 동작 보존이며, 기존 화면 golden 17장 차이 0이 완료 조건이다. 새 golden 장면은 추가하지 않는다.
+- 시작 커밋: `233fb3890a274cabea6e6b86f302cf492d3ff15f`.
+- 막힘 요약: FE2-a를 막는 `열림` FD는 없다(열림 0건).
+- 워커 재량 FD는 FD-014, FD-018, FD-022다.
+- sub-slice 분할(같은 세션에서 둘 다 진행하며, 커밋은 `fe2a` 하나):
+  - **FE2-a1 스크롤.** 대상은 다음과 같다.
+    - `ui/kit/`에 공용 사선 스크롤바(`DiagonalScrollbar`, `PlanDiagonalScrollbar` 이동), `ScrollViewportFog` 파라미터화(extent·색·페이드 범위), `DiagonalScrollViewport`(resize·translate)를 둔다.
+    - 학생·계정·프리셋·페이즈 편집기의 private 스크롤바 4종을 공용으로 교체한다.
+  - **FE2-a2 행·갤러리.** 대상은 `DiagonalRow`(.srow/.row/.plain/.tile, 상태 4종, 테두리 path hit test), UI Kit 갤러리, 개발 패널 진입점이다.
+- 사본: 고칠 기존 파일마다 착수 전 사본을 `debug/frontend_fe2a/pre/<v7 기준 경로>`에 둔다.
+
+## FE2-a 종료 기록 (2026-10-07, 코드 작성 완료·gate 미실행)
+
+FE2-a1(스크롤)과 FE2-a2(행·갤러리)를 모두 끝냈다. 커밋은 `fe2a` 하나다.
+- 이 환경에는 Flutter·Dart가 없다. analyze·테스트·golden은 돌리지 못했으니 통과를 주장하지 않는다.
+- 대신 두 가지로 확인했다.
+  - 이전 painter 5종을 테스트 안에 그대로 복사해 두고, 공용 painter와 그리기 명령을 비교하는 테스트를 넣었다.
+  - 별도 검토 에이전트가 pre 사본과 새 코드를 대조했다. 화면별 값·연산 순서·Paint·키·Stack 순서가 같다고 보고했고, 컴파일·lint 문제는 찾지 못했다.
+
+### 공용 키트 (`frontend/lib/ui/kit/`, 새 파일)
+
+| 파일 | 내용 |
+|---|---|
+| `scroll_viewport_fog.dart` | `ScrollViewportFog`를 `ui/widgets/`에서 옮겼고, 옛 파일은 다시 내보내기만 한다(아래 설명). |
+| `diagonal_scrollbar.dart` | `DiagonalScrollbar`: 계획 화면의 `PlanDiagonalScrollbar` 구현을 그대로 옮긴 위젯(아래 설명). |
+| `diagonal_scroll_viewport.dart` | `DiagonalScrollViewport`(아래 설명). |
+| `diagonal_row.dart` | `DiagonalRow`, `WidgetTile`과 보조 클래스·함수(아래 설명). |
+| `gallery/ui_kit_gallery_page.dart` | `UiKitGalleryPage`. 개발 패널에서 연다. |
+
+**`scroll_viewport_fog.dart`**
+- 기존 이름(`ScrollViewportFog`, `scrollViewportFogVisibility`, `scrollViewportFogExtent`)을 그대로 쓴다. 옛 경로 `ui/widgets/scroll_viewport_fog.dart`는 `export`만 남겼다. 스캐너 소유 `scan_student_review_workspace.dart`도 이 경로로 import하므로 그 파일은 고치지 않았다.
+- `ScrollViewportFog`에 파라미터를 더했다. 기본값은 기존과 같다.
+
+  | 파라미터 | 기본값 |
+  |---|---|
+  | `extent` | 36 |
+  | `color` | #263d52 |
+  | `topOpacity` | 1 |
+  | `bottomOpacity` | 1 |
+
+- 불투명도가 1이면 기존과 같은 위젯 트리를 만든다(`Opacity`를 끼우지 않는다).
+- 페이드 계산 `scrollViewportFogOpacity`와 생성자 `ScrollViewportFog.fromScroll`을 새로 두었다.
+- `ScrollFogSpec`으로 시안 포그 세 종을 표현한다.
+  - `standard`(A): 36px #263d52, 페이드 없음.
+  - `panel(color)`(B): 44px, 페이드 60.
+  - `statistics`(C): 56px rgba(25,36,50,.96), 페이드 80.
+
+**`diagonal_scrollbar.dart`**
+- `DiagonalScrollbar`: 기본값은 계획 화면 구현과 같다. 화면별 차이를 재현하는 파라미터가 있다.
+
+  | 파라미터 | 값 |
+  |---|---|
+  | `trackPoint` | 레일 점 함수 |
+  | `style` | `DiagonalScrollbarStyle`: 색·두께, path/`drawLine`, 스크롤할 것이 없어도 썸 그리기 |
+  | `thumbSizing` | viewport 비율 또는 콘텐츠 비율 |
+  | `extentSource` | controller 또는 콘텐츠 높이 |
+  | `scrollOffset` | 보정한 스크롤 값 |
+  | `drag` | rect, rail, none |
+  | `showFog`·`fog`·`fogClipper`·`fogBuilder` | 포그 설정 |
+
+- 그 밖에 공개한 것:
+  - painter `DiagonalScrollbarPainter`.
+  - 레일 점 함수 `diagonalScrollbarTrackPoint`(기존 `planScrollbarTrackPoint` 식)와 `diagonalScrollbarRailTrackPoint`(기존 프리셋 식).
+  - 드래그 띠 `diagonalScrollbarDragPath`.
+
+**`diagonal_scroll_viewport.dart`**
+- `DiagonalScrollViewport`: resize·translate 두 모드가 있다(FD-018 (a)). 행 배치 함수는 `diagonalScrollRowSlot`이다.
+- 두 모드 모두 FE1-b의 `diagonalRowTranslateOffset`·`diagonalRowResizeReduction`을 쓴다.
+  - 기준 폭은 기존 `planPhaseRowWidth`와 같은 식이다.
+  - translate는 `left += run`이고, resize는 `width += run`이다.
+  - 화면 밖 행은 시안 CSS `cover 0%~100%`처럼 자른다.
+- 기존 화면은 이 위젯으로 바꾸지 않았다. 바꾸는 일은 각 탭 slice가 한다.
+
+**`diagonal_row.dart`**
+- `DiagonalRow`
+  - 변형: `.srow`, `.row`, `.plain`, `.tile`, 그리고 `rail`(`.rsr-*`).
+  - 표시: `none`, `selected`, `blue`. hover는 누를 수 있는 행에서만 생긴다.
+  - 테두리 path는 `diagonalRowPath`(80° 평행사변형, r8 Q 곡선 = 시안 path)다. 그리기·`ClipPath`·hit test·hover가 같은 path를 쓴다.
+  - 시안 값은 `DiagonalRowLook.of`에 있다.
+- `WidgetTile`(FD-022).
+
+### 스크롤바 교체 (동작 보존)
+
+| 화면 | 이전 | 교체 후 공용 위젯에 넘기는 값 |
+|---|---|---|
+| 계획 6곳(페이즈·병목·시나리오 목록·비교·전체 등) | `PlanDiagonalScrollbar` | 기본값 그대로. `PlanDiagonalScrollbar`는 `DiagonalScrollbar`의 typedef로 남겼다(테스트 호환). `keyPrefix` 기본값 `'plan-phase'`에 기대던 1곳은 값을 명시했다. |
+| 학생 3곳(필터·목록·그리드, 계획 학생 선택기 포함) | `_StudentDiagonalScrollbar` + painter | 래퍼만 남겼다. `drag: rail`(레일 띠 8px), `fogBuilder` → `StudentViewportFog`. |
+| 계정 2곳(초상 그리드·프로필 목록) | `_DiagonalScrollbar` + painter | 래퍼만 남겼다. `showFog: false`, 썸 #8edcff, `trackPoint: portraitScrollbarTrackPoint`. |
+| 프리셋 3곳(요소 빌더의 프리셋 불러오기·프리셋 단계·미배정 목록) | `_PlanPresetDiagonalScrollbarPainter` + 화면마다 Stack | `_PlanPresetDiagonalScrollbar` 래퍼를 두었다. 넘기는 값: `extentSource`·`thumbSizing`을 콘텐츠 기준으로, `drawLine`, 위쪽 기준 레일 점, `planStageEffectiveScrollOffset` 값. 미배정 목록은 `drag: none`이다. |
+| 페이즈 편집기 4곳 | `_PhaseEditorDiagonalScrollbarPainter` + Stack | `thumbSizing: contentRatio`, `phaseEditorScrollbarStyle`(트랙 2px outline@.38, 썸 4px accent@.9, `drawLine`, 스크롤할 것이 없어도 썸 표시), `drag: none`. |
+
+- "프리셋"은 `plan_element_builder.dart`의 프리셋 painter를 뜻하는 것으로 보았다. `plan_preset_manager.dart`에는 private 스크롤바가 없다.
+- 재현하지 못해 교체를 건너뛴 곳은 없다.
+- 바뀌었지만 그리지 않는 것:
+  - 드래그 영역 키를 `<prefix>-diagonal-scrollbar-drag`로 통일했다. 계획·프리셋은 원래 `-scrollbar-drag`였고, 이 이름을 찾는 코드·테스트는 없다.
+  - 프리셋·페이즈 편집기 목록에도 1×1 `<prefix>-scrollbar-handle-center` 표식이 생겼다. 그리지 않고 포인터도 받지 않는다.
+  - `ScrollConfiguration(scrollbars: false)`이 감싸는 범위가 스크롤 뷰에서 Stack 전체로 넓어졌다.
+- 시안 대비 남은 시각 차이(동작 보존이라 이번에는 두었다):
+  - 계정 썸 #8edcff(시안 #e5a0ea).
+  - 페이즈 편집기 2px/4px accent.
+  - 프리셋·페이즈 편집기 `drawLine`.
+  - 이 값들은 각 탭 slice에서 캔버스와 대조해 공용 기본값으로 모은다. 파라미터와 주석에 그 뜻을 적었다.
+
+### 바꾼 파일
+
+- 기존 파일 7개. pre 사본은 `debug/frontend_fe2a/pre/frontend/lib/ui/widgets/`에 있다.
+  - `plan_section_layout.dart`(CRLF 유지)
+  - `student_section_layout.dart`
+  - `account_section_cluster.dart`
+  - `plan_element_builder.dart`
+  - `plan_phase_editor.dart`
+  - `scroll_viewport_fog.dart`(export만 남김)
+  - `development_panel.dart`(갤러리 버튼 1개)
+- 기존 미커밋 변경: 7개 모두 FE1-c 커밋 기록상 작업트리 차이가 없었다(`Working-tree diffs left`에 없음). 이 환경에서는 `git status`를 볼 수 없어 확인은 하지 못했다. `fe_commit.ps1`이 3-way 병합하므로, 차이가 있으면 거기서 드러난다.
+- 새 파일 10개: `lib/ui/kit/` 5개, `test/kit/` 5개.
+- `app_shell.dart`는 건드리지 않았다. 개발 패널 버튼이 `Navigator.push`로 갤러리를 연다.
+- 스캐너 소유·동결·택틱 소유 파일도 건드리지 않았다.
+
+### 테스트 (`frontend/test/kit/`, 32건 추가 → 예상 456 + golden 17)
+
+| 파일 | 건수 | 확인 내용 |
+|---|---|---|
+| `diagonal_scrollbar_test.dart` | 9 | 아래 설명 |
+| `scroll_viewport_fog_test.dart` | 6 | 기본값 36·#263d52·불투명도 1, 옛 경로 재수출, 포그 B·C 사양, 페이드 0이면 기존 on/off와 같은지, 불투명도 1이면 `Opacity` 없음, 페이드 25% |
+| `diagonal_scroll_viewport_test.dart` | 5 | 아래 설명 |
+| `diagonal_row_test.dart` | 6 | 아래 설명 |
+| `ui_kit_gallery_test.dart` | 6 | 아래 설명 |
+
+**`diagonal_scrollbar_test.dart`**
+- 레일 점이 이전 식과 비트 단위로 같은지 확인한다.
+- **이전 painter 4종**(계획=학생, 계정, 프리셋, 페이즈 편집기)을 그대로 복사해 두고, 공용 painter와 그리기 명령을 비교한다. 크기 3 × 스크롤 4 × 범위 3 조합에서 명령 종류·점·색·두께·cap·style을 본다.
+  - `drawLine`은 정확한 double로 비교한다.
+  - `drawPath`는 PathMetrics로 읽으므로 float32 정밀도로 비교한다.
+- 위젯 테스트: 포그 기본값, 썸 표식 이동, 드래그, `showFog`·`drag`·`fogBuilder` 옵션.
+
+**`diagonal_scroll_viewport_test.dart`**
+- translate 모드 배치가 `planPhaseRowHorizontalOffset`·`planPhaseRowWidth`와 정확히 같은지 확인한다.
+- 두 모드가 기하 API를 쓰는지, 행 윗변 오른쪽 끝이 레일 위에 있는지 확인한다.
+- W-Layout 시안 폭 523.5/513.3/503.1, 시작 폭 472와 대조한다.
+- 위젯에서 resize·translate 스크롤을 확인한다.
+
+**`diagonal_row_test.dart`**
+- path 모양: rail은 왼쪽이 수직이다.
+- 변형·상태별 시안 CSS 값.
+- 사선 바깥 삼각형을 누르면 반응하지 않는다.
+- hover는 path 안, 누를 수 있는 행에서만 생긴다.
+- painter의 채움·테두리 stroke, `WidgetTile`.
+
+**`ui_kit_gallery_test.dart`**
+- 개발 패널에서 열린다.
+- resize 스크롤로 폭이 Δy/tan80만큼 넓어지고, 위 포그가 나타난다.
+- translate 스크롤로 행이 Δy/tan80만큼 밀린다.
+- 상태 견본이 맞고, 규칙이 없는 조합은 만들지 않는다.
+- 직접 누르는 행의 hover·선택, 사선 바깥 탭.
+- rail 행 선택.
+
+지운 테스트는 없다. 기존 테스트가 찾는 키(`*-diagonal-scrollbar`, `*-fog`, `*-viewport-fog-*`, `*-scrollbar-handle-center`, `account-*-diagonal-scrollbar-drag`, `student-*-fog`의 `StudentViewportFog` 타입)는 모두 그대로다.
+
+### 처리한 FD
+
+- **FD-018 (a)**: `DiagonalScrollViewport(mode: resize/translate)`, `ScrollViewportFog` extent·색·페이드 범위 파라미터, `ScrollFogSpec` A/B/C.
+- **FD-022**: 위젯 카드 `.tile`은 `WidgetTile`(= `DiagonalRow` tile 변형)로 만들었다. 갤러리 카드가 이것을 쓴다. 재화 타일 `ResourceTile`은 이번에 필요하지 않아 만들지 않았다(FE2-d `ItemIconTile` 때).
+- **FD-014**: 시안에 정의만 있는 `.dash`는 만들지 않았다. `.row`·`.plain`의 hover·선택, rail의 파랑처럼 CSS 규칙이 없는 상태도 만들지 않았다. 갤러리에서는 "—"로 보인다.
+- **FD-016**: 행 path는 시안과 같은 Q 곡선(`DiagonalCornerStyle.quadratic`)이다. 새 위젯이라 동작 보존과 무관하다.
+- **워커 재량 1**: 워크플로의 네 변형 외에 `rail`(`.rsr-*`, W-Layout·Tactical·Import-Excel)을 더했다. "사다리꼴 안 스크롤" 견본을 그 배치대로 올리는 데 필요했다.
+
+### 검수표 (mock 모드, 2560×1440 모니터 최대화 = 2560×1392)
+
+**UI Kit 갤러리 여는 방법**
+1. 헤더 오른쪽 개발 버튼(보드 아이콘)을 누른다.
+2. 개발 상태 패널에서 "UI Kit 갤러리"를 누른다.
+3. 왼쪽 위 뒤로 버튼으로 닫는다.
+
+**W-Layout-Widgets "사다리꼴 안 스크롤" 타일(갤러리 첫 타일)과 캔버스 대조**
+
+1. 패널: 560×320 사다리꼴(왼쪽 수직, 오른쪽 80°, r14, #141e2b). 목록 뷰포트는 (12,14) 541.5×292다.
+2. 행 폭이 레일을 따른다.
+   - 정지 상태 폭: 1행 523.5, 2행 513.3, 3행 503.1.
+   - 위로 스크롤하면 넓어지고, 아래로 내리면 좁아진다. 왼쪽 끝은 고정이다.
+3. 선택 행(처음엔 2행 "시로코"): 왼쪽 분홍 3px 막대와 핑크 그라데이션. 다른 행을 누르면 선택이 옮겨 간다.
+4. hover: 행 바탕이 rgba(36,52,72,.8)로 밝아진다.
+5. 사선 스크롤바: 트랙과 썸이 레일과 평행하고, 썸이 레일을 따라 움직인다. 썸을 끌어도 스크롤된다.
+6. 포그 B(44px #141e2b)
+   - 맨 위에서는 위 포그가 없고, 스크롤을 시작하면 60px 동안 나타난다.
+   - 끝 60px 동안 아래 포그가 사라진다.
+7. 알려진 차이
+   - 초상 44×36 자리는 학생 이미지 대신 이름 첫 글자다.
+   - 스크롤바 트랙의 가로 inset은 공용값 10이다. 시안 견본은 약 7이라 트랙이 시안보다 최대 3px 왼쪽에 있다.
+   - rail 선택 그라데이션은 행 폭 기준이다(시안은 기울인 바탕 기준).
+   - 설명 5번째 줄(CSS 구현 메모)은 빼고, 4줄만 둔다.
+   - 타일 제목은 FE2-b `TileTitle` 전까지 갤러리 전용 임시 구현이다.
+
+**갤러리 두 번째 타일 "평행사변형 안 스크롤 (translate)"(통계 sv-*)**
+- 행 폭은 일정하고, 스크롤하면 행 전체가 레일 방향으로 밀린다.
+- 포그 C: 56px, 페이드 80.
+- 행은 `.srow`이고, hover와 선택이 된다.
+
+**세 번째 타일 "사선 행 변형 · 상태"(UI-Elements 행 견본과 대조)**
+- `.srow`
+  - 기본 rgba(16,24,35,.72), 안쪽 1px 테두리 rgba(113,199,244,.16).
+  - hover rgba(30,45,62,.9).
+  - 선택 rgba(52,36,58,.85), 안쪽 2px #f2b3ef.
+  - 파랑: 안쪽 2px rgba(113,199,244,.65).
+- `.row`는 srow 바탕이고 상태가 없다. `.plain`은 투명하다.
+- `.tile`은 rgba(16,24,35,.6), 테두리 없음, hover rgba(45,80,105,.8).
+- rail은 위 "사다리꼴 안 스크롤" 행과 같다.
+- 맨 아래 "직접 눌러 보기" 행으로 hover·선택과 사선 바깥 탭(반응 없음)을 확인한다.
+
+**스크롤바를 바꾼 4화면(+계획). 모두 바뀌면 안 된다: golden diff 0 + 눈으로 확인**
+
+| 화면 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| 학생 | 학생 탭 → 그리드·목록, 필터 열기 | 핑크 썸 8px, 레일 띠를 끌면 스크롤, 포그 #263d52(필터는 패널색) |
+| 계정 | 타이틀 → 계정 관리, 계정 편집 → 초상 선택 | 하늘색 썸 #8edcff, 포그 없음, 썸 끌기 |
+| 프리셋 | 계획 탭 → 계획 만들기(요소 빌더): 프리셋 불러오기 목록, 프리셋 단계 목록, 미배정 목록 | 핑크 썸, 포그, 앞의 두 목록은 오른쪽 끝을 끌면 스크롤 |
+| 페이즈 편집기 | 계획 탭 → 페이즈 편집 | 얇은 핑크 썸 4px(스크롤할 것이 없어도 보임), 트랙 2px, 끌기 없음 |
+| 계획 | 계획 탭 → 페이즈별·병목·전체, 시나리오 목록·비교 | 이전과 같음 |
+
+### 미검증 항목
+
+1. `flutter analyze`, 전체 테스트(기존 424 + 새 32), golden 17장 비교. 모두 사용자 PC gate가 필요하다.
+2. 새 테스트 기대값 중 실제 실행에서 어긋날 수 있는 곳:
+   - `drawPath` 비교의 PathMetrics 끝점 정밀도.
+   - 갤러리 드래그 거리(drag slop 18px 이후 이동).
+   - hover 테스트의 마우스 이벤트 순서.
+   - 개발 패널 ListView에서 갤러리 버튼이 2560×1392 안에 그려지는지.
+   - 실패하면 테스트 기대값부터 확인한다. 화면 코드는 golden이 판정한다.
+3. 갤러리의 시각 배치(타일 내부 좌표)는 사용자 검수가 필요하다.
+
+### 발견 사항
+
+1. **status 0단계 기록이 기기에서 사라졌다.** FE2-a 착수 때 기기에 쓴 FE1-c 결과·착수 기록이 확인 시점에 없었다. 파일은 FE1-c 커밋 내용 그대로였고, 줄바꿈만 CRLF였다(mtime은 내가 쓴 시각). 원인은 모른다. 이번 종료 기록과 함께 다시 썼다.
+2. `fe_commit.ps1`이 붙이는 trailer의 `Claude-Session` URL이 고정값(이전 세션)이다. 오케스트레이터가 판단할 일이다.
+3. 계정 썸 색(#8edcff)과 페이즈 편집기 스크롤바(2px/4px accent)는 시안 사선 스크롤바와 다르다. 각 탭 slice에서 정할 일이다(계정 FE8, 페이즈 편집기 FE4).
+
+### 사용자 실행 순서
+
+```powershell
+# ① gate. GREEN이어야 한다. golden 차이가 나오면 멈추고 오케스트레이터 검토(동작 보존 slice라 golden을 갱신하지 않는다)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+①이 GREEN이면:
+
+```powershell
+# ② 커밋 미리보기 → ③ 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe2a -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe2a
+```
+
+### 다음 행동
+
+1. 사용자: ①. GREEN이면 ②·③을 실행하고, golden이나 테스트가 RED면 `summary.txt`와 `failures/`를 오케스트레이터에 넘긴다.
+2. 다음 slice: FE2-b 소형 컨트롤·제목(`TileTitle`이 생기면 갤러리 임시 제목을 바꾼다).
+
+### FE2-a commit record (2026-10-07 00:48, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_004310\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

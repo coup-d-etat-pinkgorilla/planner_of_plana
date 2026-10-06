@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../kit/diagonal_scrollbar.dart';
 import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
 import '../studio/plan_starter_studio_layout.dart';
@@ -17,7 +18,6 @@ import 'ba_triangle_background.dart';
 import 'bond_rank_portrait.dart';
 import 'diagonal_flow_indicator.dart';
 import 'plan_phase_editor.dart' show phaseEditorPathSurfaceTexture;
-import 'scroll_viewport_fog.dart';
 import 'section_surface.dart';
 import 'section_template_surface.dart';
 import 'student_section_layout.dart';
@@ -2099,15 +2099,6 @@ class _PlanPresetLoaderDiagonalListState
           if ((rawScroll - scroll).abs() > 0.01) {
             _scheduleScrollCorrection();
           }
-          final maxScroll = math.max(
-            0.0,
-            contentHeight - constraints.maxHeight,
-          );
-          final fogVisibility = scrollViewportFogVisibility(
-            minScrollExtent: 0,
-            maxScrollExtent: maxScroll,
-            pixels: scroll,
-          );
           final tangent = diagonalTan80;
           final horizontalGap = diagonalNormalInset(_normalGap);
           final rowWidth = math.max(
@@ -2139,72 +2130,20 @@ class _PlanPresetLoaderDiagonalListState
             );
             top += _rowHeight + _rowGap;
           }
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              ScrollConfiguration(
-                behavior: ScrollConfiguration.of(
-                  context,
-                ).copyWith(scrollbars: false),
-                child: SingleChildScrollView(
-                  key: const ValueKey('plan-starter-preset-scroll'),
-                  controller: _controller,
-                  child: SizedBox(
-                    width: constraints.maxWidth,
-                    height: contentHeight,
-                    child: Stack(clipBehavior: Clip.none, children: rows),
-                  ),
-                ),
+          return _PlanPresetDiagonalScrollbar(
+            keyPrefix: 'plan-starter-preset',
+            controller: _controller,
+            contentExtent: contentHeight,
+            scrollOffset: scroll,
+            child: SingleChildScrollView(
+              key: const ValueKey('plan-starter-preset-scroll'),
+              controller: _controller,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: contentHeight,
+                child: Stack(clipBehavior: Clip.none, children: rows),
               ),
-              Positioned.fill(
-                child: ScrollViewportFog(
-                  key: const ValueKey('plan-starter-preset-fog'),
-                  keyPrefix: 'plan-starter-preset-viewport-fog',
-                  showTop: fogVisibility.showTop,
-                  showBottom: fogVisibility.showBottom,
-                ),
-              ),
-              IgnorePointer(
-                child: CustomPaint(
-                  key: const ValueKey('plan-starter-preset-diagonal-scrollbar'),
-                  painter: _PlanPresetDiagonalScrollbarPainter(
-                    offset: scroll,
-                    contentExtent: contentHeight,
-                  ),
-                ),
-              ),
-              if (maxScroll > 0)
-                Positioned(
-                  left: math.max(
-                    0,
-                    constraints.maxWidth - constraints.maxHeight / tangent - 24,
-                  ),
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: GestureDetector(
-                    key: const ValueKey('plan-starter-preset-scrollbar-drag'),
-                    behavior: HitTestBehavior.translucent,
-                    onVerticalDragUpdate: (details) {
-                      const trackInset = 10.0;
-                      final trackHeight = math.max(
-                        1.0,
-                        constraints.maxHeight - trackInset * 2,
-                      );
-                      final handleHeight = math.max(
-                        28.0,
-                        trackHeight * constraints.maxHeight / contentHeight,
-                      );
-                      final travel = math.max(1.0, trackHeight - handleHeight);
-                      _controller.jumpTo(
-                        (_controller.offset +
-                                details.delta.dy * maxScroll / travel)
-                            .clamp(0.0, maxScroll),
-                      );
-                    },
-                  ),
-                ),
-            ],
+            ),
           );
         },
       );
@@ -2397,10 +2336,6 @@ class _PlanPresetDiagonalListState extends State<PlanPresetDiagonalList> {
         animation: _controller,
         builder: (context, _) {
           final rawScroll = _controller.hasClients ? _controller.offset : 0.0;
-          final maxScroll = math.max(
-            0.0,
-            contentHeight - constraints.maxHeight,
-          );
           final scroll = planStageEffectiveScrollOffset(
             rawOffset: rawScroll,
             contentHeight: contentHeight,
@@ -2409,11 +2344,6 @@ class _PlanPresetDiagonalListState extends State<PlanPresetDiagonalList> {
           if ((rawScroll - scroll).abs() > 0.01) {
             _scheduleScrollCorrection();
           }
-          final fogVisibility = scrollViewportFogVisibility(
-            minScrollExtent: 0.0,
-            maxScrollExtent: maxScroll,
-            pixels: scroll,
-          );
           var top = _verticalInset;
           final cards = <Widget>[];
           for (var index = 0; index < widget.itemCount; index++) {
@@ -2452,74 +2382,20 @@ class _PlanPresetDiagonalListState extends State<PlanPresetDiagonalList> {
             }
             top += itemHeight + planElementBuilderCardGap;
           }
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              ScrollConfiguration(
-                behavior: ScrollConfiguration.of(
-                  context,
-                ).copyWith(scrollbars: false),
-                child: SingleChildScrollView(
-                  key: ValueKey('${widget.keyPrefix}-scroll'),
-                  controller: _controller,
-                  child: SizedBox(
-                    width: constraints.maxWidth,
-                    height: contentHeight,
-                    child: Stack(clipBehavior: Clip.none, children: cards),
-                  ),
-                ),
+          return _PlanPresetDiagonalScrollbar(
+            keyPrefix: widget.keyPrefix,
+            controller: _controller,
+            contentExtent: contentHeight,
+            scrollOffset: scroll,
+            child: SingleChildScrollView(
+              key: ValueKey('${widget.keyPrefix}-scroll'),
+              controller: _controller,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: contentHeight,
+                child: Stack(clipBehavior: Clip.none, children: cards),
               ),
-              Positioned.fill(
-                child: ScrollViewportFog(
-                  key: ValueKey('${widget.keyPrefix}-fog'),
-                  keyPrefix: '${widget.keyPrefix}-viewport-fog',
-                  showTop: fogVisibility.showTop,
-                  showBottom: fogVisibility.showBottom,
-                ),
-              ),
-              IgnorePointer(
-                child: CustomPaint(
-                  key: ValueKey('${widget.keyPrefix}-diagonal-scrollbar'),
-                  painter: _PlanPresetDiagonalScrollbarPainter(
-                    offset: scroll,
-                    contentExtent: contentHeight,
-                  ),
-                ),
-              ),
-              if (maxScroll > 0)
-                Positioned(
-                  left: math.max(
-                    0,
-                    constraints.maxWidth -
-                        diagonalCutDepth(constraints.maxHeight) -
-                        24,
-                  ),
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: GestureDetector(
-                    key: ValueKey('${widget.keyPrefix}-scrollbar-drag'),
-                    behavior: HitTestBehavior.translucent,
-                    onVerticalDragUpdate: (details) {
-                      const trackInset = 10.0;
-                      final trackHeight = math.max(
-                        1.0,
-                        constraints.maxHeight - trackInset * 2,
-                      );
-                      final handleHeight = math.max(
-                        28.0,
-                        trackHeight * constraints.maxHeight / contentHeight,
-                      );
-                      final travel = math.max(1.0, trackHeight - handleHeight);
-                      _controller.jumpTo(
-                        (_controller.offset +
-                                details.delta.dy * maxScroll / travel)
-                            .clamp(0.0, maxScroll),
-                      );
-                    },
-                  ),
-                ),
-            ],
+            ),
           );
         },
       );
@@ -2527,50 +2403,45 @@ class _PlanPresetDiagonalListState extends State<PlanPresetDiagonalList> {
   );
 }
 
-class _PlanPresetDiagonalScrollbarPainter extends CustomPainter {
-  const _PlanPresetDiagonalScrollbarPainter({
-    required this.offset,
+/// 요소 빌더 사선 목록 3곳(프리셋 불러오기·프리셋 단계·미배정)의 스크롤바.
+///
+/// 공용 [DiagonalScrollbar](FE2-a)에 이 목록들의 기존 렌더 값을 넘긴다. 범위와 썸 길이는 콘텐츠
+/// 높이로 계산하고, 선은 `drawLine`으로 그리며, 레일 점은 위쪽 기준이다. 스크롤 값은
+/// [planStageEffectiveScrollOffset]으로 보정한 값이다.
+class _PlanPresetDiagonalScrollbar extends StatelessWidget {
+  const _PlanPresetDiagonalScrollbar({
+    required this.keyPrefix,
+    required this.controller,
     required this.contentExtent,
+    required this.scrollOffset,
+    required this.child,
+    this.draggable = true,
   });
 
-  final double offset;
+  static final _style = DiagonalScrollbarStyle.standard.copyWith(
+    stroke: DiagonalScrollbarStroke.line,
+  );
+
+  final String keyPrefix;
+  final ScrollController controller;
   final double contentExtent;
+  final double scrollOffset;
+  final Widget child;
+  final bool draggable;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    const inset = 10.0;
-    final trackHeight = math.max(1.0, size.height - inset * 2);
-    final maxScroll = math.max(0.0, contentExtent - size.height);
-    final handleHeight = maxScroll <= 0
-        ? trackHeight
-        : math.max(28.0, trackHeight * size.height / contentExtent);
-    final travel = math.max(0.0, trackHeight - handleHeight);
-    final handleTop =
-        inset +
-        (maxScroll <= 0 ? 0 : travel * (offset / maxScroll).clamp(0.0, 1.0));
-    Offset point(double y) =>
-        Offset(diagonalRightRailX(right: size.width - inset, y: y), y);
-    final trackPaint = Paint()
-      ..color = AppColors.outline.withValues(alpha: 0.48)
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    final handlePaint = Paint()
-      ..color = AppColors.scrollThumb
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(point(inset), point(size.height - inset), trackPaint);
-    if (maxScroll <= 0) return;
-    canvas.drawLine(
-      point(handleTop),
-      point(handleTop + handleHeight),
-      handlePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_PlanPresetDiagonalScrollbarPainter oldDelegate) =>
-      oldDelegate.offset != offset ||
-      oldDelegate.contentExtent != contentExtent;
+  Widget build(BuildContext context) => DiagonalScrollbar(
+    keyPrefix: keyPrefix,
+    controller: controller,
+    contentExtent: contentExtent,
+    scrollOffset: scrollOffset,
+    extentSource: DiagonalScrollbarExtentSource.contentExtent,
+    thumbSizing: DiagonalScrollbarThumbSizing.contentRatio,
+    style: _style,
+    trackPoint: diagonalScrollbarRailTrackPoint,
+    drag: draggable ? DiagonalScrollbarDrag.rect : DiagonalScrollbarDrag.none,
+    child: child,
+  );
 }
 
 /// An editable plan-stage item used by the diagonal preset/stage list.
@@ -3813,10 +3684,6 @@ class _UnassignedDiagonalListState extends State<_UnassignedDiagonalList> {
           if ((rawScroll - scroll).abs() > 0.01) {
             _scheduleScrollCorrection();
           }
-          final maxScroll = math.max(
-            0.0,
-            contentHeight - constraints.maxHeight,
-          );
           final rowWidth = planUnassignedRowWidth(
             viewportSize: constraints.biggest,
             rowHeight: _rowHeight,
@@ -3847,48 +3714,21 @@ class _UnassignedDiagonalListState extends State<_UnassignedDiagonalList> {
             );
             top += _rowHeight + _rowGap;
           }
-          final fogVisibility = scrollViewportFogVisibility(
-            minScrollExtent: 0,
-            maxScrollExtent: maxScroll,
-            pixels: scroll,
-          );
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              ScrollConfiguration(
-                behavior: ScrollConfiguration.of(
-                  context,
-                ).copyWith(scrollbars: false),
-                child: SingleChildScrollView(
-                  key: const ValueKey('plan-starter-unassigned-scroll'),
-                  controller: _controller,
-                  child: SizedBox(
-                    width: constraints.maxWidth,
-                    height: contentHeight,
-                    child: Stack(clipBehavior: Clip.none, children: rows),
-                  ),
-                ),
+          return _PlanPresetDiagonalScrollbar(
+            keyPrefix: 'plan-starter-unassigned',
+            controller: _controller,
+            contentExtent: contentHeight,
+            scrollOffset: scroll,
+            draggable: false,
+            child: SingleChildScrollView(
+              key: const ValueKey('plan-starter-unassigned-scroll'),
+              controller: _controller,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: contentHeight,
+                child: Stack(clipBehavior: Clip.none, children: rows),
               ),
-              Positioned.fill(
-                child: ScrollViewportFog(
-                  key: const ValueKey('plan-starter-unassigned-fog'),
-                  keyPrefix: 'plan-starter-unassigned-viewport-fog',
-                  showTop: fogVisibility.showTop,
-                  showBottom: fogVisibility.showBottom,
-                ),
-              ),
-              IgnorePointer(
-                child: CustomPaint(
-                  key: const ValueKey(
-                    'plan-starter-unassigned-diagonal-scrollbar',
-                  ),
-                  painter: _PlanPresetDiagonalScrollbarPainter(
-                    offset: scroll,
-                    contentExtent: contentHeight,
-                  ),
-                ),
-              ),
-            ],
+            ),
           );
         },
       );

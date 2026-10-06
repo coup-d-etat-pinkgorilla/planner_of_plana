@@ -8,6 +8,7 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../kit/diagonal_scrollbar.dart';
 import '../studio/account_studio_layout.dart';
 import '../studio/section_template.dart';
 import 'asset_image_grid.dart';
@@ -1140,6 +1141,9 @@ class _AccountListItem extends StatelessWidget {
   );
 }
 
+/// 계정 화면의 사선 스크롤바: 공용 [DiagonalScrollbar](FE2-a)에 계정 화면 값을 넘긴다.
+///
+/// 포그가 없고, 썸은 #8edcff, 레일 점은 [portraitScrollbarTrackPoint]다.
 class _DiagonalScrollbar extends StatelessWidget {
   const _DiagonalScrollbar({
     required this.controller,
@@ -1151,145 +1155,19 @@ class _DiagonalScrollbar extends StatelessWidget {
   final String keyPrefix;
   final Widget child;
 
-  @override
-  Widget build(BuildContext context) => ScrollConfiguration(
-    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-    child: LayoutBuilder(
-      builder: (context, constraints) => AnimatedBuilder(
-        animation: controller,
-        builder: (context, _) {
-          final size = constraints.biggest;
-          final hasClients = controller.hasClients;
-          final maxScroll = hasClients
-              ? controller.position.maxScrollExtent
-              : 0.0;
-          final viewport = hasClients
-              ? controller.position.viewportDimension
-              : size.height;
-          final offset = hasClients ? controller.offset : 0.0;
-          const trackInset = 10.0;
-          final trackHeight = math.max(1.0, size.height - trackInset * 2);
-          final handleHeight = maxScroll <= 0
-              ? trackHeight
-              : math.max(28.0, trackHeight * viewport / (viewport + maxScroll));
-          final travel = math.max(1.0, trackHeight - handleHeight);
-          final trajectoryDepth = portraitGridTrajectoryOffset(0, size.height);
-          final handleTop =
-              trackInset +
-              travel *
-                  (maxScroll <= 0 ? 0 : (offset / maxScroll).clamp(0.0, 1.0));
-          final handleCenter = portraitScrollbarTrackPoint(
-            size,
-            handleTop + handleHeight / 2,
-            trackInset: trackInset,
-          );
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              child,
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(
-                    key: ValueKey('$keyPrefix-diagonal-scrollbar'),
-                    painter: _DiagonalScrollbarPainter(
-                      offset: offset,
-                      maxScrollExtent: maxScroll,
-                      handleHeight: handleHeight,
-                      trackInset: trackInset,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                key: ValueKey('$keyPrefix-scrollbar-handle-center'),
-                left: handleCenter.dx - 0.5,
-                top: handleCenter.dy - 0.5,
-                width: 1,
-                height: 1,
-                child: const IgnorePointer(),
-              ),
-              if (maxScroll > 0)
-                Positioned(
-                  left: math.max(0, size.width - trajectoryDepth - 24),
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: GestureDetector(
-                    key: ValueKey('$keyPrefix-diagonal-scrollbar-drag'),
-                    behavior: HitTestBehavior.translucent,
-                    onVerticalDragUpdate: (details) {
-                      controller.jumpTo(
-                        (controller.offset +
-                                details.delta.dy * maxScroll / travel)
-                            .clamp(0.0, maxScroll),
-                      );
-                    },
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-    ),
+  static final _style = DiagonalScrollbarStyle.standard.copyWith(
+    thumbColor: const Color(0xff8edcff),
   );
-}
-
-class _DiagonalScrollbarPainter extends CustomPainter {
-  const _DiagonalScrollbarPainter({
-    required this.offset,
-    required this.maxScrollExtent,
-    required this.handleHeight,
-    required this.trackInset,
-  });
-
-  final double offset;
-  final double maxScrollExtent;
-  final double handleHeight;
-  final double trackInset;
-
-  Offset _point(Size size, double y) {
-    return portraitScrollbarTrackPoint(size, y, trackInset: trackInset);
-  }
-
-  Path _segment(Size size, double top, double bottom) {
-    final start = _point(size, top);
-    final end = _point(size, bottom);
-    return Path()
-      ..moveTo(start.dx, start.dy)
-      ..lineTo(end.dx, end.dy);
-  }
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final trackBottom = size.height - trackInset;
-    canvas.drawPath(
-      _segment(size, trackInset, trackBottom),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round
-        ..color = AppColors.outline.withValues(alpha: 0.48),
-    );
-    if (maxScrollExtent <= 0) return;
-    final travel = math.max(0.0, trackBottom - trackInset - handleHeight);
-    final top =
-        trackInset + travel * (offset / maxScrollExtent).clamp(0.0, 1.0);
-    canvas.drawPath(
-      _segment(size, top, top + handleHeight),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 8
-        ..strokeCap = StrokeCap.round
-        ..color = const Color(0xff8edcff),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_DiagonalScrollbarPainter oldDelegate) =>
-      oldDelegate.offset != offset ||
-      oldDelegate.maxScrollExtent != maxScrollExtent ||
-      oldDelegate.handleHeight != handleHeight ||
-      oldDelegate.trackInset != trackInset;
+  Widget build(BuildContext context) => DiagonalScrollbar(
+    keyPrefix: keyPrefix,
+    controller: controller,
+    style: _style,
+    trackPoint: portraitScrollbarTrackPoint,
+    showFog: false,
+    child: child,
+  );
 }
 
 class _DirectionalAccountMotion extends StatelessWidget {

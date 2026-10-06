@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../kit/diagonal_scrollbar.dart';
 import '../studio/section_template.dart';
 import '../studio/student_studio_layout.dart';
 import 'animated_section_stack.dart';
@@ -4616,6 +4617,9 @@ class StudentGridCardOverlayPainter extends CustomPainter {
 double studentCardNameFontSize(double nameAreaHeight) =>
     math.max(6.0, math.min(12.0, nameAreaHeight * 0.8));
 
+/// 학생 화면의 사선 스크롤바: 공용 [DiagonalScrollbar](FE2-a)에 학생 화면 값을 넘긴다.
+///
+/// 포그는 [StudentViewportFog](키 `<keyPrefix>-fog`), 드래그는 레일 띠다.
 class _StudentDiagonalScrollbar extends StatelessWidget {
   const _StudentDiagonalScrollbar({
     required this.controller,
@@ -4630,208 +4634,37 @@ class _StudentDiagonalScrollbar extends StatelessWidget {
   final Color? fogColor;
 
   @override
-  Widget build(BuildContext context) => ScrollConfiguration(
-    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-    child: LayoutBuilder(
-      builder: (context, constraints) => AnimatedBuilder(
-        animation: controller,
-        builder: (context, _) {
-          final size = constraints.biggest;
-          final hasClients = controller.hasClients;
-          final maxScroll = hasClients
-              ? controller.position.maxScrollExtent
-              : 0.0;
-          final viewport = hasClients
-              ? controller.position.viewportDimension
-              : size.height;
-          final offset = hasClients ? controller.offset : 0.0;
-          final fogVisibility = hasClients
-              ? studentViewportFogVisibility(
-                  minScrollExtent: controller.position.minScrollExtent,
-                  maxScrollExtent: controller.position.maxScrollExtent,
-                  pixels: controller.position.pixels,
-                )
-              : (showTop: false, showBottom: false);
-          const trackInset = 10.0;
-          final trackHeight = math.max(1.0, size.height - trackInset * 2);
-          final handleHeight = maxScroll <= 0
-              ? trackHeight
-              : math.max(28.0, trackHeight * viewport / (viewport + maxScroll));
-          final travel = math.max(1.0, trackHeight - handleHeight);
-          final handleTop =
-              trackInset +
-              travel *
-                  (maxScroll <= 0 ? 0 : (offset / maxScroll).clamp(0.0, 1.0));
-          final handleCenter = studentScrollbarTrackPoint(
-            size,
-            handleTop + handleHeight / 2,
-            trackInset: trackInset,
-          );
-          final dragPath = studentScrollbarDragPath(
-            size,
-            trackInset: trackInset,
-          );
-          final dragBounds = dragPath.getBounds();
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              child,
-              Positioned.fill(
-                child: StudentViewportFog(
-                  key: ValueKey('$keyPrefix-fog'),
-                  showTop: fogVisibility.showTop,
-                  showBottom: fogVisibility.showBottom,
-                  color: fogColor,
-                ),
-              ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(
-                    key: ValueKey('$keyPrefix-diagonal-scrollbar'),
-                    painter: _StudentDiagonalScrollbarPainter(
-                      offset: offset,
-                      maxScrollExtent: maxScroll,
-                      handleHeight: handleHeight,
-                      trackInset: trackInset,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                key: ValueKey('$keyPrefix-scrollbar-handle-center'),
-                left: handleCenter.dx - 0.5,
-                top: handleCenter.dy - 0.5,
-                width: 1,
-                height: 1,
-                child: const IgnorePointer(),
-              ),
-              if (maxScroll > 0)
-                Positioned.fromRect(
-                  rect: dragBounds,
-                  child: ClipPath(
-                    clipper: _LocalPathClipper(
-                      dragPath.shift(-dragBounds.topLeft),
-                    ),
-                    child: GestureDetector(
-                      key: ValueKey('$keyPrefix-diagonal-scrollbar-drag'),
-                      behavior: HitTestBehavior.opaque,
-                      onVerticalDragUpdate: (details) {
-                        controller.jumpTo(
-                          (controller.offset +
-                                  details.delta.dy * maxScroll / travel)
-                              .clamp(0.0, maxScroll),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
+  Widget build(BuildContext context) => DiagonalScrollbar(
+    keyPrefix: keyPrefix,
+    controller: controller,
+    drag: DiagonalScrollbarDrag.rail,
+    fogBuilder: (context, visibility) => StudentViewportFog(
+      key: ValueKey('$keyPrefix-fog'),
+      showTop: visibility.showTop,
+      showBottom: visibility.showBottom,
+      color: fogColor,
     ),
+    child: child,
   );
 }
 
+/// 학생 스크롤바 레일 점. 공용 [diagonalScrollbarTrackPoint]와 같은 식이다.
 Offset studentScrollbarTrackPoint(
   Size size,
   double y, {
   double trackInset = 10,
-}) {
-  final tangent = diagonalTan80;
-  final depth = size.height / tangent;
-  final clampedY = y.clamp(0.0, size.height);
-  return Offset(
-    size.width - trackInset - depth + (size.height - clampedY) / tangent,
-    clampedY,
-  );
-}
+}) => diagonalScrollbarTrackPoint(size, y, trackInset: trackInset);
 
+/// 학생 스크롤바 드래그 띠. 공용 [diagonalScrollbarDragPath]와 같다.
 Path studentScrollbarDragPath(
   Size size, {
   double trackInset = 10,
   double hitSlop = 8,
-}) {
-  final start = studentScrollbarTrackPoint(
-    size,
-    trackInset,
-    trackInset: trackInset,
-  );
-  final end = studentScrollbarTrackPoint(
-    size,
-    size.height - trackInset,
-    trackInset: trackInset,
-  );
-  final direction = end - start;
-  final length = direction.distance;
-  if (length <= 0) return Path();
-  final normal =
-      Offset(-direction.dy / length, direction.dx / length) * hitSlop;
-  return Path()
-    ..moveTo((start + normal).dx, (start + normal).dy)
-    ..lineTo((end + normal).dx, (end + normal).dy)
-    ..lineTo((end - normal).dx, (end - normal).dy)
-    ..lineTo((start - normal).dx, (start - normal).dy)
-    ..close();
-}
-
-class _StudentDiagonalScrollbarPainter extends CustomPainter {
-  const _StudentDiagonalScrollbarPainter({
-    required this.offset,
-    required this.maxScrollExtent,
-    required this.handleHeight,
-    required this.trackInset,
-  });
-
-  final double offset;
-  final double maxScrollExtent;
-  final double handleHeight;
-  final double trackInset;
-
-  Path _segment(Size size, double top, double bottom) {
-    final start = studentScrollbarTrackPoint(size, top, trackInset: trackInset);
-    final end = studentScrollbarTrackPoint(
-      size,
-      bottom,
-      trackInset: trackInset,
-    );
-    return Path()
-      ..moveTo(start.dx, start.dy)
-      ..lineTo(end.dx, end.dy);
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final trackBottom = size.height - trackInset;
-    canvas.drawPath(
-      _segment(size, trackInset, trackBottom),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round
-        ..color = AppColors.outline.withValues(alpha: 0.48),
-    );
-    if (maxScrollExtent <= 0) return;
-    final travel = math.max(0.0, trackBottom - trackInset - handleHeight);
-    final top =
-        trackInset + travel * (offset / maxScrollExtent).clamp(0.0, 1.0);
-    canvas.drawPath(
-      _segment(size, top, top + handleHeight),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 8
-        ..strokeCap = StrokeCap.round
-        ..color = AppColors.scrollThumb,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_StudentDiagonalScrollbarPainter oldDelegate) =>
-      oldDelegate.offset != offset ||
-      oldDelegate.maxScrollExtent != maxScrollExtent ||
-      oldDelegate.handleHeight != handleHeight ||
-      oldDelegate.trackInset != trackInset;
-}
+}) => diagonalScrollbarDragPath(
+  size,
+  trackInset: trackInset,
+  hitSlop: hitSlop,
+);
 
 class _ContainerBoundsClipper extends CustomClipper<Path> {
   _ContainerBoundsClipper(this.id, this.canvasSize);

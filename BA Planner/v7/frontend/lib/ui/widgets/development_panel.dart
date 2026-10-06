@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../kit/gallery/ui_kit_gallery_page.dart';
 
 class DevelopmentPanel extends StatelessWidget {
   const DevelopmentPanel({
@@ -107,6 +108,17 @@ class DevelopmentPanel extends StatelessWidget {
                 onPressed: onOpenSectionTemplateStudio,
                 icon: const Icon(Icons.dashboard_customize_outlined),
                 label: const Text('Section Template Studio'),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              FilledButton.tonalIcon(
+                key: const ValueKey('open-ui-kit-gallery'),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const UiKitGalleryPage(),
+                  ),
+                ),
+                icon: const Icon(Icons.widgets_outlined),
+                label: const Text('UI Kit 갤러리'),
               ),
               const SizedBox(height: AppSpacing.sm),
               FilledButton.tonalIcon(
