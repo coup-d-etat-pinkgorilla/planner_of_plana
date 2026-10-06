@@ -26,6 +26,8 @@ void main() {
         PlanningProtocolClient(
           () => startBackendProcess(config),
           defaultTimeout: const Duration(seconds: 10),
+          waitForStartupProbe: true,
+          startupProbeTimeout: const Duration(seconds: 30),
         ),
       );
       ProcessAppService? first, second;

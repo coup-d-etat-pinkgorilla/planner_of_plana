@@ -15,6 +15,8 @@ from typing import Any
 
 from PIL import Image
 
+from tools.scanner_golden_dump import dump_comparison
+
 from core.inventory_detail_recovery import InventoryDetailRecognizer, InventoryDetailRecovery
 from core.inventory_navigation import InventoryNavigation
 from core.recognition_answer_samples import RecognitionAnswerSampleStore
@@ -366,6 +368,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Compare or deliberately rewrite C0 scanner golden fixtures.")
     parser.add_argument("--write", action="store_true",
                         help="overwrite golden files; only for a phase whose status records the intended diff")
+    parser.add_argument("--dump-dir", help="save full expected/actual JSON and diffs (or set BA_PLANNER_GOLDEN_DUMP_DIR)")
     parser.add_argument("scenario", nargs="*", help="scenario ids (default: all)")
     args = parser.parse_args()
     scenarios = [s for s in load_scenarios() if not args.scenario or s["id"] in args.scenario]
@@ -376,7 +379,9 @@ def main() -> None:
         text = dumps(run_scenario(scenario))
         path = golden_path(scenario["id"])
         # autocrlf checkouts may turn LF into CRLF; content, not line endings, is the contract.
-        same = path.is_file() and path.read_text(encoding="utf-8").replace("\r\n", "\n") == text
+        expected = path.read_text(encoding="utf-8").replace("\r\n", "\n") if path.is_file() else ""
+        same = path.is_file() and expected == text
+        dump_comparison(scenario["id"], expected, text, args.dump_dir)
         if args.write and not same:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text, encoding="utf-8", newline="\n")

@@ -69,10 +69,15 @@ void main() {
       ProcessAppService? service;
       try {
         service = ProcessAppService(
-          PlanningProtocolClient(() async {
-            process = await startBackendProcess(config);
-            return process!;
-          }, defaultTimeout: const Duration(seconds: 10)),
+          PlanningProtocolClient(
+            () async {
+              process = await startBackendProcess(config);
+              return process!;
+            },
+            defaultTimeout: const Duration(seconds: 10),
+            waitForStartupProbe: true,
+            startupProbeTimeout: const Duration(seconds: 30),
+          ),
         );
         await service.reconnect();
         final profile = await service.createProfile(

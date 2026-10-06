@@ -36,6 +36,8 @@ void main() {
         PlanningProtocolClient(
           startTrackedProcess,
           defaultTimeout: const Duration(seconds: 10),
+          waitForStartupProbe: true,
+          startupProbeTimeout: const Duration(seconds: 30),
         ),
       );
 

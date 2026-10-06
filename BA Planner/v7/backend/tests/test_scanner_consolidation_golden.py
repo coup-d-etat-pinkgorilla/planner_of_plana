@@ -9,6 +9,7 @@ from pathlib import Path
 import unittest
 
 from tools.scanner_consolidation_replay import dumps, golden_path, load_scenarios, run_scenario, verify_inputs
+from tools.scanner_golden_dump import dump_comparison
 
 
 REQUIRED_COVERAGE = {
@@ -36,6 +37,7 @@ class ScannerConsolidationGoldenTests(unittest.TestCase):
                 self.assertEqual([], problems, "recorded input frames changed")
                 expected = golden_path(scenario["id"]).read_text(encoding="utf-8").replace("\r\n", "\n")
                 actual = dumps(run_scenario(scenario))
+                dump_comparison(scenario["id"], expected, actual)
                 if actual != expected:
                     diff = "".join(difflib.unified_diff(
                         expected.splitlines(True), actual.splitlines(True), "golden", "replay", n=2))
