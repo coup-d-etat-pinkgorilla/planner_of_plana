@@ -7,8 +7,8 @@ import '../../services/app_service.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
-import 'lifted_path_shadow.dart';
 import 'plan_element_builder.dart';
+import 'section_surface.dart';
 import 'section_template_surface.dart';
 
 const studentRangeConditionSectionGap = 24.0;
@@ -481,13 +481,7 @@ class StudentRangeConditionSectionPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    paintLiftedPathShadow(canvas, path, defaultLiftedSectionShadow);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.surface.withValues(alpha: 0.76)
-        ..style = PaintingStyle.fill,
-    );
+    paintSectionSurface(canvas, path);
   }
 
   @override

@@ -14,6 +14,7 @@ import 'package:ba_planner_v7/ui/widgets/animated_section_stack.dart';
 import 'package:ba_planner_v7/ui/widgets/asset_image_grid.dart';
 import 'package:ba_planner_v7/ui/widgets/ba_triangle_background.dart';
 import 'package:ba_planner_v7/ui/widgets/lifted_path_shadow.dart';
+import 'package:ba_planner_v7/ui/widgets/section_surface.dart';
 import 'package:ba_planner_v7/ui/widgets/section_template_surface.dart';
 import 'package:ba_planner_v7/ui/widgets/student_grid_warmup.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
@@ -390,9 +391,10 @@ void main() {
     }
 
     final brandGlass = find.byKey(const ValueKey('title-brand-glass'));
+    // FE1-c(FD-006): 섹션 바탕은 블러 없이 공용 섹션 표면 색(surface@.76) 하나로 칠한다.
     expect(
       find.descendant(of: brandGlass, matching: find.byType(BackdropFilter)),
-      findsOneWidget,
+      findsNothing,
     );
     final glassColor = tester
         .widgetList<ColoredBox>(
@@ -400,6 +402,7 @@ void main() {
         )
         .first
         .color;
+    expect(glassColor, sectionSurfaceColor);
     expect(glassColor.a, lessThan(1));
     expect(
       find.descendant(of: brandGlass, matching: find.byType(CustomPaint)),

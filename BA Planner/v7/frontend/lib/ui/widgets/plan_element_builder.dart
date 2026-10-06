@@ -16,16 +16,16 @@ import 'asset_image_grid.dart';
 import 'ba_triangle_background.dart';
 import 'bond_rank_portrait.dart';
 import 'diagonal_flow_indicator.dart';
-import 'lifted_path_shadow.dart';
 import 'plan_phase_editor.dart' show phaseEditorPathSurfaceTexture;
 import 'scroll_viewport_fog.dart';
+import 'section_surface.dart';
 import 'section_template_surface.dart';
 import 'student_section_layout.dart';
 
 export '../models/planning_growth_rules.dart'
     show planElementTargetMaximums, planElementTargetMinimums;
 
-const planElementBuilderSectionOpacity = 0.76;
+const planElementBuilderSectionOpacity = sectionSurfaceOpacity;
 const planElementBuilderGap = 12.0;
 const planElementBuilderCardGap = 14.0;
 const planStarterStageControlHeight = 62.0;
@@ -1804,15 +1804,7 @@ class _PlanStarterFoundationPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    paintLiftedPathShadow(canvas, path, defaultLiftedSectionShadow);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..isAntiAlias = true
-        ..color = AppColors.surface.withValues(
-          alpha: planElementBuilderSectionOpacity,
-        ),
-    );
+    paintSectionSurface(canvas, path);
   }
 
   @override

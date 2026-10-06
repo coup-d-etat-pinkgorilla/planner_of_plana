@@ -7,8 +7,8 @@ import '../geometry/diagonal_geometry.dart';
 import '../studio/section_template.dart';
 import 'ba_triangle_background.dart';
 import 'diagonal_media_list_item.dart';
-import 'lifted_path_shadow.dart';
 import 'scroll_viewport_fog.dart';
+import 'section_surface.dart';
 import 'section_template_surface.dart';
 
 const phaseEditorMotionDuration = AppMotion.section;
@@ -1172,11 +1172,7 @@ class _PhaseEditorFoundationPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    paintLiftedPathShadow(canvas, path, defaultLiftedSectionShadow);
-    canvas.drawPath(
-      path,
-      Paint()..color = AppColors.surface.withValues(alpha: 0.76),
-    );
+    paintSectionSurface(canvas, path);
   }
 
   @override

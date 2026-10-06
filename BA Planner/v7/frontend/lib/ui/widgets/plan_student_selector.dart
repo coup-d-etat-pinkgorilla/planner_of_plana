@@ -11,6 +11,7 @@ import '../studio/section_template.dart';
 import 'animated_section_stack.dart';
 import 'ba_triangle_background.dart';
 import 'lifted_path_shadow.dart';
+import 'section_surface.dart';
 import 'section_template_surface.dart';
 import 'student_range_condition_section.dart';
 import 'student_section_layout.dart';
@@ -30,7 +31,7 @@ const planStudentSelectorMotion = SectionMotionSpec(
   intro: planStudentSelectorIntroDegrees,
   outro: planStudentSelectorOutroDegrees,
 );
-const planStudentSelectorSectionOpacity = 0.76;
+const planStudentSelectorSectionOpacity = sectionSurfaceOpacity;
 const planStudentSelectorSelectionWidth = 280.0;
 const planStudentSelectorSelectionHeight = 112.0;
 const planStudentSelectorConfirmTexture = titlePrimaryActionTexture;
@@ -681,11 +682,8 @@ class _PlanStudentSelectionSectionPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    paintLiftedPathShadow(canvas, path, defaultLiftedSectionShadow);
-    canvas.drawPath(
-      path,
-      Paint()..color = AppColors.surface.withValues(alpha: 0.84),
-    );
+    // FE1-c: 선택 패널도 다른 섹션과 같은 표면(.84 → .76, FD-006).
+    paintSectionSurface(canvas, path);
   }
 
   @override
@@ -816,15 +814,7 @@ class PlanStudentSelectorSectionPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    paintLiftedPathShadow(canvas, path, shadow);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.surface.withValues(
-          alpha: planStudentSelectorSectionOpacity,
-        )
-        ..style = PaintingStyle.fill,
-    );
+    paintSectionSurface(canvas, path, shadow: shadow);
   }
 
   @override

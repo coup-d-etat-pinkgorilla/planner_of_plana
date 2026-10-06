@@ -13,6 +13,7 @@ import '../studio/section_template.dart';
 import 'asset_image_grid.dart';
 import 'ba_triangle_background.dart';
 import 'lifted_path_shadow.dart';
+import 'section_surface.dart';
 import 'section_template_surface.dart';
 
 enum AccountClusterEntry { createFirst, manage }
@@ -1334,19 +1335,21 @@ class _PathSurface extends StatelessWidget {
   final Path path;
   final BATriangleTextureConfig? texture;
 
+  // FE1-c: 텍스처가 없는 섹션 바탕은 공용 섹션 표면(surface@.76, 블러 없음)이다.
+  // 그림자는 화면이 따로 그리는 LiftedPathShadow가 맡는다. 텍스처 표면(FD-015)은 그대로 둔다.
   @override
   Widget build(BuildContext context) => ClipPath(
     clipper: _FixedPathClipper(path),
     clipBehavior: Clip.antiAlias,
-    child: BackdropFilter(
-      filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-      child: texture == null
-          ? ColoredBox(
-              color: AppColors.surface.withValues(alpha: 0.78),
-              child: const SizedBox.expand(),
-            )
-          : BATriangleBackground(config: texture!),
-    ),
+    child: texture == null
+        ? ColoredBox(
+            color: sectionSurfaceColor,
+            child: const SizedBox.expand(),
+          )
+        : BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            child: BATriangleBackground(config: texture!),
+          ),
   );
 }
 

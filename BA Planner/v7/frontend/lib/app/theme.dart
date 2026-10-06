@@ -10,6 +10,10 @@ abstract final class AppColors {
   // --- 표면·선 -------------------------------------------------------------
   static const canvas = Color(0xff101722);
   static const navigation = Color(0xff172230);
+
+  /// 섹션 표면의 기준색. 모든 섹션은 이 색 @.76, 블러 없음, 테두리 없음, 아래에 lifted shadow
+  /// 4층으로 그린다(FD-006·FD-007). 직접 칠하지 말고 `ui/widgets/section_surface.dart`의
+  /// `SectionSurface`·`paintSectionSurface`·`sectionSurfaceColor`를 쓴다.
   static const surface = Color(0xff1d2a3a);
   static const surfaceRaised = Color(0xff243448);
   static const outline = Color(0xff38516b);

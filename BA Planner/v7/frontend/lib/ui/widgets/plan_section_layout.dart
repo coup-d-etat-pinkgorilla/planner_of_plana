@@ -22,11 +22,12 @@ import 'plan_preset_manager.dart';
 import 'plan_student_selector.dart';
 import 'plan_student_step_tile.dart';
 import 'scroll_viewport_fog.dart';
+import 'section_surface.dart';
 import 'section_template_surface.dart';
 
 export 'plan_student_step_tile.dart';
 
-const planSectionOpacity = 0.76;
+const planSectionOpacity = sectionSurfaceOpacity;
 const planPhaseItemHeight = 65.0;
 const planPhaseItemExtent = 69.0;
 const planPhaseHeaderHeight = 38.0;
@@ -6591,14 +6592,7 @@ class PlanSectionFoundationPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = planSectionPath(size, sectionId);
-    paintLiftedPathShadow(canvas, path, defaultLiftedSectionShadow);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.surface.withValues(alpha: planSectionOpacity)
-        ..style = PaintingStyle.fill,
-    );
+    paintSectionSurface(canvas, planSectionPath(size, sectionId));
   }
 
   @override

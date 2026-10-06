@@ -13,6 +13,7 @@ import 'bond_rank_portrait.dart';
 import 'lifted_path_shadow.dart';
 import 'plan_student_step_tile.dart';
 import 'scroll_viewport_fog.dart';
+import 'section_surface.dart';
 import 'section_template_surface.dart';
 import 'student_portrait_status_overlay.dart';
 
@@ -48,7 +49,7 @@ const _studentActionTexture = BATriangleTextureConfig(
 );
 
 const studentSectionBevelGap = 12.0;
-const studentSectionOpacity = 0.76;
+const studentSectionOpacity = sectionSurfaceOpacity;
 const studentViewportFogExtent = scrollViewportFogExtent;
 const studentFilterResetButtonSize = 44.0;
 const studentFilterCompanionSectionGap = 24.0;

@@ -1,31 +1,19 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import '../../app/theme.dart';
+import 'section_surface.dart';
 
-/// Shared clipped glass surface with the v7 80-degree attachment edge.
+/// 80° 부착 변을 가진 공용 섹션. 표면은 [SectionSurface](FE1-c, FD-006)를 쓴다:
+/// surface@.76, 블러 없음, 테두리 없음, lifted shadow 4층.
 class DiagonalSection extends StatelessWidget {
   const DiagonalSection({super.key, required this.child});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => ClipPath(
-    clipper: const DiagonalSectionClipper(),
-    clipBehavior: Clip.antiAlias,
-    child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.92),
-          border: Border.all(color: AppColors.outline),
-        ),
-        child: Material(type: MaterialType.transparency, child: child),
-      ),
-    ),
-  );
+  Widget build(BuildContext context) =>
+      SectionSurface(clipper: const DiagonalSectionClipper(), child: child);
 }
 
 class DiagonalSectionClipper extends CustomClipper<Path> {

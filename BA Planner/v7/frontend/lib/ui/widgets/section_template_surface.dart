@@ -7,6 +7,7 @@ import '../../app/theme.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../studio/section_template.dart';
 import 'ba_triangle_background.dart';
+import 'section_surface.dart';
 
 class AttachedSectionTemplateSurface extends StatelessWidget {
   const AttachedSectionTemplateSurface({
@@ -22,6 +23,8 @@ class AttachedSectionTemplateSurface extends StatelessWidget {
   final bool selected;
   final bool showFaceGrid;
 
+  // FE1-c: 표면은 공용 SectionSurface(surface@.76, 블러·테두리 없음, lifted shadow).
+  // 선택 표시(primaryMuted@.78 + primary 2.5px 외곽선)는 Studio 편집용이고 시안 근거가 없어 그대로 둔다.
   @override
   Widget build(BuildContext context) => CustomPaint(
     foregroundPainter: _AttachedSectionPainter(
@@ -29,18 +32,10 @@ class AttachedSectionTemplateSurface extends StatelessWidget {
       selected: selected,
       showFaceGrid: showFaceGrid,
     ),
-    child: ClipPath(
+    child: SectionSurface(
       clipper: AttachedSectionClipper(spec),
-      clipBehavior: Clip.antiAlias,
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: ColoredBox(
-          color: selected
-              ? AppColors.primaryMuted.withValues(alpha: 0.78)
-              : AppColors.surface.withValues(alpha: 0.88),
-          child: Material(type: MaterialType.transparency, child: child),
-        ),
-      ),
+      fill: selected ? AppColors.primaryMuted.withValues(alpha: 0.78) : null,
+      child: child,
     ),
   );
 }
@@ -243,20 +238,23 @@ class SectionCanvasPainter extends CustomPainter {
     for (final element in elements) {
       final selected = element.id == selectedElementId;
       final path = buildSectionCanvasElementPath(size, element);
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = selected
-              ? AppColors.primaryMuted.withValues(alpha: 0.88)
-              : AppColors.surface.withValues(alpha: 0.92),
-      );
-      canvas.drawPath(
-        path,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = selected ? 2.5 : 1
-          ..color = selected ? AppColors.primary : AppColors.outline,
-      );
+      if (selected) {
+        // Studio 편집기의 선택 표시. 시안 밖 상태라 기존 표현을 유지한다.
+        canvas.drawPath(
+          path,
+          Paint()..color = AppColors.primaryMuted.withValues(alpha: 0.88),
+        );
+        canvas.drawPath(
+          path,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.5
+            ..color = AppColors.primary,
+        );
+      } else {
+        // 런타임과 같은 섹션 표면(FE1-c): surface@.76 + lifted shadow, 테두리 없음.
+        paintSectionSurface(canvas, path);
+      }
       if (showSafeArea) _paintSafeArea(canvas, path);
       if (selected && showGrid) _paintAttachmentFace(canvas, size, element);
       _paintElementLabel(canvas, path, element);
@@ -1185,13 +1183,16 @@ class _AttachedSectionPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawPath(
-      buildAttachedSectionPath(size, spec),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = selected ? 2.5 : 1
-        ..color = selected ? AppColors.primary : AppColors.outline,
-    );
+    // 섹션 테두리는 없다(FD-006). 선택 외곽선만 Studio 편집 표시로 남긴다.
+    if (selected) {
+      canvas.drawPath(
+        buildAttachedSectionPath(size, spec),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5
+          ..color = AppColors.primary,
+      );
+    }
     if (!showFaceGrid) return;
     final (start, end) = switch (spec.face) {
       SectionAttachmentFace.left => (Offset.zero, Offset(0, size.height)),
@@ -1259,21 +1260,14 @@ class SectionTemplateSurface extends StatelessWidget {
   final Widget child;
   final bool selected;
 
+  // FE1-c: 표면은 공용 SectionSurface. 선택 표시는 AttachedSectionTemplateSurface와 같은 이유로 유지한다.
   @override
   Widget build(BuildContext context) => CustomPaint(
     painter: _SectionTemplateBorderPainter(shape: shape, selected: selected),
-    child: ClipPath(
+    child: SectionSurface(
       clipper: SectionTemplateClipper(shape),
-      clipBehavior: Clip.antiAlias,
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: ColoredBox(
-          color: selected
-              ? AppColors.primaryMuted.withValues(alpha: 0.78)
-              : AppColors.surface.withValues(alpha: 0.88),
-          child: Material(type: MaterialType.transparency, child: child),
-        ),
-      ),
+      fill: selected ? AppColors.primaryMuted.withValues(alpha: 0.78) : null,
+      child: child,
     ),
   );
 }
@@ -1345,12 +1339,14 @@ class _SectionTemplateBorderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // 섹션 테두리는 없다(FD-006). 선택 외곽선만 남긴다.
+    if (!selected) return;
     canvas.drawPath(
       buildSectionTemplatePath(size, shape),
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = selected ? 2.5 : 1
-        ..color = selected ? AppColors.primary : AppColors.outline,
+        ..strokeWidth = 2.5
+        ..color = AppColors.primary,
     );
   }
 

@@ -163,11 +163,21 @@ Container/Feature 상대 rect를 typed projection으로 읽고 Studio와 같은 
 유지해야 하는 경우처럼 서로 다른 부모 rect를 섞는 작업은 암묵적인 좌표 재계산에 맡기지 않는다.
 [@title-layout] [@title-tests]
 
+Section의 기본 표면은 앱 전체에서 하나다(FE1-c, 2026-10-06, 시안 우선 FD-001·FD-006·FD-007):
+`AppColors.surface` alpha 0.76, 블러(`BackdropFilter`) 없음, 테두리 없음, 그 아래 최종 polygon
+path를 따르는 `defaultLiftedSectionShadow` 4층. 코드는 `frontend/lib/ui/widgets/section_surface.dart`의
+`SectionSurface`(위젯)·`paintSectionSurface`(painter 함수)·`sectionSurfaceColor` 하나만 쓴다.
+`DiagonalSection`, `SectionTemplateSurface`, `AttachedSectionTemplateSurface`는 그 래퍼이고, 이전의
+surface 0.92·0.88 + blur 8 + 1px outline은 폐기했다. Studio 편집기(`SectionCanvasPainter`)도 선택되지
+않은 Section을 같은 표면으로 미리 보여 준다. 선택된 Section의 primaryMuted 채움과 primary 외곽선은
+편집 표시이며 시안 근거가 없어 유지한다. 삼각 무늬 텍스처 Container 표면은 이 규칙 밖이다(FD-015).
+
 Section의 기본 표면은 테두리가 없고 반투명이다. 그러나 같은 영역에 부모 Section 표면과
 삼각 무늬 Container를 차례로 그리면 두 반투명 색이 합성되어 원하지 않는 원본 색이 남는다.
 Container 텍스처가 최종 표면인 구성에서는 부모 Section fill을 먼저 그리지 않고 실제 Container
 path에 텍스처를 한 번만 그린다. 반투명은 화면 배경과의 관계에서 유지하며, 서로 겹친 두 표면으로
-만들지 않는다. 회귀 test는 해당 모션 그룹 아래 배경/blur 표면의 개수를 검사해야 한다.
+만들지 않는다. 회귀 test는 해당 모션 그룹 아래 배경 표면의 개수를 검사해야 한다(FE1-c 이후 Section
+바탕에는 blur가 없고, blur는 텍스처 Container 표면에만 남는다).
 [@title-runtime] [@title-tests]
 
 Title 패널에 속한 모든 최상위 Section은 최종 polygon path를 따르는 얇은 lifted shadow를 가진다.
