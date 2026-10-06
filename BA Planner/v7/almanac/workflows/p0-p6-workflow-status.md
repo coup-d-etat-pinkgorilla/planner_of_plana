@@ -10,6 +10,15 @@ sources:
 
 # P0-P6 Workflow Status
 
+### 2026-10-06 체크포인트 C 최종 인수
+
+- 사용자가 C 범위의 로컬 커밋과 인계 문서 작성을 승인했다(Sentinel_1885c650d15c8191a08eaff01b7e51bd, 11:07:36 UTC).
+- 실제 6시나리오 full payload dump와 전수 분류, 허용된 로그 8건만 반영한 golden 6건, Python 집중 10/전체 807, Dart 집중 4/Flutter 전체 411 및 analyze, Almanac 37페이지와 whitespace 검사가 통과했다. 새 전체 검사는 반복하지 않았다.
+- C 소스 커밋 `2156685ac63a852021e3dc01093185f78d97df49`에 dump 도구/검사 4파일, golden 6파일, 시작 준비 대기 검사 5파일만 포함했다. staged는 전후 비었고 무관한 working diff 70개 및 기존 추적 flags를 보존했다.
+- 최종 인계는 `docs/migration/scanner-consolidation/checkpoint-c-handoff-2026-10-06.md`에 있다. 원본 증거와 커밋 검증은 `debug/scanner_checkpoint_c_commit_20261006_b7f894ab/`에 보존한다.
+- C의 검증·로컬 커밋·인수 조건을 충족했으므로 FD-004의 C 대기를 해제한다. 프론트의 다음 행동은 FE1-a이며 slice별 결정과 검증 규칙은 유지한다. O3 이름 shadow/holdout, O2 활성화, Viewer/Arena 및 release build 완료를 이번 인수로 주장하지 않는다.
+
+
 ### 2026-09-01 F12 and F0-F12 workflow complete; D2 limitation accepted as risk
 
 - Applied three arbitrary 16:9 game-window client sizes and ran the production Dart-to-Python student
