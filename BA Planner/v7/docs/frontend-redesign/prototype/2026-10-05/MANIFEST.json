@@ -1,0 +1,595 @@
+{
+  "source": "https://claude.ai/artifact/BqhYfDnvkiQCTjDv8XgYJ3",
+  "canvas_title": "BA Planner v7 UI 개선 시안",
+  "artifact_version": "1791216886-b4f5",
+  "history": [
+    {
+      "date": "2026-10-05",
+      "artifact_version": "1791201546-3bff",
+      "artboards": 50
+    },
+    {
+      "date": "2026-10-06",
+      "artifact_version": "1791216886-b4f5",
+      "artboards": 57,
+      "note": "스캔 탭 6장(Scan*)과 성장 계산기(Calc-Student) 추가. 기존 50장은 sha256 동일."
+    }
+  ],
+  "scope": "택틱 페이지(Tactic-*, Boss-*, Tactical-Timeline.dc.html) 제외. 이미지(/_blob/…)는 포함하지 않음.",
+  "canvas_json": {
+    "bytes": 21112,
+    "sha256": "4d825a636ba2fab7eb1f98c9ca529c6194fc95872dfba8f836c4712faeda6874"
+  },
+  "artboards": [
+    {
+      "file": "Calc-Student.dc.html",
+      "title": "성장 계산기 · 학생 한 명 — 학생 정보 인디케이터 응용 · 목표값 → 인연 선물 · 크레딧 · 재화 필요량 (계획에 저장하지 않음)",
+      "page": "plan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 135063,
+      "sha256": "11f356dba5c8c5a0f4f7d46dea982998d54d3bde6e2f142f03fb8db3232f4479",
+      "added": "2026-10-06"
+    },
+    {
+      "file": "Flow-1-Students-Filter.dc.html",
+      "title": "계획 만들기 1 · 필터 팝업 (계획 칩 그룹 포함)",
+      "page": "plan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 246920,
+      "sha256": "87f341172aff4831d3896dc56201e08453a79234586141b3d89e583caf4d0d85",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Flow-1-Students-Many.dc.html",
+      "title": "계획 만들기 1 · 학생 고르기 (많이 고른 경우 · 14명)",
+      "page": "plan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 188775,
+      "sha256": "dc739468793bc8680621e2a3cd87db1d1c9941887d4d3d8eb409cbde37ff193a",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Flow-1-Students-One.dc.html",
+      "title": "계획 만들기 1 · 학생 고르기 (한 명 · 학생 탭 인디케이터)",
+      "page": "plan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 182806,
+      "sha256": "8e0c34ad7f3308f833a7b4e4ee66608a77ff24b23a73578f41bfb9b0f223f98d",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Flow-1-Students.dc.html",
+      "title": "계획 만들기 1 · 학생 고르기",
+      "page": "plan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 164623,
+      "sha256": "395ed888735a7cfd8f8e58005a2efdba472e4d711092e5c4a3ad9e1399664172",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Flow-2-Goals.dc.html",
+      "title": "계획 만들기 2 · 목표 정하기",
+      "page": "plan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 161880,
+      "sha256": "d439df39ec48087fa81ceec0f9069d75d41576b68c82387c368a9efb1db5f59d",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Flow-3-Order-Many.dc.html",
+      "title": "계획 만들기 3 · 단계 순서 (단계가 많은 경우 · 30개)",
+      "page": "plan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 101831,
+      "sha256": "6310684676e8c192f5e29eb76edf9eb0c82a5738e298fe66700b36c8382587d4",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Flow-3-Order.dc.html",
+      "title": "계획 만들기 3 · 단계 순서",
+      "page": "plan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 73963,
+      "sha256": "2e8a7c2b5903f7cf7a22dd7eaa3e35278c4394a8ea7e6958f1ba5d3035cd1707",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Flow-4-Save.dc.html",
+      "title": "계획 만들기 4 · 계획/시나리오로 저장",
+      "page": "plan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 74879,
+      "sha256": "24cfe69d7074f377ed5e2289ddb05d3b8792b8a8808674b31324ac57e720356a",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Home-Connect-Effect.dc.html",
+      "title": "홈 · 싯딤의 상자와 연결 ② 연결 이펙트 — 메뉴 섹션 빠짐 → 스캔으로 교체 → 들어옴 (반복 재생)",
+      "page": "home",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 122066,
+      "sha256": "4c324adb9964168fa2edd7ac69ec45917ce5d2089deea02093892082cbfb2d48",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Home-Connect-Pick.dc.html",
+      "title": "홈 · 싯딤의 상자와 연결 ① 오른쪽 창 선택 패널 (v6 복원)",
+      "page": "home",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 47289,
+      "sha256": "dc19bc06edee3888dd4b558fab58a2d0e5625ee5c85d19880e0b2f177db6ba02",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Home-Connected-Scan.dc.html",
+      "title": "홈 · 연결 후 ③ 스캔 버튼 → 스캔 팝업 (학생 · 아이템 · 기타)",
+      "page": "home",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 107317,
+      "sha256": "08f1684eef0ded1ab1b8b26c602134c1e85b170a89f273e578550fa074ec0e0e",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Inventory-All.dc.html",
+      "title": "인벤토리 · 전체 아이템 (종류별 타일)",
+      "page": "inventory",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 99141,
+      "sha256": "6a4a5d3eb5d6e165795954f0061b943c5d19318cc2b760a6344d485c49118073",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Inventory-Analysis-Opa.dc.html",
+      "title": "인벤토리 · 분석 — 오파츠 확장 (확장 버튼 → 다른 섹션 퇴장 → 오파츠 확대 · 선택 오파츠 상세)",
+      "page": "inventory",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 52734,
+      "sha256": "3adec952579b2c6c89c135463a05cb2337ce5f97a233be943cb168b6f9cf8086",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Inventory-Analysis.dc.html",
+      "title": "인벤토리 · 분석 (학교별·오파츠·설계도·변화)",
+      "page": "inventory",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 98325,
+      "sha256": "05acc12536a7b5325f1cbe8e4cd84a65a1d1967b3e8d84b946f3c899d91634cf",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Inventory-Tiers.dc.html",
+      "title": "인벤토리 · 티어별 충족률 (기술 노트 · BD · 오파츠)",
+      "page": "inventory",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 100602,
+      "sha256": "01ce3f7849d966c61e6803d9a83ca5c0de59e0cc081b06c1f642e8b99d7cc579",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Inventory.dc.html",
+      "title": "인벤토리 · 부족 위험 + 상세",
+      "page": "inventory",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 55217,
+      "sha256": "4149d37e397a36f40a35534ae48c4c3ee079682c180db68ddc5184c11f4f0493",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Scan-Item-Review.dc.html",
+      "title": "스캔 · 아이템 결과 검토 — 칸별 승인 · 읽지 못한 칸은 빗금",
+      "page": "scan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 63136,
+      "sha256": "1fb4d64b2a4f5707413712f42dfe0e4ad1efb1b114d16e1157e7779918306d83",
+      "added": "2026-10-06"
+    },
+    {
+      "file": "Scan-Item-Run.dc.html",
+      "title": "스캔 · 아이템 진행 중 — 게임 창이 앞으로 · 옆에 붙는 진행 창 (진행 / 일시정지 / 완료)",
+      "page": "scan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 59796,
+      "sha256": "7a0a7c105d0a864cad7d2888ed55b684f6163122ca5c9376bc1043800e9c6cb6",
+      "added": "2026-10-06"
+    },
+    {
+      "file": "Scan-Items.dc.html",
+      "title": "스캔 · 고르기 — 아이템 2종 선택 (포그라운드)",
+      "page": "scan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 163319,
+      "sha256": "d65a4b8199980a6eacc1416fb2cd8a3f39d39e18281a54c61f7a1d7ade676e41",
+      "added": "2026-10-06"
+    },
+    {
+      "file": "Scan-Student-Review.dc.html",
+      "title": "스캔 · 학생 결과 검토 — 확인 필요 · 계산 일치 일괄 적용 · 새 학생 재검증",
+      "page": "scan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 110784,
+      "sha256": "8a8bcde79cccab40677685b5b898470d30aed898a4b176075f13aac14d11a0ab",
+      "added": "2026-10-06"
+    },
+    {
+      "file": "Scan-Student-Run.dc.html",
+      "title": "스캔 · 학생 전체 진행 중 — 백그라운드 · 머리글 진행 표시 · 다른 탭 사용 가능",
+      "page": "scan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 65885,
+      "sha256": "2ad3773b6b440b8d95ed7d1c904e67fadd7e91a5e5fa22bab8c46fcf495a4692",
+      "added": "2026-10-06"
+    },
+    {
+      "file": "Scan.dc.html",
+      "title": "스캔 · 고르기 — 학생 전체 선택 (백그라운드) · 종류별 마지막 스캔",
+      "page": "scan",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 222943,
+      "sha256": "7dc61f0dc475937c6250ff4228456df041ddbc1a2db080b78c2ea330e9d39b75",
+      "added": "2026-10-06"
+    },
+    {
+      "file": "Scenario-Compare.dc.html",
+      "title": "시나리오 · 나란히 비교 (최대 4열 · 기준 대비)",
+      "page": "scenario",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 219479,
+      "sha256": "2e71bdcae56ebe71072f70190f2d642a6c846ebd481154612fc1ab1727feecc2",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Scenario-Detail-All.dc.html",
+      "title": "시나리오 · 열어 보기 — 전체 (활성 계획 대비)",
+      "page": "scenario",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 86798,
+      "sha256": "e33498fb9f68487f1a494fc03264c79f24c5dc491c2bdb8e80838a8420fce6b5",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Scenario-Detail-Bottleneck.dc.html",
+      "title": "시나리오 · 열어 보기 — 병목 (활성 계획 대비)",
+      "page": "scenario",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 71298,
+      "sha256": "a8d2c77ba1750c71cefc8b58c78620d03bfac951814a3d400712cd0f60b56570",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Scenario-Detail-Phase.dc.html",
+      "title": "시나리오 · 열어 보기 — 페이즈별 (활성 계획 대비)",
+      "page": "scenario",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 73088,
+      "sha256": "f4c9fc8681fdb25c49688f2ae76e0416ea97e01a6917cb1ba657c8fcd7155b95",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Scenario-List.dc.html",
+      "title": "시나리오 · 목록 관리 (정렬·필터·비교 담기·미리보기)",
+      "page": "scenario",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 91926,
+      "sha256": "602fb4cd3207df4dd534fa75eebc786efd17151995d4c5d6d3cab762e8eaa35d",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Statistics-Proposal.dc.html",
+      "title": "통계 · 기능 제안 + 그래프 매핑 (질문 → 그래프 · 1/2/3차 · 확정 사항)",
+      "page": "parts",
+      "w": 2560,
+      "h": 3054,
+      "bytes": 139928,
+      "sha256": "6c1d801b53b65777dcde40dff482d473ef1698ddc5c846a8dfc874ed0469bcf0",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Stats-Filter-Open.dc.html",
+      "title": "통계 · 통계 전용 필터 팝업 (학생 탭과 같은 필터 · 학생 성장에만 적용 · 학생 탭 필터 불러오기)",
+      "page": "stats",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 173544,
+      "sha256": "ca3868832aa402c916da64f262ecbfbedb30228055347994788e7f67717ce0ec",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Stats-Growth-Filter.dc.html",
+      "title": "통계 · 학생 성장 — 통계 필터 적용(밀레니엄 · 스트라이커) · 스냅샷 1회 (A4 비교 불가 · A6 빈 상태)",
+      "page": "stats",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 78240,
+      "sha256": "284580748471ca55a3a067e46ca5295397b92e4a9fff0f43f0991092825b5f9c",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Stats-Growth.dc.html",
+      "title": "통계 · 학생 성장 — KPI · A1 분포 · A2 항목 · A4 학교 · A6 추이 · A3 성작 · A5 매트릭스 (가운데 세로 스크롤 · 위젯별 비율 유지) + 구간 근거",
+      "page": "stats",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 93712,
+      "sha256": "2e2fa6a89a44e748382c6aaf865bd638b26fe39472b70db4733708370b7bf239",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Stats-Inventory.dc.html",
+      "title": "통계 · 인벤토리 현황 — B1 충족률 · B2 부족/과잉 · B3 재화 변화 (위젯별 비율 유지) + 선택 재화 근거",
+      "page": "stats",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 61374,
+      "sha256": "49d3ff90bad7c2a61a0f58656bc4a24370ca259dd21b709623e876e534b6f0e0",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Stats-Plan.dc.html",
+      "title": "통계 · 계획 집계 — C1 필요량 · C2 병목 · C3 누적 부족 · C4 목표 진행 · C5 미계획 (가운데 세로 스크롤) + 병목 근거",
+      "page": "stats",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 75873,
+      "sha256": "b00e510fc74cf8d220d04538505bc26793d2ab699a696a2b0082de133881a61e",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Student-Filter.dc.html",
+      "title": "학생 · 필터 팝업 (속성 칩 + 성장 범위 슬라이더)",
+      "page": "student",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 266412,
+      "sha256": "d33c4c7d615a84d44324f3344a8e03594de837c16df83db3456946eead1607ff",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Student.dc.html",
+      "title": "학생 — v7 원형 (student_section_layout 1:1 이식)",
+      "page": "student",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 186259,
+      "sha256": "e154d465f070ae1f4dde91952ce8666d71b437325ef6ea477bcd0dff239d1416",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Tactical-Analysis-All.dc.html",
+      "title": "전술대항전 · 족보 전체 보기 팝업 (같은 방어 덱의 족보 7개 · 정렬 · 공격 기록에 복사)",
+      "page": "pvp",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 114807,
+      "sha256": "b246b1f12125d5aa49ca0428fd42c449ea8ef77d9815706d8efd660f40754a6f",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Tactical-Analysis.dc.html",
+      "title": "전술대항전 · 시그니처 · 족보 · 상대 카드",
+      "page": "pvp",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 80215,
+      "sha256": "6112177929063be457e5816e81d097ba232075563dadf2e9a8fc8fd1d9e0ce79",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Tactical-Import-Excel.dc.html",
+      "title": "전술대항전 · 엑셀 가져오기 → 해석 결과 승인 팝업 (열 연결 · 이해하지 못한 문자열 처리 · 미리보기)",
+      "page": "pvp",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 261297,
+      "sha256": "81f58ebc77a04a51b35d404b28a324a41b084c75dadee070f161f79618ecc40f",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Tactical-Slots.dc.html",
+      "title": "전술대항전 · 슬롯 통계 · 궁합 · 카운터",
+      "page": "pvp",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 70638,
+      "sha256": "20777e7a2bca3596f7ce7f1915b206ae22f08323ed6b9c78988cc2c1785d0fa9",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Tactical.dc.html",
+      "title": "전술대항전 · 기록 + 편성 + 로비 스캔",
+      "page": "pvp",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 218839,
+      "sha256": "1939032d7ef765214b3c26fcd357452fc0dca91bf47e5e2d3ed14ae4a83e652b",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Title-Accounts-New.dc.html",
+      "title": "타이틀 설정 · 계정 추가 (새 계정)",
+      "page": "title",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 51745,
+      "sha256": "c3c8256a8f7c79206d98d9cfb100711abe39a0dc13992e082674aed51bc63696",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Title-Accounts-Portrait.dc.html",
+      "title": "타이틀 설정 · 초상 고르기",
+      "page": "title",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 79396,
+      "sha256": "488bbf51c5e83816fee66d5e2c7b6b70cacd4a0c10928057402453cd27f16c0f",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Title-Accounts.dc.html",
+      "title": "타이틀 설정 · 계정 관리 (목록 + 수정)",
+      "page": "title",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 50529,
+      "sha256": "0872f51dcd00d35f081355e80587a3911b4bdaf2a2ce3485363a6a304aea3bff",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "Title.dc.html",
+      "title": "타이틀 — v7 구성 유지 (계정 카드 · 로고 띠 · 설정/나가기 · 시작)",
+      "page": "title",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 17839,
+      "sha256": "aa94f42836db1c67a579c5327a886b70e7cd2b20d0d8c19ff49703681fc48ebd",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "UI-Elements.dc.html",
+      "title": "UI 요소 사전 (v7 수치)",
+      "page": "parts",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 122755,
+      "sha256": "52629104b5b80e292be1ed579def64952fd46a964cbf8b48d44af0d7b9733f4e",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "W-Bond-Variants.dc.html",
+      "title": "인연도 표현 대안 (S3 삼각형 자리) · B 채택",
+      "page": "parts",
+      "w": 1947,
+      "h": 776,
+      "bytes": 200405,
+      "sha256": "7f80817a498cecdd5a30d969fc3a8c84c446f5f4942afd1c1e0eda12b3c5308b",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "W-Card-Grid-DE.dc.html",
+      "title": "학생 그리드 · 글자 칩 + 이름 카드 밖",
+      "page": "parts",
+      "w": 1708,
+      "h": 940,
+      "bytes": 108805,
+      "sha256": "5430e37486788a2c8339fc9a6b87de58a6713e58ea3d52dc7d8a65fa1d98d022",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "W-Card-States.dc.html",
+      "title": "학생 카드 · 상태별",
+      "page": "parts",
+      "w": 1410,
+      "h": 360,
+      "bytes": 26636,
+      "sha256": "fcc2bd575215b926da171be4802f5902024c186b08dd70e81ae6ffd6f91ba67e",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "W-Card-Variants.dc.html",
+      "title": "학생 카드 · 속성/이름 표현 대안",
+      "page": "parts",
+      "w": 1498,
+      "h": 1590,
+      "bytes": 76772,
+      "sha256": "7c49dfdd83d64dd3b9f00067724c36eb726855e231601be0b618c6e3686d875f",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "W-Data-Widgets.dc.html",
+      "title": "위젯 · 데이터 표시",
+      "page": "parts",
+      "w": 2560,
+      "h": 1570,
+      "bytes": 76219,
+      "sha256": "38cdb40ccced74d0f1dde40b26f452f00147f36391f3ef5ad2d8725b72ce77ae",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "W-Filter-Widgets.dc.html",
+      "title": "위젯 · 필터",
+      "page": "parts",
+      "w": 2560,
+      "h": 652,
+      "bytes": 42810,
+      "sha256": "d3a36629e4a8bd1a91fe8d38b9a7827641d2318d0a5cb7314ea2a8059202c833",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "W-Info-Popover.dc.html",
+      "title": "도움말 (i) · 팝오버",
+      "page": "parts",
+      "w": 1160,
+      "h": 400,
+      "bytes": 14710,
+      "sha256": "2cf6e8c95c09366876698b68fdd738e6a4bd8dd91a88b29acdf5383bbe617724",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "W-Layout-Widgets.dc.html",
+      "title": "위젯 · 구조와 상호작용",
+      "page": "parts",
+      "w": 2560,
+      "h": 1448,
+      "bytes": 62911,
+      "sha256": "f6bbb0d96cb4317c1a546673c9ee205138ed881f1e5da195dcad7fab6753adc3",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "W-Student-Actions.dc.html",
+      "title": "학생 액션 (S1)",
+      "page": "parts",
+      "w": 242,
+      "h": 785,
+      "bytes": 18731,
+      "sha256": "f18303afcb491e7065332f2578366389a1c6a8b324a8d5d2a7f34cc5cf76799f",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "W-Student-Detail.dc.html",
+      "title": "학생 상세 (S3 · 인디케이터)",
+      "page": "parts",
+      "w": 802,
+      "h": 836,
+      "bytes": 47325,
+      "sha256": "718fc19c57b444a360a95f6a2d9e7f03d4fd004c1903b31dbafdb2f23fe5f74a",
+      "added": "2026-10-05"
+    },
+    {
+      "file": "W-Student-Search.dc.html",
+      "title": "학생 검색 (S4)",
+      "page": "parts",
+      "w": 660,
+      "h": 408,
+      "bytes": 23274,
+      "sha256": "377c36bb08fa0e514d8fb11c5cb4a6a70600995f81bd6de73de47d82429174c0",
+      "added": "2026-10-05"
+    }
+  ]
+}
