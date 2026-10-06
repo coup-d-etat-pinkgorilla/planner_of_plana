@@ -62,3 +62,15 @@ topics: [workflow, design]
 - (23:15) 사용자 승인으로 실행. FE0-base 커밋 `36702c28`(12파일: 스냅샷 4개 + 미추적 8개, GyeonggiTitle은 이미 추적 중). FE1-a 커밋 `54ed8086`(16파일: lib 14개 + theme_tokens_test + fe_commit.ps1). 충돌은 없었다. 9개 파일은 post_dir(FE1-b 사본)을 끝 상태로 썼고, 그 파일들의 작업트리 차이는 FE1-b 변경이다. 나머지 5개는 stage 뒤 작업트리와 index가 같았다. 브랜치 순서: … → 1ac37eeb FE1-g → 180f5551 docs → 36702c28 FE0-base → 54ed8086 FE1-a. push 안 함.
 - (23:20) FE1-b 검토: gate `20261006_231705` GREEN(analyze, 테스트 419, golden 17 차이 0, almanac, diff-check). 커밋 `d5f87b7b`는 15파일이고 작업트리에 남은 차이가 없다. 워커 status의 "아래 FE1-b 절"이 실제로는 없다. FE1-c 워커에게 FE1-b 종료 기록부터 채우게 한다. `diagonal_header.dart`의 `buildRightCutRoundedPath`(각도 인자, FD-016 세 번째 함수)는 FE1-b 커밋에 없다. 의도인지 FE1-b 종료 기록에 적게 한다.
 - FE1-c 착수 조건 정리: 표면 채우기 지점은 `DiagonalSection`(.92+blur+테두리), `SectionTemplateSurface`/`AttachedSectionTemplateSurface`(.88/.78+blur), `SectionCanvasPainter`(.92/.88)다. 호출처 중 `scan_page.dart`(동결 창 아님)와 `scan_student_review_workspace.dart`(스캐너 소유)는 고치지 않는다. 공용 위젯 내부를 바꾸면 그 화면에도 반영되며, 이것은 허용한다. `almanac/design/section-template-studio.md`는 기존 미커밋 변경이 있으므로 사본 규칙을 따른다. golden PNG는 `whole`로 커밋한다. 워크플로 불변식에 FE0-base 선례, PS ASCII 규칙, golden 갱신 순서를 적었다.
+
+## 2026-10-06 23:40 — FE1-c 검토(커밋 `99583757` 뒤 사후 검토)
+
+- 사용자가 ①~⑤를 한 번에 실행했다. 원래는 ① 뒤 golden 차이 검토를 먼저 하려 했으나 순서가 바뀌었다. `failures/`에 ① 차이 이미지가 남아 있어 사후 검토했고, 문제는 없다.
+- golden: 바뀐 장면은 6장(title, account-manager/editor/picker, plan-student-selector, scan-student-review)이다. 워커 status의 예상 6장과 정확히 일치하고, 나머지 11장은 차이 0이다. title·account·student-selector는 채널 최대 차이가 3(255 기준)이다. 블러 제거와 .78→.76 변화가 거의 보이지 않는 수준이고, 표면 외 변화는 없다. scan-student-review는 `DiagonalSection` 1px 외곽선이 사라졌고, 채움 .92→.76으로 섹션 전체가 균일하게 4~5 바뀌었다(최대 56은 외곽선 자리). 글자·행·버튼은 변하지 않았다.
+- gate: ① `20261006_233307` RED(golden 6 실패, 테스트 424 통과). ② `233431` update. ③ `233605` GREEN(424 + golden 17). 커밋 22파일. `section-template-studio.md`의 C 이전 미커밋 변경은 작업트리에 남았다(병합 정상).
+- 워커 발견 사항 처리:
+  ① 스캔 화면 표면 변경 → 스캐너 오케스트레이터 로그에 알림을 append했다.
+  ② 섹션 선택 표시 → FD-174 (a) 유지 확정.
+  ③ `SectionTemplateSurface` 계열은 런타임 사용처가 없다 → FE10 죽은 코드 목록에 추가했다.
+- 남은 확인: 그림자가 부모 clip에 잘리는지는 사용자 검수표(인벤토리·통계·설정·전술대항전·스캔)로 본다. status "현재 상태" 머리글이 "gate 미실행"으로 남아 있다. FE2-a 워커가 FE1-c 결과(gate·커밋)로 갱신한다.
+- 운영: 시각 변경 slice에서는 사용자 실행 순서 ①과 ② 사이에 "오케스트레이터 검토" 멈춤을 워커가 명시하게 한다. 이번에는 status에 적혀 있었지만 실행 명령이 한 블록이라 이어서 실행됐다. 다음부터는 ①만 따로 제시한다.

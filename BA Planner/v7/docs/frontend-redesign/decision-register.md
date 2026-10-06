@@ -112,6 +112,7 @@
 | FD-171 | "이 목표로 계획에 추가"는 무엇을 넘기고, 이미 계획에 있는 학생이면 어떻게 하는가? (`PlanningStudentSeed`에 목표 필드 없음) | Calc-Student, 출처 `survey/J-calc.md` §9 | (a) seed에 `targets` 추가. 계획 만들기 2단계를 그 학생 1단계 = 계산기 목표로 열고, 진행 중 초안이 있으면 학생을 덧붙임. 활성 계획에 이미 있으면 그 학생 마지막 단계 뒤 새 단계로 (b) 1단계로만 넘기고 목표는 버림 | (a). 버튼 부제 "계획 만들기 2 · 목표 정하기로 넘깁니다"와 맞고, 단계 누적 snapshot 계약(plan-element-builder-lessons)과 충돌하지 않는다 | FE4-g | 워커 재량 |
 | FD-172 | 아직 데이터가 없는 표기(인벤토리 스캔 시각, 학생 스캔 시각, 크레딧 보유, 계획에 없음)는 어떻게 그리는가? | Calc-Student, 출처 `survey/J-calc.md` §9 | — | 스캔 시각 2개는 FB-2 전까지 숨김(FD-041), 크레딧 보유는 통화 스캔(FD-096 (c), FB-10)이 생기기 전까지 "스캔 없음" 빗금(부족 칩 숨김), "계획에 없음/있음"은 FB-1 전에는 goals v1 기준(FD-027 방식) | FE3-f | 워커 재량 |
 | FD-173 | "인벤토리 · 부족 위험에서 보기 / 부족 3종 · 획득처"는 어디로 가는가? (인벤토리 부족 위험은 활성 계획 기준) | Calc-Student, 출처 `survey/J-calc.md` §9 | (a) 인벤토리 탭을 열고 계산기 부족 재화 키를 강조 필터로 넘김(FE7-d navigation intent 재사용) (b) 계산기 안에서 획득처 플라이아웃(FB-3 보충 방법) (c) FE6-a·FE7-d 전까지 버튼 숨김 | (a). 연결 수단이 생기기 전에는 (c) | FE3-f(숨김), 후속 연결 | 워커 재량 |
+| FD-174 | Studio 편집기(`SectionCanvasPainter`)와 `SectionTemplateSurface` 계열의 섹션 선택 표시(primaryMuted 채움 + primary 외곽선)를 FD-005 핑크로 바꾸는가? | FE1-c 발견 사항 2(status), H §6.1~6.3 | (a) 유지 (b) 핑크 accent | (a). 시안의 섹션에는 선택 상태가 없고(핑크는 행·세그먼트 선택), Studio 편집기는 시안 범위 밖 개발 도구다. `SectionTemplateSurface` 계열은 런타임 사용처가 없어 FE10에서 지운다 | FE1-c | 확정(오케스트레이터, 2026-10-06) |
 
 ## §4 계획 만들기 (FB-1, FB-8, FE4)
 

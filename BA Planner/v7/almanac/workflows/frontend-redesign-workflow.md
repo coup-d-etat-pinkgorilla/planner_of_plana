@@ -199,7 +199,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | FE1-a 토큰 (동작 보존) | `AppColors` 확장(accent·accentText·onAccent·scrollThumb·textSecondary·textDim·popover·rowSurface·indicatorSurface·scrim, 칩 6색 tone 쌍, 공격·방어 타입 5색), `AppMotion`(360/460/970/220/180ms), `AppRadii`, 컨트롤 높이 토큰, `AppType` 개정(FD-008·FD-010). 하드코딩된 같은 값을 토큰으로 바꾸기만 한다 | golden diff 0, 하드코딩 핑크 6곳 → 토큰 — **완료 2026-10-06**: 커밋 `54ed8086`(기존 타이포·계획 작업은 FE0-base `36702c28`로 먼저 커밋) |
 | FE1-g golden 기준선 + 게이트 스크립트 (2026-10-06 추가, FE1-b 전 필수) | 저장소에 Flutter golden이 0개라 동작 보존 slice를 판정할 수 없다. 기준 viewport 2560×1392, DPR 1, 실제 폰트(Pretendard·GyeonggiTitle을 `FontLoader`로 asset에서 적재), mock fixture, 애니메이션 정착 후 `matchesGoldenFile`로 장면을 고정한다. 장면은 **인라인 80° 계산이 있는 파일을 모두 한 번 이상 그리도록** 고른다(최소: 타이틀, 계정 관리·편집·초상 선택, 홈, 학생 그리드·상세, 계획 메인 병목/페이즈별/전체, 요소 빌더, 페이즈 편집기, 학생 선택기, 프리셋 관리, 시나리오 목록·비교). 함께 FE1-d의 `frontend/tool/fe_gate.ps1`(analyze·test·golden·almanac validate·diff-check를 돌리고 요약 파일을 남김)을 만든다. golden PNG는 Windows 폰트 렌더 때문에 **사용자 PC에서** `flutter test --update-goldens test/goldens`로 한 번 생성하고 따로 커밋한다 | 사용자가 생성한 golden 커밋 + fe_gate 1회 녹색. 이후 FE1-b·FE2-a 등 동작 보존 slice는 이 golden diff 0이 완료 조건 — **완료 2026-10-06**: 17장, 비교 GREEN(`debug/frontend_gate/20261006_222432`), PNG 커밋 `8e95d946` |
 | FE1-b DiagonalGeometry (동작 보존) | `tan80` 상수, `cutDepth(h)`, 레일 x(y), 법선 inset(g/sin80), 둥근 다각형 단일 함수(Q 곡선 vs 원호는 FE1-b에서 둘 다 측정해 시안 path와 맞는 쪽, 다른 쪽은 호환 래퍼), 행 오프셋 2모드(translate/resize). 인라인 108곳 교체 | golden diff 0, 기하 단위 테스트. 스캐너 소유 `scan_student_review_workspace.dart`의 3곳은 바꾸지 않는다. 교체 전 `flutter test --coverage test/goldens`로 108곳이 golden 장면에서 실행되는지 줄 단위로 확인하고, 실행되지 않는 줄은 기하 단위 테스트로 덮는다. 고치는 파일마다 착수 전 사본을 `debug/frontend_fe1b/pre/`에 둔다 — **완료 2026-10-06**: gate GREEN `20261006_231705`(419 + golden 17), 커밋 `d5f87b7b` |
-| FE1-c SectionSurface (시각 변경) | 섹션 표면 .76·무블러·무테 + lifted shadow 4층(FD-006, FD-007). `DiagonalSection`·`SectionTemplateSurface` 계열을 한 표면으로 | golden 갱신 사유 기록, 사용자 검수(아무 탭이나 캔버스와 표면 비교) |
+| FE1-c SectionSurface (시각 변경) | 섹션 표면 .76·무블러·무테 + lifted shadow 4층(FD-006, FD-007). `DiagonalSection`·`SectionTemplateSurface` 계열을 한 표면으로 | golden 갱신 사유 기록, 사용자 검수(아무 탭이나 캔버스와 표면 비교) — **완료 2026-10-06**: golden 6장 갱신(예상 6장과 일치, 나머지 11장 차이 0), gate GREEN `20261006_233605`(424 + golden 17), 커밋 `99583757` |
 | FE1-d 게이트 스크립트 | FE1-g로 앞당겨 합쳤다(2026-10-06) | — |
 
 갱신 문서: `app/theme.dart` 주석, section-template-studio.md 표면 절.
@@ -343,7 +343,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 ### FE10 — 마감
 
 - 택틱 탭 셸 규칙 조율: 9번째 탭과 선반 폭(760 → 860, 택틱 시안). 택틱 워크플로 T5와 함께 정한다.
-- 대장의 `열림` 0건 확인, 충돌 문서 갱신 누락 점검(대장 "갱신" 근거 칸 전수), 죽은 코드(옛 Section 5, 범위 카드, `_DeckEditor` 등) 제거.
+- 대장의 `열림` 0건 확인, 충돌 문서 갱신 누락 점검(대장 "갱신" 근거 칸 전수), 죽은 코드(옛 Section 5, 범위 카드, `_DeckEditor`, 런타임 사용처 없는 `SectionTemplateSurface`·`AttachedSectionTemplateSurface`(FD-174) 등) 제거.
 - 전체 회귀 + Windows Release + 사용자 최종 둘러보기(artboard 지도 57장 전수).
 - `frontend-section-direction-and-user-flows.md`의 탭별 "사용자 검수 포인트"를 결정문으로 바꾼다(그 문서 §13 규칙). [@section-direction]
 
@@ -391,3 +391,4 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-06(밤): FE1-a 워커 종료(코드 15파일 + 토큰 테스트, gate 미실행). 오케스트레이터 검토: 값 동일 교체 확인, `theme.dart`·`app_shell.dart`·`plan_section_layout.dart`에 기존 미커밋 변경이 있어 index 전용 패치와 커밋 도우미를 `debug/frontend_fe1a_commit_20261006/`에 만들었다. golden 기준선이 없어 FE1-g(기준선 + fe_gate)를 FE1-b 앞에 넣었다. 다음 행동: 사용자 커밋 도우미 실행 → FE1-g.
 - 2026-10-06(밤 2): FE1-g 완료(golden 17장, fe_gate GREEN `20261006_222432`). 검증 명령을 `fe_gate.ps1`로 바꿨다(AGENTS.md, frontend/README.md; 루트 README.md는 C 이전 미커밋 변경이 있어 그 정리 때 같이 고친다). FE1-a·FE1-g 코드와 개편 문서는 아직 미커밋 — `commit-fe1a.ps1 -CommitRedesignDocs -IncludeFE1g -GateSummary …`로 FE1-b 전에 커밋한다. 다음 행동: FE1-b.
 - 2026-10-06(밤 3): FE1-g `1ac37eeb`, 개편 문서 `180f5551`, FE0-base `36702c28`(기존 미커밋 타이포·계획 자원 아이콘·시나리오 비교 작업을 원래 내용대로, 사용자 승인), FE1-a `54ed8086`, FE1-b `d5f87b7b`(gate `20261006_231705` GREEN, 419 + golden 17) 커밋. push 안 함. `fe_commit.ps1`을 3-way 병합 + snapshot/optional_added/post_dir/inspect, ASCII 전용으로 개정. 다음 행동: FE1-c SectionSurface(시각 변경, golden 갱신).
+- 2026-10-06(밤 4): FE1-c `99583757`(공용 `SectionSurface`, golden 6장 갱신). 워크플로 문서 커밋 `b91c30ff`. FE1 완료. FD-174(섹션 선택 표시 유지) 확정. 다음 행동: FE2-a 행·스크롤(동작 보존, golden diff 0).
