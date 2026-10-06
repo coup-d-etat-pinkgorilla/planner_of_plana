@@ -7,6 +7,7 @@ import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scenario_service.dart';
 import '../models/planning_models.dart';
+import '../models/planning_resource_assets.dart';
 import '../studio/plan_studio_layout.dart';
 import 'animated_section_stack.dart';
 import 'ba_triangle_background.dart';
@@ -1542,19 +1543,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     return result;
   }
 
-  String _resourceIcon(String? itemId, String category) {
-    if (itemId == null || category == 'credits') return planCreditIconAsset;
-    final folder = switch (category) {
-      'oopart' || 'workbook' => 'ooparts',
-      'tactical_bd' => 'tactical_bd',
-      'tech_notes' => 'skill_db',
-      'equipment' => 'equipment',
-      _ => null,
-    };
-    return folder == null
-        ? planCreditIconAsset
-        : 'assets/item_icons/$folder/$itemId.png';
-  }
+  String _resourceIcon(String? itemId, String category) =>
+      planningResourceIconAsset(category: category, itemId: itemId) ??
+      planPrimaryBottleneckIconAsset;
 
   PlanConsumptionResourcePreview _consumptionResource(
     Map<String, dynamic> raw,
@@ -3431,6 +3422,7 @@ class _PlanScenarioComparisonSectionState
   _PlanComparisonTarget? _targetB;
   PlanningScenarioComparisonResult? _comparison;
   bool _working = false;
+  Map<String, StudentCatalogEntry> _comparisonStudents = {};
 
   PlanningScenarioRepositoryService get _repository =>
       widget.service as PlanningScenarioRepositoryService;
@@ -3448,8 +3440,15 @@ class _PlanScenarioComparisonSectionState
       final result = await _repository.listScenarios(
         widget.repositoryState.profileId,
       );
+      final service = widget.service;
+      final students = service is AppService
+          ? await service.listStudents()
+          : <StudentCatalogEntry>[];
       if (!mounted) return;
       setState(() {
+        _comparisonStudents = {
+          for (final student in students) student.studentId: student,
+        };
         _list = result;
         _error = null;
         _selectedIds.removeWhere(
@@ -3570,7 +3569,7 @@ class _PlanScenarioComparisonSectionState
             child: CustomPaint(
               key: const ValueKey('plan-scenario-comparison-foundation'),
               size: size,
-              painter: _PlanScenarioListSectionPainter(path),
+              painter: _ComparisonFoundationPainter(path),
             ),
           ),
           Positioned.fromRect(
@@ -3594,7 +3593,7 @@ class _PlanScenarioComparisonSectionState
         final header = planScenarioComparisonSafeRect(
           size,
           top: 12,
-          bottom: 62 + errorHeight,
+          bottom: 92 + errorHeight,
           inset: 16,
         );
         final footer = planScenarioComparisonRailBandRect(
@@ -3622,11 +3621,14 @@ class _PlanScenarioComparisonSectionState
                       children: [
                         const Icon(Icons.compare_arrows_rounded),
                         const SizedBox(width: 10),
-                        Text(
-                          '시나리오 비교',
-                          style: Theme.of(context).textTheme.titleLarge,
+                        Expanded(
+                          child: Text(
+                            '시나리오 비교',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
                         ),
-                        const Spacer(),
                         Text('${_selectedIds.length}/2 선택'),
                         const SizedBox(width: 12),
                         IconButton(
@@ -3637,6 +3639,12 @@ class _PlanScenarioComparisonSectionState
                         ),
                       ],
                     ),
+                  ),
+                  const Text(
+                    '먼저 선택한 계획은 A, 다음은 B로 비교합니다.',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                   ),
                   if (_error case final error?)
                     Text(
@@ -3652,7 +3660,15 @@ class _PlanScenarioComparisonSectionState
             Positioned.fromRect(
               rect: body,
               child: list == null
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(
+                      child: _error == null
+                          ? const CircularProgressIndicator()
+                          : TextButton.icon(
+                              onPressed: _load,
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('다시 불러오기'),
+                            ),
+                    )
                   : _ComparisonCandidateDiagonalList(
                       key: const ValueKey('plan-scenario-compare-candidates'),
                       cards: [
@@ -3661,6 +3677,10 @@ class _PlanScenarioComparisonSectionState
                             'plan-compare-candidate-active-plan',
                           ),
                           label: '활성 계획',
+                          studentIds: widget.activePlan.stages
+                              .map((stage) => stage.studentId)
+                              .toSet()
+                              .toList(),
                           detail:
                               '페이즈 ${widget.activePlan.phases.length} · 성장 단계 ${widget.activePlan.stages.length}',
                           selectedIndex: _selectedIds.indexOf('active-plan'),
@@ -3672,6 +3692,7 @@ class _PlanScenarioComparisonSectionState
                               'plan-compare-candidate-${scenario.id}',
                             ),
                             label: scenario.name,
+                            studentIds: scenario.studentIds,
                             detail:
                                 '학생 ${scenario.studentCount} · 페이즈 ${scenario.phaseCount} · 성장 단계 ${scenario.stageCount}',
                             stale:
@@ -3733,7 +3754,7 @@ class _PlanScenarioComparisonSectionState
           final header = planScenarioComparisonSafeRect(
             size,
             top: 10,
-            bottom: stale ? 76 : 58,
+            bottom: 58 + (stale ? 20 : 0) + (_error == null ? 0 : 20),
             inset: 16,
           );
           final tabs = planScenarioComparisonRailBandRect(
@@ -3793,6 +3814,12 @@ class _PlanScenarioComparisonSectionState
                         ],
                       ),
                     ),
+                    if (_error != null)
+                      const Text(
+                        '작업을 완료하지 못했습니다. 다시 시도해 주세요.',
+                        key: ValueKey('plan-scenario-comparison-action-error'),
+                        style: TextStyle(color: AppColors.danger, fontSize: 12),
+                      ),
                     if (stale)
                       const Text(
                         '오래된 시나리오가 포함되어 있습니다. 현재 학생·인벤토리 데이터로 다시 계산한 결과입니다.',
@@ -3811,6 +3838,12 @@ class _PlanScenarioComparisonSectionState
                   child: ClipPath(
                     clipper: const PlanScenarioParallelogramClipper(),
                     child: const TabBar(
+                      labelColor: Color(0xfff2b3ef),
+                      unselectedLabelColor: AppColors.textMuted,
+                      indicatorColor: Color(0xfff2b3ef),
+                      dividerColor: Colors.transparent,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      labelStyle: TextStyle(fontWeight: FontWeight.w700),
                       tabs: [
                         Tab(text: '전체 결과'),
                         Tab(text: '학생 목표'),
@@ -3837,17 +3870,11 @@ class _PlanScenarioComparisonSectionState
                         result: result,
                       ),
                     ),
-                    _ComparisonSideBySide(
-                      left: _ComparisonStudentPane(
-                        side: 'a',
-                        target: targetA,
-                        comparison: result.comparison,
-                      ),
-                      right: _ComparisonStudentPane(
-                        side: 'b',
-                        target: targetB,
-                        comparison: result.comparison,
-                      ),
+                    _ComparisonStudentWorkspace(
+                      targetA: targetA,
+                      targetB: targetB,
+                      comparison: result.comparison,
+                      students: _comparisonStudents,
                     ),
                     _ComparisonSideBySide(
                       left: _ComparisonResourcePane(
@@ -3951,6 +3978,21 @@ class _PlanScenarioComparisonSectionState
   }
 }
 
+class _ComparisonFoundationPainter extends CustomPainter {
+  const _ComparisonFoundationPainter(this.path);
+  final Path path;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    paintLiftedPathShadow(canvas, path, defaultLiftedSectionShadow);
+    PlanPhaseContainerPainter(path).paint(canvas, size);
+  }
+
+  @override
+  bool shouldRepaint(_ComparisonFoundationPainter oldDelegate) =>
+      oldDelegate.path != path;
+}
+
 class _ComparisonCandidateCard extends StatelessWidget {
   const _ComparisonCandidateCard({
     super.key,
@@ -3959,6 +4001,7 @@ class _ComparisonCandidateCard extends StatelessWidget {
     required this.selectedIndex,
     required this.onTap,
     this.stale = false,
+    this.studentIds = const [],
   });
 
   final String label;
@@ -3966,10 +4009,14 @@ class _ComparisonCandidateCard extends StatelessWidget {
   final int selectedIndex;
   final VoidCallback onTap;
   final bool stale;
+  final List<String> studentIds;
 
   @override
   Widget build(BuildContext context) => CustomPaint(
-    painter: _PlanScenarioListCardPainter(selectedIndex >= 0),
+    painter: _PlanScenarioListCardPainter(
+      selectedIndex >= 0,
+      accent: selectedIndex == 1 ? const Color(0xfff2b3ef) : AppColors.primary,
+    ),
     child: ClipPath(
       clipper: const PlanScenarioParallelogramClipper(),
       child: Material(
@@ -3980,24 +4027,36 @@ class _ComparisonCandidateCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 15,
-                  backgroundColor: selectedIndex >= 0
-                      ? AppColors.primary
-                      : Colors.white12,
-                  child: Text(selectedIndex < 0 ? '–' : '${selectedIndex + 1}'),
+                _ComparisonBadge(
+                  side: selectedIndex < 0
+                      ? '–'
+                      : selectedIndex == 0
+                      ? 'A'
+                      : 'B',
                 ),
+                if (studentIds.isNotEmpty) ...[
+                  const SizedBox(width: 12),
+                  _ScenarioStudentPortraits(
+                    scenarioId: label,
+                    studentIds: studentIds.take(3).toList(),
+                  ),
+                ],
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
                       Text(
                         detail,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -4033,7 +4092,7 @@ class _ComparisonCandidateDiagonalList extends StatefulWidget {
 class _ComparisonCandidateDiagonalListState
     extends State<_ComparisonCandidateDiagonalList> {
   static const _inset = 8.0;
-  static const _rowHeight = 72.0;
+  static const _rowHeight = 88.0;
   static const _rowGap = 10.0;
   final ScrollController _controller = ScrollController();
 
@@ -4138,12 +4197,12 @@ class _ComparisonPaneShell extends StatelessWidget {
       final header = planScenarioComparisonSafeRect(
         size,
         top: 12,
-        bottom: 44,
+        bottom: 48,
         inset: 14,
       );
       final listBand = planScenarioComparisonRailBandRect(
         size,
-        top: 50,
+        top: 58,
         bottom: size.height - 12,
         inset: 12,
       );
@@ -4158,11 +4217,25 @@ class _ComparisonPaneShell extends StatelessWidget {
                 rect: header,
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium,
+                  child: Row(
+                    children: [
+                      if (keyPrefix != 'plan-comparison-students')
+                        _ComparisonBadge(
+                          side: keyPrefix.startsWith('plan-comparison-a-')
+                              ? 'A'
+                              : 'B',
+                        ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -4338,21 +4411,81 @@ class _ComparisonSummaryPane extends StatelessWidget {
       title: target.name,
       entries: [
         _ComparisonPaneEntry(
-          104,
+          174,
           Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('크레딧 ${comparison['credits_$side'] ?? 0}'),
-              Text('필요 재화 ${comparison['resource_type_count_$side'] ?? 0}종'),
-              Text(
-                '부족 재화 ${comparison['known_shortage_type_count_$side'] ?? 0}종',
+              const Text(
+                '총 필요 크레딧',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 12),
               ),
-              const Divider(height: 12),
-              Text('페이즈 ${phases.length}개'),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Image.asset(planCreditIconAsset, width: 32, height: 32),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _comparisonAmount(comparison['credits_$side'] ?? 0),
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.text,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              _ComparisonDelta(
+                value:
+                    (comparison['credits_$side'] as num? ?? 0) -
+                    (comparison['credits_${side == 'a' ? 'b' : 'a'}'] as num? ??
+                        0),
+                other: side == 'a' ? 'B' : 'A',
+              ),
+              const Divider(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ComparisonMetric(
+                      label: '필요 재화',
+                      value: '${comparison['resource_type_count_$side'] ?? 0}종',
+                    ),
+                  ),
+                  Expanded(
+                    child: _ComparisonMetric(
+                      label: '확인된 부족',
+                      value:
+                          '${comparison['known_shortage_type_count_$side'] ?? 0}종',
+                      color: AppColors.warning,
+                    ),
+                  ),
+                  Expanded(
+                    child: _ComparisonMetric(
+                      label: '페이즈',
+                      value: '${phases.length}개',
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
+        if (_comparisonRows(
+          comparison['resources'],
+        ).any((row) => row['owned'] == null))
+          const _ComparisonPaneEntry(
+            52,
+            Text(
+              '일부 재고 미확인 · 부족량 계산에서 제외',
+              style: TextStyle(color: AppColors.warning, fontSize: 12),
+            ),
+          ),
         for (var index = 0; index < phases.length; index++)
           _ComparisonPaneEntry(
             64,
@@ -4379,58 +4512,145 @@ class _ComparisonSummaryPane extends StatelessWidget {
   }
 }
 
-class _ComparisonStudentPane extends StatelessWidget {
-  const _ComparisonStudentPane({
-    required this.side,
-    required this.target,
+class _ComparisonStudentWorkspace extends StatelessWidget {
+  const _ComparisonStudentWorkspace({
+    required this.targetA,
+    required this.targetB,
     required this.comparison,
+    required this.students,
   });
-  final String side;
-  final _PlanComparisonTarget target;
+  final _PlanComparisonTarget targetA;
+  final _PlanComparisonTarget targetB;
   final Map<String, dynamic> comparison;
+  final Map<String, StudentCatalogEntry> students;
 
   @override
   Widget build(BuildContext context) {
     final rows = _comparisonRows(comparison['students']);
-    return _ComparisonPaneShell(
-      keyPrefix: 'plan-comparison-$side-students',
-      title: target.name,
-      entries: [
-        for (final row in rows)
-          _ComparisonPaneEntry(
-            76,
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                backgroundImage: AssetImage(
-                  'assets/student_portraits/${row['student_id']}.png',
+    final finalA = {
+      for (final stage in targetA.document.stages)
+        stage.studentId: stage.targets,
+    };
+    final finalB = {
+      for (final stage in targetB.document.stages)
+        stage.studentId: stage.targets,
+    };
+    final entries = <_ComparisonPaneEntry>[];
+    for (var index = 0; index < rows.length; index++) {
+      final row = rows[index];
+      final id = row['student_id']?.toString() ?? '';
+      final name = students[id]?.displayName ?? id;
+      final differences = Map<String, dynamic>.from(
+        row['target_differences'] as Map? ?? const {},
+      );
+      entries.add(
+        _ComparisonPaneEntry(
+          44,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
-              title: Text(row['student_id']?.toString() ?? '학생'),
-              subtitle: Text(
-                [
-                  for (final entry in Map<String, dynamic>.from(
-                    row['target_differences'] as Map? ?? const {},
-                  ).entries)
-                    '${entry.key}: ${Map<String, dynamic>.from(entry.value as Map)[side] ?? '–'}',
-                ].join(' · '),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              Text(
+                differences.isEmpty
+                    ? '최종 목표 동일'
+                    : '다른 목표 ${differences.length}개',
+                style: const TextStyle(color: AppColors.primary, fontSize: 12),
               ),
+            ],
+          ),
+        ),
+      );
+      for (final side in ['a', 'b']) {
+        final values = (side == 'a' ? finalA : finalB)[id];
+        final target = side == 'a' ? targetA : targetB;
+        entries.add(
+          _ComparisonPaneEntry(
+            100,
+            Row(
+              children: [
+                Tooltip(
+                  message: target.name,
+                  child: _ComparisonBadge(side: side.toUpperCase()),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: values == null
+                      ? Text(
+                          '${target.name} · 이 계획에 포함되지 않음',
+                          style: const TextStyle(color: AppColors.textMuted),
+                        )
+                      : DiagonalMediaListItem(
+                          key: ValueKey('plan-comparison-$side-student-$id'),
+                          currentStudentState: true,
+                          data: _comparisonStudentData(
+                            index + 1,
+                            id,
+                            name,
+                            values,
+                            students[id],
+                          ),
+                        ),
+                ),
+              ],
             ),
           ),
-        if (rows.isEmpty)
-          const _ComparisonPaneEntry(
-            52,
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('학생 최종 목표가 같습니다.'),
-            ),
-          ),
-      ],
+        );
+      }
+    }
+    return _ComparisonPaneShell(
+      keyPrefix: 'plan-comparison-students',
+      title: '학생별 최종 목표 · A / B',
+      entries: entries.isEmpty
+          ? const [_ComparisonPaneEntry(52, Text('비교할 학생 목표가 없습니다.'))]
+          : entries,
     );
   }
+}
+
+DiagonalMediaListItemData _comparisonStudentData(
+  int order,
+  String id,
+  String name,
+  Map<String, int> values,
+  StudentCatalogEntry? student,
+) {
+  String value(String key) => values[key]?.toString() ?? '-';
+  return DiagonalMediaListItemData(
+    order: order,
+    mediaAssetPath: 'assets/student_portraits/$id.png',
+    title: name,
+    studentStars: values['student_star'] ?? 0,
+    weaponStars: values['weapon_star'] ?? 0,
+    studentLevel: DiagonalMediaValue('Lv.${value('level')}'),
+    weaponLevel: DiagonalMediaValue('Lv.${value('weapon_level')}'),
+    skills: DiagonalMediaValue(
+      ['ex_skill', 'skill1', 'skill2', 'skill3'].map(value).join('/'),
+    ),
+    equipment: [
+      for (var slot = 1; slot <= 3; slot++)
+        DiagonalMediaEquipment(
+          assetPath:
+              'assets/item_icons/equipment/Equipment_Icon_${switch (slot) {
+                1 => student?.equipmentSlot1 ?? 'Hat',
+                2 => student?.equipmentSlot2 ?? 'Hairpin',
+                _ => student?.equipmentSlot3 ?? 'Watch',
+              }}_Tier${math.max(1, values['equip${slot}_tier'] ?? 1)}.png',
+          tier: DiagonalMediaValue('T${value('equip${slot}_tier')}'),
+          level: DiagonalMediaValue('Lv.${value('equip${slot}_level')}'),
+        ),
+    ],
+    favoriteItem: DiagonalMediaValue('T${value('equip4_tier')}'),
+    bondRank: DiagonalMediaValue(value('bond_rank')),
+    stats: DiagonalMediaValue(
+      ['stat_hp', 'stat_atk', 'stat_heal'].map(value).join('/'),
+    ),
+  );
 }
 
 class _ComparisonResourcePane extends StatelessWidget {
@@ -4444,35 +4664,57 @@ class _ComparisonResourcePane extends StatelessWidget {
   final Map<String, dynamic> comparison;
 
   @override
-  Widget build(BuildContext context) {
-    final rows = _comparisonRows(comparison['resources']);
-    return _ComparisonPaneShell(
-      keyPrefix: 'plan-comparison-$side-resources',
-      title: target.name,
-      entries: [
-        for (final row in rows)
-          _ComparisonPaneEntry(
-            64,
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.inventory_2_outlined),
-              title: Text(row['display_name']?.toString() ?? '재화'),
-              subtitle: Text(
-                '필요 ${row['required_$side'] ?? 0} · 보유 ${row['owned'] ?? '미확인'} · 부족 ${row['shortage_$side'] ?? '미확인'}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+  Widget build(BuildContext context) => _ComparisonPaneShell(
+    keyPrefix: 'plan-comparison-$side-resources',
+    title: target.name,
+    entries: [
+      for (final row in _comparisonRows(comparison['resources']))
+        _ComparisonPaneEntry(
+          164,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _ComparisonResourceTitle(row: row),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ComparisonMetric(
+                      label: '필요',
+                      value: _comparisonAmount(row['required_$side'] ?? 0),
+                    ),
+                  ),
+                  Expanded(
+                    child: _ComparisonMetric(
+                      label: '보유',
+                      value: _comparisonAmount(row['owned']),
+                    ),
+                  ),
+                  Expanded(
+                    child: _ComparisonMetric(
+                      label: '부족',
+                      value: _comparisonAmount(row['shortage_$side']),
+                      color: row['shortage_$side'] == 0
+                          ? AppColors.success
+                          : AppColors.warning,
+                    ),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 6),
+              _ComparisonDelta(
+                value:
+                    (row['required_$side'] as num? ?? 0) -
+                    (row['required_${side == 'a' ? 'b' : 'a'}'] as num? ?? 0),
+                other: side == 'a' ? 'B' : 'A',
+              ),
+            ],
           ),
-        if (rows.isEmpty)
-          const _ComparisonPaneEntry(
-            52,
-            Align(alignment: Alignment.centerLeft, child: Text('필요 재화가 없습니다.')),
-          ),
-      ],
-    );
-  }
+        ),
+      if (_comparisonRows(comparison['resources']).isEmpty)
+        const _ComparisonPaneEntry(52, Text('필요 재화가 없습니다.')),
+    ],
+  );
 }
 
 class _ComparisonBottleneckPane extends StatelessWidget {
@@ -4487,36 +4729,190 @@ class _ComparisonBottleneckPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rows = _comparisonRows(
-      comparison['bottlenecks'],
-    ).where((row) => (row['shortage_$side'] as int? ?? 0) > 0).toList();
+    // Keep the union in the same order on both sides, even where one has no bottleneck.
+    final rows = _comparisonRows(comparison['bottlenecks']);
+    final resources = {
+      for (final row in _comparisonRows(comparison['resources']))
+        row['resource_key']: row,
+    };
     return _ComparisonPaneShell(
       keyPrefix: 'plan-comparison-$side-bottlenecks',
       title: target.name,
       entries: [
         for (final row in rows)
           _ComparisonPaneEntry(
-            64,
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.warning_amber_rounded),
-              title: Text(row['resource_key']?.toString() ?? '재화'),
-              subtitle: Text(
-                '최초 페이즈 ${row['first_phase_$side'] ?? '–'} · 부족 ${row['shortage_$side'] ?? 0}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+            154,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _ComparisonResourceTitle(
+                  row: resources[row['resource_key']] ?? row,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  (row['shortage_$side'] as num? ?? 0) > 0
+                      ? '최초 부족 · 페이즈 ${row['first_phase_$side'] ?? '–'}'
+                      : '확인된 병목 없음',
+                  style: TextStyle(
+                    color: (row['shortage_$side'] as num? ?? 0) > 0
+                        ? AppColors.warning
+                        : AppColors.success,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '발생 시점 부족량  ${_comparisonAmount(row['shortage_$side'] ?? 0)}',
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
           ),
-        if (rows.isEmpty)
+        if (rows.isEmpty) const _ComparisonPaneEntry(52, Text('확인된 병목이 없습니다.')),
+        if (_comparisonRows(
+          comparison['resources'],
+        ).any((row) => row['owned'] == null))
           const _ComparisonPaneEntry(
             52,
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('확인된 병목이 없습니다.'),
+            Text(
+              '미확인 재고의 병목은 판단할 수 없습니다.',
+              style: TextStyle(color: AppColors.warning, fontSize: 12),
             ),
           ),
+      ],
+    );
+  }
+}
+
+String _comparisonAmount(Object? value) {
+  if (value == null) return '미확인';
+  return value.toString().replaceAllMapped(
+    RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+    (match) => '${match[1]},',
+  );
+}
+
+class _ComparisonBadge extends StatelessWidget {
+  const _ComparisonBadge({required this.side});
+  final String side;
+  @override
+  Widget build(BuildContext context) {
+    final color = side == 'A'
+        ? AppColors.primary
+        : side == 'B'
+        ? const Color(0xfff2b3ef)
+        : AppColors.textMuted;
+    return Container(
+      width: 30,
+      height: 30,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        border: Border.all(color: color.withValues(alpha: 0.7)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        side,
+        style: TextStyle(color: color, fontWeight: FontWeight.w800),
+      ),
+    );
+  }
+}
+
+class _ComparisonMetric extends StatelessWidget {
+  const _ComparisonMetric({
+    required this.label,
+    required this.value,
+    this.color = AppColors.text,
+  });
+  final String label;
+  final String value;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+      ),
+      Tooltip(
+        message: value,
+        child: Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: color,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+class _ComparisonDelta extends StatelessWidget {
+  const _ComparisonDelta({required this.value, required this.other});
+  final num value;
+  final String other;
+  @override
+  Widget build(BuildContext context) => Text(
+    value == 0
+        ? '$other 대비 동일'
+        : '$other 대비 ${value > 0 ? '+' : ''}${_comparisonAmount(value)}',
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    style: TextStyle(
+      fontSize: 12,
+      color: value == 0
+          ? AppColors.textMuted
+          : value > 0
+          ? AppColors.warning
+          : AppColors.primary,
+    ),
+  );
+}
+
+class _ComparisonResourceTitle extends StatelessWidget {
+  const _ComparisonResourceTitle({required this.row});
+  final Map<String, dynamic> row;
+  @override
+  Widget build(BuildContext context) {
+    final asset = planningResourceIconAsset(
+      category: row['category']?.toString() ?? '',
+      itemId: row['item_id']?.toString(),
+    );
+    return Row(
+      children: [
+        if (asset != null)
+          Image.asset(
+            asset,
+            width: 72,
+            height: 72,
+            errorBuilder: (_, _, _) =>
+                const Icon(Icons.inventory_2_outlined, size: 72),
+          )
+        else
+          const Icon(
+            Icons.inventory_2_outlined,
+            size: 72,
+            color: AppColors.primary,
+          ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            row['display_name']?.toString() ??
+                row['resource_key']?.toString() ??
+                '재화',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
       ],
     );
   }
@@ -4787,20 +5183,11 @@ class PlanScenarioListCard extends StatelessWidget {
     return '크레딧 ${_compactAmount(calculation.credits)} · $shortage · $bottleneck';
   }
 
-  String? _shortageIconAsset(PlanningScenarioRepresentativeShortage shortage) {
-    final itemId = shortage.itemId;
-    if (itemId == null || shortage.category == 'credits') {
-      return shortage.category == 'credits' ? planCreditIconAsset : null;
-    }
-    final folder = switch (shortage.category) {
-      'oopart' || 'workbook' => 'ooparts',
-      'tactical_bd' => 'tactical_bd',
-      'tech_notes' => 'skill_db',
-      'equipment' => 'equipment',
-      _ => null,
-    };
-    return folder == null ? null : 'assets/item_icons/$folder/$itemId.png';
-  }
+  String? _shortageIconAsset(PlanningScenarioRepresentativeShortage shortage) =>
+      planningResourceIconAsset(
+        category: shortage.category,
+        itemId: shortage.itemId,
+      );
 
   @override
   Widget build(BuildContext context) => CustomPaint(
@@ -5098,8 +5485,12 @@ class PlanScenarioParallelogramClipper extends CustomClipper<Path> {
 }
 
 class _PlanScenarioListCardPainter extends CustomPainter {
-  const _PlanScenarioListCardPainter(this.selected);
+  const _PlanScenarioListCardPainter(
+    this.selected, {
+    this.accent = AppColors.primary,
+  });
   final bool selected;
+  final Color accent;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -5108,15 +5499,13 @@ class _PlanScenarioListCardPainter extends CustomPainter {
       path,
       Paint()
         ..color = selected
-            ? AppColors.primary.withValues(alpha: 0.22)
+            ? accent.withValues(alpha: 0.22)
             : const Color(0xd9264359),
     );
     canvas.drawPath(
       path,
       Paint()
-        ..color = selected
-            ? AppColors.primary
-            : AppColors.outline.withValues(alpha: 0.58)
+        ..color = selected ? accent : AppColors.outline.withValues(alpha: 0.58)
         ..style = PaintingStyle.stroke
         ..strokeWidth = selected ? 1.5 : 0.8,
     );
@@ -5124,7 +5513,7 @@ class _PlanScenarioListCardPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PlanScenarioListCardPainter oldDelegate) =>
-      oldDelegate.selected != selected;
+      oldDelegate.selected != selected || oldDelegate.accent != accent;
 }
 
 const _planResourceHeaderTexture = BATriangleTextureConfig(

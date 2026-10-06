@@ -62,6 +62,7 @@ flutter:
     - assets/home_menu/
     - assets/equipment_icons/
     - assets/item_backgrounds/
+    - assets/item_icons/activity_reports/
     - assets/item_icons/currency/
     - assets/item_icons/equipment/
     - assets/item_icons/ooparts/
@@ -78,6 +79,21 @@ flutter:
     - assets/student_catalog.json
 
   fonts:
+    # 본문·데이터·라벨용. 네 굵기를 실제 파일로 등록해야 w500~w700 요청이
+    # 서로 다른 글자로 그려진다. 등록된 굵기가 하나뿐이면 Flutter는 가장 가까운
+    # face로 폴백하므로 코드에 쓴 굵기 위계가 화면에 나타나지 않는다.
+    # Pretendard, SIL Open Font License 1.1 (assets/fonts/Pretendard-OFL.txt).
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Pretendard-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Pretendard-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Pretendard-Bold.otf
+          weight: 700
+    # 제목 전용. 20px 미만 본문에는 사용하지 않는다.
     - family: GyeonggiTitle
       fonts:
         - asset: assets/fonts/GyeonggiTitle-Medium.ttf

@@ -99,7 +99,7 @@ class _AppShellState extends State<AppShell>
   var _profileGeneration = 0;
   late bool _studentTabActive;
   late bool _planTabActive;
-  ScanCompanionState? _scanCompanion;
+  final ValueNotifier<ScanCompanionState?> _scanCompanion = ValueNotifier(null);
 
   @override
   void initState() {
@@ -139,6 +139,7 @@ class _AppShellState extends State<AppShell>
     _profileLoadGeneration += 1;
     widget.service.state.removeListener(_handleConnectionChanged);
     _homeEntranceController.dispose();
+    _scanCompanion.dispose();
     super.dispose();
   }
 
@@ -378,7 +379,7 @@ class _AppShellState extends State<AppShell>
                                   },
                                   onCompanionChanged: (companion) {
                                     if (!mounted) return;
-                                    setState(() => _scanCompanion = companion);
+                                    _scanCompanion.value = companion;
                                   },
                                 ),
                                 SettingsPage(
@@ -453,8 +454,12 @@ class _AppShellState extends State<AppShell>
               },
             ),
           ),
-          if (_scanCompanion != null)
-            Positioned.fill(child: ScanCompanionDock(state: _scanCompanion!)),
+          ValueListenableBuilder<ScanCompanionState?>(
+            valueListenable: _scanCompanion,
+            builder: (context, companion, child) => companion == null
+                ? const SizedBox.shrink()
+                : Positioned.fill(child: ScanCompanionDock(state: companion)),
+          ),
         ],
       ),
     );
@@ -593,35 +598,138 @@ class _CompoundPageHeader extends StatelessWidget {
   }
 }
 
-class _TopTabs extends StatelessWidget {
+/// 탭 폭은 라벨이 결정한다.
+///
+/// 이전 구현은 탭마다 픽셀 폭을 상수로 박아 두었다(`홈` 80, `인벤토리` 112 …).
+/// 그 값은 특정 서체·특정 글자 크기에서만 맞는 값이라, 서체를 바꾸거나 Windows
+/// 문자 배율을 올리면 라벨이 말줄임으로 잘렸다. 이제는 내용이 폭을 정하고,
+/// 짧은 라벨만 최소 폭으로 받쳐 준다.
+const _topTabMinWidth = 76.0;
+const _topTabGap = 2.0;
+
+class _TopTabs extends StatefulWidget {
   const _TopTabs({required this.selected, required this.onSelected});
 
   final AppSection selected;
   final ValueChanged<AppSection> onSelected;
 
   @override
+  State<_TopTabs> createState() => _TopTabsState();
+}
+
+class _TopTabsState extends State<_TopTabs> {
+  final _controller = ScrollController();
+  var _overflowStart = false;
+  var _overflowEnd = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_syncOverflow);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncOverflow());
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_syncOverflow);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// 탭이 잘려 나갔는지 여부. 잘림을 표시하지 않으면 좁은 창에서 `설정` 탭이
+  /// 아무 신호 없이 사라진다.
+  void _syncOverflow() {
+    if (!mounted || !_controller.hasClients) return;
+    final position = _controller.position;
+    final start = position.pixels > position.minScrollExtent + 0.5;
+    final end = position.pixels < position.maxScrollExtent - 0.5;
+    if (start == _overflowStart && end == _overflowEnd) return;
+    setState(() {
+      _overflowStart = start;
+      _overflowEnd = end;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final selected = widget.selected;
     final visibleSelection =
         selected == AppSection.adaptiveSync ||
             selected == AppSection.sectionTemplateStudio
         ? AppSection.settings
         : selected;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _syncOverflow());
+        return false;
+      },
+      child: Stack(
         children: [
-          for (final section in AppSection.primary)
-            _TopTab(
-              section: section,
-              selected: section == visibleSelection,
-              onTap: () => onSelected(section),
+          SingleChildScrollView(
+            controller: _controller,
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final section in AppSection.primary)
+                  _TopTab(
+                    section: section,
+                    selected: section == visibleSelection,
+                    onTap: () => widget.onSelected(section),
+                  ),
+              ],
+            ),
+          ),
+          if (_overflowStart)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: const _TopTabEdgeFade(
+                key: ValueKey('top-tabs-overflow-start'),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
+          if (_overflowEnd)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: const _TopTabEdgeFade(
+                key: ValueKey('top-tabs-overflow-end'),
+                alignment: Alignment.centerRight,
+              ),
             ),
         ],
       ),
     );
   }
+}
+
+class _TopTabEdgeFade extends StatelessWidget {
+  const _TopTabEdgeFade({super.key, required this.alignment});
+
+  final Alignment alignment;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    child: Container(
+      width: 24,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: alignment,
+          end: alignment == Alignment.centerLeft
+              ? Alignment.centerRight
+              : Alignment.centerLeft,
+          colors: [
+            AppColors.navigation,
+            AppColors.navigation.withValues(alpha: 0),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _TopTab extends StatelessWidget {
@@ -640,10 +748,10 @@ class _TopTab extends StatelessWidget {
     return Semantics(
       selected: selected,
       button: true,
-      child: SizedBox(
-        width: _topTabWidth(section),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: _topTabMinWidth),
         child: Padding(
-          padding: const EdgeInsets.only(right: 2),
+          padding: const EdgeInsets.only(right: _topTabGap),
           child: Material(
             key: ValueKey('top-tab-${section.name}'),
             color: Colors.transparent,
@@ -669,6 +777,7 @@ class _TopTab extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
@@ -679,20 +788,20 @@ class _TopTab extends StatelessWidget {
                             : AppColors.textMuted,
                       ),
                       const SizedBox(width: 7),
-                      Flexible(
-                        child: Text(
-                          section.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: selected
-                                ? AppColors.text
-                                : AppColors.textMuted,
-                            fontSize: 13,
-                            fontWeight: selected
-                                ? FontWeight.w800
-                                : FontWeight.w600,
-                          ),
+                      Text(
+                        section.label,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: AppType.body.copyWith(
+                          color: selected
+                              ? AppColors.text
+                              : AppColors.textMuted,
+                          // 선택 표시는 밑줄·배경·색이 이미 하고 있다. 굵기까지
+                          // 최대로 올리면 선택되지 않은 탭도 상대적으로 굵어
+                          // 보여서 위계가 흐려진다.
+                          fontWeight: selected
+                              ? AppType.bold
+                              : AppType.medium,
                         ),
                       ),
                     ],
@@ -706,19 +815,6 @@ class _TopTab extends StatelessWidget {
     );
   }
 }
-
-double _topTabWidth(AppSection section) => switch (section) {
-  AppSection.home => 80,
-  AppSection.students => 100,
-  AppSection.plan => 84,
-  AppSection.inventory => 112,
-  AppSection.pvp => 112,
-  AppSection.statistics => 84,
-  AppSection.scan => 84,
-  AppSection.settings ||
-  AppSection.adaptiveSync ||
-  AppSection.sectionTemplateStudio => 84,
-};
 
 class _AppHeader extends StatelessWidget {
   const _AppHeader({
@@ -762,24 +858,20 @@ class _AppHeader extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 21,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: AppType.headline,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Text(
                         subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppType.bodySmall.copyWith(
                           color: section == AppSection.home
                               ? AppColors.primary
                               : AppColors.textMuted,
-                          fontSize: 12,
                           fontWeight: section == AppSection.home
-                              ? FontWeight.w700
-                              : FontWeight.w400,
+                              ? AppType.semiBold
+                              : AppType.regular,
                         ),
                       ),
                     ],
@@ -851,13 +943,11 @@ class _HeaderMetric extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+          style: AppType.caption.copyWith(color: AppColors.textMuted),
         ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-        ),
+        const SizedBox(height: 2),
+        // 지표 숫자는 탭을 오갈 때 자리가 흔들리지 않도록 tabular figures를 쓴다.
+        Text(value, style: AppType.tabular(AppType.title)),
       ],
     );
   }
@@ -892,10 +982,9 @@ class _ConnectionBadge extends StatelessWidget {
             const SizedBox(width: 7),
             Text(
               label,
-              style: TextStyle(
+              style: AppType.bodySmall.copyWith(
                 color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+                fontWeight: AppType.semiBold,
               ),
             ),
           ],
