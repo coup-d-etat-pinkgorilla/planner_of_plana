@@ -15,7 +15,10 @@ import 'dart:convert';
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/services/mock_student_fixture.dart';
+import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scenario_service.dart';
+import 'package:ba_planner_v7/ui/models/active_plan_bond_target.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/widgets/asset_image_grid.dart';
 import 'package:ba_planner_v7/ui/widgets/student_grid_warmup.dart';
@@ -240,6 +243,163 @@ class GoldenMockAppService extends MockAppService {
         createdAt: fixedTimestamp,
         updatedAt: fixedTimestamp,
       ),
+    );
+  }
+}
+
+/// 학생 장면 전용 mock(FE3-b). 계획 장면은 [GoldenMockAppService]를 그대로 쓴다.
+///
+/// 학생 7명(bundled catalog의 실제 학생·초상)으로 golden이 카드·배지·이름·인연 게이지 상태를
+/// 모두 보게 한다. `MockAppService` 기본값은 바꾸지 않는다.
+/// - 아루: 보유, 계획 없음, 인연 목표 없음(첫 학생 = 기본 선택, `students-grid` S3)
+/// - 아야네: 보유 + PLAN, 인연 목표 두 단계 30 → 45(마지막 45 사용, 현재 24, `students-detail` S3)
+/// - 호시노: 보유, 긴 이름(말줄임), 인연 목표 20 ≤ 현재 30이라 목표 표시 없음
+/// - 슌(수영복): 미보유 + PLAN + JP(배지 3개 쌓기), 인연 목표 20
+/// - 히나: 보유 + PLAN(배지 1개, 첫 칸)
+/// - 세리카: 미보유(UNOWNED, 흐린 이름)
+/// - 케이: 보유, 복합장갑 칩
+class GoldenStudentMockAppService extends GoldenMockAppService
+    implements ActivePlanDocumentSource {
+  GoldenStudentMockAppService() : super();
+
+  static const studentIds = <String>[
+    'aru',
+    'ayane',
+    'hoshino',
+    'shun_swimsuit',
+    'hina',
+    'serika',
+    'kei',
+  ];
+  static const ownedStudentIds = <String>[
+    'aru',
+    'ayane',
+    'hoshino',
+    'hina',
+    'kei',
+  ];
+  static const plannedStudentIds = <String>['ayane', 'shun_swimsuit', 'hina'];
+  static const longNameStudentId = 'hoshino';
+  static const longDisplayName = '호시노(카드 하단 변보다 긴 이름은 말줄임으로 줄어듭니다)';
+
+  /// `students-detail`에서 고르는 학생과 그 화면의 →N 문구.
+  static const bondTargetStudentId = 'ayane';
+  static const bondTargetLabel = '→45';
+
+  List<StudentCatalogEntry>? _goldenCatalog;
+
+  @override
+  Future<List<StudentCatalogEntry>> listStudents() async {
+    final cached = _goldenCatalog;
+    if (cached != null) return cached;
+    final full = MockAppService(fullStudentCatalog: true);
+    try {
+      final byId = {
+        for (final student in await full.listStudents())
+          student.studentId: student,
+      };
+      return _goldenCatalog = List.unmodifiable([
+        for (final id in studentIds)
+          id == longNameStudentId
+              ? _withDisplayName(byId[id]!, longDisplayName)
+              : byId[id]!,
+      ]);
+    } finally {
+      await full.dispose();
+    }
+  }
+
+  static StudentCatalogEntry _withDisplayName(
+    StudentCatalogEntry source,
+    String displayName,
+  ) => StudentCatalogEntry(
+    studentId: source.studentId,
+    displayName: displayName,
+    templateName: source.templateName,
+    group: source.group,
+    variant: source.variant,
+    school: source.school,
+    rarity: source.rarity,
+    attackType: source.attackType,
+    defenseType: source.defenseType,
+    combatClass: source.combatClass,
+    role: source.role,
+    position: source.position,
+    equipmentSlot1: source.equipmentSlot1,
+    equipmentSlot2: source.equipmentSlot2,
+    equipmentSlot3: source.equipmentSlot3,
+    jpOnly: source.jpOnly,
+    searchTags: source.searchTags,
+    krSearchTags: source.krSearchTags,
+  );
+
+  /// 보유 학생(mock 고정 값)과 계획 학생(goals v1)을 선택 계정에 저장한다. 화면을 열기 전에 부른다.
+  Future<void> seedStudentScene() async {
+    final profile = (await listProfiles()).firstWhere((item) => item.selected);
+    final valuesById = {
+      for (final wire in buildMockOwnedStudents())
+        wire['student_id'] as String: Map<String, dynamic>.from(
+          wire['values'] as Map,
+        ),
+    };
+    var revision = (await loadRepositoryState(profile.id)).revision;
+    revision = await saveRepositoryStudents(
+      profile.id,
+      [
+        for (final id in ownedStudentIds)
+          ConfirmedStudentState.fromValues(
+            id,
+            valuesById[id] ?? valuesById['aru']!,
+          ),
+      ],
+      revision,
+      'golden-student-scene-students',
+    );
+    await saveRepositoryGoals(
+      profile.id,
+      {
+        'version': 1,
+        'goals': [
+          for (final id in plannedStudentIds) {'student_id': id},
+        ],
+      },
+      revision,
+      'golden-student-scene-goals',
+    );
+  }
+
+  @override
+  Future<PlanningDocument?> loadActivePlanDocument(String profileId) async {
+    PlanningDocumentStage stage(String id, String studentId, int bondRank) =>
+        PlanningDocumentStage(
+          id: id,
+          studentId: studentId,
+          name: '목표',
+          targets: {
+            for (final key in planningDocumentTargetMaximums.keys) key: 0,
+            'bond_rank': bondRank,
+          },
+        );
+    return PlanningDocument(
+      id: 'golden-active-plan',
+      name: '활성 계획',
+      kind: PlanningDocumentKind.plan,
+      phases: [
+        PlanningDocumentPhase(
+          id: 'golden-phase-1',
+          name: '페이즈 1',
+          stages: [
+            stage('golden-ayane-1', 'ayane', 30),
+            stage('golden-hoshino-1', 'hoshino', 20),
+            stage('golden-shun-1', 'shun_swimsuit', 20),
+          ],
+        ),
+        PlanningDocumentPhase(
+          id: 'golden-phase-2',
+          name: '페이즈 2',
+          stages: [stage('golden-ayane-2', 'ayane', 45)],
+        ),
+      ],
     );
   }
 }

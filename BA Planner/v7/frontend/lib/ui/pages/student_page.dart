@@ -6,7 +6,8 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
-import 'planning_page.dart';
+import '../models/active_plan_bond_target.dart';
+import '../models/planning_models.dart';
 import '../widgets/diagonal_section.dart';
 import '../widgets/student_grid_warmup.dart';
 import '../widgets/student_range_condition_section.dart';
@@ -48,6 +49,9 @@ class _StudentPageState extends State<StudentPage> {
   final Map<String, TextEditingController> _editors = {};
   List<StudentCatalogEntry> _catalog = const [];
   RepositoryState? _repositoryState;
+
+  /// 인연 목표(→N)를 읽는 활성 계획 문서(FD-049). FB-1 전에는 대개 null이다.
+  PlanningDocument? _activePlan;
   RepositoryProfile? _profile;
   String? _selectedId;
   String? _message;
@@ -152,6 +156,10 @@ class _StudentPageState extends State<StudentPage> {
     if (repository == null) return;
     try {
       final state = await repository.loadRepositoryState(profile.id);
+      final activePlan = await loadStudentActivePlanDocument(
+        widget.service,
+        profile.id,
+      );
       if (!mounted) return;
       final known = _catalog.map((student) => student.studentId).toSet();
       final fallback = state.students
@@ -160,6 +168,7 @@ class _StudentPageState extends State<StudentPage> {
       setState(() {
         _profile = profile;
         _repositoryState = state;
+        _activePlan = activePlan;
         _catalog = [..._catalog, ...fallback];
         _selectedId ??= _catalog.isEmpty ? null : _catalog.first.studentId;
         _message = null;
@@ -340,6 +349,10 @@ class _StudentPageState extends State<StudentPage> {
                       (_repositoryState?.goals ?? const <RepositoryGoalState>[])
                           .map((goal) => goal.studentId)
                           .toSet(),
+                  selectedBondTarget: activePlanBondTarget(
+                    _activePlan,
+                    _selectedId,
+                  ),
                   active: widget.active,
                   searchController: _search,
                   onSearchChanged: (_) => setState(() {}),

@@ -6,7 +6,9 @@ import '../../services/app_service.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/diagonal_scrollbar.dart';
 import '../kit/game_assets.dart';
+import '../kit/hatch.dart';
 import '../kit/skew_box.dart';
+import '../models/active_plan_bond_target.dart';
 import '../studio/section_template.dart';
 import '../studio/student_studio_layout.dart';
 import 'animated_section_stack.dart';
@@ -965,6 +967,7 @@ class StudentSectionLayout extends StatefulWidget {
     required this.selectedValues,
     this.studentValuesById = const {},
     this.plannedIds = const {},
+    this.selectedBondTarget,
     required this.searchController,
     required this.onSearchChanged,
     required this.onStudentSelected,
@@ -984,6 +987,9 @@ class StudentSectionLayout extends StatefulWidget {
   final Map<String, dynamic>? selectedValues;
   final Map<String, Map<String, dynamic>> studentValuesById;
   final Set<String> plannedIds;
+
+  /// 선택 학생의 활성 계획 인연 목표(FD-049). 없으면 null. 보일지는 게이지가 정한다(FD-050).
+  final int? selectedBondTarget;
   final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onStudentSelected;
@@ -1464,6 +1470,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                       canvasSize: size,
                       student: selectedStudent,
                       values: widget.selectedValues,
+                      bondTarget: widget.selectedBondTarget,
                     ),
                   ],
                 ),
@@ -1971,11 +1978,13 @@ class _StudentStatusIndicators extends StatelessWidget {
     required this.canvasSize,
     required this.student,
     required this.values,
+    this.bondTarget,
   });
 
   final Size canvasSize;
   final StudentCatalogEntry? student;
   final Map<String, dynamic>? values;
+  final int? bondTarget;
 
   int? _integer(String key) => values?[key] as int?;
   String? _text(String key) => values?[key] as String?;
@@ -2141,8 +2150,12 @@ class _StudentStatusIndicators extends StatelessWidget {
         ),
         _containerWithPath(
           'container-10',
-          (outerPath) =>
-              StudentBondStatus(bondRank: bondRank, outerPath: outerPath),
+          (outerPath) => StudentBondStatus(
+            bondRank: bondRank,
+            outerPath: outerPath,
+            targetRank: bondTarget,
+            solidFill: true,
+          ),
         ),
       ],
     );
@@ -3113,6 +3126,11 @@ class _StudentSwordPainter extends CustomPainter {
   bool shouldRepaint(_StudentSwordPainter oldDelegate) => false;
 }
 
+/// 인연 랭크 삼각형 게이지(학생 S3 container-10, 계획 요소 초상 옆).
+///
+/// [targetRank]가 있으면 W-Bond-Variants B안(FE3-b, FD-049~051)처럼 그린다: 현재 랭크 채움은
+/// 그대로(rank/100), 현재 위 목표까지는 빗금, 목표 높이에 점선, 점선 위 오른쪽에 `→N`.
+/// 목표가 없거나 현재 이하이면 목표 표시를 하지 않는다([studentBondVisibleTarget]).
 class StudentBondStatus extends StatelessWidget {
   const StudentBondStatus({
     super.key,
@@ -3120,12 +3138,21 @@ class StudentBondStatus extends StatelessWidget {
     required this.outerPath,
     this.inverted = false,
     this.fillFromBottom = true,
+    this.targetRank,
+    this.solidFill = false,
   });
 
   final int? bondRank;
   final Path outerPath;
   final bool inverted;
   final bool fillFromBottom;
+
+  /// 활성 계획 문서의 인연 목표(FD-049). 그대로 넘기고, 보일지는 위젯이 정한다.
+  final int? targetRank;
+
+  /// B안의 현재 채움(불투명 #e9b0ee). false면 이전 채움(@.78)이다. 학생 S3는 true,
+  /// 계획 요소 초상(inverted)은 계획 화면을 B안으로 바꾸는 slice까지 false다.
+  final bool solidFill;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -3136,6 +3163,19 @@ class StudentBondStatus extends StatelessWidget {
         outerPath: outerPath,
         inverted: inverted,
       );
+      final target = studentBondVisibleTarget(
+        current: bondRank,
+        target: targetRank,
+      );
+      final targetLine = target == null
+          ? null
+          : studentBondTargetLine(
+              size,
+              outerPath,
+              target,
+              inverted: inverted,
+              fillFromBottom: fillFromBottom,
+            );
       return Stack(
         children: [
           CustomPaint(
@@ -3146,8 +3186,23 @@ class StudentBondStatus extends StatelessWidget {
               outerPath: outerPath,
               inverted: inverted,
               fillFromBottom: fillFromBottom,
+              target: target,
+              solidFill: solidFill,
             ),
           ),
+          if (target != null && targetLine != null)
+            Positioned(
+              key: const ValueKey('student-detail-bond-target'),
+              right:
+                  size.width - targetLine.right + studentBondTargetLabelInset,
+              bottom:
+                  size.height - targetLine.y + studentBondTargetLabelGap - 2,
+              child: Text(
+                studentBondTargetLabel(target),
+                maxLines: 1,
+                style: studentBondTargetLabelStyle,
+              ),
+            ),
           Positioned.fromRect(
             rect: rankRect,
             child: FittedBox(
@@ -3169,6 +3224,57 @@ class StudentBondStatus extends StatelessWidget {
       );
     },
   );
+}
+
+// --- 인연 목표 겹침(B안) ------------------------------------------------------
+// 시안 W-Bond-Variants B · W-Student-Detail: 빗금 pattern 6×6 rotate(−35°), 바탕
+// rgba(233,176,238,.16) + 폭 2.4 줄 .55. 점선 #e9b0ee 1.6, dash 3 2, 바깥 삼각형 왼쪽 변에서
+// 오른쪽 끝까지. `→N`은 경기천년제목 10 w800 #e9b0ee, 오른쪽 끝 − 3에 오른쪽 정렬, 점선 5 위가 글자 바닥.
+
+const studentBondTargetHatchStyle = HatchStyle(
+  background: Color.fromRGBO(233, 176, 238, 0.16),
+  line: Color.fromRGBO(233, 176, 238, 0.55),
+  lineWidth: 2.4,
+  spacing: 6,
+  angleDegrees: -35,
+);
+const studentBondTargetLineColor = studentSortAccentColor;
+const studentBondTargetLineWidth = 1.6;
+const studentBondTargetDash = 3.0;
+const studentBondTargetDashGap = 2.0;
+const studentBondTargetLabelInset = 3.0;
+const studentBondTargetLabelGap = 5.0;
+const studentBondTargetLabelStyle = TextStyle(
+  color: studentSortAccentColor,
+  fontFamily: 'GyeonggiTitle',
+  fontSize: 10,
+  fontWeight: FontWeight.w800,
+  height: 1,
+);
+
+String studentBondTargetLabel(int target) => '→$target';
+
+/// 목표 높이의 점선 위치: y와 바깥 삼각형의 그 높이 가로 범위.
+({double y, double left, double right}) studentBondTargetLine(
+  Size size,
+  Path outerPath,
+  int target, {
+  bool inverted = false,
+  bool fillFromBottom = true,
+}) {
+  final bounds = studentBondGaugeHostPath(
+    size,
+    outerPath,
+    inverted: inverted,
+  ).getBounds();
+  final edge = studentBondGaugeFillRect(
+    bounds,
+    target / 100,
+    fillFromBottom: fillFromBottom,
+  );
+  final y = fillFromBottom ? edge.top : edge.bottom;
+  final span = _studentPathHorizontalSpan(outerPath, y);
+  return (y: y, left: span.left, right: span.right);
 }
 
 List<Offset> studentBondOuterTrianglePoints(Size size) {
@@ -3311,12 +3417,18 @@ class _StudentTriangleBondGaugePainter extends CustomPainter {
     required this.outerPath,
     required this.inverted,
     required this.fillFromBottom,
+    this.target,
+    this.solidFill = false,
   });
 
   final int? rank;
   final Path outerPath;
   final bool inverted;
   final bool fillFromBottom;
+
+  /// 보이는 목표([studentBondVisibleTarget] 결과). null이면 목표 표시 없음.
+  final int? target;
+  final bool solidFill;
 
   void _drawInsetPath(
     Canvas canvas,
@@ -3357,6 +3469,23 @@ class _StudentTriangleBondGaugePainter extends CustomPainter {
       const Color(0xff111f2c).withValues(alpha: 0.94),
       inset + 0.5,
     );
+    final target = this.target;
+    if (target != null) {
+      // 목표까지 빗금. 현재 채움이 그 위를 덮으므로 현재 ~ 목표 구간만 남는다.
+      canvas.save();
+      canvas.clipRect(
+        studentBondGaugeFillRect(
+          bounds,
+          target / 100,
+          fillFromBottom: fillFromBottom,
+        ),
+      );
+      canvas.saveLayer(Offset.zero & size, Paint());
+      paintHatch(canvas, gauge, style: studentBondTargetHatchStyle);
+      _clearInsetBorder(canvas, gauge, inset + 0.5);
+      canvas.restore();
+      canvas.restore();
+    }
     final progress = ((rank ?? 0) / 100).clamp(0.0, 1.0);
     if (progress > 0) {
       canvas.save();
@@ -3371,11 +3500,47 @@ class _StudentTriangleBondGaugePainter extends CustomPainter {
         canvas,
         size,
         gauge,
-        studentSortAccentColor.withValues(alpha: 0.78),
+        solidFill
+            ? studentSortAccentColor
+            : studentSortAccentColor.withValues(alpha: 0.78),
         inset + 0.5,
       );
       canvas.restore();
     }
+    if (target != null) {
+      final line = studentBondTargetLine(
+        size,
+        outerPath,
+        target,
+        inverted: inverted,
+        fillFromBottom: fillFromBottom,
+      );
+      final paint = Paint()
+        ..color = studentBondTargetLineColor
+        ..strokeWidth = studentBondTargetLineWidth;
+      for (
+        var x = line.left;
+        x < line.right;
+        x += studentBondTargetDash + studentBondTargetDashGap
+      ) {
+        canvas.drawLine(
+          Offset(x, line.y),
+          Offset(math.min(line.right, x + studentBondTargetDash), line.y),
+          paint,
+        );
+      }
+    }
+  }
+
+  void _clearInsetBorder(Canvas canvas, Path path, double inset) {
+    canvas.drawPath(
+      path,
+      Paint()
+        ..blendMode = BlendMode.clear
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = inset * 2
+        ..strokeJoin = StrokeJoin.round,
+    );
   }
 
   @override
@@ -3383,7 +3548,9 @@ class _StudentTriangleBondGaugePainter extends CustomPainter {
       oldDelegate.rank != rank ||
       oldDelegate.outerPath != outerPath ||
       oldDelegate.inverted != inverted ||
-      oldDelegate.fillFromBottom != fillFromBottom;
+      oldDelegate.fillFromBottom != fillFromBottom ||
+      oldDelegate.target != target ||
+      oldDelegate.solidFill != solidFill;
 }
 
 Rect studentBondGaugeFillRect(

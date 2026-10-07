@@ -20,13 +20,13 @@ sources:
 
 ## 현재 상태
 
-**FE2-d 완료. FE2(공통 위젯 키트·UI Kit 갤러리) 완료.** 결과(오케스트레이터 로그 2026-10-07 11:17, 아래 FE2-d commit record):
-- gate `debug/frontend_gate/20261007_111210` GREEN. 내역은 flutter-test-1 295, flutter-test-2 218, 프로세스 테스트 28, golden 17 차이 0이다(합계 541 = 516 + 25).
-- 커밋 `1f65b64a`(FE2-d), 개편 문서 커밋 `e130110d`.
-- 남은 일: 사용자 UI Kit 갤러리 시각 검수. 지적 사항은 해당 위젯을 처음 쓰는 화면 slice에서 고친다.
+**FE3-a 완료.** 결과(오케스트레이터 로그 2026-10-07 12:05·12:17, 아래 FE3-a commit record):
+- gate ① RED: golden 3장(students-grid, students-detail, plan-student-selector)만 실패. 워커 예상(바뀔 3장 / 같아야 할 14장)과 일치했다. 오케스트레이터 검토 승인 → `-UpdateGoldens` → gate `20261007_121200` GREEN(golden 17).
+- 커밋 `620a98ee`(FE3-a), 개편 문서 커밋 `fdf0097e`.
+- 오케스트레이터 지적(12:05): students-detail PNG가 students-grid와 바이트까지 같고, 학생 fixture가 2명(둘 다 보유·배지 1개)이라 배지 쌓기·미보유 흐림·이름 줄 접힘을 golden이 보지 않는다 → FE3-b에서 보강한다.
 
-**진행 중: FE3-a DE 카드·그리드(시각 변경), 시작 커밋 `e130110d7b71f6c1bff729396274cbe387e5cdf0`.**
-- 자세한 내용은 아래 "FE3-a" 절에 적는다. 코드 작성 완료, 사용자 ① gate(golden만 RED 예상) 대기.
+**진행 중: FE3-b 인연 B 게이지 + 학생 golden 장면 보강(시각 변경), 시작 커밋 `fdf0097e5345b9e88c9bb3d1c187cf951dafe93c`.**
+- 자세한 내용은 아래 "FE3-b" 절에 적는다. 코드 작성 완료, 사용자 ① gate(바뀐 장면·새 장면만 RED 예상) 대기.
 
 ### 커밋 기록
 
@@ -41,6 +41,7 @@ sources:
 | FE2-b | `859c554a` | 소형 컨트롤·제목 키트(칩·단계 태그·세그먼트·토글 칩·타입 칩·필터 버튼·스위치·미세 조절·tonal·레일 버튼·제목 4종), 요소 빌더 스테퍼 추출(동작 보존), 갤러리 FE2-b 구역 | `20261007_090015` GREEN(301 + 155 + 프로세스 28 + golden 17) |
 | FE2-c | `bb1e3478` | 오버레이 키트(`InfoPopover`·`AnchoredFlyout`+프리셋·FD-090 부족 재화 2종·`BaModal` 스크림 4종), 갤러리 FE2-c 구역 | `20261007_102114` GREEN(294 + 194 + 프로세스 28 + golden 17) |
 | FE2-d | `1f65b64a` | 이미지·차트 원자 키트(`ItemIconTile`·`ItemTile`·`PortraitStrip`·`SkewBar`·`KpiTile`·차트 원자·빗금·`GameAssets`), `PlanInventoryCoverageBar`를 `SkewBar`로 흡수, 계획 위젯 asset 상수 → `GameAssets`(동작 보존), 갤러리 FE2-d 구역 | `20261007_111210` GREEN(295 + 218 + 프로세스 28 + golden 17) |
+| FE3-a | `620a98ee` | DE 학생 카드·그리드: 오른쪽 위 속성 글자 칩(축약 라벨, 80° 계단), 이름 카드 밖(미보유 흐림), 배지 왼쪽 80° 변 채워 쌓기, 행 피치 카드 + 이름 줄, 복합장갑 `typeComposite`, golden 3장 갱신(시각 변경) | ① RED(golden 3, 예상 일치) → `20261007_121200` GREEN(golden 17) |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -1470,3 +1471,173 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice re
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_121200\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: almanac/design/section-template-studio.md
+
+## FE3-b 착수 기록 (2026-10-07)
+
+- 범위 A: 워크플로 FE3-b 행 그대로. 학생 S3 인디케이터의 인연 게이지를 W-Bond-Variants B안으로 바꾼다. 현재 랭크 채움(rank/100 그대로, FD-051)에 목표 구간 빗금·목표 높이 점선·`→N`을 겹친다. 목표는 활성 계획 문서에서 그 학생 단계 목표의 `bond_rank`다(FD-003, FD-049). 단계가 여러 개면 마지막 단계를 쓰고, 목표가 없거나 현재 이하이면 목표 표시를 하지 않는다(FD-050). 목표 조회는 얇은 함수 한 곳으로 모은다(FB-1 때 교체). 백엔드·프로토콜은 바꾸지 않는다.
+- 범위 B: 학생 golden 장면 보강(오케스트레이터 12:05). golden harness·fixture 쪽만 고친다(MockAppService 기본값 유지). 미보유, PLAN·JP 배지 2개 이상, 긴 이름, 인연 목표 있음·없음 학생을 넣고, `students-detail`이 선택 학생 S3 상세를 실제로 보이게 찍는다. 계획 장면(plan-*) fixture는 건드리지 않는다.
+- 범위 밖: S4 확장(FE3-c), 필터 모달(FE3-d), 계산기(FE3-f).
+- 시작 커밋: `fdf0097e5345b9e88c9bb3d1c187cf951dafe93c`.
+- 막힘: 대장 막힘 요약에서 FE3-b를 막는 열림 FD 없음.
+- 시각 변경 slice: golden 갱신은 오케스트레이터 검토 뒤 사용자가 `fe_gate.ps1 -UpdateGoldens`로 한다. golden PNG를 직접 만들거나 지우지 않는다.
+- 사본: 고칠 기존 파일마다 착수 전 사본을 `debug/frontend_fe3b/pre/<v7 기준 경로>`에 둔다.
+- 기기 쓰기: 매번 새 업로드 경로에서 쓰고, 쓴 뒤 다시 읽어 바이트로 대조한다.
+
+## FE3-b 종료 기록 (2026-10-07, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없어 analyze·테스트·golden을 돌리지 못했다. 통과를 주장하지 않는다.
+- 쓴 API는 Flutter 3.44.0 소스와 대조했다.
+- 별도 검토 에이전트가 바뀐 파일을 사본과 대조해 정적으로 읽었다.
+  - 컴파일 오류·analyze 지적은 없었다.
+  - 테스트 1곳이 실행하면 실패할 것을 찾아 고쳤다: `Paint.strokeWidth`는 32비트라 `== 1.6` 비교가 늘 거짓이다 → 오차 1e-4로 비교한다.
+  - 계획 요소 초상(목표 없음·`solidFill: false`)의 위젯 트리와 canvas 호출 순서가 이전과 같음을 확인했다.
+- 시안 값은 W-Bond-Variants B안과 W-Student-Detail의 SVG 원문에서 읽었다(pattern `hat56`, clipPath 높이, line·text 속성).
+
+### 범위 A: 인연 B 게이지
+
+- **`frontend/lib/ui/widgets/student_section_layout.dart`**
+  - `StudentBondStatus`에 `targetRank`, `solidFill`을 더했다. 목표가 보이면(아래 규칙) 그리는 순서는 이렇다.
+    1. 빗금: 바닥에서 목표 높이까지, inset host 안. 키트 `paintHatch` + `studentBondTargetHatchStyle`(간격 6, 줄 2.4, −35°, 바탕 rgba(233,176,238,.16), 줄 .55).
+    2. 현재 채움: 같은 rank/100 비율(FD-051). 빗금 위를 덮어 현재 ~ 목표 구간만 빗금으로 남는다.
+    3. 점선: 목표 높이, 바깥 삼각형의 그 높이 가로 범위 전체. #e9b0ee 1.6, dash 3·gap 2.
+    4. `→N`: Text 위젯 `student-detail-bond-target`. 경기천년제목 10 w800 #e9b0ee, 오른쪽 끝 − 3에 오른쪽 정렬, 글자 상자 바닥 = 점선 3 위(글자 바닥 ≈ 5 위).
+  - 기하 함수 `studentBondTargetLine`, 상수 `studentBondTarget*`를 공개했다.
+  - B안 현재 채움은 불투명 #e9b0ee(`solidFill: true`)다. 학생 S3만 true다. 계획 요소 초상(inverted)은 기본값 false라 이전과 같다.
+  - `StudentSectionLayout.selectedBondTarget`을 `_StudentStatusIndicators`를 거쳐 S3 게이지로 넘긴다.
+- **새 파일 `frontend/lib/ui/models/active_plan_bond_target.dart`**: 목표 조회 경계를 한 곳에 모았다(FB-1 때 이 파일만 바꾼다).
+  - `ActivePlanDocumentSource`(서비스가 구현하면 활성 계획 문서를 준다)와 `loadStudentActivePlanDocument`: 구현하지 않으면 null이고, 실패해도 null이다.
+  - `activePlanBondTarget`: 그 학생의 마지막 단계 `bond_rank`(FD-050).
+  - `studentBondVisibleTarget`: 목표가 없거나 0 이하이거나 현재 이하이면 null이다. 현재를 모르면(미보유) 목표만 그린다(FD-050).
+  - goals v1(`RepositoryGoalState`)은 `target_bond_rank`를 받지 않는다. 그래서 거기서 목표를 만들지 않는다(없는 값을 현재값·0으로 채우지 않음). 지금 실제·mock 데이터에서는 목표가 없으니 "목표 없음"으로 그린다. 백엔드·프로토콜은 바꾸지 않았다.
+- **`frontend/lib/ui/pages/student_page.dart`**: 계정을 고를 때 `loadStudentActivePlanDocument`로 활성 계획 문서를 읽어 두고, 선택 학생의 목표를 `selectedBondTarget`으로 넘긴다. 이제 `PlanningStudentSeed`를 `planning_models.dart`에서 직접 가져오므로 쓰지 않게 된 `planning_page.dart` import를 지웠다(`unnecessary_import` 방지, 동작 같음).
+
+### 범위 B: 학생 golden 장면 보강
+
+- **`frontend/test/goldens/golden_harness.dart`**: 학생 장면 전용 `GoldenStudentMockAppService`(`GoldenMockAppService` 상속, `ActivePlanDocumentSource` 구현)를 더했다. `MockAppService` 기본값과 계획 장면 fixture(`GoldenMockAppService`)는 그대로다. 학생 7명은 bundled catalog의 실제 학생·초상이다.
+
+| 학생 | 상태 | golden이 보는 것 |
+|---|---|---|
+| 아루 | 보유, 계획 없음, 목표 없음, 첫 학생(기본 선택) | `students-grid` S3: B안 불투명 채움, 목표 표시 없음 |
+| 아야네 | 보유 + PLAN, 활성 계획 두 단계 30 → 45(현재 24) | `students-detail` S3: 마지막 단계 45의 빗금·점선·`→45`, S3 초상 PLAN 첫 칸 |
+| 호시노 | 보유, 긴 이름(`호시노(카드 하단 변보다 긴 이름은 말줄임으로 줄어듭니다)`), 목표 20 ≤ 현재 30 | 이름 말줄임. 목표는 숨김 대상(S3에는 안 나옴) |
+| 슌(수영복) | 미보유 + PLAN + JP, 목표 20 | 배지 3개 채워 쌓기, 미보유 암전·흐린 이름 |
+| 히나 | 보유 + PLAN | PLAN 배지 한 개가 첫 칸 |
+| 세리카 | 미보유 | UNOWNED, 흐린 이름 |
+| 케이 | 보유 | 복합장갑 칩(#7a8ea3) |
+
+- 보유·계획 상태는 장면을 열기 전에 `seedStudentScene()`이 선택 계정에 저장한다(`saveRepositoryStudents`, `saveRepositoryGoals`). 보유 값은 `buildMockOwnedStudents()` 고정 값이다(케이는 아루 값).
+- **`frontend/test/goldens/fe1g_baseline_golden_test.dart`**
+  - `students-grid`: 학생 fixture를 쓴다. 기본 선택(아루)에 목표 표시가 없음을 확인한다.
+  - `students-detail`: 아야네를 눌러 S3가 그리드와 다르게 보인다(`→45` 확인). 이전에는 이미 선택된 첫 학생을 다시 눌러 `students-grid`와 바이트까지 같았다.
+  - **새 장면 `students-grid-name-off`**: S4 "학생 이름 표시"를 끄고 찍는다(이름 줄 접힘, FD-046 (a)). `showNames == false`를 확인한다.
+  - 계획 장면(plan-*)은 고치지 않았다.
+
+### 테스트
+
+- **새 파일 `frontend/test/student_bond_gauge_test.dart`(11건)**
+  - 목표 조회 3건: 여러 단계 → 마지막 단계, 다른 학생·문서 없음 → null; 보일 목표 규칙(없음·같음·이하·초과·현재 모름·0·100 초과); `ActivePlanDocumentSource`가 없거나 실패하면 null.
+  - 그리기 6건:
+    - 목표 있음: `→30` 문구·스타일, 점선 y = 바닥 − 높이 × .3(closeTo), 점선 가로 범위 = 삼각형 그 높이 폭, 글자 rect(오른쪽 = 점선 오른쪽 − 3, 바닥 = 점선 − 3, 높이 10, closeTo), 빗금·점선 그리기.
+    - 목표 없음과 목표 ≤ 현재: →N·점선·빗금 없음.
+    - 현재 0(채움 없음)이어도 빗금을 그려 "목표 없음·0"과 구분된다.
+    - B안 불투명 채움 / 이전 .78 채움.
+    - 시안 값 상수.
+  - 학생 탭 연결 2건: StudentPage에서 활성 계획 두 단계(30 → 50) → S3 `→50`(30 없음)이고, 목표 없는 학생을 고르면 사라진다. 활성 계획을 줄 곳이 없으면 목표 없음.
+- 기존 테스트는 고치지 않았다. `StudentBondStatus`·`StudentSectionLayout` 생성자는 새 인자가 선택이라 기존 호출이 그대로 컴파일된다.
+- 예상 건수: 일반 558 + 11 = 569(프로세스 28 포함), golden 17 + 1 = 18.
+
+### 처리한 FD
+
+- **FD-003·FD-049**(확정): 목표는 활성 계획 문서의 그 학생 단계 `bond_rank`다. 조회 경계는 `active_plan_bond_target.dart` 한 곳이다. FB-1 전이라 실제·mock 데이터에는 문서가 없어 목표 없음이다.
+- **FD-050**(워커 재량): 마지막(최종) 단계 목표를 쓰고, 목표가 없거나 현재 이하이면 빗금·점선·→N을 숨긴다. inverted(계획 화면) 모드도 같은 위젯이 같은 표현을 지원한다. 다만 계획 요소 초상의 목표 연결은 이번에 하지 않았다(계획 golden 차이 0 조건, 계획 만들기 FE4 몫).
+- **FD-051**(확정): 채움 비율은 rank/100 그대로이고, 목표 빗금·점선·→N을 겹친다.
+
+### golden 갱신 사유(장면별 예상)
+
+바뀔 장면(2):
+- `students-grid`: 학생 fixture가 2명(전원 미보유)에서 7명으로 바뀌어 그리드 전체가 달라진다. 보유·미보유 섞임, 배지 1~3개 쌓기, 긴 이름 말줄임, 복합장갑 칩이 보인다. S3는 아루(보유)의 상세이고, 인연 게이지 채움이 불투명 #e9b0ee(B안)이다. 목표 표시는 없다.
+- `students-detail`: 같은 그리드에서 아야네가 선택된 상태(핑크 외곽선)다. S3는 아야네 상세이고, 인연 게이지에 현재 24 채움 + 24~45 빗금 + 45 높이 점선 + `→45`가 보인다. S3 초상 배지는 PLAN 첫 칸이다. 이제 `students-grid`와 다르다.
+
+새 장면(1, 기준 PNG 없음 → ① 비교에서 "파일 없음"으로 실패하는 것이 정상):
+- `students-grid-name-off`: `students-grid`와 같은 fixture에서 이름 줄이 접혀 행 간격이 ≈3.8로 줄어든다. 카드 아래 이름이 없고, S4 "학생 이름 표시" 체크가 꺼져 있다.
+
+차이가 없어야 할 장면(15): `title`, `account-manager`, `account-editor`, `account-picker`, `home`, `plan-bottleneck`, `plan-by-phase`, `plan-overall`, `plan-phase-editor`, `plan-student-selector`, `plan-element-builder`, `plan-preset-manager`, `plan-scenario-list`, `plan-scenario-compare`, `scan-student-review`.
+- 계획 요소 초상의 인연 게이지는 `targetRank`·`solidFill`을 넘기지 않아 이전과 같은 경로로 그린다(검토 에이전트 확인).
+- 학생 페이지가 활성 계획 문서를 읽는 일은 `GoldenMockAppService`에서 null이라 화면에 영향이 없다.
+
+### 검수표 (mock 모드, 2560×1440 모니터 최대화 = 2560×1392)
+
+mock 모드에는 활성 계획 문서가 없다(FB-1 전). 그래서 앱 화면에서는 "목표 없음" 상태만 보인다. 목표 겹침은 golden `students-detail`(② 뒤 기준 PNG)과 아래 위젯 테스트로 본다.
+
+**W-Bond-Variants B · Student S3 · W-Student-Detail 대조**
+
+| 대조 포인트 | 확인 |
+|---|---|
+| 현재 채움 | 학생 탭 S3 인연 삼각형 채움이 불투명 연핑크(#e9b0ee)다. 이전은 반투명. 비율은 rank/100 그대로(20이면 아래 20%) |
+| 목표 겹침(golden `students-detail`) | 현재 채움 위로 목표 높이까지 −35° 빗금(연핑크 줄), 목표 높이에 점선(바깥 삼각형 왼쪽 사선 ~ 오른쪽 끝), 점선 위 오른쪽에 작은 `→45` |
+| 목표 없음 | 목표가 없거나 현재 이하이면 빗금·점선·→N이 없다(mock 앱 화면 전부, golden `students-grid`) |
+| 숫자 | 랭크 숫자 43.2px, 하단 span 가운데. 이전과 같다 |
+| 계획 요소 초상 | 계획 → 학생 선택 → 요소 빌더의 인연 게이지는 이전과 같다(반투명 채움, 목표 표시 없음) |
+
+**학생 그리드 golden(② 뒤 새 기준 PNG 검토용)**: 슌(수영복) 카드 왼쪽 변 UNOWNED → PLAN → JP 3개 계단, 히나 PLAN 첫 칸, 세리카·슌 이름 흐림, 호시노 이름 말줄임(…), 케이 둘째 칩 "복합" 회청색. `students-grid-name-off`는 이름 줄이 없고 행 간격만 3.84다.
+
+### 알려진 시안 차이
+
+1. **빗금 위상**: 시안 pattern은 SVG 원점 기준 6×6 칸이다. 키트 `paintHatch`는 영역 가운데를 기준으로 돌려 줄의 시작 위치가 최대 6px 다를 수 있다(간격·각도·굵기·색은 같다).
+2. **`→N` 세로 위치**: 시안은 SVG text baseline = 점선 − 5다. 앱은 글자 상자 바닥 = 점선 − 3이다(경기천년제목 하강부 ≈ 2px 가정, ±1px).
+3. **목표가 100 가까이**: 점선이 꼭짓점 근처로 올라가면 `→N`이 container-10 위로 나가 잘릴 수 있다. 시안에는 그런 상태가 없다.
+4. **계획 요소 초상(inverted 게이지)**: 위젯은 목표 겹침을 지원하지만 이번에 연결하지 않았다(채움도 이전 반투명). 계획 만들기 slice에서 B안으로 맞춘다(FD-050).
+5. **mock 화면**: 활성 계획 문서가 없어 앱에서 →N을 볼 수 없다(FB-1 전). 테스트·golden fixture만 목표를 준다.
+
+### 미검증 항목
+
+1. analyze, 전체 테스트(기존 558 + 새 11), golden 18장(2장 갱신 + 1장 새 장면 + 15장 차이 0). 사용자 PC gate가 필요하다.
+2. 실행해 봐야 아는 것:
+   - golden fixture 저장(`seedStudentScene`)과 7명 catalog 구성.
+   - `students-detail`의 아야네 탭과 `→45` 확인.
+   - `students-grid-name-off` 토글 탭.
+   - 위젯 테스트의 `paints` 패턴(빗금·점선 drawLine).
+   - 실패하면 테스트 기대값·fixture부터 확인한다.
+3. 실제 글꼴에서 `→N` 세로 위치(시안 대비 ±1px)와 빗금 모양은 새 기준 PNG로 오케스트레이터가 본다.
+
+### 발견 사항
+
+1. 계획 화면(`plan_section_layout.dart`)은 goals v1을 메모리에서 1페이즈 문서로 바꿀 때 인연 목표가 없으면 현재값(없으면 1)을 채운다(`planningDocumentTargets`). 이 값을 학생 탭 →N의 출처로 쓰면 목표처럼 보이는 가짜 값이 생겨 쓰지 않았다. FB-1 설계 때 "목표 없음"을 문서에서 어떻게 나타낼지 정해야 한다.
+
+### 사용자 실행 순서
+
+① 비교 gate 하나만 실행한다. 바뀐 장면 2장(`students-grid`, `students-detail`)은 차이로, 새 장면 1장(`students-grid-name-off`)은 기준 PNG 없음으로 RED가 날 것으로 예상한다. 나머지 15장은 차이 0이어야 한다. 결과(`debug\frontend_gate\<실행 시각>\summary.txt`, `frontend\test\goldens\failures\`)를 오케스트레이터에게 보내고 멈춘다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+② 오케스트레이터 승인 뒤: golden을 갱신하고 비교를 다시 돌린다(GREEN). 오케스트레이터가 새 기준 PNG 3장(`frontend\test\goldens\baseline\students-*.png`)을 직접 열어 검토한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+③ 새 기준 PNG 승인 뒤: 커밋한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3b -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3b
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesign-docs
+```
+
+`debug/frontend_fe3b/commit.json`의 `whole`에 `frontend/test/goldens/baseline`을 넣었다(새 PNG `students-grid-name-off.png`도 이 폴더라 함께 들어간다). 사본은 `debug/frontend_fe3b/pre/` 5개다(`student_section_layout.dart`, `student_page.dart`, `fe1g_baseline_golden_test.dart`, `golden_harness.dart`, `student-detail-indicator-lessons-2026-08-01.md`).
+
+### 다음 행동
+
+1. 사용자: ①을 실행하고 결과를 오케스트레이터에게 넘긴다.
+2. 오케스트레이터: 차이 검토 → ② → 새 기준 PNG 검토 → ③ → 다음 slice FE3-c(S4 확장).
+
+### FE3-b commit record (2026-10-07 12:59, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_125410\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

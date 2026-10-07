@@ -33,6 +33,14 @@ Future<GoldenMockAppService> _service() async {
   return service;
 }
 
+/// 학생 장면용 mock: 학생 7명과 보유·계획 상태를 미리 저장한다.
+Future<GoldenStudentMockAppService> _studentService() async {
+  final service = GoldenStudentMockAppService();
+  addTearDown(service.dispose);
+  await service.seedStudentScene();
+  return service;
+}
+
 Future<void> _tapKey(WidgetTester tester, String key) async {
   final finder = find.byKey(ValueKey(key));
   expect(finder, findsOneWidget, reason: 'golden navigation key $key');
@@ -172,26 +180,52 @@ void main() {
     await expectGoldenScene(tester, 'home');
   }, variant: goldenPlatform);
 
+  // FE3-b: 학생 장면은 학생 7명 fixture(GoldenStudentMockAppService)를 쓴다.
+  // 미보유·배지 2~3개 쌓기·긴 이름·인연 목표 있음/없음을 golden이 직접 본다.
   testWidgets('students-grid', (tester) async {
     setGoldenViewport(tester);
-    final service = await _service();
+    final service = await _studentService();
     await _openShell(tester, service);
     await _tapKey(tester, 'top-tab-students');
     expect(find.byKey(const ValueKey('student-page')), findsOneWidget);
     expect(find.byType(StudentDiagonalGrid), findsWidgets);
+    // 기본 선택(아루)은 인연 목표가 없다.
+    expect(
+      find.byKey(const ValueKey('student-detail-bond-target')),
+      findsNothing,
+    );
     await expectGoldenScene(tester, 'students-grid');
   }, variant: goldenPlatform);
 
   testWidgets('students-detail', (tester) async {
     setGoldenViewport(tester);
-    final service = await _service();
+    final service = await _studentService();
     await _openShell(tester, service);
     await _tapKey(tester, 'top-tab-students');
+    // 그리드와 다른 상태: 인연 목표가 있는 학생(아야네, 현재 24 → 목표 45)을 고른다.
+    await _tapKey(
+      tester,
+      'student-${GoldenStudentMockAppService.bondTargetStudentId}',
+    );
+    expect(
+      find.text(GoldenStudentMockAppService.bondTargetLabel),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'students-detail');
+  }, variant: goldenPlatform);
+
+  testWidgets('students-grid-name-off', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _studentService();
+    await _openShell(tester, service);
+    await _tapKey(tester, 'top-tab-students');
+    // "학생 이름 표시"를 끄면 이름 줄을 접는다(FD-046 (a)).
+    await _tapKey(tester, 'student-toggle-name-display');
     final grid = tester.widget<StudentDiagonalGrid>(
       find.byType(StudentDiagonalGrid).first,
     );
-    await _tapKey(tester, 'student-${grid.students.first.studentId}');
-    await expectGoldenScene(tester, 'students-detail');
+    expect(grid.showNames, isFalse);
+    await expectGoldenScene(tester, 'students-grid-name-off');
   }, variant: goldenPlatform);
 
   // --- 계획 메인 -------------------------------------------------------------
