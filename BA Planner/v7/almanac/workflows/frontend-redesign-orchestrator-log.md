@@ -211,3 +211,26 @@ topics: [workflow, design]
     - S4 아래에 확장 영역이 생겼다: "표시 10 / 전체 10 · 보유 7 · 계획 중 3", 적용 필터 없음, 최근 본 학생(grid: 아루 / detail: 아야네·아루).
     - name-off는 이름 줄이 없어서 둘째 줄이 올라간다(FD-046 행 피치 축소가 처음으로 golden에 보인다).
   → 갱신 승인. 12:47 배지 글꼴 지적과 12:58 두 줄 fixture 지적이 해소됐다.
+
+## 2026-10-07 13:49 — FE3-c 커밋 확인
+
+- 커밋 `b7bbfcce`(17파일).
+  · 새 상태 객체 2개: `student_filter_controller.dart`, `recent_students.dart`.
+  · 학생 페이지·레이아웃, 배지 overlay 글꼴, app_shell 6줄(최소 diff).
+  · golden 5장, harness, 새 테스트 `student_search_section_test.dart`(549줄), 문서.
+  · 작업트리에 남긴 차이는 없다. analyze 지적은 13:38에 오케스트레이터가 고친 판으로 커밋됐다.
+- 처리 FD: 057·060·061·062. 알려진 시안 차이 6건은 허용한다. 후속으로 넘길 것은 둘이다.
+  · 차이 1(S4 필터 칩 모양: 시안 r5·padding 9·inset 테두리, BaChip은 r7·10·테두리 없음) → FE3-d에서 시안 필터 칩 모양을 확인하고 BaChip 변형으로 맞춘다.
+  · 차이 5(`+n` 칩 누르기) → FE3-d에서 필터 모달로 연결한다.
+- 워커 발견 사항(계정을 바꿔도 최근 본 학생이 남음) → **결정: 계정(프로필) 전환 때 `RecentStudents`를 비운다.** 최근 본 학생은 그 계정의 보유·육성 맥락에서 의미가 있다. FE3-d에서 연결한다. FE4-b는 같은 목록을 공유한다(FD-061).
+
+## 2026-10-07 15:09 — FE3-d1 gate RED 진단
+
+- gate `20261007_150318` RED. 결과: analyze info 2건, flutter-test-1 22건 실패. flutter-test-2 284·프로세스 28·golden 18(d1은 화면 변화 없음, 예상대로 차이 0)·almanac·diff-check는 PASS.
+- 원인 4가지(로그 150개 예외 블록을 분류했다).
+  1. **의미 구조 assertion 128회**: "A SemanticsNode with action increase needs to be annotated with either both value and increasedValue or neither". 새 RangeSliderRow·StarRangeBar의 Semantics가 increase/decrease 동작을 걸면서 value·increasedValue·decreasedValue를 함께 주지 않는다. 의미 구조가 켜지는 갤러리 테스트 16건 전부와 range_controls_test 일부가 이것 하나로 무너졌다.
+  2. **모달 배경 의미 구조 노출 1건**(ba_modal_a11y_test:130): 모달이 열려 있는데 배경의 "배경 버튼"이 의미 트리에 남는다. BlockSemantics(오버레이 쪽) 또는 배경 ExcludeSemantics가 동작하지 않는다.
+  3. **RangeSliderRow 위치 3px 1건**(range_controls_test:113): 488.3 기대, 485.3 실제. 구현과 시안 수치 중 어느 쪽이 맞는지 시안으로 확인해야 한다.
+  4. **analyze deprecated 2건**: `containsSemantics` → `isSemantics`(range_controls_test 221·344). 344행 "No Semantics data found"는 1번 assertion 때문에 의미 데이터가 만들어지지 않은 결과로 보인다.
+  - 부수: StarRangeBar 탭 테스트에서 "Looking up a deactivated widget's ancestor is unsafe"(FocusableActionDetector가 dispose된 뒤 MediaQuery를 찾음) 1건. 위젯을 해제할 때 포커스 하이라이트 콜백이 남지 않게 정리해야 한다.
+- 조치: 같은 워커 세션에 수정 지시를 보낸다(사용자 전달).
