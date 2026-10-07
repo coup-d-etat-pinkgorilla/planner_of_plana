@@ -68,6 +68,51 @@ session generation을 별도 계약으로 고정합니다.
     배포하므로(`release/`) 구버전 UI가 새 backend와 함께 돌지 않습니다. FE3-e부터 Dart는
     `forms`를 선택 key로 받습니다.
 
+### `planning.student.calculate` (FB-11a)
+
+학생 한 명의 휘발 성장 목표를 한 번에 계산합니다. 기존 `planning.student.*` 명명 규칙을
+따르며 FD-162(b)의 이름을 그대로 사용합니다. 저장된 문서 ID, 프로필 ID가 필요 없고
+저장소 쓰기나 활성 계획 변경이 없습니다. 활성 계획 수치의 원천은 계속 FD-026의
+`planning.document.calculate`입니다.
+
+| 입력 | 의미 |
+| --- | --- |
+| `current_student` | 기존 `current_students` 항목과 같은 strict currentStudent 객체 |
+| `targets` | 문서 계산과 같은 필수 19 key·정수 범위·성장 규칙. 정규화된 목표를 보내며 잘못된 조합은 `invalid_payload` |
+| `inventory` | 선택 inventorySnapshot. 생략하면 빈 재고로 계산하며 미확인 보유·부족은 `null` |
+
+| 출력 | 의미 |
+| --- | --- |
+| `totals` | `{ "credits": <보유 차감 전 합계> }` |
+| `credit_breakdown` | 아래 9범주 모두 포함. 비용이 없으면 0. 합은 `totals.credits`와 같음 |
+| `resources` | 문서 계산 `overall.resources`와 같은 행·순서(크레딧 행 포함) |
+| `warnings` | 기존 계산 코어의 문자열 경고 |
+| `bond` | FB-11b용 선택 객체로 예약. FB-11a 응답에는 없음. Dart는 객체를 보존만 하며 의미를 해석하지 않음 |
+
+범주: `level`(학생 레벨), `student_star`(성급), `weapon_star`(전무 성급),
+`favorite_item`(애장품), `equipment`(일반 장비 3칸의 티어·레벨), `ex_skill`(EX),
+`weapon_level`(전무 레벨), `skill`(일반 스킬 3개), `potential`(능력 개방 3종).
+의존 목표로 발생하는 비용도 실제 비용 범주에 들어갑니다. 범주마다 별도 정규화·재계산하지
+않고 `planning_calc`가 비용을 더하는 지점에서 한 번 집계합니다.
+
+재화 행은 `resource_key`, `item_id`, `display_name`, `category`, `required`, `owned`,
+`shortage`, `affected_stage_ids`를 갖습니다. 모르는 보유와 부족은 `null`이며 명시적인 보유
+0과 다릅니다. 미해결 재화도 문서 계산과 같은 `unresolved:` 키로 유지합니다.
+`affected_stage_ids`는 기존 임시 계산기 문서와 일치하는 `["growth-calculator-stage"]`입니다.
+이 값은 휘발 계산 출처이며 저장 ID가 아닙니다. 재고는 총 비용·범주 합에 영향을 주지 않습니다.
+
+기존 1페이즈 1단계 계산 경로를 내부에서 재사용하므로 같은 현재값·목표·재고이면
+크레딧 합계, 재화 행, 경고가 문서 계산과 같습니다. 입력 객체도 변경하지 않습니다.
+오류는 `invalid_payload` 또는 `calculation_failed`입니다. 스키마는
+`planning-student-calculate-v1.schema.json`, 공용 fixture는
+`fixtures/planning_student_calculate_v1.json`입니다.
+
+Dart 공개 호출은 `AppService.calculateStudent` 확장 메서드이며
+`PlanningStudentCalculationService` 기능 인터페이스에 위임합니다. 기존 AppService 구현자
+(프런트 위젯 테스트 대역 포함)를 깨뜨리지 않는 추가 확장입니다. ProcessAppService와
+MockAppService가 같은 DTO를 반환합니다. mock은 공용 fixture의 결정론적 서비스 대역이며
+성장 계산식을 Dart로 복제하지 않습니다.
+
 ### `planning.plan.validate`
 
 저장된 계획 형태를 역직렬화하고 검사한 뒤 wire에 사용할 canonical plan을

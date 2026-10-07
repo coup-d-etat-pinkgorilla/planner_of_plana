@@ -20,6 +20,7 @@ class ProcessAppService
     with WidgetsBindingObserver
     implements
         AppService,
+        PlanningStudentCalculationService,
         PlanningDocumentService,
         PlanningScenarioRepositoryService,
         PlanningScenarioComparisonService,
@@ -179,6 +180,19 @@ class ProcessAppService
     });
     return Map<String, dynamic>.from(payload['totals'] as Map);
   }
+
+  @override
+  Future<StudentCalculationResult> calculateStudent({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    Map<String, dynamic>? inventory,
+  }) async => StudentCalculationResult.fromWire(
+    await _client.send('planning.student.calculate', {
+      'current_student': currentStudent,
+      'targets': targets,
+      'inventory': ?inventory,
+    }),
+  );
 
   @override
   Future<Map<String, dynamic>> calculatePlanningDocument({

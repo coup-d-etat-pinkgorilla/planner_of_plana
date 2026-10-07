@@ -20,7 +20,7 @@ from core.planning import (
     MAX_TARGET_WEAPON_STAR,
     StudentGoal,
 )
-from core.planning_calc import calculate_plan_totals
+from core.planning_calc import CREDIT_CATEGORIES, calculate_plan_totals
 from core.inventory_catalog import CATALOG_REVISION, catalog_payload
 from core.plan_shortages import derive_plan_shortages
 from core.planning_document import (
@@ -35,6 +35,7 @@ from core.repository_dto import InventorySnapshot, RepositoryDTOError
 PROTOCOL_VERSION = 1
 METHOD_STUDENT_GET = "planning.student.get"
 METHOD_STUDENT_CATALOG = "planning.student.catalog"
+METHOD_STUDENT_CALCULATE = "planning.student.calculate"
 METHOD_PLAN_VALIDATE = "planning.plan.validate"
 METHOD_PLAN_CALCULATE = "planning.plan.calculate"
 METHOD_INVENTORY_CATALOG = "planning.inventory.catalog"
@@ -45,7 +46,7 @@ KNOWN_METHODS = frozenset(
     {
         METHOD_STUDENT_GET, METHOD_STUDENT_CATALOG, METHOD_PLAN_VALIDATE,
         METHOD_PLAN_CALCULATE, METHOD_INVENTORY_CATALOG, METHOD_PLAN_SHORTAGES,
-        METHOD_DOCUMENT_CALCULATE, METHOD_SCENARIO_COMPARE,
+        METHOD_DOCUMENT_CALCULATE, METHOD_SCENARIO_COMPARE, METHOD_STUDENT_CALCULATE,
     }
 )
 _ENVELOPE_KEYS = {"protocol", "id", "type", "method", "payload"}
@@ -256,6 +257,8 @@ class PlanningProtocolV1:
                 return self._student_get(request)
             if request["method"] == METHOD_STUDENT_CATALOG:
                 return self._student_catalog(request)
+            if request["method"] == METHOD_STUDENT_CALCULATE:
+                return self._student_calculate(request)
             if request["method"] == METHOD_PLAN_VALIDATE:
                 return self._plan_validate(request)
             if request["method"] == METHOD_PLAN_CALCULATE:
@@ -406,6 +409,40 @@ class PlanningProtocolV1:
                 request, "shortage_calculation_failed", "Plan shortage calculation failed"
             )
         return _success(request, result)
+
+    def _student_calculate(self, request: dict[str, Any]) -> dict[str, Any]:
+        payload = request["payload"]
+        if not {"current_student", "targets"} <= set(payload) or set(payload) - {"current_student", "targets", "inventory"}:
+            raise InvalidPayload("payload must contain current_student, targets, and optional inventory")
+        records = _current_students_from_wire([payload["current_student"]])
+        # Use exactly the existing single-stage validation, goal conversion and
+        # resource projection. These IDs are transient provenance, never saved.
+        document = planning_document_from_wire({
+            "version": 1, "document_id": "growth-calculator", "name": "성장 계산기",
+            "kind": "scenario", "phases": [{
+                "phase_id": "growth-calculator-phase", "name": "성장 계산기",
+                "stages": [{
+                    "stage_id": "growth-calculator-stage", "student_id": next(iter(records)),
+                    "name": "계산기 목표", "targets": payload["targets"],
+                }],
+            }],
+        })
+        try:
+            inventory = InventorySnapshot.from_dict(payload.get("inventory", {"version": 1, "entries": []}))
+        except RepositoryDTOError as error:
+            raise InvalidPayload(str(error)) from error
+        breakdown = dict.fromkeys(CREDIT_CATEGORIES, 0)
+        try:
+            projection = calculate_document_projection(records, document, inventory, credit_breakdown=breakdown)
+        except Exception:
+            self._diagnostic(traceback.format_exc())
+            return error_response(request, "calculation_failed", "Student growth calculation failed")
+        return _success(request, {
+            "totals": {"credits": projection["overall"]["cost"]["credits"]},
+            "credit_breakdown": breakdown,
+            "resources": projection["overall"]["resources"],
+            "warnings": projection["warnings"],
+        })
 
     def _document_calculate(self, request: dict[str, Any]) -> dict[str, Any]:
         payload = request["payload"]

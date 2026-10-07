@@ -1,0 +1,843 @@
+{
+  "protocol": 1,
+  "cases": [
+    {
+      "name": "no_growth",
+      "request": {
+        "protocol": 1,
+        "id": "no_growth",
+        "type": "request",
+        "method": "planning.student.calculate",
+        "payload": {
+          "current_student": {
+            "student_id": "ayane",
+            "level": 30,
+            "student_star": 3,
+            "weapon_state": "weapon_locked",
+            "weapon_star": 0,
+            "weapon_level": 0,
+            "ex_skill": 1,
+            "skill1": 1,
+            "skill2": 1,
+            "skill3": 1,
+            "equip1": "T1",
+            "equip2": null,
+            "equip3": null,
+            "equip4": null,
+            "equip1_level": 1,
+            "equip2_level": 0,
+            "equip3_level": 0,
+            "stat_hp": 0,
+            "stat_atk": 0,
+            "stat_heal": 0
+          },
+          "targets": {
+            "level": 30,
+            "bond_rank": 1,
+            "student_star": 3,
+            "weapon_level": 0,
+            "weapon_star": 0,
+            "ex_skill": 1,
+            "skill1": 1,
+            "skill2": 1,
+            "skill3": 1,
+            "equip1_tier": 1,
+            "equip2_tier": 0,
+            "equip3_tier": 0,
+            "equip1_level": 1,
+            "equip2_level": 0,
+            "equip3_level": 0,
+            "equip4_tier": 0,
+            "stat_hp": 0,
+            "stat_atk": 0,
+            "stat_heal": 0
+          }
+        }
+      },
+      "response": {
+        "protocol": 1,
+        "id": "no_growth",
+        "type": "response",
+        "method": "planning.student.calculate",
+        "payload": {
+          "totals": {
+            "credits": 0
+          },
+          "credit_breakdown": {
+            "level": 0,
+            "student_star": 0,
+            "weapon_star": 0,
+            "favorite_item": 0,
+            "equipment": 0,
+            "ex_skill": 0,
+            "weapon_level": 0,
+            "skill": 0,
+            "potential": 0
+          },
+          "resources": [],
+          "warnings": []
+        }
+      }
+    },
+    {
+      "name": "level_only",
+      "request": {
+        "protocol": 1,
+        "id": "level_only",
+        "type": "request",
+        "method": "planning.student.calculate",
+        "payload": {
+          "current_student": {
+            "student_id": "ayane",
+            "level": 30,
+            "student_star": 3,
+            "weapon_state": "weapon_locked",
+            "weapon_star": 0,
+            "weapon_level": 0,
+            "ex_skill": 1,
+            "skill1": 1,
+            "skill2": 1,
+            "skill3": 1,
+            "equip1": "T1",
+            "equip2": null,
+            "equip3": null,
+            "equip4": null,
+            "equip1_level": 1,
+            "equip2_level": 0,
+            "equip3_level": 0,
+            "stat_hp": 0,
+            "stat_atk": 0,
+            "stat_heal": 0
+          },
+          "targets": {
+            "level": 31,
+            "bond_rank": 1,
+            "student_star": 3,
+            "weapon_level": 0,
+            "weapon_star": 0,
+            "ex_skill": 1,
+            "skill1": 1,
+            "skill2": 1,
+            "skill3": 1,
+            "equip1_tier": 1,
+            "equip2_tier": 0,
+            "equip3_tier": 0,
+            "equip1_level": 1,
+            "equip2_level": 0,
+            "equip3_level": 0,
+            "equip4_tier": 0,
+            "stat_hp": 0,
+            "stat_atk": 0,
+            "stat_heal": 0
+          }
+        }
+      },
+      "response": {
+        "protocol": 1,
+        "id": "level_only",
+        "type": "response",
+        "method": "planning.student.calculate",
+        "payload": {
+          "totals": {
+            "credits": 6825
+          },
+          "credit_breakdown": {
+            "level": 6825,
+            "student_star": 0,
+            "weapon_star": 0,
+            "favorite_item": 0,
+            "equipment": 0,
+            "ex_skill": 0,
+            "weapon_level": 0,
+            "skill": 0,
+            "potential": 0
+          },
+          "resources": [
+            {
+              "resource_key": "credits",
+              "item_id": null,
+              "display_name": "크레딧",
+              "category": "credits",
+              "required": 6825,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_ExpItem_1",
+              "item_id": "Item_Icon_ExpItem_1",
+              "display_name": "일반 활동 보고서",
+              "category": "activity_report",
+              "required": 2,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            }
+          ],
+          "warnings": []
+        }
+      }
+    },
+    {
+      "name": "mixed_growth",
+      "request": {
+        "protocol": 1,
+        "id": "mixed_growth",
+        "type": "request",
+        "method": "planning.student.calculate",
+        "payload": {
+          "current_student": {
+            "student_id": "ayane",
+            "level": 30,
+            "student_star": 3,
+            "weapon_state": "weapon_locked",
+            "weapon_star": 0,
+            "weapon_level": 0,
+            "ex_skill": 1,
+            "skill1": 1,
+            "skill2": 1,
+            "skill3": 1,
+            "equip1": "T1",
+            "equip2": null,
+            "equip3": null,
+            "equip4": null,
+            "equip1_level": 1,
+            "equip2_level": 0,
+            "equip3_level": 0,
+            "stat_hp": 0,
+            "stat_atk": 0,
+            "stat_heal": 0
+          },
+          "targets": {
+            "level": 90,
+            "bond_rank": 20,
+            "student_star": 5,
+            "weapon_level": 40,
+            "weapon_star": 2,
+            "ex_skill": 2,
+            "skill1": 2,
+            "skill2": 3,
+            "skill3": 4,
+            "equip1_tier": 2,
+            "equip2_tier": 2,
+            "equip3_tier": 2,
+            "equip1_level": 20,
+            "equip2_level": 20,
+            "equip3_level": 20,
+            "equip4_tier": 2,
+            "stat_hp": 1,
+            "stat_atk": 1,
+            "stat_heal": 1
+          }
+        }
+      },
+      "response": {
+        "protocol": 1,
+        "id": "mixed_growth",
+        "type": "response",
+        "method": "planning.student.calculate",
+        "payload": {
+          "totals": {
+            "credits": 14000529
+          },
+          "credit_breakdown": {
+            "level": 8683465,
+            "student_star": 1200000,
+            "weapon_star": 1000000,
+            "favorite_item": 500000,
+            "equipment": 31164,
+            "ex_skill": 80000,
+            "weapon_level": 2115900,
+            "skill": 90000,
+            "potential": 300000
+          },
+          "resources": [
+            {
+              "resource_key": "credits",
+              "item_id": null,
+              "display_name": "크레딧",
+              "category": "credits",
+              "required": 14000529,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_SecretStone_ayane",
+              "item_id": "Item_Icon_SecretStone_ayane",
+              "display_name": "아야네의 엘레프",
+              "category": "student_eleph",
+              "required": 340,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_Shoes_Tier2",
+              "item_id": "Equipment_Icon_Shoes_Tier2",
+              "display_name": "어그 부츠",
+              "category": "equipment",
+              "required": 15,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_Hairpin_Tier2",
+              "item_id": "Equipment_Icon_Hairpin_Tier2",
+              "display_name": "헤어 슈슈",
+              "category": "equipment",
+              "required": 15,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_Necklace_Tier2",
+              "item_id": "Equipment_Icon_Necklace_Tier2",
+              "display_name": "눈꽃 펜던트",
+              "category": "equipment",
+              "required": 15,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_ExpItem_3",
+              "item_id": "Item_Icon_ExpItem_3",
+              "display_name": "최상급 활동 보고서",
+              "category": "activity_report",
+              "required": 124,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_ExpItem_1",
+              "item_id": "Item_Icon_ExpItem_1",
+              "display_name": "일반 활동 보고서",
+              "category": "activity_report",
+              "required": 1,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_Exp_1",
+              "item_id": "Equipment_Icon_Exp_1",
+              "display_name": "일반 강화석",
+              "category": "equipment",
+              "required": 6,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_Exp_0",
+              "item_id": "Equipment_Icon_Exp_0",
+              "display_name": "하급 강화석",
+              "category": "equipment",
+              "required": 6,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_Exp_2",
+              "item_id": "Equipment_Icon_Exp_2",
+              "display_name": "상급 강화석",
+              "category": "equipment",
+              "required": 3,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_WeaponExpGrowthA_3",
+              "item_id": "Equipment_Icon_WeaponExpGrowthA_3",
+              "display_name": "스프링 T4",
+              "category": "equipment",
+              "required": 7,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_WeaponExpGrowthA_2",
+              "item_id": "Equipment_Icon_WeaponExpGrowthA_2",
+              "display_name": "스프링 T3",
+              "category": "equipment",
+              "required": 4,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_WeaponExpGrowthA_0",
+              "item_id": "Equipment_Icon_WeaponExpGrowthA_0",
+              "display_name": "스프링 T1",
+              "category": "equipment",
+              "required": 4,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_Material_ExSkill_Abydos_0",
+              "item_id": "Item_Icon_Material_ExSkill_Abydos_0",
+              "display_name": "Abydos BD T1",
+              "category": "tactical_bd",
+              "required": 12,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_SkillBook_Abydos_0",
+              "item_id": "Item_Icon_SkillBook_Abydos_0",
+              "display_name": "Abydos Note T1",
+              "category": "tech_notes",
+              "required": 43,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_SkillBook_Abydos_1",
+              "item_id": "Item_Icon_SkillBook_Abydos_1",
+              "display_name": "Abydos Note T2",
+              "category": "tech_notes",
+              "required": 5,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_Material_Nebra_0",
+              "item_id": "Item_Icon_Material_Nebra_0",
+              "display_name": "Nebra Disk T1",
+              "category": "oopart",
+              "required": 128,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_Favor_Selection",
+              "item_id": "Item_Icon_Favor_Selection",
+              "display_name": "Item_Icon_Favor_Selection",
+              "category": "present",
+              "required": 4,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_Material_Nebra_1",
+              "item_id": "Item_Icon_Material_Nebra_1",
+              "display_name": "Nebra Disk T2",
+              "category": "oopart",
+              "required": 25,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "unresolved:Item_Icon_WorkBook_PotentialMaxHP T1",
+              "item_id": null,
+              "display_name": "Item_Icon_WorkBook_PotentialMaxHP T1",
+              "category": "unresolved",
+              "required": 6,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            }
+          ],
+          "warnings": []
+        }
+      }
+    },
+    {
+      "name": "mixed_inventory",
+      "request": {
+        "protocol": 1,
+        "id": "mixed_inventory",
+        "type": "request",
+        "method": "planning.student.calculate",
+        "payload": {
+          "current_student": {
+            "student_id": "ayane",
+            "level": 30,
+            "student_star": 3,
+            "weapon_state": "weapon_locked",
+            "weapon_star": 0,
+            "weapon_level": 0,
+            "ex_skill": 1,
+            "skill1": 1,
+            "skill2": 1,
+            "skill3": 1,
+            "equip1": "T1",
+            "equip2": null,
+            "equip3": null,
+            "equip4": null,
+            "equip1_level": 1,
+            "equip2_level": 0,
+            "equip3_level": 0,
+            "stat_hp": 0,
+            "stat_atk": 0,
+            "stat_heal": 0
+          },
+          "targets": {
+            "level": 90,
+            "bond_rank": 20,
+            "student_star": 5,
+            "weapon_level": 40,
+            "weapon_star": 2,
+            "ex_skill": 2,
+            "skill1": 2,
+            "skill2": 3,
+            "skill3": 4,
+            "equip1_tier": 2,
+            "equip2_tier": 2,
+            "equip3_tier": 2,
+            "equip1_level": 20,
+            "equip2_level": 20,
+            "equip3_level": 20,
+            "equip4_tier": 2,
+            "stat_hp": 1,
+            "stat_atk": 1,
+            "stat_heal": 1
+          },
+          "inventory": {
+            "version": 1,
+            "entries": [
+              {
+                "key": "credits",
+                "quantity": "0"
+              },
+              {
+                "key": "Item_Icon_ExpItem_3",
+                "item_id": "Item_Icon_ExpItem_3",
+                "quantity": "999999"
+              },
+              {
+                "key": "Equipment_Icon_Shoes_Tier2",
+                "item_id": "Equipment_Icon_Shoes_Tier2",
+                "quantity": null
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "protocol": 1,
+        "id": "mixed_inventory",
+        "type": "response",
+        "method": "planning.student.calculate",
+        "payload": {
+          "totals": {
+            "credits": 14000529
+          },
+          "credit_breakdown": {
+            "level": 8683465,
+            "student_star": 1200000,
+            "weapon_star": 1000000,
+            "favorite_item": 500000,
+            "equipment": 31164,
+            "ex_skill": 80000,
+            "weapon_level": 2115900,
+            "skill": 90000,
+            "potential": 300000
+          },
+          "resources": [
+            {
+              "resource_key": "credits",
+              "item_id": null,
+              "display_name": "크레딧",
+              "category": "credits",
+              "required": 14000529,
+              "owned": 0,
+              "shortage": 14000529,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_SecretStone_ayane",
+              "item_id": "Item_Icon_SecretStone_ayane",
+              "display_name": "아야네의 엘레프",
+              "category": "student_eleph",
+              "required": 340,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_Shoes_Tier2",
+              "item_id": "Equipment_Icon_Shoes_Tier2",
+              "display_name": "어그 부츠",
+              "category": "equipment",
+              "required": 15,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_Hairpin_Tier2",
+              "item_id": "Equipment_Icon_Hairpin_Tier2",
+              "display_name": "헤어 슈슈",
+              "category": "equipment",
+              "required": 15,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_Necklace_Tier2",
+              "item_id": "Equipment_Icon_Necklace_Tier2",
+              "display_name": "눈꽃 펜던트",
+              "category": "equipment",
+              "required": 15,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_ExpItem_3",
+              "item_id": "Item_Icon_ExpItem_3",
+              "display_name": "최상급 활동 보고서",
+              "category": "activity_report",
+              "required": 124,
+              "owned": 999999,
+              "shortage": 0,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_ExpItem_1",
+              "item_id": "Item_Icon_ExpItem_1",
+              "display_name": "일반 활동 보고서",
+              "category": "activity_report",
+              "required": 1,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_Exp_1",
+              "item_id": "Equipment_Icon_Exp_1",
+              "display_name": "일반 강화석",
+              "category": "equipment",
+              "required": 6,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_Exp_0",
+              "item_id": "Equipment_Icon_Exp_0",
+              "display_name": "하급 강화석",
+              "category": "equipment",
+              "required": 6,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_Exp_2",
+              "item_id": "Equipment_Icon_Exp_2",
+              "display_name": "상급 강화석",
+              "category": "equipment",
+              "required": 3,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_WeaponExpGrowthA_3",
+              "item_id": "Equipment_Icon_WeaponExpGrowthA_3",
+              "display_name": "스프링 T4",
+              "category": "equipment",
+              "required": 7,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_WeaponExpGrowthA_2",
+              "item_id": "Equipment_Icon_WeaponExpGrowthA_2",
+              "display_name": "스프링 T3",
+              "category": "equipment",
+              "required": 4,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Equipment_Icon_WeaponExpGrowthA_0",
+              "item_id": "Equipment_Icon_WeaponExpGrowthA_0",
+              "display_name": "스프링 T1",
+              "category": "equipment",
+              "required": 4,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_Material_ExSkill_Abydos_0",
+              "item_id": "Item_Icon_Material_ExSkill_Abydos_0",
+              "display_name": "Abydos BD T1",
+              "category": "tactical_bd",
+              "required": 12,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_SkillBook_Abydos_0",
+              "item_id": "Item_Icon_SkillBook_Abydos_0",
+              "display_name": "Abydos Note T1",
+              "category": "tech_notes",
+              "required": 43,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_SkillBook_Abydos_1",
+              "item_id": "Item_Icon_SkillBook_Abydos_1",
+              "display_name": "Abydos Note T2",
+              "category": "tech_notes",
+              "required": 5,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_Material_Nebra_0",
+              "item_id": "Item_Icon_Material_Nebra_0",
+              "display_name": "Nebra Disk T1",
+              "category": "oopart",
+              "required": 128,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_Favor_Selection",
+              "item_id": "Item_Icon_Favor_Selection",
+              "display_name": "Item_Icon_Favor_Selection",
+              "category": "present",
+              "required": 4,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "Item_Icon_Material_Nebra_1",
+              "item_id": "Item_Icon_Material_Nebra_1",
+              "display_name": "Nebra Disk T2",
+              "category": "oopart",
+              "required": 25,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            },
+            {
+              "resource_key": "unresolved:Item_Icon_WorkBook_PotentialMaxHP T1",
+              "item_id": null,
+              "display_name": "Item_Icon_WorkBook_PotentialMaxHP T1",
+              "category": "unresolved",
+              "required": 6,
+              "owned": null,
+              "shortage": null,
+              "affected_stage_ids": [
+                "growth-calculator-stage"
+              ]
+            }
+          ],
+          "warnings": []
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/planning-student-calculate-v1.schema.json",
+  "title": "planning.student.calculate request and success response (FB-11a)",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" }
+  ],
+  "$defs": {
+    "creditBreakdown": {
+      "type": "object",
+      "required": ["level", "student_star", "weapon_star", "favorite_item", "equipment", "ex_skill", "weapon_level", "skill", "potential"],
+      "properties": {
+        "level": { "type": "integer", "minimum": 0 },
+        "student_star": { "type": "integer", "minimum": 0 },
+        "weapon_star": { "type": "integer", "minimum": 0 },
+        "favorite_item": { "type": "integer", "minimum": 0 },
+        "equipment": { "type": "integer", "minimum": 0 },
+        "ex_skill": { "type": "integer", "minimum": 0 },
+        "weapon_level": { "type": "integer", "minimum": 0 },
+        "skill": { "type": "integer", "minimum": 0 },
+        "potential": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "resource": {
+      "type": "object",
+      "required": ["resource_key", "item_id", "display_name", "category", "required", "owned", "shortage", "affected_stage_ids"],
+      "properties": {
+        "resource_key": { "type": "string", "minLength": 1 },
+        "item_id": { "type": ["string", "null"], "minLength": 1 },
+        "display_name": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "required": { "type": "integer", "minimum": 0 },
+        "owned": { "type": ["integer", "null"], "minimum": 0 },
+        "shortage": { "type": ["integer", "null"], "minimum": 0 },
+        "affected_stage_ids": { "type": "array", "items": { "const": "growth-calculator-stage" }, "minItems": 1, "maxItems": 1 }
+      },
+      "additionalProperties": false
+    },
+    "request": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        { "properties": {
+          "protocol": { "const": 1 }, "id": { "type": "string", "minLength": 1 },
+          "type": { "const": "request" }, "method": { "const": "planning.student.calculate" },
+          "payload": {
+            "type": "object", "required": ["current_student", "targets"],
+            "properties": {
+              "current_student": { "$ref": "planning-types-v1.schema.json#/$defs/currentStudent" },
+              "targets": { "$ref": "planning-document-calculate-v1.schema.json#/$defs/targets" },
+              "inventory": { "$ref": "repository-protocol-v1.schema.json#/$defs/inventorySnapshot" }
+            },
+            "additionalProperties": false
+          }
+        } }
+      ]
+    },
+    "response": {
+      "allOf": [
+        { "$ref": "protocol-envelope-v1.schema.json" },
+        { "properties": {
+          "protocol": { "const": 1 }, "id": { "type": "string", "minLength": 1 },
+          "type": { "const": "response" }, "method": { "const": "planning.student.calculate" },
+          "payload": {
+            "type": "object", "required": ["totals", "credit_breakdown", "resources", "warnings"],
+            "properties": {
+              "totals": {
+                "type": "object", "required": ["credits"],
+                "properties": { "credits": { "type": "integer", "minimum": 0 } },
+                "additionalProperties": false
+              },
+              "credit_breakdown": { "$ref": "#/$defs/creditBreakdown" },
+              "resources": { "type": "array", "items": { "$ref": "#/$defs/resource" } },
+              "warnings": { "type": "array", "items": { "type": "string" } },
+              "bond": { "type": "object", "description": "Reserved for FB-11b. FB-11a producers omit it; consumers may preserve it without interpreting its contents." }
+            },
+            "additionalProperties": false
+          }
+        } }
+      ]
+    }
+  }
+}

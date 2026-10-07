@@ -6,6 +6,7 @@
     { "$ref": "#/$defs/unknownMethod" },
     { "$ref": "#/$defs/studentGet" },
     { "$ref": "#/$defs/studentCatalog" },
+    { "$ref": "#/$defs/studentCalculate" },
     { "$ref": "#/$defs/planValidate" },
     { "$ref": "#/$defs/planCalculate" },
     { "$ref": "#/$defs/documentCalculate" },
@@ -55,6 +56,7 @@
                 "enum": [
                   "planning.student.get",
                   "planning.student.catalog",
+                  "planning.student.calculate",
                   "planning.plan.validate",
                   "planning.plan.calculate",
                   "planning.document.calculate",
@@ -109,6 +111,17 @@
             }
           }
         }
+      ]
+    },
+    "studentCalculate": {
+      "allOf": [
+        { "$ref": "#/$defs/errorEnvelope" },
+        { "properties": {
+          "method": { "const": "planning.student.calculate" },
+          "payload": { "properties": { "error": { "properties": {
+            "code": { "enum": ["invalid_payload", "calculation_failed"] }
+          } } } }
+        } }
       ]
     },
     "planValidate": {

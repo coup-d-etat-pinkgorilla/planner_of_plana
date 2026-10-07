@@ -8,6 +8,7 @@ import '../ui/models/planning_models.dart';
 import 'app_service.dart';
 import 'diagnostics_service.dart';
 import 'mock_student_fixture.dart';
+import 'mock_student_calculation_fixture.dart';
 import 'repository_service.dart';
 import 'scanner_service.dart';
 import 'scenario_service.dart';
@@ -18,6 +19,7 @@ enum MockScannerScenario { completed, failed, reviewRequired, inventoryUnknown }
 class MockAppService
     implements
         AppService,
+        PlanningStudentCalculationService,
         PlanningDocumentService,
         PlanningScenarioRepositoryService,
         PlanningScenarioComparisonService,
@@ -819,6 +821,40 @@ class MockAppService
       'stat_levels': <String, int>{},
       'warnings': <String>[],
     };
+  }
+
+  @override
+  Future<StudentCalculationResult> calculateStudent({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    Map<String, dynamic>? inventory,
+  }) async {
+    // Deterministic mixed-growth sample, not a second implementation of costs.
+    final owned = <String, int?>{};
+    for (final raw in (inventory?['entries'] as List? ?? const [])) {
+      final entry = Map<String, dynamic>.from(raw as Map);
+      final quantity = entry['quantity'];
+      owned[(entry['item_id'] ?? entry['key']) as String] =
+          quantity == null ? null : int.parse(quantity as String);
+    }
+    return StudentCalculationResult.fromWire({
+      ...mockStudentCalculationWire,
+      'resources': [
+        for (final raw in mockStudentCalculationWire['resources'] as List)
+          (() {
+            final row = Map<String, dynamic>.from(raw as Map);
+            final holding = owned[row['resource_key']];
+            final requiredAmount = row['required'] as int;
+            return {
+              ...row,
+              'owned': holding,
+              'shortage': holding == null
+                  ? null
+                  : (requiredAmount > holding ? requiredAmount - holding : 0),
+            };
+          })(),
+      ],
+    });
   }
 
   @override

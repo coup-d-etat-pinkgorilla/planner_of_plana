@@ -13,6 +13,25 @@ from core import student_meta
 
 PLANNING_DIR = PLANNING_DATA_DIR
 
+# FB-11a: the units already priced by this core, before inventory subtraction.
+CREDIT_CATEGORIES = (
+    "level", "student_star", "weapon_star", "favorite_item", "equipment",
+    "ex_skill", "weapon_level", "skill", "potential",
+)
+
+
+def _record_credits(breakdown: dict[str, int] | None, category: str, amount: int) -> None:
+    if breakdown is not None:
+        breakdown[category] = breakdown.get(category, 0) + amount
+
+
+def _add_credits(
+    summary: "PlanCostSummary", breakdown: dict[str, int] | None,
+    category: str, amount: int,
+) -> None:
+    summary.credits += amount
+    _record_credits(breakdown, category, amount)
+
 
 @dataclass(slots=True)
 class PlanCostSummary:
@@ -464,7 +483,9 @@ def _current_student_star(record) -> int:
     return _safe_int(value, 0)
 
 
-def _calculate_star_cost(record, goal: StudentGoal) -> tuple[int, dict[str, int]]:
+def _calculate_star_cost(
+    record, goal: StudentGoal, *, credit_breakdown: dict[str, int] | None = None,
+) -> tuple[int, dict[str, int]]:
     current_star = _current_student_star(record)
     target_star = max(current_star, _safe_int(goal.target_star, current_star))
     target_weapon_star = max(0, min(4, _safe_int(goal.target_weapon_star, 0)))
@@ -484,11 +505,14 @@ def _calculate_star_cost(record, goal: StudentGoal) -> tuple[int, dict[str, int]
     credits = max(0, _STAR_CREDIT_CUMULATIVE.get(effective_target_star, 0) - _STAR_CREDIT_CUMULATIVE.get(current_star, 0))
     eleph = max(0, _STAR_ELEPH_CUMULATIVE.get(effective_target_star, 0) - _STAR_ELEPH_CUMULATIVE.get(current_star, 0))
 
-    credits += max(
+    _record_credits(credit_breakdown, "student_star", credits)
+    weapon_credits = max(
         0,
         _WEAPON_STAR_CREDIT_CUMULATIVE.get(effective_target_weapon_star, 0)
         - _WEAPON_STAR_CREDIT_CUMULATIVE.get(current_weapon_star, 0),
     )
+    _record_credits(credit_breakdown, "weapon_star", weapon_credits)
+    credits += weapon_credits
     eleph += max(
         0,
         _WEAPON_STAR_ELEPH_CUMULATIVE.get(effective_target_weapon_star, 0)
@@ -800,7 +824,9 @@ def _calculate_skill_ooparts(student_id: str, current_levels: list[int], target_
     return total
 
 
-def calculate_goal_cost(record, goal: StudentGoal) -> PlanCostSummary:
+def calculate_goal_cost(
+    record, goal: StudentGoal, *, credit_breakdown: dict[str, int] | None = None,
+) -> PlanCostSummary:
     summary = PlanCostSummary()
     reference_tables = _load_reference_tables()
 
@@ -815,16 +841,16 @@ def calculate_goal_cost(record, goal: StudentGoal) -> PlanCostSummary:
 
     current_level = _safe_int(getattr(record, "level", 0))
     target_level = max(current_level, _safe_int(goal.target_level, current_level))
-    summary.credits += max(0, level_credit_map.get(target_level, 0) - level_credit_map.get(current_level, 0))
+    _add_credits(summary, credit_breakdown, "level", max(0, level_credit_map.get(target_level, 0) - level_credit_map.get(current_level, 0)))
     summary.level_exp += max(0, level_exp_map.get(target_level, 0) - level_exp_map.get(current_level, 0))
     summary.level_exp_items = _exp_item_breakdown(LEVEL_EXP_ITEM_NAME, summary.level_exp, (50, 500, 2_000, 10_000))
 
-    star_credits, star_materials = _calculate_star_cost(record, goal)
+    star_credits, star_materials = _calculate_star_cost(record, goal, credit_breakdown=credit_breakdown)
     summary.credits += star_credits
     summary.star_materials = star_materials
 
     favorite_item_credits, favorite_item_materials = _calculate_favorite_item_cost(record, goal)
-    summary.credits += favorite_item_credits
+    _add_credits(summary, credit_breakdown, "favorite_item", favorite_item_credits)
     summary.favorite_item_materials = favorite_item_materials
 
     slot_names = student_meta.equipment_slots(getattr(record, "student_id", "")) if getattr(record, "student_id", None) else (None, None, None)
@@ -845,7 +871,7 @@ def calculate_goal_cost(record, goal: StudentGoal) -> PlanCostSummary:
             target_tier,
             target_equip_level,
         )
-        summary.credits += equip_credits
+        _add_credits(summary, credit_breakdown, "equipment", equip_credits)
         summary.equipment_exp += equip_exp
         for key, value in equip_materials.items():
             summary.equipment_materials[key] = summary.equipment_materials.get(key, 0) + value
@@ -853,10 +879,10 @@ def calculate_goal_cost(record, goal: StudentGoal) -> PlanCostSummary:
 
     current_ex = _safe_int(getattr(record, "ex_skill", 0))
     target_ex = max(current_ex, _safe_int(goal.target_ex_skill, current_ex))
-    summary.credits += max(0, ex_credit_map.get(target_ex, 0) - ex_credit_map.get(current_ex, 0))
+    _add_credits(summary, credit_breakdown, "ex_skill", max(0, ex_credit_map.get(target_ex, 0) - ex_credit_map.get(current_ex, 0)))
 
     weapon_level_credits, weapon_exp = _calculate_weapon_level_cost(record, goal)
-    summary.credits += weapon_level_credits
+    _add_credits(summary, credit_breakdown, "weapon_level", weapon_level_credits)
     summary.weapon_exp += weapon_exp
     summary.weapon_exp_items = _exp_item_breakdown(
         _weapon_exp_item_name_for_record(record),
@@ -875,7 +901,7 @@ def calculate_goal_cost(record, goal: StudentGoal) -> PlanCostSummary:
         max(current_skills[2], _safe_int(goal.target_skill3, current_skills[2])),
     ]
     for current_skill, target_skill in zip(current_skills, target_skills):
-        summary.credits += max(0, skill_credit_map.get(target_skill, 0) - skill_credit_map.get(current_skill, 0))
+        _add_credits(summary, credit_breakdown, "skill", max(0, skill_credit_map.get(target_skill, 0) - skill_credit_map.get(current_skill, 0)))
 
     stat_deltas = {
         "HP": _stat_delta(getattr(record, "stat_hp", 0), goal.target_stat_hp),
@@ -896,7 +922,7 @@ def calculate_goal_cost(record, goal: StudentGoal) -> PlanCostSummary:
             (_safe_int(getattr(record, "stat_heal", 0)), _safe_int(goal.target_stat_heal, _safe_int(getattr(record, "stat_heal", 0)))),
         ):
             stat_credits, stat_materials = _calculate_single_stat_cost(main_name, current_stat, target_stat)
-            summary.credits += stat_credits
+            _add_credits(summary, credit_breakdown, "potential", stat_credits)
             for key, value in stat_materials.items():
                 summary.stat_materials[key] = summary.stat_materials.get(key, 0) + value
         if (

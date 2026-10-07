@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 
+import 'student_calculation_service.dart';
+export 'student_calculation_service.dart';
+
 enum BackendConnection { connected, disconnected, connecting }
 
 enum ScanPhase { idle, scanning, succeeded, failed }
@@ -552,6 +555,25 @@ abstract interface class PlanningDocumentService {
     required Map<String, dynamic> inventory,
     required Map<String, dynamic> document,
   });
+}
+
+/// FB-11a service entry point, without breaking existing AppService test doubles.
+extension AppServiceStudentCalculation on AppService {
+  Future<StudentCalculationResult> calculateStudent({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    Map<String, dynamic>? inventory,
+  }) {
+    final service = this;
+    if (service is! PlanningStudentCalculationService) {
+      throw UnsupportedError('Student growth calculation is unavailable');
+    }
+    return (service as PlanningStudentCalculationService).calculateStudent(
+      currentStudent: currentStudent,
+      targets: targets,
+      inventory: inventory,
+    );
+  }
 }
 
 abstract interface class MockScenarioController {

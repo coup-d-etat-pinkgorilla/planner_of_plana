@@ -219,6 +219,7 @@ def calculate_document_projection(
     records_by_id: dict[str, SimpleNamespace],
     document: PlanningDocument,
     inventory: InventorySnapshot,
+    *, credit_breakdown: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     records = {key: SimpleNamespace(**vars(value)) for key, value in records_by_id.items()}
     owned = {
@@ -246,7 +247,7 @@ def calculate_document_projection(
                 warnings.append(f"현재 상태가 없는 학생 단계 제외: {stage.student_id}/{stage.stage_id}")
                 summary = PlanCostSummary(warnings=["Current student state is missing."])
             else:
-                summary = calculate_goal_cost(record, _goal(stage))
+                summary = calculate_goal_cost(record, _goal(stage), credit_breakdown=credit_breakdown)
                 _advance(record, stage)
             phase_total.merge(summary)
             overall.merge(summary)

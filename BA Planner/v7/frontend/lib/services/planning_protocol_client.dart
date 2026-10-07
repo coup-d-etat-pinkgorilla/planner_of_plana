@@ -95,6 +95,7 @@ class PlanningProtocolClient {
   static const _methodErrorCodes = <String, Set<String>>{
     'planning.student.get': {'invalid_payload', 'metadata_lookup_failed'},
     'planning.student.catalog': {'invalid_payload', 'metadata_lookup_failed'},
+    'planning.student.calculate': {'invalid_payload', 'calculation_failed'},
     'planning.plan.validate': {'invalid_payload'},
     'planning.plan.calculate': {'invalid_payload', 'calculation_failed'},
     'planning.document.calculate': {'invalid_payload', 'calculation_failed'},
@@ -464,6 +465,7 @@ class PlanningProtocolClient {
             payload.containsKey('student') &&
             (payload['student'] == null || payload['student'] is Map),
       'planning.student.catalog' => _validStudentCatalog(payload),
+      'planning.student.calculate' => _validStudentCalculation(payload),
       'planning.plan.validate' =>
         payload.keys.toSet().length == 2 &&
             payload['valid'] == true &&
@@ -489,6 +491,15 @@ class PlanningProtocolClient {
       ),
       _ => false,
     };
+  }
+
+  bool _validStudentCalculation(Map<String, dynamic> payload) {
+    try {
+      StudentCalculationResult.fromWire(payload);
+      return true;
+    } on Object {
+      return false;
+    }
   }
 
   bool _validScenarioComparison(Map<String, dynamic> payload) {
