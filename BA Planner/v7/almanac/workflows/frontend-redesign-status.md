@@ -20,13 +20,12 @@ sources:
 
 ## 현재 상태
 
-**FE3-d2 완료.** 결과(오케스트레이터 로그 2026-10-07 17:30·17:42·17:49, 아래 FE3-d2 commit record):
-- gate `20261007_170820` RED 2건(의미 구조 핸들 `addTearDown` 해제 시점 → 오케스트레이터가 본문 끝 `dispose`로 고침, 새 장면 기준 없음) → `-UpdateGoldens` → gate `20261007_173720` GREEN(일반 594, 프로세스 28, golden 19).
-- 커밋 `0890de7a`(FE3-d2, 15파일). golden 새 장면 `students-filter-open` 추가. students-* 3장은 차이 0(워커 예상과 같음).
-- 17:42 결함: 강화·서브 행 최소값 "–"가 golden에서 흰 사각형(경기천년제목에 en dash 없음) → FE3-e 범위.
+**FE3-e 완료.** 결과(오케스트레이터 로그 2026-10-07 20:00·20:28, 아래 FE3-e commit record):
+- gate ① `20261007_191233` RED(golden 5: 기준 4장 사각형 → 마이너스 기호, 새 장면 `students-grid-second-form` 기준 없음, 예상 일치) → `-UpdateGoldens` → ② `20261007_195559` GREEN(golden 20). 백엔드 전체 812건 통과.
+- 커밋 `a3692424`(FE3-e + FB-5, 26파일), 문서 커밋 `8a6482e7`. `mock_app_service.dart`는 이 슬라이스 전부터 있던 스캐너 쪽 미커밋 변경이 작업트리에 남아 있다(3-way 병합으로 FE3-e 변경만 커밋).
 
-**진행 중: FE3-e 다중 폼 교대 + FB-5 catalog 폼 확장(시각 변경), 시작 커밋 `04c4cb67de3e7de62c4b63001e0ffdcba22d7736`.**
-- 자세한 내용은 아래 "FE3-e" 절에 적는다.
+**진행 중: FE3-f1 성장 계산기 상태 모델 + 계산 어댑터(동작 보존, 화면 연결 없음, golden 변화 0), 시작 커밋 `8a6482e7c8e506773db487f5f76fa4079ac5988f`.**
+- 코드 작성 완료, gate 대기(사용자 실행). 자세한 내용은 아래 "FE3-f1" 절에 적는다.
 
 ### 커밋 기록
 
@@ -46,6 +45,7 @@ sources:
 | FE3-c | `b7bbfcce` | S4 확장(결과 수 줄·적용 필터 칩 × / 모두 지우기 / 범위 조건 칩·`+n`·최근 본 학생 6명), 필터 상태를 페이지 `StudentFilterController`로 올림, 앱 셸 `RecentStudents`, 상태 배지 글꼴 Pretendard 명시, golden 학생 10명 두 줄, golden 5장 갱신(시각 변경) | ① RED(analyze info 1 오케스트레이터 수정, golden 5 예상 일치) → `20261007_134501` GREEN(golden 18) |
 | FE3-d1 | `ddc251eb` | 필터 모달 부품: 성장 범위·필터 선택 값 모델(FD-053·054·055·056·059·063), 키트 `RangeSliderRow`·`StarRangeBar`(FD-012) + 갤러리, `BaModal` 포커스 가두기·배경 의미 구조 차단·Esc 이중 처리 방지, `BaChip` 테두리 변형(S4 칩), 계정 전환 때 최근 본 학생 비움(화면 변화 없음) | `20261007_150318` RED(의미 구조 짝 값·테두리 3px 등 5건) → `20261007_154648` GREEN(307 + 284 + 프로세스 28 + golden 18) |
 | FE3-d2 | `0890de7a` | 필터 모달 화면 연결: 공용 `StudentFilterModal`(머리 바·속성·성장 범위 패널), 컨트롤러 적용 값 + 초안, S1 필터 버튼·S4 `+n` → 모달, S1 배지(FD-058), 셸 모달 배경 범위(15:51 결정 4), Section 5·범위 카드 폐기(FD-052), golden `students-filter-open` | `20261007_170820` RED(핸들 해제 시점·새 장면) → `20261007_173720` GREEN(594 + 프로세스 28 + golden 19) |
+| FE3-e | `a3692424`(+ 문서 `8a6482e7`) | 다중 폼 초상 교대(FD-064: 공용 시계 하나, 폼 수 × 3초 계단식, TickerMode 꺼짐이면 멈춤) + FB-5 catalog `forms`(계약·Python·Dart·mock·E2E), warmup 폼 초상, 제목 글꼴에 없는 글리프(– → −) 수정, golden 4장 갱신 + 새 장면 `students-grid-second-form`(시각 변경) | ① `20261007_191233` RED(golden 5, 예상 일치) → ② `20261007_195559` GREEN(golden 20, 백엔드 812) |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -2452,3 +2452,211 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice re
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_195559\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: frontend/lib/services/mock_app_service.dart
+
+## FE3-f1 착수 기록 (2026-10-07)
+
+- 범위(작업 지시 2026-10-07 20:35, 오케스트레이터 로그 20:28 f1/f2 분할, 워크플로 FE3-f 행): 계산기 상태 모델(`lib/ui/models/`, 13행 목표, FD-166 계산기 정규화, FD-168 현재값 출처, FD-169 빠른 목표, FD-167 칸 토글·개수, FD-170 최근 계산)과 계산 어댑터(FD-162 (a): 임시 1페이즈 1단계 문서 `planning.document.calculate`, 디바운스, 늦은 응답 버림, 오류 상태, 크레딧 내역 없음, FD-172 명시 값).
+- 범위 밖: 화면 연결(FE3-f2), 백엔드 메서드 추가(FB-11), 스캐너·tactic 소유 파일, `scan_page.dart`·`scan_companion_dock.dart`·`app_shell.dart`. 기존 `normalizePlanningGrowthTargets` 동작은 바꾸지 않는다.
+- 시작 커밋: `8a6482e7c8e506773db487f5f76fa4079ac5988f`(FE3-e `a3692424` 뒤 문서 커밋).
+- 사본: 고치는 기존 파일은 `debug/frontend_fe3f1/pre/<v7 기준 경로>`. 새 파일 위주로 만든다. 기기 쓰기는 새 업로드 경로에서 쓰고 다시 읽어 바이트로 대조한다.
+- 먼저 확인: `planning.document.calculate`(백엔드 `protocol_v1._document_calculate` → `calculate_document_projection`)는 받은 문서를 계산만 하고 저장소·활성 계획을 건드리지 않는다. 저장 id도 요구하지 않는다(문서 id는 임의 문자열). 그래서 진행한다.
+
+## FE3-f1 종료 기록 (2026-10-07, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없어 `flutter analyze`·Dart 테스트·golden을 돌리지 못했다. 통과를 주장하지 않는다.
+- 백엔드는 고치지 않았다. Python 전체 실행은 하지 않는다(작업 지시 §3).
+- 별도 검토 에이전트가 새 파일 6개를 정적으로 읽었다(컴파일·flutter_lints 6·테스트 기대값을 손으로 계산, 정규화를 Python으로 옮겨 무작위 검사). 지적 2건을 고쳤다:
+  1. `prefer_initializing_formals`: Dart 3.12부터 이름 있는 매개변수를 같은 이름의 private 필드에 넣으면(`{basis} : _basis = basis`) 린트가 잡는다. → 필드 이름을 `_activeBasis`, `_planningService`로 바꿨다.
+  2. (선택) `GrowthCalculatorEngine.cancel()`을 dispose 뒤에 부르면 ChangeNotifier assert. → 맨 앞에서 돌아간다.
+- 워커도 계산기 정규화와 기존 `normalizePlanningGrowthTargets`를 Python으로 옮겨 무작위로 23만 번 조작했다. 성장 규칙 위반·하한·상한·장비 레벨 규칙 어긋남 0건이었다. Dart 실행이 아니므로 gate가 최종 확인이다.
+
+### 바뀐 파일
+
+기존 파일은 고치지 않았다(`debug/frontend_fe3f1/pre` 사본 없음). 화면 파일·`app_shell.dart`·`mock_app_service.dart`·스캐너·tactic 소유 파일은 그대로다. 그래서 golden 변화는 0이어야 한다.
+
+| 파일 | 내용 |
+|---|---|
+| `frontend/lib/ui/models/growth_calculator_rules.dart` | 13행 정의, 계산기 정규화, 빠른 목표, 바뀐 목표 목록·칩, 칸 개수 |
+| `frontend/lib/ui/models/growth_calculator_state.dart` | `GrowthCalculatorState`(현재값 출처·토글·되돌리기), `RecentGrowthCalculations` |
+| `frontend/lib/ui/models/growth_calculator_adapter.dart` | 임시 문서, 요청·결과 모델, `GrowthCalculatorEngine`(디바운스) |
+| `frontend/test/growth_calculator_rules_test.dart` | 15건 |
+| `frontend/test/growth_calculator_state_test.dart` | 16건 |
+| `frontend/test/growth_calculator_adapter_test.dart` | 13건 |
+
+### 13행 목록(Calc-Student 순서 + 애장품)
+
+애장품 행은 시안에 없어서 자리를 정해야 했다. S3에서 애장품 칸이 장비 3칸 바로 뒤에 있고, 애장품 티어가 인연 목표를 끌어올리므로 장비 3 뒤·인연 앞에 두었다.
+
+| # | 행(`GrowthCalculatorRow`) | 움직이는 key | 스테퍼 단위 |
+|---|---|---|---|
+| 1 | 레벨 `level` | `level` | 레벨 |
+| 2 | 성급 `studentStar` | `student_star` | ★ |
+| 3 | 전용무기 `weapon` | `weapon_star`, `weapon_level` | ★(Lv은 따라감) |
+| 4 | EX 스킬 `exSkill` | `ex_skill` | 단계 |
+| 5 | 일반 스킬 `normalSkill` | `skill1` | 단계 |
+| 6 | 강화 스킬 `enhancedSkill` | `skill2` | 단계 |
+| 7 | 서브 스킬 `subSkill` | `skill3` | 단계 |
+| 8~10 | 장비 1·2·3 `equipment1~3` | `equipN_tier`, `equipN_level` | 티어(레벨은 따라감). 부위 이름(모자 등)은 f2가 메타데이터로 붙임 |
+| 11 | 애장품 `favoriteItem` | `equip4_tier` | 티어. 애장품 없는 학생은 행 없음(12행) |
+| 12 | 인연 `bond` | `bond_rank` | 랭크 |
+| 13 | 능력 개방 `abilityRelease` | `stat_hp`, `stat_atk`, `stat_heal` | 세 값 각각(`GrowthCalculatorAbility`), 행 값 = 합 |
+
+19 key를 한 번씩 덮는다(테스트).
+
+### 정규화 규칙 표(`normalizeGrowthCalculatorTargets`, 계산기 전용)
+
+계획 쪽 `normalizePlanningGrowthTargets`는 그대로다. 계산기 함수가 그 앞뒤에 아래 규칙을 더한다.
+
+| 규칙 | 계산기 | 계획(기존, 바꾸지 않음) |
+|---|---|---|
+| 범위 | 현재값 이상, MAX 이하(애장품 없으면 `equip4_tier` MAX 0) | 최소~MAX |
+| 장비 티어를 현재보다 올림 | 장비 레벨 = 그 티어 최대(T10 → 70) | 레벨은 그대로(티어 상한으로만 자름) |
+| 장비 티어를 스테퍼로 현재 티어로 되돌림 | 장비 레벨 = 현재 레벨 | — |
+| 장비 레벨을 직접 정함(빠른 목표 "완전 육성") | 현재 레벨~그 티어 최대 사이에서 그 값 | — |
+| 전용무기 ★ 올림 / 현재로 되돌림 | Lv = 그 ★ 최대(★1 → 30) / 현재 Lv. 전용무기 목표가 있으면 학생 ★5 | 같은 ★5 조건 |
+| 능력 개방 | 세 값 각각. 값이 있으면 레벨 90·★5 | 같음 |
+| 애장품 | 계산에 넣음. T1 → 인연 15, T2 → 인연 20, 인연이 성급을 끌어올림 | 같음 |
+| 행 사이 조건(강화 ★2, 서브 ★3, 장비 2·3칸 레벨 10·20, 인연 상한 ★별) | 기존 함수가 맞춤 | 같음 |
+| 순서 | ① 현재값~MAX로 자르기 ② 장비 레벨·전무 Lv 맞추기 ③ 기존 함수(바꾼 key 그대로 전달) ④ 다시 ① ⑤ 다시 ② | — |
+
+현재값과 ③의 결과가 둘 다 성장 규칙에 맞으면 key마다 큰 값도 맞는다. 그래서 ④·⑤ 뒤에도 위반이 없다(`assert` + 무작위 테스트 300 × 10회).
+- 빠른 목표(FD-169): 고른 행은 MAX, 나머지 행은 현재값에서 시작한다. 행 사이 조건은 정규화가 맞춘다(예: "스킬만 MAX"는 서브 스킬 때문에 ★3 미만이면 ★3까지 오른다).
+  - 완전 육성 = 19 key 전부 MAX(같은 티어의 덜 오른 장비 레벨도 70).
+  - 레벨·장비만 MAX = 레벨 90 + 장비 3칸 T10 Lv.70.
+  - 스킬만 MAX = EX 5 + 스킬 3종 10.
+- 칸 토글(FD-167): 바뀐 칸이면 직전 목표를 기억하고 현재값으로, 그대로인 칸이면 기억한 목표로 돌린다. 기억이 없으면 아무것도 하지 않는다(false).
+  - 다른 행 목표가 그 칸을 끌어올리면 현재값까지 내려가지 않는다. 예: 성급 목표 ★2 이상이면 강화 스킬 최소 1.
+  - "바뀌는 칸 n · 그대로 m"은 이 학생에게 쓰는 행(13 또는 12)으로 센다.
+- 되돌리기: 행 단위로 처음 값(`initialTargets`)으로 돌린다. 처음 값은 보통 현재값이고, 최근 계산에서 다시 열면 그때 목표다. `revertAll`도 있다.
+- "바뀐 목표" 칩: 레벨 +n · 성급 +n · 전용무기 ★s · Lv.l · 스킬 +n단계(EX·스킬 3종 합) · 장비 +n티어(3칸 합) · 애장품 Tn · 인연 +n · 능력 개방 +n.
+  - 시안 예시 숫자(스킬 +17단계)는 FD-025에 따라 따르지 않고 실제 차이로 센다.
+
+### 현재값 출처(FD-168)
+
+- 확정값: `confirmedCurrent` = repository 학생 상태. f2는 `planElementCurrentTargets(seed)`를 넘긴다(계획 요소 빌더와 같은 변환, 미보유면 기본값).
+- 직접 입력: 처음 고를 때 확정값에서 시작한다.
+  - 상태 객체가 살아 있는 동안 고친 값을 기억하고, 어디에도 저장하지 않는다.
+  - 장비 티어를 고치면 현재 레벨을 그 티어 최대로, 전무 ★를 고치면 그 ★ 최대 Lv로 본다.
+  - 기준을 바꾸면 목표를 새 현재값 위로 다시 맞춘다.
+- `updateConfirmedCurrent`: 스캔 승인 등으로 repository가 바뀌면 f2가 부른다.
+
+### 최근 계산(FD-170)
+
+- `RecentGrowthCalculations`: 학생 + 기준 + 목표 맵, 최대 6건, 학생마다 한 건(다시 넣으면 맨 앞으로 옮기고 새 목표로 바꿈), 앱 실행 동안만 유지.
+- 계정 전환: `app_shell.dart`를 고치지 않으려고 `syncProfile(profileId)`를 두었다. 이전에 알린 계정과 다르면 비운다.
+  - f2가 학생 탭에서 계정 id를 알릴 때 부른다. 또는 오케스트레이터가 허락하면 셸 `_profileChanged`에서 `clear()`를 부른다.
+
+### 계산 어댑터(FD-162 (a))
+
+- 호출: 기존 `PlanningDocumentService.calculatePlanningDocument`(= `planning.document.calculate`).
+  - 인자: `current_students: [그 학생 한 명]`, `inventory`, `document: 임시 문서`.
+  - 백엔드 `protocol_v1._document_calculate` → `calculate_document_projection`은 받은 문서를 계산만 한다. 저장소 쓰기·활성 계획 변경·저장 id 요구가 없어서 진행했다. 새 백엔드 메서드는 만들지 않았다(FB-11 소관).
+  - mock 왕복 테스트도 계산 뒤 repository revision·goals·시나리오 목록이 그대로인지 확인한다.
+- 임시 문서 모양(1페이즈 1단계, 계약 `planning-document-calculate-v1` 그대로):
+
+```json
+{"version": 1, "document_id": "growth-calculator", "name": "성장 계산기", "kind": "scenario",
+ "phases": [{"phase_id": "growth-calculator-phase", "name": "성장 계산기",
+   "stages": [{"stage_id": "growth-calculator-stage", "student_id": "<학생>", "name": "계산기 목표",
+     "targets": {"<19 key>": 0}}]}]}
+```
+
+- `kind`는 `scenario`다(활성 계획 문서가 아니라는 표시). 백엔드 계산은 kind와 상관없다.
+- 현재 학생 항목:
+  - 확정값 기준이고 repository에 그 학생이 있으면 계획 탭과 같은 `confirmedStudentPlanningCurrent`를 보낸다.
+  - 직접 입력·미보유면 계산기 현재값으로 만든다(`growthCalculatorCurrentStudentWire`: `T<n>`/null 장비, 전무 ★>0이면 `weapon_equipped`, 인연은 보내지 않음). 워커 환경 Python에서 `_current_students_from_wire` 통과를 확인했다.
+- 인벤토리: repository 것을 쓰고, 없으면 빈 인벤토리.
+- 결과(`GrowthCalculatorResult`):
+  - `credits` = `overall.cost.credits`(없으면 크레딧 행, 그것도 없으면 0).
+  - `resources` = `overall.resources`에서 크레딧 행을 뺀 성장 재화 행. 순서는 백엔드 순서다.
+  - `warnings`: 백엔드 경고 문자열.
+  - `shortageTypeCount`: "부족 n종".
+- 없는 값은 명시 값으로 둔다(FD-172):
+  - 크레딧 보유 `creditHolding` = `GrowthCalculatorHoldingNoScan`(FD-096 (c), 빗금·부족 칩 숨김).
+  - 재화 보유 = `Known(n)` / `Unknown`(부족 0, `isShort` false).
+  - 크레딧 내역 `creditBreakdown` = `GrowthCalculatorCreditBreakdown.unavailable`(FB-11 전 숨김).
+  - 계획 포함 `planMembership` = `inPlan`/`notInPlan`(goals v1 기준, FD-027 방식) / `unknown`(repository 없음).
+- `GrowthCalculatorEngine`:
+  - 디바운스는 `growthCalculatorDebounce = 250ms`다.
+  - `schedule`마다 요청 번호가 오르고, 응답이 왔을 때 번호가 다르면 버린다(늦은 응답·대기 중 새 요청).
+  - 상태는 `Idle` / `Pending(lastResult)` / `Ready(result)` / `Failed(error, lastResult)`다.
+  - `cancel()`이 있고, dispose 뒤 응답은 무시한다.
+- 테스트의 디바운스는 testWidgets의 가짜 시간으로 민다. `fake_async`는 직접 의존성이 아니라서 가져오지 않았다(`depend_on_referenced_packages` 방지).
+
+### FD-074 단계 프리셋 연결: 보류
+
+FD-074 (b)는 단계 프리셋 영속화를 정했지만 저장소(프로필별 repository 버킷)는 FE4-b·c에서 만든다. 지금 `defaultPlanElementPresets`는 빈 인메모리 목록이다. 그래서 빠른 목표에 "단계 프리셋 마지막 단계"는 넣지 않았다(보류). 저장소가 생기면 `growthCalculatorQuickTargets`와 같은 모양(현재값 + 프리셋 목표 → 정규화)으로 더한다.
+
+### f2가 쓸 공개 API 요약
+
+```dart
+// growth_calculator_rules.dart
+enum GrowthCalculatorRow { level, studentStar, weapon, exSkill, normalSkill, enhancedSkill, subSkill,
+  equipment1, equipment2, equipment3, favoriteItem, bond, abilityRelease }   // .label .keys .primaryKey .equipmentSlot
+enum GrowthCalculatorAbility { hp, atk, heal }                                // .key .label
+enum GrowthCalculatorQuickTarget { fullGrowth, levelAndEquipment, skills }    // .label .rows
+class GrowthCalculatorCellCounts { changing, unchanged }
+class GrowthCalculatorChange { row, current, target, delta }
+class GrowthCalculatorChangeChip { group, label }
+normalizeGrowthCalculatorTargets / growthCalculatorWithRow / growthCalculatorWithAbility / growthCalculatorQuickTargets
+growthCalculatorTargetMaximums / growthCalculatorRows / growthCalculatorRowValue
+
+// growth_calculator_state.dart  (ChangeNotifier)
+GrowthCalculatorState(studentId:, confirmedCurrent:, hasFavoriteItem:, basis:, initialTargets:)
+  basis current confirmedCurrent targets initialTargets rows maximums
+  rowTarget(row) rowCurrent(row) rowMaximum(row) abilityTarget(a) abilityCurrent(a)
+  isRowAvailable isRowChanged isRowModified canToggleRow cellCounts changes changeChips record
+  setRowTarget(row, v) setAbilityTarget(a, v) applyQuickTarget(q) toggleRow(row)->bool
+  revertRow(row) revertAll() setBasis(b) setDirectCurrentRow(row, v) setDirectCurrentAbility(a, v)
+  updateConfirmedCurrent(map)
+enum GrowthCalculatorBasis { confirmed, direct }                               // .label
+class GrowthCalculationRecord { studentId, basis, targets }
+RecentGrowthCalculations (ChangeNotifier): records, add(record), clear(), syncProfile(id), profileId   // capacity 6
+
+// growth_calculator_adapter.dart
+GrowthCalculatorRequest.fromState(state, repository: repositoryState?)
+calculateGrowthTargets(service, request) -> Future<GrowthCalculatorResult>   // 디바운스 없이 한 번
+GrowthCalculatorEngine(service:, debounce:) (ChangeNotifier): status, requestNumber, schedule(request), cancel()
+sealed GrowthCalculatorStatus: Idle | Pending | Ready | Failed  (.lastResult)
+GrowthCalculatorResult: credits, creditHolding(NoScan), creditBreakdown(unavailable), resources, planMembership,
+  warnings, shortageTypeCount
+GrowthCalculatorResourceRow: resourceKey, itemId?, displayName, category, amount, holding, shortage, isShort
+sealed GrowthCalculatorHolding: Known(quantity) | Unknown | NoScan
+enum GrowthCalculatorPlanMembership { inPlan, notInPlan, unknown }
+```
+
+f2 연결 순서 예: 상태 변경 리스너에서 `engine.schedule(GrowthCalculatorRequest.fromState(state, repository: _repositoryState))`를 부른다. 결과를 받으면 `recent.add(state.record)`를 부른다(기록 시점은 f2 재량).
+
+### 처리한 FD
+
+FD-166 (c)(13행·계산기 정규화), FD-167 (a)(토글·개수, 상태만), FD-168 (a), FD-169 (a)(프리셋 연결 보류), FD-170 (a), FD-162 (a)(임시 문서·내역 없음), FD-172(명시 값). FD-049: 계산기 목표는 인연 게이지 활성 계획 목표와 별개다(이 파일들은 `active_plan_bond_target.dart`를 쓰지 않는다).
+
+### 발견 사항(오케스트레이터 판단 필요)
+
+1. **백엔드 성급 비용이 현재 ★를 늘 0으로 본다**:
+   - `planning_calc._calculate_star_cost`가 `getattr(record, "star", 0)`을 읽는다. 그런데 `current_students` 항목 이름은 `student_star`다(`_CURRENT_INTEGER_FIELDS`, Dart `planningCurrentFields`).
+   - 그래서 성급을 올리는 목표의 크레딧·엘레프가 ★0부터 계산된다.
+   - 계획 탭 문서 계산도 같은 경로라 이번에 생긴 문제는 아니다. 백엔드 소관이라 고치지 않았다(FB-11 또는 백엔드 수정 슬라이스).
+2. **여러 단계 문서의 장비 티어 이월 형식**:
+   - `planning_document._advance`가 다음 단계용 현재 장비를 `"Tier<n>"`으로 쓴다. 그런데 `_parse_tier_number`는 `"T"`로 시작하는 값만 읽는다. `"TIER7"` → `int("IER7")` 실패 → 0이 된다.
+   - 계산기(1단계 문서)와는 상관없지만 계획 탭 2단계 이상 장비 비용에 영향이 있을 수 있다. 확인만 했고 고치지 않았다.
+3. mock `calculatePlanningDocument`는 재화 행·크레딧을 비워 보낸다(J-calc §5.1). f2 golden에서 크레딧·재화 목록을 채운 장면이 필요하면 golden fixture 서비스에 결과를 넣어야 한다. `mock_app_service.dart`에는 스캐너 쪽 미커밋 변경이 있어 이번에는 건드리지 않았다.
+
+### 사용자 실행 순서(동작 보존 슬라이스)
+
+예상: analyze info 0, 새 단위 테스트 44건 포함 전부 통과, golden 차이 0(20장 그대로). RED가 나면 `summary.txt`를 오케스트레이터에게 보낸다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3f1 -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3f1
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesigndocs
+```
+
+`debug/frontend_fe3f1/commit.json`: modified 없음, added 6, status true. `redesigndocs`와 `redesign-docs`는 같은 폴더(`debug/frontend_redesigndocs`)를 쓴다(스크립트가 `-`를 지운다).
+
+### FE3-f1 commit record (2026-10-07 21:36, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_213219\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
