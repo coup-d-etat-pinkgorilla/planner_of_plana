@@ -44,6 +44,30 @@ session generation을 별도 계약으로 고정합니다.
 정규화 없이 그대로 전달합니다. 예를 들어 `template_name`은 현재 backend 값인
 `ayane.png`이며 확장자를 제거하지 않습니다.
 
+### `planning.student.catalog`
+
+학생 탭·계획 학생 선택이 쓰는 전체 학생 목록입니다.
+
+- request payload: `{}` (그 밖의 key는 `invalid_payload`)
+- success response payload:
+  `{ "students": [<catalog entry>...], "sort": "display_name_then_id" }`
+- 학생 항목은 고정된 18개 필드(`student_id` … `kr_search_tags`)를 가지며 알 수 없는
+  필드를 거부합니다.
+- **`forms`(FB-5, 2026-10-07, 선택 필드)**: 폼이 2개 이상인 학생에게만 붙고 폼 순서대로
+  `{ "form_id", "label", "template_name" }`을 담습니다(`minItems` 2). 폼이 1개이거나 없는
+  학생은 필드 자체를 뺍니다(빈 목록을 보내지 않습니다). 그래서 다중 폼이 아닌 항목은 이전과
+  바이트까지 같습니다.
+  - `form_id`: canonical 폼 참조. 첫 폼은 `student_id`, 그 뒤는 `student_id#n`
+    (`student_meta.format_form_ref`와 같은 규칙).
+  - `label`: canonical metadata의 폼 label. 비어 있으면 1부터의 순번 문자열.
+  - `template_name`: 폼 초상 파일 이름(UI는 `assets/student_portraits/<template_name>`).
+    폼이 이름을 선언하지 않으면 `null`이고, UI는 기존 플레이스홀더를 그립니다.
+  - 기존 필드의 의미·순서는 바꾸지 않고 `forms`는 항목 끝에 붙습니다.
+  - 호환성: FE3-e 이전 Dart 클라이언트의 `StudentCatalogEntry.fromWire`는 key 집합을
+    정확히 비교하므로 `forms`가 있는 항목을 거부합니다. 앱은 UI와 backend를 한 묶음으로
+    배포하므로(`release/`) 구버전 UI가 새 backend와 함께 돌지 않습니다. FE3-e부터 Dart는
+    `forms`를 선택 key로 받습니다.
+
 ### `planning.plan.validate`
 
 저장된 계획 형태를 역직렬화하고 검사한 뒤 wire에 사용할 canonical plan을

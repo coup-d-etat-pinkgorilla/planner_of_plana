@@ -226,9 +226,12 @@ abstract final class AppFonts {
   /// 쓴다. 굵기는 500 한 종뿐이다.
   static const display = 'GyeonggiTitle';
 
-  /// Pretendard가 못 덮는 글리프(희귀 한자, 일부 기호)를 위한 시스템 폴백.
-  /// 폴백이 없으면 혼합 문자열에서 자폭과 베이스라인이 흔들린다.
+  /// 글리프 폴백. 맨 앞은 번들 본문 서체다: 경기천년제목에 없는 기호(`–` `—` `•` `−` `✓` `≈`,
+  /// FE3-e 2026-10-07)는 같은 문장 안에서 Pretendard로 그린다(시스템 서체에 맡기면 golden에서
+  /// 사각형으로 그려지고 기기마다 서체가 달라진다). 그 뒤는 Pretendard도 못 덮는 글리프(희귀 한자,
+  /// 일부 기호)를 위한 시스템 폴백이다. 폴백이 없으면 혼합 문자열에서 자폭과 베이스라인이 흔들린다.
   static const fallback = <String>[
+    body,
     'Malgun Gothic',
     'Segoe UI',
     'Apple SD Gothic Neo',

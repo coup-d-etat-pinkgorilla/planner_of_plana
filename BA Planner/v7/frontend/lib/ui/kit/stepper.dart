@@ -72,6 +72,7 @@ class StepButton extends StatelessWidget {
             style: TextStyle(
               color: enabled ? AppColors.text : AppColors.textMuted,
               fontFamily: 'GyeonggiTitle',
+              fontFamilyFallback: AppFonts.fallback,
               fontSize: 16.5,
               fontWeight: FontWeight.w800,
               height: 1,
@@ -103,6 +104,7 @@ class StepButton extends StatelessWidget {
                   ? AppColors.text
                   : AppColors.textMuted,
               fontFamily: AppFonts.display,
+              fontFamilyFallback: AppFonts.fallback,
               fontSize: AppType.stepperGlyphSize,
               fontWeight: AppType.bold,
               height: 1,
@@ -182,6 +184,7 @@ class BaStepper extends StatelessWidget {
                     key: ValueKey('$controlKey-label'),
                     style: TextStyle(
                       fontFamily: 'GyeonggiTitle',
+                      fontFamilyFallback: AppFonts.fallback,
                       fontSize: valueFontSize,
                       fontWeight: FontWeight.w700,
                       height: 1,
@@ -194,6 +197,7 @@ class BaStepper extends StatelessWidget {
                   key: ValueKey('$controlKey-value'),
                   style: TextStyle(
                     fontFamily: 'GyeonggiTitle',
+                    fontFamilyFallback: AppFonts.fallback,
                     fontSize: valueFontSize,
                     fontWeight: FontWeight.w800,
                     height: 1,
@@ -339,6 +343,7 @@ class MaxBadge extends StatelessWidget {
           style: TextStyle(
             color: enabled ? AppColors.text : AppColors.textMuted,
             fontFamily: 'GyeonggiTitle',
+            fontFamilyFallback: AppFonts.fallback,
             fontSize: 7.5,
             fontWeight: FontWeight.w800,
             height: 1,

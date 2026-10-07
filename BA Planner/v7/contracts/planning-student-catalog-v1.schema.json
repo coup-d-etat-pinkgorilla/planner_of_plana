@@ -28,7 +28,23 @@
         "equipment_slot_3": { "type": ["string", "null"] },
         "jp_only": { "type": "boolean" },
         "search_tags": { "type": "array", "items": { "type": "string" } },
-        "kr_search_tags": { "type": "array", "items": { "type": "string" } }
+        "kr_search_tags": { "type": "array", "items": { "type": "string" } },
+        "forms": {
+          "description": "FB-5: present only for students with two or more forms, in form order.",
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/form" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "form": {
+      "type": "object",
+      "required": ["form_id", "label", "template_name"],
+      "properties": {
+        "form_id": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "template_name": { "type": ["string", "null"], "minLength": 1 }
       },
       "additionalProperties": false
     },

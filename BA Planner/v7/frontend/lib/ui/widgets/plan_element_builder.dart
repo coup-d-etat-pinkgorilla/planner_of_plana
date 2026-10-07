@@ -1561,6 +1561,7 @@ class _PlanWeaponLevelStatus extends StatelessWidget {
               style: TextStyle(
                 color: AppColors.primary,
                 fontFamily: 'GyeonggiTitle',
+                fontFamilyFallback: AppFonts.fallback,
                 fontSize: 8,
                 fontWeight: FontWeight.w800,
               ),
@@ -1574,6 +1575,7 @@ class _PlanWeaponLevelStatus extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.text,
                   fontFamily: 'GyeonggiTitle',
+                  fontFamilyFallback: AppFonts.fallback,
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1982,6 +1984,7 @@ class _PlanStarterSideActionButton extends StatelessWidget {
                                   ? AppColors.text
                                   : AppColors.textMuted.withValues(alpha: 0.62),
                               fontFamily: 'GyeonggiTitle',
+                              fontFamilyFallback: AppFonts.fallback,
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
                             ),
@@ -3070,6 +3073,7 @@ class _PresetFavoriteItemSlot extends StatelessWidget {
             style: TextStyle(
               color: AppColors.textMuted,
               fontFamily: 'GyeonggiTitle',
+              fontFamilyFallback: AppFonts.fallback,
               fontSize: 8,
               height: 1,
             ),
@@ -3141,6 +3145,7 @@ class _EquipmentValueControl extends StatelessWidget {
           style: TextStyle(
             color: AppColors.text,
             fontFamily: 'GyeonggiTitle',
+            fontFamilyFallback: AppFonts.fallback,
             fontSize: valueFontSize,
             fontWeight: FontWeight.w800,
             height: 1,

@@ -20,13 +20,13 @@ sources:
 
 ## 현재 상태
 
-**FE3-d1 완료.** 결과(오케스트레이터 로그 2026-10-07 15:09·15:51, 아래 FE3-d1 commit record):
-- gate `20261007_150318` RED(analyze info 2 + 테스트 22건, 15:09 진단 5건) → 수정 → gate `20261007_154648` GREEN(analyze 0, 307 + 284 + 프로세스 28 + golden 18 차이 0).
-- 커밋 `ddc251eb`(FE3-d1, 13파일).
-- 15:51 결정: "필터 · n" = 실제로 걸린 조건(칩) 수, 칩 옆 학생 수는 학교 줄에만, 팝업 "미보유"만 ↔ S4 "미보유 숨김" 꺼짐 표시는 FD-057 결과로 맞다, 모달 배경 차단은 AppShell 수준 범위 하나로 셸 전체(머리 포함)를 ExcludeSemantics로 덮는다(FE3-d2).
+**FE3-d2 완료.** 결과(오케스트레이터 로그 2026-10-07 17:30·17:42·17:49, 아래 FE3-d2 commit record):
+- gate `20261007_170820` RED 2건(의미 구조 핸들 `addTearDown` 해제 시점 → 오케스트레이터가 본문 끝 `dispose`로 고침, 새 장면 기준 없음) → `-UpdateGoldens` → gate `20261007_173720` GREEN(일반 594, 프로세스 28, golden 19).
+- 커밋 `0890de7a`(FE3-d2, 15파일). golden 새 장면 `students-filter-open` 추가. students-* 3장은 차이 0(워커 예상과 같음).
+- 17:42 결함: 강화·서브 행 최소값 "–"가 golden에서 흰 사각형(경기천년제목에 en dash 없음) → FE3-e 범위.
 
-**진행 중: FE3-d2 필터 모달 화면 연결(시각 변경), 시작 커밋 `06091c07e45cc5bc21e9a473a1a70af32d55fa05`.**
-- 자세한 내용은 아래 "FE3-d2" 절에 적는다.
+**진행 중: FE3-e 다중 폼 교대 + FB-5 catalog 폼 확장(시각 변경), 시작 커밋 `04c4cb67de3e7de62c4b63001e0ffdcba22d7736`.**
+- 자세한 내용은 아래 "FE3-e" 절에 적는다.
 
 ### 커밋 기록
 
@@ -45,6 +45,7 @@ sources:
 | FE3-b | `809d903b` | 인연 B 게이지(목표 빗금·점선·→N, 목표 = 활성 계획 문서의 마지막 단계 `bond_rank`, 조회 경계 한 곳), 학생 golden fixture 7명·students-detail 수정·새 장면 students-grid-name-off | ① RED(golden 3, 예상 일치) → `20261007_125410` GREEN(golden 18) |
 | FE3-c | `b7bbfcce` | S4 확장(결과 수 줄·적용 필터 칩 × / 모두 지우기 / 범위 조건 칩·`+n`·최근 본 학생 6명), 필터 상태를 페이지 `StudentFilterController`로 올림, 앱 셸 `RecentStudents`, 상태 배지 글꼴 Pretendard 명시, golden 학생 10명 두 줄, golden 5장 갱신(시각 변경) | ① RED(analyze info 1 오케스트레이터 수정, golden 5 예상 일치) → `20261007_134501` GREEN(golden 18) |
 | FE3-d1 | `ddc251eb` | 필터 모달 부품: 성장 범위·필터 선택 값 모델(FD-053·054·055·056·059·063), 키트 `RangeSliderRow`·`StarRangeBar`(FD-012) + 갤러리, `BaModal` 포커스 가두기·배경 의미 구조 차단·Esc 이중 처리 방지, `BaChip` 테두리 변형(S4 칩), 계정 전환 때 최근 본 학생 비움(화면 변화 없음) | `20261007_150318` RED(의미 구조 짝 값·테두리 3px 등 5건) → `20261007_154648` GREEN(307 + 284 + 프로세스 28 + golden 18) |
+| FE3-d2 | `0890de7a` | 필터 모달 화면 연결: 공용 `StudentFilterModal`(머리 바·속성·성장 범위 패널), 컨트롤러 적용 값 + 초안, S1 필터 버튼·S4 `+n` → 모달, S1 배지(FD-058), 셸 모달 배경 범위(15:51 결정 4), Section 5·범위 카드 폐기(FD-052), golden `students-filter-open` | `20261007_170820` RED(핸들 해제 시점·새 장면) → `20261007_173720` GREEN(594 + 프로세스 28 + golden 19) |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -2265,3 +2266,189 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice re
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_173720\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: almanac/design/section-template-studio.md
+
+## FE3-e 착수 기록 (2026-10-07)
+
+- 범위(작업 지시 2026-10-07 17:52, 워크플로 FE3-e·FB-5 행): FB-5 백엔드(`planning.student.catalog` 학생 항목에 폼 목록 선택 필드, 계약·Dart `fromWire`·mock·단위 테스트·프로세스 E2E 왕복)와 다중 폼 초상 교대(FD-064: 폼 수 × 3초, 계단식, 공용 시계 하나, 화면 밖·TickerMode 꺼짐이면 멈춤, 시간 주입 가능), warmup에 폼 이미지 포함.
+- 함께: 경기천년제목에 없는 글리프(en dash 등)가 golden에서 사각형으로 나오는 문제(오케스트레이터 17:42) 수정과 같은 위치 목록.
+- 범위 밖: 스캐너 소유 인식 파일·scan_* 위젯, scan_page·scan_companion_dock, 택틱 소유 파일. 이미지 추출 대상 확장이 인식 계열을 건드리면 스캐너 오케스트레이터 로그에 요청만 남긴다.
+- 시작 커밋: `04c4cb67de3e7de62c4b63001e0ffdcba22d7736`(FE3-d2 `0890de7a` 뒤 문서 커밋).
+- 사본: `debug/frontend_fe3e/pre/<v7 기준 경로>`. 기기 쓰기는 새 업로드 경로에서 쓰고 다시 읽어 바이트로 대조한다.
+
+## FE3-e 종료 기록 (2026-10-07, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없어 `flutter analyze`·Dart 테스트·golden을 돌리지 못했다. 통과를 주장하지 않는다.
+- Python은 워커 환경(Linux, Python 3.13, jsonschema 4.26)에서 일부만 직접 돌렸다:
+  - 명령: `cd backend; python3 -m unittest tests.test_student_catalog tests.test_planning_protocol_contract -v`
+  - 결과: 10건 중 9건 통과.
+  - 실패 1건 `test_catalog_rejects_payload_and_real_process_serves_list`: `core.backend_process`가 Windows 전용 `ctypes.WINFUNCTYPE`(user_input_guard)와 인식 asset manifest를 읽다 멈춘 환경 문제다. 바꾸기 전 판에서도 같은 자리에서 실패한다.
+- 같은 환경에서 `test_stdio_protocol_server`·`test_planning_parity`·`test_inventory_protocol`·`test_canonical_metadata`의 실패 4건도 모두 환경 문제다(Windows ctypes 2, 내려받지 않은 parity fixture 2).
+- 전체 `py -3.11 -m unittest discover -s tests -v`는 사용자 PC에서 실행해야 한다(아래 ①).
+- 별도 검토 에이전트가 바뀐 파일을 사본과 대조해 정적으로 읽었다. 컴파일 오류·analyze 지적은 없었다. 지적을 모두 고쳤다:
+  1. 그리드 `active` 계산의 `sublist(first, last)`: 줄어든 목록에 예전 스크롤 위치가 남으면 `first > last`라 RangeError가 난다. → 범위가 비면 0번 도는 반복문으로 바꿨다.
+  2. 교대 때 한 프레임 초상이 비는 문제: `AssetImageGrid`가 바뀐 asset을 프레임 뒤에 넣었다. → asset이 바뀐 직후(`didUpdateWidget`) 캐시에서 바로 온 이미지는 같은 프레임에 넣는다. 첫 그리기 경로는 그대로다.
+  3. 알리는 도중 듣는 곳이 빠지면 Timer가 남을 수 있었다. → `notifyListeners` 뒤에 다시 맞춘다.
+  4. golden `tearDown`에서 고정을 풀면 실패한 테스트의 남은 트리에 진짜 Timer가 붙을 수 있었다. → `tearDown`을 없앴다(파일마다 isolate가 따로다).
+  5. CRLF 파일 8개가 통째로 LF로 바뀌어 전체 diff가 되었다. → 원래 줄은 원래 줄 끝을 되살리고, 새 줄만 LF로 썼다.
+
+### 바뀐 파일
+
+**백엔드**
+- `backend/core/protocol_v1.py`:
+  - `planning.student.catalog` 학생 항목 끝에 선택 필드 `forms`를 붙인다(폼 2개 이상 학생만).
+  - `_catalog_forms`와 주입용 `student_forms` 인자를 더했다. 기본값은 `student_meta.MULTI_FORM_STUDENTS`다.
+- `backend/tests/test_student_catalog.py`:
+  - 주입 폼 3건(이름 없는 폼 → `template_name: null`). 폼 1개·없음 학생은 key가 없고, 기존 필드 순서는 그대로다.
+  - 실제 metadata의 다중 폼 학생 집합·`format_form_ref` 일치.
+  - 실제 프로세스 응답에 `hoshino_battle` 폼 2개.
+
+**계약**
+- `contracts/planning-student-catalog-v1.schema.json`: entry에 `forms`(minItems 2, `$defs/form` = `form_id`·`label`·`template_name`(string|null), 추가 key 거부).
+- `contracts/fixtures/planning_protocol_v1.json`: 사례 2건(다중 폼 응답 valid, 폼 1개 목록 invalid). Python·Dart 계약 테스트가 같이 읽는다.
+- `contracts/README.md`: `planning.student.catalog` 절 새로 씀. 정한 것:
+  - 폼 1개 이하 학생은 필드를 **뺀다**(빈 목록을 보내지 않음).
+  - `form_id` 규칙, `template_name` null이면 플레이스홀더로 그린다.
+  - 호환성 주의(아래 발견 사항 1).
+
+**프런트**
+- `frontend/lib/services/app_service.dart`: `StudentCatalogForm`, `StudentCatalogEntry.forms`/`isMultiForm`. `fromWire`는 `forms`를 선택 key로 받는다(2개 미만·알 수 없는 key·폼 필드 이상은 거부).
+- `frontend/lib/services/mock_app_service.dart` + `frontend/assets/student_catalog.json`: mock catalog의 다중 폼 학생 2명(`hoshino_battle`, `shun_swimsuit`)에 같은 모양의 `forms`.
+- 새 `frontend/lib/ui/widgets/student_form_cycle.dart`:
+  - `StudentFormClock`: 앱 전체 시계 하나. 듣는 곳이 있을 때만 3초 `Timer.periodic` 하나가 돈다. `freeze`로 고정한다.
+  - `StudentFormClockScope`(주입), `StudentFormCycleBuilder`(다중 폼 학생이 있고 TickerMode가 켜져 있을 때만 듣는다).
+  - `studentPortraitAssetAt`·`studentPortraitAssetsOf`.
+- `frontend/lib/ui/widgets/student_section_layout.dart`:
+  - 학생 그리드 카드(보이는 행에 다중 폼이 있을 때), S3 선택 카드, S4 최근 본 학생 썸네일이 같은 시계로 교대한다.
+  - 계획 학생 선택도 같은 `StudentDiagonalGrid`라 함께 교대한다.
+  - 경기천년제목 TextStyle 17곳에 폴백 지정을 더했다.
+- `frontend/lib/ui/widgets/student_grid_warmup.dart`: warmup asset에 다중 폼 학생의 모든 폼 초상을 넣는다(앞쪽 64명 제한과 상관없이).
+- `frontend/lib/ui/widgets/asset_image_grid.dart`: asset 교체 직후 캐시 이미지를 같은 프레임에 넣는다(교대 깜박임 방지).
+- `frontend/lib/app/theme.dart`: `AppFonts.fallback` 맨 앞에 Pretendard.
+- `frontend/lib/ui/kit/stepper.dart`(5곳), `frontend/lib/ui/widgets/diagonal_media_list_item.dart`(3곳), `frontend/lib/ui/widgets/plan_element_builder.dart`(5곳): 경기천년제목 TextStyle에 `fontFamilyFallback: AppFonts.fallback`.
+
+**테스트**
+- 새 `frontend/test/student_form_cycle_test.dart`(10건):
+  - FB-5 `fromWire` 2건(받기, 거부·이름 없는 폼), mock catalog 폼 1건.
+  - 교대 규칙 1건, 시계 Timer 1건.
+  - 그리드 0초·3초·6초 1건, 폼 1개 학생은 시계를 듣지 않음 1건, TickerMode 꺼짐 멈춤·다시 켬 1건, 같은 시계 두 곳 같은 단계 1건.
+  - warmup 1건.
+- `frontend/test/repository_process_e2e_test.dart`: 실제 Python 프로세스 catalog에서 `hoshino_battle` 폼 2개(`form_id`·`template_name`), `ayane`은 빈 목록(프로세스 E2E 왕복).
+- `frontend/test/goldens/golden_harness.dart`: 학생 fixture 복사 때 `forms`도 옮긴다.
+- `frontend/test/goldens/fe1g_baseline_golden_test.dart`: `setUp`에서 시계를 단계 0에 고정, 새 장면 `students-grid-second-form`(단계 1).
+- Dart 계약 테스트 `planning_protocol_contract_test.dart`는 고치지 않았다. 새 fixture 사례 2건을 같은 `fromWire`로 검증한다.
+
+사본: `debug/frontend_fe3e/pre/` 18개(위 기존 파일 전부). CRLF가 섞인 파일: `protocol_v1.py`, `test_student_catalog.py`, fixture, README, schema, `app_service.dart`, `theme.dart`, `repository_process_e2e_test.dart`. 이 파일들은 원래 줄의 줄 끝을 그대로 두고 새 줄만 LF로 썼다.
+
+### 처리한 FD
+
+- FD-064(워커 재량, 권장안): 폼 수 × 3초, 계단식(페이드 없음), 모든 학생이 같은 단계 값(같은 시계).
+- 단계 → 폼: `단계 % 폼 수`. 폼 2개면 0초 첫 폼, 3초 둘째 폼, 6초 첫 폼이다.
+
+### 다중 폼 교대가 적용되는 곳과 안 되는 곳
+
+- 적용: 학생 탭 그리드 카드, S3 선택 카드, S4 최근 본 학생, 계획 학생 선택 그리드. 모두 `StudentCatalogEntry`를 가진 자리다.
+- 아직 안 됨: 학생 ID만 받는 자리(계획 요소 빌더·계획 단계 타일·계획 탭 목록·통계·타이틀·계정 아바타·스캔 검토). 이 자리는 첫 폼(`<id>.png`)을 그대로 그린다. FE4·FE7에서 entry를 넘기면 같은 `StudentFormCycleBuilder`로 붙일 수 있다.
+
+### 이미지 추출 대상·스캐너 로그 요청
+
+- 요청 없음. 다중 폼 학생 2명의 폼 초상(`hoshino_battle_1.png`, `shun_swimsuit_1.png`)이 이미 `frontend/assets/student_portraits/`에 있다(UI asset).
+- 인식 계열 파일과 게임 이미지 자산은 건드리지 않았다. `scanner-structural-consolidation-orchestrator-log.md`에 항목을 더하지 않았다.
+
+### en dash 등 경기천년제목에 없는 글리프
+
+`GyeonggiTitle-Medium.ttf` cmap 검사 결과 없는 글리프: `–`(U+2013) `—`(U+2014) `•`(U+2022) `−`(U+2212) `✓` `✔` `≈`. `·`는 있다. Pretendard에는 `✔` `∼`만 없다.
+
+고친 방법: `AppFonts.fallback` 맨 앞을 번들 Pretendard로 바꿨다. 폴백을 지정한 경기천년제목 글자는 빠진 글리프만 같은 문장 안에서 Pretendard로 그린다. 앱과 golden이 같고, 기기 서체에 따라 달라지지 않는다. 폴백 지정이 없던 경기천년제목 TextStyle은 Lane A 파일 30곳에 지정을 더했다.
+
+| 위치 | 글자 | 서체 | 처리 |
+|---|---|---|---|
+| `ui/models/student_filter_selection.dart:81,95` 스킬 0 → "–"(필터 모달 강화·서브 행 값, 범위 칩) | – | 경기천년제목(폴백 있음) | 고침(폴백 순서) |
+| `ui/kit/stepper.dart` `StepButton` "−"(계획 요소 빌더 스테퍼 `plan_element_builder.dart:3134`, 갤러리) | − | 경기천년제목(폴백 없음) | 고침(폴백 추가) |
+| `ui/kit/shortage_flyout.dart:93` 부족 "−n" | − | `kitDisplayStyle`(폴백 있음) | 고침(폴백 순서) |
+| `ui/kit/gallery/*` "—" "−163.1M" 등 견본 | — − | 본문·`kitDisplayStyle` | 고침 또는 본래 문제 없음 |
+| `ui/kit/info_popover.dart:230` "•" | • | 본문 | 문제 없음 |
+| `ui/widgets/plan_section_layout.dart:4040,4764,5347,7773` "–" "−" "—" | – − — | 본문(테마 기본) | 문제 없음 |
+| `statistics/statistics_projection.dart:120-124` "1–20" 등 | – | 본문 | 문제 없음(사용처 본문 스타일) |
+| `ui/pages/inventory_page.dart:712`, `section_placeholder_page.dart:166`, `tactical_page.dart:190` "—" | — | 본문 | 문제 없음 |
+| `ui/widgets/scan_student_review_workspace.dart:1344-1447` "—" | — | 본문 | 스캐너 소유 — 손대지 않음, 문제 없음 |
+| `developer_tools_main.dart:2184` "—" | — | 본문(개발 도구) | 문제 없음 |
+| 폴백 지정 없는 경기천년제목 TextStyle 10곳: `title_page.dart`(7), `home_page.dart`(1), `account_section_cluster.dart`(2) | 현재 문자열에 빠진 글리프 없음 | 경기천년제목(폴백 없음) | 남김(Lane B 화면 FE8에서 지정). 지금은 숫자·한글뿐이다 |
+
+### golden 변화 예측
+
+- 바뀜(정상):
+  - `students-filter-open`: 강화·서브 행 최소값 "–"가 흰 사각형에서 Pretendard 대시로 바뀐다.
+  - `plan-element-builder`: 스테퍼 "−" 버튼이 사각형에서 Pretendard 빼기 기호로 바뀐다(스테퍼가 장면에 보이면).
+  - `plan-preset-manager`: 같은 스테퍼가 보이면 바뀐다(보이지 않으면 차이 0).
+- 새 장면: `students-grid-second-form`(학생 10명 fixture, 시계 단계 1): 슌(수영복) 카드만 둘째 폼 `shun_swimsuit_1.png`. 나머지는 `students-grid`와 같다.
+- 차이 0:
+  - `students-grid`·`students-detail`·`students-grid-name-off`: 단계 0 = 첫 폼 `shun_swimsuit.png`, 이전과 같은 파일.
+  - `title`·계정 3장·`home`: warmup asset만 늘었다.
+  - 나머지 `plan-*`: plan fixture는 다중 폼 학생이 없다.
+  - `scan-student-review`.
+- 차이가 예측과 다르면 원인을 조사해 보고한다.
+
+### 검수표 (mock 모드, 2560×1440 모니터 최대화 = 2560×1392)
+
+| artboard·상태 | 여는 방법 | 확인 |
+|---|---|---|
+| W-Card-States "폼 2개(3초)" | 학생 탭, 검색 "슌" 또는 "호시노" | 슌(수영복)·호시노(무장) 카드가 3초마다 둘째 폼으로 바뀌고 3초 뒤 돌아온다. 페이드 없이 바로 바뀐다. 다른 카드는 그대로다 |
+| 깜박임 | 같은 화면에서 교대 순간 | 초상이 비는 프레임이 없다 |
+| 같은 시계 | 다중 폼 학생을 선택해 S3·S4 최근 본 학생에 함께 보이게 | 그리드 카드·S3 선택 카드·최근 본 학생 썸네일이 같은 순간에 바뀐다 |
+| 멈춤 | 다른 탭으로 갔다가 돌아온다 | 다른 탭에 있는 동안 학생 탭은 멈춘다(돌아오면 이어서 교대) |
+| 계획 학생 선택 | 계획 탭 → 학생 고르기 | 다중 폼 학생 카드가 같은 규칙으로 교대한다 |
+| en dash | 학생 탭 → S1 필터 → 성장 범위 "강화"·"서브" | 최소값 "–"가 사각형이 아닌 대시로 보인다 |
+| 스테퍼 "−" | 계획 탭 → 요소 빌더 | 빼기 버튼 글자가 대시 모양 |
+
+### 알려진 시안 차이
+
+1. 시안 CSS `stuform2/3/4`는 폼 수별 keyframe 애니메이션이다. 앱은 같은 주기의 계단식 전환을 공용 시계 하나로 한다(카드마다 시작 시점이 다르지 않고 모두 같이 바뀐다).
+2. 폼 label은 canonical metadata 값("1", "2")이다. 화면에는 폼 이름을 보이지 않는다(시안도 초상만 바뀐다).
+
+### 미검증 항목
+
+1. `flutter analyze`(info 0), Dart 테스트(새 10건 + 프로세스 E2E 추가 단언), golden(19 + 1장), 전체 Python 테스트. 사용자 PC에서 실행해야 한다.
+2. 실행해 봐야 아는 것:
+   - 전역 시계의 Timer가 다른 위젯 테스트(전체 catalog mock을 쓰는 학생·계획 화면)에서 테스트 끝에 남지 않는지(트리 해제 때 듣는 곳이 빠져 취소되도록 했다).
+   - 교대 순간 캐시 이미지가 같은 프레임에 들어가는지.
+   - golden에서 Pretendard 폴백이 실제로 사각형을 대신하는지.
+
+### 발견 사항
+
+1. **catalog 추가 필드와 구버전 UI**: FE3-e 이전 Dart `StudentCatalogEntry.fromWire`는 key 집합을 정확히 비교한다. 그래서 `forms`가 있는 항목(다중 폼 학생 2명)이 오면 catalog 전체를 거부한다. 지금은 UI와 backend를 한 묶음으로 배포하므로 문제가 되지 않는다. 다만 "기존 클라이언트가 깨지지 않아야 한다"를 글자 그대로 지키려면 응답 버전 협상이 필요하다. 계약 README에 적었다.
+2. 다중 폼 교대가 학생 ID만 받는 화면(계획 요소 빌더 등)에는 아직 없다(위 목록). FE4에서 entry를 넘길지 오케스트레이터 판단이 필요하다.
+
+### 사용자 실행 순서
+
+① gate만 실행하고 멈춘다. 백엔드 전체 테스트도 같이 돌린다. 예상: Python 전부 통과. gate는 golden만 RED다(새 장면 기준 없음, `students-filter-open`·`plan-element-builder` 등 차이). 결과(`debug\frontend_gate\<실행 시각>\summary.txt`, `frontend\test\goldens\failures\`)를 오케스트레이터에게 보낸다. 오케스트레이터가 차이 이미지를 검토한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7\backend"
+py -3.11 -m unittest discover -s tests -v
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+② 승인 뒤 golden을 갱신하고 GREEN을 확인한다. 오케스트레이터가 새 기준 이미지를 검토한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+③ 승인 뒤 커밋한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3e -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3e
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesign-docs
+```
+
+`debug/frontend_fe3e/commit.json`의 `whole`은 `frontend/test/goldens/baseline`이다(새·바뀐 PNG 포함). 백엔드·계약 파일도 같은 commit.json에 넣었다.
+
+### FE3-e commit record (2026-10-07 20:12, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_195559\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: frontend/lib/services/mock_app_service.dart

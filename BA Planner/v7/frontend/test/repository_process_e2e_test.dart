@@ -53,6 +53,24 @@ void main() {
           ),
           isTrue,
         );
+        // FB-5: 실제 Python catalog 응답의 폼 목록이 Dart까지 왕복한다.
+        final students = await firstService.listStudents();
+        final hoshino = students.firstWhere(
+          (student) => student.studentId == 'hoshino_battle',
+        );
+        expect(hoshino.isMultiForm, isTrue);
+        expect(hoshino.forms.map((form) => form.formId), [
+          'hoshino_battle',
+          'hoshino_battle#2',
+        ]);
+        expect(hoshino.forms.map((form) => form.templateName), [
+          'hoshino_battle.png',
+          'hoshino_battle_1.png',
+        ]);
+        expect(
+          students.firstWhere((student) => student.studentId == 'ayane').forms,
+          isEmpty,
+        );
         final shortages = await firstService.calculateShortages(
           currentStudents: const [
             {'student_id': 'ayane', 'level': 1},

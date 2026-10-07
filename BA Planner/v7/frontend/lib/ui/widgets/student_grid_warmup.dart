@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart';
 import '../../services/app_service.dart';
 import 'asset_image_grid.dart';
 import 'bond_rank_portrait.dart';
+import 'student_form_cycle.dart';
 import 'student_section_layout.dart';
 
 const studentGridWarmupStudentLimit = 64;
@@ -22,6 +23,8 @@ List<StudentCatalogEntry> studentGridWarmupStudents(
   return ordered.take(limit).toList(growable: false);
 }
 
+/// 미리 읽을 asset. 앞쪽 학생의 초상과, 다중 폼 학생은 순서와 상관없이 모든 폼 초상을 넣는다
+/// (교대할 때 처음 보이는 폼이 깜박이지 않게, FE3-e).
 List<String> studentGridWarmupAssetPaths(
   Iterable<StudentCatalogEntry> catalog, {
   int studentLimit = studentGridWarmupStudentLimit,
@@ -30,7 +33,9 @@ List<String> studentGridWarmupAssetPaths(
   'assets/student_bond_backgrounds/square_yellow.png',
   'assets/student_bond_backgrounds/square_purple.png',
   for (final student in studentGridWarmupStudents(catalog, limit: studentLimit))
-    'assets/student_portraits/${student.studentId}.png',
+    ...studentPortraitAssetsOf(student),
+  for (final student in catalog)
+    if (student.isMultiForm) ...studentPortraitAssetsOf(student),
 }.toList(growable: false);
 
 class StudentGridImageWarmup {

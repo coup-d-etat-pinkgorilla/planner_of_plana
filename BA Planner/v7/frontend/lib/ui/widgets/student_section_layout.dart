@@ -27,6 +27,7 @@ import 'scroll_viewport_fog.dart';
 import 'section_surface.dart';
 import 'section_template_surface.dart';
 import 'student_filter_modal.dart';
+import 'student_form_cycle.dart';
 import 'student_portrait_status_overlay.dart';
 
 const studentTextureTessellationContrast = 0.030;
@@ -1375,29 +1376,37 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                         fit: StackFit.expand,
                         clipBehavior: Clip.none,
                         children: [
-                          AssetImageGrid(
-                            key: const ValueKey('student-focused-portrait'),
-                            items: [
-                              AssetImageGridItem(
-                                asset: bondRankPortraitBackgroundAsset(
-                                  widget.selectedValues?['bond_rank'] as int?,
-                                ),
-                                column: 0,
-                                row: 0,
-                                edgeCropFraction: 0.11,
-                                clipPathBuilder: studentGridCardPath,
-                              ),
-                              if (widget.selectedId != null)
+                          // 선택 카드도 다중 폼이면 공용 시계로 교대한다(FD-064).
+                          StudentFormCycleBuilder(
+                            active: selectedStudent?.isMultiForm ?? false,
+                            builder: (context, formStep) => AssetImageGrid(
+                              key: const ValueKey('student-focused-portrait'),
+                              items: [
                                 AssetImageGridItem(
-                                  asset:
-                                      'assets/student_portraits/${widget.selectedId}.png',
+                                  asset: bondRankPortraitBackgroundAsset(
+                                    widget.selectedValues?['bond_rank'] as int?,
+                                  ),
                                   column: 0,
                                   row: 0,
-                                  scale: 0.98,
-                                  clipRadiusFraction: 0.12,
-                                  alphaThreshold: 0.04,
+                                  edgeCropFraction: 0.11,
+                                  clipPathBuilder: studentGridCardPath,
                                 ),
-                            ],
+                                if (widget.selectedId != null)
+                                  AssetImageGridItem(
+                                    asset: selectedStudent == null
+                                        ? 'assets/student_portraits/${widget.selectedId}.png'
+                                        : studentPortraitAssetAt(
+                                            selectedStudent,
+                                            formStep,
+                                          ),
+                                    column: 0,
+                                    row: 0,
+                                    scale: 0.98,
+                                    clipRadiusFraction: 0.12,
+                                    alphaThreshold: 0.04,
+                                  ),
+                              ],
+                            ),
                           ),
                           Positioned.fill(
                             child: IgnorePointer(
@@ -1623,6 +1632,7 @@ class StudentResultCountRow extends StatelessWidget {
         key: const ValueKey('student-result-count-shown'),
         style: const TextStyle(
           fontFamily: AppFonts.display,
+          fontFamilyFallback: AppFonts.fallback,
           color: AppColors.text,
           fontSize: 18,
           fontWeight: FontWeight.w800,
@@ -1859,24 +1869,27 @@ class StudentRecentThumb extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            AssetImageGrid(
-              items: [
-                AssetImageGridItem(
-                  asset: bondRankPortraitBackgroundAsset(null),
-                  column: 0,
-                  row: 0,
-                  edgeCropFraction: 0.11,
-                  clipPathBuilder: studentGridCardPath,
-                ),
-                AssetImageGridItem(
-                  asset: 'assets/student_portraits/${student.studentId}.png',
-                  column: 0,
-                  row: 0,
-                  scale: 0.98,
-                  clipRadiusFraction: 0.12,
-                  alphaThreshold: 0.04,
-                ),
-              ],
+            StudentFormCycleBuilder(
+              active: student.isMultiForm,
+              builder: (context, formStep) => AssetImageGrid(
+                items: [
+                  AssetImageGridItem(
+                    asset: bondRankPortraitBackgroundAsset(null),
+                    column: 0,
+                    row: 0,
+                    edgeCropFraction: 0.11,
+                    clipPathBuilder: studentGridCardPath,
+                  ),
+                  AssetImageGridItem(
+                    asset: studentPortraitAssetAt(student, formStep),
+                    column: 0,
+                    row: 0,
+                    scale: 0.98,
+                    clipRadiusFraction: 0.12,
+                    alphaThreshold: 0.04,
+                  ),
+                ],
+              ),
             ),
             IgnorePointer(
               child: CustomPaint(
@@ -2609,6 +2622,7 @@ class StudentLevelStatus extends StatelessWidget {
                         style: TextStyle(
                           color: AppColors.primary,
                           fontFamily: 'GyeonggiTitle',
+                          fontFamilyFallback: AppFonts.fallback,
                           fontSize: 8,
                           fontWeight: FontWeight.w700,
                           height: 1,
@@ -2625,6 +2639,7 @@ class StudentLevelStatus extends StatelessWidget {
                           style: const TextStyle(
                             color: AppColors.text,
                             fontFamily: 'GyeonggiTitle',
+                            fontFamilyFallback: AppFonts.fallback,
                             fontSize: 31,
                             fontWeight: FontWeight.w800,
                             height: 1,
@@ -2760,6 +2775,7 @@ class _StudentMetadataValue extends StatelessWidget {
             style: const TextStyle(
               color: studentSortAccentColor,
               fontFamily: 'GyeonggiTitle',
+              fontFamilyFallback: AppFonts.fallback,
               fontSize: 9,
               fontWeight: FontWeight.w800,
               height: 1,
@@ -2782,6 +2798,7 @@ class _StudentMetadataValue extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.text,
               fontFamily: 'GyeonggiTitle',
+              fontFamilyFallback: AppFonts.fallback,
               fontSize: 15,
               fontWeight: FontWeight.w700,
               height: 1,
@@ -2868,6 +2885,7 @@ class _StudentSectionTitle extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.text,
             fontFamily: 'GyeonggiTitle',
+            fontFamilyFallback: AppFonts.fallback,
             fontSize: 8,
             fontWeight: FontWeight.w800,
             height: 1,
@@ -2930,6 +2948,7 @@ class _StudentSkillColumn extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.textMuted,
                   fontFamily: 'GyeonggiTitle',
+                  fontFamilyFallback: AppFonts.fallback,
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                   height: 1,
@@ -2943,6 +2962,7 @@ class _StudentSkillColumn extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.text,
                 fontFamily: 'GyeonggiTitle',
+                fontFamilyFallback: AppFonts.fallback,
                 fontSize: 31.5,
                 fontWeight: FontWeight.w800,
                 height: 1,
@@ -3040,6 +3060,7 @@ class StudentAbilityStatus extends StatelessWidget {
                     style: const TextStyle(
                       color: AppColors.text,
                       fontFamily: 'GyeonggiTitle',
+                      fontFamilyFallback: AppFonts.fallback,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       height: 1,
@@ -3172,6 +3193,7 @@ class _StudentEquipmentSlot extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.textMuted,
                 fontFamily: 'GyeonggiTitle',
+                fontFamilyFallback: AppFonts.fallback,
                 fontSize: 13.5,
                 height: 1,
               ),
@@ -3214,6 +3236,7 @@ class _StudentEquipmentSlot extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.text,
                 fontFamily: 'GyeonggiTitle',
+                fontFamilyFallback: AppFonts.fallback,
                 fontSize: 13.5,
                 height: 1,
               ),
@@ -3242,6 +3265,7 @@ class _StudentFavoriteItemSlot extends StatelessWidget {
           style: TextStyle(
             color: AppColors.textMuted,
             fontFamily: 'GyeonggiTitle',
+            fontFamilyFallback: AppFonts.fallback,
             fontSize: 8,
             height: 1,
           ),
@@ -3264,6 +3288,7 @@ class _StudentFavoriteItemSlot extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.text,
               fontFamily: 'GyeonggiTitle',
+              fontFamilyFallback: AppFonts.fallback,
               fontSize: 21,
               fontWeight: FontWeight.w800,
               height: 1,
@@ -3315,6 +3340,7 @@ class StudentPotentialStatus extends StatelessWidget {
                 style: TextStyle(
                   color: AppColors.text,
                   fontFamily: 'GyeonggiTitle',
+                  fontFamilyFallback: AppFonts.fallback,
                   fontSize: 18.5,
                   fontWeight: FontWeight.w800,
                   height: 1,
@@ -3431,6 +3457,7 @@ class _StudentCombatValue extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.text,
             fontFamily: 'GyeonggiTitle',
+            fontFamilyFallback: AppFonts.fallback,
             fontSize: 19,
             fontWeight: FontWeight.w800,
             height: 1,
@@ -3587,6 +3614,7 @@ class StudentBondStatus extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.text,
                   fontFamily: 'GyeonggiTitle',
+                  fontFamilyFallback: AppFonts.fallback,
                   fontSize: 43.2,
                   fontWeight: FontWeight.w900,
                   height: 1,
@@ -3621,6 +3649,7 @@ const studentBondTargetLabelGap = 5.0;
 const studentBondTargetLabelStyle = TextStyle(
   color: studentSortAccentColor,
   fontFamily: 'GyeonggiTitle',
+  fontFamilyFallback: AppFonts.fallback,
   fontSize: 10,
   fontWeight: FontWeight.w800,
   height: 1,
@@ -4636,49 +4665,67 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                 _gridInset + trajectoryDepth + _scrollbarReserve,
                 _gridInset + geometry.nameExtent,
               );
+              // 보이는 행(+ 버퍼)에 다중 폼 학생이 있는가. 스크롤 위치가 줄어든 목록보다 뒤면 범위가 비어 있다.
+              var hasMultiForm = false;
+              for (
+                var index = firstStudentIndex;
+                index < lastStudentIndex;
+                index++
+              ) {
+                if (widget.students[index].isMultiForm) {
+                  hasMultiForm = true;
+                  break;
+                }
+              }
               return SizedBox(
                 height: contentHeight,
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: AssetImageGrid(
-                        key: const ValueKey('student-image-grid'),
-                        items: [
-                          for (
-                            var index = firstStudentIndex;
-                            index < lastStudentIndex;
-                            index++
-                          ) ...[
-                            AssetImageGridItem(
-                              asset: bondRankPortraitBackgroundAsset(
-                                widget.studentValuesById[widget
-                                        .students[index]
-                                        .studentId]?['bond_rank']
-                                    as int?,
+                      // 보이는 행에 다중 폼 학생이 있을 때만 공용 시계를 듣는다(FD-064).
+                      child: StudentFormCycleBuilder(
+                        active: hasMultiForm,
+                        builder: (context, formStep) => AssetImageGrid(
+                          key: const ValueKey('student-image-grid'),
+                          items: [
+                            for (
+                              var index = firstStudentIndex;
+                              index < lastStudentIndex;
+                              index++
+                            ) ...[
+                              AssetImageGridItem(
+                                asset: bondRankPortraitBackgroundAsset(
+                                  widget.studentValuesById[widget
+                                          .students[index]
+                                          .studentId]?['bond_rank']
+                                      as int?,
+                                ),
+                                column: index % columns,
+                                row: index ~/ columns,
+                                scale: 1,
+                                edgeCropFraction: 0.11,
+                                clipPathBuilder: studentGridCardPath,
                               ),
-                              column: index % columns,
-                              row: index ~/ columns,
-                              scale: 1,
-                              edgeCropFraction: 0.11,
-                              clipPathBuilder: studentGridCardPath,
-                            ),
-                            AssetImageGridItem(
-                              asset:
-                                  'assets/student_portraits/${widget.students[index].studentId}.png',
-                              column: index % columns,
-                              row: index ~/ columns,
-                              scale: 0.98,
-                              clipRadiusFraction: 0.12,
-                              alphaThreshold: 0.04,
-                            ),
+                              AssetImageGridItem(
+                                asset: studentPortraitAssetAt(
+                                  widget.students[index],
+                                  formStep,
+                                ),
+                                column: index % columns,
+                                row: index ~/ columns,
+                                scale: 0.98,
+                                clipRadiusFraction: 0.12,
+                                alphaThreshold: 0.04,
+                              ),
+                            ],
                           ],
-                        ],
-                        columns: columns,
-                        rows: rows,
-                        columnGap: _gridGap,
-                        rowGap: geometry.imageRowGap,
-                        rowHorizontalOffsets: offsets,
-                        contentPadding: padding,
+                          columns: columns,
+                          rows: rows,
+                          columnGap: _gridGap,
+                          rowGap: geometry.imageRowGap,
+                          rowHorizontalOffsets: offsets,
+                          contentPadding: padding,
+                        ),
                       ),
                     ),
                     Positioned.fill(

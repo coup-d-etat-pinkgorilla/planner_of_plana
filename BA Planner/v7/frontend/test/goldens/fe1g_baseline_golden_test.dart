@@ -22,6 +22,7 @@ import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/models/student_filter_selection.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_student_review_workspace.dart';
+import 'package:ba_planner_v7/ui/widgets/student_form_cycle.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -124,6 +125,9 @@ Future<String> _openPlanningWithScenario(
 
 void main() {
   setUpAll(loadGoldenFonts);
+  // FE3-e: 다중 폼 초상 교대 시계를 첫 폼(단계 0)에 고정한다(FD-064). 장면마다 같은 값이다.
+  // 풀지 않는다(테스트 파일마다 isolate가 따로라 다른 테스트에 번지지 않는다).
+  setUp(() => StudentFormClock.instance.freeze(0));
 
   // --- 타이틀·계정 -----------------------------------------------------------
   testWidgets('title', (tester) async {
@@ -235,6 +239,28 @@ void main() {
     // 8열 그리드가 두 줄이라 접힌 행 피치(카드 + 3.84)가 장면에 보인다.
     expect(grid.students.length, greaterThan(grid.columns));
     await expectGoldenScene(tester, 'students-grid-name-off');
+  }, variant: goldenPlatform);
+
+  // FE3-e: 다중 폼 학생(슌(수영복))이 둘째 폼을 보이는 순간(시계 단계 1). students-grid와 같은 fixture다.
+  testWidgets('students-grid-second-form', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _studentService();
+    await _openShell(tester, service);
+    await _tapKey(tester, 'top-tab-students');
+    StudentFormClock.instance.freeze(1);
+    await tester.pump();
+    final grid = tester.widget<StudentDiagonalGrid>(
+      find.byType(StudentDiagonalGrid).first,
+    );
+    final shun = grid.students.firstWhere(
+      (student) => student.studentId == 'shun_swimsuit',
+    );
+    expect(shun.isMultiForm, isTrue);
+    expect(
+      studentPortraitAssetAt(shun, StudentFormClock.instance.step),
+      'assets/student_portraits/shun_swimsuit_1.png',
+    );
+    await expectGoldenScene(tester, 'students-grid-second-form');
   }, variant: goldenPlatform);
 
   // FE3-d2: 필터 모달(Student-Filter). 초안에 학교·역할·공격 타입 토글, 레벨 범위, 성급 범위, 일본 서버 전용

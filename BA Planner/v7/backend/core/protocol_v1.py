@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, fields
 from types import SimpleNamespace
-from typing import Any, Callable
+from typing import Any, Callable, Mapping, Sequence
 import traceback
 
 from core import student_meta
@@ -191,6 +191,30 @@ def error_response(
     return _success(request, {"error": error})
 
 
+def _catalog_forms(
+    student_id: str, forms: Sequence[Mapping[str, Any]]
+) -> list[dict[str, Any]]:
+    """FB-5: catalog entry form list. Only students with two or more forms get one.
+
+    ``form_id`` is the canonical form reference (``student_id`` for the first form,
+    ``student_id#n`` after it), ``label`` is the form label, and ``template_name`` is
+    the portrait file name (``None`` when the form declares none; the UI then shows
+    the regular placeholder).
+    """
+    if len(forms) < 2:
+        return []
+    items: list[dict[str, Any]] = []
+    for index, form in enumerate(forms, start=1):
+        label = form.get("label")
+        template = form.get("template_name")
+        items.append({
+            "form_id": student_id if index == 1 else f"{student_id}#{index}",
+            "label": str(label) if isinstance(label, (str, int)) and str(label).strip() else str(index),
+            "template_name": template if isinstance(template, str) and template.strip() else None,
+        })
+    return items
+
+
 class PlanningProtocolV1:
     def __init__(
         self,
@@ -198,6 +222,9 @@ class PlanningProtocolV1:
         student_lookup: Callable[[str], dict[str, Any] | None] = student_meta.get,
         student_ids: Callable[[], list[str]] = student_meta.all_ids,
         student_jp_only: Callable[[str], bool] = student_meta.is_jp_only,
+        student_forms: Callable[[str], Sequence[Mapping[str, Any]]] = (
+            lambda student_id: student_meta.MULTI_FORM_STUDENTS.get(student_id, ())
+        ),
         calculator: Callable[[dict[str, object], GrowthPlan], object] = calculate_plan_totals,
         inventory_catalog: Callable[[], list[dict[str, object]]] = catalog_payload,
         shortage_deriver: Callable[
@@ -208,6 +235,7 @@ class PlanningProtocolV1:
         self._student_lookup = student_lookup
         self._student_ids = student_ids
         self._student_jp_only = student_jp_only
+        self._student_forms = student_forms
         self._calculator = calculator
         self._inventory_catalog = inventory_catalog
         self._shortage_deriver = shortage_deriver
@@ -302,6 +330,9 @@ class PlanningProtocolV1:
                     "search_tags": [str(item) for item in metadata.get("search_tags", []) if str(item).strip()] if isinstance(metadata.get("search_tags", []), list) else [],
                     "kr_search_tags": [str(item) for item in metadata.get("kr_search_tags", []) if str(item).strip()] if isinstance(metadata.get("kr_search_tags", []), list) else [],
                 })
+                forms = _catalog_forms(student_id, self._student_forms(student_id))
+                if forms:
+                    students[-1]["forms"] = forms
         except Exception:
             self._diagnostic(traceback.format_exc())
             return error_response(request, "metadata_lookup_failed", "Student catalog lookup failed")

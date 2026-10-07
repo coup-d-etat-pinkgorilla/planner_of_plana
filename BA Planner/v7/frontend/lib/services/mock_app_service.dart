@@ -695,6 +695,9 @@ class MockAppService
     'jp_only': student.jpOnly,
     'search_tags': student.searchTags,
     'kr_search_tags': student.krSearchTags,
+    // FB-5: 다중 폼 학생에게만 붙는 선택 필드(Python 응답과 같은 모양).
+    if (student.forms.isNotEmpty)
+      'forms': [for (final form in student.forms) form.toWire()],
   };
 
   @override

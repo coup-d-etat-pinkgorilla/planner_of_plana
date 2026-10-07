@@ -6,6 +6,65 @@ enum ScanPhase { idle, scanning, succeeded, failed }
 
 enum ImageLoadState { loaded, loading, failed }
 
+/// 학생 폼 하나(FB-5, `planning.student.catalog`의 선택 필드 `forms`).
+@immutable
+class StudentCatalogForm {
+  const StudentCatalogForm({
+    required this.formId,
+    required this.label,
+    required this.templateName,
+  });
+
+  /// canonical 폼 참조(첫 폼은 학생 ID, 그 뒤는 `학생ID#n`).
+  final String formId;
+  final String label;
+
+  /// 폼 초상 파일 이름. 없으면 null(기존 플레이스홀더로 그린다).
+  final String? templateName;
+
+  factory StudentCatalogForm.fromWire(Map<String, dynamic> value) {
+    const fields = {'form_id', 'label', 'template_name'};
+    if (value.keys.toSet().length != fields.length ||
+        !value.keys.toSet().containsAll(fields)) {
+      throw const FormatException('Invalid student catalog form fields');
+    }
+    final formId = value['form_id'];
+    final label = value['label'];
+    final templateName = value['template_name'];
+    if (formId is! String || formId.isEmpty) {
+      throw const FormatException('Invalid student catalog form_id');
+    }
+    if (label is! String || label.isEmpty) {
+      throw const FormatException('Invalid student catalog form label');
+    }
+    if (templateName != null &&
+        (templateName is! String || templateName.isEmpty)) {
+      throw const FormatException('Invalid student catalog form template_name');
+    }
+    return StudentCatalogForm(
+      formId: formId,
+      label: label,
+      templateName: templateName as String?,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'form_id': formId,
+    'label': label,
+    'template_name': templateName,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is StudentCatalogForm &&
+      other.formId == formId &&
+      other.label == label &&
+      other.templateName == templateName;
+
+  @override
+  int get hashCode => Object.hash(formId, label, templateName);
+}
+
 @immutable
 class StudentCatalogEntry {
   StudentCatalogEntry({
@@ -27,8 +86,10 @@ class StudentCatalogEntry {
     this.jpOnly = false,
     required List<String> searchTags,
     required List<String> krSearchTags,
+    List<StudentCatalogForm> forms = const [],
   }) : searchTags = List.unmodifiable(searchTags),
-       krSearchTags = List.unmodifiable(krSearchTags);
+       krSearchTags = List.unmodifiable(krSearchTags),
+       forms = List.unmodifiable(forms);
 
   final String studentId;
   final String displayName;
@@ -48,6 +109,12 @@ class StudentCatalogEntry {
   final bool jpOnly;
   final List<String> searchTags;
   final List<String> krSearchTags;
+
+  /// 폼이 2개 이상일 때만 폼 순서대로 있다(FB-5). 그 밖의 학생은 빈 목록이다.
+  final List<StudentCatalogForm> forms;
+
+  /// 다중 폼 학생인가(초상 교대 대상, FD-064).
+  bool get isMultiForm => forms.length > 1;
 
   factory StudentCatalogEntry.fromWire(Map<String, dynamic> value) {
     const required = {
@@ -70,8 +137,11 @@ class StudentCatalogEntry {
       'search_tags',
       'kr_search_tags',
     };
-    if (value.keys.toSet().length != required.length ||
-        !value.keys.toSet().containsAll(required)) {
+    // `forms`(FB-5)는 다중 폼 학생에게만 붙는 선택 key다. 그 밖의 key는 거부한다.
+    const optional = {'forms'};
+    final keys = value.keys.toSet();
+    if (!keys.containsAll(required) ||
+        keys.difference(required).difference(optional).isNotEmpty) {
       throw const FormatException('Invalid student catalog entry fields');
     }
     String text(String key) {
@@ -98,6 +168,19 @@ class StudentCatalogEntry {
       return item.cast<String>();
     }
 
+    List<StudentCatalogForm> forms() {
+      if (!value.containsKey('forms')) return const [];
+      final item = value['forms'];
+      // 폼이 1개 이하인 학생은 key를 빼고 보낸다(계약: minItems 2).
+      if (item is! List || item.length < 2 || item.any((form) => form is! Map)) {
+        throw const FormatException('Invalid student catalog forms');
+      }
+      return [
+        for (final form in item)
+          StudentCatalogForm.fromWire(Map<String, dynamic>.from(form as Map)),
+      ];
+    }
+
     return StudentCatalogEntry(
       studentId: text('student_id'),
       displayName: text('display_name'),
@@ -119,6 +202,7 @@ class StudentCatalogEntry {
           : throw const FormatException('Invalid student catalog jp_only'),
       searchTags: tags('search_tags'),
       krSearchTags: tags('kr_search_tags'),
+      forms: forms(),
     );
   }
 

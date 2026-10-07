@@ -338,6 +338,7 @@ class GoldenStudentMockAppService extends GoldenMockAppService
     jpOnly: source.jpOnly,
     searchTags: source.searchTags,
     krSearchTags: source.krSearchTags,
+    forms: source.forms,
   );
 
   /// 보유 학생(mock 고정 값)과 계획 학생(goals v1)을 선택 계정에 저장한다. 화면을 열기 전에 부른다.

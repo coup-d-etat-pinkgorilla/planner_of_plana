@@ -27,6 +27,16 @@
       "message": { "protocol": 1, "id": "catalog-1", "type": "response", "method": "planning.student.catalog", "payload": { "students": [{ "student_id": "aru", "display_name": "Aru", "template_name": "aru.png", "group": "aru", "variant": null, "school": "Gehenna", "rarity": "3", "attack_type": "Explosive", "defense_type": "Light", "combat_class": "Striker", "role": "Dealer", "position": "Back", "equipment_slot_1": "Hat", "equipment_slot_2": "Hairpin", "equipment_slot_3": "Watch", "jp_only": false, "search_tags": ["aru"], "kr_search_tags": [] }], "sort": "display_name_then_id" } }
     },
     {
+      "name": "student catalog response lists forms for a multi-form student",
+      "valid": true,
+      "message": { "protocol": 1, "id": "catalog-2", "type": "response", "method": "planning.student.catalog", "payload": { "students": [{ "student_id": "hoshino_battle", "display_name": "호시노(무장)", "template_name": "hoshino_battle.png", "group": "호시노", "variant": "무장", "school": "Abydos", "rarity": "3", "attack_type": "Mystic", "defense_type": "Heavy", "combat_class": "striker", "role": "tanker", "position": "front", "equipment_slot_1": "Hat", "equipment_slot_2": "Bag", "equipment_slot_3": "Watch", "jp_only": false, "search_tags": ["bhoshino"], "kr_search_tags": [], "forms": [{ "form_id": "hoshino_battle", "label": "1", "template_name": "hoshino_battle.png" }, { "form_id": "hoshino_battle#2", "label": "2", "template_name": null }] }], "sort": "display_name_then_id" } }
+    },
+    {
+      "name": "student catalog rejects a single-form list",
+      "valid": false,
+      "message": { "protocol": 1, "id": "catalog-3", "type": "response", "method": "planning.student.catalog", "payload": { "students": [{ "student_id": "hoshino_battle", "display_name": "호시노(무장)", "template_name": "hoshino_battle.png", "group": "호시노", "variant": "무장", "school": "Abydos", "rarity": "3", "attack_type": "Mystic", "defense_type": "Heavy", "combat_class": "striker", "role": "tanker", "position": "front", "equipment_slot_1": "Hat", "equipment_slot_2": "Bag", "equipment_slot_3": "Watch", "jp_only": false, "search_tags": ["bhoshino"], "kr_search_tags": [], "forms": [{ "form_id": "hoshino_battle", "label": "1", "template_name": "hoshino_battle.png" }] }], "sort": "display_name_then_id" } }
+    },
+    {
       "name": "student catalog rejects paging",
       "valid": false,
       "message": { "protocol": 1, "id": "catalog-bad", "type": "request", "method": "planning.student.catalog", "payload": { "page": 1 } }

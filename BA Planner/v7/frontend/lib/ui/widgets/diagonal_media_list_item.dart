@@ -597,6 +597,7 @@ class _DeltaLabel extends StatelessWidget {
             style: TextStyle(
               color: AppColors.textMuted,
               fontFamily: 'GyeonggiTitle',
+              fontFamilyFallback: AppFonts.fallback,
               fontSize: fontSize,
               fontWeight: FontWeight.w700,
               height: 1,
@@ -714,6 +715,7 @@ class _FittedValueText extends StatelessWidget {
       style: TextStyle(
         color: color ?? AppColors.textMuted,
         fontFamily: 'GyeonggiTitle',
+        fontFamilyFallback: AppFonts.fallback,
         fontSize: fontSize,
         fontWeight: FontWeight.w700,
         height: 1,
@@ -737,6 +739,7 @@ class _ComponentDeltaLine extends StatelessWidget {
         style: const TextStyle(
           color: AppColors.textMuted,
           fontFamily: 'GyeonggiTitle',
+          fontFamilyFallback: AppFonts.fallback,
           fontSize: 8.5,
           fontWeight: FontWeight.w700,
           height: 1,
