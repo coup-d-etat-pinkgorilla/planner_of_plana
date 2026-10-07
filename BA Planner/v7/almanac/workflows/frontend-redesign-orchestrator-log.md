@@ -291,3 +291,14 @@ topics: [workflow, design]
 - FE3-f 분할 결정. 범위가 FE3-d보다 크다(모드 전환, 13행 스테퍼, S3 목표 표시, S4, 크레딧·재화 목록, 디바운스 재계산).
   · f1: 계산기 상태 모델(13행 목표, FD-166 정규화, FD-168 현재값 출처, FD-169 빠른 목표, FD-170 최근 계산) + 계산 어댑터(FD-162 (a): 임시 1페이즈 1단계 문서 `planning.document.calculate`, 디바운스). 화면 연결 없음, golden 변화 0.
   · f2: 학생 탭 계산기 모드(FD-160 (a) 진입, FD-161 복귀), S1 버튼, 헤더 제목, S2 13행, S3 목표 표시와 FD-167 토글, S4, 크레딧 타일(내역 막대 숨김), 성장 재화 목록, FD-172 빗금, FD-173 버튼 숨김, 인연 타일 빈 상태. "이 목표로 계획에 추가"는 FE4-g 전까지 비활성. golden 장면 추가.
+
+## 2026-10-07 21:38 — FE3-f1 커밋 확인, FB-12 신설
+
+- 커밋 `7ec07589`(7파일: 새 파일 6 + status, +2987). 기존 파일 수정 0, golden 20장 그대로. 문서 커밋 `bcde9559`. gate: 일반 648, 프로세스 28, golden 20.
+- 검토: 13행 표(애장품은 장비 3 뒤·인연 앞, 애장품 없는 학생은 12행), 정규화 5단계 순서(기존 계획 함수는 손대지 않음, 무작위 테스트 3000회), 어댑터는 `planning.document.calculate`에 kind `scenario` 임시 문서를 보낸다. 백엔드가 저장·활성 계획 변경을 하지 않음을 워커가 확인했고, mock 왕복 테스트로 revision·goals 불변을 확인한다. FD-074 프리셋은 저장소(FE4-b·c) 전까지 보류. 모두 승인.
+- 최근 계산의 계정 전환: 워커가 app_shell을 피하려고 `syncProfile(id)`를 두었다. f2에서 학생 탭이 계정 id를 알릴 때 부른다. 셸 수정은 허락하지 않는다.
+- 워커 발견 사항 2건을 오케스트레이터가 코드로 확인했다:
+  · `planning_calc.py:458` `getattr(record, "star", 0)`. wire 레코드(SimpleNamespace)의 필드는 `student_star`(protocol_v1 `_CURRENT_INTEGER_FIELDS`)라서 현재 성급이 늘 0이다. 성급 목표가 있으면 크레딧·엘레프가 과다 계산된다.
+  · `planning_document.py:192` `_advance`가 `f"Tier{value}"`를 쓰고, `planning_calc.py:360` `_parse_tier_number`는 `"TIER7"`[1:] = `"IER7"` → ValueError → 0이다. 2단계 이상 문서에서 장비 비용이 T0부터 다시 계산된다.
+  · 둘 다 C 이전부터 있던 버그이고 스캐너 소유가 아니다. 계획 탭 숫자가 틀리므로 FB-12로 FE3-f2 전에 단독 slice로 고친다(Python 테스트 + 계약 영향 없음 확인).
+- mock 계산 결과가 비어 있음(발견 3): f2 golden은 golden 전용 서비스 대역에 계산 결과를 넣는다. mock_app_service.dart는 스캐너 미커밋 변경이 있으니 이번에도 고치지 않는다.
