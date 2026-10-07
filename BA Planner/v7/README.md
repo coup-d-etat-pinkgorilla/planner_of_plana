@@ -3,6 +3,7 @@
 BA Planner v7은 Flutter for Windows 프론트엔드와 headless Python 백엔드를
 분리해 새로 구축하는 세대입니다. v6의 Qt/QML/QWidget/Tk UI를 복사하지 않고,
 검증된 도메인 로직과 데이터 계약만 수직 슬라이스 단위로 이전합니다.
+클라이언트 자료 버전 고정 파일, C:\Users\brigh\ba-client-data 참조, 읽기 경로 전환은 미실시
 
 ## 현재 상태
 

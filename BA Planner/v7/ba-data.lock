@@ -1,0 +1,329 @@
+{
+  "schema": "ba-client-data.lock.v1",
+  "consumer": "v7",
+  "store_root": "C:\\Users\\brigh\\ba-client-data",
+  "written_utc": "2026-10-07T06:34:36+00:00",
+  "pins": {
+    "jp": {
+      "version_id": "jp-1.73.0-e2baf70e",
+      "client_version": "1.73.0",
+      "bundle_revision": null,
+      "files": {
+        "GameAssembly.dll": "e2baf70eeb56fc02be00dc35e43374652282ce72dd3f1cd88a5b853e33c0afc1",
+        "global-metadata.dat": "df1a47ce591a66cef2a4cf9890422495ad08e4de8804536690598f23d6485d63",
+        "ExcelDB.db": "a5cfbbb9c7f00ccdd82a59e100febb7ed5eb107bc8ac93c6ed0dede14418416a",
+        "Excel.zip": "f9e8e721c14486a1517b627799ea03122aaa39da4f024eda3da1da7c8347c97b",
+        "LevelSkillDataDBSchema.db": "410185d9e06d2ee1c191b4ea810c6a62b69a95a0da40fb30403da9e7a0e1fb6b",
+        "LogicEffectDataDBSchema.db": "ff352000f7d7e3cfebea1bbe30a93d24fa842387161f157e2a8a3e5dfdfbd099"
+      }
+    },
+    "steam": {
+      "version_id": "steam-r464491-bbe68ad3",
+      "client_version": null,
+      "bundle_revision": "464491",
+      "files": {
+        "GameAssembly.dll": "bbe68ad3fd303884fe7d87abeeac3df0b6f7581b179d8fb16715c6037ae473ab",
+        "global-metadata.dat": "b7d8373d419047bec25ebe6fe3ce76686e7ca979d151ad819d93c1c2fdbc8360",
+        "ExcelDB.db": "f4052d97af69d5fa55d8fac3332cd7518163fbf090457531a037b98040af31da",
+        "Excel.zip": "7f492e2be7234c1d7cf8f82e2be888b281703ed431d9db6ac9601e06c1a15924",
+        "LevelSkillDataDBSchema.db": "9e9eef6db11cc6662cfdd53bf6bf6fbefa50af06f67633e215658327b74fec77",
+        "LogicEffectDataDBSchema.db": "db5e99655cdc1274a571a5872ec0598b07f4deda174e525b11c2bc4b940f53db"
+      }
+    }
+  },
+  "extracts": [
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "exceldb-json",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/exceldb-json",
+      "provenance_sha256": "fa1b83edc7d8b5631e8a362ce8d5434936ab85ebc030df9d0007f770f9a08760",
+      "files": {
+        "CharacterExcel.json": "2ff635b1340a88c02a35ececdb16fbeb99c100c08793102c314f78ffe70f385c",
+        "CharacterGearExcel.json": "6e13f34f87fec2bea2e60075255fd6902cf50c8f2535cdd91aa4c5486462f0c8",
+        "CharacterPotentialExcel.json": "ad6bddbd9bd0d48ad26dfb227d823e5e7b42d9b5e5bcba1f0c7b0013da939d74",
+        "CharacterPotentialStatExcel.json": "1d51bf3130e853694e333a37ac3643ab04692acece80b9002ab378b9fc12afe7",
+        "CharacterSkillListExcel.json": "972bf3b391770b831b85a4d5cffb8f8a4f4277521dddc52ba9c3a5d91b128b56",
+        "CharacterStatExcel.json": "2e2563ba1a8dcce9fb1a157acc053cce88ee0d5d9d6b8e8d37b3e2d38b4589d0",
+        "CharacterTranscendenceExcel.json": "46d828502c52080867450587b345c6c5b8a99d728fa8d85770ec1078551e6e04",
+        "CharacterWeaponExcel.json": "20c0a6ae217bd021f3eba9c1c76ecb566170d63f4d27c30e512a69d455d767c2",
+        "EquipmentExcel.json": "dfbc2ac8d98644d1f4506e1e0e79ff9403280c436e1bd9ed80a7d532e8f8d88d",
+        "EquipmentStatExcel.json": "9c1e0ef64a36564cb13bfa4f208b70411d3cff9176aff58c248db9b34f58dbad",
+        "FavorLevelRewardExcel.json": "aa99ef825047579c1e2cd995fb63afa6c39f70e080f9e635266a6950988fd88d",
+        "LocalizeEtcExcel.json": "1f1a8e6177df69673b7573da90c7245dafdc86b0a1db4db1d184cb28a94333be",
+        "LocalizeSkillExcel.json": "3b1ac7018ae71ad79d30698a27aa0a1afe11d0714d9552d55c66b810fb51c608",
+        "SkillExcel.json": "eaeb857ad2859a20e5996a9f2dccf68106003b89006f55ddfdd92ee44884c6bf",
+        "SOURCE.json": "9986758f225287cf572e114058711f1f1f75f7d3511bbe7c024d6621fc38e876",
+        "StatLevelInterpolationExcel.json": "9f8d9ccedf17b8e81a4b9093498b227feff4b7a323ac11b05f82ae8092bdc753"
+      }
+    },
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "battle-tables",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/battle-tables",
+      "provenance_sha256": "bb25471c002b32de18f95724abbdf7d1980aeff7bfd0f6a0e2e69d2372376a96",
+      "files": {
+        "battle-tables-jp.json": "7b3d884db0a42d79a1cd3db919bc4da421ea7b85e79827e7e2c976201502aff1"
+      }
+    },
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "skill-timing",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/skill-timing",
+      "provenance_sha256": "e8b86ef765ac7b4e7cc7854369c50f35ae3947ca26bd2491f3eadf9a4a522c90",
+      "files": {
+        "skill-timing-jp.json": "9d6f6913a88e985c43586f8df6be1340a4ff76d9391cdac704d9c02f9e2c4e6c"
+      }
+    },
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "cost-effects",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/cost-effects",
+      "provenance_sha256": "685b6750bee4d34d77426deb574571542584b2e3fbaf4b29ff3667f96a41aa9a",
+      "files": {
+        "cost-effects-jp.json": "0d525b1d680568284fd614c90a5b39f6fc15b722be60cd213ed68040ed7995e6"
+      }
+    },
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "motion",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/motion",
+      "provenance_sha256": "c34c8e138913645c6dd2ac6cbb0192824e205863c2c3725fd755fa8d5602b8ff",
+      "files": {
+        "motion-jp.json": "89d57a9cf90d8fd8add4f26500119fbb07883792625cc970e748c6899eaaf30f"
+      }
+    },
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "dao-schema",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/dao-schema",
+      "provenance_sha256": "54d5209835a623c14c576dedc6a436057121faf57531ef77393bb2622af2b6ec",
+      "files": {
+        "t3-binah-dao-schema-jp.json": "5ac82f8e1bde130b471f8d252ebfa01dcc54d65c187cba0a64ff4724fe0151bb"
+      }
+    },
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "ground-schema",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/ground-schema",
+      "provenance_sha256": "d0fc58aa42106ec4c471df42a7481e74cb977b7d43a96038fe63db8661decc9f",
+      "files": {
+        "t3-binah-ground-schema-jp.json": "7cc325c14893af8034846bad3ef34551d2a8005605d0ce2175c68d5dadcba269"
+      }
+    },
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "binah-extract",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/binah-extract",
+      "provenance_sha256": "e583b8cc7495b8579113322598de8625e3d5b9f62aadbc07a36afbeef21d8dd0",
+      "files": {
+        "battle-binah-jp.json": "ae5442b22ea11a830eb19b96432640035087b4242f38e261832908b2defba092"
+      }
+    },
+    {
+      "server": "steam",
+      "version_id": "steam-r464491-bbe68ad3",
+      "kind": "il2cpp-types",
+      "path": "extracts/steam/steam-r464491-bbe68ad3/il2cpp-types",
+      "provenance_sha256": "88fb590c1aba0c34870c8218ad560c76673251482f3965d7db448d7685a2faea",
+      "files": {
+        "types-steam-bbe68ad3.json": "9745126fea64d331e62a6d90d49b96a9f0e042c1b23f5b7ee50a246e0d3bc6ba"
+      }
+    },
+    {
+      "server": "steam",
+      "version_id": "steam-r464491-bbe68ad3",
+      "kind": "dis",
+      "path": "extracts/steam/steam-r464491-bbe68ad3/dis",
+      "provenance_sha256": "42578c4f1b740512c190cd57254119010d55246d302f5b12cc4c65ab2d558395",
+      "files": {
+        "AlternateSkillAction_Interrupt.txt": "6d1349e511f2928523286a92073a89afe1e08bede1c9c9e88f68af50a2833b80",
+        "AutoUseCheckBase_CanTrigger.txt": "fabf05b43576257b3020a565472eef592815c8ce4e373dd5ac2e4d49d3361093",
+        "AutoUseCheckBase_CheckCondition.txt": "f6f50531792ac41f2e07a89f611aff55709157a63ec669bc811fe96a613d98d7",
+        "AutoUseCheckBase_ResetTriggerCountAndCondition.txt": "d7d6c942f4c81abf2b024b25e17709e48d125b1eebc0e861413e7a0dadfad031",
+        "AutoUseCheckBase_TryToUseSkill.txt": "9c2191234006cdd6ae3d4382cebbc6fea2424a0eb06dab82a0c76b3fbbcf253d",
+        "AutoUseCheckInterval_MoveNext.txt": "b8931c77073006ec307fd5ed67dea5446d50ea94e381e767169b3f5995772909",
+        "BaseMoveAction_CheckAndReleaseActionJump.txt": "7ec9216ed2e0b57f6890bbea0b31acb870bd1264312b1ac5180e08b9e57ab4e9",
+        "BaseMoveAction_CheckAndSetJumpState.txt": "967dd91a9b3f1e5a440607ac8b84c07893ce2616416b7a5c1cafada5684ae80d",
+        "BaseMoveAction_Interrupt.txt": "28b0aab88bb73685c0633101242ab35da037db5a0b40b9b086d99718f903672c",
+        "BaseMoveAction_SetMoveComplete.txt": "1a6134f51aac83ec574e54ececa0c86aef463b9b16675305d93373704d228789",
+        "Battle_ProcessCharacter.txt": "ab92b03c4e2c23fd5037adfd1332c9a58e292692a3534c204ba952ce0cb550cf",
+        "Battle_ProcessEntityUpdate.txt": "a49c1a7639a421416a0394214b4b38a650a946783aae84105f97b19d029f47ca",
+        "Battle_UpdateInProgress.txt": "cdfd3efed9ba4eb0e8890a4a4c5b65b88a0eaa810fbb85ca1af3c479d259f76b",
+        "BattleCoroutineManager_LateRemovalPredicate.txt": "8b0d38d517c613ec42bd46f6a48f50f924de9d4e056c21b71018127458091eeb",
+        "BattleCoroutineManager_LateUpdate.txt": "5eb59c91c284468b80d2aa62ea87405c8091cfce6377c2edf0d629c1a75b187f",
+        "BattleCoroutineManager_StartCoroutine.txt": "28c7511356622a6f25b4ad18698816f460c6a592e009597a3e3e75ef8f6a99d1",
+        "BattleCoroutineManager_StartPredicate0.txt": "ac07feabf0806caa0e1e1ddcd181128a60c2921c5d70dfee884765574eb38250",
+        "BattleCoroutineManager_StartPredicate1.txt": "728f8c4f3baffea4731570796148ad3289cd772255d076bf89e1efcb7350dd4a",
+        "BattleCoroutineManager_StopCoroutine.txt": "9c76211db4cad635ea4420673f5e7a8db7d9191f9029b276e37d47404e5e8785",
+        "BattleCoroutineManager_StopPredicate.txt": "f7c11e43c6d8a4d7ab5c7f63fdf78cc5a0b5a0c0c0d7a0b4095a9335652dcc3d",
+        "BattleCoroutineManager_StopPrunePredicate.txt": "408402786e466616d8f33c32eb87178c3cbc2957357b979a6b2c9f9960ff7051",
+        "BattleCoroutineManager_Update.txt": "687e91b8c3f17a88ec86cd1123ac7d045c12797cd58a255928848f39e1617715",
+        "BattleCoroutineManager_UpdateRemovalPredicate.txt": "fc03351e6c6737d984e7a15c2b947b45a2c4bc9107e129c7ce896cc682da2a08",
+        "BattleEntity_PostSkillTargetCleanup.txt": "8cab030d2b024c4552bea317e2784d49b17311a803ede6e42922e86decafacbd",
+        "CalcApplyDamageRatio.txt": "0f0bb51577dbf34a6a8ce9e5d87be7c5e922c7b9aa9c0971a960d3b16067b0ff",
+        "CalcApplyDamageRatio2.txt": "981e11000e1cebef2620ecebf288ecc15ee5af297304e3db8444ed3e90518b9f",
+        "CalcAttackPower.txt": "043e50e026cf33cc1ea91eea7ee5e8891727c793a295a35bd522958b8bcee9ef",
+        "CalcBulletArmorFactor.txt": "cf62f21b922f8285436e3071d87b9f4b339d454aaf5b819922aa5574acfe1126",
+        "CalcCriticalChance.txt": "85e5d5e97a5ec159a1cefb5a0d97458a5889f6267df9eca83f4e2bf7408548b6",
+        "CalcDamage.txt": "8ec4e08f476f8b2ae3995992626791944ae46e5e453df56aa0d879e69800549e",
+        "CalcDamagePower.txt": "363bfbf83c44b971164dd8c9ce7eaf47edbb0aacaa2856a372f3deef75c2f506",
+        "CalcStabilityRate.txt": "e80bef01ab31755c4062bc6528fc7dde61978d4209fd7c17461aa35b84e1d387",
+        "Character_ActionBridgeOwnerA.txt": "0836c0a97db65902631cdaf6dbf70ecab7695d04b1a0f155e8a5ea4fa046d9c2",
+        "Character_ActionBridgeOwnerB.txt": "e42373b3b19e6be481b05a6bc74c76754661e3495553438ae194eca974dadb98",
+        "Character_ActionBridgeOwnerC.txt": "04ada5f45a8632915c552a210b02b71572873827d9ad6e0f343f16569867cb76",
+        "Character_ActionFinishedSubscriber.txt": "31de275da23dae1ba1bd6c1d3b2254448fa6d76b006506ca5bda0151ecc3e9c5",
+        "Character_ActionInterruptedSubscriber.txt": "1fa4073264e89e2b0682f326ca707a117d682670406fe11cc0242be28069b02f",
+        "Character_ActionStateEventBridge.txt": "dcc6ded69c0c3279bb97702b457f87c155d9a8594aa8abe6ccd7a9b67210a56e",
+        "Character_ActionSubscriptionOwner.txt": "6df4d8ac79e292f38d0261cb6fb64315a0e33bb6b859ba749e1f443331e07faa",
+        "Character_AutoSelectionCaller.txt": "b949bd776fb42f0257fb74566e7842e9352bd82a01bd29ad915ca17a01306867",
+        "Character_AutoUseActionCallback.txt": "746dce2ffcf5e57a6333a51463d8433cd52b03b94911be8a62ffd4ad02acbf15",
+        "Character_AutoUseOwnerGate.txt": "8104d48b4bc1bcfbdeae636c714fb43cde4d3feb040e673e70f91465b4da2ab7",
+        "Character_CheckAndSetPublicSkill.txt": "0906af5ee4e4df8271702432f4e3b86787bba088d13b4b3ed0fdcda2710e67b1",
+        "Character_CheckCrowdControl.txt": "b327950b5f2d1ce9c136f268df037aa5ad21a501e059f4f621d53c42d6c6227e",
+        "Character_ClearTargetAndSkillCommandInfo.txt": "3e0d51ee68f5f38206ee5630193896794a82b3abdaf51a6c874ee88ae4aeac1a",
+        "Character_FinishedEventBridge.txt": "d421f3b8dc97151507710d773731e29ee9a6d7886e0853be4d6324a33deda123",
+        "Character_FirstPassHelper.txt": "66c5ee06db685bc994cdaa24f9279c9ef8a350eed2af44d466ff8f188d49e277",
+        "Character_ForcedBehaviorSelector.txt": "ee1bf1794f6f9b47958eeb7e6d5ed563288b1091e235fb90850299e116a10f2a",
+        "Character_InterruptedEventBridge.txt": "4aaf8f092ada9764d1341b88c5d5211437673306cbcc0a918f356e55ead89233",
+        "Character_PassiveHelper.txt": "3c22c892a1772676af2fb9eaa3b6d8461aabd1a94727d9258499a4fc0cff5f63",
+        "Character_PublicSelectionEligibility.txt": "966b6be40fc4337f2c79c676841b4e032183f8add247730ae2fb9d7ad7f32cd3",
+        "Character_SelectionWrapper.txt": "f4c01d2f4ca6027df56c1509e3b825e62ecbfd9b7ee0f3fa2d6051dc4e2ccf77",
+        "Character_SkillFinishedCallback.txt": "307743878bc4021b3bd10dc6f6ba64932e43d96f8596609a837305808a62d8fb",
+        "Character_StartedEventBridge.txt": "97fedd65da6655c1d14c55c0a3a0bf18066dfe6d4e719ae6a3ef8604a5e5a990",
+        "Character_StatusExpiryCaller.txt": "f2ed3751110bc96d101c1c19273bbd46188b02076021e12435669d4222b6adbd",
+        "Character_StatusQueueCaller.txt": "985f861a6a416be9cb78501fed5619396080cafccbb5878cbe461c12bf895e3f",
+        "Character_Update.txt": "26f7bfaf2d46b6bccfe3a32715e55375aaa20487b4cc46281b3390d68c7a7b08",
+        "Character_UpdateActionHelper.txt": "88201d369b91aac308403ca71080c680336c64a17a425fc5baa34ce91c5ae126",
+        "Character_UpdateSelection.txt": "f6f5a9e4ef77664dd53d2c7123dc138585da92b66d5867a198a0b6c083294b13",
+        "CharacterGroup_Update.txt": "739a0ef2ba0b970dfce5f8a406bbb93d75f3bf2f67ac6aadec4594987dd9ee40",
+        "CharacterGroup_UpdatePassive.txt": "ce9bcb38aec70ad0e86aee4f9a4b4fa94b70158bc9eff09d48b0da24d4546ee9",
+        "DamageEffect_FromValue.txt": "c4e0bc09c92d9208a4c20530b1874e85c1b87692830481f2ee21f85989d3e110",
+        "DamageEffect_get_ApplyEffectiveDamagedRatio.txt": "db11bc3c9c4ba54f51495128d082f4399184bd7d4eba2dc774fd67d307fc05c1",
+        "DamageEffect_get_ApplyEnhanceBasicsDamageRate.txt": "37df67385be00bb8daac867a4c5b3678b55a885db1ad803b21ac14e2d0586e55",
+        "DamageEffect_get_ApplyEnhanceExDamageRate.txt": "69c0a6e481c5f5e597cb7c86ce914b874baa74415570e42c4e4078f04225e594",
+        "DamageEffect_get_ApplyEnhanceWeakDamageRate.txt": "9b6939d3b095b0a4794266984f0716be40494639cf6f9618d53277d91dccc2ad",
+        "DamageEffect_get_ApplyExDamagedRatio.txt": "eb80842ab0656e7787cd1bc48e7e765d90350b57f84205faee7629dcfa157dec",
+        "DamageEffect_get_ApplyNormalDamagedRatio.txt": "1685acab44d3c0ff967f9eff4812c5ea0b94c32715ea31cae6c6f57cfaf24751",
+        "DamageEffect_get_ApplyResistDamagedRatio.txt": "eac9461e53fab6cef528163c4d20bc1ae1b92a0339f2412b8009e64253fdece2",
+        "DamageEffect_get_ApplyWeakDamagedRatio.txt": "087aa64afc714d2928eb87aa03052ec789b0b9bec6baa34b47aadc57cfad5d83",
+        "DamageEffect_get_OverrideSkillDamageType.txt": "58e12fd7dc7de146db6b9100577b8668c8417b8fd2250b1157460e0219df0233",
+        "DamageEffect_get_OverrideSkillType.txt": "3dcceb9d7697c1ab265c53dab943536b0c23035b2809165830ca5469eb0614fa",
+        "DamageEffectValue_FromDao.txt": "f08c1c634f6d7e3ed2a6ce055fe82d31d46bd6f2ffcf533a1b454e111e6a0322",
+        "DamageReductionRate.txt": "df96f014fa57d9b8517612cd2aa88a14e83a2b8e8a7a635b2ee825672daf8d9b",
+        "EntityTargetContainer_Clear.txt": "b865d7d099cda78044bda11fb34791096c601b7fec1f0f0b142501591e60214b",
+        "EntityTargetContainer_Update.txt": "c9d396b35465041e2f604884d05144c87ff05f6e245a37088d673898012653a0",
+        "GetLevelDamageFactor.txt": "742c868b2bf36a7d14a91e4c177ba44996d76cebca4e3b2b4bd12469eac7f0e5",
+        "GetNormalDistributionRandom.txt": "18e104d8660b6900652407b986933aa8a30977793cfe5d57041503b274013dc5",
+        "Groggy_AddPlayerGroggy.txt": "44eaf7abae31891e0211a540f1068e8ae7b86acbf49622d424c470e2d480485d",
+        "Groggy_Next.txt": "5af74b46d6f9cae4dc3bd17aa0d53ef4288beb109a184f12a270542221eeca93",
+        "Groggy_Update.txt": "8ee221c0864c5a874b1ec03436f6ec795c1193f1ea6ed185e66f0c41e6c6adca",
+        "GroggyAction_ctor.txt": "e84651d6fbb3efe8ad9c9130d2b5dfd429f3ff1ec1a17ce6c0280693bf6c7839",
+        "GroggyAction_Leave.txt": "87d55e79dc6db9a089942d55ae157d6fd71735de86847131ff663a0752ba8cb1",
+        "GroggyAction_Update.txt": "5d4673824e525b6ea8c14d62315c26fecf38b1619876effdada033f7f129f158",
+        "GroggyController_InitRaidBoss.txt": "9fe1441084dae9da676eacf89e58842778b5731c2d2bb4a754db4dbb2675e25f",
+        "HeroAction_Leave.txt": "de7685c66b490bf980d2d0d7b41dee851d969493979b601cef12c4ea2e47acf8",
+        "Int64MaxHelper.txt": "83d3e435a6fc8d385909d039cf04e0bb0d390f5d9176d5730857a68c493d82a5",
+        "InterfaceBoolDispatch.txt": "2c0577beacd4879b328582e24b9677abba5177be45fa51e582ed46324d0b2a5a",
+        "IsCritical.txt": "93c6105681935065cd66234a9e26db205daf0b5f7a7d3960ed5dba9db8abfa66",
+        "IsHit.txt": "42c2d7430cd44d2e82d348a403bc0642945a956f3ab89f4165e8a07172fa83ce",
+        "NewSkillAction_Enter.txt": "18f041742881954b44046d7de4513e9aa6a619cccc93e85654b523abc44d5002",
+        "NewSkillAction_Interrupt.txt": "17be0a2eafd67d6e859aeee317acdfddfa692bf4af115a1a134525144f7405d8",
+        "PseudoRandom_Next.txt": "e456fbd27006e4a3805e5821266dd974ac245be21be5cce0f39c01b30a2dc11f",
+        "SkillEntityFactory_ActionInterrupted.txt": "4afdb4240085f6e658e07ebb155c0e3082d1a2e954501fbdd3584da5b309a1ea",
+        "SkillEntityFactory_CoSpawnSkillEntity_MoveNext.txt": "23a4636943070add6aba169ae90fd36758d2d4081538c956fc79a2555fd150f0",
+        "SkillEntityFactory_SpawnSkillEntity.txt": "15bf2e521283b1b8ebeeb2e7c7a17931a938165b45c20a1031b88a694d8a9425",
+        "SkillEntityFactory_SpawnSubscriptionCleanup.txt": "edf50993f39b2d62f6b85c02a7f1f8e34fdb5b496b1165774f764984d68e529c",
+        "SkillSpecification_get_SkillType.txt": "00a7d7aefcfb1813d6d4d360c78b1c300fb428f7995d261473ec520dcd8d7a12",
+        "SkillSpecification_get_SkillTypeForDamageCalculation.txt": "b9896a2e6a058d7b1fdaf9c769d11e42b757a00e079f9a05f98413f1de88631d",
+        "SkillTypeExtensions_IsBasics.txt": "e53db001fcfc769dc276a69e8d15a668fe541d2482a02ea690b3eb6dea32ae37",
+        "StatusComparer_Compare.txt": "ff5921a6738f1fd9855ce9e819ea017e90e28374dd6786def8d3c0de941b59dd",
+        "StatusDurationComparison.txt": "f5fa3a525248347325eadd973caee3755a18abbc2154fc91ed8fed9c6bbac0b6",
+        "StatusEnumNativeComparison.txt": "45bfacb32e60b8c7ec5581c25d4f67a5b634782501f3644200dc81acc85bb6b7",
+        "StatusPrimaryComparison.txt": "4dac8be33dc7cf25c1de3c689b812647d2c5619c14b91393f91efe3a33afa9bd",
+        "StatusProcessor_ApplyAdd.txt": "b9b80d9fc301582d9893dcd00d83674f1eb803563adc71a08150a656de157bc5",
+        "StatusProcessor_ApplyRemove.txt": "9e38d89f242ef16c1c7974a1a1a2426d6f14042fae46bfc81f5b66b095fa73d0",
+        "StatusProcessor_Constructor.txt": "25a530ced1e2954c88ddf9db4b49adc9855bd36588ea6f98199b67a2ee72aee7",
+        "StatusProcessor_EnterExecution.txt": "c0ac7c8e7754c358e0e5881200b906c0de18ae3054461da6e1d911df8aabc101",
+        "StatusProcessor_ExpiredHolderPredicate.txt": "0f954073c53ee2deee4f37bb7fc25afa281a3ab7be4df7b43ff88c8564997f6e",
+        "StatusProcessor_ForceActionStatus.txt": "34f84ef84ceb58a1d1a5bb49a191a1408e49f08dc2d1cc44f3ff8f5ccc362a2a",
+        "StatusProcessor_HasCrowdControlWithoutDeath.txt": "61b47339e169f5bc32b0e772140951c91b4b93c6d10a14163a7822f991d34796",
+        "StatusProcessor_LeaveExecution.txt": "e02925f9729e74077059eb12de9181ac74363adc1c7be709c525b254c5fe5344",
+        "StatusProcessor_RemoveExpired.txt": "f800254c5a7f78d728aae08720e029abbb541f424ca29dcbcb653775b70f1622",
+        "StatusProcessor_Update.txt": "2972eb79571a8c1519ee61d71a55055103932fab4309b67c78eca6c89d9260f4",
+        "StunnedAction_ctor.txt": "e90286b2139644aa1baf1c8707b8fc75840eff2ad0260018a0fe67130efcf09b",
+        "TimelineSkillAction_Enter.txt": "f08a02466bc8dd51683d79a92a0b9d08046cd427c5ed90b04c67bd6a26d89512",
+        "TimelineSkillAction_Interrupt.txt": "74f6a05e7e2674b87d9eaf599ff6a23f4210509278bb6e37954eda7c1ea961cb",
+        "WaitForPreUpdate_Constructor.txt": "13af1011e63ef4451b3f08839faa9ecf2cc1c65e44270aad00b7dc8857e6d7a5"
+      }
+    },
+    {
+      "server": "steam",
+      "version_id": "steam-r464491-bbe68ad3",
+      "kind": "constcombat",
+      "path": "extracts/steam/steam-r464491-bbe68ad3/constcombat",
+      "provenance_sha256": "89a414ff5b7cb59ee84fce8aa32d133e5944a2602961e583ef0972f27bfc839b",
+      "files": {
+        "constcombat-steam-2026-09-30.json": "009a9d7ce8725d8b0f9d19bdd16fb26bbe193689f2b28be27620383bfbadd291"
+      }
+    },
+    {
+      "server": "steam",
+      "version_id": "steam-r464491-bbe68ad3",
+      "kind": "cost-effects",
+      "path": "extracts/steam/steam-r464491-bbe68ad3/cost-effects",
+      "provenance_sha256": "c148b200824e05e92f28c4f143b07cbef07c448dfe20409fa41d7104f098d1a0",
+      "files": {
+        "cost-effects-global.json": "310a700f615ac6b8933bf9a75a3449cda64edae85c32dce1741ec94ad4e4146c"
+      }
+    },
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "il2cpp-symbols",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/il2cpp-symbols",
+      "provenance_sha256": "3f8f592596047593abc01562ba4d830c7e3848e35fc0803e1d2281b7ac36d8c8",
+      "files": {
+        "il2cpp-symbols-jp-1.73-e2baf70e.json": "e784898ac98284cf0d1187e483bdb786b3cf1b994d6d376edf54ae44875bb16f"
+      }
+    },
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "motion-npc",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/motion-npc",
+      "provenance_sha256": "7d8899c7f41945e32d08f588b813e22a833257d35aa0c024365e341d62754915",
+      "files": {
+        "motion-jp-npc.json": "c07c84fc9de095d22a996784b01745b699a84b1a2b602012d44c33ebca247956"
+      }
+    },
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "il2cpp-symbols.fieldbundle-v1",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/il2cpp-symbols.fieldbundle-v1",
+      "provenance_sha256": "095fabb18d679c843d5c65d0fa1c51b38181016e52a501765297aa23218de98b",
+      "files": {
+        "il2cpp-symbols-jp-1.73-e2baf70e-fieldbundle-v1.json": "3a8e4f75f0f8b0d781ba92d05c606bba1feb939de334e35c440d1e549e3c4f74"
+      }
+    },
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "ccl-provisional",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/ccl-provisional",
+      "provenance_sha256": "ab59be37657bdf806f468f80be0ea4df950b7b2be8a662ae132993bd7961d052",
+      "files": {
+        "CharacterCalculationLimitExcel.json": "aa36bd9fa396e9b49a417847356004b634831ccebb78910efc02770e56dddb07",
+        "t4a-character-calculation-limit-jp-1.73.0.json": "124439c9f2bbf6d29a28ac25b2f46b0c5d8fb6edb5d650b8a44fc31529a903d2"
+      }
+    }
+  ]
+}
