@@ -190,3 +190,24 @@ topics: [workflow, design]
   · golden이 배지 글자를 검증하지 못한다.
   · 조치: FE3-c(학생 S4, 학생 golden 갱신이 있는 slice)에서 배지 글꼴을 AppFonts로 명시하고 golden으로 확인한다. 이번 FE3-b는 그대로 진행한다.
 - (12:58) ② `-UpdateGoldens` → gate GREEN. 새 기준 `students-grid-name-off.png`를 직접 검토했다. students-grid와의 차이는 이름 줄(y 343–434)과 오른쪽 "학생 이름 표시" 체크박스뿐이고, 카드·칩·배지는 같다. 다만 학생 7명이 한 줄에 들어가 행 피치가 접히는지(FD-046)는 이 장면에서 보이지 않는다(widget test가 본다). 그리드가 두 줄이 되게 fixture를 늘리는 일은 FE3-c golden 보강 때 함께 한다. → 커밋 승인.
+
+## 2026-10-07 13:00 — FE3-b 커밋 확인
+
+- 커밋 `809d903b`(11파일: 조회 경계 `active_plan_bond_target.dart`, 학생 페이지·레이아웃, golden harness·장면, golden PNG 3장(1장 새로), 새 테스트 `student_bond_gauge_test.dart`, 문서 2). 문서 커밋 `6d24838b`. redesign-docs commit.json의 메시지가 옛 문구로 남아 있어 일반 문구로 바꿨다.
+- 처리 FD: 003·049(목표 = 활성 계획 문서의 그 학생 마지막 단계 `bond_rank`, 조회 한 곳), 050, 051.
+- 알려진 시안 차이 5건은 허용한다. 계획 요소 초상의 inverted 게이지를 B안으로 맞추는 일은 FE4(계획 만들기) 몫이다.
+- 워커 발견 사항 → FB-1 설계 조건으로 워크플로 FB-1 절에 넣었다. 계획 화면의 goals v1 → 1페이즈 메모리 변환이 인연 목표가 없을 때 현재값(없으면 1)을 채워 가짜 목표를 만든다. FB-1 문서 저장에서는 "목표 없음"을 명시적으로 나타내야 한다.
+
+## 2026-10-07 13:38 — FE3-c gate ① 검토
+
+- gate ① RED, 원인 두 가지.
+  (1) analyze info 1건: `student_page.dart:406` use_null_aware_elements. 오케스트레이터가 직접 고쳤다(`if (catalogById[id] case final entry?) entry` → `?catalogById[id]`, 뜻은 같고 SDK ^3.12). 쓴 뒤 해시를 대조했다.
+  (2) golden 5장 실패. 워커 status 예상(바뀔 3 + 배지 글꼴 때문에 바뀔 수 있는 2)과 같다. 나머지 13장은 차이 0이다.
+- 차이 검토:
+  · plan-student-selector(749px)와 plan-element-builder(1012px)는 차이가 배지 글자 자리에만 있다. Ahem 사각형이 "UNOWNED"(Pretendard) 글자로 바뀌었다.
+  · students-grid/detail/name-off 변화:
+    - 학생 10명이 두 줄로 놓인다.
+    - 배지 UNOWNED·PLAN·JP 글자가 보인다(1~3개 쌓기).
+    - S4 아래에 확장 영역이 생겼다: "표시 10 / 전체 10 · 보유 7 · 계획 중 3", 적용 필터 없음, 최근 본 학생(grid: 아루 / detail: 아야네·아루).
+    - name-off는 이름 줄이 없어서 둘째 줄이 올라간다(FD-046 행 피치 축소가 처음으로 golden에 보인다).
+  → 갱신 승인. 12:47 배지 글꼴 지적과 12:58 두 줄 fixture 지적이 해소됐다.

@@ -226,7 +226,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | slice | 범위 | 백엔드 | gate·갱신 문서 |
 |---|---|---|---|
 | FE3-a DE 카드·그리드 | 속성 글자 칩(오른쪽 위, 80° 계단, 방어 축약 라벨), 이름 카드 밖(미보유 흐림), 배지 채워 쌓기, 행 피치 191.3. `StudentGridCardOverlayPainter`·`StudentDiagonalGrid`는 계획 쪽도 쓰므로 `plan_student_selector`·`plan_element_builder` 회귀를 같이 본다 | — | Student, W-Card-*, W-Card-Grid-DE 검수. student-card-rendering-lessons, section-template-studio 학생 카드 절 갱신 — **완료 2026-10-07**: golden 3장 갱신(예상과 일치), 커밋 `620a98ee` |
-| FE3-b 인연 B 게이지 | 현재 랭크 + 목표 빗금·점선·`→N`. 목표는 활성 계획 문서 단계 목표(FD-003). FB-1 전에는 목표 없음 상태로 그린다 | — | W-Bond-Variants B, Student S3. student-detail-indicator-lessons 갱신 |
+| FE3-b 인연 B 게이지 | 현재 랭크 + 목표 빗금·점선·`→N`. 목표는 활성 계획 문서 단계 목표(FD-003). FB-1 전에는 목표 없음 상태로 그린다 | — | W-Bond-Variants B, Student S3. student-detail-indicator-lessons 갱신 — **완료 2026-10-07**: 커밋 `809d903b`(학생 golden 7명 fixture, students-detail 분리, students-grid-name-off 추가) |
 | FE3-c S4 확장 | 결과 수 줄, 적용 필터 칩(×, 모두 지우기), 최근 본 학생. 필터 상태를 layout state에서 페이지 컨트롤러로 올린다 | — | Student S4 |
 | FE3-d 필터 모달 | 학생·계획 1·통계가 함께 쓰는 필터 모달(상태 객체를 주입받는 구조, FD-104). 토글 칩, 타입 칩, `RangeSliderRow`, `StarRangeBar`, draft→적용, 범위 모델 재구성. Section 5·범위 카드 2장 폐기 | (FD-074 결과에 따라 프리셋 저장) | Student-Filter. section-template-studio "학생 Section 5 필터" 절 대체 |
 | FE3-e 다중 폼 교대 | 폼 2개 이상 학생 초상 3초 교대, warmup에 폼 이미지 포함 | FB-5 | W-Card-States "폼 2개" |
@@ -236,7 +236,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 ### FB-1 — 활성 계획 문서 저장
 
 `repository.plan.*`(가칭: 활성 계획 문서 조회·저장) 신설. 기존 goals v1만 있는 프로필은 첫 로드 때 지금 메모리에서 하던 1페이즈 변환을
-영속화한다. 저장할 때 goals v1을 파생해 기존 `calculateShortages` 등 소비자가 그대로 동작하게 한다. Python·`contracts/`·Dart 클라이언트·mock·
+영속화한다. 저장할 때 goals v1을 파생해 기존 `calculateShortages` 등 소비자가 그대로 동작하게 한다. **"목표 없음"을 문서에 명시적으로 나타낸다**(FE3-b 발견: 지금 메모리 변환 `planningDocumentTargets`는 인연 목표가 없으면 현재값(없으면 1)을 채워 가짜 목표가 된다. 학생 탭 →N은 이 값을 쓰지 않는다). Python·`contracts/`·Dart 클라이언트·mock·
 계약 테스트·process E2E를 한 slice로 한다. gate: 기존 v6 가져오기·시나리오 저장·통계 경로 회귀 0.
 
 ### FE4 — 계획 만들기 (계획 탭 안의 모드)
@@ -410,3 +410,4 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-07(오전): FE1-c `99583757`, FE2-a, FE2-b `859c554a`, FE2-c `bb1e3478` 커밋. gate는 프로세스 테스트 분리판(`fe_gate.ps1`, 문서 커밋 `fd791947`). 다음 행동: FE2-d 이미지·차트 원자.
 - 2026-10-07(낮): FE2-d `1f65b64a`. FE2(공통 위젯 키트·UI Kit 갤러리) 완료. 사용자 갤러리 시각 검수는 남아 있다(지적 사항은 해당 위젯을 처음 쓰는 화면 slice에서 고친다). 다음 행동: FE3-a DE 카드·그리드(시각 변경, golden 갱신).
 - 2026-10-07(낮 2): FE3-a `620a98ee`(DE 카드·그리드, golden 3장 갱신), 문서 `fdf0097e`. 다음 행동: FE3-b 인연 B 게이지 + 학생 golden 장면 보강.
+- 2026-10-07(낮 3): FE3-b `809d903b`. 다음 행동: FE3-c S4 확장 + 배지 글꼴(golden Ahem 사각형) + 학생 fixture 두 줄.
