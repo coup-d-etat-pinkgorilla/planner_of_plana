@@ -17,9 +17,14 @@
 //   traversal parent를 잃는다.
 // - Esc 이중 처리 방지: Esc는 [KitOverlayEscape]가 가장 나중에 연 것 하나만 닫는다. 같은 키가 포커스 트리로도
 //   전달되므로 모달 안에서 Esc를 소비해, 모달을 연 라우트(다이얼로그 등)의 닫기 단축키가 함께 돌지 않게 한다.
+// - 셸 배경 범위(FE3-d2, 오케스트레이터 2026-10-07 15:51 결정 4): 앱 셸이 [BaModalBackdrop]을 두면 모달이 열려
+//   있는 동안 셸의 머리 탭 줄·배너·개발 패널([BaModalBackdropExclude]로 감싼 곳)이 의미 구조에서 빠진다. 모달을
+//   연 화면 내용은 BaModal 자신이 뺀다. 셸 전체를 한 번에 ExcludeSemantics로 덮지 않는 이유: 모달 OverlayPortal
+//   자리(traversal parent 의미 노드)가 그 안에 있으면 함께 지워져 의미 구조 갱신이 깨진다.
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/theme.dart';
@@ -98,6 +103,7 @@ class BaModal extends StatefulWidget {
 
 class _BaModalState extends State<BaModal> {
   final _portal = OverlayPortalController(debugLabel: 'BaModal');
+  BaModalBackdropState? _backdrop;
   final _scope = FocusScopeNode(
     debugLabel: 'BaModal panel',
     traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
@@ -128,6 +134,7 @@ class _BaModalState extends State<BaModal> {
   void dispose() {
     widget.controller.removeListener(_sync);
     KitOverlayEscape.remove(this);
+    _backdrop?.release(this);
     _scope.dispose();
     super.dispose();
   }
@@ -146,6 +153,8 @@ class _BaModalState extends State<BaModal> {
 
   void _show() {
     _returnFocus = FocusManager.instance.primaryFocus;
+    _backdrop ??= context.findAncestorStateOfType<BaModalBackdropState>();
+    _backdrop?.retain(this);
     _portal.show();
     KitOverlayEscape.push(this, context, widget.controller.close);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -155,6 +164,7 @@ class _BaModalState extends State<BaModal> {
 
   void _hide() {
     KitOverlayEscape.remove(this);
+    _backdrop?.release(this);
     final returnFocus = _returnFocus;
     _returnFocus = null;
     if (_scope.hasFocus && returnFocus != null && returnFocus.context != null) {
@@ -229,6 +239,76 @@ class _BaModalState extends State<BaModal> {
           : ExcludeSemantics(excluding: _portal.isShowing, child: child),
     );
   }
+}
+
+/// 앱 셸 수준 모달 배경 범위. 열린 [BaModal] 수를 세고, [BaModalBackdropExclude]가 그동안 의미 구조를 뺀다.
+class BaModalBackdrop extends StatefulWidget {
+  const BaModalBackdrop({super.key, required this.child});
+
+  final Widget child;
+
+  /// 범위 안에 열린 모달이 있는가(바뀌면 다시 빌드한다). 범위 밖이면 false.
+  static bool isOpenOf(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<_BaModalBackdropScope>()
+          ?.open ??
+      false;
+
+  @override
+  State<BaModalBackdrop> createState() => BaModalBackdropState();
+}
+
+/// [BaModalBackdrop]의 상태. [BaModal]이 열고 닫을 때 [retain]·[release]를 부른다.
+class BaModalBackdropState extends State<BaModalBackdrop> {
+  final Set<Object> _owners = {};
+
+  /// 열린 모달이 있는가.
+  bool get hasOpenModal => _owners.isNotEmpty;
+
+  void retain(Object owner) {
+    if (_owners.add(owner)) _changed();
+  }
+
+  void release(Object owner) {
+    if (_owners.remove(owner)) _changed();
+  }
+
+  // 모달은 빌드·해제 중에도 열고 닫힐 수 있다(initState·dispose, 첫 마운트는 scheduler idle 중 빌드).
+  // 그래서 늘 프레임 뒤에 다시 그린다(한 프레임 늦게 의미 구조가 바뀐다).
+  void _changed() {
+    if (!mounted) return;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
+    SchedulerBinding.instance.ensureVisualUpdate();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      _BaModalBackdropScope(open: hasOpenModal, child: widget.child);
+}
+
+class _BaModalBackdropScope extends InheritedWidget {
+  const _BaModalBackdropScope({required this.open, required super.child});
+
+  final bool open;
+
+  @override
+  bool updateShouldNotify(_BaModalBackdropScope oldWidget) =>
+      oldWidget.open != open;
+}
+
+/// 모달이 열려 있는 동안 [child]의 의미 구조를 뺀다(앱 셸의 머리 탭 줄 등). 모달을 여는 화면은 감싸지 않는다.
+class BaModalBackdropExclude extends StatelessWidget {
+  const BaModalBackdropExclude({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    excluding: BaModalBackdrop.isOpenOf(context),
+    child: child,
+  );
 }
 
 /// 모달 안 Esc(포커스 트리 쪽). [BaModal]이 소비한다.

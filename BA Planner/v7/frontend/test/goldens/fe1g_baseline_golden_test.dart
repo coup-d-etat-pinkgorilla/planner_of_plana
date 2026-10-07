@@ -19,6 +19,7 @@ import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
+import 'package:ba_planner_v7/ui/models/student_filter_selection.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_student_review_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
@@ -234,6 +235,43 @@ void main() {
     // 8열 그리드가 두 줄이라 접힌 행 피치(카드 + 3.84)가 장면에 보인다.
     expect(grid.students.length, greaterThan(grid.columns));
     await expectGoldenScene(tester, 'students-grid-name-off');
+  }, variant: goldenPlatform);
+
+  // FE3-d2: 필터 모달(Student-Filter). 초안에 학교·역할·공격 타입 토글, 레벨 범위, 성급 범위, 일본 서버 전용
+  // 제외를 넣는다. 머리 칩·"필터 · n"·학교 줄 학생 수가 장면에 보인다.
+  testWidgets('students-filter-open', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _studentService();
+    await _openShell(tester, service);
+    await _tapKey(tester, 'top-tab-students');
+    await tester.tap(find.byKey(const ValueKey('student-open-filter')));
+    await tester.pump();
+    await tester.pump();
+    final filter = tester
+        .widget<StudentSectionLayout>(find.byType(StudentSectionLayout))
+        .filterController!;
+    filter.updateDraft(
+      filter.draft!
+          .toggle('school', 'Gehenna')
+          .toggle('school', 'Abydos')
+          .toggle('role', 'dealer')
+          .toggle('attack_type', 'Explosive')
+          .withRange(studentGrowthRangeRow('level')!, 70, 90)
+          .withRange(studentGrowthRangeRow('star')!, 3, 6)
+          .withHideJpOnly(true),
+    );
+    await tester.pump();
+    expect(find.byKey(const ValueKey('student-filter-modal')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('student-filter-modal-chip-school-Gehenna')),
+      findsOneWidget,
+    );
+    expect(find.text('필터 · 7'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('student-filter-chip-school-Gehenna')),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'students-filter-open');
   }, variant: goldenPlatform);
 
   // --- 계획 메인 -------------------------------------------------------------

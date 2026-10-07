@@ -20,16 +20,13 @@ sources:
 
 ## 현재 상태
 
-**FE3-c 완료.** 결과(오케스트레이터 로그 2026-10-07 13:38·13:49, 아래 FE3-c commit record):
-- gate ① RED: analyze info 1건(`student_page.dart` use_null_aware_elements, 오케스트레이터가 `?catalogById[id]`로 고침)과 golden 5장(학생 3장 + 배지 글자 때문에 계획 2장, status 예상과 일치). 나머지 13장 차이 0. 오케스트레이터 검토 승인 → `-UpdateGoldens` → gate `20261007_134501` GREEN(golden 18).
-- 커밋 `b7bbfcce`(FE3-c, 17파일).
-- 오케스트레이터 후속(13:49) → FE3-d에서 처리한다:
-  - S4 적용 필터 칩 모양을 시안(r5·padding 9·inset 테두리)에 맞추는 `BaChip` 변형.
-  - `+n` 칩을 누르면 필터 모달이 열린다.
-  - 결정: 계정(프로필) 전환 때 `RecentStudents`를 비운다.
+**FE3-d1 완료.** 결과(오케스트레이터 로그 2026-10-07 15:09·15:51, 아래 FE3-d1 commit record):
+- gate `20261007_150318` RED(analyze info 2 + 테스트 22건, 15:09 진단 5건) → 수정 → gate `20261007_154648` GREEN(analyze 0, 307 + 284 + 프로세스 28 + golden 18 차이 0).
+- 커밋 `ddc251eb`(FE3-d1, 13파일).
+- 15:51 결정: "필터 · n" = 실제로 걸린 조건(칩) 수, 칩 옆 학생 수는 학교 줄에만, 팝업 "미보유"만 ↔ S4 "미보유 숨김" 꺼짐 표시는 FD-057 결과로 맞다, 모달 배경 차단은 AppShell 수준 범위 하나로 셸 전체(머리 포함)를 ExcludeSemantics로 덮는다(FE3-d2).
 
-**진행 중: FE3-d(1) 필터 모달 부품, 시작 커밋 `8209e2601b9eeabab4ecf1019d20996fdb17ea34`. gate `20261007_150318` RED → 수정 완료(아래 "FE3-d1 gate RED 수정"), 사용자 ① 재실행 대기.**
-- FE3-d를 d1(부품·모델, 화면 변화 없음)과 d2(모달 화면 연결, 시각 변경)로 나눈다. 계획은 아래 "FE3-d 착수 기록"에 적는다.
+**진행 중: FE3-d2 필터 모달 화면 연결(시각 변경), 시작 커밋 `06091c07e45cc5bc21e9a473a1a70af32d55fa05`.**
+- 자세한 내용은 아래 "FE3-d2" 절에 적는다.
 
 ### 커밋 기록
 
@@ -47,6 +44,7 @@ sources:
 | FE3-a | `620a98ee` | DE 학생 카드·그리드: 오른쪽 위 속성 글자 칩(축약 라벨, 80° 계단), 이름 카드 밖(미보유 흐림), 배지 왼쪽 80° 변 채워 쌓기, 행 피치 카드 + 이름 줄, 복합장갑 `typeComposite`, golden 3장 갱신(시각 변경) | ① RED(golden 3, 예상 일치) → `20261007_121200` GREEN(golden 17) |
 | FE3-b | `809d903b` | 인연 B 게이지(목표 빗금·점선·→N, 목표 = 활성 계획 문서의 마지막 단계 `bond_rank`, 조회 경계 한 곳), 학생 golden fixture 7명·students-detail 수정·새 장면 students-grid-name-off | ① RED(golden 3, 예상 일치) → `20261007_125410` GREEN(golden 18) |
 | FE3-c | `b7bbfcce` | S4 확장(결과 수 줄·적용 필터 칩 × / 모두 지우기 / 범위 조건 칩·`+n`·최근 본 학생 6명), 필터 상태를 페이지 `StudentFilterController`로 올림, 앱 셸 `RecentStudents`, 상태 배지 글꼴 Pretendard 명시, golden 학생 10명 두 줄, golden 5장 갱신(시각 변경) | ① RED(analyze info 1 오케스트레이터 수정, golden 5 예상 일치) → `20261007_134501` GREEN(golden 18) |
+| FE3-d1 | `ddc251eb` | 필터 모달 부품: 성장 범위·필터 선택 값 모델(FD-053·054·055·056·059·063), 키트 `RangeSliderRow`·`StarRangeBar`(FD-012) + 갤러리, `BaModal` 포커스 가두기·배경 의미 구조 차단·Esc 이중 처리 방지, `BaChip` 테두리 변형(S4 칩), 계정 전환 때 최근 본 학생 비움(화면 변화 없음) | `20261007_150318` RED(의미 구조 짝 값·테두리 3px 등 5건) → `20261007_154648` GREEN(307 + 284 + 프로세스 28 + golden 18) |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -2055,3 +2053,215 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice re
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_154648\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE3-d2 착수 기록 (2026-10-07)
+
+- 범위(FE3-d 착수 기록의 d2 계획 그대로): d1 부품으로 Student-Filter 모달을 구성하고 학생 탭 S1 필터 버튼·S4 `+n`으로 연다. 상태는 FE3-c `StudentFilterController`를 주입한다(FD-104). 초안(draft) → 적용 / 취소.
+- 15:51 결정: 머리 칩과 "필터 · n" = 실제로 걸린 조건 전부(숫자 = 칩 수), 칩 옆 학생 수는 학교 줄에만, AppShell 수준 모달 배경 범위로 셸 전체를 ExcludeSemantics로 덮는다(OverlayPortal + BlockSemantics 금지, app_shell 최소 diff, 커지면 FE10).
+- 그 밖: 닫힌 뒤 S1 필터 버튼 개수 배지(FD-058), 필터 프리셋 칩 숨김(FD-074 (b)), 심상개화 비활성(FD-054), Section 5·범위 카드 2장 폐기(FD-052, B §2-4)와 section-template-studio.md "학생 Section 5 필터" 절 대체(기존 미커밋 변경 있음 → 사본 규칙).
+- 범위 밖: 계획 1단계 연결(FE4-b), 통계 연결(FE7-e), 육성도 행(FE7-d).
+- 시작 커밋: `06091c07e45cc5bc21e9a473a1a70af32d55fa05`.
+- 시각 변경 slice: golden 갱신은 오케스트레이터 검토 뒤 사용자가 `fe_gate.ps1 -UpdateGoldens`로 한다. 새 장면 `students-filter-open`. golden PNG를 직접 만들거나 지우지 않는다.
+- 사본: `debug/frontend_fe3d2/pre/<v7 기준 경로>`. 기기 쓰기는 새 업로드 경로에서 쓰고 다시 읽어 바이트로 대조한다.
+
+## FE3-d2 종료 기록 (2026-10-07, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없어 analyze·테스트·golden을 돌리지 못했다. 통과를 주장하지 않는다.
+- 쓴 API는 Flutter 3.44 소스와 대조했다(`OverlayPortal` 의미 노드, `SchedulerBinding.addPostFrameCallback`·`ensureVisualUpdate`, `find.semantics.byLabel`, `listEquals`·`setEquals`).
+- 별도 검토 에이전트가 바뀐 파일을 사본과 대조해 정적으로 읽었다. 컴파일 오류는 없었다. 지적 5건은 모두 고쳤다.
+  1. 모달 배지 `BoxDecoration`에 `const`가 없었다(`prefer_const_constructors`, gate RED 원인).
+  2. 셸 배경 범위가 scheduler idle 중 바로 `setState`했다. 첫 마운트 빌드도 idle 중이라 위험하다 → 늘 프레임 뒤에 다시 그린다(의미 구조가 한 프레임 늦게 바뀐다).
+  3. 탭을 떠날 때 열린 모달을 닫지 않았다 → `active`가 꺼지면 프레임 뒤에 닫는다(초안은 버린다).
+  4. 셸 의미 구조 테스트의 `SemanticsHandle`을 `addTearDown`으로 정리한다.
+  5. "범위 모두 풀기"·S4 `+n` 버튼이 이름을 두 번 읽었다 → 안쪽 칩을 `ExcludeSemantics`로 감쌌다.
+- 시안 값은 `Student-Filter.dc.html`을 `dc_outline.py --abs`와 원문 CSS(`flex-wrap:wrap;gap:8px 10px;padding:4px 0`)로 읽었다.
+
+### 바꾼 것
+
+**1-1 모달 구성(FD-104)**
+- 새 `frontend/lib/ui/widgets/student_filter_modal.dart`: `StudentFilterModal`(머리 바 + 속성 패널 + 성장 범위 패널 + "필터 · n" 배지).
+  - 바깥 틀: `BaModal`(필터 스크림 .8 + blur 2).
+  - 값: 초안 `StudentFilterSelection`. 바뀐 초안은 `onChanged`로 돌려준다. 속성 그룹은 쓰는 쪽이 넘긴다(FE4-b·FE7-e 재사용).
+- `StudentFilterController`를 적용 값 + 초안으로 바꿨다.
+  - 초안 흐름: `beginEdit` → `updateDraft` → `applyDraft`, 또는 `discardDraft`. `resetDraft`는 초안만 비운다.
+  - 적용 값 쪽: `chips`, `activeCount`, `searchRowChips`, `removeApplied`, `clearApplied`, `matches`.
+  - 이전 API(`catalogKeys`, `catalog`, `range`, `appliedFilters`, `StudentAppliedFilter`, `rangeBounds`, `clearCatalog`, `resetRange`)는 없앴다.
+- 학생 탭 연결(`student_section_layout.dart`):
+  - 레이아웃 전체를 `BaModal`이 감싼다.
+  - S1 필터 버튼은 "필터 열기"(`tune_rounded`)이고 모달을 연다.
+  - "적용"만 초안을 그리드에 건다. 닫기 ×·Esc·스크림은 초안을 버린다.
+  - 그리드 필터는 `StudentFilterCandidate`(속성 + 보유 + 현재 성장 값)를 만들어 `filter.matches`로 건다. 후보는 학생·보유·현재 값이 바뀔 때만 다시 만든다(내용 비교).
+
+**1-2 표시**
+- 머리 칩과 "필터 · n"은 걸린 조건 전부이고, 숫자는 칩 수다(15:51 결정 1).
+- S1 필터 버튼 개수 배지 `student-filter-count-badge`(FD-058, 워커 재량):
+  - 모달이 닫혀 있고 조건이 있을 때만 단다.
+  - 모양: 아이콘 오른쪽 위, h18 알약, #0d151f + 1.5px 핑크 링, 글자 #f7c9f4.
+  - 모달이 열려 있는 동안에는 모달이 (18, 226)에 "필터 · n"을 그린다.
+- 칩 옆 학생 수는 학교 줄에만 둔다(15:51 결정 2, `studentFilterCountedGroups`). 학교 소제목에는 값 수를 쓴다.
+- S4 `+n` 칩은 `KitPressable`이며 누르면 모달을 연다.
+- S4 줄의 칩은 `searchRowChips`(걸린 조건에서 "보유 · 서버"를 뺀 것)다. 바로 위 토글이 그 조건을 보인다.
+- 필터 프리셋 칩은 숨긴다(FD-074 (b)).
+- 심상개화는 비활성 칩 3개와 "v7 “준비 중” 자리"만 둔다(FD-054). 좁은 창에서는 칩 줄을 자르고 안내 문구를 말줄임한다.
+- 육성도 행은 넣지 않았다(FE7-d, FD-063).
+
+**1-3 폐기(FD-052, B §2-4)**
+
+| 없앤 것 | 대체 |
+|---|---|
+| 학생 탭 Section 5 분기: `StudentDiagonalFilterList` `student-filter-section-5`, 초기화 `student-filter-reset`(InkWell), `student-section-5-motion`·`-foundation` 키 | 필터 모달(`student-filter-modal`, 초기화 = 모달 머리 "초기화" `student-filter-reset`) |
+| 기하 도우미: `studentFilterSectionPolygon`·`studentFilterSectionPath`·`studentListSectionEdgeLength`·`studentFilterCompanionSectionRect`·`studentFilterSectionHorizontalInterval`·`studentFilterContainerPolygon`·`studentFilterContainerPath`·`studentFoundationUsesLegacySectionChildren`·`studentFilterResetPath`, 상수 `studentFilterResetButtonSize`·`studentFilterCompanionSectionGap`, painter `filterSection` 깃발 | `StudentFilterModalLayout`·`studentFilterRowSpan`·`studentFilterChipRowHeight` |
+| `studentMatchesCatalogFilters` | `StudentFilterSelection.matches` |
+| `StudentSectionLayout` 인자 `onFilterVisibilityChanged`·`filterCompanion`·`rangeConditionMatches`, 상태 `_showFilters`·`_toggleFilterSection`·`_toggleCatalogFilter`·`_resetCatalogFilters` | `_filterModal`(`BaModalController`)·`_openFilterModal`·`_applyFilterModal` |
+| `student_page.dart`의 범위 카드 2장(`StudentRangeConditionSection` `student-range-condition-section`)과 닫으면 범위 초기화 | 모달 성장 범위 패널(적용 값은 모달을 닫아도 유지) |
+
+남긴 것: `StudentDiagonalFilterList`·`StudentRangeConditionSection`·`StudentRangeConditions`와 그 테스트. 계획 학생 선택기(`plan_student_selector.dart`)가 FE4-b 전까지 쓴다. 학생 탭에서는 폐기했고, 코드는 FE4-b에서 지운다.
+
+없앤·바꾼 테스트:
+
+| 이전 테스트 | 처리 | 대체 |
+|---|---|---|
+| studio `Section 5 keeps the left rail and halves its previous width` | 삭제 | 모달 배치 테스트(`배치가 시안 좌표와 같다`). fog 폭 단언만 `student viewport fog extent follows the lifted shadow inset`로 옮겼다 |
+| studio `Section 5 container derives both diagonal edges from its parent` | 삭제 | 같은 모달 배치 테스트(행 좌우 = 80° 변 규칙) |
+| studio `Section 5 foundation does not repaint Section 2 legacy children` | 삭제 | (painter 분기 자체가 없어짐) |
+| studio `student sections use explicit motion paths and filter swap` | 다시 씀 → `… and filter modal` | S1 → 모달, Section 2 그대로, `tune_rounded` |
+| studio `catalog filters persist across the Section 5 toggle and reset` | 다시 씀 → `catalog filters apply through the filter modal and reset` | 적용 / 닫기 취소 / 초기화 + 적용 |
+| range `student filter and condition sections preserve a 24 px visible gap` | 삭제 | — |
+| range `student filter close and reopen resets range conditions` | 삭제 | 모달 `취소(닫기 · Esc · 스크림)는 초안을 버리고, 적용은 그리드에 건다` |
+| search `적용 필터 칩 …`, `× 와 모두 지우기 …`, `범위 조건도 칩이고 …` | 새 API로 고침 | 칩 순서는 시안 칩 순서(게헨나 → 아비도스), 범위 칩 키 `student-applied-filter-growth-level` |
+| followups `S4 적용 필터 칩과 "+n"이 테두리 변형을 쓴다` | `+n` 안 `BaChip`을 찾게 고침 | — |
+
+- `almanac/design/section-template-studio.md`: "학생 Section 5 필터와 Section 2 고정 viewport 후속 계약" 절을 "학생 필터 모달과 Section 2 고정 viewport 후속 계약"으로 바꿨다(모달 진입·배경·배치·속성·성장 범위·배지). Filter 행동 문단, 최초 토대 표의 화면 범위·Section 5·전환 행, 출처 2개도 고쳤다. 이 파일에는 FE3-d2 전 미커밋 변경이 있어 사본(`debug/frontend_fe3d2/pre/almanac/design/section-template-studio.md`)을 두었다.
+
+**1-4 셸 배경 범위(15:51 결정 4)**
+- `ba_modal.dart`: `BaModalBackdrop`(열린 모달 수를 세는 범위)과 `BaModalBackdropExclude`(그동안 의미 구조에서 뺌)를 더했다. `BaModal`은 열 때 가장 가까운 범위에 등록한다.
+- `app_shell.dart`(diff 최소):
+  - `build`가 `BaModalBackdrop(child: _buildShell(context))`를 돌려준다.
+  - 머리 탭 줄(`home-header-entrance`), `RecoveryBanner`, 개발 패널 두 곳, 스캔 독을 `BaModalBackdropExclude`로 감쌌다.
+  - FE10으로 넘길 만큼 커지지 않았다.
+- `student_page.dart`: 레이아웃 아래 나머지 내용(메타데이터 안내·후보 카드·메시지)을 `BaModalBackdropExclude`로 감쌌다.
+- 그 밖의 학생 탭 내용은 `BaModal`이 뺀다. 다른 탭은 `AnimatedSectionStack`이 이미 뺀다.
+- 결과: 모달이 열려 있으면 셸 전체(머리 포함)가 빠지고 모달만 남는다.
+- 셸 전체를 한 `ExcludeSemantics`로 덮지 않은 이유: 모달 OverlayPortal 자리(의미 트리의 traversal parent)가 그 안에 들어가기 때문이다. `OverlayPortal + BlockSemantics`는 쓰지 않았다.
+
+### 테스트
+
+- 새 `frontend/test/student_filter_modal_test.dart`(7):
+  - S1·`+n` → 모달.
+  - 닫기·Esc·스크림 = 취소(초안 버림), 적용 → 그리드, 초기화 → 적용.
+  - S1 배지 = 칩 수 = 머리 칩 수, 열려 있으면 모달 배지만.
+  - 학교 줄만 학생 수.
+  - 심상개화 비활성, 범위는 초안에.
+  - 배치(시안 좌표 `closeTo` 0.5).
+  - 셸 의미 구조 차단(`find.semantics`) + 닫은 뒤 학생 탭 동작.
+  - 모달은 `pump` 두 번으로 민다(pumpAndSettle 대기 회피).
+- 고친 테스트: 위 표.
+- golden: `students-filter-open` 장면 1개 추가(아래).
+
+### 처리한 FD
+
+- FD-052: Section 5·범위 카드 폐기.
+- FD-054: 심상개화 비활성.
+- FD-057: 보유 · 서버 = S4 토글.
+- FD-058: 배지 위치. 워커 재량으로 S1 알약을 정했다.
+- FD-059: catalog 값만 칩으로 만든다. d1 모델을 그대로 쓴다.
+- FD-063: 육성도 행은 FE7-d로 남긴다.
+- FD-074 (b): 프리셋 칩 숨김.
+- FD-104: 상태 주입.
+- 오케스트레이터 15:51 결정 1·2·4.
+
+### golden 갱신 사유(장면별 예상)
+
+- 새 장면 `students-filter-open`:
+  - 학생 10명 fixture에서 S1으로 모달을 연다.
+  - 초안: 게헨나·아비도스, 딜러, 폭발, 레벨 70~90, 성급 ★3~무기★1, 일본 서버 전용 제외.
+  - 보이는 것: 머리 칩 7개, "필터 · 7", 학교 줄 칩 옆 학생 수, 좁힌 두 `.srow` 분홍.
+  - 배경 학생 탭은 스크림 .8 + blur 2 아래에 보인다.
+- `students-grid`·`students-detail`·`students-grid-name-off`: 차이 0이 예상이다(작업 지시는 "바뀐다"였다). 세 장면 모두 걸린 조건이 없다.
+  - Section 5 분기는 원래 닫힌 상태라 그려지지 않았다.
+  - S1 배지는 조건이 있을 때만 보인다.
+  - S1 아이콘·tooltip은 닫힌 상태의 이전 값(`tune_rounded`, "필터 열기")과 같다.
+  - 그 아래 0높이 `Column` 하나가 더해졌다.
+  - 차이가 나면 원인을 조사해 보고한다.
+- 차이 0: 나머지 15장(`title`·계정 3장·`home`·`plan-*` 9장·`scan-student-review`). plan fixture는 건드리지 않았다.
+
+### 검수표 (mock 모드, 2560×1440 모니터 최대화 = 2560×1392)
+
+**Student-Filter 대조(학생 탭 → S1 필터 버튼)**
+
+| 대조 포인트 | 확인 |
+|---|---|
+| 스크림 | 화면 전체 어둡게(.8) + 약한 흐림, 머리 탭 줄도 덮인다 |
+| 머리 바 | (453.8, 206) 1876×92 사선 r14. 핑크 사선 막대 · "필터" · 결과 수(굵게) "/ N명" · 구분선 · 핑크 칩(×) · "초기화" · "적용"(파랑) · × |
+| 프리셋 칩 | 없다(FD-074 (b)) |
+| 속성 패널 | (285.9, 320) 984×930. 제목 "속성" + "같은 줄은 “또는”, 줄끼리는 “그리고”" |
+| 학교 줄 | 소제목 "학교" 옆 값 수, 칩 옆 학생 수(다른 줄에는 숫자 없음). 두 줄이면 줄 높이 76 |
+| 공격·방어 줄 | 왼쪽 색 막대 칩(화학은 막대 없음) |
+| 보유 · 서버 | 보유 · 미보유 · 일본 서버 전용 제외. S4 토글과 같이 바뀐다 |
+| 성장 범위 패널 | (1127.9, 320) 1182×930. "범위 모두 풀기" 칩, 기본·스킬·장비 · 능력치 소제목, `.srow` 48 사이 10 |
+| 좁힌 행 | 분홍 바탕 + 4px 핑크 테두리 |
+| 심상개화 | 맨 아래, 칩 3개 흐림(누를 수 없음), 오른쪽 "v7 “준비 중” 자리" |
+| "필터 · n" | 열려 있는 동안 화면 왼쪽 (18, 226). 수 = 머리 칩 수 |
+| 적용 / 취소 | "적용"이면 닫히고 그리드가 걸린다. ×·Esc·스크림이면 닫히고 바뀐 것이 버려진다 |
+| S1 배지 | 적용 뒤 S1 필터 아이콘 오른쪽 위 작은 핑크 링 알약에 같은 수. 조건을 모두 풀면 사라진다 |
+| S4 `+n` | 조건이 많아 `+n`이 보이면 눌러서 모달이 열린다 |
+| 다른 창 크기 | 1280×720 정도로 줄여도 넘침 줄무늬가 없다(패널 안 세로 스크롤) |
+
+### 알려진 시안 차이
+
+1. **"필터 · n"**: 시안은 "필터 · 5"(머리 칩 5개)인데 패널에는 성급 행과 일본 서버 전용 제외도 걸려 있다. 15:51 결정 1대로 걸린 조건 전부를 센다.
+2. **S1 배지 모양**: 시안 W-Student-Actions에는 배지가 없다. FD-058 워커 재량으로 정했다.
+3. **칩 줄 높이**: 시안 값(한 줄 34, 두 줄 76)을 그대로 따랐다. 한 줄 34는 CSS 계산 값(30 + 8)보다 4 작다.
+4. **결과 수·칩 학생 수의 범위**: 검색어가 있으면 검색 결과 안에서 센다("/ N명"의 N은 catalog 전체).
+5. **패널 높이**: 다른 창 크기에서는 머리 바 아래 22부터 1250/1392 높이까지이고, 넘치면 패널 안에서 스크롤한다(시안은 한 크기뿐).
+6. **셸 배경 의미 구조**: 범위 갱신이 한 프레임 늦다(위 검토 2).
+
+### 미검증 항목
+
+1. analyze, 전체 테스트, golden 19장 비교. 사용자 PC gate가 필요하다.
+2. 실행해 봐야 아는 것:
+   - 모달 칩 폭 추정(`studentFilterToggleChipWidth`)과 실제 칩 폭이 맞아 줄 수가 맞는지(어긋나면 칩 줄이 넘치거나 남는다. 오류는 나지 않는다).
+   - 셸 의미 구조 테스트의 탭 이름 노드(`전술대항전`)와 모달 이름 노드 병합.
+   - 스크림 탭 위치(1300, 1320)가 스크림에 닿는지.
+   - 1280×720 창에서 머리 바·성장 행이 넘치지 않는지.
+3. 실제 글꼴에서 머리 칩이 길게 이어질 때 잘림, 학교 칩 줄 수.
+
+### 사용자 실행 순서
+
+① 비교 gate만 실행하고 멈춘다. 예상은 RED다(새 장면 `students-filter-open` 기준 없음). 그 밖의 golden 18장은 차이 0이 예상이다. 결과(`debug\frontend_gate\<실행 시각>\summary.txt`, `frontend\test\goldens\failures\`)를 오케스트레이터에게 보낸다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+② 오케스트레이터 승인 뒤 golden을 갱신하고 GREEN을 확인한다. 오케스트레이터가 새 PNG를 검토한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+③ 승인 뒤 커밋한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3d2 -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3d2
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesign-docs
+```
+
+- `debug/frontend_fe3d2/commit.json`의 `whole`은 `frontend/test/goldens/baseline`이다(새 PNG 포함).
+- 사본은 `debug/frontend_fe3d2/pre/` 11개다: app_shell, ba_modal, student_filter_controller, student_page, student_section_layout, 테스트 5개, section-template-studio.md.
+
+### 다음 행동
+
+1. 사용자: ①을 실행하고 결과를 오케스트레이터에게 넘긴다.
+2. 오케스트레이터: 검토 → ② → PNG 검토 → ③.
+3. 다음은 FE4-b(계획 1단계에 같은 모달 연결, 이전 필터 위젯 삭제)다.
+
+### FE3-d2 commit record (2026-10-07 17:45, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_173720\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: almanac/design/section-template-studio.md

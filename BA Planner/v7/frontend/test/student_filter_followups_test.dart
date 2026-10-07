@@ -134,9 +134,7 @@ void main() {
       addTearDown(tester.view.reset);
       final search = TextEditingController();
       addTearDown(search.dispose);
-      final filter = StudentFilterController(
-        catalogKeys: studentFilterDefinitions.map((item) => item.key),
-      );
+      final filter = StudentFilterController();
       addTearDown(filter.dispose);
       for (final school in const [
         'Abydos',
@@ -190,7 +188,15 @@ void main() {
       );
       final more = find.byKey(const ValueKey('student-applied-filter-more'));
       expect(more, findsOneWidget);
-      expect(tester.widget<BaChip>(more).shape, BaChipShape.outlined);
+      // FE3-d2: "+n"은 누르면 필터 모달을 여는 KitPressable이고 그 안 칩이 테두리 변형이다.
+      expect(
+        tester
+            .widget<BaChip>(
+              find.descendant(of: more, matching: find.byType(BaChip)),
+            )
+            .shape,
+        BaChipShape.outlined,
+      );
       expect(tester.takeException(), isNull);
     });
   });

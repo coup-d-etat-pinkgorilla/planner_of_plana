@@ -6,13 +6,13 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
+import '../kit/ba_modal.dart';
 import '../models/active_plan_bond_target.dart';
 import '../models/planning_models.dart';
 import '../models/recent_students.dart';
 import '../models/student_filter_controller.dart';
 import '../widgets/diagonal_section.dart';
 import '../widgets/student_grid_warmup.dart';
-import '../widgets/student_range_condition_section.dart';
 import '../widgets/student_section_layout.dart';
 
 class StudentCandidateContext {
@@ -66,10 +66,8 @@ class _StudentPageState extends State<StudentPage> {
   int _handoffSequence = 0;
   int _warmupRequest = 0;
 
-  /// S4·필터가 함께 쓰는 필터 상태(FE3-c). 범위 조건도 여기 있다.
-  final StudentFilterController _filter = StudentFilterController(
-    catalogKeys: studentFilterDefinitions.map((item) => item.key),
-  );
+  /// S4·S1 배지·필터 모달이 함께 쓰는 필터 상태(FE3-c, FE3-d2). 성장 범위 조건도 여기 있다.
+  final StudentFilterController _filter = StudentFilterController();
   RecentStudents? _ownRecent;
 
   RecentStudents get _recent =>
@@ -414,102 +412,95 @@ class _StudentPageState extends State<StudentPage> {
                   onAddToPlan: _addToPlan,
                   onOpenScan: widget.onOpenScan,
                   onOpenFilter: () {},
-                  onFilterVisibilityChanged: (visible) {
-                    // Section 5를 닫으면 범위 조건을 처음 상태로(기존 동작, FE3-d에서 바뀐다).
-                    if (!visible) _filter.resetRange();
-                  },
-                  filterCompanion: StudentRangeConditionSection(
-                    key: const ValueKey('student-range-condition-section'),
-                    keyPrefix: 'student-range-condition',
-                    conditions: _filter.range,
-                    onChanged: (conditions) => _filter.range = conditions,
-                  ),
-                  rangeConditionMatches: (student, currentValues) =>
-                      _filter.range.matchesStudent(
-                        student: student,
-                        currentValues: currentValues ?? const {},
-                        owned: owned.contains(student.studentId),
-                      ),
                 ),
               ),
-              if (visible.any((student) => student.school == null))
-                const Text(
-                  'metadata unavailable',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 11),
-                ),
-              if (candidate != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                DiagonalSection(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Delivered scan candidate',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        Text(
-                          'Candidate ${candidate.candidate.id} · revision ${candidate.candidate.revision}',
-                        ),
-                        Text(
-                          'Confirmed: ${_selectedState?.values ?? const <String, dynamic>{}}',
-                        ),
-                        Text(
-                          'Candidate: ${candidate.candidate.payload['values'] ?? candidate.candidate.payload}',
-                        ),
-                        Text(
-                          'Review required: ${candidate.candidate.reviewRequired}',
-                        ),
-                        ...candidate.candidate.evidence.map(
-                          (evidence) => Text(
-                            '${evidence.field}: ${evidence.status} (${evidence.source}, confidence ${evidence.confidence?.toStringAsFixed(2) ?? 'n/a'})',
+              // 필터 모달이 열려 있는 동안 학생 탭의 나머지 내용도 의미 구조에서 뺀다(FE3-d2, 15:51 결정 4).
+              BaModalBackdropExclude(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (visible.any((student) => student.school == null))
+                      const Text(
+                        'metadata unavailable',
+                        style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                      ),
+                    if (candidate != null) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      DiagonalSection(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Delivered scan candidate',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              Text(
+                                'Candidate ${candidate.candidate.id} · revision ${candidate.candidate.revision}',
+                              ),
+                              Text(
+                                'Confirmed: ${_selectedState?.values ?? const <String, dynamic>{}}',
+                              ),
+                              Text(
+                                'Candidate: ${candidate.candidate.payload['values'] ?? candidate.candidate.payload}',
+                              ),
+                              Text(
+                                'Review required: ${candidate.candidate.reviewRequired}',
+                              ),
+                              ...candidate.candidate.evidence.map(
+                                (evidence) => Text(
+                                  '${evidence.field}: ${evidence.status} (${evidence.source}, confidence ${evidence.confidence?.toStringAsFixed(2) ?? 'n/a'})',
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Wrap(
+                                spacing: AppSpacing.sm,
+                                children: [
+                                  FilledButton(
+                                    key: const ValueKey('candidate-approve'),
+                                    onPressed: _saving ? null : _approveCandidate,
+                                    child: const Text('Approve and commit'),
+                                  ),
+                                  OutlinedButton(
+                                    key: const ValueKey('candidate-hold'),
+                                    onPressed: () => setState(
+                                      () => _message =
+                                          'Candidate kept for later review; repository unchanged.',
+                                    ),
+                                    child: const Text('Hold'),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Wrap(
-                          spacing: AppSpacing.sm,
+                      ),
+                    ],
+                    if (_message != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.md),
+                        child: Row(
                           children: [
-                            FilledButton(
-                              key: const ValueKey('candidate-approve'),
-                              onPressed: _saving ? null : _approveCandidate,
-                              child: const Text('Approve and commit'),
-                            ),
-                            OutlinedButton(
-                              key: const ValueKey('candidate-hold'),
-                              onPressed: () => setState(
-                                () => _message =
-                                    'Candidate kept for later review; repository unchanged.',
+                            Expanded(
+                              child: Text(
+                                _message!,
+                                key: const ValueKey('student-message'),
                               ),
-                              child: const Text('Hold'),
                             ),
+                            if (_profile != null)
+                              TextButton(
+                                key: const ValueKey('student-reload-profile'),
+                                onPressed: _saving ? null : _reloadProfile,
+                                child: const Text('Reload profile'),
+                              ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-              if (_message != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.md),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _message!,
-                          key: const ValueKey('student-message'),
-                        ),
                       ),
-                      if (_profile != null)
-                        TextButton(
-                          key: const ValueKey('student-reload-profile'),
-                          onPressed: _saving ? null : _reloadProfile,
-                          child: const Text('Reload profile'),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
+              ),
             ],
           ),
         );

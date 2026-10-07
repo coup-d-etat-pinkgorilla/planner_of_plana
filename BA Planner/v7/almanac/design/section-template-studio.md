@@ -60,6 +60,12 @@ sources:
   - id: student-tests
     type: file
     path: frontend/test/student_studio_layout_test.dart
+  - id: student-filter-modal
+    type: file
+    path: frontend/lib/ui/widgets/student_filter_modal.dart
+  - id: student-filter-modal-tests
+    type: file
+    path: frontend/test/student_filter_modal_test.dart
   - id: student-studio-document
     type: file
     path: release/section-student.ba-section-studio.json
@@ -562,9 +568,8 @@ Container 4의 왼쪽 80° rail과 상태 Container 오른쪽 rail 사이의 법
 
 Container 12와 Container 2·4는 Container 5·6·7·9와 같은 어두운 상태용 삼각 texture·outline을
 사용한다. Container 10만 Section 1 행동 버튼과 같은 연핑크 행동 texture를 사용한다. Filter 행동은
-Section 2를 260°로 완전히 퇴장시킨 뒤 Section 5로 교체하고 Section 5를 80°로
-진입시킨다. 다시 누르면 같은 순서로 Section 5에서 Section 2로 복귀한다. Section별 motion은
-  Section 1 `intro 0° / outro 180°`, Section 2·5 `80° / 260°`, Section 3·4 `180° / 0°`다.
+(2026-10-07 FE3-d2부터) Section 2를 바꾸지 않고 필터 모달을 연다(아래 “학생 필터 모달” 절). Section별 motion은
+  Section 1 `intro 0° / outro 180°`, Section 2 `80° / 260°`, Section 3·4 `180° / 0°`다.
   runtime은 forward 중 각 Section의 intro 벡터를 사용하고 reverse 중에는 해당 Section의 outro
   벡터를 직접 사용한다. outro를 intro의 반대 방향이라고 암묵적으로 추론하거나 검증용 값으로만
   남겨 두지 않는다.
@@ -573,10 +578,8 @@ Section 2를 260°로 완전히 퇴장시킨 뒤 Section 5로 교체하고 Secti
 시에는 `active`를 먼저 끄고 같은 controller를 reverse하여 각자의 outro를 사용한다. 따라서
 페이지 전체의 90°/270° 이동을 Section motion과 합성하지 않으며, 학생 페이지와 선택·filter 상태는
 기존처럼 mount된 채 motion lifecycle만 탭 활성 상태에 연결한다.
-Section 5는 Section 2의 높이와 왼쪽 80° rail을 유지하되 윗변과 밑변 길이를 모두 Section 2의
-50%로 줄여 평행사변형을 유지한다. 내부 Container 12도 축소된 Section 5 bounds에서 normalized
-placement를 다시 계산하고 최종 Section path와 교차해 바깥으로 넘치지 않게 한다. Filter 버튼은
-Section 5가 열린 동안 `tune_rounded` 대신 현재 학생 탭과 같은 `groups_2_outlined` 아이콘을 표시한다.
+학생 탭 Section 5(필터 교체 영역)와 그 옆 범위 조건 카드 2장은 FE3-d2에서 폐기했다(FD-052, B §2-4).
+Filter 버튼은 늘 `tune_rounded`·“필터 열기”이며, 모달이 닫혀 있고 조건이 걸려 있으면 개수 배지를 단다.
 각 foundation painter는 hit test를 받지 않아 위 레이어의 빈 영역이 아래 학생 grid 입력을 막지 않는다.
 
 Section 1~4는 공통 alpha 0.76의 반투명 기본 표면을 사용하고 각각 최종 polygon path에
@@ -662,7 +665,7 @@ Section 5의 낮은 높이는 viewport에 따라 탭과 중첩 헤더 높이를 
 
 | 항목 | 최초 토대·초기 해석 | 피드백 이후 확정된 계약 | 재사용 시 교훈 |
 |---|---|---|---|
-| 화면 범위 | Section 1~4를 배치하고 기존 하단 편집 영역을 함께 유지했다. | 헤더 사이와 canvas 하단의 legacy 영역을 제거하고 Section 1~4, 전환 중의 Section 5만 남긴다. | 새 토대를 추가하기 전에 유지·제거할 기존 영역을 명시한다. |
+| 화면 범위 | Section 1~4를 배치하고 기존 하단 편집 영역을 함께 유지했다. | 헤더 사이와 canvas 하단의 legacy 영역을 제거하고 Section 1~4만 남긴다(전환용 Section 5는 FE3-d2에서 필터 모달로 대체). | 새 토대를 추가하기 전에 유지·제거할 기존 영역을 명시한다. |
 | Section 외곽 | 일반 outline과 shadow를 함께 쓰는 보통 glass section으로 해석했다. | Section outline은 없고 alpha 0.76 surface와 lifted shadow만 사용한다. child surface는 parent fill에서 차감한다. | border, shadow, transparency는 서로 독립된 질문이다. |
 | Section 1 버튼 | Studio의 개별 rect와 일반 bounds 중앙 정렬을 우선했다. | 세 버튼 크기는 Section inset과 동일 gap에서 유동 계산한다. 오른쪽 사선 inset까지 포함하고 아이콘은 중간 Y의 실제 수평 선분 중앙에 둔다. | 사다리꼴 자식은 bounding-box 중앙을 사용하지 않는다. |
 | Section 1 texture | 버튼별 색만 유지하고 무늬는 후속으로 보았다. | 세 버튼 모두 연핑크 BA 삼각 texture를 사용한다. Container 10도 같은 action 역할이며 Container 4는 status 역할이다. | “같은 효과”가 fill, texture, outline, shadow 중 무엇인지 묻는다. |
@@ -674,8 +677,8 @@ Section 5의 낮은 높이는 viewport에 따라 탭과 중첩 헤더 높이를 
 | Section 3 정렬 | 각 container의 저장 rect를 개별 적용했다. | portrait·성작·5·6·7·9의 왼쪽은 한 80° rail, 5·6·7·9의 오른쪽은 다른 한 rail에 맞춘다. 4와 stack의 간격도 stack 내부 gap과 같다. | 여러 요소가 같은 사선에 맞는지는 공통 rail로 모델링한다. |
 | Section 4 | 높은 검색 입력 하나만 우선 배치했다. | 검색 bar 높이와 상단 inset을 줄이고 text를 수직 중앙에 둔다. 속성·이름 표시, 미보유·JP 전용 숨김의 네 toggle을 둔다. | 검색, 표시 옵션, 데이터 제외 filter를 별도 상태로 구분한다. |
 | 데이터·정렬 | sample 학생과 화면용 이름을 직접 둘 수 있었다. | backend catalog 전체, 한국어 display name 정렬, v6 alias, repository 보유 ID, protocol의 `jp_only`를 사용한다. | UI filter에 필요한 정적 metadata가 protocol에 있는지 먼저 확인한다. |
-| Section 5 | Section 2와 같은 geometry의 빈 교체 영역으로 시작했다. | 높이와 왼쪽 rail은 유지하고 윗변·밑변과 내부 Container를 50%로 줄인 평행사변형이다. | 외곽만 바꾸지 말고 내부 normalized container도 새 path에서 다시 계산한다. |
-| 전환·역할 표시 | 정적인 네 section을 우선했다. | Section 1=0/180, Section 2·5=80/260, Section 3·4=180/0이다. Filter 버튼은 Section 5에서 학생 탭 아이콘으로 바뀐다. | 상태가 버튼의 역할을 바꾸면 tooltip과 icon도 함께 바꾼다. |
+| Section 5 | Section 2와 같은 geometry의 빈 교체 영역으로 시작했다. | (2026-10-07 FE3-d2로 폐기) 필터는 셸 위에 뜨는 모달이다. Section 2는 교체되지 않는다. | 화면 안 교체 영역과 떠 있는 모달 중 무엇인지 시안·결정 기록으로 먼저 확인한다. |
+| 전환·역할 표시 | 정적인 네 section을 우선했다. | Section 1=0/180, Section 2=80/260, Section 3·4=180/0이다. Filter 버튼은 역할이 바뀌지 않고(늘 필터 열기), 적용 개수 배지만 단다. | 상태가 버튼의 역할을 바꾸면 tooltip과 icon도 함께 바꾼다. |
 | 탭 호출 lifecycle | AppShell의 공용 페이지 이동과 내부 Section 이동을 함께 적용했다. | 학생 페이지 자체 translation은 끄고, 이전 탭 퇴장 완료 뒤 Section별 intro를 시작한다. 학생 탭 퇴장 시에는 Section별 controller가 각자의 outro로 reverse한다. | 페이지 전환과 내부 Section 전환을 합성할지 먼저 정하고, 독립 motion이면 탭 활성 lifecycle을 자식에게 명시적으로 전달한다. |
 
 현재 runtime과 회귀 test는 위 확정 계약을 기준으로 한다. 이후 Studio 값이나 유사 화면을 가져올 때
@@ -781,53 +784,58 @@ controller를 재사용해 같은 Section instance/flow를 여는 것인지도 �
 data와 child 구성은 새로 만든다”처럼 조합된 최종 계약을 한 문단으로 확인한 후 구현한다.
 [@student-runtime] [@student-tests]
 
-## 학생 Section 5 필터와 Section 2 고정 viewport 후속 계약
+## 학생 필터 모달과 Section 2 고정 viewport 후속 계약
 
-2026-07-27 후속 보정에서 Section 5의 `container-12`는 Section path 안쪽의 남은 높이에
-고정된 filter viewport가 되었다. 아래쪽에는 container와 겹치지 않는 44px 초기화 action을
-두며, 항목 수가 늘어도 Section이나 container 높이를 늘리지 않는다. Section 2의 학생 grid도
-같은 고정 viewport 정책을 사용한다.
+2026-10-07 FE3-d2에서 학생 탭 Section 5 필터(교체 영역 + 초기화 action)와 범위 조건 카드 2장을
+폐기하고, 시안 Student-Filter의 필터 모달로 바꿨다(FD-052, B §2-4). 모달 내용은
+`StudentFilterModal`이며 학생 탭·계획 만들기 1단계(FE4-b)·통계(FE7-e)가 함께 쓴다. 상태는 쓰는 쪽이
+`StudentFilterController`를 주입한다(FD-104). [@student-filter-modal] [@student-filter-modal-tests]
 
-두 viewport는 표준 수직 `ScrollController`를 유지하면서 행 중심의 viewport Y를 80도
-trajectory의 X로 변환한다. Section 5는 v6의 그룹명과 표시값을 사용하는 학교, 초기 성급,
-공격 타입, 방어 타입, 편성, 역할, 포지션 그룹을 제공한다. 같은 그룹에서 선택한 값은 OR,
-서로 다른 그룹은 AND이며, Section 2로 돌아가도 선택을 보존하고 초기화 action만 모든 선택을
-지운다. 현재 planning catalog protocol이 직접 제공하지 않는 v6 성장·스킬 metadata 그룹은
-빈 동작으로 노출하지 않는다.
+- 진입: S1 Filter 버튼, S4 적용 필터 줄의 `+n` 칩. 열면 적용 값을 초안으로 복사하고, “적용”만 초안을
+  그리드에 건다. 닫기 ×·Esc·스크림 누르기는 초안을 버린다. “초기화”는 초안만 비운다.
+- 바깥 틀: `BaModal` 필터 스크림(rgba(6,10,16,.8) + blur 2), 포커스 가두기, Esc 한 번 처리. 모달이 열려
+  있는 동안 학생 탭 내용은 BaModal이, 셸 머리 탭 줄·배너·개발 패널·스캔 독은 AppShell의
+  `BaModalBackdrop` 범위가 의미 구조에서 뺀다. 셸 전체를 한 ExcludeSemantics로 덮지 않는 이유는 모달
+  OverlayPortal 자리(의미 트리의 traversal parent)가 그 안에 있기 때문이다.
+- 배치(기준 viewport 2560×1392, 페이지 좌표): 머리 바 (453.8, 206, 1876.2×92), 속성 패널
+  (285.9, 320, 984×930), 성장 범위 패널 (1127.9, 320, 1182×930). 두 패널은 아래 변 사이 22의 평행사변형이고,
+  가로는 viewport 비율, 머리 바·행 높이는 고정, 패널은 머리 바 아래 22부터 1250/1392 높이까지다.
+- 패널 행은 패널 왼쪽 80° 변을 행 밑변 높이에서, 오른쪽 80° 변을 행 윗변 높이에서 평가한 뒤 안쪽으로
+  26/30(속성)·26/34(성장)을 둔다. 제목 행만 20/30·24/30이다. 칩 줄은 한 줄 34, 여러 줄은
+  30·줄 + 8·(줄−1) + 8(학교 두 줄 76)이다. 내용이 패널 높이를 넘으면 패널 안에서 세로로 스크롤하고
+  행은 80° 변을 따라 민다.
+- 속성: 학교·초기 성급·공격·방어·편성·역할·포지션 + “보유 · 서버”. 같은 줄은 OR, 줄끼리는 AND다.
+  칩 옆 학생 수는 학교 줄에만 둔다(오케스트레이터 15:51 결정 2). “보유 · 서버”는 S4 “미보유 학생 숨김”·
+  “일본 서버 전용 숨김”과 같은 상태다(FD-057).
+- 성장 범위: 기본·스킬·장비 · 능력치 그룹의 `.srow` 범위 행(좁힌 행만 분홍), “범위 모두 풀기”. 심상개화는
+  데이터가 없어 비활성 칩 자리만 둔다(FD-054). 육성도 행은 FE7-d(FD-063)에서 다룬다.
+- “필터 · n”은 걸린 조건 전부(머리 칩 수)다(15:51 결정 1). 모달이 열려 있는 동안 (18, 226)에 두고, 닫힌
+  뒤에는 S1 Filter 버튼에 개수 배지로 단다(FD-058). 필터 프리셋 칩은 숨긴다(FD-074 (b)).
+
+Section 2의 학생 grid는 Section path 안쪽 높이에 고정된 viewport다. 항목 수가 늘어도 Section이나
+container 높이를 늘리지 않는다. viewport는 표준 수직 `ScrollController`를 유지하면서 행 중심의
+viewport Y를 80도 trajectory의 X로 변환한다.
 
 viewport 위·아래에는 container 기본색과 같은 36px gradient fog를 둔다. 이는 기본 lifted
 shadow의 약 3배 두께이며, scroll content가 고정 경계에서 잘려 보이지 않고 자연스럽게
-사라지게 한다. fog는 pointer를 받지 않고 grid/list의 wheel, drag, checkbox hit target과
+사라지게 한다. fog는 pointer를 받지 않고 grid/list의 wheel, drag, hit target과
 사선 scrollbar 동작을 그대로 보존한다.
 
-실화면 재검수에서는 container polygon을 사각 bounds로 만든 뒤 부모 path와 교차시키는 방식이
-둥근 꼭짓점을 잘라내는 것을 확인했다. Section 5 container의 위·아래 좌우 점은 부모 80도 경계를
-각 Y에서 직접 평가하고 10px 안쪽에 배치한다. 필터 group row도 중심 Y 이동과 자체 사선 깊이를
-중복 적용하지 않고 row 밑변의 viewport Y를 기준으로 한 번만 이동한다. 제목·checkbox의 좌우
-안전영역은 row 전체 높이에서 생기는 최대 사선 깊이와 8px 여백을 합한 값으로 고정해 상단 제목이
-사선에 잘리지 않게 한다.
-
-필터 group row의 폭은 모든 row에 같은 상수를 사용하지 않는다. 각 row의 높이에 따른 자체 우측
-사선 깊이를 폭에 포함해, viewport 상단·하단에서 평가한 row의 우측 두 끝점이 하나의 80도 rail
-위에 놓이도록 계산한다. 따라서 checkbox 개수로 row 높이가 달라져도 우측 사선이 서로 평행하게
-어긋나는 대신 같은 경계선에 정렬되며, scroll offset이 바뀌어도 이 관계를 유지한다.
+`StudentDiagonalFilterList`(체크박스 group row)는 학생 탭에서 쓰지 않지만 계획 학생 선택기가 FE4-b 전까지
+쓴다. 그 group row는 중심 Y 이동과 자체 사선 깊이를 중복 적용하지 않고 row 밑변의 viewport Y를 기준으로
+한 번만 이동하며, 각 row의 높이에 따른 우측 사선 깊이를 폭에 포함해 우측 두 끝점이 하나의 80도 rail
+위에 놓이게 한다.
 
 ### 학생 페이지 viewport와 Section canvas 높이
 
 학생 페이지의 Section canvas 높이는 `StudentPage` viewport에서 페이지 상하 padding을 뺀 값이어야
 한다. `SingleChildScrollView`의 바깥 constraint를 padding 차감 없이 그대로 canvas 높이로 사용하면
-Section 2·5의 하단과 Section 5 초기화 버튼이 화면 아래로 padding 합계만큼 밀린다. 최소 canvas
+Section 2의 하단이 화면 아래로 padding 합계만큼 밀린다. 최소 canvas
 높이 590은 유지하되, 충분한 높이에서는 `maxHeight - padding.vertical`을 사용한다.
 
-필터 모드의 `_StudentSectionFoundationPainter`는 새 Section 5 container와 reset surface를 직접
-그린 뒤, 일반 Section 2용 runtime container/feature paint loop에서 `element-2` 자식을 제외해야
-한다. 그렇지 않으면 기존 `container-12`가 새 필터 container 뒤에 원래 크기로 다시 그려져
-이전 viewport와 비슷한 중복 면·윤곽이 남는다.
-
-Section 2·5의 viewport fog는 고정 장식이 아니라 실제 `ScrollPosition`에서 파생되는 상태다.
+Section 2의 viewport fog는 고정 장식이 아니라 실제 `ScrollPosition`에서 파생되는 상태다.
 스크롤 범위가 없으면 위·아래 fog를 모두 그리지 않는다. `pixels`가 최소 extent에 있으면 위 fog를,
-최대 extent에 있으면 아래 fog를 그리지 않으며, 두 끝점 사이에서만 양쪽 fog를 표시한다. 두
-섹션은 `_StudentDiagonalScrollbar`의 동일한 계산과 overlay를 공유한다.
+최대 extent에 있으면 아래 fog를 그리지 않으며, 두 끝점 사이에서만 양쪽 fog를 표시한다.
 
 ## 학생 Section 1 정렬 드롭다운 계약
 

@@ -8,6 +8,7 @@ import '../services/app_service.dart';
 import '../services/repository_service.dart';
 import '../services/scanner_service.dart';
 import 'app_section.dart';
+import 'kit/ba_modal.dart';
 import 'models/recent_students.dart';
 import 'pages/adaptive_sync_page.dart';
 import 'pages/home_page.dart';
@@ -264,8 +265,13 @@ class _AppShellState extends State<AppShell>
     });
   }
 
+  // 모달 배경 범위(FE3-d2, 15:51 결정 4): 화면 모달이 열려 있는 동안 셸 머리 탭 줄·배너·개발 패널·스캔 독
+  // ([BaModalBackdropExclude])을 의미 구조에서 뺀다. 모달을 연 화면 내용은 BaModal이 뺀다.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      BaModalBackdrop(child: _buildShell(context));
+
+  Widget _buildShell(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -282,28 +288,32 @@ class _AppShellState extends State<AppShell>
                     Expanded(
                       child: Column(
                         children: [
-                          DirectionalSectionEntrance(
-                            key: const ValueKey('home-header-entrance'),
-                            animation: _homeEntranceController,
-                            directionDegrees: 270,
-                            child: _CompoundPageHeader(
-                              section: _section,
-                              service: widget.service,
-                              profile: _selectedProfile,
-                              developmentPanelVisible: _showDevelopmentPanel,
-                              onSelected: _open,
-                              onToggleDevelopmentPanel: () {
-                                setState(() {
-                                  _showDevelopmentPanel =
-                                      !_showDevelopmentPanel;
-                                });
-                              },
+                          BaModalBackdropExclude(
+                            child: DirectionalSectionEntrance(
+                              key: const ValueKey('home-header-entrance'),
+                              animation: _homeEntranceController,
+                              directionDegrees: 270,
+                              child: _CompoundPageHeader(
+                                section: _section,
+                                service: widget.service,
+                                profile: _selectedProfile,
+                                developmentPanelVisible: _showDevelopmentPanel,
+                                onSelected: _open,
+                                onToggleDevelopmentPanel: () {
+                                  setState(() {
+                                    _showDevelopmentPanel =
+                                        !_showDevelopmentPanel;
+                                  });
+                                },
+                              ),
                             ),
                           ),
-                          RecoveryBanner(
-                            service: widget.service,
-                            onOpenSettings: () => _open(AppSection.settings),
-                            onOpenScan: () => _open(AppSection.scan),
+                          BaModalBackdropExclude(
+                            child: RecoveryBanner(
+                              service: widget.service,
+                              onOpenSettings: () => _open(AppSection.settings),
+                              onOpenScan: () => _open(AppSection.scan),
+                            ),
                           ),
                           Expanded(
                             child: AnimatedSectionStack(
@@ -410,15 +420,17 @@ class _AppShellState extends State<AppShell>
                       const VerticalDivider(width: 1),
                       SizedBox(
                         width: 330,
-                        child: DevelopmentPanel(
-                          service: widget.service,
-                          onOpenDiagnostics: () =>
-                              _open(AppSection.adaptiveSync),
-                          onOpenSectionTemplateStudio: () =>
-                              _open(AppSection.sectionTemplateStudio),
-                          onClose: () {
-                            setState(() => _showDevelopmentPanel = false);
-                          },
+                        child: BaModalBackdropExclude(
+                          child: DevelopmentPanel(
+                            service: widget.service,
+                            onOpenDiagnostics: () =>
+                                _open(AppSection.adaptiveSync),
+                            onOpenSectionTemplateStudio: () =>
+                                _open(AppSection.sectionTemplateStudio),
+                            onClose: () {
+                              setState(() => _showDevelopmentPanel = false);
+                            },
+                          ),
                         ),
                       ),
                     ],
@@ -446,14 +458,16 @@ class _AppShellState extends State<AppShell>
                       width: constraints.maxWidth.clamp(280, 330).toDouble(),
                       child: Material(
                         elevation: 16,
-                        child: DevelopmentPanel(
-                          service: widget.service,
-                          onOpenDiagnostics: () =>
-                              _open(AppSection.adaptiveSync),
-                          onOpenSectionTemplateStudio: () =>
-                              _open(AppSection.sectionTemplateStudio),
-                          onClose: () =>
-                              setState(() => _showDevelopmentPanel = false),
+                        child: BaModalBackdropExclude(
+                          child: DevelopmentPanel(
+                            service: widget.service,
+                            onOpenDiagnostics: () =>
+                                _open(AppSection.adaptiveSync),
+                            onOpenSectionTemplateStudio: () =>
+                                _open(AppSection.sectionTemplateStudio),
+                            onClose: () =>
+                                setState(() => _showDevelopmentPanel = false),
+                          ),
                         ),
                       ),
                     ),
@@ -466,7 +480,11 @@ class _AppShellState extends State<AppShell>
             valueListenable: _scanCompanion,
             builder: (context, companion, child) => companion == null
                 ? const SizedBox.shrink()
-                : Positioned.fill(child: ScanCompanionDock(state: companion)),
+                : Positioned.fill(
+                    child: BaModalBackdropExclude(
+                      child: ScanCompanionDock(state: companion),
+                    ),
+                  ),
           ),
         ],
       ),

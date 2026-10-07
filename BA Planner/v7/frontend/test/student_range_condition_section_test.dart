@@ -2,9 +2,7 @@ import 'dart:math' as math;
 
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
-import 'package:ba_planner_v7/ui/widgets/section_template_surface.dart';
 import 'package:ba_planner_v7/ui/widgets/student_range_condition_section.dart';
-import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -26,24 +24,6 @@ StudentCatalogEntry _student(String id) => StudentCatalogEntry(
 );
 
 void main() {
-  test(
-    'student filter and condition sections preserve a 24 px visible gap',
-    () {
-      for (final size in const [Size(1100, 720), Size(1440, 900)]) {
-        final filter = studentFilterSectionPath(size).getBounds();
-        final condition = studentFilterCompanionSectionRect(size);
-        final depth = sectionTemplateCutDepth(filter.height);
-        expect(condition.width, greaterThan(0));
-        expect(condition.top, closeTo(filter.top, 0.01));
-        expect(condition.bottom, closeTo(filter.bottom, 0.01));
-        expect(
-          condition.left + depth / 2 - (filter.right - depth / 2),
-          closeTo(studentFilterCompanionSectionGap, 0.01),
-        );
-      }
-    },
-  );
-
   test('condition cards advance along the parent 80 degree rails', () {
     for (final size in const [Size(520, 900), Size(640, 1080)]) {
       final contentHeight =
@@ -397,79 +377,4 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
-
-  testWidgets('student filter close and reopen resets range conditions', (
-    tester,
-  ) async {
-    final search = TextEditingController();
-    addTearDown(search.dispose);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.binding.setSurfaceSize(const Size(1100, 720));
-    var conditions = StudentRangeConditions.initial();
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: StatefulBuilder(
-            builder: (context, setState) => StudentSectionLayout(
-              students: [_student('aru')],
-              ownedIds: const {'aru'},
-              selectedId: null,
-              selectedValues: null,
-              searchController: search,
-              onSearchChanged: (_) {},
-              onStudentSelected: (_) {},
-              onAddToPlan: null,
-              onOpenScan: null,
-              onOpenFilter: () {},
-              onFilterVisibilityChanged: (visible) {
-                if (!visible) {
-                  setState(() => conditions = StudentRangeConditions.initial());
-                }
-              },
-              filterCompanion: StudentRangeConditionSection(
-                keyPrefix: 'student-test-range',
-                conditions: conditions,
-                onChanged: (next) => setState(() => conditions = next),
-              ),
-              rangeConditionMatches: (student, values) =>
-                  conditions.matchesStudent(
-                    student: student,
-                    currentValues: values ?? const {},
-                    owned: true,
-                  ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('student-open-filter')));
-    await tester.pumpAndSettle();
-    expect(find.byType(StudentRangeConditionSection), findsOneWidget);
-
-    await tester.tap(
-      find.byKey(const ValueKey('student-test-range-upper-enabled-control')),
-    );
-    await tester.pump();
-    expect(conditions.upperEnabled, isTrue);
-
-    await tester.tap(find.byKey(const ValueKey('student-open-filter')));
-    await tester.pumpAndSettle();
-    expect(find.byType(StudentRangeConditionSection), findsNothing);
-    expect(conditions.upperEnabled, isFalse);
-
-    await tester.tap(find.byKey(const ValueKey('student-open-filter')));
-    await tester.pumpAndSettle();
-    final checkbox = tester.widget<Checkbox>(
-      find.descendant(
-        of: find.byKey(
-          const ValueKey('student-test-range-upper-enabled-control'),
-        ),
-        matching: find.byType(Checkbox),
-      ),
-    );
-    expect(checkbox.value, isFalse);
-    expect(tester.takeException(), isNull);
-  });
 }

@@ -1,16 +1,20 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart' show listEquals, setEquals;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/ba_chip.dart';
+import '../kit/ba_modal.dart';
 import '../kit/diagonal_scrollbar.dart';
 import '../kit/game_assets.dart';
 import '../kit/hatch.dart';
+import '../kit/kit_pressable.dart';
 import '../kit/skew_box.dart';
 import '../models/active_plan_bond_target.dart';
 import '../models/student_filter_controller.dart';
+import '../models/student_filter_selection.dart';
 import '../studio/section_template.dart';
 import '../studio/student_studio_layout.dart';
 import 'animated_section_stack.dart';
@@ -22,6 +26,7 @@ import 'plan_student_step_tile.dart';
 import 'scroll_viewport_fog.dart';
 import 'section_surface.dart';
 import 'section_template_surface.dart';
+import 'student_filter_modal.dart';
 import 'student_portrait_status_overlay.dart';
 
 const studentTextureTessellationContrast = 0.030;
@@ -58,8 +63,6 @@ const _studentActionTexture = BATriangleTextureConfig(
 const studentSectionBevelGap = 12.0;
 const studentSectionOpacity = sectionSurfaceOpacity;
 const studentViewportFogExtent = scrollViewportFogExtent;
-const studentFilterResetButtonSize = 44.0;
-const studentFilterCompanionSectionGap = 24.0;
 const studentSortAccentColor = Color(0xffe9b0ee);
 const studentSortCompactFontSize = 15.0;
 const studentSortMenuFontSize = 18.0;
@@ -308,19 +311,6 @@ String studentFilterValueLabel(String key, String value) {
           .join(' ');
 }
 
-bool studentMatchesCatalogFilters(
-  StudentCatalogEntry student,
-  Map<String, Set<String>> selected,
-) {
-  for (final definition in studentFilterDefinitions) {
-    final values = selected[definition.key];
-    if (values == null || values.isEmpty) continue;
-    final value = definition.read(student);
-    if (value == null || !values.contains(value)) return false;
-  }
-  return true;
-}
-
 double studentStarSegmentDepth(Rect rect) =>
     math.min(rect.width * 0.45, diagonalCutDepth(rect.height));
 
@@ -521,102 +511,6 @@ Path studentSectionPath(Size size, String id) {
   return Path.combine(PathOperation.intersect, raw, canvasBounds);
 }
 
-List<Offset> studentFilterSectionPolygon(Size size) {
-  final actionSection = studentStudioDocument.elements.firstWhere(
-    (item) => item.id == 'element-1',
-  );
-  final filterSection = studentStudioDocument.elements.firstWhere(
-    (item) => item.id == 'element-2',
-  );
-  final actionRect = sectionCanvasElementRect(size, actionSection);
-  final rect = sectionCanvasElementRect(size, filterSection);
-  final depth = diagonalCutDepth(rect.height);
-  final leftTop = actionRect.right + studentSectionBevelGap;
-  final originalTopRight = Offset(rect.right + depth, rect.top);
-  final bottomLeft = Offset(leftTop - depth, rect.bottom);
-  final reducedEdgeLength = (originalTopRight.dx - leftTop) / 4;
-  return [
-    Offset(leftTop, rect.top),
-    Offset(leftTop + reducedEdgeLength, rect.top),
-    Offset(bottomLeft.dx + reducedEdgeLength, rect.bottom),
-    bottomLeft,
-  ];
-}
-
-double studentListSectionEdgeLength(Size size) {
-  final actionSection = studentStudioDocument.elements.firstWhere(
-    (item) => item.id == 'element-1',
-  );
-  final listSection = studentStudioDocument.elements.firstWhere(
-    (item) => item.id == 'element-2',
-  );
-  final actionRect = sectionCanvasElementRect(size, actionSection);
-  final rect = sectionCanvasElementRect(size, listSection);
-  final depth = diagonalCutDepth(rect.height);
-  return rect.right + depth - (actionRect.right + studentSectionBevelGap);
-}
-
-Path studentFilterSectionPath(Size size) {
-  final raw = buildRoundedSectionPolygon(
-    studentFilterSectionPolygon(size),
-    radius: 8,
-  );
-  final canvasBounds = Path()
-    ..addRRect(
-      RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(8)),
-    );
-  return Path.combine(PathOperation.intersect, raw, canvasBounds);
-}
-
-Rect studentFilterCompanionSectionRect(Size size) {
-  final filterBounds = studentFilterSectionPath(size).getBounds();
-  final fullBounds = studentSectionPath(size, 'element-2').getBounds();
-  final depth = diagonalCutDepth(filterBounds.height);
-  final left = filterBounds.right + studentFilterCompanionSectionGap - depth;
-  return Rect.fromLTRB(
-    left,
-    filterBounds.top,
-    fullBounds.right,
-    filterBounds.bottom,
-  );
-}
-
-(double, double) studentFilterSectionHorizontalInterval(Size size, double y) {
-  final polygon = studentFilterSectionPolygon(size);
-  final bottom = polygon[3].dy;
-  final clampedY = y.clamp(polygon[0].dy, bottom);
-  final shift = diagonalCutDepth(bottom - clampedY);
-  return (polygon[3].dx + shift, polygon[2].dx + shift);
-}
-
-List<Offset> studentFilterContainerPolygon(Size size) {
-  final sectionPolygon = studentFilterSectionPolygon(size);
-  final sectionTop = sectionPolygon[0].dy;
-  final sectionBottom = sectionPolygon[3].dy;
-  final sectionHeight = sectionBottom - sectionTop;
-  final bottomReserve = studentFilterResetButtonSize + 16;
-  final top = sectionTop + 10;
-  final bottom = math.max(
-    top + 40,
-    sectionBottom - math.min(bottomReserve, sectionHeight * 0.22),
-  );
-  final topInterval = studentFilterSectionHorizontalInterval(size, top);
-  final bottomInterval = studentFilterSectionHorizontalInterval(size, bottom);
-  return [
-    Offset(topInterval.$1 + 10, top),
-    Offset(topInterval.$2 - 10, top),
-    Offset(bottomInterval.$2 - 10, bottom),
-    Offset(bottomInterval.$1 + 10, bottom),
-  ];
-}
-
-Path studentFilterContainerPath(Size size) {
-  return buildRoundedSectionPolygon(
-    studentFilterContainerPolygon(size),
-    radius: 10,
-  );
-}
-
 double studentDiagonalRowHorizontalOffset({
   required double viewportHeight,
   required double rowTop,
@@ -649,30 +543,6 @@ double studentDiagonalFilterRowWidth({
 
 double studentFilterGroupContentInset(double height) =>
     diagonalCutDepth(height) + 8;
-
-bool studentFoundationUsesLegacySectionChildren({
-  required bool filterSection,
-  required String parentSectionId,
-}) => !(filterSection && parentSectionId == 'element-2');
-
-Path studentFilterResetPath(Size size) {
-  final polygon = studentFilterSectionPolygon(size);
-  final section = studentFilterSectionPath(size).getBounds();
-  final bottomRight = polygon[2].dx;
-  final rect = Rect.fromLTWH(
-    bottomRight - studentFilterResetButtonSize - 12,
-    section.bottom - studentFilterResetButtonSize - 8,
-    studentFilterResetButtonSize,
-    studentFilterResetButtonSize,
-  );
-  final depth = diagonalCutDepth(rect.height);
-  return buildRoundedSectionPolygon([
-    Offset(rect.left + depth, rect.top),
-    rect.topRight,
-    Offset(rect.right - depth, rect.bottom),
-    rect.bottomLeft,
-  ], radius: 7);
-}
 
 List<StudioContainerElement> studentRuntimeContainers(Size size) {
   final detailSection = studentStudioDocument.elements.firstWhere(
@@ -979,9 +849,6 @@ class StudentSectionLayout extends StatefulWidget {
     required this.onAddToPlan,
     required this.onOpenScan,
     required this.onOpenFilter,
-    this.onFilterVisibilityChanged,
-    this.filterCompanion,
-    this.rangeConditionMatches,
     this.active = true,
   });
 
@@ -996,7 +863,7 @@ class StudentSectionLayout extends StatefulWidget {
   /// 선택 학생의 활성 계획 인연 목표(FD-049). 없으면 null. 보일지는 게이지가 정한다(FD-050).
   final int? selectedBondTarget;
 
-  /// 필터 상태(FE3-c). 페이지가 소유한다. 없으면 레이아웃이 자기 것을 만든다.
+  /// 필터 상태(FE3-c). 페이지가 소유하고 필터 모달에 주입한다(FD-104). 없으면 레이아웃이 자기 것을 만든다.
   final StudentFilterController? filterController;
 
   /// S4 결과 수 줄의 "전체" 수(검색 전 catalog 크기). 없으면 [students] 수.
@@ -1009,14 +876,8 @@ class StudentSectionLayout extends StatefulWidget {
   final ValueChanged<String> onStudentSelected;
   final VoidCallback? onAddToPlan;
   final VoidCallback? onOpenScan;
+  /// 필터 모달을 연 뒤 알린다(S1 필터 버튼 · S4 "+n" 칩).
   final VoidCallback? onOpenFilter;
-  final ValueChanged<bool>? onFilterVisibilityChanged;
-  final Widget? filterCompanion;
-  final bool Function(
-    StudentCatalogEntry student,
-    Map<String, dynamic>? currentValues,
-  )?
-  rangeConditionMatches;
   final bool active;
 
   @override
@@ -1030,7 +891,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
   late final AnimationController _listController;
   late final AnimationController _section3Controller;
   late final AnimationController _section4Controller;
-  bool _showFilters = false;
+  final _filterModal = BaModalController();
   bool _switchingListSection = false;
   bool _showStudentAttributes = true;
   bool _showStudentNames = true;
@@ -1039,14 +900,57 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
   StudentFilterController? _ownFilter;
   String? _revealStudentId;
   int _revealRequest = 0;
+  List<StudentFilterCandidate>? _candidates;
 
   StudentFilterController get _filter =>
-      widget.filterController ??
-      (_ownFilter ??= StudentFilterController(
-        catalogKeys: studentFilterDefinitions.map((item) => item.key),
-      ));
+      widget.filterController ?? (_ownFilter ??= StudentFilterController());
 
   void _filterChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// 필터를 거는 학생들(속성 + 보유 + 현재 성장 값). 학생·보유·현재 값이 바뀔 때만 다시 만든다.
+  List<StudentFilterCandidate> get _filterCandidates =>
+      _candidates ??= [
+        for (final student in widget.students)
+          StudentFilterCandidate.fromValues(
+            student: student,
+            owned: widget.ownedIds.contains(student.studentId),
+            currentValues:
+                widget.studentValuesById[student.studentId] ?? const {},
+          ),
+      ];
+
+  /// 페이지는 빌드마다 새 목록을 넘기므로 내용으로 비교한다(학생 값 맵은 같은 객체인지만 본다).
+  static bool _sameFilterInputs(StudentSectionLayout a, StudentSectionLayout b) {
+    if (!listEquals(a.students, b.students) ||
+        !setEquals(a.ownedIds, b.ownedIds) ||
+        a.studentValuesById.length != b.studentValuesById.length) {
+      return false;
+    }
+    for (final entry in a.studentValuesById.entries) {
+      if (!identical(b.studentValuesById[entry.key], entry.value)) return false;
+    }
+    return true;
+  }
+
+  /// 필터 모달을 연다(S1 필터 버튼 · S4 "+n" 칩). 적용 값을 초안으로 복사한다.
+  void _openFilterModal() {
+    if (_filterModal.isOpen) return;
+    _filter.beginEdit();
+    _filterModal.open();
+    widget.onOpenFilter?.call();
+  }
+
+  /// "적용": 초안을 그리드에 걸고 닫는다.
+  void _applyFilterModal() {
+    _filter.applyDraft();
+    _filterModal.close();
+  }
+
+  /// 모달이 닫히면(닫기 · Esc · 스크림) 적용하지 않은 초안을 버린다.
+  void _filterModalChanged() {
+    if (!_filterModal.isOpen) _filter.discardDraft();
     if (mounted) setState(() {});
   }
 
@@ -1063,6 +967,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
   void initState() {
     super.initState();
     _filter.addListener(_filterChanged);
+    _filterModal.addListener(_filterModalChanged);
     _section1Controller = _controller();
     _listController = _controller();
     _section3Controller = _controller();
@@ -1085,8 +990,15 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
       );
       _filter.addListener(_filterChanged);
     }
+    if (!_sameFilterInputs(oldWidget, widget)) _candidates = null;
     if (oldWidget.active != widget.active) {
       _setTabSectionsActive(widget.active);
+      // 탭을 떠나면 열린 필터 모달을 닫는다(초안은 버린다). 숨은 탭이 모달 자리를 의미 구조에서 빼기 전에.
+      if (!widget.active && _filterModal.isOpen) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _filterModal.close();
+        });
+      }
     }
   }
 
@@ -1108,30 +1020,14 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
   @override
   void dispose() {
     _filter.removeListener(_filterChanged);
+    _filterModal.removeListener(_filterModalChanged);
+    _filterModal.dispose();
     _ownFilter?.dispose();
     _section1Controller.dispose();
     _listController.dispose();
     _section3Controller.dispose();
     _section4Controller.dispose();
     super.dispose();
-  }
-
-  Future<void> _toggleFilterSection() async {
-    if (_switchingListSection) return;
-    setState(() => _switchingListSection = true);
-    try {
-      await _listController.reverse();
-      if (!mounted) return;
-      final nextVisibility = !_showFilters;
-      setState(() => _showFilters = nextVisibility);
-      widget.onFilterVisibilityChanged?.call(nextVisibility);
-      await _listController.forward();
-      widget.onOpenFilter?.call();
-    } on TickerCanceled {
-      return;
-    } finally {
-      if (mounted) setState(() => _switchingListSection = false);
-    }
   }
 
   Future<void> _switchSection2View(StudentSection2View nextView) async {
@@ -1148,11 +1044,6 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
       if (mounted) setState(() => _switchingListSection = false);
     }
   }
-
-  void _toggleCatalogFilter(String key, String value) =>
-      _filter.toggleCatalog(key, value);
-
-  void _resetCatalogFilters() => _filter.clearCatalog();
 
   /// S4 아래쪽 확장(FE3-c, W-Student-Search): 구분선, 결과 수, 적용 필터 칩, 최근 본 학생.
   /// 각 줄 왼쪽은 S4 왼쪽 80° 변을 따라 줄 밑변 높이에서 22px 안쪽, 오른쪽은 검색 상자 오른쪽이다.
@@ -1189,9 +1080,6 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
     }
 
     final filter = _filter;
-    final applied = filter.appliedFilters(
-      catalogLabel: studentFilterValueLabel,
-    );
     add(
       studentSearchDividerHeight,
       studentSearchDividerGap - studentSearchDividerHeight,
@@ -1216,9 +1104,10 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
       studentSearchChipRowGap,
       (_) => StudentAppliedFilterRow(
         key: const ValueKey('student-applied-filters'),
-        filters: applied,
+        filters: filter.searchRowChips,
         onRemove: filter.removeApplied,
         onClearAll: filter.clearApplied,
+        onShowMore: _openFilterModal,
       ),
     );
     add(
@@ -1248,7 +1137,28 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
   }
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
+  Widget build(BuildContext context) => BaModal(
+    controller: _filterModal,
+    scrim: BaScrim.filter,
+    label: '필터',
+    builder: (context) {
+      final filter = _filter;
+      return StudentFilterModal(
+        key: const ValueKey('student-filter-modal'),
+        selection: filter.draft ?? filter.applied,
+        onChanged: filter.updateDraft,
+        candidates: _filterCandidates,
+        groups: filter.groups,
+        totalCount: widget.totalStudentCount ?? widget.students.length,
+        onApply: _applyFilterModal,
+        onReset: filter.resetDraft,
+        onClose: _filterModal.close,
+      );
+    },
+    child: _buildLayout(),
+  );
+
+  Widget _buildLayout() => LayoutBuilder(
     builder: (context, constraints) {
       final size = Size(
         constraints.maxWidth,
@@ -1259,9 +1169,6 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
       }
 
       final listBounds = containerBounds('container-12');
-      final filterBounds = studentFilterContainerPath(size).getBounds();
-      final resetPath = studentFilterResetPath(size);
-      final resetBounds = resetPath.getBounds();
       final portraitBounds = containerBounds('container-1');
       final searchBounds = containerBounds('container-14');
       final selectedStudent =
@@ -1271,26 +1178,10 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
             orElse: () => null,
           );
       final filter = _filter;
-      final catalogFilters = filter.catalog;
-      final filteredGridStudents = widget.students
-          .where(
-            (student) =>
-                (!filter.hideUnowned ||
-                    widget.ownedIds.contains(student.studentId)) &&
-                (!filter.hideJpOnly || !student.jpOnly),
-          )
-          .where(
-            (student) => studentMatchesCatalogFilters(student, catalogFilters),
-          )
-          .where(
-            (student) =>
-                widget.rangeConditionMatches?.call(
-                  student,
-                  widget.studentValuesById[student.studentId],
-                ) ??
-                true,
-          )
-          .toList(growable: false);
+      final filteredGridStudents = [
+        for (final candidate in _filterCandidates)
+          if (filter.matches(candidate)) candidate.student,
+      ];
       final gridStudents = sortStudentGridEntries(
         filteredGridStudents,
         _gridSort,
@@ -1304,11 +1195,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
           children: [
             Positioned.fill(
               child: StudentSectionMotion(
-                key: ValueKey(
-                  _showFilters
-                      ? 'student-section-5-motion'
-                      : 'student-section-2-motion',
-                ),
+                key: const ValueKey('student-section-2-motion'),
                 animation: _listController,
                 introDegrees: 80,
                 outroDegrees: 260,
@@ -1317,110 +1204,54 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                   children: [
                     IgnorePointer(
                       child: CustomPaint(
-                        key: ValueKey(
-                          _showFilters
-                              ? 'student-section-5-foundation'
-                              : 'student-section-2-foundation',
-                        ),
+                        key: const ValueKey('student-section-2-foundation'),
                         painter: _StudentSectionFoundationPainter(
                           selectedValues: widget.selectedValues,
                           sectionIds: const {'element-2'},
-                          filterSection: _showFilters,
                         ),
                       ),
                     ),
-                    if (_showFilters) ...[
-                      Positioned.fromRect(
-                        rect: filterBounds,
-                        child: ClipPath(
-                          clipper: _LocalPathClipper(
-                            studentFilterContainerPath(
-                              size,
-                            ).shift(-filterBounds.topLeft),
-                          ),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              StudentDiagonalFilterList(
-                                key: const ValueKey('student-filter-section-5'),
-                                students: widget.students,
-                                selected: catalogFilters,
-                                onToggle: _toggleCatalogFilter,
-                              ),
-                            ],
-                          ),
+                    Positioned.fromRect(
+                      rect: listBounds,
+                      child: ClipPath(
+                        clipper: _ContainerBoundsClipper(
+                          'container-12',
+                          size,
                         ),
-                      ),
-                      Positioned.fromRect(
-                        rect: resetBounds,
-                        child: Tooltip(
-                          message: '필터 초기화',
-                          child: ClipPath(
-                            clipper: _LocalPathClipper(
-                              resetPath.shift(-resetBounds.topLeft),
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                key: const ValueKey('student-filter-reset'),
-                                onTap: _resetCatalogFilters,
-                                child: const Icon(
-                                  Icons.restart_alt_rounded,
-                                  size: 23,
-                                  color: AppColors.text,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            if (_section2View == StudentSection2View.grid)
+                              StudentDiagonalGrid(
+                                key: const ValueKey(
+                                  'student-section-2-grid-view',
                                 ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (widget.filterCompanion != null)
-                        Positioned.fromRect(
-                          rect: studentFilterCompanionSectionRect(size),
-                          child: widget.filterCompanion!,
-                        ),
-                    ] else
-                      Positioned.fromRect(
-                        rect: listBounds,
-                        child: ClipPath(
-                          clipper: _ContainerBoundsClipper(
-                            'container-12',
-                            size,
-                          ),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              if (_section2View == StudentSection2View.grid)
-                                StudentDiagonalGrid(
-                                  key: const ValueKey(
-                                    'student-section-2-grid-view',
-                                  ),
-                                  students: gridStudents,
-                                  ownedIds: widget.ownedIds,
-                                  studentValuesById: widget.studentValuesById,
-                                  plannedIds: widget.plannedIds,
-                                  selectedId: widget.selectedId,
-                                  showAttributes: _showStudentAttributes,
-                                  showNames: _showStudentNames,
-                                  onSelected: widget.onStudentSelected,
-                                  revealStudentId: _revealStudentId,
-                                  revealRequest: _revealRequest,
-                                )
-                              else
-                                StudentDiagonalList(
-                                  key: const ValueKey(
-                                    'student-section-2-list-view',
-                                  ),
-                                  students: gridStudents,
-                                  ownedIds: widget.ownedIds,
-                                  studentValuesById: widget.studentValuesById,
-                                  selectedId: widget.selectedId,
-                                  onSelected: widget.onStudentSelected,
+                                students: gridStudents,
+                                ownedIds: widget.ownedIds,
+                                studentValuesById: widget.studentValuesById,
+                                plannedIds: widget.plannedIds,
+                                selectedId: widget.selectedId,
+                                showAttributes: _showStudentAttributes,
+                                showNames: _showStudentNames,
+                                onSelected: widget.onStudentSelected,
+                                revealStudentId: _revealStudentId,
+                                revealRequest: _revealRequest,
+                              )
+                            else
+                              StudentDiagonalList(
+                                key: const ValueKey(
+                                  'student-section-2-list-view',
                                 ),
-                            ],
-                          ),
+                                students: gridStudents,
+                                ownedIds: widget.ownedIds,
+                                studentValuesById: widget.studentValuesById,
+                                selectedId: widget.selectedId,
+                                onSelected: widget.onStudentSelected,
+                              ),
+                          ],
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -1644,13 +1475,14 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                       canvasSize: size,
                       containerId: 'container-11',
                       key: const ValueKey('student-open-filter'),
-                      tooltip: _showFilters ? '학생 목록 열기' : '필터 열기',
-                      icon: _showFilters
-                          ? Icons.groups_2_outlined
-                          : Icons.tune_rounded,
-                      onPressed: _switchingListSection
+                      tooltip: '필터 열기',
+                      icon: Icons.tune_rounded,
+                      // "필터 · n" 배지(FD-058): 모달이 닫혀 있고 조건이 걸려 있을 때. 열려 있으면 모달이 시안
+                      // 위치에 같은 배지를 그린다.
+                      badgeCount: _filterModal.isOpen || filter.activeCount == 0
                           ? null
-                          : _toggleFilterSection,
+                          : filter.activeCount,
+                      onPressed: _openFilterModal,
                     ),
                     _StudentSortDropdown(
                       canvasSize: size,
@@ -1850,11 +1682,15 @@ class StudentAppliedFilterRow extends StatelessWidget {
     required this.filters,
     required this.onRemove,
     required this.onClearAll,
+    this.onShowMore,
   });
 
-  final List<StudentAppliedFilter> filters;
-  final ValueChanged<StudentAppliedFilter> onRemove;
+  final List<StudentFilterChipItem> filters;
+  final ValueChanged<StudentFilterChipItem> onRemove;
   final VoidCallback onClearAll;
+
+  /// "+n" 칩을 누르면(필터 모달을 연다, FE3-d2).
+  final VoidCallback? onShowMore;
 
   static const chipGap = 8.0;
 
@@ -1907,13 +1743,19 @@ class StudentAppliedFilterRow extends StatelessWidget {
                           ],
                           if (hidden > 0) ...[
                             if (visible > 0) const SizedBox(width: chipGap),
-                            BaChip(
+                            KitPressable(
                               key: const ValueKey(
                                 'student-applied-filter-more',
                               ),
-                              label: '+$hidden',
-                              tone: AppTones.gray,
-                              shape: BaChipShape.outlined,
+                              onPressed: onShowMore,
+                              semanticLabel: '적용 필터 $hidden개 더 보기',
+                              builder: (context, state) => ExcludeSemantics(
+                                child: BaChip(
+                                  label: '+$hidden',
+                                  tone: AppTones.gray,
+                                  shape: BaChipShape.outlined,
+                                ),
+                              ),
                             ),
                           ],
                         ],
@@ -2144,6 +1986,7 @@ class _StudentActionButton extends StatelessWidget {
     required this.tooltip,
     required this.icon,
     required this.onPressed,
+    this.badgeCount,
   });
 
   final Size canvasSize;
@@ -2151,6 +1994,9 @@ class _StudentActionButton extends StatelessWidget {
   final String tooltip;
   final IconData icon;
   final VoidCallback? onPressed;
+
+  /// 아이콘 오른쪽 위 개수 배지(S1 필터 버튼 "필터 · n", FD-058). null이면 없다.
+  final int? badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -2184,6 +2030,15 @@ class _StudentActionButton extends StatelessWidget {
                           : AppColors.text,
                     ),
                   ),
+                  if (badgeCount case final count?)
+                    Positioned(
+                      left: iconCenter.dx + iconSize * 0.18,
+                      top: iconCenter.dy - iconSize / 2 - 7,
+                      child: StudentFilterButtonBadge(
+                        key: const ValueKey('student-filter-count-badge'),
+                        count: count,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -2192,6 +2047,46 @@ class _StudentActionButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// S1 필터 버튼 개수 배지(FD-058, 워커 재량): 모달이 닫힌 뒤 걸린 조건 수. 모달 배지와 같은 색
+/// (#0d151f + 1.5px 핑크 링, 글자 #f7c9f4)의 작은 알약이다.
+class StudentFilterButtonBadge extends StatelessWidget {
+  const StudentFilterButtonBadge({super.key, required this.count});
+
+  final int count;
+
+  static const height = 18.0;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: '필터 · $count',
+    child: ExcludeSemantics(
+      child: Container(
+        height: height,
+        constraints: const BoxConstraints(minWidth: height),
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: AppColors.popover,
+          borderRadius: BorderRadius.all(Radius.circular(height / 2)),
+          boxShadow: [BoxShadow(color: AppColors.accent, spreadRadius: 1.5)],
+        ),
+        child: Text(
+          '$count',
+          maxLines: 1,
+          style: const TextStyle(
+            fontFamily: AppFonts.body,
+            fontFamilyFallback: AppFonts.fallback,
+            fontSize: AppType.captionSize,
+            height: 1,
+            fontWeight: AppType.bold,
+            color: AppColors.accentText,
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _StudentSortDropdown extends StatelessWidget {
@@ -4050,12 +3945,10 @@ class _StudentSectionFoundationPainter extends CustomPainter {
   const _StudentSectionFoundationPainter({
     required this.selectedValues,
     required this.sectionIds,
-    this.filterSection = false,
   });
 
   final Map<String, dynamic>? selectedValues;
   final Set<String> sectionIds;
-  final bool filterSection;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -4069,43 +3962,8 @@ class _StudentSectionFoundationPainter extends CustomPainter {
     for (final section in sectionOrder.where(
       (section) => sectionIds.contains(section.id),
     )) {
-      final path = filterSection && section.id == 'element-2'
-          ? studentFilterSectionPath(size)
-          : studentSectionPath(size, section.id);
+      final path = studentSectionPath(size, section.id);
       paintLiftedPathShadow(canvas, path, defaultLiftedSectionShadow);
-      if (filterSection && section.id == 'element-2') {
-        final containerPath = studentFilterContainerPath(size);
-        canvas.drawPath(
-          Path.combine(PathOperation.difference, path, containerPath),
-          Paint()
-            ..color = AppColors.surface.withValues(alpha: studentSectionOpacity)
-            ..style = PaintingStyle.fill,
-        );
-        canvas.save();
-        canvas.clipPath(containerPath, doAntiAlias: true);
-        BATriangleTexturePainter(_studentTexture).paint(canvas, size);
-        canvas.restore();
-        canvas.drawPath(
-          containerPath,
-          Paint()
-            ..color = AppColors.outline.withValues(alpha: 0.75)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 0.9,
-        );
-        final resetPath = studentFilterResetPath(size);
-        canvas.save();
-        canvas.clipPath(resetPath, doAntiAlias: true);
-        BATriangleTexturePainter(_studentActionTexture).paint(canvas, size);
-        canvas.restore();
-        canvas.drawPath(
-          resetPath,
-          Paint()
-            ..color = AppColors.outline.withValues(alpha: 0.75)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 0.9,
-        );
-        continue;
-      }
       var fillPath = path;
       for (final container in studentRuntimeContainers(size)) {
         if (container.parentSectionId != section.id ||
@@ -4131,13 +3989,7 @@ class _StudentSectionFoundationPainter extends CustomPainter {
     }
 
     for (final container in studentRuntimeContainers(size)) {
-      if (!sectionIds.contains(container.parentSectionId) ||
-          !studentFoundationUsesLegacySectionChildren(
-            filterSection: filterSection,
-            parentSectionId: container.parentSectionId,
-          )) {
-        continue;
-      }
+      if (!sectionIds.contains(container.parentSectionId)) continue;
       if (container.id == 'container-1' || container.id == 'container-3') {
         continue;
       }
@@ -4177,13 +4029,7 @@ class _StudentSectionFoundationPainter extends CustomPainter {
       final parentContainer = document.containers.firstWhere(
         (container) => container.id == feature.parentContainerId,
       );
-      if (!sectionIds.contains(parentContainer.parentSectionId) ||
-          !studentFoundationUsesLegacySectionChildren(
-            filterSection: filterSection,
-            parentSectionId: parentContainer.parentSectionId,
-          )) {
-        continue;
-      }
+      if (!sectionIds.contains(parentContainer.parentSectionId)) continue;
       final path = studentFeaturePath(size, feature.id);
       if (path == null) continue;
       canvas.drawPath(
@@ -4212,8 +4058,7 @@ class _StudentSectionFoundationPainter extends CustomPainter {
   @override
   bool shouldRepaint(_StudentSectionFoundationPainter oldDelegate) =>
       oldDelegate.selectedValues != selectedValues ||
-      oldDelegate.sectionIds != sectionIds ||
-      oldDelegate.filterSection != filterSection;
+      oldDelegate.sectionIds != sectionIds;
 }
 
 ({bool showTop, bool showBottom}) studentViewportFogVisibility({

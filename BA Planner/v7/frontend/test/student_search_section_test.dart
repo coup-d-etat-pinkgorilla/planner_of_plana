@@ -10,6 +10,7 @@ import 'package:ba_planner_v7/ui/kit/ba_chip.dart';
 import 'package:ba_planner_v7/ui/kit/kit_pressable.dart';
 import 'package:ba_planner_v7/ui/models/recent_students.dart';
 import 'package:ba_planner_v7/ui/models/student_filter_controller.dart';
+import 'package:ba_planner_v7/ui/models/student_filter_selection.dart';
 import 'package:ba_planner_v7/ui/pages/student_page.dart';
 import 'package:ba_planner_v7/ui/widgets/student_portrait_status_overlay.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
@@ -41,9 +42,7 @@ StudentCatalogEntry _student(
   krSearchTags: const [],
 );
 
-StudentFilterController _controller() => StudentFilterController(
-  catalogKeys: studentFilterDefinitions.map((item) => item.key),
-);
+StudentFilterController _controller() => StudentFilterController();
 
 Future<void> _pumpLayout(
   WidgetTester tester, {
@@ -124,21 +123,17 @@ void main() {
       addTearDown(filter.dispose);
       filter.toggleCatalog('school', 'Millennium');
       filter.toggleCatalog('attack_type', 'Explosive');
-      filter.range = filter.range.copyWith(
-        lowerEnabled: true,
-        upperEnabled: true,
-        lowerTargets: {...filter.range.lowerTargets, 'level': 70},
-        upperTargets: {...filter.range.upperTargets, 'ex_skill': 5},
-      );
-      final applied = filter.appliedFilters(
-        catalogLabel: studentFilterValueLabel,
-      );
+      filter.setRange('level', 70, 90);
+      filter.setRange('ex_skill', 1, 5);
+      final applied = filter.searchRowChips;
       expect(applied.map((item) => item.label), ['밀레니엄', '폭발', '레벨 70~90']);
       expect(applied.last.isRange, isTrue);
       expect(applied.first.id, 'school-Millennium');
-      expect(applied.last.id, 'range-level');
-      // 최대값 그대로인 상한(EX 5)은 조건이 아니다.
-      expect(filter.rangeBounds('ex_skill'), isNull);
+      expect(applied.last.id, 'growth-level');
+      // 행 전체(EX 1~5)는 조건이 아니다.
+      expect(filter.applied.ranges.isNarrowed('ex_skill'), isFalse);
+      // "필터 · n"은 걸린 조건 전부(15:51 결정 1).
+      expect(filter.activeCount, 3);
     });
 
     test('× 와 모두 지우기는 칩 조건만 지우고 S4 토글은 그대로 둔다', () {
@@ -148,23 +143,18 @@ void main() {
         ..toggleCatalog('school', 'Gehenna')
         ..toggleCatalog('school', 'Abydos')
         ..hideUnowned = true
-        ..range = filter.range.copyWith(
-          lowerEnabled: true,
-          lowerTargets: {...filter.range.lowerTargets, 'level': 50},
-        );
+        ..setRange('level', 50, 90);
       List<String> labels() => [
-        for (final item in filter.appliedFilters(
-          catalogLabel: studentFilterValueLabel,
-        ))
-          item.label,
+        for (final item in filter.searchRowChips) item.label,
       ];
-      expect(labels(), ['아비도스', '게헨나', '레벨 50~90']);
+      // 칩 순서는 시안 칩 순서(게헨나 → 아비도스), S4 줄에는 "보유 · 서버"가 없다(바로 위 토글).
+      expect(labels(), ['게헨나', '아비도스', '레벨 50~90']);
+      expect(filter.chips.map((item) => item.label), contains('보유'));
+      expect(filter.activeCount, 4);
       filter.removeApplied(
-        filter
-            .appliedFilters(catalogLabel: studentFilterValueLabel)
-            .firstWhere((item) => item.isRange),
+        filter.searchRowChips.firstWhere((item) => item.isRange),
       );
-      expect(labels(), ['아비도스', '게헨나']);
+      expect(labels(), ['게헨나', '아비도스']);
       filter.clearApplied();
       expect(labels(), isEmpty);
       expect(filter.hideUnowned, isTrue);
@@ -331,13 +321,11 @@ void main() {
       ]) {
         filter.toggleCatalog('school', school);
       }
-      filter.range = filter.range.copyWith(
-        lowerEnabled: true,
-        lowerTargets: {...filter.range.lowerTargets, 'level': 70},
-      );
+      filter.setRange('level', 70, 90);
       await _pumpLayout(tester, students: [_student('a')], filter: filter);
       final more = find.byKey(const ValueKey('student-applied-filter-more'));
       expect(more, findsOneWidget);
+      final moreChip = find.descendant(of: more, matching: find.byType(BaChip));
       final visible = find.byWidgetPredicate(
         (widget) =>
             widget is BaChip &&
@@ -349,7 +337,7 @@ void main() {
       );
       final shownCount = visible.evaluate().length;
       expect(shownCount, greaterThan(0));
-      expect(tester.widget<BaChip>(more).label, '+${9 - shownCount}');
+      expect(tester.widget<BaChip>(moreChip).label, '+${9 - shownCount}');
       // 칩은 한 줄(같은 top)이고 줄 오른쪽을 넘지 않는다.
       final row = tester.getRect(
         find.byKey(const ValueKey('student-applied-filters')),
@@ -360,10 +348,10 @@ void main() {
       expect(tester.takeException(), isNull);
 
       // 범위 칩 하나만 남기면 "레벨 70~90"이 보인다.
-      filter.clearCatalog();
+      filter.applied = StudentFilterSelection(ranges: filter.applied.ranges);
       await tester.pump();
       expect(
-        find.byKey(const ValueKey('student-applied-filter-range-level')),
+        find.byKey(const ValueKey('student-applied-filter-growth-level')),
         findsOneWidget,
       );
       expect(find.text('레벨 70~90'), findsOneWidget);
