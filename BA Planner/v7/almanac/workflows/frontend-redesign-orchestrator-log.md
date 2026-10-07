@@ -234,3 +234,30 @@ topics: [workflow, design]
   4. **analyze deprecated 2건**: `containsSemantics` → `isSemantics`(range_controls_test 221·344). 344행 "No Semantics data found"는 1번 assertion 때문에 의미 데이터가 만들어지지 않은 결과로 보인다.
   - 부수: StarRangeBar 탭 테스트에서 "Looking up a deactivated widget's ancestor is unsafe"(FocusableActionDetector가 dispose된 뒤 MediaQuery를 찾음) 1건. 위젯을 해제할 때 포커스 하이라이트 콜백이 남지 않게 정리해야 한다.
 - 조치: 같은 워커 세션에 수정 지시를 보낸다(사용자 전달).
+
+## 2026-10-07 15:51 — FE3-d1 커밋 확인
+
+- gate `20261007_154648` GREEN. 결과: analyze 0, 테스트 307 + 284, 프로세스 28, golden 18 차이 0. 커밋 `ddc251eb`(13파일).
+  · 새 파일: `range_controls.dart`(1022줄), `student_filter_selection.dart`(767줄).
+  · 수정: BaModal 접근성, BaChip 테두리 변형, app_shell 2줄.
+  · 테스트 4개 새로 추가.
+  · 15:09 진단 5건이 모두 해소됐다.
+- 워커 발견 사항 → 결정:
+  1. "필터 · n" = 실제로 걸린 조건(칩) 수다. 시안 Student-Filter의 "5"와 달라도 데이터 의미를 우선한다(시안 숫자는 예시). 승인한다.
+  2. 칩 옆 학생 수는 시안대로 학교 줄에만 보인다. 승인한다.
+  3. 팝업 "미보유"만 선택 ↔ S4 "미보유 숨김" 꺼짐 표시. 같은 상태를 두 곳에서 보여 주는 FD-057의 결과로 맞다. 승인한다.
+  4. 모달 배경 차단 범위: 지금은 BaModal이 감싼 영역만 의미 구조에서 빠지고, 머리 탭 줄은 남는다. **결정: FE3-d2에서 AppShell 수준에 모달 배경 범위 하나를 두고, 모달이 열리면 셸 전체(머리 포함)를 ExcludeSemantics로 덮는다.** OverlayPortal + BlockSemantics 조합은 쓰지 않는다. 작업이 커지면 status에 적고 FE10으로 넘긴다(데스크톱 앱이라 우선순위는 낮다).
+
+## 2026-10-07 17:30 — FE3-d2 gate ① 검토
+
+- gate `20261007_170820` RED 2건.
+  (1) `student_filter_modal_test.dart` "셸 전체가 의미 구조에서 빠진다": 검사 내용은 모두 통과했다. 실패 원인은 `addTearDown(semantics.dispose)`다. flutter_test는 SemanticsHandle 해제를 테스트 본문 끝에서 검사하는데, addTearDown은 그보다 늦게 돈다. 오케스트레이터가 고쳤다(본문 끝에서 `semantics.dispose()`, 이유 주석). 해시를 대조했다.
+  (2) `students-filter-open` 기준 없음: 새 장면이라 정상이다.
+- 기존 golden 18장은 차이 0이다. students-* 3장도 차이 0인데, 워커 status 예상과 같다(Section 5는 닫힌 상태라 원래 그려지지 않았고, S1 배지는 조건이 있을 때만 보인다). 프롬프트의 "바뀐다"는 오케스트레이터 추정이 틀렸다.
+- → ② 승인. `-UpdateGoldens` 뒤 새 기준 PNG를 직접 검토한다.
+- (17:42) ② GREEN(일반 594, 프로세스 28, golden 19). 새 기준 `students-filter-open.png`를 직접 검토했다. 확인한 것:
+  · 모달 좌우 패널 배치, 머리 칩 7개, "필터 0 / 10명"(fixture에 일치 학생 없음).
+  · 학교 줄에만 개수 표시, 좁힌 두 행(학생 레벨 70~90, 성급 ★3~무기★1) 분홍.
+  · 심상개화 비활성, 왼쪽 위 "필터 · 7", 배경 스크림.
+  → 커밋 승인.
+  **결함 1건**: 강화·서브 행의 최소값 "–"(FD-059: 0 = "–")가 흰 사각형(글리프 없음)으로 그려진다. 경기천년제목에 en dash가 없는 것으로 보인다. 실제 앱에서는 fallback 글꼴로 그려질 수 있지만, 서체가 섞이고 golden이 사각형을 기준으로 굳는다. → FE3-e 프롬프트에 넣는다: 값 서체에 없는 글리프(–, … 등)는 본문 서체로 그리거나 서체에 있는 글자로 바꾸고, 다른 화면의 같은 문제를 찾아 목록으로 남긴다.
