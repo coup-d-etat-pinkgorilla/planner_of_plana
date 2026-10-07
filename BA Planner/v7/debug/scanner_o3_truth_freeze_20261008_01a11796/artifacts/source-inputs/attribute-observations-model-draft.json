@@ -1,0 +1,709 @@
+{
+  "schema_version": 1,
+  "cohort": "public-F8-3-basic-1280x720-attribute-truth-preparation",
+  "partition": "development_regression_not_holdout_or_runtime_learning",
+  "label_origin": "model_visual_draft",
+  "independent_from_student_DB_attributes": true,
+  "classifier_predictions_used_for_labels": false,
+  "model_has_seen_names_in_full_frames": true,
+  "model_has_seen_manifest_identity_strings": true,
+  "independent_human_review_completed": false,
+  "approved_truth_observations": 0,
+  "use_as_approved_truth_or_detector_input": false,
+  "numeric_acceptance_criteria": null,
+  "production_decisions_changed": false,
+  "unknown_policy": "unreadable/unobserved values must remain null with unknown/unobserved visibility; never backfill from identity",
+  "manifest_sha256": "bb0486834d004e9607fc91746ce837bbb5d529c213836e081a999109a0af4818",
+  "regions_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+  "ratio_crop_source_sha256": "5d40f9ea622ac39a8fb7f23478fa183728758aea29742d6bd734af38d0b93a00",
+  "ratio_crop_source_line": 56,
+  "vocabulary_source_path": "backend/core/student_attribute_filter.py",
+  "vocabulary_source_sha256": "96e9a4bf3e438dfae204308756f7a859002c84359b1db2f5deec4648c05d2256",
+  "vocabulary_usage": "axis spelling and enum normalization only; no student/form metadata lookup",
+  "observations": [
+    {
+      "observation_id": "F8A001",
+      "evidence_png": "pixels/F8A001.png",
+      "source_fixture_file": "mika.png",
+      "source_fixture_path": "backend/tests/fixtures/student_identity_f8_live/mika.png",
+      "original_capture_provenance_string": "debug/scanner_f8_live/mika-retry/frame-01.png",
+      "original_capture_path_opened": false,
+      "source_file_bytes": 684829,
+      "source_file_sha256": "661e64a533a0993a9c51204381da9dc4b7a839f4ec9c57c4c34d19e59ac04cf8",
+      "source_size": [
+        1280,
+        720
+      ],
+      "source_state": "basic",
+      "manifest_identity_used_for_attribute_labels": false,
+      "observations": {
+        "attack_type": {
+          "screen_text": "관통",
+          "proposed_value": "piercing",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_attack_type",
+            "normalized_xyxy": [
+              0.1672,
+              0.872,
+              0.2098,
+              0.914
+            ],
+            "pixel_box_xyxy_exclusive": [
+              214,
+              628,
+              269,
+              658
+            ],
+            "pixel_size": [
+              55,
+              30
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        },
+        "defense_type": {
+          "screen_text": "경장갑",
+          "proposed_value": "light",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_defense_type",
+            "normalized_xyxy": [
+              0.153,
+              0.922,
+              0.2027,
+              0.965
+            ],
+            "pixel_box_xyxy_exclusive": [
+              196,
+              664,
+              259,
+              695
+            ],
+            "pixel_size": [
+              63,
+              31
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        },
+        "role": {
+          "screen_text": "딜러",
+          "proposed_value": "dealer",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_role",
+            "normalized_xyxy": [
+              0.052,
+              0.8741,
+              0.1195,
+              0.9119
+            ],
+            "pixel_box_xyxy_exclusive": [
+              67,
+              629,
+              153,
+              657
+            ],
+            "pixel_size": [
+              86,
+              28
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        },
+        "position": {
+          "screen_text": "FRONT",
+          "proposed_value": "front",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_position",
+            "normalized_xyxy": [
+              0.0366,
+              0.922,
+              0.1134,
+              0.965
+            ],
+            "pixel_box_xyxy_exclusive": [
+              47,
+              664,
+              145,
+              695
+            ],
+            "pixel_size": [
+              98,
+              31
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        },
+        "combat_class": {
+          "screen_text": "STRIKER",
+          "proposed_value": "striker",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_combat_class",
+            "normalized_xyxy": [
+              0.2703,
+              0.7874,
+              0.3198,
+              0.81795
+            ],
+            "pixel_box_xyxy_exclusive": [
+              346,
+              567,
+              409,
+              589
+            ],
+            "pixel_size": [
+              63,
+              22
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        }
+      }
+    },
+    {
+      "observation_id": "F8A002",
+      "evidence_png": "pixels/F8A002.png",
+      "source_fixture_file": "hoshino-form1.png",
+      "source_fixture_path": "backend/tests/fixtures/student_identity_f8_live/hoshino-form1.png",
+      "original_capture_provenance_string": "debug/scanner_f8_live/hoshino-forms/frame-00.png",
+      "original_capture_path_opened": false,
+      "source_file_bytes": 710382,
+      "source_file_sha256": "8ea3effd149a5b766b0e3d757cdaf23815e947f9c6243ec88bc98138c90a4ca6",
+      "source_size": [
+        1280,
+        720
+      ],
+      "source_state": "basic",
+      "manifest_identity_used_for_attribute_labels": false,
+      "observations": {
+        "attack_type": {
+          "screen_text": "신비",
+          "proposed_value": "mystic",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_attack_type",
+            "normalized_xyxy": [
+              0.1672,
+              0.872,
+              0.2098,
+              0.914
+            ],
+            "pixel_box_xyxy_exclusive": [
+              214,
+              628,
+              269,
+              658
+            ],
+            "pixel_size": [
+              55,
+              30
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        },
+        "defense_type": {
+          "screen_text": "중장갑",
+          "proposed_value": "heavy",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_defense_type",
+            "normalized_xyxy": [
+              0.153,
+              0.922,
+              0.2027,
+              0.965
+            ],
+            "pixel_box_xyxy_exclusive": [
+              196,
+              664,
+              259,
+              695
+            ],
+            "pixel_size": [
+              63,
+              31
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        },
+        "role": {
+          "screen_text": "탱커",
+          "proposed_value": "tanker",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_role",
+            "normalized_xyxy": [
+              0.052,
+              0.8741,
+              0.1195,
+              0.9119
+            ],
+            "pixel_box_xyxy_exclusive": [
+              67,
+              629,
+              153,
+              657
+            ],
+            "pixel_size": [
+              86,
+              28
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        },
+        "position": {
+          "screen_text": "FRONT",
+          "proposed_value": "front",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_position",
+            "normalized_xyxy": [
+              0.0366,
+              0.922,
+              0.1134,
+              0.965
+            ],
+            "pixel_box_xyxy_exclusive": [
+              47,
+              664,
+              145,
+              695
+            ],
+            "pixel_size": [
+              98,
+              31
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        },
+        "combat_class": {
+          "screen_text": "STRIKER",
+          "proposed_value": "striker",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_combat_class",
+            "normalized_xyxy": [
+              0.2703,
+              0.7874,
+              0.3198,
+              0.81795
+            ],
+            "pixel_box_xyxy_exclusive": [
+              346,
+              567,
+              409,
+              589
+            ],
+            "pixel_size": [
+              63,
+              22
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        }
+      }
+    },
+    {
+      "observation_id": "F8A003",
+      "evidence_png": "pixels/F8A003.png",
+      "source_fixture_file": "hoshino-form2.png",
+      "source_fixture_path": "backend/tests/fixtures/student_identity_f8_live/hoshino-form2.png",
+      "original_capture_provenance_string": "debug/scanner_f8_live/hoshino-original2-tie/frame-00.png",
+      "original_capture_path_opened": false,
+      "source_file_bytes": 649951,
+      "source_file_sha256": "48ae0272bad1dfedeebfb8346c88fa3c0aecab28a57ff1199b4b2129b91b6b63",
+      "source_size": [
+        1280,
+        720
+      ],
+      "source_state": "basic",
+      "manifest_identity_used_for_attribute_labels": false,
+      "observations": {
+        "attack_type": {
+          "screen_text": "신비",
+          "proposed_value": "mystic",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_attack_type",
+            "normalized_xyxy": [
+              0.1672,
+              0.872,
+              0.2098,
+              0.914
+            ],
+            "pixel_box_xyxy_exclusive": [
+              214,
+              628,
+              269,
+              658
+            ],
+            "pixel_size": [
+              55,
+              30
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        },
+        "defense_type": {
+          "screen_text": "중장갑",
+          "proposed_value": "heavy",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_defense_type",
+            "normalized_xyxy": [
+              0.153,
+              0.922,
+              0.2027,
+              0.965
+            ],
+            "pixel_box_xyxy_exclusive": [
+              196,
+              664,
+              259,
+              695
+            ],
+            "pixel_size": [
+              63,
+              31
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        },
+        "role": {
+          "screen_text": "딜러",
+          "proposed_value": "dealer",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_role",
+            "normalized_xyxy": [
+              0.052,
+              0.8741,
+              0.1195,
+              0.9119
+            ],
+            "pixel_box_xyxy_exclusive": [
+              67,
+              629,
+              153,
+              657
+            ],
+            "pixel_size": [
+              86,
+              28
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        },
+        "position": {
+          "screen_text": "FRONT",
+          "proposed_value": "front",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_position",
+            "normalized_xyxy": [
+              0.0366,
+              0.922,
+              0.1134,
+              0.965
+            ],
+            "pixel_box_xyxy_exclusive": [
+              47,
+              664,
+              145,
+              695
+            ],
+            "pixel_size": [
+              98,
+              31
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        },
+        "combat_class": {
+          "screen_text": "STRIKER",
+          "proposed_value": "striker",
+          "visibility": "observed_readable_by_model",
+          "value_source": "direct model visual transcription of visible field text",
+          "label_status": "model_draft_pending_independent_human_review",
+          "human_reviewed": false,
+          "approved_truth_value": null,
+          "reason": "visible field text; semantic canonicalization only, no identity/DB lookup",
+          "roi": {
+            "roi_id": "basic_attribute_combat_class",
+            "normalized_xyxy": [
+              0.2703,
+              0.7874,
+              0.3198,
+              0.81795
+            ],
+            "pixel_box_xyxy_exclusive": [
+              346,
+              567,
+              409,
+              589
+            ],
+            "pixel_size": [
+              63,
+              22
+            ],
+            "native_source_size": [
+              1280,
+              720
+            ],
+            "origin": "top-left captured client PNG",
+            "transform": "xy = round(width*x_ratio), round(height*y_ratio); Python round ties-to-even",
+            "rounding_stage": "once after multiplying ratios by actual stored PNG width/height",
+            "bbox_convention": "left/top inclusive; right/bottom exclusive",
+            "client_to_png": "identity transform; no desktop/window-border/DPI conversion",
+            "DPI_and_desktop_origin": "not captured; no values invented",
+            "display": "HTML native 1280x720 source translated by (-x1,-y1), clipped, scale(3) pixelated",
+            "source_contract_path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+            "source_contract_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "sandbox_attempt": {"result": "WinError5 during runtime_paths import before inference", "inferenceCount": 0, "metricsCount": 0},
+  "first_escalated_attempt": {
+    "session": 90560,
+    "exitCode": 1,
+    "result": "AttributeError: TemplateMatcher has no attribute close; off cleanup",
+    "inferenceCountByCodePath": {"off": 3, "on": 0},
+    "metricsCount": 0,
+    "outputCreated": false,
+    "sourceRace": "Worker applied cleanup-only guard before receiving root running notification. Loaded old evaluator still called matcher.close. No candidate/threshold/label change."
+  },
+  "corrected_attempt": {"reason": "guard optional cleanup method only, frozen candidate remains unchanged", "receipt": "w2-public-corrected-result.json"}
+}

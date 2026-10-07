@@ -1,0 +1,6 @@
+test_fifteen_fields_and_actual_reviewer_signature_with_integrity_rejection (tests.test_student_attribute_truth_loader.PublicAttributeTruthLoaderTests.test_fifteen_fields_and_actual_reviewer_signature_with_integrity_rejection) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.079s
+
+OK

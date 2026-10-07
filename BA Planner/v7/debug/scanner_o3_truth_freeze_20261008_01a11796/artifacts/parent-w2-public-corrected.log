@@ -1,0 +1,1 @@
+{"result": "PASS", "metrics": {"off": {"correct_candidate_dropped": 0, "final_wrong": 0, "top1_correct": 3, "unconfirmed": 2}, "on": {"correct_candidate_dropped": 0, "final_wrong": 0, "top1_correct": 3, "unconfirmed": 0}}}

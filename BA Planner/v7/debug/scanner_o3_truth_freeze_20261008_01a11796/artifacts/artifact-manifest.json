@@ -1,0 +1,187 @@
+{
+  "task_id": "scanner_o3_truth_freeze_20261008_01a11796",
+  "artifacts": [
+    {
+      "path": "artifacts/approved-attribute-truth-v1.json",
+      "bytes": 22017,
+      "sha256": "e1dbd5830107e846b624966f5e05c85d16ca895d8241fb163554ee7e98f79cac"
+    },
+    {
+      "path": "artifacts/approved-attribute-truth-v2.json",
+      "bytes": 23810,
+      "sha256": "dfeaffd607d054883627c22295a557b1a785343643f5a8f16539328e10ad091a"
+    },
+    {
+      "path": "artifacts/attempt-history-final.json",
+      "bytes": 3135,
+      "sha256": "23a3ccb53a11ea4257f55f6e72f1d23f3d84ec0475c39206172c80ab70ca342a"
+    },
+    {
+      "path": "artifacts/attempt-history.json",
+      "bytes": 2800,
+      "sha256": "a4c58bf2a8bb6d68141e628c63d4f922211febfedb385c29b656a60f20b3771c"
+    },
+    {
+      "path": "artifacts/bundle_truth_inputs.py",
+      "bytes": 3445,
+      "sha256": "c8dd8ee6bb507ba0612ccacc66e0176280847e039b2b6164a727ecbbf302e706"
+    },
+    {
+      "path": "artifacts/commit-files.json",
+      "bytes": 4340,
+      "sha256": "6589df15d74c53394780cb2afb04c592b0232c9cb11468e95967ae2e27f7800b"
+    },
+    {
+      "path": "artifacts/final/backend/tests/test_student_attribute_truth_loader.py",
+      "bytes": 2496,
+      "sha256": "46a59641f8a945a5ff91a23bbe7f61488f179fbf25fee687528b490b7e43df05"
+    },
+    {
+      "path": "artifacts/final/backend/tools/evaluate_student_attribute_prefilter.py",
+      "bytes": 10354,
+      "sha256": "fd83dc908f1fdb2bac1497cdb405d6d155796e8a73cfa86c16f17c764033f51d"
+    },
+    {
+      "path": "artifacts/final/backend/tools/student_attribute_truth.py",
+      "bytes": 6990,
+      "sha256": "522d8aced002d3e91e85d45f9f243f661b26ac83b5724f709d5d067f0a213450"
+    },
+    {
+      "path": "artifacts/final-candidate-freeze.json",
+      "bytes": 6622,
+      "sha256": "2607584163c9a3166d0af26a640780a81243968f09aa6950f1f2b101d51b0817"
+    },
+    {
+      "path": "artifacts/final-pre-evaluation-freeze.json",
+      "bytes": 6536,
+      "sha256": "ae1094a7d153850c70f68a989389ed5e8d645dbc3465bf99259401debdd510ef"
+    },
+    {
+      "path": "artifacts/focused-loader-final.log",
+      "bytes": 330,
+      "sha256": "d89c2256a0e461f88eb6df33d5e12eb763857e5d9bc5dba5b7f297ba9e86080d"
+    },
+    {
+      "path": "artifacts/focused-loader.log",
+      "bytes": 330,
+      "sha256": "9452d2fd3a1f64bb26efc0b0b5f9881017bc952484047ebcce67bd9481d05d3b"
+    },
+    {
+      "path": "artifacts/freeze_public_truth.py",
+      "bytes": 6847,
+      "sha256": "7c044e2b0a215defd28e9efbd6fefc1d1801d9979e1ca3b5f2ca164f4108ca6c"
+    },
+    {
+      "path": "artifacts/MASTER_PROMPT.md",
+      "bytes": 1072,
+      "sha256": "634353fffbcc4ae311cb8281bd01bd2508cd2401901913775d70a2178d5b041c"
+    },
+    {
+      "path": "artifacts/parent-w2-attempts.json",
+      "bytes": 739,
+      "sha256": "1971977833a1e49a4f2ac783f373adaef329bab2ac4d3cc12d4ae39be9f8ba99"
+    },
+    {
+      "path": "artifacts/parent-w2-public-corrected-result.json",
+      "bytes": 948,
+      "sha256": "7e62facd90231184c21df5f0553002df8145c8269797e41b24ed7cb21e254ac8"
+    },
+    {
+      "path": "artifacts/parent-w2-public-corrected.log",
+      "bytes": 224,
+      "sha256": "37b8c9a9cb673130448e85e52c4d657a0805802ec8f7671b2f5e87d3dd02eaf8"
+    },
+    {
+      "path": "artifacts/pre-evaluation-freeze.json",
+      "bytes": 4675,
+      "sha256": "1c9a624567e59d87fc73a01e34b6f84d8cad65ef086d2bcae83ac412fa8ae72c"
+    },
+    {
+      "path": "artifacts/preservation-and-hash-verification.json",
+      "bytes": 4423,
+      "sha256": "aceb64f1d1be9c174580ee09605e3fc4d94ffbd404e1a5418b67796d12f9b740"
+    },
+    {
+      "path": "artifacts/public-evaluation-report.md",
+      "bytes": 2332,
+      "sha256": "8fb4eef022914d4152ca8c34ec7657eb85a799e64c0726c260d06c1dab401eeb"
+    },
+    {
+      "path": "artifacts/public-off-on-evaluation.json",
+      "bytes": 386772,
+      "sha256": "e1d5f87f5c566f1f929864f9b6327675bdecd6222bbfeee0d0daef068f461cf7"
+    },
+    {
+      "path": "artifacts/seal_handoff.py",
+      "bytes": 15588,
+      "sha256": "168c0080421cccca6003346aae2f0f32bab4773632c25f3751681b912ab7fb09"
+    },
+    {
+      "path": "artifacts/source-inputs/attribute-observations-model-draft.json",
+      "bytes": 30784,
+      "sha256": "8654eb9b1f17307a11ed3dd18a3b26a6908c410fd49b39f08192fb1967440da3"
+    },
+    {
+      "path": "artifacts/source-inputs/attribute-vocabulary.json",
+      "bytes": 382,
+      "sha256": "eb2cce0bfb20cc64714c635ce32658708049731d72b9c6c03363c01efd071f29"
+    },
+    {
+      "path": "artifacts/source-inputs/f8-manifest.json",
+      "bytes": 2297,
+      "sha256": "bb0486834d004e9607fc91746ce837bbb5d529c213836e081a999109a0af4818"
+    },
+    {
+      "path": "artifacts/source-inputs/F8A001.png",
+      "bytes": 684829,
+      "sha256": "661e64a533a0993a9c51204381da9dc4b7a839f4ec9c57c4c34d19e59ac04cf8"
+    },
+    {
+      "path": "artifacts/source-inputs/F8A002.png",
+      "bytes": 710382,
+      "sha256": "8ea3effd149a5b766b0e3d757cdaf23815e947f9c6243ec88bc98138c90a4ca6"
+    },
+    {
+      "path": "artifacts/source-inputs/F8A003.png",
+      "bytes": 649951,
+      "sha256": "48ae0272bad1dfedeebfb8346c88fa3c0aecab28a57ff1199b4b2129b91b6b63"
+    },
+    {
+      "path": "artifacts/source-inputs/human-review-2026-10-08.csv",
+      "bytes": 4449,
+      "sha256": "a4c158abe7a23e7e0111d7969dbcaf25c70ce30921a1159f6442d889c9e9e5cc"
+    },
+    {
+      "path": "artifacts/source-inputs/human-review-protocol.md",
+      "bytes": 3359,
+      "sha256": "f9e20a7bc17fa78dd52f47d732666b343f8f9a9494521dff08e1c5c40de34e7c"
+    },
+    {
+      "path": "artifacts/source-inputs/ratio-crop.txt",
+      "bytes": 601,
+      "sha256": "0b328d83c1c940cff50a559c010e28ce116954740ba0e8c457167b6fc3237ecc"
+    },
+    {
+      "path": "artifacts/source-inputs/student_identity_regions.json",
+      "bytes": 1339,
+      "sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+    },
+    {
+      "path": "artifacts/source-verification.json",
+      "bytes": 769,
+      "sha256": "221960366c72527c9765388ea0a4a9a08b7845ab33ba3f5b8471f7068267d825"
+    },
+    {
+      "path": "artifacts/status-update-draft.md",
+      "bytes": 1215,
+      "sha256": "183038fef534c155d2b6789e86edd7cc06b2408b81cdd04bbcbdb03a3b923227"
+    },
+    {
+      "path": "artifacts/verification.txt",
+      "bytes": 1631,
+      "sha256": "9c7a8b39e38fc3147c3ba1fd008542726b3110724aab7925f7f736d2edf33795"
+    }
+  ],
+  "self_hash_excluded": true,
+  "output_md_written_last": true
+}

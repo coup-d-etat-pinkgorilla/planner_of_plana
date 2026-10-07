@@ -1,0 +1,33 @@
+{
+  "syntax": [
+    {
+      "path": "backend/tools/student_attribute_truth.py",
+      "python_syntax": "PASS"
+    },
+    {
+      "path": "backend/tools/evaluate_student_attribute_prefilter.py",
+      "python_syntax": "PASS"
+    },
+    {
+      "path": "backend/tests/test_student_attribute_truth_loader.py",
+      "python_syntax": "PASS"
+    }
+  ],
+  "git_whitespace": [
+    {
+      "path": "backend/tools/student_attribute_truth.py",
+      "exit_code": 1,
+      "output": ""
+    },
+    {
+      "path": "backend/tools/evaluate_student_attribute_prefilter.py",
+      "exit_code": 1,
+      "output": ""
+    },
+    {
+      "path": "backend/tests/test_student_attribute_truth_loader.py",
+      "exit_code": 1,
+      "output": ""
+    }
+  ]
+}

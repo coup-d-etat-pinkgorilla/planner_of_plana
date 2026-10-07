@@ -1,0 +1,54 @@
+{
+  "task": "W2 public truth freeze",
+  "attempts": [
+    {
+      "attempt": 1,
+      "executor": "W2 child, normal sandbox",
+      "command": ".venv/Scripts/python.exe -m tools.evaluate_student_attribute_prefilter --truth ../debug/scanner_o3_truth_freeze_20261008_01a11796/artifacts/approved-attribute-truth-v1.json --output ../debug/scanner_o3_truth_freeze_20261008_01a11796/artifacts/public-off-on-evaluation.json",
+      "cwd": "backend",
+      "environment": {"PYTHONIOENCODING": "utf-8", "PYTHONDONTWRITEBYTECODE": "1"},
+      "exit_code": 1,
+      "error_type": "PermissionError",
+      "error": "[WinError 5] Access is denied: C:\\Users\\brigh\\AppData\\Local\\BA Planner\\assets\\current\\data\\planning",
+      "failure_location": "core/runtime_paths.py resolve_planning_data_dir: external.is_dir() during imports",
+      "off_inferences": 0,
+      "on_inferences": 0,
+      "metrics_computed": false,
+      "output_json_created": false,
+      "automatic_approval_review_rejection": false,
+      "denied_path_retried_by_child": false
+    },
+    {
+      "attempt": 2,
+      "executor": "root, explicitly approved default environment execution",
+      "root_exec_session": 90560,
+      "truth": "approved-attribute-truth-v2.json",
+      "error_type": "AttributeError",
+      "error": "TemplateMatcher has no close method",
+      "failure_location": "evaluator cleanup after the three off frames, before on frames/metrics",
+      "off_inferences": 3,
+      "on_inferences": 0,
+      "metrics_computed": false,
+      "output_json_created": false,
+      "source_edit_during_execution": true,
+      "source_edit_description": "W2 had already sent a hold request but changed evaluator cleanup to a callable close guard before learning root execution had started; runtime filter/candidate/labels/thresholds unchanged",
+      "root_confirmation": "root confirmed cleanup AttributeError, off3/on0/metric0/JSON0",
+      "acceptance_claim": "none"
+    },
+    {
+      "attempt": 3,
+      "executor": "root, explicitly approved corrected comparison",
+      "candidate_freeze": "final-candidate-freeze.json",
+      "evaluator_sha256": "fd83dc908f1fdb2bac1497cdb405d6d155796e8a73cfa86c16f17c764033f51d",
+      "truth": "approved-attribute-truth-v2.json",
+      "expected_inferences": {"off": 3, "on": 3},
+      "actual_result_reference": "public-off-on-evaluation.json",
+      "source_edits_after_freeze": false,
+      "reason": "repair evaluator cleanup only; no candidate/criteria changes; parent approved one corrected comparison"
+    }
+  ],
+  "successful_comparison_inference_count": "one off + one on per fixed public frame",
+  "failed_inference_count": {"off": 3, "on": 0},
+  "total_if_corrected_comparison_completes": {"off": 6, "on": 3},
+  "repeat_limit": "no further evaluation run by W2 child"
+}
