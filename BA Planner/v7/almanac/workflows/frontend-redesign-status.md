@@ -20,12 +20,13 @@ sources:
 
 ## 현재 상태
 
-**FE3-e 완료.** 결과(오케스트레이터 로그 2026-10-07 20:00·20:28, 아래 FE3-e commit record):
-- gate ① `20261007_191233` RED(golden 5: 기준 4장 사각형 → 마이너스 기호, 새 장면 `students-grid-second-form` 기준 없음, 예상 일치) → `-UpdateGoldens` → ② `20261007_195559` GREEN(golden 20). 백엔드 전체 812건 통과.
-- 커밋 `a3692424`(FE3-e + FB-5, 26파일), 문서 커밋 `8a6482e7`. `mock_app_service.dart`는 이 슬라이스 전부터 있던 스캐너 쪽 미커밋 변경이 작업트리에 남아 있다(3-way 병합으로 FE3-e 변경만 커밋).
+**FE3-f1 완료.** 결과(오케스트레이터 로그 2026-10-07 21:38, 아래 FE3-f1 commit record):
+- gate `20261007_213219` GREEN(일반 648, 프로세스 28, golden 20 — 기준 이미지 변화 0, 예상 일치).
+- 커밋 `7ec07589`(FE3-f1, 새 파일 6 + status), 문서 커밋 `bcde9559`. 기존 파일 수정 0.
+- FE3-f1 발견 사항 1·2번(백엔드 계획 계산 버그)은 오케스트레이터가 코드로 확인해 FB-12로 떼었다. FE3-f2 전에 고친다.
 
-**진행 중: FE3-f1 성장 계산기 상태 모델 + 계산 어댑터(동작 보존, 화면 연결 없음, golden 변화 0), 시작 커밋 `8a6482e7c8e506773db487f5f76fa4079ac5988f`.**
-- 코드 작성 완료, gate 대기(사용자 실행). 자세한 내용은 아래 "FE3-f1" 절에 적는다.
+**진행 중: FB-12 계획 계산 버그 2건(백엔드만, 프런트 화면 변화 없음), 시작 커밋 `bcde9559`(FE3-f1 `7ec07589` 뒤 문서 커밋).**
+- 코드 작성 완료, 사용자 실행 대기(Python 전체 테스트 → gate). 자세한 내용은 아래 "FB-12" 절에 적는다.
 
 ### 커밋 기록
 
@@ -46,6 +47,7 @@ sources:
 | FE3-d1 | `ddc251eb` | 필터 모달 부품: 성장 범위·필터 선택 값 모델(FD-053·054·055·056·059·063), 키트 `RangeSliderRow`·`StarRangeBar`(FD-012) + 갤러리, `BaModal` 포커스 가두기·배경 의미 구조 차단·Esc 이중 처리 방지, `BaChip` 테두리 변형(S4 칩), 계정 전환 때 최근 본 학생 비움(화면 변화 없음) | `20261007_150318` RED(의미 구조 짝 값·테두리 3px 등 5건) → `20261007_154648` GREEN(307 + 284 + 프로세스 28 + golden 18) |
 | FE3-d2 | `0890de7a` | 필터 모달 화면 연결: 공용 `StudentFilterModal`(머리 바·속성·성장 범위 패널), 컨트롤러 적용 값 + 초안, S1 필터 버튼·S4 `+n` → 모달, S1 배지(FD-058), 셸 모달 배경 범위(15:51 결정 4), Section 5·범위 카드 폐기(FD-052), golden `students-filter-open` | `20261007_170820` RED(핸들 해제 시점·새 장면) → `20261007_173720` GREEN(594 + 프로세스 28 + golden 19) |
 | FE3-e | `a3692424`(+ 문서 `8a6482e7`) | 다중 폼 초상 교대(FD-064: 공용 시계 하나, 폼 수 × 3초 계단식, TickerMode 꺼짐이면 멈춤) + FB-5 catalog `forms`(계약·Python·Dart·mock·E2E), warmup 폼 초상, 제목 글꼴에 없는 글리프(– → −) 수정, golden 4장 갱신 + 새 장면 `students-grid-second-form`(시각 변경) | ① `20261007_191233` RED(golden 5, 예상 일치) → ② `20261007_195559` GREEN(golden 20, 백엔드 812) |
+| FE3-f1 | `7ec07589`(+ 문서 `bcde9559`) | 성장 계산기 상태 모델(13행·계산기 정규화·현재값 출처·빠른 목표·칸 토글·최근 계산) + 계산 어댑터(임시 1페이즈 1단계 문서 `planning.document.calculate`, 디바운스), 새 파일 6, 기존 파일 수정 0(동작 보존) | `20261007_213219` GREEN(648 + 프로세스 28 + golden 20) |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -2659,4 +2661,120 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice re
 ### FE3-f1 commit record (2026-10-07 21:36, written by fe_commit.ps1)
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_213219\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FB-12 착수 기록 (2026-10-07)
+
+- 범위(작업 지시 2026-10-07 21:41, 오케스트레이터 로그 21:38, 워크플로 FB 표 FB-12 행): FE3-f1 발견 사항 1·2번.
+  ① `planning_calc._calculate_star_cost`가 `record.star`를 읽어 wire의 `student_star`를 무시한다.
+  ② `planning_document._advance`가 장비 티어를 `"Tier<n>"`으로 이월하는데 `_parse_tier_number`는 `"T<n>"`만 읽는다.
+- 범위 밖: 스캐너 소유 백엔드 파일(recognition_*, scanner_*, student_*_recognizer 등), 프런트 파일 전부, 계약 형식.
+- 시작 커밋: `bcde9559`(FE3-f1 `7ec07589` 뒤 문서 커밋).
+- 사본: `debug/frontend_fb12/pre/backend/core/planning_calc.py`, `planning_document.py`(고치기 전 PC 파일과 바이트 동일 확인).
+
+## FB-12 종료 기록 (2026-10-07, 코드 작성 완료·사용자 실행 대기)
+
+이 환경(Linux, Python 3.13)에서는 백엔드 테스트 일부만 돌릴 수 있었다. 사용자 PC의 전체 실행(`py -3.11 -m unittest discover -s tests -v`)은 아래 사용자 실행 순서 ①이다. 통과를 주장하지 않는다.
+- 워커 실행: `backend/tests` 중 내려받은 44파일(192건). 결과는 `debug/frontend_fb12/python-worker-linux.txt`에 있다.
+  - 계획 계산 관련 모듈은 전부 통과했다: `test_planning_calc_fb12`(새 9건), `test_planning_document`, `test_planning_parity`, `test_planning_protocol_contract`, `test_plan_shortages`, `test_repository_parity`, `test_scenario_*`, `test_v6_migration`, `test_repository_protocol_contract`.
+  - 실패·오류 53건은 모두 환경 문제다. Windows 전용 `ctypes.WINFUNCTYPE`, 실제 백엔드 프로세스, 내려받지 않은 tactical·battle fixture가 원인이다.
+  - 고치기 전 코드로 같은 44파일을 돌렸을 때(새 테스트 제외)와 실패 목록이 한 줄도 다르지 않다.
+- 새 테스트 9건은 고치기 전 코드에서 모두 실패한다(18 실패 + 1 오류). 버그를 실제로 잡는 테스트다.
+
+### 바뀐 파일
+
+| 파일 | 바뀐 것 |
+|---|---|
+| `backend/core/planning_calc.py` | `_current_student_star(record)` 추가(`student_star` 먼저, 없으면 `star`), `_calculate_star_cost`가 그것을 쓴다. `_parse_tier_number`를 `T<n>`·`Tier<n>`·대소문자·공백을 읽고 그 밖은 0으로 바꿨다 |
+| `backend/core/planning_document.py` | `_advance`가 장비 티어를 정규 형식 `"T<n>"`으로 이월한다(0이면 None, 기존과 같음) |
+| `backend/tests/test_planning_calc_fb12.py` | 새 파일 9건(성급 5, 장비 이월 2, 티어 파서 2) |
+
+계약(contracts)·프런트·fixture는 바꾸지 않았다. 계약의 현재 장비 필드는 `{"type": ["string", "null"]}`이라 형식 규칙이 없고, 이번 수정은 받는 쪽만 넓혔다. 줄 끝은 원래대로 LF다.
+
+### 고친 방식
+
+1. **현재 성급**: `_current_student_star`가 `getattr(record, "student_star", None)`을 먼저 읽고, None이면 `getattr(record, "star", 0)`을 읽는다.
+   - `_advance`는 다음 단계용 레코드에 `student_star`를 이미 쓰고 있었다. 그래서 2단계 이상 문서의 성급 이월도 함께 맞는다(새 테스트 `test_later_stage_star_cost_starts_from_the_previous_stage`).
+   - 예: ★3 → ★5는 고치기 전 크레딧 1,250,000·엘레프 330(★0부터)이었다. 고친 뒤 1,200,000·220이고, ★3→★4 + ★4→★5 합과 같다.
+   - 고치기 전에는 현재 ★5인 학생에게 ★5 목표만 있어도 크레딧 1,250,000·엘레프 330이 나왔다(새 테스트 `test_reaching_the_current_star_costs_nothing`).
+2. **장비 티어 이월**: `_advance`가 `f"T{value}"`를 쓴다.
+   - 정규 형식은 `T<n>`이다. 근거: 스캐너 인식기 `student_equipment_recognizer.py:1591` `f"T{number}"`, 계약 fixture `planning_v6_parity.json`·Dart mock 학생 `"T1"`, 프런트 계산기 `growthCalculatorCurrentStudentWire`.
+3. **티어 파서**: 공백을 모두 지우고 대문자로 만든 뒤 `TIER`, `T` 접두를 떼고 남은 것이 ASCII 숫자일 때만 그 값을 쓴다. 그 밖은 0이다. 문자열이 아니면 0이다.
+   - 고치기 전과 결과가 달라지는 입력:
+
+| 입력 | 고치기 전 | 고친 뒤 |
+|---|---|---|
+| `"Tier7"`, `"TIER7"`, `"tier10"`, `"Tier 10"` | 0 | 7, 7, 10, 10 |
+| `"T-1"` | -1 | 0 |
+| `"T+3"` | 3 | 0 |
+| `"T１"`(전각 숫자) | 1 | 0 |
+| 정수 `7` 등 문자열이 아닌 값 | AttributeError | 0 |
+| `"T7"`, `"t7"`, `" T 7 "`, `None`, `""`, `"love_locked"`, `"T7a"` | 7, 7, 7, 0, 0, 0, 0 | 같음 |
+
+### 바뀐 기대값
+
+기존 테스트의 기대값 중 바뀐 것은 없다. 기존 테스트를 고치지 않았다.
+- `contracts/fixtures/planning_v6_parity.json`(`test_planning_parity`): 레코드가 `student_star: 1`이고 목표가 ★2다. 성급 누적표에서 ★0과 ★1이 둘 다 0이라 고치기 전후 값이 같다(크레딧 439,944, 엘레프 30). 워커가 고치기 전후 두 코드로 계산해 확인했다.
+- `test_planning_document` 첫 테스트: 장비가 1·2단계 모두 T1이다. 고치기 전 2단계는 `"Tier1"` → 0 → T0→T1을 계산했지만 그 비용이 0이었다. 그래서 단계별 크레딧은 고치기 전후 모두 [910, 2870]이다. 그 테스트는 0보다 큰지만 본다.
+- 프런트 프로세스 E2E(`final_p6_process_e2e_test.dart`, `repository_process_e2e_test.dart`, `scenario_process_e2e_test.dart`)는 크레딧을 `isA<int>()`·`greaterThan(0)`·`isNotEmpty`로만 본다. 굳은 버그 수치가 없어 고치지 않았다.
+- 프런트 golden은 mock 서비스로 그려 백엔드 계산을 쓰지 않는다. 변화 0을 예상한다.
+
+실제 화면 숫자는 바뀐다. 계획 탭·통계·인벤토리 부족·시나리오 비교에서 현재 ★가 1보다 큰 학생의 성급 목표 비용과, 2단계 이상 문서의 장비·성급 비용이 내려간다(버그로 부풀었던 값이 바로잡힘).
+
+### `star` 속성 grep 결과
+
+- 명령: `grep -rn '\bstar\b'`로 `backend/core`, `backend/tools`, 내려받은 `backend/tests` 44파일을 찾았다. 그중 `getattr(...,"star")`, `.star`, `"star":` 꼴만 골랐다.
+- 계획 계산에 레코드를 넘기는 경로:
+  - `protocol_v1._current_students_from_wire`(`planning.plan.calculate`·`plan.shortages`·`document.calculate`·`scenario.compare`)와 `planning_document`의 레코드 사본이다. 둘 다 `student_star`만 갖는다.
+  - repository DTO(`repository_dto.py:70`), 병합(`repository_merge.py:8`), v6 이전 가져오기(`v6_migration.py:14`)도 모두 `student_star`다.
+  - 계약 fixture `planning_v6_parity.json`도 `student_star`다.
+- `star` 이름이 나오는 다른 곳은 계획 레코드가 아니다:
+  - `student_stats.py`의 `build.star`(`StudentBuild` 데이터클래스)
+  - 스캐너 소유 `student_identity_recovery.py:246`·`student_panel_recovery.py:19,268`·`student_matcher_adapter.py:116`(패널 탭 이름 `"star"`)
+- 결론: 지금 `star` 속성을 가진 계획 레코드는 없다. 폴백은 이름이 바뀌기 전 레코드를 위한 안전장치로만 남긴다(새 테스트가 폴백과 우선순위를 확인한다).
+- 남은 점: 내려받지 않은 스캐너 테스트 약 50파일은 계획 계산을 import하지 않을 것으로 보지만 직접 grep하지는 않았다. 사용자 전체 실행이 확인한다.
+
+### `planning_calc.py` 레코드 필드 대조(`_CURRENT_INTEGER_FIELDS`·문자열 필드)
+
+| 계산이 읽는 이름 | wire 필드 | 판정 |
+|---|---|---|
+| `star` | `student_star` | **불일치 → 고침**(위 1) |
+| `level`, `weapon_star`, `weapon_level`, `ex_skill`, `skill1~3`, `stat_hp/atk/heal`, `student_id` | 같은 이름 | 일치 |
+| `equip1~3`, `equip4`(문자열), `equip1~3_level` | 같은 이름 | 이름은 일치. 값 형식은 위 2·3으로 맞춤 |
+| `weapon_state` | 같은 이름 | 이름 일치. 값은 `weapon_equipped`·`weapon_unlocked_not_equipped`를 해금으로 본다. 백엔드 생산자(`student_weapon_recognizer.py:80`, `student_star_recognizer.py:11`, 둘 다 스캐너 소유라 읽기만 함)가 쓰는 값과 같다 |
+| `display_name`, `title` | 없음 | 엘레프 표시 이름 대체용이다. `student_id`가 있으면 쓰지 않는다(wire는 늘 있음). 영향 없음, 고치지 않음 |
+| `weapon_type` | 없음 | 없으면 `student_meta.weapon_type(student_id)`로 찾는 의도된 대체다. 고치지 않음 |
+| (`bond_rank`) | 현재 항목에 없음 | 계산이 읽지 않는다 |
+
+같은 성격(이름 불일치)은 `star` 하나였다.
+
+참고(고치지 않음): 프런트 mock 학생 fixture(`mock_student_fixture.dart`)는 `weapon_state: 'weapon_unlocked'`를 쓴다. 백엔드 생산자는 이 값을 내지 않고, 검증기(`student_candidate_validation.py:129`)만 허용한다. 계산은 이 값을 해금으로 보지 않는다. mock 화면은 백엔드 계산을 쓰지 않아 숫자에 영향이 없다. 실제 스캔 값과 맞출지는 스캐너 쪽 판단이다.
+
+### 사용자 실행 순서(동작 보존 화면, golden 변화 0 예상)
+
+① Python 전체 테스트. 결과를 `debug\frontend_fb12\python-full.txt`에 남긴다. 예상: 전부 통과(FE3-e 때 812건 + 새 9건 = 821건 안팎).
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7\backend"
+cmd /c "py -3.11 -m unittest discover -s tests -v > ..\debug\frontend_fb12\python-full.txt 2>&1"
+Get-Content ..\debug\frontend_fb12\python-full.txt -Tail 4
+```
+
+② gate → 커밋 미리보기 → 커밋 → 문서 커밋.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fb12 -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fb12
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesigndocs
+```
+
+`debug/frontend_fb12/commit.json`: modified 2(`planning_calc.py`, `planning_document.py`, pre 사본 있음), added 1(새 테스트), status true.
+- `python-full.txt`와 `python-worker-linux.txt`는 커밋 대상이 아니다.
+- ①에서 실패가 나오면 그 파일을 오케스트레이터에게 보낸다.
+
+### FB-12 commit record (2026-10-07 23:25, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_232002\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

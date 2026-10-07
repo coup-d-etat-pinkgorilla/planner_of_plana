@@ -189,7 +189,8 @@ def _advance(record: SimpleNamespace, stage: PlanningStage) -> None:
         if key == "bond_rank":
             continue
         if key.endswith("_tier") and key.startswith("equip"):
-            setattr(record, key.removesuffix("_tier"), None if value <= 0 else f"Tier{value}")
+            # repository·wire와 같은 정규 형식 "T<n>"(planning_calc._parse_tier_number가 읽는다).
+            setattr(record, key.removesuffix("_tier"), None if value <= 0 else f"T{value}")
         else:
             setattr(record, key, value)
     if stage.targets["weapon_level"] > 0 or stage.targets["weapon_star"] > 0:

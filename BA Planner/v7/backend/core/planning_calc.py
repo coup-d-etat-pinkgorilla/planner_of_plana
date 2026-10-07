@@ -358,13 +358,15 @@ def _equipment_material_label(slot_name: str | None, tier: int) -> str:
 
 
 def _parse_tier_number(tier: str | None) -> int:
-    value = (tier or "").strip().upper()
-    if not value.startswith("T"):
+    """장비 티어 문자열의 숫자. 정규 형식은 "T<n>"이고 "Tier<n>"·대소문자·공백도 읽는다. 그 밖은 0."""
+    if not isinstance(tier, str):
         return 0
-    try:
-        return int(value[1:])
-    except ValueError:
-        return 0
+    value = "".join(tier.split()).upper()
+    for prefix in ("TIER", "T"):
+        if value.startswith(prefix):
+            digits = value[len(prefix):]
+            return int(digits) if digits.isascii() and digits.isdigit() else 0
+    return 0
 
 
 def _stat_delta(current_value: object, target_value: object) -> int:
@@ -454,8 +456,16 @@ def _current_weapon_star(record) -> int:
     return 0
 
 
+def _current_student_star(record) -> int:
+    """현재 성급. wire·repository 레코드는 `student_star`, v6 이전 레코드는 `star`를 쓴다."""
+    value = getattr(record, "student_star", None)
+    if value is None:
+        value = getattr(record, "star", 0)
+    return _safe_int(value, 0)
+
+
 def _calculate_star_cost(record, goal: StudentGoal) -> tuple[int, dict[str, int]]:
-    current_star = _safe_int(getattr(record, "star", 0), 0)
+    current_star = _current_student_star(record)
     target_star = max(current_star, _safe_int(goal.target_star, current_star))
     target_weapon_star = max(0, min(4, _safe_int(goal.target_weapon_star, 0)))
     current_weapon_star = _current_weapon_star(record)
