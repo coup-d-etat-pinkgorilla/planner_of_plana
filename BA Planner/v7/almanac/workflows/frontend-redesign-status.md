@@ -20,13 +20,14 @@ sources:
 
 ## 현재 상태
 
-**FE2-a 완료.** 결과(오케스트레이터 로그 2026-10-07 00:41, 아래 FE2-a commit record):
-- gate `debug/frontend_gate/20261007_003201` RED: 테스트 1건 실패. `diagonal_scroll_viewport_test.dart`의 translate 폭 정확 비교가 1ulp 차이로 틀렸다. 오케스트레이터가 `closeTo(before.width, 1e-9)`로 고쳤다. 그 밖에는 analyze PASS, golden 17장 차이 0.
-- `debug/frontend_gate/20261007_004310` GREEN(456 + golden 17).
-- 커밋 `97c568b6fc35ae8e3ba5c7304d9a8c51da7c9473`.
-- 프롬프트가 가리킨 로그 "00:47 항목"은 로그 파일에 없다(00:41 항목과 status의 00:48 commit record만 있다).
+**FE2-b 완료.** 결과(오케스트레이터 로그 2026-10-07 09:05, 아래 FE2-b commit record):
+- gate `debug/frontend_gate/20261007_090015` GREEN. 내역은 flutter-test-1 301, flutter-test-2 155, 프로세스 테스트 28(혼자 직렬), golden 17 차이 0이다(합계 484).
+- 앞선 `081859`(diff-check: 스캐너 로그 끝 빈 줄)와 `083716`·`084537`(프로세스 테스트 시간 초과, PC 부하)의 RED는 프론트 코드와 무관했다. 오케스트레이터가 정리했다(08:40·08:55 항목).
+- 커밋 `859c554a16415592d114b52b38b31b3fc67f3180`. 문서 커밋은 `fd791947`이다.
 
-**진행 중: FE2-b 소형 컨트롤·제목, 시작 커밋 `97c568b6fc35ae8e3ba5c7304d9a8c51da7c9473`(FE2-a).** 코드·테스트 작성은 끝났고 gate는 아직 돌리지 않았다(사용자 PC ①~③ 대기). 자세한 내용은 아래 "FE2-b" 절.
+**진행 중: FE2-c 오버레이, 시작 커밋 `fd791947e5c75d098fc32da0f818c3f960b9f0e7`.**
+- 이 커밋은 문서 커밋이다(스캐너 규칙·FE2-a 검토·기기 쓰기 확인 규칙). lib/·test/는 `859c554a`와 같다.
+- 자세한 내용은 아래 "FE2-c" 절에 적는다.
 
 ### 커밋 기록
 
@@ -38,6 +39,7 @@ sources:
 | FE1-b | `d5f87b7b` | 80° 기하 공용 API, 인라인 105/108곳 교체(동작 보존) | `debug/frontend_gate/20261006_231705` GREEN |
 | FE1-c | `99583757` | 공용 `SectionSurface`(surface@.76, 무블러·무테, lifted shadow 4층), golden 6장 갱신(시각 변경) | ① `20261006_233307` RED(golden 6, 예상 일치) → ③ `20261006_233605` GREEN(424 + golden 17) |
 | FE2-a | `97c568b6` | 공용 키트: 사선 스크롤바·포그 파라미터·`DiagonalScrollViewport`·`DiagonalRow`·UI Kit 갤러리, private 스크롤바 4종 교체(동작 보존) | `20261007_003201` RED(테스트 기대값 1ulp, 오케스트레이터 수정) → `20261007_004310` GREEN(456 + golden 17) |
+| FE2-b | `859c554a` | 소형 컨트롤·제목 키트(칩·단계 태그·세그먼트·토글 칩·타입 칩·필터 버튼·스위치·미세 조절·tonal·레일 버튼·제목 4종), 요소 빌더 스테퍼 추출(동작 보존), 갤러리 FE2-b 구역 | `20261007_090015` GREEN(301 + 155 + 프로세스 28 + golden 17) |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -1003,4 +1005,156 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 ### FE2-b commit record (2026-10-07 09:03, written by fe_commit.ps1)
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_090015\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE2-c 착수 기록 (2026-10-07)
+
+- 범위: 워크플로 FE2-c 행 그대로. 대상은 `InfoPopover`, `AnchoredFlyout`(+ 페이즈·시나리오·통계 점·부족 재화 2종 프리셋), `BaModal`(스크림 프리셋 4종)이다. `OverlayPortal` 기반이다(FD-021 (a)).
+- 시작 커밋: `fd791947e5c75d098fc32da0f818c3f960b9f0e7`.
+- 막힘 요약: FE2-c를 막는 `열림` FD는 없다.
+- 동작 보존: 기존 화면은 바꾸지 않는다. golden 17장 차이 0이 완료 조건이고, 새 golden 장면은 추가하지 않는다.
+- 사본: 고칠 기존 파일마다 착수 전 사본을 `debug/frontend_fe2c/pre/<v7 기준 경로>`에 둔다.
+- 기기 쓰기: 매번 새 업로드 경로에서 쓰고, 쓴 뒤 다시 읽어 바이트로 대조한다.
+
+## FE2-c 종료 기록 (2026-10-07, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없어 analyze·테스트·golden을 돌리지 못했다. 통과를 주장하지 않는다.
+- FE2-c1·c2로 나누지 않고 한 번에 했다(InfoPopover·BaModal·AnchoredFlyout·프리셋 모두).
+- 쓴 API는 GitHub에서 받은 Flutter 3.44.0 소스(태그 `3.44.0`)와 하나씩 대조했다. lint 규칙 목록도 lints·flutter_lints 저장소에서 확인했다.
+- 별도 검토 에이전트가 새 코드·테스트를 3.44.0 소스와 대조해 읽었다. 컴파일·lint·테스트 실패 요인은 찾지 못했다고 보고했다. 위치 기대값도 모두 다시 계산해 맞았다.
+- 검토 지적 중 고친 것:
+  - 패널이 닫힐 때 패널 hover 상태를 지운다(MouseRegion은 사라질 때 onExit를 부르지 않는다).
+  - Esc 처리기가 두 번 등록되지 않게 했다. 맨 위가 아닌 라우트의 오버레이는 Esc로 닫지 않는다.
+  - `BaModal`이 빌드 중에 열고 닫지 않게 했다(컨트롤러 교체는 프레임 뒤에 반영).
+  - 열린 채로 그룹을 바꾸면 새 그룹의 열린 것을 닫는다.
+  - 트리거 강조는 키보드 포커스 표시 모드에서만 포커스로 켠다(마우스로 닫은 뒤 핑크 링이 남지 않게).
+
+### 공용 키트 (`frontend/lib/ui/kit/`, 새 파일)
+
+| 파일 | 내용 |
+|---|---|
+| `kit_overlay.dart` | 공통 바탕 `KitOverlayAnchor`(`OverlayPortal.overlayChildLayoutBuilder`, 매 프레임 트리거를 따라감). 위치 규칙 `KitOverlayPlacement`(below/right/left, 시안 CSS 값)와 순수 함수 `layoutKitOverlay`(섹션 경계 보정, 꼬리 위치). `KitOverlayBounds`(섹션 경계), `KitOverlayGroup`(한 번에 하나), `KitOverlayEscape`(Esc, 가장 나중 것 하나), `KitOverlayPanel`(#0d151f + 1px 링 + 그림자), `KitOverlayTail`(11×11 45°) |
+| `info_popover.dart` | `InfoPopover`: (i) 24px 원(기본 #71c7f4@.12 / 열림·hover·포커스 #f2b3ef@.24), 팝오버 r9·안쪽 13 15 14·폭 330(견본 300), 제목 4×13 사선 막대 + 13.5px, 강조 #f7c9f4, 목록 왼쪽 16·간격 3. `.pop.l`/`.pop.r`(바깥 7, 꼬리 14), `auto` 정렬 |
+| `anchored_flyout.dart` | `AnchoredFlyout` + `FlyoutPreset`(r 420 · l 420 · dn 380 · dl 540 · 페이즈 470 · 시나리오 500 · 통계 점). 트리거 링 `FlyoutTriggerRing`(r8 안쪽 1.5 @.7 / 사선 path @.75·@.8 2px / `.lc` #f2b3ef 1.5 + 채움 @.05 / 원 바깥 2px @.85). 행 `FlyoutRow`(r7 white@.035), `FlyoutHeader`·`FlyoutFooter`·`FlyoutLink`·`FlyoutDot` |
+| `shortage_flyout.dart` | FD-090 프리셋 2종: `GroupedShortageFlyout`(분야별 그룹, 시나리오 `.shp`) · `ShortageBreakdownFlyout`(부족량·단계별 seg, Flow-4 `.fly`). 자료형 `ShortageItem`·`ShortageUse`·`ShortageGroup` |
+| `ba_modal.dart` | `BaModal` + `BaModalController`. 스크림 `BaScrim` 4종(FD-013): filter .8+blur2 · scan .72+blur2 · excel rgba(5,9,14,.62) · anchored .35. 패널 `BaModalPanel.dialog`(#0d151f r12, 족보 전체) / `.sheet`(#0f1822 r14, 엑셀) |
+
+공통 동작:
+- 열기: 마우스 올림(트리거·패널, 벗어난 뒤 150ms 기다림) · 키보드 포커스 · 누르기/Enter(고정).
+- 닫기: Esc · 바깥 누르기 · 고정된 것 다시 누르기 · 같은 그룹의 다른 것이 열릴 때. 닫은 뒤에는 새로 마우스를 올리거나 포커스를 새로 얻기 전까지 다시 열지 않는다.
+- 포커스: 플라이아웃은 눌러 열면 패널로 포커스를 옮기고 닫을 때 트리거로 돌려준다. (i)는 포커스를 버튼에 둔다. 모달은 열 때 패널로, 닫을 때 연 자리로 돌려준다.
+- 애니메이션은 없다(시안은 display 전환).
+
+### 바꾼 파일
+
+- `frontend/lib/ui/kit/gallery/ui_kit_gallery_page.dart`: FE2-c 제목과 `UiKitOverlaysSection`을 FE2-b 구역 아래에 붙였다. 사본은 `debug/frontend_fe2c/pre/frontend/lib/ui/kit/gallery/ui_kit_gallery_page.dart`.
+- 기존 화면 파일은 건드리지 않았다. 기존 `Tooltip`을 (i)로 옮기는 일(FD-020)은 각 탭 slice 몫이다. 스캐너 소유·동결·택틱 소유 파일도 건드리지 않았다.
+
+### 갤러리 (`gallery/ui_kit_overlays_section.dart`, 새 파일)
+
+- 1줄: W-Info-Popover 보드(1160×400, 시안 좌표 그대로, 테두리만 갤러리용) · 모달 스크림 프리셋 4종 버튼.
+- 2줄: W-Layout-Widgets "팝오버 (열린 상태)" 줄. 가로 = 시안 x − 40, 세로 = 시안 y − 852. 부족 재화 플라이아웃(FD-090 부족량·단계별) · 페이즈 팝오버 · (i) "위험도"(오른쪽 정렬).
+- 3줄: 나머지 프리셋(닫힌 채): 시나리오 분야별 그룹(Scenario-Compare 값) · 통계 점(Stats-Growth "밀레니엄") · `.fly.dn`(Inventory-Analysis "밀레니엄 · 계획 학생 5명") · `.fly.dl` 사선 카드(Tactical "A 유저 · 23위").
+- 시안 `.open` 견본 5개는 처음부터 열려 있다. 각자 다른 그룹이라 함께 열린다. 바깥을 누르면 닫히므로 "열린 견본 다시 열기" 버튼으로 되살린다.
+- 문구는 시안 그대로이고 값은 시안 예시 값의 정적 fixture다.
+
+### 테스트 (`frontend/test/kit/`, 32건 추가 → 예상 516 + golden 17)
+
+| 파일 | 건수 | 확인 내용 |
+|---|---|---|
+| `kit_overlay_test.dart` | 7 | `.pop.l`/`.pop.r` 위치·꼬리, 섹션 경계 보정(오른쪽 끝 왼쪽 정렬·왼쪽 끝 오른쪽 정렬), auto 정렬, 섹션보다 넓은 패널, 옆 열림 세로 보정·꼬리, CSS blur 환산 |
+| `info_popover_test.dart` | 8 | 누르기 고정/해제, hover 열림·150ms 뒤 닫힘·트리거→패널 이동 유지, Tab 포커스 열림·Enter 고정·Esc 닫힘·다시 포커스 열림, 바깥 누르기 닫힘(패널 안은 유지), 한 그룹 하나·다른 그룹 함께, 좌/우 정렬 위치·꼬리(closeTo), 섹션 경계 보정·auto, 버튼 24·패널 r9·안쪽·링·제목 글자·접근성 이름 |
+| `anchored_flyout_test.dart` | 8 | 누르기 열림 → 패널 포커스 → Esc 닫힘 → 트리거 포커스 복귀(다시 안 열림), Tab 열림·Enter 포커스 이동·바깥 누르기 복귀, hover 링·패널 버튼 누르기, r/dn/dl 위치, 페이즈·시나리오·통계 점 위치·꼬리, 링 값, FD-090 seg 전환(부족량 2행 → 단계별 3행), 분야별 그룹 행·개수·칩 |
+| `ba_modal_test.dart` | 5 | 스크림 4종 RGB·알파·blur(서로 다름), 열면 프리셋 색·blur 있는 것만 BackdropFilter, 포커스 이동·Esc 닫힘·복귀·스크림 누르기 닫힘(패널 안은 유지), barrierDismissible false, 패널 프리셋 |
+| `ui_kit_gallery_overlays_test.dart` | 4 | FE2-c 타일 4개 넘침 없음·`.open` 견본 5개 열림, 닫힌 견본 누르기 열림·같은 그룹 하나만, 다시 열기 버튼, 모달 버튼 4종 |
+
+OverlayPortal을 쓰는 테스트는 pumpAndSettle 대신 필요한 만큼 pump한다(포커스 이동은 프레임 뒤 콜백이라 pump 두 번). 레이아웃을 거친 위치는 `closeTo`로 비교한다.
+
+### 처리한 FD
+
+- **FD-013**: 스크림 알파는 artboard 값 4종 프리셋으로 둔다. 통일하지 않는다. 엑셀은 시안 그대로 rgba(5,9,14,.62)다.
+- **FD-019**: 모달·앵커 팝업·부유 패널은 "부유 섹션 금지·모든 섹션 사선"의 예외다. 키트 패널은 둥근 사각형이다. 필터·홈 스캔·계정 추가의 사선 모달 패널은 각 slice가 `BaModal.builder`에서 그린다. 문서(§1.1·§1.2) 갱신은 이미 FD-019 확정 때 반영 대상으로 적혀 있어 이번에 손대지 않았다.
+- **FD-020**: (i) 위젯을 만들었다. 기존 화면의 안내 문장·Tooltip 이동은 각 탭 slice 몫이다.
+- **FD-021**: (a) `OverlayPortal` 기반이다. 탭 고정·리치 내용·좌/우 정렬·섹션 경계 보정을 한다.
+- **FD-090**: `AnchoredFlyout` 위 프리셋 2종(`GroupedShortageFlyout` / `ShortageBreakdownFlyout`)이다. 실제 데이터 연결은 FE5-b 등 각 slice 몫이다.
+
+### 알려진 시안 차이
+
+1. **"단계별" 보기**: 시안은 seg만 있고 그림이 없다. 단계마다 단계 태그 + "n종" 머리 줄을 두고, 그 단계에 쓰는 항목만 그 단계 학생과 함께 보인다(워커 재량).
+2. **hover 닫힘 지연 150ms**: 시안(CSS)은 틈을 지나면 바로 닫힌다. 패널 안 버튼까지 갈 수 있게 지연을 두었다.
+3. **`.fly.l`**: 시안에 없다. `.fly`를 좌우로 뒤집은 값(왼쪽 14, 위 −12, 폭 420)이다.
+4. **패널이 스크롤 영역에 잘리지 않는다**: 패널은 앱 오버레이에 그려진다. 트리거가 스크롤되어 앱 바 아래로 가도 패널은 보일 수 있다. 섹션 경계 보정은 섹션 전체 사각형 기준이다. 아래 열림은 위로, 옆 열림은 반대쪽으로 뒤집지 않는다.
+5. **모달 포커스 가두기·배경 접근성**: Tab이 패널 밖으로 나갈 수 있고 배경 의미 구조를 막지 않는다. 실제 모달을 옮기는 slice(FE8 등)에서 필요하면 더한다.
+6. **Esc 이중 처리 가능성**: `showDialog`처럼 Esc로 닫히는 라우트 안에 팝오버를 열면 Esc 한 번에 팝오버와 다이얼로그가 함께 닫힐 수 있다. 지금 그런 화면은 없다.
+7. **아이콘·초상·아이템 이미지**: 갤러리는 이미지 대신 빈 상자·이름 첫 글자다(아이템 아이콘 위젯은 FE2-d 범위). "인벤토리에서 보기" 아이콘은 Material 아이콘이다. 5px 막대 `ShortageBar`·아이콘 자리 `ShortageIconSlot`은 FE2-d의 `SkewBar`·`ItemIconTile`이 나오면 바꾼다.
+8. **트리거 견본**: `.fly.dn`(66×28 "밀레니엄")·`.fly.dl`(사선 카드 "A 유저 23위")·시나리오("부족 재화 8종") 트리거는 시안 화면 일부를 대신한 그림이다. 패널은 시안 값이다.
+9. **방어 덱 "1승 1패"**: 시안은 칩이 아닌 글자라 회색 굵은 글자로 그렸다.
+
+### 검수표 (mock 모드, 2560×1440 모니터 최대화 = 2560×1392)
+
+갤러리 여는 법: 헤더 개발 버튼 → 개발 상태 패널 "UI Kit 갤러리" → 맨 아래 "FE2-c 오버레이" 구역.
+
+**W-Info-Popover 대조(1줄 왼쪽 보드, 좌표 그대로)**
+
+| 자리 | 대조 포인트 |
+|---|---|
+| 닫힘 "고른 학생" | (i) 24px 원 파랑 @.12. 마우스를 올리면 분홍 @.24 + 아래로 팝오버(왼쪽 −7, 위 34) "고른 순서대로 **목표 정하기** 탭에 놓입니다." 강조어 #f7c9f4. Tab 포커스·누르기로도 열린다 |
+| 열림 · 왼쪽 정렬 "단계 순서" | 폭 300, 제목 앞 분홍 사선 막대, 목록 두 줄(왼쪽 16), 꼬리가 버튼 아래 |
+| 열림 · 오른쪽 정렬 "넣을 단계" | 팝오버 오른쪽이 버튼 오른쪽 + 7, 꼬리 오른쪽 14, "**1 · 2 · 3**" 강조 |
+| 공통 | 팝오버 #0d151f r9, 외곽 1px #71c7f4@.38, 아래 그림자, 본문 12.5px |
+
+**W-Layout-Widgets "팝오버 (열린 상태)" 대조(2줄)**
+
+| 견본 | 대조 포인트 |
+|---|---|
+| 부족 재화 플라이아웃 | 요약 줄 380×46 #1b2a3a r8 + 안쪽 핑크 링 1.5. 오른쪽 14, 위 −12, 폭 420, 꼬리 왼쪽 위 26. 머리 "부족 재화 5종" + seg 부족량/단계별(h26 11px), 행 5개(아이콘 47×38, −30·−14·−8·−6·−3 핑크, 막대 5px, 보유/필요, 초상 + 단계 태그), 아래 줄 + "인벤토리에서 보기" h28 |
+| 페이즈 팝오버 | 사선 행 530×56 + 핑크 path 외곽 2px. 아래 10, 패널 오른쪽 = 행 오른쪽 − 40, 폭 470, 꼬리 오른쪽 40. 행 4개(−30 위험, −8·−3 주의, 크레딧 "충분"), "앞 페이즈에서 쓰고 남은 양 기준입니다" |
+| (i) 위험도 | "부족 위험도 순위" 옆, 오른쪽 정렬 폭 300 |
+
+**프리셋 견본(3줄, 마우스·Tab·누르기로 연다)**
+
+| 견본 | 대조 포인트 |
+|---|---|
+| 시나리오(.shw) | Scenario-Compare: 패널 500, 왼쪽 −20, 꼬리 left 90. 머리 "부족 재화 8종" + 설명. 분야 엘레프 1종 · 오파츠 2종 · 노트 · BD 2종 · 장비 설계도 3종, 칩(회색·충분·핑크·주의) |
+| 통계 점(.sdot) | Stats-Growth: 26px 원을 올리면 바깥 핑크 2px, 패널이 왼쪽 12 · 위 −18, 꼬리 없음, 내용 폭 |
+| 아래(.fly.dn) | Inventory-Analysis: 폭 380, 오른쪽 −10, 꼬리 오른쪽 26. "부족 필요량 · BD · 노트" 색 글자, 학생 5행, "계획에서 보기 →" |
+| 왼쪽 아래(.fly.dl) | Tactical: 사선 카드 + `.lc` 외곽(분홍 1.5 + 옅은 채움), 폭 540, 꼬리 왼쪽 36. 방어 덱 5행(첫 행 왼쪽 핑크 막대·"현재" 칩, 셋째 행 "?" 3칸), "상대 카드 열기 →" |
+| 한 번에 하나 | 3줄 견본 둘을 차례로 열면 앞의 것이 닫힌다 |
+
+**모달(1줄 오른쪽 타일)**: 버튼 4개가 각 스크림으로 연다. 필터·홈 스캔은 배경이 흐리고(blur 2), 엑셀 .62는 더 어둡고 패널 #0f1822, 앵커 .35는 가장 옅다. Esc·스크림 누르기·"닫기"로 닫히고 포커스가 연 버튼으로 돌아온다.
+
+### 미검증 항목
+
+1. analyze, 전체 테스트(기존 484 + 새 32), golden 17장 비교. 사용자 PC gate가 필요하다.
+2. 실행해 봐야 아는 테스트 기대값:
+   - Tab 첫 포커스가 트리거로 가는지, 포커스 이동이 pump 두 번 안에 끝나는지.
+   - hover 테스트(마우스 들어감·나감 순서, 150ms 타이머).
+   - Esc가 `HardwareKeyboard` 처리기로 들어오는지.
+   - 실패하면 테스트 기대값부터 확인한다. 기존 화면 렌더는 golden이 판정한다.
+3. 기존 갤러리 테스트(FE2-a·b)는 같은 페이지에 열린 견본 5개가 생긴 채로 돈다. 넘침·겹침 위험은 검토에서 찾지 못했지만 gate로 확인한다.
+4. 갤러리 시각 배치는 사용자 검수가 필요하다.
+
+### 사용자 실행 순서
+
+```powershell
+# ① gate. GREEN이어야 한다. golden 차이가 나오면 멈추고 오케스트레이터 검토(이번 slice는 golden을 갱신하지 않는다)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+①이 GREEN이면:
+
+```powershell
+# ② 커밋 미리보기 → ③ 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe2c -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe2c
+```
+
+### 다음 행동
+
+1. 사용자: ①. GREEN이면 ②·③을 실행하고, RED면 `summary.txt`와 `failures/`를 오케스트레이터에 넘긴다.
+2. 다음 slice: 워크플로 FE2 다음 행(FE2-d).
+
+### FE2-c commit record (2026-10-07 10:26, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_102114\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

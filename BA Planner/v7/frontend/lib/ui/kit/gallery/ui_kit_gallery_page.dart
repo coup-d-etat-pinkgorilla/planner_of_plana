@@ -4,6 +4,7 @@
 // FE2-a: W-Layout-Widgets "사다리꼴 안 스크롤"(resize 모드 + 포그 B + 사선 스크롤바), translate 모드(포그 C),
 // UI-Elements 행 견본(.srow/.row/.plain/.tile/rail × 기본·hover·선택·파랑).
 // FE2-b: `ui_kit_controls_section.dart`(W-Layout 첫 줄, W-Filter, 레일 버튼·스위치·스테퍼, 상태 견본).
+// FE2-c: `ui_kit_overlays_section.dart`(W-Info-Popover 보드, 모달 스크림 프리셋, W-Layout 팝오버 줄, 프리셋 견본).
 // 다음 FE2 slice는 이 페이지에 자기 위젯 타일을 더한다.
 import 'dart:math' as math;
 
@@ -17,6 +18,7 @@ import '../diagonal_scroll_viewport.dart';
 import '../scroll_viewport_fog.dart';
 import '../titles.dart';
 import 'ui_kit_controls_section.dart';
+import 'ui_kit_overlays_section.dart';
 
 /// 갤러리 페이지. 개발 패널의 "UI Kit 갤러리" 버튼이 연다.
 class UiKitGalleryPage extends StatelessWidget {
@@ -71,6 +73,16 @@ class UiKitGalleryPage extends StatelessWidget {
               ),
               SizedBox(height: 24),
               UiKitControlsSection(),
+              SizedBox(height: 48),
+              _GalleryHeading(
+                title: 'FE2-c 오버레이',
+                caption:
+                    '(i) 도움말 · 앵커 플라이아웃(프리셋) · 모달 스크림입니다. '
+                    '시안 W-Info-Popover 보드와 W-Layout-Widgets 팝오버 줄을 같은 좌표로 올렸습니다.',
+              ),
+              SizedBox(height: 24),
+              UiKitOverlaysSection(),
+              SizedBox(height: 40),
             ],
           ),
         ),
