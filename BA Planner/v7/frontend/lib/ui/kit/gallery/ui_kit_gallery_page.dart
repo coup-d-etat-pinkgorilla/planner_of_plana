@@ -3,6 +3,7 @@
 // FE2 동안의 검수 대상이다(워크플로 "검증" 4). 공용 키트 위젯을 시안 W-*·UI-Elements artboard 배치대로 올린다.
 // FE2-a: W-Layout-Widgets "사다리꼴 안 스크롤"(resize 모드 + 포그 B + 사선 스크롤바), translate 모드(포그 C),
 // UI-Elements 행 견본(.srow/.row/.plain/.tile/rail × 기본·hover·선택·파랑).
+// FE2-b: `ui_kit_controls_section.dart`(W-Layout 첫 줄, W-Filter, 레일 버튼·스위치·스테퍼, 상태 견본).
 // 다음 FE2 slice는 이 페이지에 자기 위젯 타일을 더한다.
 import 'dart:math' as math;
 
@@ -14,6 +15,8 @@ import '../../widgets/section_surface.dart';
 import '../diagonal_row.dart';
 import '../diagonal_scroll_viewport.dart';
 import '../scroll_viewport_fog.dart';
+import '../titles.dart';
+import 'ui_kit_controls_section.dart';
 
 /// 갤러리 페이지. 개발 패널의 "UI Kit 갤러리" 버튼이 연다.
 class UiKitGalleryPage extends StatelessWidget {
@@ -59,6 +62,15 @@ class UiKitGalleryPage extends StatelessWidget {
                   _RowVariantsTile(),
                 ],
               ),
+              SizedBox(height: 48),
+              _GalleryHeading(
+                title: 'FE2-b 소형 컨트롤 · 제목',
+                caption:
+                    '칩 · 단계 태그 · 세그먼트 · 토글 칩 · 필터 버튼 · 스위치 · 스테퍼 · 버튼 · 제목입니다. '
+                    '시안 W-Layout-Widgets 첫 줄과 W-Filter-Widgets의 배치를 따르고, 상태 견본을 덧붙였습니다.',
+              ),
+              SizedBox(height: 24),
+              UiKitControlsSection(),
             ],
           ),
         ),
@@ -68,7 +80,7 @@ class UiKitGalleryPage extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// 공통 글꼴·제목. 제목은 FE2-b `TileTitle`이 생기면 그것으로 바꾼다.
+// 공통 글꼴. 타일 제목·소제목은 FE2-b 키트(`TileTitle`, `SubHeader`)를 쓴다.
 
 const _wsub = TextStyle(
   fontFamily: AppFonts.body,
@@ -102,107 +114,6 @@ class _GalleryHeading extends StatelessWidget {
       ),
       const SizedBox(height: 8),
       Text(caption, style: _wsub),
-    ],
-  );
-}
-
-/// 위젯 타일 머리: 6×18 핑크 사선 막대 + 제목 16 + 1px 룰(왼쪽 40×3 핑크 캡).
-class _TileTitle extends StatelessWidget {
-  const _TileTitle(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Transform(
-        transform: _skew,
-        alignment: Alignment.center,
-        child: const SizedBox(
-          width: 6,
-          height: 18,
-          child: ColoredBox(color: AppColors.accent),
-        ),
-      ),
-      const SizedBox(width: 10),
-      Text(
-        title,
-        style: const TextStyle(
-          fontFamily: AppFonts.display,
-          fontFamilyFallback: AppFonts.fallback,
-          fontSize: AppType.titleSize,
-          height: 1.2,
-          color: AppColors.text,
-        ),
-      ),
-      const SizedBox(width: 12),
-      Expanded(
-        child: SizedBox(
-          height: 3,
-          child: Stack(
-            children: [
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 1,
-                height: 1,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primary.withValues(alpha: 0.65),
-                        AppColors.primary.withValues(alpha: 0.06),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const Positioned(
-                left: 0,
-                top: 0,
-                width: 40,
-                height: 3,
-                child: ColoredBox(color: AppColors.accent),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ],
-  );
-}
-
-/// `.ihdr` 소제목: 5×5 파랑 점 + 경기천년제목.
-class _SubHeader extends StatelessWidget {
-  const _SubHeader(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      const SizedBox(
-        width: 5,
-        height: 5,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.all(Radius.circular(1)),
-          ),
-        ),
-      ),
-      const SizedBox(width: 4),
-      Text(
-        text,
-        style: const TextStyle(
-          fontFamily: AppFonts.display,
-          fontFamilyFallback: AppFonts.fallback,
-          fontSize: AppType.captionSize,
-          height: 1.2,
-          color: AppColors.text,
-        ),
-      ),
     ],
   );
 }
@@ -259,7 +170,7 @@ class _Notes extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SubHeader(heading),
+        SubHeader(heading, fontSize: AppType.captionSize),
         for (final line in lines) ...[
           const SizedBox(height: 10),
           _Bullet(line),
@@ -303,7 +214,7 @@ class _TrapezoidScrollTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _TileTitle('사다리꼴 안 스크롤'),
+          TileTitle('사다리꼴 안 스크롤'),
           SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -500,7 +411,7 @@ class _ParallelogramScrollTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _TileTitle('평행사변형 안 스크롤 (translate)'),
+          TileTitle('평행사변형 안 스크롤 (translate)'),
           SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -661,7 +572,7 @@ class _RowVariantsTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _TileTitle('사선 행 변형 · 상태'),
+          const TileTitle('사선 행 변형 · 상태'),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -669,7 +580,10 @@ class _RowVariantsTile extends StatelessWidget {
               for (final state in _RowState.values)
                 SizedBox(
                   width: _cellWidth + 12,
-                  child: _SubHeader(_stateLabels[state]!),
+                  child: SubHeader(
+                    _stateLabels[state]!,
+                    fontSize: AppType.captionSize,
+                  ),
                 ),
             ],
           ),

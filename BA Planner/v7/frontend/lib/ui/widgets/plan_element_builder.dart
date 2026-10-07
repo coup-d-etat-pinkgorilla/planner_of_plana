@@ -7,6 +7,7 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/diagonal_scrollbar.dart';
+import '../kit/stepper.dart';
 import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
 import '../studio/plan_starter_studio_layout.dart';
@@ -2746,7 +2747,7 @@ class PlanPresetElementCard extends StatelessWidget {
   }
 
   Widget _stepper(String label, String key, {bool unsupported = false}) =>
-      _CompactTargetStepper(
+      BaStepper(
         key: ValueKey('plan-stage-$stageNumber-$key'),
         label: label,
         value: stage.targets[key] ?? planElementTargetMinimums[key] ?? 0,
@@ -3022,7 +3023,7 @@ class _PresetEquipmentSlot extends StatelessWidget {
           onDecrease: () => onChanged(_levelKey, level - 1),
           onIncrease: () => onChanged(_levelKey, level + 1),
         ),
-        _MaxBadge(
+        MaxBadge(
           controlKey: 'plan-stage-$stageNumber-equipment-$slot',
           enabled:
               tier < (planElementTargetMaximums[_tierKey] ?? tier) ||
@@ -3090,7 +3091,7 @@ class _PresetFavoriteItemSlot extends StatelessWidget {
             onIncrease: () => onChanged(value + 1),
           ),
         const SizedBox(height: 1),
-        _MaxBadge(
+        MaxBadge(
           controlKey: 'plan-stage-$stageNumber-equip4_tier',
           enabled:
               enabled &&
@@ -3128,7 +3129,7 @@ class _EquipmentValueControl extends StatelessWidget {
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _StepTextButton(
+        StepButton(
           key: ValueKey('$controlKey-decrease'),
           text: '−',
           enabled: canDecrease,
@@ -3145,7 +3146,7 @@ class _EquipmentValueControl extends StatelessWidget {
             height: 1,
           ),
         ),
-        _StepTextButton(
+        StepButton(
           key: ValueKey('$controlKey-increase'),
           text: '+',
           enabled: canIncrease,
@@ -3264,184 +3265,6 @@ class _LockedTargetRegion extends StatelessWidget {
         ),
       );
     },
-  );
-}
-
-class _CompactTargetStepper extends StatelessWidget {
-  const _CompactTargetStepper({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.minimum,
-    required this.maximum,
-    required this.propagated,
-    required this.unsupported,
-    required this.valueFontSize,
-    required this.onChanged,
-  });
-
-  final String label;
-  final int value;
-  final int minimum;
-  final int maximum;
-  final bool propagated;
-  final bool unsupported;
-  final double valueFontSize;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final controlKey = key is ValueKey<String>
-        ? (key! as ValueKey<String>).value
-        : label;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      decoration: BoxDecoration(
-        color: propagated
-            ? AppColors.primary.withValues(alpha: 0.22)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _StepTextButton(
-                  key: ValueKey('$controlKey-decrease'),
-                  text: '−',
-                  enabled: value > minimum,
-                  onTap: () => onChanged(value - 1),
-                ),
-                if (label.isNotEmpty) ...[
-                  Text(
-                    label,
-                    key: ValueKey('$controlKey-label'),
-                    style: TextStyle(
-                      fontFamily: 'GyeonggiTitle',
-                      fontSize: valueFontSize,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                ],
-                Text(
-                  '$value${unsupported ? '*' : ''}',
-                  key: ValueKey('$controlKey-value'),
-                  style: TextStyle(
-                    fontFamily: 'GyeonggiTitle',
-                    fontSize: valueFontSize,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
-                  ),
-                ),
-                _StepTextButton(
-                  key: ValueKey('$controlKey-increase'),
-                  text: '+',
-                  enabled: value < maximum,
-                  onTap: () => onChanged(value + 1),
-                ),
-              ],
-            ),
-            _MaxBadge(
-              controlKey: controlKey,
-              enabled: value < maximum,
-              onTap: () => onChanged(maximum),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StepTextButton extends StatelessWidget {
-  const _StepTextButton({
-    super.key,
-    required this.text,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  final String text;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => InkResponse(
-    onTap: enabled ? onTap : null,
-    radius: 14,
-    child: SizedBox(
-      width: 22,
-      height: 24,
-      child: Center(
-        child: Text(
-          text,
-          style: TextStyle(
-            color: enabled ? AppColors.text : AppColors.textMuted,
-            fontFamily: 'GyeonggiTitle',
-            fontSize: 16.5,
-            fontWeight: FontWeight.w800,
-            height: 1,
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _MaxBadge extends StatelessWidget {
-  const _MaxBadge({
-    required this.controlKey,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  final String controlKey;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    enabled: enabled,
-    label: '최대값',
-    child: InkWell(
-      key: ValueKey('$controlKey-max'),
-      onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 28, minHeight: 11),
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        decoration: BoxDecoration(
-          color: enabled
-              ? AppColors.primary.withValues(alpha: 0.3)
-              : AppColors.surfaceRaised.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: enabled
-                ? AppColors.primary.withValues(alpha: 0.72)
-                : AppColors.textMuted.withValues(alpha: 0.24),
-            width: 0.8,
-          ),
-        ),
-        child: Text(
-          'MAX',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: enabled ? AppColors.text : AppColors.textMuted,
-            fontFamily: 'GyeonggiTitle',
-            fontSize: 7.5,
-            fontWeight: FontWeight.w800,
-            height: 1,
-          ),
-        ),
-      ),
-    ),
   );
 }
 
