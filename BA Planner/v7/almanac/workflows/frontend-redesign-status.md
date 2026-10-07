@@ -20,13 +20,16 @@ sources:
 
 ## 현재 상태
 
-**FE3-b 완료.** 결과(오케스트레이터 로그 2026-10-07 12:47·12:58·13:00, 아래 FE3-b commit record):
-- gate ① RED: golden 3건(students-grid, students-detail 차이, students-grid-name-off 새 장면)만 실패했다. 계획 golden 차이 0. 오케스트레이터 검토 승인 → `-UpdateGoldens` → gate `20261007_125410` GREEN(golden 18, 1장 새로).
-- 커밋 `809d903b`(FE3-b), 개편 문서 커밋 `6d24838b`.
-- 오케스트레이터 지적(12:47·12:58): 상태 배지 글자가 golden에서 흰 사각형(Ahem)으로 그려진다(FE1-g부터). 학생 7명이 한 줄이라 students-grid-name-off에서 행 피치 접힘이 보이지 않는다 → FE3-c에서 고친다.
+**FE3-c 완료.** 결과(오케스트레이터 로그 2026-10-07 13:38·13:49, 아래 FE3-c commit record):
+- gate ① RED: analyze info 1건(`student_page.dart` use_null_aware_elements, 오케스트레이터가 `?catalogById[id]`로 고침)과 golden 5장(학생 3장 + 배지 글자 때문에 계획 2장, status 예상과 일치). 나머지 13장 차이 0. 오케스트레이터 검토 승인 → `-UpdateGoldens` → gate `20261007_134501` GREEN(golden 18).
+- 커밋 `b7bbfcce`(FE3-c, 17파일).
+- 오케스트레이터 후속(13:49) → FE3-d에서 처리한다:
+  - S4 적용 필터 칩 모양을 시안(r5·padding 9·inset 테두리)에 맞추는 `BaChip` 변형.
+  - `+n` 칩을 누르면 필터 모달이 열린다.
+  - 결정: 계정(프로필) 전환 때 `RecentStudents`를 비운다.
 
-**진행 중: FE3-c S4 확장 + 학생 카드 후속(시각 변경), 시작 커밋 `6d24838bfe81d2d93e2256ef92bf03350dc513e8`. 코드 작성 완료·gate 미실행(사용자 ① 대기).**
-- 자세한 내용은 아래 "FE3-c" 절에 적는다.
+**진행 중: FE3-d(1) 필터 모달 부품, 시작 커밋 `8209e2601b9eeabab4ecf1019d20996fdb17ea34`. gate `20261007_150318` RED → 수정 완료(아래 "FE3-d1 gate RED 수정"), 사용자 ① 재실행 대기.**
+- FE3-d를 d1(부품·모델, 화면 변화 없음)과 d2(모달 화면 연결, 시각 변경)로 나눈다. 계획은 아래 "FE3-d 착수 기록"에 적는다.
 
 ### 커밋 기록
 
@@ -43,6 +46,7 @@ sources:
 | FE2-d | `1f65b64a` | 이미지·차트 원자 키트(`ItemIconTile`·`ItemTile`·`PortraitStrip`·`SkewBar`·`KpiTile`·차트 원자·빗금·`GameAssets`), `PlanInventoryCoverageBar`를 `SkewBar`로 흡수, 계획 위젯 asset 상수 → `GameAssets`(동작 보존), 갤러리 FE2-d 구역 | `20261007_111210` GREEN(295 + 218 + 프로세스 28 + golden 17) |
 | FE3-a | `620a98ee` | DE 학생 카드·그리드: 오른쪽 위 속성 글자 칩(축약 라벨, 80° 계단), 이름 카드 밖(미보유 흐림), 배지 왼쪽 80° 변 채워 쌓기, 행 피치 카드 + 이름 줄, 복합장갑 `typeComposite`, golden 3장 갱신(시각 변경) | ① RED(golden 3, 예상 일치) → `20261007_121200` GREEN(golden 17) |
 | FE3-b | `809d903b` | 인연 B 게이지(목표 빗금·점선·→N, 목표 = 활성 계획 문서의 마지막 단계 `bond_rank`, 조회 경계 한 곳), 학생 golden fixture 7명·students-detail 수정·새 장면 students-grid-name-off | ① RED(golden 3, 예상 일치) → `20261007_125410` GREEN(golden 18) |
+| FE3-c | `b7bbfcce` | S4 확장(결과 수 줄·적용 필터 칩 × / 모두 지우기 / 범위 조건 칩·`+n`·최근 본 학생 6명), 필터 상태를 페이지 `StudentFilterController`로 올림, 앱 셸 `RecentStudents`, 상태 배지 글꼴 Pretendard 명시, golden 학생 10명 두 줄, golden 5장 갱신(시각 변경) | ① RED(analyze info 1 오케스트레이터 수정, golden 5 예상 일치) → `20261007_134501` GREEN(golden 18) |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -1835,4 +1839,219 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice re
 ### FE3-c commit record (2026-10-07 13:49, written by fe_commit.ps1)
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_134501\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE3-d 착수 기록 (2026-10-07)
+
+- 범위(워크플로 FE3-d 행 그대로): 학생 탭·계획 1단계·통계가 함께 쓰는 필터 모달(상태 객체를 주입받는 구조, FD-104). 토글 칩·타입 칩, `RangeSliderRow`, `StarRangeBar`, 초안(draft) → 적용, 범위 모델 재구성(FD-053). Section 5와 범위 카드 2장 폐기(FD-052). 이번에는 학생 탭만 연결한다(계획 1단계는 FE4-b, 통계는 FE7-e).
+- 오케스트레이터 후속(13:49): `+n` 칩 → 모달, S4 칩·모달 머리 칩 모양 확인과 `BaChip` 변형, 계정 전환 때 `RecentStudents` 비우기.
+- 막힘: 대장 막힘 요약의 FE3-d 행(FD-074, FD-104)은 둘 다 확정(2026-10-06)이라 막지 않는다.
+- 쪼개기: 크기가 커서 둘로 나눈다. slice 키는 `fe3d1`·`fe3d2`, 사본은 `debug/frontend_fe3d1/pre/`·`debug/frontend_fe3d2/pre/`.
+
+| slice | 범위 | 화면 변화 |
+|---|---|---|
+| FE3-d1 부품·모델 | ① 성장 범위 모델: 행마다 최소~최대, 장비 티어·레벨은 3칸 중 가장 낮은 칸, 성급 9단계, 추가 능력치 합 0~75(FD-053·055), 강화·서브 최소 0 → "–"(FD-059), 행을 늘릴 수 있는 정의 목록(FD-063), 심상개화는 비활성 그룹(FD-054). ② 필터 선택 값 객체(속성·"보유 · 서버"·범위)와 토글 칩 개수(같은 그룹 조건 빼고 셈, FD-056), 적용 칩 목록. ③ 키트 `RangeSliderRow`·`StarRangeBar`(FD-012 색) + UI Kit 갤러리 W-Filter 둘째 줄. ④ `BaModal` 포커스 가두기·배경 접근성 차단·Esc 이중 처리 방지(FE2-c 남은 일). ⑤ `BaChip` 시안 S4 변형(r5·padding 9·inset 테두리) → S4 적용 필터 칩. ⑥ 계정 전환 때 `RecentStudents` 비우기 | 없음(golden 차이 0 예상. S4 칩은 golden 장면에서 "없음"이라 보이지 않는다) |
+| FE3-d2 모달 화면 | 공용 필터 모달(머리 바·속성 패널·성장 범위 패널, 상태 객체 주입), `StudentFilterController`를 적용 값 + 초안으로 바꿈, 학생 탭 연결(S1 필터 버튼 · `+n` → 모달, "필터 · n" 배지 FD-058, "보유 · 서버" = S4 토글 FD-057), 필터 프리셋 칩 숨김(FD-074 (b)), Section 5·범위 카드 2장 폐기(FD-052, B §2-4)와 그 테스트 교체, section-template-studio.md "학생 Section 5 필터" 절 대체(기존 미커밋 변경 있음 → 사본 규칙), golden 새 장면 `students-filter-open` | 있음(students-* 갱신 + 새 장면) |
+
+- 시작 커밋(FE3-d1): `8209e2601b9eeabab4ecf1019d20996fdb17ea34`.
+- 기기 쓰기: 매번 새 업로드 경로에서 쓰고, 쓴 뒤 다시 읽어 바이트로 대조한다.
+
+## FE3-d1 종료 기록 (2026-10-07, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없어 analyze·테스트·golden을 돌리지 못했다. 통과를 주장하지 않는다.
+- 쓴 API는 Flutter 3.44 소스와 대조했다(`FocusScopeNode.traversalEdgeBehavior`, `containsSemantics`, `Color.a`, `TextScaler.noScaling`, 키 이벤트 전달 순서).
+- 별도 검토 에이전트가 바뀐 파일을 사본과 대조해 정적으로 읽었다. analyze 지적·컴파일 오류는 없었고, 아래 셋을 고쳤다.
+  1. **`BlockSemantics`를 모달 오버레이에 두면 실행 중 오류가 날 수 있다.** OverlayPortal 내용의 의미 노드는 OverlayPortal 자리의 노드를 traversal parent로 가리킨다. 그런데 `BlockSemantics`가 그 자리를 포함한 앞 화면 전체를 지워, `SemanticsNode._addToUpdate`의 `traversalParent!`가 null이 된다(`semantics.dart` 4091행). → `BlockSemantics`를 쓰지 않고, 열려 있는 동안 `BaModal.child`를 `ExcludeSemantics`로 뺀다. traversal parent 노드는 그 바깥이라 남는다.
+  2. 핸들 키보드 테스트에서 ← 두 번 사이에 pump가 없어 한 번만 반영됐다 → pump를 넣었다.
+  3. 테두리 칩의 `Border.all`이 Container 안쪽 여백에 더해져 칩이 2px 넓어졌다 → 테두리를 `foregroundDecoration`으로 그려 자리를 차지하지 않게 했다(시안 `box-shadow: inset`과 같음).
+- 시안 값은 `W-Filter-Widgets.dc.html`·`Student-Filter.dc.html`·`W-Student-Search.dc.html`을 `dc_outline.py`와 해당 요소 원문 일부로 읽었다.
+
+### 바꾼 것
+
+- **새 파일 `frontend/lib/ui/models/student_filter_selection.dart`**: 필터 모달(d2)이 쓸 값과 규칙. 화면에는 아직 연결하지 않았다.
+  - `StudentGrowthRangeRow`·`StudentGrowthRangeGroup`·`studentGrowthRangeGroups`(FD-053, FD-063):
+    - 기본: 학생 레벨 1~90 · 성급 9단계 · 전용무기 레벨 0~60 · 인연 랭크 1~100
+    - 스킬: EX 1~5 · 기본 1~10 · 강화 0~10 · 서브 0~10
+    - 장비 · 능력치: 장비 티어 T0~T10 · 장비 레벨 0~70(둘 다 3칸 중 가장 낮은 칸) · 애장품 T0~T2 · 추가 능력치 HP·ATK·HEAL 합 0~75(FD-055 (a))
+    - 표시: 스킬 최대 `M`, 강화·서브 0 `–`(FD-059), 티어 `T`, 성급 `★n`/`무기★n`. 칩 문구는 `레벨 70~90`, `EX 3~5`(스킬 최대도 숫자, 시안 머리 칩).
+    - 육성도 행(FE7-d)은 "기본" 그룹 행 목록 앞에 더하면 된다.
+  - 성급 9단계 `studentStarStep`: 학생★ 5 미만이면 학생★, 5면 5 + 전용무기★.
+  - `StudentGrowthRanges`: 좁힌 행만 저장. 범위 밖은 자르고 순서는 바로잡고, 행 전체가 되면 조건에서 뺀다. `matches`는 좁힌 행을 모두 만족해야 참이다. 장비 상한 판정이 현행(칸별)과 달라진다(최저 칸 기준).
+  - 심상개화(FD-054): `studentPotentialFilterChoices`(상관없음/개방/미개방)와 "v7 “준비 중” 자리" 문구만 둔다. 범위 행·조건이 아니다.
+  - `StudentFilterGroup`·`studentCatalogFilterGroups`: 속성 그룹을 주입하는 구조(FD-104, 계획 그룹은 FE4-b에서 더한다). 칩 순서는 시안 순서이고, 목록에 없는 값은 뒤에 이름순으로 붙는다. catalog에 있는 값만 칩이 된다(화학은 있으면 보인다, FD-059). 학교의 협업 학생(Sakugawa·Tokiwadai)은 기존처럼 뺀다. 초기 성급 칩 이름은 시안대로 `★n`(`studentFilterChipLabel`).
+  - `StudentFilterCandidate`: 학생 + 보유 + 현재 성장 값(`planElementCurrentTargets`, 미보유는 초기 값).
+  - `StudentFilterSelection`(불변 값):
+    - 속성(같은 그룹 = 또는, 그룹끼리 = 그리고), 보유·미보유(또는) + 일본 서버 전용 제외, 성장 범위.
+    - S4 토글 대응(FD-057): `hidesUnowned` = 보유만 고른 상태, `withHideUnowned`, `hidesJpOnly`/`withHideJpOnly`.
+    - `chipCount`(FD-056 (a)): 같은 그룹 조건은 빼고 다른 그룹 조건(보유 · 서버, 성장 범위 포함)만 반영해 그 값의 학생 수를 센다. "보유 · 서버" 줄은 한 그룹으로 본다.
+    - `countMatching`(머리 "38 / 170명" 미리보기), `chips`(속성 → 보유 · 서버 → 성장 범위), `without`(칩 ×), `clearedKeepingOwnership`, `clearedRanges`(범위 모두 풀기), `activeCount`("필터 · n").
+- **새 파일 `frontend/lib/ui/kit/range_controls.dart`**(W-Filter-Widgets 둘째 줄):
+  - `RangeSliderRow`: h44 r6, 좁힌 행 핑크 .1 + 안쪽 1.5px, 이름 칸·값 칸 118, 트랙 6px r3 사선 + 25·50·75% 눈금, 채움 핑크 / #5d7288, 핸들 12×16 사선 + 바깥 2px #0d151f 링. `framed: false`로 사선 행(`.srow`) 안에 내용만 놓는다(d2 모달, 행 h48).
+  - `StarRangeBar`: 9칸 사이 4, h14 r3 사선. 고른 구간 학생★ `starFilter` #e8c15a · 무기★ #71c7f4(FD-012), 좁혔으면 바깥 1.5px 핑크 링, 나머지 white@.06.
+  - 조작(시안에 설명이 없어 정함): 슬라이더는 끌면 가까운 핸들이 따라오고, 누르면 가까운 핸들이 그 자리로 간다. 핸들마다 키보드 포커스와 ←/→(1씩)가 있고, 접근성은 slider(이름 "학생 레벨 최소/최대"). 성급은 칸을 누르면 가까운 끝이 오고, 끌면 누른 칸부터 지금 칸까지다. 키보드는 ←/→가 최대, Shift + ←/→가 최소다.
+- **`frontend/lib/ui/kit/gallery/ui_kit_controls_section.dart`**: W-Filter 둘째 줄 범위 슬라이더(학생 레벨 70~90 · EX 1~M · 장비 티어 T0~T10)·성급 범위(★3~무기★1 · ★1~무기★4) 타일을 시안 위치(x 0 / 960.4, 980.5×250)에 더했다. 기존 3줄 배치는 그대로다.
+- **`frontend/lib/ui/kit/ba_modal.dart`**(FE2-c 남은 일):
+  - 포커스 가두기: 패널 FocusScope `TraversalEdgeBehavior.closedLoop`를 명시했다(기본값과 같음). Tab·Shift+Tab이 패널 안에서만 돈다.
+  - 배경 접근성 차단: 열려 있는 동안 `BaModal.child`의 의미 구조를 뺀다. 화면 전체를 가리려면 BaModal이 화면 내용을 감싸게 둔다(d2 학생 탭은 화면을 child로 둔다). 스크림은 의미 구조가 없다.
+  - Esc 이중 처리 방지: Esc 닫기는 그대로 `KitOverlayEscape`(가장 나중에 연 것 하나)다. 같은 Esc가 포커스 트리로도 가므로 모달 안 `Shortcuts`가 소비해, 모달을 연 라우트(다이얼로그 등)의 Esc 단축키가 함께 돌지 않는다. 모달 안에서 연 모달·팝오버는 Esc 한 번에 위의 것만 닫힌다.
+- **`frontend/lib/ui/kit/ba_chip.dart`**: `BaChipShape.outlined`(r5 · 좌우 9 · 간격 5 · 안쪽 1px tone 기본색 @.6 · × @.8)와 폭 계산 `BaChip.widthFor`. 기본 모양(`standard`)은 값이 같다.
+- **`frontend/lib/ui/widgets/student_section_layout.dart`**: S4 적용 필터 칩과 `+n`을 테두리 변형으로 그리고, 한 줄 칩 수 계산을 `BaChip.widthFor`로 바꿨다. 모달 머리 칩은 시안 `.chip.pk`라 기본 모양 그대로 쓴다(d2).
+- **`frontend/lib/ui/app_shell.dart`**(최소 diff 2줄): 계정(프로필) 전환 때 `RecentStudents.clear()`(오케스트레이터 13:49 결정).
+
+### 테스트
+
+- 새 파일 5개, 36건:
+  - `frontend/test/student_filter_selection_test.dart`(15): 행 순서·범위·표시(M, –, T, ★/무기★, 칩 문구), 성급 9단계, 3칸 중 가장 낮은 칸·합 0~75, 좁힌 범위(자르기·순서·전체면 해제·비교), 또는/그리고, 칩 개수(FD-056: 같은 그룹 무시·범위 반영·보유 · 서버), S4 토글 대응(FD-057), 적용 칩 목록·×·지우기, 칩 순서·화학 노출·협업 학교 제외, 심상개화 비활성, 현재 값 → 성장 값(미보유 초기 값).
+  - `frontend/test/kit/range_controls_test.dart`(11): 행 모양(h44·118·좁힘 분홍·기본 강조 없음), 핸들 위치(70 → 77.5%, closeTo), 끌기·누르기(가까운 핸들, 최소 ≤ 최대), 키보드 ←/→·접근성 slider, 비활성, 성급 9칸 색·간격·링, 누르기·끌기·키보드(Shift).
+  - `frontend/test/kit/ba_modal_a11y_test.dart`(4): Tab·Shift+Tab 가두기, 열려 있는 동안 배경 의미 구조 없음 → 닫으면 돌아옴, Esc 한 번에 모달만(바깥 Esc 단축키 0회, 닫힌 뒤에는 바깥으로), 모달 안 모달은 위의 것만.
+  - `frontend/test/student_filter_followups_test.dart`(4): 테두리 칩 값·폭 계산 = 그린 폭, 기본 칩 불변, S4 적용 칩·`+n`이 테두리 변형, 계정 전환 때 최근 본 학생 비움(앱 전체, `SettingsPage.onProfileChanged`).
+  - `frontend/test/kit/ui_kit_gallery_range_test.dart`(2): 갤러리 두 타일 크기·위치(closeTo), 견본 값, 견본 슬라이더 누르기.
+- 고친 기존 테스트 0건, 지운 테스트 0건. 모달·OverlayPortal 테스트는 pumpAndSettle 대신 필요한 만큼 pump한다.
+- 예상 건수: FE3-c 일반 테스트 수 + 36(FE3-c status 예상 582 기준이면 618), golden 18.
+
+### 처리한 FD
+
+- **FD-053**(확정): 범위 모델을 시안 의미로 재구성했다(모델·테스트). 화면 연결과 "닫아도 유지"(초안 → 적용)는 d2다.
+- **FD-054**(확정): 심상개화는 비활성 자리 값만 두고 조건에 넣지 않는다.
+- **FD-055 (a)**(워커 재량): 추가 능력치 = 합, 범위 0~75.
+- **FD-056 (a)**(워커 재량): 칩 개수는 같은 그룹 조건을 빼고 다른 그룹 조건만 반영한다.
+- **FD-057**(워커 재량): 선택 값에 S4 토글 대응을 두었다(연결은 d2).
+- **FD-059**(워커 재량): 강화·서브 최소 0 → "–", 화학은 catalog에 있으면 칩이 된다.
+- **FD-063**(워커 재량): 성장 범위 행을 그룹 목록으로 둬 늘릴 수 있다. 행 자체는 FE7-d.
+- **FD-012**(워커 재량): 성급 범위 학생★ = `starFilter` #e8c15a.
+- d2로 넘김: FD-052(Section 5·범위 카드 폐기), FD-058("필터 · n" 배지), FD-074 (b)(필터 프리셋 칩 숨김), FD-104(상태 객체 주입, 학생 탭 연결).
+
+### golden 갱신 사유(장면별 예상)
+
+- 바뀔 장면: 없음.
+- 새 장면: 없음(`students-filter-open`은 d2).
+- 차이가 없어야 할 장면(18): `title`, `account-manager`, `account-editor`, `account-picker`, `home`, `students-grid`, `students-detail`, `students-grid-name-off`, `plan-bottleneck`, `plan-by-phase`, `plan-overall`, `plan-phase-editor`, `plan-student-selector`, `plan-element-builder`, `plan-preset-manager`, `plan-scenario-list`, `plan-scenario-compare`, `scan-student-review`.
+  - S4 적용 필터 칩은 golden 장면에서 "없음"이라 칩 모양 변경이 보이지 않는다.
+  - 모달·범위 컨트롤은 golden 장면에 없다(UI Kit 갤러리는 golden 장면이 아니다).
+  - 계정 전환은 golden 장면에서 일어나지 않는다.
+
+### 검수표 (mock 모드, 2560×1440 모니터 최대화 = 2560×1392)
+
+**W-Filter-Widgets 대조(개발 패널 → UI Kit 갤러리, FE2-b 구역 셋째 줄 아래 새 줄)**
+
+| 대조 포인트 | 확인 |
+|---|---|
+| 범위 슬라이더 타일 | 980.5×250, 타일 제목 "범위 슬라이더", 아래 설명 "핸들 두 개 = 최소·최대. …" |
+| 좁힌 행(학생 레벨 70~90) | 행 전체 연핑크 바탕 + 핑크 테두리, 이름 핑크, 트랙 오른쪽 22.5% 핑크 채움, 핸들 둘 연핑크(검은 링), 값 "70 ~ 90" 흰색 |
+| 기본 행(EX 1~M, 장비 티어 T0~T10) | 바탕 거의 투명, 채움 회청(#5d7288) 전체, 핸들 회색, 값 회색. 장비 티어 아래 "3칸 중 가장 낮은 칸" |
+| 눈금 | 트랙 25·50·75% 자리에 세로 짧은 선 |
+| 조작 | 핸들을 끌면 값이 바뀌고, 기본값을 벗어나면 행이 핑크가 된다. 전체로 되돌리면 강조가 사라진다. Tab으로 핸들에 가서 ←/→ |
+| 성급 범위 타일 | 위 행 ★3~무기★1: 3~5칸 노랑 + 6칸 파랑이 핑크 링, 나머지 어둡다. 아래 행 ★1~무기★4: 9칸 모두 색(노랑 5 + 파랑 4), 링 없음 |
+| 성급 조작 | 칸을 누르면 가까운 끝이 그 칸으로, 끌면 끈 구간이 범위 |
+
+**모달(UI Kit 갤러리 FE2-c 구역 모달 타일)**: 필터 스크림으로 열고 Tab을 여러 번 눌러도 포커스가 패널 밖(갤러리 버튼)으로 나가지 않는다. Esc 한 번에 닫히고 포커스가 연 버튼으로 돌아온다.
+
+**Student S4(학생 탭)**: Section 5에서 학교 등을 고르면 S4 적용 필터 칩이 r5 모서리 + 연핑크 얇은 테두리로 보인다(이전 r7, 테두리 없음). 많이 고르면 끝의 회색 `+n`도 같은 모양이다.
+
+**계정 전환**: 학생 몇 명을 눌러 최근 본 학생을 채운 뒤 설정에서 다른 계정으로 전환하면, 학생 탭의 최근 본 학생이 새 계정의 기본 선택 학생 한 명부터 다시 시작한다.
+
+### 알려진 시안 차이
+
+1. **슬라이더·성급 조작 규칙**: 시안에 동작 설명이 없어 정했다(가까운 핸들/끝, 끌기 구간, 키보드). 핸들·성급 막대의 키보드 포커스 표시는 파랑 링이다(키트 공통, 시안 근거 없음).
+2. **값 글자 행간**: 시안 `line-height:1`이지만 앱은 한글 규칙(행간 최소 1.2, theme.dart)을 따른다. 세로 위치는 행 가운데라 차이가 작다.
+3. **테두리 칩 ×**: 시안 S4는 글자 "×"(불투명도 .8)이고 앱은 키트 × 그림(11px, @.8)이다.
+4. **S4 `+n` 칩**: 시안 S4에는 `+n`이 없다. FE3-c의 회색 `+n`을 같은 테두리 모양으로 맞췄다.
+5. **모달 배경 접근성**: `BaModal`이 감싼 영역만 의미 구조에서 뺀다. 앱 머리(탭 줄)처럼 감싸지 않은 곳은 남는다. 화면 전체를 막는 `BlockSemantics`는 OverlayPortal과 함께 쓰면 오류 위험이 있어 쓰지 않았다(위 검토 1).
+
+### 미검증 항목
+
+1. analyze, 전체 테스트(기존 + 새 36), golden 18장(차이 0 예상). 사용자 PC gate가 필요하다.
+2. 실행해 봐야 아는 것:
+   - 모달 안 `Shortcuts`가 Esc를 소비하는 순서(`HardwareKeyboard` 처리기 → 포커스 트리).
+   - `ExcludeSemantics`로 뺀 배경이 `find.bySemanticsLabel`에서 사라지는지.
+   - 슬라이더 끌기 시작점(드래그 slop 뒤 위치)과 가까운 핸들 판정.
+   - 앱 전체 테스트(계정 전환)의 pumpAndSettle.
+   - 실패하면 테스트 기대값부터 확인한다.
+3. 실제 글꼴에서 슬라이더 값·이름 칸이 118px 안에 들어가는지는 갤러리 검수로 본다.
+
+### 발견 사항
+
+1. **"필터 · n" 수와 머리 칩**: 시안 Student-Filter는 "필터 · 5"이고 머리 칩도 5개(게헨나·딜러·폭발·레벨 70~90·EX 3~5)다. 그런데 패널에서는 성급 행도 좁혀져 있고(`srow sel`) "일본 서버 전용 제외"도 켜져 있다. d2에서는 걸린 조건을 모두 칩과 개수에 넣는다(`activeCount` = 칩 수). 시안과 숫자가 다를 수 있다.
+2. **칩 옆 학생 수 표시 범위**: 시안은 학교 줄에만 개수를 쓴다(다른 줄은 숫자 없음). 모델은 모든 칩의 개수를 셀 수 있다. d2에서는 시안대로 학교 줄에만 보인다.
+3. **"보유 · 서버"와 S4 토글**: 팝업에서 "미보유"만 고르면 S4 "미보유 학생 숨김"은 꺼진 상태로 보인다(숨김이 아니라 미보유만 보기). S4 토글을 켜면 "보유"만 고른 상태가 된다.
+4. **OverlayPortal + `BlockSemantics`**: 위 검토 1. 앱 전체 배경 차단이 필요하면 모달을 화면 셸 쪽에 두거나 라우트 기반으로 바꾸는 결정이 필요하다.
+
+### 사용자 실행 순서
+
+① 비교 gate 하나만 실행한다. golden은 18장 모두 차이 0이고 GREEN이 예상이다. 결과(`debug\frontend_gate\<실행 시각>\summary.txt`, 실패가 있으면 `frontend\test\goldens\failures\`)를 오케스트레이터에게 보내고 멈춘다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+② 오케스트레이터 승인 뒤: 이 slice는 golden 갱신이 없을 것으로 본다. ①이 GREEN이면 건너뛴다. golden 차이가 나서 오케스트레이터가 갱신을 승인한 경우에만 실행한다(GREEN 확인). 오케스트레이터가 바뀐 기준 PNG를 검토한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+③ 승인 뒤: 커밋한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3d1 -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3d1
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesign-docs
+```
+
+`debug/frontend_fe3d1/commit.json`의 `whole`에 `frontend/test/goldens/baseline`을 넣었다(바뀐 PNG가 없으면 올라가는 것이 없다). 사본은 `debug/frontend_fe3d1/pre/` 5개다: `app_shell.dart`, `ba_chip.dart`, `ba_modal.dart`, `ui_kit_controls_section.dart`, `student_section_layout.dart`.
+
+### 다음 행동
+
+1. 사용자: ①을 실행하고 결과를 오케스트레이터에게 넘긴다.
+2. 오케스트레이터: 검토 → (②) → ③ → 다음 slice FE3-d2(모달 화면 연결, Section 5·범위 카드 폐기, golden `students-filter-open`).
+
+### FE3-d1 gate RED 수정 (2026-10-07, 오케스트레이터 15:09 진단)
+
+gate `20261007_150318` RED: analyze info 2, flutter-test-1 22건 실패. flutter-test-2·프로세스·golden 18(차이 0)·almanac·diff-check는 PASS였다. 이번에도 이 환경에서 Flutter를 돌리지 못했다. 고친 뒤 별도 검토 에이전트가 정적으로 다시 읽었고, 지적은 서식뿐이었다. 통과를 주장하지 않는다.
+
+1. **의미 구조 assertion(128회, 갤러리 16건 + range_controls 성급 4건)**
+   - 원인: `StarRangeCells`의 막대 의미 노드 하나가 increase/decrease 동작을 걸면서 increasedValue/decreasedValue를 주지 않았다("A SemanticsNode with action increase needs … both value and increasedValue or neither"). 슬라이더 핸들은 짝을 맞춰 줬다(그 테스트는 통과했다). 갤러리는 성급 막대를 그려 함께 무너졌다.
+   - 수정: 성급 막대를 끝마다 slider 노드 두 개(`성급 최소`·`성급 최대`, 끝 칸 위)로 나눴다. 막대 노드는 이름·값만 가진다("성급 범위", "학생 2성 ~ 전용무기 2성"). 동작을 걸 때는 value·increasedValue·decreasedValue를 항상 함께 주고, 끝값이라 못 움직이면 그 동작과 짝 값을 함께 뺀다(슬라이더 핸들도 같은 규칙으로 정리).
+   - 값 문구는 읽는 말이다. 슬라이더는 "학생 레벨 최소 70", 성급은 "성급 최소 학생 3성"·"성급 최대 전용무기 1성"이다. 새 `semanticValue` 인자(기본 = 표시 문구), `starRangeStepSpoken`, 모델 `StudentGrowthRangeRow.formatSpokenValue`(티어 "7티어", 스킬 0 "미개방")를 더했다.
+2. **모달 배경 의미 구조(ba_modal_a11y_test:130)**
+   - 원인(테스트 쪽으로 판단): `find.bySemanticsLabel`은 위젯의 `debugSemantics` 캐시를 본다. `ExcludeSemantics`로 빠진 하위 렌더 객체는 의미 갱신에서 방문되지 않아 마지막 노드가 캐시에 남는다. 실패 로그도 "배경 버튼" 렌더 객체 하나를 찾았을 뿐이고, 의미 트리에 그 노드가 붙어 있다는 증거는 아니다.
+   - 방식: 두 방식 중 `ExcludeSemantics`를 유지한다. `BlockSemantics`는 OverlayPortal 안에 두면 OverlayPortal 자리(traversal parent)의 노드까지 지워 오류 위험이 있다(첫 검토). 이 구조에서는 BaModal이 감싼 child를 열려 있는 동안 빼는 쪽이 동작한다. traversal parent `Semantics`는 그 바깥에 있다.
+   - 수정: 테스트를 의미 트리 직접 조회(`find.semantics.byLabel`)로 바꿨다. 열기 전 "배경 버튼" 1개 → 열린 동안 "배경 버튼"·"열기" 0개, 패널 "가" 1개 → 닫으면 다시 1개.
+   - 이번에도 실패하면 `ExcludeSemantics`가 이 구조에서 안 먹는다는 뜻이다. 그때는 모달을 화면 셸 쪽 OverlayEntry로 옮기는 결정이 필요하다.
+3. **RangeSliderRow 위치 3px(range_controls_test:113, 기대 488.3 / 실제 485.3)** — **구현이 틀렸다.**
+   - 시안 확인(dc_outline + 해당 요소 원문): W-Filter-Widgets 행은 `height:44px; padding:0 14px; border-radius:6px; box-shadow:inset 0 0 0 1.5px #f2b3ef`이다. 이름·값 칸은 각각 118px이다. Student-Filter `.srow`도 안쪽 18.5 + 118 + 트랙 + 118이다. inset 그림자는 자리를 차지하지 않으므로 트랙 폭 = 행 − 28 − 236이고, 테스트 기대값이 맞다.
+   - 원인: 좁힌 행의 테두리를 `BoxDecoration.border`로 줘서 Container가 테두리 두께(1.5 × 2 = 3)를 안쪽 여백에 더했다. 좁힌 행만 트랙이 3px 줄고 기본 행과 어긋났다.
+   - 수정: 테두리를 `foregroundDecoration`으로 위에 그린다(테스트에 `decoration.border == null`, 앞 장식 1.5px 확인 추가).
+4. **analyze deprecated 2건**: `containsSemantics` → `isSemantics`(range_controls_test). 344행 "No Semantics data found"는 1번 assertion 때문이었다. 1번을 고친 뒤 막대·끝 노드를 각각 확인하게 다시 썼다.
+5. **"Looking up a deactivated widget's ancestor is unsafe"**(갤러리 탭 중 `_HighlightModeManager` → `FocusableActionDetector`가 MediaQuery 조회)
+   - 원인: 1번 assertion으로 프레임이 깨진 사이 비활성 상태로 남은 detector가 강조 모드 알림을 받은 것으로 본다.
+   - 수정: 핸들·성급 막대에서 `FocusableActionDetector`를 없앴다. `Focus`(onFocusChange·onKeyEvent) + `MouseRegion`(커서) + 강조 모드 리스너 mixin으로 포커스 표시를 직접 계산한다. 리스너는 initState에서 달고 dispose에서 뗀다. 콜백은 MediaQuery를 찾지 않고 `mounted`를 확인한다. build 중 key가 바뀌는 자리도 없다(핸들 key는 고정 `range-handle-low/high`, 성급 끝은 `star-range-low/high`).
+
+**바뀐 파일(이번 수정)**
+- `frontend/lib/ui/kit/range_controls.dart`
+- `frontend/lib/ui/kit/gallery/ui_kit_controls_section.dart`(견본 `semanticValue`)
+- `frontend/lib/ui/models/student_filter_selection.dart`(`formatSpokenValue`)
+- `frontend/test/kit/range_controls_test.dart`(12건, 끝값 테스트 1건 추가)
+- `frontend/test/kit/ba_modal_a11y_test.dart`
+- `debug/frontend_fe3d1/commit.json`(목록은 같고 메시지만 갱신). `ba_modal.dart`는 이번에 바꾸지 않았다.
+
+**예상**: 새 테스트 37건(15 + 12 + 4 + 4 + 2), golden 18장 차이 0.
+
+**사용자 실행 순서(수정 뒤)**: d1은 화면 변화가 없다. ① GREEN이면 바로 ②~④를 실행한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3d1 -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3d1
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesign-docs
+```
+
+### FE3-d1 commit record (2026-10-07 15:51, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_154648\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

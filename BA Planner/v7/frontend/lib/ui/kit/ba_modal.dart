@@ -9,9 +9,18 @@
 // [BaModalPanel.sheet] #0f1822 r14, 안쪽 24 28, 링 + 0 24px 60px rgba(0,0,0,.7)(엑셀).
 // 필터·홈 스캔·계정 추가의 사선 패널은 각 slice가 [BaModal.builder]에서 직접 그린다(FD-019 예외: 모달은 떠 있다).
 // 닫기: Esc · 스크림 누르기([BaModal.barrierDismissible]). 열면 포커스를 패널로 옮기고, 닫으면 연 자리로 돌려준다.
+// 열려 있는 동안(FE3-d1, FE2-c 남은 일):
+// - 포커스 가두기: Tab·Shift+Tab이 패널 안에서만 돈다(패널 FocusScope `closedLoop`).
+// - 배경 접근성 차단: 열려 있는 동안 [BaModal.child]의 의미 구조를 읽지 않는다. 화면 전체를 가리려면 BaModal이
+//   화면 내용을 감싸게 둔다(child = 화면, 여는 버튼은 그 안 어디든). 스크림은 의미 구조가 없다.
+//   [BlockSemantics]는 쓰지 않는다: OverlayPortal 내용이 자기 부모(OverlayPortal 자리)의 의미 노드까지 지워
+//   traversal parent를 잃는다.
+// - Esc 이중 처리 방지: Esc는 [KitOverlayEscape]가 가장 나중에 연 것 하나만 닫는다. 같은 키가 포커스 트리로도
+//   전달되므로 모달 안에서 Esc를 소비해, 모달을 연 라우트(다이얼로그 등)의 닫기 단축키가 함께 돌지 않게 한다.
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/theme.dart';
 import 'kit_overlay.dart';
@@ -52,7 +61,8 @@ class BaModalController extends ChangeNotifier {
   }
 }
 
-/// 스크림 + 패널 모달. [child]는 모달을 여는 자리(보통 버튼)이며 모달이 닫혀도 그대로 그린다.
+/// 스크림 + 패널 모달. [child]는 모달 뒤의 자리(여는 버튼, 또는 화면 내용 전체)이며 모달이 닫혀도 그대로 그린다.
+/// 열려 있는 동안 [child]는 접근성 트리에서 빠진다.
 ///
 /// 패널은 [builder]가 그린다. 보통 [BaModalPanel]을 돌려준다. 오버레이(화면) 안에서 [alignment]로 놓는다.
 class BaModal extends StatefulWidget {
@@ -88,7 +98,10 @@ class BaModal extends StatefulWidget {
 
 class _BaModalState extends State<BaModal> {
   final _portal = OverlayPortalController(debugLabel: 'BaModal');
-  final _scope = FocusScopeNode(debugLabel: 'BaModal panel');
+  final _scope = FocusScopeNode(
+    debugLabel: 'BaModal panel',
+    traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
+  );
   FocusNode? _returnFocus;
 
   @override
@@ -124,7 +137,11 @@ class _BaModalState extends State<BaModal> {
       _show();
     } else if (!widget.controller.isOpen && _portal.isShowing) {
       _hide();
+    } else {
+      return;
     }
+    // 뒤 자리의 의미 구조 차단을 바꾼다.
+    if (mounted) setState(() {});
   }
 
   void _show() {
@@ -159,34 +176,64 @@ class _BaModalState extends State<BaModal> {
         child: barrier,
       );
     }
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.barrierDismissible ? widget.controller.close : null,
-          child: barrier,
-        ),
-        Align(
-          alignment: widget.alignment,
-          child: Semantics(
-            scopesRoute: true,
-            namesRoute: true,
-            explicitChildNodes: true,
-            label: widget.label,
-            child: FocusScope(node: _scope, child: widget.builder(context)),
+    return Shortcuts(
+      shortcuts: const {
+        SingleActivator(LogicalKeyboardKey.escape): _BaModalEscapeIntent(),
+      },
+      child: Actions(
+        actions: {
+          _BaModalEscapeIntent: CallbackAction<_BaModalEscapeIntent>(
+            // 닫기는 [KitOverlayEscape]가 이미 했다(또는 위의 팝오버를 닫았다). 여기서는 소비만 한다.
+            onInvoke: (_) => null,
           ),
+        },
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ExcludeSemantics(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: widget.barrierDismissible
+                    ? widget.controller.close
+                    : null,
+                child: barrier,
+              ),
+            ),
+            Align(
+              alignment: widget.alignment,
+              child: Semantics(
+                scopesRoute: true,
+                namesRoute: true,
+                explicitChildNodes: true,
+                label: widget.label,
+                child: FocusScope(
+                  node: _scope,
+                  child: widget.builder(context),
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
   @override
-  Widget build(BuildContext context) => OverlayPortal(
-    controller: _portal,
-    overlayChildBuilder: _buildOverlay,
-    child: widget.child,
-  );
+  Widget build(BuildContext context) {
+    final child = widget.child;
+    return OverlayPortal(
+      controller: _portal,
+      overlayChildBuilder: _buildOverlay,
+      child: child == null
+          ? null
+          : ExcludeSemantics(excluding: _portal.isShowing, child: child),
+    );
+  }
+}
+
+/// 모달 안 Esc(포커스 트리 쪽). [BaModal]이 소비한다.
+class _BaModalEscapeIntent extends Intent {
+  const _BaModalEscapeIntent();
 }
 
 /// 모달 패널 상자.

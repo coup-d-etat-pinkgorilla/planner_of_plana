@@ -241,6 +241,8 @@ class _AppShellState extends State<AppShell>
   }
 
   void _profileChanged() {
+    // 최근 본 학생은 그 계정의 보유·육성 맥락이라 계정을 바꾸면 비운다(오케스트레이터 2026-10-07 13:49).
+    _recentStudents.clear();
     setState(() {
       _profileGeneration += 1;
       _homeReloadToken += 1;

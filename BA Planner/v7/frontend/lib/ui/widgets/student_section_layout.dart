@@ -1830,25 +1830,18 @@ int studentVisibleChipCount({
   return chipWidths.length;
 }
 
-/// [label] 제거형 [BaChip]의 폭(가로 여백 10 + 글자 + 6 + × 11 + 10).
+/// [label] 제거형 [BaChip]의 폭(테두리 변형: 가로 여백 9 + 글자 + 5 + × 11 + 9).
 double studentRemovableChipWidth(String label, TextScaler scaler) =>
-    _chipTextWidth(label, scaler) + 10 + 6 + 11 + 10;
+    BaChip.widthFor(
+      label,
+      textScaler: scaler,
+      removable: true,
+      shape: BaChipShape.outlined,
+    );
 
 /// "+n"처럼 × 없는 [BaChip]의 폭.
 double studentPlainChipWidth(String label, TextScaler scaler) =>
-    _chipTextWidth(label, scaler) + 10 + 10;
-
-double _chipTextWidth(String label, TextScaler scaler) {
-  final painter = TextPainter(
-    text: TextSpan(text: label, style: baChipTextStyle),
-    maxLines: 1,
-    textDirection: TextDirection.ltr,
-    textScaler: scaler,
-  )..layout();
-  final width = painter.width;
-  painter.dispose();
-  return width.ceilToDouble() + 1;
-}
+    BaChip.widthFor(label, textScaler: scaler, shape: BaChipShape.outlined);
 
 /// 적용 필터 줄: "적용 필터" · 칩(×) 한 줄 + "+n" · "모두 지우기"(FD-060).
 class StudentAppliedFilterRow extends StatelessWidget {
@@ -1908,6 +1901,7 @@ class StudentAppliedFilterRow extends StatelessWidget {
                               ),
                               label: filters[index].label,
                               tone: studentAppliedFilterTone,
+                              shape: BaChipShape.outlined,
                               onRemove: () => onRemove(filters[index]),
                             ),
                           ],
@@ -1919,6 +1913,7 @@ class StudentAppliedFilterRow extends StatelessWidget {
                               ),
                               label: '+$hidden',
                               tone: AppTones.gray,
+                              shape: BaChipShape.outlined,
                             ),
                           ],
                         ],

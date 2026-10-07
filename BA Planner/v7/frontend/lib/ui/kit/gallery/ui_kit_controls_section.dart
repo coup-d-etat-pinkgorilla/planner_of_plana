@@ -5,6 +5,7 @@
 // - 2줄: W-Filter-Widgets 첫 줄. 토글 칩 · 타입 칩 · 적용 중 필터(250 높이).
 // - 3줄: W-Filter 둘째 줄 자리. 범위 슬라이더·성급 범위는 FE3-d 범위라 그 자리에 레일 버튼과
 //   스위치·스테퍼를 두고, 필터 버튼은 시안 위치에 둔다(330 높이).
+// - 3½줄(FE3-d1): W-Filter 둘째 줄의 범위 슬라이더·성급 범위(250 높이, 시안 x − 40).
 // - 4줄: 상태 견본(기본 · hover · 선택 · 비활성). 시안 CSS에 규칙이 없는 칸은 "—"다.
 import 'package:flutter/material.dart';
 
@@ -13,6 +14,7 @@ import '../../geometry/diagonal_geometry.dart';
 import '../ba_chip.dart';
 import '../buttons.dart';
 import '../diagonal_row.dart';
+import '../range_controls.dart';
 import '../skew_controls.dart';
 import '../stepper.dart';
 import '../titles.dart';
@@ -71,6 +73,11 @@ class UiKitControlsSection extends StatelessWidget {
           (965.8, _SwitchStepperTile()),
           (1831.6, _FilterButtonTile()),
         ],
+      ),
+      SizedBox(height: 24),
+      _TileRow(
+        height: 250,
+        tiles: [(0.0, _RangeSliderTile()), (960.4, _StarRangeTile())],
       ),
       SizedBox(height: 24),
       _StateSamplesTile(),
@@ -789,6 +796,129 @@ class _SwitchStepperDemoState extends State<_SwitchStepperDemo> {
             onChanged: (value) => setState(() => _builderLevel = value),
           ),
         ],
+      ),
+    ],
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 3½줄: W-Filter 둘째 줄 범위 슬라이더 · 성급 범위 (FE3-d1)
+
+class _RangeSliderTile extends StatelessWidget {
+  const _RangeSliderTile();
+
+  @override
+  Widget build(BuildContext context) => const _KitTile(
+    tileKey: 'range-slider',
+    title: '범위 슬라이더',
+    caption: '핸들 두 개 = 최소·최대. 기본값(전체)이 아니면 줄 전체를 분홍으로 강조.',
+    width: 980.5,
+    height: 250,
+    child: _RangeSliderDemo(),
+  );
+}
+
+class _RangeSliderDemo extends StatefulWidget {
+  const _RangeSliderDemo();
+
+  @override
+  State<_RangeSliderDemo> createState() => _RangeSliderDemoState();
+}
+
+class _RangeSliderDemoState extends State<_RangeSliderDemo> {
+  var _level = (70, 90);
+  var _ex = (1, 5);
+  var _tier = (0, 10);
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      RangeSliderRow(
+        key: const ValueKey('kit-gallery-range-level'),
+        label: '학생 레벨',
+        min: 1,
+        max: 90,
+        low: _level.$1,
+        high: _level.$2,
+        onChanged: (low, high) => setState(() => _level = (low, high)),
+      ),
+      const SizedBox(height: 10),
+      RangeSliderRow(
+        key: const ValueKey('kit-gallery-range-ex'),
+        label: 'EX',
+        min: 1,
+        max: 5,
+        low: _ex.$1,
+        high: _ex.$2,
+        formatValue: (value) => value >= 5 ? 'M' : '$value',
+        semanticValue: (value) => '$value',
+        onChanged: (low, high) => setState(() => _ex = (low, high)),
+      ),
+      const SizedBox(height: 10),
+      RangeSliderRow(
+        key: const ValueKey('kit-gallery-range-tier'),
+        label: '장비 티어',
+        caption: '3칸 중 가장 낮은 칸',
+        min: 0,
+        max: 10,
+        low: _tier.$1,
+        high: _tier.$2,
+        formatValue: (value) => 'T$value',
+        semanticValue: (value) => '$value티어',
+        onChanged: (low, high) => setState(() => _tier = (low, high)),
+      ),
+    ],
+  );
+}
+
+class _StarRangeTile extends StatelessWidget {
+  const _StarRangeTile();
+
+  @override
+  Widget build(BuildContext context) => const _KitTile(
+    tileKey: 'star-range',
+    title: '성급 범위',
+    caption: '성급 + 전용무기 성급을 v7 9칸 막대 하나로.',
+    width: 980.5,
+    height: 250,
+    child: _StarRangeDemo(),
+  );
+}
+
+class _StarRangeDemo extends StatefulWidget {
+  const _StarRangeDemo();
+
+  @override
+  State<_StarRangeDemo> createState() => _StarRangeDemoState();
+}
+
+class _StarRangeDemoState extends State<_StarRangeDemo> {
+  var _narrowed = (3, 6);
+  var _full = (1, starRangeStepCount);
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      StarRangeBar(
+        key: const ValueKey('kit-gallery-star-narrowed'),
+        low: _narrowed.$1,
+        high: _narrowed.$2,
+        onChanged: (low, high) => setState(() => _narrowed = (low, high)),
+      ),
+      const SizedBox(height: 10),
+      StarRangeBar(
+        key: const ValueKey('kit-gallery-star-full'),
+        low: _full.$1,
+        high: _full.$2,
+        onChanged: (low, high) => setState(() => _full = (low, high)),
+      ),
+      const SizedBox(height: 10),
+      const Text(
+        '5칸 노랑 = 학생 ★ · 4칸 파랑 = 전용무기 ★. 고른 구간만 분홍 테두리.',
+        style: _mut,
       ),
     ],
   );
