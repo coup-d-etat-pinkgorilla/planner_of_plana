@@ -1,28 +1,28 @@
-﻿<#
+<#
 .SYNOPSIS
-  프론트 개편 공통 gate (FE1-g, 2026-10-06).
+  Frontend redesign common gate (FE1-g 2026-10-06; process tests split out 2026-10-07).
+  ASCII-only on purpose: Windows PowerShell 5.1 reads BOM-less files as CP949.
 
 .DESCRIPTION
-  차례로 실행하고 모든 출력을 debug\frontend_gate\<시각>\ 에 남긴다.
+  Runs in order and keeps every output under debug\frontend_gate\<stamp>\ :
     1. flutter analyze
-    2. (-UpdateGoldens 일 때만) flutter test --update-goldens test/goldens
-    3. flutter test --exclude-tags golden   (golden 외 전체)
-    4. flutter test test/goldens            (golden 비교)
-    5. codealmanac validate                 (v7 폴더에서)
-    6. git diff --check -- .                (v7 폴더 범위)
-  3과 4를 나눠서 차례로 돌린다. golden 렌더링을 실제 Python 프로세스 E2E 테스트와
-  병렬로 돌리면 E2E 요청이 시간 초과로 실패했다(2026-10-06, 4건).
-  한 단계가 실패해도 나머지를 계속 돌리고, 끝에 summary.txt를 쓴다.
-  하나라도 실패하면 종료 코드 1, 모두 통과하면 0.
-  커밋·push·설치·작업트리 정리는 하지 않는다.
+    2. (only with -UpdateGoldens) flutter test --update-goldens test/goldens
+    3. flutter test --exclude-tags golden <unit/widget test files>     (batches of 40 files)
+    4. flutter test --concurrency=1 <process test files>               (tests that start the real Python backend)
+    5. flutter test test/goldens                                      (golden compare)
+    6. codealmanac validate                                           (in v7)
+    7. git diff --check -- .                                          (v7 scope)
+  Process tests are files under test\ whose source starts the real backend (ProcessAppService, Process.start,
+  ...). Running them in parallel with hundreds of widget tests, or next to golden rendering, made them time out
+  under load (2026-10-06: 4 cases, 2026-10-07: 3 cases). They now run alone and one file at a time.
+  A failing stage does not stop the rest. summary.txt is written at the end. Exit 1 if any stage failed.
+  No commit, push, install or working-tree cleanup.
 
 .PARAMETER UpdateGoldens
-  test\goldens 아래 golden PNG를 현재 화면으로 다시 만든다(첫 생성 또는 승인된 시각 변경).
-  만든 뒤 4단계가 같은 PNG와 다시 비교하므로 재현성도 함께 확인된다.
+  Regenerates golden PNGs under test\goldens (first creation or an approved visual change), then compares again.
 
 .EXAMPLE
   cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
-  powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
   powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
 #>
 [CmdletBinding()]
@@ -30,13 +30,12 @@ param(
   [switch]$UpdateGoldens
 )
 
-# Windows PowerShell 5.1: 'Stop'이면 네이티브 명령의 stderr가 종료 오류로 바뀐다.
-# 그래서 Continue로 두고 각 단계는 $LASTEXITCODE로 판정한다.
+# Windows PowerShell 5.1: with 'Stop', native stderr becomes a terminating error.
+# Keep Continue and judge each stage by $LASTEXITCODE.
 $ErrorActionPreference = 'Continue'
 Set-StrictMode -Version Latest
 
-# flutter·git 출력(UTF-8)을 깨지지 않게 읽는다. 끝나면 원래 값으로 돌린다.
-# 콘솔이 없는 호스트에서는 설정이 실패할 수 있으므로 무시한다.
+# Read flutter/git UTF-8 output correctly; restore afterwards. Ignore failure on console-less hosts.
 $previousOutputEncoding = $null
 try {
   $previousOutputEncoding = [Console]::OutputEncoding
@@ -66,7 +65,7 @@ function Invoke-Stage {
   $lines = New-Object System.Collections.Generic.List[string]
   $code = 0
   if (-not (Get-Command $Exe -ErrorAction SilentlyContinue)) {
-    # 명령이 없으면 & 호출이 $LASTEXITCODE를 남기지 않아 통과로 보일 수 있다. 실패로 기록한다.
+    # A missing command leaves no $LASTEXITCODE and could look like a pass. Record it as a failure.
     $lines.Add("FE_GATE: command not found on PATH: $Exe")
     Write-Host "FE_GATE: command not found on PATH: $Exe" -ForegroundColor Red
     $code = 9009
@@ -114,7 +113,7 @@ function Get-StageDetail {
     if ($hit) { return $hit.Trim() }
   }
   if ($Name -like 'flutter-test*') {
-    # 마지막 진행 줄: "00:39 +431: All tests passed!" / "+429 -2: Some tests failed."
+    # Last progress line: "00:39 +431: All tests passed!" / "+429 -2: Some tests failed."
     $hit = $all | Where-Object { $_ -match '\+\d+.*: ' } | Select-Object -Last 1
     if ($hit) {
       $passed = 0; $skipped = 0; $failed = 0
@@ -140,12 +139,37 @@ Invoke-Stage -Name 'flutter-analyze' -WorkDir $frontend -Exe 'flutter' -StageArg
 if ($UpdateGoldens) {
   Invoke-Stage -Name 'flutter-test-update-goldens' -WorkDir $frontend -Exe 'flutter' -StageArgs @('test', '--update-goldens', 'test/goldens')
 }
-Invoke-Stage -Name 'flutter-test' -WorkDir $frontend -Exe 'flutter' -StageArgs @('test', '--exclude-tags', 'golden')
+# Split test files: process tests (start the real Python backend) run alone, serially.
+$testRoot = Join-Path $frontend 'test'
+$goldenRoot = Join-Path $testRoot 'goldens'
+$processPattern = 'ProcessAppService|Process\.start|PlanningProtocolClient\.start|ScannerProtocolClient\.start|BA_PLANNER_PYTHON|stdio_server'
+$unitFiles = New-Object System.Collections.Generic.List[string]
+$processFiles = New-Object System.Collections.Generic.List[string]
+foreach ($file in (Get-ChildItem -LiteralPath $testRoot -Recurse -Filter '*_test.dart' | Sort-Object FullName)) {
+  if ($file.FullName.StartsWith($goldenRoot, [System.StringComparison]::OrdinalIgnoreCase)) { continue }
+  $rel = 'test/' + $file.FullName.Substring($testRoot.Length + 1).Replace('\', '/')
+  $text = [System.IO.File]::ReadAllText($file.FullName)
+  if ($text -match $processPattern) { $processFiles.Add($rel) } else { $unitFiles.Add($rel) }
+}
+[System.IO.File]::WriteAllLines((Join-Path $outDir 'test-split.txt'), [string[]](@('# process (serial)') + $processFiles.ToArray() + @('', '# unit/widget') + $unitFiles.ToArray()), $utf8)
+Write-Host ("test split: unit/widget " + $unitFiles.Count + " files, process " + $processFiles.Count + " files (see test-split.txt)")
+# flutter.bat goes through cmd.exe (8191-char line limit), so pass unit files in batches.
+$batchSize = 40
+$batchCount = [math]::Ceiling($unitFiles.Count / $batchSize)
+for ($b = 0; $b -lt $batchCount; $b++) {
+  $take = [math]::Min($batchSize, $unitFiles.Count - $b * $batchSize)
+  $batch = $unitFiles.GetRange($b * $batchSize, $take).ToArray()
+  $stageName = $(if ($batchCount -eq 1) { 'flutter-test' } else { 'flutter-test-' + ($b + 1) })
+  Invoke-Stage -Name $stageName -WorkDir $frontend -Exe 'flutter' -StageArgs (@('test', '--exclude-tags', 'golden') + $batch)
+}
+if ($processFiles.Count -gt 0) {
+  Invoke-Stage -Name 'flutter-test-process' -WorkDir $frontend -Exe 'flutter' -StageArgs (@('test', '--exclude-tags', 'golden', '--concurrency=1') + $processFiles.ToArray())
+}
 Invoke-Stage -Name 'flutter-test-golden' -WorkDir $frontend -Exe 'flutter' -StageArgs @('test', 'test/goldens')
 Invoke-Stage -Name 'almanac-validate' -WorkDir $v7 -Exe 'codealmanac' -StageArgs @('validate')
 Invoke-Stage -Name 'git-diff-check' -WorkDir $v7 -Exe 'git' -StageArgs @('diff', '--check', '--', '.')
 
-# --- golden 목록과 해시, 작업트리 상태 ---------------------------------------------
+# --- golden list, hashes, working-tree status ---------------------------------------
 $goldenDir = Join-Path $frontend 'test\goldens\baseline'
 $goldenLines = New-Object System.Collections.Generic.List[string]
 $goldenCount = 0
