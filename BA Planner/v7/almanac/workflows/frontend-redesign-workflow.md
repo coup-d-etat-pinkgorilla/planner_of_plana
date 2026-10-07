@@ -229,7 +229,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | FE3-b 인연 B 게이지 | 현재 랭크 + 목표 빗금·점선·`→N`. 목표는 활성 계획 문서 단계 목표(FD-003). FB-1 전에는 목표 없음 상태로 그린다 | — | W-Bond-Variants B, Student S3. student-detail-indicator-lessons 갱신 — **완료 2026-10-07**: 커밋 `809d903b`(학생 golden 7명 fixture, students-detail 분리, students-grid-name-off 추가) |
 | FE3-c S4 확장 | 결과 수 줄, 적용 필터 칩(×, 모두 지우기), 최근 본 학생. 필터 상태를 layout state에서 페이지 컨트롤러로 올린다 | — | Student S4 — **완료 2026-10-07**: 커밋 `b7bbfcce`(배지 글꼴 명시, golden 학생 10명 두 줄 포함) |
 | FE3-d 필터 모달 | 학생·계획 1·통계가 함께 쓰는 필터 모달(상태 객체를 주입받는 구조, FD-104). 토글 칩, 타입 칩, `RangeSliderRow`, `StarRangeBar`, draft→적용, 범위 모델 재구성. Section 5·범위 카드 2장 폐기 | (FD-074 결과에 따라 프리셋 저장) | Student-Filter. section-template-studio "학생 Section 5 필터" 절 대체 — **완료 2026-10-07**: d1 `ddc251eb`(부품·모델), d2 `0890de7a`(모달 연결, Section 5·범위 카드 폐기, golden `students-filter-open` 추가) |
-| FE3-e 다중 폼 교대 | 폼 2개 이상 학생 초상 3초 교대, warmup에 폼 이미지 포함 | FB-5 | W-Card-States "폼 2개" |
+| FE3-e 다중 폼 교대 | 폼 2개 이상 학생 초상 3초 교대, warmup에 폼 이미지 포함 | FB-5 | W-Card-States "폼 2개" — **완료 2026-10-07**: 커밋 `a3692424`(공유 `StudentFormClock`, FB-5 catalog `forms`, GyeonggiTitle 빠진 글리프는 Pretendard 대체, golden 4장 갱신 + `students-grid-second-form` 추가) |
 | FE3-f 성장 계산기 | 학생 탭 계산기 모드(진입·복귀, S1 버튼 세트, 헤더 제목 교체), 목표 13행(시안 12행 + 애장품 행, FD-166 (c); 스테퍼·정규화·MAX·되돌리기·바꾼 목표 칩), S3 인디케이터를 목표값으로 + "현재 …" 태그, S4 선택 학생·최근 계산, 크레딧 타일(내역 막대는 FD-162 결과에 따라)·성장 재화 목록, 디바운스 재계산. 계산기 목표는 저장하지 않는다. 인연 타일은 빈 상태 | FE3-a~c | Calc-Student(인연 타일 제외, 애장품 행은 시안에 없으므로 다른 행과 같은 모양으로) |
 | FE3-g 인연 선물 타일 | 선물 3안(선호 대형/일반/쓰다듬기), 선물 팝오버, 배분 규칙(FD-164) | FB-11, FD-163 | Calc-Student 인연 타일 |
 
@@ -328,7 +328,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | slice | 내용 | 선행 |
 |---|---|---|
 | FB-4 | `scanner.target.list`에 창 크기·게임 판별 | FD-116 |
-| FB-5 | 학생 카탈로그에 폼 목록·폼 초상 경로(사용자 설치본 추출 대상 확장 포함) | — |
+| FB-5 | 학생 카탈로그에 폼 목록·폼 초상 경로(사용자 설치본 추출 대상 확장 포함) | — 완료 2026-10-07 `a3692424`(폼 2개 이상 학생만 선택 필드 `forms`, 단일 폼은 그대로) |
 | FB-6 | 전술 v2 기록·족보 쓰기(빈칸·슬롯 출처·상대 identity 보존), 시도 횟수, 족보 이름, `MockAppService` v2 구현 | FD-127, FD-128 |
 | FB-7 | 엑셀 가져오기 해석 preview/commit(Python, 파일 지문 확인, 처리 규칙 저장) | FD-128 |
 | FB-8 | 계획 문서 v2 또는 authoring 메타(교차 선행·나중에 칸·학생 순서) | FD-068 |
@@ -413,3 +413,4 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-07(낮 3): FE3-b `809d903b`. 다음 행동: FE3-c S4 확장 + 배지 글꼴(golden Ahem 사각형) + 학생 fixture 두 줄.
 - 2026-10-07(오후): FE3-c `b7bbfcce`. 결정: 최근 본 학생은 계정(프로필) 전환 때 비운다(FE3-d에서 연결). 다음 행동: FE3-d 필터 모달.
 - 2026-10-07(저녁): FE3-d1 `ddc251eb`, FE3-d2 `0890de7a`. 다음 행동: FE3-e 다중 폼 교대(+FB-5 catalog 폼 확장).
+- 2026-10-07(밤): FE3-e `a3692424`(+FB-5), 문서 `8a6482e7`. FE3-f는 f1(계산기 상태·계산 연결, 화면 변화 없음)과 f2(화면 모드·4섹션 연결, golden 장면 추가)로 나눈다. 크레딧 내역 막대는 FB-11 전까지 숨기고 FD-162 (a) 임시 문서 계산으로 그린다. 다음 행동: FE3-f1.
