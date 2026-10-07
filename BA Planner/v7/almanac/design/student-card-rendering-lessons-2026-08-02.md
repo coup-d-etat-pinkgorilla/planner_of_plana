@@ -173,17 +173,46 @@ bitmap alpha 또는 직사각 bounds를 형상으로 사용하고 있었다. 알
 마지막에 같은 path 위에 그린다. 테두리를 이미지 alpha에서 얻지 않기 때문에 사각 캔버스
 경계가 다시 외곽선으로 나타나지 않는다. [@asset-image-grid]
 
-그리드 배지는 card clip 밖의 foreground에서 그려 잘리지 않는다.
+### 카드 정보 영역: DE 카드(2026-10-07 FE3-a, FD-043)
 
-- `UNOWNED`: 상단 좌측 rounded corner 시작점에 접하며 불필요한 radius 추가 inset 없음
-- `JP`: `UNOWNED` 오른쪽이 아니라 카드 상단 우측 rounded corner에 접함
-- `PLAN`: `UNOWNED` 아래에 짧은 변의 `0.01` 간격을 두고, 평행사변형의 80도 진행량만큼
-  왼쪽으로 이동
-- `PLAN`: repository goal student ID 집합에서 결정
-- `JP`: catalog의 `jpOnly`에서 결정
+확정 시안(Student·W-Card-Variants D+E·W-Card-States·W-Card-Grid-DE)에 맞춰 카드 안의 정보
+띠를 없앴다. 예전 계약(카드 하단 16% 중 위 3%를 반으로 나눈 공격/방어 색 띠, 아래 13% 회색
+이름 띠, `studentCardInfoAreaFraction`·`studentCardAttributeAreaFraction`·`studentCardNameFontSize`)은
+폐기했다. W-Card-Variants E안의 "카드 맨 아래 2색 밑줄"도 그리지 않는다. 속성 색은 글자 칩이 맡는다.
 
-목업에 PLAN 학생이 없어 화면에서 당장 보이지 않더라도 세 슬롯의 기하와 데이터 연결은
-고정한다.
+- **속성 글자 칩(D)**: 카드 clip 안, 오른쪽 위에 공격 → 방어 순서로 두 개. 칩 높이
+  `max(14, 카드 높이 × 0.11)`, 위 4, 칩 사이 3, 글자 Pretendard w800 흰색 `높이 × 0.55`,
+  좌우 여백 `높이 × 0.45`, r3, skewX(−10°)(키트 `skewBoxPath`), 그림자 `0 1 2 rgba(0,0,0,.4)`.
+  칩 상자 오른쪽 끝은 그 칩 밑변 높이에서 카드 오른쪽 80° 변보다 6px 안쪽이라 두 칩이
+  80° 계단을 이룬다(`studentAttributeChipBox`). 라벨은 축약형이다(FD-047): 공격 폭발/관통/신비/진동
+  (catalog에 있으면 화학), 방어 경장/중장/특수/탄력/복합. 필터 팝업은 전체 라벨(`경장갑` 등)을 쓴다.
+  라벨을 모르는 타입은 칩을 그리지 않고 다음 칩이 위로 올라온다. "학생 공격/방어 속성 표시"를 끄면
+  칩을 그리지 않는다. 색은 `AppColors` 타입 토큰만 쓴다(복합 = `typeComposite #7a8ea3`, FD-024).
+- **이름(E)**: 카드 밖, 카드 밑변 아래 3px에서 높이 16인 줄. 폭은 카드 하단 변 길이
+  (카드 폭 − 80° 깊이), 가운데 정렬, Pretendard 13 w700, 보유 `#f4f8fb` · 미보유 `#9eb0c2`(흐리게).
+  넘치면 말줄임한다. 이름 줄은 누를 자리가 아니다(hit target은 카드 path만).
+- **미보유 암전**: 칩까지 덮는다(칩을 그린 뒤 같은 clip 안에서 암전).
+- **그리드 기하(FD-045)**: 셀 = 카드(높이 = 폭 × 204/252)이고 행 사이에 이름 줄 20(3 + 16 + 1)과
+  행 간격 3.84를 둔다. 행 피치 = 카드 + 23.84(카드 폭 206.87 → 191.31). 행 가로 이동은 카드
+  중심 높이에서 viewport 밑변까지의 80° 거리다(`studentGridRowHorizontalOffset`). 이미지 grid,
+  overlay painter, hit target이 같은 `studentGridRowGeometry`를 쓴다. "학생 이름 표시"를 끄면
+  이름 줄을 접어 피치가 카드 + 3.84가 된다(FD-046 (a)).
+- 리스트 보기(`StudentDiagonalList`)는 시안이 없어 현행 그대로다(FD-048).
+
+### 상태 배지: 왼쪽 80° 변 채워 쌓기(2026-10-07 FE3-a, FD-044)
+
+그리드 배지는 card clip 밖의 foreground에서 그려 잘리지 않는다. 고정 슬롯(UNOWNED 좌상,
+PLAN은 항상 UNOWNED 아래, JP는 카드 우상단 모서리)은 폐기했다. 우상단은 속성 칩 자리다.
+
+- 있는 배지만 `UNOWNED → PLAN → JP` 순서로 위에서부터 채운다(`studentGridStatusBadgeStack`).
+  보유 + PLAN이면 PLAN이 첫 칸이고, 보유 + JP만 있으면 JP가 첫 칸이다.
+- 첫 칸은 카드 왼쪽 위 꼭짓점(80° 깊이만큼 들어간 자리, 위로 짧은 변 `0.01`의 절반)에 접한다.
+  다음 칸은 (배지 높이 + 짧은 변 `0.01`)만큼 아래로, 그 길이의 80° 깊이만큼 왼쪽으로 간다.
+  시안 Student 카드(206.87×167.47) 기준 `(29.53,0.84)` / `(25.10,25.96)` / `(20.67,51.08)`.
+- 크기와 pill 스타일은 기존 그대로다: 높이 = 카드 높이 14%(14~28), 폭 UNOWNED 42% · PLAN 28% ·
+  JP 18%, `paintStudentPortraitStatusBadge`.
+- `PLAN`: repository goal student ID 집합, `JP`: catalog의 `jpOnly`, `UNOWNED`: 보유 집합에서 결정.
+- Section 3 선택 초상과 계획 요소 초상(1×1 painter, 칩·이름 off)도 같은 채워 쌓기를 쓴다.
 
 ## 첫 학생 탭 진입 성능
 
@@ -307,8 +336,8 @@ border painter는 foundation 위를 다시 덮어 학생 탭과 다른 결과를
 
 ## 후속 작업 체크리스트
 
-- 실제 Windows 화면에서 Section 2와 Section 3의 흰 선, 배지 corner 접점과 PLAN 간격 확인
-- PLAN 목업 데이터가 생기면 `UNOWNED` 아래·왼쪽 이동과 JP 동시 표시 확인
+- 실제 Windows 화면에서 Section 2와 Section 3의 흰 선, 배지 corner 접점과 채워 쌓기 간격 확인
+- UNOWNED + PLAN + JP 세 배지가 함께 있는 학생에서 왼쪽 80° 변 계단과 우상단 속성 칩이 겹치지 않는지 확인
 - 비정수 DPI에서 흰 선과 선택선의 계단 및 1px seam 확인
 - 첫 앱 실행 중 타이틀 frame time과 학생 탭 첫 진입 frame time을 profile mode로 비교
 - 학생 수가 늘어날 때 64개 warmup 상한과 visible row buffer가 여전히 적절한지 측정

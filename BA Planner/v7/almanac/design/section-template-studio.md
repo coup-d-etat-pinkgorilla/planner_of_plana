@@ -533,15 +533,18 @@ service에서 직접 복원한다.
 
 Section 2는 Container 12 하나만 소유하는 공용 사선 grid viewport다. 표준 수직 ScrollController가
 scroll extent를 소유하고, 모든 가시 행은 viewport Y에 따라 `1 / tan(80°)`만큼 X를 함께 이동한다.
-계정 portrait picker와 같은 `gridInset=8`을 유지하고 8열의 가로 gap은 4.8, 행 gap은 그 80%인
-3.84 px를 적용한다.
-80° custom scrollbar의 trajectory와 14 px 전용 폭을 먼저 제외한 나머지 폭으로 셀 크기를 역산한다.
+계정 portrait picker와 같은 `gridInset=8`을 유지하고 8열의 가로 gap은 4.8이다. 셀은 카드(252:204)와
+같고, 행 사이에는 카드 밖 이름 줄 20 px와 행 gap 3.84 px를 둔다(행 피치 = 카드 + 23.84, 기준
+viewport에서 ≈191.3, FD-045). 행 X 이동은 카드 중심 높이를 기준으로 한다.
+80° custom scrollbar의 trajectory와 14 px 전용 폭을 먼저 제외한 나머지 폭으로 카드 폭을 역산한다.
 `square.png`는 셀 전체 크기, portrait는 98% 크기로 확대한다. `square.png`와
-portrait는 전체 grid의 단일 `AssetImageGrid` painter에서 순서대로 그린다. 별도의 overlay painter는
-`square.png`의 alpha를 최종 mask로 사용해 카드 하단 16%에만 정보를 합성한다. 이 영역의 상단 3%는
-v6 학생 카드와 같은 좌우 공격/방어 속성 색상 띠이고, 남은 13%는 회색 반투명 이름 영역과 흰색 이름이다.
-Section 4의 `학생 공격/방어 속성 표시`, `학생 이름 표시` checkbox가 두 overlay를 독립적으로
-토글한다. `미보유 학생 숨김`은 repository 보유 ID 집합을, `일본 서버 전용 숨김`은 protocol v1의
+portrait는 전체 grid의 단일 `AssetImageGrid` painter에서 순서대로 그린다. 별도의 overlay painter가
+카드 위에 DE 정보(2026-10-07 FE3-a, FD-043)를 그린다: 오른쪽 위 공격·방어 글자 칩 2개(축약 라벨,
+80° 계단), 미보유 암전, 왼쪽 80° 변을 따라 채워 쌓는 UNOWNED → PLAN → JP 배지, 카드 밖 아래 이름 줄
+(미보유는 흐리게). 카드 안 하단 16% 정보 띠(속성 색 3% + 이름 13%)는 폐기했다. 자세한 수치는
+`student-card-rendering-lessons-2026-08-02.md`의 "현재 그리드 카드 렌더링 계약"이 소유한다.
+Section 4의 `학생 공격/방어 속성 표시`는 칩을, `학생 이름 표시`는 이름 줄을 토글하며, 이름을 끄면
+이름 줄을 접어 행 피치가 카드 + 3.84가 된다(FD-046 (a)). `미보유 학생 숨김`은 repository 보유 ID 집합을, `일본 서버 전용 숨김`은 protocol v1의
 `jp_only` 정적 metadata를 기준으로 grid 항목을 제외한다. 셀 hit target과 overlay painter는 같은 행 offset을 공유한다. Mock runtime도 backend
 metadata에서 생성한 `assets/student_catalog.json`의 265명을 전부 사용한다.
 검색은 `StudentCatalogEntry.searchTags`와 `krSearchTags`를 그대로 사용하므로 v6에서 이관한
@@ -665,8 +668,8 @@ Section 5의 낮은 높이는 viewport에 따라 탭과 중첩 헤더 높이를 
 | Section 1 texture | 버튼별 색만 유지하고 무늬는 후속으로 보았다. | 세 버튼 모두 연핑크 BA 삼각 texture를 사용한다. Container 10도 같은 action 역할이며 Container 4는 status 역할이다. | “같은 효과”가 fill, texture, outline, shadow 중 무엇인지 묻는다. |
 | Section 1·2 관계 | 두 section을 독립 rect로 배치했다. | 마주 보는 80° 사선 사이에 모든 viewport에서 12px의 명시적 평행 gap을 둔다. | 인접 사선은 각 section 좌표가 아니라 공유 seam 계약으로 설계한다. |
 | Section 2 구조 | 반복 카드나 복수 container 가능성을 남기고 소수 sample 학생을 먼저 표시했다. | Container 12 하나 안에서 전체 265명 catalog를 8열 단일 grid painter로 렌더링한다. | sample 데이터가 최종 데이터 범위로 오인되지 않게 전체/부분 여부를 먼저 묻는다. |
-| Section 2 간격·scroll | 일반 grid gap과 수직 scrollbar를 사용했다. | 외곽 inset 8, 열 gap 4.8, 행 gap 3.84이며 scrollbar의 14px 예약 폭을 cell 산식에서 먼저 뺀다. 행과 scrollbar는 80° trajectory를 공유한다. | 사선 scroll은 painter, hit test, content와 handle이 한 변환을 공유해야 한다. |
-| 학생 카드 | portrait만 표시하고 이름과 속성은 후속으로 두었다. | `square.png` alpha 안의 하단 16%를 사용한다. 상단 3%는 v6 공격/방어 색상 띠, 나머지 13%는 반투명 회색 이름 영역과 흰색 이름이다. | overlay 비율, 층 순서, mask 기준을 숫자로 확인한다. |
+| Section 2 간격·scroll | 일반 grid gap과 수직 scrollbar를 사용했다. | 외곽 inset 8, 열 gap 4.8, 행 사이 = 이름 줄 20 + 3.84(FE3-a DE 그리드)이며 scrollbar의 14px 예약 폭을 cell 산식에서 먼저 뺀다. 행과 scrollbar는 80° trajectory를 공유하고 행 이동은 카드 중심 기준이다. | 사선 scroll은 painter, hit test, content와 handle이 한 변환을 공유해야 한다. |
+| 학생 카드 | portrait만 표시하고 이름과 속성은 후속으로 두었다. | (2026-10-07 FE3-a로 대체) DE 카드: 오른쪽 위 공격·방어 글자 칩(축약 라벨, 80° 계단), 이름은 카드 밖 아래 줄(미보유 흐림), 배지는 왼쪽 80° 변 채워 쌓기. 예전 하단 16% 정보 띠(3% 속성 띠 + 13% 이름)는 폐기. | overlay 비율, 층 순서, mask 기준을 숫자로 확인한다. |
 | Section 3 placeholder | Container 1·3도 일반 surface처럼 그렸다. | Container 1·3 surface를 제거하고 내부 portrait와 9개 성작 평행사변형만 남긴다. | “컨테이너”가 시각 surface인지 배치 placeholder인지 확인한다. |
 | Section 3 정렬 | 각 container의 저장 rect를 개별 적용했다. | portrait·성작·5·6·7·9의 왼쪽은 한 80° rail, 5·6·7·9의 오른쪽은 다른 한 rail에 맞춘다. 4와 stack의 간격도 stack 내부 gap과 같다. | 여러 요소가 같은 사선에 맞는지는 공통 rail로 모델링한다. |
 | Section 4 | 높은 검색 입력 하나만 우선 배치했다. | 검색 bar 높이와 상단 inset을 줄이고 text를 수직 중앙에 둔다. 속성·이름 표시, 미보유·JP 전용 숨김의 네 toggle을 둔다. | 검색, 표시 옵션, 데이터 제외 filter를 별도 상태로 구분한다. |
@@ -844,12 +847,14 @@ Section 2·5의 viewport fog는 고정 장식이 아니라 실제 `ScrollPositio
   이름 오름차순으로 안정화한다. 인연 랭크는 repository protocol에 필드가 추가되기 전까지 전원이
   미구현 값이므로 이름순 fallback만 동작한다.
 
-## 학생 카드 이름 크기 계약
+## 학생 카드 이름 계약
 
-- 하단 16% overlay 중 속성 띠를 제외한 13% 이름 영역은 유지한다.
-- 이름 글꼴은 이전 4~8px 범위에서 1.5배인 6~12px 범위로 키우고, 가용 이름 영역 높이의 80%를
-  목표값으로 사용한다. 긴 이름은 기존처럼 한 줄 ellipsis와 `square.png` alpha mask 안에서만
-  렌더링한다.
+2026-10-07 FE3-a(FD-043, FD-046)로 대체했다. 카드 안 13% 이름 영역과 6~12px 가변 글꼴은 폐기했다.
+
+- 이름은 카드 밖, 카드 밑변 아래 3 px에서 높이 16 px 줄에 둔다. 폭은 카드 하단 변 길이(카드 폭 − 80°
+  깊이)이고 가운데 정렬, Pretendard 13 px w700, 보유 `#f4f8fb` · 미보유 `#9eb0c2`다. 긴 이름은 한 줄
+  ellipsis로 줄인다. 이름 줄은 hit target이 아니다.
+- 그리드는 이름 줄 20 px(3 + 16 + 1)를 행 간격에 포함한다. `학생 이름 표시`를 끄면 이름 줄을 접는다.
 
 ## 학생 Section 4 표시 토글 텍스트 계약
 

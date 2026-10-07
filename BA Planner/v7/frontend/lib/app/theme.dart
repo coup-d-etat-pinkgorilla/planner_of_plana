@@ -81,8 +81,8 @@ abstract final class AppColors {
   static const typeMystic = Color(0xff226f9b);
   static const typeSonic = Color(0xff9945a8);
 
-  /// 복합장갑(시안 `#7a8ea3`). 현재 코드의 복합장갑은 아직 `#228b22`를 쓴다.
-  /// 색을 바꾸는 일은 학생 탭 slice에서 한다(FE1-a는 값 불변).
+  /// 복합장갑(시안 `#7a8ea3`). 학생 카드 칩과 갤러리 타입 칩이 쓴다(FE3-a에서 옛
+  /// `#228b22`를 이 토큰으로 바꿨다).
   static const typeComposite = Color(0xff7a8ea3);
 }
 

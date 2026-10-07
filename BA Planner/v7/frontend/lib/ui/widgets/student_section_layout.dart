@@ -6,6 +6,7 @@ import '../../services/app_service.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/diagonal_scrollbar.dart';
 import '../kit/game_assets.dart';
+import '../kit/skew_box.dart';
 import '../studio/section_template.dart';
 import '../studio/student_studio_layout.dart';
 import 'animated_section_stack.dart';
@@ -4024,7 +4025,6 @@ class StudentDiagonalGrid extends StatefulWidget {
 class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
   static const _rowBuffer = 1;
   static const _gridGap = 4.8;
-  static const _rowGap = 3.84;
   static const _gridInset = 8.0;
   static const _scrollbarReserve = 14.0;
   final ScrollController _controller = ScrollController();
@@ -4040,9 +4040,8 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
     builder: (context, constraints) {
       final columns = math.max(1, widget.columns);
       final rows = math.max(1, (widget.students.length / columns).ceil());
-      final tangent = diagonalTan80;
-      final trajectoryDepth = constraints.maxHeight / tangent;
-      final cellSize = math.max(
+      final trajectoryDepth = constraints.maxHeight / diagonalTan80;
+      final cardWidth = math.max(
         1.0,
         (constraints.maxWidth -
                 _gridInset * 2 -
@@ -4051,8 +4050,17 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                 _gridGap * (columns - 1)) /
             columns,
       );
+      // DE 그리드(FD-045): 셀 = 카드(252:204)이고 그 아래에 카드 밖 이름 줄이 붙는다.
+      // 이미지·overlay·hit target은 모두 이 기하를 쓰며 행 간격은 "이름 줄 + 3.84"다.
+      final geometry = studentGridRowGeometry(
+        cardWidth: cardWidth,
+        showNames: widget.showNames,
+      );
       final contentHeight =
-          _gridInset * 2 + rows * cellSize + _rowGap * math.max(0, rows - 1);
+          _gridInset * 2 +
+          rows * geometry.cardHeight +
+          geometry.imageRowGap * math.max(0, rows - 1) +
+          geometry.nameExtent;
       return _StudentDiagonalScrollbar(
         controller: _controller,
         keyPrefix: 'student-grid',
@@ -4067,8 +4075,8 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                 rowCount: rows,
                 scrollOffset: scroll,
                 viewportHeight: constraints.maxHeight,
-                cellHeight: cellSize,
-                rowGap: _rowGap,
+                cellHeight: geometry.cardHeight,
+                rowGap: geometry.imageRowGap,
                 contentTop: _gridInset,
                 bufferRows: _rowBuffer,
               );
@@ -4077,19 +4085,22 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                 widget.students.length,
                 activeRows.end * columns,
               );
-              final offsets = List<double>.generate(rows, (row) {
-                final centerY =
-                    _gridInset +
-                    row * (cellSize + _rowGap) +
-                    cellSize / 2 -
-                    scroll;
-                return (constraints.maxHeight - centerY) / tangent;
-              }, growable: false);
+              final offsets = List<double>.generate(
+                rows,
+                (row) => studentGridRowHorizontalOffset(
+                  viewportHeight: constraints.maxHeight,
+                  contentTop: _gridInset,
+                  row: row,
+                  geometry: geometry,
+                  scrollOffset: scroll,
+                ),
+                growable: false,
+              );
               final padding = EdgeInsets.fromLTRB(
                 _gridInset,
                 _gridInset,
                 _gridInset + trajectoryDepth + _scrollbarReserve,
-                _gridInset,
+                _gridInset + geometry.nameExtent,
               );
               return SizedBox(
                 height: contentHeight,
@@ -4131,7 +4142,7 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                         columns: columns,
                         rows: rows,
                         columnGap: _gridGap,
-                        rowGap: _rowGap,
+                        rowGap: geometry.imageRowGap,
                         rowHorizontalOffsets: offsets,
                         contentPadding: padding,
                       ),
@@ -4146,7 +4157,7 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                             columns: columns,
                             rows: rows,
                             columnGap: _gridGap,
-                            rowGap: _rowGap,
+                            rowGap: geometry.imageRowGap,
                             rowHorizontalOffsets: offsets,
                             contentPadding: padding,
                             showAttributes: widget.showAttributes,
@@ -4181,7 +4192,7 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                       columns,
                       rows,
                       _gridGap,
-                      _rowGap,
+                      geometry.imageRowGap,
                       padding,
                       offsets,
                       activeRows.start,
@@ -4269,52 +4280,233 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
   );
 }
 
-const studentCardInfoAreaFraction = 0.16;
-const studentCardAttributeAreaFraction = 0.03;
 const studentGridCardSourceSize = Size(252, 204);
 const studentGridCardOutlineColor = Colors.white;
 const studentGridCardSelectionColor = Color(0xffff72b6);
 const studentGridCardOutlineWidthFraction = 0.01;
 const studentGridCardSelectionWidthFraction = 0.02;
 
-({Rect unowned, Rect plan, Rect jp}) studentGridStatusBadgeRects(Rect card) {
-  final badgeHeight = (card.height * 0.14).clamp(14.0, 28.0);
-  final unownedWidth = (card.width * 0.42).clamp(32.0, 92.0);
-  final planWidth = (card.width * 0.28).clamp(28.0, 64.0);
-  final jpWidth = (card.width * 0.18).clamp(24.0, 44.0);
-  final depth = math.min(
-    card.width * 0.25,
-    diagonalCutDepth(card.height),
-  );
-  final cornerRadius = math.min(12.0, card.shortestSide * 0.1);
-  final outlineGap = card.shortestSide * studentGridCardOutlineWidthFraction;
-  final top = card.top + outlineGap * 0.5;
-  final unowned = Rect.fromLTWH(
-    card.left + depth,
-    top,
-    unownedWidth,
-    badgeHeight,
-  );
-  final jp = Rect.fromLTWH(
-    card.right - cornerRadius * 0.35 - jpWidth,
-    top,
-    jpWidth,
-    badgeHeight,
-  );
-  final plan = Rect.fromLTWH(
-    unowned.left - diagonalCutDepth(badgeHeight + outlineGap),
-    unowned.bottom + outlineGap,
-    planWidth,
-    badgeHeight,
-  );
-  return (unowned: unowned, plan: plan, jp: jp);
+// --- DE 카드: 카드 밖 이름 줄(FD-043, FD-045, FD-046) ------------------------
+// 시안 Student·W-Card-States·W-Card-Grid-DE: 이름 span은 카드 아래 3px에서 높이 16,
+// 폭 = 카드 하단 변 길이(카드 폭 − 80° 깊이), Pretendard 13 w700, 보유 #f4f8fb · 미보유 #9eb0c2.
+// 행 피치 = 카드 + 이름 줄 20 + 행 간격 3.84(카드 폭 206.87 → 167.47 + 23.84 = 191.31).
+
+/// 카드 아래 이름 줄이 차지하는 세로 길이(카드 아래 3 + 글자 줄 16 + 1).
+const studentGridNameLineExtent = 20.0;
+
+/// 카드 밑변과 이름 글자 줄 사이 간격.
+const studentGridNameTopGap = 3.0;
+
+/// 이름 글자 줄 높이.
+const studentGridNameHeight = 16.0;
+const studentGridNameFontSize = AppType.bodySize;
+const studentGridOwnedNameColor = AppColors.text;
+
+/// 미보유 학생 이름은 흐리게(FD-043).
+const studentGridUnownedNameColor = AppColors.textMuted;
+
+/// 행 사이 간격(이름 줄 아래). 열 간격은 4.8이다.
+const studentGridRowGap = 3.84;
+
+/// DE 그리드 한 행의 기하.
+@immutable
+class StudentGridRowGeometry {
+  const StudentGridRowGeometry({
+    required this.cardWidth,
+    required this.cardHeight,
+    required this.nameExtent,
+  });
+
+  final double cardWidth;
+  final double cardHeight;
+
+  /// 이름 줄 높이. "학생 이름 표시"를 끄면 0이다(FD-046 (a)).
+  final double nameExtent;
+
+  /// 이미지 셀(= 카드) 사이 세로 간격: 이름 줄 + [studentGridRowGap].
+  double get imageRowGap => nameExtent + studentGridRowGap;
+
+  /// 한 행의 세로 피치.
+  double get rowPitch => cardHeight + imageRowGap;
 }
 
-Path studentGridCardPath(Rect rect) {
-  final depth = math.min(
-    rect.width * 0.25,
-    diagonalCutDepth(rect.height),
+StudentGridRowGeometry studentGridRowGeometry({
+  required double cardWidth,
+  required bool showNames,
+}) => StudentGridRowGeometry(
+  cardWidth: cardWidth,
+  cardHeight:
+      cardWidth *
+      studentGridCardSourceSize.height /
+      studentGridCardSourceSize.width,
+  nameExtent: showNames ? studentGridNameLineExtent : 0,
+);
+
+/// [row]행의 가로 이동: 카드 중심 높이에서 viewport 밑변까지의 80° 레일 거리(FD-045).
+double studentGridRowHorizontalOffset({
+  required double viewportHeight,
+  required double contentTop,
+  required int row,
+  required StudentGridRowGeometry geometry,
+  double scrollOffset = 0,
+}) {
+  final cardCenterY =
+      contentTop +
+      row * geometry.rowPitch +
+      geometry.cardHeight / 2 -
+      scrollOffset;
+  return (viewportHeight - cardCenterY) / diagonalTan80;
+}
+
+/// 카드 밖 이름 글자 줄 rect. 왼쪽은 카드 왼쪽, 폭은 카드 하단 변 길이다.
+Rect studentGridNameRect(Rect card) => Rect.fromLTWH(
+  card.left,
+  card.bottom + studentGridNameTopGap,
+  math.max(0.0, card.width - studentGridCardCutDepth(card)),
+  studentGridNameHeight,
+);
+
+/// 카드 평행사변형의 80° 가로 깊이.
+double studentGridCardCutDepth(Rect card) =>
+    math.min(card.width * 0.25, diagonalCutDepth(card.height));
+
+// --- 상태 배지: 왼쪽 80° 변 채워 쌓기(FD-044) --------------------------------
+
+enum StudentGridStatusBadge {
+  unowned('UNOWNED'),
+  plan('PLAN'),
+  jp('JP');
+
+  const StudentGridStatusBadge(this.label);
+  final String label;
+}
+
+typedef StudentGridStatusBadgePlacement = ({
+  StudentGridStatusBadge badge,
+  Rect rect,
+});
+
+/// 있는 배지만 UNOWNED → PLAN → JP 순서로 왼쪽 80° 변을 따라 위에서부터 쌓는다.
+///
+/// 첫 칸은 카드 왼쪽 위 꼭짓점(깊이만큼 들어간 자리), 다음 칸은 (배지 높이 + 간격)만큼
+/// 아래로, 그 높이의 80° 깊이만큼 왼쪽으로 간다. 크기는 기존 계약 그대로다
+/// (높이 = 카드 높이 14%, 폭 UNOWNED 42% · PLAN 28% · JP 18%).
+List<StudentGridStatusBadgePlacement> studentGridStatusBadgeStack(
+  Rect card, {
+  required bool owned,
+  required bool planned,
+  required bool jpOnly,
+}) {
+  final badges = [
+    if (!owned) StudentGridStatusBadge.unowned,
+    if (planned) StudentGridStatusBadge.plan,
+    if (jpOnly) StudentGridStatusBadge.jp,
+  ];
+  return [
+    for (var slot = 0; slot < badges.length; slot++)
+      (
+        badge: badges[slot],
+        rect: studentGridStatusBadgeSlotRect(card, slot, badges[slot]),
+      ),
+  ];
+}
+
+/// [slot]번째(0부터) 배지 칸.
+Rect studentGridStatusBadgeSlotRect(
+  Rect card,
+  int slot,
+  StudentGridStatusBadge badge,
+) {
+  final badgeHeight = (card.height * 0.14).clamp(14.0, 28.0);
+  final width = switch (badge) {
+    StudentGridStatusBadge.unowned => (card.width * 0.42).clamp(32.0, 92.0),
+    StudentGridStatusBadge.plan => (card.width * 0.28).clamp(28.0, 64.0),
+    StudentGridStatusBadge.jp => (card.width * 0.18).clamp(24.0, 44.0),
+  };
+  final gap = card.shortestSide * studentGridCardOutlineWidthFraction;
+  final step = badgeHeight + gap;
+  return Rect.fromLTWH(
+    card.left + studentGridCardCutDepth(card) - slot * diagonalCutDepth(step),
+    card.top + gap * 0.5 + slot * step,
+    width,
+    badgeHeight,
   );
+}
+
+// --- 속성 글자 칩: 오른쪽 위, 80° 계단(D안, FD-043·FD-047) --------------------
+// 시안 값: 칩 높이 max(14, 카드 높이 × .11), 위 4, 칩 사이 3, 글자 = 높이 × .55 w800 흰색,
+// 좌우 안쪽 여백 = 높이 × .45, r3, skewX(−10°), 그림자 0 1 2 rgba(0,0,0,.4).
+// 칩 상자 오른쪽 끝은 칩 밑변 높이에서 카드 오른쪽 80° 변보다 6px 안쪽이다
+// (카드 높이 161.9 → right 9.8 / 13.5, 167.47 → 10.0 / 13.7).
+
+const studentAttributeChipTop = 4.0;
+const studentAttributeChipGap = 3.0;
+const studentAttributeChipEdgeInset = 6.0;
+const studentAttributeChipRadius = 3.0;
+const studentAttributeChipHeightFraction = 0.11;
+const studentAttributeChipMinHeight = 14.0;
+const studentAttributeChipFontFraction = 0.55;
+const studentAttributeChipPaddingFraction = 0.45;
+const studentAttributeChipShadowColor = Color(0x66000000);
+
+/// 카드 칩용 공격 타입 축약 라벨(FD-047).
+const Map<String, String> studentAttackChipLabels = {
+  'Explosive': '폭발',
+  'Piercing': '관통',
+  'Mystic': '신비',
+  'Sonic': '진동',
+  'Chemical': '화학',
+};
+
+/// 카드 칩용 방어 타입 축약 라벨(FD-047). 필터 팝업은 전체 라벨(`studentFilterValueLabels`)을 쓴다.
+const Map<String, String> studentDefenseChipLabels = {
+  'Light': '경장',
+  'Heavy': '중장',
+  'Special': '특수',
+  'Elastic': '탄력',
+  'Composite': '복합',
+};
+
+String? studentAttackChipLabel(String? attackType) =>
+    studentAttackChipLabels[attackType];
+
+String? studentDefenseChipLabel(String? defenseType) =>
+    studentDefenseChipLabels[defenseType];
+
+double studentAttributeChipHeight(Rect card) => math.max(
+  studentAttributeChipMinHeight,
+  card.height * studentAttributeChipHeightFraction,
+);
+
+/// [slot]번째 칩 상자(기울이기 전). 오른쪽 끝이 카드 오른쪽 80° 변을 따라 계단을 이룬다.
+Rect studentAttributeChipBox(Rect card, int slot, double width) {
+  final height = studentAttributeChipHeight(card);
+  final top =
+      studentAttributeChipTop + slot * (height + studentAttributeChipGap);
+  final right =
+      card.right -
+      studentAttributeChipEdgeInset -
+      diagonalCutDepth(top + height);
+  return Rect.fromLTRB(
+    right - width,
+    card.top + top,
+    right,
+    card.top + top + height,
+  );
+}
+
+/// 칩에 들어가는 (라벨, 색) 목록. 라벨을 모르는 타입은 칩을 그리지 않고 다음 칩이 올라온다.
+List<({String label, Color color})> studentAttributeChips(
+  StudentCatalogEntry student,
+) => [
+  if (studentAttackChipLabel(student.attackType) case final label?)
+    (label: label, color: studentAttackTypeColor(student.attackType)),
+  if (studentDefenseChipLabel(student.defenseType) case final label?)
+    (label: label, color: studentDefenseTypeColor(student.defenseType)),
+];
+
+Path studentGridCardPath(Rect rect) {
+  final depth = studentGridCardCutDepth(rect);
   return buildRoundedSectionPolygon([
     Offset(rect.left + depth, rect.top),
     Offset(rect.right, rect.top),
@@ -4329,10 +4521,7 @@ Rect studentGridCardFittedRect(Rect cell) => Alignment.center.inscribe(
 );
 
 Path studentGridCardHitPath(Rect rect) {
-  final depth = math.min(
-    rect.width * 0.25,
-    diagonalCutDepth(rect.height),
-  );
+  final depth = studentGridCardCutDepth(rect);
   return Path()
     ..moveTo(rect.left + depth, rect.top)
     ..lineTo(rect.right, rect.top)
@@ -4352,6 +4541,7 @@ class _StudentGridCardHitClipper extends CustomClipper<Path> {
   bool shouldReclip(_StudentGridCardHitClipper oldClipper) => false;
 }
 
+/// 공격 타입 색(FD-024). 타입 색은 [AppColors] 토큰만 쓴다.
 Color studentAttackTypeColor(String? attackType) => switch (attackType) {
   'Explosive' => AppColors.typeExplosive,
   'Piercing' => AppColors.typePiercing,
@@ -4360,19 +4550,23 @@ Color studentAttackTypeColor(String? attackType) => switch (attackType) {
   'Break' ||
   'Demolition' ||
   'Disassembly' ||
-  'Composite' => const Color(0xff228b22),
-  _ => const Color(0xff5c6ea8),
-};
-
-Color studentDefenseTypeColor(String? defenseType) => switch (defenseType) {
-  'Light' => studentAttackTypeColor('Explosive'),
-  'Heavy' => studentAttackTypeColor('Piercing'),
-  'Special' => studentAttackTypeColor('Mystic'),
-  'Elastic' => studentAttackTypeColor('Sonic'),
-  'Composite' => const Color(0xff228b22),
+  'Composite' => AppColors.typeComposite,
   _ => AppColors.outline,
 };
 
+/// 방어 타입 색. 경장=폭발, 중장=관통, 특수=신비, 탄력=진동, 복합=composite.
+Color studentDefenseTypeColor(String? defenseType) => switch (defenseType) {
+  'Light' => AppColors.typeExplosive,
+  'Heavy' => AppColors.typePiercing,
+  'Special' => AppColors.typeMystic,
+  'Elastic' => AppColors.typeSonic,
+  'Composite' => AppColors.typeComposite,
+  _ => AppColors.outline,
+};
+
+/// 학생 카드 overlay(DE). 셀마다 카드(252:204 contain)를 잡고 그 위에
+/// 속성 글자 칩(오른쪽 위), 미보유 암전, 흰 외곽선·선택 외곽선, 왼쪽 변 배지 스택을,
+/// 카드 아래에는 이름 줄을 그린다. 그리드는 셀을 카드와 같게 잡고 이름 줄만큼 행 간격을 둔다.
 class StudentGridCardOverlayPainter extends CustomPainter {
   const StudentGridCardOverlayPainter({
     required this.students,
@@ -4405,6 +4599,8 @@ class StudentGridCardOverlayPainter extends CustomPainter {
   final List<double> rowHorizontalOffsets;
   final EdgeInsets contentPadding;
   final bool showAttributes;
+
+  /// 카드 밖 이름 줄. 켜면 카드 밑변 아래 [studentGridNameRect]에 그린다.
   final bool showNames;
   final int? selectedIndex;
   final Set<int> selectedIndices;
@@ -4416,12 +4612,34 @@ class StudentGridCardOverlayPainter extends CustomPainter {
   final double outlineWidthFraction;
   final double selectionWidthFraction;
 
+  /// [index] 학생의 카드 rect(그리기와 같은 계산). 범위를 벗어나면 null.
+  Rect? cardRectAt(Size size, int index) {
+    if (index < 0 || index >= students.length) return null;
+    final row = index ~/ columns;
+    if (row >= rows) return null;
+    final content = contentPadding.deflateRect(Offset.zero & size);
+    final cellWidth = (content.width - columnGap * (columns - 1)) / columns;
+    final cellHeight = (content.height - rowGap * (rows - 1)) / rows;
+    final cell = Rect.fromLTWH(
+      content.left +
+          _rowOffset(row) +
+          (index % columns) * (cellWidth + columnGap),
+      content.top + row * (cellHeight + rowGap),
+      cellWidth,
+      cellHeight,
+    );
+    return studentGridCardFittedRect(cell);
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
     final content = contentPadding.deflateRect(Offset.zero & size);
     final cellWidth = (content.width - columnGap * (columns - 1)) / columns;
     final cellHeight = (content.height - rowGap * (rows - 1)) / rows;
+    // 외곽선 두께 기준은 셀의 짧은 변이다. DE 그리드는 셀 = 카드라서 카드 높이의 1%·2%가
+    // 되고(시안 1.67 / 3.35), 1×1 초상 슬롯은 기존 두께를 유지한다.
+    final strokeBase = math.min(cellWidth, cellHeight);
     final cards = <int, Rect>{};
     final visibleLastRow = math.min(rows, lastRow ?? rows);
     final firstIndex = math.min(
@@ -4430,28 +4648,16 @@ class StudentGridCardOverlayPainter extends CustomPainter {
     );
     final lastIndex = math.min(students.length, visibleLastRow * columns);
     for (var index = firstIndex; index < lastIndex; index++) {
-      final column = index % columns;
-      final row = index ~/ columns;
-      if (row >= rows) break;
-      final cell = Rect.fromLTWH(
-        content.left + _rowOffset(row) + column * (cellWidth + columnGap),
-        content.top + row * (cellHeight + rowGap),
-        cellWidth,
-        cellHeight,
-      );
-      final fitted = studentGridCardFittedRect(cell);
+      final fitted = cardRectAt(size, index);
+      if (fitted == null) break;
       cards[index] = fitted;
       _paintCardOverlay(canvas, fitted, students[index]);
     }
-    final outlineWidth = math.max(
-      1.0,
-      math.min(cellWidth, cellHeight) * outlineWidthFraction,
-    );
     final outlinePaint = Paint()
       ..isAntiAlias = true
       ..style = PaintingStyle.stroke
       ..strokeJoin = StrokeJoin.round
-      ..strokeWidth = outlineWidth
+      ..strokeWidth = math.max(1.0, strokeBase * outlineWidthFraction)
       ..color = outlineColor;
     for (final card in cards.values) {
       canvas.drawPath(studentGridCardPath(card), outlinePaint);
@@ -4466,25 +4672,32 @@ class StudentGridCardOverlayPainter extends CustomPainter {
           ..isAntiAlias = true
           ..style = PaintingStyle.stroke
           ..strokeJoin = StrokeJoin.round
-          ..strokeWidth = math.max(
-            1.0,
-            math.min(cellWidth, cellHeight) * selectionWidthFraction,
-          )
+          ..strokeWidth = math.max(1.0, strokeBase * selectionWidthFraction)
           ..color = selectionColor,
       );
     }
     for (final entry in cards.entries) {
-      final index = entry.key;
-      final student = students[index];
-      final badges = studentGridStatusBadgeRects(entry.value);
-      if (!ownedIds.contains(student.studentId)) {
-        paintStudentPortraitStatusBadge(canvas, badges.unowned, 'UNOWNED');
+      final student = students[entry.key];
+      final owned = ownedIds.contains(student.studentId);
+      for (final placement in studentGridStatusBadgeStack(
+        entry.value,
+        owned: owned,
+        planned: plannedIds.contains(student.studentId),
+        jpOnly: student.jpOnly,
+      )) {
+        paintStudentPortraitStatusBadge(
+          canvas,
+          placement.rect,
+          placement.badge.label,
+        );
       }
-      if (student.jpOnly) {
-        paintStudentPortraitStatusBadge(canvas, badges.jp, 'JP');
-      }
-      if (plannedIds.contains(student.studentId)) {
-        paintStudentPortraitStatusBadge(canvas, badges.plan, 'PLAN');
+      if (showNames) {
+        paintStudentGridName(
+          canvas,
+          entry.value,
+          student.displayName,
+          owned: owned,
+        );
       }
     }
   }
@@ -4497,96 +4710,15 @@ class StudentGridCardOverlayPainter extends CustomPainter {
     Rect card,
     StudentCatalogEntry student,
   ) {
-    final infoTop = card.bottom - card.height * studentCardInfoAreaFraction;
-    final attributeBottom =
-        infoTop + card.height * studentCardAttributeAreaFraction;
     canvas.save();
     canvas.clipPath(studentGridCardPath(card), doAntiAlias: true);
-
-    if (showNames) {
-      canvas.drawRect(
-        Rect.fromLTRB(card.left, infoTop, card.right, card.bottom),
-        Paint()..color = const Color(0xb35b626b),
-      );
-    }
     if (showAttributes) {
-      final topBounds = _rowBounds(card, infoTop);
-      final bottomBounds = _rowBounds(card, attributeBottom);
-      final topMiddle = (topBounds.$1 + topBounds.$2) / 2;
-      final bottomMiddle = (bottomBounds.$1 + bottomBounds.$2) / 2;
-      final attackPath = Path()
-        ..moveTo(topBounds.$1, infoTop)
-        ..lineTo(topMiddle, infoTop)
-        ..lineTo(bottomMiddle, attributeBottom)
-        ..lineTo(bottomBounds.$1, attributeBottom)
-        ..close();
-      final defensePath = Path()
-        ..moveTo(topMiddle, infoTop)
-        ..lineTo(topBounds.$2, infoTop)
-        ..lineTo(bottomBounds.$2, attributeBottom)
-        ..lineTo(bottomMiddle, attributeBottom)
-        ..close();
-      canvas.drawPath(
-        attackPath,
-        Paint()..color = studentAttackTypeColor(student.attackType),
-      );
-      canvas.drawPath(
-        defensePath,
-        Paint()..color = studentDefenseTypeColor(student.defenseType),
-      );
-    }
-    if (showNames) {
-      _paintName(canvas, card, attributeBottom, student.displayName);
+      paintStudentAttributeChips(canvas, card, studentAttributeChips(student));
     }
     if (!ownedIds.contains(student.studentId)) {
       paintUnownedStudentPortraitStatus(canvas, card, showBadge: false);
     }
-
     canvas.restore();
-  }
-
-  (double, double) _rowBounds(Rect card, double y) {
-    final progress = ((y - card.top) / card.height).clamp(0.0, 1.0);
-    final depth = diagonalCutDepth(card.height);
-    return (card.left + (1 - progress) * depth, card.right - progress * depth);
-  }
-
-  void _paintName(Canvas canvas, Rect card, double top, String name) {
-    final bottom = card.bottom;
-    final topBounds = _rowBounds(card, top);
-    final bottomBounds = _rowBounds(card, bottom);
-    final left = math.max(topBounds.$1, bottomBounds.$1) + 1;
-    final right = math.min(topBounds.$2, bottomBounds.$2) - 1;
-    final height = math.max(1.0, bottom - top);
-    final painter = TextPainter(
-      text: TextSpan(
-        text: name,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: studentCardNameFontSize(height),
-          fontWeight: FontWeight.w700,
-          height: 1,
-          shadows: const [
-            Shadow(
-              color: Color(0xaa000000),
-              blurRadius: 1,
-              offset: Offset(0, 1),
-            ),
-          ],
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-      textAlign: TextAlign.center,
-      maxLines: 1,
-      ellipsis: '…',
-    )..layout(maxWidth: math.max(1.0, right - left));
-    painter.paint(
-      canvas,
-      Offset(
-        left + (right - left - painter.width) / 2,
-        top + (height - painter.height) / 2,
-      ),
-    );
   }
 
   @override
@@ -4612,8 +4744,94 @@ class StudentGridCardOverlayPainter extends CustomPainter {
       oldDelegate.selectionWidthFraction != selectionWidthFraction;
 }
 
-double studentCardNameFontSize(double nameAreaHeight) =>
-    math.max(6.0, math.min(12.0, nameAreaHeight * 0.8));
+/// 속성 글자 칩 글자 스타일(카드 높이에 따라 크기만 바뀐다).
+TextStyle studentAttributeChipTextStyle(double chipHeight) => TextStyle(
+  fontFamily: AppFonts.body,
+  fontFamilyFallback: AppFonts.fallback,
+  color: Colors.white,
+  fontSize: chipHeight * studentAttributeChipFontFraction,
+  fontWeight: FontWeight.w800,
+  height: 1,
+);
+
+/// 칩 [chips]를 카드 오른쪽 위에 계단으로 그린다. 카드 clip 안에서 부른다.
+/// 그린 칩 상자(기울이기 전)를 돌려준다.
+List<Rect> paintStudentAttributeChips(
+  Canvas canvas,
+  Rect card,
+  List<({String label, Color color})> chips,
+) {
+  final height = studentAttributeChipHeight(card);
+  final padding = height * studentAttributeChipPaddingFraction;
+  final boxes = <Rect>[];
+  for (var slot = 0; slot < chips.length; slot++) {
+    final chip = chips[slot];
+    final text = TextPainter(
+      text: TextSpan(
+        text: chip.label,
+        style: studentAttributeChipTextStyle(height),
+      ),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final box = studentAttributeChipBox(card, slot, text.width + padding * 2);
+    final path = skewBoxPath(
+      box.size,
+      radius: studentAttributeChipRadius,
+    ).shift(box.topLeft);
+    canvas.drawPath(
+      path.shift(const Offset(0, 1)),
+      Paint()
+        ..color = studentAttributeChipShadowColor
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1),
+    );
+    canvas.drawPath(path, Paint()..color = chip.color);
+    text.paint(
+      canvas,
+      Offset(
+        box.center.dx - text.width / 2,
+        box.center.dy - text.height / 2,
+      ),
+    );
+    boxes.add(box);
+  }
+  return boxes;
+}
+
+/// 이름 글자 스타일. 미보유는 흐리게(FD-043).
+TextStyle studentGridNameTextStyle({required bool owned}) => TextStyle(
+  fontFamily: AppFonts.body,
+  fontFamilyFallback: AppFonts.fallback,
+  color: owned ? studentGridOwnedNameColor : studentGridUnownedNameColor,
+  fontSize: studentGridNameFontSize,
+  fontWeight: FontWeight.w700,
+  height: 1,
+);
+
+/// 카드 밖 이름 줄을 [studentGridNameRect]의 가운데에 그린다(넘치면 말줄임).
+void paintStudentGridName(
+  Canvas canvas,
+  Rect card,
+  String name, {
+  required bool owned,
+}) {
+  final rect = studentGridNameRect(card);
+  if (rect.width <= 0) return;
+  final painter = TextPainter(
+    text: TextSpan(text: name, style: studentGridNameTextStyle(owned: owned)),
+    textDirection: TextDirection.ltr,
+    textAlign: TextAlign.center,
+    maxLines: 1,
+    ellipsis: '…',
+  )..layout(maxWidth: rect.width);
+  painter.paint(
+    canvas,
+    Offset(
+      rect.left + (rect.width - painter.width) / 2,
+      rect.top + (rect.height - painter.height) / 2,
+    ),
+  );
+}
 
 /// 학생 화면의 사선 스크롤바: 공용 [DiagonalScrollbar](FE2-a)에 학생 화면 값을 넘긴다.
 ///

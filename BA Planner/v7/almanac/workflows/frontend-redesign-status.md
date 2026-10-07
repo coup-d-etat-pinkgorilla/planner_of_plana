@@ -20,13 +20,13 @@ sources:
 
 ## 현재 상태
 
-**FE2-c 완료.** 결과(오케스트레이터 로그 2026-10-07 10:26, 아래 FE2-c commit record):
-- gate `debug/frontend_gate/20261007_102114` GREEN. 내역은 flutter-test-1 294, flutter-test-2 194, 프로세스 테스트 28, golden 17 차이 0이다(합계 516 = 484 + 32).
-- 커밋 `bb1e3478ea18bdd04a8a829adbfb6d6ae52fdc80`.
-- 후속(오케스트레이터 지정): 모달 포커스 가두기·배경 접근성 차단과 Esc 이중 처리는 FE3-d 필터 모달에서, `ShortageBar`·`ShortageIconSlot` 교체는 FE2-d에서 한다.
+**FE2-d 완료. FE2(공통 위젯 키트·UI Kit 갤러리) 완료.** 결과(오케스트레이터 로그 2026-10-07 11:17, 아래 FE2-d commit record):
+- gate `debug/frontend_gate/20261007_111210` GREEN. 내역은 flutter-test-1 295, flutter-test-2 218, 프로세스 테스트 28, golden 17 차이 0이다(합계 541 = 516 + 25).
+- 커밋 `1f65b64a`(FE2-d), 개편 문서 커밋 `e130110d`.
+- 남은 일: 사용자 UI Kit 갤러리 시각 검수. 지적 사항은 해당 위젯을 처음 쓰는 화면 slice에서 고친다.
 
-**진행 중: FE2-d 이미지·차트 원자, 시작 커밋 `bb1e3478ea18bdd04a8a829adbfb6d6ae52fdc80`.**
-- 자세한 내용은 아래 "FE2-d" 절에 적는다.
+**진행 중: FE3-a DE 카드·그리드(시각 변경), 시작 커밋 `e130110d7b71f6c1bff729396274cbe387e5cdf0`.**
+- 자세한 내용은 아래 "FE3-a" 절에 적는다. 코드 작성 완료, 사용자 ① gate(golden만 RED 예상) 대기.
 
 ### 커밋 기록
 
@@ -40,6 +40,7 @@ sources:
 | FE2-a | `97c568b6` | 공용 키트: 사선 스크롤바·포그 파라미터·`DiagonalScrollViewport`·`DiagonalRow`·UI Kit 갤러리, private 스크롤바 4종 교체(동작 보존) | `20261007_003201` RED(테스트 기대값 1ulp, 오케스트레이터 수정) → `20261007_004310` GREEN(456 + golden 17) |
 | FE2-b | `859c554a` | 소형 컨트롤·제목 키트(칩·단계 태그·세그먼트·토글 칩·타입 칩·필터 버튼·스위치·미세 조절·tonal·레일 버튼·제목 4종), 요소 빌더 스테퍼 추출(동작 보존), 갤러리 FE2-b 구역 | `20261007_090015` GREEN(301 + 155 + 프로세스 28 + golden 17) |
 | FE2-c | `bb1e3478` | 오버레이 키트(`InfoPopover`·`AnchoredFlyout`+프리셋·FD-090 부족 재화 2종·`BaModal` 스크림 4종), 갤러리 FE2-c 구역 | `20261007_102114` GREEN(294 + 194 + 프로세스 28 + golden 17) |
+| FE2-d | `1f65b64a` | 이미지·차트 원자 키트(`ItemIconTile`·`ItemTile`·`PortraitStrip`·`SkewBar`·`KpiTile`·차트 원자·빗금·`GameAssets`), `PlanInventoryCoverageBar`를 `SkewBar`로 흡수, 계획 위젯 asset 상수 → `GameAssets`(동작 보존), 갤러리 FE2-d 구역 | `20261007_111210` GREEN(295 + 218 + 프로세스 28 + golden 17) |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -1306,3 +1307,166 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice re
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_111210\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE3-a 착수 기록 (2026-10-07)
+
+- 범위: 워크플로 FE3-a 행 그대로. 속성 글자 칩(오른쪽 위, 80° 계단, 방어 축약 라벨 — FD-047), 이름 카드 밖(미보유 흐림, E의 2색 밑줄 없음 — FD-043), 상태 배지 왼쪽 80° 변 채워 쌓기(UNOWNED → PLAN → JP — FD-044), 행 피치 카드 + 이름 줄 ≈191.3·카드 중심 기준 행 이동(FD-045), 이름 끄면 이름 줄 접기(FD-046 (a)), 리스트 보기 현행 유지(FD-048), 복합장갑 색 `#228b22` → `AppColors.typeComposite`(FD-024).
+- 범위 밖: 인연 게이지(FE3-b), S4 확장(FE3-c), 필터 모달(FE3-d), 폼 교대(FE3-e).
+- 시작 커밋: `e130110d7b71f6c1bff729396274cbe387e5cdf0`.
+- 막힘: 대장 막힘 요약에서 FE3-a를 막는 열림 FD 없음.
+- 방어 칩 라벨: 프롬프트의 "특장" 대신 시안·FD-047의 "특수"를 쓴다(2026-10-07 사용자 확인).
+- 시각 변경 slice: golden 갱신은 오케스트레이터 검토 뒤 사용자가 `fe_gate.ps1 -UpdateGoldens`로 한다. golden PNG를 직접 만들거나 지우지 않는다.
+- 사본: 고칠 기존 파일마다 착수 전 사본을 `debug/frontend_fe3a/pre/<v7 기준 경로>`에 둔다.
+- 기기 쓰기: 매번 새 업로드 경로에서 쓰고, 쓴 뒤 다시 읽어 바이트로 대조한다.
+
+## FE3-a 종료 기록 (2026-10-07, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없어 analyze·테스트·golden을 돌리지 못했다. 통과를 주장하지 않는다.
+- 쓴 API는 Flutter 3.44.0 소스(sparse clone)와 대조했다. lint 규칙은 flutter_lints 6.0.0 목록으로 확인했다.
+- 별도 검토 에이전트가 바뀐 파일을 사본과 대조해 정적으로 읽었다. 보고 내용은 이렇다.
+  - 컴파일 오류·analyze 지적 없음. 지운 심볼을 참조하는 곳이 lib·test에 남지 않았다.
+  - 새 테스트의 수치 기대값을 Python으로 다시 계산해 모두 맞았다(칩·배지·이름·행 피치·행 이동·hit target).
+  - `paints` 패턴이 painter의 실제 호출 순서와 맞는다.
+- 시안 값은 `dc_outline.py`와 사본 원문(칩 span 스타일)에서 읽었다: Student(카드 206.87×167.47), W-Card-States(200×161.9), W-Card-Grid-DE(200.80×162.55), W-Card-Variants D·E.
+
+### 바꾼 것
+
+- **`frontend/lib/ui/widgets/student_section_layout.dart`**
+  - **그리드 기하(FD-045, FD-046 (a))**: `StudentDiagonalGrid`의 셀을 정사각형에서 카드(폭 × 204/252)로 바꿨다. 행 사이에 이름 줄 20(3 + 16 + 1)과 3.84를 둔다. 그래서 이미지 grid·overlay의 `rowGap` = 23.84이고 아래 padding = 8 + 20이다. 행 가로 이동은 카드 중심 기준이다. 이름을 끄면 이름 줄을 접는다(`rowGap` 3.84, 아래 padding 8). 공용 함수: `studentGridRowGeometry`·`StudentGridRowGeometry`, `studentGridRowHorizontalOffset`. 이미지 grid·overlay painter·hit target이 같은 기하를 쓴다. 기준 viewport에서 행 피치는 카드 + 23.84 ≈ 190.7이다(카드 폭 206.12 — 시안 206.87과의 차이는 아래 알려진 시안 차이 1).
+  - **카드 overlay(FD-043)**: 카드 안 하단 16% 정보 띠(3% 속성 띠 + 13% 회색 이름 띠)를 지웠다. 대신 아래를 그린다.
+    - 오른쪽 위 속성 글자 칩: `paintStudentAttributeChips`, `studentAttributeChipBox`, `studentAttributeChips`. 공격 → 방어 순서이고, 칩 높이 max(14, 카드 높이 × .11), 위 4, 칩 사이 3, 글자 높이 × .55 w800, 여백 × .45, r3, −10° 기울임(키트 `skewBoxPath`), 그림자 0 1 2 @.4다. 칩 상자 오른쪽 끝은 칩 밑변 높이에서 카드 오른쪽 80° 변보다 6px 안쪽이라 두 칩이 80° 계단을 이룬다.
+    - 미보유 암전: 칩까지 덮는다.
+    - 카드 밖 이름 줄: `studentGridNameRect`, `paintStudentGridName`. 카드 아래 3, 높이 16, 폭 = 카드 하단 변, Pretendard 13 w700, 보유 `AppColors.text` · 미보유 `AppColors.textMuted`(흐림), 말줄임.
+    - E안의 2색 밑줄은 그리지 않는다.
+  - **배지(FD-044)**: `studentGridStatusBadgeRects`(고정 3슬롯, JP 우상단)를 `studentGridStatusBadgeStack`·`studentGridStatusBadgeSlotRect`·`StudentGridStatusBadge`로 바꿨다. 있는 배지만 UNOWNED → PLAN → JP 순서로 왼쪽 80° 변을 따라 위에서부터 채운다. 크기·pill 스타일은 그대로다.
+  - **라벨(FD-047)**: 카드 칩 라벨 맵 `studentAttackChipLabels`(폭발/관통/신비/진동/화학), `studentDefenseChipLabels`(경장/중장/특수/탄력/복합)를 새로 뒀다. 필터 라벨 `studentFilterValueLabels`는 그대로다(경장갑…).
+  - **타입 색(FD-024)**: 복합장갑·복합 공격 계열 `#228b22` → `AppColors.typeComposite`(#7a8ea3). 모르는 공격 타입의 대체 색 `#5c6ea8` → `AppColors.outline`(방어와 같다). 이제 타입 색은 `AppColors` 토큰만 쓴다.
+  - **외곽선 두께**: 기준은 그대로 "셀의 짧은 변"이다. 셀이 카드가 되었으므로 그리드 카드는 카드 높이의 1%·2%가 된다(시안 1.67·3.35, 이전 2.07·4.13). 1×1 초상 슬롯(학생 S3, 계획 요소 초상)은 이전 두께 그대로다.
+  - **폐기**: `studentCardInfoAreaFraction`, `studentCardAttributeAreaFraction`, `studentCardNameFontSize`, `studentGridStatusBadgeRects`, painter의 `_rowBounds`·`_paintName`.
+  - **새 공용 기하·painter 도우미**: `studentGridCardCutDepth`, `StudentGridCardOverlayPainter.cardRectAt`(그리기와 같은 계산, 테스트·검수용). painter 생성자는 바뀌지 않아 계획 요소 초상(`plan_element_builder`)·warmup·S3 호출부는 그대로다.
+- **`frontend/lib/app/theme.dart`**: `typeComposite` 주석만 고쳤다("아직 #228b22를 쓴다" → FE3-a에서 바꿨다). 값은 같다.
+- **스캐너 소유 파일**: `scan_student_review_workspace.dart`·`scan_inventory_identity_review.dart`·`scan_page.dart`·`scan_companion_dock.dart`에는 `#228b22`(대소문자 무관)·`Composite`가 없다(lib 전체 검색). 그래서 건드릴 것이 없었다. 택틱 소유 파일도 건드리지 않았다.
+- **리스트 보기(FD-048)**: `StudentDiagonalList`는 바꾸지 않았다.
+- **계획 쪽 회귀 범위**: `plan_student_selector`(4열)는 `StudentDiagonalGrid`를 쓰므로 같은 DE 카드·행 기하가 적용된다. `plan_element_builder`의 1×1 초상은 칩·이름이 꺼져 있어 배지 채워 쌓기만 영향을 받는다.
+
+### 문서
+
+- `almanac/design/student-card-rendering-lessons-2026-08-02.md`: "현재 그리드 카드 렌더링 계약"에 "카드 정보 영역: DE 카드"와 "상태 배지: 왼쪽 80° 변 채워 쌓기" 소절을 새로 썼다. 고정 슬롯 배지 서술은 지웠다. 후속 체크리스트 두 줄도 고쳤다.
+- `almanac/design/section-template-studio.md`(기존 미커밋 변경 있음, CRLF 유지): 학생 Section 2 grid 문단(행 간격·DE overlay·토글), 표의 "Section 2 간격·scroll"·"학생 카드" 행, "학생 카드 이름 크기 계약" → "학생 카드 이름 계약"을 고쳤다. 사본은 `debug/frontend_fe3a/pre/almanac/design/section-template-studio.md`이고, `fe_commit.ps1`이 3-way 병합한다.
+
+### 테스트
+
+- **새 파일 `frontend/test/student_card_de_test.dart`(17건)**
+  - 칩: 축약 라벨과 필터 전체 라벨, 칩 순서와 모르는 타입 빠짐, 칩 상자 위치(시안 두 카드 크기, closeTo), 글자 스타일, painter가 타입 색으로 칩을 그리고 속성을 끄면 안 그림, 칩 계단.
+  - 배지: 세 배지 쌓기 순서·위치·폭(시안 좌표), 있는 배지만 채움(PLAN만·JP만·UNOWNED+PLAN·없음), painter가 같은 칸에 그림.
+  - 이름: 이름 rect, 보유·미보유 색(흐림), painter가 카드 아래에 그리고 끄면 안 그림.
+  - 행 기하: 피치 191.31 / 이름 접힘 171.31, 행 left 192.95·159.21·125.48(시안).
+  - 위젯 2건(1913.69×1140.62): 셀 = 카드, 행 피치·행 이동, 이름 줄은 누를 자리가 아님, 이름 끄면 접힘.
+  - 복합장갑 색.
+- **고친 기존 테스트(`student_studio_layout_test.dart`)**:
+  - 지운 것 1건 + 대체: `student grid badges follow both top corners and the left rail`(고정 슬롯, JP 우상단)를 `student grid badges pack down the left 80 degree rail`로 바꿨다. 같은 내용을 새 파일의 배지 테스트 3건이 더 자세히 덮는다.
+  - 기대값 수정 3건:
+    - `student card name text is 1.5x larger with an 80 percent target` → `student grid name and Section 1 control text sizes`. `studentCardNameFontSize` 대신 `studentGridNameFontSize == 13`을 확인한다.
+    - `student attack and defense colors preserve the v6 mapping`: 폐기 상수 두 줄을 뺐다.
+    - `student grid is a single eight-column image grid`: `rowGap` 3.84 → 23.84, 아래 padding 28을 확인한다.
+- 계획 테스트(`planning_page_test`의 4열 선택기 오른쪽 위 탭, `plan_element_builder_test`의 초상 배지)는 바뀐 기하에 기대지 않아 고치지 않았다(검토 에이전트가 4열 오른쪽 위 탭이 스크롤바 띠에 걸리지 않음을 계산으로 확인).
+- 예상 건수: 541 + 17 = 558 + golden 17.
+
+### 처리한 FD
+
+- **FD-043**(확정): D(오른쪽 위 글자 칩) + E(이름 카드 밖), E의 2색 밑줄 없음.
+- **FD-044**(확정): 배지 왼쪽 80° 변 채워 쌓기, 우상단 JP 슬롯 폐기.
+- **FD-045**(확정): 행 피치 = 카드 + 이름 줄 + 3.84, 카드 중심 기준 행 이동. 이미지 grid·overlay·hit target이 같은 기하를 쓴다.
+- **FD-046**(워커 재량): (a) 이름을 끄면 이름 줄을 접는다.
+- **FD-047**(워커 재량): 칩 축약 라벨 경장/중장/특수/탄력/복합, 공격 폭발/관통/신비/진동(+화학). 필터는 전체 라벨이다. 프롬프트의 "특장" 대신 시안·대장의 "특수"를 썼다(2026-10-07 사용자 확인). "복합"은 시안에 없는 값이라 대장대로 추정 라벨이다.
+- **FD-048**(워커 재량): 리스트 보기는 현행 유지.
+- **FD-024**(워커 재량): 복합장갑 `AppColors.typeComposite`. 타입 색은 토큰만 쓴다.
+- FD-012: 해당 없음(별 색 변경 없음).
+
+### golden 갱신 사유(장면별 예상)
+
+바뀔 장면(3):
+- `students-grid`: 학생 그리드 카드가 바뀐다. 카드 안 회색 이름 띠와 속성 색 띠가 사라지고, 오른쪽 위에 칩 2개, 카드 아래에 이름 줄이 생긴다. 외곽선이 얇아진다(셀 짧은 변 → 카드 높이 1%). 행 가로 이동 기준이 셀 중심 → 카드 중심으로 바뀌어 카드가 오른쪽으로 약 3.5px 옮겨진다(셀 높이 차이의 절반 / tan80). 배지는 한 개라 같은 칸이다.
+- `students-detail`: 같은 그리드 변화. S3 선택 초상(1×1, 칩·이름 꺼짐)은 배지가 한 개면 이전과 같아야 한다.
+- `plan-student-selector`: 선택기 4열 그리드가 같은 DE 카드·행 기하로 바뀐다.
+
+차이가 없어야 할 장면(14): `title`, `account-manager`, `account-editor`, `account-picker`, `home`, `plan-bottleneck`, `plan-by-phase`, `plan-overall`, `plan-phase-editor`, `plan-element-builder`, `plan-preset-manager`, `plan-scenario-list`, `plan-scenario-compare`, `scan-student-review`.
+- 기존 golden에서 `plan-element-builder` 초상의 배지는 첫 칸 하나다. 그래서 채워 쌓기와 같은 자리라 차이가 없어야 한다. 이 장면에 차이가 나면 배지가 두 개 이상(예: 보유 + PLAN)이라는 뜻이니 차이 이미지를 보고 판단한다.
+- `title`의 warmup 카드(불투명도 1/255)는 캡처 전에 사라진다(harness가 확인한다).
+
+### 검수표 (mock 모드, 2560×1440 모니터 최대화 = 2560×1392)
+
+실행: `cd frontend; flutter run -d windows --dart-define=BA_PLANNER_USE_REAL_BACKEND=false`(mock은 전체 265명 catalog, 보유 42명).
+
+**학생 탭 그리드 → 캔버스 Student · W-Card-Grid-DE · W-Card-Variants(D·E) · W-Card-States**
+
+| 대조 포인트 | 확인 |
+|---|---|
+| 속성 칩 | 카드 오른쪽 위에 공격 → 방어 칩 2개. 두 번째 칩이 아래로 3, 왼쪽으로 약 3.7 들어간 80° 계단. −10° 기울기, r3, 그림자. 글자 흰색 w800 약 10px. 라벨 폭발/관통/신비/진동 · 경장/중장/특수/탄력/복합 |
+| 이름 | 카드 밖 아래 줄(카드 밑변 + 3, 13px w700), 폭 = 카드 하단 변, 가운데 정렬. 미보유는 #9eb0c2로 흐리다. 카드 안 회색 띠·2색 밑줄 없음 |
+| 배지 | 왼쪽 80° 변을 따라 UNOWNED → PLAN → JP 채워 쌓기. 우상단에 JP 없음. 보유 + PLAN이면 PLAN이 맨 위. 세 배지: JP 전용 미보유 학생(예: 슌(수영복))을 계획에 넣으면 |
+| 행 | 8열, 행 피치 ≈191(카드 + 이름 줄), 행마다 왼쪽으로 ≈33.6 이동(80° 레일). 맨 아래 행 이름 줄까지 스크롤된다 |
+| 토글 | S4 "학생 이름 표시" 끄기 → 이름 줄이 접혀 행 간격이 ≈3.8이 된다. "학생 공격/방어 속성 표시" 끄기 → 칩이 사라진다 |
+| 복합장갑 | 아리스(무장)·케이의 두 번째 칩 "복합"이 회청색 #7a8ea3(이전 초록 아님) |
+| 상태(W-Card-States) | 선택 = #ff72b6 2% + 흰 1% 외곽선, 미보유 암전이 칩까지 덮는다, 인연 20/50/100 배경 구간은 이전과 같다 |
+| S3 선택 초상 | 칩·이름 없음, 배지는 왼쪽 변 채워 쌓기(보유 + PLAN이면 PLAN이 첫 칸) |
+| 리스트 보기 | 이전과 같다(FD-048) |
+
+**계획 학생 선택기**: 계획 탭 → 학생 선택(`plan-student-selector-launch`). 4열 DE 카드(칩·카드 밖 이름·배지 쌓기), 행 피치 = 카드 + 23.84. 여러 명을 고르면 핑크 외곽선이 생긴다. 1~4행 4열 카드의 오른쪽 위를 눌러도 선택된다. 확인 → 요소 빌더 초상의 배지 위치를 본다.
+
+### 알려진 시안 차이
+
+1. **카드 폭**: 기준 viewport에서 앱 카드 폭은 206.12이고 시안은 206.87이다. 셀 폭 산식(컨테이너 폭 − inset − 80° trajectory − 스크롤바 예약 14 − 열 간격)이 FE3-a 전부터 쓰던 값이라 바꾸지 않았다. 그래서 행 피치는 190.7(시안 191.31), 첫 행 left는 약 0.5px 다르다. 같은 카드 폭을 넣으면 시안 값과 일치한다(테스트).
+2. **이름 넘침**: 시안은 넘치면 잘리기만 한다(overflow hidden). 앱은 말줄임(…)을 쓴다.
+3. **칩 오른쪽 위치**: 시안 칩의 right 값(9.8/13.5, 10.0/13.7, 9.9/13.5)을 "칩 밑변 높이에서 카드 오른쪽 변 − 6"으로 모델링했다. 모든 시안 카드 크기에서 ±0.05px 안이다.
+4. **배지 높이**: 시안 배지 상자는 23px 고정이지만 쌓기 간격은 카드 높이 14%(23.45)로 계산되어 있다. 앱은 기존대로 상자도 14%다(±0.5px).
+5. **화학 공격 칩 색**: 시안·토큰에 색이 없어 `AppColors.outline`이다. 현재 catalog에는 화학 학생이 없다.
+6. **다중 폼 교대**(시안 첫 두 카드 호시노(무장)·슌(수영복))는 FE3-e 몫이다.
+7. **인연 게이지·S4 확장**(Student 시안 S3·S4)은 FE3-b·FE3-c 몫이다.
+
+### 미검증 항목
+
+1. analyze, 전체 테스트(기존 541 + 새 17), golden 17장 비교. 사용자 PC gate가 필요하다.
+2. 실행해 봐야 아는 것:
+   - `paints` 패턴(칩·배지·이름 호출 순서). 검토 에이전트가 순서를 확인했지만 실행은 못 했다.
+   - 위젯 테스트 기대값(1913.69×1140.62 grid의 hit target).
+   - 실제 글꼴에서 칩 글자 세로 가운데.
+   - 실패하면 테스트 기대값부터 확인한다.
+3. golden 3장 변화가 예상과 같은지(위 장면별 예상). 14장은 차이 0이어야 한다.
+4. 실제 화면 시각 비교는 사용자 검수가 필요하다(위 검수표).
+
+### 발견 사항
+
+1. **방어 칩 라벨 표기 불일치**: 프롬프트의 "특장"과 대장·시안의 "특수"가 달랐다. 사용자 확인으로 "특수"를 썼다.
+2. **warmup 카드 이름**: `student_grid_warmup.dart`의 warmup 카드(126×102, `showNames: true`)는 이름을 카드 아래, 상자 밖에 그린다. 불투명도 1/255이고 글자 그리기 경로를 미리 데우는 목적이라 그대로 두었다(파일 미수정).
+
+### 사용자 실행 순서
+
+①만 먼저 실행한다. golden만 RED(위 3장)일 것으로 예상한다. 결과(`debug/frontend_gate/<stamp>/summary.txt`, `frontend/test/goldens/failures/`)를 오케스트레이터에게 보내고 멈춘다.
+
+```powershell
+# ① 비교 gate. golden 3장(students-grid, students-detail, plan-student-selector)만 RED 예상
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+② 오케스트레이터가 차이 이미지를 승인한 뒤에만:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3a -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3a
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesign-docs
+```
+
+`debug/frontend_fe3a/commit.json`의 `whole`에 `frontend/test/goldens/baseline`을 넣었다. 사본은 `debug/frontend_fe3a/pre/` 5개다(`student_section_layout.dart`, `theme.dart`, `student_studio_layout_test.dart`, 두 almanac design 문서).
+
+### 다음 행동
+
+1. 사용자: ①을 실행하고 결과를 오케스트레이터에게 넘긴다.
+2. 오케스트레이터: golden 차이 검토 → 승인되면 ② → 다음 slice FE3-b(인연 B 게이지).
+
+### FE3-a commit record (2026-10-07 12:16, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_121200\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: almanac/design/section-template-studio.md

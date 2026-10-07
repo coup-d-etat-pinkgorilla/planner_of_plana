@@ -73,18 +73,36 @@ void main() {
     );
   });
 
-  test('student grid badges follow both top corners and the left rail', () {
+  test('student grid badges pack down the left 80 degree rail', () {
     const card = Rect.fromLTWH(10, 20, 252, 204);
-    final badges = studentGridStatusBadgeRects(card);
+    final badges = studentGridStatusBadgeStack(
+      card,
+      owned: false,
+      planned: true,
+      jpOnly: true,
+    );
     final expectedGap = card.shortestSide * 0.01;
     final expectedDepth = card.height / math.tan(80 * math.pi / 180);
+    final step = badges.first.rect.height + expectedGap;
 
-    expect(badges.unowned.top, badges.jp.top);
-    expect(badges.unowned.left, closeTo(card.left + expectedDepth, 1e-9));
-    expect(badges.jp.right, lessThan(card.right));
-    expect(badges.jp.right, greaterThan(card.right - 6));
-    expect(badges.plan.top - badges.unowned.bottom, closeTo(expectedGap, 1e-9));
-    expect(badges.plan.left, lessThan(badges.unowned.left));
+    expect(badges.map((item) => item.badge), [
+      StudentGridStatusBadge.unowned,
+      StudentGridStatusBadge.plan,
+      StudentGridStatusBadge.jp,
+    ]);
+    expect(badges.first.rect.left, closeTo(card.left + expectedDepth, 1e-9));
+    for (var slot = 1; slot < badges.length; slot++) {
+      expect(
+        badges[slot].rect.top - badges[slot - 1].rect.bottom,
+        closeTo(expectedGap, 1e-9),
+      );
+      expect(
+        badges[slot - 1].rect.left - badges[slot].rect.left,
+        closeTo(step / math.tan(80 * math.pi / 180), 1e-9),
+      );
+    }
+    // 오른쪽 위는 속성 칩 자리다(JP 고정 슬롯 폐기, FD-044).
+    expect(badges.last.rect.right, lessThan(card.center.dx));
   });
 
   test('student Studio action containers use one size and cadence', () {
@@ -208,10 +226,8 @@ void main() {
     expect(ids(StudentGridSort.bondAscending), ['bravo', 'alpha', 'charlie']);
   });
 
-  test('student card name text is 1.5x larger with an 80 percent target', () {
-    expect(studentCardNameFontSize(10), 8);
-    expect(studentCardNameFontSize(20), 12);
-    expect(studentCardNameFontSize(4), 6);
+  test('student grid name and Section 1 control text sizes', () {
+    expect(studentGridNameFontSize, 13);
     expect(studentSortCompactFontSize, 15);
     expect(studentSortMenuFontSize, 18);
     expect(studentGridDisplayToggleFontSize, 16.5);
@@ -646,8 +662,6 @@ void main() {
   });
 
   test('student attack and defense colors preserve the v6 mapping', () {
-    expect(studentCardInfoAreaFraction, 0.16);
-    expect(studentCardAttributeAreaFraction, 0.03);
     expect(studentAttackTypeColor('Explosive'), const Color(0xff920008));
     expect(studentAttackTypeColor('Piercing'), const Color(0xffbd8901));
     expect(studentAttackTypeColor('Mystic'), const Color(0xff226f9b));
@@ -1066,7 +1080,9 @@ void main() {
     expect(grid.columns, 8);
     expect(grid.rows, 3);
     expect(grid.columnGap, 4.8);
-    expect(grid.rowGap, 3.84);
+    // DE 그리드: 이미지 셀 = 카드, 행 간격 = 이름 줄 20 + 3.84(FD-045).
+    expect(grid.rowGap, closeTo(23.84, 1e-9));
+    expect(grid.contentPadding.bottom, closeTo(8 + 20, 1e-9));
     expect(grid.items, hasLength(34));
     expect(grid.items.first.scale, 1);
     expect(grid.items.first.edgeCropFraction, 0.11);
