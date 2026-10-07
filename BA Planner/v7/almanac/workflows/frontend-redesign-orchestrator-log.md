@@ -164,3 +164,29 @@ topics: [workflow, design]
   ① students-detail PNG가 students-grid와 바이트 단위로 같다(FE1-g부터). "상세" 장면이 그리드와 다른 상태를 그리지 않는다.
   ② 학생 fixture가 2명이고 둘 다 보유·배지 1개다. 배지 채워 쌓기(FD-044), 미보유 흐림, 이름 줄 접힘(FD-046)은 golden이 보지 않는다(widget test만 본다).
   → FE3-b(시각 변경, golden 갱신이 어차피 있는 slice)에서 학생 golden 장면을 보강한다: 미보유·PLAN·JP 배지 2개 이상인 학생 포함, students-detail은 선택 학생 상세가 그리드와 다르게 보이도록.
+
+## 2026-10-07 12:17 — FE3-a 커밋 확인
+
+- `-UpdateGoldens` → gate GREEN(golden 17) → 커밋 `620a98ee`. 10파일: lib 2, golden PNG 3, 테스트 2(새 student_card_de_test 490줄), 문서 3. section-template-studio.md의 C 이전 미커밋 변경은 작업트리에 남았다(병합 정상). 문서 커밋 `fdf0097e`.
+- FE3-b 프롬프트에 학생 golden 장면 보강을 넣는다(12:05 항목). 새 장면은 기준 PNG가 없어 ① 비교에서 차이 이미지가 생기지 않는다. 그래서 순서를 세 단계로 한다.
+  ① gate: 바뀐 장면 차이 검토.
+  ② `-UpdateGoldens` + gate: 오케스트레이터가 새 기준 PNG를 직접 열어 검토.
+  ③ 커밋.
+
+## 2026-10-07 12:47 — FE3-b golden ① 검토(갱신 승인)
+
+- gate ① RED. golden 3건만 실패했다: students-grid 7.29%, students-detail 7.57%, students-grid-name-off는 기준 없음(새 장면). 나머지 golden 15, 일반 541, 프로세스 28, analyze·almanac·diff-check는 PASS다. 계획 golden(plan-*)은 차이 0이다(fixture 분리 확인).
+- 차이 이미지 검토(차이가 큰 것은 fixture를 보강했기 때문이다).
+  · 그리드 학생이 2명에서 7명이 됐다.
+  · 미보유 2명(세리카, 슌(수영복))은 흐리고 이름이 회색이다.
+  · 슌은 배지 3개를 왼쪽 변을 따라 쌓았다(FD-044).
+  · 긴 이름은 "호시노(카드 하단 변보다 긴 이…"로 줄였다.
+  · students-detail은 이제 아야네를 선택한 상세다. 그리드 장면과 다르다(12:05 지적 해소).
+  · 인연 B 게이지: 현재 24 채움 + 45까지 빗금 + 점선 + "→45"(FD-049·050·051). 시안 B안과 일치한다.
+  · students-grid의 S3 패널 값(Lv.1, 12000 등)은 fixture 데이터 변경으로 바뀐 것이다.
+  → 갱신 승인. ② 뒤 새 장면 students-grid-name-off 기준 PNG를 직접 검토한다.
+- 새로 발견: **상태 배지 글자가 golden에서 흰 사각형(Ahem)으로 그려진다.** FE1-g 기준선부터 그랬다.
+  · 원인 추정: 배지 painter의 TextStyle에 fontFamily가 없다. 테스트 환경에서는 등록되지 않은 기본 글꼴(Ahem)이 쓰이고, 실제 앱에서도 Pretendard가 아니라 시스템 글꼴이 쓰일 수 있다.
+  · golden이 배지 글자를 검증하지 못한다.
+  · 조치: FE3-c(학생 S4, 학생 golden 갱신이 있는 slice)에서 배지 글꼴을 AppFonts로 명시하고 golden으로 확인한다. 이번 FE3-b는 그대로 진행한다.
+- (12:58) ② `-UpdateGoldens` → gate GREEN. 새 기준 `students-grid-name-off.png`를 직접 검토했다. students-grid와의 차이는 이름 줄(y 343–434)과 오른쪽 "학생 이름 표시" 체크박스뿐이고, 카드·칩·배지는 같다. 다만 학생 7명이 한 줄에 들어가 행 피치가 접히는지(FD-046)는 이 장면에서 보이지 않는다(widget test가 본다). 그리드가 두 줄이 되게 fixture를 늘리는 일은 FE3-c golden 보강 때 함께 한다. → 커밋 승인.
