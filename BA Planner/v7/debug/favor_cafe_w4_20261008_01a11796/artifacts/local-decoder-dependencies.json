@@ -1,0 +1,20 @@
+{
+  "packages": {
+    "plana-flatbuffers": "0.16.0",
+    "flatbuffers": "25.12.19",
+    "cryptography": "50.0.1",
+    "capstone": "5.0.9"
+  },
+  "modules": [
+    {
+      "module": "MX.Data.Excel.FavorLevelExcel",
+      "size": 4974,
+      "sha256": "88e1673a634f412ae3d5e47d80018cc3db2bb2c5632f37c4a06bdee6158bcfa1"
+    },
+    {
+      "module": "MX.Data.Excel.CafeInteractionExcel",
+      "size": 16431,
+      "sha256": "34ef8392923d8bd4847f0d9b9e8ce16d15baf0518289a8b29aabada86ddb1e0f"
+    }
+  ]
+}

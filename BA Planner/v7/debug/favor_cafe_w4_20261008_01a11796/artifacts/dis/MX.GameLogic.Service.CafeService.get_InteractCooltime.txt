@@ -1,0 +1,15 @@
+# SHA256 e2baf70eeb56fc02be00dc35e43374652282ce72dd3f1cd88a5b853e33c0afc1; start 0x181338160; end 0x1813381a8; bound unwind; mode body
+181338160 sub rsp, 0x28
+181338164 cmp byte ptr [rip + 0x8a163e6], 0
+18133816b jne 0x181338180
+18133816d lea rcx, [rip + 0x86dd52c]
+181338174 call 0x180778b40
+181338179 mov byte ptr [rip + 0x8a163d1], 1
+181338180 mov rcx, qword ptr [rip + 0x86dd519]
+181338187 cmp dword ptr [rcx + 0xe0], 0
+18133818e jne 0x181338195
+181338190 call 0x18070e020
+181338195 movsd xmm0, qword ptr [rip + 0x601938b]
+18133819d xor edx, edx
+18133819f add rsp, 0x28
+1813381a3 jmp 0x1860a79e0

@@ -1,0 +1,42 @@
+{
+  "jsonSyntax": true,
+  "tablesMatchFiles": true,
+  "artifactCopiesMatch": true,
+  "oldJsonPinnedHashesMatch": 20,
+  "metadataClaims": [
+    {
+      "file": "favor-cafe-tables-jp-1.73.0.json",
+      "where": "$.sourceSha256",
+      "key": "sourceSha256",
+      "sha256": "a5cfbbb9c7f00ccdd82a59e100febb7ed5eb107bc8ac93c6ed0dede14418416a",
+      "matches_client_manifest": true
+    },
+    {
+      "file": "favor-cafe-tables-jp-1.73.0.json",
+      "where": "$.gameAssemblySha256",
+      "key": "gameAssemblySha256",
+      "sha256": "e2baf70eeb56fc02be00dc35e43374652282ce72dd3f1cd88a5b853e33c0afc1",
+      "matches_client_manifest": true
+    },
+    {
+      "file": "favor-cafe-tables-jp-1.73.0.json",
+      "where": "$.metadataSha256",
+      "key": "metadataSha256",
+      "sha256": "df1a47ce591a66cef2a4cf9890422495ad08e4de8804536690598f23d6485d63",
+      "matches_client_manifest": true
+    },
+    {
+      "file": "favor-cafe-tables-jp-1.73.0.json",
+      "where": "$.cafeInteraction.constSearch.source.sourceSha256",
+      "key": "sourceSha256",
+      "sha256": "f9e8e721c14486a1517b627799ea03122aaa39da4f024eda3da1da7c8347c97b",
+      "matches_client_manifest": true
+    }
+  ],
+  "toolSyntax": true,
+  "disassemblyQuota": {
+    "functionCount": 1,
+    "rounds": 1
+  },
+  "wholePython": "MASTER_REQUIRED root owns common run"
+}

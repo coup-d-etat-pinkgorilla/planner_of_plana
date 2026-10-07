@@ -1,0 +1,139 @@
+{
+  "files": [
+    {
+      "path": "artifacts/build_evidence.py",
+      "size": 12556,
+      "sha256": "c6ab32bfb0d690989e547952153c1a11307606f1b6cae0ecd6e57bf98075a0d5"
+    },
+    {
+      "path": "artifacts/CafeInteractionExcel.json",
+      "size": 104975,
+      "sha256": "fab6c94f38a5ab0ea6ed426e1bf312adba695aa26e3469a313b69bcde1f61209"
+    },
+    {
+      "path": "artifacts/commit-files.json",
+      "size": 2258,
+      "sha256": "b619c87f8e45ac33d484ea0560195cc287416432295d627d5f109e4a7064c393"
+    },
+    {
+      "path": "artifacts/ConstCommonExcel.candidate-fields.json",
+      "size": 1291,
+      "sha256": "bfc7885dce787639845247ce584796d109225d5ae09bd0cee15d50a93960a961"
+    },
+    {
+      "path": "artifacts/cooltime-native-resolution.json",
+      "size": 556,
+      "sha256": "5678b465800b03279c03ed24255150c516d1a2e3122dc87520e5aa0ddb92a2da"
+    },
+    {
+      "path": "artifacts/dis/MX.GameLogic.Service.CafeService.get_InteractCooltime.txt",
+      "size": 615,
+      "sha256": "c8ceb20c2136d473dd4f1417a262e9f1527d573ea4597bebb4946d15caff2a7e"
+    },
+    {
+      "path": "artifacts/extract_jp.py",
+      "size": 8223,
+      "sha256": "12507e8c054878be8c7a051a86b5ba0edaf145af557352b3a67a35e6d40b796e"
+    },
+    {
+      "path": "artifacts/extract_jp.TABLES.patch",
+      "size": 342,
+      "sha256": "e9ac571f65f336af797c4c81f9115e72a3f05f04f0be4171b1fd92c4c3dbfb9e"
+    },
+    {
+      "path": "artifacts/extraction-verification.json",
+      "size": 1301,
+      "sha256": "ead52fbf05a5d65d005ed9205ab6bfa7a39a550fd85c1f496fc74c422499d390"
+    },
+    {
+      "path": "artifacts/favor-cafe-tables-jp-1.73.0.json",
+      "size": 212800,
+      "sha256": "a5e6c82ae949a26c0f3cd2d11721845a57f35370bae3543db1b04c454bc8e830"
+    },
+    {
+      "path": "artifacts/favor-structure-analysis.json",
+      "size": 7977,
+      "sha256": "b1c1a794bc252e2d993b38832d1bb5f7e557329f656791fe85a06fde66b03b34"
+    },
+    {
+      "path": "artifacts/FavorLevelExcel.json",
+      "size": 3459,
+      "sha256": "3d76612c4e3b7f7f685dd45bcd38cccd0af48373d5ad6aeaf6269c967edc4293"
+    },
+    {
+      "path": "artifacts/final-verification.json",
+      "size": 1371,
+      "sha256": "593b2d434b7069c8cec40e0ed2bc639bafd425b39e1c5c9f083be899e6739882"
+    },
+    {
+      "path": "artifacts/frontend-handoff-3-lines.txt",
+      "size": 600,
+      "sha256": "14575469921400a9f682332d3fe97c78347149e47d6256eabedf70c2fc0b8126"
+    },
+    {
+      "path": "artifacts/import-command.txt",
+      "size": 297,
+      "sha256": "b0b9ac3091822669daa4d6329eef5c7237ff69712ca6b48694dd772cf2fe45ff"
+    },
+    {
+      "path": "artifacts/jp-cafe-symbols-for-dis.json",
+      "size": 360071,
+      "sha256": "804d87f071a0a898cf67f35518fda46a2bdc3f0fb3f32d036464b68061938f2f"
+    },
+    {
+      "path": "artifacts/jp-static-field-inventory-v2.json",
+      "size": 1140250,
+      "sha256": "d85e0fafb536b582a674a7f37257535b0da5db9b2fba4a2fd25499d9f1c12594"
+    },
+    {
+      "path": "artifacts/jp-static-field-inventory.json",
+      "size": 147679,
+      "sha256": "7bd00b577d76194f4eea5094d696885fdb94b91462d888bdf22268b09fb5aeb7"
+    },
+    {
+      "path": "artifacts/local-decoder-dependencies.json",
+      "size": 517,
+      "sha256": "236e3304cf50a4b87978edb2392801def50fbf43ffb4e12de8a5c05554bde4a7"
+    },
+    {
+      "path": "artifacts/MASTER_PROMPT.md",
+      "size": 948,
+      "sha256": "24219454a48cbb2069797babd1c09142dad70c228d7ed10c5107547dda5e5511"
+    },
+    {
+      "path": "artifacts/prior-json-preservation.json",
+      "size": 5889,
+      "sha256": "0b19ea74cc03b2f9d9f3b6e5345e5ec2ee123ffe5e4377498b81422113ee7c02"
+    },
+    {
+      "path": "artifacts/report.md",
+      "size": 1950,
+      "sha256": "231f4a76ed247e2bbf88342e5f8c3ee24664afaa0401d1ad8364b0eb63a757c8"
+    },
+    {
+      "path": "artifacts/run_favor_cafe_jp.py",
+      "size": 6513,
+      "sha256": "6ed07ce903171941aeeff292ffcfe67d1a6c1972b015ae2a6a676d51851aeaac"
+    },
+    {
+      "path": "artifacts/scan_jp_metadata.py",
+      "size": 4734,
+      "sha256": "e2ae6bb109b668dfe1e0c941897ed1cb01250125ba59c211c40b4019af4f886b"
+    },
+    {
+      "path": "artifacts/store-status-append.md",
+      "size": 1106,
+      "sha256": "b170e89531c9419dd515c77a5ef2a901ae4a5f40acfeaabd02c07271e4180795"
+    },
+    {
+      "path": "artifacts/verification.txt",
+      "size": 1165,
+      "sha256": "de087c1bab12493a11b85e29918159508642cf38a05722d309a5489bc8e76507"
+    }
+  ],
+  "count": 26,
+  "excludes": [
+    "manifest.json itself; its hash is in output.md",
+    "__pycache__/*.pyc"
+  ]
+}

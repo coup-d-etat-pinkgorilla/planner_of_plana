@@ -1,0 +1,127 @@
+{
+  "files": [
+    {
+      "path": "data/extracted/jp-json/CharacterExcel.json",
+      "expectedSha256": "2ff635b1340a88c02a35ececdb16fbeb99c100c08793102c314f78ffe70f385c",
+      "actualSha256": "2ff635b1340a88c02a35ececdb16fbeb99c100c08793102c314f78ffe70f385c",
+      "size": 13404085
+    },
+    {
+      "path": "data/extracted/jp-json/CharacterGearExcel.json",
+      "expectedSha256": "6e13f34f87fec2bea2e60075255fd6902cf50c8f2535cdd91aa4c5486462f0c8",
+      "actualSha256": "6e13f34f87fec2bea2e60075255fd6902cf50c8f2535cdd91aa4c5486462f0c8",
+      "size": 49474
+    },
+    {
+      "path": "data/extracted/jp-json/CharacterPotentialExcel.json",
+      "expectedSha256": "ad6bddbd9bd0d48ad26dfb227d823e5e7b42d9b5e5bcba1f0c7b0013da939d74",
+      "actualSha256": "ad6bddbd9bd0d48ad26dfb227d823e5e7b42d9b5e5bcba1f0c7b0013da939d74",
+      "size": 96616
+    },
+    {
+      "path": "data/extracted/jp-json/CharacterPotentialStatExcel.json",
+      "expectedSha256": "1d51bf3130e853694e333a37ac3643ab04692acece80b9002ab378b9fc12afe7",
+      "actualSha256": "1d51bf3130e853694e333a37ac3643ab04692acece80b9002ab378b9fc12afe7",
+      "size": 174273
+    },
+    {
+      "path": "data/extracted/jp-json/CharacterSkillListExcel.json",
+      "expectedSha256": "972bf3b391770b831b85a4d5cffb8f8a4f4277521dddc52ba9c3a5d91b128b56",
+      "actualSha256": "972bf3b391770b831b85a4d5cffb8f8a4f4277521dddc52ba9c3a5d91b128b56",
+      "size": 6542711
+    },
+    {
+      "path": "data/extracted/jp-json/CharacterStatExcel.json",
+      "expectedSha256": "2e2563ba1a8dcce9fb1a157acc053cce88ee0d5d9d6b8e8d37b3e2d38b4589d0",
+      "actualSha256": "2e2563ba1a8dcce9fb1a157acc053cce88ee0d5d9d6b8e8d37b3e2d38b4589d0",
+      "size": 21961605
+    },
+    {
+      "path": "data/extracted/jp-json/CharacterTranscendenceExcel.json",
+      "expectedSha256": "46d828502c52080867450587b345c6c5b8a99d728fa8d85770ec1078551e6e04",
+      "actualSha256": "46d828502c52080867450587b345c6c5b8a99d728fa8d85770ec1078551e6e04",
+      "size": 409200
+    },
+    {
+      "path": "data/extracted/jp-json/CharacterWeaponExcel.json",
+      "expectedSha256": "20c0a6ae217bd021f3eba9c1c76ecb566170d63f4d27c30e512a69d455d767c2",
+      "actualSha256": "20c0a6ae217bd021f3eba9c1c76ecb566170d63f4d27c30e512a69d455d767c2",
+      "size": 139344
+    },
+    {
+      "path": "data/extracted/jp-json/EquipmentExcel.json",
+      "expectedSha256": "dfbc2ac8d98644d1f4506e1e0e79ff9403280c436e1bd9ed80a7d532e8f8d88d",
+      "actualSha256": "dfbc2ac8d98644d1f4506e1e0e79ff9403280c436e1bd9ed80a7d532e8f8d88d",
+      "size": 96971
+    },
+    {
+      "path": "data/extracted/jp-json/EquipmentStatExcel.json",
+      "expectedSha256": "9c1e0ef64a36564cb13bfa4f208b70411d3cff9176aff58c248db9b34f58dbad",
+      "actualSha256": "9c1e0ef64a36564cb13bfa4f208b70411d3cff9176aff58c248db9b34f58dbad",
+      "size": 72886
+    },
+    {
+      "path": "data/extracted/jp-json/FavorLevelRewardExcel.json",
+      "expectedSha256": "aa99ef825047579c1e2cd995fb63afa6c39f70e080f9e635266a6950988fd88d",
+      "actualSha256": "aa99ef825047579c1e2cd995fb63afa6c39f70e080f9e635266a6950988fd88d",
+      "size": 1189375
+    },
+    {
+      "path": "data/extracted/jp-json/LocalizeEtcExcel.json",
+      "expectedSha256": "1f1a8e6177df69673b7573da90c7245dafdc86b0a1db4db1d184cb28a94333be",
+      "actualSha256": "1f1a8e6177df69673b7573da90c7245dafdc86b0a1db4db1d184cb28a94333be",
+      "size": 1994317
+    },
+    {
+      "path": "data/extracted/jp-json/LocalizeSkillExcel.json",
+      "expectedSha256": "3b1ac7018ae71ad79d30698a27aa0a1afe11d0714d9552d55c66b810fb51c608",
+      "actualSha256": "3b1ac7018ae71ad79d30698a27aa0a1afe11d0714d9552d55c66b810fb51c608",
+      "size": 7546946
+    },
+    {
+      "path": "data/extracted/jp-json/SkillExcel.json",
+      "expectedSha256": "eaeb857ad2859a20e5996a9f2dccf68106003b89006f55ddfdd92ee44884c6bf",
+      "actualSha256": "eaeb857ad2859a20e5996a9f2dccf68106003b89006f55ddfdd92ee44884c6bf",
+      "size": 17358487
+    },
+    {
+      "path": "data/extracted/jp-json/SOURCE.json",
+      "expectedSha256": "9986758f225287cf572e114058711f1f1f75f7d3511bbe7c024d6621fc38e876",
+      "actualSha256": "9986758f225287cf572e114058711f1f1f75f7d3511bbe7c024d6621fc38e876",
+      "size": 174
+    },
+    {
+      "path": "data/extracted/jp-json/StatLevelInterpolationExcel.json",
+      "expectedSha256": "9f8d9ccedf17b8e81a4b9093498b227feff4b7a323ac11b05f82ae8092bdc753",
+      "actualSha256": "9f8d9ccedf17b8e81a4b9093498b227feff4b7a323ac11b05f82ae8092bdc753",
+      "size": 13011
+    },
+    {
+      "path": "data/extracted/battle-tables-jp.json",
+      "expectedSha256": "7b3d884db0a42d79a1cd3db919bc4da421ea7b85e79827e7e2c976201502aff1",
+      "actualSha256": "7b3d884db0a42d79a1cd3db919bc4da421ea7b85e79827e7e2c976201502aff1",
+      "size": 69906
+    },
+    {
+      "path": "data/extracted/skill-timing-jp.json",
+      "expectedSha256": "9d6f6913a88e985c43586f8df6be1340a4ff76d9391cdac704d9c02f9e2c4e6c",
+      "actualSha256": "9d6f6913a88e985c43586f8df6be1340a4ff76d9391cdac704d9c02f9e2c4e6c",
+      "size": 987252
+    },
+    {
+      "path": "data/extracted/cost-effects-jp.json",
+      "expectedSha256": "0d525b1d680568284fd614c90a5b39f6fc15b722be60cd213ed68040ed7995e6",
+      "actualSha256": "0d525b1d680568284fd614c90a5b39f6fc15b722be60cd213ed68040ed7995e6",
+      "size": 22159
+    },
+    {
+      "path": "data/extracted/jp-json/CharacterCalculationLimitExcel.json",
+      "expectedSha256": "aa36bd9fa396e9b49a417847356004b634831ccebb78910efc02770e56dddb07",
+      "actualSha256": "aa36bd9fa396e9b49a417847356004b634831ccebb78910efc02770e56dddb07",
+      "size": 5728
+    }
+  ],
+  "count": 20,
+  "allMatch": true,
+  "basis": "v7 ba-data.lock pinned files (19) plus existing CCL evidence hash (1); post-extraction byte verification"
+}

@@ -1,0 +1,24 @@
+{
+  "literal": {
+    "instructionVa": "0x181338195",
+    "referencedVa": "0x187351528",
+    "fileOffset": 120911656,
+    "rawHex": "0000000000000840",
+    "binary64": 3.0
+  },
+  "tailcall": [
+    {
+      "name": "FromHours",
+      "declaring": 25147,
+      "returnType": 75952,
+      "token": 100666203,
+      "va": 6543800800,
+      "declaringType": "System.TimeSpan",
+      "rva": 101349856,
+      "pointerFileOffset": 163844032,
+      "unresolvedReason": null
+    }
+  ],
+  "disassemblyFunctionCount": 1,
+  "disassemblyRounds": 1
+}
