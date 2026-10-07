@@ -261,3 +261,24 @@ topics: [workflow, design]
   · 심상개화 비활성, 왼쪽 위 "필터 · 7", 배경 스크림.
   → 커밋 승인.
   **결함 1건**: 강화·서브 행의 최소값 "–"(FD-059: 0 = "–")가 흰 사각형(글리프 없음)으로 그려진다. 경기천년제목에 en dash가 없는 것으로 보인다. 실제 앱에서는 fallback 글꼴로 그려질 수 있지만, 서체가 섞이고 golden이 사각형을 기준으로 굳는다. → FE3-e 프롬프트에 넣는다: 값 서체에 없는 글리프(–, … 등)는 본문 서체로 그리거나 서체에 있는 글자로 바꾸고, 다른 화면의 같은 문제를 찾아 목록으로 남긴다.
+
+## 2026-10-07 17:49 — FE3-d2 커밋 확인
+
+- 커밋 `0890de7a`(15파일).
+  · 새 파일: `student_filter_modal.dart`(1233줄), `student_filter_modal_test`.
+  · Section 5·범위 카드 폐기로 student_section_layout -577/+, student_range_condition_section_test에서 95줄이 빠졌다(대체 테스트는 status).
+  · section-template-studio.md의 C 이전 변경은 작업트리에 남았다.
+  · golden 새 장면 1장. 17:30에 오케스트레이터가 고친 테스트 판으로 들어갔다.
+- 주의: app_shell.dart가 96줄 바뀌었다(모달 배경 범위, 15:51 결정 4). "최소 diff" 원칙보다 크다. 스캐너 쪽 미커밋 작업에는 app_shell이 없어서(FE0-base에서 커밋됨) 충돌 위험은 지금 없다. 다만 스캐너 FE8·스캔 동반 작업 때 이 파일을 함께 고치게 되므로 스캐너 오케스트레이터에게 알릴 거리다. 다음 스캐너 알림 때 같이 적는다.
+- FE3-e는 FB-5(백엔드 catalog 폼 확장)를 포함하는 첫 수직 slice다. Python 검증과 프로세스 E2E가 필요하다. 사용자 이미지 추출 대상 확장은 인식 계열(스캐너 소유) 파일이면 고치지 않고 요청만 한다.
+
+## 2026-10-07 20:00 — FE3-e 골든 검토(①·②)
+
+- 백엔드 unittest 812개 통과(약 25분). ① gate `20261007_191233` RED: 골든 5건만 실패, 나머지 단계 통과.
+- 차이 판정(원본·새 이미지를 나란히 확대해 확인):
+  · plan-student-selector 0.31%(34곳), plan-element-builder 0.14%(16곳), plan-preset-manager 0.14%(16곳), students-filter-open 0.02%(2곳): 모두 스테퍼·범위 행의 두부 상자(■)가 빼기 기호(−)로 바뀐 것뿐이다. AppFonts.fallback 맨 앞에 Pretendard를 둔 수정의 결과. 레이아웃·색 변화 없음.
+  · students-grid-second-form: 새 장면, 기준 없음.
+  · students-grid 계열은 바뀌지 않았다. 골든 시계를 0단계에 고정했으므로 맞다.
+- ② gate `20261007_195559` GREEN(골든 20장). git 상태: 기준 4장 수정 + 새 장면 1장, 그 밖의 기준 이미지 변화 없음.
+- 새 장면 검토: students-grid와 비교하면 차이는 카드 1장(슌(수영복), 영역 약 200×170px)뿐이다. 두 번째 폼 초상으로 바뀌었고 배지·이름은 같다. 목 catalog에서 폼이 있는 학생은 shun_swimsuit, hoshino_battle 등이고 폼 label은 "1"/"2"다.
+- commit.json: 백엔드·계약 5개 + 프런트 13개 수정, 새 파일 2개(student_form_cycle.dart, student_form_cycle_test), whole에 baseline 폴더. 게임 이미지 추가 없음. ③ 커밋으로 진행한다.
