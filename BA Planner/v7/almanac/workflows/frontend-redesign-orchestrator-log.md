@@ -302,3 +302,62 @@ topics: [workflow, design]
   · `planning_document.py:192` `_advance`가 `f"Tier{value}"`를 쓰고, `planning_calc.py:360` `_parse_tier_number`는 `"TIER7"`[1:] = `"IER7"` → ValueError → 0이다. 2단계 이상 문서에서 장비 비용이 T0부터 다시 계산된다.
   · 둘 다 C 이전부터 있던 버그이고 스캐너 소유가 아니다. 계획 탭 숫자가 틀리므로 FB-12로 FE3-f2 전에 단독 slice로 고친다(Python 테스트 + 계약 영향 없음 확인).
 - mock 계산 결과가 비어 있음(발견 3): f2 golden은 golden 전용 서비스 대역에 계산 결과를 넣는다. mock_app_service.dart는 스캐너 미커밋 변경이 있으니 이번에도 고치지 않는다.
+
+## 2026-10-07 23:25 — FB-12 커밋 확인, Lane A 병렬 시작
+
+- 커밋 `50dbed6c`(4파일: planning_calc.py +24/-, planning_document.py 3줄, 새 테스트 9건 234줄, status). 문서 `f2cf4fb8`. gate `20261007_232002` GREEN. Python 836건 통과(1552초).
+- 검토:
+  · 새 테스트 9건은 고치기 전 코드에서 모두 실패하는 것을 워커가 확인했다.
+  · 기존 기대값 변화 0. parity fixture는 ★1 → ★2라 ★0/★1 누적값이 같아 영향이 없었다. 문서 테스트는 T1 → T1이라 비용이 0이었다.
+  · 티어 파서가 `T-1`(→ -1), `T+3`(→ 3), 전각 숫자를 이제 0으로 본다. 정상 입력이 아니므로 승인.
+  · 정규 형식 `T<n>` 근거 3곳을 제시했다. star 속성 grep 결과, 계획 레코드는 모두 `student_star`다.
+- 실제 화면 영향: 현재 ★가 2 이상인 학생의 성급 비용과, 2단계 이상 문서의 장비·성급 비용이 내려간다(부풀었던 값 정정). 사용자에게 알린다.
+- 참고(워커 발견): mock 학생 fixture의 `weapon_state: 'weapon_unlocked'`는 백엔드 생산자가 내지 않는 값이다. mock 화면 숫자에는 영향이 없다. 스캐너 쪽 판단 사항이라 다음 스캐너 알림에 app_shell 변경과 함께 적는다.
+- 결정(사용자 승인): Lane A를 프론트·백엔드 워커로 나눈다. 규칙은 워크플로 실행 순서 절에 적었다.
+  · FB-11은 a(단일 학생 계산 메서드: totals + 범주별 크레딧 + 재화 행)와 b(인연 경험치 표·쓰다듬기 상수·선물 3안)로 나눈다.
+  · 인연 경험치 표·쓰다듬기 상수는 저장소 안의 데이터원(메타데이터·추출본)에서만 가져온다. 근거가 없으면 숫자를 지어내지 말고 멈춰서 보고하게 한다.
+
+## 2026-10-08 02:33 — gate `20261008_022827` RED 검토(FE3-f2a ①, FB-11a 동시)
+
+- 프론트 워커가 FE3-f2를 f2a(진입·복귀, S1, S2 두 열, 계산 연결)와 f2b(S3·S4, 계정 전환 위젯 테스트)로 나눴다. 승인.
+- gate 결과: analyze 통과, 일반 테스트 1건 실패, process 37건 통과(FB-11a 새 process 포함), golden 6건 실패.
+  · 실패 테스트 `growth_calculator_view_test` "크레딧 합계 · 스캔 없음 빗금 · 재화 6행…": 이미지 로드 예외 9건. 테스트 재화 행 itemId `res-0`… → `planningResourceIconAsset`이 `assets/item_icons/ooparts/res-0.png`를 만든다. 없는 파일이다.
+  · golden `students-calculator`: 같은 원인이다. `GoldenCalculatorMockAppService`의 itemId가 실제 파일과 다르다.
+    - ooparts `Item_Icon_Material_Lower_1~9`는 없다(실제는 `Item_Icon_Material_Nebra_0` 등).
+    - skill_book `Item_Icon_SkillBook_Ultimate_Gehenna_3`은 없다(실제는 `Item_Icon_SkillBook_Gehenna_3`, `Item_Icon_SkillBook_Ultimate`).
+    - skill_db `Item_Icon_SkillBook_Gehenna_3`은 없다(실제는 `Item_Icon_Material_ExSkill_Gehenna_3`).
+    - 워커 환경에 Flutter가 없어(상태 문서 명시) 실행 확인 없이 지어낸 id다.
+  · 나머지 golden 5건(students-grid·detail·grid-name-off·grid-second-form 282px, filter-open 609px): S1 container-16 아이콘 `playlist_add_rounded` → `calculate_outlined` 교체뿐이다. 확대 비교로 확인했다. 승인.
+- 조치(프론트 워커): ① 테스트·golden fixture의 itemId를 실제 자산이 있는 id로 바꾼다. ② `ItemIconTile`에 자산이 없을 때의 대체 표시(errorBuilder, 예외 없음)와 테스트를 더한다. 게임 자산은 배포하지 않으므로 아이콘이 없는 경우는 실제 런타임에서도 생긴다. ③ 고친 뒤 멈춘다.
+- FB-11a(백엔드) 검토: `planning.student.calculate` 추가 확장, 9범주 크레딧 집계는 계산 코어의 기존 가산 지점에서 모은다. 문서 계산과 일치(4쌍 + 무작위 50), 저장소 바이트 불변 process E2E, `post_dir`로 slice 끝 사본 고정. 승인.
+  · 커밋 순서: 프론트 수정 → gate ① 재실행 → golden 갱신 ② GREEN → fb11a·fe3f2a 커밋 → redesigndocs. Python 전체(fb11a)는 지금 돌려도 된다.
+  · 그 사이 두 워커는 새 코드 편집을 하지 않는다(gate가 작업 트리 전체를 보므로). 백엔드 워커는 FB-1 설계 조사만 한다(읽기 전용, status-backend에 기록).
+- FB-11b 데이터 공백(백엔드 워커 조사): 인연 랭크별 누적 경험치 표와 쓰다듬기 수치가 저장소에 없다. FavorLevelRewardExcel은 능력치 보상 표다. il2cpp 타입에는 FavorLevelExcel·CafeInteractionExcel 필드 이름만 있다. 선물 exp_value(52종)와 gift_affinities(265명)는 있다. → FE3-g 범위 결정을 사용자에게 묻는다.
+- 프론트 요청(f2a 발견 1): catalog `has_favorite_item`. 백엔드 다음 작업 목록에 넣는다(FB-1과 같은 slice 또는 작은 별도 slice).
+
+## 2026-10-08 02:45 — 사용자 결정: FE3-g는 자료 확보 먼저
+
+- 선택지 ①축소안(필요 랭크·보유 선물만) ②자료 먼저 ③FE3-g 보류 중 사용자가 ②를 골랐다. FD-163 (a)(백엔드 계산)는 그대로 두고, FB-11b·FE3-g에 자료 선행 조건을 붙였다.
+- 공용 클라이언트 자료 저장소(`C:\Users\brigh\ba-client-data\`)는 택틱 오케스트레이터가 단일 쓰기로 관리한다. 그래서 `tactic-editor-orchestrator-log.md`에 요청 항목(02:45)을 append했다. 요청은 `FavorLevelExcel`, `CafeInteractionExcel` 전체 행, 쓰다듬기 횟수·간격 근거, ExpType 해석 근거다. 프론트 쪽은 추출 도구를 고치지 않는다.
+- Lane A 순서: f2a 커밋 → f2b → (FE3-g 보류) → FE4. 백엔드는 FB-1(+`has_favorite_item`). 자료가 오면 FB-11b → FE3-g를 끼워 넣는다.
+
+## 2026-10-08 08:30 — 택틱 오케스트레이터 회신: 인연·카페 자료 확보 완료 (FB-11b/FE3-g 선행 조건 해소, 일부 미확정)
+
+- 읽기 경로: `data/extracted/jp-json/FavorLevelExcel.json` 100행 sha `3d76612c…`, `data/extracted/jp-json/CafeInteractionExcel.json` 276행 sha `fab6c94f…`; evidence `docs/tactic-editor/evidence/favor-cafe-tables-jp-1.73.0.json`(전체 행·provenance). 공용 저장소 `jp-1.73.0-e2baf70e/favor-cafe-tables` 등록, v7 lock 변경 없음. 커밋 `9d14b2b5`.
+- ExpType **해석 미확정**: 후보 ① 랭크별 필요 경험치 ② 누적 임계값. Level 1..100, long 벡터 1열, FavorLevelupType 매핑·랭크 경계 미검증 → 합산·raw 인덱싱은 보류. 확정 방법은 택틱 쪽에서 결정 예정(코드 1함수 또는 사용자 인연 화면 1장).
+- 쓰다듬기: 보상 FavorExp(11)/Id 0/Amount 15(276행 동일) [표]; 간격 JP `CafeService.get_InteractCooltime` → 3시간 [코드]; 가능 횟수·서버 검증·리셋 규칙 [?] — UI는 3시간만 표기하고 횟수는 미정으로 둘 것.
+- 통지: 워커 보존 점검에서 프론트 학생 baseline PNG 5장이 2026-10-08 새벽 변경됨(택틱 W 세션 범위 밖, 복원 안 함; 해시는 `debug/w1_w5_approved_resume_20261008_01a11796/artifacts/final-verification.json`). 프론트 쪽 의도된 변경인지 확인 바람.
+
+## 2026-10-08 08:45 — 택틱 회신(08:30) 확인
+
+- 인연·카페 자료: `data/extracted/jp-json/FavorLevelExcel.json` 100행, `CafeInteractionExcel.json` 276행(커밋 `9d14b2b5`). 쓰다듬기 1회 = FavorExp 15 [표], 간격 3시간 [코드], 가능 횟수 [?]. ExpType은 아직 미확정(후보: 랭크별 필요 / 누적 임계)이고 택틱 W4b에서 확정한다.
+- FB-11b는 W4b 확정 뒤 착수한다. 그 전에는 경험치 합산·인덱싱 코드를 쓰지 않는다. 쓰다듬기 UI는 "3시간 간격"만 표기하고 횟수는 미정으로 둔다.
+- 택틱 통지(학생 baseline PNG 5장 변경)는 FE3-f2a의 의도된 golden 갱신이다. 택틱 로그 08:40 항목에 회신을 적었다.
+- 이 기간 다른 세션 커밋: `a180cc5e`, `13f86b57`, `9d14b2b5`, `4b924af7`(택틱 W2~W4). fe_commit은 3-way라 영향이 없지만, DryRun에서 우리 파일이 섞였는지 확인한다.
+
+## 2026-10-08 08:40 — 사용자 신규 과제: 애니메이션 효과 프레임 스펙트럼 도구 → 택틱 워크플로로 넘김
+
+- 요청: 보스·전체 학생의 애니메이션별 효과 발동 프레임을 타임라인 스펙트럼으로 보는 도구. 나중에 택틱에서 재사용한다.
+- 사용자 결정: 애니메이션 이벤트와 스킬 로직 시점을 겹쳐 그린다. v7 개발자 도구 안의 Flutter 화면으로 만든다. 택틱 워크플로 과제로 한다.
+- `tactic-editor-orchestrator-log.md` 08:40에 배정 요청과 프론트 쪽 경계를 적었다: 새 폴더만 쓰고 진입점 1곳만 수정, 키트는 읽기 전용(수정은 이 로그로 요청), app_shell·화면·AppService 인터페이스 불변, 기존 golden 영향 0.
+- 프론트 개편 일정에는 넣지 않는다. 택틱 쪽이 키트 수정을 요청하면 Lane A 프론트 워커 작업으로 받는다.
