@@ -8,6 +8,8 @@ import '../../services/repository_service.dart';
 import '../../services/scenario_service.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/diagonal_scrollbar.dart';
+import '../kit/game_assets.dart';
+import '../kit/skew_bar.dart';
 import '../models/planning_models.dart';
 import '../models/planning_resource_assets.dart';
 import '../studio/plan_studio_layout.dart';
@@ -93,9 +95,8 @@ const planPrimaryBottleneckItemId = 'Item_Icon_Material_Nebra_2';
 // are zero-based rarity indices, while equipment TierN suffixes are 1-based.
 const planPrimaryBottleneckItemName = '마모된 네브라 디스크';
 const planPrimaryBottleneckIconAsset =
-    'assets/item_icons/ooparts/Item_Icon_Material_Nebra_2.png';
-const planPrimaryBottleneckBackgroundAsset =
-    'assets/item_backgrounds/square_yellow.png';
+    '${GameAssets.itemIconDirectory}/ooparts/Item_Icon_Material_Nebra_2.png';
+const planPrimaryBottleneckBackgroundAsset = GameAssets.itemBackgroundYellow;
 const planPrimaryBottleneckStudentIds = {'azusa', 'nonomi', 'haruka'};
 const planPhaseShortageOwned = 42;
 const planPhaseShortageRequired = 60;
@@ -104,9 +105,8 @@ const planPhaseShortageStudentCount = 4;
 const planPhaseShortageCompletableCount = 1;
 const planPhaseShortageItemName = '온전한 안티키테라 장치';
 const planPhaseShortageIconAsset =
-    'assets/item_icons/ooparts/Item_Icon_Material_Antikythera_3.png';
-const planPhaseShortageBackgroundAsset =
-    'assets/item_backgrounds/square_purple.png';
+    '${GameAssets.itemIconDirectory}/ooparts/Item_Icon_Material_Antikythera_3.png';
+const planPhaseShortageBackgroundAsset = GameAssets.itemBackgroundPurple;
 const planPhaseShortageStudentIds = {'yuuka'};
 const planOverallProgressPercent = 72;
 const planOverallShortageKindCount = 14;
@@ -121,10 +121,10 @@ const planOverallAffectedStudentIds = {
 };
 const planBottleneckContainerScale = 0.95;
 const planBottleneckContainerTopRatio = 0.025;
-const planCreditIconAsset = 'assets/item_icons/currency/Currency_Icon_Gold.png';
+const planCreditIconAsset = GameAssets.creditIcon;
 const planBasicTacticalBdIconAsset =
-    'assets/item_icons/tactical_bd/Item_Icon_Material_ExSkill_Abydos_0.png';
-const planDefaultItemBackgroundAsset = 'assets/item_backgrounds/square.png';
+    '${GameAssets.itemIconDirectory}/tactical_bd/Item_Icon_Material_ExSkill_Abydos_0.png';
+const planDefaultItemBackgroundAsset = GameAssets.itemBackgroundBasic;
 const planHairpinTier10ItemName = '전자파 차단 헤어핀';
 const planHatTier10ItemName = '게이밍 헬멧';
 const planWatchTier10ItemName = '스크린 워치';
@@ -329,7 +329,7 @@ const dummyPlanBottleneckDetails = <PlanBottleneckDetailPreview>[
         remainingAtEntry: 1,
         requiredAtEntry: 3,
         shortage: 2,
-        iconAsset: 'assets/equipment_icons/hairpin_t10.png',
+        iconAsset: GameAssets.equipmentHairpinT10,
         affectedStageKeys: {'phase-3:azusa:3', 'phase-4:ako:3'},
         backgroundAsset: planDefaultItemBackgroundAsset,
         equipmentTier: 10,
@@ -535,7 +535,7 @@ const dummyPlanPhaseConsumptions = <PlanConsumptionGroupPreview>[
         name: planHairpinTier10ItemName,
         amount: 3,
         owned: 2,
-        iconAsset: 'assets/equipment_icons/hairpin_t10.png',
+        iconAsset: GameAssets.equipmentHairpinT10,
         affectedStageKeys: {'phase-2:yuuka:2'},
         backgroundAsset: planDefaultItemBackgroundAsset,
         equipmentTier: 10,
@@ -610,7 +610,7 @@ const dummyPlanPhaseConsumptions = <PlanConsumptionGroupPreview>[
         name: planHatTier10ItemName,
         amount: 4,
         owned: 1,
-        iconAsset: 'assets/equipment_icons/hat_t10.png',
+        iconAsset: GameAssets.equipmentHatT10,
         affectedStageKeys: {'phase-4:hina:2'},
         backgroundAsset: planDefaultItemBackgroundAsset,
         equipmentTier: 10,
@@ -620,7 +620,7 @@ const dummyPlanPhaseConsumptions = <PlanConsumptionGroupPreview>[
         name: planWatchTier10ItemName,
         amount: 2,
         owned: 5,
-        iconAsset: 'assets/equipment_icons/watch_t10.png',
+        iconAsset: GameAssets.equipmentWatchT10,
         affectedStageKeys: {'phase-4:ako:3'},
         backgroundAsset: planDefaultItemBackgroundAsset,
         equipmentTier: 10,
@@ -701,7 +701,7 @@ const dummyPlanOverallConsumption = PlanConsumptionGroupPreview(
       name: planHairpinTier10ItemName,
       amount: 3,
       owned: 2,
-      iconAsset: 'assets/equipment_icons/hairpin_t10.png',
+      iconAsset: GameAssets.equipmentHairpinT10,
       affectedStageKeys: {'phase-2:yuuka:2'},
       backgroundAsset: planDefaultItemBackgroundAsset,
       equipmentTier: 10,
@@ -711,7 +711,7 @@ const dummyPlanOverallConsumption = PlanConsumptionGroupPreview(
       name: planHatTier10ItemName,
       amount: 4,
       owned: 1,
-      iconAsset: 'assets/equipment_icons/hat_t10.png',
+      iconAsset: GameAssets.equipmentHatT10,
       affectedStageKeys: {'phase-4:hina:2'},
       backgroundAsset: planDefaultItemBackgroundAsset,
       equipmentTier: 10,
@@ -721,7 +721,7 @@ const dummyPlanOverallConsumption = PlanConsumptionGroupPreview(
       name: planWatchTier10ItemName,
       amount: 2,
       owned: 5,
-      iconAsset: 'assets/equipment_icons/watch_t10.png',
+      iconAsset: GameAssets.equipmentWatchT10,
       affectedStageKeys: {'phase-4:ako:3'},
       backgroundAsset: planDefaultItemBackgroundAsset,
       equipmentTier: 10,
@@ -4643,12 +4643,14 @@ DiagonalMediaListItemData _comparisonStudentData(
     equipment: [
       for (var slot = 1; slot <= 3; slot++)
         DiagonalMediaEquipment(
-          assetPath:
-              'assets/item_icons/equipment/Equipment_Icon_${switch (slot) {
-                1 => student?.equipmentSlot1 ?? 'Hat',
-                2 => student?.equipmentSlot2 ?? 'Hairpin',
-                _ => student?.equipmentSlot3 ?? 'Watch',
-              }}_Tier${math.max(1, values['equip${slot}_tier'] ?? 1)}.png',
+          assetPath: GameAssets.equipmentIcon(
+            switch (slot) {
+              1 => student?.equipmentSlot1 ?? 'Hat',
+              2 => student?.equipmentSlot2 ?? 'Hairpin',
+              _ => student?.equipmentSlot3 ?? 'Watch',
+            },
+            math.max(1, values['equip${slot}_tier'] ?? 1),
+          ),
           tier: DiagonalMediaValue('T${value('equip${slot}_tier')}'),
           level: DiagonalMediaValue('Lv.${value('equip${slot}_level')}'),
         ),
@@ -7757,7 +7759,11 @@ class PlanInventoryCoverageBar extends StatelessWidget {
                   height: (compact ? 7.2 : 10.8) * scale,
                   child: CustomPaint(
                     key: const ValueKey('plan-inventory-coverage-bar-fill'),
-                    painter: _PlanInventoryCoveragePainter(ratio),
+                    painter: SkewBarPainter(
+                      fraction: ratio,
+                      color: diagonalMediaHighlightColor,
+                      style: SkewBarStyle.planCoverage,
+                    ),
                   ),
                 ),
               ),
@@ -7777,34 +7783,6 @@ class PlanInventoryCoverageBar extends StatelessWidget {
       ),
     ),
   );
-}
-
-class _PlanInventoryCoveragePainter extends CustomPainter {
-  const _PlanInventoryCoveragePainter(this.ratio);
-
-  final double ratio;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final track = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      Radius.circular(size.height / 2),
-    );
-    canvas.drawRRect(track, Paint()..color = const Color(0x324F7090));
-    final fillWidth = size.width * ratio.clamp(0, 1);
-    if (fillWidth <= 0) return;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, fillWidth, size.height),
-        Radius.circular(size.height / 2),
-      ),
-      Paint()..color = diagonalMediaHighlightColor,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_PlanInventoryCoveragePainter oldDelegate) =>
-      oldDelegate.ratio != ratio;
 }
 
 class _PlanResourceTileFrame extends StatelessWidget {

@@ -20,14 +20,13 @@ sources:
 
 ## 현재 상태
 
-**FE2-b 완료.** 결과(오케스트레이터 로그 2026-10-07 09:05, 아래 FE2-b commit record):
-- gate `debug/frontend_gate/20261007_090015` GREEN. 내역은 flutter-test-1 301, flutter-test-2 155, 프로세스 테스트 28(혼자 직렬), golden 17 차이 0이다(합계 484).
-- 앞선 `081859`(diff-check: 스캐너 로그 끝 빈 줄)와 `083716`·`084537`(프로세스 테스트 시간 초과, PC 부하)의 RED는 프론트 코드와 무관했다. 오케스트레이터가 정리했다(08:40·08:55 항목).
-- 커밋 `859c554a16415592d114b52b38b31b3fc67f3180`. 문서 커밋은 `fd791947`이다.
+**FE2-c 완료.** 결과(오케스트레이터 로그 2026-10-07 10:26, 아래 FE2-c commit record):
+- gate `debug/frontend_gate/20261007_102114` GREEN. 내역은 flutter-test-1 294, flutter-test-2 194, 프로세스 테스트 28, golden 17 차이 0이다(합계 516 = 484 + 32).
+- 커밋 `bb1e3478ea18bdd04a8a829adbfb6d6ae52fdc80`.
+- 후속(오케스트레이터 지정): 모달 포커스 가두기·배경 접근성 차단과 Esc 이중 처리는 FE3-d 필터 모달에서, `ShortageBar`·`ShortageIconSlot` 교체는 FE2-d에서 한다.
 
-**진행 중: FE2-c 오버레이, 시작 커밋 `fd791947e5c75d098fc32da0f818c3f960b9f0e7`.**
-- 이 커밋은 문서 커밋이다(스캐너 규칙·FE2-a 검토·기기 쓰기 확인 규칙). lib/·test/는 `859c554a`와 같다.
-- 자세한 내용은 아래 "FE2-c" 절에 적는다.
+**진행 중: FE2-d 이미지·차트 원자, 시작 커밋 `bb1e3478ea18bdd04a8a829adbfb6d6ae52fdc80`.**
+- 자세한 내용은 아래 "FE2-d" 절에 적는다.
 
 ### 커밋 기록
 
@@ -40,6 +39,7 @@ sources:
 | FE1-c | `99583757` | 공용 `SectionSurface`(surface@.76, 무블러·무테, lifted shadow 4층), golden 6장 갱신(시각 변경) | ① `20261006_233307` RED(golden 6, 예상 일치) → ③ `20261006_233605` GREEN(424 + golden 17) |
 | FE2-a | `97c568b6` | 공용 키트: 사선 스크롤바·포그 파라미터·`DiagonalScrollViewport`·`DiagonalRow`·UI Kit 갤러리, private 스크롤바 4종 교체(동작 보존) | `20261007_003201` RED(테스트 기대값 1ulp, 오케스트레이터 수정) → `20261007_004310` GREEN(456 + golden 17) |
 | FE2-b | `859c554a` | 소형 컨트롤·제목 키트(칩·단계 태그·세그먼트·토글 칩·타입 칩·필터 버튼·스위치·미세 조절·tonal·레일 버튼·제목 4종), 요소 빌더 스테퍼 추출(동작 보존), 갤러리 FE2-b 구역 | `20261007_090015` GREEN(301 + 155 + 프로세스 28 + golden 17) |
+| FE2-c | `bb1e3478` | 오버레이 키트(`InfoPopover`·`AnchoredFlyout`+프리셋·FD-090 부족 재화 2종·`BaModal` 스크림 4종), 갤러리 FE2-c 구역 | `20261007_102114` GREEN(294 + 194 + 프로세스 28 + golden 17) |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -1157,4 +1157,152 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 ### FE2-c commit record (2026-10-07 10:26, written by fe_commit.ps1)
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_102114\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE2-d 착수 기록 (2026-10-07)
+
+- 범위: 워크플로 FE2-d 행 그대로. 대상은 `ItemIconTile`(+ 아이템 타일), `PortraitStrip`, `SkewBar`(`PlanInventoryCoverageBar` 흡수), `KpiTile`, 차트 원자(`StatChartFrame`, 80° 막대, 빗금, 축·기준선, 팔레트, hit-test geometry)다. 차트 라이브러리는 넣지 않는다(FD-023 (a)).
+- 함께: FE2-c 임시 `ShortageBar`·`ShortageIconSlot`을 `SkewBar`·`ItemIconTile`로 바꾼다. FD-022 이름 나누기(`ResourceTile`/`WidgetTile`)는 이번에 필요한 것만 한다.
+- 범위 밖: 완성 차트 위젯(히스토그램·꺾은선·히트맵·위험도 행 등, H §8 H8)은 FE6·FE7 몫이다.
+- 시작 커밋: `bb1e3478ea18bdd04a8a829adbfb6d6ae52fdc80`.
+- 동작 보존: 기존 화면 렌더는 바뀌지 않아야 한다. golden 17장 차이 0이 완료 조건이고, 새 golden 장면·게임 이미지 파일은 넣지 않는다.
+- 사본: 고칠 기존 파일마다 착수 전 사본을 `debug/frontend_fe2d/pre/<v7 기준 경로>`에 둔다.
+- 기기 쓰기: 매번 새 업로드 경로에서 쓰고, 쓴 뒤 다시 읽어 바이트로 대조한다.
+
+## FE2-d 종료 기록 (2026-10-07, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없어 analyze·테스트·golden을 돌리지 못했다. 통과를 주장하지 않는다.
+- FE2-d1·d2로 나누지 않고 한 번에 했다(이미지 원자·막대·KPI·차트 원자 모두).
+- 쓴 API는 Flutter 3.44.0 소스와 대조했다.
+- 별도 검토 에이전트가 새 코드·테스트·바꾼 기존 파일을 사본과 대조해 읽었다. 보고 내용은 이렇다.
+  - 바꾼 asset 문자열은 모두 같다.
+  - `PlanInventoryCoverageBar`의 그리기 호출이 기존 painter와 같다(NaN·clamp 처리까지).
+  - 갤러리 타일은 시험 글꼴로 넘치지 않는다.
+- 검토 지적 중 고친 것: Path 좌표는 32비트라 기하 테스트 허용 오차를 1e-4로 넓혔다. CRLF였던 두 파일(`plan_section_layout.dart`, `planning_resource_assets.dart`)의 줄 끝을 CRLF로 되돌렸다.
+
+### 공용 키트 (`frontend/lib/ui/kit/`, 새 파일)
+
+| 파일 | 내용 |
+|---|---|
+| `game_assets.dart` | `GameAssets`: 아이템 배경 3종, 크레딧, 장비 T10 3종, 아이템 아이콘·장비 아이콘(설계도 `_Piece` 선택)·학교 로고·엘레프·학생 초상 경로. `ItemBackground`(basic·purple·yellow) |
+| `skew_bar.dart` | `SkewBar`(`.bar2`, 높이 4~12, 트랙 white@.09, 반경 h/2, 기울임 −10°)와 `SkewBarPainter`, `SkewBarStyle`, `CoverageTone` |
+| `hatch.dart` | `paintHatch`·`HatchStyle`·`HatchBox`·`HatchPainter`. 시안 `#hx` 값: 7px 간격 45°, 바탕 rgba(158,176,194,.07), 선 .45 |
+| `item_icon_tile.dart` | `ItemIconTile`: `.pt`. 배경 + 아이콘 92% contain, margin 4%는 폭 기준. 크기 42×34·47×38·52×42·74×60과 임의 크기. 그림이 없으면 빈 상자 |
+| 〃 | `ItemTile`: 74×74, 수량 `.dsp` 13 + 그림자, 막대 64.9×4(왼쪽 1.5, 위 64, r1, 왼쪽 위 기준 기울임), 선택 = 2px 핑크 링 + 14px 글로우 |
+| `portrait_strip.dart` | `PortraitStrip`: 초상 34×28, 간격 4, 최대 n개. `AssetImageGrid` 한 장에 아이템 기본 배경 + 초상 98%를 그린다. 넘치는 수는 "…+n" 사선 칩, 슬롯 폭(시안 246)을 고정할 수 있다. `portraitStripSplit` |
+| `kpi_tile.dart` | `KpiTile`: 높이 70, 사선 바탕 r7 #203243 + 안쪽 1px. 기본형은 값 26 + 변화 11(증가 #7fe3bd·계획 #f7c9f4). `KpiTile.compare`는 이전 14 → 화살표 13 → 예상 24 |
+| `stat_chart.dart` | `StatChartFrame`(viewBox × 1.25 균일 배율, 누른 자리 → 설계 좌표)·`StatChartPainter`, `skewedBarPath`·`skewedTrackPath`(80°), `paintValueBar`(모름 = 빗금, 0 = 바닥 1px), `StatChartScale`, `paintStatGridLine`(실선·점선), `paintStatLabel`, `StatChartPalette`, `StatChartHitMap` |
+
+과잉 노랑은 시안 견본 값 #ffc66d = `AppColors.warning`으로 정했다(H §2.6 모호점). 계획 무관은 막대가 없다(`ItemTile.tone == null`).
+
+### 바꾼 기존 파일 (모두 동작 보존)
+
+- **`widgets/plan_section_layout.dart`**:
+  - `PlanInventoryCoverageBar`의 painter를 `SkewBarPainter` + `SkewBarStyle.planCoverage`(트랙 #4f7090@.2, 기울임 없음, 반경 h/2)로 바꾸고 private `_PlanInventoryCoveragePainter`를 지웠다.
+  - 위젯 모양과 키(`plan-inventory-coverage-bar-fill`)는 그대로다.
+  - asset 상수·장비 아이콘 문자열은 `GameAssets`로 바꿨다(값 동일).
+- **asset 문자열 → `GameAssets`(값 동일)**: `widgets/plan_phase_editor.dart`(배경), `widgets/plan_element_builder.dart`(배경·장비 아이콘), `widgets/plan_student_step_tile.dart`(장비 T10 3종), `widgets/student_section_layout.dart`(장비 아이콘·학교 로고), `models/planning_resource_assets.dart`(재화 아이콘).
+- **`kit/shortage_flyout.dart`**:
+  - FE2-c 임시 `ShortageIconSlot`·`ShortageBar`를 지우고 `ItemIconTile`·`SkewBar`(평평, 5px)·`ShortagePortrait`(`PortraitStrip` 22×18)로 바꿨다.
+  - `ShortageItem.icon`(위젯)은 `iconAsset` + `iconBackground`로, `ShortageUse.portrait`는 `studentId`로 바꿨다.
+- **`kit/gallery/ui_kit_overlays_section.dart`**: 견본 아이콘·초상을 실제 그림 경로로 바꿨다(그림이 없으면 빈 상자).
+- **`kit/gallery/ui_kit_gallery_page.dart`**: FE2-d 제목과 `UiKitDataSection`을 붙였다.
+- **`test/kit/anchored_flyout_test.dart`**: `ShortageBar` 대신 `SkewBar`를 찾는다.
+- 사본은 `debug/frontend_fe2d/pre/frontend/...` 10개다. 스캐너 소유(`scan_student_review_workspace.dart`의 장비 아이콘 문자열 포함)·동결·택틱 소유 파일은 건드리지 않았다. 게임 이미지 파일도 넣지 않았다.
+- `student_section_layout.dart`의 초상·인연 배경, `bond_rank_portrait.dart`·`student_grid_warmup.dart`·`account_section_cluster.dart`·`title_page.dart`의 초상·스튜디오 사각형 경로는 아이템 아이콘·배경이 아니라 이번에 옮기지 않았다(각 화면 slice에서 `GameAssets`로 옮긴다).
+
+### 갤러리 (`gallery/ui_kit_data_section.dart`, 새 파일)
+
+- 1줄(W-Data 첫 줄, 높이 300, 가로 = 시안 x − 40): KPI 사선 타일 · 전후 비교 / 주요 재화 (숫자형) / 아이템 타일 + 충족 막대.
+- 2줄(높이 330): 비율 막대 행 (사선 정렬)(W-Data 둘째 줄 첫 타일) · 차트 원자 견본(막대 6개, 모름 빗금, 0 빈 막대, 평균 점선, 누르면 고르기) · 이미지 원자·막대 견본(아이콘 4크기, 그림 없음, 초상 3명·7명 "…+2", 막대 5상태).
+- 타일 안쪽 여백은 시안대로 2 × 80° 컷 + 26이다. 머리는 FE2-b `TileTitle`이고 값은 시안 예시 값이다.
+- 완성 위젯(히스토그램·꺾은선·± 막대·히트맵·위험도 행·부족 상위 행·부족 칩 팝업, H §8 H8)은 만들지 않았다(FE6·FE7).
+
+### 테스트 (`frontend/test/kit/`, 25건 추가 → 예상 541 + golden 17)
+
+| 파일 | 건수 | 확인 내용 |
+|---|---|---|
+| `skew_bar_test.dart` | 8 | 충족 상태 색(과잉 = warning), 채움 폭·clamp, 기울임 기준점(가운데·왼쪽 위), 모름 = 빗금 / 0 = 빈 트랙, 비율 눈금 25/50/75, planCoverage 그리기 호출이 기존 painter와 같음, `PlanInventoryCoverageBar` 키·크기·의미, 위젯 크기 |
+| `item_icon_tile_test.dart` | 6 | asset 경로가 기존 문자열과 같음(계획 상수·`planningResourceIconAsset` 포함), 4크기·아이콘 상자 92%, 그림 없음 → 빈 상자·예외 없음(모든 읽기가 실패하는 asset 묶음), 아이템 타일 수량·막대·선택 링·계획 무관, "…+n" 계산, 초상 줄 칸·칩·슬롯 폭 |
+| `kpi_tile_test.dart` | 2 | 기본형 라벨 9·값 26·변화 색(증가·계획)·바탕, 전후형 14 → 화살표 → 24 순서와 간격 |
+| `stat_chart_test.dart` | 7 | 값 축 변환·역변환, 80° 막대 기하·contains, 틀 크기 viewBox × 1.25·누른 자리 → 설계 좌표(closeTo), hit map 위쪽 우선, 견본 막대 칸 hit, 모름(빗금)·0(바닥만)·값(채움) 구분, 팔레트 |
+| `ui_kit_gallery_data_test.dart` | 2 | FE2-d 타일 6개 넘침 없음·KPI 6·아이템 타일 4·계획 무관 막대 없음·"…+2"·모름/0 막대·비율 행 레일 28.2, 차트 견본 누르기로 고르기 |
+
+`anchored_flyout_test.dart`는 건수 그대로(`SkewBar` 확인으로 바꿈).
+
+### 처리한 FD
+
+- **FD-022**: 위젯 카드는 기존 `WidgetTile`(FE2-a)이다. 재화 타일 `ResourceTile`(UI-Elements 300×107)은 이번 범위에서 쓰지 않아 이름만 남겨 둔다(FE6 인벤토리에서 만든다). 갤러리 "주요 재화" 행은 원자 조합 견본(`_ResourceAmountRow`, 갤러리 private)이다.
+- **FD-023**: (a) CustomPainter 원자다. 차트 패키지를 넣지 않았다(`pubspec.yaml` 변경 없음).
+- **FD-012**: 이번 원자에 별 색이 없다. 그대로 둔다.
+- **FD-024**: 타입 색 토큰은 이번 원자에서 쓰지 않는다.
+- **데이터 의미(불변식)**: 모르는 값은 0이 아니라 빗금이다(`SkewBar(fraction: null)`, `paintValueBar(value: null)`). 0은 빈 트랙·바닥선이다.
+
+### 알려진 시안 차이
+
+1. **KPI 전후형 세로 정렬**: 시안은 값 줄을 baseline으로 맞추고 화살표만 가운데다. 키트는 세 요소를 가운데 정렬했다(14px와 24px 글자 바닥이 몇 px 다르다).
+2. **경기천년제목 w800**: 값 글자는 FD-009대로 굵기 700이다.
+3. **아이템 배경 3종의 등급 대응**: 시안 blob 3개(`6aa789`·`869728`·`362f0a`)를 기본·보라·노랑 그림으로 대응했다. 어느 등급이 어느 색인지는 각 화면 slice가 데이터에 맞춘다.
+4. **초상 바탕**: 시안 초상 뒤 사각형은 아이템 기본 배경과 같은 그림이라 `GameAssets.portraitBackground = itemBackgroundBasic`이다. 계정·타이틀의 큰 초상은 스튜디오 사각형을 그대로 쓴다.
+5. **빗금 선 폭**: 시안 패턴은 칸 가장자리 2px 선이 칸에 잘려 1px로 보인다. 키트는 1px 선으로 그린다.
+6. **차트 원자 견본**: 시안 W-Data에 같은 견본이 없다. 갤러리용 조합이다(막대·빗금·평균선·눈금은 Stats 시안 값).
+7. **갤러리 아이콘**: 견본 아이콘(기술 노트 밀레니엄 최상급, 전술 교육 BD, 장비 설계도, 네브라)은 시안과 같은 종류의 그림을 골랐다. 그림이 PC에 없으면 빈 상자다.
+8. **"엘리그마" 아이콘**: 저장소에 그림이 없어 시안처럼 이름 글자(`#3d4d5c`)로 그린다.
+
+### 검수표 (mock 모드, 2560×1440 모니터 최대화 = 2560×1392)
+
+갤러리 여는 법: 헤더 개발 버튼 → 개발 상태 패널 "UI Kit 갤러리" → 맨 아래 "FE2-d 이미지·차트 원자" 구역.
+
+**W-Data-Widgets 대조**
+
+| 갤러리 타일 | 대조 포인트 |
+|---|---|
+| KPI 사선 타일 · 전후 비교 | 윗줄 3칸(높이 70, 사선 #203243 r7 + 테두리): 보유 학생 128 "/ 170 · +2"(초록) · 평균 육성도 63.4% "+1.2" · 계획 등록 9명 "+7"(핑크). 아랫줄: 72% → 78%, 14종 → 12종, 0 → 2개(회색 14 → 핑크 화살표 → 초록 24) |
+| 주요 재화 (숫자형) | 행 2개(사선 바탕 + 테두리, 안쪽 10 18): 크레딧 아이콘 42×34 · "98.4M" · "/ 필요 261.5M" · 오른쪽 핑크 "−163.1M" · 6px 기운 막대 38%. 엘리그마는 이름 글자 아이콘, 45% |
+| 아이템 타일 + 충족 막대 | 74×74 네 개: 부족(핑크 링 + 글로우, 수량 12, 막대 28% 핑크) · 충분(88, 파랑 100%) · 과잉(140, 노랑 100%) · 계획 무관(0, 막대 없음). 막대는 타일 밑변 길이(64.9)·기울기 |
+| 비율 막대 행 (사선 정렬) | 5행(높이 32, 간격 8): 이름 70 · 트랙 12 r3 기울임 · 25/50/75 눈금 · 값 14. 첫 행이 오른쪽으로 28.2 들어가고 아래로 갈수록 왼쪽으로 나온다(80° 레일) |
+
+**원자 견본(시안에 없는 갤러리 조합)**
+
+| 견본 | 대조 포인트 |
+|---|---|
+| 차트 원자 | 설계 232×96 → 화면 290×120(1.25배). 80° 막대(위가 오른쪽으로 기움), 셋째 막대 "모름" = 회색 빗금, 넷째 "0" = 바닥선만, 핑크 평균 점선 63%, 막대를 누르면 핑크로 바뀐다 |
+| 이미지 원자 · 막대 | 아이콘 42·47·52·74(노랑 배경 + 92% 아이콘), 그림 없음 = 짙은 빈 상자, 초상 3명 / 7명 → 5명 + "…+2" 사선 칩(슬롯 246), 막대 부족·충분·과잉·모름(빗금)·0(빈 트랙), 빗금 견본 상자 |
+
+**계획 탭(동작 보존, golden)**: 계획 → 전체 보기의 재화 확보율 막대와 계획 화면 아이콘·배경이 이전과 같아야 한다(golden diff 0).
+
+### 미검증 항목
+
+1. analyze, 전체 테스트(기존 516 + 새 25), golden 17장 비교. 사용자 PC gate가 필요하다.
+2. 실행해 봐야 아는 테스트 기대값:
+   - `paints` 패턴(기울임 막대의 save·translate·transform 순서).
+   - 그림 없음 테스트(실패하는 asset 묶음 → errorBuilder가 pump 두 번 안에 오는지).
+   - 갤러리 시험 글꼴 폭. 검토 계산상 가장 빠듯한 곳은 이미지 원자 1줄(747 / 870.85)과 "…+2" 칩 슬롯(242 / 246)이다.
+   - 실패하면 테스트 기대값부터 확인한다. 기존 화면 렌더는 golden이 판정한다.
+3. 갤러리 시각 배치와 실제 그림(아이템·초상)은 사용자 검수가 필요하다.
+
+### 사용자 실행 순서
+
+```powershell
+# ① gate. GREEN이어야 한다. golden 차이가 나오면 멈추고 오케스트레이터 검토(이번 slice는 golden을 갱신하지 않는다)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+①이 GREEN이면:
+
+```powershell
+# ② 커밋 미리보기 → ③ 커밋 → ④ 개편 문서 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe2d -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe2d
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesign-docs
+```
+
+### 다음 행동
+
+1. 사용자: ①. GREEN이면 ②·③·④를 실행하고, RED면 `summary.txt`와 `failures/`를 오케스트레이터에 넘긴다.
+2. FE2는 이것으로 끝난다. 다음은 워크플로 Lane A의 FE3(학생 탭)이다.
+
+### FE2-d commit record (2026-10-07 11:16, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_111210\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

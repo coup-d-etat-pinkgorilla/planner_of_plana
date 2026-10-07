@@ -7,6 +7,7 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/diagonal_scrollbar.dart';
+import '../kit/game_assets.dart';
 import '../kit/stepper.dart';
 import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
@@ -2970,8 +2971,7 @@ class _PresetEquipmentSlot extends StatelessWidget {
 
   String? get _assetPath {
     if (equipmentType == null || tier < 1 || tier > 10) return null;
-    return 'assets/item_icons/equipment/'
-        'Equipment_Icon_${equipmentType}_Tier$tier.png';
+    return GameAssets.equipmentIcon(equipmentType!, tier);
   }
 
   @override
@@ -3676,7 +3676,7 @@ class _UnassignedPlanElementRowState extends State<_UnassignedPlanElementRow> {
                             children: [
                               Positioned.fill(
                                 child: Image.asset(
-                                  'assets/item_backgrounds/square.png',
+                                  GameAssets.itemBackgroundBasic,
                                   fit: BoxFit.contain,
                                 ),
                               ),

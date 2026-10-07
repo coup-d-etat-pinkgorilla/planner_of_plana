@@ -5,6 +5,7 @@ import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/ui/kit/anchored_flyout.dart';
 import 'package:ba_planner_v7/ui/kit/kit_overlay.dart';
 import 'package:ba_planner_v7/ui/kit/shortage_flyout.dart';
+import 'package:ba_planner_v7/ui/kit/skew_bar.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -317,7 +318,7 @@ void main() {
     expect(find.text('−30'), findsOneWidget);
     expect(find.text('보유 66 / 필요 96'), findsOneWidget);
     expect(
-      tester.widget<ShortageBar>(find.byType(ShortageBar).first).fraction,
+      tester.widget<SkewBar>(find.byType(SkewBar).first).fraction,
       closeTo(66 / 96, 1e-9),
     );
 

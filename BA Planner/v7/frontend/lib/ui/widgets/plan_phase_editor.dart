@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/diagonal_scrollbar.dart';
+import '../kit/game_assets.dart';
 import '../studio/section_template.dart';
 import 'ba_triangle_background.dart';
 import 'diagonal_media_list_item.dart';
@@ -1423,7 +1424,7 @@ class _PhaseElementSourceSection<T> extends StatelessWidget {
                   children: [
                     Positioned.fill(
                       child: Image.asset(
-                        'assets/item_backgrounds/square.png',
+                        GameAssets.itemBackgroundBasic,
                         key: ValueKey(
                           'plan-phase-editor-source-square-${item.id}',
                         ),

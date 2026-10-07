@@ -5,6 +5,7 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/diagonal_scrollbar.dart';
+import '../kit/game_assets.dart';
 import '../studio/section_template.dart';
 import '../studio/student_studio_layout.dart';
 import 'animated_section_stack.dart';
@@ -2171,9 +2172,7 @@ String? studentSchoolLogoAsset(String? school) {
     'etc' => 'ETC',
     _ => null,
   };
-  return assetName == null
-      ? null
-      : 'assets/item_icons/school_logo/School_Icon_$assetName.png';
+  return assetName == null ? null : GameAssets.schoolLogo(assetName);
 }
 
 class StudentLevelStatus extends StatelessWidget {
@@ -2700,8 +2699,7 @@ class StudentEquipmentStatus extends StatelessWidget {
     if (equipmentType == null || tier == null || tier < 1 || tier > 10) {
       return null;
     }
-    return 'assets/item_icons/equipment/'
-        'Equipment_Icon_${equipmentType}_Tier$tier.png';
+    return GameAssets.equipmentIcon(equipmentType, tier);
   }
 
   @override

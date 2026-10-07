@@ -5,6 +5,7 @@
 // UI-Elements 행 견본(.srow/.row/.plain/.tile/rail × 기본·hover·선택·파랑).
 // FE2-b: `ui_kit_controls_section.dart`(W-Layout 첫 줄, W-Filter, 레일 버튼·스위치·스테퍼, 상태 견본).
 // FE2-c: `ui_kit_overlays_section.dart`(W-Info-Popover 보드, 모달 스크림 프리셋, W-Layout 팝오버 줄, 프리셋 견본).
+// FE2-d: `ui_kit_data_section.dart`(W-Data KPI · 주요 재화 · 아이템 타일 · 비율 막대 행, 차트·이미지 원자 견본).
 // 다음 FE2 slice는 이 페이지에 자기 위젯 타일을 더한다.
 import 'dart:math' as math;
 
@@ -18,6 +19,7 @@ import '../diagonal_scroll_viewport.dart';
 import '../scroll_viewport_fog.dart';
 import '../titles.dart';
 import 'ui_kit_controls_section.dart';
+import 'ui_kit_data_section.dart';
 import 'ui_kit_overlays_section.dart';
 
 /// 갤러리 페이지. 개발 패널의 "UI Kit 갤러리" 버튼이 연다.
@@ -82,6 +84,15 @@ class UiKitGalleryPage extends StatelessWidget {
               ),
               SizedBox(height: 24),
               UiKitOverlaysSection(),
+              SizedBox(height: 48),
+              _GalleryHeading(
+                title: 'FE2-d 이미지·차트 원자',
+                caption:
+                    '아이템 아이콘 · 아이템 타일 · 초상 줄 · 막대 · KPI · 차트 원자입니다. '
+                    '시안 W-Data-Widgets의 KPI · 주요 재화 · 아이템 타일 · 비율 막대 행과 나란히 비교합니다.',
+              ),
+              SizedBox(height: 24),
+              UiKitDataSection(),
               SizedBox(height: 40),
             ],
           ),

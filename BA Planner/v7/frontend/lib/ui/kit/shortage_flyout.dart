@@ -6,13 +6,18 @@
 // 2. 부족량·단계별 [ShortageBreakdownFlyout] (Flow-4 `.fly`): 머리(제목 14 + seg 부족량/단계별 h26 11px) →
 //    행 `.fr`(아이콘 47×38 · 이름 13 굵게 + 부족량 `.dsp` 16 핑크 / 막대 5px + "보유 x / 필요 y" 11 /
 //    초상 22×18 + 단계 태그). "단계별"은 시안에 그림이 없어 단계마다 소제목을 두고 그 단계에 쓰는 항목만 모은다.
+// FE2-d: 아이콘은 `ItemIconTile`, 초상은 `PortraitStrip`, 막대는 `SkewBar`로 그린다(FE2-c 임시 위젯을 바꿈).
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import 'anchored_flyout.dart';
 import 'ba_chip.dart';
 import 'buttons.dart';
+import 'game_assets.dart';
+import 'item_icon_tile.dart';
 import 'kit_overlay.dart';
+import 'portrait_strip.dart';
+import 'skew_bar.dart';
 import 'skew_controls.dart';
 import 'titles.dart';
 
@@ -22,16 +27,17 @@ class ShortageUse {
   const ShortageUse({
     required this.student,
     required this.stage,
-    this.portrait,
+    this.studentId,
   });
 
+  /// 표시 이름.
   final String student;
 
   /// 1~3단계.
   final int stage;
 
-  /// 22×18 초상. 없으면 이름 첫 글자 자리.
-  final Widget? portrait;
+  /// 초상 asset id(`assets/student_portraits/<id>.png`). 없으면 빈 상자.
+  final String? studentId;
 }
 
 /// 부족 재화 한 항목.
@@ -42,7 +48,8 @@ class ShortageItem {
     required this.shortage,
     this.owned,
     this.needed,
-    this.icon,
+    this.iconAsset,
+    this.iconBackground = ItemBackground.basic,
     this.uses = const [],
     this.note,
     this.noteTone = AppTones.gray,
@@ -55,8 +62,9 @@ class ShortageItem {
   final int? owned;
   final int? needed;
 
-  /// 아이템 아이콘. 없으면 빈 자리.
-  final Widget? icon;
+  /// 아이템 아이콘 asset. 없으면 배경만 그린다.
+  final String? iconAsset;
+  final ItemBackground iconBackground;
   final List<ShortageUse> uses;
 
   /// 오른쪽 칩(시나리오 비교: "활성 계획과 같음", "−6" 등).
@@ -93,54 +101,13 @@ const _nameStyle = TextStyle(
   color: AppColors.text,
 );
 
-/// 아이콘·초상 자리(아이콘이 없으면 #203243 r4 빈 상자, 초상이면 이름 첫 글자).
-class ShortageIconSlot extends StatelessWidget {
-  const ShortageIconSlot({
-    super.key,
-    required this.width,
-    required this.height,
-    this.child,
-    this.initial,
-  });
-
-  final double width;
-  final double height;
-  final Widget? child;
-  final String? initial;
-
-  @override
-  Widget build(BuildContext context) {
-    final child = this.child;
-    final initial = this.initial;
-    return SizedBox(
-      width: width,
-      height: height,
-      child:
-          child ??
-          DecoratedBox(
-            decoration: const BoxDecoration(
-              color: AppColors.indicatorSurface,
-              borderRadius: BorderRadius.all(Radius.circular(4)),
-            ),
-            child: initial == null || initial.isEmpty
-                ? null
-                : Center(
-                    child: Text(
-                      initial.substring(0, 1),
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontFamily: AppFonts.body,
-                        fontFamilyFallback: AppFonts.fallback,
-                        fontSize: height * 0.5,
-                        height: 1,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ),
-          ),
-    );
-  }
-}
+/// 플라이아웃 행 아이콘(`.pt`).
+Widget _itemIcon(ShortageItem item, Size size) => ItemIconTile(
+  iconAsset: item.iconAsset,
+  background: item.iconBackground,
+  size: size,
+  semanticLabel: item.name,
+);
 
 /// 인벤토리로 가는 tonal 버튼(h28, 12px).
 class ShortageInventoryButton extends StatelessWidget {
@@ -258,7 +225,7 @@ class GroupedShortageRow extends StatelessWidget {
     return FlyoutRow(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       children: [
-        ShortageIconSlot(width: 35, height: 28, child: item.icon),
+        _itemIcon(item, const Size(35, 28)),
         Expanded(
           child: Text(
             item.name,
@@ -483,7 +450,7 @@ class ShortageBreakdownRow extends StatelessWidget {
     ];
     return FlyoutRow(
       children: [
-        ShortageIconSlot(width: 47, height: 38, child: item.icon),
+        _itemIcon(item, ItemIconSizes.s47),
         Expanded(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -514,7 +481,13 @@ class ShortageBreakdownRow extends StatelessWidget {
                 const SizedBox(height: 5),
                 Row(
                   children: [
-                    Expanded(child: ShortageBar(fraction: coverage)),
+                    Expanded(
+                      child: SkewBar(
+                        fraction: coverage,
+                        height: 5,
+                        style: SkewBarStyle.flat,
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       '보유 $owned / 필요 $needed',
@@ -534,12 +507,7 @@ class ShortageBreakdownRow extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          ShortageIconSlot(
-                            width: 22,
-                            height: 18,
-                            initial: use.student,
-                            child: use.portrait,
-                          ),
+                          ShortagePortrait(use: use),
                           const SizedBox(width: 4),
                           StageTag(stage: use.stage),
                         ],
@@ -555,29 +523,27 @@ class ShortageBreakdownRow extends StatelessWidget {
   }
 }
 
-/// `.bar2` 5px: 트랙 white@.09, 채움 #71c7f4.
-class ShortageBar extends StatelessWidget {
-  const ShortageBar({super.key, required this.fraction, this.height = 5});
+/// 쓰는 학생 초상 22×18(아이템 기본 배경 + 초상 98%). [ShortageUse.studentId]가 없으면 빈 상자.
+class ShortagePortrait extends StatelessWidget {
+  const ShortagePortrait({super.key, required this.use});
 
-  final double fraction;
-  final double height;
+  static const size = Size(22, 18);
+
+  final ShortageUse use;
 
   @override
-  Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.all(Radius.circular(height / 2)),
-    child: SizedBox(
-      height: height,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          const ColoredBox(color: Color.fromRGBO(255, 255, 255, 0.09)),
-          FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: fraction.clamp(0.0, 1.0).toDouble(),
-            child: const ColoredBox(color: AppColors.primary),
-          ),
-        ],
-      ),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final studentId = use.studentId;
+    return Semantics(
+      label: use.student,
+      excludeSemantics: true,
+      child: studentId == null
+          ? SizedBox.fromSize(size: size, child: const ItemIconPlaceholder())
+          : PortraitStrip(
+              studentIds: [studentId],
+              maxVisible: 1,
+              portraitSize: size,
+            ),
+    );
+  }
 }

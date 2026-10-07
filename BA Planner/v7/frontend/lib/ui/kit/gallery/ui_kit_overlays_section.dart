@@ -16,9 +16,12 @@ import '../anchored_flyout.dart';
 import '../ba_chip.dart';
 import '../ba_modal.dart';
 import '../buttons.dart';
+import '../game_assets.dart';
 import '../diagonal_row.dart';
 import '../info_popover.dart';
+import '../item_icon_tile.dart';
 import '../kit_overlay.dart';
+import '../portrait_strip.dart';
 import '../shortage_flyout.dart';
 import '../titles.dart';
 
@@ -367,15 +370,31 @@ class _ModalDemoButtonState extends State<_ModalDemoButton> {
 // ---------------------------------------------------------------------------
 // 2줄: W-Layout-Widgets "팝오버 (열린 상태)"
 
-const _flow4Items = [
+// 견본 아이콘(FE2-d부터 실제 그림. 파일이 없으면 빈 상자).
+final _techNoteIcon = GameAssets.itemIcon(
+  'skill_book',
+  'Item_Icon_SkillBook_Millennium_3',
+);
+final _tacticalBdIcon = GameAssets.itemIcon(
+  'skill_db',
+  'Item_Icon_Material_ExSkill_Millennium_3',
+);
+final _watchIcon = GameAssets.equipmentIcon('Watch', 10, piece: true);
+final _hatIcon = GameAssets.equipmentIcon('Hat', 9, piece: true);
+final _hairpinIcon = GameAssets.equipmentIcon('Hairpin', 10, piece: true);
+final _nebraIcon = GameAssets.itemIcon('ooparts', 'Item_Icon_Material_Nebra_3');
+
+final _flow4Items = [
   ShortageItem(
     name: '기술 노트 (최상급)',
     shortage: 30,
     owned: 66,
     needed: 96,
-    uses: [
-      ShortageUse(student: '호시노', stage: 2),
-      ShortageUse(student: '리오(무장)', stage: 1),
+    iconAsset: _techNoteIcon,
+    iconBackground: ItemBackground.yellow,
+    uses: const [
+      ShortageUse(student: '호시노', stage: 2, studentId: 'hoshino'),
+      ShortageUse(student: '리오(무장)', stage: 1, studentId: 'rio_battle'),
     ],
   ),
   ShortageItem(
@@ -383,37 +402,46 @@ const _flow4Items = [
     shortage: 14,
     owned: 76,
     needed: 90,
-    uses: [ShortageUse(student: '리오(무장)', stage: 2)],
+    iconAsset: _watchIcon,
+    uses: const [
+      ShortageUse(student: '리오(무장)', stage: 2, studentId: 'rio_battle'),
+    ],
   ),
   ShortageItem(
     name: '전술 교육 BD (최상급)',
     shortage: 8,
     owned: 10,
     needed: 18,
-    uses: [ShortageUse(student: '호시노', stage: 2)],
+    iconAsset: _tacticalBdIcon,
+    iconBackground: ItemBackground.yellow,
+    uses: const [ShortageUse(student: '호시노', stage: 2, studentId: 'hoshino')],
   ),
   ShortageItem(
     name: '설계도 · 모자 T9',
     shortage: 6,
     owned: 34,
     needed: 40,
-    uses: [ShortageUse(student: '호시노', stage: 1)],
+    iconAsset: _hatIcon,
+    uses: const [ShortageUse(student: '호시노', stage: 1, studentId: 'hoshino')],
   ),
   ShortageItem(
     name: '설계도 · 머리핀 T10',
     shortage: 3,
     owned: 57,
     needed: 60,
-    uses: [ShortageUse(student: '리오(무장)', stage: 2)],
+    iconAsset: _hairpinIcon,
+    uses: const [
+      ShortageUse(student: '리오(무장)', stage: 2, studentId: 'rio_battle'),
+    ],
   ),
 ];
 
 /// 페이즈 팝오버 행(`.pr`): 아이콘 42×34 · 이름 · "필요 n" 폭 64 · 칩.
-const _phaseRows = [
-  ('기술 노트 (최상급)', '필요 96', '−30', AppTones.danger),
-  ('전술 교육 BD (최상급)', '필요 18', '−8', AppTones.warn),
-  ('설계도 · 시계 T10', '필요 60', '−3', AppTones.warn),
-  ('크레딧', '필요 14.8M', '충분', AppTones.ok),
+final _phaseRows = [
+  (_techNoteIcon, ItemBackground.yellow, '기술 노트 (최상급)', '필요 96', '−30', AppTones.danger),
+  (_tacticalBdIcon, ItemBackground.yellow, '전술 교육 BD (최상급)', '필요 18', '−8', AppTones.warn),
+  (_watchIcon, ItemBackground.basic, '설계도 · 시계 T10', '필요 60', '−3', AppTones.warn),
+  (GameAssets.creditIcon, ItemBackground.basic, '크레딧', '필요 14.8M', '충분', AppTones.ok),
 ];
 
 class _LayoutPopoverStrip extends StatefulWidget {
@@ -484,10 +512,15 @@ class _LayoutPopoverStripState extends State<_LayoutPopoverStrip> {
                   ),
                   trailing: const BaChip(label: '부족 3종', tone: AppTones.warn),
                 ),
-                for (final (name, need, chip, tone) in _phaseRows)
+                for (final (icon, background, name, need, chip, tone)
+                    in _phaseRows)
                   FlyoutRow(
                     children: [
-                      const ShortageIconSlot(width: 42, height: 34),
+                      ItemIconTile(
+                        iconAsset: icon,
+                        background: background,
+                        size: ItemIconSizes.s42,
+                      ),
                       Expanded(
                         child: Text(
                           name,
@@ -625,7 +658,7 @@ class _PhaseTrigger extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // 3줄: 나머지 프리셋
 
-const _scenarioGroups = [
+final _scenarioGroups = [
   ShortageGroup(
     label: '엘레프',
     items: [
@@ -638,6 +671,8 @@ const _scenarioGroups = [
       ShortageItem(
         name: '네브라 디스크 (최상급)',
         shortage: 14,
+        iconAsset: _nebraIcon,
+        iconBackground: ItemBackground.yellow,
         note: '−6',
         noteTone: AppTones.ok,
       ),
@@ -655,12 +690,16 @@ const _scenarioGroups = [
       ShortageItem(
         name: '기술 노트 (최상급)',
         shortage: 30,
+        iconAsset: _techNoteIcon,
+        iconBackground: ItemBackground.yellow,
         note: '+12',
         noteTone: AppTones.warn,
       ),
       ShortageItem(
         name: '전술 교육 BD (최상급)',
         shortage: 8,
+        iconAsset: _tacticalBdIcon,
+        iconBackground: ItemBackground.yellow,
         note: '이 시나리오에만',
         noteTone: AppTones.pink,
       ),
@@ -672,13 +711,20 @@ const _scenarioGroups = [
       ShortageItem(
         name: '설계도 · 시계 T10',
         shortage: 3,
+        iconAsset: _watchIcon,
         note: '−11',
         noteTone: AppTones.ok,
       ),
-      ShortageItem(name: '설계도 · 머리핀 T10', shortage: 3, note: '활성 계획과 같음'),
+      ShortageItem(
+        name: '설계도 · 머리핀 T10',
+        shortage: 3,
+        iconAsset: _hairpinIcon,
+        note: '활성 계획과 같음',
+      ),
       ShortageItem(
         name: '설계도 · 모자 T9',
         shortage: 6,
+        iconAsset: _hatIcon,
         note: '−2',
         noteTone: AppTones.ok,
       ),
@@ -688,12 +734,19 @@ const _scenarioGroups = [
 
 /// Inventory-Analysis `.fly.dn` 행: 학생 · 상급 BD · 최상급 노트.
 const _planStudents = [
-  ('리오(무장)', '상급 BD 12', '최상급 노트 8'),
-  ('토키(무장)', '상급 BD 10', '최상급 노트 6'),
-  ('히마리(무장)', '상급 BD 6', '—'),
-  ('노아', '—', '최상급 노트 4'),
-  ('유우카', '상급 BD 4', '최상급 노트 2'),
+  ('rio_battle', '리오(무장)', '상급 BD 12', '최상급 노트 8'),
+  ('toki_battle', '토키(무장)', '상급 BD 10', '최상급 노트 6'),
+  ('himari_battle', '히마리(무장)', '상급 BD 6', '—'),
+  ('noa', '노아', '—', '최상급 노트 4'),
+  ('yuuka', '유우카', '상급 BD 4', '최상급 노트 2'),
 ];
+
+/// Stats-Growth `.spop` 밀레니엄 학생 초상 6개.
+const _millenniumStudents = ['yuuka', 'noa', 'rio', 'toki', 'himari', 'koyuki'];
+
+/// Tactical 방어 덱 초상(스트라이커 4 · 스페셜 2), 36×29.
+const _deckStudents = ['yuuka', 'shun_swimsuit', 'toki_battle', 'kurumi'];
+const _deckPortrait = Size(36, 29);
 
 /// Tactical `.fly.dl` 행: 기간 · 비공개 수 · 방어 승률 · 승률 색 · 전적 · 전적 칩.
 const _defenseDecks = [
@@ -791,10 +844,14 @@ class _PresetSamples extends StatelessWidget {
                     ),
                   ],
                 ),
-                for (final (name, bd, note) in _planStudents)
+                for (final (studentId, name, bd, note) in _planStudents)
                   FlyoutRow(
                     children: [
-                      ShortageIconSlot(width: 40, height: 32, initial: name),
+                      PortraitStrip(
+                        studentIds: [studentId],
+                        maxVisible: 1,
+                        portraitSize: const Size(40, 32),
+                      ),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -990,13 +1047,10 @@ class _StatsDotSample extends StatelessWidget {
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    for (var index = 0; index < 6; index++) ...[
-                      if (index > 0) const SizedBox(width: 4),
-                      const ShortageIconSlot(width: 44, height: 36),
-                    ],
-                  ],
+                const PortraitStrip(
+                  studentIds: _millenniumStudents,
+                  maxVisible: 6,
+                  portraitSize: Size(44, 36),
                 ),
               ],
               child: const FlyoutDot(),
@@ -1091,7 +1145,11 @@ class _DeckPortraits extends StatelessWidget {
             child: Text('?', style: _bold(AppType.bodySmallSize, color: AppColors.textMuted)),
           )
         else
-          const ShortageIconSlot(width: 36, height: 29),
+          PortraitStrip(
+            studentIds: [_deckStudents[index]],
+            maxVisible: 1,
+            portraitSize: _deckPortrait,
+          ),
       ],
       const SizedBox(width: 8),
       Container(
@@ -1100,9 +1158,11 @@ class _DeckPortraits extends StatelessWidget {
         color: AppColors.textMuted.withValues(alpha: 0.3),
       ),
       const SizedBox(width: 8),
-      const ShortageIconSlot(width: 36, height: 29),
-      const SizedBox(width: 3),
-      const ShortageIconSlot(width: 36, height: 29),
+      const PortraitStrip(
+        studentIds: ['noa', 'shiroko'],
+        portraitSize: _deckPortrait,
+        gap: 3,
+      ),
     ],
   );
 }
