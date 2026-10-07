@@ -8,6 +8,7 @@ import '../services/app_service.dart';
 import '../services/repository_service.dart';
 import '../services/scanner_service.dart';
 import 'app_section.dart';
+import 'models/recent_students.dart';
 import 'pages/adaptive_sync_page.dart';
 import 'pages/home_page.dart';
 import 'pages/inventory_page.dart';
@@ -98,6 +99,9 @@ class _AppShellState extends State<AppShell>
   var _tacticalReloadToken = 0;
   var _profileGeneration = 0;
   late bool _studentTabActive;
+
+  /// 최근 본 학생(FD-061): 앱 실행 동안만, 학생 탭과 계획 만들기 1단계(FE4-b)가 함께 쓴다.
+  final RecentStudents _recentStudents = RecentStudents();
   late bool _planTabActive;
   final ValueNotifier<ScanCompanionState?> _scanCompanion = ValueNotifier(null);
 
@@ -140,6 +144,7 @@ class _AppShellState extends State<AppShell>
     widget.service.state.removeListener(_handleConnectionChanged);
     _homeEntranceController.dispose();
     _scanCompanion.dispose();
+    _recentStudents.dispose();
     super.dispose();
   }
 
@@ -338,6 +343,7 @@ class _AppShellState extends State<AppShell>
                                   candidateContext: _studentCandidate,
                                   onCandidateCommitted: _clearStudentCandidate,
                                   active: _studentTabActive,
+                                  recentStudents: _recentStudents,
                                 ),
                                 PlanningPage(
                                   key: ValueKey('plan-$_profileGeneration'),

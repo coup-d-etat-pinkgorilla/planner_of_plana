@@ -249,8 +249,9 @@ class GoldenMockAppService extends MockAppService {
 
 /// 학생 장면 전용 mock(FE3-b). 계획 장면은 [GoldenMockAppService]를 그대로 쓴다.
 ///
-/// 학생 7명(bundled catalog의 실제 학생·초상)으로 golden이 카드·배지·이름·인연 게이지 상태를
-/// 모두 보게 한다. `MockAppService` 기본값은 바꾸지 않는다.
+/// 학생 10명(bundled catalog의 실제 학생·초상)으로 golden이 카드·배지·이름·인연 게이지 상태를
+/// 모두 보게 한다. 8열 그리드가 두 줄이 되어 이름 줄 접힘(FD-046)의 행 피치 차이도 보인다(FE3-c).
+/// `MockAppService` 기본값은 바꾸지 않는다.
 /// - 아루: 보유, 계획 없음, 인연 목표 없음(첫 학생 = 기본 선택, `students-grid` S3)
 /// - 아야네: 보유 + PLAN, 인연 목표 두 단계 30 → 45(마지막 45 사용, 현재 24, `students-detail` S3)
 /// - 호시노: 보유, 긴 이름(말줄임), 인연 목표 20 ≤ 현재 30이라 목표 표시 없음
@@ -258,6 +259,7 @@ class GoldenMockAppService extends MockAppService {
 /// - 히나: 보유 + PLAN(배지 1개, 첫 칸)
 /// - 세리카: 미보유(UNOWNED, 흐린 이름)
 /// - 케이: 보유, 복합장갑 칩
+/// - 하스미·노아: 보유(둘째 줄), 나구사: 미보유(둘째 줄)
 class GoldenStudentMockAppService extends GoldenMockAppService
     implements ActivePlanDocumentSource {
   GoldenStudentMockAppService() : super();
@@ -270,6 +272,9 @@ class GoldenStudentMockAppService extends GoldenMockAppService
     'hina',
     'serika',
     'kei',
+    'hasumi',
+    'nagusa',
+    'noa',
   ];
   static const ownedStudentIds = <String>[
     'aru',
@@ -277,6 +282,8 @@ class GoldenStudentMockAppService extends GoldenMockAppService
     'hoshino',
     'hina',
     'kei',
+    'hasumi',
+    'noa',
   ];
   static const plannedStudentIds = <String>['ayane', 'shun_swimsuit', 'hina'];
   static const longNameStudentId = 'hoshino';

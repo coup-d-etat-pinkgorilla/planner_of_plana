@@ -1317,7 +1317,11 @@ void main() {
     expect(
       tester
           .widgetList<Text>(find.byType(Text))
-          .where((text) => text.style?.fontSize == studentSortMenuFontSize)
+          .where(
+            (text) =>
+                text.style?.fontSize == studentSortMenuFontSize &&
+                text.style?.color == studentSortAccentColor,
+          )
           .length,
       StudentGridSort.values.length,
     );

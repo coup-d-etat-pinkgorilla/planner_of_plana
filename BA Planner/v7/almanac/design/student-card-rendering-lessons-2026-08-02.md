@@ -213,6 +213,10 @@ PLAN은 항상 UNOWNED 아래, JP는 카드 우상단 모서리)은 폐기했다
   JP 18%, `paintStudentPortraitStatusBadge`.
 - `PLAN`: repository goal student ID 집합, `JP`: catalog의 `jpOnly`, `UNOWNED`: 보유 집합에서 결정.
 - Section 3 선택 초상과 계획 요소 초상(1×1 painter, 칩·이름 off)도 같은 채워 쌓기를 쓴다.
+- 배지 글자 글꼴(2026-10-07 FE3-c): `CustomPainter`의 `TextPainter`는 테마 `fontFamily`를
+  물려받지 않는다. FE1-g 기준선부터 golden에서 배지 글자가 흰 사각형(테스트 글꼴 Ahem)으로
+  그려진 원인이다. `studentStatusBadgeTextStyle`이 Pretendard(`AppFonts.body`) w700, 높이 × .43,
+  자간 .02em을 명시한다. painter에서 글자를 그릴 때는 글꼴을 항상 명시한다.
 
 ## 첫 학생 탭 진입 성능
 

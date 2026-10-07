@@ -8,6 +8,8 @@ import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
 import '../models/active_plan_bond_target.dart';
 import '../models/planning_models.dart';
+import '../models/recent_students.dart';
+import '../models/student_filter_controller.dart';
 import '../widgets/diagonal_section.dart';
 import '../widgets/student_grid_warmup.dart';
 import '../widgets/student_range_condition_section.dart';
@@ -31,6 +33,7 @@ class StudentPage extends StatefulWidget {
     this.candidateContext,
     this.onCandidateCommitted,
     this.active = true,
+    this.recentStudents,
   });
 
   final AppService service;
@@ -39,6 +42,9 @@ class StudentPage extends StatefulWidget {
   final StudentCandidateContext? candidateContext;
   final ValueChanged<ScannerCandidate>? onCandidateCommitted;
   final bool active;
+
+  /// 최근 본 학생(FD-061). 앱 셸이 계획 화면과 함께 쓰도록 넘긴다. 없으면 페이지가 만든다.
+  final RecentStudents? recentStudents;
 
   @override
   State<StudentPage> createState() => _StudentPageState();
@@ -59,7 +65,15 @@ class _StudentPageState extends State<StudentPage> {
   bool _saving = false;
   int _handoffSequence = 0;
   int _warmupRequest = 0;
-  StudentRangeConditions _rangeConditions = StudentRangeConditions.initial();
+
+  /// S4·필터가 함께 쓰는 필터 상태(FE3-c). 범위 조건도 여기 있다.
+  final StudentFilterController _filter = StudentFilterController(
+    catalogKeys: studentFilterDefinitions.map((item) => item.key),
+  );
+  RecentStudents? _ownRecent;
+
+  RecentStudents get _recent =>
+      widget.recentStudents ?? (_ownRecent ??= RecentStudents());
 
   RepositoryService? get _repository => widget.service is RepositoryService
       ? widget.service as RepositoryService
@@ -72,13 +86,38 @@ class _StudentPageState extends State<StudentPage> {
   void initState() {
     super.initState();
     widget.service.state.addListener(_connectionChanged);
+    _filter.addListener(_stateChanged);
+    _recent.addListener(_stateChanged);
     _loadCatalog();
+  }
+
+  void _stateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(StudentPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.recentStudents != widget.recentStudents) {
+      (oldWidget.recentStudents ?? _ownRecent)?.removeListener(_stateChanged);
+      _recent.addListener(_stateChanged);
+    }
+  }
+
+  /// 학생을 고른다. 고른 학생은 최근 본 학생 맨 앞에 온다(FD-061).
+  void _select(String? studentId) {
+    _selectedId = studentId;
+    if (studentId != null) _recent.visit(studentId);
   }
 
   @override
   void dispose() {
     _warmupRequest += 1;
     widget.service.state.removeListener(_connectionChanged);
+    _filter.removeListener(_stateChanged);
+    _filter.dispose();
+    _recent.removeListener(_stateChanged);
+    _ownRecent?.dispose();
     _search.dispose();
     for (final editor in _editors.values) {
       editor.dispose();
@@ -115,7 +154,9 @@ class _StudentPageState extends State<StudentPage> {
       if (!mounted) return;
       setState(() {
         _catalog = catalog;
-        _selectedId ??= catalog.isEmpty ? null : catalog.first.studentId;
+        if (_selectedId == null && catalog.isNotEmpty) {
+          _select(catalog.first.studentId);
+        }
         _loading = false;
       });
       _syncEditors();
@@ -170,7 +211,9 @@ class _StudentPageState extends State<StudentPage> {
         _repositoryState = state;
         _activePlan = activePlan;
         _catalog = [..._catalog, ...fallback];
-        _selectedId ??= _catalog.isEmpty ? null : _catalog.first.studentId;
+        if (_selectedId == null && _catalog.isNotEmpty) {
+          _select(_catalog.first.studentId);
+        }
         _message = null;
       });
       _syncEditors();
@@ -323,6 +366,9 @@ class _StudentPageState extends State<StudentPage> {
         student.studentId: student.values,
     };
     final candidate = widget.candidateContext;
+    final catalogById = {
+      for (final student in _catalog) student.studentId: student,
+    };
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -353,33 +399,33 @@ class _StudentPageState extends State<StudentPage> {
                     _activePlan,
                     _selectedId,
                   ),
+                  filterController: _filter,
+                  totalStudentCount: _catalog.length,
+                  recentStudents: [
+                    for (final id in _recent.ids) ?catalogById[id],
+                  ],
                   active: widget.active,
                   searchController: _search,
                   onSearchChanged: (_) => setState(() {}),
                   onStudentSelected: (studentId) {
-                    setState(() => _selectedId = studentId);
+                    setState(() => _select(studentId));
                     _syncEditors();
                   },
                   onAddToPlan: _addToPlan,
                   onOpenScan: widget.onOpenScan,
                   onOpenFilter: () {},
                   onFilterVisibilityChanged: (visible) {
-                    if (!visible) {
-                      setState(
-                        () =>
-                            _rangeConditions = StudentRangeConditions.initial(),
-                      );
-                    }
+                    // Section 5를 닫으면 범위 조건을 처음 상태로(기존 동작, FE3-d에서 바뀐다).
+                    if (!visible) _filter.resetRange();
                   },
                   filterCompanion: StudentRangeConditionSection(
                     key: const ValueKey('student-range-condition-section'),
                     keyPrefix: 'student-range-condition',
-                    conditions: _rangeConditions,
-                    onChanged: (conditions) =>
-                        setState(() => _rangeConditions = conditions),
+                    conditions: _filter.range,
+                    onChanged: (conditions) => _filter.range = conditions,
                   ),
                   rangeConditionMatches: (student, currentValues) =>
-                      _rangeConditions.matchesStudent(
+                      _filter.range.matchesStudent(
                         student: student,
                         currentValues: currentValues ?? const {},
                         owned: owned.contains(student.studentId),

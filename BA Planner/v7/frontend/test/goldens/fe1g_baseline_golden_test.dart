@@ -180,8 +180,9 @@ void main() {
     await expectGoldenScene(tester, 'home');
   }, variant: goldenPlatform);
 
-  // FE3-b: 학생 장면은 학생 7명 fixture(GoldenStudentMockAppService)를 쓴다.
-  // 미보유·배지 2~3개 쌓기·긴 이름·인연 목표 있음/없음을 golden이 직접 본다.
+  // FE3-b·FE3-c: 학생 장면은 학생 10명 fixture(GoldenStudentMockAppService)를 쓴다.
+  // 미보유·배지 2~3개 쌓기·긴 이름·인연 목표 있음/없음, 그리드 두 줄, S4 확장(결과 수·적용 필터·
+  // 최근 본 학생)을 golden이 직접 본다.
   testWidgets('students-grid', (tester) async {
     setGoldenViewport(tester);
     final service = await _studentService();
@@ -194,6 +195,8 @@ void main() {
       find.byKey(const ValueKey('student-detail-bond-target')),
       findsNothing,
     );
+    // 최근 본 학생: 기본 선택 한 명.
+    expect(find.byKey(const ValueKey('student-recent-aru')), findsOneWidget);
     await expectGoldenScene(tester, 'students-grid');
   }, variant: goldenPlatform);
 
@@ -211,6 +214,9 @@ void main() {
       find.text(GoldenStudentMockAppService.bondTargetLabel),
       findsOneWidget,
     );
+    // 최근 본 학생: 아야네(지금 선택) → 아루.
+    expect(find.byKey(const ValueKey('student-recent-ayane')), findsOneWidget);
+    expect(find.byKey(const ValueKey('student-recent-aru')), findsOneWidget);
     await expectGoldenScene(tester, 'students-detail');
   }, variant: goldenPlatform);
 
@@ -225,6 +231,8 @@ void main() {
       find.byType(StudentDiagonalGrid).first,
     );
     expect(grid.showNames, isFalse);
+    // 8열 그리드가 두 줄이라 접힌 행 피치(카드 + 3.84)가 장면에 보인다.
+    expect(grid.students.length, greaterThan(grid.columns));
     await expectGoldenScene(tester, 'students-grid-name-off');
   }, variant: goldenPlatform);
 

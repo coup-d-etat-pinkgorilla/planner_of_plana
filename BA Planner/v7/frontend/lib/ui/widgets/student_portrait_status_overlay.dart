@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../app/theme.dart';
+
 /// Paint-only status treatment for a student portrait.
 ///
 /// The overlay occupies its parent's existing bounds, ignores pointer input, and
@@ -141,6 +143,26 @@ void paintUnownedStudentPortraitStatus(
   );
 }
 
+/// 상태 배지 글자(시안 배지: Pretendard w700, 높이 × .43, 자간 .02em, #f2f2f2).
+///
+/// painter의 `TextStyle`은 앱 테마를 물려받지 않는다. 글꼴을 적지 않으면 실제 앱에서는 시스템
+/// 기본 글꼴, golden에서는 테스트 기본 글꼴(사각형)로 그려지므로 [AppFonts.body]를 명시한다(FE3-c).
+TextStyle studentStatusBadgeTextStyle(
+  Rect badgeRect, [
+  StudentPortraitStatusStyle style = const StudentPortraitStatusStyle(),
+]) {
+  final fontSize = (badgeRect.height * 0.43).clamp(6.0, 12.0).toDouble();
+  return TextStyle(
+    fontFamily: AppFonts.body,
+    fontFamilyFallback: AppFonts.fallback,
+    color: style.badgeTextColor,
+    fontSize: fontSize,
+    fontWeight: FontWeight.w700,
+    letterSpacing: fontSize * 0.02,
+    height: 1,
+  );
+}
+
 void paintStudentPortraitStatusBadge(
   Canvas canvas,
   Rect badgeRect,
@@ -168,12 +190,7 @@ void paintStudentPortraitStatusBadge(
   final textPainter = TextPainter(
     text: TextSpan(
       text: label,
-      style: TextStyle(
-        color: style.badgeTextColor,
-        fontSize: (badgeRect.height * 0.43).clamp(6.0, 12.0),
-        fontWeight: FontWeight.w700,
-        height: 1,
-      ),
+      style: studentStatusBadgeTextStyle(badgeRect, style),
     ),
     maxLines: 1,
     textDirection: TextDirection.ltr,

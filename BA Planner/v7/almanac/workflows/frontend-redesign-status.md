@@ -20,13 +20,13 @@ sources:
 
 ## 현재 상태
 
-**FE3-a 완료.** 결과(오케스트레이터 로그 2026-10-07 12:05·12:17, 아래 FE3-a commit record):
-- gate ① RED: golden 3장(students-grid, students-detail, plan-student-selector)만 실패. 워커 예상(바뀔 3장 / 같아야 할 14장)과 일치했다. 오케스트레이터 검토 승인 → `-UpdateGoldens` → gate `20261007_121200` GREEN(golden 17).
-- 커밋 `620a98ee`(FE3-a), 개편 문서 커밋 `fdf0097e`.
-- 오케스트레이터 지적(12:05): students-detail PNG가 students-grid와 바이트까지 같고, 학생 fixture가 2명(둘 다 보유·배지 1개)이라 배지 쌓기·미보유 흐림·이름 줄 접힘을 golden이 보지 않는다 → FE3-b에서 보강한다.
+**FE3-b 완료.** 결과(오케스트레이터 로그 2026-10-07 12:47·12:58·13:00, 아래 FE3-b commit record):
+- gate ① RED: golden 3건(students-grid, students-detail 차이, students-grid-name-off 새 장면)만 실패했다. 계획 golden 차이 0. 오케스트레이터 검토 승인 → `-UpdateGoldens` → gate `20261007_125410` GREEN(golden 18, 1장 새로).
+- 커밋 `809d903b`(FE3-b), 개편 문서 커밋 `6d24838b`.
+- 오케스트레이터 지적(12:47·12:58): 상태 배지 글자가 golden에서 흰 사각형(Ahem)으로 그려진다(FE1-g부터). 학생 7명이 한 줄이라 students-grid-name-off에서 행 피치 접힘이 보이지 않는다 → FE3-c에서 고친다.
 
-**진행 중: FE3-b 인연 B 게이지 + 학생 golden 장면 보강(시각 변경), 시작 커밋 `fdf0097e5345b9e88c9bb3d1c187cf951dafe93c`.**
-- 자세한 내용은 아래 "FE3-b" 절에 적는다. 코드 작성 완료, 사용자 ① gate(바뀐 장면·새 장면만 RED 예상) 대기.
+**진행 중: FE3-c S4 확장 + 학생 카드 후속(시각 변경), 시작 커밋 `6d24838bfe81d2d93e2256ef92bf03350dc513e8`. 코드 작성 완료·gate 미실행(사용자 ① 대기).**
+- 자세한 내용은 아래 "FE3-c" 절에 적는다.
 
 ### 커밋 기록
 
@@ -42,6 +42,7 @@ sources:
 | FE2-c | `bb1e3478` | 오버레이 키트(`InfoPopover`·`AnchoredFlyout`+프리셋·FD-090 부족 재화 2종·`BaModal` 스크림 4종), 갤러리 FE2-c 구역 | `20261007_102114` GREEN(294 + 194 + 프로세스 28 + golden 17) |
 | FE2-d | `1f65b64a` | 이미지·차트 원자 키트(`ItemIconTile`·`ItemTile`·`PortraitStrip`·`SkewBar`·`KpiTile`·차트 원자·빗금·`GameAssets`), `PlanInventoryCoverageBar`를 `SkewBar`로 흡수, 계획 위젯 asset 상수 → `GameAssets`(동작 보존), 갤러리 FE2-d 구역 | `20261007_111210` GREEN(295 + 218 + 프로세스 28 + golden 17) |
 | FE3-a | `620a98ee` | DE 학생 카드·그리드: 오른쪽 위 속성 글자 칩(축약 라벨, 80° 계단), 이름 카드 밖(미보유 흐림), 배지 왼쪽 80° 변 채워 쌓기, 행 피치 카드 + 이름 줄, 복합장갑 `typeComposite`, golden 3장 갱신(시각 변경) | ① RED(golden 3, 예상 일치) → `20261007_121200` GREEN(golden 17) |
+| FE3-b | `809d903b` | 인연 B 게이지(목표 빗금·점선·→N, 목표 = 활성 계획 문서의 마지막 단계 `bond_rank`, 조회 경계 한 곳), 학생 golden fixture 7명·students-detail 수정·새 장면 students-grid-name-off | ① RED(golden 3, 예상 일치) → `20261007_125410` GREEN(golden 18) |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -1640,4 +1641,198 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice re
 ### FE3-b commit record (2026-10-07 12:59, written by fe_commit.ps1)
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_125410\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE3-c 착수 기록 (2026-10-07)
+
+- 범위 A(워크플로 FE3-c 행 그대로): S4 결과 수 줄, 적용 필터 칩(FE2-b `BaChip` 제거형, × · 모두 지우기, 범위 조건 칩 포함·넘치면 한 줄 + "+n" — FD-060), 최근 본 학생(6명, 앱 실행 동안만, 누르면 선택 + 그리드 스크롤 — FD-061, 학생 위젯 밖 작은 상태 객체), 필터 상태를 layout state에서 페이지 컨트롤러로 올림(S4 토글과 팝업 "보유·서버"는 같은 상태 — FD-057), 기본 정렬 이름 ↑ 유지(FD-062).
+- 범위 B(오케스트레이터 12:47·12:58): 상태 배지 글자가 golden에서 흰 사각형으로 그려지는 원인 확인과 배지 글꼴 명시, golden 학생 fixture를 그리드 두 줄 이상으로 늘림(계획 fixture 불변).
+- 범위 밖: 필터 모달(FE3-d). 기존 Section 5·범위 카드는 동작만 유지한다.
+- 시작 커밋: `6d24838bfe81d2d93e2256ef92bf03350dc513e8`.
+- 막힘: 대장 막힘 요약에서 FE3-c를 막는 열림 FD 없음.
+- 시각 변경 slice: golden 갱신은 오케스트레이터 검토 뒤 사용자가 `fe_gate.ps1 -UpdateGoldens`로 한다. golden PNG를 직접 만들거나 지우지 않는다.
+- 사본: 고칠 기존 파일마다 착수 전 사본을 `debug/frontend_fe3c/pre/<v7 기준 경로>`에 둔다.
+- 기기 쓰기: 매번 새 업로드 경로에서 쓰고, 쓴 뒤 다시 읽어 바이트로 대조한다.
+
+## FE3-c 종료 기록 (2026-10-07, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없어 analyze·테스트·golden을 돌리지 못했다. 통과를 주장하지 않는다.
+- 별도 검토 에이전트가 바뀐 파일을 사본과 대조해 정적으로 읽었다(쓴 API의 존재·시그니처, import, listener 해제, 기존 테스트 finder 충돌).
+  - 컴파일 오류·analyze 지적은 없었다.
+  - 새 테스트 2곳이 실행하면 실패할 것을 찾아 고쳤다.
+    1. 구분선 1px 높이만큼 아래 줄이 모두 1px 내려갔다 → 구분선 뒤 간격을 5로 해 결과 수 줄이 구분선 위끝 + 6에 온다(시안 226.2 → 232.2).
+    2. `student-recent-label` 키가 줄이 아니라 가운데 정렬된 글자에 붙어 있었다 → 줄(`Align`)로 옮겼다.
+- 시안 값은 `W-Student-Search.dc.html`을 `tools/dc_outline.py`로 읽었다(칩·링크·결과 수 문구·썸네일 크기·외곽선).
+
+### 범위 A: S4 확장
+
+- **새 파일 `frontend/lib/ui/models/student_filter_controller.dart`**: 학생 그리드 필터 상태(`StudentFilterController`, `ChangeNotifier`). 학생 페이지가 하나를 소유한다.
+  - 속성 조건(학교·속성 등 catalog 값), `hideUnowned`·`hideJpOnly`(S4 토글 = 필터 팝업 "보유 · 서버", FD-057), 범위 조건(`StudentRangeConditions`)을 한곳에 둔다.
+  - `appliedFilters`: 속성 조건(필터 정의 순서, 값 이름순) 다음 범위 조건(목표 키 순서). 범위 조건 라벨은 축약형 `레벨 70~90`, `EX 3~5`(`studentRangeChipLabels`). 최소~최대 전체면 조건이 아니다.
+  - `removeApplied`(칩 ×): 속성 값 하나를 빼거나 범위 한 항목을 최소~최대로 되돌린다. `clearApplied`(모두 지우기): 칩으로 보이는 조건(속성·범위)만 지운다. S4 토글은 그대로 둔다.
+- **새 파일 `frontend/lib/ui/models/recent_students.dart`**: 최근 본 학생(`RecentStudents`, FD-061). 6명, 가장 최근이 앞, 같은 학생은 한 번. 저장하지 않는다(앱 실행 동안만). 앱 셸이 하나를 만들어 학생 탭에 넘긴다. FE4-b(계획 1단계)도 같은 객체를 받으면 된다.
+- **`frontend/lib/ui/widgets/student_section_layout.dart`**
+  - layout state의 `_hideUnownedStudents`·`_hideJpOnlyStudents`·`_selectedCatalogFilters`를 지우고 `filterController`를 읽는다. 넘기지 않으면 자체 컨트롤러를 만든다(기존 호출·테스트 그대로 동작).
+  - S4 토글 4줄 아래 확장(W-Student-Search): 구분선(1px rgba(113,199,244,.28)) → 6 → 결과 수 줄 24 → 8 → 적용 필터 줄 26 → 10 → "최근 본 학생" 20 → 2 → 썸네일 줄 40.5.
+    - 줄 왼쪽은 S4 왼쪽 80° 변을 따라 그 줄 밑변 높이에서 22px 안쪽이다(아래 줄일수록 왼쪽으로). 오른쪽 끝은 검색 상자 오른쪽이다.
+    - S4 높이를 넘는 줄은 그리지 않는다(작은 창에서 축소하지 않는다).
+  - 결과 수 줄 `StudentResultCountRow`: `표시 N / 전체 T · 보유 O · 계획 중 P`. N은 경기천년제목 18 w800, 나머지는 Pretendard 13 muted. N = 지금 그리드에 보이는 수, T = catalog 전체, O = 보유 수, P = 계획 학생 수.
+  - 적용 필터 줄 `StudentAppliedFilterRow`: "적용 필터" 라벨 + `BaChip`(제거형, 톤 #e9b0ee 배경 .12). 조건이 없으면 "없음"이다.
+    - 한 줄에 들어가는 칩만 보이고, 남는 수는 회색 `+n` 칩이다(FD-060, `studentVisibleChipCount`). `+n`은 지금 누를 수 없다(FE3-d 필터 모달에서 연결).
+    - 조건이 있을 때만 오른쪽에 "모두 지우기"(#71c7f4 12 w600)가 있다.
+  - 최근 본 학생 줄 `StudentRecentStrip`: 썸네일 50×40.5, 간격 5, 들어가는 수만큼. 선택 학생은 #ff72b6 1.6 외곽선, 나머지는 흰색 .85 1px이다.
+    - 누르면 그 학생을 고르고(`onStudentSelected`), 그리드를 그 학생 행이 viewport 가운데에 오게 스크롤한다(`studentGridRevealOffset`, 0 ~ 최대로 자름, `AppMotion.header`).
+  - `StudentDiagonalGrid`에 `revealStudentId`·`revealRequest`를 더했다. 요청이 바뀐 다음 frame에 스크롤한다.
+- **`frontend/lib/ui/pages/student_page.dart`**: `StudentFilterController`를 소유하고 layout에 넘긴다. 범위 조건(`_rangeConditions`)도 컨트롤러로 옮겼다. Section 5를 닫으면 범위 조건을 처음으로 되돌리는 기존 동작은 그대로다(FE3-d 전까지).
+  - 학생을 고를 때(기본 선택 포함) `RecentStudents.visit`을 부른다. 앱 셸이 목록을 주지 않으면 자체 목록을 쓴다.
+- **`frontend/lib/ui/app_shell.dart`**(최소 diff): `RecentStudents` 하나를 만들어 `StudentPage`에 넘기고 dispose한다.
+- 기본 정렬은 현행 이름 ↑ 그대로다(FD-062).
+- Section 5·범위 카드는 동작만 유지했다(FE3-d에서 폐기).
+
+### 범위 B: 학생 카드 후속
+
+- **배지 글자 사각형 원인**: `paintStudentPortraitStatusBadge`의 `TextPainter` `TextStyle`에 `fontFamily`가 없었다. `CustomPainter`는 테마 글꼴을 물려받지 않아, golden에서는 테스트 글꼴(Ahem)로, 실제 앱에서는 플랫폼 기본 글꼴로 그려졌다(FE1-g 기준선부터).
+- **`frontend/lib/ui/widgets/student_portrait_status_overlay.dart`**: `studentStatusBadgeTextStyle`을 공개하고 배지 painter가 쓴다. Pretendard(`AppFonts.body`, fallback `AppFonts.fallback`) w700, 글자 크기 = 배지 높이 × .43(6~12), 자간 .02em, 높이 1. 실제 앱 글꼴도 시안과 같아진다.
+- **같은 원인으로 golden에서 사각형이 될 수 있는 다른 글자(목록만, 고치지 않음)**: `frontend/lib/ui/widgets/section_template_surface.dart:327`(`_paintElementLabel`), `:1104`(`_paintTextFeature`). 둘 다 Studio(편집기) 전용이라 지금 golden 장면에는 나오지 않는다. 학생 카드 이름·속성 칩·`stat_chart` 라벨은 이미 AppFonts를 명시한다.
+- **`frontend/test/goldens/golden_harness.dart`**: 학생 fixture를 7명 → 10명으로 늘렸다. 8열 그리드가 두 줄이 된다.
+  - 더한 학생: 하스미(보유), 나구사(미보유), 노아(보유).
+  - 계획 장면 fixture(`GoldenMockAppService`)와 `MockAppService` 기본값은 그대로다.
+- **`frontend/test/goldens/fe1g_baseline_golden_test.dart`**:
+  - `students-grid`가 최근 본 학생 `aru`(기본 선택)를 확인한다.
+  - `students-detail`이 `ayane` → `aru` 순서를 확인한다.
+  - `students-grid-name-off`가 학생 수 > 열 수(두 줄)를 확인한다.
+- **`almanac/design/student-card-rendering-lessons-2026-08-02.md`**: 상태 배지 절에 "painter 글자는 글꼴을 항상 명시한다"를 더했다.
+
+### 테스트
+
+- **새 파일 `frontend/test/student_search_section_test.dart`(13건)**
+  - 최근 본 학생 목록 1건: 가장 최근이 앞, 같은 학생 한 번, 6명 상한.
+  - 필터 상태 3건:
+    - 칩 순서와 라벨(`밀레니엄`, `폭발`, `레벨 70~90`).
+    - ×·모두 지우기는 칩 조건만 지우고 S4 토글은 그대로다.
+    - 한 줄 칩 수와 `+n` 자리 계산.
+  - S4 위젯 7건(2560×1208 학생 canvas):
+    - 줄 위치(closeTo): 구분선 (2003.0, 226.2), 결과 수 (1998.7, 232.2, 높이 24), 칩 줄 (1992.7, 264.2, 26), 라벨 (1987.4, 300.2), 썸네일 (1980.0, 322.2), 오른쪽 끝 2523.7, 썸네일 50×40.5.
+    - 결과 수 문구.
+    - 칩 ×와 모두 지우기.
+    - 범위 조건 칩과 `+n`(9개 조건).
+    - S4 토글과 컨트롤러 공유(FD-057).
+    - 최근 본 학생을 누르면 선택 + 스크롤(처음에 없던 행이 보임, 썸네일 간격 5).
+    - 스크롤 위치 계산.
+  - 학생 페이지 1건: 고른 학생이 최근 본 학생 앞에 오고(`aru` → `ayane, aru`) 앱 셸 목록을 쓴다. 정렬 라벨이 이름이다(FD-062).
+  - 배지 글꼴 1건: Pretendard w700, 높이 × .43, 자간 .02em, 최소 6.
+- **고친 기존 테스트 1건(지운 테스트 없음)**: `frontend/test/student_studio_layout_test.dart` "Section 1 dropdown changes the Section 2 student order"의 정렬 메뉴 글자 수 세기. 18px 글자를 모두 세던 조건에 정렬 강조색(`studentSortAccentColor`)을 더했다. 새 결과 수 숫자(18px)가 1100×720에서도 S4에 그려져 세는 수가 하나 늘기 때문이다. 이 테스트의 검증 내용은 같다.
+- 상태를 페이지 컨트롤러로 올리면서 바뀐 기존 테스트는 없다. layout에 컨트롤러를 넘기지 않으면 자체 컨트롤러를 쓰므로 기존 토글·카탈로그 필터 테스트가 그대로 동작한다(검토 에이전트 확인).
+- 예상 건수: 일반 569 + 13 = 582, golden 18(새 장면 없음).
+
+### 처리한 FD
+
+- **FD-057**: S4 토글(미보유 숨김·일본 서버 전용 숨김)과 필터 팝업 "보유 · 서버" 그룹은 `StudentFilterController`의 같은 상태다. 팝업 자체는 FE3-d다.
+- **FD-060**: 적용 필터 칩은 범위 조건도 칩으로 보이고, 넘치면 한 줄 + `+n`이다.
+- **FD-061**: 최근 본 학생 6명, 앱 실행 동안만, 학생 위젯 밖 상태 객체. 누르면 선택 + 스크롤한다.
+- **FD-062**: 기본 정렬 이름 ↑ 유지(바꾸지 않음).
+- 오케스트레이터 12:47·12:58 후속: 배지 글꼴 명시, golden 학생 fixture 두 줄.
+
+### golden 갱신 사유(장면별 예상)
+
+바뀔 장면(3):
+- `students-grid`
+  - 학생 10명 두 줄(둘째 줄 하스미·나구사·노아 포함, 이름순 정렬).
+  - S4 아래 확장: 구분선, `표시 10 / 전체 10 · 보유 7 · 계획 중 3`, 적용 필터 "없음", 최근 본 학생 아루 1명(핑크 외곽선).
+  - 배지 글자 UNOWNED·PLAN·JP가 사각형에서 Pretendard 글자로 바뀐다.
+- `students-detail`: 위와 같고, 아야네가 선택되어 최근 본 학생이 아야네(핑크) → 아루 두 명이다.
+- `students-grid-name-off`: 위와 같고, 이름 줄이 접혀 두 줄 사이 행 피치가 줄어든 것이 보인다(FD-046).
+
+배지 글꼴 때문에 바뀔 수 있는 장면(2, 바뀐다면 배지 글자만):
+- `plan-student-selector`, `plan-element-builder`: 학생 초상에 UNOWNED 등 배지가 그려지면 그 글자만 바뀐다. 다른 화소는 차이 0이어야 한다. 계획 fixture는 건드리지 않았다.
+
+새 장면: 없음.
+
+차이가 없어야 할 장면(13): `title`, `account-manager`, `account-editor`, `account-picker`, `home`, `plan-bottleneck`, `plan-by-phase`, `plan-overall`, `plan-phase-editor`, `plan-preset-manager`, `plan-scenario-list`, `plan-scenario-compare`, `scan-student-review`.
+- 이 장면들에는 학생 상태 배지 painter가 나오지 않는다(`scan-student-review`의 학생 행은 보유라 배지 없음).
+
+### 검수표 (mock 모드, 2560×1440 모니터 최대화 = 2560×1392)
+
+**Student S4 · W-Student-Search 대조**
+
+| 대조 포인트 | 확인 |
+|---|---|
+| 줄 순서 | 토글 4줄 아래: 얇은 하늘색 구분선 → 결과 수 → 적용 필터 → "최근 본 학생" → 썸네일 줄 |
+| 왼쪽 변 | 각 줄 왼쪽 끝이 S4 왼쪽 사선을 따라 아래 줄일수록 왼쪽으로 간다. 오른쪽 끝은 검색 상자 오른쪽과 맞는다 |
+| 결과 수 | `표시 N / 전체 T · 보유 O · 계획 중 P`. 검색어를 넣거나 "미보유 학생 숨김"을 켜면 N만 줄어든다 |
+| 적용 필터 칩 | 조건이 없으면 "없음". Section 5에서 학교·속성 등을 고르면 연핑크 칩(×)이 생긴다. ×를 누르면 그 조건만 빠지고 그리드가 돌아온다 |
+| 범위 조건 칩 | 범위 카드에서 레벨 등을 좁히면 `레벨 70~90` 같은 칩이 생긴다. ×로 그 항목만 최소~최대로 돌아간다 |
+| 넘침 | 조건을 많이 고르면 한 줄을 넘지 않고 끝에 회색 `+n` 칩이 생긴다 |
+| 모두 지우기 | 조건이 있을 때만 오른쪽에 하늘색 "모두 지우기". 누르면 칩이 모두 사라진다. S4 토글 체크는 그대로다 |
+| 최근 본 학생 | 학생을 고를 때마다 맨 앞에 온다. 6명까지, 같은 학생은 한 번. 지금 선택 학생은 핑크 외곽선, 나머지는 흰 선 |
+| 최근 본 학생 누르기 | 그 학생이 선택되고, 그리드가 그 학생 행까지 부드럽게 스크롤된다(아래쪽 학생을 고른 뒤 맨 위로 스크롤해 두고 눌러 본다) |
+| 앱 실행 동안만 | 다른 탭에 갔다 와도 목록이 남는다. 앱을 다시 켜면 비어 있다(첫 기본 선택 학생 한 명부터) |
+| 토글 공유 | "미보유 학생 숨김"·"일본 서버 전용 숨김"이 이전처럼 그리드를 거른다 |
+| 기본 정렬 | 정렬 드롭다운이 이름 ↑ 그대로다 |
+| 배지 글자 | 그리드·S3 초상·계획 화면 초상의 UNOWNED·PLAN·JP 글자가 Pretendard 굵게로 보인다 |
+
+**golden(② 뒤 새 기준 PNG 검토용)**: 세 학생 장면에서 배지 글자가 사각형이 아니다. 그리드가 두 줄이다. `students-grid-name-off`는 두 줄 사이 간격이 이름 있는 장면보다 좁다. S4 아래 확장 줄이 보인다.
+
+### 알려진 시안 차이
+
+1. **칩 모양**: FE2-b `BaChip`을 그대로 써서 radius 7·좌우 padding 10이고 inset 테두리(@.6)가 없다. 시안은 높이 24, r5, padding 9, inset 테두리다. 색(#e9b0ee, 배경 .12, 글자 12 w700, × .8)은 같다.
+2. **"보유 · 서버" 칩**: S4 토글은 칩으로 보이지 않는다(토글로 이미 보임). 모두 지우기도 토글을 끄지 않는다.
+3. **결과 수 문구**: 프롬프트 예시 "24 / 170명"이 아니라 시안 문구 `표시 48 / 전체 170 · 보유 128 · 계획 중 8`을 따랐다. 보유·계획 중은 거르기 전 전체 기준이다.
+4. **최근 본 학생 썸네일 배경**: 인연 단계 배경 대신 기본 배경(랭크 없음)을 쓴다. 학생마다 인연 값을 읽지 않는다.
+5. **`+n` 칩**: 지금은 누를 수 없다. 시안에서는 필터 모달로 이어지며 FE3-d에서 연결한다.
+6. **작은 창**: S4 높이가 모자라면 아래 줄부터 그리지 않는다(시안은 기준 viewport만 있다).
+
+### 미검증 항목
+
+1. analyze, 전체 테스트(기존 569 + 새 13), golden 18장(학생 3장 갱신, 계획 2장은 배지 글자에 따라 갱신 가능, 13장 차이 0). 사용자 PC gate가 필요하다.
+2. 실행해 봐야 아는 것:
+   - S4 줄 위치 계산(`studentSectionRect` 기준)과 시안 좌표의 ±1px.
+   - 칩 폭 측정(`baChipTextStyle` TextPainter)과 실제 `BaChip` 폭의 차이로 `+n` 경계가 칩 하나 어긋날 수 있다.
+   - 최근 본 학생 스크롤의 post-frame 타이밍.
+   - 실패하면 테스트 기대값부터 확인한다.
+3. `plan-student-selector`·`plan-element-builder`에 배지가 실제로 나오는지는 ① 결과로 확인한다.
+
+### 발견 사항
+
+1. `RecentStudents.clear()`는 아직 부르는 곳이 없다. 계정을 바꿔도 최근 본 학생이 남고, 학생 탭이 새로 만들어지며 기본 선택 학생(목록 첫 학생)이 맨 앞에 온다. 학생 ID는 계정과 무관해 누르면 동작은 맞다. 계정별로 비울지는 FE4-b 때 정한다.
+
+### 사용자 실행 순서
+
+① 비교 gate 하나만 실행한다. 학생 3장(`students-grid`, `students-detail`, `students-grid-name-off`)은 차이로 RED가 날 것으로 예상한다. `plan-student-selector`·`plan-element-builder`는 배지 글자 차이로만 RED가 날 수 있다. 나머지 13장은 차이 0이어야 한다. 결과(`debug\frontend_gate\<실행 시각>\summary.txt`, `frontend\test\goldens\failures\`)를 오케스트레이터에게 보내고 멈춘다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+② 오케스트레이터 승인 뒤: golden을 갱신하고 비교를 다시 돌린다(GREEN). 오케스트레이터가 새·바뀐 기준 PNG(`frontend\test\goldens\baseline\students-*.png`, 바뀌었다면 `plan-student-selector.png`·`plan-element-builder.png`)를 직접 열어 검토한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+③ 새 기준 PNG 승인 뒤: 커밋한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3c -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3c
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesign-docs
+```
+
+`debug/frontend_fe3c/commit.json`의 `whole`에 `frontend/test/goldens/baseline`을 넣었다. 사본은 `debug/frontend_fe3c/pre/` 8개다:
+- `student_section_layout.dart`, `student_page.dart`, `app_shell.dart`, `student_portrait_status_overlay.dart`
+- `golden_harness.dart`, `fe1g_baseline_golden_test.dart`, `student_studio_layout_test.dart`
+- `student-card-rendering-lessons-2026-08-02.md`
+
+### 다음 행동
+
+1. 사용자: ①을 실행하고 결과를 오케스트레이터에게 넘긴다.
+2. 오케스트레이터: 차이 검토 → ② → 새·바뀐 기준 PNG 검토 → ③ → 다음 slice FE3-d(필터 모달).
+
+### FE3-c commit record (2026-10-07 13:49, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_134501\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

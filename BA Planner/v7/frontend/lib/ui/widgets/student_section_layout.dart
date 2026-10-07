@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../kit/ba_chip.dart';
 import '../kit/diagonal_scrollbar.dart';
 import '../kit/game_assets.dart';
 import '../kit/hatch.dart';
 import '../kit/skew_box.dart';
 import '../models/active_plan_bond_target.dart';
+import '../models/student_filter_controller.dart';
 import '../studio/section_template.dart';
 import '../studio/student_studio_layout.dart';
 import 'animated_section_stack.dart';
@@ -968,6 +970,9 @@ class StudentSectionLayout extends StatefulWidget {
     this.studentValuesById = const {},
     this.plannedIds = const {},
     this.selectedBondTarget,
+    this.filterController,
+    this.totalStudentCount,
+    this.recentStudents = const [],
     required this.searchController,
     required this.onSearchChanged,
     required this.onStudentSelected,
@@ -990,6 +995,15 @@ class StudentSectionLayout extends StatefulWidget {
 
   /// 선택 학생의 활성 계획 인연 목표(FD-049). 없으면 null. 보일지는 게이지가 정한다(FD-050).
   final int? selectedBondTarget;
+
+  /// 필터 상태(FE3-c). 페이지가 소유한다. 없으면 레이아웃이 자기 것을 만든다.
+  final StudentFilterController? filterController;
+
+  /// S4 결과 수 줄의 "전체" 수(검색 전 catalog 크기). 없으면 [students] 수.
+  final int? totalStudentCount;
+
+  /// S4 최근 본 학생(가장 최근이 앞, 최대 6명, FD-061).
+  final List<StudentCatalogEntry> recentStudents;
   final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onStudentSelected;
@@ -1020,18 +1034,35 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
   bool _switchingListSection = false;
   bool _showStudentAttributes = true;
   bool _showStudentNames = true;
-  bool _hideUnownedStudents = false;
-  bool _hideJpOnlyStudents = false;
   StudentSection2View _section2View = StudentSection2View.grid;
   StudentGridSort _gridSort = StudentGridSort.nameAscending;
-  final Map<String, Set<String>> _selectedCatalogFilters = {
-    for (final definition in studentFilterDefinitions)
-      definition.key: <String>{},
-  };
+  StudentFilterController? _ownFilter;
+  String? _revealStudentId;
+  int _revealRequest = 0;
+
+  StudentFilterController get _filter =>
+      widget.filterController ??
+      (_ownFilter ??= StudentFilterController(
+        catalogKeys: studentFilterDefinitions.map((item) => item.key),
+      ));
+
+  void _filterChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// 최근 본 학생 썸네일: 그 학생을 고르고 그리드를 그 학생까지 스크롤한다(FD-061).
+  void _openRecentStudent(String studentId) {
+    setState(() {
+      _revealStudentId = studentId;
+      _revealRequest += 1;
+    });
+    widget.onStudentSelected(studentId);
+  }
 
   @override
   void initState() {
     super.initState();
+    _filter.addListener(_filterChanged);
     _section1Controller = _controller();
     _listController = _controller();
     _section3Controller = _controller();
@@ -1048,6 +1079,12 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
   @override
   void didUpdateWidget(StudentSectionLayout oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.filterController != widget.filterController) {
+      (oldWidget.filterController ?? _ownFilter)?.removeListener(
+        _filterChanged,
+      );
+      _filter.addListener(_filterChanged);
+    }
     if (oldWidget.active != widget.active) {
       _setTabSectionsActive(widget.active);
     }
@@ -1070,6 +1107,8 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
 
   @override
   void dispose() {
+    _filter.removeListener(_filterChanged);
+    _ownFilter?.dispose();
     _section1Controller.dispose();
     _listController.dispose();
     _section3Controller.dispose();
@@ -1110,19 +1149,102 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
     }
   }
 
-  void _toggleCatalogFilter(String key, String value) {
-    setState(() {
-      final values = _selectedCatalogFilters[key]!;
-      values.contains(value) ? values.remove(value) : values.add(value);
-    });
-  }
+  void _toggleCatalogFilter(String key, String value) =>
+      _filter.toggleCatalog(key, value);
 
-  void _resetCatalogFilters() {
-    setState(() {
-      for (final values in _selectedCatalogFilters.values) {
-        values.clear();
-      }
-    });
+  void _resetCatalogFilters() => _filter.clearCatalog();
+
+  /// S4 아래쪽 확장(FE3-c, W-Student-Search): 구분선, 결과 수, 적용 필터 칩, 최근 본 학생.
+  /// 각 줄 왼쪽은 S4 왼쪽 80° 변을 따라 줄 밑변 높이에서 22px 안쪽, 오른쪽은 검색 상자 오른쪽이다.
+  /// S4 높이를 넘는 줄은 그리지 않는다(작은 창에서 축소하지 않는다).
+  List<Widget> _section4Extension({
+    required Size size,
+    required Rect searchBounds,
+    required int shownCount,
+  }) {
+    final section = studentSectionRect(size, 'element-4');
+    final right = searchBounds.right;
+    double leftAt(double bottom) =>
+        section.left +
+        (section.bottom - bottom) / diagonalTan80 +
+        studentSearchRowRailInset;
+    final limit = section.bottom - studentSearchRowBottomMargin;
+    final rows = <Widget>[];
+    var top =
+        searchBounds.bottom +
+        studentSearchToggleTopGap +
+        studentSearchToggleRowHeight * 4 +
+        studentSearchDividerGap;
+
+    void add(double height, double gapAfter, Widget Function(Rect) builder) {
+      final rect = Rect.fromLTRB(
+        leftAt(top + height),
+        top,
+        right,
+        top + height,
+      );
+      top = rect.bottom + gapAfter;
+      if (rect.bottom > limit || rect.width <= 0) return;
+      rows.add(Positioned.fromRect(rect: rect, child: builder(rect)));
+    }
+
+    final filter = _filter;
+    final applied = filter.appliedFilters(
+      catalogLabel: studentFilterValueLabel,
+    );
+    add(
+      studentSearchDividerHeight,
+      studentSearchDividerGap - studentSearchDividerHeight,
+      (_) => const ColoredBox(
+        key: ValueKey('student-search-divider'),
+        color: studentSearchDividerColor,
+      ),
+    );
+    add(
+      studentSearchCountRowHeight,
+      studentSearchCountRowGap,
+      (_) => StudentResultCountRow(
+        key: const ValueKey('student-result-count'),
+        shown: shownCount,
+        total: widget.totalStudentCount ?? widget.students.length,
+        owned: widget.ownedIds.length,
+        planned: widget.plannedIds.length,
+      ),
+    );
+    add(
+      studentSearchChipRowHeight,
+      studentSearchChipRowGap,
+      (_) => StudentAppliedFilterRow(
+        key: const ValueKey('student-applied-filters'),
+        filters: applied,
+        onRemove: filter.removeApplied,
+        onClearAll: filter.clearApplied,
+      ),
+    );
+    add(
+      studentSearchRecentLabelHeight,
+      studentSearchRecentLabelGap,
+      (_) => const Align(
+        key: ValueKey('student-recent-label'),
+        alignment: Alignment.centerLeft,
+        child: Text(
+          '최근 본 학생',
+          maxLines: 1,
+          style: studentSearchLabelStyle,
+        ),
+      ),
+    );
+    add(
+      studentRecentThumbSize.height,
+      0,
+      (_) => StudentRecentStrip(
+        key: const ValueKey('student-recent-strip'),
+        students: widget.recentStudents,
+        selectedId: widget.selectedId,
+        onSelected: _openRecentStudent,
+      ),
+    );
+    return rows;
   }
 
   @override
@@ -1148,16 +1270,17 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
             (student) => student?.studentId == widget.selectedId,
             orElse: () => null,
           );
+      final filter = _filter;
+      final catalogFilters = filter.catalog;
       final filteredGridStudents = widget.students
           .where(
             (student) =>
-                (!_hideUnownedStudents ||
+                (!filter.hideUnowned ||
                     widget.ownedIds.contains(student.studentId)) &&
-                (!_hideJpOnlyStudents || !student.jpOnly),
+                (!filter.hideJpOnly || !student.jpOnly),
           )
           .where(
-            (student) =>
-                studentMatchesCatalogFilters(student, _selectedCatalogFilters),
+            (student) => studentMatchesCatalogFilters(student, catalogFilters),
           )
           .where(
             (student) =>
@@ -1221,7 +1344,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                               StudentDiagonalFilterList(
                                 key: const ValueKey('student-filter-section-5'),
                                 students: widget.students,
-                                selected: _selectedCatalogFilters,
+                                selected: catalogFilters,
                                 onToggle: _toggleCatalogFilter,
                               ),
                             ],
@@ -1280,6 +1403,8 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                                   showAttributes: _showStudentAttributes,
                                   showNames: _showStudentNames,
                                   onSelected: widget.onStudentSelected,
+                                  revealStudentId: _revealStudentId,
+                                  revealRequest: _revealRequest,
                                 )
                               else
                                 StudentDiagonalList(
@@ -1374,19 +1499,22 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                           _StudentGridDisplayToggle(
                             key: const ValueKey('student-toggle-hide-unowned'),
                             label: '미보유 학생 숨김',
-                            value: _hideUnownedStudents,
-                            onChanged: (value) =>
-                                setState(() => _hideUnownedStudents = value),
+                            value: filter.hideUnowned,
+                            onChanged: (value) => filter.hideUnowned = value,
                           ),
                           _StudentGridDisplayToggle(
                             key: const ValueKey('student-toggle-hide-jp-only'),
                             label: '일본 서버 전용 숨김',
-                            value: _hideJpOnlyStudents,
-                            onChanged: (value) =>
-                                setState(() => _hideJpOnlyStudents = value),
+                            value: filter.hideJpOnly,
+                            onChanged: (value) => filter.hideJpOnly = value,
                           ),
                         ],
                       ),
+                    ),
+                    ..._section4Extension(
+                      size: size,
+                      searchBounds: searchBounds,
+                      shownCount: gridStudents.length,
                     ),
                   ],
                 ),
@@ -1592,6 +1720,362 @@ class _StudentGridDisplayToggle extends StatelessWidget {
       ),
     ),
   );
+}
+
+// --- S4 확장(FE3-c, W-Student-Search) ------------------------------------------
+// 시안 값(기준 viewport): 토글 4줄(27) 아래 6 → 구분선 1(#71c7f4@.28, 구분선 위끝에서 6) → 결과 수 줄 24 → 8 →
+// 적용 필터 줄 26 → 10 → "최근 본 학생" 20 → 2 → 썸네일 50×40.5(간격 5). 줄 왼쪽은 S4 왼쪽 80° 변에서
+// 줄 밑변 높이 기준 22px 안쪽, 오른쪽 끝은 검색 상자 오른쪽.
+
+const studentSearchToggleTopGap = 6.0;
+const studentSearchToggleRowHeight = 27.0;
+const studentSearchDividerGap = 6.0;
+const studentSearchDividerHeight = 1.0;
+const studentSearchCountRowHeight = 24.0;
+const studentSearchCountRowGap = 8.0;
+const studentSearchChipRowHeight = 26.0;
+const studentSearchChipRowGap = 10.0;
+const studentSearchRecentLabelHeight = 20.0;
+const studentSearchRecentLabelGap = 2.0;
+const studentSearchRowRailInset = 22.0;
+const studentSearchRowBottomMargin = 4.0;
+const studentSearchDividerColor = Color.fromRGBO(113, 199, 244, 0.28);
+const studentRecentThumbSize = Size(50, 40.5);
+const studentRecentThumbGap = 5.0;
+const studentSearchLabelStyle = TextStyle(
+  fontFamily: AppFonts.body,
+  fontFamilyFallback: AppFonts.fallback,
+  color: AppColors.textMuted,
+  fontSize: AppType.bodySmallSize,
+  height: 1.2,
+);
+
+/// 적용 필터 칩 색(시안 `rgba(233,176,238,.12)` 바탕 + `#e9b0ee` 글자).
+const studentAppliedFilterTone = AppTone(
+  base: studentSortAccentColor,
+  backgroundAlpha: 0.12,
+  foreground: studentSortAccentColor,
+);
+
+/// 결과 수 줄: "표시 48 / 전체 170 · 보유 128 · 계획 중 8".
+class StudentResultCountRow extends StatelessWidget {
+  const StudentResultCountRow({
+    super.key,
+    required this.shown,
+    required this.total,
+    required this.owned,
+    required this.planned,
+  });
+
+  final int shown;
+  final int total;
+  final int owned;
+  final int planned;
+
+  static String detail({
+    required int total,
+    required int owned,
+    required int planned,
+  }) => '/ 전체 $total · 보유 $owned · 계획 중 $planned';
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Text(
+        '표시',
+        style: studentSearchLabelStyle.copyWith(fontSize: AppType.bodySize),
+      ),
+      const SizedBox(width: 8),
+      Text(
+        '$shown',
+        key: const ValueKey('student-result-count-shown'),
+        style: const TextStyle(
+          fontFamily: AppFonts.display,
+          color: AppColors.text,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          height: 1,
+        ),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          detail(total: total, owned: owned, planned: planned),
+          key: const ValueKey('student-result-count-detail'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: studentSearchLabelStyle.copyWith(fontSize: AppType.bodySize),
+        ),
+      ),
+    ],
+  );
+}
+
+/// 칩이 한 줄에 몇 개 들어가는지(넘치면 "+n" 칩 자리를 남긴다, FD-060).
+/// [chipWidths]는 칩 폭, [gap]은 칩 사이, [moreWidth]는 "+n" 칩 폭이다.
+int studentVisibleChipCount({
+  required List<double> chipWidths,
+  required double maxWidth,
+  required double gap,
+  required double Function(int hidden) moreWidth,
+}) {
+  var used = 0.0;
+  for (var index = 0; index < chipWidths.length; index++) {
+    final next = used + (index == 0 ? 0 : gap) + chipWidths[index];
+    final hiddenAfter = chipWidths.length - index - 1;
+    final reserve = hiddenAfter == 0 ? 0.0 : gap + moreWidth(hiddenAfter);
+    if (next + reserve > maxWidth) return index;
+    used = next;
+  }
+  return chipWidths.length;
+}
+
+/// [label] 제거형 [BaChip]의 폭(가로 여백 10 + 글자 + 6 + × 11 + 10).
+double studentRemovableChipWidth(String label, TextScaler scaler) =>
+    _chipTextWidth(label, scaler) + 10 + 6 + 11 + 10;
+
+/// "+n"처럼 × 없는 [BaChip]의 폭.
+double studentPlainChipWidth(String label, TextScaler scaler) =>
+    _chipTextWidth(label, scaler) + 10 + 10;
+
+double _chipTextWidth(String label, TextScaler scaler) {
+  final painter = TextPainter(
+    text: TextSpan(text: label, style: baChipTextStyle),
+    maxLines: 1,
+    textDirection: TextDirection.ltr,
+    textScaler: scaler,
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width.ceilToDouble() + 1;
+}
+
+/// 적용 필터 줄: "적용 필터" · 칩(×) 한 줄 + "+n" · "모두 지우기"(FD-060).
+class StudentAppliedFilterRow extends StatelessWidget {
+  const StudentAppliedFilterRow({
+    super.key,
+    required this.filters,
+    required this.onRemove,
+    required this.onClearAll,
+  });
+
+  final List<StudentAppliedFilter> filters;
+  final ValueChanged<StudentAppliedFilter> onRemove;
+  final VoidCallback onClearAll;
+
+  static const chipGap = 8.0;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      const Text('적용 필터', maxLines: 1, style: studentSearchLabelStyle),
+      const SizedBox(width: 8),
+      Expanded(
+        child: filters.isEmpty
+            ? Text(
+                '없음',
+                key: const ValueKey('student-applied-filter-empty'),
+                maxLines: 1,
+                style: studentSearchLabelStyle.copyWith(
+                  color: AppColors.textDim,
+                ),
+              )
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  final scaler = MediaQuery.textScalerOf(context);
+                  final visible = studentVisibleChipCount(
+                    chipWidths: [
+                      for (final filter in filters)
+                        studentRemovableChipWidth(filter.label, scaler),
+                    ],
+                    maxWidth: constraints.maxWidth,
+                    gap: chipGap,
+                    moreWidth: (hidden) =>
+                        studentPlainChipWidth('+$hidden', scaler),
+                  );
+                  final hidden = filters.length - visible;
+                  return ClipRect(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: Row(
+                        children: [
+                          for (var index = 0; index < visible; index++) ...[
+                            if (index > 0) const SizedBox(width: chipGap),
+                            BaChip(
+                              key: ValueKey(
+                                'student-applied-filter-${filters[index].id}',
+                              ),
+                              label: filters[index].label,
+                              tone: studentAppliedFilterTone,
+                              onRemove: () => onRemove(filters[index]),
+                            ),
+                          ],
+                          if (hidden > 0) ...[
+                            if (visible > 0) const SizedBox(width: chipGap),
+                            BaChip(
+                              key: const ValueKey(
+                                'student-applied-filter-more',
+                              ),
+                              label: '+$hidden',
+                              tone: AppTones.gray,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+      ),
+      if (filters.isNotEmpty) ...[
+        const SizedBox(width: 8),
+        TextButton(
+          key: const ValueKey('student-filter-clear-all'),
+          onPressed: onClearAll,
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            foregroundColor: AppColors.primary,
+            textStyle: const TextStyle(
+              fontFamily: AppFonts.body,
+              fontSize: AppType.bodySmallSize,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          child: const Text('모두 지우기'),
+        ),
+      ],
+    ],
+  );
+}
+
+/// 최근 본 학생 줄: 50×40.5 카드 썸네일, 간격 5, 지금 선택은 핑크 외곽선(FD-061).
+class StudentRecentStrip extends StatelessWidget {
+  const StudentRecentStrip({
+    super.key,
+    required this.students,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final List<StudentCatalogEntry> students;
+  final String? selectedId;
+  final ValueChanged<String> onSelected;
+
+  /// [width]에 들어가는 썸네일 수(넘치는 썸네일은 그리지 않는다).
+  static int fittingCount(double width) => math.max(
+    0,
+    ((width + studentRecentThumbGap) /
+            (studentRecentThumbSize.width + studentRecentThumbGap))
+        .floor(),
+  );
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final count = math.min(
+        students.length,
+        fittingCount(constraints.maxWidth),
+      );
+      return Row(
+        children: [
+          for (var index = 0; index < count; index++) ...[
+            if (index > 0) const SizedBox(width: studentRecentThumbGap),
+            StudentRecentThumb(
+              key: ValueKey('student-recent-${students[index].studentId}'),
+              student: students[index],
+              selected: students[index].studentId == selectedId,
+              onTap: () => onSelected(students[index].studentId),
+            ),
+          ],
+        ],
+      );
+    },
+  );
+}
+
+/// 최근 본 학생 썸네일 하나(그리드 카드와 같은 경로·배경·초상).
+class StudentRecentThumb extends StatelessWidget {
+  const StudentRecentThumb({
+    super.key,
+    required this.student,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final StudentCatalogEntry student;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    selected: selected,
+    label: '최근 본 학생 ${student.displayName}',
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox.fromSize(
+        size: studentRecentThumbSize,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            AssetImageGrid(
+              items: [
+                AssetImageGridItem(
+                  asset: bondRankPortraitBackgroundAsset(null),
+                  column: 0,
+                  row: 0,
+                  edgeCropFraction: 0.11,
+                  clipPathBuilder: studentGridCardPath,
+                ),
+                AssetImageGridItem(
+                  asset: 'assets/student_portraits/${student.studentId}.png',
+                  column: 0,
+                  row: 0,
+                  scale: 0.98,
+                  clipRadiusFraction: 0.12,
+                  alphaThreshold: 0.04,
+                ),
+              ],
+            ),
+            IgnorePointer(
+              child: CustomPaint(
+                painter: _StudentRecentThumbOutlinePainter(selected: selected),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _StudentRecentThumbOutlinePainter extends CustomPainter {
+  const _StudentRecentThumbOutlinePainter({required this.selected});
+
+  final bool selected;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      studentGridCardPath(studentGridCardFittedRect(Offset.zero & size)),
+      Paint()
+        ..isAntiAlias = true
+        ..style = PaintingStyle.stroke
+        ..strokeJoin = StrokeJoin.round
+        ..strokeWidth = selected ? 1.6 : 1
+        ..color = selected
+            ? studentGridCardSelectionColor
+            : Colors.white.withValues(alpha: 0.85),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_StudentRecentThumbOutlinePainter oldDelegate) =>
+      oldDelegate.selected != selected;
 }
 
 class StudentSectionMotion extends StatelessWidget {
@@ -4172,6 +4656,8 @@ class StudentDiagonalGrid extends StatefulWidget {
     this.showAttributes = true,
     this.showNames = true,
     this.columns = 8,
+    this.revealStudentId,
+    this.revealRequest = 0,
   });
 
   final List<StudentCatalogEntry> students;
@@ -4185,6 +4671,10 @@ class StudentDiagonalGrid extends StatefulWidget {
   final bool showNames;
   final int columns;
 
+  /// [revealRequest]가 바뀌면 이 학생의 행이 보이도록 스크롤한다(최근 본 학생, FD-061).
+  final String? revealStudentId;
+  final int revealRequest;
+
   @override
   State<StudentDiagonalGrid> createState() => _StudentDiagonalGridState();
 }
@@ -4195,6 +4685,38 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
   static const _gridInset = 8.0;
   static const _scrollbarReserve = 14.0;
   final ScrollController _controller = ScrollController();
+  ({StudentGridRowGeometry geometry, int columns, double viewport})? _layout;
+
+  @override
+  void didUpdateWidget(StudentDiagonalGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final studentId = widget.revealStudentId;
+    if (studentId != null && oldWidget.revealRequest != widget.revealRequest) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _reveal(studentId));
+    }
+  }
+
+  void _reveal(String studentId) {
+    final layout = _layout;
+    if (!mounted || layout == null || !_controller.hasClients) return;
+    final index = widget.students.indexWhere(
+      (student) => student.studentId == studentId,
+    );
+    if (index < 0) return;
+    final offset = studentGridRevealOffset(
+      row: index ~/ layout.columns,
+      geometry: layout.geometry,
+      contentTop: _gridInset,
+      viewportHeight: layout.viewport,
+      maxScrollExtent: _controller.position.maxScrollExtent,
+    );
+    if ((offset - _controller.offset).abs() < 0.5) return;
+    _controller.animateTo(
+      offset,
+      duration: AppMotion.header,
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   void dispose() {
@@ -4222,6 +4744,11 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
       final geometry = studentGridRowGeometry(
         cardWidth: cardWidth,
         showNames: widget.showNames,
+      );
+      _layout = (
+        geometry: geometry,
+        columns: columns,
+        viewport: constraints.maxHeight,
       );
       final contentHeight =
           _gridInset * 2 +
@@ -4424,6 +4951,22 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
         ),
     ];
   }
+}
+
+/// [row]행 카드가 viewport 가운데에 오는 스크롤 위치(0 ~ [maxScrollExtent]로 자름).
+double studentGridRevealOffset({
+  required int row,
+  required StudentGridRowGeometry geometry,
+  required double contentTop,
+  required double viewportHeight,
+  required double maxScrollExtent,
+}) {
+  final cardCenter =
+      contentTop + row * geometry.rowPitch + geometry.cardHeight / 2;
+  return (cardCenter - viewportHeight / 2).clamp(
+    0.0,
+    math.max(0.0, maxScrollExtent),
+  );
 }
 
 ({int start, int end}) studentGridActiveRowRange({
