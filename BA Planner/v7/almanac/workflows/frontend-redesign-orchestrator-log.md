@@ -140,3 +140,27 @@ topics: [workflow, design]
   · 모달 포커스 가두기·배경 접근성 차단(차이 5)과 Esc 이중 처리(차이 6)는 `BaModal`을 처음 실제로 쓰는 FE3-d 필터 모달에서 더한다. 워크플로 FE2-c 행에 적었다.
   · 패널이 스크롤 영역에 잘리지 않고, 위아래·좌우로 뒤집지 않는다(차이 4). 화면 slice에서 문제가 되면 그때 보정한다.
   · `ShortageBar`·`ShortageIconSlot`은 FE2-d의 `SkewBar`·`ItemIconTile`로 바꾼다. FE2-d 프롬프트에 넣었다.
+
+## 2026-10-07 11:17 — FE2-d 검토, FE2 완료
+
+- gate `20261007_111210` GREEN. 결과: 테스트 295 + 218, 프로세스 28, golden 17 차이 0, 합계 541. 커밋 `1f65b64a`(24파일). `PlanInventoryCoverageBar`를 SkewBar로 흡수하고 계획 위젯 5개의 asset 상수를 `GameAssets`로 모았는데 golden 차이 0이다(동작 보존 확인). 문서 커밋 `e130110d`.
+- 처리 FD: 022(WidgetTile 유지, ResourceTile은 FE6), 023(CustomPainter, pubspec 변경 없음), 012·024(해당 없음). 데이터 의미 불변식(모르는 값 = 빗금)을 SkewBar·막대 원자에 반영했다.
+- 알려진 시안 차이 8건은 허용한다. 아이템 배경 3종과 등급의 대응(차이 3)은 FE6 인벤토리에서 실제 데이터로 정한다. 엘리그마 아이콘(차이 8)은 FB-3·FB-10 통화 항목 때 다시 본다.
+- FE2 완료. 사용자 UI Kit 갤러리 시각 검수는 남아 있다. 검수에서 나온 지적은 그 위젯을 처음 쓰는 화면 slice 프롬프트에 넣는다.
+- 다음: FE3-a. 시각 변경 slice이므로 사용자 실행 순서를 둘로 나눠 제시한다. ① gate만 먼저 → golden 차이 검토 → 그다음 갱신·커밋.
+
+## 2026-10-07 12:05 — FE3-a golden 검토(갱신 승인)
+
+- gate ① RED. golden 3장만 실패했다: students-grid 1.76%, students-detail 1.76%, plan-student-selector 1.03%. 나머지 golden 14장, 일반 530, 프로세스 28, analyze·almanac·diff-check는 PASS다. 워커 status의 예상(바뀔 3장 / 같아야 할 14장)과 정확히 일치한다.
+- 차이 이미지를 검토했다. 픽셀 차이(>8)는 카드 영역 안에만 있다(students-grid bbox 240,253–648,438, selector 528,46–839,188). 바뀐 점은 다섯 가지다.
+  · 오른쪽 위 속성 칩 2개(80° 계단, 폭발/관통 + 경장)가 생겼다.
+  · 카드 안 이름 띠와 2색 밑줄이 사라졌다.
+  · 이름은 카드 아래로 갔다.
+  · 외곽선이 얇아졌다.
+  · 카드가 약 3.5px 이동했다.
+  FD-043·045·047 반영이 맞다. 카드 외 영역은 변하지 않았다. → 갱신 승인.
+- 워커 발견 사항 1: 프롬프트의 방어 축약 "특장"은 오케스트레이터 오기다. 대장·시안대로 "특수"가 맞다. 워커는 사용자 확인을 받고 "특수"를 썼다.
+- golden 커버리지 약점 3가지:
+  ① students-detail PNG가 students-grid와 바이트 단위로 같다(FE1-g부터). "상세" 장면이 그리드와 다른 상태를 그리지 않는다.
+  ② 학생 fixture가 2명이고 둘 다 보유·배지 1개다. 배지 채워 쌓기(FD-044), 미보유 흐림, 이름 줄 접힘(FD-046)은 golden이 보지 않는다(widget test만 본다).
+  → FE3-b(시각 변경, golden 갱신이 어차피 있는 slice)에서 학생 golden 장면을 보강한다: 미보유·PLAN·JP 배지 2개 이상인 학생 포함, students-detail은 선택 학생 상세가 그리드와 다르게 보이도록.

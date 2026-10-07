@@ -216,10 +216,10 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 
 | slice | 범위 | 재사용·교체 | gate |
 |---|---|---|---|
-| FE2-a 행·스크롤 | `DiagonalRow`(.srow/.row/.plain/.tile, default/hover/selected/blue, 테두리 path 공유 hit test), `DiagonalScrollViewport`(resize·translate 모드), `PlanDiagonalScrollbar` 공용 이동과 private 4종 대체, `ScrollViewportFog` extent·색·페이드 범위 파라미터 | 기존 학생·계정·프리셋·페이즈 편집기 스크롤바를 공용으로 교체(동작 보존) | 기존 화면 golden diff 0 + 갤러리 검수(W-Layout "사다리꼴 안 스크롤") |
-| FE2-b 소형 컨트롤·제목 | `BaChip(tone, removable)`, `StageTag`, `SkewSegmented`, `SkewToggleChip`/`TypeChip`, `FilterButton`, `BaSwitch`, `Stepper`+`MaxBadge`(추출), `NudgeButtons`, `TonalButton` 핑크 변형, `RailButton`(+그룹), `PanelTitle`/`TileTitle`/`SubHeader`/`KV` | Material `SegmentedButton`(4페이지)·`Chip` 교체는 각 탭 slice에서 한다. 여기서는 위젯만 | 갤러리 검수(W-Layout 칩·세그먼트·버튼, W-Filter) |
+| FE2-a 행·스크롤 | `DiagonalRow`(.srow/.row/.plain/.tile, default/hover/selected/blue, 테두리 path 공유 hit test), `DiagonalScrollViewport`(resize·translate 모드), `PlanDiagonalScrollbar` 공용 이동과 private 4종 대체, `ScrollViewportFog` extent·색·페이드 범위 파라미터 | 기존 학생·계정·프리셋·페이즈 편집기 스크롤바를 공용으로 교체(동작 보존) | 기존 화면 golden diff 0 + 갤러리 검수(W-Layout "사다리꼴 안 스크롤") — **완료 2026-10-07**: gate `20261007_004310` |
+| FE2-b 소형 컨트롤·제목 | `BaChip(tone, removable)`, `StageTag`, `SkewSegmented`, `SkewToggleChip`/`TypeChip`, `FilterButton`, `BaSwitch`, `Stepper`+`MaxBadge`(추출), `NudgeButtons`, `TonalButton` 핑크 변형, `RailButton`(+그룹), `PanelTitle`/`TileTitle`/`SubHeader`/`KV` | Material `SegmentedButton`(4페이지)·`Chip` 교체는 각 탭 slice에서 한다. 여기서는 위젯만 | 갤러리 검수(W-Layout 칩·세그먼트·버튼, W-Filter) — **완료 2026-10-07**: 커밋 `859c554a` |
 | FE2-c 오버레이 | `InfoPopover`(i, hover·focus·tap, 좌/우 정렬, 섹션 경계 안 정렬), `AnchoredFlyout`(r/l/dn/dl, 꼬리, 사선 path 트리거) + 페이즈·시나리오·점 프리셋, `BaModal`(스크림 + #0d151f 패널). `OverlayPortal` 기반 | `Tooltip`으로 쓰던 설명은 각 탭 slice에서 옮긴다 | 갤러리 검수(W-Info-Popover, W-Layout 팝오버), 키보드 포커스로 열림 테스트 — **완료 2026-10-07**: 커밋 `bb1e3478`, gate `20261007_102114` GREEN. 남은 일: 모달 포커스 가두기·배경 접근성 차단과 Esc 이중 처리는 `BaModal`을 처음 실제로 쓰는 slice(FE3-d 필터 모달)에서 더한다 |
-| FE2-d 이미지·차트 원자 | `ItemIconTile`(rarity 배경 + 92% 아이콘), `PortraitStrip`(+"…+n"), `SkewBar`(`PlanInventoryCoverageBar` 흡수), 차트 primitive(`StatChartFrame` viewBox×1.25, 80° 막대, 빗금, 축·기준선, 팔레트, hit-test geometry), `KpiTile` | 차트 라이브러리를 추가하지 않는다(CustomPainter) | 갤러리 검수(W-Data KPI·아이템 타일·막대 행) |
+| FE2-d 이미지·차트 원자 | `ItemIconTile`(rarity 배경 + 92% 아이콘), `PortraitStrip`(+"…+n"), `SkewBar`(`PlanInventoryCoverageBar` 흡수), 차트 primitive(`StatChartFrame` viewBox×1.25, 80° 막대, 빗금, 축·기준선, 팔레트, hit-test geometry), `KpiTile` | 차트 라이브러리를 추가하지 않는다(CustomPainter) | 갤러리 검수(W-Data KPI·아이템 타일·막대 행) — **완료 2026-10-07**: 커밋 `1f65b64a`, gate `20261007_111210` GREEN(295 + 218 + 프로세스 28 + golden 17) |
 
 ### FE3 — 학생 탭
 
@@ -408,3 +408,4 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-06(밤 4): FE1-c `99583757`(공용 `SectionSurface`, golden 6장 갱신). 워크플로 문서 커밋 `b91c30ff`. FE1 완료. FD-174(섹션 선택 표시 유지) 확정. 다음 행동: FE2-a 행·스크롤(동작 보존, golden diff 0).
 - 2026-10-06(밤 5): 사용자 승인으로 스캐너 변동 대응 2건 반영. FB-2의 `scan_kind`·`inventory_scan_profile`은 불투명 문자열로 저장하고, FE8-g2~g5는 FB-10 형식 고정 선언 뒤에만 착수한다. 스캐너 실험 쪽 응답 형식 변경 여부는 아직 미정이다.
 - 2026-10-07(오전): FE1-c `99583757`, FE2-a, FE2-b `859c554a`, FE2-c `bb1e3478` 커밋. gate는 프로세스 테스트 분리판(`fe_gate.ps1`, 문서 커밋 `fd791947`). 다음 행동: FE2-d 이미지·차트 원자.
+- 2026-10-07(낮): FE2-d `1f65b64a`. FE2(공통 위젯 키트·UI Kit 갤러리) 완료. 사용자 갤러리 시각 검수는 남아 있다(지적 사항은 해당 위젯을 처음 쓰는 화면 slice에서 고친다). 다음 행동: FE3-a DE 카드·그리드(시각 변경, golden 갱신).
