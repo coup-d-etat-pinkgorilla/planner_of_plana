@@ -13,6 +13,8 @@ import '../kit/hatch.dart';
 import '../kit/kit_pressable.dart';
 import '../kit/skew_box.dart';
 import '../models/active_plan_bond_target.dart';
+import '../models/growth_calculator_rules.dart';
+import '../models/growth_calculator_state.dart';
 import '../models/student_filter_controller.dart';
 import '../models/student_filter_selection.dart';
 import '../studio/section_template.dart';
@@ -21,6 +23,7 @@ import 'animated_section_stack.dart';
 import 'asset_image_grid.dart';
 import 'ba_triangle_background.dart';
 import 'bond_rank_portrait.dart';
+import 'growth_calculator_section.dart';
 import 'lifted_path_shadow.dart';
 import 'plan_student_step_tile.dart';
 import 'scroll_viewport_fog.dart';
@@ -850,6 +853,8 @@ class StudentSectionLayout extends StatefulWidget {
     required this.onAddToPlan,
     required this.onOpenScan,
     required this.onOpenFilter,
+    this.onOpenCalculator,
+    this.calculator,
     this.active = true,
   });
 
@@ -879,6 +884,12 @@ class StudentSectionLayout extends StatefulWidget {
   final VoidCallback? onOpenScan;
   /// 필터 모달을 연 뒤 알린다(S1 필터 버튼 · S4 "+n" 칩).
   final VoidCallback? onOpenFilter;
+
+  /// S1 "성장 계산기 열기"(FD-160 (a), 예전 "포커스 학생으로 계획 열기" 자리).
+  final VoidCallback? onOpenCalculator;
+
+  /// 성장 계산기 모드(FE3-f2a). 있으면 S1 버튼 세트와 S2 본문을 계산기로 바꾼다. S3·S4는 f2b에서 바꾼다.
+  final GrowthCalculatorModeData? calculator;
   final bool active;
 
   @override
@@ -992,6 +1003,12 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
       _filter.addListener(_filterChanged);
     }
     if (!_sameFilterInputs(oldWidget, widget)) _candidates = null;
+    // 계산기 모드를 열고 닫을 때 S1·S2 내용이 바뀌므로 그 두 섹션만 다시 들어온다.
+    if (widget.active &&
+        (oldWidget.calculator == null) != (widget.calculator == null)) {
+      _section1Controller.forward(from: 0);
+      _listController.forward(from: 0);
+    }
     if (oldWidget.active != widget.active) {
       _setTabSectionsActive(widget.active);
       // 탭을 떠나면 열린 필터 모달을 닫는다(초안은 버린다). 숨은 탭이 모달 자리를 의미 구조에서 빼기 전에.
@@ -1035,10 +1052,12 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
     if (_switchingListSection || nextView == _section2View) return;
     setState(() => _switchingListSection = true);
     try {
-      await _listController.reverse();
+      // 계산기 모드를 열고 닫을 때 S2를 다시 들이면(forward(from: 0)) 이 애니메이션이 끊긴다. orCancel로
+      // 끊김을 받아야 아래 finally가 전환 표시를 푼다.
+      await _listController.reverse().orCancel;
       if (!mounted) return;
       setState(() => _section2View = nextView);
-      await _listController.forward();
+      await _listController.forward().orCancel;
     } on TickerCanceled {
       return;
     } finally {
@@ -1137,6 +1156,60 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
     return rows;
   }
 
+  /// 계산기 S1 버튼 세트(Calc-Student, 학생 S1과 같은 자리):
+  /// 보기 토글 → 확정값 기준/직접 입력(FD-168), 정렬 → 빠른 목표(FD-169), 계획 열기 → 이 목표로 계획에 추가
+  /// (FE4-g 전 비활성), 학생 스캔 → 학생 스캔으로 현재값 갱신, 필터 → 현재값으로 되돌리기.
+  List<Widget> _calculatorRail(Size size, GrowthCalculatorModeData calculator) {
+    final state = calculator.state;
+    final paths = studentViewTogglePaths(size);
+    return [
+      _StudentViewModeButton(
+        path: paths[0],
+        buttonKey: const ValueKey('calculator-basis-confirmed'),
+        tooltip: '확정값 기준',
+        icon: Icons.fact_check_outlined,
+        selected: state.basis == GrowthCalculatorBasis.confirmed,
+        onTap: () => state.setBasis(GrowthCalculatorBasis.confirmed),
+      ),
+      _StudentViewModeButton(
+        path: paths[1],
+        buttonKey: const ValueKey('calculator-basis-direct'),
+        tooltip: '직접 입력',
+        icon: Icons.edit_note_rounded,
+        selected: state.basis == GrowthCalculatorBasis.direct,
+        onTap: () => state.setBasis(GrowthCalculatorBasis.direct),
+      ),
+      _CalculatorQuickTargetDropdown(
+        canvasSize: size,
+        onSelected: state.applyQuickTarget,
+      ),
+      _StudentActionButton(
+        canvasSize: size,
+        containerId: 'container-16',
+        key: const ValueKey('calculator-add-to-plan'),
+        tooltip: '이 목표로 계획에 추가',
+        icon: Icons.playlist_add_rounded,
+        onPressed: calculator.onAddToPlan,
+      ),
+      _StudentActionButton(
+        canvasSize: size,
+        containerId: 'container-13',
+        key: const ValueKey('calculator-open-scan'),
+        tooltip: '학생 스캔으로 현재값 갱신',
+        icon: Icons.document_scanner_outlined,
+        onPressed: calculator.onOpenScan,
+      ),
+      _StudentActionButton(
+        canvasSize: size,
+        containerId: 'container-11',
+        key: const ValueKey('calculator-revert-all'),
+        tooltip: '현재값으로 되돌리기',
+        icon: Icons.restart_alt_rounded,
+        onPressed: state.cellCounts.changing == 0 ? null : state.resetToCurrent,
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) => BaModal(
     controller: _filterModal,
@@ -1179,6 +1252,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
             orElse: () => null,
           );
       final filter = _filter;
+      final calculator = widget.calculator;
       final filteredGridStudents = [
         for (final candidate in _filterCandidates)
           if (filter.matches(candidate)) candidate.student,
@@ -1209,9 +1283,22 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                         painter: _StudentSectionFoundationPainter(
                           selectedValues: widget.selectedValues,
                           sectionIds: const {'element-2'},
+                          bare: calculator != null,
                         ),
                       ),
                     ),
+                    if (calculator != null)
+                      Positioned.fill(
+                        child: GrowthCalculatorSection(
+                          key: const ValueKey('growth-calculator-section'),
+                          canvasSize: size,
+                          state: calculator.state,
+                          engine: calculator.engine,
+                          student: calculator.student,
+                          onAddToPlan: calculator.onAddToPlan,
+                        ),
+                      )
+                    else
                     Positioned.fromRect(
                       rect: listBounds,
                       child: ClipPath(
@@ -1462,15 +1549,24 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                         ),
                       ),
                     ),
+                    if (calculator != null)
+                      ListenableBuilder(
+                        listenable: calculator.state,
+                        builder: (context, _) => Stack(
+                          fit: StackFit.expand,
+                          children: _calculatorRail(size, calculator),
+                        ),
+                      )
+                    else ...[
                     _StudentActionButton(
                       canvasSize: size,
                       containerId: 'container-16',
-                      key: const ValueKey('student-add-to-plan'),
-                      tooltip: '포커스 학생으로 계획 열기',
-                      icon: Icons.playlist_add_rounded,
+                      key: const ValueKey('student-open-calculator'),
+                      tooltip: '성장 계산기 열기',
+                      icon: Icons.calculate_outlined,
                       onPressed: widget.selectedId == null
                           ? null
-                          : widget.onAddToPlan,
+                          : widget.onOpenCalculator,
                     ),
                     _StudentActionButton(
                       canvasSize: size,
@@ -1503,6 +1599,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                       value: _section2View,
                       onChanged: _switchSection2View,
                     ),
+                    ],
                   ],
                 ),
               ),
@@ -2160,6 +2257,79 @@ class _StudentSortDropdown extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
+                            color: studentSortAccentColor,
+                            fontSize: studentSortCompactFontSize,
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 계산기 S1 "빠른 목표 고르기"(FD-169). 학생 정렬 드롭다운과 같은 자리·모양이다.
+class _CalculatorQuickTargetDropdown extends StatelessWidget {
+  const _CalculatorQuickTargetDropdown({
+    required this.canvasSize,
+    required this.onSelected,
+  });
+
+  final Size canvasSize;
+  final ValueChanged<GrowthCalculatorQuickTarget> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = studentSortDropdownPath(canvasSize);
+    final bounds = path.getBounds();
+    final localPath = path.shift(-bounds.topLeft);
+    return Positioned.fromRect(
+      rect: bounds,
+      child: CustomPaint(
+        painter: _StudentSortDropdownBorderPainter(localPath),
+        child: ClipPath(
+          clipper: _LocalPathClipper(localPath),
+          child: Material(
+            color: Colors.transparent,
+            child: PopupMenuButton<GrowthCalculatorQuickTarget>(
+              key: const ValueKey('calculator-quick-target-dropdown'),
+              tooltip: '빠른 목표 고르기',
+              color: AppColors.surfaceRaised,
+              padding: EdgeInsets.zero,
+              onSelected: onSelected,
+              itemBuilder: (context) => [
+                for (final option in GrowthCalculatorQuickTarget.values)
+                  PopupMenuItem(
+                    key: ValueKey('calculator-quick-target-${option.name}'),
+                    value: option,
+                    child: Text(
+                      option.label,
+                      style: const TextStyle(
+                        color: studentSortAccentColor,
+                        fontSize: studentSortMenuFontSize,
+                      ),
+                    ),
+                  ),
+              ],
+              child: bounds.width < 26
+                  ? const SizedBox.expand()
+                  : Padding(
+                      padding: EdgeInsets.only(
+                        left: math.min(11, bounds.width * 0.16),
+                        right: math.min(20, bounds.width * 0.28),
+                      ),
+                      child: const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '빠른 목표',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
                             color: studentSortAccentColor,
                             fontSize: studentSortCompactFontSize,
                             fontWeight: FontWeight.w700,
@@ -3974,10 +4144,14 @@ class _StudentSectionFoundationPainter extends CustomPainter {
   const _StudentSectionFoundationPainter({
     required this.selectedValues,
     required this.sectionIds,
+    this.bare = false,
   });
 
   final Map<String, dynamic>? selectedValues;
   final Set<String> sectionIds;
+
+  /// 섹션 바탕만 그리고 안쪽 container·feature는 그리지 않는다(계산기 S2, FE3-f2a).
+  final bool bare;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -3995,7 +4169,8 @@ class _StudentSectionFoundationPainter extends CustomPainter {
       paintLiftedPathShadow(canvas, path, defaultLiftedSectionShadow);
       var fillPath = path;
       for (final container in studentRuntimeContainers(size)) {
-        if (container.parentSectionId != section.id ||
+        if (bare ||
+            container.parentSectionId != section.id ||
             container.id == 'container-1' ||
             container.id == 'container-3') {
           continue;
@@ -4017,6 +4192,7 @@ class _StudentSectionFoundationPainter extends CustomPainter {
       );
     }
 
+    if (bare) return;
     for (final container in studentRuntimeContainers(size)) {
       if (!sectionIds.contains(container.parentSectionId)) continue;
       if (container.id == 'container-1' || container.id == 'container-3') {
@@ -4087,7 +4263,8 @@ class _StudentSectionFoundationPainter extends CustomPainter {
   @override
   bool shouldRepaint(_StudentSectionFoundationPainter oldDelegate) =>
       oldDelegate.selectedValues != selectedValues ||
-      oldDelegate.sectionIds != sectionIds;
+      oldDelegate.sectionIds != sectionIds ||
+      oldDelegate.bare != bare;
 }
 
 ({bool showTop, bool showBottom}) studentViewportFogVisibility({

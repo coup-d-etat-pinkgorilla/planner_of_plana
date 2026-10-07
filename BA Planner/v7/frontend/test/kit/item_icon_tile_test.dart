@@ -1,5 +1,7 @@
 // FE2-d 이미지 원자 테스트: 아이템 아이콘(크기·아이콘 상자·그림 없음 = 빈 상자), 아이템 타일(수량·막대·선택),
 // 초상 줄 "…+n" 계산, 모은 asset 경로가 기존 문자열과 같은지.
+import 'dart:async';
+
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/ui/kit/game_assets.dart';
 import 'package:ba_planner_v7/ui/kit/item_icon_tile.dart';
@@ -240,4 +242,94 @@ void main() {
     expect(find.byType(PortraitOverflowChip), findsNothing);
     expect(tester.widget<AssetImageGrid>(find.byType(AssetImageGrid)).columns, 2);
   });
+
+  // FE3-f2a: 그림을 읽는 도중 타일이 트리에서 빠진 뒤 "파일 없음"이 와도 예외가 올라오지 않는다
+  // (ItemIconAssetImage). 읽기 결과를 테스트가 정하도록 정한 경로만 붙잡는 bundle을 쓴다.
+  testWidgets('missing images stay quiet even when the tile left the tree mid-load', (
+    tester,
+  ) async {
+    addTearDown(PaintingBinding.instance.imageCache.clear);
+    const missingIcon = 'assets/item_icons/ooparts/Item_Icon_Missing_A.png';
+    const missingBackground = 'assets/item_backgrounds/missing_background.png';
+    const removedIcon = 'assets/item_icons/ooparts/Item_Icon_Missing_B.png';
+    final bundle = _HeldAssetBundle(const [
+      missingIcon,
+      missingBackground,
+      removedIcon,
+    ]);
+
+    // 1) 화면에 있는 동안 읽기가 실패한다: 아이콘은 비우고 배경 자리는 빈 상자다.
+    await tester.pumpWidget(
+      _heldHost(
+        bundle,
+        const ItemIconTile(
+          key: ValueKey('tile-a'),
+          iconAsset: missingIcon,
+          backgroundAsset: missingBackground,
+          size: ItemIconSizes.s52,
+        ),
+      ),
+    );
+    bundle.fail(missingIcon);
+    bundle.fail(missingBackground);
+    await tester.pump();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    final size = tester.getSize(find.byKey(const ValueKey('tile-a')));
+    expect(size.width, closeTo(ItemIconSizes.s52.width, 0.01));
+    expect(size.height, closeTo(ItemIconSizes.s52.height, 0.01));
+    expect(
+      find.byKey(const ValueKey('item-icon-placeholder')),
+      findsOneWidget,
+    );
+
+    // 2) 읽는 도중 타일이 트리에서 빠진 뒤 실패한다: 듣는 위젯이 없어도 오류가 올라오지 않는다.
+    await tester.pumpWidget(
+      _heldHost(
+        bundle,
+        const ItemIconTile(iconAsset: removedIcon, size: ItemIconSizes.s52),
+      ),
+    );
+    await tester.pumpWidget(_heldHost(bundle, const SizedBox.shrink()));
+    bundle.fail(removedIcon);
+    await tester.pump();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
 }
+
+/// [held] 경로의 읽기를 테스트가 끝낼 때까지 붙잡는 bundle(나머지는 rootBundle에 넘긴다).
+class _HeldAssetBundle extends AssetBundle {
+  _HeldAssetBundle(Iterable<String> held)
+    : _held = {for (final key in held) key: Completer<ByteData>()};
+
+  final Map<String, Completer<ByteData>> _held;
+
+  /// [key] 읽기를 "파일 없음"으로 끝낸다.
+  void fail(String key) =>
+      _held[key]!.completeError(FlutterError('Unable to load asset: "$key".'));
+
+  @override
+  Future<ByteData> load(String key) =>
+      _held[key]?.future ?? rootBundle.load(key);
+
+  @override
+  Future<T> loadStructuredData<T>(
+    String key,
+    Future<T> Function(String value) parser,
+  ) => rootBundle.loadStructuredData(key, parser);
+
+  @override
+  Future<T> loadStructuredBinaryData<T>(
+    String key,
+    FutureOr<T> Function(ByteData data) parser,
+  ) => rootBundle.loadStructuredBinaryData(key, parser);
+}
+
+Widget _heldHost(AssetBundle bundle, Widget child) => Directionality(
+  textDirection: TextDirection.ltr,
+  child: DefaultAssetBundle(
+    bundle: bundle,
+    child: Center(child: child),
+  ),
+);

@@ -229,6 +229,19 @@ class GrowthCalculatorState extends ChangeNotifier {
     );
   }
 
+  /// 모든 행 목표를 현재값으로 둔다(S1·"바꾼 목표" 줄의 "현재값으로 되돌리기", FE3-f2a).
+  /// 처음 값([initialTargets])이 아니라 지금 출처의 현재값이다.
+  void resetToCurrent() {
+    _toggleMemory.clear();
+    _setTargets(
+      normalizeGrowthCalculatorTargets(
+        current: current,
+        targets: current,
+        hasFavoriteItem: hasFavoriteItem,
+      ),
+    );
+  }
+
   /// 모든 행을 처음 값으로 되돌린다.
   void revertAll() {
     _toggleMemory.clear();

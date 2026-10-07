@@ -6,12 +6,19 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
+import '../app_section.dart';
 import '../kit/ba_modal.dart';
+import '../kit/kit_overlay.dart';
 import '../models/active_plan_bond_target.dart';
+import '../models/growth_calculator_adapter.dart';
+import '../models/growth_calculator_state.dart';
 import '../models/planning_models.dart';
 import '../models/recent_students.dart';
 import '../models/student_filter_controller.dart';
 import '../widgets/diagonal_section.dart';
+import '../widgets/growth_calculator_section.dart';
+import '../widgets/page_header_override.dart';
+import '../widgets/plan_element_builder.dart' show planElementCurrentTargets, planStudentHasFavoriteItemMetadata;
 import '../widgets/student_grid_warmup.dart';
 import '../widgets/student_section_layout.dart';
 
@@ -34,9 +41,13 @@ class StudentPage extends StatefulWidget {
     this.onCandidateCommitted,
     this.active = true,
     this.recentStudents,
+    this.headerOverride,
   });
 
   final AppService service;
+
+  /// 계획 만들기로 학생을 넘긴다. FD-160 (a)로 학생 S1의 "포커스 학생으로 계획 열기" 자리가 "성장 계산기
+  /// 열기"가 되어 지금은 쓰지 않는다. FE4-g에서 계산기 "이 목표로 계획에 추가"가 쓴다.
   final ValueChanged<PlanningStudentSeed> onAddToPlan;
   final VoidCallback? onOpenScan;
   final StudentCandidateContext? candidateContext;
@@ -45,6 +56,9 @@ class StudentPage extends StatefulWidget {
 
   /// 최근 본 학생(FD-061). 앱 셸이 계획 화면과 함께 쓰도록 넘긴다. 없으면 페이지가 만든다.
   final RecentStudents? recentStudents;
+
+  /// 성장 계산기 모드의 머리말 제목·"← 학생" 칩(FD-161 (a)). 앱 셸이 넘긴다.
+  final PageHeaderOverrideController? headerOverride;
 
   @override
   State<StudentPage> createState() => _StudentPageState();
@@ -63,8 +77,15 @@ class _StudentPageState extends State<StudentPage> {
   String? _message;
   bool _loading = true;
   bool _saving = false;
-  int _handoffSequence = 0;
   int _warmupRequest = 0;
+
+  /// 성장 계산기 모드(FE3-f2a, FD-160 (a)). 열려 있으면 null이 아니다. 목표는 저장하지 않는다.
+  GrowthCalculatorState? _calculator;
+  GrowthCalculatorEngine? _calculatorEngine;
+
+  /// 최근 계산(FD-170): 앱 실행 동안만, 계정이 바뀌면 비운다(최근 본 학생과 같은 규칙).
+  final RecentGrowthCalculations _recentCalculations =
+      RecentGrowthCalculations();
 
   /// S4·S1 배지·필터 모달이 함께 쓰는 필터 상태(FE3-c, FE3-d2). 성장 범위 조건도 여기 있다.
   final StudentFilterController _filter = StudentFilterController();
@@ -100,6 +121,127 @@ class _StudentPageState extends State<StudentPage> {
       (oldWidget.recentStudents ?? _ownRecent)?.removeListener(_stateChanged);
       _recent.addListener(_stateChanged);
     }
+    if (oldWidget.active != widget.active) _syncCalculatorEscape();
+  }
+
+  // --- 성장 계산기 모드 ------------------------------------------------------
+
+  static const _calculatorTitle = '성장 계산기';
+  static const _calculatorSubtitle =
+      '학생 한 명 · 목표까지 필요한 인연 선물 · 크레딧 · 재화를 바로 계산 (계획에는 저장하지 않음)';
+
+  /// 계산기가 쓰는 학생 메타데이터. 학생 catalog에는 애장품 유무 필드가 없어서(발견 사항), 값이 없으면
+  /// 애장품이 있는 것으로 보고 13행을 그린다(FD-166 (c)). catalog가 `has_favorite_item`을 보내면 그 값을 따른다.
+  Map<String, dynamic> _calculatorMetadata(StudentCatalogEntry entry) {
+    final metadata = entry.metadata;
+    if (metadata.containsKey('has_favorite_item') ||
+        metadata.containsKey('has_favorite_item_kr')) {
+      return metadata;
+    }
+    return {...metadata, 'has_favorite_item': true};
+  }
+
+  /// 선택 학생의 현재값(계획 요소 빌더와 같은 변환, 미보유면 기본값).
+  Map<String, int> _calculatorCurrent(StudentCatalogEntry entry) =>
+      planElementCurrentTargets(
+        PlanningStudentSeed(
+          handoffId: 'growth-calculator-${entry.studentId}',
+          studentId: entry.studentId,
+          metadata: _calculatorMetadata(entry),
+          currentValues: _selectedState?.values ?? const {},
+          owned: _selectedState != null,
+        ),
+      );
+
+  /// 선택 학생으로 계산기를 연다. 이미 열려 있으면 그 학생으로 다시 연다(기준은 유지).
+  void _openCalculator() {
+    final entry = _selectedEntry;
+    if (entry == null) return;
+    final previous = _calculator;
+    final basis = previous?.basis ?? GrowthCalculatorBasis.confirmed;
+    previous?.removeListener(_calculatorChanged);
+    _disposeCalculatorEngine();
+    final state = GrowthCalculatorState(
+      studentId: entry.studentId,
+      confirmedCurrent: _calculatorCurrent(entry),
+      hasFavoriteItem: planStudentHasFavoriteItemMetadata(
+        _calculatorMetadata(entry),
+      ),
+      basis: basis,
+    )..addListener(_calculatorChanged);
+    // 학생마다 새 계산 연결을 쓴다(앞 학생의 결과를 흐리게 보이지 않게).
+    _calculatorEngine = switch (widget.service) {
+      final PlanningDocumentService service => GrowthCalculatorEngine(
+        service: service,
+      )..addListener(_calculatorEngineChanged),
+      _ => null,
+    };
+    setState(() => _calculator = state);
+    if (previous != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => previous.dispose());
+    }
+    widget.headerOverride?.set(
+      PageHeaderOverride(
+        owner: this,
+        section: AppSection.students,
+        title: _calculatorTitle,
+        subtitle: _calculatorSubtitle,
+        backLabel: '← 학생',
+        onBack: _closeCalculator,
+      ),
+    );
+    _syncCalculatorEscape();
+    _scheduleCalculation();
+  }
+
+  /// 학생 목록으로 돌아간다(복귀 칩 · Esc · 주 탭 "학생" 다시 누르기, FD-161 (a)).
+  void _closeCalculator() {
+    final state = _calculator;
+    if (state == null || !mounted) return;
+    KitOverlayEscape.remove(this);
+    widget.headerOverride?.clear(this);
+    state.removeListener(_calculatorChanged);
+    setState(() => _calculator = null);
+    _disposeCalculatorEngine();
+    // 레이아웃이 이 상태를 놓은 뒤 버린다.
+    WidgetsBinding.instance.addPostFrameCallback((_) => state.dispose());
+  }
+
+  void _disposeCalculatorEngine() {
+    final engine = _calculatorEngine;
+    _calculatorEngine = null;
+    if (engine == null) return;
+    engine.removeListener(_calculatorEngineChanged);
+    engine.cancel();
+    // 레이아웃이 아직 이 연결을 듣고 있을 수 있어 다음 프레임에 버린다.
+    WidgetsBinding.instance.addPostFrameCallback((_) => engine.dispose());
+  }
+
+  /// 탭이 보이고 계산기가 열려 있을 때만 Esc가 계산기를 닫는다. 위에 열린 팝오버가 먼저 닫힌다.
+  void _syncCalculatorEscape() {
+    if (_calculator != null && widget.active && mounted) {
+      KitOverlayEscape.push(this, context, _closeCalculator);
+    } else {
+      KitOverlayEscape.remove(this);
+    }
+  }
+
+  void _calculatorChanged() => _scheduleCalculation();
+
+  void _scheduleCalculation() {
+    final state = _calculator;
+    final engine = _calculatorEngine;
+    if (state == null || engine == null) return;
+    engine.schedule(
+      GrowthCalculatorRequest.fromState(state, repository: _repositoryState),
+    );
+  }
+
+  void _calculatorEngineChanged() {
+    final state = _calculator;
+    if (state != null && _calculatorEngine?.status is GrowthCalculatorReady) {
+      _recentCalculations.add(state.record);
+    }
   }
 
   /// 학생을 고른다. 고른 학생은 최근 본 학생 맨 앞에 온다(FD-061).
@@ -111,6 +253,13 @@ class _StudentPageState extends State<StudentPage> {
   @override
   void dispose() {
     _warmupRequest += 1;
+    KitOverlayEscape.remove(this);
+    widget.headerOverride?.release(this);
+    _calculator?.removeListener(_calculatorChanged);
+    _calculator?.dispose();
+    _calculatorEngine?.removeListener(_calculatorEngineChanged);
+    _calculatorEngine?.dispose();
+    _recentCalculations.dispose();
     widget.service.state.removeListener(_connectionChanged);
     _filter.removeListener(_stateChanged);
     _filter.dispose();
@@ -204,6 +353,7 @@ class _StudentPageState extends State<StudentPage> {
       final fallback = state.students
           .where((student) => !known.contains(student.studentId))
           .map((student) => StudentCatalogEntry.fallback(student.studentId));
+      _recentCalculations.syncProfile(profile.id);
       setState(() {
         _profile = profile;
         _repositoryState = state;
@@ -215,9 +365,22 @@ class _StudentPageState extends State<StudentPage> {
         _message = null;
       });
       _syncEditors();
+      _refreshCalculatorCurrent();
     } catch (error) {
       if (mounted) setState(() => _message = 'Could not load profile: $error');
     }
+  }
+
+  /// repository가 바뀌면(계정 다시 읽기·스캔 승인) 열린 계산기의 확정값을 맞춘다.
+  void _refreshCalculatorCurrent() {
+    final state = _calculator;
+    final entry = _selectedEntry;
+    if (state == null || entry == null || entry.studentId != state.studentId) {
+      return;
+    }
+    state.updateConfirmedCurrent(_calculatorCurrent(entry));
+    // 학생 값이 그대로여도 인벤토리(보유·부족)는 바뀌었을 수 있다.
+    _scheduleCalculation();
   }
 
   Future<void> _reloadProfile() async {
@@ -252,38 +415,6 @@ class _StudentPageState extends State<StudentPage> {
       );
       editor.text = (values[field.name] ?? field.minimum).toString();
     }
-  }
-
-  Map<String, dynamic>? _draftValues() {
-    final values = Map<String, dynamic>.from(_defaultValues);
-    for (final field in _studentFields) {
-      final value = int.tryParse(_editors[field.name]?.text.trim() ?? '');
-      if (value == null || value < field.minimum || value > field.maximum) {
-        setState(
-          () => _message =
-              '${field.label} must be ${field.minimum}-${field.maximum}.',
-        );
-        return null;
-      }
-      values[field.name] = value;
-    }
-    return values;
-  }
-
-  void _addToPlan() {
-    final entry = _selectedEntry;
-    final values = _draftValues();
-    if (entry == null || values == null) return;
-    widget.onAddToPlan(
-      PlanningStudentSeed(
-        handoffId:
-            '${entry.studentId}-${++_handoffSequence}-${DateTime.now().microsecondsSinceEpoch}',
-        studentId: entry.studentId,
-        metadata: entry.metadata,
-        currentValues: values,
-        owned: _selectedState != null,
-      ),
-    );
   }
 
   Future<void> _approveCandidate() async {
@@ -326,6 +457,7 @@ class _StudentPageState extends State<StudentPage> {
         _message = 'Candidate committed at revision ${committed['revision']}.';
       });
       _syncEditors();
+      _refreshCalculatorCurrent();
       widget.onCandidateCommitted?.call(context.candidate);
     } catch (error) {
       if (mounted) {
@@ -408,10 +540,22 @@ class _StudentPageState extends State<StudentPage> {
                   onStudentSelected: (studentId) {
                     setState(() => _select(studentId));
                     _syncEditors();
+                    // 계산기가 열려 있으면 고른 학생으로 다시 연다.
+                    if (_calculator != null) _openCalculator();
                   },
-                  onAddToPlan: _addToPlan,
+                  onAddToPlan: null,
                   onOpenScan: widget.onOpenScan,
                   onOpenFilter: () {},
+                  onOpenCalculator: _openCalculator,
+                  calculator: switch (_calculator) {
+                    final state? => GrowthCalculatorModeData(
+                      state: state,
+                      engine: _calculatorEngine,
+                      student: _selectedEntry,
+                      onOpenScan: widget.onOpenScan,
+                    ),
+                    null => null,
+                  },
                 ),
               ),
               // 필터 모달이 열려 있는 동안 학생 탭의 나머지 내용도 의미 구조에서 뺀다(FE3-d2, 15:51 결정 4).

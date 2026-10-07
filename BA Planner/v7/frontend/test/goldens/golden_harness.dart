@@ -412,6 +412,77 @@ class GoldenStudentMockAppService extends GoldenMockAppService
   }
 }
 
+/// 성장 계산기 장면 전용 mock(FE3-f2a). 학생 장면 fixture에 계산 결과(크레딧·성장 재화 행)를 더한다.
+///
+/// `MockAppService.calculatePlanningDocument`는 재화 행을 비워 보내므로(J-calc §5.1) golden 대역이
+/// 백엔드 `calculate_document_projection` 모양의 고정 결과를 돌려준다. 숫자는 Calc-Student 예시를 따른다.
+/// 행 15개(접힘 6 + "9종 더"), 보유를 아는 행(부족·충분)과 모르는 행(스캔 없음)이 함께 있다.
+class GoldenCalculatorMockAppService extends GoldenStudentMockAppService {
+  GoldenCalculatorMockAppService() : super();
+
+  static const credits = 18420000;
+
+  static Map<String, dynamic> resource(
+    String key,
+    String name,
+    String category,
+    int required, {
+    int? owned,
+  }) => {
+    'resource_key': key,
+    'item_id': key,
+    'display_name': name,
+    'category': category,
+    'required': required,
+    'owned': owned,
+    'shortage': owned == null ? null : (required - owned).clamp(0, required),
+    'affected_stage_ids': const ['growth-calculator-stage'],
+  };
+
+  static final resources = <Map<String, dynamic>>[
+    resource('Item_Icon_Material_Antikythera_3', '오파츠 · 안티키테라', 'oopart', 48, owned: 31),
+    resource('Equipment_Icon_Watch_Tier10_Piece', '설계도 · 시계 T10', 'equipment', 90, owned: 76),
+    resource('Item_Icon_Material_ExSkill_Gehenna_3', '전술 교육 BD · 게헨나 (최상급)', 'tactical_bd', 22, owned: 18),
+    resource('Item_Icon_ExpItem_3', '활동 보고서 (최상급)', 'activity_report', 64, owned: 120),
+    resource('Item_Icon_SkillBook_Gehenna_3', '기술 노트 · 게헨나 (최상급)', 'tech_notes', 96, owned: 96),
+    resource('Item_Icon_SecretStone_aru', '아루의 엘레프', 'student_eleph', 170),
+    // 아래 9행: "… 등 n종 더"를 보이려고 넣는 오파츠(모두 assets/item_icons/ooparts에 있는 id). 부족이 없고
+    // 필요량이 작아 기본 정렬(부족 큰 순)에서 위 행들 뒤로 간다.
+    resource('Item_Icon_Material_Nebra_0', '오파츠 · 네브라 디스크 (하급)', 'oopart', 5, owned: 8),
+    resource('Item_Icon_Material_Nebra_1', '오파츠 · 네브라 디스크 (일반)', 'oopart', 10, owned: 13),
+    resource('Item_Icon_Material_Nebra_2', '오파츠 · 네브라 디스크 (상급)', 'oopart', 15, owned: 18),
+    resource('Item_Icon_Material_Nebra_3', '오파츠 · 네브라 디스크 (최상급)', 'oopart', 20, owned: 23),
+    resource('Item_Icon_Material_Phaistos_0', '오파츠 · 파이스토스 원반 (하급)', 'oopart', 25, owned: 28),
+    resource('Item_Icon_Material_Phaistos_1', '오파츠 · 파이스토스 원반 (일반)', 'oopart', 30, owned: 33),
+    resource('Item_Icon_Material_Phaistos_2', '오파츠 · 파이스토스 원반 (상급)', 'oopart', 35, owned: 38),
+    resource('Item_Icon_Material_Phaistos_3', '오파츠 · 파이스토스 원반 (최상급)', 'oopart', 40, owned: 43),
+    resource('Item_Icon_Material_Wolfsegg_0', '오파츠 · 볼프세크 철광석 (하급)', 'oopart', 45, owned: 48),
+  ];
+
+  @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async {
+    final projection = await super.calculatePlanningDocument(
+      currentStudents: currentStudents,
+      inventory: inventory,
+      document: document,
+    );
+    return {
+      ...projection,
+      'overall': {
+        'cost': {'credits': credits},
+        'resources': [
+          resource('credits', '크레딧', 'credits', credits),
+          ...resources,
+        ],
+      },
+    };
+  }
+}
+
 /// 요소 빌더·프리셋 관리 장면이 쓰는 프리셋(`planning_page_test`와 같은 값).
 PlanElementPreset goldenTestPreset() => PlanElementPreset(
   id: 'balanced-growth',

@@ -6,6 +6,7 @@ import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/planning_protocol_client.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
+import 'package:ba_planner_v7/ui/models/growth_calculator_adapter.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/pages/student_page.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
@@ -38,7 +39,9 @@ Future<void> _reveal(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
-  testWidgets('catalog search and plan handoff use services', (tester) async {
+  testWidgets('catalog search and calculator entry use services', (
+    tester,
+  ) async {
     final service = MockAppService();
     PlanningStudentSeed? seed;
     await tester.binding.setSurfaceSize(const Size(1024, 768));
@@ -60,9 +63,29 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('student-ayane')));
     await tester.pump();
 
-    await _reveal(tester, find.byKey(const ValueKey('student-add-to-plan')));
-    await tester.tap(find.byKey(const ValueKey('student-add-to-plan')));
-    expect(seed?.studentId, 'ayane');
+    // FD-160 (a): S1의 예전 "포커스 학생으로 계획 열기" 자리는 성장 계산기 입구다. 계산기는 계획에
+    // 넘기지 않는다("이 목표로 계획에 추가"는 FE4-g까지 비활성).
+    await _reveal(
+      tester,
+      find.byKey(const ValueKey('student-open-calculator')),
+    );
+    await tester.tap(find.byKey(const ValueKey('student-open-calculator')));
+    await tester.pumpAndSettle();
+    await tester.pump(growthCalculatorDebounce);
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('growth-calculator-section')),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<StudentSectionLayout>(find.byType(StudentSectionLayout))
+          .calculator
+          ?.student
+          ?.studentId,
+      'ayane',
+    );
+    expect(seed, isNull);
     expect(tester.takeException(), isNull);
   });
 

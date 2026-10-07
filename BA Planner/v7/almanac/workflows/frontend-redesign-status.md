@@ -20,13 +20,14 @@ sources:
 
 ## 현재 상태
 
-**FE3-f1 완료.** 결과(오케스트레이터 로그 2026-10-07 21:38, 아래 FE3-f1 commit record):
-- gate `20261007_213219` GREEN(일반 648, 프로세스 28, golden 20 — 기준 이미지 변화 0, 예상 일치).
-- 커밋 `7ec07589`(FE3-f1, 새 파일 6 + status), 문서 커밋 `bcde9559`. 기존 파일 수정 0.
-- FE3-f1 발견 사항 1·2번(백엔드 계획 계산 버그)은 오케스트레이터가 코드로 확인해 FB-12로 떼었다. FE3-f2 전에 고친다.
+**FB-12 완료.** 결과(오케스트레이터 로그 2026-10-07 23:25, 아래 FB-12 commit record):
+- Python 836건 통과(1552초), gate `20261007_232002` GREEN.
+- 커밋 `50dbed6c`(FB-12: planning_calc.py·planning_document.py + 새 테스트 9건 + status), 문서 커밋 `f2cf4fb8`. 기존 기대값 변화 0.
+- 이번부터 Lane A를 프론트·백엔드 워커 두 명으로 나눈다(워크플로 실행 순서 "Lane A 앞뒤 병렬"). 백엔드 워커는 `frontend-redesign-status-backend.md`에 쓴다.
 
-**진행 중: FB-12 계획 계산 버그 2건(백엔드만, 프런트 화면 변화 없음), 시작 커밋 `bcde9559`(FE3-f1 `7ec07589` 뒤 문서 커밋).**
-- 코드 작성 완료, 사용자 실행 대기(Python 전체 테스트 → gate). 자세한 내용은 아래 "FB-12" 절에 적는다.
+**FE3-f2a: gate ① `20261008_030824` 테스트 통과·golden 6건 예상 차이. 다만 `test/kit/item_icon_tile_test.dart`를 덮어써 기존 테스트 6건이 빠졌다 → 되돌리고 1건 추가, gate 재실행 대기.** 성장 계산기 화면 연결 1/2(시각 변경), 시작 커밋 `f2cf4fb8`(FB-12 `50dbed6c` 뒤 문서 커밋).
+- FE3-f2를 세션 운영 규칙 2에 따라 둘로 나눈다(아래 "FE3-f2 분할"). 이번 세션은 f2a만 했다. 결과는 아래 "FE3-f2a 종료 기록"에 있다.
+- 다음: FE3-f2b(S3 목표 표시·FD-167 토글, S4 계산기 내용).
 
 ### 커밋 기록
 
@@ -48,6 +49,7 @@ sources:
 | FE3-d2 | `0890de7a` | 필터 모달 화면 연결: 공용 `StudentFilterModal`(머리 바·속성·성장 범위 패널), 컨트롤러 적용 값 + 초안, S1 필터 버튼·S4 `+n` → 모달, S1 배지(FD-058), 셸 모달 배경 범위(15:51 결정 4), Section 5·범위 카드 폐기(FD-052), golden `students-filter-open` | `20261007_170820` RED(핸들 해제 시점·새 장면) → `20261007_173720` GREEN(594 + 프로세스 28 + golden 19) |
 | FE3-e | `a3692424`(+ 문서 `8a6482e7`) | 다중 폼 초상 교대(FD-064: 공용 시계 하나, 폼 수 × 3초 계단식, TickerMode 꺼짐이면 멈춤) + FB-5 catalog `forms`(계약·Python·Dart·mock·E2E), warmup 폼 초상, 제목 글꼴에 없는 글리프(– → −) 수정, golden 4장 갱신 + 새 장면 `students-grid-second-form`(시각 변경) | ① `20261007_191233` RED(golden 5, 예상 일치) → ② `20261007_195559` GREEN(golden 20, 백엔드 812) |
 | FE3-f1 | `7ec07589`(+ 문서 `bcde9559`) | 성장 계산기 상태 모델(13행·계산기 정규화·현재값 출처·빠른 목표·칸 토글·최근 계산) + 계산 어댑터(임시 1페이즈 1단계 문서 `planning.document.calculate`, 디바운스), 새 파일 6, 기존 파일 수정 0(동작 보존) | `20261007_213219` GREEN(648 + 프로세스 28 + golden 20) |
+| FB-12 | `50dbed6c`(+ 문서 `f2cf4fb8`) | 계획 계산 버그 2건: 성급 비용이 wire `student_star`를 읽음(★0부터 계산하던 것 정정), 장비 티어 이월을 정규 형식 `T<n>`으로 쓰고 티어 파서를 견고하게(백엔드만, 새 테스트 9건) | Python 836 통과, `20261007_232002` GREEN |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -2777,4 +2779,263 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice re
 ### FB-12 commit record (2026-10-07 23:25, written by fe_commit.ps1)
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261007_232002\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE3-f2 분할 (2026-10-07)
+
+작업 지시(2026-10-07 23:47)의 범위가 크다. 모드 전환, S1 버튼 6개, S2 두 열(13행·크레딧·재화 목록·아래 버튼), S3 목표 표시·토글, S4 교체, golden 장면이 모두 들어 있다. 그래서 둘로 나눈다. 둘 다 시각 변경 slice다.
+
+| sub-slice | 범위 | golden |
+|---|---|---|
+| **FE3-f2a(이번)** | 진입·복귀(FD-160 (a) S1 버튼, FD-161 (a) 헤더 "← 학생" 칩·Esc·주 탭 다시 누르기, 헤더 제목 교체), 계산기 S1 버튼 세트(기준 토글 FD-168, 빠른 목표 FD-169, 계획에 추가 비활성, 현재값 갱신, 되돌리기), S2 왼쪽 열(13행 스테퍼·MAX·행 되돌리기·바뀐 목표 칩·"바뀌는 칸 n · 그대로 m" 칩·능력 개방 플라이아웃·직접 입력 현재값 스테퍼), S2 오른쪽 열(크레딧 타일 합계 + 보유 "스캔 없음" 빗금, 내역 막대 숨김, 인연 타일 빈 상태, 성장 재화 목록·정렬·접힘), 아래 버튼("이 목표로 계획에 추가" 비활성, FD-173 버튼 숨김), 계산 연결(디바운스, Pending 흐리게, Failed 오류 문구, Ready → 최근 계산 추가), 최근 계산 상태 객체와 `syncProfile` | 새 장면 `students-calculator` |
+| FE3-f2b(다음) | S3 인디케이터를 목표값으로 + "현재 …" 태그, S3 칸 누르기 토글(FD-167), S4 계산기 내용(선택 학생 요약·"기준: …" 칩·최근 계산 줄, 누르면 그 목표로 다시 열기), 계정 전환 비움 위젯 테스트, 필요하면 능력 개방 플라이아웃 열림 장면 | 새 장면 1~2, `students-calculator` 갱신 |
+
+f2a 동안 S3·S4는 학생 탭 그대로다. S3는 선택 학생의 현재값을 그리고, S4 최근 본 학생을 누르면 그 학생으로 계산기를 다시 연다.
+
+## FE3-f2a 종료 기록 (2026-10-08, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없다. 그래서 `flutter analyze`·Dart 테스트·golden을 돌리지 못했고, 통과를 주장하지 않는다.
+- 별도 검토 에이전트 2개가 바뀐·새 파일을 정적으로 읽었다. 하나는 lib 컴파일·린트·런타임, 다른 하나는 테스트 기대값·기존 테스트 영향을 보았다. 지적을 고친 뒤 고친 곳만 다시 읽혔다.
+- 고친 지적:
+  1. 컴파일 오류: `_AppHeader`에 `override`라는 필드를 두면 같은 클래스의 `@override`가 그 필드로 풀린다. → `pageOverride`로 바꿨다.
+  2. `SemanticsAction`은 material·flutter_test가 다시 내보내지 않는다. → `isSemantics(value·increasedValue·hasIncreaseAction·hasDecreaseAction)` 매처로 바꿨다(`kit/range_controls_test.dart`와 같은 방식).
+  3. `RenderProxyBox`·`BoxHitTestResult`도 material이 내보내지 않는다. → `package:flutter/rendering.dart`를 import했다.
+  4. 호출 수 기대값: 앱 셸이 시작할 때 계획 탭도 문서를 한 번 계산한다. → 계산기를 열기 전 호출 수를 기준으로 센다.
+  5. 작은 창 레이아웃:
+     - 1024×768(캔버스 992×736)에서 목표 행 버튼이 잘리거나 누를 수 없었다. → 행 내용을 426px로 그린 뒤 같은 비율로 줄인다(`_ScaleDownRow`, 넓으면 그대로 채움).
+     - 두 열 제목이 겹쳤다. → 왼쪽 제목을 오른쪽 제목 앞에서 끊고, "바뀌는 칸" 칩은 줄여 넣는다. 제목 줄은 첫 행과 겹치지 않게 올린다(섹션 안에서).
+  6. 재화 목록 상자(직사각형)가 같은 높이의 왼쪽 열 목표 행 오른쪽 끝 누르기를 가렸다. → 상자 바닥 왼쪽을 지나는 80° 레일 왼쪽에서는 누르기를 받지 않는다(`_RailHitRegion`, 그리기는 그대로). 빈 상태 문구도 레일 위쪽 끝으로 옮겼다.
+  7. 계정 다시 읽기·스캔 승인 뒤 학생 값이 같으면 다시 계산하지 않았다(인벤토리만 바뀐 경우). → `_refreshCalculatorCurrent`가 계산을 예약한다.
+  8. 기존 코드 잠재 버그: `_switchSection2View`가 `reverse()`의 일반 Future를 기다렸다. 계산기 전환이 S2 애니메이션을 다시 시작하면 그 Future가 끝나지 않아 목록/그리드 토글이 멈춘다. → `.orCancel`로 기다린다(기존 `on TickerCanceled`가 받는다).
+  9. 엔진 상태가 바뀔 때마다 학생 화면 전체를 `setState`하던 것을 뺐다. 계산기 섹션이 엔진을 직접 듣는다.
+
+### 바뀐 파일
+
+| 파일 | 종류 | 줄(+/−) | 내용 |
+|---|---|---|---|
+| `frontend/lib/ui/widgets/page_header_override.dart` | 새 | 86 | 머리말 제목·부제·복귀 칩 바꾸기 값과 컨트롤러(`set`·`clear`·`release`(dispose 중 안전)·`back`) |
+| `frontend/lib/ui/app_shell.dart` | 수정 | +54 −13(diff 67줄) | 작업 지시 §1의 "주 탭 처리 최소 diff"다. 컨트롤러 1개를 만들어 `StudentPage`에 넘긴다. 같은 탭을 다시 누르면 `back`을 부른다. `_CompoundPageHeader`가 값을 듣고, `_AppHeader`는 제목·부제를 바꾸고 제목 옆에 `BaChip` 복귀 칩(`page-header-back-chip`)을 그린다 |
+| `frontend/lib/ui/pages/student_page.dart` | 수정 | +178 −34 | 계산기 열기/닫기, 학생당 계산 엔진, Esc 등록, 머리말 값, 최근 계산(`syncProfile`), 확정값 갱신. 예전 S1 계획 넘기기(`_addToPlan`·`_draftValues`)를 뺐다 |
+| `frontend/lib/ui/widgets/student_section_layout.dart` | 수정 | +185 −8 | S1: 계산기 모드 버튼 세트, 학생 모드 container-16을 "성장 계산기 열기"(`student-open-calculator`, 아이콘 `calculate_outlined`)로 바꿈. S2: 계산기 모드면 `GrowthCalculatorSection`(바탕 painter `bare`). 전환 때 S1·S2 다시 들이기 |
+| `frontend/lib/ui/models/growth_calculator_state.dart` | 수정 | +13 | `resetToCurrent()`(모든 목표 = 현재값, 토글 기억 비움) |
+| `frontend/lib/ui/widgets/growth_calculator_section.dart` | 새 | 1658 | S2 두 열·아래 버튼·능력 개방 플라이아웃·배치 계산(`GrowthCalculatorLayout`)·정렬·행 글자 함수 |
+| `frontend/test/growth_calculator_view_test.dart` | 새 | 381 | 위젯 테스트 9 + 순수 테스트 1(아래) |
+| `frontend/test/student_page_test.dart` | 수정 | +27 −4 | 첫 테스트: S1 계획 넘기기 → 계산기 진입(넘기기 없음 확인) |
+| `frontend/test/goldens/golden_harness.dart` | 수정 | +62 | `GoldenCalculatorMockAppService`(학생 fixture + 계산 결과: 크레딧 18,420,000, 재화 15행, 1행은 보유 모름) |
+| `frontend/test/goldens/fe1g_baseline_golden_test.dart` | 수정 | +40 | 새 장면 `students-calculator` |
+
+`lib/services/**`·`backend/`·`contracts/`·스캐너·tactic 파일·`scan_page.dart`·`scan_companion_dock.dart`·`mock_app_service.dart`는 고치지 않았다. golden 계산 숫자는 harness의 서비스 double에 넣었다.
+
+### 화면 구성(f2a)
+
+- 진입: 학생 S1 container-16 "성장 계산기 열기"(FD-160 (a)). 선택 학생으로 연다. 같은 자리의 계산기 S1 버튼은 "이 목표로 계획에 추가"이고 FE4-g까지 비활성이다.
+- 복귀(FD-161 (a)): 세 가지가 모두 학생 목록으로 돌아간다. 계산기 목표는 버린다(저장하지 않음).
+  - 머리말 제목 옆 "← 학생" 칩
+  - Esc(위에 열린 플라이아웃이 있으면 그것부터 닫는다)
+  - 주 탭 "학생" 다시 누르기
+- 머리말: 제목 "성장 계산기", 부제 "학생 한 명 · 목표까지 필요한 인연 선물 · 크레딧 · 재화를 바로 계산 (계획에는 저장하지 않음)".
+- S1(학생 4섹션 기하 그대로):
+  - 기준 토글 "확정값 기준"/"직접 입력"(FD-168)
+  - "빠른 목표" 드롭다운(완전 육성·레벨·장비만 MAX·스킬만 MAX, FD-169)
+  - 계획에 추가(비활성)
+  - "학생 스캔으로 현재값 갱신"
+  - "현재값으로 되돌리기"(바뀐 칸이 없으면 비활성)
+- S2 왼쪽 "목표 정하기":
+  - 제목 줄: 정보 팝오버, "바뀌는 칸 n · 그대로 m" 칩
+  - 13행(애장품 유무를 모르면 13행, FD-166 (c)). 행마다 이름, 현재, 목표 스테퍼, MAX, 행 되돌리기(바꿨을 때만)가 있다.
+    - 장비 행 이름은 catalog 장비 종류에서 가져온다("장비 1 · 모자").
+    - 직접 입력 기준이면 "현재" 칸이 스테퍼가 된다.
+    - 능력 개방 행은 HP·ATK·HEAL 세 스테퍼 `AnchoredFlyout`을 연다.
+  - "바꾼 목표" 칩 묶음 + "현재값으로 되돌리기" + 단계 제한 안내
+- S2 오른쪽 "필요 재화":
+  - "목표까지" 칩, 실패 시 오류 문구
+  - 크레딧 타일: 합계만 그린다. 내역 막대는 숨긴다. 보유는 "스캔 없음" 빗금이고 부족 칩은 숨긴다(FD-172).
+  - 인연 타일: "인연 a → b" + "인연 선물 계산은 아직 지원하지 않습니다"(FE3-g)
+  - 성장 재화 목록: `result.resources`. 정렬 "부족 큰 순"(기본)·"필요 많은 순"·"보유 많은 순"이 있고, 보유를 모르는 행은 보유·부족 정렬에서 뒤로 간다. 6행까지 보이고 "… 등 n종 더 · 모두 보기"/"접기"로 펼친다. 보유를 아는 행은 "보유 n" + 부족 칩, 모르는 행은 "스캔 없음"이다.
+- 아래: "이 목표로 계획에 추가 / 계획 만들기 2 · 목표 정하기로 넘깁니다"(비활성). "인벤토리 · 부족 위험에서 보기"는 숨긴다(FD-173 (c)).
+- 계산:
+  - 상태가 바뀔 때마다 `engine.schedule`(250ms 디바운스)을 부른다. 계산기를 열 때마다 엔진을 새로 만든다.
+  - Pending이면 직전 결과를 흐리게(0.55), Failed면 오류 문구와 직전 결과를 보인다.
+  - Ready면 `recent.add(state.record)`. 계정을 고르면 `syncProfile`.
+  - 서비스가 `PlanningDocumentService`가 아니면 "이 연결에서는 재화를 계산할 수 없습니다"를 보인다.
+- S3·S4는 f2a에서 학생 모드 그대로다(FE3-f2b). S4 최근 본 학생을 누르면 그 학생으로 계산기를 다시 연다.
+
+### 위젯 테스트(`growth_calculator_view_test.dart`)
+
+1. 진입·복귀: S1 버튼 → 머리말 제목·칩 → 칩으로 복귀, Esc로 복귀, 주 탭 다시 누르기로 복귀
+2. 디바운스: 레벨 + 세 번(40ms 간격) → 계산 1번 추가, "Lv.4"
+3. 빠른 목표(완전 육성 = MAX 표, 칸 13/0, 칩), 현재값으로 되돌리기, 기준 토글(직접 입력 현재 스테퍼 "2" → 확정값 기준 "1")
+4. 행 MAX·되돌리기, 장비 행 이름
+5. "계획에 추가" 비활성(아래 버튼·S1 둘 다), FD-173 버튼 없음, 인연 빈 상태
+6. 능력 개방 플라이아웃: HP + → "1 · 0 · 0", 레벨 90·★5로 맞춰짐, Esc가 플라이아웃만 닫음
+7. 크레딧 합계·스캔 없음·재화 6행·펼치기 9행·정렬(필요 많은 순 맨 위)
+8. 계산 오류 문구·크레딧 "—"
+9. 의미 구조: value "Lv.1", increasedValue "Lv.2", 늘리기만 있음(handle은 본문 끝에서 dispose)
+10. (순수) 정렬·숫자·행 글자 함수
+
+계정 전환 비움 위젯 테스트는 f2b다(S4가 최근 계산을 그릴 때). `RecentGrowthCalculations.syncProfile` 단위 테스트는 FE3-f1에 있다.
+
+### golden 변화 예측
+
+- 새 장면: `students-calculator`(학생 fixture + `GoldenCalculatorMockAppService`, 아루). 빠른 목표 "스킬만 MAX" + 레벨 90 + 장비 1 두 단계를 바꾼 상태다. 장면에서 보이는 것:
+  - 머리말 "성장 계산기"·"← 학생" 칩
+  - 계산기 S1 버튼 묶음
+  - 목표 행(바뀐 값 분홍)·바꾼 목표 칩·"바뀌는 칸 n · 그대로 m"
+  - 크레딧 18,420,000·보유 "스캔 없음" 빗금
+  - 인연 빈 상태
+  - 재화 6행(부족 큰 순)·"… 등 n종 더 · 모두 보기"
+  - S3·S4는 학생 모드 그대로
+- 바뀜(정상): S1 container-16 아이콘 `playlist_add_rounded` → `calculate_outlined`. 학생 S1이 보이는 장면이 모두 바뀐다: `students-grid`·`students-detail`·`students-grid-name-off`·`students-grid-second-form`·`students-filter-open`(모달 아래 S1). 툴팁 글자는 장면에 없다. 머리말은 그대로다(값이 없으면 기존 제목).
+- 차이 0: `title`·계정 3장·`home`·`plan-*`·`scan-student-review`.
+- 차이가 예측과 다르면 원인을 조사해 보고한다.
+
+### 처리한 FD
+
+FD-160 (a)(진입 버튼·계획에 추가 비활성), FD-161 (a)(칩·Esc·주 탭), FD-162 (a)(임시 문서 계산 표시), FD-166 (c)(13행), FD-168(기준 토글·직접 입력 현재 스테퍼), FD-169(빠른 목표), FD-170(최근 계산 추가·`syncProfile`; 표시는 f2b), FD-172(크레딧 합계만·스캔 없음 빗금·부족 칩 숨김), FD-173 (c)(버튼 숨김). FD-167(S3 토글)은 f2b다. 칸 개수 칩은 f2a에 있다. FD-049: 계산기 목표는 인연 게이지 활성 계획 목표와 섞지 않는다.
+
+### 검수표 (mock 모드, 2560×1440 모니터 최대화 = 2560×1392)
+
+| artboard·상태 | 여는 방법 | 확인 |
+|---|---|---|
+| Calc-Student 진입 | 학생 탭 → S1 "성장 계산기 열기"(계산기 아이콘) | 머리말이 "성장 계산기" + 부제로 바뀌고 제목 옆에 "← 학생" 칩이 있다. S1이 계산기 버튼 묶음으로 바뀐다 |
+| 복귀 3가지 | 칩 / Esc / 주 탭 "학생" 다시 누르기 | 학생 그리드로 돌아오고 머리말이 "학생"으로 돌아온다 |
+| 목표 행 | S2 왼쪽 | 13행(애장품 포함). +/−/MAX로 바꾸면 값이 분홍, 행 끝에 되돌리기, "바뀌는 칸 n · 그대로 m"·바꾼 목표 칩이 같이 바뀐다 |
+| 능력 개방 | "능력 개방" 행 값 | 오른쪽에 HP·ATK·HEAL 플라이아웃. 처음 올리면 레벨 90·★5가 같이 맞춰진다. Esc는 플라이아웃만 닫는다 |
+| 기준 토글 | S1 "직접 입력" | "현재" 칸이 스테퍼가 된다. "확정값 기준"으로 돌아가면 확정값으로 돌아온다 |
+| 빠른 목표 | S1 "빠른 목표" | 세 항목이 해당 행을 MAX로 올린다 |
+| 계산 | 값을 바꾼 직후 | 오른쪽이 잠깐 흐려졌다가 크레딧·재화가 다시 그려진다(mock은 재화 행이 비어 "목표까지 더 필요한 성장 재화가 없습니다") |
+| 크레딧 타일 | S2 오른쪽 위 | 합계만 보이고 내역 막대가 없다. 보유는 빗금 "스캔 없음", 부족 칩이 없다 |
+| 비활성 | 아래 "이 목표로 계획에 추가"·S1 같은 버튼 | 누를 수 없다. "인벤토리 · 부족 위험에서 보기"가 없다 |
+| 작은 창 | 창을 1280×720 정도로 줄인다 | 목표 행 버튼이 잘리지 않고 같은 비율로 작아진다. 두 열 제목이 겹치지 않는다 |
+
+### 알려진 시안 차이
+
+1. 시안 S3·S4 계산기 내용(목표값 + "현재 …" 태그, 최근 계산 줄)은 f2b에서 그린다.
+2. 크레딧 내역 막대·보유량·부족 칩, 인연 선물 계산은 숨김·빈 상태다(FD-172·FE3-g).
+3. 작은 창에서는 목표 행을 줄여 그린다(시안에 작은 창 규칙이 없다).
+
+### 미검증 항목
+
+1. `flutter analyze`(info 0), Dart 테스트(새 10건 + 바뀐 1건), golden(새 1 + 바뀜 5). 사용자 PC에서 실행해야 한다.
+2. 실행해 봐야 아는 것:
+   - 능력 개방 플라이아웃이 2560 폭에서 섹션 경계 안에 열리는지(`KitOverlayBounds`)
+   - `FittedBox`로 줄인 행이 1024~1600 폭에서 읽을 만한지
+   - 계산기 전환 때 S1·S2 다시 들이기 애니메이션이 자연스러운지
+
+### 발견 사항(오케스트레이터 판단 필요)
+
+1. **catalog에 애장품 유무가 없다**: `StudentCatalogEntry`에 `has_favorite_item`이 없다. 그래서 계산기는 모든 학생에게 애장품 행을 둔다(13행). 백엔드 워커 요청: catalog 항목에 `has_favorite_item`(bool, 추가 필드)을 넣어 달라는 것이다. 들어오면 메타데이터에 그 값을 그대로 쓰도록 `student_page.dart` `_calculatorMetadata`만 고치면 된다(이미 값이 있으면 그 값을 쓴다).
+2. **겹친 사선 목록의 누르기**: 직사각형 `DiagonalScrollViewport` 둘이 80° 레일로 나란히 있으면, 위에 있는 상자의 레일 왼쪽 빈 자리가 아래 목록 누르기를 가린다. 이번에는 계산기 안에 `_RailHitRegion`을 두었다. 계획 화면 등 같은 배치가 또 나오면 키트(`DiagonalScrollViewport` 옵션)로 올릴지 판단이 필요하다.
+3. `StudentPage.onAddToPlan`(학생 → 계획 넘기기)은 이제 학생 탭에서 부르지 않는다. 셸은 여전히 넘긴다. FE4-g "이 목표로 계획에 추가"가 이 경로를 다시 쓸 수 있게 남겼다.
+
+### 사용자 실행 순서(시각 변경, 백엔드 워커와 프론트 워커가 둘 다 멈췄을 때만 gate)
+
+① gate만 실행하고 멈춘다. 예상: analyze info 0, Dart 테스트 통과, golden만 RED(새 `students-calculator` 기준 없음 + 학생 5장 차이). 결과(`debug\frontend_gate\<실행 시각>\summary.txt`, `frontend\test\goldens\failures\`)를 오케스트레이터에게 보낸다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+② 승인 뒤 golden을 갱신하고 GREEN을 확인한다. 오케스트레이터가 새 기준 이미지를 검토한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+③ 승인 뒤 커밋한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3f2a -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3f2a
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesigndocs
+```
+
+`debug/frontend_fe3f2a/commit.json`: modified 7, added 3, `whole`은 `frontend/test/goldens/baseline`(새·바뀐 PNG 포함), status true. pre 사본은 `debug/frontend_fe3f2a/pre/`에 있다. 작업 지시의 slice 이름은 `fe3f2`였으나 분할했으므로 `fe3f2a`를 쓴다(f2b는 `fe3f2b`).
+
+### 수정 (2026-10-08, gate `20261008_022827` RED 뒤)
+
+오케스트레이터 검토(로그 02:33): 일반 테스트 1건과 golden `students-calculator`가 이미지 로드 예외로 실패했다. 학생 장면 5건 차이(S1 아이콘 교체)는 승인됐다.
+
+원인:
+- 테스트와 golden fixture의 재화 itemId를 지어냈다. 해당 아이콘 파일이 없다.
+  - 테스트: `res-0`…`res-8`
+  - golden: `Item_Icon_Material_Lower_1~9`, `Item_Icon_SkillBook_Ultimate_Gehenna_3`, 그리고 전술 교육 BD에 기술 노트 id(`Item_Icon_SkillBook_Gehenna_3`)
+- `ItemIconTile`에는 이미 `errorBuilder`가 있었다. 하지만 "파일 없음" 오류가 올 때 스트림을 듣는 위젯이 없으면 이 오류를 받지 못한다. 그때는 이미지 캐시가 대기 항목을 지우면서 스트림 completer가 버려지고, 늦게 온 오류가 `FlutterError`로 올라간다(stack: `PlatformAssetBundle.load` → "resolving an image codec").
+
+고친 것:
+1. **fixture id**: 모두 `frontend/assets/item_icons/**`·`assets/student_elephs`에 파일이 있는 실제 inventory id로 바꿨다(PC 자산 목록과 대조, 15/15 존재).
+   - golden: 오파츠 하급 9행 → `Item_Icon_Material_Nebra_0~3`·`Phaistos_0~3`·`Wolfsegg_0`. 부족 0·필요량 5~45로 바꿔 기본 정렬(부족 큰 순)에서 대표 행 뒤로 가게 했다(전에는 이 9행이 위 6줄을 다 차지했다).
+   - golden: 기술 노트 → `Item_Icon_SkillBook_Gehenna_3`
+   - golden: 전술 교육 BD → `Item_Icon_Material_ExSkill_Gehenna_3`
+   - 위젯 테스트: 같은 오파츠 9개(`_resourceIds`). 행 key와 기대값도 그 id로 바꿨다.
+2. **`ItemIconTile` 대체 표시**: 배경·아이콘 그림을 새 `ItemIconAssetImage`(`AssetImage` 하위 클래스)로 읽는다.
+   - 스트림을 풀 때 첫 결과(그림 또는 오류)가 올 때까지만 리스너 하나를 붙여 둔다. 그래서 위젯이 먼저 트리에서 빠져도 오류를 조용히 받는다. 그림이 오면 받은 `ImageInfo`를 dispose하고 리스너를 뗀다.
+   - 캐시에서 읽는 중(pending)인 그림에만 붙인다. 이미 다 읽힌(또는 이미 실패한) completer에 붙이면 리스너가 그 자리에서 불려 바로 떨어진다. 그때 듣는 곳이 없으면 completer가 버려지고, 뒤이어 `Image`가 붙을 때 "Stream has been disposed"가 날 수 있다.
+   - 그리기·캐시 key·`errorBuilder`는 그대로다. 아이콘이 없으면 배경만, 배경이 없으면 빈 상자를 그린다.
+   - 기존 golden 장면에는 `ItemIconTile`이 없어 차이가 없다(쓰는 곳: UI Kit 갤러리, `shortage_flyout`, 계산기).
+3. **위젯 테스트 1건 추가** `test/kit/item_icon_tile_test.dart`(FE2-d부터 있던 파일, 아래 "덮어쓰기 실수" 참고): 테스트용 asset bundle이 정한 경로의 읽기를 붙잡았다가 "파일 없음"으로 끝낸다.
+   - 화면에 있는 동안 실패: 예외 없음, 크기 그대로, 빈 상자 1개.
+   - 읽는 도중 트리에서 빠진 뒤 실패: 예외 없음. 고치기 전 코드에서는 이 경우 `FlutterError`가 올라올 것으로 본다(Flutter 소스 `ImageStreamCompleter`·`AssetBundleImageProvider`를 읽은 판단이고, 실행으로 확인하지 않았다).
+
+바뀐 파일(추가):
+
+| 파일 | 종류 | 내용 |
+|---|---|---|
+| `frontend/lib/ui/kit/item_icon_tile.dart` | 수정 | `ItemIconAssetImage` 추가, `Image.asset` 2곳 → `Image(image: ItemIconAssetImage(...))`, 머리 주석 |
+| `frontend/test/kit/item_icon_tile_test.dart` | 수정 | HEAD 내용(243줄, 테스트 6건) 그대로 + `import 'dart:async';` 1줄 + 끝에 테스트 1건과 도움 클래스 `_HeldAssetBundle`·`_heldHost`. 기존 줄 삭제·변경 0 |
+| `frontend/test/goldens/golden_harness.dart` | 수정(f2a 안) | fixture id |
+| `frontend/test/growth_calculator_view_test.dart` | 새(f2a 안) | 실제 id 9개 |
+
+golden 예측: `students-calculator`는 새 장면이다. 재화 6줄은 부족 큰 순으로 안티키테라(부족 17)·시계 T10 설계도(14)·전술 교육 BD(4)·기술 노트(96, 부족 0)·활동 보고서(64)·볼프세크(45)이고, 아이콘이 실제 그림으로 보인다. "… 등 9종 더" 줄에는 숨은 행 이름이 나온다(보유 모름인 아루의 엘레프가 맨 뒤). 학생 장면 5건은 승인된 S1 아이콘 차이다. 나머지는 차이 0이다.
+
+`debug/frontend_fe3f2a/commit.json`: modified 9(`item_icon_tile.dart`·`test/kit/item_icon_tile_test.dart` 추가, pre 사본 `debug/frontend_fe3f2a/pre/frontend/lib/ui/kit/item_icon_tile.dart`·`.../test/kit/item_icon_tile_test.dart`), added 3.
+
+사용자 실행 순서는 위 ①~③ 그대로다. 오케스트레이터 순서(로그 02:33)는 gate ① 재실행 → golden 갱신 ② GREEN → fb11a·fe3f2a 커밋 → redesigndocs다. f2b는 fe3f2a 커밋 뒤에 시작한다.
+
+### 덮어쓰기 실수와 되돌림 (2026-10-08, gate `20261008_030824` 뒤)
+
+오케스트레이터 검토: gate의 테스트는 모두 통과했고 golden 6건은 예상한 차이였다. 그런데 일반 테스트가 659건이어야 하는데 653건이었다.
+
+원인:
+- `test/kit/item_icon_tile_test.dart`는 FE2-d(`1f65b64a`)부터 추적되는 파일(243줄, 테스트 6건)이다. 워커가 이 파일을 테스트 1건짜리로 덮어썼다.
+- 워커는 "같은 경로에 파일이 있는지"를 PC가 아니라 이 세션에 예전에 받아 둔 일부 사본 폴더에서 확인했다. 거기에 그 파일이 없어 새 파일로 잘못 판단했다.
+- FE3-f2a 처음 기록의 `ItemIconTile` 사용처 조사("기존 테스트 없음")도 같은 일부 사본에서 했다. 그래서 틀렸다.
+
+되돌림:
+1. HEAD(`f2cf4fb8`) 내용을 git 객체에서 그대로 꺼냈다.
+   - 워커 환경에는 git 명령이 없다. 그래서 PC의 `.git`에서 HEAD commit → tree → blob을 읽었다.
+   - blob `2ab2d3527d04839423a46a370a8b5892c7f3088f`이고, 해시를 다시 계산해 일치를 확인했다. 243줄, LF다.
+   - index의 같은 경로 blob과도 같다.
+2. 그 내용에 `import 'dart:async';` 1줄을 더했다(`Completer`·`FutureOr`). 파일 끝(main 안 마지막)에 테스트 1건, main 뒤에 도움 클래스 2개를 붙였다. 기존 테스트는 지우거나 바꾸지 않았다(diff 삭제 줄 0). 테스트 수는 6 + 1 = 7, gate 일반 테스트는 659건이 되어야 한다.
+3. pre 사본: `debug/frontend_fe3f2a/pre/frontend/test/kit/item_icon_tile_test.dart` = HEAD 내용. commit.json에서 이 파일을 added에서 modified로 옮겼다.
+
+기존 테스트 6건과 새 `ItemIconAssetImage`:
+- 고치지 않았다. 읽어 본 판단으로는 깨지지 않는다.
+- 기존 테스트는 `CachingAssetBundle`의 `load`가 늘 실패하는 bundle로 그린다.
+  - 크기·아이콘 상자: `Positioned` 위치·크기만 본다.
+  - 빈 상자: 배경 실패 → `ItemIconPlaceholder`. `errorBuilder`는 그대로이고, 이 경로에서 실패는 위젯이 듣는 동안 온다.
+  - 아이템 타일·초상 줄: 그림을 보지 않는다.
+- `AssetImage`의 같음 비교(runtimeType 포함)를 쓰는 테스트(`planning_page_test`)는 `ItemIconTile`이 아닌 계획 위젯의 `Image.asset`을 본다. 그래서 영향이 없다.
+- `ItemIconTile`을 그리는 다른 테스트는 `ui_kit_gallery_data_test`(`ItemTile` 개수만 셈)뿐이다. PC의 `test/kit` 전체를 다시 받아 확인했다.
+
+"새"로 적은 파일의 추적 여부(PC `.git/index` 직접 읽기 = `git ls-files`, HEAD tree도 확인):
+
+| 파일 | index | HEAD tree | 판정 |
+|---|---|---|---|
+| `frontend/lib/ui/widgets/page_header_override.dart` | 없음 | 없음 | 새 파일 맞음 |
+| `frontend/lib/ui/widgets/growth_calculator_section.dart` | 없음 | 없음 | 새 파일 맞음 |
+| `frontend/test/growth_calculator_view_test.dart` | 없음 | 없음 | 새 파일 맞음 |
+| `frontend/test/kit/item_icon_tile_test.dart` | `2ab2d352` | 같음 | 추적 중 → modified로 옮김 |
+
+modified로 적은 나머지 7개 파일의 pre 사본도 index blob과 해시가 같다. 그 파일들에는 미커밋 변경이 없었다.
+
+앞으로: 파일을 새로 만들기 전에 같은 경로를 PC에서 직접 확인한다(폴더 목록 또는 `.git/index`). 예전에 받아 둔 사본 폴더로 판단하지 않는다.
+
+### FE3-f2a commit record (2026-10-08 08:30, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261008_080127\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

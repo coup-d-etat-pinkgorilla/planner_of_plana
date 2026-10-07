@@ -8,7 +8,9 @@ import '../services/app_service.dart';
 import '../services/repository_service.dart';
 import '../services/scanner_service.dart';
 import 'app_section.dart';
+import 'kit/ba_chip.dart';
 import 'kit/ba_modal.dart';
+import 'kit/kit_pressable.dart';
 import 'models/recent_students.dart';
 import 'pages/adaptive_sync_page.dart';
 import 'pages/home_page.dart';
@@ -26,6 +28,7 @@ import 'widgets/ba_triangle_background.dart';
 import 'widgets/development_panel.dart';
 import 'widgets/diagonal_header.dart';
 import 'widgets/lifted_path_shadow.dart';
+import 'widgets/page_header_override.dart';
 import 'widgets/recovery_banner.dart';
 import 'widgets/scan_companion_dock.dart';
 
@@ -103,6 +106,10 @@ class _AppShellState extends State<AppShell>
 
   /// 최근 본 학생(FD-061): 앱 실행 동안만, 학생 탭과 계획 만들기 1단계(FE4-b)가 함께 쓴다.
   final RecentStudents _recentStudents = RecentStudents();
+
+  /// 탭 안 모드(학생 탭 성장 계산기)가 머리말 제목·복귀 칩을 바꾼다(FE3-f2a, FD-161).
+  final PageHeaderOverrideController _headerOverride =
+      PageHeaderOverrideController();
   late bool _planTabActive;
   final ValueNotifier<ScanCompanionState?> _scanCompanion = ValueNotifier(null);
 
@@ -146,6 +153,7 @@ class _AppShellState extends State<AppShell>
     _homeEntranceController.dispose();
     _scanCompanion.dispose();
     _recentStudents.dispose();
+    _headerOverride.dispose();
     super.dispose();
   }
 
@@ -183,6 +191,8 @@ class _AppShellState extends State<AppShell>
   }
 
   void _open(AppSection section) {
+    // 같은 탭을 다시 누르면 탭 안 모드에서 나온다(FD-161 (a)).
+    if (section == _section && _headerOverride.back(section)) return;
     setState(() {
       final changingSection = section != _section;
       if (section == AppSection.home) _homeReloadToken += 1;
@@ -295,6 +305,7 @@ class _AppShellState extends State<AppShell>
                               directionDegrees: 270,
                               child: _CompoundPageHeader(
                                 section: _section,
+                                headerOverride: _headerOverride,
                                 service: widget.service,
                                 profile: _selectedProfile,
                                 developmentPanelVisible: _showDevelopmentPanel,
@@ -356,6 +367,7 @@ class _AppShellState extends State<AppShell>
                                   onCandidateCommitted: _clearStudentCandidate,
                                   active: _studentTabActive,
                                   recentStudents: _recentStudents,
+                                  headerOverride: _headerOverride,
                                 ),
                                 PlanningPage(
                                   key: ValueKey('plan-$_profileGeneration'),
@@ -495,6 +507,7 @@ class _AppShellState extends State<AppShell>
 class _CompoundPageHeader extends StatelessWidget {
   const _CompoundPageHeader({
     required this.section,
+    required this.headerOverride,
     required this.service,
     required this.profile,
     required this.developmentPanelVisible,
@@ -503,6 +516,7 @@ class _CompoundPageHeader extends StatelessWidget {
   });
 
   final AppSection section;
+  final PageHeaderOverrideController headerOverride;
   final AppService service;
   final RepositoryProfile? profile;
   final bool developmentPanelVisible;
@@ -604,12 +618,16 @@ class _CompoundPageHeader extends StatelessWidget {
                       },
                       child: KeyedSubtree(
                         key: ValueKey('page-header-content-${section.name}'),
-                        child: _AppHeader(
-                          section: section,
-                          service: service,
-                          profile: profile,
-                          developmentPanelVisible: developmentPanelVisible,
-                          onToggleDevelopmentPanel: onToggleDevelopmentPanel,
+                        child: ListenableBuilder(
+                          listenable: headerOverride,
+                          builder: (context, _) => _AppHeader(
+                            section: section,
+                            pageOverride: headerOverride.valueFor(section),
+                            service: service,
+                            profile: profile,
+                            developmentPanelVisible: developmentPanelVisible,
+                            onToggleDevelopmentPanel: onToggleDevelopmentPanel,
+                          ),
                         ),
                       ),
                     ),
@@ -845,6 +863,7 @@ class _TopTab extends StatelessWidget {
 class _AppHeader extends StatelessWidget {
   const _AppHeader({
     required this.section,
+    this.pageOverride,
     required this.service,
     required this.profile,
     required this.developmentPanelVisible,
@@ -852,6 +871,7 @@ class _AppHeader extends StatelessWidget {
   });
 
   final AppSection section;
+  final PageHeaderOverride? pageOverride;
   final AppService service;
   final RepositoryProfile? profile;
   final bool developmentPanelVisible;
@@ -859,6 +879,7 @@ class _AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pageOverride = this.pageOverride;
     return ValueListenableBuilder(
       valueListenable: service.state,
       builder: (context, state, _) {
@@ -868,10 +889,10 @@ class _AppHeader extends StatelessWidget {
                 section == AppSection.home && constraints.maxWidth >= 920;
             final title = section == AppSection.home
                 ? '안녕하세요, 선생님. 기다리고 있었습니다'
-                : section.label;
+                : pageOverride?.title ?? section.label;
             final subtitle = section == AppSection.home
                 ? '현재 프로필 · 아로나 선생님'
-                : section.description;
+                : pageOverride?.subtitle ?? section.description;
 
             return Row(
               children: [
@@ -880,11 +901,31 @@ class _AppHeader extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppType.headline,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppType.headline,
+                            ),
+                          ),
+                          if (pageOverride != null) ...[
+                            const SizedBox(width: AppSpacing.sm),
+                            KitPressable(
+                              key: const ValueKey('page-header-back-chip'),
+                              onPressed: pageOverride.onBack,
+                              semanticLabel: pageOverride.backLabel,
+                              builder: (context, state) => BaChip(
+                                label: pageOverride.backLabel,
+                                tone: state.hovered || state.focused
+                                    ? AppTones.pink
+                                    : AppTones.info,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 6),
                       Text(

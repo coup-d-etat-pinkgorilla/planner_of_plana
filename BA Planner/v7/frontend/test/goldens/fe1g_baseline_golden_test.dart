@@ -18,6 +18,8 @@ import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
+import 'package:ba_planner_v7/ui/models/growth_calculator_adapter.dart';
+import 'package:ba_planner_v7/ui/models/growth_calculator_rules.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/models/student_filter_selection.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
@@ -298,6 +300,44 @@ void main() {
       findsOneWidget,
     );
     await expectGoldenScene(tester, 'students-filter-open');
+  }, variant: goldenPlatform);
+
+  // FE3-f2a: 성장 계산기(Calc-Student). 학생 S1 "성장 계산기 열기"로 들어가 빠른 목표(스킬만 MAX)에
+  // 레벨 90·장비 1 두 단계를 더한다. 머리말 제목·"← 학생" 칩, S1 계산기 버튼 묶음, S2 목표 행(바뀐
+  // 칸 분홍)·바꾼 목표 칩, 크레딧 타일(보유 "스캔 없음" 빗금)·재화 목록 6줄과 "더 보기"가 장면에 보인다.
+  // S3·S4는 아직 학생 모드 그대로다(FE3-f2b).
+  testWidgets('students-calculator', (tester) async {
+    setGoldenViewport(tester);
+    final service = GoldenCalculatorMockAppService();
+    addTearDown(service.dispose);
+    await service.seedStudentScene();
+    await _openShell(tester, service);
+    await _tapKey(tester, 'top-tab-students');
+    await _tapKey(tester, 'student-open-calculator');
+    final state = tester
+        .widget<StudentSectionLayout>(find.byType(StudentSectionLayout))
+        .calculator!
+        .state;
+    state.applyQuickTarget(GrowthCalculatorQuickTarget.skills);
+    state.setRowTarget(GrowthCalculatorRow.level, 90);
+    state.setRowTarget(
+      GrowthCalculatorRow.equipment1,
+      state.rowTarget(GrowthCalculatorRow.equipment1) + 2,
+    );
+    await tester.pump();
+    await tester.pump(growthCalculatorDebounce);
+    await tester.pump();
+    expect(find.text('성장 계산기'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('page-header-back-chip')),
+      findsOneWidget,
+    );
+    expect(find.text('18,420,000'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('calculator-resource-more')),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'students-calculator');
   }, variant: goldenPlatform);
 
   // --- 계획 메인 -------------------------------------------------------------
