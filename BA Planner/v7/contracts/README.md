@@ -51,12 +51,21 @@ session generation을 별도 계약으로 고정합니다.
 - request payload: `{}` (그 밖의 key는 `invalid_payload`)
 - success response payload:
   `{ "students": [<catalog entry>...], "sort": "display_name_then_id" }`
-- 학생 항목은 고정된 18개 필드(`student_id` … `kr_search_tags`)를 가지며 알 수 없는
+- 학생 항목은 고정된 19개 필드(`student_id` … `kr_search_tags`, `has_favorite_item` 포함)를 가지며 알 수 없는
   필드를 거부합니다.
+- **`has_favorite_item`(FB-13, 필수 bool)**: **KR 서버에서 애장품이 제공되는 학생인지**를
+  `student_meta.favorite_item_enabled(student_id, server="kr")`로 판정합니다. JP 서버 제공 여부,
+  프로필의 현재 보유·장착 여부, 성장 목표 `equip4_tier`와 다릅니다. 요청에 server 선택은 없으며,
+  모든 항목에 JSON `true` 또는 `false`를 보냅니다. 누락·`null`·문자열 `"yes"`/`"no"`·숫자는 거부합니다.
+  - Dart `StudentCatalogEntry.fromWire`에서도 필수 bool입니다. 수동 DTO 생성자는 기존 대역 호환을
+    위해 생략 시 `false`로 두며, `fallback`(예: `missing-student`)도 `false`입니다. 메타데이터가
+    없다는 이유로 실제 애장품 제공 학생으로 간주하지 않습니다. `metadata` getter는 bool을 전달합니다.
+  - 새 backend·DTO·mock asset·fixture는 같은 slice와 배포 묶음으로 갱신합니다. 이전 wire 항목의
+    누락을 허용하는 fallback은 없습니다. 번들 mock은 exporter가 runtime catalog builder를 재사용하며
+    가용성과 다중 폼 목록을 함께 보존합니다.
 - **`forms`(FB-5, 2026-10-07, 선택 필드)**: 폼이 2개 이상인 학생에게만 붙고 폼 순서대로
   `{ "form_id", "label", "template_name" }`을 담습니다(`minItems` 2). 폼이 1개이거나 없는
-  학생은 필드 자체를 뺍니다(빈 목록을 보내지 않습니다). 그래서 다중 폼이 아닌 항목은 이전과
-  바이트까지 같습니다.
+  학생은 필드 자체를 뺍니다(빈 목록을 보내지 않습니다).
   - `form_id`: canonical 폼 참조. 첫 폼은 `student_id`, 그 뒤는 `student_id#n`
     (`student_meta.format_form_ref`와 같은 규칙).
   - `label`: canonical metadata의 폼 label. 비어 있으면 1부터의 순번 문자열.

@@ -1,6 +1,6 @@
 ---
 title: "Frontend Redesign Backend Status"
-summary: "Lane A 병렬 백엔드 워커의 FB-11a 구현·검증, FB-11b 데이터원 및 FB-1 활성 계획 저장 설계 조사 기록입니다."
+summary: "Lane A 병렬 백엔드 워커의 FB-13 catalog 애장품 가용성·검증, FB-11a 구현, FB-11b 데이터원 및 FB-1 설계 조사 기록입니다."
 topics: [workflow, design]
 sources:
   - id: workflow
@@ -14,6 +14,109 @@ sources:
     path: backend/tests/test_student_calculation_fb11a.py
 ---
 백엔드 워커 전용(Lane A 병렬, 2026-10-07)
+
+# FB-13 학생 catalog 애장품 가용성
+
+## 착수 기록 (2026-10-08)
+
+- 진행 중: FB-13. 시작 커밋 SHA: `2bcdcbd9f490a53e0bb4a0c66bd81625bfbeb895`.
+- 워크플로 FB-13 행, FB-1 "분할", 실행 순서의 Lane A 병렬 규칙과 오케스트레이터 로그 08:57을 읽었다. FB-11a `facdd1d3` 이후 코드 편집 재개가 승인되었다. [@workflow]
+- 범위: `planning.student.catalog`의 필수 `has_favorite_item: bool`(KR 서버 제공 여부), 계약·Python 테스트·Dart DTO/metadata·mock·번들 exporter/asset·DTO/mock/process 검증.
+- 기존 미커밋 변경 있음: `mock_app_service.dart`, `planning_protocol_client.dart`, `process_app_service.dart`의 스캐너 변경. catalog 수정 전 사본은 `debug/frontend_fb13/pre/`에 보존한다. mock의 catalog 부분만 수정하고 나머지 서비스 2파일과 스캐너·tactic 소유 파일은 수정하지 않는다.
+- `frontend/lib/ui/**`, 위젯·golden 테스트와 baseline PNG는 수정하지 않는다. 전체 gate는 두 워커가 모두 멈춘 뒤 사용자 PC에서 실행한다. golden 변화 시 비교 → 오케스트레이터 검토 → UpdateGoldens 및 재비교 → 커밋 순서를 따른다.
+- 커밋·push·stage를 하지 않는다. FB-1a는 이 슬라이스 종료 후 준비 메모만 남기며 오케스트레이터 프롬프트를 받은 뒤 시작한다.
+
+## 종료 기록 (2026-10-08)
+
+FB-13 백엔드 범위의 코드·계약·직접 검증을 마쳤다. **Python 전체·공통 gate·golden 판정·커밋은 사용자 단계로 남는다.**
+필수 wire 필드 누락이 확인된 프런트 소유 테스트 fixture 2곳과 범위 밖 almanac 오류 6건을
+아래에 기록했다. 이 상태에서 공통 gate GREEN이나 동작 보존 완료를 주장하지 않는다.
+
+### 구현과 계약
+
+- `protocol_v1.py`: 모든 catalog 항목에 `student_meta.favorite_item_enabled(student_id, server="kr")`의 bool을 넣는다. 요청은 계속 `{}`이고 JP 제공·보유·장착·목표 티어와 독립적이다.
+- schema·README·공용 fixture: 고정 필드는 19개, `has_favorite_item` 필수 bool. true/false fixture와 누락·"yes"·"no"·null·0·1 거부 fixture를 Python/Dart 양쪽에서 검증한다.
+- `StudentCatalogEntry`: immutable `hasFavoriteItem`, strict fromWire, bool `metadata` getter. 수동 생성자 생략은 기존 대역 호환을 위해 false, `missing-student` fallback도 false다. 실제 wire 누락은 거부한다.
+- `MockAppService._studentCatalogWire`: bool을 보존하여 compact·long-name 사본에서도 Aru=true / Ayane=false를 유지한다. 스캐너 코드와 서비스 나머지 2파일은 변경하지 않았다.
+- exporter는 runtime catalog builder를 재사용한다. 기존 exporter 재실행 시 사라지던 FB-5 `forms`도 보존하고, asset·runtime 전체 항목이 같도록 재생성한다. 265명: KR true 60명, false 205명.
+- 재생성 과정에서 기존 번들의 오래된 `jp_only=true` 7건이 현재 canonical/runtime 값 false로 동기화되었다: `niko`, `rena`, `akane_school_uniform`, `otogi`, `konoka`, `koyuki_pajama`, `kurumi`. 신규 bool과 이 7개 flag 외 기존 필드·폼·순서는 동일하다. canonical metadata 자체는 수정하지 않았다.
+- Python은 Aru=true / Airi=false, Ayane·Asuna의 KR=false / JP=true를 검증한다. 모든 항목의 bool 타입·KR 판정, 잘못된 값·누락 schema 거부, 번들 전체 parity, exporter 재현성, Python process 전체 응답 parity를 검사한다.
+- 새 Dart 서비스 테스트는 DTO·metadata·수동 생략·missing fallback·번들 전체·폼·이름 사본을 검사한다. 별도 process E2E는 실제 Python catalog와 번들·full mock의 265명 가용성 전체를 비교한다.
+
+### 직접 검증
+
+| 검사 | 결과와 로그 |
+| --- | --- |
+| Python `tests.test_student_catalog`, `tests.test_planning_protocol_contract`, `tests.test_canonical_metadata`, `tests.test_student_calculation_fb11a` | **33건 통과**, `debug/frontend_fb13/python-targeted.txt` |
+| Dart `student_catalog_service_test`, `planning_protocol_client_test`, `planning_protocol_contract_test`, `mock_student_fixture_test` | **39건 통과**, `debug/frontend_fb13/dart-targeted.txt` |
+| 새 `student_catalog_process_e2e_test` | **1건 통과**, `debug/frontend_fb13/dart-process.txt` |
+| 변경 서비스·테스트 5파일 analyze | **No issues found**, `debug/frontend_fb13/dart-analyze.txt` |
+| 프런트 fixture 영향 확인: `student_form_cycle_test`, `student_studio_layout_test` | **46건 통과 / 9건 실패**, 모두 `Invalid student catalog entry fields`, `debug/frontend_fb13/frontend-fixture-check.txt` |
+| `codealmanac validate` | **실패, 범위 밖 metadata-manager 문서 오류 6건**, `debug/frontend_fb13/almanac-validate.txt` |
+| `git diff --check` | 통과, `debug/frontend_fb13/diff-check.txt` |
+
+#### 프런트 워커 연결 요청 (이 워커는 수정하지 않음)
+
+1. `frontend/test/student_form_cycle_test.dart`의 `_wire`(18행)와
+   `frontend/test/student_studio_layout_test.dart`의 Erika `StudentCatalogEntry.fromWire` 항목(1859행)에
+   필수 `has_favorite_item` bool을 넣는다. 신규 strict 계약을 완화하면 안 된다. 두 곳 누락 때문에
+   폼 교대 테스트 8건과 Studio 테스트 1건이 실패한다. 테스트를 삭제하지 않는다.
+2. 수동 DTO 사본은 가용성을 유지하려면 `hasFavoriteItem: source.hasFavoriteItem`을 전달해야 한다.
+   예: golden harness `_withDisplayName`은 현재 Hoshino(KR=true)의 필드를 생략하여 false로 만든다.
+   이 워커는 golden 테스트를 고치지 않았다. 프런트 워커가 해당 fixture의 의미를 확인한다.
+3. `_calculatorMetadata`의 전체-true 폴백 제거와 실제 false 학생의 애장품 행 숨김 검증은 프런트 몫이다.
+   현재 metadata는 모든 DTO에서 bool을 제공한다. `students-calculator` 장면 Aru는 KR=true라
+   해당 행은 유지될 것으로 예상하지만, golden 변화 여부는 공통 gate로 확정한다.
+
+almanac 오류는 `metadata-manager-orchestrator-log`의 topics 누락 1건,
+`metadata-manager-status`의 workflow 미인용 1건,
+`metadata-manager-workflow`의 canonical-export·data-lock·devtools-backend·stats-sync 미인용 4건이다.
+해당 소유자가 정리해야 하며 FB-13 범위에서는 편집하지 않았다.
+
+### 사본·커밋 준비
+
+기존 수정 파일 10개에 `debug/frontend_fb13/pre/` 사본을 만들었다. mock 서비스의 pre→post diff는
+catalog bool 전달 **1줄**뿐이다. 수정 파일 10개·신규 테스트 2개와 종료 상태의 사본은
+`debug/frontend_fb13/post/`에 고정한다. `debug/frontend_fb13/commit.json`은 `status: false`,
+`whole: ["almanac/workflows/frontend-redesign-status-backend.md"]`, `post_dir: "debug/frontend_fb13/post"`다.
+golden은 실행·갱신하지 않았으므로 baseline 폴더는 whole에 넣지 않았다. 검토 후 실제 PNG가 바뀐
+경우에만 `frontend/test/goldens/baseline`을 whole에 추가한다. 커밋·push·stage 미실시.
+
+인계 검증(`debug/frontend_fb13/handoff-verification.json`): pre/HEAD/post의 3-way 병합 10개가
+모두 충돌 없이 가능하다. mock의 예정 커밋 내용에는 catalog bool 1줄만 추가되고 기존 스캐너
+미커밋 변경은 포함되지 않는다. UI·golden·해당 프런트 fixture·서비스 나머지 2파일 등
+착수 시 해시를 기록한 125개 보호 파일은 그대로다. 검증은 임시 파일에서만 수행했고 index를
+변경하지 않았다.
+
+### 사용자 실행 단계
+
+저장소 루트의 일반 PowerShell에서 먼저 Python 전체를 실행한다. 결과 파일은 지정한
+`debug/frontend_fb13/python-full.txt`다. 이 워커는 전체 결과 파일을 미리 만들지 않는다.
+
+```powershell
+Push-Location backend
+py -3.11 -m unittest discover -s tests -v 2>&1 | Tee-Object -FilePath ..\debug\frontend_fb13\python-full.txt
+$fb13PythonExit = $LASTEXITCODE
+Pop-Location
+Write-Host "FB-13 Python exit: $fb13PythonExit"
+```
+
+1. **Python 전체 통과** → 프런트 소유 fixture와 almanac 오류 정리 → **두 워커가 모두 멈춘 뒤**
+   `powershell -ExecutionPolicy Bypass -File frontend/tool/fe_gate.ps1`.
+2. golden 변화가 없으면 동작 보존 slice로 진행한다. 변화가 있으면 **① 비교 gate → 오케스트레이터
+   차이 검토 → ② `fe_gate.ps1 -UpdateGoldens` 후 다시 `fe_gate.ps1` → ③ 커밋** 순서를 따른다.
+   baseline whole 추가는 이 경우에만 한다. FE3-f2b의 golden ②는 FB-13 커밋 뒤에 한다. [@workflow]
+3. GREEN 확인 후 `powershell -ExecutionPolicy Bypass -File frontend/tool/fe_commit.ps1 -Slice fb13 -DryRun`,
+   이어 같은 명령에서 `-DryRun`을 빼고 실행한다. 기존 스캐너 변경이 섞이지 않는지 확인한다.
+4. 오케스트레이터의 공유 문서 갱신과 `fe_commit.ps1 -Slice redesigndocs`로 문서 커밋을 정리한다.
+
+### 다음 준비: FB-1a
+
+FB-13은 정적 가용성 데이터이므로 FB-1 저장·이관 의존성을 추가하지 않는다. 다음은 승인된
+분할의 **FB-1a: 문서 v2 nullable targets·goal_metadata·v1/v2 계산 및 시나리오 호환**이다.
+현재 아래 FB-1 설계 조사와 워크플로 "분할"을 인계 자료로 유지한다. FB-1b 저장·이관과
+FB-1c 교체 transaction은 별도 slice다. **오케스트레이터 프롬프트를 받은 뒤 FB-1a를 착수하며,
+지금은 시작하지 않는다.**
 
 # FB-11a 단일 학생 성장 계산
 

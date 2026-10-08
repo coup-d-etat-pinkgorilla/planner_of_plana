@@ -695,6 +695,7 @@ class MockAppService
     'equipment_slot_2': student.equipmentSlot2,
     'equipment_slot_3': student.equipmentSlot3,
     'jp_only': student.jpOnly,
+    'has_favorite_item': student.hasFavoriteItem,
     'search_tags': student.searchTags,
     'kr_search_tags': student.krSearchTags,
     // FB-5: 다중 폼 학생에게만 붙는 선택 필드(Python 응답과 같은 모양).

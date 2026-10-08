@@ -87,6 +87,7 @@ class StudentCatalogEntry {
     this.equipmentSlot2,
     this.equipmentSlot3,
     this.jpOnly = false,
+    this.hasFavoriteItem = false,
     required List<String> searchTags,
     required List<String> krSearchTags,
     List<StudentCatalogForm> forms = const [],
@@ -110,6 +111,10 @@ class StudentCatalogEntry {
   final String? equipmentSlot2;
   final String? equipmentSlot3;
   final bool jpOnly;
+
+  /// KR 서버 애장품 제공 여부. JP 제공·현재 보유/장착 여부와 독립적이다(FB-13).
+  /// 수동 생성자에서 생략하거나 fallback인 경우 가용성을 주장하지 않는다.
+  final bool hasFavoriteItem;
   final List<String> searchTags;
   final List<String> krSearchTags;
 
@@ -137,6 +142,7 @@ class StudentCatalogEntry {
       'equipment_slot_2',
       'equipment_slot_3',
       'jp_only',
+      'has_favorite_item',
       'search_tags',
       'kr_search_tags',
     };
@@ -203,6 +209,11 @@ class StudentCatalogEntry {
       jpOnly: value['jp_only'] is bool
           ? value['jp_only'] as bool
           : throw const FormatException('Invalid student catalog jp_only'),
+      hasFavoriteItem: value['has_favorite_item'] is bool
+          ? value['has_favorite_item'] as bool
+          : throw const FormatException(
+              'Invalid student catalog has_favorite_item',
+            ),
       searchTags: tags('search_tags'),
       krSearchTags: tags('kr_search_tags'),
       forms: forms(),
@@ -226,6 +237,7 @@ class StudentCatalogEntry {
     equipmentSlot2: null,
     equipmentSlot3: null,
     jpOnly: false,
+    hasFavoriteItem: false,
     searchTags: const [],
     krSearchTags: const [],
   );
@@ -247,6 +259,7 @@ class StudentCatalogEntry {
     'equipment_slot_2': equipmentSlot2,
     'equipment_slot_3': equipmentSlot3,
     'jp_only': jpOnly,
+    'has_favorite_item': hasFavoriteItem,
   };
 
   bool matches(String query) {

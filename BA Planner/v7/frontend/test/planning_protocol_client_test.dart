@@ -94,13 +94,17 @@ void main() {
             'equipment_slot_2': 'Hairpin',
             'equipment_slot_3': 'Watch',
             'jp_only': false,
+            'has_favorite_item': true,
             'search_tags': ['aru'],
             'kr_search_tags': <String>[],
           },
         ],
         'sort': 'display_name_then_id',
       });
-      expect((await result).single.studentId, 'aru');
+      final aru = (await result).single;
+      expect(aru.studentId, 'aru');
+      expect(aru.hasFavoriteItem, isTrue);
+      expect(aru.metadata['has_favorite_item'], isTrue);
       await service.dispose();
 
       final malformedProcess = FakeBackendProcess();

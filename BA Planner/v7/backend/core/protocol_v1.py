@@ -330,6 +330,7 @@ class PlanningProtocolV1:
                     "equipment_slot_2": metadata.get("equipment_slot_2") if isinstance(metadata.get("equipment_slot_2"), str) else None,
                     "equipment_slot_3": metadata.get("equipment_slot_3") if isinstance(metadata.get("equipment_slot_3"), str) else None,
                     "jp_only": bool(self._student_jp_only(student_id)),
+                    "has_favorite_item": student_meta.favorite_item_enabled(student_id, server="kr"),
                     "search_tags": [str(item) for item in metadata.get("search_tags", []) if str(item).strip()] if isinstance(metadata.get("search_tags", []), list) else [],
                     "kr_search_tags": [str(item) for item in metadata.get("kr_search_tags", []) if str(item).strip()] if isinstance(metadata.get("kr_search_tags", []), list) else [],
                 })
