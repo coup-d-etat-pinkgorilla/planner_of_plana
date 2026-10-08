@@ -378,3 +378,11 @@ topics: [workflow, design]
   · 프론트 워커가 고친다(소유자). `_calculatorMetadata` 전체-true 폴백 제거와 false 학생 애장품 행 숨김 테스트도 함께 넣는다. 모두 fe3f2b 매니페스트에 더한다.
   · 커밋 순서: 공통 gate GREEN 1회 → fb13 → fe3f2b(baseline whole 포함) → redesigndocs. fb13 단독 시점에는 위 fixture가 깨진 상태지만, 두 커밋을 연달아 하고 gate는 합친 트리로 검증한다.
 - 범위 밖 차단: `codealmanac validate`가 다른 워크플로(metadata-manager) 문서 오류 6건으로 실패한다(topics 누락 1, 미인용 5). gate의 almanac-validate 단계가 RED가 되므로, 그 문서 소유 세션이 고친 뒤 gate를 돌린다. 프론트 쪽은 그 파일을 고치지 않는다.
+
+## 2026-10-08 13:45 — FB-13 마무리·fe3f2b 사후 검토·다른 레인 알림
+
+- 사용자가 fe3f2b `576bd568`와 문서 `c2d5f413`을 커밋하고 push했다. FB-13은 그 시점에 커밋되지 않아 원격의 `576bd568`만으로는 fixture 테스트가 FB-13 계약을 전제한다. FB-13 Python 전체 OK, `fb13` DryRun 통과(mock은 catalog bool 1줄만 들어가고 스캐너 변경 제외 확인). 곧 커밋한다.
+- golden 사후 검토(갱신이 오케스트레이터 검토보다 먼저 진행됨): `students-calculator`는 예상 변화(내역 막대 5묶음, S3 목표·"현재" 태그, S4 요약·기준 칩). `plan-element-builder`는 예측에 없던 변화지만 맞는 동작이다(애장품 칸이 가용성 bool을 써서 가용 학생은 스테퍼, 불가 학생은 자물쇠). 승인.
+- HEAD 사이 다른 커밋: `8e0c9728` W5b, `a107c3f2` W4b(인연 ExpType = 랭크별, 그룹 인덱싱 확정), `987c0d0a` A0(애니메이션 스펙트럼 계약), `8b880441` metadata M0.
+- W4b로 FB-11b의 자료 선행 조건이 풀렸다. FE3-g/FB-11b 재개를 다음 배정에서 검토한다.
+- 새 워크플로 metadata-manager: "첫 실행 추출 구현은 프론트 레인"(사용자 결정 4). 계약이 M 단계에서 정해지면 프론트 일정에 넣는다. 개발자 도구 파일은 M 세션 소유라 택틱 A2 진입점과 충돌한다. 두 로그에 13:45 알림을 남겼다.
