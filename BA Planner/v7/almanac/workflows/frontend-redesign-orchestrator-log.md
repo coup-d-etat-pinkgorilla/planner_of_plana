@@ -412,3 +412,15 @@ topics: [workflow, design]
   · `planning_page_test` 수정 2건: "scenario creation exits its selector before cancel and list handoffs"는 S1 버튼 묶음이 레일로 바뀌어 흐름 기준으로 다시 썼다. 선택기 퇴장 애니메이션 검사(오프셋 dx<0, dy>0)는 유지됐다. 선택기 퇴장 중 목록으로 바로 넘기는 경로는 사라졌고, 흐름을 닫은 뒤 목록을 연다(의도된 동작 변경). 둘째 테스트는 기존 단언을 유지하고 2~4단계 확인을 더했다. 승인.
 - FB-1a(백엔드) 검토: 문서 v2(19 key nullable, goal_metadata), 정책 fixture 15건을 먼저 고정, v1 회귀는 값 단위 동일·시나리오 파일 바이트 동일, process 4건. `planning_growth_rules`로 계산 중 선행 성장을 결합하고 원본 null을 유지한다. 인연 비용은 FB-11b 전까지 경고. 승인. Python 전체 뒤 커밋한다.
 - 배정: 프론트 FE4-b(1단계 학생 고르기를 새로 만들고 초안을 v2로 전환), 백엔드 FB-11b(인연 선물 3안, W4b 자료 사용) → FB-1b.
+
+## 2026-10-08 20:17 — FB-1a 커밋 확인
+
+- FB-1a `682b2a7b`(17파일, +3657/-105). Python 전체 873건 통과(826초). mock_app_service.dart의 스캐너 미커밋 변경은 작업트리에 남았다(의도대로).
+- `planning_models.dart`의 임시 소유 예외 해제. FE4-b(프론트)와 FB-11b(백엔드)를 16:48 프롬프트대로 시작한다.
+
+## 2026-10-08 21:16 — FE4-b gate ① 검토
+
+- analyze 1건 `student_section_layout.dart:5207` use_null_aware_elements: 오케스트레이터가 고쳤다(`if (… case final order?) index: order` → `index: ?widget.selectionOrder[…]`). 기기 파일 해시 확인 `ec7bf03e…`. fe4b 매니페스트에 이미 있는 파일이다.
+- golden `plan-flow-step1`(46%): 새 1단계로 교체된 것이 맞다. 8열 그리드·순서 배지(1~3)·C 패널 고른 학생 목록과 역할군 칩·검색과 "계획에 없는 학생만/보유만" 칩·필터 버튼. 승인.
+- golden `plan-flow-step2`(0.6%): 2단계에 축소해 넣은 기존 요소 편집기에서 아루가 UNOWNED·기본값에서 실제 저장 상태(Lv.1, ★1, 스킬 1/1/0/0, 모자 T1 Lv.1)로 바뀌었다. 학생 탭·계산기 golden의 아루 상태와 같으므로 v2 초안이 실제 현재값을 쓰게 된 결과로 본다. 승인. 워커는 원인을 상태 문서에 한 줄 확인한다.
+- 새 장면 `plan-flow-step1-many`, `plan-flow-step1-filter`: 기준 없음(정상). ② 뒤 새 기준 이미지를 검토한다.

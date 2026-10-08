@@ -435,3 +435,4 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-08(낮): FE3-f2b `576bd568`, 문서 `c2d5f413`(사용자 push). FB-13 커밋 직전. 택틱 W4b가 인연 ExpType을 확정해 FB-11b 자료 조건이 풀렸다. 새 메타데이터 관리자 워크플로가 "첫 실행 추출 = 프론트 레인"을 정했다(계약 확정 뒤 편성). 다음 행동: 백엔드 FB-1a, 프론트 FE4-a(또는 FB-11b 뒤 FE3-g).
 - 2026-10-08(오후): FB-13 `fa15e87c`. 배정: 백엔드 FB-1a(문서 v2, 이 slice 동안 `lib/ui/models/planning_models.dart`의 문서 DTO는 백엔드 워커 소유), 프론트 FE4-a(흐름 골격, `planning_models.dart` 수정 금지). FB-11b는 FB-1a 뒤.
 - 2026-10-08(저녁): FE4-a `a18897a1`, 문서 `eea7f113`. FB-1a는 Python 전체·커밋 대기(gate `20261008_164059` GREEN에 포함). 커밋 뒤 `planning_models.dart` 소유는 프론트로 돌아온다. 다음 행동: 프론트 FE4-b(1단계 학생 고르기 + 초안을 문서 v2로 전환), 백엔드 FB-11b(인연 선물 계산) → FB-1b.
+- 2026-10-08(밤): FB-1a `682b2a7b`(17파일, Python 873 통과). `planning_models.dart` 소유가 프론트로 돌아왔다. 프론트 FE4-b, 백엔드 FB-11b 착수.
