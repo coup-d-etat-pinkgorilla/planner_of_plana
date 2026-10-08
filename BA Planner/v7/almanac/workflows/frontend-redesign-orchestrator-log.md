@@ -430,3 +430,29 @@ topics: [workflow, design]
 - FE4-b `2a5a7655`(16파일, +2526/-226). 새 장면 `plan-flow-step1-many`(8명 → 압축 그리드, FD-077), `-filter`(FE3-d 모달 재사용, 계획 칩 묶음) 승인. 후속 확인 1건: 필터 장면 왼쪽 레일 2단계 근처에 "필터 · 2" 알약이 떠 있다(필터 버튼은 B 오른쪽 위). FE4-c에서 확인한다.
 - FB-11b(백엔드) 검토 승인: `planning.student.calculate`에 선택 bond 입력·응답(필요 경험치, 선호 대형/일반/쓰다듬기 3안). W4b 해석(현재 L 행 ExpType[g−1] 차감) 근거 해시 기록, 배수 규칙은 도구에서 도메인(`core/student_bond.py`)으로 옮김(도구 파일 미수정). 보유 미확인은 null, 하루 쓰다듬기 횟수는 만들지 않음(available_count=null). FD-164·165 준수. 자료는 `core/student_bond_data.py` 스냅샷(JP 1.73.0, 원본 sha 확인 스크립트 포함). 메타데이터 워크플로가 출처 전환(M3)을 할 때 이 스냅샷도 대상이 된다 — 다음 M 알림에 적는다.
 - 배정: 프론트 FE4-c → FE4-d → FE3-g(인연 타일, FB-11b 커밋 뒤). 백엔드 FB-1b.
+
+## 2026-10-09 00:37 — FE4-c gate ① `20261009_003348` RED: 컴파일 오류 1건
+
+- 원인 하나: `plan_flow_goal_editor.dart:250` `requested.clamp(...)`이 num이라 `Map<String, int>`에 넣지 못해 컴파일 실패 → 모든 테스트 파일 적재 실패(테스트 23건 실패, golden 적재 실패). 프론트 워커 환경에 Flutter가 없어 정적 검토로 놓쳤다.
+- 오케스트레이터가 고쳤다: clamp 결과에 `.toInt()`. 같은 분석의 경고 3건(`plan_flow_goal_step.dart` 2564·2631·2679 `modeLabel(mode!)`의 불필요한 `!`)도 지웠다. 기기 해시 확인(editor `68c42ba2…`, step `ef3e7a6c…`). 두 파일 모두 fe4c 범위 파일이다.
+- 다음: gate ① 재실행. 테스트·golden 결과는 그때 처음 판정한다.
+
+## 2026-10-09 00:47 — FE4-c gate ① `20261009_003919` 검토, FB-1b 소비자 연결
+
+- 컴파일 오류 수정 뒤 analyze 0, 일반·process 테스트 통과. 실패 1건 + golden 3건.
+- `title_page_test` "first run imports a v6 account and opens its repository plan": `revision_conflict`. FB-1b(작업트리)가 첫 로드 이관으로 revision을 +1 하는데, title 화면이 이전 목록 revision으로 select한다. FB-1b 상태 문서의 소비자 영향표가 예고한 그대로다. FE4-c 탓이 아니다.
+  · 결정: 프론트 워커가 작은 별도 slice `fe1brev`로 `title_page.dart`·`account_section_cluster.dart`의 revision 전파를 고친다(state 반환 revision을 profile summary·선택에 반영, 이관 실패를 빈 목표로 덮지 않음). 테스트 기대는 바꾸지 않는다.
+  · `scan_page.dart`(스캐너)·`tactical_page.dart`(tactic)는 tactic 오케스트레이터 로그 00:50에 알렸다(같은 오케스트레이터가 스캐너 후속도 맡음). app_shell 변경 2건과 FB-11b 스냅샷도 같이 알렸다.
+  · 커밋 순서: fe1brev 수정 → gate ② → fb1b(Python 전체 먼저) → fe1brev → fe4c → redesigndocs.
+- golden:
+  · `plan-flow-step1-filter` 0.09%: 왼쪽 레일 위 "필터 · 2" 알약이 사라졌다. 21:34 후속 확인의 버그 수정. 승인.
+  · `plan-flow-step2` 40%: 새 2단계. 학생 탭 줄(설정 중/미설정/미보유), 프리셋 바(총력전 3단계·테스트 프리셋·한 번에 MAX·직접 입력), 지금 상태 + 가로 단계 카드 3장(COST 행, 부족 칩), 단계 추가, 아래 "현재 → 최종" 요약 7칸, C에 단계 프리셋·다른 학생 적용·전 학생 적용·부족 요약. 승인.
+  · `plan-flow-step2-more`: 새 장면, 기준 없음. ② 뒤 검토.
+
+## 2026-10-09 01:55 — gate ② `20261009_013850` GREEN, 새 기준 검토, 커밋 순서
+
+- fe1brev 반영 뒤 ② `-UpdateGoldens` + compare GREEN: analyze 0, 테스트 326+381+67, process 42, golden 26, almanac 42쪽, diff-check 0.
+- `title_page_test` 통과. fe1brev 범위는 `title_page.dart`·`account_section_cluster.dart`·`title_page_test.dart`. 테스트 파일은 v6 가져오기 테스트 대역이 select가 돌려준 revision으로 저장하도록 바뀌었고 단언은 그대로다. 테스트 기대를 바꾸지 말라는 조건 안이라고 판단해 승인. 새 테스트 3건(레거시 선택, 첫 로드 증가 뒤 전환, 이관 실패 표시).
+- 새 기준 `plan-flow-step2-more` 승인: 1단계 카드의 "더 보기 · 카드에 없는 목표"를 펼친 장면이다. 장비 1~3 Lv, 무기 ★, HP·ATK·HEAL 증감 버튼과 MAX 칩, 접기 버튼이 카드 안에 들어가고 겹침·잘림이 없다(FD-072).
+- FB-11b는 21:58에 이미 커밋됐다(`debug/frontend_fb11b/commit_20261008_215817`·`_215825`, Python 전체 881 OK).
+- 커밋 순서: FB-1b Python 전체(`debug/frontend_fb1b/python-full.txt`) → fb1b(post_dir, status=false) → fe1brev → fe4c(baseline whole) → redesigndocs.
