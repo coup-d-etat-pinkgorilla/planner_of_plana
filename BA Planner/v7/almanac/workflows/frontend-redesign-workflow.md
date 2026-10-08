@@ -259,7 +259,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | slice | 범위 | 선행 |
 |---|---|---|
 | FE4-a 흐름 골격 | Studio 문서, StepRail(스텝 4개·요약 4행·다음/이전), 초안 `PlanningDocument` 컨트롤러 + 디바운스 계산, 부족 재화 플라이아웃. 현 `_showStudentSelector/_showElementBuilder/_showPhaseEditor/_creatingScenario` 플래그 묶음을 대체 | FD-082 — **완료 2026-10-08**: 커밋 `a18897a1`(초안 컨트롤러·StepRail·Studio 문서, 기존 세 화면은 B 본문에 축소 수용, golden `plan-flow-step1/2` 추가). 임시 상태: 기존 화면이 작게 보이고 C 보조가 비어 있다(FE4-b~d에서 교체) |
-| FE4-b 1단계 학생 고르기 | 8열 그리드·순서 배지·C 패널 목록/압축, 한 명 모드(학생 상세 인디케이터 재사용), 필터 모달 + 계획 칩 그룹 | FE3-a·FE3-d, FD-074 |
+| FE4-b 1단계 학생 고르기 | 8열 그리드·순서 배지·C 패널 목록/압축, 한 명 모드(학생 상세 인디케이터 재사용), 필터 모달 + 계획 칩 그룹 | FE3-a·FE3-d, FD-074 — **완료 2026-10-08**: 커밋 `2a5a7655`(새 1단계, 초안 문서 v2 전환, golden `plan-flow-step1` 갱신·`-many`·`-filter` 추가). 후속 확인: 필터 장면 왼쪽 레일 위 "필터 · 2" 알약 위치 |
 | FE4-c 2단계 목표 정하기 | 학생 탭 줄·가로 단계 카드·COST(`stage_results[].cost`)·현재→최종, 프리셋 바. 미배정 목록 폐기 | FD-074 |
 | FE4-d 3단계 단계 순서 | 칸(=페이즈) 보드, 드래그, 같은 학생 선행 강제(기존 `_sequenceOrderIsValid` 재사용), 상태 배지, 자동 정렬, Many 모드 | — |
 | FE4-e 4단계 저장 | 미리보기, 활성 계획 비교, 시나리오로 저장(기존 `createScenario`), 활성 계획에 페이즈로 추가/이걸로 바꾸기(FB-1) | FB-1, FD-031 |
@@ -346,7 +346,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | FB-8 | 계획 문서 v2 또는 authoring 메타(교차 선행·나중에 칸·학생 순서) | FD-068 |
 | FB-9 | 계산 응답 보강(페이즈 진입/종료 잔량 의미 확정, 다중 비교) — FE5-d/FE5-e에서 필요가 확인될 때만 | — |
 | FB-10 | 스캐너 프로토콜 추가 — **스캐너 워크플로가 구현**(additive): `scanner.session.pause/resume`·`paused` 이벤트(D21 개정, FD-142), 학생 폴백 필드 crop·역산값(FD-145), 인벤토리 entry별 승인·부분 commit·`needs_review` 영속 표시(FD-146), 진행 중 후보·feedback 스트리밍(FD-156), 정답 샘플 수, **크레딧·엘리그마 보유량 스캔**(FD-096 (c): 새 인식 대상, 스캔 탭 고르기에 종류로 추가). 이 워크플로는 요청서를 스캐너 오케스트레이터 로그에 남기고 프론트는 필드가 오면 그린다 | FD-142·FD-146·FD-096 확정(2026-10-06) |
-| FB-11 | 학생 성장 계산 + 인연 선물: 단일 학생 계산 메서드(totals + 범주별 크레딧 + 재화 행 + 인연 블록, FD-162), 인연 랭크별 누적 경험치 표·쓰다듬기 상수 메타데이터, 선물 카탈로그·선호 배수로 선물 3안 계산(FD-163) | FD-162, FD-163 — a(계산 메서드 `planning.student.calculate`, 9범주 크레딧)와 b(인연 선물)로 나눔. b는 자료 선행: `FavorLevelExcel`·`CafeInteractionExcel` 실제 행과 쓰다듬기 횟수 근거가 필요하다(저장소에 없음, 2026-10-08 조사). 공용 클라이언트 자료 저장소를 맡은 택틱 오케스트레이터에게 요청했다 — a **완료 2026-10-08**: 커밋 `facdd1d3`(Python 847 통과). b는 택틱 W4 자료 도착(커밋 `9d14b2b5`) 후 ExpType 해석 확정(택틱 W4b) 대기 |
+| FB-11 | 학생 성장 계산 + 인연 선물: 단일 학생 계산 메서드(totals + 범주별 크레딧 + 재화 행 + 인연 블록, FD-162), 인연 랭크별 누적 경험치 표·쓰다듬기 상수 메타데이터, 선물 카탈로그·선호 배수로 선물 3안 계산(FD-163) | FD-162, FD-163 — a(계산 메서드 `planning.student.calculate`, 9범주 크레딧)와 b(인연 선물)로 나눔. b는 자료 선행: `FavorLevelExcel`·`CafeInteractionExcel` 실제 행과 쓰다듬기 횟수 근거가 필요하다(저장소에 없음, 2026-10-08 조사). 공용 클라이언트 자료 저장소를 맡은 택틱 오케스트레이터에게 요청했다 — a **완료 2026-10-08**: 커밋 `facdd1d3`(Python 847 통과). b는 택틱 W4 자료 도착(커밋 `9d14b2b5`) 후 ExpType 해석 확정(택틱 W4b) 대기 — b 코드 승인(2026-10-08, `student_bond.py`·`planning-student-bond-v1`), Python 전체·커밋 대기 |
 | FB-12 | 계획 계산 버그 2건(FE3-f1 발견, 2026-10-07): ① `planning_calc._calculate_star_cost`가 `record.star`를 읽어 wire의 `student_star`가 무시되고 성급 비용이 늘 ★0부터 계산됨 ② `planning_document._advance`가 장비 티어를 `"Tier<n>"`으로 이월하는데 `_parse_tier_number`는 `T<n>`만 읽어 2단계 이상 장비 비용이 T0부터 계산됨. 계획 탭·계산기 공통 | FE3-f2 전 단독 slice — **완료 2026-10-07**: 커밋 `50dbed6c`(Python 836건 통과, 기존 기대값 변화 0, 새 테스트 9건) |
 | FB-13 | 학생 catalog 항목에 `has_favorite_item: bool`(KR 서버 애장품 제공 여부, `student_meta.favorite_item_enabled`). 계약·Python·Dart DTO·mock·자산 재생성·process 검증 한 slice. 계산기 애장품 행 폴백 해소용(FE3-f2a 발견) | FB-1과 독립, FE3-f2b의 golden 갱신 전에 커밋 — **완료 2026-10-08**: 커밋 `fa15e87c`(13파일) |
 
@@ -436,3 +436,4 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-08(오후): FB-13 `fa15e87c`. 배정: 백엔드 FB-1a(문서 v2, 이 slice 동안 `lib/ui/models/planning_models.dart`의 문서 DTO는 백엔드 워커 소유), 프론트 FE4-a(흐름 골격, `planning_models.dart` 수정 금지). FB-11b는 FB-1a 뒤.
 - 2026-10-08(저녁): FE4-a `a18897a1`, 문서 `eea7f113`. FB-1a는 Python 전체·커밋 대기(gate `20261008_164059` GREEN에 포함). 커밋 뒤 `planning_models.dart` 소유는 프론트로 돌아온다. 다음 행동: 프론트 FE4-b(1단계 학생 고르기 + 초안을 문서 v2로 전환), 백엔드 FB-11b(인연 선물 계산) → FB-1b.
 - 2026-10-08(밤): FB-1a `682b2a7b`(17파일, Python 873 통과). `planning_models.dart` 소유가 프론트로 돌아왔다. 프론트 FE4-b, 백엔드 FB-11b 착수.
+- 2026-10-08(밤 2): FE4-b `2a5a7655`. FB-11b 코드 완료(커밋 대기). 다음 행동: 프론트 FE4-c(2단계 목표 정하기) → FE4-d → FE3-g, 백엔드 FB-1b(활성 계획 저장·이관).
