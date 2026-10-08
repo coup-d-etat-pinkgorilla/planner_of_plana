@@ -1,0 +1,104 @@
+{
+  "characterId": 7300700,
+  "kind": "boss",
+  "devName": "Binah_default_Torment",
+  "names": {"ko": "비나", "ja": "ビナー"},
+  "clientVersionId": "jp-1.73.0-e2baf70e",
+  "sourceHashes": {
+    "excelDb": "a5cfbbb9c7f00ccdd82a59e100febb7ed5eb107bc8ac93c6ed0dede14418416a",
+    "excelZip": "f9e8e721c14486a1517b627799ea03122aaa39da4f024eda3da1da7c8347c97b",
+    "bundles": [
+      {
+        "path": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+        "sha256": "b1ab8d7bce6221bd056c07893b7b97d376ceb4fb335baa764e1d4dccb3062593"
+      }
+    ]
+  },
+  "clips": [
+    {
+      "name": "Binah_Original_Normal_Attack",
+      "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+      "sourceFps": 30,
+      "lengthSeconds": 4.6666669845581055,
+      "lengthLogicFrames": 140,
+      "logicDurationFrames": null,
+      "events": [
+        {
+          "frame": 5,
+          "timeSeconds": 0.1666666716337204,
+          "layer": "anim_event",
+          "name": "PlayAudio",
+          "kind": "sfx",
+          "evidence": {
+            "kind": "observation",
+            "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Normal_Attack;PathID=6613088364977800608]"
+          },
+          "estimated": true,
+          "note": "Observed m_Events callback and float time. sfx is inferred from PlayAudio; the parameter target and gameplay meaning are unverified. No rowSha/rva is available for this clip observation. logicDurationFrames is unknown: AttackIng 140 is a period constituent, not the whole action Duration. This Original clip does not establish a Torment EX mapping."
+        },
+        {
+          "frame": 50,
+          "timeSeconds": 1.6666666269302368,
+          "layer": "anim_event",
+          "name": "PlayAudio",
+          "kind": "sfx",
+          "evidence": {
+            "kind": "observation",
+            "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Normal_Attack;PathID=6613088364977800608]"
+          },
+          "estimated": true,
+          "note": "Observed m_Events callback and float time. sfx is inferred from PlayAudio; the parameter target and gameplay meaning are unverified. No rowSha/rva is available for this clip observation. logicDurationFrames is unknown: AttackIng 140 is a period constituent, not the whole action Duration. This Original clip does not establish a Torment EX mapping."
+        }
+      ]
+    },
+    {
+      "name": "Binah_Original_Vital_Groggy",
+      "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+      "sourceFps": 30,
+      "lengthSeconds": 11.333333969116211,
+      "lengthLogicFrames": 340,
+      "logicDurationFrames": null,
+      "events": [
+        {
+          "frame": 0,
+          "timeSeconds": 0.0,
+          "layer": "anim_event",
+          "name": "InstantiateFx",
+          "kind": "vfx",
+          "evidence": {
+            "kind": "observation",
+            "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Vital_Groggy;PathID=-5953471448818496541]"
+          },
+          "estimated": true,
+          "note": "Observed m_Events callback and float time. vfx is inferred from InstantiateFx; the parameter target and gameplay meaning are unverified. No rowSha/rva is available for this clip observation. logicDurationFrames is unknown: GroggyTime 300 uses a separate clock and does not replace the 340-frame clip length. This Original clip does not establish a Torment EX mapping."
+        },
+        {
+          "frame": 13,
+          "timeSeconds": 0.4333333373069763,
+          "layer": "anim_event",
+          "name": "PlayAudio",
+          "kind": "sfx",
+          "evidence": {
+            "kind": "observation",
+            "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Vital_Groggy;PathID=-5953471448818496541]"
+          },
+          "estimated": true,
+          "note": "Observed m_Events callback and float time. sfx is inferred from PlayAudio; the parameter target and gameplay meaning are unverified. No rowSha/rva is available for this clip observation. logicDurationFrames is unknown: GroggyTime 300 uses a separate clock and does not replace the 340-frame clip length. This Original clip does not establish a Torment EX mapping."
+        },
+        {
+          "frame": 265,
+          "timeSeconds": 8.833333015441895,
+          "layer": "anim_event",
+          "name": "PlayAudio",
+          "kind": "sfx",
+          "evidence": {
+            "kind": "observation",
+            "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Vital_Groggy;PathID=-5953471448818496541]"
+          },
+          "estimated": true,
+          "note": "Observed m_Events callback and float time. sfx is inferred from PlayAudio; the parameter target and gameplay meaning are unverified. No rowSha/rva is available for this clip observation. logicDurationFrames is unknown: GroggyTime 300 uses a separate clock and does not replace the 340-frame clip length. This Original clip does not establish a Torment EX mapping."
+        }
+      ]
+    }
+  ]
+}
