@@ -302,10 +302,11 @@ void main() {
     await expectGoldenScene(tester, 'students-filter-open');
   }, variant: goldenPlatform);
 
-  // FE3-f2a: 성장 계산기(Calc-Student). 학생 S1 "성장 계산기 열기"로 들어가 빠른 목표(스킬만 MAX)에
+  // FE3-f2a·f2b: 성장 계산기(Calc-Student). 학생 S1 "성장 계산기 열기"로 들어가 빠른 목표(스킬만 MAX)에
   // 레벨 90·장비 1 두 단계를 더한다. 머리말 제목·"← 학생" 칩, S1 계산기 버튼 묶음, S2 목표 행(바뀐
-  // 칸 분홍)·바꾼 목표 칩, 크레딧 타일(보유 "스캔 없음" 빗금)·재화 목록 6줄과 "더 보기"가 장면에 보인다.
-  // S3·S4는 아직 학생 모드 그대로다(FE3-f2b).
+  // 칸 분홍)·바꾼 목표 칩, 크레딧 타일(보유 "스캔 없음" 빗금 + 9범주를 묶은 내역 막대 5줄)·재화 목록 6줄과
+  // "더 보기"가 장면에 보인다. S3는 목표값(바뀐 칸 분홍, ★ 목표 테두리)과 "현재 …" 태그, S4는 선택 학생
+  // 요약·"기준: 확정값" 칩·최근 계산(아루 한 칸)이다.
   testWidgets('students-calculator', (tester) async {
     setGoldenViewport(tester);
     final service = GoldenCalculatorMockAppService();
@@ -333,6 +334,15 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('18,420,000'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('calculator-credit-breakdown')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('calculator-current-tag-level')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('calculator-recent-aru')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('calculator-resource-more')),
       findsOneWidget,

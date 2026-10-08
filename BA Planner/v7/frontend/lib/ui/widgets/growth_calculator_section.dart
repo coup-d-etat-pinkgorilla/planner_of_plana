@@ -29,6 +29,7 @@ import '../kit/info_popover.dart';
 import '../kit/item_icon_tile.dart';
 import '../kit/kit_overlay.dart';
 import '../kit/kit_pressable.dart';
+import '../kit/skew_bar.dart';
 import '../kit/skew_controls.dart';
 import '../kit/stepper.dart';
 import '../kit/titles.dart';
@@ -96,6 +97,10 @@ String growthCalculatorRowLabel(
 
 /// 행 값 글자(시안 표기: 레벨 "Lv.90", 성급 "★5", 전용무기 "★1 · Lv.30"/"없음", 스킬 최대 "M",
 /// 장비 "T10", 능력 개방 "0 · 0 · 0"). [target]이면 목표 칸 표기다(레벨에 "Lv." 접두).
+///
+/// 스킬 최대 표기는 EX(최대 5)·일반·강화·서브(최대 10) 모두 "M"이다. 학생 상세 인디케이터
+/// (`_StudentStatusIndicators._skillValue`), 계획 요소 빌더(`_skillDisplay`), 목록 행
+/// (`formatDiagonalMediaSkillLevels`), 필터 범위(`StudentRangeValueStyle.skill`)와 같은 규칙이다(FE3-f2b).
 String growthCalculatorRowText(
   GrowthCalculatorRow row,
   Map<String, int> values, {
@@ -111,13 +116,12 @@ String growthCalculatorRowText(
       final star = value('weapon_star');
       return star <= 0 ? '없음' : '★$star · Lv.${value('weapon_level')}';
     case GrowthCalculatorRow.exSkill:
-      return '${value('ex_skill')}';
     case GrowthCalculatorRow.normalSkill:
     case GrowthCalculatorRow.enhancedSkill:
     case GrowthCalculatorRow.subSkill:
       final level = value(row.primaryKey);
-      if (level <= 0) return '잠김';
-      return level >= 10 ? 'M' : '$level';
+      if (row != GrowthCalculatorRow.exSkill && level <= 0) return '잠김';
+      return level >= planElementTargetMaximums[row.primaryKey]! ? 'M' : '$level';
     case GrowthCalculatorRow.equipment1:
     case GrowthCalculatorRow.equipment2:
     case GrowthCalculatorRow.equipment3:
@@ -129,6 +133,65 @@ String growthCalculatorRowText(
     case GrowthCalculatorRow.abilityRelease:
       return row.keys.map(value).join(' · ');
   }
+}
+
+/// 크레딧 내역 막대의 표시 묶음(FE3-f2b). FB-11a 9범주를 시안 4줄(레벨·스킬·장비·성급 · 전무)에
+/// 애장품 · 능력 개방 줄을 더해 묶는다. 9범주가 모두 어느 한 줄에 들어간다. 모르는 범주는 "기타" 줄에 둔다.
+enum GrowthCalculatorCreditGroup {
+  level('레벨', ['level']),
+  skills('스킬', ['ex_skill', 'skill']),
+  equipment('장비', ['equipment']),
+  starWeapon('성급 · 전무', ['student_star', 'weapon_star', 'weapon_level']),
+  favoriteAbility('애장품 · 능력 개방', ['favorite_item', 'potential']);
+
+  const GrowthCalculatorCreditGroup(this.label, this.categories);
+
+  final String label;
+
+  /// 이 줄에 더하는 FB-11a 범주(`studentCreditCategories`).
+  final List<String> categories;
+}
+
+/// 내역 막대 한 줄.
+typedef GrowthCalculatorCreditLine = ({String key, String label, int amount});
+
+/// [breakdown]을 표시 줄로 묶는다. 값이 0인 줄은 뺀다(합계에는 0이라 영향이 없다). 줄 합은 늘
+/// [GrowthCalculatorCreditBreakdown.total]이다.
+List<GrowthCalculatorCreditLine> growthCalculatorCreditLines(
+  GrowthCalculatorCreditBreakdown breakdown,
+) {
+  final amounts = breakdown.amounts;
+  final grouped = {
+    for (final group in GrowthCalculatorCreditGroup.values) ...group.categories,
+  };
+  final other = amounts.entries
+      .where((entry) => !grouped.contains(entry.key))
+      .fold<int>(0, (sum, entry) => sum + entry.value);
+  return [
+    for (final group in GrowthCalculatorCreditGroup.values)
+      (
+        key: group.name,
+        label: group.label,
+        amount: group.categories.fold<int>(
+          0,
+          (sum, category) => sum + (amounts[category] ?? 0),
+        ),
+      ),
+    (key: 'other', label: '기타', amount: other),
+  ].where((line) => line.amount > 0).toList();
+}
+
+/// 짧은 수(시안 "3.1M", "9.8M"). 백만 이상은 M, 천 이상은 K, 소수 첫째 자리까지("10.0M" → "10M").
+String growthCalculatorCompactNumber(int value) {
+  String scaled(double number, String unit) {
+    final text = number.toStringAsFixed(1);
+    return '${text.endsWith('.0') ? text.substring(0, text.length - 2) : text}$unit';
+  }
+
+  // 999,950 이상은 "1000K"가 아니라 "1M"으로 쓴다.
+  if (value >= 999950) return scaled(value / 1000000, 'M');
+  if (value >= 1000) return scaled(value / 1000, 'K');
+  return '$value';
 }
 
 /// 천 단위 쉼표.
@@ -223,7 +286,7 @@ class GrowthCalculatorLayout {
 
     final rightRail = 841.9 * sx;
     final creditTop = 102 * sy;
-    const creditHeight = 128.0;
+    const creditHeight = growthCalculatorCreditTileHeight;
     // 폭은 시안 비율을 따르되, 작은 창에서 타일 안 글자가 넘치지 않게 최소 폭을 둔다(넘치는 쪽은 섹션이 자른다).
     final creditTile = Rect.fromLTWH(
       railLeft(rightRail, creditTop + creditHeight),
@@ -326,6 +389,9 @@ class GrowthCalculatorModeData {
     required this.student,
     this.onOpenScan,
     this.onAddToPlan,
+    this.planMembership = GrowthCalculatorPlanMembership.unknown,
+    this.recent = const [],
+    this.onOpenRecent,
   });
 
   final GrowthCalculatorState state;
@@ -339,7 +405,22 @@ class GrowthCalculatorModeData {
 
   /// "이 목표로 계획에 추가". FE4-g 전에는 null(비활성, FD-171).
   final VoidCallback? onAddToPlan;
+
+  /// S4 선택 학생 요약의 계획 포함 여부(FD-172, FB-1 전에는 goals v1 기준).
+  final GrowthCalculatorPlanMembership planMembership;
+
+  /// S4 "최근 계산"(FD-170). 가장 최근이 앞이고, catalog에 있는 학생만 담는다.
+  final List<GrowthCalculatorRecentEntry> recent;
+
+  /// 최근 계산을 누르면 그 기준·목표로 다시 연다.
+  final ValueChanged<GrowthCalculationRecord>? onOpenRecent;
 }
+
+/// S4 최근 계산 한 칸: 기록과 그 학생.
+typedef GrowthCalculatorRecentEntry = ({
+  GrowthCalculationRecord record,
+  StudentCatalogEntry student,
+});
 
 /// 성장 계산기 S2 본문.
 class GrowthCalculatorSection extends StatefulWidget {
@@ -1386,67 +1467,194 @@ class _CreditTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final result = this.result;
+    final breakdown =
+        result?.creditBreakdown ?? GrowthCalculatorCreditBreakdown.unavailable;
     return DiagonalRow(
       key: const ValueKey('calculator-credit-tile'),
       variant: DiagonalRowVariant.tile,
-      padding: const EdgeInsets.only(left: 32.6),
-      child: Row(
-        children: [
-          const ItemIconTile(
-            iconAsset: GameAssets.creditIcon,
-            size: Size(79, 64),
-            semanticLabel: '크레딧',
-          ),
-          const SizedBox(width: 18),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.only(
+        left: 32.6,
+        right: diagonalCutDepth(growthCalculatorCreditTileHeight) + 14,
+      ),
+      // 합계 칸은 남는 폭보다 넓으면 같은 비율로 줄인다(작은 창·긴 숫자에서 넘치지 않게). 내역 막대는 그 뒤
+      // 남는 폭을 쓴다.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const iconWidth = 79.0;
+          const iconGap = 18.0;
+          const barsGap = 24.0;
+          final summaryMaxWidth = math.max(
+            0.0,
+            constraints.maxWidth -
+                iconWidth -
+                iconGap -
+                (breakdown.available ? barsGap : 0),
+          );
+          return Row(
             children: [
-              Text(
-                '크레딧',
-                style: _bodyStyle(
-                  AppType.bodySmallSize,
-                  color: AppColors.textMuted,
+              const ItemIconTile(
+                iconAsset: GameAssets.creditIcon,
+                size: Size(iconWidth, 64),
+                semanticLabel: '크레딧',
+              ),
+              const SizedBox(width: iconGap),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: summaryMaxWidth),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: _creditSummary(result),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                result == null ? '—' : growthCalculatorNumber(result.credits),
-                key: const ValueKey('calculator-credits'),
-                style: kitDisplayStyle(AppType.displayMediumSize),
-              ),
-              const SizedBox(height: 6),
-              // 크레딧 보유는 통화 스캔(FD-096 (c)) 전까지 "스캔 없음" 빗금, 부족 칩은 숨긴다(FD-172).
-              Row(
-                children: [
-                  Text(
-                    '보유',
-                    style: _bodyStyle(
-                      AppType.bodySmallSize,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const SizedBox(
-                    width: 70,
-                    height: 12,
-                    child: HatchBox(radius: 2),
-                  ),
-                  const SizedBox(width: 8),
-                  const BaChip(
-                    key: ValueKey('calculator-credit-no-scan'),
-                    label: '스캔 없음',
-                    tone: AppTones.gray,
-                  ),
-                ],
-              ),
+              // 범주별 내역 막대(FD-162 (b)). 임시 문서 경로처럼 내역이 없으면 숨긴다.
+              if (breakdown.available) ...[
+                const SizedBox(width: barsGap),
+                Expanded(child: _CreditBreakdownBars(breakdown: breakdown)),
+              ],
             ],
-          ),
-          // 범주별 내역 막대는 FB-11 전에는 없다(creditBreakdown == unavailable).
-        ],
+          );
+        },
       ),
     );
   }
+
+  Widget _creditSummary(GrowthCalculatorResult? result) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        '크레딧',
+        style: _bodyStyle(
+          AppType.bodySmallSize,
+          color: AppColors.textMuted,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        result == null ? '—' : growthCalculatorNumber(result.credits),
+        key: const ValueKey('calculator-credits'),
+        style: kitDisplayStyle(AppType.displayMediumSize),
+      ),
+      const SizedBox(height: 6),
+      // 크레딧 보유는 통화 스캔(FD-096 (c)) 전까지 "스캔 없음" 빗금, 부족 칩은 숨긴다(FD-172).
+      Row(
+        children: [
+          Text(
+            '보유',
+            style: _bodyStyle(
+              AppType.bodySmallSize,
+              color: AppColors.textMuted,
+            ),
+          ),
+          const SizedBox(width: 8),
+          const SizedBox(
+            width: 70,
+            height: 12,
+            child: HatchBox(radius: 2),
+          ),
+          const SizedBox(width: 8),
+          const BaChip(
+            key: ValueKey('calculator-credit-no-scan'),
+            label: '스캔 없음',
+            tone: AppTones.gray,
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+/// 크레딧 타일 높이(시안 128).
+const growthCalculatorCreditTileHeight = 128.0;
+
+/// 크레딧 내역 막대(시안: 줄마다 이름 · 막대 · 값, 막대는 가장 큰 줄 기준 비율).
+class _CreditBreakdownBars extends StatelessWidget {
+  const _CreditBreakdownBars({required this.breakdown});
+
+  final GrowthCalculatorCreditBreakdown breakdown;
+
+  static const _rowHeight = 16.0;
+  static const _rowGap = 4.0;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final lines = growthCalculatorCreditLines(breakdown);
+      // 좁은 창에서는 막대를 그리지 않는다(합계는 왼쪽에 그대로 있다).
+      if (lines.isEmpty || constraints.maxWidth < 180) {
+        return const SizedBox.shrink();
+      }
+      final largest = lines
+          .map((line) => line.amount)
+          .reduce(math.max)
+          .toDouble();
+      final shown = lines.take(
+        math.max(
+          1,
+          ((constraints.maxHeight + _rowGap) / (_rowHeight + _rowGap)).floor(),
+        ),
+      );
+      return Column(
+        key: const ValueKey('calculator-credit-breakdown'),
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (final line in shown)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: _rowGap / 2),
+              child: Semantics(
+                key: ValueKey('calculator-credit-breakdown-${line.key}'),
+                container: true,
+                label: '${line.label} 크레딧',
+                value: growthCalculatorNumber(line.amount),
+                child: ExcludeSemantics(
+                  child: SizedBox(
+                    height: _rowHeight,
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 108,
+                          child: Text(
+                            line.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: _bodyStyle(
+                              AppType.bodySmallSize,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: SkewBar(
+                            fraction: line.amount / largest,
+                            height: 8,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 46,
+                          child: Text(
+                            growthCalculatorCompactNumber(line.amount),
+                            key: ValueKey(
+                              'calculator-credit-breakdown-${line.key}-value',
+                            ),
+                            maxLines: 1,
+                            textAlign: TextAlign.right,
+                            style: _bodyStyle(
+                              AppType.bodySmallSize,
+                              weight: AppType.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    },
+  );
 }
 
 class _BondTile extends StatelessWidget {
@@ -1653,6 +1861,496 @@ class _MoreRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// S3·S4 (FE3-f2b, FD-167·FD-170)
+
+/// S3 학생 상세 인디케이터에 넣을 값. 계산기 목표를 학생 상세 값 모양으로 바꾼다(FD-167).
+/// - 전투 능력치처럼 계산기가 다루지 않는 값은 [base](확정 학생 값)에서 가져온다.
+/// - 인연은 현재 랭크다. 목표 랭크는 게이지 빗금으로 따로 그린다([growthCalculatorIndicatorBondTarget]).
+/// - 애장품 목표가 0이면 [base]의 애장품 상태(잠김 등)를 그대로 둔다.
+Map<String, dynamic> growthCalculatorIndicatorValues(
+  GrowthCalculatorState state, {
+  Map<String, dynamic>? base,
+}) {
+  final targets = state.targets;
+  String? tier(String key) {
+    final value = targets[key]!;
+    return value > 0 ? 'T$value' : null;
+  }
+
+  final favorite = targets['equip4_tier']!;
+  return {
+    ...?base,
+    'level': targets['level'],
+    'student_star': targets['student_star'],
+    'weapon_state': targets['weapon_star']! > 0
+        ? 'weapon_equipped'
+        : 'weapon_locked',
+    'weapon_star': targets['weapon_star'],
+    'weapon_level': targets['weapon_level'],
+    'ex_skill': targets['ex_skill'],
+    'skill1': targets['skill1'],
+    'skill2': targets['skill2'],
+    'skill3': targets['skill3'],
+    'equip1': tier('equip1_tier'),
+    'equip2': tier('equip2_tier'),
+    'equip3': tier('equip3_tier'),
+    'equip1_level': targets['equip1_level'],
+    'equip2_level': targets['equip2_level'],
+    'equip3_level': targets['equip3_level'],
+    if (favorite > 0) 'equip4': 'T$favorite',
+    'stat_hp': targets['stat_hp'],
+    'stat_atk': targets['stat_atk'],
+    'stat_heal': targets['stat_heal'],
+    'bond_rank': state.current['bond_rank'],
+  };
+}
+
+/// S3 인연 게이지의 목표(빗금). 목표가 현재보다 높을 때만 있다.
+int? growthCalculatorIndicatorBondTarget(GrowthCalculatorState state) {
+  final target = state.targets['bond_rank']!;
+  return target > state.current['bond_rank']! ? target : null;
+}
+
+/// S3 "현재 …" 태그 묶음(시안 분홍 pill). 묶음 안의 행이 하나라도 바뀌면 그 묶음 태그를 단다.
+enum GrowthCalculatorIndicatorGroup {
+  level([GrowthCalculatorRow.level]),
+  star([GrowthCalculatorRow.studentStar]),
+  weapon([GrowthCalculatorRow.weapon]),
+  skills([
+    GrowthCalculatorRow.exSkill,
+    GrowthCalculatorRow.normalSkill,
+    GrowthCalculatorRow.enhancedSkill,
+    GrowthCalculatorRow.subSkill,
+  ]),
+  equipment([
+    GrowthCalculatorRow.equipment1,
+    GrowthCalculatorRow.equipment2,
+    GrowthCalculatorRow.equipment3,
+  ]),
+  favoriteItem([GrowthCalculatorRow.favoriteItem]),
+  ability([GrowthCalculatorRow.abilityRelease]),
+  bond([GrowthCalculatorRow.bond]);
+
+  const GrowthCalculatorIndicatorGroup(this.rows);
+
+  final List<GrowthCalculatorRow> rows;
+}
+
+/// [group]의 "현재 …" 태그 글자(현재값 출처의 값, 표기는 목표 행과 같다).
+String growthCalculatorCurrentTagText(
+  GrowthCalculatorIndicatorGroup group,
+  Map<String, int> current,
+) {
+  String rows() => group.rows
+      .map((row) => growthCalculatorRowText(row, current))
+      .join(' · ');
+  return switch (group) {
+    GrowthCalculatorIndicatorGroup.level => '현재 ${current['level']}',
+    GrowthCalculatorIndicatorGroup.star => '현재 ★${current['student_star']}',
+    GrowthCalculatorIndicatorGroup.favoriteItem => '현재 애장품 ${rows()}',
+    _ => '현재 ${rows()}',
+  };
+}
+
+/// [state]에서 태그를 달 묶음(학생에게 없는 행은 뺀다).
+List<GrowthCalculatorIndicatorGroup> growthCalculatorChangedIndicatorGroups(
+  GrowthCalculatorState state,
+) => [
+  for (final group in GrowthCalculatorIndicatorGroup.values)
+    if (group.rows.any(state.isRowChanged)) group,
+];
+
+/// S3 칸 하나(누르면 그 행을 토글한다). [path]가 있으면 누르기 자리를 그 경로(캔버스 좌표)로 자른다.
+typedef GrowthCalculatorIndicatorCell = ({
+  GrowthCalculatorRow row,
+  String key,
+  Rect rect,
+  Path? path,
+});
+
+List<Rect> _splitHorizontally(Rect rect, int count, double inset) {
+  final left = rect.left + inset;
+  final width = math.max(0.0, rect.width - inset * 2) / count;
+  return [
+    for (var index = 0; index < count; index++)
+      Rect.fromLTWH(left + width * index, rect.top, width, rect.height),
+  ];
+}
+
+Rect _union(Iterable<Rect> rects) => rects.reduce((a, b) => a.expandToInclude(b));
+
+/// S3 칸 자리(캔버스 좌표). 학생 상세 컨테이너·feature 경로를 그대로 쓴다.
+/// - 스킬(container-5)·장비(container-6)는 안쪽 열을 같은 폭으로 나눈다(장비는 3칸 + 애장품).
+/// - 성급·전용무기 ★는 container-3의 앞 5칸·뒤 4칸이다. 전용무기는 Weapon Lv 칸(feature-5)도 같은 행이다.
+/// - 인연 칸(container-10)은 경계 사각형이 애장품·능력 개방 칸과 겹쳐 맨 앞(맨 아래)에 두고, 누르기 자리를
+///   경로로 자른다. 컨테이너·feature 하나에 해당하는 칸은 모두 경로로 자른다.
+List<GrowthCalculatorIndicatorCell> growthCalculatorIndicatorCells(
+  Size canvasSize, {
+  required bool hasFavoriteItem,
+}) {
+  Path containerPath(String id) => studentContainerPath(canvasSize, id)!;
+  Path featurePath(String id) => studentFeaturePath(canvasSize, id)!;
+  GrowthCalculatorIndicatorCell pathCell(
+    GrowthCalculatorRow row,
+    String key,
+    Path path,
+  ) => (row: row, key: key, rect: path.getBounds(), path: path);
+  GrowthCalculatorIndicatorCell rectCell(
+    GrowthCalculatorRow row,
+    String key,
+    Rect rect,
+  ) => (row: row, key: key, rect: rect, path: null);
+
+  final stars = studentStarSegmentRects(containerPath('container-3').getBounds());
+  final skills = containerPath('container-5').getBounds();
+  final skillCells = _splitHorizontally(
+    skills,
+    4,
+    diagonalCutDepth(skills.height) + 9,
+  );
+  final equipment = containerPath('container-6').getBounds();
+  final equipmentCells = _splitHorizontally(
+    equipment,
+    4,
+    diagonalCutDepth(equipment.height) + 9,
+  );
+  return [
+    pathCell(GrowthCalculatorRow.bond, 'bond', containerPath('container-10')),
+    pathCell(GrowthCalculatorRow.level, 'level', featurePath('feature-2')),
+    rectCell(
+      GrowthCalculatorRow.studentStar,
+      'studentStar',
+      _union(stars.take(5)),
+    ),
+    rectCell(GrowthCalculatorRow.weapon, 'weapon-star', _union(stars.skip(5))),
+    pathCell(GrowthCalculatorRow.weapon, 'weapon', featurePath('feature-5')),
+    for (final (index, row) in const [
+      GrowthCalculatorRow.exSkill,
+      GrowthCalculatorRow.normalSkill,
+      GrowthCalculatorRow.enhancedSkill,
+      GrowthCalculatorRow.subSkill,
+    ].indexed)
+      rectCell(row, row.name, skillCells[index]),
+    for (final (index, row) in const [
+      GrowthCalculatorRow.equipment1,
+      GrowthCalculatorRow.equipment2,
+      GrowthCalculatorRow.equipment3,
+    ].indexed)
+      rectCell(row, row.name, equipmentCells[index]),
+    if (hasFavoriteItem)
+      rectCell(
+        GrowthCalculatorRow.favoriteItem,
+        'favoriteItem',
+        equipmentCells[3],
+      ),
+    pathCell(
+      GrowthCalculatorRow.abilityRelease,
+      'abilityRelease',
+      containerPath('container-7'),
+    ),
+  ];
+}
+
+/// 태그를 붙일 자리(묶음의 칸을 합친 사각형).
+Rect growthCalculatorIndicatorGroupRect(
+  GrowthCalculatorIndicatorGroup group,
+  List<GrowthCalculatorIndicatorCell> cells,
+) {
+  final rects = [
+    for (final cell in cells)
+      // 전용무기 묶음은 Weapon Lv 칸에 붙인다(★칸은 성급 태그 자리와 겹친다).
+      if (group.rows.contains(cell.row) && cell.key != 'weapon-star') cell.rect,
+  ];
+  return _union(rects);
+}
+
+/// S3 위에 얹는 칸 누르기 자리와 "현재 …" 태그(FD-167). 바뀐 칸 글자색(분홍)은 인디케이터가 그린다.
+class GrowthCalculatorIndicatorOverlay extends StatelessWidget {
+  const GrowthCalculatorIndicatorOverlay({
+    super.key,
+    required this.canvasSize,
+    required this.state,
+    required this.student,
+  });
+
+  final Size canvasSize;
+  final GrowthCalculatorState state;
+  final StudentCatalogEntry? student;
+
+  @override
+  Widget build(BuildContext context) {
+    final cells = growthCalculatorIndicatorCells(
+      canvasSize,
+      hasFavoriteItem: state.hasFavoriteItem,
+    );
+    final scale = canvasSize.height / growthCalculatorCanvasSize.height;
+    final tagFont = (13 * scale).clamp(9.0, 13.0);
+    return Stack(
+      fit: StackFit.expand,
+      clipBehavior: Clip.none,
+      children: [
+        for (final cell in cells)
+          Positioned.fromRect(
+            rect: cell.rect,
+            child: _clipToCell(
+              cell,
+              _IndicatorCell(
+                key: ValueKey('calculator-cell-${cell.key}'),
+                state: state,
+                row: cell.row,
+                label: growthCalculatorRowLabel(cell.row, student),
+              ),
+            ),
+          ),
+        for (final group in growthCalculatorChangedIndicatorGroups(state))
+          _tag(group, growthCalculatorIndicatorGroupRect(group, cells), tagFont),
+      ],
+    );
+  }
+
+  // 경로가 있는 칸은 누르기 자리를 그 경로로 자른다(RenderClipPath는 경로 밖 누르기를 받지 않는다).
+  static Widget _clipToCell(GrowthCalculatorIndicatorCell cell, Widget child) {
+    final path = cell.path;
+    if (path == null) return child;
+    return ClipPath(
+      clipper: _CellPathClipper(path.shift(-cell.rect.topLeft)),
+      child: child,
+    );
+  }
+
+  // 묶음 오른쪽 위 모서리에 걸쳐 단다(시안 pill이 칸 테두리 위에 놓인다).
+  Widget _tag(
+    GrowthCalculatorIndicatorGroup group,
+    Rect anchor,
+    double fontSize,
+  ) {
+    final height = fontSize + 9;
+    return Positioned(
+      right: math.max(0.0, canvasSize.width - anchor.right + 6),
+      top: anchor.top - height / 2,
+      height: height,
+      child: IgnorePointer(
+        child: _CurrentTag(
+          key: ValueKey('calculator-current-tag-${group.name}'),
+          text: growthCalculatorCurrentTagText(group, state.current),
+          fontSize: fontSize,
+        ),
+      ),
+    );
+  }
+}
+
+class _CellPathClipper extends CustomClipper<Path> {
+  const _CellPathClipper(this.path);
+
+  final Path path;
+
+  @override
+  Path getClip(Size size) => path;
+
+  @override
+  bool shouldReclip(_CellPathClipper oldClipper) => oldClipper.path != path;
+}
+
+class _IndicatorCell extends StatelessWidget {
+  const _IndicatorCell({
+    super.key,
+    required this.state,
+    required this.row,
+    required this.label,
+  });
+
+  final GrowthCalculatorState state;
+  final GrowthCalculatorRow row;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final changed = state.isRowChanged(row);
+    final canToggle = state.canToggleRow(row);
+    final target = growthCalculatorRowText(row, state.targets, target: true);
+    final current = growthCalculatorRowText(row, state.current);
+    void toggle() => state.toggleRow(row);
+    return Semantics(
+      container: true,
+      button: true,
+      label: '$label 칸',
+      value: changed ? '바뀜, 목표 $target, 현재 $current' : '그대로, $current',
+      hint: canToggle ? '누르면 현재값과 목표를 바꿉니다' : null,
+      onTap: canToggle ? toggle : null,
+      child: MouseRegion(
+        cursor: canToggle ? SystemMouseCursors.click : MouseCursor.defer,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          excludeFromSemantics: true,
+          onTap: canToggle ? toggle : null,
+        ),
+      ),
+    );
+  }
+}
+
+class _CurrentTag extends StatelessWidget {
+  const _CurrentTag({super.key, required this.text, required this.fontSize});
+
+  final String text;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: const BoxDecoration(
+      color: growthCalculatorChangedColor,
+      borderRadius: BorderRadius.all(Radius.circular(11)),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 9),
+      child: Center(
+        widthFactor: 1,
+        child: Text(
+          text,
+          maxLines: 1,
+          softWrap: false,
+          style: TextStyle(
+            fontFamily: AppFonts.body,
+            fontFamilyFallback: AppFonts.fallback,
+            fontSize: fontSize,
+            height: 1,
+            fontWeight: FontWeight.w800,
+            color: AppColors.onAccent,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// S4 계획 포함 글자(FD-172).
+String growthCalculatorPlanMembershipLabel(
+  GrowthCalculatorPlanMembership membership,
+) => switch (membership) {
+  GrowthCalculatorPlanMembership.inPlan => '계획에 있음',
+  GrowthCalculatorPlanMembership.notInPlan => '계획에 없음',
+  GrowthCalculatorPlanMembership.unknown => '계획 확인 전',
+};
+
+/// S4 선택 학생 요약(시안: 이름 / "학교 · 클래스 · 계획에 없음" + "기준: 확정값" 칩). 학생 스캔 시각은
+/// FB-2 전까지 숨긴다(FD-172).
+class GrowthCalculatorStudentSummary extends StatelessWidget {
+  const GrowthCalculatorStudentSummary({
+    super.key,
+    required this.student,
+    required this.basis,
+    required this.planMembership,
+  });
+
+  final StudentCatalogEntry? student;
+  final GrowthCalculatorBasis basis;
+  final GrowthCalculatorPlanMembership planMembership;
+
+  @override
+  Widget build(BuildContext context) {
+    final student = this.student;
+    final details = [
+      if (student?.school case final school? when school.isNotEmpty)
+        studentFilterValueLabel('school', school),
+      if (student?.combatClass case final combatClass?
+          when combatClass.isNotEmpty)
+        studentFilterValueLabel('combat_class', combatClass),
+      growthCalculatorPlanMembershipLabel(planMembership),
+    ];
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                student?.displayName ?? '—',
+                key: const ValueKey('calculator-s4-student-name'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _bodyStyle(AppType.bodyPlusSize, weight: AppType.bold),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                details.join(' · '),
+                key: const ValueKey('calculator-s4-student-details'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _bodyStyle(
+                  AppType.bodySmallSize,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        BaChip(
+          key: const ValueKey('calculator-s4-basis'),
+          label: '기준: ${basis.label}',
+          tone: AppTones.pink,
+        ),
+      ],
+    );
+  }
+}
+
+/// S4 "최근 계산" 초상 줄(FD-170). 누르면 그때 목표로 다시 연다.
+class GrowthCalculatorRecentStrip extends StatelessWidget {
+  const GrowthCalculatorRecentStrip({
+    super.key,
+    required this.entries,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final List<GrowthCalculatorRecentEntry> entries;
+  final String? selectedId;
+  final ValueChanged<GrowthCalculationRecord>? onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (entries.isEmpty) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          '아직 계산한 학생이 없습니다',
+          key: const ValueKey('calculator-recent-empty'),
+          maxLines: 1,
+          style: _bodyStyle(AppType.bodySmallSize, color: AppColors.textMuted),
+        ),
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final count = math.min(
+          entries.length,
+          StudentRecentStrip.fittingCount(constraints.maxWidth),
+        );
+        return Row(
+          children: [
+            for (var index = 0; index < count; index++) ...[
+              if (index > 0) const SizedBox(width: studentRecentThumbGap),
+              StudentRecentThumb(
+                key: ValueKey(
+                  'calculator-recent-${entries[index].student.studentId}',
+                ),
+                student: entries[index].student,
+                selected: entries[index].student.studentId == selectedId,
+                semanticPrefix: '최근 계산',
+                onTap: () => onSelected?.call(entries[index].record),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }

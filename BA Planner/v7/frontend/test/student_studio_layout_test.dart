@@ -1873,6 +1873,7 @@ void main() {
                 'equipment_slot_2': null,
                 'equipment_slot_3': null,
                 'jp_only': true,
+                'has_favorite_item': false,
                 'search_tags': <String>[],
                 'kr_search_tags': <String>[],
               }),

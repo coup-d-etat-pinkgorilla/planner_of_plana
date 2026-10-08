@@ -31,6 +31,7 @@ Map<String, dynamic> _wire(String id, {List<Map<String, dynamic>>? forms}) => {
   'equipment_slot_2': 'Bag',
   'equipment_slot_3': 'Watch',
   'jp_only': false,
+  'has_favorite_item': false,
   'search_tags': <String>[],
   'kr_search_tags': <String>[],
   'forms': ?forms,

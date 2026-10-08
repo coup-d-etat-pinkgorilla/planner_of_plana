@@ -1,4 +1,4 @@
-// FE3-f1 성장 계산기 계산 연결 테스트(FD-162 (a)·FD-172).
+// FE3-f1 성장 계산기 계산 연결 테스트(FD-162 (a)·FD-172). FE3-f2b: 단일 학생 계산(FD-162 (b)) 우선·폴백.
 //
 // 디바운스 테스트는 testWidgets의 가짜 시간(FakeAsync 영역)에서 Timer를 민다. fake_async 패키지는 직접
 // 의존성이 아니라서 따로 가져오지 않는다.
@@ -206,6 +206,47 @@ class _RecordingService implements PlanningDocumentService {
 }
 
 int _credits(GrowthCalculatorStatus status) => status.lastResult!.credits;
+
+/// 단일 학생 계산(FB-11a)과 문서 계산을 둘 다 가진 서비스. 단일 학생 계산은 [MockAppService]에 넘긴다.
+class _StudentAndDocumentService
+    implements PlanningStudentCalculationService, PlanningDocumentService {
+  final _inner = MockAppService();
+  final studentCalls = <Map<String, Object?>>[];
+  final results = <StudentCalculationResult>[];
+  var documentCalls = 0;
+
+  @override
+  Future<StudentCalculationResult> calculateStudent({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    Map<String, dynamic>? inventory,
+  }) async {
+    studentCalls.add({
+      'current_student': currentStudent,
+      'targets': targets,
+      'inventory': inventory,
+    });
+    final result = await _inner.calculateStudent(
+      currentStudent: currentStudent,
+      targets: targets,
+      inventory: inventory,
+    );
+    results.add(result);
+    return result;
+  }
+
+  @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async {
+    documentCalls += 1;
+    return _backendProjection();
+  }
+
+  Future<void> dispose() => _inner.dispose();
+}
 
 void main() {
   group('임시 문서', () {
@@ -584,6 +625,83 @@ void main() {
       await tester.pump();
       expect(notified, before);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('단일 학생 계산(FB-11a, FE3-f2b)', () {
+    test('단일 학생 계산이 있으면 그것만 한 번 부르고 크레딧 내역을 채운다', () async {
+      final service = _StudentAndDocumentService();
+      addTearDown(service.dispose);
+      final request = _request(level: 80);
+
+      final result = await calculateGrowthTargets(service, request);
+
+      expect(service.documentCalls, 0);
+      final call = service.studentCalls.single;
+      expect(call['current_student'], request.currentStudent);
+      expect(call['targets'], request.targets);
+      expect(call['inventory'], request.inventory);
+      final calculation = service.results.single;
+      expect(result.credits, calculation.credits);
+      expect(result.creditBreakdown.available, isTrue);
+      expect(result.creditBreakdown.amounts, calculation.creditBreakdown);
+      expect(result.creditBreakdown.total, calculation.credits);
+      // 크레딧 행은 재화 목록에서 뺀다.
+      expect(
+        result.resources.map((row) => row.resourceKey),
+        isNot(contains(growthCalculatorCreditResourceKey)),
+      );
+      expect(
+        result.resources.map((row) => row.resourceKey).toList(),
+        [
+          for (final row in calculation.resources)
+            if (row.resourceKey != growthCalculatorCreditResourceKey)
+              row.resourceKey,
+        ],
+      );
+      expect(result.planMembership, request.planMembership);
+    });
+
+    test('단일 학생 계산이 없으면 임시 문서로 계산하고 내역은 없다', () async {
+      final service = _ControlledService();
+      final future = calculateGrowthTargets(service, _request());
+      expect(service.calls, hasLength(1));
+      service.completers.single.complete(_backendProjection(credits: 700));
+      final result = await future;
+      expect(result.credits, 700);
+      expect(
+        result.creditBreakdown,
+        GrowthCalculatorCreditBreakdown.unavailable,
+      );
+      expect(result.creditBreakdown.available, isFalse);
+    });
+
+    test('계산 기능이 없는 서비스는 쓸 수 없다', () async {
+      expect(growthCalculatorSupports(Object()), isFalse);
+      expect(growthCalculatorSupports(_ControlledService()), isTrue);
+      await expectLater(
+        calculateGrowthTargets(Object(), _request()),
+        throwsUnsupportedError,
+      );
+    });
+
+    testWidgets('재계산기도 디바운스 뒤 단일 학생 계산을 한 번 부른다', (tester) async {
+      final service = _StudentAndDocumentService();
+      addTearDown(service.dispose);
+      final engine = GrowthCalculatorEngine(service: service);
+      addTearDown(engine.dispose);
+      engine.schedule(_request(level: 80));
+      engine.schedule(_request(level: 85));
+      await tester.pump(growthCalculatorDebounce);
+      await tester.pump();
+      expect(service.studentCalls, hasLength(1));
+      expect(
+        (service.studentCalls.single['targets']! as Map)['level'],
+        85,
+      );
+      expect(service.documentCalls, 0);
+      expect(engine.status, isA<GrowthCalculatorReady>());
+      expect(engine.status.lastResult!.creditBreakdown.available, isTrue);
     });
   });
 }

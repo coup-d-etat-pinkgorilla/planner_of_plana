@@ -1008,6 +1008,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
         (oldWidget.calculator == null) != (widget.calculator == null)) {
       _section1Controller.forward(from: 0);
       _listController.forward(from: 0);
+      _section4Controller.forward(from: 0);
     }
     if (oldWidget.active != widget.active) {
       _setTabSectionsActive(widget.active);
@@ -1156,6 +1157,88 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
     return rows;
   }
 
+  /// 계산기 S4(Calc-Student): 검색창 아래 선택 학생 요약("기준: …" 칩) → 구분선 → "최근 계산" 줄
+  /// (FD-170). 학생 S4의 토글 4개·결과 수·적용 필터·최근 본 학생 자리를 대신한다. 행은 학생 S4와 같은
+  /// 80° 레일을 따른다.
+  List<Widget> _calculatorSection4({
+    required Size size,
+    required Rect searchBounds,
+    required GrowthCalculatorModeData calculator,
+    required StudentCatalogEntry? selectedStudent,
+  }) {
+    final section = studentSectionRect(size, 'element-4');
+    final right = searchBounds.right;
+    double leftAt(double bottom) =>
+        section.left +
+        (section.bottom - bottom) / diagonalTan80 +
+        studentSearchRowRailInset;
+    final limit = section.bottom - studentSearchRowBottomMargin;
+    final rows = <Widget>[];
+    var top = searchBounds.bottom + studentSearchToggleTopGap + 4;
+
+    void add(double height, double gapAfter, Widget child) {
+      final rect = Rect.fromLTRB(leftAt(top + height), top, right, top + height);
+      top = rect.bottom + gapAfter;
+      if (rect.bottom > limit || rect.width <= 0) return;
+      rows.add(Positioned.fromRect(rect: rect, child: child));
+    }
+
+    final state = calculator.state;
+    add(
+      calculatorSearchSummaryHeight,
+      studentSearchDividerGap,
+      GrowthCalculatorStudentSummary(
+        key: const ValueKey('calculator-s4-summary'),
+        student: calculator.student ?? selectedStudent,
+        basis: state.basis,
+        planMembership: calculator.planMembership,
+      ),
+    );
+    add(
+      studentSearchDividerHeight,
+      studentSearchDividerGap,
+      const ColoredBox(
+        key: ValueKey('calculator-s4-divider'),
+        color: studentSearchDividerColor,
+      ),
+    );
+    add(
+      studentSearchRecentLabelHeight,
+      studentSearchRecentLabelGap + 2,
+      const Row(
+        key: ValueKey('calculator-recent-label'),
+        children: [
+          Text('최근 계산', maxLines: 1, style: studentSearchLabelStyle),
+          SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              '누르면 그때 목표로 다시 엽니다',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: AppFonts.body,
+                fontFamilyFallback: AppFonts.fallback,
+                fontSize: 11,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    add(
+      studentRecentThumbSize.height,
+      0,
+      GrowthCalculatorRecentStrip(
+        key: const ValueKey('calculator-recent-strip'),
+        entries: calculator.recent,
+        selectedId: state.studentId,
+        onSelected: calculator.onOpenRecent,
+      ),
+    );
+    return rows;
+  }
+
   /// 계산기 S1 버튼 세트(Calc-Student, 학생 S1과 같은 자리):
   /// 보기 토글 → 확정값 기준/직접 입력(FD-168), 정렬 → 빠른 목표(FD-169), 계획 열기 → 이 목표로 계획에 추가
   /// (FE4-g 전 비활성), 학생 스캔 → 학생 스캔으로 현재값 갱신, 필터 → 현재값으로 되돌리기.
@@ -1263,7 +1346,16 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
         widget.studentValuesById,
       );
 
-      return SizedBox.fromSize(
+      // 계산기 모드(FE3-f2b): S3는 목표값으로 그리고(현재값은 태그), S4는 선택 학생 요약·최근 계산이다.
+      Widget content() {
+        final calcState = calculator?.state;
+        int? starTarget(String key) {
+          if (calcState == null) return null;
+          final target = calcState.targets[key]!;
+          return target > calcState.current[key]! ? target : null;
+        }
+
+        return SizedBox.fromSize(
         size: size,
         child: Stack(
           clipBehavior: Clip.none,
@@ -1389,9 +1481,36 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                             ),
                           ),
                           onChanged: widget.onSearchChanged,
+                          // 계산기 모드에서는 검색 결과 목록이 없다. Enter로 첫 결과 학생을 계산기로 연다
+                          // (여러 줄 입력칸이라 Enter가 줄바꿈이 되지 않게 입력 동작을 "검색"으로 둔다).
+                          textInputAction: calculator == null
+                              ? null
+                              : TextInputAction.search,
+                          onSubmitted: calculator == null
+                              ? null
+                              : (text) {
+                                  // 빈 검색이거나 첫 결과가 지금 학생이면 바꾼 목표를 지우지 않도록 그대로 둔다.
+                                  if (text.trim().isEmpty ||
+                                      widget.students.isEmpty) {
+                                    return;
+                                  }
+                                  final first = widget.students.first.studentId;
+                                  if (first == calculator.state.studentId) {
+                                    return;
+                                  }
+                                  widget.onStudentSelected(first);
+                                },
                         ),
                       ),
                     ),
+                    if (calculator != null)
+                      ..._calculatorSection4(
+                        size: size,
+                        searchBounds: searchBounds,
+                        calculator: calculator,
+                        selectedStudent: selectedStudent,
+                      )
+                    else ...[
                     Positioned(
                       left: searchBounds.left,
                       top: searchBounds.bottom + 6,
@@ -1435,6 +1554,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                       searchBounds: searchBounds,
                       shownCount: gridStudents.length,
                     ),
+                    ],
                   ],
                 ),
               ),
@@ -1452,8 +1572,17 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                       child: CustomPaint(
                         key: const ValueKey('student-section-3-foundation'),
                         painter: _StudentSectionFoundationPainter(
-                          selectedValues: widget.selectedValues,
+                          selectedValues: calcState == null
+                              ? widget.selectedValues
+                              : {
+                                  'student_star':
+                                      calcState.current['student_star'],
+                                  'weapon_star':
+                                      calcState.current['weapon_star'],
+                                },
                           sectionIds: {'element-3'},
+                          targetStudentStars: starTarget('student_star'),
+                          targetWeaponStars: starTarget('weapon_star'),
                         ),
                       ),
                     ),
@@ -1521,12 +1650,39 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                         ],
                       ),
                     ),
-                    _StudentStatusIndicators(
-                      canvasSize: size,
-                      student: selectedStudent,
-                      values: widget.selectedValues,
-                      bondTarget: widget.selectedBondTarget,
-                    ),
+                    if (calcState == null)
+                      _StudentStatusIndicators(
+                        canvasSize: size,
+                        student: selectedStudent,
+                        values: widget.selectedValues,
+                        bondTarget: widget.selectedBondTarget,
+                      )
+                    else ...[
+                      _StudentStatusIndicators(
+                        key: const ValueKey('calculator-s3-indicators'),
+                        canvasSize: size,
+                        student: selectedStudent,
+                        values: growthCalculatorIndicatorValues(
+                          calcState,
+                          base: widget.selectedValues,
+                        ),
+                        bondTarget: growthCalculatorIndicatorBondTarget(
+                          calcState,
+                        ),
+                        changedRows: {
+                          for (final row in calcState.rows)
+                            if (calcState.isRowChanged(row)) row,
+                        },
+                      ),
+                      Positioned.fill(
+                        child: GrowthCalculatorIndicatorOverlay(
+                          key: const ValueKey('calculator-s3-overlay'),
+                          canvasSize: size,
+                          state: calcState,
+                          student: calculator!.student ?? selectedStudent,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1607,6 +1763,14 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
           ],
         ),
       );
+      }
+
+      // 계산기 모드에서는 목표가 바뀔 때마다 S3·S4도 다시 그린다. 학생 모드와 계산기 모드의 뿌리 위젯을
+      // 같게 두어 모드를 바꿔도 네 섹션의 상태(검색창 포커스·초상 등)가 다시 만들어지지 않게 한다.
+      return ListenableBuilder(
+        listenable: Listenable.merge([?calculator?.state]),
+        builder: (context, _) => content(),
+      );
     },
   );
 }
@@ -1679,6 +1843,9 @@ const studentSearchRowRailInset = 22.0;
 const studentSearchRowBottomMargin = 4.0;
 const studentSearchDividerColor = Color.fromRGBO(113, 199, 244, 0.28);
 const studentRecentThumbSize = Size(50, 40.5);
+
+/// 계산기 S4 선택 학생 요약 줄 높이(이름 + 학교 · 클래스 · 계획 포함).
+const calculatorSearchSummaryHeight = 40.0;
 const studentRecentThumbGap = 5.0;
 const studentSearchLabelStyle = TextStyle(
   fontFamily: AppFonts.body,
@@ -1947,17 +2114,21 @@ class StudentRecentThumb extends StatelessWidget {
     required this.student,
     required this.selected,
     required this.onTap,
+    this.semanticPrefix = '최근 본 학생',
   });
 
   final StudentCatalogEntry student;
   final bool selected;
   final VoidCallback onTap;
 
+  /// 접근성 이름 앞말(계산기 S4는 "최근 계산").
+  final String semanticPrefix;
+
   @override
   Widget build(BuildContext context) => Semantics(
     button: true,
     selected: selected,
-    label: '최근 본 학생 ${student.displayName}',
+    label: '$semanticPrefix ${student.displayName}',
     child: GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -2532,16 +2703,27 @@ bool studentContainerShowsOutline(StudioContainerElement container) => true;
 
 class _StudentStatusIndicators extends StatelessWidget {
   const _StudentStatusIndicators({
+    super.key,
     required this.canvasSize,
     required this.student,
     required this.values,
     this.bondTarget,
+    this.changedRows = const {},
   });
 
   final Size canvasSize;
   final StudentCatalogEntry? student;
   final Map<String, dynamic>? values;
   final int? bondTarget;
+
+  /// 계산기 S3에서 목표가 현재값과 다른 행(그 칸 글자를 분홍으로, FD-167). 학생 모드는 비어 있다.
+  final Set<GrowthCalculatorRow> changedRows;
+
+  Color _valueColor(GrowthCalculatorRow row) =>
+      changedRows.contains(row) ? growthCalculatorChangedColor : AppColors.text;
+
+  Color? _highlight(GrowthCalculatorRow row) =>
+      changedRows.contains(row) ? growthCalculatorChangedColor : null;
 
   int? _integer(String key) => values?[key] as int?;
   String? _text(String key) => values?[key] as String?;
@@ -2631,6 +2813,7 @@ class _StudentStatusIndicators extends StatelessWidget {
           StudentLevelStatus(
             level: level,
             schoolLogoAsset: studentSchoolLogoAsset(student?.school),
+            valueColor: _valueColor(GrowthCalculatorRow.level),
           ),
         ),
         _feature(
@@ -2658,6 +2841,7 @@ class _StudentStatusIndicators extends StatelessWidget {
             label: 'Weapon',
             value: 'Lv. ${_hasWeapon ? weaponLevel ?? '--' : '--'}',
             valueLeftInset: metadataValueLeft - metadataBounds[2].left,
+            valueColor: _valueColor(GrowthCalculatorRow.weapon),
           ),
         ),
         _container(
@@ -2668,6 +2852,15 @@ class _StudentStatusIndicators extends StatelessWidget {
               _skillValue('skill1', 10),
               _skillValue('skill2', 10),
               _skillValue('skill3', 10),
+            ],
+            valueColors: [
+              for (final row in const [
+                GrowthCalculatorRow.exSkill,
+                GrowthCalculatorRow.normalSkill,
+                GrowthCalculatorRow.enhancedSkill,
+                GrowthCalculatorRow.subSkill,
+              ])
+                _valueColor(row),
             ],
           ),
         ),
@@ -2683,6 +2876,12 @@ class _StudentStatusIndicators extends StatelessWidget {
             ],
             favoriteItem: _favoriteItemValue(),
             favoriteItemLocked: _favoriteItemLocked,
+            slotHighlights: [
+              _highlight(GrowthCalculatorRow.equipment1),
+              _highlight(GrowthCalculatorRow.equipment2),
+              _highlight(GrowthCalculatorRow.equipment3),
+            ],
+            favoriteItemHighlight: _highlight(GrowthCalculatorRow.favoriteItem),
           ),
         ),
         _container(
@@ -2691,6 +2890,7 @@ class _StudentStatusIndicators extends StatelessWidget {
             hp: _integer('stat_hp'),
             atk: _integer('stat_atk'),
             heal: _integer('stat_heal'),
+            valueColor: _valueColor(GrowthCalculatorRow.abilityRelease),
           ),
         ),
         _container('container-9', const StudentPotentialStatus()),
@@ -2752,11 +2952,15 @@ class StudentLevelStatus extends StatelessWidget {
     required this.level,
     required this.schoolLogoAsset,
     this.showSchool = true,
+    this.valueColor = AppColors.text,
   });
 
   final int? level;
   final String? schoolLogoAsset;
   final bool showSchool;
+
+  /// 레벨 글자색(계산기 S3의 바뀐 칸은 분홍, FD-167).
+  final Color valueColor;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -2806,8 +3010,8 @@ class StudentLevelStatus extends StatelessWidget {
                         child: Text(
                           'Lv. ${level ?? '--'}',
                           key: const ValueKey('student-detail-level'),
-                          style: const TextStyle(
-                            color: AppColors.text,
+                          style: TextStyle(
+                            color: valueColor,
                             fontFamily: 'GyeonggiTitle',
                             fontFamilyFallback: AppFonts.fallback,
                             fontSize: 31,
@@ -2922,11 +3126,13 @@ class _StudentMetadataValue extends StatelessWidget {
     required this.label,
     required this.value,
     required this.valueLeftInset,
+    this.valueColor = AppColors.text,
   });
 
   final String label;
   final String value;
   final double valueLeftInset;
+  final Color valueColor;
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -2965,8 +3171,8 @@ class _StudentMetadataValue extends StatelessWidget {
             value,
             maxLines: 1,
             key: ValueKey('student-detail-metadata-value-$label'),
-            style: const TextStyle(
-              color: AppColors.text,
+            style: TextStyle(
+              color: valueColor,
               fontFamily: 'GyeonggiTitle',
               fontFamilyFallback: AppFonts.fallback,
               fontSize: 15,
@@ -2981,10 +3187,13 @@ class _StudentMetadataValue extends StatelessWidget {
 }
 
 class StudentSkillStatus extends StatelessWidget {
-  const StudentSkillStatus({super.key, required this.values});
+  const StudentSkillStatus({super.key, required this.values, this.valueColors});
 
   static const _labels = ['EX', 'Normal', 'Passive', 'Sub-skill'];
   final List<String> values;
+
+  /// 칸마다 값 글자색(계산기 S3의 바뀐 칸은 분홍). 없으면 흰색.
+  final List<Color>? valueColors;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -3017,6 +3226,7 @@ class StudentSkillStatus extends StatelessWidget {
                       label: _labels[index],
                       value: values[index],
                       index: index,
+                      valueColor: valueColors?[index] ?? AppColors.text,
                     ),
                   ),
                 ],
@@ -3093,11 +3303,13 @@ class _StudentSkillColumn extends StatelessWidget {
     required this.label,
     required this.value,
     required this.index,
+    required this.valueColor,
   });
 
   final String label;
   final String value;
   final int index;
+  final Color valueColor;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -3129,8 +3341,8 @@ class _StudentSkillColumn extends StatelessWidget {
             Text(
               value,
               key: ValueKey('student-detail-skill-$index'),
-              style: const TextStyle(
-                color: AppColors.text,
+              style: TextStyle(
+                color: valueColor,
                 fontFamily: 'GyeonggiTitle',
                 fontFamilyFallback: AppFonts.fallback,
                 fontSize: 31.5,
@@ -3194,11 +3406,13 @@ class StudentAbilityStatus extends StatelessWidget {
     required this.hp,
     required this.atk,
     required this.heal,
+    this.valueColor = AppColors.text,
   });
 
   final int? hp;
   final int? atk;
   final int? heal;
+  final Color valueColor;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -3227,8 +3441,8 @@ class StudentAbilityStatus extends StatelessWidget {
                     'HEAL ${heal ?? '-'}',
                     key: const ValueKey('student-detail-ability-values'),
                     maxLines: 1,
-                    style: const TextStyle(
-                      color: AppColors.text,
+                    style: TextStyle(
+                      color: valueColor,
                       fontFamily: 'GyeonggiTitle',
                       fontFamilyFallback: AppFonts.fallback,
                       fontSize: 11,
@@ -3255,6 +3469,8 @@ class StudentEquipmentStatus extends StatelessWidget {
     required this.favoriteItem,
     required this.favoriteItemLocked,
     this.equipmentTypes,
+    this.slotHighlights,
+    this.favoriteItemHighlight,
   });
 
   final StudentCatalogEntry? student;
@@ -3263,6 +3479,10 @@ class StudentEquipmentStatus extends StatelessWidget {
   final String favoriteItem;
   final bool favoriteItemLocked;
   final List<String?>? equipmentTypes;
+
+  /// 칸마다 강조 글자색(계산기 S3의 바뀐 칸은 분홍, 티어·레벨 모두). 없으면 기본 색.
+  final List<Color?>? slotHighlights;
+  final Color? favoriteItemHighlight;
 
   String? _assetPath(int index) {
     final equipmentType =
@@ -3313,6 +3533,7 @@ class StudentEquipmentStatus extends StatelessWidget {
                         level: levels[index],
                         assetPath: _assetPath(index),
                         edgeShift: railInset * 0.22,
+                        highlight: slotHighlights?[index],
                       ),
                     ),
                   ],
@@ -3323,6 +3544,7 @@ class StudentEquipmentStatus extends StatelessWidget {
                     child: _StudentFavoriteItemSlot(
                       value: favoriteItem,
                       locked: favoriteItemLocked,
+                      highlight: favoriteItemHighlight,
                     ),
                   ),
                 ],
@@ -3342,12 +3564,14 @@ class _StudentEquipmentSlot extends StatelessWidget {
     required this.level,
     required this.assetPath,
     required this.edgeShift,
+    this.highlight,
   });
 
   final String tier;
   final int? level;
   final String? assetPath;
   final double edgeShift;
+  final Color? highlight;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -3360,8 +3584,8 @@ class _StudentEquipmentSlot extends StatelessWidget {
             fit: BoxFit.scaleDown,
             child: Text(
               tier,
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: highlight ?? AppColors.textMuted,
                 fontFamily: 'GyeonggiTitle',
                 fontFamilyFallback: AppFonts.fallback,
                 fontSize: 13.5,
@@ -3403,8 +3627,8 @@ class _StudentEquipmentSlot extends StatelessWidget {
             fit: BoxFit.scaleDown,
             child: Text(
               level == null ? '-' : 'Lv. $level',
-              style: const TextStyle(
-                color: AppColors.text,
+              style: TextStyle(
+                color: highlight ?? AppColors.text,
                 fontFamily: 'GyeonggiTitle',
                 fontFamilyFallback: AppFonts.fallback,
                 fontSize: 13.5,
@@ -3419,10 +3643,15 @@ class _StudentEquipmentSlot extends StatelessWidget {
 }
 
 class _StudentFavoriteItemSlot extends StatelessWidget {
-  const _StudentFavoriteItemSlot({required this.value, required this.locked});
+  const _StudentFavoriteItemSlot({
+    required this.value,
+    required this.locked,
+    this.highlight,
+  });
 
   final String value;
   final bool locked;
+  final Color? highlight;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -3455,8 +3684,8 @@ class _StudentFavoriteItemSlot extends StatelessWidget {
           child: Text(
             value,
             key: const ValueKey('student-detail-favorite-value'),
-            style: const TextStyle(
-              color: AppColors.text,
+            style: TextStyle(
+              color: highlight ?? AppColors.text,
               fontFamily: 'GyeonggiTitle',
               fontFamilyFallback: AppFonts.fallback,
               fontSize: 21,
@@ -4145,10 +4374,16 @@ class _StudentSectionFoundationPainter extends CustomPainter {
     required this.selectedValues,
     required this.sectionIds,
     this.bare = false,
+    this.targetStudentStars,
+    this.targetWeaponStars,
   });
 
   final Map<String, dynamic>? selectedValues;
   final Set<String> sectionIds;
+
+  /// 계산기 S3의 ★ 목표(현재 ★는 채우고 목표 ★는 테두리, FE3-f2b). 학생 모드는 null.
+  final int? targetStudentStars;
+  final int? targetWeaponStars;
 
   /// 섹션 바탕만 그리고 안쪽 container·feature는 그리지 않는다(계산기 S2, FE3-f2a).
   final bool bare;
@@ -4257,6 +4492,8 @@ class _StudentSectionFoundationPainter extends CustomPainter {
       bounds,
       studentStars: studentStars,
       weaponStars: weaponStars,
+      targetStudentStars: targetStudentStars,
+      targetWeaponStars: targetWeaponStars,
     );
   }
 
@@ -4264,7 +4501,9 @@ class _StudentSectionFoundationPainter extends CustomPainter {
   bool shouldRepaint(_StudentSectionFoundationPainter oldDelegate) =>
       oldDelegate.selectedValues != selectedValues ||
       oldDelegate.sectionIds != sectionIds ||
-      oldDelegate.bare != bare;
+      oldDelegate.bare != bare ||
+      oldDelegate.targetStudentStars != targetStudentStars ||
+      oldDelegate.targetWeaponStars != targetWeaponStars;
 }
 
 ({bool showTop, bool showBottom}) studentViewportFogVisibility({

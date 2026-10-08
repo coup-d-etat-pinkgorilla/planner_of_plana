@@ -1,13 +1,18 @@
-// FE3-f2a 성장 계산기 화면 연결 테스트(FD-160·FD-161·FD-162·FD-166·FD-167·FD-168·FD-169·FD-172·FD-173).
+// FE3-f2a·f2b 성장 계산기 화면 연결 테스트(FD-160·FD-161·FD-162·FD-166·FD-167·FD-168·FD-169·FD-170·
+// FD-172·FD-173). f2b부터 계산은 단일 학생 계산(`calculateStudent`, FB-11a)을 부른다.
 //
 // 앱 셸(BAPlannerApp)로 학생 탭을 열고 S1 "성장 계산기 열기"로 들어간다. 계산 디바운스(Timer)와
 // 플라이아웃(OverlayPortal)이 있어 pumpAndSettle 대신 명시적인 pump를 쓰는 곳이 있다.
 import 'package:ba_planner_v7/app/app.dart';
+import 'package:ba_planner_v7/app/theme.dart';
+import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/ui/kit/buttons.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_adapter.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_rules.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_state.dart';
+import 'package:ba_planner_v7/ui/models/planning_growth_rules.dart';
+import 'package:ba_planner_v7/ui/pages/settings_page.dart';
 import 'package:ba_planner_v7/ui/widgets/growth_calculator_section.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
@@ -27,12 +32,72 @@ const _resourceIds = [
   'Item_Icon_Material_Wolfsegg_0',
 ];
 
-/// 문서 계산 호출 수를 세고, 정한 결과(또는 오류)를 돌려주는 mock.
+/// 단일 학생 계산(FB-11a) 호출 수를 세고, 정한 결과(또는 오류)를 돌려주는 mock. 크레딧 내역은 합이
+/// 1,234,567인 9범주다.
 class _CalculatorService extends MockAppService {
   _CalculatorService({this.fail = false, this.resourceCount = 0});
 
   final bool fail;
   final int resourceCount;
+  int calls = 0;
+  final List<Map<String, int>> requestedTargets = [];
+
+  static const credits = 1234567;
+  static const breakdown = <String, int>{
+    'level': 600000,
+    'student_star': 100000,
+    'weapon_star': 50000,
+    'favorite_item': 4567,
+    'equipment': 200000,
+    'ex_skill': 80000,
+    'weapon_level': 100000,
+    'skill': 70000,
+    'potential': 30000,
+  };
+
+  @override
+  Future<StudentCalculationResult> calculateStudent({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    Map<String, dynamic>? inventory,
+  }) async {
+    calls += 1;
+    requestedTargets.add(Map.of(targets));
+    if (fail) throw StateError('calculation_failed');
+    return StudentCalculationResult(
+      credits: credits,
+      creditBreakdown: breakdown,
+      resources: [
+        const StudentCalculationResource(
+          resourceKey: 'credits',
+          itemId: null,
+          displayName: '크레딧',
+          category: 'credits',
+          requiredAmount: credits,
+          owned: null,
+          shortage: null,
+          affectedStageIds: ['growth-calculator-stage'],
+        ),
+        for (var index = 0; index < resourceCount; index++)
+          StudentCalculationResource(
+            resourceKey: _resourceIds[index],
+            itemId: _resourceIds[index],
+            displayName: '재화 $index',
+            category: 'oopart',
+            requiredAmount: 10 + index,
+            // 0번은 보유를 모른다(스캔 없음), 나머지는 index만큼 있다.
+            owned: index == 0 ? null : index,
+            shortage: index == 0 ? null : 10,
+            affectedStageIds: const ['growth-calculator-stage'],
+          ),
+      ],
+      warnings: const [],
+    );
+  }
+}
+
+/// 단일 학생 계산이 없는 서비스(임시 문서 경로, FD-162 (a)). 크레딧 내역이 없다.
+class _DocumentOnlyService implements PlanningDocumentService {
   int calls = 0;
 
   @override
@@ -42,34 +107,32 @@ class _CalculatorService extends MockAppService {
     required Map<String, dynamic> document,
   }) async {
     calls += 1;
-    if (fail) throw StateError('calculation_failed');
-    final projection = await super.calculatePlanningDocument(
-      currentStudents: currentStudents,
-      inventory: inventory,
-      document: document,
-    );
     return {
-      ...projection,
       'overall': {
-        'cost': {'credits': 1234567},
-        'resources': [
-          for (var index = 0; index < resourceCount; index++)
-            {
-              'resource_key': _resourceIds[index],
-              'item_id': _resourceIds[index],
-              'display_name': '재화 $index',
-              'category': 'oopart',
-              'required': 10 + index,
-              // 0번은 보유를 모른다(스캔 없음), 나머지는 index만큼 있다.
-              'owned': index == 0 ? null : index,
-              'shortage': index == 0 ? null : 10,
-              'affected_stage_ids': const ['growth-calculator-stage'],
-            },
-        ],
+        'cost': {'credits': 500},
+        'resources': const <Object?>[],
       },
+      'warnings': const <Object?>[],
     };
   }
 }
+
+/// 계산을 한 번 끝낸다(디바운스 + 응답).
+Future<void> _settleCalculation(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(growthCalculatorDebounce);
+  await tester.pump();
+}
+
+Color? _s3TextColor(WidgetTester tester, String key) => tester
+    .widget<Text>(
+      find.descendant(
+        of: find.byKey(const ValueKey('calculator-s3-indicators')),
+        matching: find.byKey(ValueKey(key)),
+      ),
+    )
+    .style
+    ?.color;
 
 Future<void> _openStudents(WidgetTester tester, MockAppService service) async {
   tester.view.physicalSize = const Size(2560, 1392);
@@ -139,7 +202,7 @@ void main() {
   testWidgets('스테퍼를 연달아 눌러도 디바운스 뒤 한 번만 계산한다', (tester) async {
     final service = _CalculatorService();
     await _openStudents(tester, service);
-    // 계획 탭도 시작할 때 문서를 한 번 계산한다. 계산기 호출만 센다.
+    // 계산기 호출(단일 학생 계산)만 센다.
     final base = service.calls;
     await _openCalculator(tester);
     expect(service.calls, base + 1);
@@ -161,7 +224,7 @@ void main() {
   testWidgets('빠른 목표 · 칸 개수 · 바뀐 목표 칩 · 기준 토글', (tester) async {
     await _openStudents(tester, _CalculatorService());
     await _openCalculator(tester);
-    // 애장품 유무를 catalog가 보내지 않으면 13행을 그린다.
+    // 아루는 catalog의 KR 애장품 제공 여부가 true라 13행을 그린다(FB-13).
     expect(
       find.byKey(const ValueKey('calculator-row-favoriteItem')),
       findsOneWidget,
@@ -219,6 +282,50 @@ void main() {
       findsNothing,
     );
     expect(_text(tester, 'calculator-row-level-current'), '1');
+  });
+
+  testWidgets('KR 애장품이 없는 학생(아야네)은 애장품 행 없이 12행이다(FB-13)', (tester) async {
+    await _openStudents(tester, _CalculatorService());
+    await _openCalculator(tester);
+    expect(_state(tester).studentId, 'aru');
+    expect(_state(tester).hasFavoriteItem, isTrue);
+    expect(
+      find.byKey(const ValueKey('calculator-cell-favoriteItem')),
+      findsOneWidget,
+    );
+
+    await tester.enterText(find.byKey(const ValueKey('student-search')), 'ayane');
+    // 검색 결과가 학생 목록에 반영된 뒤(한 프레임) Enter를 누른다.
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await _settleCalculation(tester);
+    expect(_state(tester).studentId, 'ayane');
+    expect(_state(tester).hasFavoriteItem, isFalse);
+    expect(_state(tester).rows, hasLength(12));
+    expect(
+      _state(tester).rows,
+      isNot(contains(GrowthCalculatorRow.favoriteItem)),
+    );
+    expect(
+      find.byKey(const ValueKey('calculator-row-favoriteItem')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('calculator-cell-favoriteItem')),
+      findsNothing,
+    );
+    expect(find.text('바뀌는 칸 0 · 그대로 12'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey('calculator-quick-target-dropdown')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('calculator-quick-target-fullGrowth')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('바뀌는 칸 12 · 그대로 0'), findsOneWidget);
+    await _settleCalculation(tester);
   });
 
   testWidgets('행 MAX · 행 되돌리기 · 장비 부위 이름', (tester) async {
@@ -353,6 +460,247 @@ void main() {
       ),
     );
     handle.dispose();
+  });
+
+  testWidgets('S3는 목표값으로 그리고 칸을 누르면 현재값 ↔ 목표를 토글한다(FD-167)', (tester) async {
+    await _openStudents(tester, _CalculatorService());
+    await _openCalculator(tester);
+    // 처음에는 바뀐 칸이 없다: 흰 글자, "현재 …" 태그 없음.
+    expect(_s3TextColor(tester, 'student-detail-level'), AppColors.text);
+    expect(
+      find.byKey(const ValueKey('calculator-current-tag-level')),
+      findsNothing,
+    );
+
+    _state(tester).setRowTarget(GrowthCalculatorRow.level, 50);
+    _state(tester).setRowTarget(GrowthCalculatorRow.exSkill, 5);
+    await _settleCalculation(tester);
+    Text s3Text(String key) => tester.widget<Text>(
+      find.descendant(
+        of: find.byKey(const ValueKey('calculator-s3-indicators')),
+        matching: find.byKey(ValueKey(key)),
+      ),
+    );
+    // 목표값으로 그린다. 스킬 최대는 EX까지 "M"이다(학생 상세 인디케이터와 같은 규칙).
+    expect(s3Text('student-detail-level').data, 'Lv. 50');
+    expect(s3Text('student-detail-skill-0').data, 'M');
+    expect(_text(tester, 'calculator-row-exSkill-value'), 'M');
+    expect(
+      _s3TextColor(tester, 'student-detail-level'),
+      growthCalculatorChangedColor,
+    );
+    expect(
+      tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byKey(const ValueKey('calculator-current-tag-level')),
+              matching: find.byType(Text),
+            ),
+          )
+          .data,
+      '현재 1',
+    );
+    final changing = _state(tester).cellCounts.changing;
+
+    // 레벨 칸을 누르면 현재값으로, 한 번 더 누르면 직전 목표로 돌아온다.
+    await tester.tap(find.byKey(const ValueKey('calculator-cell-level')));
+    await tester.pump();
+    expect(_state(tester).targets['level'], 1);
+    expect(_state(tester).cellCounts.changing, changing - 1);
+    expect(_s3TextColor(tester, 'student-detail-level'), AppColors.text);
+    expect(
+      find.byKey(const ValueKey('calculator-current-tag-level')),
+      findsNothing,
+    );
+    await tester.tap(find.byKey(const ValueKey('calculator-cell-level')));
+    await tester.pump();
+    expect(_state(tester).targets['level'], 50);
+    expect(
+      _s3TextColor(tester, 'student-detail-level'),
+      growthCalculatorChangedColor,
+    );
+    await _settleCalculation(tester);
+  });
+
+  testWidgets('S3 칸 의미 구조: 바뀜 여부와 목표·현재값을 알린다', (tester) async {
+    final handle = tester.ensureSemantics();
+    await _openStudents(tester, _CalculatorService());
+    await _openCalculator(tester);
+    _state(tester).setRowTarget(GrowthCalculatorRow.level, 50);
+    await _settleCalculation(tester);
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('calculator-cell-level'))),
+      isSemantics(
+        label: '레벨 칸',
+        value: '바뀜, 목표 Lv.50, 현재 1',
+        isButton: true,
+        hasTapAction: true,
+      ),
+    );
+    handle.dispose();
+  });
+
+  testWidgets('S4 선택 학생 요약 · 기준 칩 · 최근 계산을 누르면 그 목표로 다시 연다(FD-170)', (
+    tester,
+  ) async {
+    final service = _CalculatorService();
+    await _openStudents(tester, service);
+    await _openCalculator(tester);
+    expect(_text(tester, 'calculator-s4-student-name'), 'Aru');
+    expect(
+      tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byKey(const ValueKey('calculator-s4-basis')),
+              matching: find.byType(Text),
+            ),
+          )
+          .data,
+      '기준: 확정값',
+    );
+    // 계산이 끝나면 최근 계산에 들어간다.
+    expect(find.byKey(const ValueKey('calculator-recent-aru')), findsOneWidget);
+    _state(tester).setRowTarget(GrowthCalculatorRow.level, 50);
+    await _settleCalculation(tester);
+
+    // S4 검색 + Enter: 첫 결과 학생으로 계산기를 다시 연다.
+    await tester.enterText(find.byKey(const ValueKey('student-search')), 'ayane');
+    // 검색 결과가 학생 목록에 반영된 뒤(한 프레임) Enter를 누른다.
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await _settleCalculation(tester);
+    expect(_state(tester).studentId, 'ayane');
+    expect(find.byKey(const ValueKey('calculator-recent-ayane')), findsOneWidget);
+    expect(find.byKey(const ValueKey('calculator-recent-aru')), findsOneWidget);
+
+    // 아루 최근 계산을 누르면 레벨 목표 50으로 다시 연다.
+    await tester.tap(find.byKey(const ValueKey('calculator-recent-aru')));
+    await _settleCalculation(tester);
+    expect(_state(tester).studentId, 'aru');
+    expect(_state(tester).targets['level'], 50);
+    expect(_text(tester, 'calculator-row-level-value'), 'Lv.50');
+    expect(service.requestedTargets.last['level'], 50);
+  });
+
+  testWidgets('계정(프로필)을 바꾸면 최근 계산을 비운다', (tester) async {
+    await _openStudents(tester, _CalculatorService());
+    await _openCalculator(tester);
+    await tester.enterText(find.byKey(const ValueKey('student-search')), 'ayane');
+    // 검색 결과가 학생 목록에 반영된 뒤(한 프레임) Enter를 누른다.
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await _settleCalculation(tester);
+    expect(find.byKey(const ValueKey('calculator-recent-ayane')), findsOneWidget);
+    expect(find.byKey(const ValueKey('calculator-recent-aru')), findsOneWidget);
+
+    tester
+        .widget<SettingsPage>(find.byType(SettingsPage, skipOffstage: false))
+        .onProfileChanged();
+    await tester.pumpAndSettle();
+    // 새 학생 탭은 계산기가 닫혀 있고, 다시 열면 그 학생 한 건만 있다.
+    expect(_section, findsNothing);
+    await _openCalculator(tester);
+    expect(find.byKey(const ValueKey('calculator-recent-aru')), findsOneWidget);
+    expect(find.byKey(const ValueKey('calculator-recent-ayane')), findsNothing);
+  });
+
+  testWidgets('단일 학생 계산의 크레딧 내역 막대: 9범주를 다섯 줄로 묶어 그린다', (tester) async {
+    final service = _CalculatorService();
+    await _openStudents(tester, service);
+    await _openCalculator(tester);
+    expect(service.calls, 1);
+    expect(
+      find.byKey(const ValueKey('calculator-credit-breakdown')),
+      findsOneWidget,
+    );
+    expect(_text(tester, 'calculator-credit-breakdown-level-value'), '600K');
+    expect(_text(tester, 'calculator-credit-breakdown-skills-value'), '150K');
+    expect(_text(tester, 'calculator-credit-breakdown-equipment-value'), '200K');
+    expect(
+      _text(tester, 'calculator-credit-breakdown-starWeapon-value'),
+      '250K',
+    );
+    expect(
+      _text(tester, 'calculator-credit-breakdown-favoriteAbility-value'),
+      '34.6K',
+    );
+  });
+
+  testWidgets('임시 문서 경로(단일 학생 계산이 없는 서비스)는 내역 막대를 숨긴다', (tester) async {
+    tester.view.physicalSize = const Size(2560, 1392);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final service = _DocumentOnlyService();
+    final state = GrowthCalculatorState(
+      studentId: 'aru',
+      confirmedCurrent: Map.of(planElementTargetMinimums),
+      hasFavoriteItem: true,
+    );
+    addTearDown(state.dispose);
+    final engine = GrowthCalculatorEngine(service: service);
+    addTearDown(engine.dispose);
+    const canvas = Size(2528, 1208);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: BAPlannerTheme.dark(),
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox.fromSize(
+              size: canvas,
+              child: GrowthCalculatorSection(
+                canvasSize: canvas,
+                state: state,
+                engine: engine,
+                student: null,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    engine.schedule(GrowthCalculatorRequest.fromState(state));
+    await _settleCalculation(tester);
+    expect(service.calls, 1);
+    expect(_text(tester, 'calculator-credits'), '500');
+    expect(
+      find.byKey(const ValueKey('calculator-credit-breakdown')),
+      findsNothing,
+    );
+  });
+
+  test('크레딧 내역 묶음은 범주를 빠뜨리지 않는다', () {
+    final breakdown = GrowthCalculatorCreditBreakdown.of(
+      _CalculatorService.breakdown,
+    );
+    final lines = growthCalculatorCreditLines(breakdown);
+    expect(
+      lines.fold<int>(0, (sum, line) => sum + line.amount),
+      _CalculatorService.credits,
+    );
+    expect(breakdown.total, _CalculatorService.credits);
+    // 9범주가 모두 어느 한 묶음에 들어간다.
+    expect(
+      {
+        for (final group in GrowthCalculatorCreditGroup.values)
+          ...group.categories,
+      },
+      studentCreditCategories,
+    );
+    // 0인 묶음은 빼고, 모르는 범주는 "기타"로 더한다.
+    final other = growthCalculatorCreditLines(
+      GrowthCalculatorCreditBreakdown.of(const {'level': 10, 'new_cost': 5}),
+    );
+    expect([for (final line in other) line.key], ['level', 'other']);
+    expect(other.last.amount, 5);
+    expect(
+      growthCalculatorCreditLines(GrowthCalculatorCreditBreakdown.unavailable),
+      isEmpty,
+    );
+    expect(growthCalculatorCompactNumber(3100000), '3.1M');
+    expect(growthCalculatorCompactNumber(10000000), '10M');
+    expect(growthCalculatorCompactNumber(34567), '34.6K');
+    expect(growthCalculatorCompactNumber(999), '999');
   });
 
   test('재화 정렬: 보유를 모르는 행은 보유·부족 정렬에서 뒤로 간다', () {

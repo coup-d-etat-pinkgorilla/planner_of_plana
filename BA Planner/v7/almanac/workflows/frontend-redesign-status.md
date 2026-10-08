@@ -25,9 +25,10 @@ sources:
 - 커밋 `50dbed6c`(FB-12: planning_calc.py·planning_document.py + 새 테스트 9건 + status), 문서 커밋 `f2cf4fb8`. 기존 기대값 변화 0.
 - 이번부터 Lane A를 프론트·백엔드 워커 두 명으로 나눈다(워크플로 실행 순서 "Lane A 앞뒤 병렬"). 백엔드 워커는 `frontend-redesign-status-backend.md`에 쓴다.
 
-**FE3-f2a: gate ① `20261008_030824` 테스트 통과·golden 6건 예상 차이. 다만 `test/kit/item_icon_tile_test.dart`를 덮어써 기존 테스트 6건이 빠졌다 → 되돌리고 1건 추가, gate 재실행 대기.** 성장 계산기 화면 연결 1/2(시각 변경), 시작 커밋 `f2cf4fb8`(FB-12 `50dbed6c` 뒤 문서 커밋).
-- FE3-f2를 세션 운영 규칙 2에 따라 둘로 나눈다(아래 "FE3-f2 분할"). 이번 세션은 f2a만 했다. 결과는 아래 "FE3-f2a 종료 기록"에 있다.
-- 다음: FE3-f2b(S3 목표 표시·FD-167 토글, S4 계산기 내용).
+**FE3-f2a 완료.** 커밋 `3e7272e2`(gate `20261008_080127` GREEN). 같은 때 FB-11a(백엔드 단일 학생 계산) `facdd1d3`(Python 847), 문서 `2bcdcbd9`.
+
+**FE3-f2b 코드 작성 완료, gate 미실행(사용자 실행 대기).** 성장 계산기 화면 연결 2/2(시각 변경). 시작 커밋 `2bcdcbd9` 이후 작업 트리. 결과는 아래 "FE3-f2b 종료 기록"에 있다.
+- FB-13(catalog `has_favorite_item`, 백엔드 워커)은 작업 트리에 코드가 있지만 아직 커밋 전이다. 오케스트레이터 승인(로그 10:14) 뒤 같은 slice에 FB-13 프론트 연결(fixture 3곳, 애장품 폴백 제거, 아야네 12행 테스트)을 더했다(아래 "FE3-f2b 추가 작업 기록"). gate `20261008_102700` RED(크레딧 타일 가로 넘침 1건 + golden 2장) → 넘침 수정 → gate `20261008_121125` RED(golden 2장만, 예측과 같음). golden은 FB-13 화면과 함께 지금 갱신하기로 결정(사용자, 12:19). 사용자 `-UpdateGoldens` 실행 대기.
 
 ### 커밋 기록
 
@@ -50,6 +51,8 @@ sources:
 | FE3-e | `a3692424`(+ 문서 `8a6482e7`) | 다중 폼 초상 교대(FD-064: 공용 시계 하나, 폼 수 × 3초 계단식, TickerMode 꺼짐이면 멈춤) + FB-5 catalog `forms`(계약·Python·Dart·mock·E2E), warmup 폼 초상, 제목 글꼴에 없는 글리프(– → −) 수정, golden 4장 갱신 + 새 장면 `students-grid-second-form`(시각 변경) | ① `20261007_191233` RED(golden 5, 예상 일치) → ② `20261007_195559` GREEN(golden 20, 백엔드 812) |
 | FE3-f1 | `7ec07589`(+ 문서 `bcde9559`) | 성장 계산기 상태 모델(13행·계산기 정규화·현재값 출처·빠른 목표·칸 토글·최근 계산) + 계산 어댑터(임시 1페이즈 1단계 문서 `planning.document.calculate`, 디바운스), 새 파일 6, 기존 파일 수정 0(동작 보존) | `20261007_213219` GREEN(648 + 프로세스 28 + golden 20) |
 | FB-12 | `50dbed6c`(+ 문서 `f2cf4fb8`) | 계획 계산 버그 2건: 성급 비용이 wire `student_star`를 읽음(★0부터 계산하던 것 정정), 장비 티어 이월을 정규 형식 `T<n>`으로 쓰고 티어 파서를 견고하게(백엔드만, 새 테스트 9건) | Python 836 통과, `20261007_232002` GREEN |
+| FE3-f2a | `3e7272e2` | 성장 계산기 화면 연결 1/2: 진입·복귀(머리말 덮어쓰기·"← 학생" 칩·Esc·주 탭), 계산기 S1, S2 두 열(13행·크레딧 타일·재화 목록), 계산 연결, `ItemIconTile` 자산 없음 대체 표시, golden 학생 5장 갱신 + 새 장면 `students-calculator`(시각 변경) | `20261008_022827` RED(지어낸 아이콘 id) → `20261008_030824` RED(테스트 파일 덮어쓰기) → `20261008_080127` GREEN |
+| FB-11a | `facdd1d3` | 백엔드 단일 학생 계산 `planning.student.calculate`(totals + 9범주 크레딧 + 재화 행), Dart DTO·클라이언트·mock(백엔드 워커, `frontend-redesign-status-backend.md`) | Python 847 통과, 같은 gate |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -3038,4 +3041,268 @@ modified로 적은 나머지 7개 파일의 pre 사본도 index blob과 해시�
 ### FE3-f2a commit record (2026-10-08 08:30, written by fe_commit.ps1)
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261008_080127\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE3-f2b 착수 기록 (2026-10-08)
+
+- 작업 지시(09:01)의 §0을 읽었다: 워크플로 FE3-f 행·FB-1 "분할"·FB-13 행·재개 지점(아침), 오케스트레이터 로그 08:45·08:57, 이 문서의 FE3-f2 분할표 f2b 행과 f2a 종료·수정 기록, `frontend-redesign-status-backend.md` "프런트 워커 연결 메모"(FB-11a), FD-167·FD-170, J-calc §1 S3·S4, Calc-Student 시안.
+- 0단계 기록: FE3-f2a `3e7272e2`, FB-11a `facdd1d3`(위 커밋 기록 표).
+- 시작 시점 PC: HEAD 계열 `2bcdcbd9` 뒤 작업 트리. FB-13(백엔드 워커) 코드가 작업 트리에 있고 커밋 전이다.
+- 고칠 파일 8개가 모두 추적 중인지 PC `.git/index`로 확인했다. pre 사본이 index blob과 같다(미커밋 변경 없음). 새 파일은 만들지 않았다.
+
+## FE3-f2b 종료 기록 (2026-10-08, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없다. 그래서 `flutter analyze`·Dart 테스트·golden을 돌리지 못했고, 통과를 주장하지 않는다.
+- 별도 검토 에이전트 2개가 lib 4파일과 테스트 4파일을 정적으로 읽었다(Flutter 3.44 소스로 API 대조). 고친 지적:
+  1. 계산기 모드를 켜고 끌 때 레이아웃 뿌리 위젯이 `SizedBox` ↔ `ListenableBuilder`로 바뀌어 네 섹션 상태(검색창 포커스·초상)가 새로 만들어졌다. → 두 모드 모두 `ListenableBuilder(Listenable.merge([?calculator?.state]))`로 둔다(학생 모드 그림은 같다).
+  2. S3 인연 칸(container-10)의 경계 사각형이 애장품·능력 개방 칸을 덮어 누르기를 가렸다. → 인연 칸을 맨 아래에 두고, 컨테이너·feature 하나에 해당하는 칸(인연·레벨·전용무기 Lv·능력 개방)은 누르기 자리를 그 경로로 자른다.
+  3. 검색 Enter 테스트가 검색 결과 반영 전에 Enter를 눌렀다. → `enterText` 뒤 `pump` 한 번. 화면도 빈 검색·지금 학생과 같은 첫 결과에서는 아무것도 하지 않는다(바꾼 목표를 지우지 않게).
+  4. 999,950 이상이 "1000K"로 보였다 → "1M". 내역 줄 이름 칸 92 → 108(“애장품 · 능력 개방” 잘림).
+- 검토 에이전트 하나가 "FB-11a 메서드가 백엔드·클라이언트에 없다"고 했다. 워커가 받아 둔 사본이 오래된 것이었다. PC 파일을 다시 받아 `planning_protocol_client.dart`의 `planning.student.calculate` 검증과 `backend/core/protocol_v1.py`의 `METHOD_STUDENT_CALCULATE`를 확인했다.
+
+### 바뀐 파일(모두 추적 중, 새 파일 없음)
+
+| 파일 | 줄(+/−) | 내용 |
+|---|---|---|
+| `frontend/lib/ui/models/growth_calculator_adapter.dart` | +107 −25 | 단일 학생 계산 우선 + 임시 문서 폴백(`calculateGrowthTargets(Object, …)`, `growthCalculatorSupports`), `GrowthCalculatorCreditBreakdown`을 enum → "available + 범주별 값" 클래스로, `GrowthCalculatorResult.creditBreakdown`·`fromStudentCalculation`, 엔진이 `Object` 서비스를 받음 |
+| `frontend/lib/ui/widgets/growth_calculator_section.dart` | +679 −6 | EX 최대 "M", 크레딧 내역 막대, S3 표시값·칸·"현재 …" 태그(`GrowthCalculatorIndicatorOverlay`), S4 선택 학생 요약·최근 계산 줄, `GrowthCalculatorModeData` 필드 3개 |
+| `frontend/lib/ui/widgets/student_section_layout.dart` | +265 −26 | S3 계산기 분기(목표값·분홍·★ 목표 테두리·인연 목표 빗금·칸 겹침), S4 계산기 분기(`_calculatorSection4`, 검색 Enter), 인디케이터 위젯 5종에 강조색 인자(기본값 = 기존 색), 바탕 painter ★ 목표, `StudentRecentThumb.semanticPrefix`, 전환 때 S4 다시 들이기 |
+| `frontend/lib/ui/pages/student_page.dart` | +33 −9 | 엔진 생성(`growthCalculatorSupports`), 최근 계산 듣기, `_openCalculator({record})`, `_openRecentCalculation`, 모드 데이터에 계획 포함·최근 계산 |
+| `frontend/test/growth_calculator_view_test.dart` | +329 −25 | 대역이 `calculateStudent`를 덮어씀, 새 위젯 테스트 6 + 순수 1 |
+| `frontend/test/growth_calculator_adapter_test.dart` | +119 −1 | 단일 학생 계산 묶음 4건(1회 호출·폴백·미지원·디바운스) |
+| `frontend/test/goldens/golden_harness.dart` | +32 −24 | `GoldenCalculatorMockAppService`가 `calculateStudent`(9범주 내역 포함, `fromWire` 검증 통과)를 덮어씀 |
+| `frontend/test/goldens/fe1g_baseline_golden_test.dart` | +13 −3 | `students-calculator` 기대값(내역 막대·레벨 태그·최근 계산) |
+
+`lib/services/**`·`backend/`·`contracts/`·`frontend/assets/student_catalog.json`·스캐너·tactic 파일·`app_shell.dart`는 고치지 않았다.
+
+### 계산 어댑터 교체(FB-11a 연결 메모대로)
+
+- `calculateGrowthTargets(service, request)`: 서비스가 `PlanningStudentCalculationService`면 `calculateStudent(currentStudent:, targets:, inventory:)`를 한 번 부른다. 아니고 `PlanningDocumentService`면 예전 임시 문서 계산, 둘 다 아니면 `UnsupportedError`.
+- 디바운스(250ms)·요청 번호·늦은 응답 버림·취소·오류 상태는 그대로다(엔진 코드는 서비스 타입만 바뀜).
+- 결과: `credits`, `resources`에서 `credits` 행을 뺀 성장 재화(`row.toWire()` → 기존 `GrowthCalculatorResourceRow.fromWire`, 보유 모름은 그대로 Unknown), `warnings`, 9범주 `creditBreakdown`. 인연(`reservedBond`)은 쓰지 않는다(FB-11b 전 빈 상태 유지). 크레딧 보유·계획 포함 표기(FD-172)는 그대로다.
+- `MockAppService`·`ProcessAppService`는 둘 다 단일 학생 계산을 가진다. mock은 목표와 상관없이 고정 결과(`mockStudentCalculationWire`)를 돌려주므로 mock 모드 화면의 숫자는 목표를 바꿔도 같다(백엔드 실행 모드에서 실제 계산).
+
+### 크레딧 내역 막대(FD-162 (b))
+
+| 줄 | 더하는 FB-11a 범주 |
+|---|---|
+| 레벨 | `level` |
+| 스킬 | `ex_skill` + `skill` |
+| 장비 | `equipment` |
+| 성급 · 전무 | `student_star` + `weapon_star` + `weapon_level` |
+| 애장품 · 능력 개방 | `favorite_item` + `potential` |
+| 기타 | 위에 없는 범주(지금은 없음) |
+
+- 9범주가 모두 한 줄에 들어간다(테스트로 고정). 0인 줄은 그리지 않지만 합계에는 영향이 없다. 줄 합 = 합계.
+- 막대 길이는 가장 큰 줄 기준 비율(시안), 값은 "3.1M"·"150K" 짧은 수, 의미 구조 값은 쉼표 숫자.
+- 내역이 없으면(임시 문서 경로) 숨긴다. 타일 안 남은 폭이 180px보다 좁아도 숨긴다(합계는 그대로).
+
+### S3(FD-167)
+
+- 계산기 목표값으로 그린다: 레벨·전용무기 Lv·스킬 4칸·장비 3칸(티어·Lv)·애장품·능력 개방. 학생 상세 인디케이터 위젯을 그대로 쓰고 값만 목표로 바꾼다(`growthCalculatorIndicatorValues`). 전투 능력치는 확정값 그대로다.
+- ★는 현재 ★를 채우고 목표 ★를 테두리로 그린다(기존 `paintStudentStarStatus` 목표 표기). 인연은 현재 랭크 + 목표 빗금(FE3-b 게이지).
+- 바뀐 칸 글자는 분홍(`growthCalculatorChangedColor`), 그대로인 칸은 흰색. 인디케이터 위젯 5종에 강조색 인자를 더했고 기본값이 기존 색이라 학생 모드 그림은 같다.
+- 칸을 누르면 `toggleRow`(현재값 ↔ 직전 목표). 칸 key `calculator-cell-<행>`(전용무기는 Lv 칸 `weapon`과 ★칸 `weapon-star` 두 곳). 바꿀 것이 없는 칸은 누르기 동작이 없다.
+- "현재 …" 분홍 태그: 묶음(레벨·성급·전용무기·스킬·장비·애장품·능력 개방·인연) 안의 행이 바뀌면 그 묶음 오른쪽 위 모서리에 단다. 글자는 현재값 출처(확정값/직접 입력)의 값이다.
+
+### S4(FD-170·FD-172)
+
+- 검색창은 그대로 둔다. 계산기 모드에서는 결과 목록이 없으므로 Enter(입력 동작 "검색")로 첫 결과 학생을 계산기로 연다.
+- 선택 학생 요약: 이름 / "학교 · 클래스 · 계획에 있음·없음·확인 전"(FB-1 전 goals v1 기준) + 분홍 칩 "기준: 확정값/직접 입력". 학생 스캔 시각은 FB-2 전까지 숨긴다.
+- 구분선 → "최근 계산 · 누르면 그때 목표로 다시 엽니다" → 초상 줄(최대 6, 앱 실행 동안만, 학생마다 한 건). 누르면 그 학생·기준·목표로 다시 연다. 비어 있으면 "아직 계산한 학생이 없습니다".
+- 계정을 바꾸면 비운다: 셸이 학생 탭을 프로필 세대로 다시 만들고(최근 계산 객체도 새로 생김), 페이지는 `syncProfile`도 부른다. 위젯 테스트로 고정했다.
+
+### 표기 확인: 스킬 최대 "M"
+
+f2a의 S2 목표 행은 최대일 때 EX "5", 나머지 "M"이었다. 기존 규칙을 찾아 EX도 "M"으로 맞췄다. 근거(모두 최대값 이상이면 "M", EX 최대 5·나머지 10):
+- 학생 상세 인디케이터 `_StudentStatusIndicators._skillValue(key, maximum)`(`'ex_skill', 5`)
+- 계획 요소 빌더 `_skillDisplay(value, maximum)`
+- 목록 행 `formatDiagonalMediaSkillLevels`(최대 `[5, 10, 10, 10]`)
+- 필터 범위 `StudentRangeValueStyle.skill`, 키트 갤러리 EX 범위(`value >= 5 ? 'M'`)
+시안 S3의 "5/5"는 예시 표기라 쓰지 않는다(FD-025). S3는 기존 인디케이터를 그대로 써서 원래 "M"이다.
+
+### 위젯·단위 테스트
+
+`growth_calculator_view_test.dart`(새 6 + 순수 1, 기존 9 + 1은 대역만 교체):
+1. S3 목표값·EX "M"(S2·S3)·분홍·"현재 1" 태그, 레벨 칸 토글 두 번(바뀌는 칸 수 −1, 흰색, 태그 사라짐 → 되돌아옴)
+2. S3 칸 의미 구조(label "레벨 칸", value "바뀜, 목표 Lv.50, 현재 1", 버튼·누르기)
+3. S4 요약·"기준: 확정값", 최근 계산 추가, 검색 Enter로 다른 학생, 최근 계산을 누르면 그 목표(레벨 50)로 다시 열고 그 목표로 계산
+4. 계정 전환(`SettingsPage.onProfileChanged`) 뒤 계산기가 닫히고 최근 계산이 비어 있다
+5. 단일 학생 계산 1회 + 내역 다섯 줄 값(600K·150K·200K·250K·34.6K)
+6. 임시 문서 경로(단일 학생 계산이 없는 서비스)는 내역 막대를 숨긴다(섹션만 따로 그림)
+7. (순수) 묶음이 범주를 빠뜨리지 않음·합계 일치·"기타"·짧은 수
+
+`growth_calculator_adapter_test.dart` 새 묶음 4건: 두 기능이 다 있으면 `calculateStudent`만 1회(문서 계산 0)·내역·크레딧 행 제외, 없으면 임시 문서·내역 없음, 미지원 서비스 `UnsupportedError`, 엔진 디바운스 뒤 마지막 요청으로 1회.
+
+### golden 변화 예측
+
+- 바뀜(정상): `students-calculator`. S3가 목표값(레벨 90·스킬 M·장비 1 +2 티어, 분홍)과 "현재 …" 태그, ★ 목표 테두리(스킬 MAX가 ★를 끌어올리면). S4가 아루 요약·"기준: 확정값"·최근 계산 한 칸. 크레딧 타일 오른쪽에 내역 다섯 줄(레벨 3.1M · 스킬 7.9M · 장비 4.6M · 성급 · 전무 2.8M · 애장품 · 능력 개방 20K). S2 EX 목표 칸 "5" → "M".
+- 차이 0: 학생 장면 5장(학생 모드는 강조색 기본값·같은 뿌리 위젯), `title`·계정 3장·`home`·`plan-*`·`scan-student-review`.
+- 장면 추가는 하지 않았다(능력 개방 플라이아웃 열림 장면은 디바운스 Timer·OverlayPortal 정착 위험에 비해 얻는 것이 적다고 판단).
+- FB-13이 같은 작업 트리에 있어 그쪽 변화(golden harness `_withDisplayName`이 `hasFavoriteItem`을 잃음 등, 아래 "FB-13")가 섞일 수 있다. 차이가 예측과 다르면 원인을 조사해 보고한다.
+
+### 처리한 FD
+
+FD-162 (b)(단일 학생 계산·내역 막대, 폴백 (a)), FD-167 (a)(S3 칸 토글·분홍/흰색·태그), FD-168(S4 "기준" 칩), FD-170 (a)(최근 계산 줄·다시 열기·계정 전환 비움), FD-172(계획 포함 goals v1 기준·스캔 시각 숨김·크레딧 보유 빗금 유지), FD-049(계산기 목표는 활성 계획 인연 목표와 섞지 않음: S3 인연 빗금은 계산기 목표만 씀).
+
+### 검수표 (mock 모드, 2560×1440 모니터 최대화 = 2560×1392)
+
+| artboard·상태 | 여는 방법 | 확인 |
+|---|---|---|
+| Calc-Student S3 | 학생 탭 → 성장 계산기 열기 → 아무 목표 + | S3 해당 칸이 목표값·분홍으로 바뀌고 칸 오른쪽 위에 "현재 …" 분홍 태그가 붙는다. 그대로인 칸은 흰색 |
+| S3 칸 누르기 | 분홍 칸을 누른다 | 그 칸만 현재값(흰색)으로, 다시 누르면 직전 목표로. "바뀌는 칸 n · 그대로 m"과 필요 재화가 같이 바뀐다 |
+| ★·인연 | 성급·인연 목표를 올린다 | ★는 현재만 채워지고 목표까지 테두리, 인연 게이지에 목표 빗금 |
+| 스킬 최대 | 스킬 행 MAX | S2 EX·일반 모두 "M", S3 SKILL SUMMARY도 "M" |
+| S4 | 계산기 연 상태 | 학생 이름 / 학교 · 클래스 · 계획 포함, "기준: 확정값" 칩(직접 입력이면 바뀜), 최근 계산 초상 |
+| 최근 계산 | 다른 학생을 검색창에 쓰고 Enter → 앞 학생 초상 누르기 | 앞 학생이 그때 목표로 다시 열린다 |
+| 계정 전환 | 설정에서 다른 계정으로 | 계산기가 닫히고 다시 열면 최근 계산에 앞 계정 학생이 없다 |
+| 크레딧 내역 | 크레딧 타일 오른쪽 | 막대 줄(레벨·스킬·장비·성급 · 전무·애장품 · 능력 개방), mock은 고정 숫자 |
+
+### 알려진 시안 차이
+
+1. 시안 내역 막대는 4줄이다. 9범주를 빠뜨리지 않으려고 "애장품 · 능력 개방" 줄을 더했다(0이면 그리지 않음).
+2. 시안 S3 "EX 5/5" 대신 기존 규칙 "M".
+3. S4 "학생 스캔 어제 21:40"은 FB-2 전까지 숨긴다(FD-172).
+4. 최근 계산을 "직접 입력" 기준으로 다시 열면 기준과 목표는 돌아오지만, 그때 고친 현재값은 남지 않는다(FD-170 기록은 학생 + 기준 + 목표). 목표는 확정값 위로 다시 맞춘다.
+
+### FB-13 반영 여부
+
+- FB-13은 이 slice보다 먼저 커밋되지 않았다(작업 트리에 코드만 있음). 그래서 작업 지시대로 폴백 제거와 애장품 행 숨김 테스트를 넣지 않고 후속으로 남긴다.
+- 지금 코드도 FB-13 값을 쓴다: `_calculatorMetadata`는 metadata에 `has_favorite_item`이 있으면 그 값을 그대로 쓰고, 없을 때만 true로 채운다. FB-13의 `StudentCatalogEntry.metadata`는 모든 항목에 bool을 넣으므로, FB-13이 들어오면 폴백은 쓰이지 않는다(아야네 등 KR false 학생은 12행).
+- 후속(FB-13 커밋 뒤 프론트): ① `_calculatorMetadata`의 true 폴백 제거(`hasFavoriteItem` 직접 사용) ② 애장품 없는 학생(mock 아야네)의 12행·S3 애장품 칸 누르기 없음 테스트.
+- 백엔드 상태 문서의 "프런트 워커 연결 요청"(FB-13): 프론트 소유 테스트 fixture 2곳(`student_form_cycle_test.dart` `_wire`, `student_studio_layout_test.dart` Erika `fromWire`)에 필수 `has_favorite_item`이 없어 9건 실패, golden harness `_withDisplayName`이 `hasFavoriteItem`을 잃음. 이번 지시 범위 밖이라 고치지 않았다. FB-13 gate 전에 누가 고칠지 오케스트레이터 판단이 필요하다.
+
+### 미검증 항목
+
+1. `flutter analyze`(info 0), Dart 테스트, golden(바뀜 1). 사용자 PC에서 실행해야 한다.
+2. 실행해 봐야 아는 것: S3 태그가 작은 창에서 서로 겹치는지, 칸 누르기 자리(사각형으로 나눈 스킬·장비 칸)가 실제 열과 맞는지, 계산기 전환 때 S4 다시 들이기 모양.
+
+### 발견 사항(오케스트레이터 판단 필요)
+
+1. 위 FB-13 프론트 fixture 3곳(테스트 2 + golden harness 1).
+2. mock 모드 계산 숫자는 고정이다(`MockAppService.calculateStudent`가 목표를 보지 않음). 검수 때 숫자 변화는 백엔드 실행 모드에서만 보인다.
+
+### 사용자 실행 순서(시각 변경, 두 워커가 모두 멈췄을 때만 gate)
+
+① gate만 실행하고 멈춘다. 예상: analyze info 0, 테스트 통과(단, FB-13 fixture 3곳이 고쳐지지 않았으면 그쪽 9건 RED), golden은 `students-calculator` 차이. 결과를 오케스트레이터에게 보낸다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+② **FB-13 커밋 뒤에만** golden을 갱신하고 GREEN을 확인한다(두 slice가 같은 baseline 폴더를 `whole`로 커밋한다).
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+③ 승인 뒤 커밋한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3f2b -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3f2b
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesigndocs
+```
+
+`debug/frontend_fe3f2b/commit.json`: modified 8, added 0, `whole`은 `frontend/test/goldens/baseline`, status true. pre 사본은 `debug/frontend_fe3f2b/pre/`. (추가 작업 뒤 modified 10, 아래)
+
+## FE3-f2b 추가 작업 기록 (2026-10-08 10:16 지시, FB-13 프론트 연결)
+
+오케스트레이터가 FE3-f2b를 승인(로그 10:14)한 뒤 같은 slice에 더한 작업이다. FB-13 결과(`StudentCatalogEntry.hasFavoriteItem`, 엄격한 `fromWire`)는 작업 트리에 있다(커밋 전). 계약은 완화하지 않았고 테스트도 지우지 않았다. gate 미실행.
+
+### 고친 것
+
+1. `test/student_form_cycle_test.dart` `_wire`: `'has_favorite_item': false`를 `jp_only` 다음에 더했다. 이 테스트의 학생은 지어낸 id라 애장품 없음으로 둔다.
+2. `test/student_studio_layout_test.dart` Erika `fromWire`(1859행 부근): `'has_favorite_item': false`. asset의 `erika` 값(false)과 같다.
+3. `test/goldens/golden_harness.dart` `_withDisplayName`: `hasFavoriteItem: source.hasFavoriteItem`을 넘긴다(긴 이름 사본이 값을 잃지 않게).
+4. `lib/ui/pages/student_page.dart`: `_calculatorMetadata`(값이 없으면 true로 채우던 폴백)를 지웠다. 현재값 변환 seed는 `entry.metadata`를 그대로 쓰고, 계산기 상태는 `hasFavoriteItem: entry.hasFavoriteItem`이다. 쓰지 않게 된 `planStudentHasFavoriteItemMetadata`는 import `show`에서 뺐다. `StudentCatalogEntry.fallback`(메타데이터 없는 학생)은 false라 12행이다.
+5. `test/growth_calculator_view_test.dart`: 위젯 테스트 1건 추가 "KR 애장품이 없는 학생(아야네)은 애장품 행 없이 12행이다(FB-13)". 아루(KR true)는 `hasFavoriteItem` true, S3 `calculator-cell-favoriteItem` 있음 → 검색 Enter로 아야네(KR false) → `hasFavoriteItem` false, `rows` 12개·`favoriteItem` 없음, S2 `calculator-row-favoriteItem`·S3 `calculator-cell-favoriteItem` 없음, "바뀌는 칸 0 · 그대로 12", 성장 MAX 뒤 "바뀌는 칸 12 · 그대로 0". 끝에서 디바운스 Timer를 정착시킨다. 기존 "빠른 목표" 테스트는 13행 근거 주석만 고쳤다(catalog true).
+6. 남은 fixture 검사: `'jp_only'`를 쓰는 프론트 파일을 모두 봤다. `planning_protocol_client_test.dart`는 FB-13이 이미 고쳤고, `plan_element_builder_test.dart`는 metadata 맵(선택 key)이라 `fromWire`를 거치지 않으며, `lib/`는 읽기만 한다. 더 고칠 곳은 없다.
+
+### pre 사본(HEAD 기준)
+
+HEAD는 `2bcdcbd9`(문서 커밋, 부모 `facdd1d3`). git 객체를 직접 읽어 HEAD blob과 맞췄다.
+
+| 파일 | HEAD blob | pre 사본 |
+|---|---|---|
+| `test/student_form_cycle_test.dart` | `a57e78d2` | HEAD blob(이번에 처음 고침, 고치기 전 작업 트리와도 같음) |
+| `test/student_studio_layout_test.dart` | `ed1ac1af` | 같음 |
+| `lib/ui/pages/student_page.dart` | `7971c457` | 기존 pre 사본 그대로(HEAD와 같음) |
+| `test/goldens/golden_harness.dart` | `597c373b` | 같음 |
+| `test/growth_calculator_view_test.dart` | `a223bea6` | 같음 |
+
+### commit.json
+
+`debug/frontend_fe3f2b/commit.json`: modified 10(앞 8 + fixture 테스트 2), added 0, `whole`은 `frontend/test/goldens/baseline`, status true. 메시지에 FB-13 연결 줄을 더했다.
+
+### golden 변화 예측(갱신)
+
+- `students-calculator`: 바뀜(앞의 f2b 예측 그대로). 아루는 KR true라 13행이 유지된다(HEAD에서도 폴백 true였으므로 행 수 차이 없음).
+- jp_only가 false로 바뀐 7명(niko·rena·akane_school_uniform·otogi·konoka·koyuki_pajama·kurumi)은 golden fixture에 없다. 학생 장면 catalog는 아루·아야네·호시노·슌(수영복)·히나·세리카·케이·하스미·나구사·노아, 기본 mock은 아루·아야네, `scan-student-review`는 아루·호시노다. 그래서 "JP" 배지 변화는 없다. 슌(수영복)은 HEAD와 지금 모두 jp_only true라 배지가 남는다.
+- `_withDisplayName` 사본: 호시노 한 명만 쓴다. 호시노 `hasFavoriteItem`이 이제 true로 전달된다(전에는 false). 호시노를 고르는 장면이 없고 학생 격자·상세는 애장품 유무를 그리지 않으므로 화면 차이 0으로 본다.
+- `plan-element-builder`: FB-13 때문에 바뀔 수 있다(f2b 코드와 무관). HEAD catalog에는 `has_favorite_item`이 없어서 계획 요소 빌더(`planStudentHasFavoriteItemMetadata`, key가 없으면 false)가 아루를 애장품 없음으로 봤다. FB-13 뒤 아루는 true다. 이 장면은 기본 mock 격자의 첫 학생(catalog 순서상 아루)으로 빌더를 열므로 애장품 칸·행이 생길 수 있다. 다른 `plan-*` 장면도 아루의 애장품 요소를 그리면 같은 이유로 바뀔 수 있다.
+- 그 밖의 장면은 차이 0.
+- 차이가 예측과 다르면 원인을 조사해 보고한다.
+
+### 사용자 실행 순서(바뀐 점)
+
+① gate. 예상: analyze info 0, FB-13 fixture 실패 9건은 이번 수정으로 사라진다, golden은 `students-calculator`(+ FB-13으로 `plan-element-builder` 가능) 차이.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+②·③은 앞 "FE3-f2b 종료 기록"과 같다. golden 갱신은 FB-13 커밋 순서에 맞춰 오케스트레이터가 정한다(두 slice가 같은 baseline 폴더를 `whole`로 커밋한다).
+
+### 수정 (2026-10-08, gate `20261008_102700` RED 뒤)
+
+gate 결과: analyze·test-1·test-3·process 38·almanac·diff-check 통과. 실패는 3건이다.
+
+1. `student_page_test.dart` "catalog search and calculator entry use services": RenderFlex가 오른쪽으로 67px 넘침(f2b 코드 원인).
+   - 원인: 크레딧 타일(`_CreditTile`)의 Row가 아이콘 79 + 간격 18 + 합계 칸(고정 폭) + 내역 막대 앞 간격 24 + 막대(Expanded)였다. 1024×768에서 타일은 최소 폭 420, 안쪽 폭은 420 − 32.6 − (128/tan80° + 14) = 350.8이다. 기본 `MockAppService.calculateStudent`의 크레딧은 14,000,529라 테스트 글꼴(글자당 1em)에서 30px × 10글자 − 자간 0.3 × 10 = 297px이 된다. 79 + 18 + 297 + 24 − 350.8 = 67.2로 보고값과 맞는다. f2a는 내역 간격 24가 없고 숫자도 짧아 넘치지 않았다.
+   - 수정: 합계 칸(크레딧 글자 · 숫자 · 보유 빗금 줄)을 `ConstrainedBox(maxWidth: 남는 폭)` + `FittedBox(scaleDown, 왼쪽 정렬)`로 감싸, 남는 폭보다 넓으면 같은 비율로 줄인다. 남는 폭 = 안쪽 폭 − 79 − 18 − (내역이 있으면 24). 내역 막대는 그 뒤 남는 폭을 쓰고 180px 미만이면 숨긴다(기존 규칙). 실제 글꼴·큰 창에서는 합계 칸이 남는 폭보다 좁아 배율 1이라 `students-calculator` 모양은 그대로다. 바뀐 파일은 `growth_calculator_section.dart` 하나(commit.json modified에 이미 있음).
+2. golden `students-calculator` 1.51%: 예측한 f2b 변화다. 실패 이미지에서 S3 목표값·"현재 …" 태그, S4 요약·"기준: 확정값"·최근 계산, 크레딧 18,420,000과 내역 다섯 줄(3.1M · 7.9M · 4.6M · 2.8M · 20K), 13행을 확인했다.
+3. golden `plan-element-builder` 0.03%: 예측한 FB-13 영향이다. 차이는 x 522–1195, y 285–624 한 곳뿐이다. 장비 상태 넷째 칸 "애장품"이 "-"에서 "− T0 + / MAX" 스테퍼로, 왼쪽 장비 칸의 애장품이 "-"에서 자물쇠로 바뀌었다. 아루의 `has_favorite_item`이 true가 되어 계획 요소 빌더가 애장품 칸을 연다(f2b 코드 무관).
+
+사용자 실행 순서: gate를 다시 돌린다. 예상: test-2 통과, golden은 위 2장만 차이(갱신 전). 그 뒤 golden 갱신 시점(`-UpdateGoldens`)은 FB-13 커밋 순서에 맞춰 오케스트레이터가 정한다.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+```
+
+### gate `20261008_121125` 결과 (2026-10-08 12:11)
+
+- analyze, test-1 303 · test-2 358 · test-3 22(UI 683), process 38, almanac, diff-check 통과. `student_page_test` 넘침은 사라졌다.
+- golden 실패 2장은 예측과 같다: `students-calculator` 1.51%(f2b), `plan-element-builder` 0.03%(FB-13).
+- 두 장의 testImage는 `20261008_102700`의 testImage와 sha256까지 같다. 크레딧 타일 수정은 golden 화면을 바꾸지 않았다(실제 글꼴에서 배율 1).
+- HEAD가 `8b880441`로 움직였다(다른 작업 커밋 "A0: define animation spectrum contract…", "metadata M0"). f2b 파일 10개의 index blob은 그대로라 pre 사본(HEAD 기준)도 그대로 맞다.
+- FB-13은 아직 커밋 전이다(index의 `app_service.dart`·`student_catalog.json`이 작업 트리와 다르다). `plan-element-builder` 차이는 FB-13 작업 트리 때문이므로, 지금 `-UpdateGoldens` 후 f2b가 baseline 폴더를 `whole`로 커밋하면 FB-13 커밋 전 baseline에 FB-13 화면이 들어간다. 순서(FB-13 먼저 커밋, 또는 f2b에 함께 싣기)는 오케스트레이터가 정한다.
+
+남은 사용자 실행 순서(오케스트레이터 결정 뒤):
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3f2b -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3f2b
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesigndocs
+```
+
+### 결정: golden 함께 갱신 (사용자, 2026-10-08 12:19)
+
+- FB-13 커밋을 기다리지 않고 지금 `-UpdateGoldens`로 `students-calculator`(f2b)와 `plan-element-builder`(FB-13 작업 트리의 애장품 칸)를 함께 갱신한다. f2b가 baseline 폴더를 `whole`로 커밋한다.
+- 그래서 FB-13이 커밋되기 전까지 HEAD의 `plan-element-builder` baseline은 FB-13 화면이다. FB-13 커밋 뒤 그 장면은 차이 0이어야 한다. FB-13 쪽 코드(`app_service.dart`·`mock_app_service.dart`·`student_catalog.json` 등)는 f2b commit.json에 넣지 않는다(백엔드 워커 소유).
+- commit.json 메시지에 이 내용을 한 줄 더했다(modified 10·added 0 그대로).
+- 실행 순서: 위 "남은 사용자 실행 순서"와 같다(`-UpdateGoldens` → gate GREEN 확인 → `fe_commit -Slice fe3f2b -DryRun` → `fe_commit -Slice fe3f2b` → `fe_commit -Slice redesigndocs`).
+
+### FE3-f2b commit record (2026-10-08 12:32, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261008_122807\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

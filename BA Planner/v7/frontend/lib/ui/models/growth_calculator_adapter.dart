@@ -1,12 +1,12 @@
-// 성장 계산기 계산 연결 (FE3-f1, FD-162 (a)·FD-172).
+// 성장 계산기 계산 연결 (FE3-f1, FD-162·FD-172; FE3-f2b에서 FB-11a로 교체).
 //
-// FB-11의 단일 학생 계산 메서드가 생기기 전 임시 경로다. 계산기 목표로 1페이즈 1단계짜리 임시 문서를
-// 만들어 기존 `planning.document.calculate`([PlanningDocumentService.calculatePlanningDocument])로
-// 계산한다. 이 호출은 받은 문서를 계산만 하고 저장하지 않으며 활성 계획도 건드리지 않는다
-// (백엔드 `protocol_v1._document_calculate` → `calculate_document_projection`). 문서 id는 저장 id가
-// 아닌 고정 문자열이다.
-// - 결과: 크레딧 합계와 성장 재화 행(전체 `overall.resources`에서 크레딧 행을 뺀 것).
-// - 크레딧 범주별 내역은 FB-11 전에는 없다([GrowthCalculatorCreditBreakdown.unavailable]).
+// - 서비스가 [PlanningStudentCalculationService]면 단일 학생 계산(`planning.student.calculate`, FB-11a)을
+//   한 번 부른다(FD-162 (b)). 크레딧 합계·9범주 크레딧 내역·성장 재화 행을 한 번에 받는다.
+// - 그 기능이 없는 서비스는 예전 임시 경로로 계산한다(FD-162 (a)). 계산기 목표로 1페이즈 1단계짜리 임시
+//   문서를 만들어 `planning.document.calculate`([PlanningDocumentService.calculatePlanningDocument])로
+//   계산한다. 이 호출은 받은 문서를 계산만 하고 저장하지 않으며 활성 계획도 건드리지 않는다. 문서 id는
+//   저장 id가 아닌 고정 문자열이다. 이 경로에는 크레딧 내역이 없다([GrowthCalculatorCreditBreakdown.unavailable]).
+// - 결과: 크레딧 합계와 성장 재화 행(전체 재화 행에서 크레딧 행을 뺀 것).
 // - 데이터가 없는 값은 null이 아니라 명시 값이다(FD-172): 크레딧 보유 = 스캔 없음(FD-096 (c)),
 //   재화 보유 = 확인/미확인, 계획 포함 = goals v1 기준(FD-027 방식) 있음/없음/모름.
 // - [GrowthCalculatorEngine]은 디바운스로 한 번만 부르고, 늦게 온 이전 요청 응답은 요청 번호로 버린다.
@@ -207,8 +207,48 @@ final class GrowthCalculatorHoldingNoScan extends GrowthCalculatorHolding {
   int get hashCode => (GrowthCalculatorHoldingNoScan).hashCode;
 }
 
-/// 크레딧 범주별 내역(FD-162). FB-11 전에는 없다(내역 막대 숨김).
-enum GrowthCalculatorCreditBreakdown { unavailable }
+/// 크레딧 범주별 내역(FD-162). 없으면 [unavailable](내역 막대를 숨긴다).
+///
+/// FB-11a의 9범주(`studentCreditCategories`) 값을 그대로 담는다. 화면에서 묶어 그릴 때도 범주를
+/// 빠뜨리지 않도록 [amounts]의 합은 늘 [total]이다.
+@immutable
+class GrowthCalculatorCreditBreakdown {
+  const GrowthCalculatorCreditBreakdown._(this._amounts);
+
+  /// 범주별 크레딧. 음수는 받지 않는다.
+  factory GrowthCalculatorCreditBreakdown.of(Map<String, int> amounts) {
+    if (amounts.values.any((amount) => amount < 0)) {
+      throw const FormatException('Negative credit breakdown amount');
+    }
+    return GrowthCalculatorCreditBreakdown._(Map.unmodifiable(amounts));
+  }
+
+  /// 내역이 없다(임시 문서 경로).
+  static const unavailable = GrowthCalculatorCreditBreakdown._(null);
+
+  final Map<String, int>? _amounts;
+
+  bool get available => _amounts != null;
+
+  /// 범주 → 크레딧. 없으면 빈 맵.
+  Map<String, int> get amounts => _amounts ?? const {};
+
+  /// 모든 범주의 합.
+  int get total => amounts.values.fold(0, (sum, amount) => sum + amount);
+
+  @override
+  bool operator ==(Object other) =>
+      other is GrowthCalculatorCreditBreakdown &&
+      other.available == available &&
+      mapEquals(other._amounts, _amounts);
+
+  @override
+  int get hashCode => available
+      ? Object.hashAllUnordered(
+          amounts.entries.map((entry) => Object.hash(entry.key, entry.value)),
+        )
+      : 0;
+}
 
 /// 성장 재화 한 행.
 @immutable
@@ -284,8 +324,28 @@ class GrowthCalculatorResult {
     required List<GrowthCalculatorResourceRow> resources,
     required this.planMembership,
     required List<String> warnings,
+    this.creditBreakdown = GrowthCalculatorCreditBreakdown.unavailable,
   }) : resources = List.unmodifiable(resources),
        warnings = List.unmodifiable(warnings);
+
+  /// `planning.student.calculate` 결과(FB-11a)를 읽는다. 크레딧 행은 재화 목록에서 뺀다.
+  factory GrowthCalculatorResult.fromStudentCalculation(
+    StudentCalculationResult calculation, {
+    required GrowthCalculatorRequest request,
+  }) => GrowthCalculatorResult(
+    studentId: request.studentId,
+    credits: calculation.credits,
+    resources: [
+      for (final row in calculation.resources)
+        if (row.resourceKey != growthCalculatorCreditResourceKey)
+          GrowthCalculatorResourceRow.fromWire(row.toWire()),
+    ],
+    planMembership: request.planMembership,
+    warnings: calculation.warnings,
+    creditBreakdown: GrowthCalculatorCreditBreakdown.of(
+      calculation.creditBreakdown,
+    ),
+  );
 
   /// `planning.document.calculate` 응답의 projection을 읽는다.
   factory GrowthCalculatorResult.fromProjection(
@@ -342,9 +402,8 @@ class GrowthCalculatorResult {
   GrowthCalculatorHolding get creditHolding =>
       const GrowthCalculatorHoldingNoScan();
 
-  /// 크레딧 범주별 내역. FB-11 전에는 늘 없음이다.
-  GrowthCalculatorCreditBreakdown get creditBreakdown =>
-      GrowthCalculatorCreditBreakdown.unavailable;
+  /// 크레딧 범주별 내역. 임시 문서 경로에서는 없음이다.
+  final GrowthCalculatorCreditBreakdown creditBreakdown;
 
   /// 성장 재화 행(백엔드 순서, 크레딧 행 제외).
   final List<GrowthCalculatorResourceRow> resources;
@@ -357,17 +416,37 @@ class GrowthCalculatorResult {
   int get shortageTypeCount => resources.where((row) => row.isShort).length;
 }
 
-/// 디바운스 없이 한 번 계산한다.
+/// [service]로 계산기를 쓸 수 있는가(단일 학생 계산 또는 문서 계산).
+bool growthCalculatorSupports(Object service) =>
+    service is PlanningStudentCalculationService ||
+    service is PlanningDocumentService;
+
+/// 디바운스 없이 한 번 계산한다. 단일 학생 계산(FB-11a)이 있으면 그것을 한 번 부르고, 없으면 임시 문서로
+/// 계산한다. 둘 다 없으면 [UnsupportedError].
 Future<GrowthCalculatorResult> calculateGrowthTargets(
-  PlanningDocumentService service,
+  Object service,
   GrowthCalculatorRequest request,
 ) async {
-  final projection = await service.calculatePlanningDocument(
-    currentStudents: [request.currentStudent],
-    inventory: request.inventory,
-    document: request.document.toWire(),
-  );
-  return GrowthCalculatorResult.fromProjection(projection, request: request);
+  if (service is PlanningStudentCalculationService) {
+    final calculation = await service.calculateStudent(
+      currentStudent: request.currentStudent,
+      targets: request.targets,
+      inventory: request.inventory,
+    );
+    return GrowthCalculatorResult.fromStudentCalculation(
+      calculation,
+      request: request,
+    );
+  }
+  if (service is PlanningDocumentService) {
+    final projection = await service.calculatePlanningDocument(
+      currentStudents: [request.currentStudent],
+      inventory: request.inventory,
+      document: request.document.toWire(),
+    );
+    return GrowthCalculatorResult.fromProjection(projection, request: request);
+  }
+  throw UnsupportedError('Growth calculation is unavailable');
 }
 
 /// 계산 상태.
@@ -427,13 +506,16 @@ final class GrowthCalculatorFailed extends GrowthCalculatorStatus {
 
 /// 디바운스 재계산기. [schedule]을 여러 번 불러도 [debounce] 동안 조용하면 마지막 요청만 한 번
 /// 계산한다. 응답이 왔을 때 그 뒤에 새 요청이 있었으면(요청 번호가 다르면) 버린다.
+///
+/// [service]는 [growthCalculatorSupports]를 만족해야 한다([calculateGrowthTargets]).
 class GrowthCalculatorEngine extends ChangeNotifier {
   GrowthCalculatorEngine({
-    required PlanningDocumentService service,
+    required Object service,
     this.debounce = growthCalculatorDebounce,
-  }) : _planningService = service;
+  }) : assert(growthCalculatorSupports(service)),
+       _calculationService = service;
 
-  final PlanningDocumentService _planningService;
+  final Object _calculationService;
   final Duration debounce;
 
   GrowthCalculatorStatus _status = const GrowthCalculatorIdle();
@@ -484,7 +566,7 @@ class GrowthCalculatorEngine extends ChangeNotifier {
     if (request == null || _disposed) return;
     final number = _requestNumber;
     try {
-      final result = await calculateGrowthTargets(_planningService, request);
+      final result = await calculateGrowthTargets(_calculationService, request);
       if (_disposed || number != _requestNumber) return;
       _setStatus(GrowthCalculatorReady(requestNumber: number, result: result));
     } on Object catch (error) {

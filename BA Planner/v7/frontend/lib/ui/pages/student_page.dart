@@ -18,7 +18,7 @@ import '../models/student_filter_controller.dart';
 import '../widgets/diagonal_section.dart';
 import '../widgets/growth_calculator_section.dart';
 import '../widgets/page_header_override.dart';
-import '../widgets/plan_element_builder.dart' show planElementCurrentTargets, planStudentHasFavoriteItemMetadata;
+import '../widgets/plan_element_builder.dart' show planElementCurrentTargets;
 import '../widgets/student_grid_warmup.dart';
 import '../widgets/student_section_layout.dart';
 
@@ -107,6 +107,7 @@ class _StudentPageState extends State<StudentPage> {
     widget.service.state.addListener(_connectionChanged);
     _filter.addListener(_stateChanged);
     _recent.addListener(_stateChanged);
+    _recentCalculations.addListener(_stateChanged);
     _loadCatalog();
   }
 
@@ -130,52 +131,42 @@ class _StudentPageState extends State<StudentPage> {
   static const _calculatorSubtitle =
       '학생 한 명 · 목표까지 필요한 인연 선물 · 크레딧 · 재화를 바로 계산 (계획에는 저장하지 않음)';
 
-  /// 계산기가 쓰는 학생 메타데이터. 학생 catalog에는 애장품 유무 필드가 없어서(발견 사항), 값이 없으면
-  /// 애장품이 있는 것으로 보고 13행을 그린다(FD-166 (c)). catalog가 `has_favorite_item`을 보내면 그 값을 따른다.
-  Map<String, dynamic> _calculatorMetadata(StudentCatalogEntry entry) {
-    final metadata = entry.metadata;
-    if (metadata.containsKey('has_favorite_item') ||
-        metadata.containsKey('has_favorite_item_kr')) {
-      return metadata;
-    }
-    return {...metadata, 'has_favorite_item': true};
-  }
-
   /// 선택 학생의 현재값(계획 요소 빌더와 같은 변환, 미보유면 기본값).
   Map<String, int> _calculatorCurrent(StudentCatalogEntry entry) =>
       planElementCurrentTargets(
         PlanningStudentSeed(
           handoffId: 'growth-calculator-${entry.studentId}',
           studentId: entry.studentId,
-          metadata: _calculatorMetadata(entry),
+          metadata: entry.metadata,
           currentValues: _selectedState?.values ?? const {},
           owned: _selectedState != null,
         ),
       );
 
   /// 선택 학생으로 계산기를 연다. 이미 열려 있으면 그 학생으로 다시 연다(기준은 유지).
-  void _openCalculator() {
+  /// [record]가 있으면 그 최근 계산의 기준·목표로 연다(FD-170).
+  void _openCalculator({GrowthCalculationRecord? record}) {
     final entry = _selectedEntry;
     if (entry == null) return;
     final previous = _calculator;
-    final basis = previous?.basis ?? GrowthCalculatorBasis.confirmed;
+    final basis =
+        record?.basis ?? previous?.basis ?? GrowthCalculatorBasis.confirmed;
     previous?.removeListener(_calculatorChanged);
     _disposeCalculatorEngine();
     final state = GrowthCalculatorState(
       studentId: entry.studentId,
       confirmedCurrent: _calculatorCurrent(entry),
-      hasFavoriteItem: planStudentHasFavoriteItemMetadata(
-        _calculatorMetadata(entry),
-      ),
+      // 애장품 행은 catalog의 KR 애장품 제공 여부를 따른다(FB-13). 없으면 12행이다(FD-166 (c)).
+      hasFavoriteItem: entry.hasFavoriteItem,
       basis: basis,
+      initialTargets: record?.targets,
     )..addListener(_calculatorChanged);
-    // 학생마다 새 계산 연결을 쓴다(앞 학생의 결과를 흐리게 보이지 않게).
-    _calculatorEngine = switch (widget.service) {
-      final PlanningDocumentService service => GrowthCalculatorEngine(
-        service: service,
-      )..addListener(_calculatorEngineChanged),
-      _ => null,
-    };
+    // 학생마다 새 계산 연결을 쓴다(앞 학생의 결과를 흐리게 보이지 않게). 단일 학생 계산(FB-11a)이 있으면
+    // 그것을, 없으면 임시 문서 계산을 쓴다(어댑터가 고른다).
+    _calculatorEngine = growthCalculatorSupports(widget.service)
+        ? (GrowthCalculatorEngine(service: widget.service)
+            ..addListener(_calculatorEngineChanged))
+        : null;
     setState(() => _calculator = state);
     if (previous != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => previous.dispose());
@@ -228,6 +219,16 @@ class _StudentPageState extends State<StudentPage> {
 
   void _calculatorChanged() => _scheduleCalculation();
 
+  /// S4 "최근 계산"을 누르면 그때의 학생·기준·목표로 다시 연다(FD-170). catalog에 없는 학생은 무시한다.
+  void _openRecentCalculation(GrowthCalculationRecord record) {
+    if (!_catalog.any((student) => student.studentId == record.studentId)) {
+      return;
+    }
+    setState(() => _select(record.studentId));
+    _syncEditors();
+    _openCalculator(record: record);
+  }
+
   void _scheduleCalculation() {
     final state = _calculator;
     final engine = _calculatorEngine;
@@ -259,6 +260,7 @@ class _StudentPageState extends State<StudentPage> {
     _calculator?.dispose();
     _calculatorEngine?.removeListener(_calculatorEngineChanged);
     _calculatorEngine?.dispose();
+    _recentCalculations.removeListener(_stateChanged);
     _recentCalculations.dispose();
     widget.service.state.removeListener(_connectionChanged);
     _filter.removeListener(_stateChanged);
@@ -553,6 +555,16 @@ class _StudentPageState extends State<StudentPage> {
                       engine: _calculatorEngine,
                       student: _selectedEntry,
                       onOpenScan: widget.onOpenScan,
+                      planMembership: growthCalculatorPlanMembership(
+                        _repositoryState,
+                        state.studentId,
+                      ),
+                      recent: [
+                        for (final record in _recentCalculations.records)
+                          if (catalogById[record.studentId] case final entry?)
+                            (record: record, student: entry),
+                      ],
+                      onOpenRecent: _openRecentCalculation,
                     ),
                     null => null,
                   },

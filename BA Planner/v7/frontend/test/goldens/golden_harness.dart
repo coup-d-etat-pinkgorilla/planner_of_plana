@@ -336,6 +336,7 @@ class GoldenStudentMockAppService extends GoldenMockAppService
     equipmentSlot2: source.equipmentSlot2,
     equipmentSlot3: source.equipmentSlot3,
     jpOnly: source.jpOnly,
+    hasFavoriteItem: source.hasFavoriteItem,
     searchTags: source.searchTags,
     krSearchTags: source.krSearchTags,
     forms: source.forms,
@@ -412,10 +413,11 @@ class GoldenStudentMockAppService extends GoldenMockAppService
   }
 }
 
-/// 성장 계산기 장면 전용 mock(FE3-f2a). 학생 장면 fixture에 계산 결과(크레딧·성장 재화 행)를 더한다.
+/// 성장 계산기 장면 전용 mock(FE3-f2a·f2b). 학생 장면 fixture에 계산 결과(크레딧·9범주 내역·성장 재화 행)를
+/// 더한다.
 ///
-/// `MockAppService.calculatePlanningDocument`는 재화 행을 비워 보내므로(J-calc §5.1) golden 대역이
-/// 백엔드 `calculate_document_projection` 모양의 고정 결과를 돌려준다. 숫자는 Calc-Student 예시를 따른다.
+/// FE3-f2b부터 계산기는 단일 학생 계산(`planning.student.calculate`)을 부른다. golden 대역은 그 응답 모양
+/// (`StudentCalculationResult.fromWire` 검증 통과)의 고정 결과를 돌려준다. 숫자는 Calc-Student 예시를 따른다.
 /// 행 15개(접힘 6 + "9종 더"), 보유를 아는 행(부족·충분)과 모르는 행(스캔 없음)이 함께 있다.
 class GoldenCalculatorMockAppService extends GoldenStudentMockAppService {
   GoldenCalculatorMockAppService() : super();
@@ -459,28 +461,35 @@ class GoldenCalculatorMockAppService extends GoldenStudentMockAppService {
     resource('Item_Icon_Material_Wolfsegg_0', '오파츠 · 볼프세크 철광석 (하급)', 'oopart', 45, owned: 48),
   ];
 
+  /// 크레딧 9범주 내역(FB-11a `credit_breakdown`). 합이 [credits]다. 화면은 레벨 3.1M · 스킬 7.9M ·
+  /// 장비 4.6M · 성급 · 전무 2.8M · 애장품 · 능력 개방 20K 다섯 줄로 묶는다.
+  static const creditBreakdown = <String, int>{
+    'level': 3100000,
+    'student_star': 1500000,
+    'weapon_star': 800000,
+    'favorite_item': 0,
+    'equipment': 4600000,
+    'ex_skill': 2400000,
+    'weapon_level': 500000,
+    'skill': 5500000,
+    'potential': 20000,
+  };
+
+  /// FE3-f2b: 계산기는 단일 학생 계산(`planning.student.calculate`)을 부른다. 목표와 상관없이 같은 결과다.
   @override
-  Future<Map<String, dynamic>> calculatePlanningDocument({
-    required List<Map<String, dynamic>> currentStudents,
-    required Map<String, dynamic> inventory,
-    required Map<String, dynamic> document,
-  }) async {
-    final projection = await super.calculatePlanningDocument(
-      currentStudents: currentStudents,
-      inventory: inventory,
-      document: document,
-    );
-    return {
-      ...projection,
-      'overall': {
-        'cost': {'credits': credits},
-        'resources': [
-          resource('credits', '크레딧', 'credits', credits),
-          ...resources,
-        ],
-      },
-    };
-  }
+  Future<StudentCalculationResult> calculateStudent({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    Map<String, dynamic>? inventory,
+  }) async => StudentCalculationResult.fromWire({
+    'totals': {'credits': credits},
+    'credit_breakdown': creditBreakdown,
+    'resources': [
+      resource('credits', '크레딧', 'credits', credits),
+      ...resources,
+    ],
+    'warnings': const <String>[],
+  });
 }
 
 /// 요소 빌더·프리셋 관리 장면이 쓰는 프리셋(`planning_page_test`와 같은 값).
