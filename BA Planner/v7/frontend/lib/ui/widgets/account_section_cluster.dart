@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../../services/planning_protocol_client.dart'
+    show BackendRemoteException;
 import '../../services/repository_service.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/diagonal_scrollbar.dart';
@@ -87,6 +89,56 @@ const _accountActionTexture = BATriangleTextureConfig(
   fogStrength: 0.08,
 );
 
+/// 저장소 오류 코드(백엔드 `BackendRemoteException.code`, mock은 `StateError` 메시지).
+String? repositoryErrorCode(Object error) => switch (error) {
+  BackendRemoteException(:final code) => code,
+  StateError(:final message) => message,
+  _ => null,
+};
+
+/// 계정 state를 읽다가 난 오류의 화면 문구(FB-1b 첫 로드 이관 실패 포함). 이관 실패는 빈 목표로 덮지 않고 이 문구로
+/// 알린다. 원본 파일은 백엔드가 그대로 둔다.
+String repositoryLoadErrorText(Object error) =>
+    switch (repositoryErrorCode(error)) {
+      'legacy_goals_conflict' =>
+        '이전 계획에 같은 학생의 목표가 여러 개 있어 활성 계획으로 옮기지 못했습니다. 원본은 그대로 두었습니다.',
+      'corrupt_data' => '저장된 계정 데이터가 손상되어 읽지 못했습니다. 원본은 그대로 두었습니다.',
+      'repository_busy' => '저장소가 다른 작업을 하고 있습니다. 잠시 뒤 다시 시도해 주십시오.',
+      _ => '$error',
+    };
+
+/// 저장소가 바쁘면(`repository_busy`, 재시도 가능) 잠깐 기다렸다가 두 번까지 다시 읽는다.
+Future<RepositoryState> loadRepositoryStateRetrying(
+  RepositoryService repository,
+  String profileId,
+) async {
+  for (var attempt = 0; ; attempt++) {
+    try {
+      return await repository.loadRepositoryState(profileId);
+    } catch (error) {
+      if (attempt >= 2 || repositoryErrorCode(error) != 'repository_busy') {
+        rethrow;
+      }
+      await Future<void>.delayed(Duration(milliseconds: 150 * (attempt + 1)));
+    }
+  }
+}
+
+/// [profile]의 revision을 state가 돌려준 값으로 바꾼다. state를 처음 읽을 때 FB-1b가 legacy 목표를 활성 문서로 옮기며
+/// revision을 올리므로, 목록 revision보다 state revision이 권위값이다.
+RepositoryProfile repositoryProfileWithRevision(
+  RepositoryProfile profile,
+  int revision,
+) => profile.revision == revision
+    ? profile
+    : RepositoryProfile(
+        id: profile.id,
+        displayName: profile.displayName,
+        avatarStudentId: profile.avatarStudentId,
+        revision: revision,
+        selected: profile.selected,
+      );
+
 class AccountSectionCluster extends StatefulWidget {
   const AccountSectionCluster({
     super.key,
@@ -116,6 +168,8 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
   late final ScrollController _profileListController;
   late final ScrollController _portraitGridController;
   List<RepositoryProfile> _profiles = const [];
+
+  /// 학생 수. state를 읽지 못한 계정(이관 실패 등)은 빠진다(0으로 보이지 않는다).
   Map<String, int> _studentCounts = const {};
   List<String> _portraitIds = const ['hasumi'];
   int _catalogStudentCount = 0;
@@ -208,11 +262,47 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
         repository.listProfiles(),
         widget.service.listStudents(),
       ]);
-      final profiles = results[0] as List<RepositoryProfile>;
+      final listed = results[0] as List<RepositoryProfile>;
       final catalog = results[1] as List<StudentCatalogEntry>;
-      final states = await Future.wait(
-        profiles.map((profile) => repository.loadRepositoryState(profile.id)),
-      );
+      // 계정마다 state를 읽고(첫 로드 이관), 돌려받은 revision으로 목록 값을 바꾼다. 선택·수정·삭제는 이 값을 쓴다.
+      // 한 계정이 실패해도 나머지는 보이고, 실패한 계정은 오류 문구로 알린다.
+      Future<({RepositoryState? state, Object? error})> loadState(
+        RepositoryProfile profile,
+      ) async {
+        try {
+          return (
+            state: await loadRepositoryStateRetrying(repository, profile.id),
+            error: null,
+          );
+        } catch (error) {
+          return (state: null, error: error);
+        }
+      }
+
+      final loads = await Future.wait(listed.map(loadState));
+      final profiles = [
+        for (final (index, profile) in listed.indexed)
+          switch (loads[index].state) {
+            final state? => repositoryProfileWithRevision(
+              profile,
+              state.revision,
+            ),
+            null => profile,
+          },
+      ];
+      final failures = <String>[];
+      final counts = <String, int>{};
+      for (final (index, profile) in listed.indexed) {
+        final load = loads[index];
+        final state = load.state;
+        final error = load.error;
+        if (state != null) counts[state.profileId] = state.students.length;
+        if (error != null) {
+          failures.add(
+            '${profile.displayName}: ${repositoryLoadErrorText(error)}',
+          );
+        }
+      }
       final selected =
           profiles.where((profile) => profile.selected).firstOrNull ??
           profiles.firstOrNull;
@@ -220,11 +310,9 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
       setState(() {
         _profiles = profiles;
         _selected = selected;
-        _studentCounts = {
-          for (final state in states) state.profileId: state.students.length,
-        };
+        _studentCounts = counts;
         _catalogStudentCount = catalog.length;
-        _error = null;
+        _error = failures.isEmpty ? null : failures.join('\n');
       });
     } catch (error) {
       if (mounted) setState(() => _error = '$error');
@@ -857,7 +945,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
                                   ),
                                   profile: profile,
                                   selected: _selected?.id == profile.id,
-                                  ownedCount: _studentCounts[profile.id] ?? 0,
+                                  ownedCount: _studentCounts[profile.id],
                                   totalCount: _totalStudents,
                                   path: localRowPath,
                                   portraitRect: localRect(
@@ -1032,7 +1120,8 @@ class _AccountListItem extends StatelessWidget {
   });
   final RepositoryProfile profile;
   final bool selected;
-  final int ownedCount;
+  /// state를 읽지 못했으면 null("읽지 못함").
+  final int? ownedCount;
   final int totalCount;
   final Path path;
   final Rect portraitRect;
@@ -1120,7 +1209,9 @@ class _AccountListItem extends StatelessWidget {
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Text(
-                '보유 : $ownedCount/$totalCount',
+                ownedCount == null
+                    ? '보유 : 읽지 못함'
+                    : '보유 : $ownedCount/$totalCount',
                 style: const TextStyle(color: AppColors.textMuted),
               ),
             ),

@@ -79,6 +79,9 @@ class _TitlePageState extends State<TitlePage>
   var _actionRunning = false;
   var _transitioning = false;
   String? _error;
+
+  /// 계정 목록·state를 읽다가 실패했다(이관 실패 포함). 주 버튼은 첫 실행 흐름 대신 다시 읽는다.
+  bool _accountLoadFailed = false;
   AccountClusterEntry? _accountClusterEntry;
   StudentCatalogEntry? _studentGridWarmupPreview;
   bool _studentGridWarmupActive = false;
@@ -174,11 +177,17 @@ class _TitlePageState extends State<TitlePage>
       final profiles = await repository.listProfiles();
       var selected = profiles.where((item) => item.selected).firstOrNull;
       if (selected == null && profiles.isNotEmpty) {
+        // 선택 대상 state를 먼저 읽는다. legacy 프로필은 이 첫 로드에서 활성 문서로 옮겨지며 revision이 오르므로
+        // (FB-1b), 목록 revision이 아니라 state가 돌려준 revision으로 고른다.
         final fallback = profiles.first;
+        final fallbackState = await loadRepositoryStateRetrying(
+          repository,
+          fallback.id,
+        );
         final revision = await repository.selectProfile(
           fallback.id,
-          fallback.revision,
-          'title-login-${fallback.id}-${fallback.revision}',
+          fallbackState.revision,
+          'title-login-${fallback.id}-${fallbackState.revision}',
         );
         selected = RepositoryProfile(
           id: fallback.id,
@@ -190,20 +199,28 @@ class _TitlePageState extends State<TitlePage>
       }
       final state = selected == null
           ? null
-          : await repository.loadRepositoryState(selected.id);
+          : await loadRepositoryStateRetrying(repository, selected.id);
+      // state를 읽은 뒤의 revision이 권위값이다(첫 로드 이관으로 목록 값보다 클 수 있다).
+      final profile = selected == null || state == null
+          ? selected
+          : repositoryProfileWithRevision(selected, state.revision);
       if (!mounted || generation != _accountLoadGeneration) return;
       setState(() {
-        _profile = selected;
+        _profile = profile;
         _repositoryState = state;
         _loading = false;
         _error = null;
+        _accountLoadFailed = false;
       });
       unawaited(_loadStudentCatalog(generation));
     } catch (error) {
       if (!mounted || generation != _accountLoadGeneration) return;
+      // 이관 실패(legacy_goals_conflict·corrupt_data)는 빈 목표로 열지 않고 문구로 알린다. 계정을 읽지 못한 채로
+      // 첫 실행(새 계정·v6 가져오기)으로 넘어가지 않게, 주 버튼은 다시 읽기만 한다.
       setState(() {
         _loading = false;
-        _error = '$error';
+        _error = repositoryLoadErrorText(error);
+        _accountLoadFailed = true;
       });
     }
   }
@@ -323,6 +340,10 @@ class _TitlePageState extends State<TitlePage>
         _actionRunning ||
         _transitioning ||
         widget.service.state.value.connection != BackendConnection.connected) {
+      return;
+    }
+    if (_accountLoadFailed) {
+      await _loadAccount();
       return;
     }
     var initialAction = _InitialAccountAction.create;

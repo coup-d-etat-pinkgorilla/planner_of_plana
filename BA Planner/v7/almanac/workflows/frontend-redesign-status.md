@@ -31,7 +31,9 @@ sources:
 
 **FE4-a 완료.** 커밋 `a18897a1`(gate `20261008_164059` GREEN, golden `plan-flow-step1`·`plan-flow-step2` 추가), 문서 `eea7f113`. FE4-a2(활성 계획 편집 경로 이관)는 하지 않고 FE4-b로 넘어갔다(오케스트레이터 배정 2026-10-08 16:48). FB-1a(문서 v2, 백엔드 워커) `682b2a7b` 커밋으로 `planning_models.dart` 소유가 프론트로 돌아왔다.
 
-**FE4-b1 코드 작성 완료, gate 미실행(2026-10-08 밤).** FE4-b를 b1/b2로 나눴다(아래 "FE4-b 분할과 FE4-b1 착수 기록"·"FE4-b1 종료 기록"). 시작 커밋 `682b2a7b`(FB-1a, 그 뒤 문서 커밋이 있으면 그것). 다음은 사용자 gate ① → 오케스트레이터 검토 → FE4-b2.
+**FE4-b 완료.** 커밋 `2a5a7655`(gate `20261008_212503` GREEN, ①의 analyze 1건은 오케스트레이터가 고침). FE4-b2(한 명 모드·최근 본 학생)는 하지 않고 FE4-c로 넘어갔다(오케스트레이터 배정 2026-10-08 21:34).
+
+**FE4-c 코드 작성 완료, gate ① 대기(2026-10-08 밤).** 시작 커밋 `2a5a7655`(그 뒤 문서 커밋이 있으면 그것). 분할하지 않았다(아래 "FE4-c 착수 기록"·"FE4-c 종료 기록"). 예상: golden 3건 RED(`plan-flow-step2`·`plan-flow-step1-filter` 바뀜, `plan-flow-step2-more` 기준 없음).
 
 ### 커밋 기록
 
@@ -60,6 +62,7 @@ sources:
 | FB-13 | `fa15e87c` | catalog `has_favorite_item`(KR 애장품 제공 여부) 계약·Python·Dart·mock·asset 재생성(백엔드 워커, `frontend-redesign-status-backend.md`) | 백엔드 기록 참조, 프론트 gate는 `20261008_122807` GREEN |
 | FE4-a | `a18897a1`(+ 문서 `eea7f113`) | 계획 만들기 흐름 골격: 3-Section Studio 문서, 진행 레일(스텝 4개·요약 4행·다음/이전), 초안 컨트롤러 + 문서 경계 + 250ms 디바운스 계산, 부족 재화 플라이아웃, 시나리오 생성(1단계)·비교 편집(3단계) 진입, 기존 세 화면은 B 본문에 축소 수용, golden 2장 추가 | `20261008_152312` RED(넘침·가림·단계 상태 기대·analyze 1) → `20261008_162544` RED(golden 2, 새 장면) → `20261008_164059` GREEN |
 | FB-1a | `682b2a7b` | 문서 v2: 19키 nullable 목표(null = 목표 없음)·학생별 `goal_metadata`, 계산·시나리오가 v1·v2를 함께 읽음(백엔드 워커, `frontend-redesign-status-backend.md`) | Python 873 통과, 프론트 gate `20261008_164059` GREEN에 포함 |
+| FE4-b | `2a5a7655` | 계획 만들기 1단계 새 학생 고르기(8열 그리드·순서 배지·C 목록/압축 그리드·역할군 칩·필터 모달 + 계획 칩 그룹), 초안 문서 v2 전환, 시나리오 반영·비교의 v2 정수 보기, golden `plan-flow-step1`·`-step2` 갱신·`-many`·`-filter` 추가 | ① RED(analyze 1 `use_null_aware_elements`, 오케스트레이터 수정 + golden 4 예측 일치) → ② → `20261008_212503` GREEN |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -3633,4 +3636,191 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice re
 ### FE4-b1 commit record (2026-10-08 21:33, written by fe_commit.ps1)
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261008_212503\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-c 착수 기록 (2026-10-08 밤)
+
+- 작업 지시(22:14)의 §0을 읽었다: 워크플로 FE4 절·FE4-c 행·재개 지점(2026-10-08 밤 2), 오케스트레이터 로그 16:02·16:48·21:16·21:34, 결정 대장 FD-072~FD-076, 시안 Flow-2-Goals(`dc_outline.py`), C 보고서 §2, FB-1a "FE4 초안 컨트롤러 연결 메모".
+- 0단계 기록: FE4-b `2a5a7655`(위 커밋 기록 표).
+- 막힘 확인: FD-072·FD-073·FD-075·FD-076은 워커 재량(권장안으로 진행), FD-074 확정(단계 프리셋·내 그룹 저장소는 FB-1b 이후). 열림 0건.
+- 21:16 요청(`plan-flow-step2` 0.6% 차이 원인 한 줄): FE4-b1에서 계획 만들기 golden mock(`GoldenPlanFlowMockAppService`)이 학생 장면 fixture(`GoldenStudentMockAppService` + `seedStudentScene`)를 이어받게 바꿨다. 그래서 아루가 저장된 보유 학생(Lv.1, ★1, 스킬 1/1/0/0, 모자 T1 Lv.1)이 되었다. 이전에는 기본 mock에 아루가 없어 미보유 기본값이었다. 학생 탭·계산기 golden과 같은 fixture 값이다.
+- 분할 판단: FE4-a2·FE4-b2처럼 남은 조각이 다음 배정에서 빠지는 일이 있었다. 그래서 이번에는 나누지 않고 지시 범위 전체(2단계 B·C, 필터 알약 확인)를 한 번에 한다. 바뀌는 파일은 새 2단계 화면·편집 상태와 컨트롤러·워크스페이스·흐름 테스트·golden이다. 기존 요소 편집기(`PlanElementBuilder`)는 활성 계획 "학생 추가" 경로가 아직 쓰므로 지우지 않는다.
+
+## FE4-c 종료 기록 (2026-10-08 밤, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없다. 그래서 `flutter analyze`·Dart 테스트·golden을 돌리지 못했고, 통과를 주장하지 않는다.
+- 별도 검토 에이전트 1개가 바뀐 파일 전부를 정적으로 읽었다. kit·모델 정의와 생성자·키·mock 값(`buildMockOwnedStudents`)을 대조했다. 고친 지적:
+  1. "더 보기" 키가 `ValueKey<String?>`로 만들어져 테스트·golden이 못 찾았다. → 지역 변수로 받아 `ValueKey<String>`.
+  2. 단계 카드가 겹쳐 놓여(간격 363 < 폭 473) 오른쪽 끝 누르기(×·상태 칩·인연 ▲▼)가 다음 카드로 갔다. → 누르기 감지를 카드 자르기(평행사변형) 안쪽에 둔다.
+  3. `_designBox`의 쓰지 않는 `key` 인자(analyze 경고).
+  4. `stage_results` 읽기의 if-case 맵 원소(`use_null_aware_elements` 가능성). → 일반 반복문.
+  5. 편집 상태가 계산 결과 알림마다 학생 작업 단계를 다시 읽을 수 있었다(시나리오 편집으로 연 단계 중 앞 단계보다 올린 것이 없는 단계가 있을 때). → 학생별로 마지막에 읽거나 넣은 초안 단계 id와 비교하고, 초안이 그대로면 건너뛴다.
+- PC `.git/index`로 확인했다: 바꾼 추적 파일 9개는 작업 시작 때 PC 내용 = HEAD 블롭이다. 새 파일 3개는 index에 없다. 시작 뒤 PC 파일 mtime도 그대로다.
+
+### 바뀐 파일
+
+| 파일 | 상태 | 줄(+/−) | 내용 |
+|---|---|---|---|
+| `frontend/lib/ui/models/plan_flow_goal_editor.dart` | 새 파일 | +597 | `PlanFlowGoalEditor`: 학생별 정수 작업 단계·모드·고른 단계·"더 보기", 값 바꾸기(기존 요소 편집기 `_setTarget` 이식: 앞 단계 하한·최댓값·정규화·뒤 단계 올림·900ms 표시), 단계 추가/삭제/이름(기본 이름 번호), 모드(프리셋·한 번에 MAX·직접 입력), 목표 지우기(모든 단계), 다른 학생·모두 적용. 고칠 때마다 "앞 단계보다 올린 단계"만 `setStudentStages`로 초안에 넣는다 |
+| `frontend/lib/ui/widgets/plan_flow_goal_step.dart` | 새 파일 | +2762 | `PlanFlowGoalBody`(B: 학생 탭 줄, 프리셋 바, 지금 상태 카드 + 단계 카드 가로 스크롤 + 단계 추가, 현재 → 최종 7항목), `PlanFlowGoalAside`(C: 단계 프리셋 행, 다른 학생에도 적용·모두, 이 학생 재화 요약). 카드 블록(LEVEL·STAR·WEAPON·인연 ▲▼, 성급 9칸, SKILL SUMMARY, EQUIPMENT 티어 ◀▶, ABILITY + 더 보기, COST) |
+| `frontend/test/plan_flow_goal_step_test.dart` | 새 파일 | +1094 | 아래 테스트 |
+| `frontend/lib/ui/models/plan_flow_draft.dart` | 수정 | +169 −3 | `PlanFlowStageResource`·`PlanFlowStageCost`(`stage_results[]`: 크레딧·재화·들어설 때 보유/부족·경고), `PlanFlowCalculation.stageCosts`, `PlanFlowController.setStudentStages`(단계 id가 그대로면 칸 배치 유지, 바뀌면 그 학생 단계를 모두 칸에서 뺌, 빈 목록 = 미설정) |
+| `frontend/lib/ui/widgets/plan_flow_workspace.dart` | 수정 | +42 −39 | 2단계를 B·C 모션 안의 새 화면으로(요소 편집기 축소 수용 제거), 편집 상태를 흐름 동안 유지·폐기, 프리셋 목록 갱신 |
+| `frontend/lib/ui/widgets/student_filter_modal.dart` | 수정 | +13 −7 | 선택 인자 `showCountBadge`(기본 true = 학생 탭 그대로) |
+| `frontend/lib/ui/widgets/plan_flow_student_step.dart` | 수정 | +2 | 흐름 1단계 필터 모달은 `showCountBadge: false` |
+| `frontend/test/plan_flow_test.dart` | 수정 | +52 −31 | 흐름 위젯 테스트를 새 2단계 기준으로(아래 대조표) |
+| `frontend/test/planning_page_test.dart` | 수정 | +7 −11 | "scenario creation builds goals in the plan flow and reuses the phase editor"(이름 바꿈): 프리셋·확정·페이즈 편집기 열기 → 한 번에 MAX + 레일 "다음" |
+| `frontend/test/plan_flow_student_step_test.dart` | 수정 | +5 | 필터 모달 테스트에 배지 없음 단언 |
+| `frontend/test/goldens/golden_harness.dart` | 수정 | +98 −1 | `GoldenPlanFlowMockAppService`가 단계마다 `stage_results`(크레딧 + 오파츠 2종, 순서 0 = 부족 1종, 1 = 부족 2종, 2 이후 = 지금 가능, 미보유 = 비용 0 + 경고), `goldenFlowStagePreset()`(총력전 3단계) |
+| `frontend/test/goldens/fe1g_baseline_golden_test.dart` | 수정 | +55 −8 | `plan-flow-step2` 다시 씀, 새 `plan-flow-step2-more`, 쓰지 않게 된 import 1줄 삭제 |
+
+`lib/services/**`, `backend/`, `contracts/`, 스캐너·tactic·metadata 소유 파일, `developer_tools*`, `app_shell.dart`, `plan_section_layout.dart`(CRLF)는 고치지 않았다. 기존 요소 편집기 `plan_element_builder.dart`·`plan_preset_manager.dart`도 그대로다(활성 계획 "학생 추가" 경로).
+
+### 기존 요소 편집기 기능 대조
+
+흐름 2단계는 더 이상 `PlanElementBuilder`를 쓰지 않는다. 활성 계획 "학생 추가" 경로가 아직 그 편집기를 써서 파일·`plan_element_builder_test`·golden `plan-element-builder`·`plan-preset-manager`는 그대로 둔다.
+
+| 기존 요소 편집기 | 새 2단계 | 테스트(`plan_flow_goal_step_test` 기준) |
+|---|---|---|
+| 스테퍼 `− 값 +`(아래 한계 = 앞 단계 값, 첫 단계는 지금 값 · 위 한계 = 목표 최댓값) | 카드 ▲▼ 미세 조절: LEVEL·STAR·WEAPON·인연·EX/Normal/Passive/Sub, 장비 티어 ◀▶. 같은 한계 규칙 | "값 바꾸기 …", "미세 조절 → 디바운스 …"(▼는 지금 값까지) |
+| MAX 배지(칸마다 최댓값) | "더 보기" 스테퍼의 MAX 배지 + 프리셋 바 "한 번에 MAX"(모든 목표, FD-075) | "성급 9칸 · … 더 보기", "한 번에 MAX …" |
+| 성장 규칙 정규화(장비 티어↔레벨, 무기★↔레벨, 성급↔인연, 스킬2·3↔성급, 능력치 = Lv.90·5성, 애장품 없는 학생) | 같은 `normalizePlanningGrowthTargets` | "성장 규칙 …", "더 보기"(능력치 MAX → Lv.90) |
+| 뒤 단계 자동 올림 + 900ms 표시 | 같음(파란 바탕) | "값 바꾸기 …" |
+| 성급 · 전용무기 스트립(9칸, 고른 칸을 다시 누르면 한 칸 아래) | 카드 성급 9칸(같은 규칙) + STAR ▲▼(FD-072) | "성급 9칸 …" |
+| 장비 편집기(티어·레벨) · 애장품 슬롯 · 능력치 스테퍼 | 카드는 티어 ◀▶, 레벨·애장품(애장품 있는 학생만)·HP/ATK/HEAL·무기 ★는 "더 보기"(FD-072) | "성급 9칸 · 장비 티어 ◀▶ · 더 보기 스테퍼" |
+| 프리셋 적용(듬성한 단계를 앞 단계에 누적해 펼치고, 올린 것이 없는 단계는 버림) | 프리셋 바 세그먼트 + C 프리셋 행(같은 규칙) | "프리셋 …", "한 번에 MAX · 직접 입력 세그먼트와 프리셋 세그먼트" |
+| 단계 추가(고른 단계 바로 뒤 복사본) · 선택 단계 삭제(하나는 남김) · 기본 이름 번호 다시 매기기 | "단계 추가" 세로 버튼(고른 단계 뒤) · 카드마다 ×(하나 남으면 비활성) · 같은 번호 규칙 · 이름 인라인 편집(FD-073) | "단계 추가는 …", "단계 추가·삭제 버튼과 카드 고르기" |
+| 단계 고르기(카드 선택) | 카드 누르기 = 고르기(굵은 테두리), 값을 고치면 그 단계를 고름 | "단계 추가·삭제 버튼과 카드 고르기" |
+| 현재 상태로 초기화 | "직접 입력"(빈 1단계) | "한 번에 MAX는 …" |
+| 확정(앞 단계보다 올린 단계만, 없으면 안내) | 확정 버튼 없음. 고칠 때마다 올린 단계만 초안에 들어가고(v2 null 규칙), 올린 것이 없는 단계는 카드에 "목표 없음"으로 남는다 | "v2: …", "값 바꾸기 …" |
+| 학생 큐(확정하면 다음 학생) | 학생 탭(고른 순서, 설정 중·완료·미설정, 아무 때나 이동) | "처음에는 …", "학생 탭은 …" |
+| 미배정 목록(이름 바꾸기·삭제·학생 다시 편집) | 없앰. 이름은 카드 머리, 삭제는 카드 ×, 학생 편집은 탭, 칸 배치는 3단계 | `plan_flow_test` 흐름("미배정" 없음) |
+| 현재 상태 섹션(읽기 전용) | 지금 상태 카드(미보유면 "모집 필요", FD-076) | "미보유 학생 …" |
+| 계획으로 돌아가기 · 페이즈 편집기 열기 | 레일 이전 · 다음(FE4-a) | `plan_flow_test`, `planning_page_test` |
+
+옮긴 테스트:
+- `plan_flow_test` "1단계는 새 학생 고르기 …": 2단계 요소 편집기 축소 배치 검사 → 새 2단계 B·C 단언(축소 슬롯 없음, 탭, 프리셋 세그먼트, 저장 버튼·미배정 없음) + "한 번에 MAX" → 3단계. 축소 배치 검사는 3단계 페이즈 편집기로 옮겼다. 돌아오면 고른 모드가 남는다.
+- `planning_page_test` "scenario creation …": 프리셋 + 확정 + "페이즈 편집기 열기" → "한 번에 MAX" + 레일 "다음". 3·4단계 단언은 그대로다.
+- golden `plan-flow-step2`: 프리셋 + 확정 → 3명 + 3단계 프리셋.
+- 기존 요소 편집기 자체 테스트(`plan_element_builder_test`, `planning_page_test` 활성 계획 경로)는 그대로다.
+
+### 테스트
+
+- `plan_flow_goal_step_test.dart`(새 파일, 23건):
+  - 편집 상태: 처음 상태(첫 학생·직접 입력·초안 비어 있음), v2(올린 키만 목표, 나머지 null, 계산 문서·`PlanningDocument.fromWire`까지 null 유지), 값 바꾸기 한계·뒤 단계 올림·900ms 표시, 성장 규칙, 단계 추가/삭제/이름, 프리셋 누적 펼침, 한 번에 MAX·직접 입력, 목표 지우기(모든 단계, 묶인 목표도 내려감, v2 null), 다른 학생·모두 적용, 미보유 학생, 1단계에서 뺀 학생, 시나리오 편집처럼 기존 단계로 열기.
+  - 초안 연결: `setStudentStages` 칸 배치 규칙, `stage_results` 읽기·COST 행 순서·비용 한 줄·상태 칩, 현재 → 최종 글자·막대(`closeTo`).
+  - 화면: 학생 탭 순서·상태·전환, 미세 조절 3번 → 디바운스 계산 1번 → COST·상태·비용 한 줄 갱신(계산 결과를 목표에 되쓰지 않음) + 의미 구조(label · value · increasedValue · decreasedValue + 동작, `SemanticsHandle`은 본문 끝에서 dispose), 단계 추가·삭제·이름 인라인 편집·카드 고르기, MAX/직접 입력/프리셋 세그먼트와 C 프리셋 행, 현재 → 최종 ×, 성급 9칸·장비 티어·더 보기 스테퍼, C 다른 학생에도 적용·모두·재화 요약, 미보유 학생 칩.
+  - 계산 디바운스·바뀐 칸 Timer는 명시적인 pump로 끝까지 흘린다.
+- `plan_flow_test.dart`·`planning_page_test.dart`: 위 옮긴 테스트.
+- `plan_flow_student_step_test.dart`: 필터 모달에 "필터 · n" 배지가 없다.
+
+### golden 예측
+
+- 바뀜 2: `plan-flow-step2`(새 2단계: 탭 3명 — 아루 설정 중·호시노·미보유 슌, 총력전 3단계 카드 3장 + COST·상태 칩 "부족 1종 / 부족 2종 / 지금 가능", 현재 → 최종, C 프리셋 2행·다른 학생 2행·재화 요약, 레일 "48.2M·5종"), `plan-flow-step1-filter`(왼쪽 위 "필터 · 2" 배지가 사라짐).
+- 새 장면 1: `plan-flow-step2-more`(아루 한 번에 MAX 뒤 미보유 슌 탭, Lv.4 1단계, "모집 필요", 더 보기 펼침).
+- 그대로: `plan-element-builder`·`plan-preset-manager`(활성 계획 경로, 파일 미수정), `plan-flow-step1`·`plan-flow-step1-many`(모달을 열지 않음), 학생 탭 필터 장면(배지 기본값 true) 등 나머지.
+- 그래서 ① gate는 golden 3건 RED가 예상이다(바뀜 2 + 기준 없음 1).
+
+### 처리한 FD
+
+- **FD-072 (a)**: 목표 키 19개를 모두 고칠 수 있다. 성급은 카드 STAR ▲▼ + 성급 9칸, 장비 레벨·애장품·추가 능력치·무기 ★는 카드 아래 "더 보기"(EQUIPMENT·ABILITY·COST 자리를 스테퍼 판으로 바꿈).
+- **FD-073**: 단계 이름 기본 "n단계", 카드 머리 인라인 편집(비우면 기본 이름). 프리셋 적용 때 프리셋 단계 이름은 아직 쓸 수 없다(`PlanElementPreset`에 단계 이름이 없음, FD-074 모델 변경과 함께).
+- **FD-074**: 프리셋 바·C는 계획 화면 프리셋 관리의 인메모리 프리셋을 보여 주고 적용한다(기존 편집기 "프리셋 적용" 대조 유지). 저장되는 프리셋("지금 구성을 프리셋으로")과 영속 저장, 1단계 "내 그룹"은 FB-1b 저장소 전까지 그리지 않는다. 판단 근거: 지시의 "저장되는 단계 프리셋"을 저장 기능·저장소로 읽었다. 인메모리 프리셋도 숨겨야 한다면 세그먼트·C 행만 빼면 된다(프리셋 적용 대조 행은 비게 된다).
+- **FD-075**: "한 번에 MAX"(1단계에 모든 목표 최댓값, 애장품 없는 학생은 0)·"직접 입력"(지금 값 그대로인 빈 1단계)은 모드이고 저장하지 않는다.
+- **FD-076**: 미보유 학생은 목표 최솟값을 지금 값으로 본다. 탭 "미보유", 지금 상태 카드·단계 상태 "모집 필요". 백엔드는 현재 상태가 없는 학생 단계를 계산에서 빼므로 COST는 "모집 뒤에 비용을 계산합니다"다(모집 비용 FB-9).
+
+### 필터 알약 판정
+
+- 판정: 버그. `StudentFilterModal`이 "필터 · n" 배지를 (18, 226)에 그린다. 이 자리는 학생 탭 S1 필터 버튼 자리다. 계획 만들기 1단계에서는 필터 버튼이 B 오른쪽 위에 있어서 배지가 레일 2단계 근처에 떠 보였다. 시안 Flow-1-Students-Filter에도 떠 있는 배지가 없다(B 버튼 "필터 · n"만 있음).
+- 수정: `StudentFilterModal.showCountBadge`(기본 true). 흐름 1단계만 false다. 학생 탭은 그대로다.
+
+### 바뀐 동작(검토 때 볼 것)
+
+1. 2단계에는 확정 버튼이 없다. 값을 고칠 때마다 앞 단계보다 올린 단계만 초안에 들어가고 디바운스 계산이 돈다(레일 요약·카드 COST).
+2. 학생의 단계 목록이 바뀌면(추가·삭제, 또는 어떤 단계가 앞 단계보다 올린 것이 없어짐) 그 학생의 단계는 모두 칸에서 빠진다(3단계에서 다시 배치). 값만 바꾸면 칸 배치는 그대로다.
+3. 카드 상태 "지금 가능/부족 n종"의 기준: 2단계에는 칸 순서가 없어서 계산 문서의 임시 순서(모든 학생 1단계 → 2단계 …)에서 단계에 들어설 때의 보유량이다(C 보고서 §2.6 미정 항목).
+4. 현재 → 최종은 7항목이다. 시안 6항목에 추가 능력치(ABILITY)를 더했고, EQUIPMENT ×는 애장품도 함께 지운다.
+5. "고른 n명 모두 …"·학생 행 "바꾸기"는 확인 없이 그 학생의 단계를 지금 모드로 바꾼다.
+6. 기존 v1/v2 시나리오를 "편집"으로 열면 초안 단계를 작업 단계로 읽는다. 지금 값과 같아 초안에 null로 들어가는 키는 처음 고칠 때 null로 정리된다.
+7. 프리셋 바 "지금 구성을 프리셋으로"는 없다(FD-074).
+
+### 검수표
+
+| 항목 | 확인 |
+|---|---|
+| 학생 탭 줄(1단계 고른 순서, 상태 3종) | 탭 테스트 |
+| 단계 카드 추가·삭제, 이름(FD-073) | 편집 상태·화면 테스트 |
+| 카드 COST(`stage_results`, 디바운스 1회) | 미세 조절 → 디바운스 테스트, 계산 결과 읽기 테스트 |
+| 현재 → 최종, × = 모든 단계에서 지우기(v2 null) | 목표 지우기 테스트 2건 |
+| 프리셋 바 모드(FD-075), 저장 숨김(FD-074) | 세그먼트 테스트, `plan_flow_test` |
+| 카드에 없는 목표(FD-072), 미보유(FD-076) | 더 보기·미보유 테스트 |
+| v2: 고르지 않은 목표 null, `planningDocumentTargets` 안 씀, 계산 결과 되쓰기 없음 | v2 테스트(계산 문서·fromWire), 디바운스 테스트 |
+| 미배정 목록 없앰, 기존 편집기 기능 대조·테스트 옮김 | 위 표 |
+| C 보조(Flow-2) | C 테스트 |
+| 필터 알약 | 판정·수정, 1단계 필터 테스트 단언 |
+| Semantics value 3종, `SemanticsHandle` 본문 끝 dispose | 디바운스 테스트 |
+| `closeTo`, 명시적 pump, analyze info 0, ~습니다체 | 코드 확인(실행 안 됨) |
+| 금지 파일 미수정 | 바뀐 파일 표 |
+
+### 확인하지 못한 것
+
+- analyze·테스트·golden 실행 전부(이 환경에 Flutter 없음).
+- 새 장면 그림. 시안과 견줄 것: 카드 블록 안 글자 크기(블록마다 scaleDown), 성급 9칸 위치, 장비 아이콘(카탈로그 `equipment_slot_n` 이름), "단계 추가" 점선, C 행 간격(창 높이가 1208이 아니면 행 높이는 고정·위치만 비율).
+- 학생이 많을 때 C "다른 학생에도 적용"은 4명까지 보이고 나머지는 "외 n명" 줄로 줄인다.
+
+### 사용자 실행 순서
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 승인 뒤 기준 이미지 갱신 → gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4c -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4c
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesigndocs
+```
+
+## fe1brev 종료 기록 (2026-10-09 새벽, FB-1b 이관 revision 전파, 코드 작성 완료·gate 미실행)
+
+작업 지시(00:51): FE4-c 승인 뒤 같은 워커가 작은 별도 slice로 한다. 읽은 것: `frontend-redesign-status-backend.md` FB-1b "소비자 영향·오케스트레이터 전달 요청" 표와 "프런트 연결 메모", 오케스트레이터 로그 00:37·00:47, gate `20261009_003919` 로그. 이 환경에는 Flutter가 없어 analyze·테스트를 돌리지 못했다.
+
+### 실패 원인(gate `20261009_003919`, `title_page_test` "first run imports a v6 account and opens its repository plan")
+
+- 로그 문구: `v6 계정을 가져오지 못했습니다: Bad state: revision_conflict`. 충돌은 화면이 아니라 테스트 대역 `_V6ImportMockService.importV6Account` 안에서 난다.
+- 그 대역은 `selectProfile` 뒤 `saveRepositoryStudents(..., 0, ...)`로 revision 0을 고정해서 넘긴다. FB-1b mock은 state revision과 프로필 revision을 하나로 맞췄다(state가 없으면 프로필 revision을 쓴다). 그래서 선택이 올린 revision 1과 맞지 않는다.
+- 고친 방법: 대역이 `selectProfile`이 돌려준 revision으로 다음 저장을 한다. 테스트 기대(단언)는 그대로다.
+
+### 화면 수정(FB-1b 소비자 영향표의 프런트 두 행)
+
+| 파일 | 줄(+/−) | 내용 |
+|---|---|---|
+| `frontend/lib/ui/pages/title_page.dart` | +25 −5 | 선택된 계정이 없으면 대상 state를 먼저 읽고 그 revision으로 select한다(목록 revision 아님). state를 읽은 뒤 `_profile` revision을 state 값으로 바꾼다. 읽기 실패(이관 실패 포함)는 문구로 보이고, 주 버튼은 첫 실행(새 계정·v6 가져오기)으로 가지 않고 다시 읽는다 |
+| `frontend/lib/ui/widgets/account_section_cluster.dart` | +96 −11 | 계정마다 state를 읽고 돌려받은 revision으로 목록 값을 바꾼다(선택·수정·삭제가 이 값을 씀). 한 계정이 실패해도 나머지는 보이고, 실패한 계정은 오류 줄 + 행 "보유 : 읽지 못함"(0명으로 보이지 않음). 공용 도우미 `repositoryLoadErrorText`(legacy_goals_conflict·corrupt_data·repository_busy 문구), `loadRepositoryStateRetrying`(repository_busy 두 번까지 재시도), `repositoryProfileWithRevision` |
+| `frontend/test/title_page_test.dart` | +151 −2 | 위 대역 수정 + 새 테스트 3건 |
+
+새 테스트:
+- 선택 안 된 legacy 프로필(활성 문서 없이 저장된 state): 타이틀이 첫 state 로드(revision 0 → 1) 뒤 그 값으로 선택(1 → 2)하고 오류가 없다. 이전 코드는 목록 값 0으로 select해서 충돌한다.
+- 계정 관리: 두 번째 계정의 첫 state 로드가 revision을 올린 뒤 "이 계정으로 전환"이 충돌 없이 된다.
+- 계정 관리: 첫 로드 이관 실패(`legacy_goals_conflict`)는 오류 줄과 "보유 : 읽지 못함"으로 보이고 다른 계정은 그대로다.
+
+범위 밖(고치지 않음): `scan_page.dart`·`tactical_page.dart`(다른 레인, 오케스트레이터가 tactic 로그 00:50에 전달), `lib/services/**`(백엔드). FE4-c 매니페스트와 겹치는 파일 없음. golden 변화 0 예상(정상 경로 그림은 같고, 실패 문구는 실패 때만 보임).
+
+### 사용자 실행 순서
+
+로그 00:47 순서대로: fe1brev 수정 → gate ② → fb1b(Python 전체 먼저) → fe1brev → fe4c → redesigndocs.
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe1brev -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe1brev
+```
+
+### fe1brev commit record (2026-10-09 02:33, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_013850\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

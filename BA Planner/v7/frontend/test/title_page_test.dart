@@ -67,13 +67,19 @@ class _V6ImportMockService extends MockAppService {
       'v6-import-profile',
       avatarStudentId: 'ayane',
     );
-    await selectProfile(created.id, created.revision, 'v6-import-select');
+    // 선택도 프로필 revision을 올린다. 다음 저장은 선택이 돌려준 revision을 쓴다(FB-1b mock은 state와 프로필
+    // revision이 하나다).
+    final selectedRevision = await selectProfile(
+      created.id,
+      created.revision,
+      'v6-import-select',
+    );
     final studentRevision = await saveRepositoryStudents(
       created.id,
       [
         ConfirmedStudentState.fromValues('ayane', {'level': 1}),
       ],
-      0,
+      selectedRevision,
       'v6-import-students',
     );
     final inventoryRevision = await saveRepositoryInventory(
@@ -113,6 +119,77 @@ class _V6ImportMockService extends MockAppService {
       'goal_count': 1,
       'warnings': <String>[],
     });
+  }
+}
+
+/// 선택된 계정이 없는 legacy 프로필 하나. 활성 문서 없이 저장된 state라서 첫 state 로드(선택 포함)가 활성 문서로
+/// 옮기며 revision을 +1 한다(FB-1b mock).
+class _LegacyUnselectedTitleService extends MockAppService {
+  _LegacyUnselectedTitleService()
+    : super(
+        profiles: const [
+          RepositoryProfile(
+            id: _legacyProfileId,
+            displayName: 'legacy fixture',
+            revision: 0,
+            selected: false,
+          ),
+        ],
+        repositoryStates: {
+          _legacyProfileId: {
+            'profile_id': _legacyProfileId,
+            'revision': 0,
+            'students': <dynamic>[],
+            'inventory': {'version': 1, 'entries': <dynamic>[]},
+            'goals': {'version': 1, 'goals': <dynamic>[]},
+          },
+        },
+      );
+}
+
+const _legacyProfileId = '0000000000000000000000d1';
+
+/// 계정 두 개. 각 계정의 첫 state 로드가 프로필 revision을 한 번 올린다(첫 로드 이관 흉내).
+/// [failingProfileId]의 state는 이관 실패(`legacy_goals_conflict`)로 읽지 못한다.
+class _MigratingAccountsService extends MockAppService {
+  _MigratingAccountsService({this.failingProfileId})
+    : super(
+        profiles: const [
+          RepositoryProfile(
+            id: '0000000000000000000000e1',
+            displayName: 'first account',
+            revision: 0,
+            selected: true,
+          ),
+          RepositoryProfile(
+            id: '0000000000000000000000e2',
+            displayName: 'second account',
+            revision: 0,
+            selected: false,
+          ),
+        ],
+      );
+
+  final String? failingProfileId;
+  final _migrated = <String>{};
+
+  @override
+  Future<RepositoryState> loadRepositoryState(String profileId) async {
+    if (profileId == failingProfileId) {
+      throw StateError('legacy_goals_conflict');
+    }
+    if (_migrated.add(profileId)) {
+      final profile = (await listProfiles()).firstWhere(
+        (item) => item.id == profileId,
+      );
+      await renameProfile(
+        profileId,
+        profile.displayName,
+        profile.revision,
+        'first-load-migration-$profileId',
+      );
+    }
+    return super.loadRepositoryState(profileId);
   }
 }
 
@@ -1237,6 +1314,91 @@ void main() {
     expect(state.goals.single.values['target_level'], 10);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'title selects an unselected legacy account with the migrated state revision',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 720));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final service = _LegacyUnselectedTitleService();
+      addTearDown(service.dispose);
+
+      await tester.pumpWidget(BAPlannerApp(service: service, showTitle: true));
+      await _pumpUntilFound(tester, find.text('legacy fixture'));
+      expect(find.byKey(const ValueKey('title-error')), findsNothing);
+      // 첫 state 로드(이관)가 revision을 0 → 1로 올리고, 선택은 그 revision으로 1 → 2.
+      final profile = (await service.listProfiles()).single;
+      expect(profile.selected, isTrue);
+      expect(profile.revision, 2);
+      expect((await service.loadRepositoryState(profile.id)).revision, 2);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'account manager switches with the revision returned by each state load',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 720));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final service = _MigratingAccountsService();
+      addTearDown(service.dispose);
+
+      await tester.pumpWidget(BAPlannerApp(service: service, showTitle: true));
+      await _pumpUntilFound(tester, find.byKey(const ValueKey('title-settings')));
+      await tester.tap(find.byKey(const ValueKey('title-settings')));
+      await tester.pumpAndSettle();
+
+      // 관리 화면이 두 번째 계정 state를 처음 읽으며 revision이 0 → 1이 되었다. 목록 값(0)으로 고르면
+      // revision_conflict다.
+      const secondId = '0000000000000000000000e2';
+      await tester.tap(find.byKey(const ValueKey('account-profile-$secondId')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('account-switch')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('account-cluster-error')), findsNothing);
+      final second = (await service.listProfiles()).firstWhere(
+        (profile) => profile.id == secondId,
+      );
+      expect(second.selected, isTrue);
+      expect(second.revision, 2);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'account manager shows a failed first-load migration instead of an empty account',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 720));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      const secondId = '0000000000000000000000e2';
+      final service = _MigratingAccountsService(failingProfileId: secondId);
+      addTearDown(service.dispose);
+
+      await tester.pumpWidget(BAPlannerApp(service: service, showTitle: true));
+      await _pumpUntilFound(tester, find.byKey(const ValueKey('title-settings')));
+      await tester.tap(find.byKey(const ValueKey('title-settings')));
+      await tester.pumpAndSettle();
+
+      final error = tester.widget<Text>(
+        find.byKey(const ValueKey('account-cluster-error')),
+      );
+      expect(error.data, contains('second account'));
+      expect(error.data, contains('활성 계획으로 옮기지 못했습니다'));
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('account-profile-count-$secondId')),
+          matching: find.text('보유 : 읽지 못함'),
+        ),
+        findsOneWidget,
+      );
+      // 다른 계정은 그대로 보인다.
+      expect(
+        find.byKey(const ValueKey('account-profile-0000000000000000000000e1')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'account deletion is confirmed and manager back reverses title motion',
