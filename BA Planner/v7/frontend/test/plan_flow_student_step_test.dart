@@ -292,6 +292,11 @@ void main() {
     await tester.pump();
     // 초안: 그리드는 그대로다.
     expect(_gridWidget(tester).students, hasLength(total));
+    // FE4-c: 학생 탭 S1 필터 버튼 자리의 "필터 · n" 배지는 그리지 않는다(개수는 B 오른쪽 위 필터 버튼이 보인다).
+    expect(
+      find.byKey(const ValueKey('student-filter-modal-badge')),
+      findsNothing,
+    );
 
     // 닫으면(적용 안 함) 초안을 버린다.
     await tester.tap(find.byKey(const ValueKey('student-filter-close')));

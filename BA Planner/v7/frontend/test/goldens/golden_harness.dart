@@ -498,6 +498,10 @@ class GoldenCalculatorMockAppService extends GoldenStudentMockAppService {
 ///
 /// FE4-b1: 1단계 새 학생 고르기 장면이 실제 카드·배지를 보이도록 학생 장면 fixture(학생 10명, 보유 7명,
 /// PLAN 3명)를 그대로 쓴다. 장면을 열기 전에 [seedStudentScene]을 부른다.
+///
+/// FE4-c: 2단계 카드 COST가 보이도록 단계마다 `stage_results`(크레딧 + 오파츠 2종, 들어설 때 보유량)를 돌려준다.
+/// 단계 순서(문서 순서) 0 = 부족 1종, 1 = 부족 2종, 2 이후 = 지금 가능. 현재 상태가 없는(미보유) 학생 단계는 백엔드처럼
+/// 비용 0 + 경고다.
 class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
   GoldenPlanFlowMockAppService() : super();
 
@@ -529,10 +533,91 @@ class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
       'shortage': (required - owned).clamp(0, required),
       'affected_stage_ids': stageIds,
     };
+    final owned = {
+      for (final student in currentStudents) student['student_id'] as String,
+    };
+    final stages = [
+      for (final phase in document['phases'] as List<dynamic>)
+        for (final stage in (phase as Map)['stages'] as List<dynamic>)
+          (
+            phaseId: phase['phase_id'] as String,
+            stage: Map<String, dynamic>.from(stage as Map),
+          ),
+    ];
+    Map<String, dynamic> stageResource(
+      String key,
+      String name,
+      int required,
+      int ownedAtEntry,
+    ) => {
+      'resource_key': key,
+      'item_id': key,
+      'display_name': name,
+      'category': 'oopart',
+      'required': required,
+      'owned_at_entry': ownedAtEntry,
+      'shortage_at_entry': (required - ownedAtEntry).clamp(0, required),
+    };
+    const stageCredits = [18200000, 9600000, 1800000];
+    final stageResults = [
+      for (final (index, entry) in stages.indexed)
+        {
+          'stage_id': entry.stage['stage_id'],
+          'phase_id': entry.phaseId,
+          'student_id': entry.stage['student_id'],
+          'name': entry.stage['name'],
+          if (!owned.contains(entry.stage['student_id'])) ...{
+            'cost': {
+              'credits': 0,
+              'warnings': ['Current student state is missing.'],
+            },
+            'resources': const <dynamic>[],
+          } else ...{
+            'cost': {'credits': stageCredits[index % stageCredits.length]},
+            'resources': [
+              {
+                'resource_key': 'credits',
+                'item_id': null,
+                'display_name': '크레딧',
+                'category': 'credits',
+                'required': stageCredits[index % stageCredits.length],
+                'owned_at_entry': 99000000,
+                'shortage_at_entry': 0,
+              },
+              switch (index) {
+                0 => stageResource(
+                  'Item_Icon_Material_Nebra_3',
+                  '오파츠 · 네브라 디스크 (최상급)',
+                  90,
+                  76,
+                ),
+                1 => stageResource(
+                  'Item_Icon_Material_Phaistos_3',
+                  '오파츠 · 파이스토스 원반 (최상급)',
+                  96,
+                  66,
+                ),
+                _ => stageResource(
+                  'Item_Icon_Material_Nebra_2',
+                  '오파츠 · 네브라 디스크 (상급)',
+                  40,
+                  52,
+                ),
+              },
+              stageResource(
+                'Item_Icon_Material_Wolfsegg_0',
+                '오파츠 · 볼프세크 철광석 (하급)',
+                18,
+                index == 1 ? 10 : 30,
+              ),
+            ],
+          },
+        },
+    ];
     return {
       'document_id': document['document_id'],
       'kind': document['kind'],
-      'stage_results': const <dynamic>[],
+      'stage_results': stageResults,
       'phase_results': const <dynamic>[],
       'overall': {
         'cost': {'credits': credits},
@@ -568,6 +653,18 @@ PlanElementPreset goldenTestPreset() => PlanElementPreset(
   isDefault: false,
   stages: const [
     {'level': 30},
+  ],
+);
+
+/// 2단계 장면이 쓰는 3단계 프리셋(FE4-c, 시안 "총력전 3단계"와 같은 구성).
+PlanElementPreset goldenFlowStagePreset() => PlanElementPreset(
+  id: 'raid-three-stage',
+  name: '총력전 3단계',
+  isDefault: false,
+  stages: const [
+    {'level': 90, 'equip1_tier': 9, 'equip2_tier': 9, 'equip3_tier': 9},
+    {'ex_skill': 5, 'skill1': 10, 'skill2': 10, 'bond_rank': 20},
+    {'student_star': 5, 'weapon_level': 30},
   ],
 );
 

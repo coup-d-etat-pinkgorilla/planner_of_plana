@@ -516,14 +516,128 @@ class PlanFlowShortage {
   final List<PlanFlowShortageUse> uses;
 }
 
-/// 초안 계산 결과 중 레일 요약과 플라이아웃에 쓰는 값.
+/// 단계 비용의 재화 한 줄(`stage_results[].resources`, FE4-c).
+@immutable
+class PlanFlowStageResource {
+  const PlanFlowStageResource({
+    required this.resourceKey,
+    required this.name,
+    required this.category,
+    required this.required,
+    this.itemId,
+    this.ownedAtEntry,
+    this.shortageAtEntry,
+  });
+
+  final String resourceKey;
+  final String name;
+  final String? itemId;
+  final String category;
+
+  /// 이 단계에 드는 양.
+  final int required;
+
+  /// 계산 문서 순서로 이 단계에 들어설 때 남은 보유량. 보유를 모르면 null.
+  final int? ownedAtEntry;
+
+  /// 들어설 때 모자라는 양(0 이상). 보유를 모르면 null.
+  final int? shortageAtEntry;
+
+  bool get isCredits => resourceKey == 'credits';
+}
+
+/// 학생 단계 하나의 비용(`planning.document.calculate` 응답 `stage_results[]`, FE4-c).
+///
+/// 2단계에는 아직 칸 순서가 없어서 계산 문서는 칸에 넣지 않은 단계를 단계 번호마다 임시 칸에 넣는다
+/// ([PlanFlowDocumentBoundary.calculationWire]). 그래서 "들어설 때 보유량"은 그 임시 순서(모두 1단계 → 모두
+/// 2단계 …) 기준이다(C 보고서 §2.6 판정 기준 미정).
+@immutable
+class PlanFlowStageCost {
+  PlanFlowStageCost({
+    required this.stageId,
+    required this.credits,
+    List<PlanFlowStageResource> resources = const [],
+    List<String> warnings = const [],
+  }) : resources = List.unmodifiable(resources),
+       warnings = List.unmodifiable(warnings);
+
+  final String stageId;
+
+  /// 필요 크레딧. 응답에 없으면 null.
+  final int? credits;
+  final List<PlanFlowStageResource> resources;
+
+  /// 계산 경고(미보유 학생 단계 제외 등).
+  final List<String> warnings;
+
+  /// 보유량을 아는 재화가 하나라도 있다.
+  bool get shortageKnown =>
+      resources.any((resource) => resource.shortageAtEntry != null);
+
+  /// 모자라는 재화 수. 보유를 모르면 null.
+  int? get shortageKinds => shortageKnown
+      ? resources.where((resource) => (resource.shortageAtEntry ?? 0) > 0).length
+      : null;
+
+  /// `stage_results[]` 한 줄을 읽는다. 단계 id가 없으면 null.
+  static PlanFlowStageCost? fromWire(Map<String, dynamic> row) {
+    final stageId = row['stage_id'];
+    if (stageId is! String) return null;
+    final cost = row['cost'];
+    final rawResources = row['resources'];
+    final resources = <PlanFlowStageResource>[
+      for (final raw in rawResources is List ? rawResources : const <Object?>[])
+        if (raw is Map && raw['required'] is int)
+          PlanFlowStageResource(
+            resourceKey:
+                raw['resource_key']?.toString() ??
+                raw['item_id']?.toString() ??
+                '',
+            name:
+                raw['display_name']?.toString() ??
+                raw['item_id']?.toString() ??
+                '알 수 없는 재화',
+            itemId: raw['item_id']?.toString(),
+            category: raw['category']?.toString() ?? 'unresolved',
+            required: raw['required'] as int,
+            ownedAtEntry: raw['owned_at_entry'] is int
+                ? raw['owned_at_entry'] as int
+                : null,
+            shortageAtEntry: raw['shortage_at_entry'] is int
+                ? raw['shortage_at_entry'] as int
+                : null,
+          ),
+    ];
+    int? credits;
+    if (cost is Map && cost['credits'] is int) {
+      credits = cost['credits'] as int;
+    } else {
+      for (final resource in resources) {
+        if (resource.isCredits) credits = resource.required;
+      }
+    }
+    final warnings = cost is Map && cost['warnings'] is List
+        ? [for (final warning in cost['warnings'] as List) '$warning']
+        : const <String>[];
+    return PlanFlowStageCost(
+      stageId: stageId,
+      credits: credits,
+      resources: resources,
+      warnings: warnings,
+    );
+  }
+}
+
+/// 초안 계산 결과 중 레일 요약과 플라이아웃, 2단계 카드 COST에 쓰는 값.
 @immutable
 class PlanFlowCalculation {
   PlanFlowCalculation({
     required this.credits,
     required this.shortageKnown,
     List<PlanFlowShortage> shortages = const [],
-  }) : shortages = List.unmodifiable(shortages);
+    Map<String, PlanFlowStageCost> stageCosts = const {},
+  }) : shortages = List.unmodifiable(shortages),
+       stageCosts = Map.unmodifiable(stageCosts);
 
   /// 필요 크레딧. 응답에 없으면 null("—").
   final int? credits;
@@ -536,7 +650,11 @@ class PlanFlowCalculation {
 
   int? get shortageKinds => shortageKnown ? shortages.length : null;
 
-  /// `planning.document.calculate` 응답의 `overall`을 읽는다. [stageLookup]은 단계 id → 학생 단계.
+  /// 단계 id → 단계 비용(`stage_results`). 응답에 없는 단계는 빠진다.
+  final Map<String, PlanFlowStageCost> stageCosts;
+
+  /// `planning.document.calculate` 응답의 `overall`과 `stage_results`를 읽는다. [stageLookup]은 단계 id → 학생
+  /// 단계.
   factory PlanFlowCalculation.fromProjection(
     Map<String, dynamic> projection, {
     required PlanFlowShortageUse? Function(String stageId) stageLookup,
@@ -592,10 +710,20 @@ class PlanFlowCalculation {
       );
     }
     shortages.sort((a, b) => b.shortage.compareTo(a.shortage));
+    final rawStages = projection['stage_results'];
+    final stageCosts = <String, PlanFlowStageCost>{};
+    for (final raw in rawStages is List ? rawStages : const <Object?>[]) {
+      if (raw is! Map) continue;
+      final stageCost = PlanFlowStageCost.fromWire(
+        Map<String, dynamic>.from(raw),
+      );
+      if (stageCost != null) stageCosts[stageCost.stageId] = stageCost;
+    }
     return PlanFlowCalculation(
       credits: credits,
       shortageKnown: shortageKnown,
       shortages: shortages,
+      stageCosts: stageCosts,
     );
   }
 }
@@ -882,6 +1010,44 @@ class PlanFlowController extends ChangeNotifier {
       },
     );
     if (_goalIndex + 1 < _goalQueue.length) _goalIndex += 1;
+    notifyListeners();
+    _scheduleCalculation();
+  }
+
+  /// 2단계 목표 편집기(`PlanFlowGoalEditor`)가 [studentId]의 단계를 바꾼다(정수 편집기 보기 → v2,
+  /// [PlanFlowGoalCodec.fromEditor]). 빈 목록이면 그 학생의 단계가 없어진다(미설정).
+  ///
+  /// 단계 id 목록(순서 포함)이 그대로면 칸 배치를 둔다(목표 값만 바뀜). 단계를 더하거나 지우거나 순서가 바뀌면 그
+  /// 학생의 단계를 모두 칸에서 뺀다. 같은 학생의 단계가 칸에 다 들어가거나 하나도 안 들어가야 계산 문서 순서에서
+  /// 목표가 퇴행하지 않는다([PlanFlowDocumentBoundary.calculationWire]). 목표 순번([goalSeed])은 바꾸지 않는다.
+  void setStudentStages(
+    String studentId,
+    List<PlanElementStageDraft> stages,
+  ) {
+    if (_disposed) return;
+    final previous = [
+      for (final stage
+          in _draft.stagesByStudent[studentId] ??
+              const <PlanFlowStageDraft>[])
+        stage.id,
+    ];
+    final next = [for (final stage in stages) stage.id];
+    final sameIds = listEquals(previous, next);
+    final seed = _draft.seedOf(studentId) ?? context.seedFor(studentId);
+    _draft = _draft.copyWith(
+      students: _draft.seedOf(studentId) != null
+          ? null
+          : [..._draft.students, seed],
+      stagesByStudent: {
+        ..._draft.stagesByStudent,
+        studentId: PlanFlowGoalCodec.fromEditor(seed, stages),
+      },
+      phases: sameIds ? null : _withoutStages(previous.toSet()),
+      goalMetadata: {
+        ..._draft.goalMetadata,
+        studentId: _draft.goalMetadata[studentId] ?? planFlowDefaultGoalMetadata,
+      },
+    );
     notifyListeners();
     _scheduleCalculation();
   }

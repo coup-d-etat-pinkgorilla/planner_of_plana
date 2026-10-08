@@ -196,6 +196,7 @@ class StudentFilterModal extends StatelessWidget {
     required this.onReset,
     required this.onClose,
     this.countedGroups = studentFilterCountedGroups,
+    this.showCountBadge = true,
   });
 
   /// 초안.
@@ -216,6 +217,10 @@ class StudentFilterModal extends StatelessWidget {
 
   /// 칩 옆 학생 수를 보이는 그룹 키.
   final Set<String> countedGroups;
+
+  /// "필터 · n" 배지를 그린다. 배지 자리 (18, 226)는 학생 탭 S1 필터 버튼 자리라서, 필터 버튼이 다른 곳에 있는
+  /// 화면(계획 만들기 1단계, 버튼은 B 오른쪽 위)은 끈다(FE4-c 확인: 시안 Flow-1-Students-Filter에 떠 있는 배지 없음).
+  final bool showCountBadge;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -254,14 +259,15 @@ class StudentFilterModal extends StatelessWidget {
                 rows: _growthRows(),
               ),
             ),
-            Positioned(
-              left: layout.badge.dx,
-              top: layout.badge.dy,
-              child: StudentFilterCountBadge(
-                key: const ValueKey('student-filter-modal-badge'),
-                count: chips.length,
+            if (showCountBadge)
+              Positioned(
+                left: layout.badge.dx,
+                top: layout.badge.dy,
+                child: StudentFilterCountBadge(
+                  key: const ValueKey('student-filter-modal-badge'),
+                  count: chips.length,
+                ),
               ),
-            ),
           ],
         ),
       );

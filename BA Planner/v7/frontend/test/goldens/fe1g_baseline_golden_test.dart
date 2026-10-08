@@ -18,13 +18,14 @@ import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
+import 'package:ba_planner_v7/ui/kit/kit_pressable.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_adapter.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_rules.dart';
 import 'package:ba_planner_v7/ui/models/plan_flow_draft.dart';
+import 'package:ba_planner_v7/ui/models/plan_flow_goal_editor.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/models/student_filter_selection.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
-import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_student_review_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/student_form_cycle.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
@@ -526,19 +527,65 @@ void main() {
   testWidgets('plan-flow-step2', (tester) async {
     setGoldenViewport(tester);
     final service = await _planFlowService();
-    await _openPlanFlow(tester, service, presets: [goldenTestPreset()]);
-    await _tapFlowCard(tester, 'aru');
+    await _openPlanFlow(
+      tester,
+      service,
+      presets: [goldenFlowStagePreset(), goldenTestPreset()],
+    );
+    // 세 명(아루 · 호시노 · 미보유 슌): 탭 줄은 고른 순서, 첫 학생(아루)부터 정한다.
+    for (final id in const ['aru', 'hoshino', 'shun_swimsuit']) {
+      await _tapFlowCard(tester, id);
+    }
     await _tapKey(tester, 'plan-flow-next');
-    await _tapKey(tester, 'plan-starter-preset-balanced-growth');
-    await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
-    // 초안 계산은 디바운스 Timer 뒤에 부른다.
+    expect(find.byKey(const ValueKey('plan-flow-goal-body')), findsOneWidget);
+    // 3단계 프리셋 → 단계 카드 3장. 초안 계산(stage_results)은 디바운스 Timer 뒤에 부른다.
+    await _tapKey(tester, 'plan-flow-goal-preset-raid-three-stage');
     await tester.pump();
     await tester.pump(planFlowCalculationDebounce);
     await tester.pump();
-    expect(find.byType(PlanElementBuilder), findsOneWidget);
     expect(find.text('48.2M'), findsOneWidget);
-    expect(find.text('5종'), findsOneWidget);
+    expect(find.text('부족 1종'), findsOneWidget);
+    expect(find.text('부족 2종'), findsOneWidget);
+    expect(find.text('지금 가능'), findsOneWidget);
     await expectGoldenScene(tester, 'plan-flow-step2');
+  }, variant: goldenPlatform);
+
+  testWidgets('plan-flow-step2-more', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _planFlowService();
+    await _openPlanFlow(tester, service, presets: [goldenFlowStagePreset()]);
+    for (final id in const ['aru', 'shun_swimsuit']) {
+      await _tapFlowCard(tester, id);
+    }
+    await _tapKey(tester, 'plan-flow-next');
+    // 아루는 한 번에 MAX(완료), 미보유 슌은 직접 입력 1단계에서 레벨을 올리고 "더 보기"를 연다(FD-072·FD-076).
+    await _tapKey(tester, 'plan-flow-goal-mode-max');
+    await _tapKey(tester, 'plan-flow-goal-tab-shun_swimsuit');
+    final nudge = find.byWidgetPredicate(
+      (widget) =>
+          widget is KeyedSubtree &&
+          widget.key is ValueKey<String> &&
+          (widget.key! as ValueKey<String>).value.endsWith('-level-nudge'),
+    );
+    for (var count = 0; count < 3; count++) {
+      await tester.tap(
+        find.descendant(of: nudge, matching: find.byType(KitPressable)).first,
+      );
+      await tester.pump();
+    }
+    final more = find.byWidgetPredicate(
+      (widget) =>
+          widget is KitPressable &&
+          widget.key is ValueKey<String> &&
+          (widget.key! as ValueKey<String>).value.endsWith('-more'),
+    );
+    await tester.tap(more);
+    await tester.pump();
+    await tester.pump(planFlowCalculationDebounce);
+    await tester.pump(planFlowGoalPropagationHighlight);
+    expect(find.text('모집 필요'), findsWidgets);
+    expect(find.text('더 보기 · 카드에 없는 목표'), findsOneWidget);
+    await expectGoldenScene(tester, 'plan-flow-step2-more');
   }, variant: goldenPlatform);
 
   // --- 시나리오 ---------------------------------------------------------------

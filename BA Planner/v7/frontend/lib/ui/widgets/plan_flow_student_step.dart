@@ -407,6 +407,8 @@ class _PlanFlowStudentBodyState extends State<PlanFlowStudentBody> {
         onApply: _applyFilter,
         onReset: _filter.resetDraft,
         onClose: _modal.close,
+        // 필터 버튼은 B 오른쪽 위에 있고 개수도 그 버튼이 보인다(FE4-c: 학생 탭 자리 배지는 그리지 않는다).
+        showCountBadge: false,
       ),
     ),
     child: ListenableBuilder(

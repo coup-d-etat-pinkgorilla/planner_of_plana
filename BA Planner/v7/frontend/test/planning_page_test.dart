@@ -3906,7 +3906,7 @@ void main() {
   );
 
   testWidgets(
-    'scenario creation reuses student builder and phase editor inside the plan flow',
+    'scenario creation builds goals in the plan flow and reuses the phase editor',
     (tester) async {
       final service = MockAppService();
       addTearDown(service.dispose);
@@ -3943,19 +3943,15 @@ void main() {
       await tester.pump();
       await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
       await tester.pumpAndSettle();
-      // 2단계: 기존 요소 편집기를 레일 옆에서 연다.
-      expect(find.byType(PlanElementBuilder), findsOneWidget);
+      // 2단계(FE4-c): 새 목표 정하기를 레일 옆 B·C에 그린다(기존 요소 편집기 아님).
+      expect(find.byType(PlanElementBuilder), findsNothing);
+      expect(find.byKey(const ValueKey('plan-flow-goal-body')), findsOneWidget);
       expect(find.byKey(const ValueKey('plan-flow-rail')), findsOneWidget);
 
-      await tester.tap(
-        find.byKey(const ValueKey('plan-starter-preset-balanced-growth')),
-      );
+      // 한 번에 MAX가 고른 학생의 1단계를 만들고(바로 초안에 들어간다) 레일 "다음"으로 3단계를 연다.
+      await tester.tap(find.byKey(const ValueKey('plan-flow-goal-mode-max')));
       await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
-      await tester.pump();
-      await tester.tap(
-        find.byKey(const ValueKey('plan-starter-open-phase-editor')),
-      );
+      await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
       await tester.pumpAndSettle();
       // 3단계: 기존 페이즈 편집기.
       await tester.tap(
