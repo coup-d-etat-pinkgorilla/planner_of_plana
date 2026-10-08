@@ -258,7 +258,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 
 | slice | 범위 | 선행 |
 |---|---|---|
-| FE4-a 흐름 골격 | Studio 문서, StepRail(스텝 4개·요약 4행·다음/이전), 초안 `PlanningDocument` 컨트롤러 + 디바운스 계산, 부족 재화 플라이아웃. 현 `_showStudentSelector/_showElementBuilder/_showPhaseEditor/_creatingScenario` 플래그 묶음을 대체 | FD-082 |
+| FE4-a 흐름 골격 | Studio 문서, StepRail(스텝 4개·요약 4행·다음/이전), 초안 `PlanningDocument` 컨트롤러 + 디바운스 계산, 부족 재화 플라이아웃. 현 `_showStudentSelector/_showElementBuilder/_showPhaseEditor/_creatingScenario` 플래그 묶음을 대체 | FD-082 — **완료 2026-10-08**: 커밋 `a18897a1`(초안 컨트롤러·StepRail·Studio 문서, 기존 세 화면은 B 본문에 축소 수용, golden `plan-flow-step1/2` 추가). 임시 상태: 기존 화면이 작게 보이고 C 보조가 비어 있다(FE4-b~d에서 교체) |
 | FE4-b 1단계 학생 고르기 | 8열 그리드·순서 배지·C 패널 목록/압축, 한 명 모드(학생 상세 인디케이터 재사용), 필터 모달 + 계획 칩 그룹 | FE3-a·FE3-d, FD-074 |
 | FE4-c 2단계 목표 정하기 | 학생 탭 줄·가로 단계 카드·COST(`stage_results[].cost`)·현재→최종, 프리셋 바. 미배정 목록 폐기 | FD-074 |
 | FE4-d 3단계 단계 순서 | 칸(=페이즈) 보드, 드래그, 같은 학생 선행 강제(기존 `_sequenceOrderIsValid` 재사용), 상태 배지, 자동 정렬, Many 모드 | — |
@@ -434,3 +434,4 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-08(아침): FE3-f2a `3e7272e2`, FB-11a `facdd1d3`(Python 847), 문서 `2bcdcbd9`. 택틱 W4가 인연·카페 자료를 넣었다(ExpType 해석은 W4b 대기). 시각화 도구(애니메이션 효과 프레임 스펙트럼)는 택틱 워크플로로 넘겼다. 다음 행동: 프론트 FE3-f2b, 백엔드 FB-13 → FB-1a.
 - 2026-10-08(낮): FE3-f2b `576bd568`, 문서 `c2d5f413`(사용자 push). FB-13 커밋 직전. 택틱 W4b가 인연 ExpType을 확정해 FB-11b 자료 조건이 풀렸다. 새 메타데이터 관리자 워크플로가 "첫 실행 추출 = 프론트 레인"을 정했다(계약 확정 뒤 편성). 다음 행동: 백엔드 FB-1a, 프론트 FE4-a(또는 FB-11b 뒤 FE3-g).
 - 2026-10-08(오후): FB-13 `fa15e87c`. 배정: 백엔드 FB-1a(문서 v2, 이 slice 동안 `lib/ui/models/planning_models.dart`의 문서 DTO는 백엔드 워커 소유), 프론트 FE4-a(흐름 골격, `planning_models.dart` 수정 금지). FB-11b는 FB-1a 뒤.
+- 2026-10-08(저녁): FE4-a `a18897a1`, 문서 `eea7f113`. FB-1a는 Python 전체·커밋 대기(gate `20261008_164059` GREEN에 포함). 커밋 뒤 `planning_models.dart` 소유는 프론트로 돌아온다. 다음 행동: 프론트 FE4-b(1단계 학생 고르기 + 초안을 문서 v2로 전환), 백엔드 FB-11b(인연 선물 계산) → FB-1b.
