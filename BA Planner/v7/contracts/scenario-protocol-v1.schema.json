@@ -115,7 +115,7 @@
           "type": "object",
           "required": ["code", "message", "retryable"],
           "properties": {
-            "code": { "enum": ["invalid_payload", "profile_not_found", "scenario_not_found", "revision_conflict", "idempotency_conflict", "repository_busy", "corrupt_data", "migration_required", "persistence_failed", "unknown_method"] },
+            "code": { "enum": ["invalid_payload", "profile_not_found", "scenario_not_found", "revision_conflict", "idempotency_conflict", "repository_busy", "corrupt_data", "migration_required", "persistence_failed", "unknown_method", "legacy_goals_conflict"] },
             "message": { "type": "string", "minLength": 1 },
             "retryable": { "type": "boolean" },
             "details": { "type": "object" }

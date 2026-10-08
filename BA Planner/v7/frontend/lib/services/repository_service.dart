@@ -1,3 +1,6 @@
+import 'repository_plan_service.dart';
+export 'repository_plan_service.dart';
+
 class RepositoryProfile {
   const RepositoryProfile({
     required this.id,
@@ -446,9 +449,13 @@ bool isValidRepositorySuccessPayload(
       case 'repository.students.update':
       case 'repository.inventory.update':
       case 'repository.goals.save':
+      case 'repository.plan.save':
         return _exact(payload, {'revision'}) && _revision(payload['revision']);
       case 'repository.state.get':
         RepositoryState.fromWire(payload);
+        return true;
+      case 'repository.plan.get':
+        RepositoryPlanState.fromWire(payload);
         return true;
       case 'repository.migration.preview':
         if (!_exact(payload, {'accounts'}) || payload['accounts'] is! List) {
@@ -501,6 +508,8 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         'migration_not_supported',
         'migration_source_invalid',
         'persistence_failed',
+        'legacy_goals_conflict',
+        'plan_lossy_write',
         'unknown_method',
       };
       return error.keys.toSet().containsAll(required) &&
@@ -566,6 +575,7 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
       case 'repository.profile.delete':
         return mutation({});
       case 'repository.state.get':
+      case 'repository.plan.get':
         return _exact(payload, {'profile_id'}) &&
             payload['profile_id'] is String &&
             RegExp(r'^[0-9a-f]{24}$').hasMatch(payload['profile_id'] as String);
@@ -594,6 +604,10 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         for (final item in plan['goals'] as List) {
           RepositoryGoalState.fromWire(_wireMap(item, 'goal'));
         }
+        return true;
+      case 'repository.plan.save':
+        if (!mutation({'document'})) return false;
+        repositoryActiveDocument(payload['document']);
         return true;
       case 'repository.migration.preview':
         return payload.isEmpty;

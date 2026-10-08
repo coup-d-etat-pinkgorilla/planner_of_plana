@@ -1,0 +1,507 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "get",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "get",
+        "type": "request",
+        "method": "repository.plan.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      }
+    },
+    {
+      "id": "save_empty",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "save_empty",
+        "type": "request",
+        "method": "repository.plan.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [],
+            "goal_metadata": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "save_nullable",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "save_nullable",
+        "type": "request",
+        "method": "repository.plan.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "부분 목표",
+                    "targets": {
+                      "level": null,
+                      "student_star": null,
+                      "weapon_level": 25,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": 1,
+                      "stat_hp": 0,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": "부분 목표"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "get_null_calculation",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "get_null_calculation",
+        "type": "response",
+        "method": "repository.plan.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 1,
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "calculation": null
+        }
+      }
+    },
+    {
+      "id": "get_empty_calculation",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "get_empty_calculation",
+        "type": "response",
+        "method": "repository.plan.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0,
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [],
+            "goal_metadata": {}
+          },
+          "calculation": {
+            "credits": 0,
+            "required_resource_type_count": 0,
+            "known_shortage_type_count": 0,
+            "inventory_complete": true,
+            "first_bottleneck_phase_number": null,
+            "representative_shortage": null
+          }
+        }
+      }
+    },
+    {
+      "id": "save_response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "save_response",
+        "type": "response",
+        "method": "repository.plan.save",
+        "payload": {
+          "revision": 1
+        }
+      }
+    },
+    {
+      "id": "legacy_goals_conflict",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "legacy_goals_conflict",
+        "type": "response",
+        "method": "repository.goals.save",
+        "payload": {
+          "error": {
+            "code": "legacy_goals_conflict",
+            "message": "Blocked loss",
+            "retryable": false,
+            "details": {
+              "reasons": [
+                "multiple_phases"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "plan_lossy_write",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "plan_lossy_write",
+        "type": "response",
+        "method": "repository.goals.save",
+        "payload": {
+          "error": {
+            "code": "plan_lossy_write",
+            "message": "Blocked loss",
+            "retryable": false,
+            "details": {
+              "reasons": [
+                "multiple_phases"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "get_extra",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "get_extra",
+        "type": "request",
+        "method": "repository.plan.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [],
+            "goal_metadata": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "save_bool_revision",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "save_bool_revision",
+        "type": "request",
+        "method": "repository.plan.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": true,
+          "idempotency_key": "save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [],
+            "goal_metadata": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "save_scenario_kind",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "save_scenario_kind",
+        "type": "request",
+        "method": "repository.plan.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "scenario",
+            "phases": [],
+            "goal_metadata": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "save_v1",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "save_v1",
+        "type": "request",
+        "method": "repository.plan.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "save",
+          "document": {
+            "version": 1,
+            "document_id": "old",
+            "name": "Old",
+            "kind": "plan",
+            "phases": []
+          }
+        }
+      }
+    },
+    {
+      "id": "get_missing_calculation",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "get_missing_calculation",
+        "type": "response",
+        "method": "repository.plan.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0,
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [],
+            "goal_metadata": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "save_bool_target",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "save_bool_target",
+        "type": "request",
+        "method": "repository.plan.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": false
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "save_loose_metadata",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "save_loose_metadata",
+        "type": "request",
+        "method": "repository.plan.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": "",
+                "extra": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "replace_out_of_scope",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace_out_of_scope",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [],
+            "goal_metadata": {}
+          }
+        }
+      }
+    }
+  ]
+}

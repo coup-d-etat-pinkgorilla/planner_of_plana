@@ -114,6 +114,8 @@ class PlanningProtocolClient {
       'profile_name_conflict',
       'revision_conflict',
       'idempotency_conflict',
+      'legacy_goals_conflict',
+      'plan_lossy_write',
       'repository_busy',
       'corrupt_data',
       'migration_required',

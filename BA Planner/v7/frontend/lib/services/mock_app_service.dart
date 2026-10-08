@@ -11,6 +11,7 @@ import 'mock_student_fixture.dart';
 import 'mock_student_calculation_fixture.dart';
 import 'mock_student_bond_fixture.dart';
 import 'repository_service.dart';
+import 'mock_repository_plan.dart';
 import 'scanner_service.dart';
 import 'scenario_service.dart';
 import 'tactical_service.dart';
@@ -27,6 +28,7 @@ class MockAppService
         PlanningScenarioComparisonService,
         MockScenarioController,
         RepositoryService,
+        RepositoryPlanService,
         ScannerService,
         TacticalService,
         DiagnosticsService {
@@ -37,6 +39,7 @@ class MockAppService
     List<ScannerTarget>? scannerTargets,
     Map<String, dynamic>? scannerReadiness,
     List<RepositoryProfile>? profiles,
+    Map<String, Map<String, dynamic>>? repositoryStates,
   }) : _scannerTargets = List.unmodifiable(
          scannerTargets ??
              const [
@@ -82,6 +85,11 @@ class MockAppService
                hasMissingMetadata: false,
              ),
        ) {
+    for (final profile in _profiles) {
+      if (repositoryStates?.containsKey(profile.id) != true) {
+        _repositoryPlans[profile.id] = mockDocumentFromGoals({'version': 1, 'goals': <dynamic>[]});
+      }
+    }
     if (fullStudentCatalog && _profiles.isNotEmpty) {
       final profile = _profiles.firstWhere(
         (item) => item.selected,
@@ -94,6 +102,10 @@ class MockAppService
         'inventory': {'version': 1, 'entries': <dynamic>[]},
         'goals': {'version': 1, 'goals': <dynamic>[]},
       };
+    }
+    for (final entry in repositoryStates?.entries ?? const <MapEntry<String, Map<String, dynamic>>>[]) {
+      RepositoryState.fromWire(entry.value);
+      _repositoryStates[entry.key] = Map<String, dynamic>.from(jsonDecode(jsonEncode(entry.value)) as Map);
     }
   }
 
@@ -127,6 +139,8 @@ class MockAppService
   );
   final List<RepositoryProfile> _profiles;
   final Map<String, Map<String, dynamic>> _repositoryStates = {};
+  final Map<String, PlanningDocument> _repositoryPlans = {};
+  final Map<String, Map<String, ({String fingerprint, int revision})>> _planIdempotency = {};
   final Map<String, TacticalState> _tacticalStates = {};
   final StreamController<ScannerEvent> _scannerEvents =
       StreamController.broadcast();
@@ -1224,6 +1238,7 @@ class MockAppService
       selected: false,
     );
     _profiles.add(profile);
+    _repositoryPlans[profile.id] = mockDocumentFromGoals({'version': 1, 'goals': <dynamic>[]});
     return profile;
   }
 
@@ -1237,6 +1252,7 @@ class MockAppService
       failNextProfileMutation = false;
       throw StateError('revision_conflict');
     }
+    _ensureMockRepositoryPlan(profileId);
     final target = _profiles.firstWhere((profile) => profile.id == profileId);
     if (target.revision != expectedRevision) {
       throw StateError('revision_conflict');
@@ -1253,6 +1269,7 @@ class MockAppService
         selected: profile.id == profileId,
       );
     }
+    _syncMockRepositoryStateRevision(profileId, expectedRevision + 1);
     return expectedRevision + 1;
   }
 
@@ -1263,6 +1280,7 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
+    _ensureMockRepositoryPlan(profileId);
     final index = _profiles.indexWhere((profile) => profile.id == profileId);
     final profile = _profiles[index];
     if (failNextProfileMutation || profile.revision != expectedRevision) {
@@ -1276,6 +1294,7 @@ class MockAppService
       revision: expectedRevision + 1,
       selected: profile.selected,
     );
+    _syncMockRepositoryStateRevision(profileId, expectedRevision + 1);
     return expectedRevision + 1;
   }
 
@@ -1287,6 +1306,7 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
+    _ensureMockRepositoryPlan(profileId);
     final index = _profiles.indexWhere((profile) => profile.id == profileId);
     final profile = _profiles[index];
     if (failNextProfileMutation || profile.revision != expectedRevision) {
@@ -1300,6 +1320,7 @@ class MockAppService
       revision: expectedRevision + 1,
       selected: profile.selected,
     );
+    _syncMockRepositoryStateRevision(profileId, expectedRevision + 1);
     return expectedRevision + 1;
   }
 
@@ -1318,6 +1339,8 @@ class MockAppService
     final wasSelected = profile.selected;
     _profiles.removeAt(index);
     _repositoryStates.remove(profileId);
+    _repositoryPlans.remove(profileId);
+    _planIdempotency.remove(profileId);
     _planningScenarios.remove(profileId);
     _planningScenarioRevisions.remove(profileId);
     if (wasSelected && _profiles.isNotEmpty) {
@@ -1335,18 +1358,171 @@ class MockAppService
 
   @override
   Future<RepositoryState> loadRepositoryState(String profileId) async =>
-      RepositoryState.fromWire(
-        Map<String, dynamic>.from(
-          _repositoryStates[profileId] ??
-              {
-                'profile_id': profileId,
-                'revision': 0,
-                'students': <dynamic>[],
-                'inventory': {'version': 1, 'entries': <dynamic>[]},
-                'goals': {'version': 1, 'goals': <dynamic>[]},
-              },
-        ),
+      RepositoryState.fromWire(_ensureMockRepositoryPlan(profileId));
+
+  Map<String, dynamic> _mockRepositoryState(String profileId) =>
+      _repositoryStates[profileId] ??
+      {
+        'profile_id': profileId,
+        'revision':
+            _profiles
+                .where((profile) => profile.id == profileId)
+                .firstOrNull
+                ?.revision ??
+            0,
+        'students': <dynamic>[],
+        'inventory': {'version': 1, 'entries': <dynamic>[]},
+        'goals': {'version': 1, 'goals': <dynamic>[]},
+      };
+
+  void _syncMockPlanRevision(String profileId, int revision) {
+    final index = _profiles.indexWhere((profile) => profile.id == profileId);
+    if (index < 0) {
+      throw StateError('profile_not_found');
+    }
+    final old = _profiles[index];
+    _profiles[index] = RepositoryProfile(
+      id: old.id,
+      displayName: old.displayName,
+      avatarStudentId: old.avatarStudentId,
+      revision: revision,
+      selected: old.selected,
+    );
+  }
+
+  void _syncMockRepositoryStateRevision(String profileId, int revision) {
+    final state = _repositoryStates[profileId];
+    if (state != null) {
+      _repositoryStates[profileId] = {...state, 'revision': revision};
+    }
+  }
+
+  Map<String, dynamic> _ensureMockRepositoryPlan(String profileId) {
+    final state = _mockRepositoryState(profileId);
+    if (!_repositoryPlans.containsKey(profileId)) {
+      final document = mockDocumentFromGoals(
+        Map<String, dynamic>.from(state['goals'] as Map),
       );
+      if (!_repositoryStates.containsKey(profileId)) {
+        _repositoryPlans[profileId] = document;
+        return state;
+      }
+      final revision = (state['revision'] as int) + 1;
+      final migrated = {
+        ...state,
+        'revision': revision,
+        'goals': mockGoalsFromDocument(document),
+      };
+      _repositoryPlans[profileId] = document;
+      _repositoryStates[profileId] = migrated;
+      _syncMockPlanRevision(profileId, revision);
+      return migrated;
+    }
+    return state;
+  }
+
+  @override
+  Future<RepositoryPlanState> loadRepositoryPlan(String profileId) async {
+    if (!_profiles.any((profile) => profile.id == profileId)) {
+      throw StateError('profile_not_found');
+    }
+    final state = _ensureMockRepositoryPlan(profileId);
+    final document = _repositoryPlans[profileId]!;
+    Map<String, dynamic>? calculation;
+    try {
+      final projection = await calculatePlanningDocument(
+        currentStudents: [
+          for (final raw in state['students'] as List)
+            {
+              'student_id': raw['student_id'],
+              ...Map<String, dynamic>.from(raw['values'] as Map),
+            },
+        ],
+        inventory: Map<String, dynamic>.from(state['inventory'] as Map),
+        document: document.toWire(),
+      );
+      // Reuse the existing empty mock projection; production calculation is Python.
+      calculation = {
+        'credits': (projection['overall'] as Map)['cost']['credits'] ?? 0,
+        'required_resource_type_count': 0,
+        'known_shortage_type_count': 0,
+        'inventory_complete': true,
+        'first_bottleneck_phase_number': null,
+        'representative_shortage': null,
+      };
+    } catch (_) {
+      calculation = null;
+    }
+    return RepositoryPlanState.fromWire({
+      'profile_id': profileId,
+      'revision': state['revision'],
+      'document': document.toWire(),
+      'calculation': calculation,
+    });
+  }
+
+  int _saveMockRepositoryPlan(
+    String profileId,
+    PlanningDocument document,
+    int expectedRevision,
+    String idempotencyKey,
+    String operation, {
+    bool legacy = false,
+  }) {
+    final request = RepositoryPlanSaveRequest(
+      profileId: profileId,
+      document: document,
+      expectedRevision: expectedRevision,
+      idempotencyKey: idempotencyKey,
+    ).toWire();
+    if (!_profiles.any((profile) => profile.id == profileId)) {
+      throw StateError('profile_not_found');
+    }
+    final state = _ensureMockRepositoryPlan(profileId);
+    final fingerprint = mockPlanFingerprint({
+      'operation': operation,
+      'expected_revision': expectedRevision,
+      'value': legacy ? mockGoalsFromDocument(document) : request['document'],
+    });
+    final cache = _planIdempotency.putIfAbsent(profileId, () => {});
+    final cached = cache[idempotencyKey];
+    if (cached != null) {
+      if (cached.fingerprint != fingerprint) {
+        throw StateError('idempotency_conflict');
+      }
+      return cached.revision;
+    }
+    if (state['revision'] != expectedRevision) {
+      throw StateError('revision_conflict');
+    }
+    if (legacy && mockLegacyWriteLosesPlan(_repositoryPlans[profileId]!)) {
+      throw StateError('plan_lossy_write');
+    }
+    final revision = expectedRevision + 1;
+    _repositoryStates[profileId] = {
+      ...state,
+      'revision': revision,
+      'goals': mockGoalsFromDocument(document),
+    };
+    _repositoryPlans[profileId] = repositoryActiveDocument(document.toWire());
+    _syncMockPlanRevision(profileId, revision);
+    cache[idempotencyKey] = (fingerprint: fingerprint, revision: revision);
+    return revision;
+  }
+
+  @override
+  Future<int> saveRepositoryPlan({
+    required String profileId,
+    required PlanningDocument document,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => _saveMockRepositoryPlan(
+    profileId,
+    document,
+    expectedRevision,
+    idempotencyKey,
+    'plan',
+  );
 
   TacticalState _tactical(String profileId) =>
       _tacticalStates[profileId] ??
@@ -1444,21 +1620,8 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
-    final current =
-        _repositoryStates[profileId] ??
-        {
-          'profile_id': profileId,
-          'revision': 0,
-          'students': <dynamic>[],
-          'inventory': {'version': 1, 'entries': <dynamic>[]},
-          'goals': {'version': 1, 'goals': <dynamic>[]},
-        };
-    _repositoryStates[profileId] = {
-      ...current,
-      'revision': expectedRevision + 1,
-      'goals': goals,
-    };
-    return expectedRevision + 1;
+    return _saveMockRepositoryPlan(profileId, mockDocumentFromGoals(goals),
+      expectedRevision, idempotencyKey, 'goals', legacy: true);
   }
 
   @override
@@ -1468,15 +1631,8 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
-    final current =
-        _repositoryStates[profileId] ??
-        {
-          'profile_id': profileId,
-          'revision': 0,
-          'students': <dynamic>[],
-          'inventory': {'version': 1, 'entries': <dynamic>[]},
-          'goals': {'version': 1, 'goals': <dynamic>[]},
-        };
+    final current = _ensureMockRepositoryPlan(profileId);
+    if (current['revision'] != expectedRevision) throw StateError('revision_conflict');
     _repositoryStates[profileId] = {
       ...current,
       'revision': expectedRevision + 1,
@@ -1484,6 +1640,7 @@ class MockAppService
           .map((student) => student.toWire())
           .toList(growable: false),
     };
+    _syncMockPlanRevision(profileId, expectedRevision + 1);
     return expectedRevision + 1;
   }
 
@@ -1494,15 +1651,7 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
-    final current =
-        _repositoryStates[profileId] ??
-        {
-          'profile_id': profileId,
-          'revision': 0,
-          'students': <dynamic>[],
-          'inventory': {'version': 1, 'entries': <dynamic>[]},
-          'goals': {'version': 1, 'goals': <dynamic>[]},
-        };
+    final current = _ensureMockRepositoryPlan(profileId);
     if (current['revision'] != expectedRevision) {
       throw StateError('revision_conflict');
     }
@@ -1511,6 +1660,7 @@ class MockAppService
       'revision': expectedRevision + 1,
       'inventory': inventory.toWire(),
     };
+    _syncMockPlanRevision(profileId, expectedRevision + 1);
     return expectedRevision + 1;
   }
 

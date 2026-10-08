@@ -14,6 +14,8 @@ from core.inventory_catalog import BY_KEY as INVENTORY_CATALOG_BY_KEY, CATALOG_R
 from core.planning import GrowthPlan, StudentGoal
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, StudentGoalRecord, canonical_json
 from core.repository_merge import resolve_inventory_snapshot
+from core.repository_plan import canonical_active_document, document_from_goals, goals_from_document, legacy_write_loss, LegacyGoalsConflict
+from core.planning_summary import safe_calculation_summary
 from core.v6_migration import V6MigrationError, load_v6_accounts
 
 
@@ -136,7 +138,7 @@ class JsonRepository:
     def _profile(self, profile_id: str) -> dict[str, Any]:
         value = self._read(self._profile_path(profile_id), "profile")
         required = {"version", "profile_id", "revision", "students", "inventory", "goals", "idempotency"}
-        if set(value) != required or value["profile_id"] != profile_id:
+        if set(value) not in (required, required | {"plan"}) or value["profile_id"] != profile_id:
             raise RepositoryError("corrupt_data", "profile has an invalid shape")
         revision = self._stored_revision(value["revision"], "profile revision")
         if not isinstance(value["students"], list):
@@ -163,10 +165,62 @@ class JsonRepository:
             InventorySnapshot.from_dict(value["inventory"])
             for goal in goals["goals"]:
                 StudentGoalRecord.from_dict({"version": 1, "goal": goal})
+            if "plan" in value:
+                value["plan"] = canonical_active_document(value["plan"])
+                if goals != goals_from_document(value["plan"]):
+                    raise ValueError("stored goals do not match the active document")
         except (TypeError, ValueError, AttributeError, KeyError) as error:
             raise RepositoryError("corrupt_data", "profile contains invalid repository data") from error
         value["inventory"] = rebase_inventory_snapshot(value["inventory"])
         return value
+
+    @staticmethod
+    def _legacy_document(goals: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return document_from_goals(goals)
+        except LegacyGoalsConflict as error:
+            raise RepositoryError("legacy_goals_conflict", str(error), details={"student_ids": error.student_ids}) from error
+
+    def _write_profile_catalog(self, profile: dict[str, Any], catalog: dict[str, Any]) -> None:
+        """Use the existing two-file transaction and byte-preserving rollback."""
+        profile_path = self._profile_path(profile["profile_id"])
+        profile_before, catalog_before = profile_path.read_bytes(), self.catalog_path.read_bytes()
+        try:
+            self._atomic_write(profile_path, profile)
+            self._atomic_write(self.catalog_path, catalog)
+        except Exception:
+            self._restore(profile_path, profile_before)
+            self._restore(self.catalog_path, catalog_before)
+            raise
+
+    def _ensure_plan_locked(self, profile_id: str, catalog: dict[str, Any] | None = None) -> dict[str, Any]:
+        profile = self._profile(profile_id)
+        if "plan" in profile:
+            return profile
+        catalog = self._catalog(allow_missing=False) if catalog is None else catalog
+        summary = next((item for item in catalog["profiles"] if item["profile_id"] == profile_id), None)
+        if summary is None:
+            raise RepositoryError("corrupt_data", "legacy profile is absent from catalog")
+        try:
+            profile["plan"] = self._legacy_document(profile["goals"])
+        except (TypeError, ValueError) as error:
+            raise RepositoryError("corrupt_data", "legacy goals cannot form a valid active document", details={"reason": str(error)}) from error
+        profile["goals"] = goals_from_document(profile["plan"])
+        profile["revision"] += 1
+        summary["revision"] = profile["revision"]
+        self._write_profile_catalog(profile, catalog)
+        return profile
+
+    def _profile_with_plan(self, profile_id: str) -> dict[str, Any]:
+        profile = self._profile(profile_id)
+        if "plan" in profile:
+            return profile
+        descriptor = self._lock()
+        try:
+            # Another first reader may have completed migration before this lock.
+            return self._ensure_plan_locked(profile_id)
+        finally:
+            self._unlock(descriptor)
 
     def _lock(self) -> int:
         self.root.mkdir(parents=True, exist_ok=True)
@@ -237,6 +291,7 @@ class JsonRepository:
             if any(item["display_name"].casefold() == display_name.strip().casefold() for item in catalog["profiles"]):
                 raise RepositoryError("profile_name_conflict", "profile display name already exists")
             profile = {"version": 1, "profile_id": profile_id, "revision": 0, "students": [], "inventory": {"version": 1, "catalog_revision": CATALOG_REVISION, "entries": []}, "goals": {"version": 1, "goals": []}, "idempotency": {}}
+            profile["plan"] = document_from_goals(profile["goals"])
             summary = {"profile_id": profile_id, "display_name": display_name.strip(), "avatar_student_id": avatar_student_id, "revision": 0, "selected": catalog["selected_profile_id"] is None}
             if catalog["selected_profile_id"] is None:
                 catalog["selected_profile_id"] = profile_id
@@ -269,10 +324,8 @@ class JsonRepository:
             raise RepositoryError("invalid_payload", "expected_revision must be a non-negative integer")
         descriptor = self._lock()
         try:
-            catalog, profile = self._catalog(allow_missing=False), self._profile(profile_id)
-            catalog_before = self.catalog_path.read_bytes()
-            profile_path = self._profile_path(profile_id)
-            profile_before = profile_path.read_bytes()
+            catalog = self._catalog(allow_missing=False)
+            profile = self._ensure_plan_locked(profile_id, catalog)
             fingerprint = hashlib.sha256(canonical_json({"operation": operation, "expected_revision": expected_revision}).encode()).hexdigest()
             cached = profile["idempotency"].get(idempotency_key)
             if cached:
@@ -288,13 +341,7 @@ class JsonRepository:
             for item in catalog["profiles"]:
                 if item["profile_id"] == profile_id:
                     item["revision"] = profile["revision"]
-            try:
-                self._atomic_write(profile_path, profile)
-                self._atomic_write(self.catalog_path, catalog)
-            except Exception:
-                self._restore(profile_path, profile_before)
-                self._restore(self.catalog_path, catalog_before)
-                raise
+            self._write_profile_catalog(profile, catalog)
             return response
         finally:
             self._unlock(descriptor)
@@ -376,8 +423,19 @@ class JsonRepository:
             self._unlock(descriptor)
 
     def get_state(self, profile_id: str) -> dict[str, Any]:
-        profile = self._profile(profile_id)
+        profile = self._profile_with_plan(profile_id)
         return {key: profile[key] for key in ("profile_id", "revision", "students", "inventory", "goals")}
+
+    def get_plan(self, profile_id: str) -> dict[str, Any]:
+        profile = self._profile_with_plan(profile_id)
+        return {"profile_id": profile_id, "revision": profile["revision"], "document": profile["plan"], "calculation": safe_calculation_summary(profile["plan"], profile)}
+
+    def save_plan(self, profile_id: str, document: object, expected_revision: int, idempotency_key: str) -> dict[str, Any]:
+        canonical = canonical_active_document(document)
+        goals = goals_from_document(canonical)
+        def mutate(_catalog: dict[str, Any], profile: dict[str, Any]) -> None:
+            profile["plan"], profile["goals"] = canonical, goals
+        return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"plan:{canonical_json(canonical)}", mutate)
 
     def update_students(self, profile_id: str, students: list[dict[str, Any]], expected_revision: int, idempotency_key: str) -> dict[str, Any]:
         canonical = [ConfirmedStudent.from_dict(item).to_dict() for item in students]
@@ -390,9 +448,14 @@ class JsonRepository:
     def save_goals(self, profile_id: str, goals: dict[str, Any], expected_revision: int, idempotency_key: str) -> dict[str, Any]:
         if not isinstance(goals, dict) or goals.get("version") != 1 or not isinstance(goals.get("goals"), list) or set(goals) != {"version", "goals"}:
             raise RepositoryError("invalid_payload", "goals must be a version 1 goal plan")
-        canonical_goals = [StudentGoalRecord.from_dict({"version": 1, "goal": item}).to_dict()["goal"] for item in goals["goals"]]
-        canonical = {"version": 1, "goals": canonical_goals}
-        return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"goals:{canonical_json(canonical)}", lambda _c, p: p.__setitem__("goals", canonical))
+        document = self._legacy_document(goals)
+        canonical = goals_from_document(document)
+        def mutate(_catalog: dict[str, Any], profile: dict[str, Any]) -> None:
+            reasons = legacy_write_loss(profile["plan"])
+            if reasons:
+                raise RepositoryError("plan_lossy_write", "legacy goals writer would discard active document structure or bond targets", details={"reasons": reasons})
+            profile["plan"], profile["goals"] = document, canonical
+        return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"goals:{canonical_json(canonical)}", mutate)
 
     @staticmethod
     def migration_preview(source_path: str) -> dict[str, Any]:
@@ -410,6 +473,7 @@ class JsonRepository:
         account = next((item for item in accounts if item.profile_key == source_profile_key), None)
         if account is None:
             raise RepositoryError("migration_source_invalid", "v6 profile was not found")
+        document = self._legacy_document(account.goals)
 
         descriptor = self._lock()
         profile_path: Path | None = None
@@ -443,7 +507,8 @@ class JsonRepository:
                 "revision": 0,
                 "students": list(account.students),
                 "inventory": account.inventory,
-                "goals": account.goals,
+                "goals": goals_from_document(document),
+                "plan": document,
                 "idempotency": {},
             }
             summary = {

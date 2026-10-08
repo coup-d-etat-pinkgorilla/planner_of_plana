@@ -400,6 +400,76 @@ raw state map을 직접 읽지 않습니다. 실제 process test는 Dart가 실�
 process를 종료한 뒤 같은 격리 storage root로 새 process를 시작해 profile, revision과 goal
 복원을 검증합니다.
 
+### 활성 계획 저장·첫 로드 이관 (FB-1b)
+
+활성 계획의 저장 원천은 문서 v2(`kind: "plan"`)입니다. IPC envelope와 profile/catalog
+파일의 바깥 `version`은 계속 1입니다. profile의 명시적 `plan` 필드 유무로 legacy를
+구분합니다. `plan`이 있으면 빈 문서도 이관 완료 상태이며 goals로 되살리지 않습니다.
+`repository.state.get`의 기존 다섯 응답 필드는 그대로입니다.
+
+| 메서드 | 정확한 입력 payload | 성공 payload |
+| --- | --- | --- |
+| `repository.plan.get` | `{profile_id}` | `{profile_id, revision, document, calculation}` |
+| `repository.plan.save` | `{profile_id, expected_revision, idempotency_key, document}` | `{revision}` |
+
+plan save는 v1 문서와 kind=scenario를 거부합니다. 문서·페이즈·단계 ID, 학생별 누적 목표
+회귀, 19개의 int/null 목표, 학생별 favorite/notes를 기존 v2 parser로 엄격하게 검사합니다.
+현재값·필수 선행 성장·계산 결과를 저장 목표에 되쓰지 않습니다.
+
+`calculation`은 `PlanningScenarioCalculationSummary`와 같은 여섯 필드입니다:
+`credits`, `required_resource_type_count`, `known_shortage_type_count`, `inventory_complete`,
+nullable `first_bottleneck_phase_number`, nullable `representative_shortage`(resource_key,
+item_id, display_name, category, shortage). scenario.list와 active get은 공용 Python
+`planning_summary.calculation_summary`를 사용합니다. 같은 profile 파일 snapshot의
+document/students/inventory로 계산하며, 계산 실패는 `calculation: null`입니다. 저장 문서는
+계속 조회할 수 있습니다. null 요약을 비용 0으로 해석하지 않습니다.
+
+문서 저장 transaction 안에서 phase→stage 순으로 학생별 마지막 단계의 18개 목표를
+goals v1에 파생합니다. 첫 등장 학생 순서, nullable 목표, 명시적 0, favorite와 원래 notes를
+보존합니다. bond_rank는 문서에만 있고 goals v1에는 새 키가 없습니다. 빈 문서는 goals=[]입니다.
+목표·파생 goals·idempotency가 같은 profile의 atomic write에 들어가고 profile/catalog revision을
+같이 갱신합니다. 잡힌 저장 실패에는 두 원본 파일의 바이트를 rollback합니다.
+
+동시 편집은 `expected_revision`으로 막습니다. 동일 key/동일 canonical 문서/동일 expected
+revision 재시도는 최초 `{revision}`을 반환하며 추가 저장을 하지 않습니다. key가 같아도
+문서나 expected revision, 작업 종류가 다르면 `idempotency_conflict`입니다. 최초 성공 뒤
+계획이 바뀌었어도 기존 재시도는 최초 응답을 반환하므로 이후 현재 revision은 재조회합니다.
+
+legacy 첫 state.get 또는 plan.get은 repository lock 아래에서 필드 유무를 재확인하고,
+한 번만 document/goals와 revision을 저장합니다. 이미 저장된 legacy profile은 revision이
+정확히 한 번 증가합니다. 경합하는 첫 읽기는 retryable repository_busy로 재시도할 수 있습니다.
+mutation이 먼저 legacy profile에 닿아도 이관 후 revision이 권위값이며 오래된 expected
+revision은 revision_conflict입니다. profile.list/current의 요약 revision을 계속 쓰지 않습니다.
+신규 profile 생성과 v6 import는 최초 생성 transaction에서 문서를 함께 저장하여 revision 0을
+유지합니다. v6 원본 파일은 읽기 전용입니다.
+
+legacy goal은 순서대로 한 페이즈/학생당 한 단계로 변환합니다. 18개 목표를 원래 int/null로
+옮기고 bond_rank는 현재 인연이 알려져 있어도 **항상 null**입니다. 현재 학생 상태로 빈 목표를
+채우지 않습니다. all-null goal도 단계와 metadata를 보존합니다. 같은 학생의 중복 goal은
+기존 비용 계산에서 각 항목을 합산하므로 누적 단계나 마지막 항목으로 자동 접지 않습니다.
+`legacy_goals_conflict`(details.student_ids)로 차단하고 원본을 보존합니다. 이 오류는 legacy
+첫 조회, goals.save, v6 import, profile 이관을 먼저 수행하는 scenario 호출에도 적용됩니다.
+손상된 파일이나 변환 불가능한 저장 데이터는 corrupt_data이며 빈 문서로 덮지 않습니다.
+
+legacy `repository.goals.save`도 동일 변환·저장 transaction을 사용합니다. 기존 활성 문서의
+페이즈가 둘 이상, 같은 학생의 단계가 여러 개, 또는 명시적 인연 목표가 하나라도 있으면
+`plan_lossy_write`(details.reasons: multiple_phases / multiple_student_stages / bond_target)로
+막습니다. 빈 문서와 학생별 단일 단계·인연 없는 한 페이즈는 이 호환 writer를 사용할 수 있습니다.
+목표를 지우려는 빈 goals 쓰기도 같은 손실 방지 검사를 받습니다.
+
+FD-026대로 새 활성 화면의 수치는 저장 문서 projection이 원천입니다. 파생 goals는 호환
+소비용이며 다중 단계의 재화 배분이나 인연 목표의 필수 성급 성장을 표현하지 않습니다.
+따라서 새 문서에서 goals 계산과 projection이 항상 같다고 가정하지 않습니다. 기존 단일
+성장 목표의 비용·재화·부족량은 process E2E로 일치를 확인합니다. 문서의 인연 비용 미계산
+경고는 유지합니다. `repository.plan.replace`와 기존 계획의 시나리오 보존은 FB-1c 범위입니다.
+
+fixture는 `fixtures/repository_plan_migration_v1.json`(8개 정책)과
+`fixtures/repository_plan_v1.json`(16개 wire 판정)입니다. Dart는 기존 RepositoryService 대역을
+보존하는 추가 `RepositoryPlanService` capability와 strict `RepositoryPlanState`,
+`RepositoryPlanSaveRequest`를 제공합니다. ProcessAppService/MockAppService가 이를 구현합니다.
+mock은 목표 변환·revision·idempotency·손실 방지를 재현하고 기존 빈 mock document projection을
+요약합니다. 실제 성장 계산식을 Dart에 복제하지 않습니다. mock 계산 실패도 요약 null로 보존합니다.
+
 ## scanner protocol v1
 
 P5 scanner 계약은 `scanner-protocol-v1.schema.json`과 공유 fixture

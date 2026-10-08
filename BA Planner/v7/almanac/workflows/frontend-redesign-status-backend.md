@@ -1,6 +1,6 @@
 ---
 title: "Frontend Redesign Backend Status"
-summary: "Lane A 백엔드 워커의 FB-11b 인연·선물 3안과 자료 근거·FE3-g 인계, FB-1a v2, FB-13 catalog 및 FB-1 설계 조사 기록입니다."
+summary: "Lane A 백엔드 워커의 FB-1b 활성 계획 저장·legacy 이관·revision 소비자 인계, FB-11b 선물 3안, FB-1a v2 및 FB-1 설계 조사 기록입니다."
 topics: [workflow, design]
 sources:
   - id: workflow
@@ -14,6 +14,158 @@ sources:
     path: backend/tests/test_student_calculation_fb11a.py
 ---
 백엔드 워커 전용(Lane A 병렬, 2026-10-07)
+
+# FB-1b 활성 계획 저장·legacy 이관
+
+## 착수 (2026-10-08)
+
+- 시작 SHA: `e9baa24959e9f7b26ce08f8113c60c0118f06d1b`. FB-11b `7d0af068` 커밋을 확인하고 편집을 재개했다.
+- 워크플로 FB-1 전체·분할 FB-1b·밤 2·병렬 규칙, 로그 14:05·21:34, 아래 FB-1 설계 조사의 repository/파생/첫 로드/소비자, FD-003·026·027·049·067·083·138을 읽었다. [@workflow]
+- 중복 legacy goal은 각 항목 비용 합산을 문서의 누적 단계로 안전하게 보존할 수 없으므로 `legacy_goals_conflict`로 막고 원본 파일을 보존한다. 자동 병합/삭제하지 않는다. 먼저 정책 fixture를 고정한다.
+- 문서는 v2(kind=plan), 목표는 원래 int/null·bond는 항상 null로 이관한다. 저장·goals 파생·revision은 하나의 repository transaction이다. replace는 FB-1c로 남긴다.
+- UI·위젯/golden·스캐너·tactic·metadata 소유 파일은 수정하지 않는다. 서비스 기존 변경을 pre에 보존하고 index·커밋·push는 하지 않는다.
+
+## 구현·직접 검증 완료
+
+FB-1b를 구현했다. **Python 전체·두 워커 종료 뒤 공통 gate·커밋은 사용자 단계**다.
+화면과 위젯/golden 코드는 수정하지 않았다. 기존 스캐너 서비스 변경은 pre에 보존했다.
+
+### 계약과 저장 경계
+
+| 경계 | FB-1b 계약 |
+| --- | --- |
+| repository.plan.get | 입력 `{profile_id}`; 출력 `{profile_id, revision, document, calculation}`. document는 v2/kind=plan |
+| repository.plan.save | 입력 `{profile_id, expected_revision, idempotency_key, document}`; 출력 `{revision}`. v1/scenario 문서·회귀·잘못된 목표/metadata 거부 |
+| 저장 형식 | profile/catalog 바깥 version=1 유지. profile의 명시적 plan 필드 유무로 이관 여부 구별. plan이 있으면 goals fallback 없음 |
+| goals 파생 | phase→stage 순 학생별 마지막 단계, 첫 등장 학생 순서. 18개 목표를 원래 int/null로 대응. favorite/notes 보존, bond는 문서에만 |
+| revision·멱등성 | 문서/goals/idempotency를 profile atomic write, catalog revision 함께 갱신. 같은 key·작업·canonical 문서·expected revision은 최초 응답 재사용. 달라지면 idempotency_conflict |
+| 첫 로드 | state.get/plan.get 공통 함수. legacy만 lock 아래 재확인 후 한 번 이관·revision +1. 경합은 retryable repository_busy, 오래된 expected revision은 revision_conflict |
+| 신규/v6 import | 생성 transaction 안에 문서·파생 goals를 넣고 revision=0. 별도 첫 로드 이관 없음. v6 원본 읽기 전용 |
+| 계산 요약 | scenario.list와 공용 planning_summary 경계. 같은 profile snapshot의 문서/students/inventory 사용. 기존 6-key PlanningScenarioCalculationSummary, 실패는 null |
+| legacy writer | goals.save도 같은 변환·transaction. 여러 phase / 학생당 여러 stage / 명시적 bond 목표를 잃으면 plan_lossy_write(details.reasons) |
+| 실패 | 중복 목표 legacy_goals_conflict(details.student_ids), 손상/변환 불가 저장 데이터 corrupt_data. 파일을 빈 문서로 덮지 않음. 잡힌 저장 실패에는 profile/catalog 원본 바이트 rollback |
+
+repository.state.get의 기존 다섯 필드와 RepositoryService의 기존 interface는 바꾸지 않았다.
+추가 RepositoryPlanService capability를 ProcessAppService·MockAppService가 구현한다.
+RepositoryPlanState/SaveRequest는 strict DTO이며 문서 목표·metadata가 불변이다. Dart에는
+성장 비용식을 복제하지 않았다. mock은 변환·revision·멱등성·손실 방지를 재현하고 기존 빈
+mock 문서 projection을 요약한다(실제 비용 검증은 process 경로). mock 계산 실패도 null이다.
+학생/인벤토리/프로필 수정은 저장 목표를 만들거나 고치지 않고 revision·계산 요약만 바꾼다.
+
+### 먼저 고정한 이관 정책 fixture
+
+`contracts/fixtures/repository_plan_migration_v1.json`은 구현 전에 고정한 8개 정책이다.
+`repository_plan_v1.json`은 추가 16개 request/response 판정이다. Python schema와 Dart validator가
+동일 fixture를 읽는다. schema의 구조 검사 외 학생 ID 집합·중복 ID·누적 회귀는 기존 parser가 검사한다.
+
+| 정책 fixture | 결과와 근거 |
+| --- | --- |
+| null_bond_known_current | 현재 인연 35를 알아도 목표 bond=null. 기존 목표 level=10만 옮김 |
+| null_bond_unknown_current | 현재 인연 모름도 bond=null. 1을 지어내지 않음 |
+| all_null_goal | 학생 단계 유지, 19-key all-null. favorite=false와 원래 공백 메모 보존. 단계 표시명만 trim/fallback |
+| partial_goal_explicit_zero | 전무 레벨 25·애장품 1·HP 0만 그대로, 나머지 null. 계산 선행 조건을 목표에 되쓰지 않음 |
+| empty_legacy | phases=[]·goal_metadata={} 저장, 최초 로드 revision +1 |
+| duplicate_goals | 같은 학생 level 10/20의 비용은 각각 합산됨을 시험. 마지막 항목이나 누적 단계로 접으면 비용이 달라져 legacy_goals_conflict. 원본 두 goal과 파일 보존 |
+| corrupt_legacy | JSON 손상은 corrupt_data. 빈 문서/파생 goals로 덮지 않음 |
+| saved_empty_is_authoritative | 예전 목표를 저장한 뒤 빈 문서 save·재시작해도 빈 상태 유지. 이미 있는 plan을 legacy로 보지 않음 |
+
+추가 검증: 학생별 최종 단계·첫 등장 순서, metadata·0·null, 이관 전 stale revision,
+성공 재시도(후속 richer 문서 저장 뒤에도 최초 응답), 다중 phase/stage·bond에 대한 legacy
+손실 오류, 동시 첫 조회, profile/catalog 1·2번째 쓰기 실패 rollback, 저장 목표/goals 불일치
+손상, 계산 요약 실패, 신규/v6 import·중복 import 원본 보존을 포함한다.
+
+### 회귀와 직접 검증
+
+| 검증 | 결과 |
+| --- | --- |
+| Python 13모듈: FB-1b·repository persistence/parity/contract·v6·seed·scenario·문서 v1/v2·계획 parity·shortage | **76건 통과**, debug/frontend_fb1b/python-targeted.txt |
+| Dart: 새 DTO/mock 13건 + 기존 repository fixture·통계 projection·protocol client·mock scanner | **44건 통과**, debug/frontend_fb1b/dart-targeted.txt |
+| Process: 새 first get→save→restart→계산/손실 방지/빈 문서 + 기존 repository/scenario E2E | **3건 통과**, debug/frontend_fb1b/dart-process.txt |
+| flutter analyze (services와 새 테스트) | **통과**, debug/frontend_fb1b/dart-analyze.txt |
+| almanac·diff·슬라이스 병합 | **통과: almanac 42페이지, diff 오류 없음, 수정 11파일 충돌 없음·pre 12파일·post 21파일 고정·기존 스캐너 변경 제외·보호 파일 및 index 변경 없음**, debug/frontend_fb1b/almanac-validate.txt, diff-check.txt, handoff-verification.json |
+| Python 전체·공통 fe_gate | **미실행, 아래 사용자 명령**. golden 0 예상(화면·baseline 수정 없음) |
+
+v6 가져오기 기존 3건과 source byte 보존/생성 revision 0/중복 목표 import 거부를 확인했다.
+시나리오 v1의 frozen 계산·비교·저장 파일 parity, v2 CRUD·재시작·목표 분리, 공용 active/scenario
+요약 일치가 통과했다. scenario 최초 접근은 공유 repository lock을 잡기 전에 profile 이관을
+마친다. 이 경로의 legacy_goals_conflict를 scenario 오류 schema에도 등록했다.
+
+통계의 기존 goals 총량·shortage 계산과 기존 statistics_projection 테스트가 통과했다.
+process E2E의 단일 성장 목표에서는 크레딧·총 성장 재화·부족량이 저장 문서 계산과 같다.
+문서 resource의 credits 행은 총 credits와 별도로 대조하며 기존 goals shortage가 재화 행만
+내보내는 의미를 유지했다. v2의 현재값 부족/인연 비용 경고는 성장 비용과 분리하여 검사한다.
+
+새 다중 단계의 재화 배분이나 bond에 필요한 선행 성급은 goals v1에 표현되지 않는다.
+파생 목표를 계산용 값으로 채워 이 차이를 숨기지 않는다. **새 활성 화면 수치는 FD-026대로
+저장 문서 projection**을 사용한다. 문서의 인연 비용 미계산 경고는 FB-11b 이후에도 그대로다.
+
+시드 회귀는 격리한 200학생/500아이템 profile로 import→rename→8개 시나리오→반복 실행을
+검사했다(선택 list KPI 계산만 대역). 추가 이관 없이 rename 뒤 revision=1, scenario base=1,
+collection revision=8과 8개 시나리오가 재실행 뒤에도 그대로다. 실제 v6 파일 전체 실행은
+소비자 읽기 순서 대응과 사용자 환경에서 이어간다.
+
+### 소비자 영향·오케스트레이터 전달 요청
+
+모든 행은 알림/후속 요청이며 해당 화면·스캐너·tactic·시드 파일을 이번 slice에서 고치지 않았다.
+legacy 최초 state/plan 로드가 profile revision을 +1 하므로 catalog summary와 반환 state가
+다르면 **반환 revision이 권위값**이다. 기존 scenario.base_profile_revision은 과거 기준 그대로다.
+
+| 소비자 | 확인한 영향 | 요청할 대응 / 소유자 |
+| --- | --- | --- |
+| title_page.dart | 목록/선택 profile을 보관한 뒤 state를 로드. 선택 profile 없는 분기는 fallback.revision으로 state 로드 전에 select | 선택 대상 state를 먼저 로드하거나 profile 목록을 재조회하여 최신 revision으로 select. state 로드 후 _profile revision도 갱신 / 프런트 |
+| account_section_cluster.dart | 목록을 읽고 각 state를 읽어도 _profiles/_selected에는 이전 목록 revision 유지. 선택·수정·삭제는 그 revision 사용 | state별 반환 revision으로 profile summary 갱신 또는 목록 재조회. 이관 실패는 보여 주고 빈 목표로 처리하지 않음 / 프런트 |
+| scan_page.dart | profile과 state를 읽고 scanner commit에는 state.revision 사용 | state.revision 사용 유지. profile 표시/cache 및 첫 session base revision도 이관 후 값으로 맞추기. repository_busy 재시도·revision_conflict 재조회 검사 / 스캐너 소유자에 전달 |
+| tactical_page.dart | repository state·tactical state·catalog를 병렬 로드하며 _profile은 이전 summary | state 반환 revision을 profile/cache에 전파, 추천/비교 cache 갱신. tactical 자체 collection revision과 profile revision 구별 / tactic 소유자에 전달 |
+| seed_ui_test_profile.py | import 뒤 state revision으로 scenario 생성은 안전. 기존 legacy profile이 미선택이면 state 이전 select에 목록 revision 사용 | 기존 계정 재사용 시 state를 먼저 읽은 revision으로 select 또는 conflict 뒤 재조회. 신규 import·반복 8개 seed 회귀 통과 / 도구 후속 소유자 |
+| scenario 목록/비교·통계/인벤토리 | 과거 scenario base가 이관 후 current revision과 달라 stale 표시 가능. 파생 goals는 호환 경로 | 과거 base를 다시 쓰지 않기. 새 활성 수치/cache는 document projection과 get.calculation 사용 / 프런트 |
+
+### 프런트 연결 메모
+
+1. `_loadRepositoryPlan`의 메모리 goals→v1 변환을 `RepositoryPlanService.loadRepositoryPlan(profileId)`로
+   교체한다. 빈 문서도 그대로 사용하며 goals fallback으로 되살리지 않는다. RepositoryService
+   대역은 기존 interface 그대로이고 실제/mock을 추가 capability로 검사/캐스팅한다.
+2. plan.get과 loadRepositoryState를 각각 읽었을 때 revision이 같아야 한다. 다르면 다시 읽고,
+   편집 중 충돌은 초안을 보존한 채 재조회/다시 미리보기한다. 저장 expectedRevision은 그 일치한
+   snapshot의 revision이다. 저장 재시도는 같은 document·expectedRevision·idempotencyKey를 유지한다.
+3. FE4 초안의 v2 PlanningDocument를 saveRepositoryPlan에 전달한다. append는 기존 문서와 phase를
+   합쳐 저장한다. 문서 goals/metadata를 프런트에서 별도로 저장하지 않는다. replace와 자동 archive는
+   FB-1c 계약 뒤 연결한다.
+4. 문서 계산 current는 confirmedStudentPlanningCurrent에 실제 확인된 nullable bond_rank만 보탠다.
+   bond_rank를 목표로 복사하거나 모르는 현재 인연을 1로 만들지 않는다. get.calculation=null은 계산
+   불가 상태이며 문서 내용은 계속 표시한다.
+5. 인연 게이지/ActivePlanDocumentSource에는 저장 문서의 학생별 마지막 nullable bond target을
+   연결한다(FD-049). goals에는 인연 key가 없다. current 이하 또는 null 목표의 표시 정책은 기존
+   프런트 규칙을 따른다. UI·게이지·위젯/golden fixture 수정은 프런트 몫이다.
+
+```dart
+final plans = service as RepositoryPlanService;
+final active = await plans.loadRepositoryPlan(profileId);
+final revision = await plans.saveRepositoryPlan(
+  profileId: profileId,
+  document: draftDocumentV2,
+  expectedRevision: active.revision, // state와도 같은 snapshot인지 먼저 확인
+  idempotencyKey: retainedSaveKey,
+);
+```
+
+### 사용자 검증·인계
+
+루트에서 Python 전체를 실행한다. 결과 파일은 debug/frontend_fb1b/python-full.txt다.
+
+```powershell
+Push-Location backend
+py -3.11 -m unittest discover -s tests -v 2>&1 | Tee-Object -FilePath ..\debug\frontend_fb1b\python-full.txt
+$fb1bPythonExit = $LASTEXITCODE
+Pop-Location
+if ($fb1bPythonExit -ne 0) { throw "FB-1b Python full failed: $fb1bPythonExit" }
+```
+
+Python 전체 통과 → **두 워커가 모두 멈춘 뒤** `fe_gate` →
+`fe_commit -Slice fb1b -DryRun` 검토 → `fe_commit -Slice fb1b` → `redesigndocs`.
+golden 변경은 0을 예상하며 baseline 폴더는 whole에 넣지 않는다.
+debug/frontend_fb1b/commit.json은 status=false·whole=이 backend 상태 문서다. 수정 전 pre와
+고정 종료 post를 함께 둔다. 커밋·push·index 변경은 하지 않는다. FB-1b 커밋까지 코드 편집을
+멈추며 다음 FB-1c는 별도 오케스트레이터 프롬프트 뒤 시작한다.
 
 # FB-11b 인연 경험치·선물 3안
 
