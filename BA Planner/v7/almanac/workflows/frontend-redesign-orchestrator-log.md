@@ -386,3 +386,20 @@ topics: [workflow, design]
 - HEAD 사이 다른 커밋: `8e0c9728` W5b, `a107c3f2` W4b(인연 ExpType = 랭크별, 그룹 인덱싱 확정), `987c0d0a` A0(애니메이션 스펙트럼 계약), `8b880441` metadata M0.
 - W4b로 FB-11b의 자료 선행 조건이 풀렸다. FE3-g/FB-11b 재개를 다음 배정에서 검토한다.
 - 새 워크플로 metadata-manager: "첫 실행 추출 구현은 프론트 레인"(사용자 결정 4). 계약이 M 단계에서 정해지면 프론트 일정에 넣는다. 개발자 도구 파일은 M 세션 소유라 택틱 A2 진입점과 충돌한다. 두 로그에 13:45 알림을 남겼다.
+
+## 2026-10-08 14:05 — FB-13 커밋 확인, FB-1a·FE4-a 배정
+
+- FB-13 `fa15e87c`(13파일, +492/-75). mock 서비스는 catalog bool 1줄만 들어갔다(DryRun 사본으로 확인). 원격의 fe3f2b와 짝이 맞는다.
+- 배정과 파일 경계:
+  · 백엔드 FB-1a(문서 v2 nullable targets + goal_metadata, 계산·시나리오의 v1/v2 동시 수용). 추가만 하는 확장이며 v1 의미·FB-11a 계약·현재 UI 동작은 바꾸지 않는다. Dart 문서 DTO가 `lib/ui/models/planning_models.dart`에 있으므로, 이 slice 동안 그 파일의 문서 DTO 부분은 백엔드 워커가 고친다(예외). 화면 코드는 고치지 않는다.
+  · 프론트 FE4-a(흐름 골격: Studio 문서, StepRail, 초안 컨트롤러, 디바운스 계산, 부족 재화 플라이아웃). `planning_models.dart`는 고치지 않는다. 초안 컨트롤러는 문서 DTO를 감싸는 얇은 경계를 두어, FB-1a 뒤 v2로 바꾸기 쉽게 한다. 기존 학생 고르기·요소 편집기·페이즈 편집기 화면은 FE4-b~d 전까지 새 레일 안에서 그대로 연다.
+- FB-11b·FE3-g는 FB-1a 뒤에 편성한다(W4b로 자료 조건 해소).
+
+## 2026-10-08 16:02 — FE4-a gate ① `20261008_152312` RED 검토
+
+- analyze 1건: `plan_flow_draft.dart:473` prefer_initializing_formals.
+- `plan_flow_test` "각 단계에서 기존 … 연다": 기존 `PlanElementBuilder`를 B 본문 폭에 그대로 넣어서 RenderFlex 넘침이 생겼다(`plan_element_builder.dart:1557` Row +33px, `:2793` Column +4.6px, 9건). 기존 화면은 설계된 크기보다 좁은 제약을 받으면 안 된다.
+- `planning_page_test` "scenario creation reuses …"(기존 테스트): `plan-student-selector-confirm-selection`(2398.9, 1350) 누르기가 새 골격 크롬에 가려져 element builder가 열리지 않는다. 기존 기능 회귀다.
+- `plan_flow_test` 단계 상태: 다음으로 넘어간 뒤 이전 단계가 done이어야 하는데 current로 남는다(285행).
+- golden: `plan-flow-step1`은 기준 없음(정상). `plan-flow-step2`는 위 넘침·가림 때문에 기존 builder의 프리셋 키를 못 찾는다.
+- 결정(기존 화면 임시 수용 원칙, FE4-b~d 전까지): 기존 세 화면은 설계 크기(기준 viewport)로 배치한 뒤, B 본문의 겹치지 않는 안쪽 영역에 맞춰 통째로 축소해 넣는다(FittedBox·Transform 류, 히트 테스트 유지). 새 크롬(A 레일, C 보조, 사선 겹침)이 그 조작부를 가리면 안 된다. 기존 `planning_page_test`는 고치지 않고 통과해야 한다. 축소가 불가능한 경우에만, 기존 화면이 열린 동안 골격을 숨기고 기존 전체 화면을 그대로 보이는 안으로 바꾸고 이유를 적는다.
