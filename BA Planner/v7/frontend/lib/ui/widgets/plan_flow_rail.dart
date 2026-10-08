@@ -102,12 +102,7 @@ String planFlowStepSubtitle(PlanFlowController flow, PlanFlowStep step) {
   final draft = flow.draft;
   switch (step) {
     case PlanFlowStep.students:
-      final known = {for (final seed in draft.students) seed.studentId};
-      final count =
-          draft.studentCount +
-          flow.pendingSelection
-              .where((seed) => !known.contains(seed.studentId))
-              .length;
+      final count = draft.studentCount;
       return count == 0 ? '아직 고르지 않았습니다' : '$count명 · 여러 명 모드';
     case PlanFlowStep.goals:
       return draft.studentCount == 0

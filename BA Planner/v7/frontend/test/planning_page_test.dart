@@ -12,6 +12,7 @@ import 'package:ba_planner_v7/ui/widgets/bond_rank_portrait.dart';
 import 'package:ba_planner_v7/ui/widgets/ba_triangle_background.dart';
 import 'package:ba_planner_v7/ui/widgets/diagonal_media_list_item.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_flow_student_step.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_phase_editor.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_section_layout.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_student_selector.dart';
@@ -3720,7 +3721,7 @@ void main() {
   );
 
   testWidgets(
-    'scenario creation opens the plan flow and quitting plays the selector outro',
+    'scenario creation opens the plan flow step 1 and quitting plays the flow outro',
     (tester) async {
       final service = MockAppService();
       addTearDown(service.dispose);
@@ -3728,11 +3729,11 @@ void main() {
       await pumpPage(tester, service, size: const Size(2560, 1392));
       await tester.pumpAndSettle();
 
-      Offset selectorOffset(String panel) {
+      Offset motionOffset(String key) {
         final transform = tester.widget<Transform>(
           find
               .descendant(
-                of: find.byKey(ValueKey('plan-student-selector-$panel-motion')),
+                of: find.byKey(ValueKey(key)),
                 matching: find.byType(Transform),
               )
               .first,
@@ -3741,46 +3742,46 @@ void main() {
         return Offset(translation.x, translation.y);
       }
 
-      // FE4-a1: S1 "시나리오 생성"은 계획 만들기 1단계를 연다. S1 버튼 묶음 대신 진행 레일이 왼쪽에 선다.
+      // FE4-a: S1 "시나리오 생성"은 계획 만들기 1단계를 연다. FE4-b1부터 1단계는 B 본문·C 보조의 새 학생 고르기다.
       await tester.tap(
         find.byKey(const ValueKey('plan-scenario-create-launch')),
       );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('plan-flow-rail')), findsOneWidget);
-      expect(find.byType(PlanStudentSelector), findsOneWidget);
+      expect(find.byType(PlanFlowStudentBody), findsOneWidget);
+      expect(find.byType(PlanStudentSelector), findsNothing);
       expect(
         find.byKey(const ValueKey('plan-scenario-create-launch')),
         findsNothing,
       );
+      // 학생 그리드는 레일 오른쪽(B 본문 안)에서 시작한다.
       final railRight = tester
           .getRect(find.byKey(const ValueKey('plan-flow-step-1')))
           .right;
       expect(
         tester
             .getRect(
-              find.byKey(const ValueKey('plan-student-selector-grid-section')),
+              find.byKey(const ValueKey('plan-flow-student-grid-container')),
             )
             .left,
         greaterThan(railRight - 220),
       );
 
-      // 1단계의 "그만두기"는 학생 고르기 패널을 내보낸 뒤 흐름을 닫는다.
+      // 1단계의 "그만두기"는 섹션을 부착면 쪽으로 내보낸 뒤 흐름을 닫는다(FD-078: B 260°, 레일 180°, C 0°).
       await tester.tap(find.byKey(const ValueKey('plan-flow-previous')));
       await tester.pump();
       await tester.pump(
-        Duration(
-          milliseconds: planStudentSelectorMotionDuration.inMilliseconds ~/ 2,
-        ),
+        Duration(milliseconds: AppMotion.section.inMilliseconds ~/ 2),
       );
-      expect(find.byType(PlanStudentSelector), findsOneWidget);
-      for (final panel in const ['grid', 'filter', 'condition', 'selection']) {
-        final offset = selectorOffset(panel);
-        expect(offset.dx, lessThan(0));
-        expect(offset.dy, greaterThan(0));
-      }
+      expect(find.byType(PlanFlowStudentBody), findsOneWidget);
+      final body = motionOffset('plan-flow-body-motion');
+      expect(body.dx, lessThan(0));
+      expect(body.dy, greaterThan(0));
+      expect(motionOffset('plan-flow-rail-motion').dx, lessThan(0));
+      expect(motionOffset('plan-flow-aside-motion').dx, greaterThan(0));
       await tester.pumpAndSettle();
 
-      expect(find.byType(PlanStudentSelector), findsNothing);
+      expect(find.byType(PlanFlowStudentBody), findsNothing);
       expect(find.byKey(const ValueKey('plan-flow-rail')), findsNothing);
       expect(
         tester
@@ -3922,22 +3923,25 @@ void main() {
         find.byKey(const ValueKey('plan-scenario-create-launch')),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(PlanStudentSelector), findsOneWidget);
+      expect(find.byType(PlanFlowStudentBody), findsOneWidget);
       expect(
         find.byKey(const ValueKey('plan-scenario-bulk-apply')),
         findsNothing,
       );
 
-      final grid = tester.widget<StudentDiagonalGrid>(
-        find.byKey(const ValueKey('plan-student-selector-grid')),
-      );
+      // 1단계(FE4-b1): 그리드에서 고르고 레일 "다음"으로 2단계를 연다.
+      final gridFinder = find.byKey(const ValueKey('plan-flow-student-grid'));
+      final grid = tester.widget<StudentDiagonalGrid>(gridFinder);
       await tester.tap(
-        find.byKey(ValueKey('student-${grid.students.first.studentId}')),
+        find.descendant(
+          of: gridFinder,
+          matching: find.byKey(
+            ValueKey('student-${grid.students.first.studentId}'),
+          ),
+        ),
       );
       await tester.pump();
-      await tester.tap(
-        find.byKey(const ValueKey('plan-student-selector-confirm-selection')),
-      );
+      await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
       await tester.pumpAndSettle();
       // 2단계: 기존 요소 편집기를 레일 옆에서 연다.
       expect(find.byType(PlanElementBuilder), findsOneWidget);
@@ -4044,15 +4048,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final gridFinder = find.byKey(
-        const ValueKey('plan-student-selector-grid'),
-      );
-      final students = tester.widget<StudentDiagonalGrid>(gridFinder).students;
-      expect(students.length, greaterThanOrEqualTo(16));
+      // FE4-b1: 계획 만들기 1단계 그리드(8열)로 옮겼다. 4번째 열 카드 오른쪽 위를 1~4행에서 누른다.
+      final gridFinder = find.byKey(const ValueKey('plan-flow-student-grid'));
+      final grid = tester.widget<StudentDiagonalGrid>(gridFinder);
+      final students = grid.students;
+      expect(students.length, greaterThanOrEqualTo(grid.columns * 4));
 
       for (var row = 0; row < 4; row++) {
-        final student = students[row * 4 + 3];
-        final target = find.byKey(ValueKey('student-${student.studentId}'));
+        final student = students[row * grid.columns + 3];
+        final target = find.descendant(
+          of: gridFinder,
+          matching: find.byKey(ValueKey('student-${student.studentId}')),
+        );
         final bounds = tester.getRect(target);
         final fitted = studentGridCardFittedRect(Offset.zero & bounds.size);
         final tapPoint = bounds.topLeft + fitted.topRight + const Offset(-2, 2);

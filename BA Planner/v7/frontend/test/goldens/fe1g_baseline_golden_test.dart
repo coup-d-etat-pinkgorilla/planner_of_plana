@@ -25,7 +25,6 @@ import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/models/student_filter_selection.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
-import 'package:ba_planner_v7/ui/widgets/plan_student_selector.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_student_review_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/student_form_cycle.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
@@ -100,6 +99,40 @@ Future<void> _selectFirstPlanStudent(WidgetTester tester) async {
   );
   await tester.pump();
   await _tapKey(tester, 'plan-student-selector-confirm-selection');
+}
+
+/// 계획 만들기 장면 mock(학생 장면 fixture + 고정 계산 결과).
+Future<GoldenPlanFlowMockAppService> _planFlowService() async {
+  final service = GoldenPlanFlowMockAppService();
+  addTearDown(service.dispose);
+  await service.seedStudentScene();
+  return service;
+}
+
+/// 계획 탭 S1 "시나리오 생성"으로 계획 만들기 1단계를 연다.
+Future<void> _openPlanFlow(
+  WidgetTester tester,
+  AppService service, {
+  List<PlanElementPreset> presets = const [],
+}) async {
+  await _openPlanning(tester, service, presets: presets);
+  await _tapKey(tester, 'plan-scenario-create-launch');
+  expect(find.byKey(const ValueKey('plan-flow-rail')), findsOneWidget);
+  expect(
+    find.byKey(const ValueKey('plan-flow-student-grid')),
+    findsOneWidget,
+  );
+}
+
+/// 1단계 B 그리드의 학생 카드를 누른다.
+Future<void> _tapFlowCard(WidgetTester tester, String studentId) async {
+  await tester.tap(
+    find.descendant(
+      of: find.byKey(const ValueKey('plan-flow-student-grid')),
+      matching: find.byKey(ValueKey('student-$studentId')),
+    ),
+  );
+  await tester.pump();
 }
 
 /// 시나리오 하나를 만든 뒤 활성 계획을 읽는 계획 화면을 연다.
@@ -424,32 +457,78 @@ void main() {
     await expectGoldenScene(tester, 'plan-preset-manager');
   }, variant: goldenPlatform);
 
-  // --- 계획 만들기 흐름(FE4-a1) ------------------------------------------------
+  // --- 계획 만들기 흐름(FE4-a1, FE4-b1에서 1단계 새 학생 고르기로 갱신) -----------------
   testWidgets('plan-flow-step1', (tester) async {
     setGoldenViewport(tester);
-    final service = GoldenPlanFlowMockAppService();
-    addTearDown(service.dispose);
-    await _openPlanning(tester, service);
-    await _tapKey(tester, 'plan-scenario-create-launch');
-    expect(find.byKey(const ValueKey('plan-flow-rail')), findsOneWidget);
-    expect(find.byType(PlanStudentSelector), findsOneWidget);
+    final service = await _planFlowService();
+    await _openPlanFlow(tester, service);
+    // 세 명: 긴 이름(말줄임), 아루, 미보유 + PLAN + JP(배지 셋). C는 목록 행, 그리드는 고른 순서 배지.
+    for (final id in const ['hoshino', 'aru', 'shun_swimsuit']) {
+      await _tapFlowCard(tester, id);
+    }
+    expect(find.text('3명 골랐습니다'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('plan-flow-selected-shun_swimsuit')),
+      findsOneWidget,
+    );
     await expectGoldenScene(tester, 'plan-flow-step1');
+  }, variant: goldenPlatform);
+
+  testWidgets('plan-flow-step1-many', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _planFlowService();
+    await _openPlanFlow(tester, service);
+    // 여덟 명: C가 압축 그리드(순서 배지 · ×)와 정렬 세그먼트 · 경고 줄로 바뀐다(FD-077).
+    for (final id in const [
+      'aru',
+      'ayane',
+      'hoshino',
+      'shun_swimsuit',
+      'hina',
+      'serika',
+      'kei',
+      'noa',
+    ]) {
+      await _tapFlowCard(tester, id);
+    }
+    expect(
+      find.byKey(const ValueKey('plan-flow-selected-grid')),
+      findsOneWidget,
+    );
+    expect(find.text('미보유 2명 · 이미 계획에 있는 학생 3명'), findsOneWidget);
+    await expectGoldenScene(tester, 'plan-flow-step1-many');
+  }, variant: goldenPlatform);
+
+  testWidgets('plan-flow-step1-filter', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _planFlowService();
+    await _openPlanFlow(tester, service);
+    await _tapFlowCard(tester, 'aru');
+    await tester.tap(find.byKey(const ValueKey('plan-flow-student-filter')));
+    await tester.pump();
+    await tester.pump();
+    // 초안: 계획 칩 그룹 "계획에 없는 학생만" + 학교(시안 Flow-1-Students-Filter의 계획 칩 그룹 포함 팝업).
+    await tester.tap(
+      find.byKey(const ValueKey('student-filter-chip-plan-unplanned')),
+    );
+    await tester.pump();
+    await tester.tap(
+      find.byKey(const ValueKey('student-filter-chip-school-Gehenna')),
+    );
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('plan-flow-student-filter-modal')),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'plan-flow-step1-filter');
   }, variant: goldenPlatform);
 
   testWidgets('plan-flow-step2', (tester) async {
     setGoldenViewport(tester);
-    final service = GoldenPlanFlowMockAppService();
-    addTearDown(service.dispose);
-    await _openPlanning(tester, service, presets: [goldenTestPreset()]);
-    await _tapKey(tester, 'plan-scenario-create-launch');
-    final grid = tester.widget<StudentDiagonalGrid>(
-      find.byKey(const ValueKey('plan-student-selector-grid')),
-    );
-    await tester.tap(
-      find.byKey(ValueKey('student-${grid.students.first.studentId}')),
-    );
-    await tester.pump();
-    await _tapKey(tester, 'plan-student-selector-confirm-selection');
+    final service = await _planFlowService();
+    await _openPlanFlow(tester, service, presets: [goldenTestPreset()]);
+    await _tapFlowCard(tester, 'aru');
+    await _tapKey(tester, 'plan-flow-next');
     await _tapKey(tester, 'plan-starter-preset-balanced-growth');
     await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
     // 초안 계산은 디바운스 Timer 뒤에 부른다.

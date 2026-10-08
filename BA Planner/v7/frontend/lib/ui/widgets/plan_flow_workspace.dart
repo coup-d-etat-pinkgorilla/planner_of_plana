@@ -1,10 +1,11 @@
 // 계획 만들기 흐름 화면(FE4-a1): A 진행 레일 + B 본문 + C 보조.
 //
-// 1~3단계 본문은 기존 화면을 그대로 연다(FE4-b~d에서 다시 만든다). 기존 화면 임시 수용 원칙(FE4-a gate 검토):
+// 1단계는 새 학생 고르기(FE4-b1, [PlanFlowStudentBody]·[PlanFlowStudentAside])다.
+// 2·3단계 본문은 기존 화면을 그대로 연다(FE4-c·FE4-d에서 다시 만든다). 기존 화면 임시 수용 원칙(FE4-a gate 검토):
 // - 기존 화면은 원래 받던 크기(계획 화면 캔버스 전체, 기준 viewport 2560×1392)로 배치한 뒤 B 섹션 안에서 A·C·사선과
 //   겹치지 않는 사각형([planFlowLegacyBodyRect])에 맞춰 통째로 축소한다([FittedBox], 히트 테스트는 변환을 따른다).
 //   좁은 제약을 그대로 주면 기존 화면의 행·열이 넘친다.
-// - 1단계 [PlanStudentSelector]는 계획 홈 S1 자리를 "섹션 1"로 받는다(원래 열리던 배치 그대로).
+// - 2·3단계 정수 편집기에는 초안의 v2 목표를 [PlanFlowController.editorStagesFor]로 바꿔 넘긴다.
 // 4단계는 B·C 섹션에 만들어질 페이즈와 저장 위치를 보여 주고, 저장은 기존 시나리오 저장 대화상자를 쓴다(FE4-e에서
 // 다시 만든다).
 // 섹션 모션은 부착면 규칙(FD-078): 레일 0/180(왼쪽), B 80/260(아래), C 180/0(오른쪽).
@@ -25,14 +26,9 @@ import 'animated_section_stack.dart';
 import 'plan_element_builder.dart';
 import 'plan_flow_rail.dart';
 import 'plan_phase_editor.dart';
+import 'plan_flow_student_step.dart';
 import 'plan_section_layout.dart'
-    show
-        PlanPhaseDiagonalList,
-        PlanPhasePreview,
-        PlanSectionMotion,
-        planSectionPath,
-        planStudentSelectorSection1RightAtReference;
-import 'plan_student_selector.dart';
+    show PlanPhaseDiagonalList, PlanPhasePreview, PlanSectionMotion;
 import 'plan_student_step_tile.dart';
 import 'section_template_surface.dart';
 
@@ -43,7 +39,7 @@ const planFlowAsideMotion = SectionMotionSpec(intro: 180, outro: 0);
 /// 기존 화면 자리와 B 섹션 가장자리 사이 여백.
 const planFlowLegacyInset = 16.0;
 
-/// 1~3단계 기존 화면을 넣는 자리: B 평행사변형 안에서 A 레일·C 보조·사선과 겹치지 않는 사각형.
+/// 2·3단계 기존 화면을 넣는 자리: B 평행사변형 안에서 A 레일·C 보조·사선과 겹치지 않는 사각형.
 /// 왼쪽은 B 왼쪽 사선의 윗끝(레일 윗변 오른쪽보다 한 칸 오른쪽), 오른쪽은 B 오른쪽 사선의 아랫끝(C 왼쪽 사선보다 왼쪽).
 Rect planFlowLegacyBodyRect(Size size) {
   final body = planFlowSectionPolygon(size, planFlowBodySectionId);
@@ -132,6 +128,12 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
   /// 마지막으로 그린 단계. 편집기 완료처럼 [_changeStep]을 거치지 않고 4단계가 되면 B·C 등장 모션을 튼다.
   late PlanFlowStep _shownStep;
 
+  /// 1단계 화면 상태(필터 상태 객체·검색어, FD-104). 1단계를 처음 그릴 때 만들고 흐름 동안 유지한다.
+  PlanFlowStudentPicker? _pickerState;
+
+  PlanFlowStudentPicker get _picker =>
+      _pickerState ??= PlanFlowStudentPicker(context: _flow.context);
+
   PlanFlowController get _flow => widget.flow;
 
   AnimationController _motionController() => AnimationController(
@@ -155,6 +157,11 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
       oldWidget.flow.removeListener(_flowChanged);
       widget.flow.addListener(_flowChanged);
       _shownStep = widget.flow.step;
+      final previous = _pickerState;
+      _pickerState = null;
+      if (previous != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => previous.dispose());
+      }
     }
     if (oldWidget.active != widget.active) _setActive(widget.active);
   }
@@ -190,6 +197,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
   @override
   void dispose() {
     _flow.removeListener(_flowChanged);
+    _pickerState?.dispose();
     _railController.dispose();
     _bodyController.dispose();
     _asideController.dispose();
@@ -337,9 +345,9 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
         displayName: _flow.context.displayName(stage.studentId),
         step: stage.step,
         target: stage.name,
-        bondRank: stage.targets['bond_rank'],
+        bondRank: stage.editorTargets['bond_rank'],
         stageId: stage.id,
-        targetValues: stage.targets,
+        targetValues: stage.editorTargets,
       ),
   ];
 
@@ -378,7 +386,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     },
   );
 
-  /// B·C 섹션(표면 + 4단계 내용)과 1~3단계 기존 화면.
+  /// B·C 섹션(표면 + 1단계·4단계 내용)과 2·3단계 기존 화면.
   List<Widget> _body(Size size, bool active) {
     final step = _flow.step;
     final saving = step == PlanFlowStep.save;
@@ -399,6 +407,15 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                 ),
               ),
               if (saving) ..._saveBodyContent(size),
+              if (step == PlanFlowStep.students)
+                Positioned.fill(
+                  child: PlanFlowStudentBody(
+                    key: const ValueKey('plan-flow-student-body-view'),
+                    flow: _flow,
+                    picker: _picker,
+                    active: active,
+                  ),
+                ),
             ],
           ),
         ),
@@ -419,6 +436,14 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                 ),
               ),
               if (saving) ..._saveAsideContent(size),
+              if (step == PlanFlowStep.students)
+                Positioned.fill(
+                  child: PlanFlowStudentAside(
+                    key: const ValueKey('plan-flow-student-aside-view'),
+                    flow: _flow,
+                    picker: _picker,
+                  ),
+                ),
             ],
           ),
         ),
@@ -440,23 +465,11 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     ];
   }
 
-  /// 1~3단계 기존 화면. 계획 화면 캔버스([size])를 통째로 받는다(원래 열리던 크기).
+  /// 2·3단계 기존 화면. 계획 화면 캔버스([size])를 통째로 받는다(원래 열리던 크기).
   Widget? _legacyScreen(Size size, bool active) {
     switch (_flow.step) {
       case PlanFlowStep.students:
-        return PlanStudentSelector(
-          key: const ValueKey('plan-student-selector-view'),
-          service: widget.service,
-          plannedIds: _flow.draft.stagesByStudent.keys.toSet(),
-          onConfirmed: (seeds) =>
-              _changeStep(() => _flow.confirmStudents(seeds)),
-          onSelectionChanged: _flow.updatePendingSelection,
-          // 계획 홈 S1 자리(원래 배치). 흐름에서는 S1을 그리지 않아 그 자리는 비어 있다.
-          section1Bounds: planSectionPath(size, 'element-1').getBounds(),
-          section1RightAtReference:
-              planStudentSelectorSection1RightAtReference(size),
-          active: active,
-        );
+        return null;
       case PlanFlowStep.goals:
         final seed = _flow.goalSeed;
         if (seed == null) return null;
@@ -464,7 +477,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
         return PlanElementBuilder(
           key: ValueKey('plan-element-builder-${seed.handoffId}'),
           seed: seed,
-          initialStages: draft.stagesByStudent[seed.studentId] ?? const [],
+          initialStages: _flow.editorStagesFor(seed.studentId),
           unassignedItems: [
             for (final stage in draft.unassignedStages)
               PlanElementUnassignedItem(
@@ -473,7 +486,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                 displayName: _flow.context.displayName(stage.studentId),
                 stageNumber: stage.step,
                 stageName: stage.name,
-                targetSummary: planElementTargetSummary(stage.targets),
+                targetSummary: planElementTargetSummary(stage.editorTargets),
               ),
           ],
           hasPlanElements: draft.hasStages,

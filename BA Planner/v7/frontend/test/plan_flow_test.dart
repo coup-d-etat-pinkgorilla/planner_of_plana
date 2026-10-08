@@ -1,6 +1,6 @@
-// FE4-a1 계획 만들기 흐름 골격 테스트: Studio 3-Section, 초안 컨트롤러(단계 이동·비활성 조건), 문서 경계 어댑터,
-// 디바운스 계산과 레일 요약, 부족 재화 플라이아웃, 기존 세 화면(학생 고르기·요소 편집기·페이즈 편집기)을 단계마다
-// 여는지.
+// 계획 만들기 흐름 골격 테스트(FE4-a1, FE4-b1에서 v2 초안·새 1단계로 갱신): Studio 3-Section, 초안 컨트롤러
+// (단계 이동·비활성 조건·학생 고르기), v2 목표 변환과 문서 경계 어댑터, 디바운스 계산과 레일 요약, 부족 재화
+// 플라이아웃, 1단계 새 학생 고르기와 2·3단계 기존 화면(요소 편집기·페이즈 편집기).
 //
 // 계산 디바운스(Timer)와 플라이아웃(OverlayPortal)이 있는 화면은 pumpAndSettle 대신 명시적인 pump를 쓴다.
 import 'dart:async';
@@ -14,6 +14,7 @@ import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/studio/plan_flow_studio_layout.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_rail.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_flow_student_step.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_student_selector.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
@@ -35,6 +36,24 @@ PlanElementStageDraft _stage(String studentId, int number, {int level = 50}) =>
       name: '$number단계',
       targets: _targets(level: level),
     );
+
+/// v2 초안 단계(레벨만 목표, 나머지 18키는 null = 목표 없음).
+PlanFlowStageDraft _v2Stage(
+  String studentId,
+  int number, {
+  int level = 50,
+  Map<String, int> extra = const {},
+}) => PlanFlowStageDraft(
+  id: '$studentId-stage-$number',
+  name: '$number단계',
+  targets: {'level': level, ...extra},
+);
+
+/// 학생을 고르고 2단계로 간다(이미 2단계면 그대로).
+void _pick(PlanFlowController flow, String studentId) {
+  flow.toggleStudent(studentId);
+  flow.goTo(PlanFlowStep.goals);
+}
 
 Map<String, dynamic> _resource(
   String key,
@@ -268,14 +287,13 @@ void main() {
       expect(flow.stateOf(PlanFlowStep.students), PlanFlowStepState.current);
       expect(flow.stateOf(PlanFlowStep.goals), PlanFlowStepState.remaining);
 
-      // 그리드에서 고르기만 해도 "다음"이 열린다(확정은 다음을 누를 때).
-      final aru = flow.context.seedFor('aru');
-      flow.updatePendingSelection([aru]);
+      // 그리드에서 고르면 바로 초안에 들어가고 "다음"이 열린다.
+      flow.toggleStudent('aru');
+      expect(flow.selectedStudentIds, ['aru']);
       expect(flow.canGoNext, isTrue);
       flow.goNext();
       expect(flow.step, PlanFlowStep.goals);
       expect(flow.draft.students.map((seed) => seed.studentId), ['aru']);
-      expect(flow.pendingSelection, isEmpty);
       expect(flow.goalSeed?.studentId, 'aru');
       expect(flow.stateOf(PlanFlowStep.students), PlanFlowStepState.done);
       expect(flow.canGoNext, isFalse, reason: '단계가 없으면 순서로 못 간다');
@@ -316,22 +334,137 @@ void main() {
       expect(flow.stateOf(PlanFlowStep.order), PlanFlowStepState.remaining);
     });
 
-    test('학생 고르기 확정은 이미 고른 학생을 지우지 않고 뒤에 붙인다', () async {
+    test('고른 학생은 고른 순서대로 붙고, 다시 누르면 단계와 함께 빠진다', () async {
       final service = MockAppService();
       addTearDown(service.dispose);
       final flow = await _controller(service);
-      final aru = flow.context.seedFor('aru');
-      final ayane = flow.context.seedFor('ayane');
-      flow.confirmStudents([aru]);
+      flow.toggleStudent('aru');
+      flow.goNext();
       flow.confirmStudentStages('aru', [_stage('aru', 1)]);
       flow.goTo(PlanFlowStep.students);
-      flow.confirmStudents([ayane, aru]);
-      expect(flow.draft.students.map((seed) => seed.studentId), [
-        'aru',
-        'ayane',
-      ]);
+      // 이미 고른 학생은 그대로 두고 새 학생만 뒤에 붙는다("보이는 학생 모두 고르기").
+      flow.addStudents(['ayane', 'aru']);
+      expect(flow.selectedStudentIds, ['aru', 'ayane']);
+      // 2단계는 아직 단계가 없는 첫 학생부터 연다.
+      flow.goNext();
       expect(flow.goalSeed?.studentId, 'ayane');
-      expect(flow.draft.stagesByStudent['aru'], hasLength(1));
+      expect(flow.editorStagesFor('aru'), hasLength(1));
+
+      // 다시 누르면 그 학생의 단계·goal_metadata도 초안에서 빠지고 계산을 다시 부른다.
+      flow.goTo(PlanFlowStep.students);
+      flow.toggleStudent('aru');
+      expect(flow.selectedStudentIds, ['ayane']);
+      expect(flow.draft.stagesByStudent.containsKey('aru'), isFalse);
+      expect(flow.draft.goalMetadata.containsKey('aru'), isFalse);
+      expect(flow.canEnter(PlanFlowStep.order), isFalse);
+
+      flow.clearStudents();
+      expect(flow.selectedStudentIds, isEmpty);
+      expect(flow.canGoNext, isFalse);
+    });
+
+    test('2단계 확정은 정수 단계를 v2(고르지 않은 목표 null)로 바꾸고 goal_metadata를 둔다', () async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      final flow = await _controller(service);
+      _pick(flow, 'aru');
+      final current = planElementCurrentTargets(flow.draft.seedOf('aru')!);
+      final skill = current['skill1']! + 1;
+      flow.confirmStudentStages('aru', [
+        PlanElementStageDraft(
+          id: 'aru-1',
+          name: '1단계',
+          targets: {...current, 'level': 90},
+        ),
+        PlanElementStageDraft(
+          id: 'aru-2',
+          name: '2단계',
+          targets: {...current, 'level': 90, 'skill1': skill},
+        ),
+      ]);
+      final stages = flow.draft.stagesByStudent['aru']!;
+      expect(stages.first.targets.keys.toSet(), planningDocumentTargetKeys);
+      expect(stages.first.goalKeys, {'level'});
+      expect(stages.first.targets['skill1'], isNull);
+      expect(stages.last.goalKeys, {'level', 'skill1'});
+      expect(stages.last.targets['skill1'], skill);
+      expect(
+        flow.draft.goalMetadata['aru'],
+        isA<PlanningGoalMetadata>()
+            .having((item) => item.favorite, 'favorite', isFalse)
+            .having((item) => item.notes, 'notes', ''),
+      );
+      // 정수 편집기 보기: null은 지금 값(첫 단계) · 앞 단계 값으로 채워 원래 입력과 같다.
+      final editor = flow.editorStagesFor('aru');
+      expect(editor.first.targets, {...current, 'level': 90});
+      expect(editor.last.targets, {...current, 'level': 90, 'skill1': skill});
+    });
+  });
+
+  group('v2 목표 변환', () {
+    final seed = PlanningStudentSeed(
+      handoffId: 'seed',
+      studentId: 'aru',
+      metadata: const {},
+      currentValues: const {'level': 30, 'skill1': 4, 'bond_rank': 10},
+    );
+
+    test('지금 값보다 처음 올라간 단계부터 목표로 보고 뒤 단계에도 남긴다', () {
+      final current = planElementCurrentTargets(seed);
+      final stages = PlanFlowGoalCodec.fromEditor(seed, [
+        PlanElementStageDraft(
+          id: 's1',
+          name: '1',
+          targets: {...current, 'level': 50},
+        ),
+        PlanElementStageDraft(
+          id: 's2',
+          name: '2',
+          targets: {...current, 'level': 50, 'skill1': 7},
+        ),
+      ]);
+      expect(stages[0].goalKeys, {'level'});
+      expect(stages[1].goalKeys, {'level', 'skill1'});
+      expect(stages[1].targets['level'], 50);
+      expect(stages[0].targets['bond_rank'], isNull);
+      final editor = PlanFlowGoalCodec.toEditor(seed, stages);
+      expect(editor[0].targets['skill1'], 4);
+      expect(editor[1].targets['skill1'], 7);
+      expect(editor[0].targets['bond_rank'], 10);
+    });
+
+    test('정수만 다루는 기존 화면에는 v2 문서의 null을 앞 단계 값으로 채워 준다', () {
+      final document = PlanningDocument(
+        id: 'v2',
+        name: '후보',
+        kind: PlanningDocumentKind.scenario,
+        version: 2,
+        goalMetadata: const {'aru': planFlowDefaultGoalMetadata},
+        phases: [
+          PlanningDocumentPhase(
+            id: 'p1',
+            name: '1',
+            stages: [
+              PlanningDocumentStage(
+                id: 's1',
+                studentId: 'aru',
+                name: '1',
+                targets: {
+                  for (final key in planningDocumentTargetKeys) key: null,
+                  'level': 50,
+                },
+              ),
+            ],
+          ),
+        ],
+      );
+      final integers = planFlowDocumentIntegerTargets(
+        document,
+        seedFor: (_) => seed,
+      );
+      expect(integers['s1']!['level'], 50);
+      expect(integers['s1']!['skill1'], 4);
+      expect(integers['s1']!.keys.toSet(), planningDocumentTargetKeys);
     });
   });
 
@@ -352,12 +485,17 @@ void main() {
         ),
       ],
       stagesByStudent: {
-        'aru': [_stage('aru', 1), _stage('aru', 2, level: 60)],
-        'ayane': [_stage('ayane', 1)],
+        'aru': [_v2Stage('aru', 1), _v2Stage('aru', 2, level: 60)],
+        'ayane': [
+          _v2Stage('ayane', 1, extra: const {'skill1': 4}),
+        ],
       },
       phases: [
         PlanFlowPhase(id: 'p1', name: '1순위', stageIds: const ['ayane-stage-1']),
       ],
+      goalMetadata: const {
+        'ayane': PlanningGoalMetadata(favorite: true, notes: '메모'),
+      },
     );
 
     test('계산 문서는 칸에 없는 단계를 단계 번호마다 임시 페이즈에 넣는다', () {
@@ -386,8 +524,18 @@ void main() {
           ['aru-stage-2'],
         ],
       ]);
-      expect(wire['version'], 1);
+      expect(wire['version'], 2);
       expect(wire['kind'], 'scenario');
+      // 문서 학생과 같은 키의 goal_metadata, 고르지 않은 목표는 null.
+      expect((wire['goal_metadata'] as Map).keys.toSet(), {'aru', 'ayane'});
+      final aruStage =
+          ((wire['phases'] as List)[1] as Map)['stages'] as List;
+      final aruTargets = (aruStage.single as Map)['targets'] as Map;
+      expect(aruTargets.keys.toSet(), planningDocumentTargetKeys);
+      expect(aruTargets['level'], 50);
+      expect(aruTargets['skill1'], isNull);
+      // 서버 쪽과 같은 규칙으로 다시 읽을 수 있다.
+      expect(PlanningDocument.fromWire(wire).version, 2);
     });
 
     test('저장 문서는 칸 배치만 담고, 불러오면 같은 초안이 된다', () {
@@ -397,8 +545,10 @@ void main() {
         name: '후보',
       );
       expect(document.kind, PlanningDocumentKind.scenario);
+      expect(document.version, 2);
       expect(document.phases.map((phase) => phase.id), ['p1']);
       expect(document.stages.map((stage) => stage.id), ['ayane-stage-1']);
+      expect(document.goalMetadata.keys, ['ayane']);
 
       final reopened = PlanFlowDocumentBoundary.fromDocument(
         document,
@@ -412,6 +562,12 @@ void main() {
       expect(reopened.students.map((seed) => seed.studentId), ['ayane']);
       expect(reopened.phases.single.stageIds, ['ayane-stage-1']);
       expect(reopened.allStagesAssigned, isTrue);
+      expect(
+        reopened.stagesByStudent['ayane']!.single.targets,
+        draft.stagesByStudent['ayane']!.single.targets,
+      );
+      expect(reopened.goalMetadata['ayane']?.favorite, isTrue);
+      expect(reopened.goalMetadata['ayane']?.notes, '메모');
     });
   });
 
@@ -472,7 +628,7 @@ void main() {
       '지금',
     );
 
-    flow.updatePendingSelection([flow.context.seedFor('aru')]);
+    flow.toggleStudent('aru');
     await tester.pump();
     expect(
       _text(tester, find.byKey(const ValueKey('plan-flow-step-1'))),
@@ -507,7 +663,7 @@ void main() {
     final service = _FlowService();
     addTearDown(service.dispose);
     final flow = await _controller(service);
-    flow.confirmStudents([flow.context.seedFor('aru')]);
+    _pick(flow, 'aru');
     flow.confirmStudentStages('aru', [_stage('aru', 1)]);
     await _pumpRail(tester, flow);
     await _settle(tester);
@@ -560,12 +716,12 @@ void main() {
       contains('—'),
     );
 
-    flow.confirmStudents([flow.context.seedFor('aru')]);
+    _pick(flow, 'aru');
     flow.confirmStudentStages('aru', [_stage('aru', 1)]);
     await tester.pump(const Duration(milliseconds: 100));
     flow.confirmStudentStages('aru', [_stage('aru', 1), _stage('aru', 2)]);
     await tester.pump(const Duration(milliseconds: 100));
-    flow.confirmStudents([flow.context.seedFor('ayane')]);
+    _pick(flow, 'ayane');
     flow.confirmStudentStages('ayane', [_stage('ayane', 1)]);
     await tester.pump(
       planFlowCalculationDebounce - const Duration(milliseconds: 1),
@@ -615,7 +771,7 @@ void main() {
     final service = _ControlledService();
     addTearDown(service.dispose);
     final flow = await _controller(service);
-    flow.confirmStudents([flow.context.seedFor('aru')]);
+    _pick(flow, 'aru');
     flow.confirmStudentStages('aru', [_stage('aru', 1)]);
     await tester.pump(planFlowCalculationDebounce);
     expect(service.completers, hasLength(1));
@@ -641,7 +797,7 @@ void main() {
     final service = _FlowService();
     addTearDown(service.dispose);
     final flow = await _controller(service);
-    flow.confirmStudents([flow.context.seedFor('aru')]);
+    _pick(flow, 'aru');
     flow.confirmStudentStages('aru', [_stage('aru', 1)]);
     await _pumpRail(tester, flow);
     await _settle(tester);
@@ -665,7 +821,9 @@ void main() {
     expect(title, findsNothing);
   });
 
-  testWidgets('각 단계에서 기존 학생 고르기 · 요소 편집기 · 페이즈 편집기를 연다', (tester) async {
+  testWidgets('1단계는 새 학생 고르기이고, 2·3단계는 기존 요소 편집기 · 페이즈 편집기를 연다', (
+    tester,
+  ) async {
     final service = MockAppService();
     addTearDown(service.dispose);
     tester.view.physicalSize = const Size(2560, 1392);
@@ -697,19 +855,30 @@ void main() {
       find.byKey(const ValueKey('plan-scenario-create-launch')),
     );
     await tester.pumpAndSettle();
-    expect(find.byType(PlanStudentSelector), findsOneWidget);
+    // FE4-b1: 1단계는 기존 선택기가 아니라 B 본문·C 보조에 그리는 새 학생 고르기다.
+    expect(find.byType(PlanStudentSelector), findsNothing);
+    expect(find.byType(PlanFlowStudentBody), findsOneWidget);
+    expect(find.byType(PlanFlowStudentAside), findsOneWidget);
+    expect(find.byKey(const ValueKey('plan-flow-legacy-slot')), findsNothing);
 
-    // 그리드에서 고르고 레일 "다음"으로 2단계(확정 버튼 없이).
-    final grid = tester.widget<StudentDiagonalGrid>(
-      find.byKey(const ValueKey('plan-student-selector-grid')),
-    );
+    // 그리드에서 고르고 레일 "다음"으로 2단계.
+    final gridFinder = find.byKey(const ValueKey('plan-flow-student-grid'));
+    final grid = tester.widget<StudentDiagonalGrid>(gridFinder);
+    final firstId = grid.students.first.studentId;
     await tester.tap(
-      find.byKey(ValueKey('student-${grid.students.first.studentId}')),
+      find.descendant(
+        of: gridFinder,
+        matching: find.byKey(ValueKey('student-$firstId')),
+      ),
     );
     await tester.pump();
+    expect(
+      find.byKey(ValueKey('plan-flow-selected-$firstId')),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
     await tester.pumpAndSettle();
-    expect(find.byType(PlanStudentSelector), findsNothing);
+    expect(find.byType(PlanFlowStudentBody), findsNothing);
     expect(find.byType(PlanElementBuilder), findsOneWidget);
     // 요소 편집기는 원래 캔버스 크기로 배치한 뒤 B 안쪽 사각형에 맞춰 통째로 줄인다(넘침 없음).
     final workspace = find.byKey(const ValueKey('plan-flow-workspace'));
@@ -733,7 +902,12 @@ void main() {
     // 레일 1단계 버튼으로 돌아갔다가 "다음"으로 다시 온다.
     await tester.tap(find.byKey(const ValueKey('plan-flow-step-1')));
     await tester.pumpAndSettle();
-    expect(find.byType(PlanStudentSelector), findsOneWidget);
+    expect(find.byType(PlanFlowStudentBody), findsOneWidget);
+    // 돌아와도 고른 학생은 그대로다.
+    expect(
+      find.byKey(ValueKey('plan-flow-selected-$firstId')),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
     await tester.pumpAndSettle();
     expect(find.byType(PlanElementBuilder), findsOneWidget);

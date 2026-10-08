@@ -4,8 +4,8 @@
 // 활성 계획 쪽 스냅샷 왕복이 필요 없다.
 //
 // 계획 문서 DTO(`PlanningDocument`·`PlanningDocumentPhase`·`PlanningDocumentStage`, `planning_models.dart`)는
-// [PlanFlowDocumentBoundary] 한 곳에서만 만들고 읽는다. FB-1a(문서 v2: 목표 없음 = null, 학생별 goal_metadata)
-// 뒤에는 그 경계만 바꾸면 된다.
+// [PlanFlowDocumentBoundary] 한 곳에서만 만들고 읽는다. 초안은 문서 v2(FB-1a: 목표 없음 = null, 학생별
+// goal_metadata)이고(FE4-b1), 2·3단계의 기존 정수 편집기와는 [PlanFlowGoalCodec]으로 바꾼다.
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -13,6 +13,8 @@ import 'package:flutter/foundation.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scenario_service.dart';
+import '../widgets/plan_element_builder.dart' show planElementCurrentTargets;
+import 'planning_growth_rules.dart';
 import 'planning_models.dart';
 
 /// 초안이 바뀐 뒤 계산을 부를 때까지 기다리는 시간.
@@ -42,7 +44,7 @@ enum PlanFlowStep {
 /// 스텝 버튼 상태(시안 `지금`·`완료`·`남음`).
 enum PlanFlowStepState { current, done, remaining }
 
-/// 흐름을 연 목적. 활성 계획 편집(학생 추가·페이즈 만들기)은 FE4-a2에서 더한다.
+/// 흐름을 연 목적.
 enum PlanFlowPurpose {
   /// 계획 탭 S1 "시나리오 생성"(FD-081 "새 시나리오" → 1단계).
   newScenario,
@@ -65,6 +67,133 @@ class PlanFlowPhase {
   final List<String> stageIds;
 }
 
+/// 목표를 고르지 않은 학생의 goal_metadata 기본값(FB-1a).
+const planFlowDefaultGoalMetadata = PlanningGoalMetadata(
+  favorite: false,
+  notes: '',
+);
+
+/// 초안의 학생 단계 하나(문서 v2 목표, FB-1a).
+///
+/// [targets]는 `planningDocumentTargetKeys` 19키를 모두 가진다. null은 "목표 없음"이고 0은 실제 값이다.
+@immutable
+class PlanFlowStageDraft {
+  PlanFlowStageDraft({
+    required this.id,
+    required this.name,
+    required Map<String, int?> targets,
+  }) : targets = Map.unmodifiable(<String, int?>{
+         for (final key in planningDocumentTargetKeys) key: targets[key],
+       });
+
+  final String id;
+  final String name;
+  final Map<String, int?> targets;
+
+  /// 고른 목표 키.
+  Set<String> get goalKeys => {
+    for (final entry in targets.entries)
+      if (entry.value != null) entry.key,
+  };
+
+  PlanFlowStageDraft copyWith({String? name}) =>
+      PlanFlowStageDraft(id: id, name: name ?? this.name, targets: targets);
+}
+
+/// v2 초안 목표 ↔ 2·3단계 정수 편집기(`PlanElementStageDraft`) 변환.
+///
+/// 기존 요소 편집기·페이즈 편집기는 19키 정수 목표만 다룬다(FE4-c·FE4-d에서 다시 만든다). 그 화면에 v2를 그대로
+/// 넘기지 않고 여기서 바꾼다(FB-1a 연결 메모).
+/// - 정수 → v2: 그 학생의 지금 값([planElementCurrentTargets])보다 처음 올라간 단계부터 그 키를 "고른 목표"로
+///   보고 뒤 단계에도 남긴다(v2 문서 규칙: 한 번 정한 목표는 뒤 단계에서 null로 돌아가지 않는다). 끝까지 지금 값과
+///   같은 키는 모든 단계에서 null이다. 현재값으로 채우는 `planningDocumentTargets`는 쓰지 않는다.
+/// - v2 → 정수: null은 앞 단계 값(첫 단계는 지금 값)으로 채운다. 그래서 정수 편집기에서는 퇴행이 생기지 않는다.
+abstract final class PlanFlowGoalCodec {
+  /// 바닥값: 학생의 지금 값. [seed]가 없으면 목표 최솟값([planElementTargetMinimums])이다.
+  static Map<String, int> _floor(PlanningStudentSeed? seed) => seed == null
+      ? {
+          for (final key in planningDocumentTargetKeys)
+            key: planElementTargetMinimums[key] ?? 0,
+        }
+      : planElementCurrentTargets(seed);
+
+  static List<PlanFlowStageDraft> fromEditor(
+    PlanningStudentSeed? seed,
+    List<PlanElementStageDraft> stages,
+  ) {
+    final current = _floor(seed);
+    final chosen = <String>{};
+    return [
+      for (final stage in stages)
+        () {
+          for (final key in planningDocumentTargetKeys) {
+            final value = stage.targets[key] ?? current[key]!;
+            if (value > current[key]!) chosen.add(key);
+          }
+          return PlanFlowStageDraft(
+            id: stage.id,
+            name: stage.name,
+            targets: {
+              for (final key in planningDocumentTargetKeys)
+                key: chosen.contains(key)
+                    ? stage.targets[key] ?? current[key]!
+                    : null,
+            },
+          );
+        }(),
+    ];
+  }
+
+  static List<PlanElementStageDraft> toEditor(
+    PlanningStudentSeed? seed,
+    List<PlanFlowStageDraft> stages,
+  ) {
+    var previous = _floor(seed);
+    return [
+      for (final stage in stages)
+        () {
+          final targets = <String, int>{
+            for (final key in planningDocumentTargetKeys)
+              key: stage.targets[key] ?? previous[key]!,
+          };
+          previous = targets;
+          return PlanElementStageDraft(
+            id: stage.id,
+            name: stage.name,
+            targets: targets,
+          );
+        }(),
+    ];
+  }
+}
+
+/// 문서 단계 id → 정수 목표 보기. v1 문서는 정수 목표 그대로이고, v2 문서의 null은 그 학생의 앞 단계 값(첫 단계는
+/// [seedFor]의 지금 값)으로 채운다([PlanFlowGoalCodec.toEditor]).
+///
+/// 활성 계획 반영·시나리오 비교처럼 아직 정수 목표만 다루는 기존 화면이 v2 시나리오(FE4-b1부터 저장)를 읽을 때
+/// 쓴다. v2 단계의 `targets`는 null이 있으면 StateError를 내므로 그 화면에서 바로 읽지 않는다.
+Map<String, Map<String, int>> planFlowDocumentIntegerTargets(
+  PlanningDocument document, {
+  required PlanningStudentSeed? Function(String studentId) seedFor,
+}) {
+  final byStudent = <String, List<PlanningDocumentStage>>{};
+  for (final stage in document.stages) {
+    byStudent.putIfAbsent(stage.studentId, () => []).add(stage);
+  }
+  return {
+    for (final entry in byStudent.entries)
+      for (final stage in PlanFlowGoalCodec.toEditor(seedFor(entry.key), [
+        for (final stage in entry.value)
+          PlanFlowStageDraft(
+            id: stage.id,
+            name: stage.name,
+            targets: stage.nullableTargets,
+          ),
+      ]))
+        stage.id: stage.targets,
+  };
+}
+
 /// 초안의 학생 단계 하나(같은 학생의 [step]번째 누적 목표).
 @immutable
 class PlanFlowStage {
@@ -72,48 +201,80 @@ class PlanFlowStage {
     required this.studentId,
     required this.step,
     required this.draft,
+    required this.editorTargets,
   });
 
   final String studentId;
 
   /// 1부터.
   final int step;
-  final PlanElementStageDraft draft;
+  final PlanFlowStageDraft draft;
+
+  /// 정수 편집기 보기([PlanFlowGoalCodec.toEditor]). 요약·미리보기에 쓴다.
+  final Map<String, int> editorTargets;
 
   String get id => draft.id;
   String get name => draft.name;
-  Map<String, int> get targets => draft.targets;
+
+  /// v2 목표(null = 목표 없음).
+  Map<String, int?> get targets => draft.targets;
 }
 
-/// 계획 만들기 초안: 고른 학생(고른 순서) · 학생별 누적 단계 · 칸 배치.
+/// 계획 만들기 초안: 고른 학생(고른 순서) · 학생별 누적 단계(v2) · 칸 배치 · 학생별 goal_metadata.
 @immutable
 class PlanFlowDraft {
   PlanFlowDraft({
     List<PlanningStudentSeed> students = const [],
-    Map<String, List<PlanElementStageDraft>> stagesByStudent = const {},
+    Map<String, List<PlanFlowStageDraft>> stagesByStudent = const {},
     List<PlanFlowPhase> phases = const [],
+    Map<String, PlanningGoalMetadata> goalMetadata = const {},
   }) : students = List.unmodifiable(students),
-       stagesByStudent = Map.unmodifiable(<String, List<PlanElementStageDraft>>{
+       stagesByStudent = Map.unmodifiable(<String, List<PlanFlowStageDraft>>{
          for (final entry in stagesByStudent.entries)
            if (entry.value.isNotEmpty)
-             entry.key: List<PlanElementStageDraft>.unmodifiable(entry.value),
+             entry.key: List<PlanFlowStageDraft>.unmodifiable(entry.value),
        }),
-       phases = List.unmodifiable(phases);
+       phases = List.unmodifiable(phases),
+       goalMetadata = Map.unmodifiable(goalMetadata);
 
   /// 고른 순서.
   final List<PlanningStudentSeed> students;
-  final Map<String, List<PlanElementStageDraft>> stagesByStudent;
+  final Map<String, List<PlanFlowStageDraft>> stagesByStudent;
   final List<PlanFlowPhase> phases;
 
+  /// 학생별 즐겨찾기·메모. 초안을 다시 만들거나 문서로 바꿔도 그대로 옮긴다(FB-1a).
+  final Map<String, PlanningGoalMetadata> goalMetadata;
+
   static final empty = PlanFlowDraft();
+
+  /// 고른 학생 ID(고른 순서).
+  List<String> get studentIds => [for (final seed in students) seed.studentId];
+
+  PlanningStudentSeed? seedOf(String studentId) {
+    for (final seed in students) {
+      if (seed.studentId == studentId) return seed;
+    }
+    return null;
+  }
+
+  /// [studentId]의 단계를 정수 편집기 보기로.
+  List<PlanElementStageDraft> editorStagesFor(String studentId) =>
+      PlanFlowGoalCodec.toEditor(
+        seedOf(studentId),
+        stagesByStudent[studentId] ?? const <PlanFlowStageDraft>[],
+      );
 
   /// 학생 순서 → 단계 순서로 펼친 단계.
   List<PlanFlowStage> get stages => [
     for (final studentId in _studentOrder)
-      for (final (index, draft)
-          in (stagesByStudent[studentId] ?? const <PlanElementStageDraft>[])
-              .indexed)
-        PlanFlowStage(studentId: studentId, step: index + 1, draft: draft),
+      if (stagesByStudent[studentId] case final drafts?)
+        for (final (index, editor) in editorStagesFor(studentId).indexed)
+          PlanFlowStage(
+            studentId: studentId,
+            step: index + 1,
+            draft: drafts[index],
+            editorTargets: editor.targets,
+          ),
   ];
 
   /// 고른 순서 뒤에, 고른 목록에 없는(불러온 문서의) 학생을 붙인다.
@@ -160,48 +321,70 @@ class PlanFlowDraft {
 
   PlanFlowDraft copyWith({
     List<PlanningStudentSeed>? students,
-    Map<String, List<PlanElementStageDraft>>? stagesByStudent,
+    Map<String, List<PlanFlowStageDraft>>? stagesByStudent,
     List<PlanFlowPhase>? phases,
+    Map<String, PlanningGoalMetadata>? goalMetadata,
   }) => PlanFlowDraft(
     students: students ?? this.students,
     stagesByStudent: stagesByStudent ?? this.stagesByStudent,
     phases: phases ?? this.phases,
+    goalMetadata: goalMetadata ?? this.goalMetadata,
   );
 }
 
 /// 초안 ↔ 계획 문서 DTO 경계.
 ///
-/// 흐름의 다른 코드는 `PlanningDocument*`를 직접 만들거나 읽지 않는다. 지금은 문서 v1(19키 정수 목표, 모든
-/// 단계가 페이즈 안)이다. FB-1a 뒤 v2로 바꿀 때 고칠 곳은 이 클래스뿐이다(아래 각 메서드 주석).
+/// 흐름의 다른 코드는 `PlanningDocument*`를 직접 만들거나 읽지 않는다. 문서는 v2(FB-1a)다: 19키 nullable 목표
+/// (null = 목표 없음), 문서 학생과 같은 키 집합의 `goal_metadata`.
 abstract final class PlanFlowDocumentBoundary {
   /// 저장할 시나리오 문서. 칸 배치를 그대로 페이즈로 쓴다(빈 칸 포함, 기존 저장 경로와 같다).
-  ///
-  /// v2: 학생별 goal_metadata와 "목표 없음"(null) 키를 여기서 채운다.
   static PlanningDocument toScenarioDocument(
     PlanFlowDraft draft, {
     required String id,
     required String name,
-  }) => PlanningDocument(
+  }) => _document(
+    draft,
     id: id,
     name: name,
-    kind: PlanningDocumentKind.scenario,
     phases: _phases(draft, includeUnassigned: false),
   );
 
   /// 계산(`planning.document.calculate`)에 보낼 문서. 칸에 아직 넣지 않은 단계는 단계 번호마다 임시 페이즈에
   /// 넣는다(모두 1단계 → 모두 2단계 …). 같은 학생의 단계는 칸에 다 들어가거나 하나도 안 들어가므로(요소 편집기가
   /// 학생 단위로 바꾸고 페이즈 편집기는 미배정 0일 때만 끝난다) 문서 순서상 목표가 퇴행하지 않는다(C 보고서 §1.6).
-  ///
-  /// v2: v1 정수 목표 대신 null을 보내게 되면 여기만 바꾼다.
   static Map<String, dynamic> calculationWire(
     PlanFlowDraft draft, {
     required String id,
-  }) => PlanningDocument(
+  }) => _document(
+    draft,
     id: id,
     name: '계획 만들기 초안',
-    kind: PlanningDocumentKind.scenario,
     phases: _phases(draft, includeUnassigned: true),
   ).toWire();
+
+  static PlanningDocument _document(
+    PlanFlowDraft draft, {
+    required String id,
+    required String name,
+    required List<PlanningDocumentPhase> phases,
+  }) {
+    final studentIds = {
+      for (final phase in phases)
+        for (final stage in phase.stages) stage.studentId,
+    };
+    return PlanningDocument(
+      id: id,
+      name: name,
+      kind: PlanningDocumentKind.scenario,
+      phases: phases,
+      version: 2,
+      goalMetadata: {
+        for (final studentId in studentIds)
+          studentId:
+              draft.goalMetadata[studentId] ?? planFlowDefaultGoalMetadata,
+      },
+    );
+  }
 
   static List<PlanningDocumentPhase> _phases(
     PlanFlowDraft draft, {
@@ -243,30 +426,41 @@ abstract final class PlanFlowDocumentBoundary {
 
   /// 저장된 시나리오 문서를 초안으로 연다. 페이즈 순서·안의 단계 순서를 그대로 칸으로 쓴다.
   ///
-  /// v2: null 목표를 초안의 "목표 없음"으로 옮긴다.
+  /// v2 문서는 `nullableTargets`·`goalMetadata`를 그대로 옮긴다. v1 문서(정수 목표)는 [PlanFlowGoalCodec.fromEditor]로
+  /// 지금 값보다 높은 키만 목표로 본다.
   static PlanFlowDraft fromDocument(
     PlanningDocument document, {
     required PlanningStudentSeed Function(String studentId) seedFor,
   }) {
-    final stagesByStudent = <String, List<PlanElementStageDraft>>{};
-    final order = <String>[];
+    final byStudent = <String, List<PlanningDocumentStage>>{};
     for (final stage in document.stages) {
-      if (!stagesByStudent.containsKey(stage.studentId)) {
-        order.add(stage.studentId);
-      }
-      stagesByStudent
-          .putIfAbsent(stage.studentId, () => [])
-          .add(
-            PlanElementStageDraft(
-              id: stage.id,
-              name: stage.name,
-              targets: stage.targets,
-            ),
-          );
+      byStudent.putIfAbsent(stage.studentId, () => []).add(stage);
     }
+    final seeds = {
+      for (final studentId in byStudent.keys) studentId: seedFor(studentId),
+    };
     return PlanFlowDraft(
-      students: [for (final studentId in order) seedFor(studentId)],
-      stagesByStudent: stagesByStudent,
+      students: [for (final studentId in byStudent.keys) seeds[studentId]!],
+      stagesByStudent: {
+        for (final entry in byStudent.entries)
+          entry.key: document.version >= 2
+              ? [
+                  for (final stage in entry.value)
+                    PlanFlowStageDraft(
+                      id: stage.id,
+                      name: stage.name,
+                      targets: stage.nullableTargets,
+                    ),
+                ]
+              : PlanFlowGoalCodec.fromEditor(seeds[entry.key], [
+                  for (final stage in entry.value)
+                    PlanElementStageDraft(
+                      id: stage.id,
+                      name: stage.name,
+                      targets: stage.targets,
+                    ),
+                ]),
+      },
       phases: [
         for (final phase in document.phases)
           PlanFlowPhase(
@@ -275,6 +469,7 @@ abstract final class PlanFlowDocumentBoundary {
             stageIds: [for (final stage in phase.stages) stage.id],
           ),
       ],
+      goalMetadata: document.goalMetadata,
     );
   }
 }
@@ -459,7 +654,7 @@ class PlanFlowSavePreparation {
   final int collectionRevision;
 }
 
-/// 계획 만들기 흐름 상태: 지금 단계, 초안, 1단계에서 아직 확정하지 않은 선택, 2단계 학생 순번, 계산.
+/// 계획 만들기 흐름 상태: 지금 단계, 초안(고른 학생은 1단계에서 바로 초안에 들어간다), 2단계 학생 순번, 계산.
 class PlanFlowController extends ChangeNotifier {
   PlanFlowController({
     required this.purpose,
@@ -487,7 +682,6 @@ class PlanFlowController extends ChangeNotifier {
 
   PlanFlowStep _step;
   PlanFlowDraft _draft;
-  List<PlanningStudentSeed> _pendingSelection = const [];
   List<PlanningStudentSeed> _goalQueue = const [];
   int _goalIndex = 0;
 
@@ -502,9 +696,6 @@ class PlanFlowController extends ChangeNotifier {
 
   PlanFlowStep get step => _step;
   PlanFlowDraft get draft => _draft;
-
-  /// 1단계 그리드에서 골랐지만 아직 확정하지 않은 학생(고른 순서).
-  List<PlanningStudentSeed> get pendingSelection => _pendingSelection;
 
   /// 마지막 계산 결과. 단계가 없으면 null.
   PlanFlowCalculation? get calculation => _calculation;
@@ -528,8 +719,7 @@ class PlanFlowController extends ChangeNotifier {
 
   bool canEnter(PlanFlowStep target) => switch (target) {
     PlanFlowStep.students => true,
-    PlanFlowStep.goals =>
-      _draft.students.isNotEmpty || _pendingSelection.isNotEmpty,
+    PlanFlowStep.goals => _draft.students.isNotEmpty,
     PlanFlowStep.order => _draft.hasStages,
     PlanFlowStep.save => _draft.allStagesAssigned,
   };
@@ -553,15 +743,11 @@ class PlanFlowController extends ChangeNotifier {
     null => _draft.allStagesAssigned && canSaveScenario,
   };
 
-  /// [target]으로 간다. 1단계에서 2단계로 갈 때 확정하지 않은 선택이 있으면 먼저 확정한다.
+  /// [target]으로 간다. 1단계에서 2단계로 가면 고른 순서대로 목표를 정한다(아직 단계가 없는 첫 학생부터).
   void goTo(PlanFlowStep target) {
     if (_disposed || target == _step || !canEnter(target)) return;
-    if (_step == PlanFlowStep.students &&
-        target != PlanFlowStep.students &&
-        _pendingSelection.isNotEmpty) {
-      _confirmStudentsSilently(_pendingSelection);
-    }
-    if (target == PlanFlowStep.goals && goalSeed == null) {
+    if (target == PlanFlowStep.goals &&
+        (_step == PlanFlowStep.students || goalSeed == null)) {
       _resetGoalQueue();
     }
     _step = target;
@@ -580,41 +766,79 @@ class PlanFlowController extends ChangeNotifier {
 
   // --- 1단계 학생 고르기 ------------------------------------------------------
 
-  void updatePendingSelection(List<PlanningStudentSeed> seeds) {
+  /// 고른 학생 ID(고른 순서). 1단계 그리드 배지·C 목록이 이 순서를 쓴다.
+  List<String> get selectedStudentIds => _draft.studentIds;
+
+  bool isSelected(String studentId) => _draft.seedOf(studentId) != null;
+
+  /// 그리드 카드 누르기: 고르지 않았으면 고른 순서 뒤에 붙이고, 골랐으면 뺀다.
+  void toggleStudent(String studentId) => isSelected(studentId)
+      ? removeStudent(studentId)
+      : addStudents([studentId]);
+
+  /// 학생들을 고른 순서 뒤에 붙인다(이미 고른 학생은 그대로, "보이는 학생 모두 고르기").
+  void addStudents(Iterable<String> studentIds) {
     if (_disposed) return;
-    _pendingSelection = List.unmodifiable(seeds);
+    final known = _draft.studentIds.toSet();
+    final added = [
+      for (final studentId in studentIds)
+        if (known.add(studentId)) context.seedFor(studentId),
+    ];
+    if (added.isEmpty) return;
+    _draft = _draft.copyWith(students: [..._draft.students, ...added]);
     notifyListeners();
   }
 
-  /// 학생 고르기 확정: 새 학생을 고른 순서 뒤에 붙이고(이미 있는 학생은 그대로), 이번에 고른 학생 순서로
-  /// 2단계를 연다.
-  void confirmStudents(List<PlanningStudentSeed> seeds) {
-    if (_disposed || seeds.isEmpty) return;
-    _confirmStudentsSilently(seeds);
-    _step = PlanFlowStep.goals;
-    notifyListeners();
-  }
+  /// 학생을 뺀다(카드를 한 번 더 누르기 · C 목록 ×). 그 학생의 단계·칸 배치·goal_metadata도 초안에서 빠진다.
+  void removeStudent(String studentId) => _removeStudents({studentId});
 
-  void _confirmStudentsSilently(List<PlanningStudentSeed> seeds) {
-    final known = {for (final seed in _draft.students) seed.studentId};
+  /// C "모두 비우기".
+  void clearStudents() => _removeStudents(_draft.studentIds.toSet());
+
+  void _removeStudents(Set<String> studentIds) {
+    if (_disposed || studentIds.isEmpty) return;
+    final removedStages = <String>{
+      for (final studentId in studentIds)
+        for (final stage
+            in _draft.stagesByStudent[studentId] ??
+                const <PlanFlowStageDraft>[])
+          stage.id,
+    };
+    final hadStages = removedStages.isNotEmpty;
     _draft = _draft.copyWith(
       students: [
-        ..._draft.students,
-        for (final seed in seeds)
-          if (known.add(seed.studentId)) seed,
+        for (final seed in _draft.students)
+          if (!studentIds.contains(seed.studentId)) seed,
       ],
+      stagesByStudent: {
+        for (final entry in _draft.stagesByStudent.entries)
+          if (!studentIds.contains(entry.key)) entry.key: entry.value,
+      },
+      phases: _withoutStages(removedStages),
+      goalMetadata: {
+        for (final entry in _draft.goalMetadata.entries)
+          if (!studentIds.contains(entry.key)) entry.key: entry.value,
+      },
     );
-    _goalQueue = List.unmodifiable(seeds);
+    _goalQueue = const [];
     _goalIndex = 0;
-    _pendingSelection = const [];
+    notifyListeners();
+    if (hadStages) _scheduleCalculation();
   }
 
   void _resetGoalQueue() {
     final students = [
-      ..._draft.students,
+      for (final seed in _draft.students)
+        PlanningStudentSeed(
+          handoffId:
+              'plan-flow-goal-${seed.studentId}-${DateTime.now().microsecondsSinceEpoch}',
+          studentId: seed.studentId,
+          metadata: seed.metadata,
+          currentValues: seed.currentValues,
+          owned: seed.owned,
+        ),
       for (final studentId in _draft.stagesByStudent.keys)
-        if (!_draft.students.any((seed) => seed.studentId == studentId))
-          context.seedFor(studentId),
+        if (_draft.seedOf(studentId) == null) context.seedFor(studentId),
     ];
     final firstOpen = students.indexWhere(
       (seed) => _draft.stagesByStudent[seed.studentId]?.isEmpty ?? true,
@@ -625,7 +849,12 @@ class PlanFlowController extends ChangeNotifier {
 
   // --- 2단계 목표 정하기(요소 편집기) -------------------------------------------
 
-  /// 요소 편집기 확정: 그 학생의 단계를 바꾸고 칸 배치에서 빼며(다시 배치해야 한다), 다음 학생으로 넘어간다.
+  /// 2·3단계 정수 편집기에 넘길 [studentId]의 단계([PlanFlowGoalCodec.toEditor]).
+  List<PlanElementStageDraft> editorStagesFor(String studentId) =>
+      _draft.editorStagesFor(studentId);
+
+  /// 요소 편집기 확정: 정수 단계를 v2로 바꿔 그 학생의 단계를 바꾸고 칸 배치에서 빼며(다시 배치해야 한다), 다음
+  /// 학생으로 넘어간다.
   void confirmStudentStages(
     String studentId,
     List<PlanElementStageDraft> stages,
@@ -634,15 +863,23 @@ class PlanFlowController extends ChangeNotifier {
     final removed = <String>{
       for (final stage
           in _draft.stagesByStudent[studentId] ??
-              const <PlanElementStageDraft>[])
+              const <PlanFlowStageDraft>[])
         stage.id,
     };
+    final seed = _draft.seedOf(studentId) ?? context.seedFor(studentId);
     _draft = _draft.copyWith(
-      students: _draft.students.any((seed) => seed.studentId == studentId)
+      students: _draft.seedOf(studentId) != null
           ? null
-          : [..._draft.students, context.seedFor(studentId)],
-      stagesByStudent: {..._draft.stagesByStudent, studentId: stages},
+          : [..._draft.students, seed],
+      stagesByStudent: {
+        ..._draft.stagesByStudent,
+        studentId: PlanFlowGoalCodec.fromEditor(seed, stages),
+      },
       phases: _withoutStages(removed),
+      goalMetadata: {
+        ..._draft.goalMetadata,
+        studentId: _draft.goalMetadata[studentId] ?? planFlowDefaultGoalMetadata,
+      },
     );
     if (_goalIndex + 1 < _goalQueue.length) _goalIndex += 1;
     notifyListeners();
@@ -652,12 +889,7 @@ class PlanFlowController extends ChangeNotifier {
   /// 요소 편집기에서 다른 학생을 고친다.
   void editStudent(String studentId) {
     if (_disposed) return;
-    final seed =
-        [
-          for (final seed in _draft.students)
-            if (seed.studentId == studentId) seed,
-        ].firstOrNull ??
-        context.seedFor(studentId);
+    final seed = _draft.seedOf(studentId) ?? context.seedFor(studentId);
     _goalQueue = List.unmodifiable([
       PlanningStudentSeed(
         handoffId:

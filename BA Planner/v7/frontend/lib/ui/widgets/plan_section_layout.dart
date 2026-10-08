@@ -2080,6 +2080,25 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       stepByStudent[stage.studentId] =
           (stepByStudent[stage.studentId] ?? 0) + 1;
     }
+    // 시나리오는 FE4-b1부터 문서 v2로 저장된다. null(목표 없음)은 앞 단계 값으로 채운 정수 보기로 읽는다.
+    // 활성 계획에 없는 학생은 프로필 확정 현재값으로 바닥값을 만든다.
+    final currentById = {
+      for (final student
+          in _repositoryState?.students ?? const <ConfirmedStudentState>[])
+        student.studentId: student.values,
+    };
+    final sourceTargets = planFlowDocumentIntegerTargets(
+      scenario.document,
+      seedFor: (studentId) =>
+          _studentSeedsById[studentId] ??
+          PlanningStudentSeed(
+            handoffId: 'scenario-import-$studentId',
+            studentId: studentId,
+            metadata: const {},
+            currentValues: currentById[studentId] ?? const {},
+            owned: currentById.containsKey(studentId),
+          ),
+    );
     final importedElements = <PlanStudentStepPreview>[];
     final importedPhases = <PlanPhasePreview>[];
     final importedDrafts = <String, List<PlanElementStageDraft>>{};
@@ -2097,12 +2116,13 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         stageIndex++
       ) {
         final source = sourcePhase.stages[stageIndex];
+        final sourceValues = sourceTargets[source.id]!;
         final floor = targetFloor[source.studentId];
-        if (floor != null && !_targetsAtLeast(source.targets, floor)) {
+        if (floor != null && !_targetsAtLeast(sourceValues, floor)) {
           skipped++;
           continue;
         }
-        targetFloor[source.studentId] = source.targets;
+        targetFloor[source.studentId] = sourceValues;
         final step = (stepByStudent[source.studentId] ?? 0) + 1;
         stepByStudent[source.studentId] = step;
         final id = 'import-$stamp-$phaseIndex-$stageIndex';
@@ -2115,9 +2135,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           displayName: displayName,
           step: step,
           target: source.name,
-          bondRank: source.targets['bond_rank'],
+          bondRank: sourceValues['bond_rank'],
           stageId: id,
-          targetValues: source.targets,
+          targetValues: sourceValues,
         );
         importedElements.add(preview);
         phaseSteps.add(preview);
@@ -2127,7 +2147,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
               PlanElementStageDraft(
                 id: id,
                 name: source.name,
-                targets: source.targets,
+                targets: sourceValues,
               ),
             );
       }
@@ -3655,6 +3675,10 @@ class _PlanScenarioComparisonSectionState
                       targetB: targetB,
                       comparison: result.comparison,
                       students: _comparisonStudents,
+                      currentValues: {
+                        for (final student in widget.repositoryState.students)
+                          student.studentId: student.values,
+                      },
                     ),
                     _ComparisonSideBySide(
                       left: _ComparisonResourcePane(
@@ -4298,23 +4322,40 @@ class _ComparisonStudentWorkspace extends StatelessWidget {
     required this.targetB,
     required this.comparison,
     required this.students,
+    this.currentValues = const {},
   });
   final _PlanComparisonTarget targetA;
   final _PlanComparisonTarget targetB;
   final Map<String, dynamic> comparison;
   final Map<String, StudentCatalogEntry> students;
 
+  /// 학생별 확정 현재값(v2 null을 채우는 바닥값).
+  final Map<String, Map<String, dynamic>> currentValues;
+
   @override
   Widget build(BuildContext context) {
     final rows = _comparisonRows(comparison['students']);
-    final finalA = {
-      for (final stage in targetA.document.stages)
-        stage.studentId: stage.targets,
-    };
-    final finalB = {
-      for (final stage in targetB.document.stages)
-        stage.studentId: stage.targets,
-    };
+    // v2 시나리오의 null(목표 없음)은 지금 값으로 채워 보인다(FE4-b1).
+    PlanningStudentSeed seedFor(String studentId) => PlanningStudentSeed(
+      handoffId: 'plan-comparison-$studentId',
+      studentId: studentId,
+      metadata: students[studentId]?.metadata ?? const {},
+      currentValues: currentValues[studentId] ?? const {},
+      owned: currentValues.containsKey(studentId),
+    );
+    Map<String, Map<String, int>> finalTargets(PlanningDocument document) {
+      final targets = planFlowDocumentIntegerTargets(
+        document,
+        seedFor: seedFor,
+      );
+      return {
+        for (final stage in document.stages)
+          stage.studentId: targets[stage.id]!,
+      };
+    }
+
+    final finalA = finalTargets(targetA.document);
+    final finalB = finalTargets(targetB.document);
     final entries = <_ComparisonPaneEntry>[];
     for (var index = 0; index < rows.length; index++) {
       final row = rows[index];

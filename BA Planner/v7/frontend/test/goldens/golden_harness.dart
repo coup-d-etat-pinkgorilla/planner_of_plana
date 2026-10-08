@@ -495,7 +495,10 @@ class GoldenCalculatorMockAppService extends GoldenStudentMockAppService {
 /// 계획 만들기 흐름 장면 전용 mock(FE4-a1). 초안 계산(`planning.document.calculate`)에 필요 크레딧과 부족 재화
 /// 5종을 돌려준다(시안 Flow-1-Students 요약 "48.2M · 5종"과 같은 숫자). 재화 id는 모두
 /// assets/item_icons/ooparts에 있는 오파츠다. 계획 홈 장면은 이 mock을 쓰지 않는다(그쪽 숫자는 그대로).
-class GoldenPlanFlowMockAppService extends GoldenMockAppService {
+///
+/// FE4-b1: 1단계 새 학생 고르기 장면이 실제 카드·배지를 보이도록 학생 장면 fixture(학생 10명, 보유 7명,
+/// PLAN 3명)를 그대로 쓴다. 장면을 열기 전에 [seedStudentScene]을 부른다.
+class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
   GoldenPlanFlowMockAppService() : super();
 
   static const credits = 48200000;

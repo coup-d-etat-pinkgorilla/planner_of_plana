@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart' show listEquals, setEquals;
+import 'package:flutter/foundation.dart' show listEquals, mapEquals, setEquals;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -259,6 +259,8 @@ final List<StudentFilterDefinition> studentFilterDefinitions = [
 const Map<String, Map<String, String>> studentFilterValueLabels = {
   'ownership': {'owned': '보유', 'unowned': '미보유'},
   'plan_status': {'planned': '계획 포함', 'unplanned': '미계획'},
+  // 계획 만들기 1단계 필터 모달의 계획 칩 그룹(FE4-b1).
+  'plan': {'unplanned': '계획에 없는 학생만', 'planned': '계획에 있는 학생만'},
   'school': {
     'Abydos': '아비도스',
     'Arius': '아리우스',
@@ -4943,6 +4945,10 @@ class StudentDiagonalGrid extends StatefulWidget {
     this.columns = 8,
     this.revealStudentId,
     this.revealRequest = 0,
+    this.selectionOrder = const {},
+    this.showRemoveMarks = false,
+    this.semanticLabelOf,
+    this.scrollKey = const ValueKey('student-diagonal-grid-scroll'),
   });
 
   final List<StudentCatalogEntry> students;
@@ -4959,6 +4965,18 @@ class StudentDiagonalGrid extends StatefulWidget {
   /// [revealRequest]가 바뀌면 이 학생의 행이 보이도록 스크롤한다(최근 본 학생, FD-061).
   final String? revealStudentId;
   final int revealRequest;
+
+  /// 학생 ID → 고른 순서(1부터). 있으면 카드 오른쪽 아래에 순서 배지를 그린다(계획 만들기 1단계, FE4-b1).
+  final Map<String, int> selectionOrder;
+
+  /// 카드 오른쪽 위에 "빼기" × 표시를 그린다(계획 만들기 C 압축 그리드). 누르면 [onSelected]가 불린다.
+  final bool showRemoveMarks;
+
+  /// 카드 누르기 대상의 의미 이름. 없으면 학생 이름이다(예: "호시노 빼기").
+  final String Function(StudentCatalogEntry student)? semanticLabelOf;
+
+  /// 스크롤 뷰 키. 한 화면에 그리드가 둘이면 서로 다르게 준다.
+  final Key scrollKey;
 
   @override
   State<StudentDiagonalGrid> createState() => _StudentDiagonalGridState();
@@ -5044,7 +5062,7 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
         controller: _controller,
         keyPrefix: 'student-grid',
         child: SingleChildScrollView(
-          key: const ValueKey('student-diagonal-grid-scroll'),
+          key: widget.scrollKey,
           controller: _controller,
           child: AnimatedBuilder(
             animation: _controller,
@@ -5179,6 +5197,18 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                                 ))
                                   index,
                             },
+                            orderBadges: {
+                              if (widget.selectionOrder.isNotEmpty)
+                                for (
+                                  var index = 0;
+                                  index < widget.students.length;
+                                  index++
+                                )
+                                  index: ?widget.selectionOrder[widget
+                                      .students[index]
+                                      .studentId],
+                            },
+                            removeMarks: widget.showRemoveMarks,
                           ),
                         ),
                       ),
@@ -5241,7 +5271,9 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
             selected:
                 widget.students[index].studentId == widget.selectedId ||
                 widget.selectedIds.contains(widget.students[index].studentId),
-            label: widget.students[index].displayName,
+            label:
+                widget.semanticLabelOf?.call(widget.students[index]) ??
+                widget.students[index].displayName,
             child: ClipPath(
               clipper: const _StudentGridCardHitClipper(),
               child: GestureDetector(
@@ -5595,6 +5627,8 @@ class StudentGridCardOverlayPainter extends CustomPainter {
     required this.selectedIndex,
     this.selectedIndices = const {},
     required this.plannedIds,
+    this.orderBadges = const {},
+    this.removeMarks = false,
     this.firstRow = 0,
     this.lastRow,
     this.outlineColor = studentGridCardOutlineColor,
@@ -5618,6 +5652,12 @@ class StudentGridCardOverlayPainter extends CustomPainter {
   final int? selectedIndex;
   final Set<int> selectedIndices;
   final Set<String> plannedIds;
+
+  /// 학생 인덱스 → 고른 순서 배지 숫자(FE4-b1).
+  final Map<int, int> orderBadges;
+
+  /// 카드마다 오른쪽 위 × 표시(FE4-b1 압축 그리드).
+  final bool removeMarks;
   final int firstRow;
   final int? lastRow;
   final Color outlineColor;
@@ -5712,6 +5752,10 @@ class StudentGridCardOverlayPainter extends CustomPainter {
           owned: owned,
         );
       }
+      if (orderBadges[entry.key] case final order?) {
+        paintStudentGridOrderBadge(canvas, entry.value, order);
+      }
+      if (removeMarks) paintStudentGridRemoveMark(canvas, entry.value);
     }
   }
 
@@ -5749,12 +5793,81 @@ class StudentGridCardOverlayPainter extends CustomPainter {
       oldDelegate.selectedIndex != selectedIndex ||
       oldDelegate.selectedIndices != selectedIndices ||
       oldDelegate.plannedIds != plannedIds ||
+      !mapEquals(oldDelegate.orderBadges, orderBadges) ||
+      oldDelegate.removeMarks != removeMarks ||
       oldDelegate.firstRow != firstRow ||
       oldDelegate.lastRow != lastRow ||
       oldDelegate.outlineColor != outlineColor ||
       oldDelegate.selectionColor != selectionColor ||
       oldDelegate.outlineWidthFraction != outlineWidthFraction ||
       oldDelegate.selectionWidthFraction != selectionWidthFraction;
+}
+
+// --- 고른 순서 배지 · 빼기 표시(계획 만들기 1단계, FE4-b1) ------------------
+// 시안 Flow-1-Students: 카드 172.6×139.7에 지름 26 원(#f2b3ef, 13px w900 #2a1330), 오른쪽은 카드 아래 80° 모서리보다
+// 4 안쪽, 아래 4. Flow-1-Students-Many C 압축 그리드: 카드 86.2×69.8에 지름 21(11px), 3 안쪽, × 22×22
+// (rgba(6,8,14,.8), 오른쪽 위 4·3).
+
+/// 고른 순서 배지 원 상자.
+Rect studentGridOrderBadgeRect(Rect card) {
+  final size = math.max(21.0, card.height * 0.186);
+  final right = card.right - studentGridCardCutDepth(card) - size * 0.15;
+  final bottom = card.bottom - math.max(3.0, card.height * 0.0287);
+  return Rect.fromLTRB(right - size, bottom - size, right, bottom);
+}
+
+/// 고른 순서 배지를 그린다(원 + 숫자).
+void paintStudentGridOrderBadge(Canvas canvas, Rect card, int order) {
+  final rect = studentGridOrderBadgeRect(card);
+  canvas.drawOval(rect, Paint()..color = AppColors.accent);
+  final text = TextPainter(
+    text: TextSpan(
+      text: '$order',
+      style: TextStyle(
+        fontFamily: AppFonts.body,
+        fontFamilyFallback: AppFonts.fallback,
+        color: AppColors.onAccent,
+        fontSize: rect.height * 0.5,
+        fontWeight: FontWeight.w900,
+        height: 1,
+      ),
+    ),
+    maxLines: 1,
+    textDirection: TextDirection.ltr,
+  )..layout();
+  text.paint(
+    canvas,
+    Offset(
+      rect.center.dx - text.width / 2,
+      rect.center.dy - text.height / 2,
+    ),
+  );
+}
+
+/// 빼기 × 상자(카드 오른쪽 위).
+Rect studentGridRemoveMarkRect(Rect card) {
+  final size = math.max(16.0, card.height * 0.315);
+  final right = card.right - math.max(3.0, card.width * 0.046);
+  final top = card.top + math.max(2.0, card.height * 0.043);
+  return Rect.fromLTWH(right - size, top, size, size);
+}
+
+/// 빼기 × 표시를 그린다.
+void paintStudentGridRemoveMark(Canvas canvas, Rect card) {
+  final rect = studentGridRemoveMarkRect(card);
+  canvas.drawRRect(
+    RRect.fromRectAndRadius(rect, Radius.circular(rect.height * 0.25)),
+    Paint()..color = const Color.fromRGBO(6, 8, 14, 0.8),
+  );
+  final arm = rect.height * 0.22;
+  final paint = Paint()
+    ..color = AppColors.text
+    ..strokeWidth = math.max(1.2, rect.height * 0.08)
+    ..strokeCap = StrokeCap.round;
+  final center = rect.center;
+  canvas
+    ..drawLine(center - Offset(arm, arm), center + Offset(arm, arm), paint)
+    ..drawLine(center - Offset(-arm, arm), center + Offset(-arm, arm), paint);
 }
 
 /// 속성 글자 칩 글자 스타일(카드 높이에 따라 크기만 바뀐다).
