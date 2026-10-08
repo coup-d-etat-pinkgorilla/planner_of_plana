@@ -10,6 +10,7 @@ import '../geometry/diagonal_geometry.dart';
 import '../kit/diagonal_scrollbar.dart';
 import '../kit/game_assets.dart';
 import '../kit/skew_bar.dart';
+import '../models/plan_flow_draft.dart';
 import '../models/planning_models.dart';
 import '../models/planning_resource_assets.dart';
 import '../studio/plan_studio_layout.dart';
@@ -20,6 +21,7 @@ import 'diagonal_flow_indicator.dart';
 import 'diagonal_media_list_item.dart';
 import 'lifted_path_shadow.dart';
 import 'plan_element_builder.dart';
+import 'plan_flow_workspace.dart';
 import 'plan_phase_editor.dart';
 import 'plan_preset_manager.dart';
 import 'plan_student_selector.dart';
@@ -1285,28 +1287,6 @@ double planPhaseRowWidth({
   );
 }
 
-class _PlanWorkspaceSnapshot {
-  const _PlanWorkspaceSnapshot({
-    required this.document,
-    required this.elements,
-    required this.phases,
-    required this.drafts,
-    required this.unassignedIds,
-    required this.bottlenecks,
-    required this.phaseConsumptions,
-    required this.overallConsumption,
-  });
-
-  final PlanningDocument? document;
-  final List<PlanStudentStepPreview> elements;
-  final List<PlanPhasePreview> phases;
-  final Map<String, List<PlanElementStageDraft>> drafts;
-  final Set<String> unassignedIds;
-  final List<PlanBottleneckDetailPreview> bottlenecks;
-  final List<PlanConsumptionGroupPreview> phaseConsumptions;
-  final PlanConsumptionGroupPreview overallConsumption;
-}
-
 class PlanSectionLayout extends StatefulWidget {
   const PlanSectionLayout({
     super.key,
@@ -1345,10 +1325,10 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   bool _showScenarioList = false;
   bool _showScenarioComparison = false;
   bool _switchingScenarioWorkspace = false;
-  bool _creatingScenario = false;
-  PlanningScenarioRecord? _editingScenario;
-  int? _editingScenarioCollectionRevision;
-  _PlanWorkspaceSnapshot? _scenarioPlanSnapshot;
+
+  /// 계획 만들기 흐름(FE4-a1). 시나리오 만들기·시나리오 편집이 이 흐름으로 열린다. 초안은 흐름이 따로
+  /// 가지므로 활성 계획 작업 상태를 건드리지 않는다.
+  PlanFlowController? _flow;
   bool _usingLivePlanElements = false;
   String? _consumedHandoffId;
   PlanningStudentSeed? _builderSeed;
@@ -1710,11 +1690,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   void _rebuildDocumentFromPhases() {
     if (_repositoryState == null) return;
     _document = PlanningDocument(
-      id: _creatingScenario ? _document?.id ?? 'scenario-draft' : 'active-plan',
-      name: _document?.name ?? (_creatingScenario ? '새 시나리오' : '계획'),
-      kind: _creatingScenario
-          ? PlanningDocumentKind.scenario
-          : PlanningDocumentKind.plan,
+      id: 'active-plan',
+      name: _document?.name ?? '계획',
+      kind: PlanningDocumentKind.plan,
       phases: [
         for (final phase in _planPhases)
           PlanningDocumentPhase(
@@ -1759,10 +1737,12 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     _showStudentSelector = false;
     _showScenarioList = false;
     _showScenarioComparison = false;
-    _creatingScenario = false;
+    _discardFlow();
   }
 
   void _setActive(bool active) {
+    // 흐름 화면은 자기 섹션 모션을 `active`로 튼다.
+    if (_flow != null) return;
     if (_showScenarioList || _showScenarioComparison) {
       for (final entry in _controllers.entries) {
         if (entry.key == 'element-1') {
@@ -1921,7 +1901,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   }
 
   Future<void> _openScenarioWorkspace({required bool comparison}) async {
-    if (_showScenarioList ||
+    if (_flow != null ||
+        _showScenarioList ||
         _showScenarioComparison ||
         _switchingScenarioWorkspace ||
         _switchingStudentSelector ||
@@ -1942,10 +1923,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           _showStudentSelector = false;
           _switchingStudentSelector = false;
         });
-        if (_creatingScenario) {
-          await _restorePlanAfterScenarioCreation(revealPlanSections: false);
-          if (!mounted) return;
-        }
       }
       final state = await _ensureRepositoryContext();
       if (state == null || !mounted) return;
@@ -1995,166 +1972,93 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     }
   }
 
+  /// 흐름을 열 때 한 번 읽는 프로필 상태(확정 현재값·재고·카탈로그).
+  Future<PlanFlowContext?> _flowContext() async {
+    final service = widget.service;
+    if (service == null) return null;
+    final state = await _ensureRepositoryContext();
+    if (state == null) return null;
+    final catalog = await service.listStudents();
+    return PlanFlowContext(
+      repositoryState: state,
+      catalog: {for (final entry in catalog) entry.studentId: entry},
+    );
+  }
+
+  /// 계획 탭 S1 "시나리오 생성" → 계획 만들기 1단계(FD-081 "새 시나리오").
   Future<void> _openScenarioCreation() async {
-    if (_creatingScenario ||
+    if (_flow != null ||
         _showScenarioList ||
         _showScenarioComparison ||
         _switchingScenarioWorkspace ||
         widget.service is! PlanningScenarioRepositoryService) {
       return;
     }
-    final state = await _ensureRepositoryContext();
-    if (state == null || !mounted) return;
-    final draftId = 'scenario-draft-${DateTime.now().microsecondsSinceEpoch}';
-    _captureScenarioPlanSnapshot();
+    final flowContext = await _flowContext();
+    if (flowContext == null || !mounted || _flow != null) return;
+    // 퇴장 Future를 기다리지 않는다(도중에 멈추면 끝나지 않는다). 모션 시간만 기다린다.
+    for (final controller in _controllers.values) {
+      controller.reverse();
+    }
+    await Future<void>.delayed(_motionDuration);
+    if (!mounted || _flow != null) return;
     setState(() {
-      _creatingScenario = true;
-      _builderStudentQueue = const [];
-      _builderStudentQueueIndex = 0;
-      _usingLivePlanElements = true;
-      _draftsByStudent.clear();
-      _planElements = const [];
-      _unassignedPlanElementIds = const {};
-      _planPhases = const [];
-      _bottleneckDetails = const [];
-      _phaseConsumptions = const [];
-      _overallConsumption = const PlanConsumptionGroupPreview(
-        id: 'overall',
-        label: '전체 시나리오',
-        resources: [],
-      );
-      _document = PlanningDocument(
-        id: draftId,
-        name: '새 시나리오',
-        kind: PlanningDocumentKind.scenario,
-        phases: const [],
+      _flow = PlanFlowController(
+        purpose: PlanFlowPurpose.newScenario,
+        context: flowContext,
+        service: widget.service,
       );
     });
-    await _openStudentSelector();
   }
 
-  Future<void> _restorePlanAfterScenarioCreation({
-    bool revealPlanSections = true,
-  }) async {
-    if (!mounted) return;
-    final snapshot = _scenarioPlanSnapshot;
-    setState(() {
-      _creatingScenario = false;
-      _editingScenario = null;
-      _editingScenarioCollectionRevision = null;
-      _showElementBuilder = false;
-      _showPhaseEditor = false;
-      _showStudentSelector = false;
-      _builderSeed = null;
-      _builderStudentQueue = const [];
-      _builderStudentQueueIndex = 0;
-      if (snapshot != null) {
-        _document = snapshot.document;
-        _planElements = snapshot.elements;
-        _planPhases = snapshot.phases;
-        _draftsByStudent
-          ..clear()
-          ..addAll(snapshot.drafts);
-        _unassignedPlanElementIds = snapshot.unassignedIds;
-        _bottleneckDetails = snapshot.bottlenecks;
-        _phaseConsumptions = snapshot.phaseConsumptions;
-        _overallConsumption = snapshot.overallConsumption;
-        _usingLivePlanElements = snapshot.elements.isNotEmpty;
-      }
-      _scenarioPlanSnapshot = null;
-    });
-    if (snapshot == null) await _loadRepositoryPlan();
-    if (!mounted || !revealPlanSections) return;
+  /// 흐름을 닫고 계획 홈 섹션을 다시 들인다.
+  void _closeFlow(bool saved) {
+    if (_flow == null) return;
+    setState(_discardFlow);
     for (final controller in _controllers.values) {
       controller.forward(from: controller.value);
     }
   }
 
-  void _captureScenarioPlanSnapshot() {
-    _scenarioPlanSnapshot ??= _PlanWorkspaceSnapshot(
-      document: _document,
-      elements: List.unmodifiable(_planElements),
-      phases: List.unmodifiable(_planPhases),
-      drafts: Map.unmodifiable({
-        for (final entry in _draftsByStudent.entries)
-          entry.key: List.unmodifiable(entry.value),
-      }),
-      unassignedIds: Set.unmodifiable(_unassignedPlanElementIds),
-      bottlenecks: List.unmodifiable(_bottleneckDetails),
-      phaseConsumptions: List.unmodifiable(_phaseConsumptions),
-      overallConsumption: _overallConsumption,
-    );
+  /// 흐름 컨트롤러를 버린다(화면이 내려간 다음 프레임에 dispose).
+  void _discardFlow() {
+    final flow = _flow;
+    if (flow == null) return;
+    _flow = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) => flow.dispose());
   }
 
+  /// 시나리오 비교 "편집" → 계획 만들기 3단계(단계 순서)로 그 시나리오를 연다.
   Future<void> _editScenarioFromComparison(
     PlanningScenarioRecord scenario,
     int collectionRevision,
   ) async {
-    if (_switchingScenarioWorkspace) return;
+    if (_switchingScenarioWorkspace || _flow != null) return;
     setState(() => _switchingScenarioWorkspace = true);
     try {
-      await _scenarioListController.reverse(from: 1);
-      if (!mounted) return;
-      _captureScenarioPlanSnapshot();
-      final steps = <PlanStudentStepPreview>[];
-      final drafts = <String, List<PlanElementStageDraft>>{};
-      final phases = <PlanPhasePreview>[];
-      final stepByStudent = <String, int>{};
-      for (final phase in scenario.document.phases) {
-        final phaseSteps = <PlanStudentStepPreview>[];
-        for (final stage in phase.stages) {
-          final step = (stepByStudent[stage.studentId] ?? 0) + 1;
-          stepByStudent[stage.studentId] = step;
-          final displayName =
-              _studentSeedsById[stage.studentId]?.metadata['display_name']
-                  ?.toString() ??
-              stage.studentId;
-          final preview = PlanStudentStepPreview(
-            studentId: stage.studentId,
-            displayName: displayName,
-            step: step,
-            target: stage.name,
-            bondRank: stage.targets['bond_rank'],
-            stageId: stage.id,
-            targetValues: stage.targets,
-          );
-          steps.add(preview);
-          phaseSteps.add(preview);
-          drafts
-              .putIfAbsent(stage.studentId, () => [])
-              .add(
-                PlanElementStageDraft(
-                  id: stage.id,
-                  name: stage.name,
-                  targets: stage.targets,
-                ),
-              );
-        }
-        phases.add(
-          PlanPhasePreview(id: phase.id, name: phase.name, steps: phaseSteps),
-        );
+      final flowContext = await _flowContext();
+      if (flowContext == null || !mounted) return;
+      _scenarioListController.reverse(from: _scenarioListController.value);
+      for (final controller in _controllers.values) {
+        controller.reverse();
       }
+      await Future<void>.delayed(_motionDuration);
+      if (!mounted || _flow != null) return;
       setState(() {
         _showScenarioComparison = false;
-        _creatingScenario = true;
-        _editingScenario = scenario;
-        _editingScenarioCollectionRevision = collectionRevision;
-        _document = scenario.document;
-        _usingLivePlanElements = true;
-        _planElements = List.unmodifiable(steps);
-        _planPhases = List.unmodifiable(phases);
-        _draftsByStudent
-          ..clear()
-          ..addEntries(
-            drafts.entries.map(
-              (entry) => MapEntry(entry.key, List.unmodifiable(entry.value)),
-            ),
-          );
-        _unassignedPlanElementIds = const {};
-        _showPhaseEditor = true;
+        _flow = PlanFlowController(
+          purpose: PlanFlowPurpose.editScenario,
+          context: flowContext,
+          service: widget.service,
+          initialDraft: PlanFlowDocumentBoundary.fromDocument(
+            scenario.document,
+            seedFor: flowContext.seedFor,
+          ),
+          initialStep: PlanFlowStep.order,
+          scenario: scenario,
+          scenarioCollectionRevision: collectionRevision,
+        );
       });
-    } on TickerCanceled {
-      return;
     } finally {
       if (mounted) setState(() => _switchingScenarioWorkspace = false);
     }
@@ -2273,128 +2177,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     );
   }
 
-  Future<void> _saveScenarioDraft() async {
-    final service = widget.service;
-    final state = _repositoryState;
-    final document = _document;
-    if (!_creatingScenario ||
-        service is! PlanningScenarioRepositoryService ||
-        state == null ||
-        document == null ||
-        document.phases.isEmpty) {
-      return;
-    }
-    final scenarioRepository = service as PlanningScenarioRepositoryService;
-    try {
-      final list = await scenarioRepository.listScenarios(state.profileId);
-      if (!mounted) return;
-      var scenarioName =
-          _editingScenario?.name ?? '새 시나리오 ${list.scenarios.length + 1}';
-      var scenarioDescription = _editingScenario?.description ?? '';
-      final result = await showDialog<(String, String)>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
-          key: const ValueKey('plan-scenario-save-dialog'),
-          title: Text(_editingScenario == null ? '시나리오 저장' : '시나리오 편집 저장'),
-          content: SizedBox(
-            width: 420,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  key: const ValueKey('plan-scenario-name-field'),
-                  initialValue: scenarioName,
-                  onChanged: (value) => scenarioName = value,
-                  autofocus: true,
-                  decoration: const InputDecoration(labelText: '이름'),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  key: const ValueKey('plan-scenario-description-field'),
-                  initialValue: scenarioDescription,
-                  onChanged: (value) => scenarioDescription = value,
-                  maxLines: 3,
-                  decoration: const InputDecoration(labelText: '설명'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('취소'),
-            ),
-            FilledButton(
-              key: const ValueKey('plan-scenario-save-confirm'),
-              onPressed: () {
-                final name = scenarioName.trim();
-                if (name.isNotEmpty) {
-                  Navigator.pop(dialogContext, (
-                    name,
-                    scenarioDescription.trim(),
-                  ));
-                }
-              },
-              child: const Text('저장'),
-            ),
-          ],
-        ),
-      );
-      if (result == null) {
-        await _restorePlanAfterScenarioCreation();
-        return;
-      }
-      final savedDocument = PlanningDocument(
-        id: document.id,
-        name: result.$1,
-        kind: PlanningDocumentKind.scenario,
-        phases: document.phases,
-      );
-      final editing = _editingScenario;
-      if (editing == null) {
-        await scenarioRepository.createScenario(
-          profileId: state.profileId,
-          expectedRevision: list.revision,
-          idempotencyKey:
-              'scenario-create-${DateTime.now().microsecondsSinceEpoch}',
-          name: result.$1,
-          description: result.$2,
-          baseProfileRevision: state.revision,
-          document: savedDocument,
-        );
-      } else {
-        await scenarioRepository.updateScenario(
-          profileId: state.profileId,
-          scenarioId: editing.id,
-          expectedRevision: _editingScenarioCollectionRevision ?? list.revision,
-          expectedScenarioRevision: editing.revision,
-          idempotencyKey:
-              'scenario-update-${DateTime.now().microsecondsSinceEpoch}',
-          name: result.$1,
-          description: result.$2,
-          baseProfileRevision: state.revision,
-          document: PlanningDocument(
-            id: editing.document.id,
-            name: result.$1,
-            kind: PlanningDocumentKind.scenario,
-            phases: savedDocument.phases,
-          ),
-        );
-      }
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('${result.$1} 시나리오를 저장했습니다.')));
-      await _restorePlanAfterScenarioCreation();
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('시나리오 저장 실패: $error')));
-    }
-  }
-
   Future<void> _openPhaseEditor() async {
     if (_showPhaseEditor) return;
     if (!_showElementBuilder) {
@@ -2455,10 +2237,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       await Future<void>.delayed(planStudentSelectorMotionDuration);
       if (!mounted) return;
       setState(() => _showStudentSelector = false);
-      if (_creatingScenario) {
-        await _restorePlanAfterScenarioCreation();
-        return;
-      }
       await Future.wait([
         for (final entry in _controllers.entries)
           if (entry.key != 'element-1') entry.value.forward(from: 0),
@@ -2493,20 +2271,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
 
   void _closeElementBuilder() {
     if (!_showElementBuilder) return;
-    if (_creatingScenario) {
-      if (_planElements.isEmpty) {
-        _restorePlanAfterScenarioCreation();
-      } else {
-        setState(() {
-          _showElementBuilder = false;
-          _builderSeed = null;
-          _builderStudentQueue = const [];
-          _builderStudentQueueIndex = 0;
-        });
-        _openStudentSelector();
-      }
-      return;
-    }
     setState(() {
       _showElementBuilder = false;
       _builderSeed = null;
@@ -2520,10 +2284,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
 
   void _closePhaseEditor() {
     if (!_showPhaseEditor) return;
-    if (_creatingScenario) {
-      _restorePlanAfterScenarioCreation();
-      return;
-    }
     setState(() => _showPhaseEditor = false);
     if (!_showElementBuilder) {
       for (final controller in _controllers.values) {
@@ -2703,11 +2463,11 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       }
     }
     _rebuildDocumentFromPhases();
-    if (_creatingScenario) _saveScenarioDraft();
   }
 
   @override
   void dispose() {
+    _flow?.dispose();
     for (final controller in _controllers.values) {
       controller.dispose();
     }
@@ -3180,7 +2940,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           children: [
             if (!_showPhaseEditor &&
                 !_showElementBuilder &&
-                !_showPresetManager)
+                !_showPresetManager &&
+                _flow == null)
               for (final id in const [
                 'element-2',
                 'element-3',
@@ -3242,6 +3003,17 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                     onEdit: _editScenarioFromComparison,
                     onIncorporate: _incorporateScenario,
                   ),
+                ),
+              ),
+            if (_flow case final flow? when widget.service != null)
+              Positioned.fill(
+                child: PlanFlowWorkspace(
+                  key: const ValueKey('plan-flow-workspace-view'),
+                  flow: flow,
+                  service: widget.service!,
+                  presets: _presets,
+                  active: widget.active,
+                  onClosed: _closeFlow,
                 ),
               ),
             if (!_showPhaseEditor && _showElementBuilder && builderSeed != null)

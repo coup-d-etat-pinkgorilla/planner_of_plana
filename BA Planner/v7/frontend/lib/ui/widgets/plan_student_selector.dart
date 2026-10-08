@@ -175,11 +175,16 @@ class PlanStudentSelector extends StatefulWidget {
     required this.section1Bounds,
     required this.section1RightAtReference,
     required this.active,
+    this.onSelectionChanged,
   });
 
   final AppService service;
   final Set<String> plannedIds;
   final ValueChanged<List<PlanningStudentSeed>> onConfirmed;
+
+  /// 그리드에서 학생을 고르거나 뺄 때마다 지금 선택(고른 순서)을 알린다. 계획 만들기 레일의 "다음"이
+  /// 확정 버튼 없이 이 선택으로 2단계를 연다(FE4-a1).
+  final ValueChanged<List<PlanningStudentSeed>>? onSelectionChanged;
   final Rect section1Bounds;
   final double section1RightAtReference;
   final bool active;
@@ -351,27 +356,30 @@ class _PlanStudentSelectorState extends State<PlanStudentSelector>
         _selectedStudentIds.add(studentId);
       }
     });
+    widget.onSelectionChanged?.call(_selectedSeeds());
   }
+
+  List<PlanningStudentSeed> _selectedSeeds() => [
+    for (final studentId in _selectedStudentIds)
+      () {
+        final student = _students.firstWhere(
+          (entry) => entry.studentId == studentId,
+        );
+        final currentValues = _studentValuesById[studentId] ?? const {};
+        return PlanningStudentSeed(
+          handoffId:
+              'plan-selector-$studentId-${DateTime.now().microsecondsSinceEpoch}',
+          studentId: studentId,
+          metadata: student.metadata,
+          currentValues: currentValues,
+          owned: _ownedIds.contains(studentId),
+        );
+      }(),
+  ];
 
   void _confirmSelection() {
     if (_selectedStudentIds.isEmpty) return;
-    widget.onConfirmed([
-      for (final studentId in _selectedStudentIds)
-        () {
-          final student = _students.firstWhere(
-            (entry) => entry.studentId == studentId,
-          );
-          final currentValues = _studentValuesById[studentId] ?? const {};
-          return PlanningStudentSeed(
-            handoffId:
-                'plan-selector-$studentId-${DateTime.now().microsecondsSinceEpoch}',
-            studentId: studentId,
-            metadata: student.metadata,
-            currentValues: currentValues,
-            owned: _ownedIds.contains(studentId),
-          );
-        }(),
-    ]);
+    widget.onConfirmed(_selectedSeeds());
   }
 
   @override

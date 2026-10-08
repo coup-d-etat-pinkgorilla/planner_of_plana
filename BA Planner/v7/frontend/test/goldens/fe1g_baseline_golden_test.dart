@@ -20,9 +20,12 @@ import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_adapter.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_rules.dart';
+import 'package:ba_planner_v7/ui/models/plan_flow_draft.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/models/student_filter_selection.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_student_selector.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_student_review_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/student_form_cycle.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
@@ -419,6 +422,44 @@ void main() {
     await _openPlanning(tester, service, presets: [goldenTestPreset()]);
     await _tapKey(tester, 'plan-preset-manager-launch');
     await expectGoldenScene(tester, 'plan-preset-manager');
+  }, variant: goldenPlatform);
+
+  // --- 계획 만들기 흐름(FE4-a1) ------------------------------------------------
+  testWidgets('plan-flow-step1', (tester) async {
+    setGoldenViewport(tester);
+    final service = GoldenPlanFlowMockAppService();
+    addTearDown(service.dispose);
+    await _openPlanning(tester, service);
+    await _tapKey(tester, 'plan-scenario-create-launch');
+    expect(find.byKey(const ValueKey('plan-flow-rail')), findsOneWidget);
+    expect(find.byType(PlanStudentSelector), findsOneWidget);
+    await expectGoldenScene(tester, 'plan-flow-step1');
+  }, variant: goldenPlatform);
+
+  testWidgets('plan-flow-step2', (tester) async {
+    setGoldenViewport(tester);
+    final service = GoldenPlanFlowMockAppService();
+    addTearDown(service.dispose);
+    await _openPlanning(tester, service, presets: [goldenTestPreset()]);
+    await _tapKey(tester, 'plan-scenario-create-launch');
+    final grid = tester.widget<StudentDiagonalGrid>(
+      find.byKey(const ValueKey('plan-student-selector-grid')),
+    );
+    await tester.tap(
+      find.byKey(ValueKey('student-${grid.students.first.studentId}')),
+    );
+    await tester.pump();
+    await _tapKey(tester, 'plan-student-selector-confirm-selection');
+    await _tapKey(tester, 'plan-starter-preset-balanced-growth');
+    await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
+    // 초안 계산은 디바운스 Timer 뒤에 부른다.
+    await tester.pump();
+    await tester.pump(planFlowCalculationDebounce);
+    await tester.pump();
+    expect(find.byType(PlanElementBuilder), findsOneWidget);
+    expect(find.text('48.2M'), findsOneWidget);
+    expect(find.text('5종'), findsOneWidget);
+    await expectGoldenScene(tester, 'plan-flow-step2');
   }, variant: goldenPlatform);
 
   // --- 시나리오 ---------------------------------------------------------------

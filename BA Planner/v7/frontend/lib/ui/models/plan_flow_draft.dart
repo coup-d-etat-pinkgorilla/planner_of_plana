@@ -1,0 +1,866 @@
+// 계획 만들기 흐름의 초안·단계 이동·디바운스 계산(FE4-a1, C 보고서 §0~§4, FD-078·FD-081).
+//
+// 흐름은 활성 계획 작업 상태와 따로 있는 초안([PlanFlowDraft])을 고친다. 흐름을 그만두면 초안만 버리므로
+// 활성 계획 쪽 스냅샷 왕복이 필요 없다.
+//
+// 계획 문서 DTO(`PlanningDocument`·`PlanningDocumentPhase`·`PlanningDocumentStage`, `planning_models.dart`)는
+// [PlanFlowDocumentBoundary] 한 곳에서만 만들고 읽는다. FB-1a(문서 v2: 목표 없음 = null, 학생별 goal_metadata)
+// 뒤에는 그 경계만 바꾸면 된다.
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
+import '../../services/app_service.dart';
+import '../../services/repository_service.dart';
+import '../../services/scenario_service.dart';
+import 'planning_models.dart';
+
+/// 초안이 바뀐 뒤 계산을 부를 때까지 기다리는 시간.
+const planFlowCalculationDebounce = Duration(milliseconds: 250);
+
+/// 흐름의 네 단계(시안 A 레일 스텝 버튼).
+enum PlanFlowStep {
+  students(1, '학생 고르기'),
+  goals(2, '목표 정하기'),
+  order(3, '단계 순서'),
+  save(4, '계획으로 만들기');
+
+  const PlanFlowStep(this.number, this.title);
+
+  /// 1~4.
+  final int number;
+  final String title;
+
+  PlanFlowStep? get next => index + 1 < PlanFlowStep.values.length
+      ? PlanFlowStep.values[index + 1]
+      : null;
+
+  PlanFlowStep? get previous =>
+      index > 0 ? PlanFlowStep.values[index - 1] : null;
+}
+
+/// 스텝 버튼 상태(시안 `지금`·`완료`·`남음`).
+enum PlanFlowStepState { current, done, remaining }
+
+/// 흐름을 연 목적. 활성 계획 편집(학생 추가·페이즈 만들기)은 FE4-a2에서 더한다.
+enum PlanFlowPurpose {
+  /// 계획 탭 S1 "시나리오 생성"(FD-081 "새 시나리오" → 1단계).
+  newScenario,
+
+  /// 시나리오 비교 "편집"(→ 3단계).
+  editScenario,
+}
+
+/// 칸(= 페이즈) 하나. [stageIds]는 칸 안 순서다.
+@immutable
+class PlanFlowPhase {
+  PlanFlowPhase({
+    required this.id,
+    required this.name,
+    required List<String> stageIds,
+  }) : stageIds = List.unmodifiable(stageIds);
+
+  final String id;
+  final String name;
+  final List<String> stageIds;
+}
+
+/// 초안의 학생 단계 하나(같은 학생의 [step]번째 누적 목표).
+@immutable
+class PlanFlowStage {
+  const PlanFlowStage({
+    required this.studentId,
+    required this.step,
+    required this.draft,
+  });
+
+  final String studentId;
+
+  /// 1부터.
+  final int step;
+  final PlanElementStageDraft draft;
+
+  String get id => draft.id;
+  String get name => draft.name;
+  Map<String, int> get targets => draft.targets;
+}
+
+/// 계획 만들기 초안: 고른 학생(고른 순서) · 학생별 누적 단계 · 칸 배치.
+@immutable
+class PlanFlowDraft {
+  PlanFlowDraft({
+    List<PlanningStudentSeed> students = const [],
+    Map<String, List<PlanElementStageDraft>> stagesByStudent = const {},
+    List<PlanFlowPhase> phases = const [],
+  }) : students = List.unmodifiable(students),
+       stagesByStudent = Map.unmodifiable(<String, List<PlanElementStageDraft>>{
+         for (final entry in stagesByStudent.entries)
+           if (entry.value.isNotEmpty)
+             entry.key: List<PlanElementStageDraft>.unmodifiable(entry.value),
+       }),
+       phases = List.unmodifiable(phases);
+
+  /// 고른 순서.
+  final List<PlanningStudentSeed> students;
+  final Map<String, List<PlanElementStageDraft>> stagesByStudent;
+  final List<PlanFlowPhase> phases;
+
+  static final empty = PlanFlowDraft();
+
+  /// 학생 순서 → 단계 순서로 펼친 단계.
+  List<PlanFlowStage> get stages => [
+    for (final studentId in _studentOrder)
+      for (final (index, draft)
+          in (stagesByStudent[studentId] ?? const <PlanElementStageDraft>[])
+              .indexed)
+        PlanFlowStage(studentId: studentId, step: index + 1, draft: draft),
+  ];
+
+  /// 고른 순서 뒤에, 고른 목록에 없는(불러온 문서의) 학생을 붙인다.
+  List<String> get _studentOrder => [
+    for (final seed in students) seed.studentId,
+    for (final studentId in stagesByStudent.keys)
+      if (!students.any((seed) => seed.studentId == studentId)) studentId,
+  ];
+
+  int get studentCount => _studentOrder.length;
+
+  int get stageCount =>
+      stagesByStudent.values.fold(0, (sum, stages) => sum + stages.length);
+
+  bool get hasStages => stageCount > 0;
+
+  /// 단계를 정한 학생 수(시안 "n명 중 m명 완료"의 m).
+  int get completedStudentCount => [
+    for (final studentId in _studentOrder)
+      if (stagesByStudent[studentId]?.isNotEmpty ?? false) studentId,
+  ].length;
+
+  Set<String> get assignedStageIds => {
+    for (final phase in phases) ...phase.stageIds,
+  };
+
+  List<PlanFlowStage> get unassignedStages {
+    final assigned = assignedStageIds;
+    return [
+      for (final stage in stages)
+        if (!assigned.contains(stage.id)) stage,
+    ];
+  }
+
+  /// 모든 단계가 칸에 들어 있다(3단계 완료, 저장 가능).
+  bool get allStagesAssigned => hasStages && unassignedStages.isEmpty;
+
+  PlanFlowStage? stageById(String id) {
+    for (final stage in stages) {
+      if (stage.id == id) return stage;
+    }
+    return null;
+  }
+
+  PlanFlowDraft copyWith({
+    List<PlanningStudentSeed>? students,
+    Map<String, List<PlanElementStageDraft>>? stagesByStudent,
+    List<PlanFlowPhase>? phases,
+  }) => PlanFlowDraft(
+    students: students ?? this.students,
+    stagesByStudent: stagesByStudent ?? this.stagesByStudent,
+    phases: phases ?? this.phases,
+  );
+}
+
+/// 초안 ↔ 계획 문서 DTO 경계.
+///
+/// 흐름의 다른 코드는 `PlanningDocument*`를 직접 만들거나 읽지 않는다. 지금은 문서 v1(19키 정수 목표, 모든
+/// 단계가 페이즈 안)이다. FB-1a 뒤 v2로 바꿀 때 고칠 곳은 이 클래스뿐이다(아래 각 메서드 주석).
+abstract final class PlanFlowDocumentBoundary {
+  /// 저장할 시나리오 문서. 칸 배치를 그대로 페이즈로 쓴다(빈 칸 포함, 기존 저장 경로와 같다).
+  ///
+  /// v2: 학생별 goal_metadata와 "목표 없음"(null) 키를 여기서 채운다.
+  static PlanningDocument toScenarioDocument(
+    PlanFlowDraft draft, {
+    required String id,
+    required String name,
+  }) => PlanningDocument(
+    id: id,
+    name: name,
+    kind: PlanningDocumentKind.scenario,
+    phases: _phases(draft, includeUnassigned: false),
+  );
+
+  /// 계산(`planning.document.calculate`)에 보낼 문서. 칸에 아직 넣지 않은 단계는 단계 번호마다 임시 페이즈에
+  /// 넣는다(모두 1단계 → 모두 2단계 …). 같은 학생의 단계는 칸에 다 들어가거나 하나도 안 들어가므로(요소 편집기가
+  /// 학생 단위로 바꾸고 페이즈 편집기는 미배정 0일 때만 끝난다) 문서 순서상 목표가 퇴행하지 않는다(C 보고서 §1.6).
+  ///
+  /// v2: v1 정수 목표 대신 null을 보내게 되면 여기만 바꾼다.
+  static Map<String, dynamic> calculationWire(
+    PlanFlowDraft draft, {
+    required String id,
+  }) => PlanningDocument(
+    id: id,
+    name: '계획 만들기 초안',
+    kind: PlanningDocumentKind.scenario,
+    phases: _phases(draft, includeUnassigned: true),
+  ).toWire();
+
+  static List<PlanningDocumentPhase> _phases(
+    PlanFlowDraft draft, {
+    required bool includeUnassigned,
+  }) {
+    final stagesById = {for (final stage in draft.stages) stage.id: stage};
+    PlanningDocumentStage documentStage(PlanFlowStage stage) =>
+        PlanningDocumentStage(
+          id: stage.id,
+          studentId: stage.studentId,
+          name: stage.name,
+          targets: stage.targets,
+        );
+    final unassigned = includeUnassigned
+        ? draft.unassignedStages
+        : const <PlanFlowStage>[];
+    final steps = {for (final stage in unassigned) stage.step}.toList()..sort();
+    return [
+      for (final phase in draft.phases)
+        PlanningDocumentPhase(
+          id: phase.id,
+          name: phase.name,
+          stages: [
+            for (final stageId in phase.stageIds)
+              if (stagesById[stageId] case final stage?) documentStage(stage),
+          ],
+        ),
+      for (final step in steps)
+        PlanningDocumentPhase(
+          id: 'flow-draft-step-$step',
+          name: '임시 순서 $step',
+          stages: [
+            for (final stage in unassigned)
+              if (stage.step == step) documentStage(stage),
+          ],
+        ),
+    ];
+  }
+
+  /// 저장된 시나리오 문서를 초안으로 연다. 페이즈 순서·안의 단계 순서를 그대로 칸으로 쓴다.
+  ///
+  /// v2: null 목표를 초안의 "목표 없음"으로 옮긴다.
+  static PlanFlowDraft fromDocument(
+    PlanningDocument document, {
+    required PlanningStudentSeed Function(String studentId) seedFor,
+  }) {
+    final stagesByStudent = <String, List<PlanElementStageDraft>>{};
+    final order = <String>[];
+    for (final stage in document.stages) {
+      if (!stagesByStudent.containsKey(stage.studentId)) {
+        order.add(stage.studentId);
+      }
+      stagesByStudent
+          .putIfAbsent(stage.studentId, () => [])
+          .add(
+            PlanElementStageDraft(
+              id: stage.id,
+              name: stage.name,
+              targets: stage.targets,
+            ),
+          );
+    }
+    return PlanFlowDraft(
+      students: [for (final studentId in order) seedFor(studentId)],
+      stagesByStudent: stagesByStudent,
+      phases: [
+        for (final phase in document.phases)
+          PlanFlowPhase(
+            id: phase.id,
+            name: phase.name,
+            stageIds: [for (final stage in phase.stages) stage.id],
+          ),
+      ],
+    );
+  }
+}
+
+/// 부족 재화를 쓰는 학생 단계.
+@immutable
+class PlanFlowShortageUse {
+  const PlanFlowShortageUse({
+    required this.studentId,
+    required this.displayName,
+    required this.step,
+  });
+
+  final String studentId;
+  final String displayName;
+  final int step;
+}
+
+/// 부족 재화 한 줄(전체 계산 기준).
+@immutable
+class PlanFlowShortage {
+  PlanFlowShortage({
+    required this.resourceKey,
+    required this.name,
+    required this.category,
+    required this.shortage,
+    required this.needed,
+    this.itemId,
+    this.owned,
+    List<PlanFlowShortageUse> uses = const [],
+  }) : uses = List.unmodifiable(uses);
+
+  final String resourceKey;
+  final String name;
+  final String? itemId;
+  final String category;
+
+  /// 양수.
+  final int shortage;
+
+  /// 필요량.
+  final int needed;
+  final int? owned;
+  final List<PlanFlowShortageUse> uses;
+}
+
+/// 초안 계산 결과 중 레일 요약과 플라이아웃에 쓰는 값.
+@immutable
+class PlanFlowCalculation {
+  PlanFlowCalculation({
+    required this.credits,
+    required this.shortageKnown,
+    List<PlanFlowShortage> shortages = const [],
+  }) : shortages = List.unmodifiable(shortages);
+
+  /// 필요 크레딧. 응답에 없으면 null("—").
+  final int? credits;
+
+  /// 보유량을 아는 재화가 하나라도 있다. 없으면 부족 재화 수를 모른다("—").
+  final bool shortageKnown;
+
+  /// 부족량이 큰 순.
+  final List<PlanFlowShortage> shortages;
+
+  int? get shortageKinds => shortageKnown ? shortages.length : null;
+
+  /// `planning.document.calculate` 응답의 `overall`을 읽는다. [stageLookup]은 단계 id → 학생 단계.
+  factory PlanFlowCalculation.fromProjection(
+    Map<String, dynamic> projection, {
+    required PlanFlowShortageUse? Function(String stageId) stageLookup,
+  }) {
+    final overall = projection['overall'];
+    if (overall is! Map) {
+      throw const FormatException('Invalid planning projection overall');
+    }
+    final cost = overall['cost'];
+    final rawResources = overall['resources'];
+    if ((cost != null && cost is! Map) ||
+        (rawResources != null && rawResources is! List)) {
+      throw const FormatException('Invalid planning projection overall');
+    }
+    final resources = [
+      for (final raw in rawResources as List? ?? const <Object?>[])
+        if (raw is Map) Map<String, dynamic>.from(raw),
+    ];
+    int? credits;
+    final costCredits = (cost as Map?)?['credits'];
+    if (costCredits is int) {
+      credits = costCredits;
+    } else {
+      for (final row in resources) {
+        if (row['resource_key'] == 'credits' && row['required'] is int) {
+          credits = row['required'] as int;
+        }
+      }
+    }
+    var shortageKnown = false;
+    final shortages = <PlanFlowShortage>[];
+    for (final row in resources) {
+      final shortage = row['shortage'];
+      if (shortage is! int) continue;
+      shortageKnown = true;
+      if (shortage <= 0) continue;
+      final itemId = row['item_id']?.toString();
+      shortages.add(
+        PlanFlowShortage(
+          resourceKey: row['resource_key']?.toString() ?? itemId ?? '',
+          name: row['display_name']?.toString() ?? itemId ?? '알 수 없는 재화',
+          itemId: itemId,
+          category: row['category']?.toString() ?? 'unresolved',
+          shortage: shortage,
+          needed: row['required'] is int ? row['required'] as int : 0,
+          owned: row['owned'] is int ? row['owned'] as int : null,
+          uses: [
+            for (final id
+                in row['affected_stage_ids'] as List? ?? const <Object?>[])
+              ?stageLookup(id.toString()),
+          ],
+        ),
+      );
+    }
+    shortages.sort((a, b) => b.shortage.compareTo(a.shortage));
+    return PlanFlowCalculation(
+      credits: credits,
+      shortageKnown: shortageKnown,
+      shortages: shortages,
+    );
+  }
+}
+
+/// 흐름이 계산·학생 정보에 쓰는 프로필 상태(흐름을 열 때 한 번 읽는다).
+@immutable
+class PlanFlowContext {
+  PlanFlowContext({
+    required this.repositoryState,
+    required Map<String, StudentCatalogEntry> catalog,
+  }) : catalog = Map.unmodifiable(catalog);
+
+  final RepositoryState repositoryState;
+  final Map<String, StudentCatalogEntry> catalog;
+
+  String displayName(String studentId) =>
+      catalog[studentId]?.displayName ?? studentId;
+
+  /// 요소 편집기에 넘길 학생 정보(카탈로그 metadata + 확정 현재값).
+  PlanningStudentSeed seedFor(String studentId) {
+    final current = [
+      for (final student in repositoryState.students)
+        if (student.studentId == studentId) student,
+    ].firstOrNull;
+    return PlanningStudentSeed(
+      handoffId:
+          'plan-flow-$studentId-${DateTime.now().microsecondsSinceEpoch}',
+      studentId: studentId,
+      metadata:
+          catalog[studentId]?.metadata ??
+          StudentCatalogEntry.fallback(studentId).metadata,
+      currentValues: current?.values ?? const {},
+      owned: current != null,
+    );
+  }
+
+  List<Map<String, dynamic>> get currentStudentsWire => [
+    for (final student in repositoryState.students)
+      confirmedStudentPlanningCurrent(student),
+  ];
+
+  Map<String, dynamic> get inventoryWire => repositoryState.inventory.toWire();
+}
+
+/// 시나리오 저장 준비값(기존 저장 대화상자의 기본값과 목록 revision).
+@immutable
+class PlanFlowSavePreparation {
+  const PlanFlowSavePreparation({
+    required this.name,
+    required this.description,
+    required this.collectionRevision,
+  });
+
+  final String name;
+  final String description;
+  final int collectionRevision;
+}
+
+/// 계획 만들기 흐름 상태: 지금 단계, 초안, 1단계에서 아직 확정하지 않은 선택, 2단계 학생 순번, 계산.
+class PlanFlowController extends ChangeNotifier {
+  PlanFlowController({
+    required this.purpose,
+    required this.context,
+    this.service,
+    PlanFlowDraft? initialDraft,
+    PlanFlowStep initialStep = PlanFlowStep.students,
+    this.scenario,
+    this.scenarioCollectionRevision,
+    this.debounce = planFlowCalculationDebounce,
+  }) : _draft = initialDraft ?? PlanFlowDraft.empty,
+       _step = initialStep {
+    if (_draft.hasStages) _scheduleCalculation();
+  }
+
+  final PlanFlowPurpose purpose;
+  final PlanFlowContext context;
+  /// 계산(`PlanningDocumentService`)·시나리오 저장(`PlanningScenarioRepositoryService`)을 맡는 서비스.
+  final Object? service;
+  final Duration debounce;
+
+  /// [PlanFlowPurpose.editScenario]일 때 고치는 시나리오.
+  final PlanningScenarioRecord? scenario;
+  final int? scenarioCollectionRevision;
+
+  PlanFlowStep _step;
+  PlanFlowDraft _draft;
+  List<PlanningStudentSeed> _pendingSelection = const [];
+  List<PlanningStudentSeed> _goalQueue = const [];
+  int _goalIndex = 0;
+
+  PlanFlowCalculation? _calculation;
+  Object? _calculationError;
+  bool _calculating = false;
+  Timer? _timer;
+  int _calculationNumber = 0;
+  bool _disposed = false;
+  late final String _documentId =
+      'plan-flow-${DateTime.now().microsecondsSinceEpoch}';
+
+  PlanFlowStep get step => _step;
+  PlanFlowDraft get draft => _draft;
+
+  /// 1단계 그리드에서 골랐지만 아직 확정하지 않은 학생(고른 순서).
+  List<PlanningStudentSeed> get pendingSelection => _pendingSelection;
+
+  /// 마지막 계산 결과. 단계가 없으면 null.
+  PlanFlowCalculation? get calculation => _calculation;
+  Object? get calculationError => _calculationError;
+
+  /// 디바운스를 기다리거나 응답을 기다리는 중.
+  bool get calculating => _calculating;
+
+  /// 계산을 부른 횟수(테스트·진단용).
+  int get calculationRequests => _calculationRequests;
+  int _calculationRequests = 0;
+
+  bool get canCalculate => service is PlanningDocumentService;
+  bool get canSaveScenario => service is PlanningScenarioRepositoryService;
+
+  /// 2단계에서 지금 목표를 정하는 학생.
+  PlanningStudentSeed? get goalSeed =>
+      _goalIndex < _goalQueue.length ? _goalQueue[_goalIndex] : null;
+
+  // --- 단계 이동 ------------------------------------------------------------
+
+  bool canEnter(PlanFlowStep target) => switch (target) {
+    PlanFlowStep.students => true,
+    PlanFlowStep.goals =>
+      _draft.students.isNotEmpty || _pendingSelection.isNotEmpty,
+    PlanFlowStep.order => _draft.hasStages,
+    PlanFlowStep.save => _draft.allStagesAssigned,
+  };
+
+  PlanFlowStepState stateOf(PlanFlowStep target) {
+    if (target == _step) return PlanFlowStepState.current;
+    final done = switch (target) {
+      PlanFlowStep.students => _draft.students.isNotEmpty,
+      PlanFlowStep.goals =>
+        _draft.studentCount > 0 &&
+            _draft.completedStudentCount == _draft.studentCount,
+      PlanFlowStep.order => _draft.allStagesAssigned,
+      PlanFlowStep.save => false,
+    };
+    return done ? PlanFlowStepState.done : PlanFlowStepState.remaining;
+  }
+
+  /// "다음"(4단계에서는 저장)을 누를 수 있다.
+  bool get canGoNext => switch (_step.next) {
+    final next? => canEnter(next),
+    null => _draft.allStagesAssigned && canSaveScenario,
+  };
+
+  /// [target]으로 간다. 1단계에서 2단계로 갈 때 확정하지 않은 선택이 있으면 먼저 확정한다.
+  void goTo(PlanFlowStep target) {
+    if (_disposed || target == _step || !canEnter(target)) return;
+    if (_step == PlanFlowStep.students &&
+        target != PlanFlowStep.students &&
+        _pendingSelection.isNotEmpty) {
+      _confirmStudentsSilently(_pendingSelection);
+    }
+    if (target == PlanFlowStep.goals && goalSeed == null) {
+      _resetGoalQueue();
+    }
+    _step = target;
+    notifyListeners();
+  }
+
+  void goNext() {
+    final next = _step.next;
+    if (next != null && canEnter(next)) goTo(next);
+  }
+
+  void goPrevious() {
+    final previous = _step.previous;
+    if (previous != null) goTo(previous);
+  }
+
+  // --- 1단계 학생 고르기 ------------------------------------------------------
+
+  void updatePendingSelection(List<PlanningStudentSeed> seeds) {
+    if (_disposed) return;
+    _pendingSelection = List.unmodifiable(seeds);
+    notifyListeners();
+  }
+
+  /// 학생 고르기 확정: 새 학생을 고른 순서 뒤에 붙이고(이미 있는 학생은 그대로), 이번에 고른 학생 순서로
+  /// 2단계를 연다.
+  void confirmStudents(List<PlanningStudentSeed> seeds) {
+    if (_disposed || seeds.isEmpty) return;
+    _confirmStudentsSilently(seeds);
+    _step = PlanFlowStep.goals;
+    notifyListeners();
+  }
+
+  void _confirmStudentsSilently(List<PlanningStudentSeed> seeds) {
+    final known = {for (final seed in _draft.students) seed.studentId};
+    _draft = _draft.copyWith(
+      students: [
+        ..._draft.students,
+        for (final seed in seeds)
+          if (known.add(seed.studentId)) seed,
+      ],
+    );
+    _goalQueue = List.unmodifiable(seeds);
+    _goalIndex = 0;
+    _pendingSelection = const [];
+  }
+
+  void _resetGoalQueue() {
+    final students = [
+      ..._draft.students,
+      for (final studentId in _draft.stagesByStudent.keys)
+        if (!_draft.students.any((seed) => seed.studentId == studentId))
+          context.seedFor(studentId),
+    ];
+    final firstOpen = students.indexWhere(
+      (seed) => _draft.stagesByStudent[seed.studentId]?.isEmpty ?? true,
+    );
+    _goalQueue = List.unmodifiable(students);
+    _goalIndex = firstOpen < 0 ? 0 : firstOpen;
+  }
+
+  // --- 2단계 목표 정하기(요소 편집기) -------------------------------------------
+
+  /// 요소 편집기 확정: 그 학생의 단계를 바꾸고 칸 배치에서 빼며(다시 배치해야 한다), 다음 학생으로 넘어간다.
+  void confirmStudentStages(
+    String studentId,
+    List<PlanElementStageDraft> stages,
+  ) {
+    if (_disposed) return;
+    final removed = <String>{
+      for (final stage
+          in _draft.stagesByStudent[studentId] ??
+              const <PlanElementStageDraft>[])
+        stage.id,
+    };
+    _draft = _draft.copyWith(
+      students: _draft.students.any((seed) => seed.studentId == studentId)
+          ? null
+          : [..._draft.students, context.seedFor(studentId)],
+      stagesByStudent: {..._draft.stagesByStudent, studentId: stages},
+      phases: _withoutStages(removed),
+    );
+    if (_goalIndex + 1 < _goalQueue.length) _goalIndex += 1;
+    notifyListeners();
+    _scheduleCalculation();
+  }
+
+  /// 요소 편집기에서 다른 학생을 고친다.
+  void editStudent(String studentId) {
+    if (_disposed) return;
+    final seed =
+        [
+          for (final seed in _draft.students)
+            if (seed.studentId == studentId) seed,
+        ].firstOrNull ??
+        context.seedFor(studentId);
+    _goalQueue = List.unmodifiable([
+      PlanningStudentSeed(
+        handoffId:
+            'plan-flow-edit-$studentId-${DateTime.now().microsecondsSinceEpoch}',
+        studentId: seed.studentId,
+        metadata: seed.metadata,
+        currentValues: seed.currentValues,
+        owned: seed.owned,
+      ),
+    ]);
+    _goalIndex = 0;
+    notifyListeners();
+  }
+
+  /// 칸에 넣지 않은 단계의 이름을 바꾼다.
+  void renameStage(String stageId, String name) {
+    final stage = _draft.stageById(stageId);
+    if (_disposed || stage == null) return;
+    _draft = _draft.copyWith(
+      stagesByStudent: {
+        ..._draft.stagesByStudent,
+        stage.studentId: [
+          for (final item in _draft.stagesByStudent[stage.studentId]!)
+            item.id == stageId ? item.copyWith(name: name) : item,
+        ],
+      },
+    );
+    notifyListeners();
+  }
+
+  /// 칸에 넣지 않은 단계를 지운다(기존 요소 편집기 미배정 목록과 같은 규칙).
+  void deleteStage(String stageId) {
+    final stage = _draft.stageById(stageId);
+    if (_disposed ||
+        stage == null ||
+        _draft.assignedStageIds.contains(stageId)) {
+      return;
+    }
+    _draft = _draft.copyWith(
+      stagesByStudent: {
+        ..._draft.stagesByStudent,
+        stage.studentId: [
+          for (final item in _draft.stagesByStudent[stage.studentId]!)
+            if (item.id != stageId) item,
+        ],
+      },
+    );
+    notifyListeners();
+    _scheduleCalculation();
+  }
+
+  List<PlanFlowPhase> _withoutStages(Set<String> stageIds) => [
+    for (final phase in _draft.phases)
+      PlanFlowPhase(
+        id: phase.id,
+        name: phase.name,
+        stageIds: [
+          for (final id in phase.stageIds)
+            if (!stageIds.contains(id)) id,
+        ],
+      ),
+  ];
+
+  // --- 3단계 단계 순서(페이즈 편집기) -------------------------------------------
+
+  /// 페이즈 편집기 완료: 칸 배치를 바꾸고 4단계로 간다.
+  void completeOrder(List<PlanFlowPhase> phases) {
+    if (_disposed) return;
+    _draft = _draft.copyWith(phases: phases);
+    if (_draft.allStagesAssigned) _step = PlanFlowStep.save;
+    notifyListeners();
+    _scheduleCalculation();
+  }
+
+  // --- 4단계 저장 -------------------------------------------------------------
+
+  /// 저장 대화상자 기본값(기존 경로와 같다: 새 시나리오는 "새 시나리오 n+1").
+  Future<PlanFlowSavePreparation> prepareScenarioSave() async {
+    final repository = service;
+    if (repository is! PlanningScenarioRepositoryService) {
+      throw StateError('Scenario repository is unavailable');
+    }
+    final list = await repository.listScenarios(
+      context.repositoryState.profileId,
+    );
+    final editing = scenario;
+    return PlanFlowSavePreparation(
+      name: editing?.name ?? '새 시나리오 ${list.scenarios.length + 1}',
+      description: editing?.description ?? '',
+      collectionRevision: scenarioCollectionRevision ?? list.revision,
+    );
+  }
+
+  /// 초안을 시나리오로 저장한다(새로 만들기 또는 고치기).
+  Future<void> saveScenario({
+    required String name,
+    required String description,
+    required PlanFlowSavePreparation preparation,
+  }) async {
+    final repository = service;
+    if (repository is! PlanningScenarioRepositoryService ||
+        !_draft.allStagesAssigned) {
+      throw StateError('Scenario draft cannot be saved');
+    }
+    final state = context.repositoryState;
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    final editing = scenario;
+    if (editing == null) {
+      await repository.createScenario(
+        profileId: state.profileId,
+        expectedRevision: preparation.collectionRevision,
+        idempotencyKey: 'scenario-create-$stamp',
+        name: name,
+        description: description,
+        baseProfileRevision: state.revision,
+        document: PlanFlowDocumentBoundary.toScenarioDocument(
+          _draft,
+          id: 'scenario-draft-$stamp',
+          name: name,
+        ),
+      );
+    } else {
+      await repository.updateScenario(
+        profileId: state.profileId,
+        scenarioId: editing.id,
+        expectedRevision: preparation.collectionRevision,
+        expectedScenarioRevision: editing.revision,
+        idempotencyKey: 'scenario-update-$stamp',
+        name: name,
+        description: description,
+        baseProfileRevision: state.revision,
+        document: PlanFlowDocumentBoundary.toScenarioDocument(
+          _draft,
+          id: editing.document.id,
+          name: name,
+        ),
+      );
+    }
+  }
+
+  // --- 계산 -----------------------------------------------------------------
+
+  void _scheduleCalculation() {
+    if (_disposed) return;
+    _timer?.cancel();
+    _calculationNumber += 1;
+    if (!_draft.hasStages || !canCalculate) {
+      _timer = null;
+      final changed = _calculation != null || _calculating;
+      _calculation = null;
+      _calculationError = null;
+      _calculating = false;
+      if (changed) notifyListeners();
+      return;
+    }
+    final wasCalculating = _calculating;
+    _calculating = true;
+    _timer = Timer(debounce, () => unawaited(_calculate()));
+    if (!wasCalculating) notifyListeners();
+  }
+
+  Future<void> _calculate() async {
+    _timer = null;
+    final number = _calculationNumber;
+    final draft = _draft;
+    final calculator = service as PlanningDocumentService;
+    _calculationRequests += 1;
+    try {
+      final projection = await calculator.calculatePlanningDocument(
+        currentStudents: context.currentStudentsWire,
+        inventory: context.inventoryWire,
+        document: PlanFlowDocumentBoundary.calculationWire(
+          draft,
+          id: _documentId,
+        ),
+      );
+      if (_disposed || number != _calculationNumber) return;
+      final stagesById = {for (final stage in draft.stages) stage.id: stage};
+      _calculation = PlanFlowCalculation.fromProjection(
+        projection,
+        stageLookup: (stageId) => switch (stagesById[stageId]) {
+          final stage? => PlanFlowShortageUse(
+            studentId: stage.studentId,
+            displayName: context.displayName(stage.studentId),
+            step: stage.step,
+          ),
+          null => null,
+        },
+      );
+      _calculationError = null;
+    } on Object catch (error) {
+      if (_disposed || number != _calculationNumber) return;
+      _calculationError = error;
+    }
+    _calculating = false;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _timer?.cancel();
+    _timer = null;
+    super.dispose();
+  }
+}

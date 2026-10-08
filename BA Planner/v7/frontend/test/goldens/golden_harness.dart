@@ -492,6 +492,72 @@ class GoldenCalculatorMockAppService extends GoldenStudentMockAppService {
   });
 }
 
+/// 계획 만들기 흐름 장면 전용 mock(FE4-a1). 초안 계산(`planning.document.calculate`)에 필요 크레딧과 부족 재화
+/// 5종을 돌려준다(시안 Flow-1-Students 요약 "48.2M · 5종"과 같은 숫자). 재화 id는 모두
+/// assets/item_icons/ooparts에 있는 오파츠다. 계획 홈 장면은 이 mock을 쓰지 않는다(그쪽 숫자는 그대로).
+class GoldenPlanFlowMockAppService extends GoldenMockAppService {
+  GoldenPlanFlowMockAppService() : super();
+
+  static const credits = 48200000;
+
+  @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async {
+    final stageIds = [
+      for (final phase in document['phases'] as List<dynamic>)
+        for (final stage in (phase as Map)['stages'] as List<dynamic>)
+          (stage as Map)['stage_id'] as String,
+    ];
+    Map<String, dynamic> resource(
+      String key,
+      String name,
+      int required,
+      int owned,
+    ) => {
+      'resource_key': key,
+      'item_id': key,
+      'display_name': name,
+      'category': 'oopart',
+      'required': required,
+      'owned': owned,
+      'shortage': (required - owned).clamp(0, required),
+      'affected_stage_ids': stageIds,
+    };
+    return {
+      'document_id': document['document_id'],
+      'kind': document['kind'],
+      'stage_results': const <dynamic>[],
+      'phase_results': const <dynamic>[],
+      'overall': {
+        'cost': {'credits': credits},
+        'resources': [
+          {
+            'resource_key': 'credits',
+            'item_id': null,
+            'display_name': '크레딧',
+            'category': 'credits',
+            'required': credits,
+            'owned': null,
+            'shortage': null,
+            'affected_stage_ids': stageIds,
+          },
+          resource('Item_Icon_Material_Nebra_3', '오파츠 · 네브라 디스크 (최상급)', 96, 66),
+          resource('Item_Icon_Material_Phaistos_3', '오파츠 · 파이스토스 원반 (최상급)', 90, 76),
+          resource('Item_Icon_Material_Wolfsegg_0', '오파츠 · 볼프세크 철광석 (하급)', 18, 10),
+          resource('Item_Icon_Material_Nebra_2', '오파츠 · 네브라 디스크 (상급)', 40, 34),
+          resource('Item_Icon_Material_Phaistos_2', '오파츠 · 파이스토스 원반 (상급)', 12, 9),
+          resource('Item_Icon_Material_Nebra_1', '오파츠 · 네브라 디스크 (일반)', 10, 13),
+        ],
+      },
+      'bottlenecks': const <dynamic>[],
+      'warnings': const <dynamic>[],
+    };
+  }
+}
+
 /// 요소 빌더·프리셋 관리 장면이 쓰는 프리셋(`planning_page_test`와 같은 값).
 PlanElementPreset goldenTestPreset() => PlanElementPreset(
   id: 'balanced-growth',

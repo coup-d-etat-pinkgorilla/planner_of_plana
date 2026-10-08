@@ -27,8 +27,9 @@ sources:
 
 **FE3-f2a 완료.** 커밋 `3e7272e2`(gate `20261008_080127` GREEN). 같은 때 FB-11a(백엔드 단일 학생 계산) `facdd1d3`(Python 847), 문서 `2bcdcbd9`.
 
-**FE3-f2b 코드 작성 완료, gate 미실행(사용자 실행 대기).** 성장 계산기 화면 연결 2/2(시각 변경). 시작 커밋 `2bcdcbd9` 이후 작업 트리. 결과는 아래 "FE3-f2b 종료 기록"에 있다.
-- FB-13(catalog `has_favorite_item`, 백엔드 워커)은 작업 트리에 코드가 있지만 아직 커밋 전이다. 오케스트레이터 승인(로그 10:14) 뒤 같은 slice에 FB-13 프론트 연결(fixture 3곳, 애장품 폴백 제거, 아야네 12행 테스트)을 더했다(아래 "FE3-f2b 추가 작업 기록"). gate `20261008_102700` RED(크레딧 타일 가로 넘침 1건 + golden 2장) → 넘침 수정 → gate `20261008_121125` RED(golden 2장만, 예측과 같음). golden은 FB-13 화면과 함께 지금 갱신하기로 결정(사용자, 12:19). 사용자 `-UpdateGoldens` 실행 대기.
+**FE3-f2b 완료.** 커밋 `576bd568`(gate `20261008_122807` GREEN, golden `students-calculator`·`plan-element-builder` 갱신 포함). FB-13(catalog `has_favorite_item`, 백엔드 워커) `fa15e87c`, 문서 `0fd37702`.
+
+**FE4-a1 gate `20261008_152312` RED 4건 수정 완료, gate 미실행(2026-10-08 16시).** FE4-a를 a1/a2로 나눴다(아래 "FE4-a 분할과 FE4-a1 착수 기록"·"FE4-a1 종료 기록"). 시작 커밋 `0fd37702`. FB-1a(백엔드 워커)가 `lib/ui/models/planning_models.dart`를 고치는 중이라 그 파일은 건드리지 않았다. 다음은 사용자 gate → 오케스트레이터 검토 → FE4-a2.
 
 ### 커밋 기록
 
@@ -53,6 +54,8 @@ sources:
 | FB-12 | `50dbed6c`(+ 문서 `f2cf4fb8`) | 계획 계산 버그 2건: 성급 비용이 wire `student_star`를 읽음(★0부터 계산하던 것 정정), 장비 티어 이월을 정규 형식 `T<n>`으로 쓰고 티어 파서를 견고하게(백엔드만, 새 테스트 9건) | Python 836 통과, `20261007_232002` GREEN |
 | FE3-f2a | `3e7272e2` | 성장 계산기 화면 연결 1/2: 진입·복귀(머리말 덮어쓰기·"← 학생" 칩·Esc·주 탭), 계산기 S1, S2 두 열(13행·크레딧 타일·재화 목록), 계산 연결, `ItemIconTile` 자산 없음 대체 표시, golden 학생 5장 갱신 + 새 장면 `students-calculator`(시각 변경) | `20261008_022827` RED(지어낸 아이콘 id) → `20261008_030824` RED(테스트 파일 덮어쓰기) → `20261008_080127` GREEN |
 | FB-11a | `facdd1d3` | 백엔드 단일 학생 계산 `planning.student.calculate`(totals + 9범주 크레딧 + 재화 행), Dart DTO·클라이언트·mock(백엔드 워커, `frontend-redesign-status-backend.md`) | Python 847 통과, 같은 gate |
+| FE3-f2b | `576bd568` | 성장 계산기 화면 연결 2/2: S3 목표값·"현재 …" 태그·칸 토글(FD-167), S4 요약·"기준" 칩·최근 계산(FD-170), 단일 학생 계산 어댑터(FB-11a), 크레딧 내역 9범주 막대, 크레딧 합계 칸 줄이기, FB-13 프론트 연결(fixture 3곳·애장품 폴백 제거·아야네 12행), golden 2장 갱신 | `20261008_102700` RED(크레딧 타일 넘침) → `20261008_121125` RED(golden 2, 예측 일치) → `20261008_122807` GREEN |
+| FB-13 | `fa15e87c` | catalog `has_favorite_item`(KR 애장품 제공 여부) 계약·Python·Dart·mock·asset 재생성(백엔드 워커, `frontend-redesign-status-backend.md`) | 백엔드 기록 참조, 프론트 gate는 `20261008_122807` GREEN |
 
 아래 FE1-a·FE1-g 절의 "미실행", "대기" 표현은 작성 당시 기록이다. 결과는 이 표와 각 절의 커밋 기록이 최신이다.
 
@@ -3305,4 +3308,169 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice re
 ### FE3-f2b commit record (2026-10-08 12:32, written by fe_commit.ps1)
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261008_122807\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-a 분할과 FE4-a1 착수 기록 (2026-10-08)
+
+- 작업 지시(14:14)의 §0을 읽었다: 워크플로 FE4 절(공통 3-Section 기하, FE4-a 행)·재개 지점(2026-10-08 오후)·"Lane A 앞뒤 병렬", 오케스트레이터 로그 14:05(파일 경계), FD-070~FD-082(FD-078·FD-081·FD-082), C 보고서 §0~§4, artboard-map Flow-* 행, 시안 Flow-1-Students(`dc_outline.py`).
+- 0단계 기록: FE3-f2b `576bd568`, FB-13 `fa15e87c`(위 커밋 기록 표). 시작 커밋 `0fd37702`.
+- 막힘 확인: FE4-a를 막는 FD-082는 확정(권장안 (a)), FD-078·FD-081은 확정/워커 재량. 열림 0건.
+
+### 분할(운영 규칙 2)
+
+`plan_section_layout.dart`(8,237줄)의 네 플래그는 두 갈래 흐름에 걸쳐 있다. 시나리오 만들기(`_creatingScenario` + 스냅샷 왕복)와 활성 계획 편집(`학생 추가`·`페이즈 만들기`·학생 탭 넘김, 플래그 3개)이다. 한 번에 바꾸면 `planning_page_test` 26건 중 흐름 관련 10건 남짓과 golden 3장(`plan-student-selector`·`plan-element-builder`·`plan-phase-editor`)이 함께 바뀌어 검토가 어렵다. 그래서 둘로 나눈다.
+
+| sub-slice | 범위 | golden |
+|---|---|---|
+| **FE4-a1 흐름 골격 + 시나리오 만들기** (이번) | 새 Studio 문서(A 진행 레일·B 본문·C 보조), StepRail(스텝 4개·요약 4행·다음/이전), 초안 컨트롤러(문서 DTO를 감싸는 경계 어댑터, 디바운스 `planning.document.calculate`), 부족 재화 플라이아웃(FE2-c `ShortageBreakdownFlyout` 재사용). 계획 탭 S1 "시나리오 생성"(FD-081의 "새 시나리오") → 1단계, 시나리오 비교 "편집" → 3단계. `_creatingScenario`·`_editingScenario*`·`_PlanWorkspaceSnapshot` 왕복을 컨트롤러로 대체(초안이 활성 계획 작업 상태와 따로 있어 스냅샷이 필요 없다). 각 스텝은 기존 화면(학생 고르기·요소 편집기·페이즈 편집기)을 레일 옆에서 그대로 열고, 4단계는 기존 저장 대화상자를 연다 | 새 장면 추가만. 기존 plan-* 장면 차이 0 예상 |
+| **FE4-a2 활성 계획 편집 경로 이관** (다음) | "학생 추가"·"페이즈 만들기"·학생 탭 넘김(`initialSeed`)을 흐름 1·3·2단계로 옮기고 `_showStudentSelector`/`_showElementBuilder`/`_showPhaseEditor`/`_switchingStudentSelector` 제거, 4단계 "계획에 반영"(메모리 반영, FB-1 전), 해당 `planning_page_test` 재작성 | `plan-student-selector`·`plan-element-builder`·`plan-phase-editor`(레일 크롬) |
+
+- FE4-a1 동안 활성 계획 편집 경로는 지금 그대로 둔다(기능 손실 없음). 두 경로가 같은 기존 화면을 각자 띄우는 중복은 a2에서 없앤다.
+- 바꿀 기존 파일(추적 중, PC `.git/index`로 확인 예정): `plan_section_layout.dart`, `plan_student_selector.dart`(선택 변화 알림 콜백 1개 추가), `planning_page_test.dart`, golden 테스트·하네스. 새 파일은 같은 경로가 index에 없는지 확인한 뒤 만든다.
+
+## FE4-a1 종료 기록 (2026-10-08, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없다. 그래서 `flutter analyze`·Dart 테스트·golden을 돌리지 못했고, 통과를 주장하지 않는다.
+- 별도 검토 에이전트 1개가 새 파일 5개와 바뀐 파일 5개를 정적으로 읽었다(정의 파일과 생성자·콜백 시그니처 대조). 고친 지적:
+  1. `PlanFlowDraft`의 `Map.unmodifiable({… List.unmodifiable(…)})`가 문맥 타입을 받지 못해 `List<dynamic>`이 되고, 단계가 있는 초안을 만들 때마다 런타임 TypeError가 난다. → 맵·리스트에 타입 인자를 적었다.
+  2. `confirmStudentStages`의 `?? const []`가 `List<dynamic>`으로 추론돼 `Set<dynamic>`을 `Set<String>` 인자로 넘긴다(컴파일 오류). → `const <PlanElementStageDraft>[]`.
+  3. `plan_flow_rail.dart`의 쓰지 않는 `anchored_flyout.dart` import 삭제(analyze 경고).
+  4. 계산 문서 테스트가 리스트를 담은 record를 `equals`로 비교했다(record 안 리스트는 동일성 비교라 늘 실패). → 리스트로 바꿨다.
+  5. 흐름 화면·새 진입 메서드가 `controller.reverse()` Future를 기다렸다. 모션 도중 다른 forward/reverse가 끼면 그 Future는 끝나지 않아 `_switching`이 영영 true로 남는다(`on TickerCanceled`는 `.orCancel` 없이는 오지 않는다). → 새 코드(`PlanFlowWorkspace._changeStep`·`_close`, `_openScenarioCreation`, `_editScenarioFromComparison`)는 퇴장을 시작만 하고 `AppMotion.section`만 기다린다. 기존 메서드의 같은 패턴은 이번 범위 밖이라 그대로 둔다.
+  6. `_shownStep`을 `initState`에서 정하고 `flow`가 바뀌면 다시 정한다(첫 알림이 단계 변경이면 4단계 등장 모션을 건너뛰던 문제).
+- 검토 중 PC `planning_models.dart`·`mock_app_service.dart`·`scenario_service.dart`가 FB-1a 작업으로 바뀐 것을 확인했다(작업 트리, 미커밋). 이 slice 코드는 그 변경과 함께 컴파일된다: `PlanningDocumentStage(targets: Map<String, int>)`는 `Map<String, int?>` 인자에 들어가고, `PlanningDocument`의 새 인자(`version`·`goalMetadata`)는 선택이다. 세 파일은 고치지 않았다.
+
+### 분할 여부
+
+FE4-a를 a1/a2로 나눴고 이번은 **FE4-a1**이다(위 "FE4-a 분할과 FE4-a1 착수 기록"). 활성 계획 편집 경로(학생 추가·페이즈 만들기·학생 탭 넘김)는 지금 그대로 두고 FE4-a2에서 흐름으로 옮긴다.
+
+### 바뀐 파일
+
+| 파일 | 상태 | 줄(+/−) | 내용 |
+|---|---|---|---|
+| `frontend/lib/ui/studio/plan_flow_studio_layout.dart` | 새 파일 | +70 | 흐름 3-Section Studio 문서(A `flow-rail` (0,2,22,94) 왼쪽 사다리꼴, B `flow-body` (15,2,56,94) 아래 평행사변형, C `flow-aside` (72,2,24,94) 오른쪽 사다리꼴). 순수 데이터 |
+| `frontend/lib/ui/models/plan_flow_draft.dart` | 새 파일 | +866 | `PlanFlowStep`·`PlanFlowDraft`(학생·학생별 단계·칸), `PlanFlowDocumentBoundary`(문서 DTO를 만들고 읽는 유일한 곳), `PlanFlowCalculation.fromProjection`(크레딧·부족 재화), `PlanFlowContext`, `PlanFlowController`(단계 규칙·초안 편집·250ms 디바운스 계산·요청 번호·늦은 응답 버림·오류 상태·시나리오 저장) |
+| `frontend/lib/ui/widgets/plan_flow_rail.dart` | 새 파일 | +682 | `PlanFlowRail`(제목+InfoPopover, 스텝 4개, 연결선, 요약 4행, 부족 재화 플라이아웃, 계산 오류, 다음/이전), 섹션 경로·painter 도우미, 문구 함수 |
+| `frontend/lib/ui/widgets/plan_flow_workspace.dart` | 새 파일 | +685 | `PlanFlowWorkspace`: 레일 + 단계 본문(1 학생 고르기, 2 요소 편집기, 3 페이즈 편집기, 4 B "이렇게 만들어집니다"·C 저장 위치), 섹션 모션, 기존 저장 대화상자 이전 |
+| `frontend/test/plan_flow_test.dart` | 새 파일 | +747 | 아래 테스트 |
+| `frontend/lib/ui/widgets/plan_section_layout.dart` | 수정(CRLF 유지) | +86 −314 | `_PlanWorkspaceSnapshot`·`_creatingScenario`·`_editingScenario*`·스냅샷 왕복·`_saveScenarioDraft` 제거, `PlanFlowController? _flow`, `_openScenarioCreation`·`_closeFlow`·`_discardFlow`·`_editScenarioFromComparison`, 흐름이 열려 있으면 홈 섹션을 숨기고 `PlanFlowWorkspace`를 그린다 |
+| `frontend/lib/ui/widgets/plan_student_selector.dart` | 수정 | +25 −17 | 선택 변화 알림 `onSelectionChanged`(선택 인자), `_selectedSeeds()` 추출 |
+| `frontend/test/planning_page_test.dart` | 수정 | +42 −25 | 시나리오 만들기 테스트 2건을 흐름 기준으로 다시 씀 |
+| `frontend/test/goldens/golden_harness.dart` | 수정 | +66 | `GoldenPlanFlowMockAppService`(크레딧 48,200,000, 오파츠 부족 5종 + 충분 1종) |
+| `frontend/test/goldens/fe1g_baseline_golden_test.dart` | 수정 | +41 | 새 장면 2개 |
+
+`lib/services/**`, `backend/`, `contracts/`, `planning_models.dart`, 스캐너·tactic·metadata 소유 파일, `developer_tools*`, `app_shell.dart`는 고치지 않았다.
+
+### 테스트
+
+- `plan_flow_test.dart`
+  - 기하: 세 섹션 다각형이 시안 점(2560×1208 캔버스)과 1px 안.
+  - 컨트롤러: 단계 이동·비활성 조건(학생 없으면 2단계 불가, 단계 없으면 3단계 불가, 칸 배치가 끝나야 4단계), 확정한 학생 덧붙이기.
+  - 경계: `calculationWire`가 칸에 없는 단계를 단계 번호별 임시 페이즈에 넣음, `toScenarioDocument` ↔ `fromDocument` 왕복.
+  - 계산 결과: 크레딧 줄 대체, 부족을 모르면 "—".
+  - 레일: 상태 칩·비활성 버튼, Semantics label·value·hint(핸들은 본문 끝에서 dispose).
+  - 디바운스: 편집 3번 → 계산 1번, 요약 "2명"·"3개"·"1.2M"·"2종", 오류 문구. 늦은 응답 버림.
+  - 플라이아웃: 탭으로 열림, 부족 큰 순, Esc로 닫힘.
+  - 기존 화면: PlanningPage에서 1단계 학생 고르기 → 레일 "다음"(보류 선택) → 2단계 요소 편집기(B 윗변 왼쪽부터) → 1단계 버튼 → 다음 → 프리셋 확정 → 다음 → 3단계 페이즈 편집기 → 이전 → 요소 편집기.
+- `planning_page_test.dart`: "시나리오 생성"이 흐름을 열고 그만두기가 학생 고르기 퇴장 모션을 트는지, 흐름 안에서 요소 편집기·페이즈 편집기를 거쳐 4단계 → "저장하고 닫기" → 대화상자 → 시나리오 1건 저장.
+
+### golden 예측
+
+- 새 장면 2개: `plan-flow-step1`(시나리오 생성 → 레일 + 학생 고르기), `plan-flow-step2`(학생 1명 → 균형 성장 프리셋 확정 → 디바운스 뒤 요약 "48.2M"·"5종"). 아이템 ID는 실제 아이콘이 있는 오파츠(`Nebra_3`·`Phaistos_3`·`Wolfsegg_0`·`Nebra_2`·`Phaistos_2`, 충분 `Nebra_1`)만 쓴다. 첫 실행은 기준 PNG가 없어 RED가 정상이다.
+- 기존 21장면은 차이 0 예상. 시나리오 만들기 경로만 바뀌었고, 기존 장면 중 그 경로를 지나는 장면은 없다(`plan-scenario-list`·`plan-scenario-compare`는 시나리오를 미리 넣고 연다).
+
+### 처리한 FD
+
+- **FD-078**: 섹션 모션을 부착면 규칙으로(레일 0/180, B 80/260, C 180/0).
+- **FD-081**: 이번 진입은 계획 탭 안만(S1 "시나리오 생성" → 1단계, 시나리오 비교 "편집" → 3단계). 학생 탭 → 2단계는 FE4-g.
+- **FD-082**: 권장안 (a) 전제로 진행했다. 흐름 초안은 활성 계획 작업 상태와 따로 있다.
+
+### 바뀐 동작(검토 때 볼 것)
+
+1. 시나리오 만들기 동안 S1(계획 홈)이 보이지 않는다. 흐름이 화면 전체를 쓴다.
+2. 저장 대화상자에서 취소하면 4단계에 남는다(전에는 시나리오 만들기를 끝냈다).
+3. 페이즈 편집기 "완료" 뒤 바로 대화상자가 뜨지 않고 4단계를 보인다. 대화상자는 레일 "저장하고 닫기" 또는 C "시나리오로 저장"으로 연다.
+4. 1단계에서 레일 "다음"을 누르면 학생 고르기에서 고르는 중인 학생으로 확정한다.
+5. 학생을 다시 고르면 기존 학생 뒤에 덧붙인다(바꾸지 않는다).
+6. 4단계 부제는 "시나리오로 저장". 활성 계획 두 갈래(FD-079)는 FB-1 뒤 FE4-e.
+7. 부족 재화 플라이아웃은 재고 보기·아이템 탭 이동을 아직 뺐다(FE4-b~d).
+8. 흐름 섹션은 PlanningPage의 좌우 16px 패딩 안에 그려져 시안보다 2528/2560 비율로 좁다(기존 계획 화면과 같은 규칙).
+
+### 검수표
+
+| 항목 | 확인 |
+|---|---|
+| A·B·C 섹션이 시안 Flow-* 좌표와 맞는다 | 기하 테스트(1px) |
+| 스텝 4개·요약 4행·다음/이전, 비활성 조건 | 위젯 테스트 |
+| 요약이 계산 뒤 바뀐다, 디바운스 1회 계산 | 위젯 테스트 |
+| 부족 재화 플라이아웃 열기·닫기 | 위젯 테스트 |
+| 기존 세 화면이 각 단계에서 열린다, 기능 손실 없음 | 위젯 테스트 + planning_page_test |
+| Semantics value 3종(스텝 칩·부제, 요약 값, 저장 위치) | 위젯 테스트 1건 + 코드 |
+| 앱 문구 ~습니다체 | 코드 확인 |
+| 금지 파일 미수정 | 바뀐 파일 표 |
+
+### FB-1a 뒤 v2 전환 메모
+
+- 바꿀 곳은 `PlanFlowDocumentBoundary` 하나다. `toScenarioDocument`·`calculationWire`에서 `version: 2`와 `goalMetadata`를 채우고, 목표 없음은 `null`로 둔다. `fromDocument`는 `stage.targets` 대신 `nullableTargets`를 읽는다(지금 FB-1a 작업 트리의 `targets` getter는 null이 있으면 StateError를 던진다).
+- `PlanElementStageDraft`가 `Map<String, int>`를 쓰는 동안은 경계에서 v1 ↔ v2를 바꾼다. 편집기를 nullable로 바꾸는 일은 FE4-c.
+
+### 확인하지 못한 것
+
+- analyze·테스트·golden 실행 전부(이 환경에 Flutter 없음).
+- 새 장면 2개의 실제 그림. 첫 실행 RED 뒤 PNG를 보고 레일 글자 넘침·플라이아웃 위치를 확인해야 한다.
+
+### 사용자 실행 순서
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① 두 워커가 멈춘 상태에서 gate → 오케스트레이터 검토
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 새 장면 기준 PNG 만들기 → gate 다시
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4a -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4a
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice redesigndocs
+```
+
+## FE4-a1 gate `20261008_152312` 수정 기록 (2026-10-08 16:05 지시, 코드 작성 완료·gate 미실행)
+
+gate RED 4건(오케스트레이터 로그 16:02)을 고쳤다. 이 환경에는 Flutter가 없어 다시 돌리지 못했다.
+
+1. **analyze `prefer_initializing_formals`** (`plan_flow_draft.dart:473`): `PlanFlowController`의 서비스 필드를 공개 `final Object? service`로 바꾸고 `this.service`로 받는다(호출하는 쪽 `service:` 인자는 그대로).
+2. **기존 화면 임시 수용(FE4-b~d 전까지).** 축소 방식으로 했다.
+   - 1~3단계 기존 화면(학생 고르기·요소 편집기·페이즈 편집기)은 원래 받던 크기, 곧 계획 화면 캔버스 전체(`SizedBox.fromSize(size: 캔버스)`)로 배치한다. 학생 고르기는 원래처럼 계획 홈 S1 자리(`planSectionPath(size, 'element-1')`)와 `planStudentSelectorSection1RightAtReference(size)`를 받는다. 흐름에서는 S1을 그리지 않아 그 자리는 비어 보인다.
+   - 그 캔버스를 `FittedBox(fit: contain)`으로 통째로 줄여 `planFlowLegacyBodyRect`에 넣는다. 히트 테스트는 변환을 따른다. 넣는 자리는 B 평행사변형 안에서 A·C·사선과 겹치지 않는 사각형이다. 왼쪽은 B 왼쪽 사선의 윗끝, 오른쪽은 B 오른쪽 사선의 아랫끝, 위아래는 B 윗변·아랫변이고, 네 변 모두 16px 안쪽이다. 기준 viewport(계획 화면 캔버스 폭 2528)에서 폭은 약 1230, 배율은 약 0.49다.
+   - 실패 원인: 전에는 학생 고르기에 레일을 "섹션 1"로 줘 패널 배치가 바뀌었다. 그래서 학생 고르기 자신의 패널 표면(`CustomPaint`)이 확정 버튼 위에 놓여 `plan-student-selector-confirm-selection` 누르기를 가렸다. 요소 편집기는 B 윗변 왼쪽부터 오른쪽 끝까지의 좁은 폭을 받아 `plan_element_builder.dart:1557` Row(+33)·`:2793` Column(+4.6)·`:3671` Row(+37)가 넘쳤다. 원래 크기로 그리면 둘 다 기존 계획 화면과 같은 배치라 생기지 않는다.
+   - B·C 섹션 표면은 1~3단계에도 그린다(빈 C는 FE4-b~d에서 채운다). 표면은 `IgnorePointer`다. 기존 화면은 그 위, 레일 아래에 둔다.
+   - `planning_page_test.dart`는 이번에 고치지 않았다.
+   - `plan_flow_test`는 기준 viewport 2560×1392로 그린다(전과 같음). 넘침 예외는 무시하지 않는다. "각 단계에서 기존 화면을 연다" 테스트의 위치 기대는 다음으로 바꿨다: 요소 편집기의 크기가 캔버스와 같고, 그려진 사각형이 `planFlowLegacyFittedRect`와 맞고, 레일 윗변 오른쪽 끝보다 오른쪽·C 왼쪽 사선 아랫끝보다 왼쪽이다.
+3. **`plan_flow_test` 285행 `done` 기대.** 285행은 `goNext` 전, 2단계에 머무는 동안이라 컨트롤러가 `current`를 돌려준 것이 맞다. 시안으로 확인했다: Flow-1-Students는 학생 3명을 고른 1단계도 "지금"(`sel-pink`)이고, Flow-4-Save는 1~3단계 "완료"(`done`)·4단계 "지금"이다. 그래서 규칙은 "지금 단계는 할 일을 마쳐도 지금, 넘어간 뒤 완료"다(semantics 테스트의 2단계 "지금, 1명 중 1명 완료"와도 같다). 컨트롤러는 그대로 두고, 테스트를 고쳤다: 285행은 `current`를 기대하고, `goNext` 뒤 2단계 `done`·3단계 `current`를 확인한다.
+4. **golden `plan-flow-step2`가 `plan-starter-preset-balanced-growth`를 못 찾음.** 원인은 2번과 같다. 확정 버튼 누르기가 가려져 요소 편집기가 열리지 않았다. 2번으로 해결될 것으로 본다. `plan-flow-step1`은 새 장면이라 기준이 없는 것이 정상이다.
+
+### 바뀐 파일(이번 수정분)
+
+| 파일 | 내용 |
+|---|---|
+| `frontend/lib/ui/models/plan_flow_draft.dart` | `service` 초기화 형식 |
+| `frontend/lib/ui/widgets/plan_flow_workspace.dart` | `planFlowLegacyBodyRect`(B 안쪽 사각형)·`planFlowLegacyFittedRect`, 기존 화면을 원래 캔버스 크기로 그린 뒤 `FittedBox`로 축소(`plan-flow-legacy-slot`·`-fit`·`-canvas`), 학생 고르기에 계획 홈 S1 자리, B·C 표면을 모든 단계에 |
+| `frontend/test/plan_flow_test.dart` | 285행 기대(시안 기준), 기존 화면 위치 기대 |
+
+추적 중인 파일은 이번에 더 바꾸지 않았다. commit.json은 메시지의 흐름 화면 설명만 고쳤고, pre 사본은 그대로다.
+
+### golden 예측(갱신)
+
+- 새 장면 `plan-flow-step1`: 레일(1단계 "지금", 요약 "—"), B·C 빈 표면, B 안쪽에 약 0.5배로 줄어든 학생 고르기. 학생 고르기 패널은 원래처럼 S1 자리 오른쪽에 있고, S1 자리는 비어 있다.
+- 새 장면 `plan-flow-step2`: 레일(1단계 "완료", 2단계 "지금", 요약 1명·단계 n개·"48.2M"·"5종"), B 안쪽에 약 0.5배로 줄어든 요소 편집기.
+- 두 장면 안의 기존 화면이 작게 보이는 것은 축소 방식이라 정상이다.
+- 기존 21장면은 차이 0 예상. 바뀐 것은 시나리오 만들기 흐름 안쪽뿐이고, 기존 장면은 그 경로를 지나지 않는다.
+
+### 사용자 실행 순서
+
+앞 "FE4-a1 종료 기록"과 같다(① gate → 오케스트레이터 검토, ② `-UpdateGoldens` 뒤 gate, ③ `fe_commit -Slice fe4a` → `redesigndocs`).
+
+### FE4-a1 commit record (2026-10-08 16:45, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261008_164059\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

@@ -3720,7 +3720,7 @@ void main() {
   );
 
   testWidgets(
-    'scenario creation exits its selector before cancel and list handoffs',
+    'scenario creation opens the plan flow and quitting plays the selector outro',
     (tester) async {
       final service = MockAppService();
       addTearDown(service.dispose);
@@ -3741,13 +3741,31 @@ void main() {
         return Offset(translation.x, translation.y);
       }
 
+      // FE4-a1: S1 "시나리오 생성"은 계획 만들기 1단계를 연다. S1 버튼 묶음 대신 진행 레일이 왼쪽에 선다.
       await tester.tap(
         find.byKey(const ValueKey('plan-scenario-create-launch')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('plan-student-selector-launch')),
+      expect(find.byKey(const ValueKey('plan-flow-rail')), findsOneWidget);
+      expect(find.byType(PlanStudentSelector), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('plan-scenario-create-launch')),
+        findsNothing,
       );
+      final railRight = tester
+          .getRect(find.byKey(const ValueKey('plan-flow-step-1')))
+          .right;
+      expect(
+        tester
+            .getRect(
+              find.byKey(const ValueKey('plan-student-selector-grid-section')),
+            )
+            .left,
+        greaterThan(railRight - 220),
+      );
+
+      // 1단계의 "그만두기"는 학생 고르기 패널을 내보낸 뒤 흐름을 닫는다.
+      await tester.tap(find.byKey(const ValueKey('plan-flow-previous')));
       await tester.pump();
       await tester.pump(
         Duration(
@@ -3761,38 +3779,22 @@ void main() {
         expect(offset.dy, greaterThan(0));
       }
       await tester.pumpAndSettle();
-      expect(find.byType(PlanStudentSelector), findsNothing);
-
-      await tester.tap(
-        find.byKey(const ValueKey('plan-scenario-create-launch')),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('plan-scenario-list-launch')));
-      await tester.pump();
-      await tester.pump(
-        Duration(
-          milliseconds: planStudentSelectorMotionDuration.inMilliseconds ~/ 2,
-        ),
-      );
-      expect(find.byType(PlanStudentSelector), findsOneWidget);
-      expect(find.byType(PlanScenarioListSection), findsNothing);
-      for (final panel in const ['grid', 'filter', 'condition', 'selection']) {
-        final offset = selectorOffset(panel);
-        expect(offset.dx, lessThan(0));
-        expect(offset.dy, greaterThan(0));
-      }
-      await tester.pumpAndSettle();
 
       expect(find.byType(PlanStudentSelector), findsNothing);
-      expect(find.byType(PlanScenarioListSection), findsOneWidget);
+      expect(find.byKey(const ValueKey('plan-flow-rail')), findsNothing);
       expect(
         tester
             .widget<FilledButton>(
               find.byKey(const ValueKey('plan-scenario-create-launch')),
             )
             .onPressed,
-        isNull,
+        isNotNull,
       );
+
+      // 흐름을 닫은 뒤에는 시나리오 목록이 그대로 열린다.
+      await tester.tap(find.byKey(const ValueKey('plan-scenario-list-launch')));
+      await tester.pumpAndSettle();
+      expect(find.byType(PlanScenarioListSection), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -3903,7 +3905,7 @@ void main() {
   );
 
   testWidgets(
-    'scenario creation reuses student builder and phase editor without bulk apply',
+    'scenario creation reuses student builder and phase editor inside the plan flow',
     (tester) async {
       final service = MockAppService();
       addTearDown(service.dispose);
@@ -3937,7 +3939,9 @@ void main() {
         find.byKey(const ValueKey('plan-student-selector-confirm-selection')),
       );
       await tester.pumpAndSettle();
+      // 2단계: 기존 요소 편집기를 레일 옆에서 연다.
       expect(find.byType(PlanElementBuilder), findsOneWidget);
+      expect(find.byKey(const ValueKey('plan-flow-rail')), findsOneWidget);
 
       await tester.tap(
         find.byKey(const ValueKey('plan-starter-preset-balanced-growth')),
@@ -3949,6 +3953,7 @@ void main() {
         find.byKey(const ValueKey('plan-starter-open-phase-editor')),
       );
       await tester.pumpAndSettle();
+      // 3단계: 기존 페이즈 편집기.
       await tester.tap(
         find.byKey(const ValueKey('plan-phase-editor-assign-all')),
       );
@@ -3958,6 +3963,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // 4단계: 저장 대화상자는 레일의 "저장하고 닫기"가 연다.
+      expect(
+        find.byKey(const ValueKey('plan-flow-save-counts')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('plan-scenario-save-dialog')),
+        findsNothing,
+      );
+      await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('plan-scenario-save-dialog')),
         findsOneWidget,
@@ -3975,6 +3991,7 @@ void main() {
       expect(list.scenarios, hasLength(1));
       expect(list.scenarios.single.name, '빠른 성장 후보');
       expect(list.scenarios.single.phaseCount, 1);
+      expect(find.byKey(const ValueKey('plan-flow-rail')), findsNothing);
       expect(
         find.byKey(const ValueKey('plan-scenario-create-launch')),
         findsOneWidget,
