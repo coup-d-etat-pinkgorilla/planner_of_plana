@@ -361,3 +361,20 @@ topics: [workflow, design]
 - 사용자 결정: 애니메이션 이벤트와 스킬 로직 시점을 겹쳐 그린다. v7 개발자 도구 안의 Flutter 화면으로 만든다. 택틱 워크플로 과제로 한다.
 - `tactic-editor-orchestrator-log.md` 08:40에 배정 요청과 프론트 쪽 경계를 적었다: 새 폴더만 쓰고 진입점 1곳만 수정, 키트는 읽기 전용(수정은 이 로그로 요청), app_shell·화면·AppService 인터페이스 불변, 기존 golden 영향 0.
 - 프론트 개편 일정에는 넣지 않는다. 택틱 쪽이 키트 수정을 요청하면 Lane A 프론트 워커 작업으로 받는다.
+
+## 2026-10-08 08:57 — fe3f2a·fb11a 커밋 확인, 다음 배정
+
+- FE3-f2a `3e7272e2`(19파일, +3105/-69). golden: 학생 5장 갱신 + `students-calculator` 추가. app_shell.dart가 67줄 바뀌었다(머리말 덮어쓰기·주 탭 다시 누르기). FE3-d2의 96줄과 함께 다음 스캐너 알림에 적는다.
+- FB-11a `facdd1d3`(post_dir 사본으로 커밋, 서비스 3파일의 스캐너 미커밋 변경은 작업트리에 남음). Python 847건 통과(1076초). 문서 `2bcdcbd9`.
+- FB-1 설계 조사 승인. a(문서 v2 nullable) / b(저장·이관) / c(교체 transaction)로 나눈다. 워크플로 FB-1 절에 기록했다. c는 FE4-e 전까지만 있으면 된다.
+- `has_favorite_item`은 FB-13으로 신설한다. FB-1보다 먼저 한다. 계산기 golden(애장품 행)이 바뀔 수 있으므로 FB-13은 golden 3단계 절차를 따르고, FE3-f2b의 golden 갱신(②)은 FB-13 커밋 뒤에만 한다(두 slice가 같은 baseline 폴더를 `whole`로 커밋하기 때문).
+- f2b 검토 메모: 최대치에서 EX 스킬은 "5", 나머지 스킬은 "M"으로 보인다. 기존 학생 상세 표기 규칙과 맞추도록 f2b에서 확인한다.
+
+## 2026-10-08 10:14 — FE3-f2b·FB-13 작업 종료 보고 검토, 연결 처리 결정
+
+- FE3-f2b(프론트): S3 목표 표시·토글, S4 요약·최근 계산 다시 열기, 어댑터를 `calculateStudent`로 교체(없으면 임시 문서로 폴백), 크레딧 내역 9범주 → 5묶음(0 제외, 모르는 항목은 "기타", 합계 = 총액), 최대치 표기는 EX·스킬 모두 "M"(학생 상세 `_skillValue` 규칙). 수정 8파일, 새 파일 0. 승인.
+- FB-13(백엔드): catalog 필수 `has_favorite_item` bool(KR 60 / 265), strict fromWire, 수동 생성자 생략은 false, exporter가 runtime builder를 재사용해 asset을 재생성했다. 재생성으로 번들의 오래된 `jp_only=true` 7건(niko·rena·akane_school_uniform·otogi·konoka·koyuki_pajama·kurumi)이 canonical 값 false로 맞춰졌다. 승인. golden "JP" 배지가 바뀌면 그 원인이다.
+- 연결 결정(strict 계약 때문에 깨지는 프론트 fixture 3곳: `student_form_cycle_test` `_wire`, `student_studio_layout_test` Erika, golden harness `_withDisplayName`의 hasFavoriteItem 누락):
+  · 프론트 워커가 고친다(소유자). `_calculatorMetadata` 전체-true 폴백 제거와 false 학생 애장품 행 숨김 테스트도 함께 넣는다. 모두 fe3f2b 매니페스트에 더한다.
+  · 커밋 순서: 공통 gate GREEN 1회 → fb13 → fe3f2b(baseline whole 포함) → redesigndocs. fb13 단독 시점에는 위 fixture가 깨진 상태지만, 두 커밋을 연달아 하고 gate는 합친 트리로 검증한다.
+- 범위 밖 차단: `codealmanac validate`가 다른 워크플로(metadata-manager) 문서 오류 6건으로 실패한다(topics 누락 1, 미인용 5). gate의 almanac-validate 단계가 RED가 되므로, 그 문서 소유 세션이 고친 뒤 gate를 돌린다. 프론트 쪽은 그 파일을 고치지 않는다.
