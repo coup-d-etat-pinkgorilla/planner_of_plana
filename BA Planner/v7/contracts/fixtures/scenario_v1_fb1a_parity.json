@@ -1,0 +1,190 @@
+{
+  "document": {
+    "version": 1,
+    "document_id": "scenario-1",
+    "name": "시나리오",
+    "kind": "scenario",
+    "phases": [
+      {
+        "phase_id": "phase-1",
+        "name": "1단계",
+        "stages": [
+          {
+            "stage_id": "stage-1",
+            "student_id": "ayane",
+            "name": "Lv.5",
+            "targets": {
+              "level": 5,
+              "bond_rank": 1,
+              "student_star": 1,
+              "weapon_level": 0,
+              "weapon_star": 0,
+              "ex_skill": 1,
+              "skill1": 1,
+              "skill2": 0,
+              "skill3": 0,
+              "equip1_tier": 1,
+              "equip2_tier": 0,
+              "equip3_tier": 0,
+              "equip1_level": 1,
+              "equip2_level": 0,
+              "equip3_level": 0,
+              "equip4_tier": 0,
+              "stat_hp": 0,
+              "stat_atk": 0,
+              "stat_heal": 0
+            }
+          }
+        ]
+      },
+      {
+        "phase_id": "phase-2",
+        "name": "2단계",
+        "stages": [
+          {
+            "stage_id": "stage-2",
+            "student_id": "ayane",
+            "name": "Lv.10",
+            "targets": {
+              "level": 10,
+              "bond_rank": 1,
+              "student_star": 1,
+              "weapon_level": 0,
+              "weapon_star": 0,
+              "ex_skill": 1,
+              "skill1": 1,
+              "skill2": 0,
+              "skill3": 0,
+              "equip1_tier": 1,
+              "equip2_tier": 1,
+              "equip3_tier": 0,
+              "equip1_level": 1,
+              "equip2_level": 1,
+              "equip3_level": 0,
+              "equip4_tier": 0,
+              "stat_hp": 0,
+              "stat_atk": 0,
+              "stat_heal": 0
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "created": {
+    "revision": 1,
+    "scenario_id": "bbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "loaded": {
+    "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+    "revision": 1,
+    "current_profile_revision": 0,
+    "scenario": {
+      "base_profile_revision": 0,
+      "created_at": "2026-10-08T14:05:00Z",
+      "description": "old notes",
+      "document": {
+        "document_id": "scenario-1",
+        "kind": "scenario",
+        "name": "시나리오",
+        "phases": [
+          {
+            "name": "1단계",
+            "phase_id": "phase-1",
+            "stages": [
+              {
+                "name": "Lv.5",
+                "stage_id": "stage-1",
+                "student_id": "ayane",
+                "targets": {
+                  "bond_rank": 1,
+                  "equip1_level": 1,
+                  "equip1_tier": 1,
+                  "equip2_level": 0,
+                  "equip2_tier": 0,
+                  "equip3_level": 0,
+                  "equip3_tier": 0,
+                  "equip4_tier": 0,
+                  "ex_skill": 1,
+                  "level": 5,
+                  "skill1": 1,
+                  "skill2": 0,
+                  "skill3": 0,
+                  "stat_atk": 0,
+                  "stat_heal": 0,
+                  "stat_hp": 0,
+                  "student_star": 1,
+                  "weapon_level": 0,
+                  "weapon_star": 0
+                }
+              }
+            ]
+          },
+          {
+            "name": "2단계",
+            "phase_id": "phase-2",
+            "stages": [
+              {
+                "name": "Lv.10",
+                "stage_id": "stage-2",
+                "student_id": "ayane",
+                "targets": {
+                  "bond_rank": 1,
+                  "equip1_level": 1,
+                  "equip1_tier": 1,
+                  "equip2_level": 1,
+                  "equip2_tier": 1,
+                  "equip3_level": 0,
+                  "equip3_tier": 0,
+                  "equip4_tier": 0,
+                  "ex_skill": 1,
+                  "level": 10,
+                  "skill1": 1,
+                  "skill2": 0,
+                  "skill3": 0,
+                  "stat_atk": 0,
+                  "stat_heal": 0,
+                  "stat_hp": 0,
+                  "student_star": 1,
+                  "weapon_level": 0,
+                  "weapon_star": 0
+                }
+              }
+            ]
+          }
+        ],
+        "version": 1
+      },
+      "name": "Scenario",
+      "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+      "revision": 0,
+      "scenario_id": "bbbbbbbbbbbbbbbbbbbbbbbb",
+      "updated_at": "2026-10-08T14:05:00Z",
+      "version": 1
+    }
+  },
+  "listed": {
+    "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+    "revision": 1,
+    "current_profile_revision": 0,
+    "scenarios": [
+      {
+        "scenario_id": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "revision": 0,
+        "name": "Scenario",
+        "description": "old notes",
+        "base_profile_revision": 0,
+        "phase_count": 2,
+        "stage_count": 2,
+        "student_count": 1,
+        "student_ids": [
+          "ayane"
+        ],
+        "calculation": null,
+        "created_at": "2026-10-08T14:05:00Z",
+        "updated_at": "2026-10-08T14:05:00Z"
+      }
+    ]
+  },
+  "file_text": "{\"idempotency\":{\"freeze\":{\"fingerprint\":\"c42d5d1609a95c1a67cfe53549a6522308499b1cbef020c19d15236d5d94e913\",\"response\":{\"revision\":1,\"scenario_id\":\"bbbbbbbbbbbbbbbbbbbbbbbb\"}}},\"profile_id\":\"aaaaaaaaaaaaaaaaaaaaaaaa\",\"revision\":1,\"scenarios\":[{\"base_profile_revision\":0,\"created_at\":\"2026-10-08T14:05:00Z\",\"description\":\"old notes\",\"document\":{\"document_id\":\"scenario-1\",\"kind\":\"scenario\",\"name\":\"시나리오\",\"phases\":[{\"name\":\"1단계\",\"phase_id\":\"phase-1\",\"stages\":[{\"name\":\"Lv.5\",\"stage_id\":\"stage-1\",\"student_id\":\"ayane\",\"targets\":{\"bond_rank\":1,\"equip1_level\":1,\"equip1_tier\":1,\"equip2_level\":0,\"equip2_tier\":0,\"equip3_level\":0,\"equip3_tier\":0,\"equip4_tier\":0,\"ex_skill\":1,\"level\":5,\"skill1\":1,\"skill2\":0,\"skill3\":0,\"stat_atk\":0,\"stat_heal\":0,\"stat_hp\":0,\"student_star\":1,\"weapon_level\":0,\"weapon_star\":0}}]},{\"name\":\"2단계\",\"phase_id\":\"phase-2\",\"stages\":[{\"name\":\"Lv.10\",\"stage_id\":\"stage-2\",\"student_id\":\"ayane\",\"targets\":{\"bond_rank\":1,\"equip1_level\":1,\"equip1_tier\":1,\"equip2_level\":1,\"equip2_tier\":1,\"equip3_level\":0,\"equip3_tier\":0,\"equip4_tier\":0,\"ex_skill\":1,\"level\":10,\"skill1\":1,\"skill2\":0,\"skill3\":0,\"stat_atk\":0,\"stat_heal\":0,\"stat_hp\":0,\"student_star\":1,\"weapon_level\":0,\"weapon_star\":0}}]}],\"version\":1},\"name\":\"Scenario\",\"profile_id\":\"aaaaaaaaaaaaaaaaaaaaaaaa\",\"revision\":0,\"scenario_id\":\"bbbbbbbbbbbbbbbbbbbbbbbb\",\"updated_at\":\"2026-10-08T14:05:00Z\",\"version\":1}],\"version\":1}"
+}

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from types import SimpleNamespace
 from typing import Any
 
 from core.inventory_catalog import resolve_planning_resource
 from core.planning import StudentGoal
-from core.planning_calc import PlanCostSummary, calculate_goal_cost
-from core.planning_growth_rules import growth_rule_violation
+from core.planning_calc import PlanCostSummary, calculate_goal_cost, calculate_goal_transition
+from core.planning_growth_rules import TARGET_TO_GOAL, growth_rule_violation
 from core.repository_dto import InventorySnapshot
 
 
@@ -32,26 +32,6 @@ TARGET_MAXIMUMS = {
     "stat_atk": 25,
     "stat_heal": 25,
 }
-TARGET_TO_GOAL = {
-    "level": "target_level",
-    "student_star": "target_star",
-    "weapon_level": "target_weapon_level",
-    "weapon_star": "target_weapon_star",
-    "ex_skill": "target_ex_skill",
-    "skill1": "target_skill1",
-    "skill2": "target_skill2",
-    "skill3": "target_skill3",
-    "equip1_tier": "target_equip1_tier",
-    "equip2_tier": "target_equip2_tier",
-    "equip3_tier": "target_equip3_tier",
-    "equip1_level": "target_equip1_level",
-    "equip2_level": "target_equip2_level",
-    "equip3_level": "target_equip3_level",
-    "equip4_tier": "target_equip4_tier",
-    "stat_hp": "target_stat_hp",
-    "stat_atk": "target_stat_atk",
-    "stat_heal": "target_stat_heal",
-}
 _MATERIAL_FIELDS = (
     "star_materials", "equipment_materials", "level_exp_items",
     "equipment_exp_items", "weapon_exp_items", "skill_books", "ex_ooparts",
@@ -68,7 +48,13 @@ class PlanningStage:
     stage_id: str
     student_id: str
     name: str
-    targets: dict[str, int]
+    targets: dict[str, int | None]
+
+
+@dataclass(frozen=True, slots=True)
+class GoalMetadata:
+    favorite: bool
+    notes: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,11 +70,13 @@ class PlanningDocument:
     name: str
     kind: str
     phases: tuple[PlanningPhase, ...]
+    version: int = 1
+    goal_metadata: dict[str, GoalMetadata] = field(default_factory=dict)
 
 
 def planning_document_to_wire(document: PlanningDocument) -> dict[str, Any]:
     return {
-        "version": 1,
+        "version": document.version,
         "document_id": document.document_id,
         "name": document.name,
         "kind": document.kind,
@@ -108,6 +96,7 @@ def planning_document_to_wire(document: PlanningDocument) -> dict[str, Any]:
             }
             for phase in document.phases
         ],
+        **({"goal_metadata": {student_id: asdict(metadata) for student_id, metadata in document.goal_metadata.items()}} if document.version == 2 else {}),
     }
 
 
@@ -118,10 +107,16 @@ def _text(value: object, label: str) -> str:
 
 
 def planning_document_from_wire(value: object) -> PlanningDocument:
-    if not isinstance(value, dict) or set(value) != {"version", "document_id", "name", "kind", "phases"}:
+    if not isinstance(value, dict):
         raise PlanningDocumentError("document has an invalid shape")
-    if value["version"] != 1 or isinstance(value["version"], bool):
-        raise PlanningDocumentError("document.version must be 1")
+    version = value.get("version")
+    if type(version) is not int or version not in (1, 2):
+        raise PlanningDocumentError("document.version must be 1 or 2")
+    required = {"version", "document_id", "name", "kind", "phases"}
+    if version == 2:
+        required.add("goal_metadata")
+    if set(value) != required:
+        raise PlanningDocumentError("document has an invalid shape")
     if value["kind"] not in {"plan", "scenario"}:
         raise PlanningDocumentError("document.kind must be plan or scenario")
     raw_phases = value["phases"]
@@ -130,7 +125,7 @@ def planning_document_from_wire(value: object) -> PlanningDocument:
     phases: list[PlanningPhase] = []
     phase_ids: set[str] = set()
     stage_ids: set[str] = set()
-    last_step_by_student: dict[str, dict[str, int]] = {}
+    last_step_by_student: dict[str, dict[str, int | None]] = {}
     for phase_index, raw_phase in enumerate(raw_phases):
         if not isinstance(raw_phase, dict) or set(raw_phase) != {"phase_id", "name", "stages"}:
             raise PlanningDocumentError(f"document.phases[{phase_index}] has an invalid shape")
@@ -153,32 +148,45 @@ def planning_document_from_wire(value: object) -> PlanningDocument:
             raw_targets = raw_stage["targets"]
             if not isinstance(raw_targets, dict) or set(raw_targets) != set(TARGET_MAXIMUMS):
                 raise PlanningDocumentError(f"{label}.targets must contain the complete target set")
-            targets: dict[str, int] = {}
+            targets: dict[str, int | None] = {}
             previous = last_step_by_student.get(student_id)
             for key, maximum in TARGET_MAXIMUMS.items():
                 item = raw_targets[key]
                 minimum = 1 if key == "bond_rank" else 0
-                if not isinstance(item, int) or isinstance(item, bool) or not minimum <= item <= maximum:
+                if not (version == 2 and item is None) and (type(item) is not int or not minimum <= item <= maximum):
                     raise PlanningDocumentError(f"{label}.targets.{key} is outside its valid range")
-                if previous is not None and item < previous[key]:
+                if previous is not None and previous[key] is not None and (item is None or item < previous[key]):
                     raise PlanningDocumentError(f"{label}.targets.{key} regresses from the previous student stage")
                 targets[key] = item
-            violation = growth_rule_violation(targets)
+            violation = growth_rule_violation(targets) if version == 1 else None
             if violation is not None:
                 raise PlanningDocumentError(f"{label}.targets {violation}")
             last_step_by_student[student_id] = targets
             stages.append(PlanningStage(stage_id, student_id, _text(raw_stage["name"], f"{label}.name"), targets))
         phases.append(PlanningPhase(phase_id, _text(raw_phase["name"], f"document.phases[{phase_index}].name"), tuple(stages)))
+    goal_metadata = {}
+    if version == 2:
+        raw_metadata = value["goal_metadata"]
+        if not isinstance(raw_metadata, dict) or set(raw_metadata) != set(last_step_by_student):
+            raise PlanningDocumentError("document.goal_metadata must match the document students exactly")
+        for student_id, metadata in raw_metadata.items():
+            if not isinstance(metadata, dict) or set(metadata) != {"favorite", "notes"} or type(metadata["favorite"]) is not bool or not isinstance(metadata["notes"], str):
+                raise PlanningDocumentError("document.goal_metadata entry requires only favorite bool and notes string")
+            goal_metadata[student_id] = GoalMetadata(metadata["favorite"], metadata["notes"])
     return PlanningDocument(
         _text(value["document_id"], "document.document_id"),
         _text(value["name"], "document.name"),
         value["kind"],
         tuple(phases),
+        version,
+        goal_metadata,
     )
 
 
-def _goal(stage: PlanningStage) -> StudentGoal:
+def _goal(stage: PlanningStage, metadata: GoalMetadata | None = None) -> StudentGoal:
     values: dict[str, Any] = {"student_id": stage.student_id, "notes": stage.name}
+    if metadata is not None:
+        values.update(favorite=metadata.favorite, notes=metadata.notes)
     for target_key, goal_key in TARGET_TO_GOAL.items():
         values[goal_key] = stage.targets[target_key]
     return StudentGoal(**values)
@@ -247,8 +255,14 @@ def calculate_document_projection(
                 warnings.append(f"현재 상태가 없는 학생 단계 제외: {stage.student_id}/{stage.stage_id}")
                 summary = PlanCostSummary(warnings=["Current student state is missing."])
             else:
-                summary = calculate_goal_cost(record, _goal(stage), credit_breakdown=credit_breakdown)
-                _advance(record, stage)
+                if document.version == 2:
+                    summary, records[stage.student_id] = calculate_goal_transition(
+                        record, _goal(stage, document.goal_metadata[stage.student_id]),
+                        bond_target=stage.targets["bond_rank"], credit_breakdown=credit_breakdown,
+                    )
+                else:
+                    summary = calculate_goal_cost(record, _goal(stage), credit_breakdown=credit_breakdown)
+                    _advance(record, stage)
             phase_total.merge(summary)
             overall.merge(summary)
             resources: list[dict[str, Any]] = []
@@ -360,8 +374,8 @@ def compare_document_projections(
             else shortage_b - shortage_a,
         })
 
-    def final_targets(document: PlanningDocument) -> dict[str, dict[str, int]]:
-        result: dict[str, dict[str, int]] = {}
+    def final_targets(document: PlanningDocument) -> dict[str, dict[str, int | None]]:
+        result: dict[str, dict[str, int | None]] = {}
         for phase in document.phases:
             for stage in phase.stages:
                 result[stage.student_id] = dict(stage.targets)

@@ -63,27 +63,69 @@ class PlanElementPreset {
 enum PlanningDocumentKind { plan, scenario }
 
 @immutable
+class PlanningGoalMetadata {
+  const PlanningGoalMetadata({required this.favorite, required this.notes});
+
+  final bool favorite;
+  final String notes;
+
+  Map<String, dynamic> toWire() => {'favorite': favorite, 'notes': notes};
+
+  factory PlanningGoalMetadata.fromWire(Map<String, dynamic> value) {
+    if (value.length != 2 ||
+        !value.keys.toSet().containsAll({'favorite', 'notes'}) ||
+        value['favorite'] is! bool ||
+        value['notes'] is! String) {
+      throw const FormatException('Invalid planning goal_metadata');
+    }
+    return PlanningGoalMetadata(
+      favorite: value['favorite'] as bool,
+      notes: value['notes'] as String,
+    );
+  }
+}
+
+@immutable
 class PlanningDocumentStage {
   PlanningDocumentStage({
     required this.id,
     required this.studentId,
     required this.name,
-    required Map<String, int> targets,
-  }) : targets = Map.unmodifiable(targets);
+    required Map<String, int?> targets,
+  }) : nullableTargets = Map.unmodifiable(targets),
+       _integerTargets = targets.values.any((value) => value == null)
+           ? null
+           : Map<String, int>.unmodifiable(targets.cast<String, int>());
 
   final String id;
   final String studentId;
   final String name;
-  final Map<String, int> targets;
+
+  /// Lossless v2 absolute targets. Null means no goal; zero is an explicit value.
+  final Map<String, int?> nullableTargets;
+  final Map<String, int>? _integerTargets;
+
+  /// Compatibility view for existing v1 editors. Never fills or drops nullable goals.
+  Map<String, int> get targets {
+    if (_integerTargets == null) {
+      throw StateError(
+        'Use nullableTargets for a nullable planning document stage',
+      );
+    }
+    return _integerTargets;
+  }
 
   Map<String, dynamic> toWire() => {
     'stage_id': id,
     'student_id': studentId,
     'name': name,
-    'targets': Map<String, int>.from(targets),
+    'targets': Map<String, int?>.from(nullableTargets),
   };
 
-  factory PlanningDocumentStage.fromWire(Map<String, dynamic> value) {
+  factory PlanningDocumentStage.fromWire(
+    Map<String, dynamic> value, {
+    int version = 1,
+  }) {
     if (value.keys.toSet().length != 4 ||
         !value.keys.toSet().containsAll({
           'stage_id',
@@ -105,10 +147,14 @@ class PlanningDocumentStage {
         !rawTargets.keys.toSet().containsAll(planningDocumentTargetKeys)) {
       throw const FormatException('Invalid planning document targets');
     }
-    final targets = <String, int>{};
+    final targets = <String, int?>{};
     for (final entry in rawTargets.entries) {
       final maximum = planningDocumentTargetMaximums[entry.key];
       final minimum = entry.key == 'bond_rank' ? 1 : 0;
+      if (version == 2 && entry.value == null) {
+        targets[entry.key] = null;
+        continue;
+      }
       if (maximum == null ||
           entry.value is! int ||
           entry.value < minimum ||
@@ -119,7 +165,8 @@ class PlanningDocumentStage {
       }
       targets[entry.key] = entry.value as int;
     }
-    if (planningGrowthRuleViolation(targets) != null) {
+    if (version == 1 &&
+        planningGrowthRuleViolation(targets.cast<String, int>()) != null) {
       throw const FormatException(
         'Planning document targets violate growth rules',
       );
@@ -151,7 +198,10 @@ class PlanningDocumentPhase {
     'stages': [for (final stage in stages) stage.toWire()],
   };
 
-  factory PlanningDocumentPhase.fromWire(Map<String, dynamic> value) {
+  factory PlanningDocumentPhase.fromWire(
+    Map<String, dynamic> value, {
+    int version = 1,
+  }) {
     if (value.keys.toSet().length != 3 ||
         !value.keys.toSet().containsAll({'phase_id', 'name', 'stages'}) ||
         value['phase_id'] is! String ||
@@ -168,6 +218,7 @@ class PlanningDocumentPhase {
         for (final item in value['stages'] as List)
           PlanningDocumentStage.fromWire(
             Map<String, dynamic>.from(item as Map),
+            version: version,
           ),
       ],
     );
@@ -181,34 +232,48 @@ class PlanningDocument {
     required this.name,
     required this.kind,
     required List<PlanningDocumentPhase> phases,
-  }) : phases = List.unmodifiable(phases);
+    this.version = 1,
+    Map<String, PlanningGoalMetadata> goalMetadata = const {},
+  }) : phases = List.unmodifiable(phases),
+       goalMetadata = Map.unmodifiable(goalMetadata);
 
   final String id;
   final String name;
   final PlanningDocumentKind kind;
   final List<PlanningDocumentPhase> phases;
+  final int version;
+  final Map<String, PlanningGoalMetadata> goalMetadata;
 
   Iterable<PlanningDocumentStage> get stages =>
       phases.expand((phase) => phase.stages);
 
   Map<String, dynamic> toWire() => {
-    'version': 1,
+    'version': version,
     'document_id': id,
     'name': name,
     'kind': kind.name,
     'phases': [for (final phase in phases) phase.toWire()],
+    if (version == 2)
+      'goal_metadata': {
+        for (final entry in goalMetadata.entries)
+          entry.key: entry.value.toWire(),
+      },
   };
 
   factory PlanningDocument.fromWire(Map<String, dynamic> value) {
-    if (value.keys.toSet().length != 5 ||
-        !value.keys.toSet().containsAll({
-          'version',
-          'document_id',
-          'name',
-          'kind',
-          'phases',
-        }) ||
-        value['version'] != 1 ||
+    final version = value['version'];
+    final fields = {
+      'version',
+      'document_id',
+      'name',
+      'kind',
+      'phases',
+      if (version == 2) 'goal_metadata',
+    };
+    if (value.keys.toSet().length != fields.length ||
+        !value.keys.toSet().containsAll(fields) ||
+        version is! int ||
+        (version != 1 && version != 2) ||
         value['document_id'] is! String ||
         (value['document_id'] as String).isEmpty ||
         value['name'] is! String ||
@@ -225,7 +290,10 @@ class PlanningDocument {
     }
     final phases = [
       for (final item in value['phases'] as List)
-        PlanningDocumentPhase.fromWire(Map<String, dynamic>.from(item as Map)),
+        PlanningDocumentPhase.fromWire(
+          Map<String, dynamic>.from(item as Map),
+          version: version,
+        ),
     ];
     final phaseIds = phases.map((item) => item.id).toSet();
     final stages = phases.expand((item) => item.stages).toList();
@@ -233,22 +301,46 @@ class PlanningDocument {
         stages.map((item) => item.id).toSet().length != stages.length) {
       throw const FormatException('Planning document IDs must be unique');
     }
-    final previous = <String, Map<String, int>>{};
+    final previous = <String, Map<String, int?>>{};
     for (final stage in stages) {
       final old = previous[stage.studentId];
       if (old != null &&
           planningDocumentTargetKeys.any(
-            (key) => stage.targets[key]! < old[key]!,
+            (key) =>
+                old[key] != null &&
+                (stage.nullableTargets[key] == null ||
+                    stage.nullableTargets[key]! < old[key]!),
           )) {
         throw const FormatException('Planning document stage regresses');
       }
-      previous[stage.studentId] = stage.targets;
+      previous[stage.studentId] = stage.nullableTargets;
+    }
+    final goalMetadata = <String, PlanningGoalMetadata>{};
+    if (version == 2) {
+      final raw = value['goal_metadata'];
+      if (raw is! Map ||
+          raw.keys.toSet().length != previous.length ||
+          !raw.keys.toSet().containsAll(previous.keys)) {
+        throw const FormatException(
+          'goal_metadata must match document students',
+        );
+      }
+      for (final entry in raw.entries) {
+        if (entry.value is! Map) {
+          throw const FormatException('Invalid planning goal_metadata');
+        }
+        goalMetadata[entry.key as String] = PlanningGoalMetadata.fromWire(
+          Map<String, dynamic>.from(entry.value as Map),
+        );
+      }
     }
     return PlanningDocument(
       id: value['document_id'] as String,
       name: value['name'] as String,
       kind: kind,
       phases: phases,
+      version: version,
+      goalMetadata: goalMetadata,
     );
   }
 }

@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
+from types import SimpleNamespace
 
 from core.runtime_paths import PLANNING_DATA_DIR
 from core.equipment_items import EQUIPMENT_SERIES_BY_KEY
 from core.planning import GrowthPlan, StudentGoal
 from core.schale_skill_material_map import is_skill_book_label
 from core import student_meta
+from core.planning_growth_rules import (
+    EQUIPMENT_TIER_MAX_LEVEL, TARGET_TO_GOAL, WEAPON_STAR_MAX_LEVEL,
+    equipment_growth_target, resolve_growth_state, student_star_growth_target,
+)
 
 
 PLANNING_DIR = PLANNING_DATA_DIR
@@ -150,19 +155,7 @@ _EQUIPMENT_TOTAL_CREDIT_CUMULATIVE = {
     9: 1_269_356,
     10: 1_698_220,
 }
-_EQUIPMENT_TIER_MAX_LEVEL = {
-    0: 0,
-    1: 10,
-    2: 20,
-    3: 30,
-    4: 40,
-    5: 45,
-    6: 50,
-    7: 55,
-    8: 60,
-    9: 65,
-    10: 70,
-}
+_EQUIPMENT_TIER_MAX_LEVEL = EQUIPMENT_TIER_MAX_LEVEL
 _EQUIPMENT_LEVEL_ROWS: tuple[tuple[int, int, int, int], ...] = (
     (1, 2, 25, 100),
     (2, 3, 27, 108),
@@ -492,8 +485,9 @@ def _calculate_star_cost(
     current_weapon_star = _current_weapon_star(record)
 
     # Unlocking the unique weapon at 5-star is free, so weapon targets imply at least 5-star.
-    effective_target_star = max(target_star, 5 if target_weapon_star > 0 or _safe_int(goal.target_weapon_level, 0) > 0 else current_star)
-    effective_target_star = min(max(effective_target_star, current_star), 5)
+    effective_target_star = student_star_growth_target(
+        current_star, target_star, target_weapon_star, _safe_int(goal.target_weapon_level, 0),
+    )
     effective_target_weapon_star = max(current_weapon_star, target_weapon_star)
 
     eleph_label = _eleph_label(
@@ -698,14 +692,6 @@ def _equipment_current_level(current_tier: int, raw_level: object) -> int:
     return 1
 
 
-def _minimum_equipment_tier_for_level(target_level: int) -> int:
-    level = max(0, target_level)
-    for tier, max_level in sorted(_EQUIPMENT_TIER_MAX_LEVEL.items()):
-        if level <= max_level:
-            return tier
-    return max(_EQUIPMENT_TIER_MAX_LEVEL)
-
-
 def _calculate_single_equipment_cost(
     slot_name: str | None,
     current_tier: int,
@@ -714,9 +700,7 @@ def _calculate_single_equipment_cost(
     target_level: int,
 ) -> tuple[int, int, dict[str, int], dict[str, int]]:
     current = min(max(current_tier, 0), 10)
-    effective_target_level = min(max(target_level, current_level), _EQUIPMENT_TIER_MAX_LEVEL[10])
-    required_tier = _minimum_equipment_tier_for_level(effective_target_level)
-    target = min(max(target_tier, required_tier, current), 10)
+    target, effective_target_level = equipment_growth_target(current, current_level, target_tier, target_level)
     if target <= 0:
         return 0, 0, {}, {}
 
@@ -782,12 +766,7 @@ def _current_weapon_level(record, target_weapon_level: int) -> int:
 
 
 def _weapon_level_cap_for_star(weapon_star: int) -> int:
-    return {
-        1: 30,
-        2: 40,
-        3: 50,
-        4: 60,
-    }.get(max(0, int(weapon_star)), 0)
+    return WEAPON_STAR_MAX_LEVEL.get(max(0, int(weapon_star)), 0)
 
 
 def _calculate_weapon_level_cost(record, goal: StudentGoal) -> tuple[int, int]:
@@ -826,7 +805,10 @@ def _calculate_skill_ooparts(student_id: str, current_levels: list[int], target_
 
 def calculate_goal_cost(
     record, goal: StudentGoal, *, credit_breakdown: dict[str, int] | None = None,
+    effective_targets: dict[str, int | None] | None = None,
 ) -> PlanCostSummary:
+    if effective_targets is not None:
+        goal = replace(goal, **{field: effective_targets[key] for key, field in TARGET_TO_GOAL.items()})
     summary = PlanCostSummary()
     reference_tables = _load_reference_tables()
 
@@ -933,6 +915,58 @@ def calculate_goal_cost(
         summary.warnings.append("No student id available for ooparts lookup.")
 
     return summary
+
+
+def calculate_goal_transition(
+    record, goal: StudentGoal, *, bond_target: int | None,
+    credit_breakdown: dict[str, int] | None = None,
+) -> tuple[PlanCostSummary, SimpleNamespace]:
+    """Price the original nullable goal and return its effective next state.
+
+    This is a projection boundary, not a persisted goal or a new pricing formula.
+    v1 and single-student calculation continue to call the legacy cost/advance path.
+    """
+    requested = {key: getattr(goal, field) for key, field in TARGET_TO_GOAL.items()}
+    requested["bond_rank"] = bond_target
+    current = {}
+    known = set()
+    for key in requested:
+        attr = key.removesuffix("_tier") if key.startswith("equip") and key.endswith("_tier") else key
+        raw = getattr(record, attr, None)
+        if hasattr(record, attr) and (raw is not None or key.endswith("_tier")):
+            known.add(key)
+        if key == "bond_rank":
+            current[key] = raw
+        elif key.endswith("_tier"):
+            current[key] = _parse_tier_number(raw)
+        elif key == "student_star":
+            current[key] = _current_student_star(record)
+        elif key == "weapon_star":
+            current[key] = _current_weapon_star(record)
+        elif key == "weapon_level":
+            current[key] = _current_weapon_level(record, 0)
+        elif key.startswith("equip") and key.endswith("_level"):
+            current[key] = _equipment_current_level(current[key.replace("_level", "_tier")], raw)
+        else:
+            current[key] = _safe_int(raw, 0)
+    effective = resolve_growth_state(current, requested)
+    summary = calculate_goal_cost(record, goal, credit_breakdown=credit_breakdown, effective_targets=effective)
+    for key in requested:
+        if key not in known and (requested[key] is not None or effective[key] != current[key]):
+            summary.warnings.append(f"Unknown current {key}: {goal.student_id}; growth cost may be incomplete.")
+    if effective["bond_rank"] is not None and effective["bond_rank"] != current["bond_rank"]:
+        summary.warnings.append(f"Bond growth cost is unavailable: {goal.student_id}/bond_rank.")
+    next_record = SimpleNamespace(**vars(record))
+    for key, value in effective.items():
+        if value is None or (key not in known and value == current[key] and requested[key] is None):
+            continue
+        if key.endswith("_tier"):
+            setattr(next_record, key.removesuffix("_tier"), None if value == 0 else f"T{value}")
+        else:
+            setattr(next_record, key, value)
+    if effective["weapon_star"]:
+        next_record.weapon_state = "weapon_equipped"
+    return summary, next_record
 
 
 def calculate_plan_totals(records_by_id: dict[str, object], plan: GrowthPlan) -> PlanCostSummary:

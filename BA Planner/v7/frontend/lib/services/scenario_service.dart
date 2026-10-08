@@ -232,6 +232,10 @@ class PlanningScenarioRecord {
   final String description;
   final int baseProfileRevision;
   final PlanningDocument document;
+
+  /// Scenario storage remains v1; its nested document can be v1 or v2.
+  int get documentVersion => document.version;
+  Map<String, PlanningGoalMetadata> get goalMetadata => document.goalMetadata;
   final String createdAt;
   final String updatedAt;
 

@@ -54,7 +54,7 @@
       },
       "additionalProperties": false
     },
-    "document": {
+    "documentV1": {
       "type": "object",
       "required": ["version", "document_id", "name", "kind", "phases"],
       "properties": {
@@ -63,6 +63,400 @@
         "name": { "type": "string", "minLength": 1 },
         "kind": { "enum": ["plan", "scenario"] },
         "phases": { "type": "array", "items": { "$ref": "#/$defs/phase" } }
+      },
+      "additionalProperties": false
+    },
+    "targetsV2": {
+      "type": "object",
+      "required": [
+        "level",
+        "bond_rank",
+        "student_star",
+        "weapon_level",
+        "weapon_star",
+        "ex_skill",
+        "skill1",
+        "skill2",
+        "skill3",
+        "equip1_tier",
+        "equip2_tier",
+        "equip3_tier",
+        "equip1_level",
+        "equip2_level",
+        "equip3_level",
+        "equip4_tier",
+        "stat_hp",
+        "stat_atk",
+        "stat_heal"
+      ],
+      "properties": {
+        "level": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 90
+        },
+        "bond_rank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 100
+        },
+        "student_star": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 5
+        },
+        "weapon_level": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 60
+        },
+        "weapon_star": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 4
+        },
+        "ex_skill": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 5
+        },
+        "skill1": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 10
+        },
+        "skill2": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 10
+        },
+        "skill3": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 10
+        },
+        "equip1_tier": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 10
+        },
+        "equip2_tier": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 10
+        },
+        "equip3_tier": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 10
+        },
+        "equip1_level": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 70
+        },
+        "equip2_level": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 70
+        },
+        "equip3_level": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 70
+        },
+        "equip4_tier": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 2
+        },
+        "stat_hp": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 25
+        },
+        "stat_atk": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 25
+        },
+        "stat_heal": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 25
+        }
+      },
+      "additionalProperties": false
+    },
+    "goalMetadata": {
+      "type": "object",
+      "required": [
+        "favorite",
+        "notes"
+      ],
+      "properties": {
+        "favorite": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "stageV2": {
+      "type": "object",
+      "required": [
+        "stage_id",
+        "student_id",
+        "name",
+        "targets"
+      ],
+      "properties": {
+        "stage_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "student_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targets": {
+          "$ref": "#/$defs/targetsV2"
+        }
+      },
+      "additionalProperties": false
+    },
+    "phaseV2": {
+      "type": "object",
+      "required": [
+        "phase_id",
+        "name",
+        "stages"
+      ],
+      "properties": {
+        "phase_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stageV2"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "documentV2": {
+      "type": "object",
+      "required": [
+        "version",
+        "document_id",
+        "name",
+        "kind",
+        "phases",
+        "goal_metadata"
+      ],
+      "properties": {
+        "version": {
+          "const": 2
+        },
+        "document_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "plan",
+            "scenario"
+          ]
+        },
+        "phases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/phaseV2"
+          }
+        },
+        "goal_metadata": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/goalMetadata"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "document": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/documentV1"
+        },
+        {
+          "$ref": "#/$defs/documentV2"
+        }
+      ]
+    },
+    "documentCurrentStudent": {
+      "type": "object",
+      "required": [
+        "student_id"
+      ],
+      "properties": {
+        "student_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "level": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "student_star": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "weapon_state": {
+          "type": "string"
+        },
+        "weapon_star": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "weapon_level": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "ex_skill": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "skill1": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "skill2": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "skill3": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "equip1": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "equip2": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "equip3": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "equip4": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "equip1_level": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "equip2_level": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "equip3_level": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "stat_hp": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "stat_atk": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "stat_heal": {
+          "$ref": "planning-types-v1.schema.json#/$defs/nonNegativeInteger"
+        },
+        "bond_rank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 100
+        }
       },
       "additionalProperties": false
     },
@@ -89,7 +483,7 @@
           "payload": {
             "type": "object", "required": ["current_students", "inventory", "document"],
             "properties": {
-              "current_students": { "type": "array", "items": { "$ref": "planning-types-v1.schema.json#/$defs/currentStudent" } },
+              "current_students": { "type": "array", "items": { "$ref": "#/$defs/documentCurrentStudent" } },
               "inventory": { "$ref": "repository-protocol-v1.schema.json#/$defs/inventorySnapshot" },
               "document": { "$ref": "#/$defs/document" }
             },

@@ -1,6 +1,6 @@
 ---
 title: "Frontend Redesign Backend Status"
-summary: "Lane A 병렬 백엔드 워커의 FB-13 catalog 애장품 가용성·검증, FB-11a 구현, FB-11b 데이터원 및 FB-1 설계 조사 기록입니다."
+summary: "Lane A 백엔드 워커의 FB-1a 문서 v2 nullable 목표·v1 회귀·인계, FB-13 catalog, FB-11a 구현 및 FB-1 설계 조사 기록입니다."
 topics: [workflow, design]
 sources:
   - id: workflow
@@ -14,6 +14,120 @@ sources:
     path: backend/tests/test_student_calculation_fb11a.py
 ---
 백엔드 워커 전용(Lane A 병렬, 2026-10-07)
+
+# FB-1a 계획 문서 v2 nullable 목표
+
+## 착수 기록 (2026-10-08)
+
+- 진행 중: FB-1a. 시작 커밋 SHA: `0fd3770234805b3e293c83a5285765a5492e0193`.
+- FB-13 `fa15e87c` 커밋 후 코드 편집 재개 승인. 워크플로 FB-1 전체·오후 재개 지점·Lane A 병렬 규칙, 오케스트레이터 로그 14:05 파일 경계, 아래 FB-1 설계 조사와 FD-003·026·027·049·138을 읽었다. [@workflow]
+- 범위: 문서 v2의 19-key nullable 절대 목표와 strict 학생별 goal_metadata, 계산 중 유효 상태를 넘기는 공용 코어 경계, v1/v2 문서 계산·시나리오, Dart 문서 DTO·서비스·테스트.
+- 이 slice 동안 `frontend/lib/ui/models/planning_models.dart`의 문서 DTO 부분만 백엔드 소유다. 화면·위젯·golden 테스트, 스캐너·tactic·metadata M 소유 파일은 수정하지 않는다. repository 활성 문서 저장/이관/goals 파생은 FB-1b, replace는 FB-1c다.
+- 기존 서비스 3파일의 스캐너 미커밋 변경을 보존한다. 수정 전 사본은 `debug/frontend_fb1a/pre/`에 둔다. 커밋·push·stage 미실시. 전체 gate는 두 워커 종료 후 사용자 PC에서 실행하며 golden 변화 0을 예상한다.
+
+## 구현 종료 및 인계 (2026-10-08)
+
+FB-1a의 코드·계약·직접 검증을 마쳤다. **Python 전체·두 워커 종료 후 공통 gate·커밋은 사용자 단계로 남는다.**
+현재 화면이 만드는 v1 경로를 유지했으며 golden 변화는 0을 예상한다. golden 비교 자체는 아직 실행하지 않았다.
+
+### v1/v2 계약 비교
+
+| 계약 | 문서 v1 (유지) | 문서 v2 (추가) |
+| --- | --- | --- |
+| 문서 필드 | version, document_id, name, kind, phases | 같은 필드 + 필수 goal_metadata |
+| targets | 19 key 전부 정수 | 같은 19 key 전부 int 또는 null |
+| null / 0 | null 거부, 기존 정수 의미 유지 | null=그 항목 목표 없음, 0=명시적 실제 값 |
+| bond_rank | 1~100 | null 또는 1~100 |
+| 학생 메모 | 없음 | 학생 ID별 favorite bool, notes string; 두 필드만 허용 |
+| 단계 검사 | 기존 성장 조합 검사와 누적 절대 목표 | 범위·19 key·누적 절대 목표 검사; 선행 성장은 계산 중에 결합 |
+| 다음 단계 상태 | 기존 calculate_goal_cost + _advance | calculate_goal_transition의 유효 상태 |
+| 시나리오 | 기존 문서/파일/결과 유지 | 저장·조회·목록·복제·비교·재시작에서 버전/null/메모 보존 |
+
+- 같은 학생의 이전 정수 목표 뒤에 더 작은 정수나 null이 오면 회귀 오류다. null→정수는 허용한다. 페이즈를 넘어서도 적용한다.
+- goal_metadata의 ID 집합은 단계에 등장하는 학생 집합과 정확히 일치한다. 각 값은 favorite·notes만 허용한다. false·빈 메모·메모 공백을 그대로 보존한다. 빈 문서는 phases=[], goal_metadata={}다.
+- schema는 기존 문서 정의를 documentV1로 보존하고 documentV2 분기를 추가했다. 시나리오 schema가 공유 document를 참조하므로 바깥 IPC·시나리오 저장소 버전은 계속 1이다.
+- 문서 계산과 시나리오 비교의 current_students에만 선택 bond_rank(null 또는 1~100)를 받는다. 공유 currentStudent와 FB-11a의 단일 학생·정수 19 key는 확장하지 않았다.
+- 공용 planning_growth_rules 경계가 현재값 하한·장비 티어/레벨·전무/성급·스킬 잠금·능력 개방·애장품의 필수 인연을 계산 중에 해결한다. 장비 정규화 helper를 기존 비용 코어와 함께 사용하고, 비용식은 기존 calculate_goal_cost 하나를 재사용한다.
+- 원본 nullable StudentGoal을 코어에 전달한 뒤 계산용 사본만 만든다. 계산 후 상태는 다음 단계에 전달하고 저장 targets에는 되쓰지 않는다. all-null 단계에 현재 인연 35가 있어도 성급 성장을 새로 만들지 않는다.
+- 현재 성장 기준값을 모르면 계산 경고를 낸다. 모르는 인연에 1을 넣지 않는다. 애장품의 필수 인연은 계산 상태에만 반영하며 원본 bond_rank=null은 유지한다. 인연 성장 비용은 아직 가격을 계산하지 않고 경고한다(FB-11b). 다른 알려진 비용의 합은 잠정 결과다.
+- repository.plan.get/save·이관·goals 파생(FB-1b), replace(FB-1c)는 구현하지 않았다. 시나리오 process 검증에서 활성 프로필 파일이 바뀌지 않는 것도 확인했다.
+
+### 먼저 고정한 정책 fixture
+
+`contracts/fixtures/planning_document_v2.json`: **15건(유효 12, 회귀 오류 3)**을 구현 전에 고정했다.
+
+| fixture | 고정 정책 |
+| --- | --- |
+| null_bond_known / null_bond_unknown | 현재 인연 35 / 미확인이어도 bond 목표는 null 유지, 비용 0 |
+| all_null | 단계 자체는 유지, 비용 0 |
+| explicit_zero | level·애장품·능력 개방의 명시적 0 유지, 현재값보다 낮아도 목표를 현재값으로 쓰지 않음 |
+| same_as_current | 현재와 같은 목표 비용 0 |
+| partial_weapon | 전무 레벨만 20→25. 필수 성급·전무 성급은 계산 상태로 전달, 성급 비용 한 번 |
+| partial_equipment | 장비 레벨만 15→20. 필요한 티어를 계산하고 다음 단계에서 티어 재과금 없음 |
+| partial_favorite_known_bond | 현재 인연 20, 애장품 T2만 지정. bond null 유지, 500,000 크레딧 |
+| partial_favorite_unknown_bond / partial_favorite_requires_bond | 인연 미확인 / 현재 10. 필수 인연에 대해 경고, 저장 목표 null 유지 |
+| unknown_level_baseline | 현재 레벨 미확인, 목표 31. 기준값 부족 경고 |
+| regresses_integer / regresses_to_null / bond_regresses_to_null | 더 낮은 정수 / 정수 뒤 null / 인연 정수 뒤 null 거부 |
+| empty_document | 빈 문서, 계산 비용 0·경고 0 |
+
+정책별 Python/schema·Dart DTO 검사 외에 불완전 19 key, bool·문자열 목표, bond=0,
+메타데이터 누락·추가 학생·추가 필드·잘못된 타입도 거부한다. 전무/장비의 두 단계 합과
+같은 최종 목표 단일 단계의 비용을 비교하고, 원본 입력·목표가 계산 뒤 그대로인지 확인한다.
+
+### v1 회귀와 직접 검증
+
+변경 전 `planning_document_v1_fb1a_parity.json`에 문서 A/B wire·projection·compare 결과를,
+`scenario_v1_fb1a_parity.json`에 create/get/list와 저장 파일 전체 텍스트를 고정했다.
+**문서·projection·compare·시나리오 반환값은 값 단위로 같고 시나리오 저장 파일은 바이트 단위로 같다.**
+기존 v6 비용 parity, FB-12 단계 비용, FB-11a 단일 학생 계약·왕복도 통과했다.
+
+| 검사 | 결과 / 로그 |
+| --- | --- |
+| Python: 새 v2, 기존 문서·시나리오·계약·비용·재고/저장 parity 11모듈 | **64건 통과**, debug/frontend_fb1a/python-targeted.txt |
+| Dart: 새 v2 DTO/mock, 기존 scenario_service·growth_rules·document_projection | **35건 통과**, debug/frontend_fb1a/dart-targeted.txt |
+| Process: v2 문서 계산 + v2 시나리오 저장→재시작→조회→v1/v2 비교, 기존 scenario·FB-11a | **4건 통과**, debug/frontend_fb1a/dart-process.txt |
+| 변경 Dart 5파일 analyze | **No issues found**, debug/frontend_fb1a/dart-analyze.txt |
+| codealmanac validate | **통과**, debug/frontend_fb1a/almanac-validate.txt |
+| git diff --check / 읽기 전용 slice 병합 검사 | **통과 / 수정 10파일 충돌 없음**, debug/frontend_fb1a/diff-check.txt / handoff-verification.json |
+
+### FE4 초안 컨트롤러 연결 메모
+
+- 현재 v1 화면·초안은 그대로 쓸 수 있다. PlanningDocument의 기본 version은 1이고 기존 stage.targets는 immutable 정수 Map이다. PlanElementStageDraft·preset·planningDocumentTargets는 변경하지 않았다.
+- v2를 만드는 경계에서 PlanningDocument(version: 2, ..., goalMetadata: ...)를 명시한다. 각 단계 targets는 planningDocumentTargetKeys 19개를 전부 가진 Map<String, int?>로 만들고, 선택하지 않은 목표는 null로 둔다. 현재값으로 채우는 planningDocumentTargets를 v2 생성에 사용하지 않는다.
+- v2 읽기·편집은 stage.nullableTargets를 쓴다. legacy stage.targets는 null을 포함한 단계에 대해 StateError를 내므로 v2를 기존 정수 편집기에 바로 넘기지 않는다. 선택 목표 제거는 그 학생의 모든 관련 단계에서 함께 지워 누적 회귀를 피한다.
+- goalMetadata는 문서 학생 ID 집합과 맞춰 PlanningGoalMetadata(favorite: ..., notes: ...)를 구성한다. favorite=false와 메모를 초안 재생성·복제 때도 보존한다.
+- 계산은 service.calculatePlanningDocument(..., document: document.toWire())를 사용한다. createScenario/compareScenarios는 v1/v2 PlanningDocument를 그대로 받는다. 반환 projection과 계산 경고를 초안에 연결하되 유효 계산 상태를 원본 targets에 넣지 않는다.
+- FB-11a 계산기 호출은 계속 정수 targets로 남는다. 활성 문서 저장/로드·goals 파생 연결은 FB-1b 이후에 한다. planning_models.dart의 임시 소유 예외는 이 slice 종료와 함께 해제하되, 커밋 전 pre/post 경계를 지킨다.
+
+### 사용자 실행 순서와 다음 배정
+
+v7 루트 PowerShell에서 전체 Python 결과를 저장한다(아직 실행하지 않았으며 아래 결과 파일도 만들지 않았다).
+
+```powershell
+Push-Location backend
+py -3.11 -m unittest discover -s tests -v 2>&1 | Tee-Object -FilePath ..\debug\frontend_fb1a\python-full.txt
+$fb1aPythonExit = $LASTEXITCODE
+Pop-Location
+if ($fb1aPythonExit -ne 0) { throw "FB-1a Python full failed: $fb1aPythonExit" }
+```
+
+Python 전체 통과 → **두 워커가 모두 멈춘 뒤** fe_gate → fe_commit -Slice fb1a → redesigndocs.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File frontend/tool/fe_gate.ps1
+powershell -ExecutionPolicy Bypass -File frontend/tool/fe_commit.ps1 -Slice fb1a -DryRun
+powershell -ExecutionPolicy Bypass -File frontend/tool/fe_commit.ps1 -Slice fb1a
+redesigndocs
+```
+
+인계 파일: debug/frontend_fb1a/commit.json(status=false, whole=백엔드 상태 문서만),
+수정 전 pre/와 고정 종료본 post/. baseline 폴더는 넣지 않았다.
+종료본은 수정 10 + 추가 6 + whole 1 = 17파일이다. 읽기 전용 3-way 병합에서 mock의 기존
+스캐너 변경이 커밋 후보에 섞이지 않고, Dart의 문서 DTO 밖 모델·preset·변환 helper가
+pre와 같으며 Git index가 변하지 않는 것을 확인했다.
+커밋·push·stage는 하지 않았다. **FB-1a 커밋까지 코드 편집을 멈춘다.**
+FB-1b는 커밋 뒤 오케스트레이터 프롬프트를 받고 시작하며, 첫 작업은 legacy 이관 정책 fixture
+(null bond·all-null·중복 학생 goal·부분 목표·빈 활성 문서)를 고정하는 것이다.
 
 # FB-13 학생 catalog 애장품 가용성
 

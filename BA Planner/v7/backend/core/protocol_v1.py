@@ -141,13 +141,13 @@ def _plan_from_wire(value: object) -> GrowthPlan:
     return GrowthPlan(version=1, goals=canonical_goals)
 
 
-def _current_students_from_wire(value: object) -> dict[str, SimpleNamespace]:
+def _current_students_from_wire(value: object, *, document_bond: bool = False) -> dict[str, SimpleNamespace]:
     if not isinstance(value, list):
         raise InvalidPayload("current_students must be an array")
     result: dict[str, SimpleNamespace] = {}
     for index, raw_student in enumerate(value):
         student = _require_object(raw_student, f"current_students[{index}]")
-        if set(student) - _CURRENT_FIELDS:
+        if set(student) - (_CURRENT_FIELDS | ({"bond_rank"} if document_bond else set())):
             raise InvalidPayload(f"current_students[{index}] contains unknown fields")
         student_id = student.get("student_id")
         if not isinstance(student_id, str) or not student_id:
@@ -169,6 +169,10 @@ def _current_students_from_wire(value: object) -> dict[str, SimpleNamespace]:
                 raise InvalidPayload(
                     f"current_students[{index}].{key} must be a non-negative integer"
                 )
+        if document_bond and "bond_rank" in student:
+            bond = student["bond_rank"]
+            if bond is not None and (not _is_integer(bond) or not 1 <= bond <= 100):
+                raise InvalidPayload(f"current_students[{index}].bond_rank must be null or 1..100")
         result[student_id] = SimpleNamespace(**student)
     return result
 
@@ -449,7 +453,7 @@ class PlanningProtocolV1:
         payload = request["payload"]
         if set(payload) != {"current_students", "inventory", "document"}:
             raise InvalidPayload("payload must contain current_students, inventory, and document")
-        records = _current_students_from_wire(payload["current_students"])
+        records = _current_students_from_wire(payload["current_students"], document_bond=True)
         document = planning_document_from_wire(payload["document"])
         try:
             inventory = InventorySnapshot.from_dict(payload["inventory"])
@@ -466,7 +470,7 @@ class PlanningProtocolV1:
         payload = request["payload"]
         if set(payload) != {"current_students", "inventory", "document_a", "document_b"}:
             raise InvalidPayload("payload must contain current_students, inventory, document_a, and document_b")
-        records = _current_students_from_wire(payload["current_students"])
+        records = _current_students_from_wire(payload["current_students"], document_bond=True)
         document_a = planning_document_from_wire(payload["document_a"])
         document_b = planning_document_from_wire(payload["document_b"])
         if document_a.document_id == document_b.document_id:

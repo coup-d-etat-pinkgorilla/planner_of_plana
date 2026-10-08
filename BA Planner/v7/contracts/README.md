@@ -87,7 +87,7 @@ session generation을 별도 계약으로 고정합니다.
 | 입력 | 의미 |
 | --- | --- |
 | `current_student` | 기존 `current_students` 항목과 같은 strict currentStudent 객체 |
-| `targets` | 문서 계산과 같은 필수 19 key·정수 범위·성장 규칙. 정규화된 목표를 보내며 잘못된 조합은 `invalid_payload` |
+| `targets` | 문서 v1과 같은 필수 19 key·정수 범위·성장 규칙. 정규화된 목표를 보내며 잘못된 조합은 `invalid_payload`. 문서 v2의 nullable 목표는 받지 않음 |
 | `inventory` | 선택 inventorySnapshot. 생략하면 빈 재고로 계산하며 미확인 보유·부족은 `null` |
 
 | 출력 | 의미 |
@@ -151,6 +151,49 @@ MockAppService가 같은 DTO를 반환합니다. mock은 공용 fixture의 결�
 인벤토리 보유량과 부족량은 이 payload에 포함하지 않습니다.
 `calculate_goal_cost()` 및 `calculate_plan_totals()`과 동일하게 `totals`는
 보유량을 차감하지 않습니다.
+
+### 계획 문서 v2: nullable 절대 목표 (FB-1a)
+
+`planning.document.calculate`와 시나리오 저장·조회·비교는 문서 v1과 v2를 모두 읽습니다.
+IPC envelope와 시나리오 저장소의 바깥쪽 버전은 계속 1입니다.
+
+| 계약 | 문서 v1 | 문서 v2 |
+| --- | --- | --- |
+| 문서 필드 | `version`, `document_id`, `name`, `kind`, `phases` | 왼쪽 필드 + 필수 `goal_metadata` |
+| 단계 `targets` | 필수 19 key, 정수 | 같은 19 key, 정수 또는 `null` |
+| `bond_rank` | 1~100 | `null` 또는 1~100 |
+| 학생별 메모 | 없음 | `goal_metadata[student_id] = {favorite: bool, notes: string}` |
+| 성장 선행 조건 | 정규화된 목표 조합을 입력에서 검사 | 실제 현재값과 목표를 계산 중에 결합 |
+
+v2의 `null`은 그 항목의 목표가 없다는 뜻입니다. `0`은 명시적인 실제 값이며
+생략·기본값으로 바꾸지 않습니다. 문서·페이즈·단계·목표·메타데이터는 알 수 없는 필드를
+거부합니다. `goal_metadata`의 학생 ID 집합은 단계에 등장하는 학생 집합과 정확히 같아야
+하고, 각 항목에는 `favorite`와 `notes`만 있어야 합니다. 빈 문서는 `phases: []`,
+`goal_metadata: {}`로 표현합니다. `favorite: false`와 메모의 공백도 그대로 보존합니다.
+
+단계는 학생별 누적 절대 목표입니다. 같은 학생의 앞 단계에서 정수를 지정한 항목은
+뒷 단계에서 더 작은 정수나 `null`로 바꿀 수 없습니다. `null` 뒤에 정수를 지정하는 것은
+허용합니다. 이 회귀 규칙은 페이즈 경계에도 적용됩니다.
+
+원본 nullable 목표를 기존 계산 코어로 넘기고, 공용 성장 상태 경계가 현재값·이전 단계의
+계산 결과·필수 선행 성장을 계산 중에만 적용합니다. 비용식과 장비 정규화는 기존 코어를
+재사용합니다. 계산용 성급·전무·장비·인연 값은 저장 `targets`에 되쓰지 않습니다.
+
+문서 계산과 시나리오 비교의 `current_students`에만 선택 `bond_rank`(정수 1~100 또는
+`null`)를 추가합니다. 현재 인연이나 성장 기준값을 모르면 경고를 반환하며, 알려진 비용만
+잠정 합산합니다. 인연 성장 비용은 FB-11b 전까지 경고로 표시합니다. 모르는 인연에 1을
+넣지 않습니다. FB-11a의 단일 학생 정수 19 key와 기존 currentStudent 계약은 유지합니다.
+활성 계획 `repository.plan.get/save`, 이관·goals 파생(FB-1b), replace(FB-1c)는 별도입니다.
+
+Dart에서는 `PlanningDocument(version: 2, ..., goalMetadata: ...)`와 각 단계의 완전한
+`Map<String, int?>`를 사용합니다. v2 편집기는 `stage.nullableTargets`를 읽고 직렬화하며,
+현재값으로 빈 목표를 채우는 `planningDocumentTargets`는 호출하지 않습니다. 기존 v1
+편집기의 `stage.targets`는 정수 뷰를 유지하고, nullable 단계에 접근하면 오류를 냅니다.
+시나리오 DTO와 mock의 복제·비교도 문서 버전과 nullable 목표·메타데이터를 보존합니다.
+
+스키마는 `planning-document-calculate-v1.schema.json`의 `documentV1`/`documentV2`를
+공유합니다. 정책 fixture는 `fixtures/planning_document_v2.json`, 변경 전 v1 회귀 기준은
+`fixtures/planning_document_v1_fb1a_parity.json`과 `fixtures/scenario_v1_fb1a_parity.json`입니다.
 
 ## 오류 형식
 

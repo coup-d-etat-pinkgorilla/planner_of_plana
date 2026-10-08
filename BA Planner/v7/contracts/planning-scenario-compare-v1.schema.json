@@ -19,7 +19,7 @@
             "type": "object",
             "required": ["current_students", "inventory", "document_a", "document_b"],
             "properties": {
-              "current_students": { "type": "array", "items": { "$ref": "planning-types-v1.schema.json#/$defs/currentStudent" } },
+              "current_students": { "type": "array", "items": { "$ref": "planning-document-calculate-v1.schema.json#/$defs/documentCurrentStudent" } },
               "inventory": { "$ref": "repository-protocol-v1.schema.json#/$defs/inventorySnapshot" },
               "document_a": { "$ref": "planning-document-calculate-v1.schema.json#/$defs/document" },
               "document_b": { "$ref": "planning-document-calculate-v1.schema.json#/$defs/document" }

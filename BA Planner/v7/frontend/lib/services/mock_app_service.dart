@@ -920,8 +920,8 @@ class MockAppService
       inventory: inventory,
       document: documentB.toWire(),
     );
-    Map<String, Map<String, int>> finalTargets(PlanningDocument document) => {
-      for (final stage in document.stages) stage.studentId: stage.targets,
+    Map<String, Map<String, int?>> finalTargets(PlanningDocument document) => {
+      for (final stage in document.stages) stage.studentId: stage.nullableTargets,
     };
     final targetsA = finalTargets(documentA);
     final targetsB = finalTargets(documentB);
@@ -1165,6 +1165,8 @@ class MockAppService
         name: '${source.document.name} (복사본)',
         kind: PlanningDocumentKind.scenario,
         phases: source.document.phases,
+        version: source.document.version,
+        goalMetadata: source.document.goalMetadata,
       ),
     );
   }
