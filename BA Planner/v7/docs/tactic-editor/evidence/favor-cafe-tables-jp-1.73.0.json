@@ -6668,239 +6668,556 @@
     }
   },
   "expTypeAnalysis": {
-    "status": "undetermined",
-    "conclusion": "해석 미확정 + 후보 2개. Level은 행의 랭크 축이고 ExpType은 long 벡터(현재 길이 1)이다. 랭크별 필요 경험치 후보가 더 잘 맞지만 누적 여부·레벨 경계·그룹 인덱스 변환은 실행 소비자 근거 없이 확정하지 않는다.",
-    "candidates": [
-      {
-        "id": "per-level-required-exp",
-        "tag": "[?]",
-        "meaning": "각 Level 행의 exp_type 원소는 랭크 한 단계에 필요한 경험치",
-        "support": "양수·비감소·초기 동일값 반복은 필요 경험치 곡선과 양립",
-        "unresolved": "Level L이 L→L+1인지 L-1→L인지; FavorLevelupType 1이 원소 0으로 변환되는지 미검증"
-      },
-      {
-        "id": "cumulative-threshold",
-        "tag": "[?]",
-        "meaning": "각 Level 행의 exp_type 원소는 누적 경험치 임계값",
-        "support": "비감소 수열이라는 사실만으로 누적을 배제할 수는 없음",
-        "limitation": "Level 2/3=30, 4/5/6=35, 7/8/9=40으로 같은 임계값의 여러 랭크가 생긴다. 실행 소비자와 0비용 단계 의미 미확인"
+    "schema": "ba-planner.favor-exp-type-analysis.v2",
+    "version": 2,
+    "status": "confirmed-per-level-required-exp",
+    "decision": "per-level-required-exp",
+    "tag": "[코드]",
+    "conclusion": "① 랭크별 필요 경험치 [코드]. JP FavorData.Levelup은 현재 랭크의 ExpType 값을 읽어 남은 경험치에서 차감하고 랭크를 1씩 증가시킨다. Level L 행은 L→L+1에 필요한 경험치이며 FavorLevelupType g는 1..벡터길이 검사 후 g-1을 원소 인덱스로 사용한다(그룹 1→원소 0).",
+    "updatedUtc": "2026-10-08T00:24:52+00:00",
+    "previousJudgement": {
+      "schema": "ba-planner.favor-exp-type-analysis.v1",
+      "evidenceFileSha256": "a5e6c82ae949a26c0f3cd2d11721845a57f35370bae3543db1b04c454bc8e830",
+      "value": {
+        "status": "undetermined",
+        "conclusion": "해석 미확정 + 후보 2개. Level은 행의 랭크 축이고 ExpType은 long 벡터(현재 길이 1)이다. 랭크별 필요 경험치 후보가 더 잘 맞지만 누적 여부·레벨 경계·그룹 인덱스 변환은 실행 소비자 근거 없이 확정하지 않는다.",
+        "candidates": [
+          {
+            "id": "per-level-required-exp",
+            "tag": "[?]",
+            "meaning": "각 Level 행의 exp_type 원소는 랭크 한 단계에 필요한 경험치",
+            "support": "양수·비감소·초기 동일값 반복은 필요 경험치 곡선과 양립",
+            "unresolved": "Level L이 L→L+1인지 L-1→L인지; FavorLevelupType 1이 원소 0으로 변환되는지 미검증"
+          },
+          {
+            "id": "cumulative-threshold",
+            "tag": "[?]",
+            "meaning": "각 Level 행의 exp_type 원소는 누적 경험치 임계값",
+            "support": "비감소 수열이라는 사실만으로 누적을 배제할 수는 없음",
+            "limitation": "Level 2/3=30, 4/5/6=35, 7/8/9=40으로 같은 임계값의 여러 랭크가 생긴다. 실행 소비자와 0비용 단계 의미 미확인"
+          }
+        ],
+        "facts": [
+          {
+            "tag": "[코드]",
+            "fact": "JP native schema: FavorLevelExcel.Level long, ExpTypeLength int, ExpType(index) returns long",
+            "methods": [
+              {
+                "name": "get_Level",
+                "declaring": 19046,
+                "returnType": 62113,
+                "token": 100790185,
+                "va": 6460079248,
+                "declaringType": "MX.Data.Excel.FavorLevelExcel",
+                "rva": 17628304,
+                "pointerFileOffset": 159004304,
+                "unresolvedReason": null,
+                "returnTypeName": "long"
+              },
+              {
+                "name": "ExpType",
+                "declaring": 19046,
+                "returnType": 62113,
+                "token": 100790186,
+                "va": 6460363232,
+                "declaringType": "MX.Data.Excel.FavorLevelExcel",
+                "rva": 17912288,
+                "pointerFileOffset": 159004312,
+                "unresolvedReason": null,
+                "returnTypeName": "long"
+              },
+              {
+                "name": "get_ExpTypeLength",
+                "declaring": 19046,
+                "returnType": 62076,
+                "token": 100790187,
+                "va": 6460076992,
+                "declaringType": "MX.Data.Excel.FavorLevelExcel",
+                "rva": 17626048,
+                "pointerFileOffset": 159004320,
+                "unresolvedReason": null,
+                "returnTypeName": "int"
+              }
+            ]
+          },
+          {
+            "tag": "[표]",
+            "fact": "100 distinct contiguous Level rows 1..100, every vector length 1; positive, nondecreasing, not strictly increasing",
+            "rowCount": 100,
+            "levelMin": 1,
+            "levelMax": 100,
+            "uniqueLevels": 100,
+            "contiguousLevels": true,
+            "vectorLengthDistribution": {
+              "1": 100
+            },
+            "nondecreasing": true,
+            "strictlyIncreasing": false,
+            "firstTenValues": [
+              15,
+              30,
+              30,
+              35,
+              35,
+              35,
+              40,
+              40,
+              40,
+              60
+            ],
+            "lastValue": 7365,
+            "cumulativeValuesWereNotGenerated": true
+          },
+          {
+            "tag": "[코드]",
+            "fact": "Full metadata field/property scan found CharacterExcel.FavorLevelupType int; no separate FavorExpType/FavorLevelType enum or a second matching group selector",
+            "matchingMembers": [
+              {
+                "declaringType": "SortingRule",
+                "field": "FavorLevel",
+                "type": "SortingRule",
+                "fieldIndex": 10956
+              },
+              {
+                "declaringType": "ChatSortingRule",
+                "field": "FavorLevel",
+                "type": "ChatSortingRule",
+                "fieldIndex": 11014
+              },
+              {
+                "declaringType": "UICharacterInfo",
+                "field": "FavorLevel",
+                "type": "UILabel",
+                "fieldIndex": 22449
+              },
+              {
+                "declaringType": "UICVCollection_Item",
+                "field": "Type1FavorLevel",
+                "type": "UILabel",
+                "fieldIndex": 22663
+              },
+              {
+                "declaringType": "UIPopup_AutoSelect_Product_CharList",
+                "field": "characterFavorFilterTabExcludeTypes",
+                "type": "System.Collections.Generic.List<System.Type>",
+                "fieldIndex": 38383
+              },
+              {
+                "declaringType": "FlatData.TacticDamageSimulatorSettingExcel",
+                "property": "overrideFavorLevel",
+                "type": "int"
+              },
+              {
+                "declaringType": "FlatData.TacticDamageSimulatorSettingExcel",
+                "property": "OverrideFavorLevel",
+                "type": "int"
+              },
+              {
+                "declaringType": "FlatData.TacticDamageSimulatorSettingExcel",
+                "property": "applyOverrideFavorLevel",
+                "type": "bool"
+              },
+              {
+                "declaringType": "FlatData.TacticDamageSimulatorSettingExcel",
+                "property": "ApplyOverrideFavorLevel",
+                "type": "bool"
+              },
+              {
+                "declaringType": "FlatData.MissionCompleteConditionType",
+                "field": "Reset_GetFavorLevel",
+                "type": "FlatData.MissionCompleteConditionType",
+                "fieldIndex": 45538
+              },
+              {
+                "declaringType": "MX.Data.EmblemInfo",
+                "field": "<DisplayFavorLevel>k__BackingField",
+                "type": "long",
+                "fieldIndex": 73912
+              },
+              {
+                "declaringType": "MX.Data.EmblemInfo",
+                "property": "DisplayFavorLevel",
+                "type": "long"
+              },
+              {
+                "declaringType": "MX.Data.FavorLevelReward",
+                "field": "<FavorLevel>k__BackingField",
+                "type": "long",
+                "fieldIndex": 74209
+              },
+              {
+                "declaringType": "MX.Data.FavorLevelReward",
+                "property": "FavorLevel",
+                "type": "long"
+              },
+              {
+                "declaringType": "MX.Data.Excel.CafeInteractionExcel",
+                "property": "FavorEmoticonRewardParcelType",
+                "type": "FlatData.ParcelType"
+              },
+              {
+                "declaringType": "MX.Data.Excel.CharacterExcel",
+                "property": "FavorLevelupType",
+                "type": "int"
+              },
+              {
+                "declaringType": "MX.Data.Excel.CharacterGearExcel",
+                "property": "OpenFavorLevel",
+                "type": "long"
+              },
+              {
+                "declaringType": "MX.Data.Excel.CharacterTranscendenceExcel",
+                "property": "MaxFavorLevelLength",
+                "type": "int"
+              },
+              {
+                "declaringType": "MX.Data.Excel.EmblemExcel",
+                "property": "DislpayFavorLevel",
+                "type": "int"
+              },
+              {
+                "declaringType": "MX.Data.Excel.FavorLevelExcel",
+                "property": "ExpTypeLength",
+                "type": "int"
+              },
+              {
+                "declaringType": "MX.Data.Excel.FavorLevelRewardExcel",
+                "property": "FavorLevel",
+                "type": "long"
+              }
+            ]
+          },
+          {
+            "tag": "[표]",
+            "fact": "Read existing CharacterExcel; no re-extraction",
+            "file": "data/extracted/jp-json/CharacterExcel.json",
+            "jsonFileSha256": "2ff635b1340a88c02a35ececdb16fbeb99c100c08793102c314f78ffe70f385c",
+            "rowCount": 7792,
+            "allRowsDistribution": {
+              "0": 7131,
+              "1": 661
+            },
+            "isPlayableRows": 466,
+            "isPlayableDistribution": {
+              "0": 143,
+              "1": 323
+            },
+            "cafeRowsMatched": 276,
+            "cafeRowsUnmatched": 0,
+            "cafeCharacterDistribution": {
+              "1": 276
+            }
+          },
+          {
+            "tag": "[?]",
+            "fact": "Level rows provide the rank axis. ExpType vector columns can represent a progression group, but with length 1 and FavorLevelupType values 0/1 the native index transformation is not grounded. Do not index the vector with raw FavorLevelupType."
+          }
+        ],
+        "publicWikiUsed": false
       }
-    ],
+    },
+    "consumer": {
+      "symbol": "MX.Data.FavorData.Levelup",
+      "rva": "0x1a1bae0",
+      "va": "0x181a1bae0",
+      "start": "0x181a1bae0",
+      "end": "0x181a1bcff",
+      "byteCount": 543,
+      "instructionCount": 131,
+      "bound": "exact PE RUNTIME_FUNCTION unwind",
+      "executable": true,
+      "disFile": "debug/five_followup_coord_20261008/w4b/artifacts/dis/MX.Data.FavorData.Levelup.txt",
+      "disFileSha256": "13acd2abd19de58d7e9221a8a8af67815905b88757d11784da2a5eb7a16a58d4",
+      "disText": "# SHA256 e2baf70eeb56fc02be00dc35e43374652282ce72dd3f1cd88a5b853e33c0afc1; start 0x181a1bae0; end 0x181a1bcff; bound unwind; mode body\r\n181a1bae0 mov qword ptr [rsp + 8], rbx\r\n181a1bae5 mov qword ptr [rsp + 0x10], rbp\r\n181a1baea push rsi\r\n181a1baeb push rdi\r\n181a1baec push r12\r\n181a1baee push r14\r\n181a1baf0 push r15\r\n181a1baf2 sub rsp, 0x50\r\n181a1baf6 cmp byte ptr [rip + 0x8335dea], 0\r\n181a1bafd mov rsi, r9\r\n181a1bb00 mov r14, r8\r\n181a1bb03 mov rbp, rdx\r\n181a1bb06 mov r15, rcx\r\n181a1bb09 jne 0x181a1bb2a\r\n181a1bb0b lea rcx, [rip + 0x7f5e14e]\r\n181a1bb12 call 0x180778b40\r\n181a1bb17 lea rcx, [rip + 0x7f22b1a]\r\n181a1bb1e call 0x180778b40\r\n181a1bb23 mov byte ptr [rip + 0x8335dbd], 1\r\n181a1bb2a mov rdi, qword ptr [rsp + 0xb0]\r\n181a1bb32 xorps xmm0, xmm0\r\n181a1bb35 mov r12, qword ptr [rsp + 0xb8]\r\n181a1bb3d mov rbx, qword ptr [rsp + 0xa0]\r\n181a1bb45 add rbx, qword ptr [rsp + 0xa8]\r\n181a1bb4d mov qword ptr [rdi], rsi\r\n181a1bb50 xor esi, esi\r\n181a1bb52 mov qword ptr [r12], rsi\r\n181a1bb56 mov rcx, qword ptr [rip + 0x7f22adb]\r\n181a1bb5d movups xmmword ptr [rsp + 0x40], xmm0\r\n181a1bb62 cmp dword ptr [rcx + 0xe0], esi\r\n181a1bb68 jne 0x181a1bb6f\r\n181a1bb6a call 0x18070e020\r\n181a1bb6f mov rcx, qword ptr [rip + 0x7f5e0ea]\r\n181a1bb76 call 0x1833de5c0\r\n181a1bb7b test rax, rax\r\n181a1bb7e je 0x181a1bcde\r\n181a1bb84 xor r9d, r9d\r\n181a1bb87 lea r8, [rsp + 0x40]\r\n181a1bb8c mov rdx, rbp\r\n181a1bb8f mov rcx, rax\r\n181a1bb92 call 0x1819df400\r\n181a1bb97 test al, al\r\n181a1bb99 je 0x181a1bcde\r\n181a1bb9f cmp byte ptr [rip + 0x8335d42], sil\r\n181a1bba6 jne 0x181a1bbc7\r\n181a1bba8 lea rcx, [rip + 0x7f5e0b1]\r\n181a1bbaf call 0x180778b40\r\n181a1bbb4 lea rcx, [rip + 0x7f22a7d]\r\n181a1bbbb call 0x180778b40\r\n181a1bbc0 mov byte ptr [rip + 0x8335d21], 1\r\n181a1bbc7 mov rcx, qword ptr [rip + 0x7f22a6a]\r\n181a1bbce mov qword ptr [rsp + 0x98], rsi\r\n181a1bbd6 cmp dword ptr [rcx + 0xe0], esi\r\n181a1bbdc jne 0x181a1bbe3\r\n181a1bbde call 0x18070e020\r\n181a1bbe3 mov rcx, qword ptr [rip + 0x7f5e076]\r\n181a1bbea call 0x1833de5c0\r\n181a1bbef test rax, rax\r\n181a1bbf2 je 0x181a1bcde\r\n181a1bbf8 lea r9, [rsp + 0x98]\r\n181a1bc00 mov qword ptr [rsp + 0x20], rsi\r\n181a1bc05 mov r8d, r14d\r\n181a1bc08 mov rdx, rbp\r\n181a1bc0b mov rcx, rax\r\n181a1bc0e call 0x1819dfe30 ; MX.Data.CharacterData.TryGetMaxFavorLevel\r\n181a1bc13 test al, al\r\n181a1bc15 je 0x181a1bcde\r\n181a1bc1b test rbx, rbx\r\n181a1bc1e jle 0x181a1bcd2\r\n181a1bc24 nop dword ptr [rax]\r\n181a1bc28 nop dword ptr [rax + rax]\r\n181a1bc30 mov rbp, qword ptr [rdi]\r\n181a1bc33 lea rcx, [rsp + 0x40]\r\n181a1bc38 xor edx, edx\r\n181a1bc3a call 0x181b38cb0 ; MX.Data.Excel.CharacterExcel.get_FavorLevelupType\r\n181a1bc3f cmp byte ptr [rip + 0x8335c9e], 0\r\n181a1bc46 xorps xmm0, xmm0\r\n181a1bc49 movups xmmword ptr [rsp + 0x30], xmm0\r\n181a1bc4e mov esi, eax\r\n181a1bc50 jne 0x181a1bc65\r\n181a1bc52 lea rcx, [rip + 0x7e8de0f]\r\n181a1bc59 call 0x180778b40\r\n181a1bc5e mov byte ptr [rip + 0x8335c7f], 1\r\n181a1bc65 mov rcx, qword ptr [r15 + 0x28]\r\n181a1bc69 test rcx, rcx\r\n181a1bc6c je 0x181a1bcf9\r\n181a1bc72 mov r9, qword ptr [rip + 0x7e8ddef]\r\n181a1bc79 lea r8, [rsp + 0x30]\r\n181a1bc7e mov rdx, rbp\r\n181a1bc81 call 0x1839b3790\r\n181a1bc86 test al, al\r\n181a1bc88 je 0x181a1bcde\r\n181a1bc8a test esi, esi\r\n181a1bc8c jle 0x181a1bcde\r\n181a1bc8e xor edx, edx\r\n181a1bc90 lea rcx, [rsp + 0x30]\r\n181a1bc95 call 0x1810cf3c0 ; MX.Data.Excel.CharacterAcademyTagsExcel.get_FavorTagsLength | MX.Data.Excel.CharacterGearLevelExcel.get_TierLevelExpLength | MX.Data.Excel.CharacterTranscendenceExcel.get_MaxFavorLevelLength | MX.Data.Excel.EquipmentLevelExcel.get_TierLevelExpLength | MX.Data.Excel.FavorLevelExcel.get_ExpTypeLength\r\n181a1bc9a cmp esi, eax\r\n181a1bc9c jg 0x181a1bcde\r\n181a1bc9e lea edx, [rsi - 1]\r\n181a1bca1 xor r8d, r8d\r\n181a1bca4 lea rcx, [rsp + 0x30]\r\n181a1bca9 call 0x1811151e0 ; MX.Data.Excel.CharacterGearLevelExcel.TierLevelExp | MX.Data.Excel.EquipmentLevelExcel.TierLevelExp | MX.Data.Excel.FavorLevelExcel.ExpType\r\n181a1bcae cmp rax, -1\r\n181a1bcb2 je 0x181a1bcde\r\n181a1bcb4 mov rcx, qword ptr [rsp + 0x98]\r\n181a1bcbc cmp qword ptr [rdi], rcx\r\n181a1bcbf jge 0x181a1bcd2\r\n181a1bcc1 cmp rbx, rax\r\n181a1bcc4 js 0x181a1bcd6\r\n181a1bcc6 inc qword ptr [rdi]\r\n181a1bcc9 sub rbx, rax\r\n181a1bccc jne 0x181a1bc30\r\n181a1bcd2 mov al, 1\r\n181a1bcd4 jmp 0x181a1bce0\r\n181a1bcd6 mov qword ptr [r12], rbx\r\n181a1bcda mov al, 1\r\n181a1bcdc jmp 0x181a1bce0\r\n181a1bcde xor al, al\r\n181a1bce0 lea r11, [rsp + 0x50]\r\n181a1bce5 mov rbx, qword ptr [r11 + 0x30]\r\n181a1bce9 mov rbp, qword ptr [r11 + 0x38]\r\n181a1bced mov rsp, r11\r\n181a1bcf0 pop r15\r\n181a1bcf2 pop r14\r\n181a1bcf4 pop r12\r\n181a1bcf6 pop rdi\r\n181a1bcf7 pop rsi\r\n181a1bcf8 ret \r\n181a1bcf9 call 0x180778cf0\r\n181a1bcfe int3 \r\n",
+      "tool": "backend/tools/battle_spec/dis_il2cpp.py",
+      "toolSha256": "0b3b4e90aaeeb9901a46cf9f1d82c769697ea9a9be30035cac8f7e143f734fed",
+      "gameAssemblySha256": "e2baf70eeb56fc02be00dc35e43374652282ce72dd3f1cd88a5b853e33c0afc1",
+      "metadataSha256": "df1a47ce591a66cef2a4cf9890422495ad08e4de8804536690598f23d6485d63"
+    },
     "facts": [
       {
         "tag": "[코드]",
-        "fact": "JP native schema: FavorLevelExcel.Level long, ExpTypeLength int, ExpType(index) returns long",
-        "methods": [
-          {
-            "name": "get_Level",
-            "declaring": 19046,
-            "returnType": 62113,
-            "token": 100790185,
-            "va": 6460079248,
-            "declaringType": "MX.Data.Excel.FavorLevelExcel",
-            "rva": 17628304,
-            "pointerFileOffset": 159004304,
-            "unresolvedReason": null,
-            "returnTypeName": "long"
-          },
-          {
-            "name": "ExpType",
-            "declaring": 19046,
-            "returnType": 62113,
-            "token": 100790186,
-            "va": 6460363232,
-            "declaringType": "MX.Data.Excel.FavorLevelExcel",
-            "rva": 17912288,
-            "pointerFileOffset": 159004312,
-            "unresolvedReason": null,
-            "returnTypeName": "long"
-          },
-          {
-            "name": "get_ExpTypeLength",
-            "declaring": 19046,
-            "returnType": 62076,
-            "token": 100790187,
-            "va": 6460076992,
-            "declaringType": "MX.Data.Excel.FavorLevelExcel",
-            "rva": 17626048,
-            "pointerFileOffset": 159004320,
-            "unresolvedReason": null,
-            "returnTypeName": "int"
-          }
-        ]
-      },
-      {
-        "tag": "[표]",
-        "fact": "100 distinct contiguous Level rows 1..100, every vector length 1; positive, nondecreasing, not strictly increasing",
-        "rowCount": 100,
-        "levelMin": 1,
-        "levelMax": 100,
-        "uniqueLevels": 100,
-        "contiguousLevels": true,
-        "vectorLengthDistribution": {
-          "1": 100
-        },
-        "nondecreasing": true,
-        "strictlyIncreasing": false,
-        "firstTenValues": [
-          15,
-          30,
-          30,
-          35,
-          35,
-          35,
-          40,
-          40,
-          40,
-          60
+        "fact": "Windows x64 instance-call parameter flow initializes finalLevel from currentLevel; rbx = currentExp + feedExp.",
+        "instructions": [
+          "0x181a1bafd mov rsi,r9",
+          "0x181a1bb3d mov rbx,[rsp+0xa0]",
+          "0x181a1bb45 add rbx,[rsp+0xa8]",
+          "0x181a1bb4d mov [rdi],rsi"
         ],
-        "lastValue": 7365,
-        "cumulativeValuesWereNotGenerated": true
+        "abi": "this=rcx, characterId=rdx, characterStartGrade=r8, currentLevel=r9; after five pushes and sub rsp,0x50, entry stack currentExp/ feedExp / out finalLevel / out finalExp map to rsp+0xa0 / +0xa8 / +0xb0 / +0xb8."
       },
       {
         "tag": "[코드]",
-        "fact": "Full metadata field/property scan found CharacterExcel.FavorLevelupType int; no separate FavorExpType/FavorLevelType enum or a second matching group selector",
-        "matchingMembers": [
-          {
-            "declaringType": "SortingRule",
-            "field": "FavorLevel",
-            "type": "SortingRule",
-            "fieldIndex": 10956
-          },
-          {
-            "declaringType": "ChatSortingRule",
-            "field": "FavorLevel",
-            "type": "ChatSortingRule",
-            "fieldIndex": 11014
-          },
-          {
-            "declaringType": "UICharacterInfo",
-            "field": "FavorLevel",
-            "type": "UILabel",
-            "fieldIndex": 22449
-          },
-          {
-            "declaringType": "UICVCollection_Item",
-            "field": "Type1FavorLevel",
-            "type": "UILabel",
-            "fieldIndex": 22663
-          },
-          {
-            "declaringType": "UIPopup_AutoSelect_Product_CharList",
-            "field": "characterFavorFilterTabExcludeTypes",
-            "type": "System.Collections.Generic.List<System.Type>",
-            "fieldIndex": 38383
-          },
-          {
-            "declaringType": "FlatData.TacticDamageSimulatorSettingExcel",
-            "property": "overrideFavorLevel",
-            "type": "int"
-          },
-          {
-            "declaringType": "FlatData.TacticDamageSimulatorSettingExcel",
-            "property": "OverrideFavorLevel",
-            "type": "int"
-          },
-          {
-            "declaringType": "FlatData.TacticDamageSimulatorSettingExcel",
-            "property": "applyOverrideFavorLevel",
-            "type": "bool"
-          },
-          {
-            "declaringType": "FlatData.TacticDamageSimulatorSettingExcel",
-            "property": "ApplyOverrideFavorLevel",
-            "type": "bool"
-          },
-          {
-            "declaringType": "FlatData.MissionCompleteConditionType",
-            "field": "Reset_GetFavorLevel",
-            "type": "FlatData.MissionCompleteConditionType",
-            "fieldIndex": 45538
-          },
-          {
-            "declaringType": "MX.Data.EmblemInfo",
-            "field": "<DisplayFavorLevel>k__BackingField",
-            "type": "long",
-            "fieldIndex": 73912
-          },
-          {
-            "declaringType": "MX.Data.EmblemInfo",
-            "property": "DisplayFavorLevel",
-            "type": "long"
-          },
-          {
-            "declaringType": "MX.Data.FavorLevelReward",
-            "field": "<FavorLevel>k__BackingField",
-            "type": "long",
-            "fieldIndex": 74209
-          },
-          {
-            "declaringType": "MX.Data.FavorLevelReward",
-            "property": "FavorLevel",
-            "type": "long"
-          },
-          {
-            "declaringType": "MX.Data.Excel.CafeInteractionExcel",
-            "property": "FavorEmoticonRewardParcelType",
-            "type": "FlatData.ParcelType"
-          },
-          {
-            "declaringType": "MX.Data.Excel.CharacterExcel",
-            "property": "FavorLevelupType",
-            "type": "int"
-          },
-          {
-            "declaringType": "MX.Data.Excel.CharacterGearExcel",
-            "property": "OpenFavorLevel",
-            "type": "long"
-          },
-          {
-            "declaringType": "MX.Data.Excel.CharacterTranscendenceExcel",
-            "property": "MaxFavorLevelLength",
-            "type": "int"
-          },
-          {
-            "declaringType": "MX.Data.Excel.EmblemExcel",
-            "property": "DislpayFavorLevel",
-            "type": "int"
-          },
-          {
-            "declaringType": "MX.Data.Excel.FavorLevelExcel",
-            "property": "ExpTypeLength",
-            "type": "int"
-          },
-          {
-            "declaringType": "MX.Data.Excel.FavorLevelRewardExcel",
-            "property": "FavorLevel",
-            "type": "long"
-          }
+        "fact": "Each iteration uses the current output rank as the dictionary key and reads its FavorLevelExcel vector. FavorData.LevelTable is declared Dictionary<long,FavorLevelExcel> in same-build metadata.",
+        "instructions": [
+          "0x181a1bc30 mov rbp,[rdi]",
+          "0x181a1bc65 mov rcx,[r15+0x28]",
+          "0x181a1bc7e mov rdx,rbp",
+          "0x181a1bc81 call 0x1839b3790",
+          "0x181a1bca9 call 0x1811151e0"
+        ],
+        "nativeAliasNote": "0x1811151e0 is shared by FavorLevelExcel.ExpType and two gear/equipment vector accessors. FavorData.LevelTable metadata and the enclosing consumer identify the FavorLevelExcel context; aliases do not establish other table semantics."
+      },
+      {
+        "tag": "[코드]",
+        "fact": "FavorLevelupType g must be positive and no larger than ExpTypeLength; the vector call receives g-1 in edx.",
+        "instructions": [
+          "0x181a1bc3a call CharacterExcel.get_FavorLevelupType",
+          "0x181a1bc4e mov esi,eax",
+          "0x181a1bc8a test esi,esi; jle failure",
+          "0x181a1bc95 call FavorLevelExcel.get_ExpTypeLength",
+          "0x181a1bc9a cmp esi,eax; jg failure",
+          "0x181a1bc9e lea edx,[rsi-1]",
+          "0x181a1bca9 call FavorLevelExcel.ExpType"
+        ],
+        "mapping": "index = FavorLevelupType - 1",
+        "group1Index": 0,
+        "group0Behavior": "returns false in this consumer; raw group 0 is not a vector index"
+      },
+      {
+        "tag": "[코드]",
+        "fact": "After comparing the budget with the vector element, successful progression increments rank and subtracts the element before repeating. This is per-rank required exp, not a direct cumulative threshold comparison.",
+        "instructions": [
+          "0x181a1bcc1 cmp rbx,rax",
+          "0x181a1bcc4 js remaining-exp return",
+          "0x181a1bcc6 inc qword ptr [rdi]",
+          "0x181a1bcc9 sub rbx,rax",
+          "0x181a1bccc jne 0x181a1bc30"
         ]
       },
       {
-        "tag": "[표]",
-        "fact": "Read existing CharacterExcel; no re-extraction",
-        "file": "data/extracted/jp-json/CharacterExcel.json",
-        "jsonFileSha256": "2ff635b1340a88c02a35ececdb16fbeb99c100c08793102c314f78ffe70f385c",
-        "rowCount": 7792,
-        "allRowsDistribution": {
-          "0": 7131,
-          "1": 661
-        },
-        "isPlayableRows": 466,
-        "isPlayableDistribution": {
-          "0": 143,
-          "1": 323
-        },
-        "cafeRowsMatched": 276,
-        "cafeRowsUnmatched": 0,
-        "cafeCharacterDistribution": {
-          "1": 276
-        }
-      },
-      {
-        "tag": "[?]",
-        "fact": "Level rows provide the rank axis. ExpType vector columns can represent a progression group, but with length 1 and FavorLevelupType values 0/1 the native index transformation is not grounded. Do not index the vector with raw FavorLevelupType."
+        "tag": "[코드]",
+        "fact": "When the budget is insufficient, finalExp receives the remainder rbx. A successful subtraction that leaves zero returns with finalExp initialized to zero.",
+        "instructions": [
+          "0x181a1bb52 mov [r12],rsi (rsi=0)",
+          "0x181a1bcd6 mov [r12],rbx"
+        ]
       }
+    ],
+    "levelBoundary": {
+      "tag": "[코드]",
+      "meaning": "Level L row supplies L→L+1 cost",
+      "basis": "lookup key comes from finalLevel before inc finalLevel; the same element is then subtracted"
+    },
+    "groupIndex": {
+      "tag": "[코드]",
+      "formula": "FavorLevelupType - 1",
+      "validGroups": "1..ExpTypeLength",
+      "group1Index": 0
+    },
+    "symbolEnumeration": {
+      "file": "debug/five_followup_coord_20261008/w4b/artifacts/jp-favor-consumer-symbols.json",
+      "sha256": "ec779e5f4f6239c961f442e2531517017450d25c924f1ec73f25c1f792cb28b2",
+      "typeCountExamined": 40039,
+      "methodCountExamined": 289328,
+      "matchedSymbolCount": 5748,
+      "pattern": "Favor|Exp|Level|Rank",
+      "table": [
+        {
+          "symbol": "MX.GameLogic.Service.CharacterDBService.TryGetFavorRankAndExpAfterFeed",
+          "declaringType": "MX.GameLogic.Service.CharacterDBService",
+          "method": "TryGetFavorRankAndExpAfterFeed",
+          "token": "0x6014219",
+          "metadataTypeIndex": 13002,
+          "image": "BlueArchive.dll",
+          "rva": "0x1364420",
+          "va": "0x181364420",
+          "unresolvedReason": null,
+          "returnType": "bool",
+          "parameters": [
+            {
+              "name": "character",
+              "type": "MX.GameLogic.DBModel.CharacterDB"
+            },
+            {
+              "name": "plusExp",
+              "type": "long"
+            },
+            {
+              "name": "finalRank",
+              "type": "int"
+            },
+            {
+              "name": "finalExp",
+              "type": "long"
+            }
+          ],
+          "favorFocused": true,
+          "callRelationCandidate": "Favor name/type: relation candidate from metadata only",
+          "callRelationConfirmed": false
+        },
+        {
+          "symbol": "MX.Data.FavorData.TryGetFavorLevelExcel",
+          "declaringType": "MX.Data.FavorData",
+          "method": "TryGetFavorLevelExcel",
+          "token": "0x601ba37",
+          "metadataTypeIndex": 17096,
+          "image": "BlueArchive.dll",
+          "rva": "0x1a1c520",
+          "va": "0x181a1c520",
+          "unresolvedReason": null,
+          "returnType": "bool",
+          "parameters": [
+            {
+              "name": "level",
+              "type": "long"
+            },
+            {
+              "name": "excel",
+              "type": "MX.Data.Excel.FavorLevelExcel"
+            }
+          ],
+          "favorFocused": true,
+          "callRelationCandidate": "FavorLevelExcel signature: table access/consumer candidate",
+          "callRelationConfirmed": false
+        },
+        {
+          "symbol": "MX.Data.FavorData.GetRequiredExpToLevelup",
+          "declaringType": "MX.Data.FavorData",
+          "method": "GetRequiredExpToLevelup",
+          "token": "0x601ba39",
+          "metadataTypeIndex": 17096,
+          "image": "BlueArchive.dll",
+          "rva": "0x1a1b930",
+          "va": "0x181a1b930",
+          "unresolvedReason": null,
+          "returnType": "long",
+          "parameters": [
+            {
+              "name": "favorLevel",
+              "type": "long"
+            },
+            {
+              "name": "expType",
+              "type": "int"
+            }
+          ],
+          "favorFocused": true,
+          "callRelationCandidate": "Favor name/type: relation candidate from metadata only",
+          "callRelationConfirmed": false
+        },
+        {
+          "symbol": "MX.Data.FavorData.Levelup",
+          "declaringType": "MX.Data.FavorData",
+          "method": "Levelup",
+          "token": "0x601ba3c",
+          "metadataTypeIndex": 17096,
+          "image": "BlueArchive.dll",
+          "rva": "0x1a1bae0",
+          "va": "0x181a1bae0",
+          "unresolvedReason": null,
+          "returnType": "bool",
+          "parameters": [
+            {
+              "name": "characterId",
+              "type": "long"
+            },
+            {
+              "name": "characterStartGrade",
+              "type": "long"
+            },
+            {
+              "name": "currentLevel",
+              "type": "long"
+            },
+            {
+              "name": "currentExp",
+              "type": "long"
+            },
+            {
+              "name": "feedExp",
+              "type": "long"
+            },
+            {
+              "name": "finalLevel",
+              "type": "long"
+            },
+            {
+              "name": "finalExp",
+              "type": "long"
+            }
+          ],
+          "favorFocused": true,
+          "callRelationCandidate": "Favor name/type: relation candidate from metadata only",
+          "callRelationConfirmed": false
+        },
+        {
+          "symbol": "MX.Data.Excel.CharacterExcel.get_FavorLevelupType",
+          "declaringType": "MX.Data.Excel.CharacterExcel",
+          "method": "get_FavorLevelupType",
+          "token": "0x601d398",
+          "metadataTypeIndex": 18060,
+          "image": "BlueArchive.dll",
+          "rva": "0x1b38cb0",
+          "va": "0x181b38cb0",
+          "unresolvedReason": null,
+          "returnType": "int",
+          "parameters": [],
+          "favorFocused": true,
+          "callRelationCandidate": "FavorLevelupType accessor: group selector candidate",
+          "callRelationConfirmed": false
+        },
+        {
+          "symbol": "MX.Data.Excel.FavorLevelExcel.ExpType",
+          "declaringType": "MX.Data.Excel.FavorLevelExcel",
+          "method": "ExpType",
+          "token": "0x601efaa",
+          "metadataTypeIndex": 19046,
+          "image": "BlueArchive.dll",
+          "rva": "0x11151e0",
+          "va": "0x1811151e0",
+          "unresolvedReason": null,
+          "returnType": "long",
+          "parameters": [
+            {
+              "name": "j",
+              "type": "int"
+            }
+          ],
+          "favorFocused": true,
+          "callRelationCandidate": "Favor name/type: relation candidate from metadata only",
+          "callRelationConfirmed": false
+        },
+        {
+          "symbol": "MX.Data.Excel.FavorLevelExcel.get_ExpTypeLength",
+          "declaringType": "MX.Data.Excel.FavorLevelExcel",
+          "method": "get_ExpTypeLength",
+          "token": "0x601efab",
+          "metadataTypeIndex": 19046,
+          "image": "BlueArchive.dll",
+          "rva": "0x10cf3c0",
+          "va": "0x1810cf3c0",
+          "unresolvedReason": null,
+          "returnType": "int",
+          "parameters": [],
+          "favorFocused": true,
+          "callRelationCandidate": "Favor name/type: relation candidate from metadata only",
+          "callRelationConfirmed": false
+        }
+      ],
+      "relationScope": "Metadata names/signatures give caller/helper candidates only. One selected native body confirms the two accessor calls and its arithmetic; caller/helper bodies were not disassembled."
+    },
+    "limits": {
+      "roundLimit": 2,
+      "rounds": [
+        "1: metadata symbol enumeration",
+        "2: one consumer body"
+      ],
+      "disassemblyFunctionCount": 1,
+      "disassemblyPassCount": 1,
+      "additionalFunctionsRead": 0,
+      "metadataEnumerationFirstAttempt": "failed before publication due duplicate type names; corrected type-index resolution in the same metadata-only phase",
+      "tableExtractionCount": 0,
+      "sharedStoreWrites": 0,
+      "networkCalls": 0,
+      "gameRuntimeExecutions": 0,
+      "gameProcessOrMemoryAccesses": 0,
+      "publicWikiUsed": false
+    },
+    "limitations": [
+      "This conclusion concerns the pinned JP 1.73.0 local consumer. It does not verify server enforcement or a different client build.",
+      "Star-grade maximum-rank helpers and gift feed caller bodies were not traced; this task does not change cafe cooldown or interaction counts.",
+      "No simulator resumption or runtime implementation is authorized by this evidence update."
     ],
     "publicWikiUsed": false
   },

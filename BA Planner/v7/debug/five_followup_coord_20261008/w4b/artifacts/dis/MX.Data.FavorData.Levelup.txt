@@ -1,0 +1,132 @@
+# SHA256 e2baf70eeb56fc02be00dc35e43374652282ce72dd3f1cd88a5b853e33c0afc1; start 0x181a1bae0; end 0x181a1bcff; bound unwind; mode body
+181a1bae0 mov qword ptr [rsp + 8], rbx
+181a1bae5 mov qword ptr [rsp + 0x10], rbp
+181a1baea push rsi
+181a1baeb push rdi
+181a1baec push r12
+181a1baee push r14
+181a1baf0 push r15
+181a1baf2 sub rsp, 0x50
+181a1baf6 cmp byte ptr [rip + 0x8335dea], 0
+181a1bafd mov rsi, r9
+181a1bb00 mov r14, r8
+181a1bb03 mov rbp, rdx
+181a1bb06 mov r15, rcx
+181a1bb09 jne 0x181a1bb2a
+181a1bb0b lea rcx, [rip + 0x7f5e14e]
+181a1bb12 call 0x180778b40
+181a1bb17 lea rcx, [rip + 0x7f22b1a]
+181a1bb1e call 0x180778b40
+181a1bb23 mov byte ptr [rip + 0x8335dbd], 1
+181a1bb2a mov rdi, qword ptr [rsp + 0xb0]
+181a1bb32 xorps xmm0, xmm0
+181a1bb35 mov r12, qword ptr [rsp + 0xb8]
+181a1bb3d mov rbx, qword ptr [rsp + 0xa0]
+181a1bb45 add rbx, qword ptr [rsp + 0xa8]
+181a1bb4d mov qword ptr [rdi], rsi
+181a1bb50 xor esi, esi
+181a1bb52 mov qword ptr [r12], rsi
+181a1bb56 mov rcx, qword ptr [rip + 0x7f22adb]
+181a1bb5d movups xmmword ptr [rsp + 0x40], xmm0
+181a1bb62 cmp dword ptr [rcx + 0xe0], esi
+181a1bb68 jne 0x181a1bb6f
+181a1bb6a call 0x18070e020
+181a1bb6f mov rcx, qword ptr [rip + 0x7f5e0ea]
+181a1bb76 call 0x1833de5c0
+181a1bb7b test rax, rax
+181a1bb7e je 0x181a1bcde
+181a1bb84 xor r9d, r9d
+181a1bb87 lea r8, [rsp + 0x40]
+181a1bb8c mov rdx, rbp
+181a1bb8f mov rcx, rax
+181a1bb92 call 0x1819df400
+181a1bb97 test al, al
+181a1bb99 je 0x181a1bcde
+181a1bb9f cmp byte ptr [rip + 0x8335d42], sil
+181a1bba6 jne 0x181a1bbc7
+181a1bba8 lea rcx, [rip + 0x7f5e0b1]
+181a1bbaf call 0x180778b40
+181a1bbb4 lea rcx, [rip + 0x7f22a7d]
+181a1bbbb call 0x180778b40
+181a1bbc0 mov byte ptr [rip + 0x8335d21], 1
+181a1bbc7 mov rcx, qword ptr [rip + 0x7f22a6a]
+181a1bbce mov qword ptr [rsp + 0x98], rsi
+181a1bbd6 cmp dword ptr [rcx + 0xe0], esi
+181a1bbdc jne 0x181a1bbe3
+181a1bbde call 0x18070e020
+181a1bbe3 mov rcx, qword ptr [rip + 0x7f5e076]
+181a1bbea call 0x1833de5c0
+181a1bbef test rax, rax
+181a1bbf2 je 0x181a1bcde
+181a1bbf8 lea r9, [rsp + 0x98]
+181a1bc00 mov qword ptr [rsp + 0x20], rsi
+181a1bc05 mov r8d, r14d
+181a1bc08 mov rdx, rbp
+181a1bc0b mov rcx, rax
+181a1bc0e call 0x1819dfe30 ; MX.Data.CharacterData.TryGetMaxFavorLevel
+181a1bc13 test al, al
+181a1bc15 je 0x181a1bcde
+181a1bc1b test rbx, rbx
+181a1bc1e jle 0x181a1bcd2
+181a1bc24 nop dword ptr [rax]
+181a1bc28 nop dword ptr [rax + rax]
+181a1bc30 mov rbp, qword ptr [rdi]
+181a1bc33 lea rcx, [rsp + 0x40]
+181a1bc38 xor edx, edx
+181a1bc3a call 0x181b38cb0 ; MX.Data.Excel.CharacterExcel.get_FavorLevelupType
+181a1bc3f cmp byte ptr [rip + 0x8335c9e], 0
+181a1bc46 xorps xmm0, xmm0
+181a1bc49 movups xmmword ptr [rsp + 0x30], xmm0
+181a1bc4e mov esi, eax
+181a1bc50 jne 0x181a1bc65
+181a1bc52 lea rcx, [rip + 0x7e8de0f]
+181a1bc59 call 0x180778b40
+181a1bc5e mov byte ptr [rip + 0x8335c7f], 1
+181a1bc65 mov rcx, qword ptr [r15 + 0x28]
+181a1bc69 test rcx, rcx
+181a1bc6c je 0x181a1bcf9
+181a1bc72 mov r9, qword ptr [rip + 0x7e8ddef]
+181a1bc79 lea r8, [rsp + 0x30]
+181a1bc7e mov rdx, rbp
+181a1bc81 call 0x1839b3790
+181a1bc86 test al, al
+181a1bc88 je 0x181a1bcde
+181a1bc8a test esi, esi
+181a1bc8c jle 0x181a1bcde
+181a1bc8e xor edx, edx
+181a1bc90 lea rcx, [rsp + 0x30]
+181a1bc95 call 0x1810cf3c0 ; MX.Data.Excel.CharacterAcademyTagsExcel.get_FavorTagsLength | MX.Data.Excel.CharacterGearLevelExcel.get_TierLevelExpLength | MX.Data.Excel.CharacterTranscendenceExcel.get_MaxFavorLevelLength | MX.Data.Excel.EquipmentLevelExcel.get_TierLevelExpLength | MX.Data.Excel.FavorLevelExcel.get_ExpTypeLength
+181a1bc9a cmp esi, eax
+181a1bc9c jg 0x181a1bcde
+181a1bc9e lea edx, [rsi - 1]
+181a1bca1 xor r8d, r8d
+181a1bca4 lea rcx, [rsp + 0x30]
+181a1bca9 call 0x1811151e0 ; MX.Data.Excel.CharacterGearLevelExcel.TierLevelExp | MX.Data.Excel.EquipmentLevelExcel.TierLevelExp | MX.Data.Excel.FavorLevelExcel.ExpType
+181a1bcae cmp rax, -1
+181a1bcb2 je 0x181a1bcde
+181a1bcb4 mov rcx, qword ptr [rsp + 0x98]
+181a1bcbc cmp qword ptr [rdi], rcx
+181a1bcbf jge 0x181a1bcd2
+181a1bcc1 cmp rbx, rax
+181a1bcc4 js 0x181a1bcd6
+181a1bcc6 inc qword ptr [rdi]
+181a1bcc9 sub rbx, rax
+181a1bccc jne 0x181a1bc30
+181a1bcd2 mov al, 1
+181a1bcd4 jmp 0x181a1bce0
+181a1bcd6 mov qword ptr [r12], rbx
+181a1bcda mov al, 1
+181a1bcdc jmp 0x181a1bce0
+181a1bcde xor al, al
+181a1bce0 lea r11, [rsp + 0x50]
+181a1bce5 mov rbx, qword ptr [r11 + 0x30]
+181a1bce9 mov rbp, qword ptr [r11 + 0x38]
+181a1bced mov rsp, r11
+181a1bcf0 pop r15
+181a1bcf2 pop r14
+181a1bcf4 pop r12
+181a1bcf6 pop rdi
+181a1bcf7 pop rsi
+181a1bcf8 ret
+181a1bcf9 call 0x180778cf0
+181a1bcfe int3
