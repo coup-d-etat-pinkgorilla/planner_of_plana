@@ -131,24 +131,31 @@ void main() {
     );
   });
 
-  test('reserved bond is accepted as an opaque immutable object', () {
-    final value = _copy(sample)
-      ..['bond'] = {
-        'future': {
-          'values': [1, 2],
-        },
-      };
-    final result = StudentCalculationResult.fromWire(value);
-    (value['bond']['future']['values'] as List).add(3);
-    expect(result.reservedBond?['future']['values'], [1, 2]);
-    expect(() => result.reservedBond!['extra'] = 0, throwsUnsupportedError);
-    expect(() => result.creditBreakdown['level'] = 0, throwsUnsupportedError);
-    expect(() => result.resources.clear(), throwsUnsupportedError);
-    expect(
-      () => result.resources.first.affectedStageIds.clear(),
-      throwsUnsupportedError,
-    );
-  });
+  test(
+    'defined bond is strict and its compatibility wire view is immutable',
+    () {
+      final fixture =
+          jsonDecode(
+                File(
+                  '../contracts/fixtures/planning_student_bond_v1.json',
+                ).readAsStringSync(),
+              )
+              as Map;
+      final value = _copy(sample)
+        ..['bond'] = fixture['cases'][0]['response']['payload']['bond'];
+      final result = StudentCalculationResult.fromWire(value);
+      (value['bond']['warnings'] as List).add('later');
+      expect(result.bond!.requiredExp, 45);
+      expect(result.reservedBond!['warnings'], isNot(contains('later')));
+      expect(() => result.reservedBond!['extra'] = 0, throwsUnsupportedError);
+      expect(() => result.creditBreakdown['level'] = 0, throwsUnsupportedError);
+      expect(() => result.resources.clear(), throwsUnsupportedError);
+      expect(
+        () => result.resources.first.affectedStageIds.clear(),
+        throwsUnsupportedError,
+      );
+    },
+  );
 
   test('unknown holding stays null and explicit zero means full shortage', () {
     final unknown = StudentCalculationResult.fromWire(sample).resources.first;
@@ -190,13 +197,10 @@ void main() {
         final request = requests.single;
         expect(request['method'], 'planning.student.calculate');
         expect(request['payload'], input);
-        process.respond(request, {
-          ...sample,
-          'bond': {'future': true},
-        });
+        process.respond(request, sample);
         final result = await pending;
         expect(result.credits, 14000529);
-        expect(result.reservedBond, {'future': true});
+        expect(result.reservedBond, isNull);
       } finally {
         await service.dispose();
       }

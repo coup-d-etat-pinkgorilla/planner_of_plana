@@ -9,6 +9,7 @@ import 'app_service.dart';
 import 'diagnostics_service.dart';
 import 'mock_student_fixture.dart';
 import 'mock_student_calculation_fixture.dart';
+import 'mock_student_bond_fixture.dart';
 import 'repository_service.dart';
 import 'scanner_service.dart';
 import 'scenario_service.dart';
@@ -20,6 +21,7 @@ class MockAppService
     implements
         AppService,
         PlanningStudentCalculationService,
+        PlanningStudentBondCalculationService,
         PlanningDocumentService,
         PlanningScenarioRepositoryService,
         PlanningScenarioComparisonService,
@@ -855,6 +857,35 @@ class MockAppService
             };
           })(),
       ],
+    });
+  }
+
+  @override
+  Future<StudentCalculationResult> calculateStudentWithBond({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    required StudentBondRequest bond,
+    Map<String, dynamic>? inventory,
+  }) async {
+    bond.toWire();
+    Map<String, dynamic> holdings(Map<String, dynamic>? snapshot) => {
+      for (final raw in snapshot?['entries'] as List? ?? const [])
+        (raw['item_id'] ?? raw['key']) as String: raw['quantity'],
+    };
+    final matching = mockStudentBondCases.where((entry) =>
+      entry['student_id'] == currentStudent['student_id'] &&
+      entry['current_rank'] == bond.currentRank && entry['target_rank'] == targets['bond_rank'] &&
+      mapEquals(holdings(inventory), holdings(Map<String, dynamic>.from(entry['inventory'] as Map))));
+    if (matching.isEmpty) {
+      throw UnsupportedError('Mock bond calculation supports shared fixture inputs only');
+    }
+    final growth = await calculateStudent(currentStudent: currentStudent, targets: targets, inventory: inventory);
+    return StudentCalculationResult.fromWire({
+      'totals': {'credits': growth.credits},
+      'credit_breakdown': growth.creditBreakdown,
+      'resources': [for (final row in growth.resources) row.toWire()],
+      'warnings': growth.warnings,
+      'bond': matching.first['bond'],
     });
   }
 

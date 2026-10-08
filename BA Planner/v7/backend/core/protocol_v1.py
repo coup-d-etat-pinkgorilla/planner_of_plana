@@ -30,6 +30,7 @@ from core.planning_document import (
     planning_document_from_wire,
 )
 from core.repository_dto import InventorySnapshot, RepositoryDTOError
+from core.student_bond import calculate_bond
 
 
 PROTOCOL_VERSION = 1
@@ -417,8 +418,15 @@ class PlanningProtocolV1:
 
     def _student_calculate(self, request: dict[str, Any]) -> dict[str, Any]:
         payload = request["payload"]
-        if not {"current_student", "targets"} <= set(payload) or set(payload) - {"current_student", "targets", "inventory"}:
-            raise InvalidPayload("payload must contain current_student, targets, and optional inventory")
+        if not {"current_student", "targets"} <= set(payload) or set(payload) - {"current_student", "targets", "inventory", "bond"}:
+            raise InvalidPayload("payload must contain current_student, targets, and optional inventory/bond")
+        bond = payload.get("bond")
+        if "bond" in payload:
+            if not isinstance(bond, dict) or set(bond) != {"current_rank"}:
+                raise InvalidPayload("bond must contain only current_rank")
+            rank = bond["current_rank"]
+            if rank is not None and (not _is_integer(rank) or not 1 <= rank <= 100):
+                raise InvalidPayload("bond.current_rank must be null or 1..100")
         records = _current_students_from_wire([payload["current_student"]])
         # Use exactly the existing single-stage validation, goal conversion and
         # resource projection. These IDs are transient provenance, never saved.
@@ -439,6 +447,7 @@ class PlanningProtocolV1:
         breakdown = dict.fromkeys(CREDIT_CATEGORIES, 0)
         try:
             projection = calculate_document_projection(records, document, inventory, credit_breakdown=breakdown)
+            bond_result = calculate_bond(next(iter(records)), bond["current_rank"], payload["targets"]["bond_rank"], inventory) if bond is not None else None
         except Exception:
             self._diagnostic(traceback.format_exc())
             return error_response(request, "calculation_failed", "Student growth calculation failed")
@@ -447,6 +456,7 @@ class PlanningProtocolV1:
             "credit_breakdown": breakdown,
             "resources": projection["overall"]["resources"],
             "warnings": projection["warnings"],
+            **({"bond": bond_result} if bond_result is not None else {}),
         })
 
     def _document_calculate(self, request: dict[str, Any]) -> dict[str, Any]:

@@ -21,6 +21,7 @@ class ProcessAppService
     implements
         AppService,
         PlanningStudentCalculationService,
+        PlanningStudentBondCalculationService,
         PlanningDocumentService,
         PlanningScenarioRepositoryService,
         PlanningScenarioComparisonService,
@@ -191,6 +192,21 @@ class ProcessAppService
       'current_student': currentStudent,
       'targets': targets,
       'inventory': ?inventory,
+    }),
+  );
+
+  @override
+  Future<StudentCalculationResult> calculateStudentWithBond({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    required StudentBondRequest bond,
+    Map<String, dynamic>? inventory,
+  }) async => StudentCalculationResult.fromWire(
+    await _client.send('planning.student.calculate', {
+      'current_student': currentStudent,
+      'targets': targets,
+      'inventory': ?inventory,
+      'bond': bond.toWire(),
     }),
   );
 

@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'student_bond_service.dart';
+export 'student_bond_service.dart';
 
 /// The cost units emitted by planning_calc; always present, including zeroes.
 const studentCreditCategories = <String>{
@@ -123,6 +125,7 @@ class StudentCalculationResult {
     required this.resources,
     required this.warnings,
     this.reservedBond,
+    this.bond,
   });
 
   final int credits;
@@ -130,8 +133,9 @@ class StudentCalculationResult {
   final List<StudentCalculationResource> resources;
   final List<String> warnings;
 
-  /// Opaque optional FB-11b object. FB-11a never produces or interprets it.
+  /// Compatibility wire view, now validated against the strict FB-11b contract.
   final Map<String, dynamic>? reservedBond;
+  final StudentBondResult? bond;
 
   factory StudentCalculationResult.fromWire(Map<String, dynamic> value) {
     const requiredKeys = {
@@ -183,6 +187,9 @@ class StudentCalculationResult {
       reservedBond: value.containsKey('bond')
           ? _freeze(_object(value['bond'], 'bond')) as Map<String, dynamic>
           : null,
+      bond: value.containsKey('bond')
+          ? StudentBondResult.fromWire(_object(value['bond'], 'bond'))
+          : null,
     );
   }
 }
@@ -192,6 +199,16 @@ abstract interface class PlanningStudentCalculationService {
   Future<StudentCalculationResult> calculateStudent({
     required Map<String, dynamic> currentStudent,
     required Map<String, int> targets,
+    Map<String, dynamic>? inventory,
+  });
+}
+
+/// Optional capability keeps existing growth-only implementations compatible.
+abstract interface class PlanningStudentBondCalculationService {
+  Future<StudentCalculationResult> calculateStudentWithBond({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    required StudentBondRequest bond,
     Map<String, dynamic>? inventory,
   });
 }

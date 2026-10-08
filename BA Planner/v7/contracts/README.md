@@ -77,7 +77,7 @@ session generation을 별도 계약으로 고정합니다.
     배포하므로(`release/`) 구버전 UI가 새 backend와 함께 돌지 않습니다. FE3-e부터 Dart는
     `forms`를 선택 key로 받습니다.
 
-### `planning.student.calculate` (FB-11a)
+### `planning.student.calculate` (FB-11a/b)
 
 학생 한 명의 휘발 성장 목표를 한 번에 계산합니다. 기존 `planning.student.*` 명명 규칙을
 따르며 FD-162(b)의 이름을 그대로 사용합니다. 저장된 문서 ID, 프로필 ID가 필요 없고
@@ -96,7 +96,7 @@ session generation을 별도 계약으로 고정합니다.
 | `credit_breakdown` | 아래 9범주 모두 포함. 비용이 없으면 0. 합은 `totals.credits`와 같음 |
 | `resources` | 문서 계산 `overall.resources`와 같은 행·순서(크레딧 행 포함) |
 | `warnings` | 기존 계산 코어의 문자열 경고 |
-| `bond` | FB-11b용 선택 객체로 예약. FB-11a 응답에는 없음. Dart는 객체를 보존만 하며 의미를 해석하지 않음 |
+| `bond` | 선택 요청 bond가 있을 때만 나오는 strict FB-11b 인연 경험치·선물 3안. 기존 요청은 계속 생략 |
 
 범주: `level`(학생 레벨), `student_star`(성급), `weapon_star`(전무 성급),
 `favorite_item`(애장품), `equipment`(일반 장비 3칸의 티어·레벨), `ex_skill`(EX),
@@ -121,6 +121,84 @@ Dart 공개 호출은 `AppService.calculateStudent` 확장 메서드이며
 (프런트 위젯 테스트 대역 포함)를 깨뜨리지 않는 추가 확장입니다. ProcessAppService와
 MockAppService가 같은 DTO를 반환합니다. mock은 공용 fixture의 결정론적 서비스 대역이며
 성장 계산식을 Dart로 복제하지 않습니다.
+
+#### FB-11b 인연 입력과 결과
+
+추가 입력은 `bond: {"current_rank": 12}`입니다. 목표는 기존 필수 19-key의
+`targets.bond_rank`(1~100)를 사용하므로 목표를 두 군데에 복제하지 않습니다.
+current_rank는 1~100 또는 null(현재 미확인)입니다. bond를 생략한 기존 호출의 성공
+필드·비용·재화·경고는 그대로입니다. 랭크 안 진행도와 추가 필드는 받지 않습니다.
+
+응답 bond는 다음 필드만 허용합니다. 세부 schema는
+`planning-student-bond-v1.schema.json`, 7건의 공용 fixture는
+`fixtures/planning_student_bond_v1.json`입니다.
+
+| 필드 | 의미 |
+| --- | --- |
+| current_rank / target_rank | 입력 현재 랭크 / 기존 targets의 목표 랭크 |
+| assumption | 항상 `current_rank_start`: 현재 랭크 안 경험치는 0으로 가정 |
+| source_version / favor_levelup_type | `jp-1.73.0` / 확인된 학생 그룹, 모르면 null |
+| required_exp | 현재 L부터 목표 T 직전까지 ExpType[g−1] 합. 목표≤현재는 0; 현재·그룹 미확인은 null |
+| plans.preferred_large | 선호 태그가 실제로 매칭되는 SSR(대형) 선물 안 |
+| plans.normal | SR(일반) 선물 안. 선호가 있으면 그 배수도 적용 |
+| plans.petting | 1회 15 경험치, 간격 3시간, 필요 횟수·최소 간격 시간·미확인 가능 횟수 |
+| warnings | 인연 계산의 데이터 부족 경고. 성장 계산의 기존 warnings와 분리 |
+
+선호 배수는 개발자 도구의 규칙을 도메인 `core.student_bond.gift_affinity`로 옮겼습니다.
+preferred 또는 unique 태그가 실제 매칭될 때, 두 태그 집합과 보편 태그 BC/Bc/ew를 합쳐
+선물 태그와의 매칭 수를 최대 3으로 제한합니다. 배수는 1+매칭 수(1~4), 경험치는
+gift_meta.exp_value×배수입니다. 매칭이 없으면 배수 1입니다. 개발자 도구·metadata 파일은
+수정하지 않았고 runtime에서 개발자 도구를 import하지 않습니다.
+
+각 선물 안은 독립적으로 같은 보유량을 평가하며 다른 안에서 소비한 것으로 간주하지
+않습니다. FD-164대로 보유 수가 많은 선물부터 필요한 만큼 사용합니다. 동률은 경험치
+내림차순, gift ID 오름차순입니다. 부족하면 해당 안의 1개 경험치가 가장 높은 선물로
+ceil(잔여 경험치/1개 경험치)개를 추가합니다. 선물 ID를 reviewed present resource_key와
+연결하며, 이름 추측·numeric gift ID를 inventory identity로 취급하지 않습니다.
+
+gift 행은 gift_id, resource_key, display_name, base_exp, multiplier, exp_per_gift,
+owned, required, used_owned, shortage를 포함합니다. required는 보유 사용+추가 필요의 합,
+used_owned는 확인된 보유에서 쓴 수입니다. 보유 누락/null은 미확인이므로 배분에 쓰지
+않습니다. fallback 선물 보유가 미확인이면 행·안의 shortage=null, 명시적 0이면 부족 수를
+표시합니다. inventory_complete는 그 안의 후보 보유가 모두 알려졌는지이며, 확인된 보유만
+사용하는 잠정 결과에는 경고가 붙습니다. 선호 대형 후보가 없으면 available=false입니다.
+
+쓰다듬기는 required_count=ceil(required_exp/15),
+minimum_hours=max(required_count−1,0)×3입니다. first_interaction=`immediate`는 **첫 회를
+즉시 할 수 있다고 가정한 간격만의 하한**입니다. 실제 방문·서버 제한·리셋을 판정하지
+않습니다. available_count는 항상 null이며 가능 횟수는 [?]입니다. 24/3으로 하루 8회를
+만들거나 시안의 하루 2회·일수를 사용하지 않습니다. 미확인 현재는 필요 경험치·횟수·시간도
+null입니다. 같은/낮은 목표는 0 경험치·0회·0시간입니다.
+
+FD-165: 선택한 안의 선물·부족 수를 totals, credit_breakdown, 성장 resources에 넣지
+않습니다. 기존 성장 재화 자체의 present 행(예: 애장품 재료)은 그대로입니다. 문서 v2의
+"Bond growth cost is unavailable" 경고도 유지합니다. 선물은 문서의 크레딧 계산 범위 밖입니다.
+
+자료는 승인된 W4/W4b의 JP 1.73.0 snapshot입니다. KR/다른 빌드의 서버 동작을 검증한
+것으로 해석하지 않습니다. portable runtime 사본은 core/student_bond_data.py에 있으며
+공용 저장소나 data/extracted 경로에 런타임 의존하지 않습니다.
+
+| 근거 | 꼬리표와 해시 |
+| --- | --- |
+| FavorLevelExcel 100행 | [표] rows SHA256 `ea46aef8d84687a66c0854b1f40a39b5d1ea5284fa80100ddb66632e24724c85` |
+| FavorData.Levelup, W4b `a107c3f2`, RVA 0x1a1bae0 | [코드] L→L+1 필요량 차감, 그룹 g 유효 범위 검사 후 g−1. evidence SHA256 `5af3d6e8923cc28db3f0e0e5a20edd0dd4e6d1da3ca9299efb8c787021d3c9db` |
+| CharacterExcel 그룹 | [표] file SHA256 `2ff635b1340a88c02a35ececdb16fbeb99c100c08793102c314f78ffe70f385c`; Cafe 276명 그룹=1, 현재 canonical 265명 모두 매칭 |
+| CafeInteractionExcel 276행 | [표] FavorExp(11)/Id=0/Amount=15, rows SHA256 `d02f4a7d0e46ff190cb34b05e46badb5177d7f6c5b42ffd32eaa8e2f9ddcb430` |
+| CafeService.get_InteractCooltime, RVA 0x1338160 | [코드] TimeSpan.FromHours(3.0), dis SHA256 `c8ceb20c2136d473dd4f1417a262e9f1527d573ea4597bebb4946d15caff2a7e` |
+| 가능 횟수·서버 강제·방문/리셋 | [?] 미확인, available_count=null |
+| ItemDBSchema gift ID→present identity/rarity | [표] reviewed item-rarity-v1.json SHA256 `83d3eff626ced570b3ca544b23a5f0e66109367bc77cdd7c96038c80502a11d2`, Steam 2026-09-27 식별자 근거. 경험치는 gift_meta의 Schale 최소 정의 |
+
+원 근거: `docs/tactic-editor/evidence/favor-cafe-tables-jp-1.73.0.json` 및 W4b의
+`debug/five_followup_coord_20261008/w4b/artifacts/dis/MX.Data.FavorData.Levelup.txt`.
+등록된 경험치 선물은 52종이며 상자·KR 행사 선물 등 exp_value 없는 present는 추측하지
+않습니다. 자료가 부족한 학생/그룹은 경고와 미확인 결과를 반환합니다.
+
+Dart는 `AppService.calculateStudent(..., bond: StudentBondRequest(currentRank: ...))`로
+한 번 호출하고 `result.bond`의 strict immutable DTO를 읽습니다. 기존 성장 전용 기능
+인터페이스는 그대로이고 추가 PlanningStudentBondCalculationService에 위임합니다.
+reservedBond는 검증된 wire의 호환 뷰로 남습니다. MockAppService는 공용 fixture 7개에
+해당하는 학생·랭크·보유 입력만 재생하며 나머지는 UnsupportedError입니다. 임의 계산을
+Dart에 복제하거나 다른 랭크 결과를 현재 요청의 결과로 돌려주지 않습니다.
 
 ### `planning.plan.validate`
 
@@ -181,7 +259,7 @@ v2의 `null`은 그 항목의 목표가 없다는 뜻입니다. `0`은 명시적
 
 문서 계산과 시나리오 비교의 `current_students`에만 선택 `bond_rank`(정수 1~100 또는
 `null`)를 추가합니다. 현재 인연이나 성장 기준값을 모르면 경고를 반환하며, 알려진 비용만
-잠정 합산합니다. 인연 성장 비용은 FB-11b 전까지 경고로 표시합니다. 모르는 인연에 1을
+잠정 합산합니다. 인연 성장 비용 경고는 FB-11b 뒤에도 유지합니다(선물 계산은 별도). 모르는 인연에 1을
 넣지 않습니다. FB-11a의 단일 학생 정수 19 key와 기존 currentStudent 계약은 유지합니다.
 활성 계획 `repository.plan.get/save`, 이관·goals 파생(FB-1b), replace(FB-1c)는 별도입니다.
 

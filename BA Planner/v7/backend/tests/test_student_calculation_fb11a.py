@@ -174,11 +174,12 @@ class StudentCalculationFB11aTests(unittest.TestCase):
         self.assertEqual(response["payload"]["error"]["code"], "calculation_failed")
         self.validator.validate(response)
 
-    def test_reserved_bond_object_only_and_strict_response_keys(self) -> None:
+    def test_bond_contract_is_strict_after_fb11b_and_growth_keys_stay_strict(self) -> None:
         response = deepcopy(self.cases[0]["response"])
-        response["payload"]["bond"] = {"future": {"value": 1}}
+        fixture = json.loads((CONTRACTS / "fixtures/planning_student_bond_v1.json").read_text(encoding="utf-8"))
+        response["payload"]["bond"] = fixture["cases"][0]["response"]["payload"]["bond"]
         self.validator.validate(response)
-        for value in (None, [], 1):
+        for value in (None, [], 1, {"future": {"value": 1}}):
             response["payload"]["bond"] = value
             with self.assertRaises(ValidationError):
                 self.validator.validate(response)

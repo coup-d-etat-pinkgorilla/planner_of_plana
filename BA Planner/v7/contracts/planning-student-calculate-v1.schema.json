@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://baplanner.local/contracts/planning-student-calculate-v1.schema.json",
-  "title": "planning.student.calculate request and success response (FB-11a)",
+  "title": "planning.student.calculate request and success response (FB-11a/b)",
   "oneOf": [
     { "$ref": "#/$defs/request" },
     { "$ref": "#/$defs/response" }
@@ -49,7 +49,8 @@
             "properties": {
               "current_student": { "$ref": "planning-types-v1.schema.json#/$defs/currentStudent" },
               "targets": { "$ref": "planning-document-calculate-v1.schema.json#/$defs/targets" },
-              "inventory": { "$ref": "repository-protocol-v1.schema.json#/$defs/inventorySnapshot" }
+              "inventory": { "$ref": "repository-protocol-v1.schema.json#/$defs/inventorySnapshot" },
+              "bond": { "$ref": "planning-student-bond-v1.schema.json#/$defs/request" }
             },
             "additionalProperties": false
           }
@@ -73,7 +74,7 @@
               "credit_breakdown": { "$ref": "#/$defs/creditBreakdown" },
               "resources": { "type": "array", "items": { "$ref": "#/$defs/resource" } },
               "warnings": { "type": "array", "items": { "type": "string" } },
-              "bond": { "type": "object", "description": "Reserved for FB-11b. FB-11a producers omit it; consumers may preserve it without interpreting its contents." }
+              "bond": { "$ref": "planning-student-bond-v1.schema.json#/$defs/result" }
             },
             "additionalProperties": false
           }

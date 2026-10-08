@@ -576,8 +576,17 @@ extension AppServiceStudentCalculation on AppService {
     required Map<String, dynamic> currentStudent,
     required Map<String, int> targets,
     Map<String, dynamic>? inventory,
+    StudentBondRequest? bond,
   }) {
     final service = this;
+    if (bond != null) {
+      if (service is! PlanningStudentBondCalculationService) {
+        throw UnsupportedError('Student bond calculation is unavailable');
+      }
+      return (service as PlanningStudentBondCalculationService).calculateStudentWithBond(
+        currentStudent: currentStudent, targets: targets, inventory: inventory, bond: bond,
+      );
+    }
     if (service is! PlanningStudentCalculationService) {
       throw UnsupportedError('Student growth calculation is unavailable');
     }

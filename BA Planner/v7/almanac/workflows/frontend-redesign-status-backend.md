@@ -1,6 +1,6 @@
 ---
 title: "Frontend Redesign Backend Status"
-summary: "Lane A 백엔드 워커의 FB-1a 문서 v2 nullable 목표·v1 회귀·인계, FB-13 catalog, FB-11a 구현 및 FB-1 설계 조사 기록입니다."
+summary: "Lane A 백엔드 워커의 FB-11b 인연·선물 3안과 자료 근거·FE3-g 인계, FB-1a v2, FB-13 catalog 및 FB-1 설계 조사 기록입니다."
 topics: [workflow, design]
 sources:
   - id: workflow
@@ -14,6 +14,138 @@ sources:
     path: backend/tests/test_student_calculation_fb11a.py
 ---
 백엔드 워커 전용(Lane A 병렬, 2026-10-07)
+
+# FB-11b 인연 경험치·선물 3안
+
+## 착수 기록 (2026-10-08)
+
+- 시작 SHA: `d7674086ee949c71ea224d37eece3a50410fd7e9`. FB-1a `682b2a7b` 커밋을 확인하고 편집을 재개한다.
+- 워크플로 FB-11·저녁/밤 재개 지점, 프론트 로그 08:45·13:45·16:48·20:17, tactic W4/W4b와 `a107c3f2`의 favor-cafe evidence, FD-163(a)·164·165, 아래 FB-11b 사전 조사를 읽었다. [@workflow]
+- W4b: 현재 랭크 L의 FavorLevelExcel.ExpType[g-1]을 차감하고 L+1로 진행한다. JP 1.73.0의 100행을 사용한다. 쓰다듬기는 CafeInteractionExcel FavorExp 15 [표], 3시간 getter [코드], 가능 횟수 [?]다.
+- 현재 랭크 시작 가정을 응답에 표시한다. 첫 회 즉시 가능 가정의 최소 간격 시간만 내며 하루 횟수를 만들지 않는다. FD-164 보유 많은 순→최대 경험치 선물 부족분, FD-165 성장 재화 목록과 분리한다.
+- 소유 경계: 서비스 DTO·mock/process·계약·Python만 수정한다. lib/ui/**·위젯/golden, developer_tools*·backend/data/*·data/extracted/pipeline/* 및 스캐너/tactic 파일은 수정하지 않는다. 문서 계산의 인연 비용 경고는 유지한다.
+- 수정 전 사본은 debug/frontend_fb11b/pre/. 기존 미커밋 스캐너 변경은 보존하고 커밋·push·stage는 하지 않는다. 다음 FB-1b는 새 프롬프트 뒤 시작한다.
+
+## 구현 종료 및 인계 (2026-10-08)
+
+FB-11b의 도메인·계약·서비스·직접 검증을 마쳤다. **Python 전체·두 워커 종료 후 공통 gate·커밋은 사용자 단계로 남는다.**
+lib/ui/**·위젯/golden 코드는 수정하지 않았다. 문서 v2의 인연 비용 미계산 경고를 유지한다.
+
+### 계약과 계산
+
+| 경계 | 계약 |
+| --- | --- |
+| 입력 추가 | 선택 bond={current_rank: 1~100 또는 null}. 목표는 기존 정수 targets.bond_rank. 랭크 진행도·추가 key 거부 |
+| 기존 입력 | bond 생략 시 기존 성공 필드·비용·재화·경고 그대로, bond 응답도 생략 |
+| bond 필수 필드 | current_rank, target_rank, assumption, source_version, favor_levelup_type, required_exp, plans, warnings |
+| 가정/자료 버전 | assumption=current_rank_start, source_version=jp-1.73.0 |
+| 필요 경험치 | 현재 L..목표 T−1의 ExpType[g−1] 합. 같은/낮은 목표=0. 현재·그룹 미확인=null·경고 |
+| 3안 | plans.preferred_large(실제 선호 매칭 SSR), normal(SR, 선호 배수 포함), petting |
+| 선물 행 | gift_id, resource_key, display_name, base_exp, multiplier, exp_per_gift, owned, required, used_owned, shortage |
+| 선물 안 | available, inventory_complete, provided_exp, shortage, gifts |
+| 쓰다듬기 | exp_per_interaction=15, interval_hours=3, required_count=ceil(exp/15), minimum_hours=max(count−1,0)×3, first_interaction=immediate, available_count=null |
+
+- core/student_bond.py는 developer_tools._student_gift_affinities의 태그 규칙을 옮긴 순수 도메인이다. 실제 preferred/unique 매칭이 있을 때 accepted 태그에 BC/Bc/ew를 합치고 매칭 수 최대 3, 배수 1+매칭 수, 경험치 exp_value×배수다. 매칭 없음은 배수 1이다. 도구를 runtime import하지 않고 도구 파일도 수정하지 않았다.
+- FD-164: 각 안에서 보유 많은 순으로 필요한 수만 사용한다. 동률은 경험치 내림차순·gift ID 오름차순. 부족하면 해당 안의 최고 경험치 선물로 ceil한 개수를 채운다. 후보별 보유를 서로 다른 안 사이에서 차감하지 않는다.
+- 인벤토리는 안정 present resource_key로 연결한다. 52종 경험치 선물의 Schale ID를 reviewed ItemDBSchema 식별자·rarity와 연결한 사본을 사용하며, 선물 이름 추측이나 ordinal을 identity로 쓰지 않는다. 상자·미등록 행사 선물 경험치는 만들지 않는다.
+- 보유 누락/null은 0이 아니다. 확인된 보유만 사용하고 fallback 보유가 미확인이면 해당 행/안의 shortage=null로 둔다. 명시적 0은 실제 부족 수를 낸다. inventory_complete=false인 잠정 계산에는 경고가 붙는다. 선호 대형 후보가 없으면 available=false다.
+- minimum_hours는 첫 회 즉시 가능한 조건에서 간격만 계산한 이론적 하한이다. 실제 현재 가능 여부·방문·리셋·서버 제한은 [?]다. 하루 8회/2회나 예상 일수를 만들지 않는다. 현재 랭크 미확인은 exp·필요 횟수·시간 모두 null이다.
+- FD-165: bond 3안은 totals·credit_breakdown·성장 resources를 바꾸지 않는다. 원래 성장 재료에 포함되는 present(애장품 재료)은 그대로다. FB-1a의 "Bond growth cost is unavailable" 경고도 그대로다. 인연 선물은 문서의 크레딧 비용이 아니다.
+- 새 schema planning-student-bond-v1을 기존 student-calculate의 선택 request/response로 참조한다. 기존 19-key 정수 targets/currentStudent 계약은 그대로이며 null bond 목표를 이 메서드에 추가하지 않는다. 예약 opaque bond의 테스트는 정의된 strict 객체 검사로 갱신했다.
+
+### 경험치 표 근거
+
+승인된 W4/W4b evidence: docs/tactic-editor/evidence/favor-cafe-tables-jp-1.73.0.json,
+커밋 a107c3f2. 오래된 최상위 status 문자열은 미확정 상태를 남기지만,
+**expTypeAnalysis v2.status=confirmed-per-level-required-exp**가 최종 판정이다.
+
+| 자료 | 꼬리표·근거 |
+| --- | --- |
+| FavorLevelExcel 100행 | [표] rows SHA256 ea46aef8d84687a66c0854b1f40a39b5d1ea5284fa80100ddb66632e24724c85 |
+| FavorData.Levelup, RVA 0x1a1bae0 | [코드] 현재 L 행 조회→ExpType[g−1] 차감→L+1; evidence SHA256 5af3d6e8923cc28db3f0e0e5a20edd0dd4e6d1da3ca9299efb8c787021d3c9db |
+| CharacterExcel | [표] file SHA256 2ff635b1340a88c02a35ececdb16fbeb99c100c08793102c314f78ffe70f385c. Cafe 276명 그룹 1, 현재 canonical 265명 전부 매칭 |
+| CafeInteractionExcel 276행 | [표] FavorExp(11)/Id=0/Amount=15. rows SHA256 d02f4a7d0e46ff190cb34b05e46badb5177d7f6c5b42ffd32eaa8e2f9ddcb430 |
+| CafeService.get_InteractCooltime, RVA 0x1338160 | [코드] FromHours(3.0), dis SHA256 c8ceb20c2136d473dd4f1417a262e9f1527d573ea4597bebb4946d15caff2a7e |
+| 가능 횟수·서버 강제·방문/리셋 | [?] 미확인. available_count=null |
+
+core/student_bond_data.py는 승인된 자료의 portable snapshot(100 랭크·276 그룹·52 identity)이다.
+debug/frontend_fb11b/generate_domain_snapshot.py가 원본 file/row sha를 확인해 생성한다.
+runtime은 공용 저장소·추출 경로에 의존하지 않는다. backend/data/*와 pipeline는 수정하지 않았다.
+JP 1.73.0에서 확인된 해석이며 KR/다른 빌드 서버 동작의 대조 완료를 뜻하지 않는다.
+계약 README에 동일 해시·태그와 gift identity의 별도 Steam ItemDBSchema 근거를 적었다.
+
+### 배분 예시 및 고정 fixture
+
+contracts/fixtures/planning_student_bond_v1.json의 7건: unknown_inventory,
+quantity_before_exp, owned_then_shortage, same_rank, lower_target, unknown_current,
+max_rank_boundary. 같은 입력의 실제 protocol 응답과 canned mock을 고정했다.
+
+| 사례(아루) | 계산 결과 |
+| --- | --- |
+| 현재 10→12, 필요 60+90=150. 일반 5000 보유 6개(20/개), 선호 5017 보유 1개(60/개), 나머지 0 | 보유 많은 5000 6개→5017 1개. 제공 180, 부족 0. 경험치 순 우선 배분이 아님 |
+| 현재 1→11, 필요 360. 선호 대형 5103 보유 1개(60×3=180), 나머지 0 | 1개 보유 사용 + 추가 1개, required=2·used_owned=1·shortage=1. 일반 안은 5017 6개 부족. 쓰다듬기 24회, 첫 회 즉시 가정 최소 69시간, 가능 횟수 [?] |
+| 현재 1→3, 필요 15+30=45, present 스캔 없음 | 대형 5103 1개 또는 일반 5017 1개. 보유·부족 null·경고. 쓰다듬기 3회, 최소 간격 시간 6시간 |
+
+경험치 1→2=15, 1→3=45, 1→4=75, 10→12=150, 99→100은 99행만,
+100→100=0을 검사했다. 인공 2열 fixture로 그룹 2→원소 1도 검증하며 그룹 0/범위 밖을
+기본 그룹으로 바꾸지 않는다. 보유 순서 변경, 명시적 null, 태그 매칭 상한, unknown current/
+group/선호 후보, strict 입력·응답, 숫자 bool 거부도 검사한다.
+
+### 직접 검증
+
+| 검사 | 결과 / 로그 |
+| --- | --- |
+| Python: 새 bond·gift, 기존 FB-11a·FB-1a·문서·시나리오·계약·비용·shortage/repository parity 13모듈 | **74건 통과**, debug/frontend_fb11b/python-targeted.txt |
+| Dart: 새 strict DTO/mock, 기존 student_calculation_service·growth_calculator_adapter | **36건 통과**, debug/frontend_fb11b/dart-targeted.txt |
+| Dart: planning_protocol_contract·client·repository_contract | **25건 통과**, debug/frontend_fb11b/dart-contract.txt |
+| Process: 새 인연 1건 + 기존 FB-11a 1건 | **2건 통과**, debug/frontend_fb11b/dart-process.txt. 같은 비용·재화·저장소 revision·파일 바이트 유지 |
+| analyze: lib/services와 서비스/새 테스트 | **No issues found**, debug/frontend_fb11b/dart-analyze.txt |
+| almanac·diff·slice 병합 | **통과: almanac 42페이지, diff 오류 없음, 수정 10파일 충돌 없음·post 20파일 고정·기존 스캐너 변경 제외·index 변경 없음**, debug/frontend_fb11b/almanac-validate.txt, diff-check.txt, handoff-verification.json |
+
+### FE3-g 연결 메모
+
+```dart
+final result = await service.calculateStudent(
+  currentStudent: request.currentStudent,
+  targets: request.targets, // 완전한 기존 정수 19-key, bond_rank는 목표 랭크
+  inventory: request.inventory,
+  bond: StudentBondRequest(currentRank: confirmedBondRank), // 미확인은 null
+);
+final bond = result.bond;
+```
+
+- 기존 성장 전용 인터페이스는 변경하지 않았다. 새 PlanningStudentBondCalculationService capability를 ProcessAppService/MockAppService가 구현하고 AppService 확장 메서드가 선택 인연 입력을 분기한다. 기존 어댑터·프런트 테스트 대역은 계속 동작한다.
+- FE3-g가 원래 확정값/직접 입력에서 currentRank를 따로 읽어 전달한다. 기존 currentStudent에 bond_rank를 몰래 넣지 않는다. 현재를 모르는데 1로 채우지 않는다. 디바운스 한 호출에서 성장+bond를 받아 이전 요청의 응답 버림·취소를 유지한다.
+- 필요 경험치=result.bond.requiredExp, 선호/일반 안=preferredLarge/normal, gift 행=requiredAmount·usedOwned·owned·shortage다. unknown은 빗금/미확인으로 표시하고 available=false 안은 사용할 수 없음을 드러낸다. 세 안 선택은 팝오버 고정·강조만 바꾼다.
+- sourceVersion·assumption=current_rank_start, petting.firstInteraction=immediate 조건의 minimumHours를 구분한다. availableCount=null은 [?]이며 하루 횟수/일수를 만들지 않는다. bond.warnings는 인연 타일, 기존 result.warnings는 성장 경고로 연결한다.
+- result.resources만 성장 재화 목록과 부족 종류 수에 쓴다. 선물 안을 합치지 않는다. 기존 성장 present 행이 있다고 모두 제거하는 것도 피한다.
+- reservedBond는 검증된 wire의 깊은 immutable 호환 뷰이며 result.bond는 typed immutable DTO다. 모든 field/key·산식·불변성을 검사한다. Mock은 fixture 7개 학생·랭크·보유 입력만 지원하고 다른 입력은 UnsupportedError다. 실제 임의 입력 수치는 Python process를 사용한다.
+- lib/ui/**는 이 워커가 수정하지 않았다. planning_models.dart도 프런트 소유로 유지한다.
+
+### 사용자 실행 순서와 다음 배정
+
+v7 루트에서 Python 전체 결과를 저장한다(직접 실행하지 않았으며 결과 파일도 만들지 않았다).
+
+```powershell
+Push-Location backend
+py -3.11 -m unittest discover -s tests -v 2>&1 | Tee-Object -FilePath ..\debug\frontend_fb11b\python-full.txt
+$fb11bPythonExit = $LASTEXITCODE
+Pop-Location
+if ($fb11bPythonExit -ne 0) { throw "FB-11b Python full failed: $fb11bPythonExit" }
+```
+
+Python 전체 → **두 워커가 모두 멈춘 뒤** fe_gate → fe_commit -Slice fb11b → redesigndocs.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File frontend/tool/fe_gate.ps1
+powershell -ExecutionPolicy Bypass -File frontend/tool/fe_commit.ps1 -Slice fb11b -DryRun
+powershell -ExecutionPolicy Bypass -File frontend/tool/fe_commit.ps1 -Slice fb11b
+redesigndocs
+```
+
+debug/frontend_fb11b/commit.json은 status=false·whole=백엔드 상태 문서만이며 pre/post를
+고정한다. baseline 폴더는 넣지 않는다. 커밋·push·stage는 하지 않았다.
+FB-11b 커밋까지 코드 편집을 멈춘다. 다음 FB-1b는 오케스트레이터 프롬프트 뒤 시작한다.
 
 # FB-1a 계획 문서 v2 nullable 목표
 
