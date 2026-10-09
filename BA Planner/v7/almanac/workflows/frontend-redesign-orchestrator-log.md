@@ -456,3 +456,33 @@ topics: [workflow, design]
 - 새 기준 `plan-flow-step2-more` 승인: 1단계 카드의 "더 보기 · 카드에 없는 목표"를 펼친 장면이다. 장비 1~3 Lv, 무기 ★, HP·ATK·HEAL 증감 버튼과 MAX 칩, 접기 버튼이 카드 안에 들어가고 겹침·잘림이 없다(FD-072).
 - FB-11b는 21:58에 이미 커밋됐다(`debug/frontend_fb11b/commit_20261008_215817`·`_215825`, Python 전체 881 OK).
 - 커밋 순서: FB-1b Python 전체(`debug/frontend_fb1b/python-full.txt`) → fb1b(post_dir, status=false) → fe1brev → fe4c(baseline whole) → redesigndocs.
+
+## 2026-10-09 02:40 — 커밋 확인, 다음 배정
+
+- 커밋: FB-1b `11426131`(21파일, post_dir 3-way 병합, 스캐너 WIP가 남은 서비스 3파일은 FB-1b 몫만 들어감), fe1brev `86589da6`(4파일), FE4-c `4a831177`(16파일), 문서 `b4bb199a`. Python 전체 898 OK. FB-11b는 `7d0af068`(10-08 21:58), 그 문서 `e9baa249`.
+- FE3-g 보류 해제(FB-11b 커밋). 순서는 FE4-d 뒤.
+- FE4-d를 d1(Flow-3-Order)·d2(Flow-3-Order-Many)로 나눈다. 직접 선행·나중에 칸은 FE4-f(FB-8) 그대로.
+- FE4-h 신설: 화면이 FB-1b 저장 문서를 읽도록 연결(백엔드 상태 문서 FB-1b 프런트 연결 메모 1·2·4, 소비자 표). FE4-e 저장 연결 전에 끝낸다. 지금 계획 화면은 여전히 goals → 메모리 문서 변환으로 읽어서, 저장 문서와 어긋날 수 있다.
+- 배정: 프론트 FE4-d1, 백엔드 FB-1c. 서비스 3파일(mock·process·planning_protocol_client)에 스캐너 WIP가 남아 있으므로 FB-1c도 FB-1b처럼 post_dir로 넘긴다.
+
+## 2026-10-09 12:35 — FE4-d1 + FB-1c gate ① `20261009_121942` RED(예상 범위)
+
+- analyze 0, 테스트 330+348+114, process 43 통과. 기존 golden 26장 차이 0(2단계 등 그대로).
+- golden 1건: `plan-flow-step3` 기준 없음. 새 장면이라 정상. ② 뒤 새 기준을 검토한다.
+- diff-check 1건: 이 로그 끝의 빈 줄(02:40 기록 때 오케스트레이터가 넣음). 오케스트레이터가 고쳤다.
+- FE4-d1 범위: `plan_flow_order_editor.dart`·`plan_flow_order_step.dart`·테스트 추가, draft·workspace·흐름 테스트·golden harness 수정. 활성 계획 페이즈 편집기는 남김(FE5-c에서 정리).
+- FB-1c 범위: `repository.plan.replace`, `repository_transaction.py`(journal 복구), 계약·Dart·process E2E. post_dir 사용. Python 전체는 아직 없다 → 커밋 전 실행.
+
+## 2026-10-09 12:50 — gate ② `20261009_124241` GREEN, `plan-flow-step3` 승인
+
+- analyze 0, 테스트 330+348+114, process 43, golden 27, diff-check 0.
+- 새 기준 `plan-flow-step3` 승인: B 제목 "단계 순서 정하기 · 단계 7개", 칸 3개(1순위 부족 1종, 2순위 부족 2종, 3순위 막힘)가 레일을 따라 칸마다 왼쪽으로 물러난다. 같은 학생 단계는 회색 화살표로 이어지고, 미보유 슌은 "모집 필요", 선택한 호시노 2단계는 분홍 테두리. C: 포함한 목표, 먼저 끝나야 하는 단계(자동), 이 칸에서 부족한 재화 2행, 자동 정렬 3종. 아래 "칸 추가", 범례 "같은 학생 · 자동". 레일 3단계 "지금", 단계 7개·순서 3칸.
+- 후속 확인 1건(FE4-d2로 넘김): 2순위 아루 → 3순위 아루 화살표가 3순위 칸 머리의 "막힘" 칩 위를 지나간다. 다음 칸 카드가 왼쪽으로 크게 물러난 경우 화살표가 칸 머리 칩을 피해 카드 윗변으로 들어가게 한다.
+- 커밋 순서: fb1c(Python 전체 먼저) → fe4d1 → redesigndocs. 파일이 겹치지 않으므로 Python이 길어지면 fe4d1을 먼저 커밋해도 된다.
+
+## 2026-10-09 14:30 — FB-1c Python 전체 통과, 다음 배정
+
+- FB-1c Python 전체 912 OK(`debug/frontend_fb1c/python-full.txt`). 커밋 대기: fb1c → fe4d1 → redesigndocs.
+- 다음 백엔드: FB-14 신설(단계 프리셋·내 그룹 저장, FD-074 (b)). FE4-c는 프리셋을 메모리에만 두고 "저장"을 숨겼다(FD-074 결과 대기). FD-074가 영속 저장으로 정해졌는데 담당 slice가 없었다. Lane A 순서상 FB-2·FB-3(이력·아이템 메타)은 FE5 뒤라 아직 이르고, FB-8(교차 선행)은 FE4-f 직전에 한다.
+- 계약 결정(오케스트레이터): 프로필별 묶음, 자체 collection revision(tactical 묶음 선례), get + 전체 교체 save, idempotency, 모르는 학생 ID는 지우지 않고 보존, 필터 프리셋 제외.
+- 다음 프론트: FE4-d2(Many 모드 + `plan-flow-step3` 화살표 후속).
