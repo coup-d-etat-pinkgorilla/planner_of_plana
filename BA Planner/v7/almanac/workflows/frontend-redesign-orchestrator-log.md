@@ -555,3 +555,25 @@ topics: [workflow, design]
 - 커밋: FE3-g `6eb04542`(10파일, +1824/−52), FB-8a `4accf46c`(21파일, 공유 서비스 2파일은 3-way 병합으로 스캐너 WIP 제외, 스키마 목록 테스트 포함). 스키마 목록 테스트 모듈 재실행 통과(사용자). 처음 안내한 단일 모듈 명령은 `backend`에서 모듈을 찾지 못해 errors=1이었다 — discover `-p`로 다시 실행했다.
 - 결정: FB-14 화면 연결을 FE4-i로 따로 둔다(FE4-e 뒤, FE4-f 전). FE4-e는 저장 흐름만으로도 크고, FE4-f는 FB-8b를 기다려야 하므로 그 사이에 넣는다. 범위: 단계 프리셋 저장·적용·이름 바꾸기·삭제(nullable 목표 그대로), 내 그룹 저장·불러오기, 필터 프리셋 제외(FD-074 (b)).
 - 배정: 프론트 FE4-e(4단계 저장, FD-031·079·080·088, FB-1c "FE4-e 프런트 연결 메모", 17:30 후속: 저장 때 v2 null을 정수로 바꾸지 않음). FB-8a 이후 plan.save는 저장된 authoring이 있으면 누락을 보존·재검증하고 맞지 않으면 `authoring_required`를 낸다 — FE4-e는 authoring을 보내지 않고(FE4-f 몫), 이 오류는 초안을 지우지 않고 알리기만 한다. 백엔드 FB-8b(시나리오 create/get/update/duplicate의 authoring, compare 전달, FB-8a "FB-8b 연결 메모").
+
+## 2026-10-09 21:20 — FE4-e + FB-8b gate ① `20261009_210522` RED: 두 레인 교차 컴파일 오류
+
+- HEAD `0160910f`(redesigndocs 뒤). 두 워커 모두 commit.json을 남기고 멈춤.
+- analyze 2건:
+  1. error `plan_flow_save_test.dart:111` — FE4-e 테스트 대역 `_RecordingService.createScenario`가 FB-8b가 `MockAppService.createScenario`에 더한 선택 매개변수 `PlanningAuthoring? authoring`을 갖지 않아 override가 성립하지 않는다. 그래서 flutter-test-2가 이 파일을 적재하지 못했다(실패 1 = 적재 실패, 이 파일의 테스트는 아직 한 번도 돌지 않음). 각 워커가 상대 레인의 작업트리 없이 정적 검토만 해서 생긴 교차 오류다.
+  2. info `repository_plan_service.dart:3` unnecessary_import — FB-8b가 `scenario_service.dart`에 `export 'planning_authoring.dart'`를 더해서 FB-8a 때의 직접 import가 중복이 됐다.
+- 오케스트레이터가 고쳤다:
+  · FE4-e: 테스트 대역 createScenario에 `PlanningAuthoring? authoring` 선택 매개변수를 더하고 super로는 넘기지 않는다(FE4-e는 authoring을 보내지 않는다). override는 선택 매개변수를 더해도 되므로 fb8b·fe4e 어느 순서로 커밋해도 컴파일된다. fe4e added 파일이라 매니페스트 변경 없음.
+  · FB-8b: `repository_plan_service.dart`의 중복 import 한 줄을 지웠다. FB-8b export가 있어야만 성립하므로 이 파일을 FB-8b 매니페스트 modified에 넣고 pre/post 사본을 두었다. 기기 해시 확인(test `0ef70371…`, service `2322ca16…`, fb8b commit.json `e296f4b8…`).
+- golden 2건은 새 장면 `plan-flow-step4`·`plan-flow-step4-append` 기준 없음(예상). 다른 golden 27장 차이 0, process 46 통과.
+- 다음: gate ① 재실행(FE4-e 테스트가 처음 실제로 돈다). 커밋 순서는 fb8b가 먼저(서비스 파일 import 정리가 fb8b export에 기대므로).
+
+## 2026-10-09 22:10 — gate ①′ `20261009_213235`·② `20261009_215639` GREEN, FE4-e 새 기준 승인, FB-8b Python 통과
+
+- ①′(21:20 수정 뒤): analyze 0, 테스트 346+541+142(FE4-e 저장 흐름 테스트 첫 실행 통과), process 46, 기존 golden 27장 차이 0. 실패는 새 장면 기준 없음 2건뿐.
+- ② update-goldens GREEN(31 비교 통과). 기준 이미지 변경은 새 PNG 2장 추가뿐이다.
+- 새 기준 `plan-flow-step4` 승인: B "이렇게 만들어집니다 · 페이즈 3개 · 단계 7개", P1~P3 행(학생 칩·단계 배지, 부족 2종/모두 지금 가능, 재화 링크), 비교 타일(충족률 67% → 62%, 부족 3 → 3종, 크레딧 46M → 57.4M, 학생 3 → 3명), 크게 늘어나는 재화 3행. C 3지선다(시나리오로 저장 선택), 패널 안 이름 칸 "새 시나리오 1", 저장한 뒤 토글 2개, C 버튼과 레일 primary 모두 "시나리오로 저장"(FD-079).
+- 새 기준 `plan-flow-step4-append` 승인: 페이즈로 추가 선택 → 행 번호가 P3~P5로 이어지고, P4 hover 팝오버(부족 2종: 파이스토스 원반 −126, 볼프세크 −28, 크레딧 여유, "앞 페이즈에서 쓰고 남은 양 기준"), 비교 67% → 52%·부족 3 → 4종·크레딧 46M → 103.4M, "활성 계획" 칸(이름 그대로 두고 페이즈만 붙임), 두 버튼 글자 "활성 계획에 페이즈로 추가".
+- 후속 확인(FE4-i 첫 항목으로): 시나리오 장면에서 레일 "필요 크레딧 48.2M · 부족 재화 5종"(초안 계산)과 비교 타일 b쪽 "57.4M · 3종"(같은 초안)이 다르다. golden 대역 `GoldenPlanFlowMockAppService.compareScenarios`가 단계 결과를 문서별로 따로 모아 계산 대역과 기준이 다른 탓으로 보인다(실제 compare는 백엔드 계산). 대역을 계산 대역과 같은 값이 나오게 맞추고, "시나리오로 저장 대상이면 레일 필요 크레딧·부족 종 수 = 비교 b" 단언을 더한다. 대역만 바뀌면 두 장면 golden 숫자가 바뀌므로 그때 다시 승인한다.
+- FB-8b Python 전체 955 OK(1202초). 21:20 수정분(`repository_plan_service.dart` import)은 매니페스트에 있다.
+- 커밋 순서: fb8b → fe4e(baseline whole, status=true) → redesigndocs. 다음 배정: 프론트 FE4-i(+위 후속), 백엔드 FB-2 읽기 전용 설계 조사(이력·마지막 스캔 시각). FB-2·FB-3은 원래 FE5 뒤 순서지만 FE4-f·FE4-g·FE5에 백엔드 선행이 없어(FB-9는 필요할 때만) 백엔드 워커가 쉬게 되므로 조사부터 앞당긴다. 구현은 조사 승인 뒤.
