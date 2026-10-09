@@ -479,6 +479,20 @@ class ProcessAppService
   );
 
   @override
+  Future<RepositoryHistoryEventsResult> loadRepositoryHistoryEvents(
+    RepositoryHistoryEventsRequest request,
+  ) async => RepositoryHistoryEventsResult.fromWire(
+    await _client.send('repository.history.events', request.toWire()),
+  );
+
+  @override
+  Future<RepositoryHistoryDiffResult> loadRepositoryHistoryDiff(
+    RepositoryHistoryDiffRequest request,
+  ) async => RepositoryHistoryDiffResult.fromWire(
+    await _client.send('repository.history.diff', request.toWire()),
+  );
+
+  @override
   Future<int> saveRepositoryGoals(
     String profileId,
     Map<String, dynamic> goals,

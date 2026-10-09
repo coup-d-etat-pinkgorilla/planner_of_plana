@@ -28,6 +28,7 @@ from core.current_history import (
     empty_history, history_from_wire, append_history, utc_timestamp,
     summary as history_summary,
 )
+from core.history_query import query_events, query_diff
 
 
 STORE_VERSION = 1
@@ -448,6 +449,27 @@ class JsonRepository:
             raise RepositoryError("invalid_payload", "profile_ids must contain 1..128 unique IDs")
         profiles = [self._profile(profile_id) for profile_id in profile_ids]
         return {"profiles": [history_summary(profile["profile_id"], profile["revision"], profile.get("current_history")) for profile in profiles]}
+
+    @locked(RepositoryError)
+    def get_history_events(self, payload: dict) -> dict:
+        from core.history_query import events_request
+        try:
+            data = events_request(payload)
+            profile = self._profile(data['profile_id'])
+            return query_events(profile['profile_id'], profile['revision'], profile.get('current_history'), data)
+        except HistoryError as error:
+            raise RepositoryError('invalid_payload', str(error), details={'reason': error.reason}) from error
+
+    @locked(RepositoryError)
+    def get_history_diff(self, payload: dict) -> dict:
+        from core.history_query import diff_request
+        try:
+            data = diff_request(payload)
+            profile = self._profile(data['profile_id'])
+            return query_diff(profile['profile_id'], profile['revision'], profile.get('current_history'),
+                              projection(profile['students'], profile['inventory']), data)
+        except HistoryError as error:
+            raise RepositoryError('invalid_payload', str(error), details={'reason': error.reason}) from error
 
     @locked(RepositoryError)
     def get_plan(self, profile_id: str) -> dict[str, Any]:

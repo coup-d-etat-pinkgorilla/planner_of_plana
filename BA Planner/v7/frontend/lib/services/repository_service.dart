@@ -477,6 +477,12 @@ bool isValidRepositorySuccessPayload(
       case 'repository.history.summary':
         RepositoryHistorySummaryResult.fromWire(payload);
         return true;
+      case 'repository.history.events':
+        RepositoryHistoryEventsResult.fromWire(payload);
+        return true;
+      case 'repository.history.diff':
+        RepositoryHistoryDiffResult.fromWire(payload);
+        return true;
       case 'repository.plan.get':
         RepositoryPlanState.fromWire(payload);
         return true;
@@ -653,6 +659,12 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
       case 'repository.history.summary':
         RepositoryHistorySummaryRequest.fromWire(payload);
         return true;
+      case 'repository.history.events':
+        RepositoryHistoryEventsRequest.fromWire(payload);
+        return true;
+      case 'repository.history.diff':
+        RepositoryHistoryDiffRequest.fromWire(payload);
+        return true;
       case 'repository.migration.import':
         return _exact(payload, {'source_profile_key'}) &&
             payload['source_profile_key'] is String &&
@@ -698,6 +710,12 @@ abstract interface class RepositoryService {
   Future<RepositoryState> loadRepositoryState(String profileId);
   Future<RepositoryHistorySummaryResult> loadRepositoryHistorySummary(
     List<String> profileIds,
+  );
+  Future<RepositoryHistoryEventsResult> loadRepositoryHistoryEvents(
+    RepositoryHistoryEventsRequest request,
+  );
+  Future<RepositoryHistoryDiffResult> loadRepositoryHistoryDiff(
+    RepositoryHistoryDiffRequest request,
   );
   Future<int> saveRepositoryStudents(
     String profileId,

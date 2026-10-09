@@ -1,6 +1,6 @@
 ---
 title: "Frontend Redesign Backend Status"
-summary: "FB-2a 확정 이력·journal·최소 summary와 승인된 FB-2 조사, FB-8a/b authoring 및 Lane A 백엔드 기록입니다."
+summary: "FB-2c 이력 기간·cursor·시점 diff·세션 점 조회, FB-2a 저장 기반과 승인된 FB-2 조사 및 Lane A 백엔드 기록입니다."
 topics: [workflow, design]
 sources:
   - id: workflow
@@ -14,6 +14,83 @@ sources:
     path: backend/tests/test_student_calculation_fb11a.py
 ---
 백엔드 워커 전용(Lane A 병렬, 2026-10-07)
+
+# FB-2c 이력 기간 조회
+
+## 착수 (2026-10-10)
+
+- 시작 SHA: `64f29afefe675b269d4fa3660076f2e813333ed8`. FB-2a·FE4-f1·redesigndocs 이후 HEAD.
+- AGENTS·README/runtime 경계 → workflow FB-2·FB-3 → orchestrator 23:25/00:35/01:15 → FB-2a 종료 전체·FB-2 조사 2/4절을 읽었다. 기존 기록과 조사 절은 그대로 둔다.
+- events/cursor·one-of diff·baseline/apply_event 복원·세션별 마지막 적용점과 strict Python/Dart 계약을 구현한다. 실제 scan 연결은 FB-2b이며 source=scan fixture로 조회를 고정한다.
+- 공유 서비스 pre/post를 남긴다. 관련 Python·Dart 서비스·process만 직접 실행하고 전체 Python·gate·stage·커밋·push는 하지 않는다.
+
+## 종료 (2026-10-10, 사용자 전체 검증 대기)
+
+### 계약·복원 정책
+
+| 항목 | FB-2c 결과 |
+|---|---|
+| events | `repository.history.events`에 profile, UTC `[from_at,to_at)`, source, raw kind/profile, 학생·재화 승인 scope filter, cursor, limit. 요청 default 100 / 1..200, target 배열 각각 0..256 unique IDs. raw 및 target text 1..1024 UTF-8 bytes. unknown ID/kind/profile은 보존·완전 일치, enum/trim/case 검사 없음 |
+| null·생략 | profile filter 명시 null은 저장 null과 일치; 생략은 전체. non-scan의 profile도 null이므로 null scan만 원하면 source=scan을 함께 넣는다. 나머지 optional 필드 명시 null은 거부. target 배열 생략=전체, 빈 배열=그 bucket 제외. 양쪽 target filter를 주면 승인 학생 **또는** 승인 resource scope에 일치하는 event를 선택 |
+| cursor | 불투명 값에 normalized profile/filter + 최초 anchor history_sequence + baseline + 마지막 page sequence를 묶음. limit 변경·target 배열 순서 변경 가능. anchor 뒤 새 current/metadata 쓰기를 이전 페이지/count/point에 섞지 않음; revision은 이번 read 값. query/형식 불일치 invalid_payload reason=invalid_history_query. 원래 필요한 prefix가 접히면 **invalid_payload reason=history_cursor_expired**, retryable=false → 첫 페이지 재조회. 표시했던 prefix도 전체 cohort count/session scope 때문에 필요. query filter의 최악 JSON escape를 포함하도록 cursor 구문 상한 8 MiB |
+| 시간 구문 | UTC RFC3339 `Z` 또는 `+00:00`, 소수초 0..6자리 → 6자리 Z로 normalize. 잘못된 달력·year 0·비UTC offset·범위 역전 거부. 같은 시각은 sequence 정렬. events의 같은 from/to는 빈 결과 |
+| diff | `repository.history.diff {profile_id,from,to,student_ids?,resource_keys?}`. endpoint strict one-of: `{at}`, `{sequence}`, `{scan:latest\|previous,scan_kind?,inventory_scan_profile?,student_id?\|resource_key?}`, `{current:true}`. scan의 단수 대상 2종 동시 지정 금지. resolved 역전·미래 sequence 거부, 같은 endpoint 허용 |
+| 경계 상태 | at=경계 **직전**(같은 시각 적용 전부 제외), sequence/scan=적용 **직후**, current=guard 아래 읽은 확정 현재. retained baseline sequence 자체는 복원 가능. compacted baseline 시각과 같거나 이전 at는 불가. legacy sequence 0은 실제 baseline 값이며 그 시각은 null |
+| 공용 복원 | Python current_history.apply_event와 Dart 기존 `_apply` 재사용. baseline에서 모든 scan/manual/import/unattributed를 적용한 뒤 point target projection만 거름. 비용식/계획 계산·정규화 복제 없음. Dart stored/event-response 공용 strict validator로 분리하여 같은 event 제약을 사용 |
+| 응답 | events: profile_id/revision/history_sequence/coverage/events/matching_event_count/scan_commit_count/scan_session_count/scan_points/trend_eligible/next_cursor. diff: 공통 필드 + from_point/to_point/student_changes/inventory_changes. from/to point에는 selector/sequence/recorded_at/available/학생·inventory projection. unavailable은 sequence/time null·빈 배열이며 실제 빈 snapshot을 뜻하지 않음 |
+| 값·delta | 비교 row는 동값 대상도 포함. 학생은 whole confirmed record present/value(필드 missing/null, form, provenance 보존). resource는 present/quantity + signed canonical decimal delta. known 양쪽만 실제 `"0"` 포함한 delta를 냄. missing·삭제·unknown quantity를 0으로 채우지 않음. 대수량은 Python Decimal/Dart BigInt로 정수 변환·float 제한 없이 처리 |
+| coverage | 기존 origin/baseline/first_retained/timestamps_monotonic + reasons. query complete는 **요청 범위·대상** 기준이며 summary lifetime complete와 다름. unrecorded / before_retention / legacy_time_unknown / clock_rollback / scan_not_found / unknown_quantity / unknown_student. 수량 unknown은 해당 row delta만 null·전체 coverage 불완전, 다른 known row delta는 제공. temporal 불완전은 모든 delta null. clock 역행을 보정하지 않으며 sequence 상태는 읽되 time endpoint/delta/trend를 억제 |
+| 조회·revision | root guard → 미완료 공용 journal 복구 → strict profile/current_history 읽기. read는 plan 첫 이관/history 생성/prune/clock/revision/cache 변경 없음. prepared/committed 복구 뒤 일관된 이전/이후를 읽음. 기존 저장 fingerprint·{revision} cache 그대로 |
+| 범위 | 과거 plan/goals/metadata를 추가 저장하지 않음. `backend/tools/developer_tools.py` statistics summary.snapshot_count는 여전히 `len(entries)`(inventory entry 수); 바꾸지 않았다. scanner/tactic/metadata/UI·golden 코드는 고치지 않았다 |
+
+### 세션 점·필수 fixture
+
+- 표시 표본은 session_id별 **anchor 안 마지막 scan 적용 sequence 1점**. 학생 순차 candidate commit을 수백 점으로 만들지 않는다. retained session의 승인 scope를 합치고, raw kind/profile 및 시간 filter는 마지막 점에 적용한다. 범위 안 앞 commit이 있어도 마지막 적용이 범위 밖이면 그 기간의 점은 없다. 기간의 raw scan_commit_count와 표시 scan_session_count가 다를 수 있다.
+- `scan_points=[{session_id,sequence,recorded_at,scan_kind,inventory_scan_profile}]`는 보존된 최대 10,000개 세션의 **metadata index**다. full current를 점마다 복제하지 않는다. event page와 별도로 anchor 전체 index/count를 같게 반환하며, 각 점 sequence를 diff endpoint로 읽으면 마지막 적용 당시의 실제 상태가 나온다. prefix에서 사라진 scan 적용·scope는 과거 점으로 합성하지 않는다.
+- `trend_eligible=coverage.complete && scan_session_count>=3`. FD-042의 세 세션 미만 없음 판정까지 제공; 수식과 값의 추가 known 판정은 프론트. source manual/import/unattributed는 점·scan 수를 늘리지 않는다. diff의 진단 raw commit은 `(from_sequence,to_sequence]`, 점은 같은 구간의 session 끝을 센다.
+
+| fixture | 고정 사례·독립 의미 검증 |
+|---|---|
+| 공용 policy **35** | import seed·manual·unattributed 복원, 동값 scan, A 2 commit/B 2 commit이 각각 1세션, 전체 학생/재화, 승인 scope OR, empty target, raw whitespace/unknown/null/생략, `[from,to)`, UTC normalize, seq/current/same-point 실제 0, previous는 이전 **세션**, A 학생/재화 승인 뒤 다른 scope로 끝난 상태, 세 세션 trend, unknown/null/삭제/missing/큰 수량, unrecorded·legacy 시간 미상/seq0, compacted baseline·range·previous 부족, clock 역행 |
+| strict request **21** / response **11** | unknown key, null/bool/float·limit>200·target>256·중복 ID, 두 endpoint/두 scan 대상, bad date/year0/비UTC, UTF-8 1024 초과, 역전·미래 seq. 응답의 unknown key/bool/count/trend/coverage·delta 타입/값·학생 bool·중복 row·unavailable projection·year0 거부. JSON Schema 구조와 runtime semantic verdict를 구별해서 Python·Dart가 같은 원본 fixture를 읽음 |
+| cursor | 추가 write/replay·재시작·다른 limit·target 순서 뒤 첫 anchor/count/point 유지, 불일치/깨진 cursor 거부, count/age prefix 정리 뒤 만료. 양쪽 최대 filter의 escape가 큰 cursor도 schema/왕복 경계 안에서 처리 |
+| 원자 읽기 | prepared와 committed journal이 남은 profile을 events가 먼저 복구하고 diff가 같은 상태를 확인. 기존 FB-2a exception/process-exit·원자성 테스트도 함께 회귀 |
+| Process 새 **2** | manual save→events 첫 page→재시작→diff→새 write+replay→기존 anchor 다음 page. source=scan 공용 저장 fixture를 임시 profile/catalog에 넣음→모든 기본 조회/DTO 비교→재시작 cursor→session 점·previous 부족/null delta. 실제 scanner API를 호출하거나 파일을 수정하지 않음 |
+
+### 직접 검증·인계
+
+- Python 관련 **123 OK**: history query 17 + FB-2a/history/persistence/protocol/v6/FB-1b/FB-1c/FB-8a/FB-8b/planning schema 계약. `debug/frontend_fb2c/python-targeted.txt`. 산술·복원 최종 수정의 query 17건도 `python-history.txt`에서 확인.
+- Dart 관련 서비스 **263 OK**, Process **8 OK**(새 2+기존 history/current/plan/replace/scenario 6). `dart-services.txt`, `dart-process.txt`; 명시 파일·exclude-tags golden·concurrency=1. 지정 Dart analyze **0 issues**, `dart-analyze.txt`. UI/golden 변경 0 예상.
+- `debug/frontend_fb2c/commit.json`: status=false, whole=본 문서(기존 FB-2a·FB-2 조사 그대로), post_dir=`debug/frontend_fb2c/post`. 공유 mock/process/planning_protocol_client pre/post. client는 기존 repository prefix validator를 그대로 쓰므로 코드 변경 없음. scanner WIP를 제외하는 pre→post 3-way merge·scanner 블록·index 검증은 `handoff-verification.json`.
+- 전체 Python·gate·stage·커밋·push는 실행하지 않았다. 실제 source=scan production 연결을 완료했다고 선언하지 않는다.
+
+사용자 PC 전체 Python(v7 root에서, 결과 파일 `debug\frontend_fb2c\python-full.txt`):
+
+```powershell
+Push-Location backend
+try {
+  py -3.11 -m unittest discover -s tests -v 2>&1 | Tee-Object -FilePath '..\debug\frontend_fb2c\python-full.txt'
+  $fb2cPythonExit = $LASTEXITCODE
+} finally { Pop-Location }
+if ($fb2cPythonExit -ne 0) { throw 'FB-2c Python 전체 실패: python-full.txt 확인' }
+```
+
+사용자 순서: **Python 전체 → 두 워커가 모두 멈춘 뒤 fe_gate → fe_commit -Slice fb2c → redesigndocs**. gate/커밋은 이 워커가 하지 않는다.
+
+### FE6-f·FE7-h·FB-2b 연결 메모
+
+| 대상 | 호출·처리 |
+|---|---|
+| 공용 Dart | RepositoryService.loadRepositoryHistoryEvents(RepositoryHistoryEventsRequest(...)), loadRepositoryHistoryDiff(RepositoryHistoryDiffRequest(...)); Process/Mock 동일 DTO. request.withCursor(nextCursor)로 필터 유지. inventoryScanProfile 기본 sentinel=생략, `null`=명시 null. hasInventoryScanProfile getter로 구별 |
+| FE6-f 변화 목록 | item에는 resourceKeys:[stable resource_key], studentIds:[]; UTC fromAt/toAt. events는 표시 필터로 고른 **원본 event 전체**이므로 item/학생 row를 UI에서 골라 표시. nochange는 빈 diff와 적용 시각·scope를 갖고 있음. nextCursor null까지 읽기, cursor_expired reason이면 첫 page부터 새 anchor |
+| FE6-f 기간 KPI | from/to를 RepositoryHistoryEndpoint.at(...)로 주면 경계 직전 상태 비교. inventoryChanges.delta signed string을 BigInt 등으로 사용하고 null을 0으로 바꾸지 않음. unknown_quantity만 있으면 다른 known row는 delta를 사용할 수 있으나 전체 합계에는 incomplete 표시. 학생/provenance와 null 필드는 실제 known 여부를 확인 |
+| FE6-f 스파크라인 | events source=scan 및 item filter → scanPoints의 sequence index. 각 점을 diff.sequence(...)로 읽어 point.inventory를 사용(동일 from/to 가능), 세션 끝 1점만 그림. event page count를 scan 회수로 쓰지 않음. trendEligible=false면 FD-042 추세 없음; true여도 세 known 수량 점인지 확인. 실제 scan 없음 상태에서 manual/import로 scan 점을 지어내지 않음 |
+| 지난 scan 대비 | endpoint.scan(position:'previous'/'latest',raw kind/profile,resourceKey 또는 studentId) → 서로 다른 세션의 마지막 적용 상태. latest vs current는 별도 비교. 사이 manual/import/unattributed까지 복원됨. previous 없으면 fromPoint.available=false·coverage reason·delta null |
+| FE7-h A6/B3 | 기간·대상 ID를 events/diff에 적용, scanSessionCount=표시 표본 / scanCommitCount=진단. 현재 메타 필터에서 선택한 student IDs를 양쪽 point에 같게 줌. 전체 학생 합계와 선택 scope의 scan 수를 구별. points는 retained/anchored 범위이며 lifetime 회수는 summary.totalScanSessionCount. 과거 활성 계획/등록 KPI를 이력 current로 재현하지 않음 |
+| FB-2b 남은 일 | scanner 소유자 회신 뒤 history_context(source=scan,session/candidate/raw kind/profile,실제 승인 scope) 연결. 동값·부분 승인·upsert·최초 replay를 Python/Mock/Process에서 실제 scan으로 검증. 기존 unattributed를 과거 scan으로 재분류하지 않음. 최소 history.summary에 raw tuple별 last_scan_at·학생/아이템 latest 시각을 추가하여 FE8-c(학생 행)/FE8-g1/FE6 item 연결. FB-2c fixture로 선택자·세션 점 의미는 이미 고정 |
+| FB-2d | 전술 v1/v2 삭제 범위·guard/lock 조율 후 별도 프롬프트. 이번 slice에 삭제 journal 변경 없음 |
+
+**여기서 멈춘다.** 사용자 전체 Python과 오케스트레이터 검토를 기다린다. 후속 FB-2b/d는 별도 프롬프트 뒤 시작한다.
 
 # FB-2a 이력 저장 기반
 

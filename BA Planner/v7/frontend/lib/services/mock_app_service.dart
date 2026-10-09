@@ -44,6 +44,7 @@ class MockAppService
     List<RepositoryProfile>? profiles,
     Map<String, Map<String, dynamic>>? repositoryStates,
     DateTime Function()? historyClock,
+    Map<String, RepositoryCurrentHistory>? repositoryHistories,
   }) : _historyClock = historyClock ?? (() => DateTime.now().toUtc()),
        _scannerTargets = List.unmodifiable(
          scannerTargets ??
@@ -111,6 +112,11 @@ class MockAppService
     for (final entry in repositoryStates?.entries ?? const <MapEntry<String, Map<String, dynamic>>>[]) {
       RepositoryState.fromWire(entry.value);
       _repositoryStates[entry.key] = Map<String, dynamic>.from(jsonDecode(jsonEncode(entry.value)) as Map);
+    }
+    for (final entry in repositoryHistories?.entries ?? const <MapEntry<String,RepositoryCurrentHistory>>[]) {
+      if (!_profiles.any((p)=>p.id==entry.key)) throw StateError('profile_not_found');
+      validateRepositoryHistoryCurrent(entry.value,RepositoryState.fromWire(_mockRepositoryState(entry.key)));
+      _currentHistories[entry.key]=RepositoryCurrentHistory.fromWire(entry.value.toWire());
     }
     _trackMockCurrentWrites = true;
   }
@@ -1560,6 +1566,24 @@ class MockAppService
     final state = _mockRepositoryState(profileId);
     return _currentHistories[profileId]?.summarize(profileId, state['revision'] as int)
         ?? RepositoryHistorySummary.unrecorded(profileId, state['revision'] as int);
+  }
+
+  @override
+  Future<RepositoryHistoryEventsResult> loadRepositoryHistoryEvents(
+    RepositoryHistoryEventsRequest request,
+  ) async {
+    _mockHistorySummary(request.profileId);
+    return repositoryHistoryEvents(RepositoryState.fromWire(_mockRepositoryState(request.profileId)),
+      _currentHistories[request.profileId],request);
+  }
+
+  @override
+  Future<RepositoryHistoryDiffResult> loadRepositoryHistoryDiff(
+    RepositoryHistoryDiffRequest request,
+  ) async {
+    _mockHistorySummary(request.profileId);
+    return repositoryHistoryDiff(RepositoryState.fromWire(_mockRepositoryState(request.profileId)),
+      _currentHistories[request.profileId],request);
   }
 
   void _observeMockCurrentWrite(String profileId, Map<String, dynamic>? stored,

@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'repository_service.dart' show ConfirmedStudentState, RepositoryState;
 
+part 'repository_history_query.dart';
+
 const currentHistorySources = ['scan', 'manual', 'import', 'unattributed'];
 const currentHistoryMaxEvents = 10000;
 const currentHistoryMaxBytes = 16 * 1024 * 1024;
@@ -43,7 +45,10 @@ String? _time(Object? value, {bool nullable = false}) {
     _bad('UTC history timestamp expected');
   }
   final date = DateTime.tryParse(value);
-  if (date == null || historyUtcTimestamp(date) != value) {
+  if (date == null ||
+      date.year < 1 ||
+      date.year > 9999 ||
+      historyUtcTimestamp(date) != value) {
     _bad('Invalid UTC date');
   }
   return value;
@@ -153,6 +158,14 @@ class CurrentHistoryEvent {
   String? get scanKind => _wire['scan_kind'] as String?;
   String? get inventoryScanProfile =>
       _wire['inventory_scan_profile'] as String?;
+  String? get scanSessionId =>
+      (_wire['scan_context'] as Map?)?['session_id'] as String?;
+  List<String> get appliedStudentIds => List.unmodifiable(
+    (_wire['applied_scope']['student_ids'] as List).cast<String>(),
+  );
+  List<String> get appliedResourceKeys => List.unmodifiable(
+    (_wire['applied_scope']['resource_keys'] as List).cast<String>(),
+  );
   List<HistoryStudentChange> get studentChanges => List.unmodifiable(
     (_wire['student_changes'] as List).map(
       (item) => HistoryStudentChange._(_map(item, null)),
@@ -316,103 +329,17 @@ class RepositoryCurrentHistory {
     final retainedLast = <String, String>{};
     var previousRevision = -1;
     for (var i = 0; i < rawEvents.length; i++) {
-      final e = _map(rawEvents[i], {
-        'sequence',
-        'recorded_at',
-        'source',
-        'revision_before',
-        'revision_after',
-        'scan_kind',
-        'inventory_scan_profile',
-        'scan_context',
-        'applied_scope',
-        'student_changes',
-        'inventory_changes',
-        'catalog_revision',
-      });
-      if (_int(e['sequence'], 1) != floor + i + 1 ||
-          !currentHistorySources.contains(e['source'])) {
-        _bad('Invalid application sequence/source');
+      final e = _validatedHistoryEvent(rawEvents[i]);
+      if (e['sequence'] != floor + i + 1 ||
+          (e['revision_before'] as int) < previousRevision ||
+          (e['source'] == 'scan' &&
+              !sessions.contains(e['scan_context']['session_id']))) {
+        _bad('Invalid retained event sequence/revision/session');
       }
-      _time(e['recorded_at']);
       final source = e['source'] as String;
-      if (source == 'import' && e['sequence'] != 1) {
-        _bad('Import is the single initial seed');
-      }
-      final before = _int(e['revision_before']);
-      final after = _int(e['revision_after']);
-      if (before < previousRevision ||
-          (source == 'import'
-              ? before != 0 || after != 0
-              : after != before + 1)) {
-        _bad('Invalid application revisions');
-      }
-      previousRevision = after;
+      previousRevision = e['revision_after'] as int;
       retained[source] = retained[source]! + 1;
       retainedLast[source] = e['recorded_at'] as String;
-      final scope = _map(e['applied_scope'], {'student_ids', 'resource_keys'});
-      _list(scope['student_ids'], _text);
-      _list(scope['resource_keys'], _text);
-      if (source == 'scan') {
-        _text(e['scan_kind'], raw: true);
-        if (e['inventory_scan_profile'] != null) {
-          _text(e['inventory_scan_profile'], raw: true);
-        }
-        final context = _map(e['scan_context'], {
-          'session_id',
-          'generation',
-          'candidate_id',
-          'candidate_revision',
-        });
-        _text(context['session_id'], raw: true);
-        _text(context['candidate_id'], raw: true);
-        _int(context['generation'], 1);
-        _int(context['candidate_revision']);
-        if (!sessions.contains(context['session_id']) ||
-            ((scope['student_ids'] as List).isEmpty &&
-                (scope['resource_keys'] as List).isEmpty)) {
-          _bad('Invalid scan session/scope');
-        }
-      } else if ([
-        'scan_kind',
-        'inventory_scan_profile',
-        'scan_context',
-      ].any((key) => e[key] != null)) {
-        _bad('Non-scan metadata');
-      }
-      final sha = e['catalog_revision'];
-      if (sha != null &&
-          (sha is! String || !RegExp(r'^[0-9a-f]{64}$').hasMatch(sha))) {
-        _bad('Invalid catalog revision');
-      }
-      for (final row in [
-        ('student_changes', 'student_id', 'value', 'student_ids'),
-        ('inventory_changes', 'resource_key', 'quantity', 'resource_keys'),
-      ]) {
-        final (changes, id, name, scopeKey) = row;
-        _list(e[changes], (raw) {
-          final change = _map(raw, {id, 'before', 'after'});
-          final identity = _text(change[id]);
-          for (final side in ['before', 'after']) {
-            final p = _map(change[side], {'present', name});
-            if (p['present'] is! bool ||
-                (p['present'] == false && p[name] != null)) {
-              _bad('Invalid history presence');
-            }
-            if (name == 'value' &&
-                p['present'] == true &&
-                _student(p[name]).studentId != identity) {
-              _bad('Student diff identity mismatch');
-            }
-            if (name == 'quantity') _quantity(p[name]);
-          }
-          if (_same(change['before'], change['after']) ||
-              !(scope[scopeKey] as List).contains(identity)) {
-            _bad('Invalid diff/scope');
-          }
-          return identity;
-        });
-      }
       state = _apply(state, e);
     }
     for (final source in currentHistorySources) {

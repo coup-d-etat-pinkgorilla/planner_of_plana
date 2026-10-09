@@ -903,3 +903,122 @@ no-change scan/session counts, compaction and strict schema/runtime verdicts.
 `backend/tests/fixtures/current_history_profile_shape.json` is the anonymous
 structure of an actual 217-student/614-item profile, with no account identifiers
 or original quantities; targeted tests measure full apply and 10,000 commits.
+
+### Current history period queries (FB-2c)
+
+`repository-history-query-v1.schema.json` defines strict payloads/results for
+`repository.history.events` and `repository.history.diff`; both are routed by
+`repository-protocol-v1.schema.json`. They recover the common journal under the
+repository guard before reading. They do not migrate a legacy plan, create or
+prune history, sample a clock, emit an event, or change any revision/cache.
+
+`events {profile_id, from_at?, to_at?, source?, scan_kind?,
+inventory_scan_profile?, student_ids?, resource_keys?, cursor?, limit?}` returns
+`{profile_id, revision, history_sequence, coverage, events,
+matching_event_count, scan_commit_count, scan_session_count, scan_points,
+trend_eligible, next_cursor}`. Events ascend by application sequence. UTC RFC3339
+query times accept `Z` or `+00:00` with 0..6 fractional digits and normalize to
+six-digit `Z`; calendar errors, non-UTC offsets and reversed intervals are
+invalid. The interval is **[from_at,to_at)**. Equal boundaries select no events.
+Optional filters AND together; supplying both target lists matches either
+approved scope (student OR resource). No-change applications still match their
+scope. Each target list has 0..256 unique, nonempty IDs (at most 1024 UTF-8 bytes);
+omission means all, an empty list selects none. Unknown IDs are not discarded or
+matched through catalog positions/aliases.
+
+Raw kind/profile strings are exact, including whitespace/case, with 1..1024
+UTF-8 bytes and no enum/membership check. `inventory_scan_profile:null` searches
+explicit stored null; omission includes all profiles. Non-scan events have null
+scan metadata, so add `source:scan` when selecting null-profile scans only.
+Explicit null for other optional fields is invalid. Limit defaults to 100 and
+is 1..200. `matching_event_count` and raw `scan_commit_count` describe the entire
+anchored filter result, rather than the current page.
+
+The cursor is opaque to clients. It binds normalized profile/filters, first-read
+`history_sequence` and retained baseline. Continue with identical filters and the
+returned cursor; limit may change. New applications after that anchor are never
+mixed into pages/counts/points; response revision is the revision at this read.
+Encoded cursors are bounded at 8 MiB to accommodate both maximum target filters
+even when their valid raw characters require JSON escaping.
+Malformed or mismatched cursors use `invalid_payload` with
+`details.reason=invalid_history_query`. If compaction removes the original
+required prefix, use `invalid_payload`, `details.reason=history_cursor_expired`
+(not retryable): restart from the first page. The original prefix is required
+even after its rows have been paged, because cohort counts and session scope/end
+points still depend on it. Reads alone never expire a cursor by pruning.
+
+Display points and FD-042 sample counts use **distinct scan session IDs**. For
+each retained session, union its approved scopes and select its **last scan
+application within the anchor**, including when the requested item/student was
+applied earlier in that session. Raw kind/profile and time filters apply to this
+last point; scope filters apply to the union. If a session ends outside the time
+window it has no point there, even if an earlier raw commit is in the window.
+Thus raw commits and display points can have different counts. Reappearing
+session IDs still produce one point. `latest`/`previous` select distinct sessions,
+not adjacent candidate commits.
+
+`scan_points` is the complete anchored metadata index (at most 10,000 retained
+sessions), repeated unchanged across event pages:
+`[{session_id,sequence,recorded_at,scan_kind,inventory_scan_profile}]`. It contains
+no repeated full current snapshots. Use its **sequence endpoint in diff** to
+read a point's actual confirmed state, including intervening manual/import/
+unattributed applications. `trend_eligible = coverage.complete &&
+scan_session_count >= 3`; fewer than three sessions never enable a trend.
+Frontend owns the trend formula and can further require known values. The
+raw commit count remains a diagnostic. Manual/import/unattributed never add a
+scan point or scan count. Actual scanner context wiring remains FB-2b; FB-2c's
+scan fixtures inject valid stored source=scan events without changing scanner
+code or reclassifying old unattributed events.
+
+`diff {profile_id, from, to, student_ids?, resource_keys?}` returns
+`{profile_id,revision,history_sequence,coverage,from_point,to_point,
+student_changes,inventory_changes,scan_commit_count,scan_session_count,
+scan_points,trend_eligible}`. Each endpoint is exactly one of:
+
+- `{at:UTC}`: state immediately **before** the boundary; all events with equal
+  timestamps are excluded, with sequence preserving their order.
+- `{sequence:nonnegative integer}`: state immediately **after** that application;
+  the retained baseline sequence is valid. Beyond the anchor is invalid.
+- `{scan:latest|previous, scan_kind?, inventory_scan_profile?,
+  student_id?|resource_key?}`: selected session's last application state. The
+  singular target selectors are mutually exclusive; raw/null/omission rules
+  match events. Omitting kind/profile selects across them.
+- `{current:true}`: confirmed current at this guarded query anchor.
+
+Resolved reverse endpoints are invalid. Equal endpoints are valid zero change
+when both quantities are known. Points have `{selector,sequence,recorded_at,
+available,students,inventory}`. An unavailable point has null sequence/time and
+empty arrays; it is not an invented empty snapshot. Target list omission reads
+the entire bucket; `student_ids:[]` or `resource_keys:[]` disables that bucket.
+The common baseline + `apply_event` restores **all sources** before filtering
+point projections. Time endpoints at/before a compacted baseline are unavailable;
+legacy sequence 0 has the actual baseline state but its time is unknown.
+
+Comparison rows include unchanged requested IDs too. Student rows preserve the
+whole confirmed-record presence/value on each side (field missing/null,
+form/provenance remain distinct); frontend derives growth metrics only from
+known fields. Resource rows have `{resource_key,before:{present,quantity},
+after:{present,quantity},delta}`. Delta is a signed canonical decimal string,
+including `"0"`, only when both quantities are present/known and temporal
+coverage permits comparison. Large quantities do not pass through float/int
+limits. Missing/deleted/unknown rows have null delta, never substituted zero.
+Raw scans in `(from_sequence,to_sequence]` are diagnostics; display points in
+that interval use session ends and union scope, so they can differ in count.
+
+Query coverage adds `reasons` to the minimum-summary fields. Unlike summary's
+lifetime `complete`, query `complete` means this requested range/targets are
+covered. A compacted range entirely after the baseline can be complete.
+Reasons are `unrecorded`, `before_retention`, `legacy_time_unknown`,
+`clock_rollback`, `scan_not_found`, `unknown_quantity`, `unknown_student`.
+Clock rollback is never corrected: time endpoints are unavailable, sequence
+states remain readable, all deltas/trend are suppressed. Unknown quantity marks
+overall coverage incomplete and only that row's delta null; independently known
+rows remain available. No scan match or missing previous session returns an
+unavailable point, rather than an error or fake state. After prefix compaction,
+an unavailable scan selector conservatively reports before_retention.
+
+History stores no past plans/goals/static metadata. Historical plan KPIs are
+outside FB-2c, and current statistics `snapshot_count` retains its inventory-entry
+meaning. `fixtures/repository_history_query_v1.json` is shared by Python schema/
+policy and strict Dart/Mock/Process tests, including raw/null filters, no-change
+scans, session ends, pagination, unknown values, compaction and clock rollback.
