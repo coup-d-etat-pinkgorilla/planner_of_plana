@@ -577,3 +577,29 @@ topics: [workflow, design]
 - 후속 확인(FE4-i 첫 항목으로): 시나리오 장면에서 레일 "필요 크레딧 48.2M · 부족 재화 5종"(초안 계산)과 비교 타일 b쪽 "57.4M · 3종"(같은 초안)이 다르다. golden 대역 `GoldenPlanFlowMockAppService.compareScenarios`가 단계 결과를 문서별로 따로 모아 계산 대역과 기준이 다른 탓으로 보인다(실제 compare는 백엔드 계산). 대역을 계산 대역과 같은 값이 나오게 맞추고, "시나리오로 저장 대상이면 레일 필요 크레딧·부족 종 수 = 비교 b" 단언을 더한다. 대역만 바뀌면 두 장면 golden 숫자가 바뀌므로 그때 다시 승인한다.
 - FB-8b Python 전체 955 OK(1202초). 21:20 수정분(`repository_plan_service.dart` import)은 매니페스트에 있다.
 - 커밋 순서: fb8b → fe4e(baseline whole, status=true) → redesigndocs. 다음 배정: 프론트 FE4-i(+위 후속), 백엔드 FB-2 읽기 전용 설계 조사(이력·마지막 스캔 시각). FB-2·FB-3은 원래 FE5 뒤 순서지만 FE4-f·FE4-g·FE5에 백엔드 선행이 없어(FB-9는 필요할 때만) 백엔드 워커가 쉬게 되므로 조사부터 앞당긴다. 구현은 조사 승인 뒤.
+
+## 2026-10-09 23:25 — 커밋 확인, FE4-i + FB-2 조사 gate ① `20261009_225347` 검토, FB-2 설계 승인
+
+- 커밋: redesigndocs `0160910f`(20:03), FB-8b `9aab5453`(13파일), FE4-e `3af5246c`(13파일), redesigndocs `df547db7`. FE4-e·FB-8b 완료.
+- gate ①: analyze 0, 테스트 347+544+152, process 46, almanac 42, diff-check 0. golden 8건 — 워커 예측(바뀜 7 + 새 장면 1)과 같다.
+  · `plan-flow-step1`·`-many`·`-filter`(1.1~1.9%): C에 "내 그룹" 머리 줄·(i)·"지금 고른 학생으로 그룹 만들기" 버튼·빈 안내 문구가 들어가고 역할군 칩·"보이는 학생" 줄이 아래로 밀렸다. filter 장면은 모달 뒤 흐린 영역만 바뀜. 겹침 없음. 승인.
+  · `plan-flow-step2`·`-more`(0.15%): 프리셋 바 끝에 "지금 구성을 프리셋으로" 버튼. 승인.
+  · `plan-flow-step4`·`-append`(5%): 22:10 후속 반영 — 비교 a·b가 레일과 같아졌다(78% → 78% · 1종 모름, 5 → 5종, 48.2M → 48.2M), "활성 계획보다 늘어나는 재화가 없습니다". 레일 = 비교 b 일관성은 맞다. 승인. 다만 계산 대역 overall이 고정이라 비교 타일의 차이 표현(화살표 색, 늘어나는 재화 행)과 append의 합산이 golden에서 더는 보이지 않는다(단위 테스트에는 있음). 후속: FE5-b(시나리오 미리보기·compare) 착수 때 계산 대역을 문서 의존으로 바꿔 1~4단계 장면을 함께 다시 승인한다.
+  · `plan-flow-step2-saved`: 기준 없음(새 장면). ② 뒤 검토.
+- FB-2 읽기 전용 설계 조사 승인(status-backend 맨 위). 결정:
+  1. 저장 위치: 안 A — profile JSON 안 optional `current_history` v1, 학생·인벤토리 확정 상태와 같은 transaction. 별도 revision 없음, 읽기만으로 생성·revision 증가 없음.
+  2. source = scan | manual | import. import는 가져오기 성공 시각의 seed 1건, scan 횟수·마지막 스캔에서 제외. 옛 profile은 첫 쓰기 직전 실제값을 시각 미상 baseline으로. 과거 scan을 지어내지 않는다.
+  3. 저장 단위는 FD-041대로 commit 1회 = 이력 1건. **표시 단위 결정(오케스트레이터)**: FD-144 순차 commit 때문에 학생 전체 스캔 한 번이 수백 건이 되므로 "스냅샷 n회"·FD-042 추세 점·A6는 scan 세션(scan_context.session_id) 단위로 센다. 같은 세션 안 여러 commit은 그 세션의 마지막 적용 상태 1점이다. 원시 commit 수(누적·보존)는 응답에 따로 둔다. 사용자가 다르게 원하면 FD-041 보충으로 바꾼다.
+  4. scan scope·동값: 승인한 ID만 시각 갱신, diff 0인 적용도 기록, 완료만·미승인·취소·빈 scope는 갱신 없음. raw kind/profile 문자열(1~1024 UTF-8 bytes, trim·enum 금지).
+  5. 보존: 365일 / 10,000건 / 16 MiB 중 먼저, 오래된 prefix를 baseline으로 접고 최신 scan index·누적 count 유지. 단독으로 넣을 수 없는 경우 `history_capacity_exceeded` 거부 승인 — 구현에서 실제 프로필 크기 fixture로 상한이 정상 사용을 막지 않음을 측정해 보고한다.
+  6. 학생 ID 중복: 새 입력은 invalid_payload. 기존 파일의 중복은 먼저 실제로 생길 수 있는 경로(v6 가져오기·scan)가 있는지 조사해 보고하고, 없으면 corrupt_data 가드만 둔다(조용한 last-wins 금지).
+  7. 분할: **FB-2a** 저장 기반(DTO·diff·baseline·정리·manual/import/new/legacy, current 쓰기와 create/import의 journal, scanner 연결용 선택 port만 두고 scan 호출은 안 바꿈, summary 최소 조회로 재시작 검증). **FB-2b** scan 연결 + summary(스캐너 소유자 대응 뒤). **FB-2c** events/diff/기간 조회. **FB-2d** 프로필 삭제 journal(tactical v1/v2 파일·lock 조율 뒤). FE7-h 과거 계획 KPI는 범위 밖, FE8-c는 학생 last_scans 행을 읽는다.
+- 스캐너·전술 요청: tactic 오케스트레이터 로그 23:25에 남겼다(scanner commit history context·profile 원문·부분 승인 scope·동값 적용·Mock 일치, 전술 v2 파일 삭제·lock 순서).
+- 다음: 사용자 gate ② → `plan-flow-step2-saved` 검토 → fe4i 커밋 → 문서. 배정: 프론트 FE4-f(교차 선행·나중에 칸, FB-8a·b 완료), 백엔드 FB-2a.
+
+## 2026-10-09 23:35 — gate ② `20261009_231201` GREEN, `plan-flow-step2-saved` 승인
+
+- update-goldens GREEN(32 비교 통과). 갱신 7장은 ①에서 승인한 testImage와 같다(step1·step4 바이트 대조).
+- 새 기준 `plan-flow-step2-saved` 승인: 저장된 그룹으로 호시노·아루 2명, 저장된 프리셋 "총력전 3단계 · 내 프리셋" 적용 중. 프리셋 바 맨 앞에 저장 프리셋, C 첫 행에 "적용 중"·이름 바꾸기·지우기 아이콘, 카드 이름이 저장된 단계 이름(성장 기반 / 스킬·인연), "다른 학생에도 적용 · 아루 목표 없음", "고른 2명 모두 …로".
+  · 워커 예측은 단계 3개였지만 카드는 2개다. 코드 확인: 프리셋 펼치기(`plan_flow_goal_editor.dart` 프리셋 단계 확장)가 앞 단계보다 올리는 값이 없는 단계를 빼는 FE4-c 규칙 그대로다. 호시노는 이미 ★5·무기 Lv.30이라 3단계 "성급·전용무기"가 빠졌다. 정상.
+- 커밋: fe4i(baseline whole, status=true) → redesigndocs. 그다음 배정 프론트 FE4-f, 백엔드 FB-2a(FB-2 조사 문서는 FB-2a 커밋의 status-backend whole에 들어간다).
