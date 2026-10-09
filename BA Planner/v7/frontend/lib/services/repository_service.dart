@@ -1,7 +1,9 @@
 import 'repository_plan_service.dart';
 import 'repository_presets_service.dart';
+import 'repository_history_service.dart';
 export 'repository_plan_service.dart';
 export 'repository_presets_service.dart';
+export 'repository_history_service.dart';
 
 class RepositoryProfile {
   const RepositoryProfile({
@@ -96,11 +98,16 @@ Map<String, dynamic> _wireMap(Object? value, String label) {
 }
 
 class ConfirmedStudentState {
-  ConfirmedStudentState._(this.studentId, Map<String, dynamic> values)
-    : values = Map.unmodifiable(values);
+  ConfirmedStudentState._(
+    this.studentId,
+    Map<String, dynamic> values,
+    Map<String, String>? provenance,
+  ) : values = Map.unmodifiable(values),
+      provenance = provenance == null ? null : Map.unmodifiable(provenance);
 
   final String studentId;
   final Map<String, dynamic> values;
+  final Map<String, String>? provenance;
 
   factory ConfirmedStudentState.fromValues(
     String studentId,
@@ -115,6 +122,7 @@ class ConfirmedStudentState {
     'version': 1,
     'student_id': studentId,
     'values': Map<String, dynamic>.from(values),
+    if (provenance != null) 'provenance': Map<String, String>.from(provenance!),
   };
 
   factory ConfirmedStudentState.fromWire(Map<String, dynamic> value) {
@@ -192,7 +200,11 @@ class ConfirmedStudentState {
             ))) {
       throw const FormatException('Invalid confirmed provenance');
     }
-    return ConfirmedStudentState._(value['student_id'] as String, values);
+    return ConfirmedStudentState._(
+      value['student_id'] as String,
+      values,
+      provenance == null ? null : Map<String, String>.from(provenance as Map),
+    );
   }
 }
 
@@ -391,16 +403,21 @@ class RepositoryState {
         goals['goals'] is! List) {
       throw const FormatException('Invalid goal plan');
     }
-    return RepositoryState._(
-      profileId: value['profile_id'] as String,
-      revision: value['revision'] as int,
-      students: List.unmodifiable(
-        (value['students'] as List).map(
+    final students = (value['students'] as List)
+        .map(
           (item) => ConfirmedStudentState.fromWire(
             _wireMap(item, 'confirmed student'),
           ),
-        ),
-      ),
+        )
+        .toList();
+    if (students.map((item) => item.studentId).toSet().length !=
+        students.length) {
+      throw const FormatException('Duplicate confirmed student identity');
+    }
+    return RepositoryState._(
+      profileId: value['profile_id'] as String,
+      revision: value['revision'] as int,
+      students: List.unmodifiable(students),
       inventory: RepositoryInventoryState.fromWire(
         _wireMap(value['inventory'], 'inventory snapshot'),
       ),
@@ -456,6 +473,9 @@ bool isValidRepositorySuccessPayload(
         return _exact(payload, {'revision'}) && _revision(payload['revision']);
       case 'repository.state.get':
         RepositoryState.fromWire(payload);
+        return true;
+      case 'repository.history.summary':
+        RepositoryHistorySummaryResult.fromWire(payload);
         return true;
       case 'repository.plan.get':
         RepositoryPlanState.fromWire(payload);
@@ -596,6 +616,10 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         for (final item in payload['students'] as List) {
           ConfirmedStudentState.fromWire(_wireMap(item, 'confirmed student'));
         }
+        final ids = (payload['students'] as List)
+            .map((item) => item['student_id'])
+            .toList();
+        if (ids.toSet().length != ids.length) return false;
         return true;
       case 'repository.inventory.update':
         if (!mutation({'inventory'})) return false;
@@ -626,6 +650,9 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         return true;
       case 'repository.migration.preview':
         return payload.isEmpty;
+      case 'repository.history.summary':
+        RepositoryHistorySummaryRequest.fromWire(payload);
+        return true;
       case 'repository.migration.import':
         return _exact(payload, {'source_profile_key'}) &&
             payload['source_profile_key'] is String &&
@@ -669,6 +696,9 @@ abstract interface class RepositoryService {
     String idempotencyKey,
   );
   Future<RepositoryState> loadRepositoryState(String profileId);
+  Future<RepositoryHistorySummaryResult> loadRepositoryHistorySummary(
+    List<String> profileIds,
+  );
   Future<int> saveRepositoryStudents(
     String profileId,
     List<ConfirmedStudentState> students,

@@ -471,6 +471,14 @@ class ProcessAppService
       );
 
   @override
+  Future<RepositoryHistorySummaryResult> loadRepositoryHistorySummary(
+    List<String> profileIds,
+  ) async => RepositoryHistorySummaryResult.fromWire(
+    await _client.send('repository.history.summary',
+      RepositoryHistorySummaryRequest(profileIds).toWire()),
+  );
+
+  @override
   Future<int> saveRepositoryGoals(
     String profileId,
     Map<String, dynamic> goals,

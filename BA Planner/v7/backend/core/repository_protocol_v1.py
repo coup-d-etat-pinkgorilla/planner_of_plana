@@ -16,6 +16,7 @@ METHODS = frozenset({
     "repository.plan.get", "repository.plan.save", "repository.plan.replace",
     "repository.presets.get", "repository.presets.save",
     "repository.migration.preview", "repository.migration.import",
+    "repository.history.summary",
 })
 
 
@@ -89,6 +90,12 @@ class RepositoryProtocolV1:
         if method == "repository.state.get":
             data = _require(payload, {"profile_id"})
             return self.repository.get_state(_text(data["profile_id"], "profile_id"))
+        if method == "repository.history.summary":
+            data = _require(payload, {"profile_ids"})
+            ids = data["profile_ids"]
+            if not isinstance(ids, list):
+                raise RepositoryError("invalid_payload", "profile_ids must be an array")
+            return self.repository.get_history_summary([_text(item, "profile_id") for item in ids])
         if method == "repository.plan.get":
             data = _require(payload, {"profile_id"})
             return self.repository.get_plan(_text(data["profile_id"], "profile_id"))
@@ -109,10 +116,10 @@ class RepositoryProtocolV1:
         if method == "repository.students.update":
             data, profile_id, revision, key = self._mutation(payload, {"students"})
             if not isinstance(data["students"], list): raise RepositoryError("invalid_payload", "students must be an array")
-            return self.repository.update_students(profile_id, data["students"], revision, key)
+            return self.repository.update_students(profile_id, data["students"], revision, key, manual=True)
         if method == "repository.inventory.update":
             data, profile_id, revision, key = self._mutation(payload, {"inventory"})
-            return self.repository.update_inventory(profile_id, data["inventory"], revision, key)
+            return self.repository.update_inventory(profile_id, data["inventory"], revision, key, manual=True)
         if method == "repository.goals.save":
             data, profile_id, revision, key = self._mutation(payload, {"goals"})
             return self.repository.save_goals(profile_id, data["goals"], revision, key)

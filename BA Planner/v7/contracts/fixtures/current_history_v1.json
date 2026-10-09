@@ -1,0 +1,4589 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "empty",
+      "valid": true,
+      "history": {
+        "version": 1,
+        "next_sequence": 1,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [],
+        "total_counts": {
+          "scan": 0,
+          "manual": 0,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": null,
+          "manual": null,
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [],
+        "latest_scans": {
+          "by_kind": [],
+          "by_student_id": [],
+          "by_resource_key": []
+        }
+      }
+    },
+    {
+      "id": "missing-null-zero-delete-and-same-session",
+      "valid": true,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "compacted",
+      "valid": true,
+      "history": {
+        "version": 1,
+        "next_sequence": 6,
+        "baseline": {
+          "sequence": 4,
+          "recorded_at": "2026-10-09T14:25:00.123456Z",
+          "origin": "compacted",
+          "students": [
+            {
+              "version": 1,
+              "student_id": "aru",
+              "values": {
+                "level": 0,
+                "form_combat_stats": {
+                  "normal": {
+                    "hp": 0
+                  }
+                }
+              },
+              "provenance": {
+                "level": "user_review"
+              }
+            }
+          ],
+          "inventory": [
+            {
+              "resource_key": "future-present",
+              "quantity": "0"
+            },
+            {
+              "resource_key": "large",
+              "quantity": "1000000000000000000000000000000000000"
+            }
+          ]
+        },
+        "events": [
+          {
+            "sequence": 5,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 4,
+            "revision_after": 5,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 3,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "unknown-key",
+      "valid": false,
+      "schema_valid": false,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        },
+        "unexpected": true
+      }
+    },
+    {
+      "id": "bool-sequence",
+      "valid": false,
+      "schema_valid": false,
+      "history": {
+        "version": 1,
+        "next_sequence": true,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "nonbool-presence",
+      "valid": false,
+      "schema_valid": false,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": "no",
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "missing-is-not-zero",
+      "valid": false,
+      "schema_valid": false,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "student-bool",
+      "valid": false,
+      "schema_valid": false,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": true,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sequence-gap",
+      "valid": false,
+      "schema_valid": true,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 99,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "count-mismatch",
+      "valid": false,
+      "schema_valid": true,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 99,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "raw-utf8-limit",
+      "valid": false,
+      "schema_valid": true,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": "한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "duplicate-diff-key",
+      "valid": false,
+      "schema_valid": true,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "broken-before-chain",
+      "valid": false,
+      "schema_valid": true,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 2,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "empty-scan-scope",
+      "valid": false,
+      "schema_valid": false,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": []
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "stale-latest-scan-index",
+      "valid": false,
+      "schema_valid": true,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 3,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "duplicate-baseline-student",
+      "valid": false,
+      "schema_valid": true,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "legacy",
+          "students": [
+            {
+              "version": 1,
+              "student_id": "aru",
+              "values": {}
+            },
+            {
+              "version": 1,
+              "student_id": "aru",
+              "values": {}
+            }
+          ],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "invalid-calendar-date",
+      "valid": false,
+      "schema_valid": true,
+      "history": {
+        "version": 1,
+        "next_sequence": 5,
+        "baseline": {
+          "sequence": 0,
+          "recorded_at": null,
+          "origin": "empty",
+          "students": [],
+          "inventory": []
+        },
+        "events": [
+          {
+            "sequence": 1,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 0,
+            "revision_after": 1,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": false,
+                  "value": null
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": null
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": false,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 2,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 1,
+            "revision_after": 2,
+            "source": "manual",
+            "scan_kind": null,
+            "inventory_scan_profile": null,
+            "scan_context": null,
+            "applied_scope": {
+              "student_ids": [
+                "aru"
+              ],
+              "resource_keys": [
+                "future-present",
+                "large",
+                "zero"
+              ]
+            },
+            "student_changes": [
+              {
+                "student_id": "aru",
+                "before": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                },
+                "after": {
+                  "present": true,
+                  "value": {
+                    "version": 1,
+                    "student_id": "aru",
+                    "values": {
+                      "level": 0,
+                      "form_combat_stats": {
+                        "normal": {
+                          "hp": 0
+                        }
+                      }
+                    },
+                    "provenance": {
+                      "level": "user_review"
+                    }
+                  }
+                }
+              }
+            ],
+            "inventory_changes": [
+              {
+                "resource_key": "future-present",
+                "before": {
+                  "present": true,
+                  "quantity": null
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "0"
+                }
+              },
+              {
+                "resource_key": "large",
+                "before": {
+                  "present": true,
+                  "quantity": "999999999999999999999999999999999999"
+                },
+                "after": {
+                  "present": true,
+                  "quantity": "1000000000000000000000000000000000000"
+                }
+              },
+              {
+                "resource_key": "zero",
+                "before": {
+                  "present": true,
+                  "quantity": "0"
+                },
+                "after": {
+                  "present": false,
+                  "quantity": null
+                }
+              }
+            ],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 3,
+            "recorded_at": "2026-02-30T00:00:00.000000Z",
+            "revision_before": 2,
+            "revision_after": 3,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          },
+          {
+            "sequence": 4,
+            "recorded_at": "2026-10-09T14:25:00.123456Z",
+            "revision_before": 3,
+            "revision_after": 4,
+            "source": "scan",
+            "scan_kind": " 未知 Kind ",
+            "inventory_scan_profile": " 未来 profile ",
+            "scan_context": {
+              "session_id": "session-1",
+              "generation": 1,
+              "candidate_id": "candidate-1",
+              "candidate_revision": 0
+            },
+            "applied_scope": {
+              "student_ids": [],
+              "resource_keys": [
+                "future-present"
+              ]
+            },
+            "student_changes": [],
+            "inventory_changes": [],
+            "catalog_revision": null
+          }
+        ],
+        "total_counts": {
+          "scan": 2,
+          "manual": 2,
+          "import": 0,
+          "unattributed": 0
+        },
+        "last_applied_at": {
+          "scan": "2026-10-09T14:25:00.123456Z",
+          "manual": "2026-10-09T14:25:00.123456Z",
+          "import": null,
+          "unattributed": null
+        },
+        "scan_session_ids": [
+          "session-1"
+        ],
+        "latest_scans": {
+          "by_kind": [
+            {
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ],
+          "by_student_id": [],
+          "by_resource_key": [
+            {
+              "resource_key": "future-present",
+              "sequence": 4,
+              "recorded_at": "2026-10-09T14:25:00.123456Z",
+              "scan_kind": " 未知 Kind ",
+              "inventory_scan_profile": " 未来 profile ",
+              "session_id": "session-1"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "summary": {
+    "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+    "revision": 4,
+    "history_sequence": 4,
+    "last_manual_at": "2026-10-09T14:25:00.123456Z",
+    "last_import_at": null,
+    "total_event_count": 4,
+    "retained_event_count": 4,
+    "total_counts": {
+      "scan": 2,
+      "manual": 2,
+      "import": 0,
+      "unattributed": 0
+    },
+    "retained_counts": {
+      "scan": 2,
+      "manual": 2,
+      "import": 0,
+      "unattributed": 0
+    },
+    "total_scan_session_count": 1,
+    "retained_scan_session_count": 1,
+    "coverage": {
+      "origin": "empty",
+      "baseline_sequence": 0,
+      "baseline_at": null,
+      "first_retained_at": "2026-10-09T14:25:00.123456Z",
+      "complete": true,
+      "timestamps_monotonic": true
+    }
+  },
+  "messages": [
+    {
+      "id": "summary-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "history",
+        "type": "request",
+        "method": "repository.history.summary",
+        "payload": {
+          "profile_ids": [
+            "aaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      }
+    },
+    {
+      "id": "summary-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "history",
+        "type": "response",
+        "method": "repository.history.summary",
+        "payload": {
+          "profiles": [
+            {
+              "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+              "revision": 4,
+              "history_sequence": 4,
+              "last_manual_at": "2026-10-09T14:25:00.123456Z",
+              "last_import_at": null,
+              "total_event_count": 4,
+              "retained_event_count": 4,
+              "total_counts": {
+                "scan": 2,
+                "manual": 2,
+                "import": 0,
+                "unattributed": 0
+              },
+              "retained_counts": {
+                "scan": 2,
+                "manual": 2,
+                "import": 0,
+                "unattributed": 0
+              },
+              "total_scan_session_count": 1,
+              "retained_scan_session_count": 1,
+              "coverage": {
+                "origin": "empty",
+                "baseline_sequence": 0,
+                "baseline_at": null,
+                "first_retained_at": "2026-10-09T14:25:00.123456Z",
+                "complete": true,
+                "timestamps_monotonic": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "duplicate-summary-profile",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "history",
+        "type": "request",
+        "method": "repository.history.summary",
+        "payload": {
+          "profile_ids": [
+            "aaaaaaaaaaaaaaaaaaaaaaaa",
+            "aaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      }
+    },
+    {
+      "id": "bool-summary-sequence",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "history",
+        "type": "response",
+        "method": "repository.history.summary",
+        "payload": {
+          "profiles": [
+            {
+              "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+              "revision": 4,
+              "history_sequence": true,
+              "last_manual_at": "2026-10-09T14:25:00.123456Z",
+              "last_import_at": null,
+              "total_event_count": 4,
+              "retained_event_count": 4,
+              "total_counts": {
+                "scan": 2,
+                "manual": 2,
+                "import": 0,
+                "unattributed": 0
+              },
+              "retained_counts": {
+                "scan": 2,
+                "manual": 2,
+                "import": 0,
+                "unattributed": 0
+              },
+              "total_scan_session_count": 1,
+              "retained_scan_session_count": 1,
+              "coverage": {
+                "origin": "empty",
+                "baseline_sequence": 0,
+                "baseline_at": null,
+                "first_retained_at": "2026-10-09T14:25:00.123456Z",
+                "complete": true,
+                "timestamps_monotonic": true
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

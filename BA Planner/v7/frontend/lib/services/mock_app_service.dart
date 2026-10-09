@@ -12,6 +12,7 @@ import 'mock_student_calculation_fixture.dart';
 import 'mock_student_bond_fixture.dart';
 import 'repository_service.dart';
 import 'mock_repository_plan.dart';
+import 'mock_repository_history.dart';
 import 'planning_protocol_client.dart';
 import 'scanner_service.dart';
 import 'scenario_service.dart';
@@ -42,7 +43,9 @@ class MockAppService
     Map<String, dynamic>? scannerReadiness,
     List<RepositoryProfile>? profiles,
     Map<String, Map<String, dynamic>>? repositoryStates,
-  }) : _scannerTargets = List.unmodifiable(
+    DateTime Function()? historyClock,
+  }) : _historyClock = historyClock ?? (() => DateTime.now().toUtc()),
+       _scannerTargets = List.unmodifiable(
          scannerTargets ??
              const [
                ScannerTarget(
@@ -109,6 +112,7 @@ class MockAppService
       RepositoryState.fromWire(entry.value);
       _repositoryStates[entry.key] = Map<String, dynamic>.from(jsonDecode(jsonEncode(entry.value)) as Map);
     }
+    _trackMockCurrentWrites = true;
   }
 
   List<StudentCatalogEntry>? _studentCatalog;
@@ -145,7 +149,12 @@ class MockAppService
     ),
   );
   final List<RepositoryProfile> _profiles;
-  final Map<String, Map<String, dynamic>> _repositoryStates = {};
+  late final Map<String, Map<String, dynamic>> _repositoryStates =
+      MockRepositoryCurrentMap(_observeMockCurrentWrite);
+  bool _trackMockCurrentWrites = false;
+  bool _manualMockCurrentWrite = false;
+  final DateTime Function() _historyClock;
+  final Map<String, RepositoryCurrentHistory> _currentHistories = {};
   final Map<String, PlanningDocument> _repositoryPlans = {};
   final Map<String, PlanningAuthoring> _repositoryPlanAuthoring = {};
   final Map<String, RepositoryPresetsState> _repositoryPresets = {};
@@ -1406,6 +1415,7 @@ class MockAppService
       selected: false,
     );
     _profiles.add(profile);
+    _currentHistories[profile.id] = RepositoryCurrentHistory.empty();
     _repositoryPlans[profile.id] = mockDocumentFromGoals({'version': 1, 'goals': <dynamic>[]});
     return profile;
   }
@@ -1507,6 +1517,7 @@ class MockAppService
     final wasSelected = profile.selected;
     _profiles.removeAt(index);
     _repositoryStates.remove(profileId);
+    _currentHistories.remove(profileId);
     _repositoryPlans.remove(profileId);
     _repositoryPlanAuthoring.remove(profileId);
     _planIdempotency.remove(profileId);
@@ -1531,6 +1542,41 @@ class MockAppService
   @override
   Future<RepositoryState> loadRepositoryState(String profileId) async =>
       RepositoryState.fromWire(_ensureMockRepositoryPlan(profileId));
+
+  @override
+  Future<RepositoryHistorySummaryResult> loadRepositoryHistorySummary(
+    List<String> profileIds,
+  ) async {
+    final request = RepositoryHistorySummaryRequest(profileIds);
+    return RepositoryHistorySummaryResult.fromWire({'profiles': [
+      for (final id in request.profileIds) _mockHistorySummary(id).toWire(),
+    ]});
+  }
+
+  RepositoryHistorySummary _mockHistorySummary(String profileId) {
+    if (!_profiles.any((item) => item.id == profileId)) {
+      throw StateError('profile_not_found');
+    }
+    final state = _mockRepositoryState(profileId);
+    return _currentHistories[profileId]?.summarize(profileId, state['revision'] as int)
+        ?? RepositoryHistorySummary.unrecorded(profileId, state['revision'] as int);
+  }
+
+  void _observeMockCurrentWrite(String profileId, Map<String, dynamic>? stored,
+    Map<String, dynamic> next) {
+    if (!_trackMockCurrentWrites || _manualMockCurrentWrite) return;
+    final current = stored ?? _mockRepositoryState(profileId);
+    final studentsChanged = !identical(current['students'],next['students']);
+    final inventoryChanged = !identical(current['inventory'],next['inventory']);
+    if (!studentsChanged && !inventoryChanged) return;
+    final before = RepositoryState.fromWire(current);
+    final after = RepositoryState.fromWire(next);
+    if (after.revision != before.revision+1) throw StateError('Invalid current write revision');
+    final history = _currentHistories[profileId] ?? RepositoryCurrentHistory.empty(legacy: before);
+    _currentHistories[profileId] = history.appendManual(before,after,
+      studentsChanged && inventoryChanged ? 'current' : studentsChanged ? 'students' : 'inventory',
+      _historyClock(), source:'unattributed');
+  }
 
   Map<String, dynamic> _mockRepositoryState(String profileId) =>
       _repositoryStates[profileId] ??
@@ -2046,17 +2092,8 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
-    final current = _ensureMockRepositoryPlan(profileId);
-    if (current['revision'] != expectedRevision) throw StateError('revision_conflict');
-    _repositoryStates[profileId] = {
-      ...current,
-      'revision': expectedRevision + 1,
-      'students': students
-          .map((student) => student.toWire())
-          .toList(growable: false),
-    };
-    _syncMockPlanRevision(profileId, expectedRevision + 1);
-    return expectedRevision + 1;
+    return _saveMockCurrent(profileId, 'students',
+      students.map((item) => item.toWire()).toList(), expectedRevision, idempotencyKey);
   }
 
   @override
@@ -2066,16 +2103,36 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
+    return _saveMockCurrent(profileId, 'inventory', inventory.toWire(), expectedRevision, idempotencyKey);
+  }
+
+  int _saveMockCurrent(String profileId, String bucket, Object value,
+    int expectedRevision, String idempotencyKey) {
+    if (!_profiles.any((item) => item.id == profileId)) throw StateError('profile_not_found');
+    if (expectedRevision < 0 || idempotencyKey.isEmpty) throw const FormatException('invalid_payload');
     final current = _ensureMockRepositoryPlan(profileId);
-    if (current['revision'] != expectedRevision) {
-      throw StateError('revision_conflict');
+    final next = <String, dynamic>{...current, 'revision': expectedRevision + 1, bucket: value};
+    final after = RepositoryState.fromWire(next);
+    final fingerprint = historyCanonicalJson({'operation': '$bucket:${historyCanonicalJson(value)}', 'expected_revision': expectedRevision});
+    final cache = _planIdempotency.putIfAbsent(profileId, () => {});
+    final cached = cache[idempotencyKey];
+    if (cached != null) {
+      if (cached.fingerprint != fingerprint) throw StateError('idempotency_conflict');
+      return cached.response['revision'] as int;
     }
-    _repositoryStates[profileId] = {
-      ...current,
-      'revision': expectedRevision + 1,
-      'inventory': inventory.toWire(),
-    };
+    if (current['revision'] != expectedRevision) throw StateError('revision_conflict');
+    final before = RepositoryState.fromWire(current);
+    final history = _currentHistories[profileId] ?? RepositoryCurrentHistory.empty(legacy: before);
+    final updated = history.appendManual(before, after, bucket, _historyClock());
+    _manualMockCurrentWrite = true;
+    try {
+      _repositoryStates[profileId] = next;
+    } finally {
+      _manualMockCurrentWrite = false;
+    }
+    _currentHistories[profileId] = updated;
     _syncMockPlanRevision(profileId, expectedRevision + 1);
+    cache[idempotencyKey] = (fingerprint: fingerprint, response: Map.unmodifiable({'revision': expectedRevision + 1}));
     return expectedRevision + 1;
   }
 

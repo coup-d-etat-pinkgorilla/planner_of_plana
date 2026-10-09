@@ -793,3 +793,113 @@ The common validator preserves nested v1/v2 document versions and their existing
 target semantics; the active-plan boundary continues to require v2 kind=plan.
 Scenario create/update request authoring, complete CRUD omission/fingerprint tests
 and editor integration are FB-8b. Comparison still receives only document_a/b.
+
+## FB-2a confirmed current history v1
+
+Profile format v1 accepts optional `current_history`, validated by
+`current-history-v1.schema.json` and the strict Python/Dart parsers. The public
+`repository.state.get` payload remains unchanged. History records confirmed
+students and inventory quantities; goals, plans, costs, shortages, catalog order
+and recognition images do not belong in this bucket.
+
+The history object has eight required keys: `version`, `next_sequence`,
+`baseline`, `events`, `total_counts`, `last_applied_at`, `scan_session_ids`, and
+`latest_scans`. Baseline holds `{sequence, recorded_at, origin, students,
+inventory}`; inventory baseline rows are `{resource_key, quantity}`. Origin is
+`empty`, `legacy`, or `compacted`. Sequence starts at 1 and orders applications
+independently of profile revision. A legacy baseline has unknown time (`null`),
+never an inferred scan date. Reads neither create history nor migrate the plan.
+
+Each event stores sequence, backend UTC `recorded_at` (exactly six fractional
+digits and `Z`), source, before/after revisions, raw scan metadata, approved scope,
+student/inventory changes and nullable catalog SHA. Ordinary applications are
+revision n→n+1; the single initial import seed is 0→0. The backend samples its
+clock after revision/cache validation. An unsuccessful prepared transaction has
+no recorded application; replay or journal recovery returns/preserves the first
+committed timestamp and the original `{revision}` response.
+
+Student changes are **whole confirmed student records** under
+`{student_id,before:{present,value},after:{present,value}}`. This retains missing
+versus null fields, form objects and optional provenance without maintaining a
+second field vocabulary. Inventory changes use
+`{resource_key,before:{present,quantity},after:{present,quantity}}`. A missing row
+is `{present:false,quantity:null}`; an unknown observed quantity is
+`{present:true,quantity:null}`; zero is `{present:true,quantity:"0"}`. Quantities
+remain arbitrary-size canonical decimal strings. Student order and inventory
+names/positions are not value changes. Known inventory aliases use the existing
+`canonical_resource_key(item_id or key)` boundary; unknown IDs are retained.
+
+Sources:
+
+| source | Application / scan counting |
+|---|---|
+| manual | Public repository.students.update / inventory.update; full submitted bucket scope (old/new union), including no-change applications |
+| import | Successful v6 import time, one seed, excluded from scan counts/freshness |
+| scan | Server-internal ScanHistoryContext only, approved non-empty scope; no-change applications also update freshness |
+| unattributed | Temporary compatibility path for old internal scanner calls without context; preserves reconstruction, excluded from manual/import/scan counts and freshness |
+
+`JsonRepository.update_students/update_inventory(..., history_context=None)`
+remain callable with the old four positional arguments. Public RPC dispatch sets
+`manual=True`; internal scan wiring must instead pass `ScanHistoryContext.from_wire`
+with `{source:"scan",scan_kind,inventory_scan_profile,scan_context:{session_id,
+generation,candidate_id,candidate_revision},applied_scope:{student_ids,
+resource_keys}}`. Scope must refer to identities in the submitted bucket. It is
+never derived from the merged bucket or accepted from a frontend RPC payload.
+Raw kind/profile text is 1..1024 **UTF-8 bytes**, unchanged, with no trim/case/enum
+conversion; nullable scan profile stays null, never a catalog profile fallback.
+FB-2a leaves scanner-owned commit blocks unchanged. A Mock repository-map
+observer also records contextless writes as unattributed, including no-change
+applications, so following manual writes retain a valid reconstruction chain.
+FB-2b will wire the actual approved scope and reuse a Mock history helper together
+with upsert and idempotent scanner replay.
+
+Storage unit is one commit. Display unit (`스냅샷 n회`, trend points, A6) is one
+unique scan session, including its last applied state. `scan_session_ids` retains
+lifetime session identities for exact deduplication after compaction. Raw commit
+counts remain separate. Manual/import/unattributed records never become scan
+sessions. `latest_scans` has by_kind (raw kind/profile tuple), by_student_id and
+by_resource_key arrays; pruned records do not erase their last successful scan.
+
+On a current write, fold only an old contiguous prefix into baseline until the
+history fits **365 days / 10,000 events / 16 MiB canonical UTF-8**, whichever limit
+is reached first. Baseline, latest indexes and session identities count toward
+the byte limit. Lifetime source counts and last application times survive.
+Always retain the newest application. If baseline/index plus this application
+cannot fit, reject before persistence with `invalid_payload`,
+`details.reason=history_capacity_exceeded`; never silently drop it. Reads do not
+prune. Equal times use sequence; clock rollback is kept and reported in coverage.
+Compacted/legacy coverage cannot claim complete past history.
+
+Current writes, profile create/import, and existing two-file profile writes use
+the shared before/after journal: OS guard → compatibility marker → recovery →
+profile/catalog. A prepared journal restores all before, a committed journal all
+after, including current/history/revision/cache. Related reads recover first.
+Plan migration/save/replace/goals/profile metadata preserve history and emit no
+current event. Profile deletion still deletes its inline history; durable deletion
+across tactical v1/v2 and other collections is explicitly deferred to FB-2d.
+
+Minimum query: `repository.history.summary {profile_ids:[1..128 unique IDs]}` →
+`{profiles:[{profile_id,revision,history_sequence,last_manual_at,last_import_at,
+total_event_count,retained_event_count,total_counts,retained_counts,
+total_scan_session_count,retained_scan_session_count,coverage}]}`. Source-count
+objects have all four keys. Coverage has `origin` (also `unrecorded`),
+`baseline_sequence`, `baseline_at`, `first_retained_at`, `complete`, and
+`timestamps_monotonic`. This query does not expose raw history, last scan/item
+timestamps or events/diff; full scan summary is FB-2b and period queries FB-2c.
+
+Malformed new inputs use invalid_payload; duplicate student identity is
+`details.reason=duplicate_identity`. Stored duplicate students or broken history
+use corrupt_data, and a supported-shape unknown history version uses
+migration_required. Existing v6 conversion can produce duplicate student IDs
+from distinct source keys; import now rejects these rather than last-wins.
+Context/scope failures use invalid_history, empty_scan_scope or scan_scope_mismatch.
+Existing fingerprints and `{revision}` caches are unchanged for requests without
+scan context. Explicit context joins the fingerprint; replay precedes clock,
+compatibility and revision checks. Conflicts/busy/persistence failures reuse
+existing error codes.
+
+`fixtures/current_history_v1.json` pins missing/null/zero/delete, form/provenance,
+no-change scan/session counts, compaction and strict schema/runtime verdicts.
+`backend/tests/fixtures/current_history_profile_shape.json` is the anonymous
+structure of an actual 217-student/614-item profile, with no account identifiers
+or original quantities; targeted tests measure full apply and 10,000 commits.

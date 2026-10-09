@@ -1,6 +1,6 @@
 ---
 title: "Frontend Redesign Backend Status"
-summary: "FB-8a/b 계획·시나리오 authoring 저장과 승인된 설계 조사, Lane A의 FB-14 프리셋·그룹, FB-1c 교체·복구 및 문서 v2 기록입니다."
+summary: "FB-2a 확정 이력·journal·최소 summary와 승인된 FB-2 조사, FB-8a/b authoring 및 Lane A 백엔드 기록입니다."
 topics: [workflow, design]
 sources:
   - id: workflow
@@ -14,6 +14,273 @@ sources:
     path: backend/tests/test_student_calculation_fb11a.py
 ---
 백엔드 워커 전용(Lane A 병렬, 2026-10-07)
+
+# FB-2a 이력 저장 기반
+
+## 착수 (2026-10-09)
+
+- 시작 SHA: `7965e4620d7f05e7b522af250462eb274bdb10f3`. FE4-i 및 redesigndocs 이후 HEAD.
+- AGENTS·README/runtime 경계 → workflow FB-2·FB-3 설계 승인 → 프론트/전술 오케스트레이터 23:25 → 아래 FB-2 조사 전체를 읽었다. 승인 결정 1~7을 기준으로 구현하며 조사 절은 그대로 둔다.
+- profile 안 optional current_history v1, manual/import/new/legacy·prefix 정리·공용 journal 및 최소 summary를 구현한다. 스캐너 호출은 바꾸지 않고 수신 port만 만든다. 삭제 journal은 FB-2d로 남긴다.
+- 공유 서비스 pre/post를 남긴다. 관련 Python·Dart 서비스·process만 직접 실행하고 전체 Python·gate·stage·커밋·push는 하지 않는다.
+
+## 종료 (2026-10-10, 사용자 검증 대기)
+
+### 계약·정책 요약
+
+| 항목 | FB-2a 결과 |
+|---|---|
+| 저장 | profile v1의 optional `current_history` v1. strict Python CurrentHistory/ScanHistoryContext, 새 schema, strict Dart RepositoryCurrentHistory·presence/change/event·summary DTO. state.get 기존 5키 응답은 그대로 |
+| 8키 | version, next_sequence, baseline, events, total_counts, last_applied_at, scan_session_ids, latest_scans. baseline은 sequence/recorded_at/origin/students/inventory |
+| diff | 학생 한 명의 confirmed record 전체 before/after + present(value). values 안 missing/null, form 객체, optional provenance까지 유지. inventory는 canonical_resource_key(item_id or key)의 present/quantity. missing·unknown null·문자열 0·삭제·큰 수량을 구별. 배열 순서/이름/ordinal 변경은 성장·수량 diff가 아님 |
+| 시각 | backend aware UTC clock, 소수초 6자리 Z. cache/revision 검증 뒤 읽는다. prepared 실패의 시각은 남지 않고 committed response replay·복구는 원래 시각. 같은 시각은 sequence로 정렬, clock 역행은 보정하지 않고 coverage.timestamps_monotonic=false |
+| 출처 | public repository.students.update/inventory.update는 manual. import는 성공 적용 시각 seed 1건(0→0), scan 회수 제외. 신규 empty baseline/0건, legacy는 첫 current 쓰기 직전 실제값을 시각 미상 legacy baseline |
+| 미연결 스캐너 | old 4인자 내부 update 호출은 **unattributed**. scan/manual/import로 잘못 분류하지 않고 current 복원을 유지한다. 사용자 프롬프트 4의 허용 대안이며 23:25 source 3종 결정에 대한 임시 호환 항목이다. scan port가 연결된 새 적용부터 scan으로 기록; 옛 unattributed를 과거 scan으로 바꾸지 않음 |
+| 표시·저장 단위 | raw source별 lifetime/retained commit count와 total/retained **scan_session_count**를 분리. 같은 session_id의 여러 commit은 표시 1회. lifetime session ID 집합을 prefix 정리 뒤에도 보존하여 재등장 세션을 두 번 세지 않음 |
+| 보존 | 365일 / 10,000건 / canonical UTF-8 16 MiB 중 먼저. 오래된 연속 prefix만 baseline으로 접음. 최신 적용 1건·latest_scans·누적 count·last_applied_at·session ID 유지. baseline/index와 최신 1건도 못 넣으면 invalid_payload reason=history_capacity_exceeded, current/revision/cache 모두 이전 값. GET prune 없음 |
+| revision·journal | current/event/cache/profile revision+1/catalog을 공용 write_transaction에 함께 저장. create/import도 같은 journal. root OS guard → marker → 복구 → profile/catalog; prepared=이전 전체, committed=이후 전체. plan 첫 이관/save/replace/goals/profile 메타는 history 보존만 |
+| 삭제 | inline history는 profile과 함께 지워짐. 전술 v1/v2·lock을 포함한 **삭제 journal은 FB-2d**, 이번에 삭제 코드 변경/원자성 완료 선언 없음 |
+| 최소 조회 | repository.history.summary {profile_ids:1..128 unique IDs} → profiles별 revision/history_sequence, last_manual_at/last_import_at, total/retained_event_count, source별 total/retained_counts, total/retained_scan_session_count, coverage(origin/baseline_sequence/baseline_at/first_retained_at/complete/timestamps_monotonic) |
+| 캐시 | context 없는 옛 operation fingerprint와 {revision} cache 유지. replay가 clock·history 호환·revision 검증보다 먼저. explicit context는 fingerprint에 포함, 다른 context/key 재사용은 idempotency_conflict. v6 import는 기존처럼 key 없는 새 profile 생성 API이며 재호출이 새 profile을 만드는 기존 의미를 바꾸지 않음; journal 복구는 이미 생성된 seed의 시각을 보존 |
+| 손상 | 새 중복 학생 입력/import는 invalid_payload reason=duplicate_identity. 기존 중복/손상 history는 corrupt_data, supported-shape의 unknown history version은 migration_required. 빈 history로 대체하지 않음 |
+
+**중복 경로 선조사 결과:** v6 `_students`는 서로 다른 JSON map key의 raw.student_id가 같으면 2명을 append할 수 있다. 기존 direct update도 중복 배열을 받아 저장할 수 있었다. scan 학생 commit은 target ID의 기존 항목을 모두 지우고 1명을 append하여 해당 target의 중복은 만들지 않지만, 다른 학생의 중복은 전체 배열에 남길 수 있었다. 실제 읽은 v7 10개 profile(각 학생 217명)과 v6 1개 account에는 중복이 없었다. 변환 시 조용한 last-wins/합산으로 원래값을 지울 근거가 없으므로 기존 파일은 explicit corrupt_data guard로 읽기를 막고 파일/원본의 명시 정리를 요구한다. 실제 사용자 profile/v6 원본은 수정하지 않았다. fixture로 가능한 v6 중복 경로와 저장 파일의 거부·바이트 보존을 고정했다.
+
+**Mock 경계:** manual 저장은 strict helper와 공용 plan/current cache를 사용한다. 옛 Mock scanner commit이 current map에 직접 쓰는 블록을 바꾸지 않고, repository map observer가 교체한 bucket을 unattributed로 함께 기록한다(메타·계획 쓰기는 같은 current bucket 참조를 유지하므로 event 없음). 같은 값 적용도 기록하며 다음 manual 쓰기의 복원 chain을 유지한다. scanner approved context/partial scope/upsert/replay는 FB-2b의 조율 대상이다. Mock v6 가져오기는 기존 UnsupportedError/빈 preview를 유지하며 import seed는 공용 DTO fixture와 실제 Process 경로에서 검증했다. ConfirmedStudentState는 검증했던 provenance를 이제 DTO/toWire에도 보존한다.
+
+### fixture·실측
+
+| 묶음 | 고정·검증 사례 |
+|---|---|
+| shared strict | current_history_v1: empty, missing/null/0/삭제/대수량, 학생 missing bond/form/provenance, 동값 scan 두 commit=한 session, compacted. unknown key/bool/nonbool presence/잘못된 missing 값/학생 bool/sequence gap/count 불일치/raw UTF-8 초과/중복 diff/끊긴 before/빈 scope/stale latest index/중복 baseline/date 오류. **17 policy + 4 protocol message** |
+| 출처·호환 | new/legacy/public manual 두 bucket/import seed/contextless unattributed/explicit scan/부분 scope, scan enum 없는 raw text·null profile, scope 밖 diff 거부, metadata/plan/goals/first migration은 event 없음, 옛 cache replay와 재시작 원래 시각 |
+| 정리 | count/365일 경계/bytes 각각 prefix 이동, baseline 재구성, 삭제된 key의 latest index와 누적 count 유지, legacy/compacted 불완전 coverage, 단독 capacity 오류의 이전 바이트 보존, clock 역행 |
+| 원자성 | current/create/import 각각 7개 journal 경계 × Exception/프로세스 exit=42 subcase. profile/catalog 각각 before_write/fsync/replace 실패 6건, 복구 자체 중단 뒤 재복구. 공통 read가 먼저 복구, committed current 응답 replay는 clock 없이 최초 응답 |
+| process | 새 current+동값+key replay→plan save→restart summary/DTO, legacy summary read(이관 없음)→첫 current→v6 import seed→restart. 기존 current 복원/FB-1b 계획 이관/FB-1c 보관/FB-8b authoring process 함께 회귀 |
+
+실제 프로필 크기: 학생 217명·inventory 614항목, 기존 JSON 약 192,767~198,413 bytes. `backend/tests/fixtures/current_history_profile_shape.json`은 이 구조에서 계정 ID/이름·원래 수량·원래 학생값/provenance를 제거한 익명 fixture다. 보존 제한을 우회하는 작은 테스트 profile로만 측정하지 않았다.
+
+| 실측(기본 상한) | bytes / 시간 |
+|---|---:|
+| import seed history | 212,947 bytes |
+| 접힌 full current baseline | 125,163 bytes |
+| legacy 전체 학생·inventory 변경 1건+baseline | 409,771 bytes |
+| 같은 session의 동값 학생 scan 10,000 commits history | 4,452,539 bytes (10,000 보존, 표시 1회) |
+| 위 append+strict 복원 검증 | 1.7465초 |
+| 실제 journal을 통한 전체 학생 수정 후 profile / journal | 475,227 / 811,615 bytes |
+| 위 durable 쓰기 | 0.0824초 |
+
+16 MiB(16,777,216 bytes)에 여유가 있어 이 정상 크기의 full 적용이나 10,000 동값 학생 commit은 capacity 거부 없이 저장된다. 모든 값이 매번 바뀌는 큰 적용은 16 MiB 조건으로 더 일찍 prefix를 접는다. session/latest index도 byte budget에 포함하므로 누적 ID만으로 상한을 넘기는 비정상 장기/거대 입력 역시 명시 capacity 오류다. 원본 이름·수량을 commit fixture에 넣지 않았으며 숫자/처리 시간은 `debug/frontend_fb2a/size-measurement.json`에 있다.
+
+### 직접 검증·인계
+
+- Python 관련 **106 OK**: history 18, 기존 persistence/protocol/v6/FB-1b/FB-1c/FB-8a/FB-8b 및 planning schema contract. 결과 `debug/frontend_fb2a/python-targeted.txt`. 기존 FB-1b legacy setup 한 곳은 새 생성 history를 제거하여 이력 도입 전 파일을 정확히 구성한다. v6 원본/plan·scenario 계산 계약·stats current 경로는 변경 없음.
+- Dart 관련 서비스 **192 OK**, process **6 OK**(새 2+기존 4). 결과 `dart-services.txt`, `dart-process.txt`; 지정 파일·--exclude-tags golden·concurrency=1만 실행. 지정 Dart analyze **0 issues**(`dart-analyze.txt`). golden 변화 예상 0.
+- 공유 mock/process/planning_protocol_client pre/post, `debug/frontend_fb2a/commit.json` status=false, whole=본 문서(기존 FB-2 조사 그대로 포함), post_dir=`debug/frontend_fb2a/post`. client는 prefix 기반 repository validator를 이미 사용하여 코드 변경 없음. scanner 블록/pre WIP와 index 보존·3-way merge 검증은 handoff-verification.json에 남긴다.
+- 전체 Python·fe_gate·stage·커밋·push는 실행하지 않았다. 사용자 전체 Python 결과 파일은 아직 없다.
+
+사용자 PC 전체 Python(v7 root에서):
+
+```powershell
+Push-Location backend
+try {
+  py -3.11 -m unittest discover -s tests -v 2>&1 | Tee-Object -FilePath '..\debug\frontend_fb2a\python-full.txt'
+  $fb2aPythonExit = $LASTEXITCODE
+} finally { Pop-Location }
+if ($fb2aPythonExit -ne 0) { throw 'FB-2a Python 전체 실패: python-full.txt 확인' }
+```
+
+사용자 실행 순서: **Python 전체 → 두 워커가 모두 멈춘 뒤 fe_gate → fe_commit -Slice fb2a → redesigndocs**. gate/커밋은 이 워커가 하지 않는다.
+
+### FB-2b·FB-2c·프론트 연결 메모
+
+| 대상 | 다음 연결 경계 |
+|---|---|
+| FB-2b | tactic log 23:25 대응 뒤, repository.update_students/update_inventory의 keyword history_context=ScanHistoryContext.from_wire(...)로 연결. source=scan, session/generation/candidate/revision, session.target의 raw kind/profile, 실제 승인 scope. 4인자 옛 경로는 계속 unattributed. 빈 승인 scope는 호출하지 않음. FD-147 동값도 적용 호출; candidate 제외 key는 scope 밖. 새 key/context fingerprint와 응답 유실 replay, Mock upsert/승인 scope/idempotency를 함께 맞출 것 |
+| FB-2b summary | 이번 최소 응답에 last_scan_at, raw tuple last_scans, item/student latest 시각을 추가. latest_scans와 scan_session_ids를 사용하며 session 수를 원시 commit 수로 바꾸지 않음. FE8-c 계정 메타는 **student 행**. unattributed/manual/import timestamp를 마지막 scan으로 대체하지 않음 |
+| FB-2c | baseline+whole student/resource present diff의 apply_event를 재사용. 기간·events/diff·cursor/filter와 session 마지막 적용점 묶음. prefix 이전 coverage 불완전, deleted key/unknown quantity/clock 역행을 0으로 만들지 않음. manual/import/unattributed도 실제 상태 복원에는 포함하지만 scan 점/회수에는 제외 |
+| FE6-f / FE7-h | 원시 commit count는 진단용, 스냅샷/추세/A6는 scan session 수. 기간 KPI/스파크라인은 FB-2c 후 연결; 지금 최소 summary로 과거 delta를 합성하지 않음. 현재 statistics.snapshot_count의 inventory-entry 의미를 바꾸지 않음 |
+| FE8-c / FE8-g1 | 마지막 수동 수정/가져오기는 최소 summary로 별도 의미 표시 가능. 계정 학생 scan 시각·종류별 막대는 FB-2b 뒤; 앱 실행 중 최근 8 session 기록(FD-149)은 영속 성공 이력으로 대체하지 않음 |
+| Dart 호출 | RepositoryService.loadRepositoryHistorySummary(profileIds) → result.profiles의 typed DTO. 요청당 1..128 unique IDs. unknown/unrecorded는 last 시각 null, coverage.complete=false. UTC→local 표시는 프론트 담당. state.get/현재값 저장 요청·{revision} 반환 사용법은 동일 |
+| FB-2d | 전술 v1/v2 삭제 대상·공용 guard·고정 lock 순서 회신 후 별도 프롬프트로 착수 |
+
+**여기서 멈춘다.** 구현·직접 검증을 마쳤고 사용자 전체 Python/gate 및 오케스트레이터 확인을 기다린다. FB-2b/c/d는 다음 프롬프트를 받은 뒤 시작한다.
+
+# FB-2 읽기 전용 설계 조사
+
+## 조사 기준·결론 (2026-10-09)
+
+- 조사 HEAD: `df547db746534def4316e24b3b983a689f1ada56`. AGENTS → README/runtime 경계 → workflow의 FB-2·FB-3, FE6-f·FE7-h·FE8-c·FE8-g1 및 스캐너 변동 대응 → orchestrator 22:10 → FD-041·FD-147과 연결된 inventory-catalog-order, 시안 조사 E/F/I, FD-042·FD-096·FD-144·FD-146·FD-149를 읽었다. 앞당긴 것은 **조사만**이며 구현 승인은 아직 없다. 기존 FB-8 조사 형식을 참고했다.
+- **현재 확정 저장은 시각·적용 source를 갖고 있지 않다.** scanner candidate의 evidence/provenance, 인식 정답 샘플의 confirmed_at, UI의 idempotency key, 파일 mtime을 스캔 커밋 시각으로 바꾸어 읽을 수 없다.
+- 권장안: 확정 profile 옆 별도 파일 대신 **같은 profile JSON에 optional `current_history` v1**을 둔다. 이력은 학생·인벤토리 확정 상태와 같은 transaction에 넣고, 계산/목표/계획/정적 메타와 분리한다. baseline + 적용별 diff + 적용 대상 scope + 보존 기간을 넘어 유지할 최신 scan index가 필요하다.
+- FD-041의 단위는 저장/승인 **commit 1회 = 이력 1건**이다. manual도 남기되 `스냅샷 n회`와 `지난 스캔` 기준은 source=scan만 센다. FD-147 때문에 diff=[]인 승인도 scope와 시각을 남긴다. 시작·인식·review·취소·완료만으로는 scan 시각을 갱신하지 않는다.
+- 아래 이름·상한·분할·오류 reason은 **승인 전 계약 초안**이다. 코드·계약·테스트는 바꾸거나 실행하지 않았고, gate·stage·커밋·push와 commit.json 생성도 하지 않았다. 이 절은 다음 백엔드 commit의 본 문서 whole에 함께 넣는다.
+
+## 1. 현재 저장 경로와 가진 시각·source
+
+| 경로 | 실제 확정 쓰기·revision | 지금 있는 정보 / 없는 정보 | FB-2 처리 제안 |
+|---|---|---|---|
+| scanner 학생 승인 | `ScannerSessionService.commit`가 get_state 후 candidate 학생을 교체한 전체 배열로 `JsonRepository.update_students` 호출. profile/catalog revision +1 | session_id/generation/candidate_id/candidate_revision/scan_kind는 세션에 있음. 학생 values와 field별 provenance는 저장 가능. 적용 시각·scan source는 repository로 전달되지 않음 | scanner가 서버 내부 context와 승인 student ID를 함께 넘겨 source=scan으로 1건 |
+| scanner 인벤토리 승인 | commit가 `_merged_inventory`로 읽은 key만 upsert한 전체 snapshot을 `update_inventory`에 전달. 읽지 않은 key는 보존. revision +1 | session.target의 inventory_scan_profile, payload의 catalog_revision, entry의 observed_slot가 있음. scanner-only entry inventory_scan_profile은 DTO 변환 전에 제거. 확정 entry.profile_id는 **현재 catalog 정렬 프로필** | 원래 scan profile + 실제 승인 resource keys를 별도 context로 전달. 전체 저장 snapshot의 모든 key를 스캔했다고 보지 않음 |
+| 학생/인벤토리 화면의 candidate 적용 | student_page `_approveCandidate`, inventory_page `_approveCandidate`, scan_page `_applyStudentCandidate`가 review→scanner commit 호출 | review reason·field evidence·audit는 세션 정보. 화면에서 고쳐 승인해도 확정 저장 경계는 scan commit | source=scan 유지. 수동 보정의 field provenance와 저장 적용 source는 서로 다른 의미 |
+| 직접 학생 저장 API | `repository.students.update` → Process `saveRepositoryStudents` → update_students. **전체 교체**, 삭제도 가능. revision +1 | canonical values/optional provenance, expected_revision/key만. 독립 학생 화면의 직접 save 호출은 현재 검색되지 않았고 API·서비스·tests의 호출은 있음 | source=manual. before/after 전체 상태로 학생 추가·삭제·field diff 계산 |
+| 인벤토리 수량 직접 고치기 | inventory_page `_save` → `saveRepositoryInventory` → `repository.inventory.update` → update_inventory. 전체 bucket 교체. revision +1 | key의 `inventory-save-<microseconds>`는 UI 요청 식별자이며 저장된 시각 필드가 아님. quantity는 문자열 또는 null | source=manual. 같은 수량을 새 key로 저장해도 1건. FD-096의 크레딧·엘리그마 수동 입력 금지는 유지 |
+| v6 가져오기 | `repository.migration.import` → import_v6_profile, 학생·inventory·goals·plan을 **새 profile revision=0**으로 생성 | V6Account에 source_profile_key·warnings는 있으나 scan 시각 없음. v6 JSON에서 값만 변환; 과거 스캔 시각/provenance를 이관하지 않음. 반환 결과의 source 정보도 profile 이력으로 저장되지 않음 | source=import인 초기 seed 1건 제안. 시각은 **가져오기 성공 시각**이며 scan count/마지막 scan에서 제외. 원본 scan 시각을 발명하지 않음 |
+| 신규 profile 생성 | create_profile가 empty current + empty v2 plan, revision=0을 생성 | 생성 시각 없음 | 빈 baseline/빈 history. 학생·inventory 적용 및 scan으로 세지 않음 |
+| legacy 계획 첫 get 이관 | `_ensure_plan_locked`가 goals→plan 및 goals 정규화 저장, revision +1. get_state/get_plan/관련 scanner·scenario 호출에서 촉발 가능 | 시각 없음. **학생·inventory 목표 보충이나 확정값 변경 경로가 아님** | history event 및 scan count 없음. 같은 lock/journal에서 history 필드를 보존 |
+| plan.save/replace, legacy goals.save, profile select/rename/update | profile/catalog revision 증가; replace는 scenario 파일까지 journal | current를 포함한 profile 파일을 다시 쓰지만 학생/수량을 수정하지 않음. scenario created_at/updated_at는 그 레코드 시각 | history 보존만. profile revision 증가를 current event로 추론하지 않음 |
+| catalog 재정렬/alias rebase | `_profile`의 rebase_inventory_snapshot가 읽기 view의 key/ordinal/profile/observed_slot를 정규화. 이후 쓰기에 반영될 수 있음 | catalog_revision은 내용 SHA이지 시각이 아님. position/name만 바뀔 수 있음 | 경제 값 diff·scan 시각을 만들지 않음. known alias는 양쪽 상태를 같은 canonical resource_key로 맞춤 |
+| UI seed·fixture·Mock | seed_ui_test_profile는 v6 import/rename/select 및 scenario 생성 경로 사용. Mock은 메모리 current 저장 및 scanner commit을 별도로 구현 | Mock에도 확정 저장 history/시각 없음. 현재 Mock inventory commit은 Python upsert와 달리 payload로 bucket 교체. 이력용 scanner context 없음 | 실제 저장과 같은 history helper/DTO가 필요. scanner-owned Mock commit 변화는 요청서로 조율. seed는 public repository 경로를 유지하면 별도 가짜 scan 불필요 |
+
+`resolve_inventory_input`/repository_merge의 sqlite·json `source`는 **입력 선택 출처**이며 runtime current update의 scan/manual source가 아니다. v6 importer는 현재 JSON 경로다. 인식 정답 샘플 파일은 review 과정에서 confirmed_at·confirmation_source=user_review를 남길 수 있으나 repository revision 실패 전에도 생길 수 있고, 재화 수량 이력이 아니므로 FB-2의 근거로 사용하지 않는다. 전술대항전 commit·정적 metadata export·계산 결과/부족량·scanner snapshot/event 복원 역시 이력 대상 밖이다.
+
+추가로 확인한 주의:
+
+- ConfirmedStudent.provenance는 필드 출처 문자열 map이고 시각 계약이 아니다. 현재 Dart ConfirmedStudentState는 이를 검증하지만 DTO 필드/toWire에는 보존하지 않는다. 학생 값 diff와 provenance-only 변경을 분리하며, 직접 편집 왕복에서 provenance 보존 여부는 후속 DTO 결정이 필요하다.
+- repository_merge.student_diff는 v6 parity용 넓은 field 목록을 쓰고 inventory_diff는 after key만 순회하여 **삭제와 missing/null을 충분히 표현하지 않는다**. 이를 그대로 이력 diff로 쓰지 않는다. 이력은 실제 확정 **before/after**를 비교하며 v6 MAX merge나 비용 정규화를 다시 적용하지 않는다.
+- 학생 배열은 현 repository 경계에 student_id 중복 검사 없이 들어갈 수 있다. 학생 단위 이력의 key가 모호해지는 입력/기존 파일 정책도 승인해야 한다. 조용히 last-wins로 접지 않는다.
+
+코드 근거: [repository current 쓰기](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/repository_store.py:539>), [공통 mutation](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/repository_store.py:328>), [scan commit](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/scanner_session.py:567>), [scan upsert](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/scanner_session.py:691>), [v6 변환](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/v6_migration.py:86>), [v6 import](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/repository_store.py:571>), [직접 inventory 저장](<C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/lib/ui/pages/inventory_page.dart:201>), [현재 DTO](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/repository_dto.py:128>), [Dart provenance 경계](<C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/lib/services/repository_service.dart:187>).
+
+## 2. 이력 레코드 모양·diff 및 변경 없는 적용
+
+승인 전 원본 초안(배열/객체는 strict; 아래 표기의 `...`는 문법 예시 생략이다):
+
+```text
+current_history = {
+  version: 1, next_sequence: N,
+  baseline: {sequence, at: UTC-string|null,
+             students: [confirmed-current ...],
+             inventory: [{resource_key, quantity: decimal-string|null} ...]},
+  events: [{
+    sequence, recorded_at: UTC-string, source: scan|manual|import,
+    revision_before, revision_after,
+    scan_kind: string|null, inventory_scan_profile: string|null,
+    scan_context: {session_id, generation, candidate_id, candidate_revision}|null,
+    applied_scope: {student_ids: [...], resource_keys: [...]},
+    student_changes: [{student_id, before_present, after_present,
+      fields: [{field, before: {present, value}, after: {present, value}}],
+      provenance: {before: {present, value}, after: {present, value}}|null}],
+    inventory_changes: [{resource_key,
+      before: {present, quantity}, after: {present, quantity}}],
+    catalog_revision: SHA|null
+  }],
+  scan_totals: {commit_count, first_at: UTC-string|null},
+  latest_scans: {by_kind: [...], by_resource_key: [...], by_student_id: [...]}
+}
+```
+
+- `recorded_at`은 backend의 UTC aware clock이 **최초 성공 적용**에 대해 정하는 RFC3339 `Z` 문자열이다. 구현 시 Python/Dart fixture에서 소수초 precision을 고정한다. 스캔 촬영/시작/완료 시각과 구별한다. 재시도·journal 복구는 원래 시각/sequence를 쓰며 새 clock을 읽지 않는다. UI key·mtime·sample confirmed_at을 쓰지 않는다.
+- 단위는 profile 안의 증가하는 sequence다. 보통 event는 같은 current mutation의 revision_before→revision_after(+1), import 초기 seed만 0→0이며 별도 profile revision을 올리지 않는다. 장차 학생·아이템을 같이 적용하는 commit은 한 event의 양쪽 changes에 넣는다.
+- `scan_kind`·`inventory_scan_profile`은 **raw string 그대로** 저장·반환·완전 일치 검색한다. trim/대소문자 변환·ScannerKind/InventoryScanProfile enum 변환·SCAN_PROFILES membership 검사는 금지한다. source=scan 이외는 null, scanner 쪽에서 profile을 모르면 null 그대로이며 catalog entry.profile_id로 채우지 않는다. 구문/크기 제한만 두는 안(문자열 1~1024 UTF-8 bytes, 원문 불변)이며 모르는 종류·profile fixture를 둔다.
+- `applied_scope`가 핵심이다. 학생은 승인한 candidate의 **student_id**, 인벤토리는 **실제로 승인하여 적용한 resource_key**다. 합쳐진 bucket 전체 key나 diff에 나타난 key만으로 추측하지 않는다. 수동 전체 교체는 이전/새 bucket ID의 합집합을 작업 범위로 잡아 삭제도 표현하되 scan index는 갱신하지 않는다. 제외한 미승인 key는 기존값과 scan 시각을 유지한다. 승인한 null은 unknown이며 0이나 인식 성공의 증거가 아니다.
+- inventory identity는 `canonical_resource_key(item_id or key)`다. ordinal/index·observed_slot·catalog profile을 이력 key로 삼지 않으며 unknown ID를 버리지 않는다. 수량은 기존 canonical decimal-string/null, 부호 있는 delta 문자열은 양쪽이 present/known일 때만 파생하고 나머지는 delta=null이다. 추가·삭제를 수량 0으로 채우지 않는다. 값이 같은 순서/이름/위치 변화는 수량 diff가 아니다.
+- 학생은 student_id와 현재 DTO fields로 비교하고 missing과 명시 null을 present flag로 구별한다. form_combat_stats는 field 객체 전체의 before/after, provenance는 별도 차이로 원문을 유지한다. 목표·favorite/notes·비용·부족·정적 catalog 메타를 넣지 않으며 배열 순서만 바뀌었다고 성장 diff를 만들지 않는다.
+- 전부 같아도 **새 승인 commit이면 event＋scope＋시각＋기존 revision +1**이다. changes가 비어도 latest_scans와 scan count를 갱신한다. 별도 key의 manual 동값 저장도 1건이다. repository 적용이 없는 session 완료·미승인·취소/실패·빈 승인 scope는 갱신하지 않는다(빈 scan scope는 invalid_payload안). 같은 key 재시도는 event/index/count를 늘리지 않는다.
+- 동일 시각은 sequence로 정렬한다. clock이 돌아가도 원래 시각을 발명/보정하지 않고, latest scan은 마지막 승인 sequence의 시각을 반환한다. 시간 경계와 sequence 순서가 역전하는 기간은 warning·불완전 coverage로 표시하고 delta를 만들지 않는다. sequence 기준은 재구성할 수 있다.
+
+**회수 주의(FD-041/FD-144):** 현재 full student scan은 학생 candidate마다 순차 commit하므로 한 session이 여러 건이다. `scan_commit_count`를 그대로 “스냅샷 n회”로 삼는 것이 FD-041 문구에 따른 제안이다. session_id 별 집계를 두더라도 commit 수와 바꾸지 않는다. A6를 full scan/session 단위로 그리려면 집계·완료 조건의 별도 승인이 필요하다. manual/import는 scan 회수에 넣지 않고 아이템별 scan 점은 해당 key가 applied_scope에 있는 scan만 센다(동값 점 포함). 다른 아이템의 scan을 그 아이템의 측정점으로 세지 않는다.
+
+## 3. 저장 위치·크기·정리·transaction/revision
+
+| 안 | 이점·필요 변경 | 판단 |
+|---|---|---|
+| A. profile JSON 안 optional current_history | current·history·revision/cache가 같은 after image. 기존 plan/scenario transaction의 profile target에 포함되고 profile과 함께 삭제됨. 매 profile 쓰기의 크기는 증가 | **권장**. 크기를 제한한 JSON부터. profile strict validator에 optional key를 허용하고 state/plan get에 원본 이력을 흘리지 않음 |
+| B. history/{profile_id}.json | 큰 이력을 보통 profile 읽기/쓰기에서 분리 | current/profile catalog/history의 3-file journal, plan.replace 처리·별도 revision·삭제 target/lock이 늘어남. 첫 구현으로 권장하지 않음 |
+| C. SQLite 이력 | 색인·장기 이력에 적합 | JSON profile/catalog와 DB를 한 commit으로 만드는 새 transaction 설계가 필요. A의 성능 측정에서 필요성이 확인되면 재설계 |
+
+### 크기 제한 제안값
+
+- profile별 **최근 365일·최대 10,000 event·current_history의 canonical UTF-8 16 MiB** 중 먼저 닿는 조건으로 정리한다. 10,000은 학생 순차 commit 수천 건을 보존하려는 값이며 1,000/2,048이면 전체 학생 scan 몇 번에 밀려날 수 있다. 16 MiB는 큰 전체 inventory diff가 건수 상한만으로 무제한 커지지 않게 하는 안이다. JSON/base64 journal의 메모리·읽기/쓰기 비용은 구현에서 fixture 크기와 처리 시간으로 검증하고 상한을 최종 확정한다.
+- 새 current 저장 transaction 안에서 **오래된 연속 prefix**만 지우고 해당 diff를 baseline에 반영한다. 일별 마지막만 합치거나 manual을 지워 scan만 남기지 않는다. 새 event를 넣고 조건을 만족할 때까지 baseline을 전진시킨다. 비동기 정리 쓰기·GET prune·별도 revision 증가는 만들지 않는다.
+- `latest_scans`는 scope로 같은 transaction 안에서 만드는 파생 index다. event를 지워도 종류별·현재값이 삭제된 key를 포함한 마지막 scan 시각을 잃지 않고 옛 scan을 새 scan으로 세지 않는다. scan_totals의 누적 commit 수와 보존 기간 내 count를 따로 반환한다. 종류 tuple은 raw `(scan_kind, inventory_scan_profile)`, resource/student key도 원래 identity다.
+- baseline과 latest index만으로 16 MiB를 넘는 profile, 또는 단독 event를 넣을 수 없는 경우 시각/diff를 조용히 버리지 않고 **쓰기 전에 invalid_payload reason=history_capacity_exceeded**로 거부하는 안이다. current 저장을 막으므로 반드시 승인받아야 한다. baseline을 상한에서 빼고 제한을 지켰다고 하지 않는다. 상한 확대·외부 store 이관은 후속 명시 결정이다.
+- 보존 시작 이전 diff는 `coverage.complete=false`, delta=null(또는 범위 오류)로 명시하고 0/빈 diff와 구별한다. 최신 scan index의 시각이 남아 있어도 그 시점의 과거값을 모두 복원할 수 있다고 하지 않는다. baseline 점은 scan 1건이 아니다.
+
+### 호환·revision·실패 복구
+
+- history 없는 기존 profile의 query는 기록 없음/coverage 불명을 반환한다. 읽기만으로 field를 생성하거나 revision을 올리거나 과거 scan을 만들지 않는다. 첫 current 쓰기의 lock 안에서 **쓰기 직전 실제값**을 시각 미상 baseline으로 잡고 첫 event를 추가한다. 신규는 empty, v6는 import event와 baseline을 생성 transaction에 함께 둔다. legacy plan 첫 이관의 기존 revision bump는 유지하되 history event로 세지 않는다.
+- 현 `_write_profile_catalog`는 profile→catalog atomic write 후 Exception이면 rollback하지만 프로세스 중단용 durable journal은 없다. create/import/delete도 같다. FB-2는 current＋history＋profile revision/catalog/cache를 **공용 write_transaction**으로 저장하여 복구 결과가 이전 전체/이후 전체만 되게 한다. current commit 뒤 timestamp/index를 따로 쓰지 않는다.
+- 현 journal target은 catalog/profiles/scenarios, writes 최대 3, after=null 금지, writer의 stage loop도 세 항목 zip이다. inline current 저장은 두 target으로 충분하다. 현 delete의 catalog/profile/tactical v1/scenarios/presets 다섯 target을 journal화하려면 삭제 after=null·target allowlist·건수/loop 확장이 필요하다.
+- **삭제의 별도 조율점:** TacticalV2Store는 `tactical/{id}.v2.json`을 쓰는데 현 delete는 `{id}.json`만 지운다. 두 버전을 포함한 전체 삭제면 여섯 target이다. v1/v2 writer도 `.tactical.lock`/`.tactical-v2.lock`을 따로 잡으므로 root guard만으로 동시 삭제 전체를 보장할 수 없다. 오케스트레이터가 tactical 소유자에게 삭제 대상·읽기/쓰기 공통 guard 참여·고정 lock 순서 대응을 요청해야 한다. 협의 전에는 전체 삭제의 원자성을 완료로 선언하지 않는다. inline history가 profile과 함께 삭제되는 점은 이 별도 파일 문제와 구별한다.
+- profile 삭제 때 history도 삭제한다. delete/create/import journal화도 FB-2a에 포함하는 안이다. 중단한 삭제는 시작 후 get_state/plan/history/scenario list/get의 공통 guard가 복구하며, 반쯤 삭제한 계정이나 고립된 history를 보이지 않는다. scanner 학습 sample 삭제는 별도 소유·정책이며 이력 삭제와 묶지 않는다.
+- 독립 history writer/revision을 만들지 않고 view의 `history_sequence`를 snapshot/cursor에 쓴다. 보통 current 적용은 기존 profile revision +1뿐이다. plan/profile 메타에 따른 revision gap은 정상이다. scenario/preset collection revision은 불변, plan.save/replace/goals/legacy migration은 history를 보존하지만 늘리지 않는다.
+- manual의 옛 request fingerprint와 `{revision}` 응답을 유지한다. 새 scanner context를 fingerprint에 포함하는 방식은 호환 처리를 명시하고 **옛 cache 확인을 새 history 호환 검증/clock보다 먼저** 한다. 옛 cache에 새 scan을 덧붙이지 않는다. 새 key에 다른 source/scope/profile context면 idempotency_conflict. context 미지원 scanner를 manual로 잘못 분류하여 완료로 삼지 않는다(FB-2b 연결 필요).
+- student ID 중복은 새 입력 invalid_payload, 기존 baseline의 모호한 중복은 corrupt_data/명시 정리 요청으로 처리하는 안이다. 현재 update 계약의 추가 제약이므로 별도 승인한다. 손상된 history도 빈 값으로 바꾸지 않는다.
+
+근거: [현재 두 파일 저장](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/repository_store.py:199>), [삭제 대상](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/repository_store.py:396>), [journal target·복구](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/repository_transaction.py:78>), [transaction writer](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/repository_transaction.py:216>), [tactical v2 파일](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/tactical_v2.py:408>), [v2 lock](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/tactical_v2.py:470>), [v1 lock](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/tactical_store.py:222>).
+
+## 4. 조회 메서드 초안·소비자
+
+이력 전용 method로 현재 repository.state/profile 응답의 고정 key나 기존 snapshot_count를 바꾸지 않는다. 아래는 승인 대상 계약 초안이다.
+
+| method(가칭) | 요청·응답 초안 | 소비자 |
+|---|---|---|
+| repository.history.summary | `{profile_ids, resource_keys?, student_ids?}` → profile별 `{profile_id, revision, history_sequence, last_scan_at, last_scans:[{scan_kind, inventory_scan_profile, sequence, at}], items:[{resource_key,last_scan_at}], students:[{student_id,last_scan_at}], retained_scan_commit_count,total_scan_commit_count,coverage}` | FE8-c는 계정 메타를 한 호출로. FE8-g1 종류별 막대, FE6 상세 item 시각. 이력 없는 item/student의 last_scan_at은 null이며 enum 변환 없음 |
+| repository.history.events | `{profile_id, from_at?, to_at?, source?, scan_kind?, inventory_scan_profile?, student_ids?, resource_keys?, cursor?, limit?}` → `{revision, history_sequence, coverage, events, scan_commit_count, next_cursor}` | FE6-f 최근 변화, 상세스파크라인 원본, FE7-h A6/B3 원본. source/대상 filter는 표시할 event 선택이며 reconstruct에서 다른 source의diff를 빠뜨리지 않음 |
+| repository.history.diff | `{profile_id, from, to, student_ids?,resource_keys?}` → `{revision, history_sequence, coverage, from_point,to_point,student_changes,inventory_changes,scan_commit_count}` | FE6-f KPI/기간 net change, FE7-h 두 시점 KPI. 시간/sequence 또는 최신·이전 scan/현재 endpoint를 같은 helper로 해석 |
+
+- summary는 profile_ids 최대 128, key/student filter 각각 최대 256개를 제안한다(계정 N+1 조회 방지·응답 크기 제한). events는 default limit=100, max=200. unknown kind/profile filter는 정상 빈 결과, unknown resource ID도 보존한다. missing profile은 기존 profile_not_found. UTC aware RFC3339만 받아 events는 `[from_at,to_at)`로 선택하고 기간 diff는 양쪽 경계 직전 상태를 비교한다. filter 생략은 전체, 명시 inventory_scan_profile=null은 null tuple 검색으로 구별한다.
+- diff endpoint는 strict one-of 초안: `{at: UTC}`, `{sequence: int}`, `{scan: latest|previous, scan_kind: raw, inventory_scan_profile: raw|null, resource_key?: ID, student_id?: ID}` 또는 `to={current:true}`. 시간 endpoint는 경계 직전, sequence/scan은 해당 적용 직후 상태다. selector latest/previous는 이력 API의 선택 규칙이며 raw scan_kind/profile enum이 아니다. 범위 역전·대상 중복 지정은 invalid_payload, 필요한 scan/과거 상태가 없으면 coverage 불완전·delta=null. query anchor 시점의 현재 상태까지 같은 root guard 아래에서 읽는다.
+- cursor는 profile/필터/anchor history_sequence를 묶은 불투명 값이다. 다음 페이지에 anchor 뒤 write를 섞지 않는다. prune으로 필요한 prefix가 사라지면 `invalid_payload reason=history_cursor_expired`로 재조회를 알리는 안이다. read는 profile revision을 올리지 않는다.
+- “지난 스캔 대비”는 종류/resource/student scope의 **최근 두 scan commit 시점의 실제 current**를 비교하는 안이다. 사이의 manual 변경도 먼저 반영해 상태를 복원한다. 현재값 vs 마지막 scan은 별개 비교로 UI가 구별한다. scan 한 건뿐이면 두 scan 비교는 delta=null이지만 현재/마지막 scan 비교는 가능하다. FD-042 trend는 해당 key scan 세 건 미만이면 숨긴다. manual/import 점은 scan 회수를 늘리지 않는다.
+- 과거 current projection 복원은 공용 helper를 쓰고 query마다 비용식/정규화를 복제하지 않는다. FE7-h 성장 필터는 현재 metadata에서 선택한 student ID 집합을 양쪽 시점에 적용한다. 전체 학생 합계와 필터에 해당하는 scan 표본 수를 구별하며, 상태 없는 학생·unknown quantity를 0으로 채우지 않는다.
+- **history는 과거 goals/계획/metadata를 저장하지 않는다.** 현재 plan을 고정한 과거 보유량의 부족/충족률은 같은 plan/catalog 기준으로 다시 계산할 수 있지만, “당시 활성 계획”이나 “계획 등록 +7”을 재현한 값은 아니다. 해당 KPI delta는 범위 밖으로 숨기거나 별도 목표 이력 승인이 필요하다. 크레딧·엘리그마도 FB-3/FB-10의 실제 key/scan 전에는 null/스캔 없음이며 가짜 수치를 넣지 않는다.
+- FD-147 표시는 프론트가 UTC→local 변환, 경과일/14 상한 막대, 최근≤7일/오래됨>7일/스캔 없음으로 그린다. FB-2는 시각/coverage/raw 종류를 반환한다. I-scan Q4가 계정 메타를 학생 행과 같은 시각으로 설명하므로 **FE8-c는 student의 last_scans 행**을 읽는 안이다. 전체 종류 최신 last_scan_at과 학생 최신을 조용히 바꾸지 않는다.
+- FE8-g1 “최근 스캔”은 FD-149의 앱 실행 중 8건 session 기록을 유지한다. 영속 성공 적용 이력을 session 시작/완료 로그 대신 쓰지 않는다. 현재 statistics snapshot_count(inventory entries 개수 projection)도 FD-041의 scan 회수로 바꾸어 쓰지 않는다.
+
+## 5. 스캐너 소유 경계·요청서 초안
+
+**여기는 요청안만 작성했다. scanner log나 코드에 보내거나 옮기지 않았다. 오케스트레이터가 FB-10 형식 고정·소유자와 조율한다.**
+
+| 요청 | 스캐너 쪽 필요한 정보·대응 | Lane A 수신 경계 |
+|---|---|---|
+| repository commit port | update_students/inventory에 optional 내부 history_context 또는 scan 전용 port 추가. source=scan, session/candidate 식별, raw scan_kind/profile, 실제 승인 ID scope 전달. 프론트의 source 자기 신고로 판별하지 않음 | 공용 strict context validator＋current/history 동시 저장. 기존 수동 public method는 source=manual 고정 |
+| inventory profile 보존 | session.target의 원래 profile 유지, scanner-only entry field를 버리기 전에 scope/context 확보. entry.profile_id는 catalog 정보라 사용 금지. 새 문자열을 history enum으로 거부하지 않음 | raw 문자열 저장/검색/Dart DTO 파싱. catalog ordinal에 의존하지 않음 |
+| 부분 승인(FD-146) | 실제 승인·적용 resource keys와 제외하여 옛값을 보존한 keys 구별. 미식별 slot을 key로 바꾸지 않음. quantity null/needs_review 처리는 FB-10 계약에 맞춤 | scope 대상만 최신 scan 갱신. 전체 bucket의 동값 key에 시각을 붙이지 않음. needs_review storage를 임의 추가하지 않음 |
+| 전부 그대로(FD-147) | 적용을 선택하면 diff 0이어도 기존 commit 호출. FD-144의 그대로=적용 불필요로 skip하면 시각을 갱신하지 않음. 완료 시 자동 history를 만들지 않음 | 비어 있지 않은 승인 scope＋빈 diff event 원자 저장. 같은 key 재시도는 같은 시각/한 건 |
+| retry/revision/Mock | 응답 유실 시 같은 key/context 재전송. 학생 순차 commit의 응답 revision을 다음 expected로. Mock scanner commit도 같은 scope/upsert/history helper 사용(공유 file은 동결/pre-post 분리) | legacy cache replay 우선·source/context 충돌 거부. Python/Dart/process fixture 함께 고정 |
+| 삭제 동시성(별도 tactical 요청) | tactical v1/v2 파일 삭제 범위, root guard 참여와 lock 순서를 소유자와 확정. scanner tactical_lobby commit도 같은 보호 경계를 거치게 검토 | 공용 journal target/삭제 image 확장과 fixture. tactical 소유 코드 직접 수정 없이 협의 결과를 받음 |
+
+scanner_session.py·scanner_protocol_v1.py·scanner_runtime.py·matcher/recognizer·scanner service/UI는 이번에도 수정하지 않았다. FB-2 때문에 scanner start의 기존 지원 종류 검사를 제거하도록 요청하지 않는다. enum 금지는 **history 저장/조회/DTO 경계**이며 인식 구현의 지원 종류와 별개다. crop/evidence/sample 이미지나 candidate 전체를 history에 넣지 않는다.
+
+## 6. 분할 제안·구현 전 승인 사항
+
+| slice안 | 범위·완료 조건 | 선행 |
+|---|---|---|
+| FB-2a 저장 기반 | current_history DTO/diff/baseline/정리, manual/v6/new/legacy 호환, profile/catalog atomic journal, 삭제/생성/import의 durable 경계, idempotency/손상/크기 fixture. contracts/Python/Dart history DTO 고정. 최소 query로 restart 검증 | 설계 승인. scanner context 선확정. 전체 삭제는 tactical 파일·guard 조율 필요(미승인 시 별도 하위 slice로 명시 분리) |
+| FB-2b scan 연결＋마지막 scan 조회 | scanner 담당의 port/context 대응 후 scan/no-change/부분 scope 확정 저장. summary＋typed Process/Mock＋process restart/legacy replay. FE8-c/g1·FE6 item 시각 연결 메모 | FB-2a＋scanner 소유자 대응/동결 창. 연결 전 scan freshness 완료로 삼지 않음 |
+| FB-2c 기간/그래프 조회 | events/diff/reconstruction/filter/cursor, FE6-f·FE7-h의 같은 상태 기준·scan 회수/coverage. 기존 projection 로직 사용, FD-042 trend 세 scan 조건 검증. UI는 프론트 담당 | FB-2a/b. 성장 집계 단위·스냅샷 명칭 승인 |
+
+### 오케스트레이터가 승인할 핵심 결정
+
+| 결정 | 권장안·미확정점 |
+|---|---|
+| 저장 위치·복구 범위 | profile 안 optional current_history v1. current 외 create/import/delete journal화도 FB-2a에 포함하는 안. 현 다섯 target/전술 v2 포함 여섯 target·삭제 image 확장과 tactical guard 조율, 미승인 부분의 하위 slice 분리를 결정 |
+| source/초기 seed | scan/manual에 import 추가. import는 성공 시각 seed, scan 제외. 옛 profile 시각 미상 baseline/신규 empty. 과거 scan 발명 금지 |
+| event/스냅샷 단위 | FD-041의 1 commit=1건. full student session을 한 snapshot으로 집계하려면 FD-144 순차 commit의 완료 조건을 별도 결정. 종류 queue도 session/commit 수 구별 |
+| scan scope·동값 적용 | 승인 ID만 시각 갱신, diff 0도 기록. 완료만/미승인·제외/빈 scope는 갱신 없음. FD-146 scope 전달을 scanner 담당에 요청 |
+| raw 문자열·cache 호환 | raw kind/profile enum·trim 금지. 길이 제한, null/누락 의미, 옛 cache 재시도 우선 처리, 새 context fingerprint 방식 확정 |
+| 보존·상한 | 365일/10,000건/16 MiB, prefix→baseline 정리＋최신 scan index/누적 count 유지. 못 넣을 때 current 저장 거부 정책과 reason 승인·크기 측정 |
+| 기간·비교 기준 | UTC[from,to), 두 scan 점 vs 현재/마지막 scan 구별, scope별 count, manual을 상태 복원에 반영, 모자란 기간은 delta=null. clock 역행/cursor 만료도 명시 |
+| 기존 모호한 데이터 | student_id 중복 입력 거부/기존 파일 정리 요구, provenance-only 변경과 Dart DTO 보존. 기존 계약 추가 제약을 명시·fixture 고정 |
+| 소비자·분할 | FE8-c 학생 시각 vs 전체 최신 구별. FE7-h 과거 plan KPI는 이번 범위 밖. FB-2a/b/c 순서와 scanner 소유 동결 창 |
+
+### 필수 fixture(구현 전에 정책 고정)
+
+| 묶음 | 필수 사례 |
+|---|---|
+| 저장 출처 | 학생/inventory scan, 양쪽 manual, import, 새 profile, 옛 무history profile. review에서 수정한 scan도 source=scan |
+| 동값·제외 | 전체 동값 scan/동값 manual/동일 key 재시도, 완료했지만 미적용, 취소/실패, 비어 있지 않은 scope＋빈 diff, 빈 scan scope 거부 |
+| partial/identity | 승인 key만 갱신, scope 밖 옛값/시각 유지, unknown kind/profile 원문·null profile·미래 profile, catalog 재정렬/alias/unknown resource ID |
+| diff 정확성 | 0/null/absent, 추가/삭제, 큰 정수 수량 문자열/음수 delta, 학생 missing/null, form object/provenance-only/배열 순서 변경, student ID 중복 명시 오류 |
+| revision/cache | profile 메타/plan 저장·첫 이관은 event 없음, scan/manual +1뿐, scenario/preset 불변, 옛 cache/응답 모양, 같은 key 다른 context 충돌, 재시작 동일 시각 |
+| transaction | profile/catalog 각 쓰기 경계, journal prepared/committed/복구 중 예외·강제 종료, create/import/delete 재시작. 항상 이전 전체/이후 전체이며 가짜 시각/event·중복 없음 |
+| retention | 세 상한 각각, baseline 복원, 지운 event의 최신 scan index 유지, 누적/보존 count 구별, 과거 coverage 부족, 단독 거대 record 거부, 손상 history 빈 값 대체 금지 |
+| query/통계 | profile 격리, source/대상 filter에서도 manual을 반영한 복원, 기간 끝/동시각/clock 역행, cursor 고정/만료, 0/1/2 scan 및 trend 세 건 조건, scope 밖 key는 scan 점 제외 |
+| 회귀·왕복 | v1 current/profile DTO, FB-1b 이관·FB-1c/FB-8 journal 보관·v6 import·기존 scenario/통계 값, strict Python/schema/Dart, scan commit→restart→summary/diff process E2E |
+
+**여기서 멈춘다.** 이 절은 승인 전 계약안이다. 다음 구현 프롬프트 전에는 코드 편집을 재개하지 않는다. commit.json을 만들지 않으며 다음 백엔드 commit의 backend 상태 문서 whole에 이 조사도 함께 넣는다.
 
 # FB-8b 시나리오 authoring
 

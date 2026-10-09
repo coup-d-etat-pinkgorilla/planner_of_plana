@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -22,6 +23,11 @@ from core.repository_plan import canonical_active_document, document_from_goals,
 from core.planning_summary import safe_calculation_summary
 from core.repository_transaction import Lease, acquire, release, locked, write_transaction
 from core.v6_migration import V6MigrationError, load_v6_accounts
+from core.current_history import (
+    HistoryError, ScanHistoryContext, canonical_students, projection,
+    empty_history, history_from_wire, append_history, utc_timestamp,
+    summary as history_summary,
+)
 
 
 STORE_VERSION = 1
@@ -68,10 +74,11 @@ class RepositoryError(RuntimeError):
 class JsonRepository:
     """Single-writer, atomic JSON repository. Importing it performs no I/O."""
 
-    def __init__(self, root: Path, *, id_factory: Callable[[], str] | None = None, fault: Callable[[str], None] | None = None) -> None:
+    def __init__(self, root: Path, *, id_factory: Callable[[], str] | None = None, fault: Callable[[str], None] | None = None, clock: Callable[[], datetime] | None = None) -> None:
         self.root = Path(root)
         self._id_factory = id_factory or (lambda: uuid.uuid4().hex)
         self._fault = fault or (lambda _stage: None)
+        self._clock = clock or (lambda: datetime.now(timezone.utc))
 
     @property
     def catalog_path(self) -> Path:
@@ -143,7 +150,8 @@ class JsonRepository:
     def _profile(self, profile_id: str) -> dict[str, Any]:
         value = self._read(self._profile_path(profile_id), "profile")
         required = {"version", "profile_id", "revision", "students", "inventory", "goals", "idempotency"}
-        if set(value) not in (required, required | {"plan"}, required | {"plan", "plan_authoring"}) or value["profile_id"] != profile_id:
+        shape = set(value) - {"current_history"}
+        if shape not in (required, required | {"plan"}, required | {"plan", "plan_authoring"}) or value["profile_id"] != profile_id:
             raise RepositoryError("corrupt_data", "profile has an invalid shape")
         revision = self._stored_revision(value["revision"], "profile revision")
         if not isinstance(value["students"], list):
@@ -170,8 +178,7 @@ class JsonRepository:
                 if archived_id is not None:
                     self._stored_profile_id(archived_id, "idempotency archived scenario ID")
         try:
-            for student in value["students"]:
-                ConfirmedStudent.from_dict(student)
+            canonical_students(value["students"])
             InventorySnapshot.from_dict(value["inventory"])
             for goal in goals["goals"]:
                 StudentGoalRecord.from_dict({"version": 1, "goal": goal})
@@ -181,6 +188,11 @@ class JsonRepository:
                     value["plan_authoring"] = planning_authoring_from_wire(value["plan_authoring"], value["plan"])
                 if goals != goals_from_document(value["plan"]):
                     raise ValueError("stored goals do not match the active document")
+            if "current_history" in value:
+                value["current_history"] = history_from_wire(value["current_history"], current=projection(value["students"], value["inventory"]), revision=revision)
+        except HistoryError as error:
+            code = "migration_required" if error.reason == "unsupported_version" else "corrupt_data"
+            raise RepositoryError(code, str(error), details={"reason": error.reason}) from error
         except PlanningAuthoringError as error:
             code = "migration_required" if error.reason == "unsupported_version" else "corrupt_data"
             raise RepositoryError(code, str(error), details=error.details) from error
@@ -197,16 +209,8 @@ class JsonRepository:
             raise RepositoryError("legacy_goals_conflict", str(error), details={"student_ids": error.student_ids}) from error
 
     def _write_profile_catalog(self, profile: dict[str, Any], catalog: dict[str, Any]) -> None:
-        """Use the existing two-file transaction and byte-preserving rollback."""
-        profile_path = self._profile_path(profile["profile_id"])
-        profile_before, catalog_before = profile_path.read_bytes(), self.catalog_path.read_bytes()
-        try:
-            self._atomic_write(profile_path, profile)
-            self._atomic_write(self.catalog_path, catalog)
-        except Exception:
-            self._restore(profile_path, profile_before)
-            self._restore(self.catalog_path, catalog_before)
-            raise
+        """Guard held by caller; recovery selects both before or both after."""
+        write_transaction(self.root, [(self._profile_path(profile["profile_id"]), profile), (self.catalog_path, catalog)], self._atomic_write, self._fault, RepositoryError)
 
     def _ensure_plan_locked(self, profile_id: str, catalog: dict[str, Any] | None = None) -> dict[str, Any]:
         profile = self._profile(profile_id)
@@ -299,17 +303,12 @@ class JsonRepository:
                 raise RepositoryError("profile_name_conflict", "profile display name already exists")
             profile = {"version": 1, "profile_id": profile_id, "revision": 0, "students": [], "inventory": {"version": 1, "catalog_revision": CATALOG_REVISION, "entries": []}, "goals": {"version": 1, "goals": []}, "idempotency": {}}
             profile["plan"] = document_from_goals(profile["goals"])
+            profile["current_history"] = empty_history()
             summary = {"profile_id": profile_id, "display_name": display_name.strip(), "avatar_student_id": avatar_student_id, "revision": 0, "selected": catalog["selected_profile_id"] is None}
             if catalog["selected_profile_id"] is None:
                 catalog["selected_profile_id"] = profile_id
             catalog["profiles"].append({key: summary[key] for key in ("profile_id", "display_name", "avatar_student_id", "revision")})
-            self._atomic_write(self._profile_path(profile_id), profile)
-            try:
-                self._atomic_write(self.catalog_path, catalog)
-            except Exception:
-                try: self._profile_path(profile_id).unlink()
-                except OSError: pass
-                raise
+            self._write_profile_catalog(profile, catalog)
             return {"profile": summary, "revision": 0}
         finally:
             self._unlock(descriptor)
@@ -442,6 +441,15 @@ class JsonRepository:
         return {key: profile[key] for key in ("profile_id", "revision", "students", "inventory", "goals")}
 
     @locked(RepositoryError)
+    def get_history_summary(self, profile_ids: list[str]) -> dict[str, Any]:
+        # History reads recover the common journal, but do not trigger plan
+        # migration, create history, prune records, or increment any revision.
+        if not isinstance(profile_ids, list) or not 1 <= len(profile_ids) <= 128 or not all(isinstance(item, str) for item in profile_ids) or len(set(profile_ids)) != len(profile_ids):
+            raise RepositoryError("invalid_payload", "profile_ids must contain 1..128 unique IDs")
+        profiles = [self._profile(profile_id) for profile_id in profile_ids]
+        return {"profiles": [history_summary(profile["profile_id"], profile["revision"], profile.get("current_history")) for profile in profiles]}
+
+    @locked(RepositoryError)
     def get_plan(self, profile_id: str) -> dict[str, Any]:
         profile = self._profile_with_plan(profile_id)
         result = {"profile_id": profile_id, "revision": profile["revision"], "document": profile["plan"], "calculation": safe_calculation_summary(profile["plan"], profile)}
@@ -536,13 +544,45 @@ class JsonRepository:
         finally:
             self._unlock(descriptor)
 
-    def update_students(self, profile_id: str, students: list[dict[str, Any]], expected_revision: int, idempotency_key: str) -> dict[str, Any]:
-        canonical = [ConfirmedStudent.from_dict(item).to_dict() for item in students]
-        return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"students:{canonical_json(canonical)}", lambda _c, p: p.__setitem__("students", canonical))
+    def _update_current(self, profile_id: str, bucket: str, canonical: object, expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | None, manual: bool) -> dict[str, Any]:
+        source = "manual" if manual else "unattributed"
+        operation = f"{bucket}:{canonical_json(canonical)}"
+        if history_context is not None:
+            if manual:
+                raise RepositoryError("invalid_payload", "Manual RPC cannot claim scanner context")
+            try:
+                history_context = ScanHistoryContext.from_wire(history_context.to_wire())
+            except (HistoryError, AttributeError) as error:
+                raise RepositoryError("invalid_payload", str(error)) from error
+            source = "scan"
+            operation = f"{bucket}-history:{canonical_json({'current': canonical, 'history_context': history_context.to_wire()})}"
+        def mutate(_catalog: dict, profile: dict) -> None:
+            try:
+                before = projection(profile["students"], profile["inventory"])
+                after = projection(canonical if bucket == "students" else profile["students"], canonical if bucket == "inventory" else profile["inventory"])
+                scope = {"student_ids": sorted({item['student_id'] for item in before['students'] + after['students']}) if bucket == "students" else [],
+                         "resource_keys": sorted({item['resource_key'] for item in before['inventory'] + after['inventory']}) if bucket == "inventory" else []}
+                if history_context is not None:
+                    approved = history_context.to_wire()["applied_scope"]
+                    if any(not set(approved[key]).issubset(scope[key]) for key in scope):
+                        raise HistoryError("scan_scope_mismatch", "Scan scope must reference the bucket and identities actually submitted")
+                history = profile.get("current_history") or empty_history(profile["students"], profile["inventory"], legacy=True)
+                profile["current_history"] = append_history(history, before, after, source=source, recorded_at=utc_timestamp(self._clock()), revision_before=profile["revision"], revision_after=profile["revision"] + 1, catalog_revision=CATALOG_REVISION, context=history_context, applied_scope=scope)
+                profile[bucket] = canonical
+            except HistoryError as error:
+                raise RepositoryError("invalid_payload", str(error), details={"reason": error.reason}) from error
+        return self._catalog_mutation(profile_id, expected_revision, idempotency_key, operation, mutate)
 
-    def update_inventory(self, profile_id: str, inventory: dict[str, Any], expected_revision: int, idempotency_key: str) -> dict[str, Any]:
+    def update_students(self, profile_id: str, students: list[dict[str, Any]], expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | None = None, manual: bool = False) -> dict[str, Any]:
+        try:
+            canonical = canonical_students(students)
+        except HistoryError as error:
+            raise RepositoryError("invalid_payload", str(error), details={"reason": error.reason}) from error
+        return self._update_current(profile_id, "students", canonical, expected_revision, idempotency_key, history_context=history_context, manual=manual)
+
+    def update_inventory(self, profile_id: str, inventory: dict[str, Any], expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | None = None, manual: bool = False) -> dict[str, Any]:
         canonical = rebase_inventory_snapshot(inventory)
-        return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"inventory:{canonical_json(canonical)}", lambda _c, p: p.__setitem__("inventory", canonical))
+        return self._update_current(profile_id, "inventory", canonical, expected_revision, idempotency_key, history_context=history_context, manual=manual)
 
     def save_goals(self, profile_id: str, goals: dict[str, Any], expected_revision: int, idempotency_key: str) -> dict[str, Any]:
         if not isinstance(goals, dict) or goals.get("version") != 1 or not isinstance(goals.get("goals"), list) or set(goals) != {"version", "goals"}:
@@ -577,13 +617,14 @@ class JsonRepository:
         if account is None:
             raise RepositoryError("migration_source_invalid", "v6 profile was not found")
         document = self._legacy_document(account.goals)
+        try:
+            canonical_students(list(account.students))
+        except HistoryError as error:
+            raise RepositoryError("invalid_payload", "v6 import contains duplicate student identities", details={"reason": error.reason}) from error
 
         descriptor = self._lock()
-        profile_path: Path | None = None
-        catalog_before: bytes | None = None
         try:
             catalog = self._catalog()
-            catalog_before = self.catalog_path.read_bytes() if self.catalog_path.exists() else None
             existing_names = {str(item["display_name"]).casefold() for item in catalog["profiles"]}
             base_name = account.display_name
             display_name = base_name
@@ -614,6 +655,9 @@ class JsonRepository:
                 "plan": document,
                 "idempotency": {},
             }
+            before = projection([], {"version": 1, "entries": []})
+            after = projection(profile["students"], profile["inventory"])
+            profile["current_history"] = append_history(empty_history(), before, after, source="import", recorded_at=utc_timestamp(self._clock()), revision_before=0, revision_after=0, catalog_revision=account.inventory.get("catalog_revision"))
             summary = {
                 "profile_id": profile_id,
                 "display_name": display_name,
@@ -622,13 +666,7 @@ class JsonRepository:
             }
             catalog["profiles"].append(summary)
             catalog["selected_profile_id"] = profile_id
-            profile_path = self._profile_path(profile_id)
-            self._atomic_write(profile_path, profile)
-            try:
-                self._atomic_write(self.catalog_path, catalog)
-            except Exception:
-                profile_path.unlink(missing_ok=True)
-                raise
+            self._write_profile_catalog(profile, catalog)
             return {
                 "profile": {**summary, "selected": True},
                 "student_count": len(account.students),
@@ -637,12 +675,8 @@ class JsonRepository:
                 "warnings": list(account.warnings),
             }
         except Exception as error:
-            if catalog_before is not None:
-                self.catalog_path.write_bytes(catalog_before)
-            elif self.catalog_path.exists():
-                self.catalog_path.unlink(missing_ok=True)
-            if profile_path is not None:
-                profile_path.unlink(missing_ok=True)
+            if isinstance(error, HistoryError):
+                raise RepositoryError("invalid_payload", str(error), details={"reason": error.reason}) from error
             if isinstance(error, RepositoryError):
                 raise
             raise RepositoryError("persistence_failed", "v6 profile import failed", details={"reason": type(error).__name__}) from error

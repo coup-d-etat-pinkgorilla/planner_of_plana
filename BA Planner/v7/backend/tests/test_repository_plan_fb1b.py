@@ -50,6 +50,7 @@ class RepositoryPlanTests(unittest.TestCase):
     def legacy(self, case, revision=4):
         profile = json.loads(self.path.read_text(encoding='utf-8'))
         profile.pop('plan', None)
+        profile.pop('current_history', None)  # A legacy file predates history.
         profile.update(revision=revision, goals=case['legacy_goals'], students=case.get('students', []))
         profile['idempotency'] = {'old-write': {'fingerprint': 'a' * 64, 'response': {'revision': revision}}}
         self.path.write_text(json.dumps(profile), encoding='utf-8')
