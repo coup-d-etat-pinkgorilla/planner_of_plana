@@ -6,6 +6,8 @@
 // - 경계: authoring wire(학생 순서 · 체인 · 나중에 단계 nullable 목표 · goal_metadata) ↔ 초안 복원.
 // - 저장: 시나리오 create · 페이즈로 추가(활성 authoring 병합, id 재발급 remap) · authoring 오류를 카드에 잇고 초안 유지.
 // - 화면: "나중에" 칸에 끌어 놓기, C "선행 단계 추가" 뒤 카드 누르기, 카드 아래 점 끌기, 분홍 점선, C ×.
+// - FE4-f2: 시나리오 편입(stage ID 재발급 remap · 퇴행 단계와 그 직접 선행을 명시해 빼기), 활성 계획을 고치는 흐름의
+//   4단계(이걸로 바꾸기 기본 · 페이즈로 추가 막음 · 초안을 연 revision으로 충돌 알림).
 //
 // 계산 디바운스(Timer)가 있어서 pumpAndSettle 대신 명시적인 pump를 쓴다.
 import 'package:ba_planner_v7/app/theme.dart';
@@ -219,6 +221,36 @@ List<PlanFlowOrderArrow> _directArrows(WidgetTester tester) {
   );
   return (paint.painter! as PlanFlowOrderArrowPainter).arrows;
 }
+
+/// v2 단계(적지 않은 키는 null).
+PlanningDocumentStage _docStage(String id, String studentId, int level) =>
+    PlanningDocumentStage(
+      id: id,
+      studentId: studentId,
+      name: id,
+      targets: {
+        for (final key in planningDocumentTargetKeys)
+          key: key == 'level' ? level : null,
+      },
+    );
+
+/// v2 문서(goal_metadata는 문서 학생 기본값).
+PlanningDocument _doc(
+  String id,
+  PlanningDocumentKind kind,
+  List<PlanningDocumentPhase> phases,
+) => PlanningDocument(
+  id: id,
+  name: id,
+  kind: kind,
+  version: 2,
+  phases: phases,
+  goalMetadata: {
+    for (final phase in phases)
+      for (final stage in phase.stages)
+        stage.studentId: planFlowDefaultGoalMetadata,
+  },
+);
 
 void main() {
   group('나중에 칸(FE4-f1)', () {
@@ -909,6 +941,277 @@ void main() {
       expect(flow.draft.prerequisites, hasLength(1));
       expect(editor.message, isNotNull);
       expect(find.byKey(const ValueKey('plan-flow-order-message')), findsOneWidget);
+    });
+  });
+
+  group('시나리오 편입(FE4-f2)', () {
+    test('stage ID를 재발급하면 나중에 단계·직접 선행 양 끝·학생 체인·학생 순서를 함께 바꾼다', () {
+      // 활성: 아루 1단계(칸, id 겹침) + 나중에 칸 아루 단계.
+      final active = _doc('active-plan', PlanningDocumentKind.plan, [
+        PlanningDocumentPhase(
+          id: 'p1',
+          name: '1순위',
+          stages: [_docStage('aru-stage-1', 'aru', 40)],
+        ),
+      ]);
+      final activeAuthoring = PlanningAuthoring.fromWire({
+        'version': 1,
+        'prerequisites': const <Object>[],
+        'deferred_stages': [_docStage('aru-later', 'aru', 45).toWire()],
+        'student_order': const ['aru'],
+        'stage_order_by_student': const {
+          'aru': ['aru-stage-1', 'aru-later'],
+        },
+        'goal_metadata': const <String, Object>{},
+      }, active);
+      // 시나리오: 아야네 1단계(칸) → 아루 1단계(나중에 칸, id 겹침) 직접 선행.
+      final scenario = _doc('scenario', PlanningDocumentKind.scenario, [
+        PlanningDocumentPhase(
+          id: 'p1',
+          name: '1순위',
+          stages: [_docStage('ayane-stage-1', 'ayane', 51)],
+        ),
+      ]);
+      final scenarioAuthoring = PlanningAuthoring.fromWire({
+        'version': 1,
+        'prerequisites': const [
+          {'stage_id': 'aru-stage-1', 'requires_stage_id': 'ayane-stage-1'},
+        ],
+        'deferred_stages': [_docStage('aru-stage-1', 'aru', 60).toWire()],
+        'student_order': const ['ayane', 'aru'],
+        'stage_order_by_student': const {
+          'ayane': ['ayane-stage-1'],
+          'aru': ['aru-stage-1'],
+        },
+        'goal_metadata': const {
+          'aru': {'favorite': false, 'notes': ''},
+        },
+      }, scenario);
+      final result = planFlowIncorporateScenario(
+        active: active,
+        activeAuthoring: activeAuthoring,
+        scenarioDocument: scenario,
+        scenarioAuthoring: scenarioAuthoring,
+        scenarioName: '후보',
+        seedFor: _seed,
+      );
+      expect(result.skippedStageCount, 0);
+      expect(result.droppedPrerequisites, isEmpty);
+      expect(result.addedStageCount, 2);
+      final merged = result.merged;
+      expect(merged.blocked, isFalse);
+      expect(merged.stageIds['aru-stage-1'], 'aru-stage-1-2');
+      final document = merged.document!;
+      expect(document.phases.map((phase) => (phase.id, phase.name)), [
+        ('p1', '1순위'),
+        ('p1-2', '후보 · 1순위'),
+      ]);
+      final authoring = merged.authoring!;
+      expect(authoring.studentOrder, ['aru', 'ayane']);
+      expect([for (final stage in authoring.deferredStages) stage.id], [
+        'aru-later',
+        'aru-stage-1-2',
+      ]);
+      expect(authoring.stageOrderByStudent['aru'], [
+        'aru-stage-1',
+        'aru-later',
+        'aru-stage-1-2',
+      ]);
+      final prerequisite = authoring.prerequisites.single;
+      expect(prerequisite.stageId, 'aru-stage-1-2');
+      expect(prerequisite.requiresStageId, 'ayane-stage-1');
+      // v2 nullable 원본 그대로다.
+      expect(
+        authoring.deferredStages.last.nullableTargets['ex_skill'],
+        isNull,
+      );
+    });
+
+    test('활성 목표보다 낮은 단계는 빼고, 그 단계에 이은 직접 선행은 명시해 뺀다', () {
+      final active = _doc('active-plan', PlanningDocumentKind.plan, [
+        PlanningDocumentPhase(
+          id: 'p1',
+          name: '1순위',
+          stages: [_docStage('aru-active', 'aru', 70)],
+        ),
+      ]);
+      final scenario = _doc('scenario', PlanningDocumentKind.scenario, [
+        PlanningDocumentPhase(
+          id: 's1',
+          name: '1순위',
+          stages: [
+            _docStage('aru-s1', 'aru', 50),
+            _docStage('ayane-s1', 'ayane', 51),
+          ],
+        ),
+        PlanningDocumentPhase(
+          id: 's2',
+          name: '2순위',
+          stages: [_docStage('ayane-s2', 'ayane', 60)],
+        ),
+      ]);
+      final scenarioAuthoring = PlanningAuthoring.fromWire({
+        'version': 1,
+        'prerequisites': const [
+          {'stage_id': 'ayane-s2', 'requires_stage_id': 'aru-s1'},
+        ],
+        'deferred_stages': const <Object>[],
+        'student_order': const ['aru', 'ayane'],
+        'stage_order_by_student': const {
+          'aru': ['aru-s1'],
+          'ayane': ['ayane-s1', 'ayane-s2'],
+        },
+        'goal_metadata': const <String, Object>{},
+      }, scenario);
+      final result = planFlowIncorporateScenario(
+        active: active,
+        scenarioDocument: scenario,
+        scenarioAuthoring: scenarioAuthoring,
+        scenarioName: '후보',
+        seedFor: _seed,
+      );
+      expect(result.skippedStageCount, 1);
+      expect(result.droppedPrerequisites, [
+        const PlanFlowPrerequisite(
+          stageId: 'ayane-s2',
+          requiresStageId: 'aru-s1',
+        ),
+      ]);
+      expect(result.addedStageCount, 2);
+      final merged = result.merged;
+      expect(merged.blocked, isFalse);
+      expect(
+        merged.document!.phases.map((phase) => phase.name),
+        ['1순위', '후보 · 1순위', '후보 · 2순위'],
+      );
+      expect(merged.document!.stages.map((stage) => stage.id), [
+        'aru-active',
+        'ayane-s1',
+        'ayane-s2',
+      ]);
+      expect(merged.authoring!.prerequisites, isEmpty);
+      expect(merged.authoring!.studentOrder, ['aru', 'ayane']);
+    });
+  });
+
+  group('시나리오 편입 · 활성 나중에(FE4-f2)', () {
+    test('활성 나중에 단계보다 높은 시나리오 배치 단계는 빼서 체인이 퇴행하지 않게 한다', () {
+      final active = _doc('active-plan', PlanningDocumentKind.plan, [
+        PlanningDocumentPhase(
+          id: 'p1',
+          name: '1순위',
+          stages: [_docStage('aru-active', 'aru', 40)],
+        ),
+      ]);
+      final activeAuthoring = PlanningAuthoring.fromWire({
+        'version': 1,
+        'prerequisites': const <Object>[],
+        'deferred_stages': [_docStage('aru-later', 'aru', 45).toWire()],
+        'student_order': const ['aru'],
+        'stage_order_by_student': const {
+          'aru': ['aru-active', 'aru-later'],
+        },
+        'goal_metadata': const <String, Object>{},
+      }, active);
+      final scenario = _doc('scenario', PlanningDocumentKind.scenario, [
+        PlanningDocumentPhase(
+          id: 's1',
+          name: '1순위',
+          stages: [
+            _docStage('aru-s1', 'aru', 60),
+            _docStage('ayane-s1', 'ayane', 51),
+          ],
+        ),
+      ]);
+      final result = planFlowIncorporateScenario(
+        active: active,
+        activeAuthoring: activeAuthoring,
+        scenarioDocument: scenario,
+        scenarioName: '후보',
+        seedFor: _seed,
+      );
+      expect(result.skippedStageCount, 1);
+      expect(result.merged.blocked, isFalse);
+      expect(result.merged.document!.stages.map((stage) => stage.id), [
+        'aru-active',
+        'ayane-s1',
+      ]);
+      expect(result.merged.authoring!.stageOrderByStudent['aru'], [
+        'aru-active',
+        'aru-later',
+      ]);
+    });
+  });
+
+  group('활성 계획 고치기(FE4-f2)', () {
+    test('4단계는 이걸로 바꾸기가 기본이고 페이즈로 추가는 막으며, 초안을 연 revision으로 충돌을 알린다', () async {
+      final service = _AuthoringService();
+      addTearDown(service.dispose);
+      final profileId = await _profileId(service);
+      final initial = await service.loadRepositoryPlan(profileId);
+      await service.saveRepositoryPlan(
+        profileId: profileId,
+        document: _doc(initial.document.id, PlanningDocumentKind.plan, [
+          PlanningDocumentPhase(
+            id: 'p1',
+            name: '1순위',
+            stages: [_docStage('aru-stage-1', 'aru', 60)],
+          ),
+        ]),
+        expectedRevision: initial.revision,
+        idempotencyKey: 'seed-edit-active',
+      );
+      final plan = await service.loadRepositoryPlan(profileId);
+      final state = await service.loadRepositoryState(profileId);
+      final catalog = await service.listStudents();
+      final flow = PlanFlowController(
+        purpose: PlanFlowPurpose.editActivePlan,
+        context: PlanFlowContext(
+          repositoryState: state,
+          catalog: {for (final entry in catalog) entry.studentId: entry},
+          activePlan: plan.document,
+        ),
+        service: service,
+        initialDraft: PlanFlowDocumentBoundary.fromDocument(
+          plan.document,
+          seedFor: _seed,
+          authoring: plan.authoring,
+        ),
+        initialStep: PlanFlowStep.order,
+        activePlanRevision: plan.revision,
+      );
+      addTearDown(flow.dispose);
+      expect(flow.draft.phases.single.stageIds, ['aru-stage-1']);
+      expect(
+        flow.moveStage('aru-stage-1', phaseId: planFlowDeferredLaneId),
+        isNull,
+      );
+      // 초안을 연 뒤 다른 곳에서 활성 계획이 바뀌었다.
+      await service.saveRepositoryPlan(
+        profileId: profileId,
+        document: plan.document,
+        expectedRevision: plan.revision,
+        idempotencyKey: 'bump-edit-active',
+      );
+      final save = await _save(flow);
+      expect(save.target, PlanFlowSaveTarget.replace);
+      expect(save.isAvailable(PlanFlowSaveTarget.appendPhases), isFalse);
+      expect(
+        save.unavailableReason(PlanFlowSaveTarget.appendPhases),
+        contains('고치는 중'),
+      );
+      expect(save.archiveName, planFlowEditedArchiveName);
+      expect(save.snapshot!.revision, plan.revision + 1);
+      expect(await save.save(), isNull);
+      expect(save.message, contains('바뀌어 저장하지 않았습니다'));
+      // 다시 읽은 뒤에는 최신 revision으로 보낸다.
+      await save.reload();
+      final outcome = await save.save();
+      expect(outcome, isNotNull);
+      expect(outcome!.changedActivePlan, isTrue);
+      final stored = await service.loadRepositoryPlan(profileId);
+      expect(stored.document.phases, isEmpty);
+      expect(stored.authoring.deferredStages.single.id, 'aru-stage-1');
     });
   });
 }

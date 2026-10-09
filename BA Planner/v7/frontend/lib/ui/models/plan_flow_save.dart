@@ -347,6 +347,166 @@ PlanFlowMergedPlan planFlowMergedPlanDocument({
   );
 }
 
+/// 시나리오 편입 결과([planFlowIncorporateScenario], FE4-f2).
+@immutable
+class PlanFlowIncorporation {
+  PlanFlowIncorporation._({
+    required this.merged,
+    required this.skippedStageCount,
+    required List<PlanFlowPrerequisite> droppedPrerequisites,
+    required this.addedStageCount,
+  }) : droppedPrerequisites = List.unmodifiable(droppedPrerequisites);
+
+  /// 활성 계획 + 편입 단계(문서 · authoring, id 재발급 표 포함).
+  final PlanFlowMergedPlan merged;
+
+  /// 활성 계획 목표보다 낮아(퇴행) 뺀 시나리오 단계 수.
+  final int skippedStageCount;
+
+  /// 뺀 단계가 끝점이라 함께 뺀 직접 선행(시나리오 id 기준). 편입 안내에 수를 보인다.
+  final List<PlanFlowPrerequisite> droppedPrerequisites;
+
+  /// 편입하는 단계 수(칸 + 나중에 칸).
+  final int addedStageCount;
+}
+
+/// 시나리오([scenarioDocument] + [scenarioAuthoring])를 활성 계획([active] + [activeAuthoring]) 뒤에 편입한다(FE4-f2).
+///
+/// - 시나리오를 초안으로 연다([PlanFlowDocumentBoundary.fromDocument], v2 nullable 그대로, authoring이 없으면 DTO
+///   기본값). 같은 학생 체인(활성 배치 → 시나리오 배치 → 활성 나중에 → 시나리오 나중에)에서 앞 목표보다 낮은 키가 있는
+///   시나리오 단계는 뺀다(기존 편입 규칙 "퇴행하는 단계는 제외"). null(목표 없음)은 퇴행이 아니다(앞 값을 이어
+///   받는다). 활성 나중에 단계가 시나리오 배치 단계보다 낮거나 그 키를 비워 두면(고칠 수 없는 쪽이 뒤) 그 학생의
+///   시나리오 배치 단계를 모두 뺀다.
+/// - 뺀 단계를 끝점으로 가진 직접 선행은 [PlanFlowIncorporation.droppedPrerequisites]로 명시해 빼고 수를 알린다. 뺀
+///   단계의 목표는 이미 활성 계획 앞 단계가 이루므로(편입 페이즈는 늘 활성 페이즈 뒤) 그 순서 뜻은 남는다. 그 밖의
+///   직접 선행은 조용히 지우지 않고 그대로 보낸다(끝점이 없으면 validator가 거절해 편입하지 않는다).
+/// - 편입 페이즈 이름은 "시나리오 이름 · 페이즈 이름"이다. 병합·id 재발급(페이즈 · 배치 단계 · 나중에 단계 · 직접 선행
+///   양 끝 · stage_order_by_student · student_order)은 [planFlowMergedPlanDocument]가 한다.
+PlanFlowIncorporation planFlowIncorporateScenario({
+  required PlanningDocument active,
+  PlanningAuthoring? activeAuthoring,
+  required PlanningDocument scenarioDocument,
+  PlanningAuthoring? scenarioAuthoring,
+  required String scenarioName,
+  required PlanningStudentSeed Function(String studentId) seedFor,
+}) {
+  final activeBundle =
+      activeAuthoring ?? PlanningAuthoring.defaultForDocument(active);
+  final source = PlanFlowDocumentBoundary.fromDocument(
+    scenarioDocument,
+    seedFor: seedFor,
+    authoring: scenarioAuthoring,
+  );
+  final stagesById = {for (final stage in source.stages) stage.id: stage};
+  final floors = <String, Map<String, int?>>{
+    for (final stage in active.stages) stage.studentId: stage.nullableTargets,
+  };
+  bool regresses(Map<String, int?> targets, Map<String, int?>? floor) =>
+      floor != null &&
+      planningDocumentTargetKeys.any((key) {
+        final before = floor[key];
+        final after = targets[key];
+        return before != null && after != null && after < before;
+      });
+  Map<String, int?> carried(
+    Map<String, int?> targets,
+    Map<String, int?>? floor,
+  ) => {
+    for (final key in planningDocumentTargetKeys)
+      key: targets[key] ?? floor?[key],
+  };
+  final skipped = <String>{};
+  void visit(String stageId) {
+    final stage = stagesById[stageId];
+    if (stage == null) return;
+    final floor = floors[stage.studentId];
+    if (regresses(stage.targets, floor)) {
+      skipped.add(stageId);
+    } else {
+      floors[stage.studentId] = carried(stage.targets, floor);
+    }
+  }
+
+  for (final phase in source.phases) {
+    phase.stageIds.forEach(visit);
+  }
+  // 체인에서 시나리오 배치 단계 뒤에 활성 나중에 단계가 온다. 활성 나중에 단계(고칠 수 없음)가 남긴 시나리오 배치
+  // 목표보다 낮거나 그 키를 비워 두면(validator target_regression) 그 학생의 시나리오 배치 단계를 모두 뺀다.
+  for (final stage in activeBundle.deferredStages) {
+    final floor = floors[stage.studentId];
+    final strict =
+        floor != null &&
+        planningDocumentTargetKeys.any((key) {
+          final before = floor[key];
+          final after = stage.nullableTargets[key];
+          return before != null && (after == null || after < before);
+        });
+    if (strict) {
+      for (final phase in source.phases) {
+        for (final id in phase.stageIds) {
+          if (stagesById[id]?.studentId == stage.studentId) skipped.add(id);
+        }
+      }
+    }
+    floors[stage.studentId] = stage.nullableTargets;
+  }
+  source.deferredStageIds.forEach(visit);
+
+  final dropped = [
+    for (final prerequisite in source.prerequisites)
+      if (skipped.contains(prerequisite.stageId) ||
+          skipped.contains(prerequisite.requiresStageId))
+        prerequisite,
+  ];
+  final kept = <String, List<PlanFlowStageDraft>>{
+    for (final entry in source.stagesByStudent.entries)
+      entry.key: [
+        for (final stage in entry.value)
+          if (!skipped.contains(stage.id)) stage,
+      ],
+  };
+  final draft = source.copyWith(
+    // 편입할 단계가 남은 학생만 활성 계획에 더한다(단계 없는 선택 학생은 편입하지 않는다).
+    students: [
+      for (final seed in source.students)
+        if (kept[seed.studentId]?.isNotEmpty ?? false) seed,
+    ],
+    stagesByStudent: kept,
+    phases: [
+      for (final phase in source.phases)
+        PlanFlowPhase(
+          id: phase.id,
+          name: '$scenarioName · ${phase.name}',
+          stageIds: [
+            for (final id in phase.stageIds)
+              if (!skipped.contains(id)) id,
+          ],
+        ),
+    ],
+    deferredStageIds: [
+      for (final id in source.deferredStageIds)
+        if (!skipped.contains(id)) id,
+    ],
+    prerequisites: [
+      for (final prerequisite in source.prerequisites)
+        if (!dropped.contains(prerequisite)) prerequisite,
+    ],
+  );
+  final added = draft.stageCount;
+  return PlanFlowIncorporation._(
+    merged: planFlowMergedPlanDocument(
+      active: active,
+      draft: draft,
+      id: active.id,
+      name: active.name,
+      activeAuthoring: activeBundle,
+    ),
+    skippedStageCount: skipped.length,
+    droppedPrerequisites: dropped,
+    addedStageCount: added,
+  );
+}
+
 /// FD-031 (a) 계획 충족률: 필요량이 있는 재화마다 min(보유, 필요) / 필요의 평균. 크레딧도 넣는다. 보유를 모르는
 /// 재화는 빼고 [unknown]에 센다. 셀 재화가 없으면 [rate]는 null이다.
 typedef PlanFlowFulfillment = ({double? rate, int unknown});
@@ -725,7 +885,10 @@ class PlanFlowSaveController extends ChangeNotifier {
 
   PlanFlowDraft _draft;
   PlanFlowStep _step;
-  PlanFlowSaveTarget _target = PlanFlowSaveTarget.scenario;
+  // 활성 계획을 고치는 흐름(FE4-f2)은 "이걸로 바꾸기"를 먼저 고른다.
+  late PlanFlowSaveTarget _target = _editingActivePlan
+      ? PlanFlowSaveTarget.replace
+      : PlanFlowSaveTarget.scenario;
   String? _scenarioName;
   String? _archiveName;
   bool _openScenarioList = true;
@@ -738,6 +901,13 @@ class PlanFlowSaveController extends ChangeNotifier {
   int _loadCount = 0;
   int? _editingRevision;
   int? _editingCollectionRevision;
+  int? _editingPlanRevision;
+
+  /// 활성 계획을 고치는 흐름에서 `revision_conflict` 뒤 다시 읽었다. 그때만 expected revision을 최신으로 옮긴다.
+  bool _acceptLatestPlanRevision = false;
+
+  bool get _editingActivePlan =>
+      flow.purpose == PlanFlowPurpose.editActivePlan;
 
   PlanFlowMergedPlan? _merged;
   final Map<bool, PlanFlowSaveComparison> _comparisons = {};
@@ -770,7 +940,11 @@ class PlanFlowSaveController extends ChangeNotifier {
   String get scenarioName => _scenarioName ?? '';
 
   /// 이걸로 바꾸기에서 옮겨 둘 기존 활성 계획 이름.
-  String get archiveName => _archiveName ?? planFlowDefaultArchiveName;
+  String get archiveName =>
+      _archiveName ??
+      (_editingActivePlan
+          ? planFlowEditedArchiveName
+          : planFlowDefaultArchiveName);
 
   /// 병합 결과(페이즈로 추가). 활성 계획을 아직 읽지 못했으면 null.
   PlanFlowMergedPlan? get merged {
@@ -810,6 +984,9 @@ class PlanFlowSaveController extends ChangeNotifier {
       case PlanFlowSaveTarget.appendPhases:
         if (service is! RepositoryPlanService) {
           return '활성 계획 저장소를 쓸 수 없습니다';
+        }
+        if (_editingActivePlan) {
+          return '활성 계획을 고치는 중이라 페이즈로 붙이지 않습니다';
         }
         if (snapshot == null) return null;
         if (snapshot.plan == null) return '활성 계획을 읽지 못했습니다';
@@ -953,6 +1130,16 @@ class PlanFlowSaveController extends ChangeNotifier {
             ? (flow.scenarioCollectionRevision ?? snapshot.scenarioRevision)
             : snapshot.scenarioRevision;
       }
+      if (_editingActivePlan) {
+        // 처음에는 초안을 연 활성 계획 revision을 지킨다(그 사이 바뀌었으면 충돌로 알린다). 충돌을 알리고 다시 읽은
+        // 뒤에만 최신으로 옮긴다(3단계에 다녀오는 재읽기로는 옮기지 않는다).
+        if (_editingPlanRevision == null) {
+          _editingPlanRevision = flow.activePlanRevision ?? snapshot.revision;
+        } else if (_acceptLatestPlanRevision) {
+          _editingPlanRevision = snapshot.revision;
+          _acceptLatestPlanRevision = false;
+        }
+      }
       _scenarioName ??=
           editing?.name ??
           '새 시나리오 ${(snapshot.scenarios?.scenarios.length ?? 0) + 1}';
@@ -996,7 +1183,8 @@ class PlanFlowSaveController extends ChangeNotifier {
         id: 'plan-flow-compare-draft-$stamp',
         name: '계획 만들기 초안',
       ),
-      if (merged?.document case final document?)
+      // 활성 계획을 고치는 흐름은 페이즈로 추가를 쓰지 않는다.
+      if (merged?.document case final document? when !_editingActivePlan)
         true: PlanningDocument(
           id: 'plan-flow-compare-merged-$stamp',
           name: document.name,
@@ -1054,7 +1242,7 @@ class PlanFlowSaveController extends ChangeNotifier {
     }
     final expectedRevision = switch (_target) {
       PlanFlowSaveTarget.scenario => _scenarioExpectedRevision(snapshot),
-      _ => snapshot.revision,
+      _ => _planExpectedRevision(snapshot),
     };
     if (pending.expectedRevision != expectedRevision) return false;
     return switch (_target) {
@@ -1129,19 +1317,27 @@ class PlanFlowSaveController extends ChangeNotifier {
           idempotencyKey: key,
           document: document,
           authoring: PlanFlowDocumentBoundary.authoringFor(_draft, document),
-          expectedRevision: snapshot.revision,
+          expectedRevision: _planExpectedRevision(snapshot),
           expectedScenarioRevision: collection,
           name: _archiveRequestName(snapshot),
         );
     }
   }
 
+  /// 활성 계획 저장의 계정 revision. 활성 계획을 고치는 흐름은 초안을 연 revision(다시 읽은 뒤에는 최신)이다.
+  int _planExpectedRevision(PlanFlowSaveSnapshot snapshot) =>
+      _editingActivePlan
+      ? _editingPlanRevision ?? snapshot.revision
+      : snapshot.revision;
+
   /// 옮겨 둘 기존 계획 이름. 기존 활성 계획이 비어 있어 이름 칸을 숨겼는데 비어 있으면 기본값을 보낸다(백엔드는
   /// 빈 이름을 받지 않는다).
   String _archiveRequestName(PlanFlowSaveSnapshot snapshot) {
     final name = archiveName.trim();
     return name.isEmpty && snapshot.activePhaseCount == 0
-        ? planFlowDefaultArchiveName
+        ? (_editingActivePlan
+              ? planFlowEditedArchiveName
+              : planFlowDefaultArchiveName)
         : name;
   }
 
@@ -1192,6 +1388,7 @@ class PlanFlowSaveController extends ChangeNotifier {
       }
       if (planFlowSaveRereadCodes.contains(code)) {
         _saving = false;
+        if (code == 'revision_conflict') _acceptLatestPlanRevision = true;
         unawaited(reload(message: message));
         return null;
       } else if (_retryable(error, code) || code == 'idempotency_conflict') {
@@ -1333,6 +1530,9 @@ class PlanFlowSaveController extends ChangeNotifier {
 
 /// 이걸로 바꾸기에서 옮겨 둘 기존 활성 계획 이름의 기본값.
 const planFlowDefaultArchiveName = '이전 활성 계획';
+
+/// 활성 계획을 고쳐 바꿀 때(FE4-f2) 옮겨 둘 기존 활성 계획 이름의 기본값.
+const planFlowEditedArchiveName = '고치기 전 활성 계획';
 
 /// 숫자 뒤 조사 "로/으로"(받침 없음·ㄹ은 "로").
 String planFlowRoParticle(int value) {

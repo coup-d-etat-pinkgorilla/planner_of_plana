@@ -4627,3 +4627,93 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261010_004148\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-f2 선 경로 다듬기·시나리오 편입 remap·활성 계획 흐름 진입 (구현 끝, gate 전)
+
+- 시작: 2026-10-10 01:20, 시작 SHA `64f29afefe675b269d4fa3660076f2e813333ed8`(FB-2a `000aaa85`, FE4-f1 `7bff91ec`, 문서 커밋 뒤 HEAD).
+- 범위(f1 "남은 일(f2)" 세 가지): 1) 작게 보기 S 곡선(회색·분홍 점선)이 사이 줄 칩 위를 지나지 않게 칩 사이·칸 사이 틈으로 돌리고, 크게 보기 칸 → 나중에 칸 선이 "칸 추가" 타일 위를 지나지 않게 한다. 2) `_incorporateScenario`를 v2 문서 + authoring 병합으로 바꿔 stage ID 재발급 때 deferred_stages·직접 선행 양 끝·stage_order_by_student·student_order를 함께 remap하고 authoring 전체로 저장한다(끝점이 빠진 edge 처리 근거는 종료 기록). 3) 활성 계획(plan.get document + authoring)을 흐름 초안으로 여는 진입(활성 계획 홈 "페이즈 만들기" 옆, 최소 diff).
+- 고칠 기존 파일(사본 `debug/frontend_fe4f2/pre/frontend/...`): `lib/ui/widgets/plan_flow_order_step.dart`, `lib/ui/models/plan_flow_draft.dart`, `lib/ui/models/plan_flow_save.dart`, `lib/ui/widgets/plan_section_layout.dart`, `test/plan_flow_order_step_test.dart`, `test/plan_flow_authoring_test.dart`, `test/planning_page_test.dart`.
+
+### FE4-f2 종료 기록 (2026-10-10 02:40, 커밋 전)
+
+상태: 구현 끝, gate 미실행. 시작 SHA `64f29afefe675b269d4fa3660076f2e813333ed8`. `debug/frontend_fe4f2/commit.json`(baseline whole, status=true)을 두었다. 직접 커밋하지 않았다. 시작 기록 목록 그대로 고쳤고(사본 있음) 새 파일은 없다. `lib/services/**`·backend·contracts·스캐너·tactic·app_shell 미수정. 옛 PlanPhaseEditor는 그대로 둔다(FE5-c).
+
+#### 1. 선 경로 다듬기(`plan_flow_order_step.dart`)
+
+- `PlanFlowOrderArrow.via`(지나는 점): `curve`면 점을 차례로 잇는 수직 접선 S 곡선(같은 x 구간은 곧은 세로선), 아니면 둥근 모서리 꺾인 선(`planFlowRoundedPolyline`). `via`가 없으면 기존 경로·판정과 똑같다(기존 곡선·직선 판정 테스트 기대 그대로).
+- 작게 보기 `planFlowOrderCompactArrow(from, to, obstacles:)`: 고른 카드와 이은 선(회색 · 분홍 점선 모두)이 다른 칩 자리를 지나면 돈다(`planFlowOrderPathHits`, 3 간격 표본 · 1 안쪽 상자).
+  - 위아래: 시작·끝 사이에 걸친 칩을 줄(세로로 겹치는 묶음)로 나누고, 줄마다 칩 x 구간(±3)을 합친 틈의 가운데·줄 오른쪽 끝 바깥(+9)·지금 x(비어 있으면) 중 "옮기는 거리 + 끝까지 남는 거리"가 가장 작은 곳을 고른다. 줄 위·아래 2 안쪽에서 세로로 지나고 옆으로 가는 것은 줄 사이·칸 사이 틈뿐이다. S 곡선 판정(`curve == true`)·시작·끝 점은 돌지 않을 때와 같다.
+  - 같은 줄(사이에 칩): 줄 아래 틈(아래 끝 + 6)으로 내려가 옆으로 가서 `to` 아래로 올라간다(꺾쇠 위 방향).
+  - 지날 틈을 못 찾거나 돈 경로도 부딪히면 돌지 않은 선을 쓴다.
+- 크게 보기 `planFlowOrderArrowAvoiding`: 칸 → "나중에" 칸 선의 세로 구간이 "칸 추가" 타일(상자 ±6)을 지나면 타일 위 틈(타일 위 − 7)에서 타일 오른쪽 바깥(+16)으로 옆으로 가 내려가고, 원래 꺾는 높이(나중에 칸 위 − 7)에서 들어갈 x로 간다.
+- 새 단위 테스트 3건(`test/plan_flow_order_step_test.dart` "선 경로(FE4-f2)"): 사이 줄 칩 피하기(틈 가운데 x, 칩 높이 안에서는 x 그대로, 막는 칩이 없으면 기존 S 곡선과 같음), 같은 줄 아래로 돌기(꺾쇠 위, y가 줄 아래 6 안), "칸 추가" 비키기(지나는 점 4개, 안 지나면 같은 객체).
+- 안 한 것: 크게 보기에서 칸을 둘 이상 건너는 세로 구간이 사이 칸 카드 위를 지나는 것(범위 밖), 작게 보기 "칸 추가" 타일은 장애물에 넣지 않았다.
+
+#### 2. 시나리오 편입(`plan_flow_save.dart` `planFlowIncorporateScenario`, `plan_section_layout.dart` `_incorporateScenario`)
+
+- 계획 화면 작업 문서(정수 보기)에 붙이던 기존 경로를 버리고, 저장된 활성 계획(`plan.get` document + authoring) 뒤에 시나리오(get 레코드의 document + authoring, 없으면 DTO 기본값)를 붙여 `plan.save(document, authoring, expectedRevision: plan.get revision)`로 저장한 뒤 활성 계획을 다시 읽는다. 문서는 v2 nullable 원본 그대로(v1 시나리오는 흐름 편집과 같은 `fromDocument` 규칙), authoring은 전체다.
+- 병합·재발급은 f1 `planFlowMergedPlanDocument`를 그대로 쓴다: 페이즈 id · 배치 단계 id · 나중에 단계 id(활성 문서 + 활성 나중에와 겹치면 `-2`…) 재발급, 그 표로 직접 선행 양 끝 remap, `stage_order_by_student` = 활성 배치 → 편입 배치 → 활성 나중에 → 편입 나중에, `student_order` = 활성 뒤 편입 새 학생. 편입 페이즈 이름은 기존처럼 "시나리오 이름 · 페이즈 이름".
+- 퇴행 단계: 기존 규칙(활성 목표보다 낮은 시나리오 단계는 제외)을 nullable로 옮겼다(null은 퇴행이 아니고 앞 값을 이어 받음). 체인상 뒤에 오는 활성 나중에 단계가 시나리오 배치 목표보다 낮거나 그 키를 비우면 그 학생의 시나리오 배치 단계를 모두 뺀다(활성 쪽은 고치지 않는다). 단계가 하나도 안 남은 학생은 편입하지 않는다.
+- **끝점이 빠진 edge — 판단: 그 edge만 명시해 빼고 수를 알린다(편입은 계속).** 근거: (1) 끝점이 빠지는 경우는 위 퇴행 제외뿐이고, 뺀 단계의 목표는 이미 활성 계획 앞 단계가 이루며 편입 페이즈는 늘 활성 페이즈 뒤라 "그 단계 뒤에" 순서 뜻이 남는다. (2) 기존 편입도 퇴행 단계를 빼고 수를 알리는 방식이라 같은 흐름이다. (3) 편입을 멈추면 퇴행 단계 하나 때문에 시나리오 전체를 못 붙인다. 뺀 edge는 `PlanFlowIncorporation.droppedPrerequisites`로 남기고 안내에 "그 단계에 이은 직접 선행 n개도 뺐습니다"를 붙인다. 그 밖의 edge는 지우지 않고 그대로 보내므로, 만약 끝점이 없으면 validator가 거절해 편입하지 않고 이유를 알린다.
+- 실패: 병합 authoring을 만들 수 없으면 "활성 계획의 나중에 칸·선행 조건과 맞출 수 없어 … 편입하지 않았습니다(이유)", `revision_conflict`면 다시 읽고 "편입하는 사이에 활성 계획이 바뀌어 편입하지 않았습니다…", 그 밖은 "편입하지 못했습니다(code)". 성공 안내 문구는 기존 그대로.
+- 동작 변화(확인 부탁): 편입이 이제 저장까지 한다. 계획 화면 편집기(옛 PlanPhaseEditor·요소 빌더)에서 저장하지 않은 작업 문서 변경은 다시 읽은 저장 계획으로 바뀐다. `loadRepositoryPlan: false`인 계획 화면은 편입 뒤 보이는 단계가 바뀌지 않는다(저장은 된다). 활성 계획 저장소가 없는 서비스에서는 편입 버튼이 아무것도 하지 않는다.
+- 비교 화면은 먼저 닫고 그다음 다시 읽는다(닫는 모션 동안 계정 상태를 비우지 않게).
+- 테스트: `plan_flow_authoring_test.dart` 3건(id 재발급 remap 전부 · 퇴행 단계와 그 edge 명시 제외 · 활성 나중에보다 높은 배치 단계 제외), `planning_page_test.dart` 기존 편입 테스트에 저장 결과(v2 · authoring 있음 · 편입 페이즈 이름) 단언 추가.
+
+#### 3. 활성 계획을 흐름 초안으로 여는 진입(`plan_section_layout.dart`, `plan_flow_draft.dart`, `plan_flow_save.dart`)
+
+- 활성 계획 홈 섹션 1 "페이즈 만들기" 버튼 오른쪽에 40px 아이콘 버튼(`plan-flow-edit-active-launch`, ↕, 툴팁·의미 "활성 계획 단계 순서 바꾸기")을 더했다(최소 diff: 같은 줄, 열 폭이 가장 좁은 120일 때도 왼쪽 버튼 74px).
+- 누르면 `plan.get`을 다시 읽어(`_ensureRepositoryContext(refresh: true)`) document + authoring(없으면 DTO 기본값)으로 초안을 열고, 단계가 있으면 3단계, 없으면 1단계로 연다. `PlanFlowPurpose.editActivePlan`, `PlanFlowController.activePlanRevision`(연 revision).
+- 4단계: "이걸로 바꾸기"를 먼저 고르고(기존 계획은 "고치기 전 활성 계획" 시나리오로 옮겨 둠), "페이즈로 추가"는 "활성 계획을 고치는 중이라 페이즈로 붙이지 않습니다"로 막고 비교도 하지 않는다. "시나리오로 저장"은 그대로 쓸 수 있다. 이걸로 바꾸기의 expected revision은 초안을 연 revision이라 그 사이 활성 계획이 바뀌었으면 `revision_conflict`로 알리고 다시 읽은 뒤에만 최신으로 옮긴다(3단계에 다녀오는 재읽기로는 옮기지 않는다).
+- 판단(확인 부탁): 활성 계획을 고칠 때 덮어쓰기 전용 위치(보관 없이 plan.save)는 만들지 않았다. "이걸로 바꾸기"가 기존 계획을 시나리오로 옮겨 두므로 되돌릴 수 있다. 저장 뒤 "시나리오 보기로 이동" 토글 기본값(켜짐)은 그대로다.
+- 테스트: `plan_flow_authoring_test.dart` 1건(이걸로 바꾸기 기본 · 페이즈로 추가 막음 · 보관 이름 · 연 revision으로 충돌 → 다시 읽은 뒤 저장 성공 · 저장된 authoring), `planning_page_test.dart` 1건(버튼 → 흐름 3단계, purpose · revision · 칸 · 나중에 칸 복원).
+
+#### 정적 검토
+
+- 별도 검토 1회: 컴파일·시그니처·lint 문제 없음. 지적 반영 — 새 버튼 폭(48 → 40, 틈 8 → 6, `minimumSize: Size.zero`: 좁은 화면 900×900 테스트에서 "페이즈 만들기"가 넘치지 않게), expected revision을 충돌 뒤에만 옮기기, 활성 나중에보다 높은 편입 배치 단계 제외, 비교 화면을 닫은 뒤 다시 읽기, 고치기 흐름에서 병합 비교 생략, 보관 이름 기본값, 쓰이지 않는 분기 제거.
+- lint 확인: 새 코드에 `if (x case final y?) y`·`if (x != null) x` 컬렉션 요소, `.toSet().toList()`, 쓰이지 않는 private 매개변수·지역 변수 없음.
+
+#### golden ① 예상
+
+- 바뀜(확실): `plan-flow-step3-many` — 고른 호시노 2단계 카드로 들어오는 호시노 1단계 선과 나가는 호시노 3단계 선이 사이 줄의 흐린 칩(16:25에 적은 1순위 세리카, 2순위 히나·노아) 위를 지나지 않고, 칩 사이 틈(또는 줄 오른쪽 끝 바깥)을 세로로 지나며 줄 사이·칸 사이 틈에서만 옆으로 간다. 줄 사이 틈이 10px라 그 구간의 옆 이동은 거의 수평으로 보인다.
+- 바뀜(섹션 1이 보이는 계획 홈 장면): "페이즈 만들기" 버튼이 46px 좁아지고 오른쪽에 ↕ 아이콘 버튼. `plan-overall`·`plan-by-phase`·`plan-bottleneck`·`plan-scenario-list`·`plan-scenario-compare`는 섹션 1이 보이므로 바뀐다. `plan-student-selector`·`plan-phase-editor`·`plan-preset-manager`·`plan-element-builder`는 그 장면에서 섹션 1이 보이면 같은 변화다(확인 못 함).
+- 그대로: `plan-flow-step3`(나중에 칸 선 없음), `plan-flow-step3-deferred`(아루 2단계 → 나중에 아루 3단계 선은 2열 카드라 "칸 추가" 타일 오른쪽을 지나 비키지 않음), `plan-flow-step1*`·`-step2*`·`-step4*`, 학생·계정·스캔 장면.
+- 새 장면 없음.
+
+#### 검수표
+
+| 항목 | 확인 |
+|---|---|
+| 작게 보기 S 곡선(회색 · 분홍)이 사이 줄 칩 위를 안 지남(칩 사이 · 줄 사이 틈) | 단위 2건, golden `-many` |
+| 크게 보기 칸 → 나중에 칸 선이 "칸 추가" 위를 안 지남 | 단위 1건 |
+| 기존 곡선 · 직선 판정 테스트 기대 그대로 | 기존 테스트 미수정(`curve` 유지) |
+| 편입 stage ID 재발급: deferred · edge 양 끝 · stage_order_by_student · student_order | 단위 1건 |
+| 끝점이 빠진 edge는 명시 제외 + 안내(근거 위) | 단위 1건 |
+| 편입 저장 v2 nullable 원본 + authoring 전체 | 단위 · 위젯 단언 |
+| 활성 계획 → 흐름 초안(plan.get document + authoring, 기본값), 3단계/1단계, 최소 diff 진입 | 단위 1건, 위젯 1건 |
+| 금지 파일 미수정, ~습니다체 | 코드 확인 |
+
+#### 확인하지 못한 것
+
+- analyze · 테스트 · golden 실행 전부(이 환경에 Flutter 없음). 정적 검토만 했다.
+- 새 그림: 작게 보기 돌린 선의 모양(10px 줄 사이 틈의 옆 이동이 수평에 가깝다), 새 아이콘 버튼과 좁아진 "페이즈 만들기"(가장 좁은 열 120에서 글자 줄임).
+- ProcessAppService(실제 Python)에서 편입 plan.save(authoring 포함)와 고치기 흐름의 replace 왕복.
+
+#### 사용자 실행 순서
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다(위 장면 변경 RED 예상, 새 장면 없음)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 승인 뒤 기준 이미지 갱신 → gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4f2 -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4f2
+```
+
+### FE4-f2 commit record (2026-10-10 03:07, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261010_023726\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

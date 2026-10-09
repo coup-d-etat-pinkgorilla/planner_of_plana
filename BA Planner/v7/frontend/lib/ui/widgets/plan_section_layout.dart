@@ -11,7 +11,12 @@ import '../kit/diagonal_scrollbar.dart';
 import '../kit/game_assets.dart';
 import '../kit/skew_bar.dart';
 import '../models/plan_flow_draft.dart';
-import '../models/plan_flow_save.dart' show PlanFlowSaveOutcome;
+import '../models/plan_flow_save.dart'
+    show
+        PlanFlowSaveOutcome,
+        planFlowAuthoringReasonText,
+        planFlowIncorporateScenario,
+        planFlowSaveErrorCode;
 import '../models/planning_models.dart';
 import '../models/planning_resource_assets.dart';
 import '../models/repository_plan_snapshot.dart';
@@ -1910,8 +1915,14 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   /// 계정 상태와 저장된 활성 계획(같은 revision). 계획 화면이 이미 읽었으면 그 snapshot을 쓰고, 아니면
   /// [_loadRepositoryPlan]과 같은 경로([loadRepositoryPlanSnapshot])로 읽는다. 작업 문서([_document])는 바꾸지
   /// 않는다.
-  Future<RepositoryState?> _ensureRepositoryContext() async {
-    if (_repositoryState case final state?) return state;
+  ///
+  /// [refresh]면 이미 읽었어도 다시 읽는다(활성 계획을 흐름 초안으로 열 때, FE4-f2).
+  Future<RepositoryState?> _ensureRepositoryContext({
+    bool refresh = false,
+  }) async {
+    if (!refresh) {
+      if (_repositoryState case final state?) return state;
+    }
     final service = widget.service;
     if (service is! RepositoryService) return null;
     final repository = service as RepositoryService;
@@ -2012,10 +2023,10 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   }
 
   /// 흐름을 열 때 한 번 읽는 프로필 상태(확정 현재값·재고·카탈로그)와 저장된 활성 계획 문서(FE4-h).
-  Future<PlanFlowContext?> _flowContext() async {
+  Future<PlanFlowContext?> _flowContext({bool refresh = false}) async {
     final service = widget.service;
     if (service == null) return null;
-    final state = await _ensureRepositoryContext();
+    final state = await _ensureRepositoryContext(refresh: refresh);
     if (state == null) return null;
     final catalog = await service.listStudents();
     return PlanFlowContext(
@@ -2047,6 +2058,46 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         purpose: PlanFlowPurpose.newScenario,
         context: flowContext,
         service: widget.service,
+      );
+    });
+  }
+
+  /// 계획 탭 "단계 순서 바꾸기"(FE4-f2): 저장된 활성 계획을 다시 읽어(`plan.get` document + authoring, 없으면 DTO
+  /// 기본값) 흐름 초안으로 연다. 단계가 있으면 3단계(단계 순서), 없으면 1단계다. 4단계 저장은 "이걸로 바꾸기"가
+  /// 기본이고 expected revision은 이때 읽은 revision이다.
+  Future<void> _openActivePlanFlow() async {
+    if (_flow != null ||
+        _showScenarioList ||
+        _showScenarioComparison ||
+        _switchingScenarioWorkspace ||
+        widget.service is! RepositoryPlanService) {
+      return;
+    }
+    final flowContext = await _flowContext(refresh: true);
+    final plan = _repositoryPlan;
+    if (flowContext == null || plan == null || !mounted || _flow != null) {
+      return;
+    }
+    final draft = PlanFlowDocumentBoundary.fromDocument(
+      plan.document,
+      seedFor: flowContext.seedFor,
+      authoring: plan.authoring,
+    );
+    for (final controller in _controllers.values) {
+      controller.reverse();
+    }
+    await Future<void>.delayed(_motionDuration);
+    if (!mounted || _flow != null) return;
+    setState(() {
+      _flow = PlanFlowController(
+        purpose: PlanFlowPurpose.editActivePlan,
+        context: flowContext,
+        service: widget.service,
+        initialDraft: draft,
+        initialStep: draft.hasStages
+            ? PlanFlowStep.order
+            : PlanFlowStep.students,
+        activePlanRevision: plan.revision,
       );
     });
   }
@@ -2127,17 +2178,26 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     }
   }
 
-  bool _targetsAtLeast(Map<String, int> candidate, Map<String, int> floor) =>
-      planningDocumentTargetKeys.every(
-        (key) => (candidate[key] ?? 0) >= (floor[key] ?? 0),
-      );
-
+  /// 시나리오 비교 "편입"(FE4-f2): 저장된 활성 계획(`plan.get` document + authoring) 뒤에 시나리오(document +
+  /// authoring)를 붙여 `plan.save`로 저장한다([planFlowIncorporateScenario]).
+  ///
+  /// - 문서는 v2 nullable 원본 그대로, authoring은 전체(활성 + 편입, stage ID 재발급 remap)를 보낸다. 계획 화면 작업
+  ///   문서(정수 보기)에서 다시 만들지 않는다.
+  /// - 활성 목표보다 낮은 시나리오 단계는 빼고, 그 단계에 이은 직접 선행은 명시해 빼고 수를 알린다.
+  /// - 저장하면 활성 계획을 다시 읽는다(편집기에서 저장하지 않은 작업 문서 변경은 다시 읽은 저장 계획으로 바뀐다).
+  ///   그 사이 활성 계획이 바뀌었으면(`revision_conflict`) 편입하지 않고 다시 읽어 알린다.
   Future<void> _incorporateScenario(PlanningScenarioRecord scenario) async {
-    final document = _document;
-    if (document == null || document.kind != PlanningDocumentKind.plan) return;
-    final stamp = DateTime.now().microsecondsSinceEpoch;
-    // 시나리오는 FE4-b1부터, 활성 계획은 FE4-h부터 문서 v2로 읽는다. null(목표 없음)은 앞 단계 값으로 채운 정수
-    // 보기로 읽는다. 문서에 처음 나오는 학생은 프로필 확정 현재값으로 바닥값을 만든다.
+    final plan = _repositoryPlan;
+    final service = widget.service;
+    if (plan == null || service is! RepositoryPlanService) return;
+    final repository = service as RepositoryPlanService;
+    void notify(String message) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
+
     final currentById = {
       for (final student
           in _repositoryState?.students ?? const <ConfirmedStudentState>[])
@@ -2152,117 +2212,74 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           currentValues: currentById[studentId] ?? const {},
           owned: currentById.containsKey(studentId),
         );
-    final activeTargets = planFlowDocumentIntegerTargets(
-      document,
+    final incorporation = planFlowIncorporateScenario(
+      active: plan.document,
+      activeAuthoring: plan.authoring,
+      scenarioDocument: scenario.document,
+      scenarioAuthoring: scenario.authoring,
+      scenarioName: scenario.name,
       seedFor: seedFor,
     );
-    final targetFloor = <String, Map<String, int>>{};
-    final stepByStudent = <String, int>{};
-    for (final stage in document.stages) {
-      targetFloor[stage.studentId] = activeTargets[stage.id]!;
-      stepByStudent[stage.studentId] =
-          (stepByStudent[stage.studentId] ?? 0) + 1;
+    if (incorporation.addedStageCount == 0) {
+      notify('현재 계획 뒤에 이어질 수 있는 성장 단계가 없습니다.');
+      return;
     }
-    final sourceTargets = planFlowDocumentIntegerTargets(
-      scenario.document,
-      seedFor: seedFor,
-    );
-    final importedElements = <PlanStudentStepPreview>[];
-    final importedPhases = <PlanPhasePreview>[];
-    final importedDrafts = <String, List<PlanElementStageDraft>>{};
-    var skipped = 0;
-    for (
-      var phaseIndex = 0;
-      phaseIndex < scenario.document.phases.length;
-      phaseIndex++
-    ) {
-      final sourcePhase = scenario.document.phases[phaseIndex];
-      final phaseSteps = <PlanStudentStepPreview>[];
-      for (
-        var stageIndex = 0;
-        stageIndex < sourcePhase.stages.length;
-        stageIndex++
-      ) {
-        final source = sourcePhase.stages[stageIndex];
-        final sourceValues = sourceTargets[source.id]!;
-        final floor = targetFloor[source.studentId];
-        if (floor != null && !_targetsAtLeast(sourceValues, floor)) {
-          skipped++;
-          continue;
-        }
-        targetFloor[source.studentId] = sourceValues;
-        final step = (stepByStudent[source.studentId] ?? 0) + 1;
-        stepByStudent[source.studentId] = step;
-        final id = 'import-$stamp-$phaseIndex-$stageIndex';
-        final displayName =
-            _studentSeedsById[source.studentId]?.metadata['display_name']
-                ?.toString() ??
-            source.studentId;
-        final preview = PlanStudentStepPreview(
-          studentId: source.studentId,
-          displayName: displayName,
-          step: step,
-          target: source.name,
-          bondRank: sourceValues['bond_rank'],
-          stageId: id,
-          targetValues: sourceValues,
-        );
-        importedElements.add(preview);
-        phaseSteps.add(preview);
-        importedDrafts
-            .putIfAbsent(source.studentId, () => [])
-            .add(
-              PlanElementStageDraft(
-                id: id,
-                name: source.name,
-                targets: sourceValues,
-              ),
-            );
-      }
-      if (phaseSteps.isNotEmpty) {
-        importedPhases.add(
-          PlanPhasePreview(
-            id: 'import-$stamp-phase-$phaseIndex',
-            name: '${scenario.name} · ${sourcePhase.name}',
-            steps: phaseSteps,
-          ),
-        );
-      }
+    final merged = incorporation.merged;
+    final document = merged.document;
+    final authoring = merged.authoring;
+    if (document == null || authoring == null) {
+      notify(
+        '활성 계획의 나중에 칸·선행 조건과 맞출 수 없어 "${scenario.name}" 시나리오를 편입하지 않았습니다'
+        '(${planFlowAuthoringReasonText(merged.authoringReason ?? '')}).',
+      );
+      return;
     }
-    if (importedElements.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('현재 계획 뒤에 이어질 수 있는 성장 단계가 없습니다.')),
-        );
+    try {
+      await repository.saveRepositoryPlan(
+        profileId: plan.profileId,
+        document: document,
+        authoring: authoring,
+        expectedRevision: plan.revision,
+        idempotencyKey:
+            'plan-incorporate-${scenario.id}-${DateTime.now().microsecondsSinceEpoch}',
+      );
+    } on Object catch (error) {
+      if (!mounted) return;
+      final code = planFlowSaveErrorCode(error);
+      if (code == 'revision_conflict') {
+        _reloadRepositoryPlan();
+        notify('편입하는 사이에 활성 계획이 바뀌어 편입하지 않았습니다. 최신 상태를 다시 읽었습니다. 다시 편입해 주십시오.');
+      } else {
+        notify('"${scenario.name}" 시나리오를 편입하지 못했습니다($code).');
       }
       return;
     }
-    setState(() {
-      _planElements = List.unmodifiable([
-        ..._planElements,
-        ...importedElements,
-      ]);
-      _planPhases = List.unmodifiable([..._planPhases, ...importedPhases]);
-      for (final entry in importedDrafts.entries) {
-        _draftsByStudent[entry.key] = List.unmodifiable([
-          ...?_draftsByStudent[entry.key],
-          ...entry.value,
-        ]);
-      }
-      _usingLivePlanElements = true;
-    });
-    _rebuildDocumentFromPhases();
+    if (!mounted) return;
+    // 비교 화면을 먼저 닫고(닫는 모션이 계정 상태를 쓴다) 저장된 활성 계획을 다시 읽는다.
     await _closeScenarioList();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          skipped == 0
-              ? '"${scenario.name}" 시나리오를 현재 계획에 편입했습니다.'
-              : '"${scenario.name}" 시나리오를 편입했습니다. 퇴행하는 $skipped개 단계는 제외했습니다.',
-        ),
-      ),
+    _reloadRepositoryPlan();
+    final skipped = incorporation.skippedStageCount;
+    final dropped = incorporation.droppedPrerequisites.length;
+    notify(
+      skipped == 0
+          ? '"${scenario.name}" 시나리오를 현재 계획에 편입했습니다.'
+          : '"${scenario.name}" 시나리오를 편입했습니다. 퇴행하는 $skipped개 단계는 제외했습니다.'
+                '${dropped == 0 ? '' : ' 그 단계에 이은 직접 선행 $dropped개도 뺐습니다.'}',
     );
+  }
+
+  /// 저장된 활성 계획과 계정 상태를 다시 읽는다(편입·흐름 저장 뒤).
+  void _reloadRepositoryPlan() {
+    setState(() {
+      _repositoryState = null;
+      _repositoryPlan = null;
+    });
+    if (widget.loadRepositoryPlan) {
+      _loadRepositoryPlan();
+    } else {
+      _ensureRepositoryContext();
+    }
   }
 
   Future<void> _openPhaseEditor() async {
@@ -2675,22 +2692,60 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
-                      child: FilledButton.tonalIcon(
-                        key: const ValueKey('plan-phase-editor-launch'),
-                        onPressed:
-                            _showStudentSelector ||
-                                _switchingStudentSelector ||
-                                _showScenarioList ||
-                                _showScenarioComparison ||
-                                _switchingScenarioWorkspace
-                            ? null
-                            : _openPhaseEditor,
-                        icon: const Icon(Icons.account_tree_outlined),
-                        label: const Text(
-                          '페이즈 만들기',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: FilledButton.tonalIcon(
+                              key: const ValueKey('plan-phase-editor-launch'),
+                              onPressed:
+                                  _showStudentSelector ||
+                                      _switchingStudentSelector ||
+                                      _showScenarioList ||
+                                      _showScenarioComparison ||
+                                      _switchingScenarioWorkspace
+                                  ? null
+                                  : _openPhaseEditor,
+                              icon: const Icon(Icons.account_tree_outlined),
+                              label: const Text(
+                                '페이즈 만들기',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          // FE4-f2: 저장된 활성 계획을 계획 만들기 흐름(3단계 단계 순서)으로 연다. 열 폭이 가장
+                          // 좁을 때(120)도 왼쪽 버튼에 아이콘·여백 자리가 남게 40이다.
+                          SizedBox(
+                            width: 40,
+                            child: Tooltip(
+                              message: '활성 계획 단계 순서 바꾸기',
+                              child: FilledButton.tonal(
+                                key: const ValueKey('plan-flow-edit-active-launch'),
+                                onPressed:
+                                    _showStudentSelector ||
+                                        _switchingStudentSelector ||
+                                        _showScenarioList ||
+                                        _showScenarioComparison ||
+                                        _switchingScenarioWorkspace ||
+                                        _flow != null ||
+                                        widget.service
+                                            is! RepositoryPlanService
+                                    ? null
+                                    : _openActivePlanFlow,
+                                style: FilledButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                ),
+                                child: const Icon(
+                                  Icons.swap_vert_rounded,
+                                  semanticLabel: '활성 계획 단계 순서 바꾸기',
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 12),

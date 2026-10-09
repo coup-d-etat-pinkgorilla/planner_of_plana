@@ -6,6 +6,7 @@
 // - 화면: 처음 그리면 칸에 넣기, 끌어 옮기기와 거부 이유, 카드 고르기 → C 상세, 칸 이름 바꾸기, 칸 추가, 자동 정렬.
 // - FE4-d2: 화살표가 칸 머리를 피해 들어가기, 단계가 12개를 넘으면 작게 보기(크게·작게, 펼친 카드, 이어진 선만,
 //   흐리게, 선택 풀기, 부족 있는 단계만, 학생별 묶음, 끌어 옮기기·거부).
+// - FE4-f2: 선 경로 규칙(작게 보기 사이 줄 칩 피하기 · 같은 줄 아래로 돌기, 크게 보기 "칸 추가" 타일 비키기).
 // - FE4-f1: "칸 추가" 아래 빈 "나중에" 칸도 "여기로 끌어다 놓기"를 보인다(교차 선행·나중에 칸은
 //   `plan_flow_authoring_test.dart`).
 //
@@ -977,6 +978,108 @@ void main() {
       );
       expect(_lanes(flow)[0], first);
       await _settle(tester);
+    });
+  });
+
+  group('선 경로(FE4-f2)', () {
+    List<Offset> samples(Path path) => [
+      for (final metric in path.computeMetrics())
+        for (var distance = 0.0; distance <= metric.length; distance += 2)
+          metric.getTangentForOffset(distance)!.position,
+    ];
+
+    test('작게 보기: 사이 줄 칩을 지나면 칩 사이 틈으로 세로로 지나고 줄 사이 틈에서만 옆으로 간다', () {
+      // 0줄 첫 칩 → 2줄 첫 칩. 1줄은 레일을 따라 9.5 왼쪽으로 놓인다.
+      const from = Rect.fromLTWH(327.9, 26, 203.8, 44);
+      const blocker = Rect.fromLTWH(318.4, 80, 203.8, 44);
+      const beside = Rect.fromLTWH(532.15, 80, 203.8, 44);
+      const to = Rect.fromLTWH(308.9, 134, 203.8, 44);
+      const obstacles = [blocker, beside];
+      final direct = planFlowOrderCompactArrow(from, to);
+      expect(direct.via, isEmpty);
+      expect(planFlowOrderPathHits(direct.path(), obstacles), isTrue);
+      final arrow = planFlowOrderCompactArrow(from, to, obstacles: obstacles);
+      // S 곡선 판정·시작·끝 점은 돌지 않을 때와 같다.
+      expect(arrow.curve, isTrue);
+      expect(arrow.from, direct.from);
+      expect(arrow.to, direct.to);
+      expect(arrow.endDirection, const Offset(0, 1));
+      expect(planFlowOrderPathHits(arrow.path(), obstacles), isFalse);
+      // 1줄은 두 칩 사이 틈 가운데로, 줄 위·아래 2 안쪽에서 세로로 지난다.
+      expect(arrow.via, hasLength(2));
+      final channel = (blocker.right + beside.left) / 2;
+      expect(arrow.via.first.dx, closeTo(channel, 0.01));
+      expect(arrow.via.first.dy, closeTo(blocker.top - 2, 0.01));
+      expect(arrow.via.last.dx, closeTo(channel, 0.01));
+      expect(arrow.via.last.dy, closeTo(blocker.bottom + 2, 0.01));
+      // 옆으로 가는 곳은 줄 사이 틈뿐이다(칩 높이 안에서는 x가 그대로).
+      for (final point in samples(arrow.path())) {
+        if (point.dy > blocker.top && point.dy < blocker.bottom) {
+          expect(point.dx, closeTo(arrow.via.first.dx, 0.5));
+        }
+      }
+      // 막는 칩이 없으면 그대로 S 곡선이다.
+      expect(
+        planFlowOrderCompactArrow(
+          from,
+          to,
+          obstacles: [beside.shift(const Offset(400, 0))],
+        ),
+        direct,
+      );
+    });
+
+    test('작게 보기: 같은 줄 사이에 칩이 있으면 줄 아래 틈으로 돌아 그 칩 아래로 들어간다', () {
+      const from = Rect.fromLTWH(327.9, 26, 203.8, 44);
+      const middle = Rect.fromLTWH(541.65, 26, 203.8, 44);
+      const to = Rect.fromLTWH(755.4, 26, 203.8, 44);
+      final direct = planFlowOrderCompactArrow(from, to);
+      expect(direct.curve, isFalse);
+      expect(planFlowOrderPathHits(direct.path(), [middle]), isTrue);
+      final arrow = planFlowOrderCompactArrow(from, to, obstacles: [middle]);
+      expect(planFlowOrderPathHits(arrow.path(), [middle]), isFalse);
+      expect(arrow.from, Offset(from.center.dx, from.bottom));
+      expect(arrow.to, Offset(to.center.dx, to.bottom + 2));
+      expect(arrow.endDirection, const Offset(0, -1));
+      for (final point in samples(arrow.path())) {
+        expect(point.dy, greaterThanOrEqualTo(from.bottom - 0.01));
+        expect(point.dy, lessThanOrEqualTo(from.bottom + 6.01));
+      }
+    });
+
+    test('크게 보기: 칸 → 나중에 칸 선은 "칸 추가" 타일 위 틈에서 타일 오른쪽으로 비켜 내려간다', () {
+      const from = Rect.fromLTWH(150, 48, 398.4, 150);
+      const add = Rect.fromLTWH(100, 240, 360, 56);
+      const to = Rect.fromLTWH(120, 358, 398.4, 150);
+      final base = planFlowOrderArrowBetween(
+        from,
+        to,
+        gapY: to.top - 7,
+        enterX: to.left + 372,
+      );
+      expect(planFlowOrderPathHits(base.path(), [add]), isTrue);
+      final arrow = planFlowOrderArrowAvoiding(base, add, aboveY: add.top - 7);
+      expect(planFlowOrderPathHits(arrow.path(), [add]), isFalse);
+      expect(arrow.from, base.from);
+      expect(arrow.to, base.to);
+      expect(arrow.endDirection, const Offset(0, 1));
+      expect(arrow.via, [
+        Offset(base.from.dx, add.top - 7),
+        Offset(add.right + 16, add.top - 7),
+        Offset(add.right + 16, base.elbowY!),
+        Offset(base.to.dx, base.elbowY!),
+      ]);
+      // 타일을 지나지 않는 선은 그대로 둔다.
+      final clear = planFlowOrderArrowBetween(
+        from.shift(const Offset(500, 0)),
+        to,
+        gapY: to.top - 7,
+        enterX: to.left + 372,
+      );
+      expect(
+        planFlowOrderArrowAvoiding(clear, add, aboveY: add.top - 7),
+        same(clear),
+      );
     });
   });
 }

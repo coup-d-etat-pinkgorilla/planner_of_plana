@@ -6,6 +6,7 @@ import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scenario_service.dart';
 import 'package:ba_planner_v7/ui/kit/buttons.dart';
+import 'package:ba_planner_v7/ui/models/plan_flow_draft.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/models/repository_plan_snapshot.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
@@ -16,6 +17,7 @@ import 'package:ba_planner_v7/ui/widgets/ba_triangle_background.dart';
 import 'package:ba_planner_v7/ui/widgets/diagonal_media_list_item.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_student_step.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_phase_editor.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_section_layout.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_student_selector.dart';
@@ -3809,6 +3811,102 @@ void main() {
       expect(find.text('편입 후보 · 페이즈 1'), findsOneWidget);
       expect(find.byType(PlanScenarioComparisonSection), findsNothing);
       expect(find.text('"편입 후보" 시나리오를 현재 계획에 편입했습니다.'), findsOneWidget);
+      // FE4-f2: 편입은 활성 계획 문서(v2) + authoring 전체로 plan.save한다.
+      final saved = await service.loadRepositoryPlan(profile.id);
+      expect(saved.hasAuthoring, isTrue);
+      expect(saved.document.version, 2);
+      expect(
+        saved.document.phases.map((phase) => phase.name),
+        contains('편입 후보 · 페이즈 1'),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'plan home "step order" button opens the saved active plan in flow step 3 (FE4-f2)',
+    (tester) async {
+      final service = MockAppService();
+      addTearDown(service.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final profile = (await service.listProfiles()).firstWhere(
+        (profile) => profile.selected,
+      );
+      final initial = await service.loadRepositoryPlan(profile.id);
+      Map<String, int?> level(int value) => {
+        for (final key in planningDocumentTargetKeys)
+          key: key == 'level' ? value : null,
+      };
+      final document = PlanningDocument(
+        id: initial.document.id,
+        name: initial.document.name,
+        kind: PlanningDocumentKind.plan,
+        version: 2,
+        phases: [
+          PlanningDocumentPhase(
+            id: 'p1',
+            name: '먼저',
+            stages: [
+              PlanningDocumentStage(
+                id: 'ayane-stage-1',
+                studentId: 'ayane',
+                name: '1단계',
+                targets: level(50),
+              ),
+            ],
+          ),
+        ],
+        goalMetadata: const {
+          'ayane': PlanningGoalMetadata(favorite: false, notes: ''),
+        },
+      );
+      await service.saveRepositoryPlan(
+        profileId: profile.id,
+        document: document,
+        authoring: PlanningAuthoring.fromWire({
+          'version': 1,
+          'prerequisites': const <Object>[],
+          'deferred_stages': [
+            PlanningDocumentStage(
+              id: 'ayane-stage-2',
+              studentId: 'ayane',
+              name: '2단계',
+              targets: level(60),
+            ).toWire(),
+          ],
+          'student_order': const ['ayane'],
+          'stage_order_by_student': const {
+            'ayane': ['ayane-stage-1', 'ayane-stage-2'],
+          },
+          'goal_metadata': const <String, Object>{},
+        }, document),
+        expectedRevision: initial.revision,
+        idempotencyKey: 'seed-edit-active-flow',
+      );
+      final saved = await service.loadRepositoryPlan(profile.id);
+      await tester.binding.setSurfaceSize(const Size(2560, 1392));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PlanningPage(service: service, loadRepositoryPlan: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('plan-flow-edit-active-launch')),
+      );
+      await tester.pumpAndSettle();
+      final flow = tester
+          .widget<PlanFlowWorkspace>(find.byType(PlanFlowWorkspace))
+          .flow;
+      expect(flow.purpose, PlanFlowPurpose.editActivePlan);
+      expect(flow.step, PlanFlowStep.order);
+      expect(flow.activePlanRevision, saved.revision);
+      expect(flow.draft.phases.single.name, '먼저');
+      expect(flow.draft.phases.single.stageIds, ['ayane-stage-1']);
+      expect(flow.draft.deferredStageIds, ['ayane-stage-2']);
       expect(tester.takeException(), isNull);
     },
   );

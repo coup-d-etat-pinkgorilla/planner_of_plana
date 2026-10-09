@@ -58,6 +58,10 @@ enum PlanFlowPurpose {
 
   /// 시나리오 비교 "편집"(→ 3단계).
   editScenario,
+
+  /// 계획 탭 "단계 순서 바꾸기"(FE4-f2): 저장된 활성 계획(`plan.get` document + authoring)을 초안으로 연다(→ 3단계,
+  /// 단계가 없으면 1단계). 4단계는 "이걸로 바꾸기"를 먼저 고르고 "페이즈로 추가"는 막는다.
+  editActivePlan,
 }
 
 /// 칸(= 페이즈) 하나. [stageIds]는 칸 안 순서다.
@@ -1373,6 +1377,7 @@ class PlanFlowController extends ChangeNotifier {
     PlanFlowStep initialStep = PlanFlowStep.students,
     this.scenario,
     this.scenarioCollectionRevision,
+    this.activePlanRevision,
     this.debounce = planFlowCalculationDebounce,
   }) : _draft = initialDraft ?? PlanFlowDraft.empty,
        _step = initialStep {
@@ -1388,6 +1393,10 @@ class PlanFlowController extends ChangeNotifier {
   /// [PlanFlowPurpose.editScenario]일 때 고치는 시나리오.
   final PlanningScenarioRecord? scenario;
   final int? scenarioCollectionRevision;
+
+  /// [PlanFlowPurpose.editActivePlan]일 때 초안을 연 활성 계획의 revision(`plan.get`). 4단계 처음 저장의 expected
+  /// revision이라, 그 사이 활성 계획이 바뀌었으면 `revision_conflict`로 알린다.
+  final int? activePlanRevision;
 
   PlanFlowStep _step;
   PlanFlowDraft _draft;

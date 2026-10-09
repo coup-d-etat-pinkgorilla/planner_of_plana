@@ -13,7 +13,9 @@
 // - FE4-f1: 마지막 칸 아래 "칸 추가", 그 아래 "나중에" 칸(점선 타일, 계산에서 빠짐). 카드 아래 점을 다른 카드로 끌거나
 //   C "선행 단계 추가" 뒤 카드를 누르면 직접 선행(분홍 점선)을 잇고, C ×로 지운다. 자기 학생·자기 자신·순환·앞 칸은
 //   거부하고 이유를 보인다(백엔드 authoring reason과 같은 말). 규칙을 어긴 카드는 빨간 테두리. 작게 보기도 "나중에"
-//   칸과 고른 카드의 직접 선행 선을 그린다(경로 다듬기는 FE4-f2).
+//   칸과 고른 카드의 직접 선행 선을 그린다.
+// - FE4-f2: 작게 보기 S 곡선(회색 · 분홍 점선)은 사이 줄 칩 위를 지나지 않게 칩 사이·줄 사이 틈으로 돌고, 크게 보기
+//   칸 → "나중에" 칸 선은 "칸 추가" 타일 위를 지나지 않게 타일 오른쪽으로 비켜 간다.
 // 좌표는 시안(2560×1392, 헤더 184 아래가 캔버스)의 값이다([planFlowProtoRect]).
 import 'dart:math' as math;
 
@@ -336,16 +338,27 @@ class _BoardLayout {
 ///
 /// - [elbowY]가 있으면 꺾인 선: [from]에서 아래로 [elbowY]까지, 옆으로 [to]의 x까지, 다시 아래로 [to]까지(모서리는
 ///   둥글게). 칸 사이 틈에서만 옆으로 가서 칸 머리(이름 · 상태 칩)를 지나지 않는다(FE4-d2).
-/// - [curve]면 시안 Flow-3-Order-Many처럼 위아래 접선이 수직인 S 곡선.
-/// - 둘 다 아니면 곧은 선(같은 줄의 옆 카드).
+/// - [curve]면 시안 Flow-3-Order-Many처럼 위아래 접선이 수직인 S 곡선. [via]가 있으면 그 점들을 차례로 지나는
+///   S 곡선 이음(x가 같은 구간은 곧은 세로선)이다(FE4-f2, 사이 줄 칩을 피해 칩 사이·줄 사이 틈으로 돈다).
+/// - [curve]가 아니고 [via]가 있으면 그 점들을 잇는 꺾인 선(모서리 둥글게, FE4-f2 "칸 추가" 타일 피하기).
+/// - 모두 아니면 곧은 선(같은 줄의 옆 카드).
 @immutable
 class PlanFlowOrderArrow {
-  const PlanFlowOrderArrow(this.from, this.to, {this.elbowY, this.curve = false});
+  const PlanFlowOrderArrow(
+    this.from,
+    this.to, {
+    this.elbowY,
+    this.curve = false,
+    this.via = const [],
+  });
 
   final Offset from;
   final Offset to;
   final double? elbowY;
   final bool curve;
+
+  /// [from]과 [to] 사이에 지나는 점(보드 좌표).
+  final List<Offset> via;
 
   @override
   bool operator ==(Object other) =>
@@ -353,14 +366,30 @@ class PlanFlowOrderArrow {
       other.from == from &&
       other.to == to &&
       other.elbowY == elbowY &&
-      other.curve == curve;
+      other.curve == curve &&
+      listEquals(other.via, via);
 
   @override
-  int get hashCode => Object.hash(from, to, elbowY, curve);
+  int get hashCode => Object.hash(from, to, elbowY, curve, Object.hashAll(via));
 
   /// 선 경로(꺾쇠 제외).
   Path path() {
     final path = Path()..moveTo(from.dx, from.dy);
+    if (via.isNotEmpty) {
+      final points = [from, ...via, to];
+      if (!curve) return planFlowRoundedPolyline(points, radius: 10);
+      for (var index = 1; index < points.length; index++) {
+        final a = points[index - 1];
+        final b = points[index];
+        if ((a.dx - b.dx).abs() < 0.5) {
+          path.lineTo(b.dx, b.dy);
+        } else {
+          final middle = (a.dy + b.dy) / 2;
+          path.cubicTo(a.dx, middle, b.dx, middle, b.dx, b.dy);
+        }
+      }
+      return path;
+    }
     final elbow = elbowY;
     if (curve) {
       final middle = (from.dy + to.dy) / 2;
@@ -386,6 +415,16 @@ class PlanFlowOrderArrow {
 
   /// 끝에서의 진행 방향(꺾쇠 방향).
   Offset get endDirection {
+    if (via.isNotEmpty) {
+      final last = via.last;
+      if (curve) {
+        // S 곡선 이음은 끝 접선이 수직이다(위로 들어가면 위 방향).
+        return Offset(0, to.dy >= last.dy ? 1 : -1);
+      }
+      final delta = to - last;
+      final length = delta.distance;
+      return length < 1 ? const Offset(0, 1) : delta / length;
+    }
     if (curve || (elbowY != null && (to.dx - from.dx).abs() >= 1)) {
       return const Offset(0, 1);
     }
@@ -393,6 +432,34 @@ class PlanFlowOrderArrow {
     final length = delta.distance;
     return length < 1 ? const Offset(0, 1) : delta / length;
   }
+}
+
+/// [points]를 잇는 꺾인 선. 모서리는 반경 [radius](양쪽 구간 길이의 반을 넘지 않게)의 Q 곡선으로 둥글린다.
+Path planFlowRoundedPolyline(List<Offset> points, {double radius = 10}) {
+  final path = Path();
+  if (points.isEmpty) return path;
+  path.moveTo(points.first.dx, points.first.dy);
+  for (var index = 1; index < points.length - 1; index++) {
+    final previous = points[index - 1];
+    final corner = points[index];
+    final next = points[index + 1];
+    final inward = corner - previous;
+    final outward = next - corner;
+    final inLength = inward.distance;
+    final outLength = outward.distance;
+    if (inLength < 0.01 || outLength < 0.01) {
+      path.lineTo(corner.dx, corner.dy);
+      continue;
+    }
+    final r = math.min(radius, math.min(inLength / 2, outLength / 2));
+    final start = corner - inward / inLength * r;
+    final end = corner + outward / outLength * r;
+    path
+      ..lineTo(start.dx, start.dy)
+      ..quadraticBezierTo(corner.dx, corner.dy, end.dx, end.dy);
+  }
+  path.lineTo(points.last.dx, points.last.dy);
+  return path;
 }
 
 /// 칸 머리 왼쪽 끝은 첫 줄 첫 카드 왼쪽보다 25.7 오른쪽이다(머리 14.9 + 카드 48·tan10 + 2.3).
@@ -434,10 +501,22 @@ double planFlowOrderHeaderClearX(Rect card, double chipWidth) {
 
 /// 작게 보기 화살표(시안: 고른 카드와 이어진 것만, S 곡선). [from] 아래 가운데에서 [to] 위 가운데로 간다. 둘이
 /// 같은 높이에 걸치면(같은 칸 같은 줄, FD-069) 옆 가운데끼리 곧게 잇는다.
-PlanFlowOrderArrow planFlowOrderCompactArrow(Rect from, Rect to) {
-  if (to.top - 5 < from.bottom) {
+///
+/// FE4-f2: [obstacles](그 사이의 다른 칩 자리)를 지나면 돌아간다.
+/// - 위아래: 사이 줄마다 칩 사이 틈(또는 줄 오른쪽 끝)을 세로로 지나고, 줄 사이·칸 사이 틈에서만 옆으로 가는 S 곡선
+///   이음이다([PlanFlowOrderArrow.via]). 시작·끝 점은 돌지 않을 때와 같다.
+/// - 같은 줄: 줄 아래 틈으로 내려가 옆으로 가서 [to] 아래로 들어간다.
+/// 지날 틈을 찾지 못하면 돌지 않은 선을 그대로 쓴다.
+PlanFlowOrderArrow planFlowOrderCompactArrow(
+  Rect from,
+  Rect to, {
+  List<Rect> obstacles = const [],
+}) {
+  final side = to.top - 5 < from.bottom;
+  final PlanFlowOrderArrow direct;
+  if (side) {
     final forward = to.center.dx >= from.center.dx;
-    return PlanFlowOrderArrow(
+    direct = PlanFlowOrderArrow(
       Offset(
         forward
             ? from.right - diagonalCutDepth(from.height) / 2
@@ -451,11 +530,147 @@ PlanFlowOrderArrow planFlowOrderCompactArrow(Rect from, Rect to) {
         to.center.dy,
       ),
     );
+  } else {
+    direct = PlanFlowOrderArrow(
+      Offset(from.center.dx - diagonalCutDepth(from.height) / 2, from.bottom),
+      Offset(to.center.dx, to.top - 5),
+      curve: true,
+    );
   }
+  if (obstacles.isEmpty || !planFlowOrderPathHits(direct.path(), obstacles)) {
+    return direct;
+  }
+  final routed = side
+      ? _compactRouteBelow(from, to)
+      : _compactRouteDown(direct, from, to, obstacles);
+  if (routed == null || planFlowOrderPathHits(routed.path(), obstacles)) {
+    return direct;
+  }
+  return routed;
+}
+
+/// [path]가 [obstacles] 안쪽(1 안으로 줄인 상자)을 지난다(3 간격으로 본다).
+bool planFlowOrderPathHits(Path path, List<Rect> obstacles) {
+  final inner = [for (final rect in obstacles) rect.deflate(1)];
+  for (final metric in path.computeMetrics()) {
+    for (var distance = 0.0; distance <= metric.length; distance += 3) {
+      final point = metric.getTangentForOffset(distance)?.position;
+      if (point == null) continue;
+      if (inner.any((rect) => rect.contains(point))) return true;
+    }
+  }
+  return false;
+}
+
+/// 같은 줄 화살표: [from] 아래 가운데에서 줄 아래 틈(두 상자 아래 끝보다 6 아래)으로 가서 [to] 아래 가운데로 올라간다.
+PlanFlowOrderArrow _compactRouteBelow(Rect from, Rect to) {
+  final gap = math.max(from.bottom, to.bottom) + 6;
+  final start = Offset(from.center.dx, from.bottom);
+  final end = Offset(to.center.dx, to.bottom + 2);
   return PlanFlowOrderArrow(
-    Offset(from.center.dx - diagonalCutDepth(from.height) / 2, from.bottom),
-    Offset(to.center.dx, to.top - 5),
+    start,
+    end,
     curve: true,
+    via: [Offset((start.dx + end.dx) / 2, gap)],
+  );
+}
+
+/// 위아래 화살표: [from] 아래와 [to] 위 사이에 걸친 장애물을 줄(세로로 겹치는 상자 묶음)로 나누고, 줄마다 지날
+/// x(칩 사이 6 이상 틈의 가운데, 줄 오른쪽 끝 바깥, 또는 지금 x가 비어 있으면 그대로)를 고른다. 줄 위아래 2 안쪽에서
+/// 세로로 지나고, 줄 사이 틈에서만 옆으로 간다.
+PlanFlowOrderArrow? _compactRouteDown(
+  PlanFlowOrderArrow direct,
+  Rect from,
+  Rect to,
+  List<Rect> obstacles,
+) {
+  final between = [
+    for (final rect in obstacles)
+      if (rect.top < to.top - 1 && rect.bottom > from.bottom + 1) rect,
+  ]..sort((a, b) => a.top.compareTo(b.top));
+  final bands = <({double top, double bottom, List<Rect> rects})>[];
+  for (final rect in between) {
+    final last = bands.lastOrNull;
+    if (last != null && rect.top < last.bottom - 1) {
+      bands[bands.length - 1] = (
+        top: last.top,
+        bottom: math.max(last.bottom, rect.bottom),
+        rects: [...last.rects, rect],
+      );
+    } else {
+      bands.add((top: rect.top, bottom: rect.bottom, rects: [rect]));
+    }
+  }
+  final endX = direct.to.dx;
+  var x = direct.from.dx;
+  final via = <Offset>[];
+  for (final band in bands) {
+    final channel = _compactChannel(band.rects, x, endX);
+    if (channel == null) return null;
+    via
+      ..add(Offset(channel, band.top - 2))
+      ..add(Offset(channel, band.bottom + 2));
+    x = channel;
+  }
+  return PlanFlowOrderArrow(direct.from, direct.to, curve: true, via: via);
+}
+
+/// 줄 하나를 세로로 지날 x. 상자들의 x 구간을 3씩 넓혀 합치고, 그 사이 틈 가운데와 오른쪽 끝 바깥(12)을 후보로,
+/// 지금 [x]가 어느 구간에도 없으면 [x]도 후보로 둔다. [x]에서 옮기는 거리 + [endX]까지 남는 거리가 가장 작은 것.
+double? _compactChannel(List<Rect> rects, double x, double endX) {
+  final spans = [
+    for (final rect in rects) (left: rect.left - 3, right: rect.right + 3),
+  ]..sort((a, b) => a.left.compareTo(b.left));
+  final merged = <({double left, double right})>[];
+  for (final span in spans) {
+    final last = merged.lastOrNull;
+    if (last != null && span.left <= last.right) {
+      merged[merged.length - 1] = (
+        left: last.left,
+        right: math.max(last.right, span.right),
+      );
+    } else {
+      merged.add(span);
+    }
+  }
+  final candidates = <double>[
+    if (!merged.any((span) => x > span.left && x < span.right)) x,
+    for (var index = 1; index < merged.length; index++)
+      (merged[index].left + merged[index - 1].right) / 2,
+    merged.last.right + 9,
+  ];
+  double cost(double candidate) =>
+      (candidate - x).abs() + (candidate - endX).abs();
+  return candidates.reduce((a, b) => cost(b) < cost(a) ? b : a);
+}
+
+/// 크게 보기에서 "칸 추가" 타일([obstacle]) 위를 세로로 지나는 꺾인 선을 비켜 낸다(FE4-f2). 타일 위 틈([aboveY])에서
+/// 타일 오른쪽 바깥(16)으로 옆으로 가서 내려가고, 원래 꺾는 높이([PlanFlowOrderArrow.elbowY])에서 [to]의 x로 간다.
+/// 타일을 지나지 않으면 그대로 돌려준다.
+PlanFlowOrderArrow planFlowOrderArrowAvoiding(
+  PlanFlowOrderArrow arrow,
+  Rect obstacle, {
+  required double aboveY,
+}) {
+  final elbow = arrow.elbowY;
+  if (elbow == null || arrow.curve || arrow.via.isNotEmpty) return arrow;
+  final x = arrow.from.dx;
+  final crosses =
+      x > obstacle.left - 6 &&
+      x < obstacle.right + 6 &&
+      arrow.from.dy < obstacle.bottom &&
+      elbow > obstacle.top;
+  if (!crosses) return arrow;
+  final aside = obstacle.right + 16;
+  return PlanFlowOrderArrow(
+    arrow.from,
+    arrow.to,
+    via: [
+      Offset(x, aboveY),
+      Offset(aside, aboveY),
+      Offset(aside, elbow),
+      Offset(arrow.to.dx, elbow),
+    ],
   );
 }
 
@@ -760,7 +975,7 @@ class _OrderBoardState extends State<_OrderBoard> {
         }
         enterX = planFlowOrderHeaderClearX(to, chipWidth);
       }
-      return planFlowOrderArrowBetween(
+      final arrow = planFlowOrderArrowBetween(
         from,
         to,
         gapY: identical(fromLane, toLane)
@@ -768,6 +983,14 @@ class _OrderBoardState extends State<_OrderBoard> {
             : toLane.tile.top - _laneGap / 2,
         enterX: enterX,
       );
+      // 칸 → "나중에" 칸 선은 사이의 "칸 추가" 타일 위를 지나지 않게 비켜 간다(FE4-f2).
+      return toLane.deferred && !fromLane.deferred
+          ? planFlowOrderArrowAvoiding(
+              arrow,
+              layout.add,
+              aboveY: layout.add.top - _laneGap / 2,
+            )
+          : arrow;
     }
 
     final arrows = <PlanFlowOrderArrow>[];
@@ -1867,23 +2090,45 @@ class _CompactBoardState extends State<_CompactBoard> {
     final arrows = <PlanFlowOrderArrow>[];
     final directArrows = <PlanFlowOrderArrow>[];
     if (selected != null && expanded != null) {
+      // 사이 줄 칩 위를 지나지 않게 다른 칩 자리를 피한다(FE4-f2).
+      final slots = [
+        for (final lane in layout.lanes) ...lane.slots.entries,
+      ];
+      PlanFlowOrderArrow arrow(
+        String fromId,
+        Rect from,
+        String toId,
+        Rect to,
+      ) => planFlowOrderCompactArrow(
+            from,
+            to,
+            obstacles: [
+              for (final entry in slots)
+                if (entry.key != fromId && entry.key != toId) entry.value,
+            ],
+          );
       final predecessor = editor.predecessorOf(selected);
       final successor = editor.successorOf(selected);
       final from = predecessor == null ? null : layout.slotOf(predecessor.id);
       final to = successor == null ? null : layout.slotOf(successor.id);
-      if (from != null) arrows.add(planFlowOrderCompactArrow(from, expanded));
-      if (to != null) arrows.add(planFlowOrderCompactArrow(expanded, to));
-      // 직접 선행(분홍 점선): 고른 카드의 먼저 끝나야 하는 단계 → 카드, 카드 → 기다리는 단계. 경로 다듬기는 FE4-f2.
+      if (predecessor != null && from != null) {
+        arrows.add(arrow(predecessor.id, from, selected.id, expanded));
+      }
+      if (successor != null && to != null) {
+        arrows.add(arrow(selected.id, expanded, successor.id, to));
+      }
+      // 직접 선행(분홍 점선): 고른 카드의 먼저 끝나야 하는 단계 → 카드, 카드 → 기다리는 단계.
       for (final item in editor.directPrerequisitesOf(selected)) {
-        final rect = item.stage == null ? null : layout.slotOf(item.stage!.id);
-        if (rect != null) {
-          directArrows.add(planFlowOrderCompactArrow(rect, expanded));
+        final required = item.stage;
+        final rect = required == null ? null : layout.slotOf(required.id);
+        if (required != null && rect != null) {
+          directArrows.add(arrow(required.id, rect, selected.id, expanded));
         }
       }
       for (final dependent in editor.directDependentsOf(selected)) {
         final rect = layout.slotOf(dependent.id);
         if (rect != null) {
-          directArrows.add(planFlowOrderCompactArrow(expanded, rect));
+          directArrows.add(arrow(selected.id, expanded, dependent.id, rect));
         }
       }
     }
