@@ -3829,3 +3829,123 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_013850\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-d1 종료 기록 (2026-10-09 새벽, 코드 작성 완료·gate 미실행)
+
+작업 지시(02:38): 계획 만들기 3단계 단계 순서(Flow-3-Order). HEAD `b4bb199a` 이후. 읽은 것: 워크플로 FE4 표(FE4-d 분할 메모), artboard-map Flow-3-Order 행, 결정 대장 FD-035·FD-069·FD-070·FD-071, 시안 Flow-3-Order(`dc_outline.py`), 기존 `plan_phase_editor.dart`(`_sequenceOrderIsValid`)·`plan_student_step_tile.dart`, FE4-c 상태 기록.
+
+이 환경에는 Flutter·Dart가 없다. 그래서 `flutter analyze`·Dart 테스트·golden을 돌리지 못했고, 통과를 주장하지 않는다.
+- 별도 검토 에이전트 1개가 바뀐 파일 전부를 정적으로 읽었다. kit·모델 생성자 시그니처, null·타입(`int.clamp`, `ValueKey<String?>`, 필드 승격), 새 테스트 11건과 golden 단언을 구현과 대조했다. 고친 지적:
+  1. EX 목표를 스킬처럼 5 → "M"으로 적었다. 새 테스트 기대("EX 3→5")·시안(`EX5`)과 다르다. → EX는 숫자 그대로.
+  2. `_DropHint`의 `CustomPaint`가 const가 아니었다(analyze info). → const.
+  3. 새 테스트 `fromProjection` 맵 리터럴(`prefer_const_literals_to_create_immutables`). → const 맵.
+  4. 칸·카드 키가 `Positioned` 안쪽 위젯에 있어 순서가 바뀌면 element가 새로 만들어졌다(끌기·칸 이름 입력 상태가 사라짐). → 키를 `Positioned`로 옮김.
+- PC `.git/index`로 확인했다: 바꾼 추적 파일 6개는 작업 시작 때 PC 내용 = HEAD 블롭이다. 새 파일 3개는 index와 PC에 없다. 시작 뒤 PC 파일 mtime도 그대로다.
+
+### 바뀐 파일
+
+| 파일 | 상태 | 줄(+/−) | 내용 |
+|---|---|---|---|
+| `frontend/lib/ui/widgets/plan_flow_order_step.dart` | 새 파일 | +1423 | `PlanFlowOrderBody`(B: 제목 · (i) · "단계 n개" · 거부 이유, 칸 보드, 범례 "같은 학생 · 자동"), `PlanFlowOrderAside`(C: 고른 카드 머리, 포함한 목표, 먼저 끝나야 하는 단계, 이 칸에서 부족한 재화, 자동으로 정렬 3행). 칸 보드: 칸 타일(80° 레일을 따라 228마다 40.2 왼쪽, 스크롤하면 보이는 높이 기준으로 다시 놓음), 칸 머리 이름 인라인 편집 + 상태 칩, 카드 한 줄 3장(넘치면 다음 줄, 28.9 왼쪽), 빈 칸 "여기로 끌어다 놓기", 마지막 칸 아래 "칸 추가", 같은 학생 회색 실선 화살표. 카드(`.srow` 398.4×150): 초상 · 이름 · 단계 태그 · 목표 요약 · 비용 한 줄 · 상태 칩. 칸마다 `DragTarget`, 카드는 `Draggable`(놓은 위치로 칸 안 자리 계산) |
+| `frontend/lib/ui/models/plan_flow_order_editor.dart` | 새 파일 | +280 | `PlanFlowOrderEditor`(고른 카드, 마지막 거부 이유, 칸에 넣기·옮기기·이름·칸 추가·자동 정렬 전달, 상태·선행·칸 부족 재화 읽기), `planFlowGoalChanges`(앞 단계 → 이 단계 목표 바뀜: 카드 요약 `Lv.90`·C 상세 `EX 3→5`, 스킬 10 = M), `PlanFlowLaneShortage` |
+| `frontend/test/plan_flow_order_step_test.dart` | 새 파일 | +697 | 아래 테스트 |
+| `frontend/lib/ui/models/plan_flow_draft.dart` | 수정 | +367 −8 | `PlanFlowBottleneck`·`PlanFlowCalculation.bottlenecks`(응답 `bottlenecks[]`), `PlanFlowShortage.affectedStageIds`, `PlanFlowStageStatus`·`planFlowStageStatuses`(FD-035), `PlanFlowAutoArrange`, `planFlowDefaultPhaseName`("n순위"). 컨트롤러: `placeUnassignedStages`, `orderViolation`, `moveStage`(같은 칸 선행 → 후행 정렬), `renamePhase`, `addPhase`, `autoArrange`. 저장 문서·계산 문서에서 빈 칸을 뺌 |
+| `frontend/lib/ui/widgets/plan_flow_workspace.dart` | 수정 | +33 −109 | 3단계를 B·C 모션 안의 새 화면으로(축소해 넣던 `PlanPhaseEditor`와 `planFlowLegacyBodyRect`·`planFlowLegacyFittedRect`·`plan-flow-legacy-*` 슬롯 제거, FD-070), 3단계 화면 상태를 흐름 동안 유지·폐기 |
+| `frontend/test/plan_flow_test.dart` | 수정 | +32 −19 | 흐름 위젯 테스트의 3단계 단언을 새 칸 보드로(아래) |
+| `frontend/test/planning_page_test.dart` | 수정 | +5 −9 | 시나리오 만들기 흐름의 3단계 조작을 새 칸 보드로(아래) |
+| `frontend/test/goldens/golden_harness.dart` | 수정 | +71 −10 | `GoldenPlanFlowMockAppService`: 단계 재화를 문서 순번 대신 그 학생의 단계 번호로 정함(1 = 부족 1종, 2 = 부족 2종, 3 이후 = 충분), `bottlenecks`(재화마다 처음 모자라는 단계)와 전체 재화 행 `affected_stage_ids`(그 재화를 쓰는 단계). `goldenFlowTwoStagePreset()`(육성 2단계) |
+| `frontend/test/goldens/fe1g_baseline_golden_test.dart` | 수정 | +44 | 새 장면 `plan-flow-step3` |
+
+`lib/services/**`, `backend/`, `contracts/`, 스캐너·tactic·metadata 소유 파일, `app_shell.dart`, `plan_section_layout.dart`(CRLF)는 고치지 않았다. `plan_phase_editor.dart`·`plan_student_step_tile.dart`는 활성 계획 "페이즈 편집"(`plan-phase-editor-launch`, golden `plan-phase-editor`)과 4단계 미리보기(`PlanStudentStepPreview`)가 아직 써서 지우지 않고 고치지도 않았다.
+
+### 기존 페이즈 편집기 기능 대조(흐름 3단계)
+
+| 기존 페이즈 편집기(흐름에 축소 수용) | 새 3단계 | 테스트 |
+|---|---|---|
+| 미배정 목록 → 페이즈로 끌어 놓기 | 3단계를 처음 그리면 칸에 없는 단계를 n단계 → n순위 칸에 넣는다(같은 학생 앞 단계보다 앞 칸·뒤 단계보다 뒤 칸에는 두지 않음). 미배정 자리("나중에" 칸)는 FE4-f | "칸에 없는 단계는 …", "처음 그리면 …" |
+| 카드를 페이즈 사이·페이즈 안에서 끌기(삽입선) | 카드를 칸 사이·칸 안에서 끌기(놓은 위치의 카드 가운데 기준으로 자리), 끄는 동안 칸 테두리(놓을 수 있으면 핑크, 거부면 빨강) | "카드를 끌어 칸을 옮기고 …", "칸 이름 바꾸기 · 칸 추가 …"(빈 칸에 놓기) |
+| `_sequenceOrderIsValid`(같은 학생 단계 순서, 스낵바 "같은 학생의 단계 순서를 지켜 배치하세요.") | `orderViolation`: 선행보다 앞 칸·뒤 단계보다 뒤 칸은 거부하고 이유 문구("호시노 2단계는 선행 단계(호시노 1단계)보다 앞 칸에 둘 수 없습니다.")를 B 제목 줄에 보인다. 같은 칸은 허용하고 선행 → 후행으로 다시 놓는다(FD-069) | "선행보다 앞 칸 · …", "카드를 끌어 …" |
+| 전부 배치 · 빠른 배치 | 처음 자동 배치 + C "자동으로 정렬" 3종 | "자동 정렬 3종 …", "부족이 적은 단계부터 …" |
+| 되돌리기 · 전부 되돌리기(미배정으로) | 없음. "나중에" 칸이 FE4-f에서 그 자리를 맡는다 | — |
+| 페이즈 이름 편집 | 칸 머리 인라인 편집, 비우면 기본 "n순위"(FD-071) | 컨트롤러·화면 이름 테스트 |
+| 페이즈 추가 · 삭제 · 위/아래 이동 | 마지막 칸 아래 "칸 추가". 빈 칸은 저장·계산 문서에서 빠진다(FD-071). 칸 삭제·칸 순서 이동 버튼은 시안에 없어 만들지 않았다(카드 이동·자동 정렬로 대신) | "칸 이름 · 칸 추가 · 빈 칸은 …" |
+| 완료(미배정 0일 때 4단계) · 뒤로 | 레일 "다음"(모든 단계가 칸에 있으면) · "이전" | `plan_flow_test`, `planning_page_test` |
+
+바꾼 기존 테스트 기대(FD-070으로 흐름 안에서 `plan-phase-editor`·`plan-flow-legacy-*`가 없어졌기 때문):
+- `plan_flow_test` "1단계는 새 학생 고르기, 2단계는 새 목표 정하기이고, 3단계는 기존 페이즈 편집기를 연다" → 이름 "… 3단계는 새 칸 보드다". 3단계 단언: 페이즈 편집기 축소 배치(`planFlowLegacyFittedRect`) 대신 `PlanFlowOrderBody`·`PlanFlowOrderAside`가 있고 `plan-phase-editor`가 없다, 단계가 "1순위" 칸에 들어가 레일 "다음"이 켜진다, 첫 칸이 A 레일 오른쪽 사선과 C 왼쪽 사선 사이에 있다. "이전" 단언은 그대로(페이즈 편집기 없음 → 칸 보드 없음).
+- `planning_page_test` "scenario creation builds goals in the plan flow and reuses the phase editor" → 이름 "… builds goals and orders stages in the plan flow". 3단계 조작: `plan-phase-editor-assign-all`·`-complete` 누르기 → 칸 보드가 있는지 보고 레일 "다음". 4단계·저장·목록 단언(페이즈 1개)은 그대로다.
+- 활성 계획 페이즈 편집기 테스트(`planning_page_test` "phase editor keeps lists …" 등)·`plan_element_builder_test`는 그대로다.
+
+### 테스트
+
+- `plan_flow_order_step_test.dart`(새 파일, 11건):
+  - 초안 컨트롤러: 칸에 넣기(빈 초안 → 1·2순위, 일부가 이미 칸에 있으면 나머지만, 이름 유지), 거부 이유 두 가지(선행보다 앞 칸 · 뒤 단계보다 뒤 칸)와 거부 때 배치 그대로, 같은 칸 허용·정렬, 칸 안 자리 옮기기, 칸 이름(앞뒤 공백 정리, 비우면 기본), 칸 추가, 빈 칸은 저장 문서·계산 문서에서 빠짐, 자동 정렬 3종(이름 유지, 부족이 적은 단계부터는 계산 결과 기준이고 같은 학생 순서를 지킴).
+  - 상태(FD-035): 응답 `bottlenecks`·`affected_stage_ids` 읽기, 부족·막힘·가능, 병목보다 앞에 둔 단계는 막히지 않음, 카드·칸 머리 글자, 목표 바뀜 글자.
+  - 화면: 처음 그리면 칸에 넣기, 칸 간격(40.2·228), 상태 칩 3종, 화살표 1개, 처음 고른 카드. 끌어 옮기기 → 거부 → 이유 문구 → 다른 카드를 고르면 지움. 카드 고르기 → C 제목·포함한 목표·선행("자동")·이 칸 부족 재화(−20)·빈 칸 문구. 칸 이름 입력(done), 칸 추가 → 빈 칸에 끌어 놓기, 자동 정렬 행 누르기.
+  - 계산 디바운스 Timer는 명시적인 pump로 끝까지 흘린다.
+- `plan_flow_test.dart`·`planning_page_test.dart`: 위 바꾼 기대.
+
+### golden 예측
+
+- 새 장면 1: `plan-flow-step3` — 3명(호시노 육성 2단계 · 아루 총력전 3단계 · 미보유 슌 육성 2단계) = 단계 7개, 1순위 [호시노 1 · 아루 1 · 슌 1] / 2순위 [호시노 2 · 아루 2 · 슌 2] / 3순위 [아루 3], 호시노 2단계 고름(핑크 테두리, C 상세). 배지: 호시노 1·2 "부족", 아루 1~3 "막힘", 슌 "모집 필요". 칸 머리: "부족 1종"·"부족 2종"(빨강, 막힌 카드가 있음)·"막힘". 회색 화살표 4개(호시노 1→2, 아루 1→2→3, 슌 1→2).
+- 그대로: `plan-flow-step2`·`plan-flow-step2-more`(단계가 있는 보유 학생이 한 명이라 단계 번호 = 문서 순번 + 1, 단계 비용·전체 재화 행 값 그대로. 새 `bottlenecks`는 3단계만 읽고, 바뀐 `affected_stage_ids`는 닫힌 부족 재화 플라이아웃의 사용처에만 쓰인다), `plan-phase-editor`(활성 계획 경로, 파일 미수정), `plan-flow-step1*`, 나머지.
+- 그래서 ① gate는 golden 1건 RED(기준 없음)가 예상이다.
+- 이 장면에서 "가능"(초록) 카드는 나오지 않는다. mock의 볼프세크 철광석을 모든 보유 단계가 쓰고 그 병목(호시노 2단계)이 아루 3단계보다 앞이라 아루 3단계도 막힘이다. 2단계 장면을 바꾸지 않으려고 mock 재화 구성은 그대로 두었다. 가능 배지는 위젯 테스트가 본다.
+
+### 처리한 FD
+
+- **FD-035**: 부족 = 어떤 병목의 `stage_id`이거나 들어설 때 모자라는 재화가 있음(`stage_results`), 막힘 = 다른 병목 재화의 `affected_stage_ids`에 있고 문서 순서(칸 → 칸 안)상 그 병목 단계보다 뒤(자기 부족과 겹치면 막힘), 가능 = 둘 다 아님. "뒤"를 더한 이유: `affected_stage_ids`는 그 재화를 쓰는 모든 단계라서 병목보다 앞 단계까지 막힘이 된다. 응답의 병목 행에는 영향 단계 목록이 없어 전체 재화 행 것을 쓴다. 미보유 학생 단계는 "모집 필요"(FD-076).
+- **FD-069**: 같은 칸 허용, 칸 안에서 같은 학생 단계는 단계 번호 순서로 다시 놓는다(다른 학생 카드 자리는 그대로).
+- **FD-070**: 흐름 3단계는 새 칸 보드다. 시나리오 비교 "편집"도 같은 흐름(`initialStep: order`)이라 새 화면으로 들어간다. 활성 계획 "페이즈 편집"은 이번 범위 밖이라 기존 편집기 그대로(FE5-c).
+- **FD-071**: 칸 머리 이름 인라인 편집(기본 "n순위", 비우면 기본으로), 마지막 칸 아래 "칸 추가", 빈 칸은 저장 문서에서 뺀다(계산 문서에서도 뺀다). 레일 부제 "순서 n칸"은 전부터 빈 칸을 세지 않는다.
+
+### 바뀐 동작(검토 때 볼 것)
+
+1. 3단계를 열면 칸에 없는 단계를 바로 칸에 넣는다. 그래서 레일 "다음"이 곧바로 켜진다(전에는 페이즈 편집기에서 모두 배치하고 완료). 컨트롤러가 아니라 화면이 첫 프레임 뒤 부른다(단위 테스트의 "3단계에 들어간 직후 다음 불가" 기대는 그대로).
+2. 2단계에서 한 학생의 단계를 바꾸면 그 학생 단계가 칸에서 빠진다(FE4-c 규칙). 3단계로 돌아오면 다시 n순위 규칙으로 넣는다(다른 학생 배치는 그대로).
+3. 거부 이유는 B 제목 줄 오른쪽에 빨강 글자로 남고, 다음 이동·카드 고르기·칸 추가·자동 정렬에서 지운다.
+4. 칸 삭제·칸 위아래 이동은 없다(시안에 없음). 빈 칸은 화면에 남지만 저장·계산에서는 빠진다.
+5. 자동 정렬은 확인 없이 지금 배치를 바꾼다. 칸 이름·id는 앞에서부터 다시 쓰고 남는 칸은 지운다. "고른 학생 순서대로"는 학생마다 한 칸, "부족이 적은 단계부터"는 마지막 계산의 단계별 부족 종류 수가 적은 순서로 칸을 나눈다(계산 전이면 모두 0으로 봄).
+6. 칸 보드는 세로로 스크롤한다. 스크롤하면 칸이 보이는 높이에 맞춰 80° 선을 따라 옆으로 다시 놓인다.
+7. 카드를 끄는 동안 보이는 것은 작은 행(초상 · 이름 · 단계 태그)이다.
+8. C "이 칸에서 부족한 재화"는 그 칸 단계들의 들어설 때 부족량을 재화마다 더한 값(큰 순 3개, 나머지는 "외 n종")이다.
+
+### 검수표
+
+| 항목 | 확인 |
+|---|---|
+| 칸 보드: 80° 레일 40px씩 왼쪽, 카드 끌기(칸 사이·칸 안) | 화면 테스트(간격 단언, 끌기 2건) |
+| 같은 학생 회색 실선 화살표 | 화살표 개수 단언, golden |
+| 선행보다 앞 칸 거부 + 이유, 같은 칸 허용·정렬(FD-069) | 컨트롤러·화면 테스트 |
+| 상태 배지 가능·부족·막힘(FD-035), 초안 계산 결과 사용 | 상태 테스트, 화면 칩 테스트, golden |
+| C 선택 카드 상세 + 자동 정렬 3종 | C 테스트, 자동 정렬 테스트 |
+| 칸 이름 인라인(기본 n순위), 칸 추가, 빈 칸 저장 때 제거(FD-071) | 컨트롤러·화면 테스트 |
+| 기존 PlanPhaseEditor 교체(FD-070), 시나리오 비교 "편집" → 새 화면 | 워크스페이스 코드, `plan_flow_test` |
+| 범위 밖 미구현: 직접 선행·"나중에"(FE4-f), 작게 보기(FE4-d2) | 코드 확인 |
+| ~습니다체, 명시적 pump, 금지 파일 미수정 | 코드 확인(실행 안 됨) |
+
+### 확인하지 못한 것
+
+- analyze·테스트·golden 실행 전부(이 환경에 Flutter 없음).
+- 새 장면 그림. 시안과 견줄 것: 화살표 시작·끝 위치(카드 아래 186 → 다음 카드 위 212.5), 카드 안 글자 줄 간격, 칸 머리 이름 칸 폭(220), 긴 이름(호시노) 말줄임, C 행 간격.
+- 터치 화면에서 세로 스크롤과 카드 끌기가 겹칠 때(마우스는 스크롤 뷰가 끌기를 받지 않음). 끄는 동안 보드 자동 스크롤은 없다.
+- 단계가 많을 때(30개) 보기는 FE4-d2.
+
+### 사용자 실행 순서
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 승인 뒤 기준 이미지 갱신 → gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4d1 -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4d1
+```
+
+### FE4-d1 commit record (2026-10-09 14:30, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_124241\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

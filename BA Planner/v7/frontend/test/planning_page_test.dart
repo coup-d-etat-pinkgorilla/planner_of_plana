@@ -3906,7 +3906,7 @@ void main() {
   );
 
   testWidgets(
-    'scenario creation builds goals in the plan flow and reuses the phase editor',
+    'scenario creation builds goals and orders stages in the plan flow',
     (tester) async {
       final service = MockAppService();
       addTearDown(service.dispose);
@@ -3953,14 +3953,10 @@ void main() {
       await tester.pump();
       await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
       await tester.pumpAndSettle();
-      // 3단계: 기존 페이즈 편집기.
-      await tester.tap(
-        find.byKey(const ValueKey('plan-phase-editor-assign-all')),
-      );
-      await tester.pump();
-      await tester.tap(
-        find.byKey(const ValueKey('plan-phase-editor-complete')),
-      );
+      // 3단계(FE4-d1): 새 칸 보드가 단계를 "1순위" 칸에 넣고, 레일 "다음"으로 4단계를 연다.
+      expect(find.byKey(const ValueKey('plan-flow-order-body')), findsOneWidget);
+      expect(find.byKey(const ValueKey('plan-phase-editor')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
       await tester.pumpAndSettle();
 
       // 4단계: 저장 대화상자는 레일의 "저장하고 닫기"가 연다.

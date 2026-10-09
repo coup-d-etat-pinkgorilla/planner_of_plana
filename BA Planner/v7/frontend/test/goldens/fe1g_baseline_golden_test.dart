@@ -26,6 +26,7 @@ import 'package:ba_planner_v7/ui/models/plan_flow_goal_editor.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/models/student_filter_selection.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_student_review_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/student_form_cycle.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
@@ -586,6 +587,49 @@ void main() {
     expect(find.text('모집 필요'), findsWidgets);
     expect(find.text('더 보기 · 카드에 없는 목표'), findsOneWidget);
     await expectGoldenScene(tester, 'plan-flow-step2-more');
+  }, variant: goldenPlatform);
+
+  testWidgets('plan-flow-step3', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _planFlowService();
+    await _openPlanFlow(
+      tester,
+      service,
+      presets: [goldenFlowStagePreset(), goldenFlowTwoStagePreset()],
+    );
+    // 세 명(호시노 2단계 · 아루 3단계 · 미보유 슌 2단계) = 단계 7개.
+    for (final id in const ['hoshino', 'aru', 'shun_swimsuit']) {
+      await _tapFlowCard(tester, id);
+    }
+    await _tapKey(tester, 'plan-flow-next');
+    await _tapKey(tester, 'plan-flow-goal-preset-two-stage');
+    await _tapKey(tester, 'plan-flow-goal-tab-aru');
+    await _tapKey(tester, 'plan-flow-goal-preset-raid-three-stage');
+    await _tapKey(tester, 'plan-flow-goal-tab-shun_swimsuit');
+    await _tapKey(tester, 'plan-flow-goal-preset-two-stage');
+    await _tapKey(tester, 'plan-flow-next');
+    // FE4-d1: 칸 보드가 n단계를 n순위 칸에 넣는다(3칸). 호시노 2단계 카드를 고른다.
+    expect(find.byKey(const ValueKey('plan-flow-order-body')), findsOneWidget);
+    final flow = tester
+        .widget<PlanFlowWorkspace>(find.byType(PlanFlowWorkspace))
+        .flow;
+    expect(flow.draft.stageCount, 7);
+    expect(flow.draft.phases.map((phase) => phase.name), [
+      '1순위',
+      '2순위',
+      '3순위',
+    ]);
+    final hoshinoSecond = flow.draft.stagesByStudent['hoshino']![1].id;
+    await _tapKey(tester, 'plan-flow-order-card-$hoshinoSecond');
+    await tester.pump();
+    await tester.pump(planFlowCalculationDebounce);
+    await tester.pump();
+    // 상태 배지(FD-035): 병목 단계(호시노 1·2)는 부족, 같은 재화를 뒤에서 또 쓰는 아루 1~3은 막힘(3칸 머리도
+    // 막힘), 미보유 슌은 모집 필요.
+    expect(find.text('부족'), findsNWidgets(2));
+    expect(find.text('막힘'), findsNWidgets(4));
+    expect(find.text('모집 필요'), findsNWidgets(2));
+    await expectGoldenScene(tester, 'plan-flow-step3');
   }, variant: goldenPlatform);
 
   // --- 시나리오 ---------------------------------------------------------------

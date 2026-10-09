@@ -2,11 +2,8 @@
 //
 // 1단계는 새 학생 고르기(FE4-b1, [PlanFlowStudentBody]·[PlanFlowStudentAside])다.
 // 2단계는 새 목표 정하기(FE4-c, [PlanFlowGoalBody]·[PlanFlowGoalAside], 편집 상태 [PlanFlowGoalEditor])다.
-// 3단계 본문은 기존 페이즈 편집기를 그대로 연다(FE4-d에서 다시 만든다). 기존 화면 임시 수용 원칙(FE4-a gate 검토):
-// - 기존 화면은 원래 받던 크기(계획 화면 캔버스 전체, 기준 viewport 2560×1392)로 배치한 뒤 B 섹션 안에서 A·C·사선과
-//   겹치지 않는 사각형([planFlowLegacyBodyRect])에 맞춰 통째로 축소한다([FittedBox], 히트 테스트는 변환을 따른다).
-//   좁은 제약을 그대로 주면 기존 화면의 행·열이 넘친다.
-// - 3단계 정수 편집기에는 초안의 v2 목표를 [PlanFlowController.editorStagesFor]로 바꿔 넘긴다.
+// 3단계는 새 단계 순서 칸 보드(FE4-d1, [PlanFlowOrderBody]·[PlanFlowOrderAside], 화면 상태 [PlanFlowOrderEditor])다.
+// FE4-a1에서 축소해 넣었던 기존 페이즈 편집기는 이 화면으로 바꿨다(FD-070). 활성 계획의 페이즈 편집기는 그대로다.
 // 4단계는 B·C 섹션에 만들어질 페이즈와 저장 위치를 보여 주고, 저장은 기존 시나리오 저장 대화상자를 쓴다(FE4-e에서
 // 다시 만든다).
 // 섹션 모션은 부착면 규칙(FD-078): 레일 0/180(왼쪽), B 80/260(아래), C 180/0(오른쪽).
@@ -22,12 +19,13 @@ import '../kit/buttons.dart';
 import '../kit/titles.dart';
 import '../models/plan_flow_draft.dart';
 import '../models/plan_flow_goal_editor.dart';
+import '../models/plan_flow_order_editor.dart';
 import '../models/planning_models.dart';
 import '../studio/plan_flow_studio_layout.dart';
 import 'animated_section_stack.dart';
 import 'plan_flow_goal_step.dart';
+import 'plan_flow_order_step.dart';
 import 'plan_flow_rail.dart';
-import 'plan_phase_editor.dart';
 import 'plan_flow_student_step.dart';
 import 'plan_section_layout.dart'
     show PlanPhaseDiagonalList, PlanPhasePreview, PlanSectionMotion;
@@ -37,42 +35,6 @@ import 'section_template_surface.dart';
 const planFlowRailMotion = SectionMotionSpec(intro: 0, outro: 180);
 const planFlowBodyMotion = SectionMotionSpec(intro: 80, outro: 260);
 const planFlowAsideMotion = SectionMotionSpec(intro: 180, outro: 0);
-
-/// 기존 화면 자리와 B 섹션 가장자리 사이 여백.
-const planFlowLegacyInset = 16.0;
-
-/// 3단계 기존 화면을 넣는 자리: B 평행사변형 안에서 A 레일·C 보조·사선과 겹치지 않는 사각형.
-/// 왼쪽은 B 왼쪽 사선의 윗끝(레일 윗변 오른쪽보다 한 칸 오른쪽), 오른쪽은 B 오른쪽 사선의 아랫끝(C 왼쪽 사선보다 왼쪽).
-Rect planFlowLegacyBodyRect(Size size) {
-  final body = planFlowSectionPolygon(size, planFlowBodySectionId);
-  // 꼭짓점 순서: 윗변 왼쪽, 윗변 오른쪽, 아랫변 오른쪽, 아랫변 왼쪽.
-  final left = math.max(body[0].dx, body[3].dx) + planFlowLegacyInset;
-  final right = math.min(body[1].dx, body[2].dx) - planFlowLegacyInset;
-  final top = math.max(body[0].dy, body[1].dy) + planFlowLegacyInset;
-  final bottom = math.min(body[2].dy, body[3].dy) - planFlowLegacyInset;
-  return Rect.fromLTRB(
-    left,
-    top,
-    math.max(left, right),
-    math.max(top, bottom),
-  );
-}
-
-/// 원래 [canvas] 크기로 그린 기존 화면을 [planFlowLegacyBodyRect]에 맞춰 줄였을 때 실제로 차지하는 사각형(가운데 정렬).
-Rect planFlowLegacyFittedRect(Size canvas) {
-  final slot = planFlowLegacyBodyRect(canvas);
-  if (canvas.isEmpty) return slot;
-  final scale = math.min(
-    slot.width / canvas.width,
-    slot.height / canvas.height,
-  );
-  final fitted = Size(canvas.width * scale, canvas.height * scale);
-  return Rect.fromCenter(
-    center: slot.center,
-    width: fitted.width,
-    height: fitted.height,
-  );
-}
 
 /// 4단계 B 안의 페이즈 목록 자리(제목 줄 아래, 폭은 최대 900).
 Path planFlowSavePhaseContainerPath(Size size) {
@@ -142,6 +104,12 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
   PlanFlowGoalEditor get _goalEditor => _goalEditorState ??=
       PlanFlowGoalEditor(flow: _flow, presets: widget.presets);
 
+  /// 3단계 화면 상태(고른 카드·거부 이유). 3단계를 처음 그릴 때 만들고 흐름 동안 유지한다.
+  PlanFlowOrderEditor? _orderEditorState;
+
+  PlanFlowOrderEditor get _orderEditor =>
+      _orderEditorState ??= PlanFlowOrderEditor(flow: _flow);
+
   PlanFlowController get _flow => widget.flow;
 
   AnimationController _motionController() => AnimationController(
@@ -169,10 +137,13 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
       _pickerState = null;
       final previousEditor = _goalEditorState;
       _goalEditorState = null;
-      if (previous != null || previousEditor != null) {
+      final previousOrder = _orderEditorState;
+      _orderEditorState = null;
+      if (previous != null || previousEditor != null || previousOrder != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           previous?.dispose();
           previousEditor?.dispose();
+          previousOrder?.dispose();
         });
       }
     }
@@ -215,13 +186,14 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     _flow.removeListener(_flowChanged);
     _pickerState?.dispose();
     _goalEditorState?.dispose();
+    _orderEditorState?.dispose();
     _railController.dispose();
     _bodyController.dispose();
     _asideController.dispose();
     super.dispose();
   }
 
-  /// 본문 퇴장(기존 화면은 `active: false`로 outro, 4단계 B·C는 컨트롤러)을 기다린 뒤 [change]를 한다.
+  /// 본문 퇴장(B·C 섹션 컨트롤러)을 기다린 뒤 [change]를 한다.
   Future<void> _changeStep(VoidCallback change) async {
     if (_switching || _closing) return;
     setState(() => _switching = true);
@@ -403,7 +375,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     },
   );
 
-  /// B·C 섹션(표면 + 1·2·4단계 내용)과 3단계 기존 화면.
+  /// B·C 섹션(표면 + 단계별 내용).
   List<Widget> _body(Size size, bool active) {
     final step = _flow.step;
     final saving = step == PlanFlowStep.save;
@@ -439,6 +411,14 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                     key: const ValueKey('plan-flow-goal-body-view'),
                     flow: _flow,
                     editor: _goalEditor,
+                  ),
+                ),
+              if (step == PlanFlowStep.order)
+                Positioned.fill(
+                  child: PlanFlowOrderBody(
+                    key: const ValueKey('plan-flow-order-body-view'),
+                    flow: _flow,
+                    editor: _orderEditor,
                   ),
                 ),
             ],
@@ -477,75 +457,19 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                     editor: _goalEditor,
                   ),
                 ),
+              if (step == PlanFlowStep.order)
+                Positioned.fill(
+                  child: PlanFlowOrderAside(
+                    key: const ValueKey('plan-flow-order-aside-view'),
+                    flow: _flow,
+                    editor: _orderEditor,
+                  ),
+                ),
             ],
           ),
         ),
       ),
-      if (_legacyScreen(size, active) case final legacy?)
-        Positioned.fromRect(
-          key: const ValueKey('plan-flow-legacy-slot'),
-          rect: planFlowLegacyBodyRect(size),
-          child: FittedBox(
-            key: const ValueKey('plan-flow-legacy-fit'),
-            fit: BoxFit.contain,
-            child: SizedBox.fromSize(
-              key: const ValueKey('plan-flow-legacy-canvas'),
-              size: size,
-              child: legacy,
-            ),
-          ),
-        ),
     ];
-  }
-
-  /// 3단계 기존 화면. 계획 화면 캔버스([size])를 통째로 받는다(원래 열리던 크기).
-  Widget? _legacyScreen(Size size, bool active) {
-    switch (_flow.step) {
-      case PlanFlowStep.students:
-      case PlanFlowStep.goals:
-        return null;
-      case PlanFlowStep.order:
-        final previews = _stepPreviews();
-        final items = [
-          for (final step in previews)
-            PlanPhaseEditorItem<PlanStudentStepPreview>(
-              id: step.stageId!,
-              label: '${step.displayName} · ${step.target}',
-              iconAsset: 'assets/student_portraits/${step.studentId}.png',
-              data: step,
-              sequenceGroup: step.studentId,
-              sequenceIndex: step.step,
-            ),
-        ];
-        final itemsById = {for (final item in items) item.id: item};
-        return PlanPhaseEditor<PlanStudentStepPreview>(
-          key: const ValueKey('plan-phase-editor'),
-          items: items,
-          initialGroups: [
-            for (final phase in _flow.draft.phases)
-              PlanPhaseEditorGroup<PlanStudentStepPreview>(
-                id: phase.id,
-                name: phase.name,
-                items: [for (final id in phase.stageIds) ?itemsById[id]],
-              ),
-          ],
-          active: active,
-          itemBuilder: (context, item, order) =>
-              PlanStudentStepTile(order: order, step: item.data),
-          // 편집기가 자기 퇴장 모션을 마친 뒤 부른다.
-          onCancel: () => _flow.goTo(PlanFlowStep.goals),
-          onComplete: (groups) => _flow.completeOrder([
-            for (final group in groups)
-              PlanFlowPhase(
-                id: group.id,
-                name: group.name,
-                stageIds: [for (final item in group.items) item.id],
-              ),
-          ]),
-        );
-      case PlanFlowStep.save:
-        return null;
-    }
   }
 
   /// 4단계 B: 제목·개수 + 만들어질 페이즈.

@@ -1,6 +1,6 @@
 // 계획 만들기 흐름 골격 테스트(FE4-a1, FE4-b1에서 v2 초안·새 1단계로 갱신): Studio 3-Section, 초안 컨트롤러
 // (단계 이동·비활성 조건·학생 고르기), v2 목표 변환과 문서 경계 어댑터, 디바운스 계산과 레일 요약, 부족 재화
-// 플라이아웃, 1단계 새 학생 고르기 · 2단계 새 목표 정하기(FE4-c)와 3단계 기존 화면(페이즈 편집기).
+// 플라이아웃, 1단계 새 학생 고르기 · 2단계 새 목표 정하기(FE4-c) · 3단계 새 칸 보드(FE4-d1)로 가는 길.
 //
 // 계산 디바운스(Timer)와 플라이아웃(OverlayPortal)이 있는 화면은 pumpAndSettle 대신 명시적인 pump를 쓴다.
 import 'dart:async';
@@ -16,6 +16,7 @@ import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/studio/plan_flow_studio_layout.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_goal_step.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_flow_order_step.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_rail.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_student_step.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
@@ -824,7 +825,7 @@ void main() {
     expect(title, findsNothing);
   });
 
-  testWidgets('1단계는 새 학생 고르기, 2단계는 새 목표 정하기이고, 3단계는 기존 페이즈 편집기를 연다', (
+  testWidgets('1단계는 새 학생 고르기, 2단계는 새 목표 정하기, 3단계는 새 칸 보드다', (
     tester,
   ) async {
     final service = MockAppService();
@@ -916,31 +917,43 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
     await tester.pumpAndSettle();
     expect(find.byType(PlanFlowGoalBody), findsNothing);
-    final editor = find.byKey(const ValueKey('plan-phase-editor'));
-    expect(editor, findsOneWidget);
-    // 페이즈 편집기는 원래 캔버스 크기로 배치한 뒤 B 안쪽 사각형에 맞춰 통째로 줄인다(넘침 없음).
+    // FE4-d1: 3단계는 B 본문·C 보조에 그리는 새 칸 보드다(FD-070). 기존 페이즈 편집기를 축소해 넣지 않는다.
+    expect(find.byType(PlanFlowOrderBody), findsOneWidget);
+    expect(find.byType(PlanFlowOrderAside), findsOneWidget);
+    expect(find.byKey(const ValueKey('plan-phase-editor')), findsNothing);
+    // 처음 열면 칸에 없는 단계를 n단계 → "n순위" 칸에 넣고, 그러면 레일 "다음"(4단계)을 누를 수 있다.
+    final flow = tester
+        .widget<PlanFlowWorkspace>(find.byType(PlanFlowWorkspace))
+        .flow;
+    expect(flow.draft.allStagesAssigned, isTrue);
+    expect(flow.canGoNext, isTrue);
+    final phase = flow.draft.phases.single;
+    expect(phase.name, '1순위');
+    final stageId = phase.stageIds.single;
+    expect(
+      find.byKey(ValueKey('plan-flow-order-card-$stageId')),
+      findsOneWidget,
+    );
+    // 첫 칸은 B 안에 있다: A 레일 오른쪽 사선보다 오른쪽, C 보조 왼쪽 사선보다 왼쪽.
     final workspace = find.byKey(const ValueKey('plan-flow-workspace'));
     final canvas = tester.getSize(workspace);
     final origin = tester.getTopLeft(workspace);
-    expect(tester.getSize(editor).width, closeTo(canvas.width, 0.01));
-    expect(tester.getSize(editor).height, closeTo(canvas.height, 0.01));
-    final fitted = planFlowLegacyFittedRect(canvas).shift(origin);
-    final drawn = tester.getRect(editor);
-    expect(drawn.left, closeTo(fitted.left, 0.5));
-    expect(drawn.top, closeTo(fitted.top, 0.5));
-    expect(drawn.right, closeTo(fitted.right, 0.5));
-    expect(drawn.bottom, closeTo(fitted.bottom, 0.5));
-    // A 레일 윗변 오른쪽 끝·C 보조 왼쪽 사선 아랫끝과 겹치지 않는다.
+    final lane = tester
+        .getRect(find.byKey(ValueKey('plan-flow-order-lane-${phase.id}')))
+        .shift(-origin);
     final rail = planFlowSectionPolygon(canvas, planFlowRailSectionId);
-    final aside = planFlowSectionPolygon(canvas, planFlowAsideSectionId);
-    expect(drawn.left - origin.dx, greaterThan(rail[1].dx));
-    expect(drawn.right - origin.dx, lessThan(aside[2].dx));
+    final railRight =
+        rail[1].dx +
+        (rail[2].dx - rail[1].dx) *
+            ((lane.top - rail[1].dy) / (rail[2].dy - rail[1].dy));
+    expect(lane.left, greaterThan(railRight));
+    expect(lane.right, lessThan(planFlowAsideLeftAt(canvas, lane.top)));
 
-    // 페이즈 편집기 "이전"은 2단계로 돌아가고, 고른 모드가 남아 있다.
+    // 레일 "이전"은 2단계로 돌아가고, 고른 모드가 남아 있다.
     await tester.tap(find.byKey(const ValueKey('plan-flow-previous')));
     await tester.pumpAndSettle();
     expect(find.byType(PlanFlowGoalBody), findsOneWidget);
-    expect(find.byKey(const ValueKey('plan-phase-editor')), findsNothing);
+    expect(find.byType(PlanFlowOrderBody), findsNothing);
     expect(
       tester
           .widget<SkewSegmented<String>>(
