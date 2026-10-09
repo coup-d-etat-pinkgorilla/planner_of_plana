@@ -21,7 +21,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// 콘텐츠 캔버스(기준 viewport 2560×1392에서 헤더 184 아래).
 const _canvas = Size(2560, 1208);
 
-/// 계획(프로필 목표)에 넣어 둘 학생. PLAN 배지·계획 칩 그룹에 쓴다.
+/// 계획(저장된 활성 계획 문서)에 넣어 둘 학생. PLAN 배지·계획 칩 그룹에 쓴다.
 const _plannedIds = ['hoshino', 'hina'];
 
 Future<(PlanFlowController, PlanFlowStudentPicker)> _setup(
@@ -42,11 +42,14 @@ Future<(PlanFlowController, PlanFlowStudentPicker)> _setup(
     state.revision,
     'plan-flow-student-step-goals',
   );
+  // FE4-h: 계획 학생은 저장된 활성 계획 문서(plan.get)에서 읽는다. goals 저장(legacy write)은 그 문서도 바꾼다.
+  final plan = await service.loadRepositoryPlan(profile.id);
   state = await service.loadRepositoryState(profile.id);
   final catalog = await service.listStudents();
   final context = PlanFlowContext(
     repositoryState: state,
     catalog: {for (final entry in catalog) entry.studentId: entry},
+    activePlan: plan.document,
   );
   final flow = PlanFlowController(
     purpose: PlanFlowPurpose.newScenario,
@@ -144,6 +147,30 @@ void main() {
       planFlowSelectionWarning(unowned: 1, planned: 2),
       '미보유 1명 · 이미 계획에 있는 학생 2명',
     );
+  });
+
+  testWidgets('계획 학생은 저장된 활성 계획 문서 기준이다(goals를 보지 않는다, FE4-h)', (
+    tester,
+  ) async {
+    final service = MockAppService(fullStudentCatalog: true);
+    addTearDown(service.dispose);
+    final (_, picker) = await _setup(service);
+    expect(picker.plannedIds, _plannedIds.toSet());
+    expect(picker.context.activePlan, isNotNull);
+
+    // 같은 계정 상태(goals에 두 학생이 있다)라도 문서를 주지 않으면 계획 학생이 없다.
+    final withoutPlan = PlanFlowContext(
+      repositoryState: picker.context.repositoryState,
+      catalog: picker.context.catalog,
+    );
+    expect(
+      withoutPlan.repositoryState.goals.map((goal) => goal.studentId),
+      containsAll(_plannedIds),
+    );
+    expect(withoutPlan.plannedStudentIds, isEmpty);
+    final bare = PlanFlowStudentPicker(context: withoutPlan);
+    addTearDown(bare.dispose);
+    expect(bare.plannedIds, isEmpty);
   });
 
   testWidgets('그리드에서 고르면 고른 순서 배지가 붙고, 다시 누르거나 ×로 빼면 순서가 당겨진다', (

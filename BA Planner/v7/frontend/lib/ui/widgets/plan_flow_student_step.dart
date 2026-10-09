@@ -77,8 +77,9 @@ Path planFlowParallelogramPath(Size size, {double radius = 10}) {
 
 /// 1단계 필터 모달 그룹: 학생 탭 7개 + 학교 다음에 계획 칩 그룹.
 ///
-/// 계획 = 프로필의 계획 목표(학생 탭 PLAN 배지와 같은 원천, `RepositoryState.goals`). 시안의 "다른 계획에 있는
-/// 학생 포함"·"목표를 이미 채운 학생 숨기기"는 활성 계획 문서(FB-1b)가 생긴 뒤 더한다.
+/// 계획 = 저장된 활성 계획 문서에 단계가 있는 학생(학생 탭 PLAN 배지와 같은 원천, FE4-h부터 `plan.get`,
+/// [PlanFlowContext.plannedStudentIds]). 시안의 "다른 계획에 있는 학생 포함"·"목표를 이미 채운 학생 숨기기"는
+/// 아직 그리지 않는다.
 List<StudentFilterGroup> planFlowStudentFilterGroups(Set<String> plannedIds) => [
   for (final group in studentCatalogFilterGroups) ...[
     group,
@@ -135,9 +136,7 @@ const List<PlanFlowRoleChip> planFlowRoleChips = [
 /// 1단계 화면 상태(흐름 동안 유지): 학생 목록·보유·계획, 필터 상태 객체(FD-104), 검색어, C 정렬.
 class PlanFlowStudentPicker extends ChangeNotifier {
   PlanFlowStudentPicker({required PlanFlowContext context})
-    : this._(context, {
-        for (final goal in context.repositoryState.goals) goal.studentId,
-      });
+    : this._(context, context.plannedStudentIds);
 
   PlanFlowStudentPicker._(this.context, this.plannedIds)
     : filter = StudentFilterController(
@@ -170,7 +169,7 @@ class PlanFlowStudentPicker extends ChangeNotifier {
 
   final PlanFlowContext context;
 
-  /// 계획(프로필 목표)에 있는 학생. 카드 PLAN 배지·계획 칩 그룹이 쓴다.
+  /// 계획(저장된 활성 계획 문서)에 있는 학생. 카드 PLAN 배지·계획 칩 그룹이 쓴다.
   final Set<String> plannedIds;
   final StudentFilterController filter;
   final TextEditingController search = TextEditingController();

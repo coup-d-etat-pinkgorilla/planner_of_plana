@@ -4,8 +4,10 @@
 // 목표까지 빗금(6px · −35° · 줄 .55), 목표 높이 점선(#e9b0ee 1.6, 3 2), 점선 위 오른쪽 끝 − 3에 `→N`.
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/models/active_plan_bond_target.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
+import 'package:ba_planner_v7/ui/models/repository_plan_snapshot.dart';
 import 'package:ba_planner_v7/ui/pages/student_page.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
@@ -94,23 +96,58 @@ bool _targetDash(Symbol method, List<dynamic> arguments) =>
     ((arguments[2] as Paint).strokeWidth - studentBondTargetLineWidth).abs() <
         1e-4;
 
-class _PlanSourceService extends MockAppService
-    implements ActivePlanDocumentSource {
-  _PlanSourceService(this.plan);
+/// v2 단계: 인연 목표만 정하고 나머지는 null(목표 없음)이다.
+PlanningDocumentStage _v2Stage(String id, String studentId, int? bondRank) =>
+    PlanningDocumentStage(
+      id: id,
+      studentId: studentId,
+      name: '목표',
+      targets: {
+        for (final key in planningDocumentTargetKeys) key: null,
+        'bond_rank': bondRank,
+      },
+    );
 
-  final PlanningDocument? plan;
+/// 저장할 수 있는 활성 계획 문서(v2, kind=plan).
+PlanningDocument _v2Plan(List<List<PlanningDocumentStage>> phases) =>
+    PlanningDocument(
+      id: 'active-plan',
+      name: '활성 계획',
+      kind: PlanningDocumentKind.plan,
+      version: 2,
+      goalMetadata: {
+        for (final phase in phases)
+          for (final stage in phase)
+            stage.studentId: const PlanningGoalMetadata(
+              favorite: true,
+              notes: '',
+            ),
+      },
+      phases: [
+        for (var index = 0; index < phases.length; index++)
+          PlanningDocumentPhase(
+            id: 'phase-$index',
+            name: '페이즈 ${index + 1}',
+            stages: phases[index],
+          ),
+      ],
+    );
 
-  @override
-  Future<PlanningDocument?> loadActivePlanDocument(String profileId) async =>
-      plan;
+/// 선택 계정에 활성 계획 문서를 저장한다(plan.save).
+Future<void> _savePlan(MockAppService service, PlanningDocument plan) async {
+  final profile = (await service.listProfiles()).firstWhere(
+    (item) => item.selected,
+  );
+  final current = await service.loadRepositoryPlan(profile.id);
+  await service.saveRepositoryPlan(
+    profileId: profile.id,
+    document: plan,
+    expectedRevision: current.revision,
+    idempotencyKey: 'bond-gauge-plan',
+  );
 }
 
-class _FailingPlanSourceService extends MockAppService
-    implements ActivePlanDocumentSource {
-  @override
-  Future<PlanningDocument?> loadActivePlanDocument(String profileId) =>
-      Future.error(StateError('no plan'));
-}
+const _legacyProfileId = 'bbbbbbbbbbbbbbbbbbbbbbbb';
 
 void main() {
   group('목표 조회(FD-049, FD-050)', () {
@@ -137,22 +174,54 @@ void main() {
       expect(studentBondVisibleTarget(current: 10, target: 120), 100);
     });
 
-    test('조회는 ActivePlanDocumentSource만 쓰고 실패하면 목표 없음', () async {
-      final plain = MockAppService();
-      final plan = _plan([
-        [_stage('a1', 'aru', 30)],
+    test('v2 저장 문서의 null은 목표 없음이고 다른 null 목표가 있어도 읽는다(FE4-h)', () {
+      final plan = _v2Plan([
+        [_v2Stage('a1', 'ayane', null), _v2Stage('h1', 'hina', null)],
+        [_v2Stage('a2', 'ayane', 45)],
       ]);
-      final source = _PlanSourceService(plan);
-      final failing = _FailingPlanSourceService();
-      addTearDown(() async {
-        await plain.dispose();
-        await source.dispose();
-        await failing.dispose();
-      });
-      // goals v1만 있는 서비스는 인연 목표를 만들지 않는다(없는 값을 채우지 않는다).
-      expect(await loadStudentActivePlanDocument(plain, 'p'), isNull);
-      expect(await loadStudentActivePlanDocument(source, 'p'), same(plan));
-      expect(await loadStudentActivePlanDocument(failing, 'p'), isNull);
+      // `targets`(정수 보기)는 null이 있으면 StateError다. 조회는 nullableTargets만 쓴다.
+      expect(() => plan.stages.first.targets, throwsStateError);
+      expect(activePlanBondTarget(plan, 'ayane'), 45);
+      expect(activePlanBondTarget(plan, 'hina'), isNull);
+      expect(activePlanStudentIds(plan), {'ayane', 'hina'});
+    });
+
+    test('레거시 goals는 저장 문서로 옮겨도 인연 목표를 만들지 않는다(FE4-h)', () async {
+      // goals v1은 target_bond_rank가 없다. plan.get의 이관 문서는 bond_rank null이다.
+      final service = MockAppService(
+        profiles: const [
+          RepositoryProfile(
+            id: _legacyProfileId,
+            displayName: 'Legacy',
+            revision: 4,
+            selected: true,
+          ),
+        ],
+        repositoryStates: {
+          _legacyProfileId: {
+            'profile_id': _legacyProfileId,
+            'revision': 4,
+            'students': <dynamic>[],
+            'inventory': {'version': 1, 'entries': <dynamic>[]},
+            'goals': {
+              'version': 1,
+              'goals': [
+                {'student_id': 'aru', 'target_level': 10},
+              ],
+            },
+          },
+        },
+      );
+      addTearDown(service.dispose);
+      final snapshot = await loadRepositoryPlanSnapshot(
+        service,
+        _legacyProfileId,
+      );
+      // 첫 읽기가 이관하며 revision을 +1 한다. state도 같은 revision이다.
+      expect(snapshot.revision, 5);
+      expect(snapshot.plan!.revision, 5);
+      expect(activePlanStudentIds(snapshot.document), {'aru'});
+      expect(activePlanBondTarget(snapshot.document, 'aru'), isNull);
     });
   });
 
@@ -288,18 +357,20 @@ void main() {
   });
 
   group('학생 탭 연결', () {
-    testWidgets('S3 게이지가 활성 계획의 마지막 단계 목표를 쓴다', (tester) async {
-      final service = _PlanSourceService(
-        _plan([
-          [_stage('a1', 'aru', 30)],
-          [_stage('a2', 'aru', 50)],
-        ]),
-      );
+    testWidgets('S3 게이지가 저장된 활성 계획의 마지막 단계 목표를 쓴다', (tester) async {
+      final service = MockAppService();
       await tester.binding.setSurfaceSize(const Size(1920, 1080));
       addTearDown(() async {
         await tester.binding.setSurfaceSize(null);
         await service.dispose();
       });
+      await _savePlan(
+        service,
+        _v2Plan([
+          [_v2Stage('a1', 'aru', 30), _v2Stage('y1', 'ayane', null)],
+          [_v2Stage('a2', 'aru', 50)],
+        ]),
+      );
       await tester.pumpWidget(
         MaterialApp(
           theme: BAPlannerTheme.dark(),
@@ -319,7 +390,7 @@ void main() {
       expect(gauge.targetRank, 50);
       expect(gauge.solidFill, isTrue);
 
-      // 목표가 없는 학생을 고르면 목표 표시가 사라진다.
+      // 목표가 null(목표 없음)인 학생을 고르면 목표 표시가 사라진다.
       await tester.tap(find.byKey(const ValueKey('student-ayane')));
       await tester.pumpAndSettle();
       expect(find.textContaining('→'), findsNothing);
@@ -331,7 +402,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('활성 계획을 줄 곳이 없으면 목표 없음으로 그린다', (tester) async {
+    testWidgets('빈 활성 계획이면 목표 없음으로 그린다', (tester) async {
       final service = MockAppService();
       await tester.binding.setSurfaceSize(const Size(1920, 1080));
       addTearDown(() async {

@@ -8,7 +8,7 @@
 //   저장 id가 아닌 고정 문자열이다. 이 경로에는 크레딧 내역이 없다([GrowthCalculatorCreditBreakdown.unavailable]).
 // - 결과: 크레딧 합계와 성장 재화 행(전체 재화 행에서 크레딧 행을 뺀 것).
 // - 데이터가 없는 값은 null이 아니라 명시 값이다(FD-172): 크레딧 보유 = 스캔 없음(FD-096 (c)),
-//   재화 보유 = 확인/미확인, 계획 포함 = goals v1 기준(FD-027 방식) 있음/없음/모름.
+//   재화 보유 = 확인/미확인, 계획 포함 = 저장된 활성 계획 문서 기준(FE4-h) 있음/없음/모름.
 // - [GrowthCalculatorEngine]은 디바운스로 한 번만 부르고, 늦게 온 이전 요청 응답은 요청 번호로 버린다.
 import 'dart:async';
 
@@ -18,6 +18,7 @@ import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import 'growth_calculator_state.dart';
 import 'planning_models.dart';
+import 'repository_plan_snapshot.dart';
 
 /// 목표를 바꾼 뒤 다시 계산할 때까지 기다리는 시간.
 const growthCalculatorDebounce = Duration(milliseconds: 250);
@@ -94,21 +95,22 @@ const growthCalculatorEmptyInventory = <String, dynamic>{
   'entries': <Map<String, dynamic>>[],
 };
 
-/// 계획 포함 여부(FD-172). FB-1 전에는 goals v1 기준이다(FD-027 방식).
+/// 계획 포함 여부(FD-172). FE4-h부터 저장된 활성 계획 문서(`plan.get`) 기준이다. 그 학생 단계가 문서에 하나라도
+/// 있으면 계획에 있다. goals v1은 보지 않는다.
 enum GrowthCalculatorPlanMembership {
   inPlan,
   notInPlan,
 
-  /// repository를 아직 못 읽었다.
+  /// 활성 계획 문서를 아직 못 읽었다(또는 읽지 못했다).
   unknown,
 }
 
 GrowthCalculatorPlanMembership growthCalculatorPlanMembership(
-  RepositoryState? repository,
+  PlanningDocument? activePlan,
   String studentId,
 ) {
-  if (repository == null) return GrowthCalculatorPlanMembership.unknown;
-  return repository.goals.any((goal) => goal.studentId == studentId)
+  if (activePlan == null) return GrowthCalculatorPlanMembership.unknown;
+  return activePlanStudentIds(activePlan).contains(studentId)
       ? GrowthCalculatorPlanMembership.inPlan
       : GrowthCalculatorPlanMembership.notInPlan;
 }
@@ -131,9 +133,11 @@ class GrowthCalculatorRequest {
   ///   `confirmedStudentPlanningCurrent`를 보낸다.
   /// - 직접 입력이거나 미보유 학생이면 계산기 현재값으로 만든 항목을 보낸다.
   /// - 인벤토리는 repository 것을 쓰고, 없으면 빈 인벤토리다.
+  /// - 계획 포함 여부는 [activePlan](저장된 활성 계획 문서) 기준이다. 없으면 모름이다.
   factory GrowthCalculatorRequest.fromState(
     GrowthCalculatorState state, {
     RepositoryState? repository,
+    PlanningDocument? activePlan,
   }) {
     ConfirmedStudentState? confirmed;
     if (state.basis == GrowthCalculatorBasis.confirmed && repository != null) {
@@ -150,7 +154,7 @@ class GrowthCalculatorRequest {
       inventory:
           repository?.inventory.toWire() ?? growthCalculatorEmptyInventory,
       planMembership: growthCalculatorPlanMembership(
-        repository,
+        activePlan,
         state.studentId,
       ),
     );

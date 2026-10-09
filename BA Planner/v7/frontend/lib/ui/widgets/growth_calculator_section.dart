@@ -406,7 +406,7 @@ class GrowthCalculatorModeData {
   /// "이 목표로 계획에 추가". FE4-g 전에는 null(비활성, FD-171).
   final VoidCallback? onAddToPlan;
 
-  /// S4 선택 학생 요약의 계획 포함 여부(FD-172, FB-1 전에는 goals v1 기준).
+  /// S4 선택 학생 요약의 계획 포함 여부(FD-172, FE4-h부터 저장된 활성 계획 문서 기준).
   final GrowthCalculatorPlanMembership planMembership;
 
   /// S4 "최근 계산"(FD-170). 가장 최근이 앞이고, catalog에 있는 학생만 담는다.

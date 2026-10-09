@@ -14,6 +14,7 @@ import '../models/growth_calculator_adapter.dart';
 import '../models/growth_calculator_state.dart';
 import '../models/planning_models.dart';
 import '../models/recent_students.dart';
+import '../models/repository_plan_snapshot.dart';
 import '../models/student_filter_controller.dart';
 import '../widgets/diagonal_section.dart';
 import '../widgets/growth_calculator_section.dart';
@@ -70,7 +71,8 @@ class _StudentPageState extends State<StudentPage> {
   List<StudentCatalogEntry> _catalog = const [];
   RepositoryState? _repositoryState;
 
-  /// 인연 목표(→N)를 읽는 활성 계획 문서(FD-049). FB-1 전에는 대개 null이다.
+  /// 저장된 활성 계획 문서(FD-049, FE4-h `plan.get`). 인연 목표(→N)·PLAN 배지·계산기 계획 포함의 원천이다.
+  /// 읽지 못했으면 null이다.
   PlanningDocument? _activePlan;
   RepositoryProfile? _profile;
   String? _selectedId;
@@ -234,7 +236,11 @@ class _StudentPageState extends State<StudentPage> {
     final engine = _calculatorEngine;
     if (state == null || engine == null) return;
     engine.schedule(
-      GrowthCalculatorRequest.fromState(state, repository: _repositoryState),
+      GrowthCalculatorRequest.fromState(
+        state,
+        repository: _repositoryState,
+        activePlan: _activePlan,
+      ),
     );
   }
 
@@ -345,11 +351,21 @@ class _StudentPageState extends State<StudentPage> {
     final repository = _repository;
     if (repository == null) return;
     try {
-      final state = await repository.loadRepositoryState(profile.id);
-      final activePlan = await loadStudentActivePlanDocument(
-        widget.service,
-        profile.id,
-      );
+      // FE4-h: 활성 계획은 저장 문서(plan.get)다. state와 같은 revision으로 읽는다(레거시 첫 읽기의 이관
+      // revision도 state에 반영된다). 계획을 못 읽으면 상태만 읽고 계획은 모름(null)이다.
+      RepositoryState state;
+      PlanningDocument? activePlan;
+      try {
+        final snapshot = await loadRepositoryPlanSnapshot(
+          repository,
+          profile.id,
+        );
+        state = snapshot.state;
+        activePlan = snapshot.document;
+      } on Object {
+        state = await repository.loadRepositoryState(profile.id);
+        activePlan = null;
+      }
       if (!mounted) return;
       final known = _catalog.map((student) => student.studentId).toSet();
       final fallback = state.students
@@ -523,10 +539,7 @@ class _StudentPageState extends State<StudentPage> {
                   selectedStudent: _selectedEntry,
                   selectedValues: _selectedState?.values,
                   studentValuesById: studentValuesById,
-                  plannedIds:
-                      (_repositoryState?.goals ?? const <RepositoryGoalState>[])
-                          .map((goal) => goal.studentId)
-                          .toSet(),
+                  plannedIds: activePlanStudentIds(_activePlan),
                   selectedBondTarget: activePlanBondTarget(
                     _activePlan,
                     _selectedId,
@@ -556,7 +569,7 @@ class _StudentPageState extends State<StudentPage> {
                       student: _selectedEntry,
                       onOpenScan: widget.onOpenScan,
                       planMembership: growthCalculatorPlanMembership(
-                        _repositoryState,
+                        _activePlan,
                         state.studentId,
                       ),
                       recent: [

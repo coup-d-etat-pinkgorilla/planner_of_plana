@@ -4073,3 +4073,112 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_161730\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-h 종료 기록 (2026-10-09 오후, 저장 문서 읽기 연결, 코드 작성 완료·gate 미실행)
+
+작업 지시(16:23): 계획 화면·학생 탭·계획 만들기 흐름이 활성 계획을 저장 문서(`plan.get`, `RepositoryPlanService.loadRepositoryPlan`)에서 읽는다. FE4-d2 커밋 뒤 HEAD에서 시작했다. 읽은 것: 워크플로 FE4-h 행, backend status FB-1b "소비자 영향" 표·"프런트 연결 메모" 1·2·4, FB-1c 종료 기록의 프런트 메모(replace는 읽기만), `lib/services/repository_plan_service.dart`, mock의 `loadRepositoryPlan`·`_ensureMockRepositoryPlan`·`mock_repository_plan.dart`.
+
+이 환경에는 Flutter·Dart가 없다. 그래서 `flutter analyze`·Dart 테스트·golden을 돌리지 못했고, 통과를 주장하지 않는다.
+- 별도 검토 에이전트 1개가 바뀐 파일 전부를 정적으로 읽었다(컴파일·lint·남은 참조·mock 동작에 대한 테스트 기대·golden 영향). 고친 지적: `repository_service.dart`가 이미 `repository_plan_service.dart`를 export하므로 두 개를 같이 import하면 `unnecessary_import`가 난다(3곳) → 지웠다. 낡은 주석 4곳을 고쳤다.
+- PC `.git/index`로 확인했다: 바꾼 추적 파일 12개는 작업 시작 때 PC 내용 = HEAD 블롭이다(`plan_section_layout.dart`는 CRLF만 다르고 CRLF를 지켰다). 작업 중 PC 파일 mtime도 그대로다.
+
+### 바뀐 파일
+
+| 파일 | 줄(+/−) | 내용 |
+|---|---|---|
+| `frontend/lib/ui/models/repository_plan_snapshot.dart` (새 파일) | +82 | `loadRepositoryPlanSnapshot`: `plan.get` → `state.get` 순서로 읽고 revision이 같아야 돌려준다. 다르면 둘 다 다시 읽는다(최대 3번, `repositoryPlanSnapshotAttempts`). 끝내 다르면 `RepositoryPlanSnapshotMismatch`. `plan.get`을 먼저 부르는 이유: 레거시 첫 읽기의 이관 revision(+1)을 `state.get`이 같이 본다. 서비스가 `RepositoryPlanService`가 아니면 state만 읽고 plan은 null. `activePlanStudentIds`(문서에 단계가 있는 학생) |
+| `frontend/lib/ui/widgets/plan_section_layout.dart` (CRLF) | +162 −106 | `_loadRepositoryPlan`: goals → 1페이즈 메모리 변환을 지우고 snapshot의 저장 문서를 그대로 쓴다. 페이즈·단계·이름·id는 문서 그대로, 기존 정수 화면용 목표는 `planFlowDocumentIntegerTargets`(v2 null → 앞 단계 값, 첫 단계는 확정 현재값). 작업 문서(`_document`)는 저장 문서(v2, null 그대로)라 계산·비교에 null이 그대로 간다. `_repositoryPlan`(snapshot) 보관. `calculation == null`이면 `_calculationUnavailable` → 자세한 계산을 부르지 않고 섹션 3에 "계산할 수 없음" 문구(`planCalculationUnavailableMessage`, 키 `plan-calculation-unavailable`), 섹션 2 문서는 그대로. `_ensureRepositoryContext`(흐름·시나리오 목록·비교 진입)도 같은 snapshot 경로, `_flowContext`는 `activePlan`으로 저장 문서를 넘긴다. `_incorporateScenario`의 바닥값을 `stage.targets` 대신 정수 보기로 읽는다(v2 null이면 StateError였다). 섹션 4의 "계산 오류" 분기 2개를 지우고 섹션 3 상태 분기로 옮겼다(아래 "바뀐 동작" 1) |
+| `frontend/lib/ui/models/active_plan_bond_target.dart` | +7 −30 | `activePlanBondTarget`이 마지막 단계의 `nullableTargets['bond_rank']`(null = 목표 없음). FB-1 전 임시 경계 `ActivePlanDocumentSource`·`loadStudentActivePlanDocument`를 없앴다 |
+| `frontend/lib/ui/models/growth_calculator_adapter.dart` | +11 −7 | `growthCalculatorPlanMembership(PlanningDocument? activePlan, …)`: 문서에 그 학생 단계가 있으면 계획에 있음, 문서가 없으면 모름. `GrowthCalculatorRequest.fromState`에 `activePlan` |
+| `frontend/lib/ui/models/plan_flow_draft.dart` | +9 | `PlanFlowContext.activePlan`(선택), `plannedStudentIds` |
+| `frontend/lib/ui/pages/student_page.dart` | +25 −12 | 계정 선택 때 snapshot으로 state·문서를 같이 읽는다(실패하면 state만, 문서 null). PLAN 배지 `plannedIds`·→N·계산기 계획 포함이 모두 문서 기준 |
+| `frontend/lib/ui/widgets/plan_flow_student_step.dart` | +5 −6 | 1단계 계획 학생 = `context.plannedStudentIds`(goals를 보지 않는다) |
+| `frontend/lib/ui/widgets/growth_calculator_section.dart` | +1 −1 | 주석만(계획 포함 기준) |
+| `frontend/test/planning_page_test.dart` | +266 | 새 그룹 "FE4-h 저장 문서 읽기" 6건 + 기록용 mock `_RepositoryPlanLoadService` |
+| `frontend/test/student_bond_gauge_test.dart` | +110 −39 | 아래 |
+| `frontend/test/growth_calculator_adapter_test.dart` | +55 −14 | 아래 |
+| `frontend/test/plan_flow_student_step_test.dart` | +28 −1 | 아래 |
+| `frontend/test/goldens/golden_harness.dart` | +21 −22 | `GoldenStudentMockAppService`가 `ActivePlanDocumentSource` 대신 `seedStudentScene`에서 v2 활성 계획을 `saveRepositoryPlan`으로 저장한다(아래 golden 예측) |
+
+`lib/services/**`, `backend/`, `contracts/`, 스캐너·tactic·metadata 소유 파일, `app_shell.dart`는 고치지 않았다. 통계·인벤토리는 goals 호환 경로 그대로다. 저장(save/append/replace)은 손대지 않았다(FE4-e). 서비스에 요청할 빠진 기능은 없다.
+
+### 동작
+
+- 계획 탭(`loadRepositoryPlan: true`): 선택 계정의 snapshot을 읽어 저장 문서의 페이즈·단계를 섹션 2에 그린다. 빈 문서는 빈 계획이다(goals가 남아 있어도 되살리지 않는다, 더미 계획도 그리지 않는다). 이 snapshot의 revision이 나중 저장의 `expectedRevision`이다(`_repositoryPlan.revision` = `_repositoryState.revision`).
+- `plan.get`의 `calculation`이 null이면 섹션 3은 "계산할 수 없음 / 지금은 이 계획을 계산할 수 없습니다. 계획 내용은 그대로 보여 줍니다."이고 자세한 계산(`planning.document.calculate`)을 부르지 않는다. 문서를 편집·편입해 다시 계산이 성공하면 이 상태는 풀린다.
+- 계산할 수 있으면 지금처럼 화면이 자세한 계산을 한 번 더 부른다(`plan.get`의 요약에는 페이즈별 소비·병목이 없다).
+- 학생 탭: PLAN 배지·인연 →N·계산기 "계획에 있음/없음/확인 전"이 모두 같은 저장 문서다. →N은 그 학생 마지막 단계의 `bond_rank`이고 null이면 목표 없음이다.
+- 시나리오 만들기 1단계·비교 "편집"(3단계): 흐름 문맥이 계획 화면과 같은 snapshot(이미 읽었으면 다시 읽지 않는다)의 저장 문서를 갖고, 1단계 계획 학생은 그 문서 기준이다.
+
+### 테스트
+
+- `planning_page_test.dart` 새 그룹 6건(레거시 계정: revision 4, goals에 아야네 `target_level` 10):
+  - 레거시 프로필 첫 로드: `plan.get` revision `[5]`, `state.get` `[5]`, 이관 문서 단계(`plan-step-v6-imported-plan-ayane-1`)만 보임, 계산할 수 없음·계산 오류 없음.
+  - 빈 문서: goals에 아야네가 있어도 단계 타일 0, 계산할 수 없음 없음.
+  - calculation null: "계산할 수 없음" 문구가 보이고 문서 단계도 보임, 자세한 계산을 부르지 않음(불렀다면 계산 오류).
+  - revision 불일치 재조회: 첫 `plan.get`이 revision 4 + 낡은 문서 → 다시 읽어 `[4, 5]`/`[5, 5]`, 낡은 문서 단계는 안 보임.
+  - 끝내 불일치(3번): 오류("revision이 맞지 않습니다")를 보이고 낡은 문서는 쓰지 않음.
+  - 시나리오 만들기 1단계: 다시 읽지 않고(`[5]`) 계획 학생 = 문서 학생 `{ayane}`.
+- `student_bond_gauge_test.dart`:
+  - 새 단위 테스트 2건: v2 문서의 null bond(마지막 단계 null = 목표 없음, 다른 null 목표가 있어도 `targets` StateError 없이 읽음), 레거시 goals → 이관 문서(revision 5, bond null → 목표 없음).
+  - 기대를 바꾼 것: "조회는 ActivePlanDocumentSource만 쓰고 실패하면 목표 없음" 테스트를 지웠다(그 임시 경계를 없앴고 위 두 테스트가 대신한다). "S3 게이지가 … 마지막 단계 목표를 쓴다"는 임시 경계 mock 대신 `plan.save`로 저장한 v2 문서(아루 30 → 50, 아야네 null)를 읽는다. 기대값(→50, 아야네는 목표 없음)은 그대로다. "활성 계획을 줄 곳이 없으면…"은 기본 mock이 이제 빈 저장 문서를 주므로 이름만 "빈 활성 계획이면…"으로 바꿨다(기대 그대로).
+- `growth_calculator_adapter_test.dart`: 계획 포함 테스트를 goals 기준에서 문서 기준으로 다시 썼다(지시: 계산기 어댑터 "현재 계획에 있음"을 문서 기준으로). goals에만 있는 학생은 문서에 없으면 "계획에 없음"이라는 단언을 더했다. `fromState`를 부르는 두 테스트("확정값 기준이면…", "MockAppService 왕복")는 `activePlan`을 넘긴다. 넘기지 않으면 계획 포함이 "모름"이 되기 때문이고, 기대(`notInPlan`)는 그대로다.
+- `plan_flow_student_step_test.dart`: 준비 함수가 `plan.get` 문서를 `PlanFlowContext.activePlan`으로 넘긴다(goals 저장은 mock에서 그 문서도 바꾼다, 기대 그대로). 새 테스트 1건: 같은 계정 상태라도 문서를 주지 않으면 계획 학생이 없다(goals를 보지 않는다).
+- `title_page_test` "first run imports a v6 account …"의 키 `plan-step-v6-imported-plan-ayane-1`은 mock 이관 문서의 페이즈 id와 같아 그대로 통과할 것으로 본다.
+
+### golden 예측
+
+- 변경 0을 예상한다.
+- harness를 바꾼 이유: 학생 장면의 →N이 쓰던 임시 경계(`ActivePlanDocumentSource`)를 없앴다. 이제 `seedStudentScene`이 v2 활성 계획을 저장하고, 화면은 그 문서를 `plan.get`으로 읽는다. 문서: 페이즈 1 = 아야네 bond 30 · 슌(수영복) 20 · 히나 null, 페이즈 2 = 아야네 45. 나머지 목표는 모두 null, goal_metadata는 즐겨찾기 true · 메모 빈칸.
+- 그대로인 이유:
+  - PLAN 배지: 문서 학생 {아야네, 슌, 히나} = 예전 goals 학생과 같다.
+  - goals 호환 보기(통계·인벤토리): 예전에도 goals 저장이 mock에서 문서를 거쳐 만들어졌다. 같은 학생·순서·즐겨찾기·빈 목표라 같다.
+  - →N: 아야네 45(현재 24), 슌 20(미보유) 그대로. 호시노는 예전 임시 문서에 20(현재 30 이하라 숨김)이 있었고 이제 계획에 없다. 어느 쪽이든 표시가 없다. 히나는 목표 없음 그대로.
+  - 계산기 장면: 아루는 어느 쪽이든 "계획에 없음"이다.
+  - 계획 홈 장면: `loadRepositoryPlan`을 쓰지 않는다(더미 그대로). 시나리오 목록·비교 장면은 빈 문서로, 예전 goals 0개와 같다.
+- 보이지 않는 차이: 학생 장면에서 셸이 화면 밖에 만든 계획 탭이 이제 2페이즈를 읽는다.
+
+### 바뀐 동작(검토 때 볼 것)
+
+1. 계산 오류 문구가 이제 실제로 보인다. 예전 "계산 오류" 분기는 섹션 4(`element-4`)에 있었지만, 그 앞의 섹션 4 분기가 항상 먼저 돌아가서 그리지 못하는 코드였다. 이제 읽기·계산 오류와 계산할 수 없음은 섹션 3(재화 탭 자리)에 보인다. 오류가 없으면 섹션 3은 그대로다.
+2. 계정을 읽지 못하면(끝내 revision 불일치 포함) 섹션 2는 예전처럼 더미 계획을 그린다. 오류는 섹션 3에 보인다. 이 동작은 원래 있던 것이고 이번에 바꾸지 않았다.
+3. 저장 문서에 단계가 없는 페이즈가 있으면 빈 페이즈로 그린다.
+4. 이관된 레거시 계획의 페이즈·단계 이름은 백엔드 문서 이름이다(mock: 페이즈 "v6 목표", 단계는 메모 또는 "v6 목표"). 예전 화면 이름 "v6 가져온 계획"이 아니다. 페이즈 id `v6-imported-plan`은 같다.
+5. 편집·편입 뒤 작업 문서는 지금처럼 화면 상태에서 v1 정수 문서로 다시 만든다. 저장은 FE4-e다.
+6. 학생 탭도 계정을 열 때 `plan.get`을 부른다(백엔드가 요약 계산을 한 번 한다). 문서를 읽지 못하면 state만 읽고 PLAN 배지 없음 · 계산기 "계획 확인 전"이다.
+
+### 검수표
+
+| 항목 | 확인 |
+|---|---|
+| `_loadRepositoryPlan` → `plan.get`, 빈 문서 = 빈 계획, goals로 되살리지 않음 | 계획 테스트 2건 |
+| plan/state revision 불일치 → 다시 읽어 같은 snapshot | 재조회 테스트 2건 |
+| `calculation == null` → 계산할 수 없음 + 문서 표시 | 계획 테스트 1건 |
+| 레거시 첫 로드 이관 revision | 계획 테스트 1건, 인연 단위 테스트 1건 |
+| 학생 탭 →N = 마지막 nullable bond_rank, null = 목표 없음 | 인연 테스트 3건 |
+| plannedIds·계산기 계획 포함 = 문서 기준 | 어댑터 테스트, 1단계 테스트, golden(그대로) |
+| 흐름 진입이 같은 경로 | 1단계 계획 학생 테스트 |
+| 통계·인벤토리 goals 경로 그대로, 저장 범위 밖 | 코드 확인 |
+| `lib/services/**`·금지 파일 미수정, ~습니다체 | 코드 확인(실행 안 됨) |
+
+### 확인하지 못한 것
+
+- analyze·테스트·golden 실행 전부(이 환경에 Flutter 없음).
+- ProcessAppService(실제 백엔드)에서 레거시 계정 첫 `plan.get` → `state.get`이 같은 revision을 주는지(FB-1b 계약상 그렇다).
+- 섹션 3 상태 문구의 위치·줄바꿈 모양(평행사변형 안 가운데).
+
+### 사용자 실행 순서
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다(golden 변경 0 예상)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4h -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4h
+```
+
+### FE4-h commit record (2026-10-09 17:23, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_171109\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

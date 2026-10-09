@@ -3,8 +3,10 @@ import 'dart:math' as math;
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scenario_service.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
+import 'package:ba_planner_v7/ui/models/repository_plan_snapshot.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/studio/plan_studio_layout.dart';
 import 'package:ba_planner_v7/ui/studio/section_template.dart';
@@ -65,6 +67,142 @@ PlanningDocument _comparisonTestDocument(
     ],
   );
 }
+
+/// FE4-h 저장 문서 읽기 테스트의 레거시 계정. 활성 문서 없이 goals v1만 있어 첫 `plan.get`이 문서로 옮기며
+/// revision을 4 → 5로 올린다(FB-1b mock).
+const _legacyPlanProfileId = 'cccccccccccccccccccccccc';
+
+Map<String, dynamic> _legacyPlanState() => {
+  'profile_id': _legacyPlanProfileId,
+  'revision': 4,
+  'students': <dynamic>[],
+  'inventory': {'version': 1, 'entries': <dynamic>[]},
+  'goals': {
+    'version': 1,
+    'goals': [
+      {'student_id': 'ayane', 'target_level': 10},
+    ],
+  },
+};
+
+/// 첫 `plan.get`이 돌려줄 낡은 문서(revision이 state보다 하나 작다).
+PlanningDocument _stalePlanDocument() => PlanningDocument(
+  id: 'active-plan',
+  name: '활성 계획',
+  kind: PlanningDocumentKind.plan,
+  version: 2,
+  goalMetadata: const {
+    'hina': PlanningGoalMetadata(favorite: true, notes: ''),
+  },
+  phases: [
+    PlanningDocumentPhase(
+      id: 'stale-phase',
+      name: '낡은 페이즈',
+      stages: [
+        PlanningDocumentStage(
+          id: 'stale-hina-1',
+          studentId: 'hina',
+          name: '낡은 목표',
+          targets: {for (final key in planningDocumentTargetKeys) key: null},
+        ),
+      ],
+    ),
+  ],
+);
+
+/// `plan.get`·`state.get`이 돌려준 revision을 기록하는 mock(FE4-h).
+class _RepositoryPlanLoadService extends MockAppService {
+  _RepositoryPlanLoadService({
+    this.stalePlanLoads = 0,
+    this.emptyDocument = false,
+    this.unavailableCalculation = false,
+  }) : super(
+         profiles: const [
+           RepositoryProfile(
+             id: _legacyPlanProfileId,
+             displayName: 'Legacy',
+             revision: 4,
+             selected: true,
+           ),
+         ],
+         repositoryStates: {_legacyPlanProfileId: _legacyPlanState()},
+       );
+
+  /// 처음 몇 번의 `plan.get`이 낡은 revision·문서를 돌려준다.
+  final int stalePlanLoads;
+
+  /// `plan.get`이 빈 문서를 돌려준다(goals 호환 보기에는 학생이 남아 있다).
+  final bool emptyDocument;
+
+  /// 문서 계산이 실패한다. `plan.get`의 `calculation`이 null이 된다.
+  final bool unavailableCalculation;
+
+  final planRevisions = <int>[];
+  final stateRevisions = <int>[];
+
+  @override
+  Future<RepositoryPlanState> loadRepositoryPlan(String profileId) async {
+    final real = await super.loadRepositoryPlan(profileId);
+    final stale = planRevisions.length < stalePlanLoads;
+    final result = stale || emptyDocument
+        ? RepositoryPlanState.fromWire({
+            'profile_id': profileId,
+            'revision': stale ? real.revision - 1 : real.revision,
+            'document': stale
+                ? _stalePlanDocument().toWire()
+                : PlanningDocument(
+                    id: 'active-plan',
+                    name: '활성 계획',
+                    kind: PlanningDocumentKind.plan,
+                    version: 2,
+                    phases: const [],
+                  ).toWire(),
+            // 낡은 응답은 버려지므로 계산 요약이 없다. 빈 문서는 계산할 수 있다(빈 요약).
+            'calculation': stale
+                ? null
+                : {
+                    'credits': 0,
+                    'required_resource_type_count': 0,
+                    'known_shortage_type_count': 0,
+                    'inventory_complete': true,
+                    'first_bottleneck_phase_number': null,
+                    'representative_shortage': null,
+                  },
+          })
+        : real;
+    planRevisions.add(result.revision);
+    return result;
+  }
+
+  @override
+  Future<RepositoryState> loadRepositoryState(String profileId) async {
+    final state = await super.loadRepositoryState(profileId);
+    stateRevisions.add(state.revision);
+    return state;
+  }
+
+  @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) {
+    if (unavailableCalculation) {
+      return Future.error(StateError('calculation unavailable'));
+    }
+    return super.calculatePlanningDocument(
+      currentStudents: currentStudents,
+      inventory: inventory,
+      document: document,
+    );
+  }
+}
+
+/// 섹션 2의 계획 단계 타일(`plan-step-<phase>-<student>-<step>`).
+Finder _planStepTiles() => find.byWidgetPredicate((widget) {
+  final key = widget.key;
+  return key is ValueKey<String> && key.value.startsWith('plan-step-');
+});
 
 void main() {
   test('plan phase items use the expanded readable height', () {
@@ -4067,4 +4205,132 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('FE4-h 저장 문서 읽기', () {
+    Future<void> pumpRepositoryPlan(
+      WidgetTester tester,
+      MockAppService service,
+    ) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(2560, 1392));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PlanningPage(service: service, loadRepositoryPlan: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('레거시 프로필 첫 로드는 이관된 문서를 이관 revision으로 읽는다', (tester) async {
+      final service = _RepositoryPlanLoadService();
+      addTearDown(service.dispose);
+      await pumpRepositoryPlan(tester, service);
+
+      // plan.get이 먼저 goals를 문서로 옮기며 revision 4 → 5. state.get도 같은 5다(한 snapshot).
+      expect(service.planRevisions, [5]);
+      expect(service.stateRevisions, [5]);
+      expect(
+        find.byKey(const ValueKey('plan-step-v6-imported-plan-ayane-1')),
+        findsOneWidget,
+      );
+      expect(_planStepTiles(), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('plan-calculation-unavailable')),
+        findsNothing,
+      );
+      expect(find.textContaining('계산 오류'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('빈 저장 문서는 goals가 있어도 빈 계획이다', (tester) async {
+      final service = _RepositoryPlanLoadService(emptyDocument: true);
+      addTearDown(service.dispose);
+      await pumpRepositoryPlan(tester, service);
+
+      // goals 호환 보기에는 아야네가 있지만 문서가 비었으므로 되살리지 않는다(더미 계획도 그리지 않는다).
+      final state = await service.loadRepositoryState(_legacyPlanProfileId);
+      expect(state.goals.map((goal) => goal.studentId), ['ayane']);
+      expect(_planStepTiles(), findsNothing);
+      expect(
+        find.byKey(const ValueKey('plan-calculation-unavailable')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('calculation이 null이면 계산할 수 없음을 보이고 문서는 그대로 보인다', (tester) async {
+      final service = _RepositoryPlanLoadService(unavailableCalculation: true);
+      addTearDown(service.dispose);
+      await pumpRepositoryPlan(tester, service);
+
+      expect(
+        find.byKey(const ValueKey('plan-calculation-unavailable')),
+        findsOneWidget,
+      );
+      expect(find.text(planCalculationUnavailableMessage), findsOneWidget);
+      // 자세한 계산을 다시 부르지 않는다(불렀다면 계산 오류가 보인다).
+      expect(find.textContaining('계산 오류'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('plan-step-v6-imported-plan-ayane-1')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('plan.get과 state.get의 revision이 다르면 다시 읽어 맞춘다', (tester) async {
+      final service = _RepositoryPlanLoadService(stalePlanLoads: 1);
+      addTearDown(service.dispose);
+      await pumpRepositoryPlan(tester, service);
+
+      expect(service.planRevisions, [4, 5]);
+      expect(service.stateRevisions, [5, 5]);
+      // 낡은 문서는 버리고 같은 revision의 문서를 보인다.
+      expect(
+        find.byKey(const ValueKey('plan-step-stale-phase-hina-1')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('plan-step-v6-imported-plan-ayane-1')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('revision이 끝내 맞지 않으면 문서를 쓰지 않고 오류를 보인다', (tester) async {
+      final service = _RepositoryPlanLoadService(
+        stalePlanLoads: repositoryPlanSnapshotAttempts,
+      );
+      addTearDown(service.dispose);
+      await pumpRepositoryPlan(tester, service);
+
+      expect(service.planRevisions, hasLength(repositoryPlanSnapshotAttempts));
+      expect(find.textContaining('revision이 맞지 않습니다'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('plan-step-stale-phase-hina-1')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('시나리오 만들기 1단계의 계획 학생은 저장 문서와 같다', (tester) async {
+      final service = _RepositoryPlanLoadService();
+      addTearDown(service.dispose);
+      await pumpRepositoryPlan(tester, service);
+      await tester.tap(
+        find.byKey(const ValueKey('plan-scenario-create-launch')),
+      );
+      await tester.pumpAndSettle();
+
+      // 흐름은 계획 화면이 읽은 snapshot을 그대로 쓴다(다시 읽지 않는다).
+      expect(service.planRevisions, [5]);
+      final body = tester.widget<PlanFlowStudentBody>(
+        find.byType(PlanFlowStudentBody),
+      );
+      expect(body.picker.plannedIds, {'ayane'});
+      expect(body.picker.context.activePlan?.stages.single.studentId, 'ayane');
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

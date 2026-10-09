@@ -81,6 +81,37 @@ RepositoryState _repository({List<Map<String, dynamic>> goals = const []}) =>
       'goals': {'version': 1, 'goals': goals},
     });
 
+/// 저장된 활성 계획 문서(v2). [studentIds] 학생마다 목표가 모두 null인 단계 하나가 있다(FE4-h).
+PlanningDocument _activePlan([List<String> studentIds = const []]) =>
+    PlanningDocument(
+      id: 'active-plan',
+      name: '활성 계획',
+      kind: PlanningDocumentKind.plan,
+      version: 2,
+      goalMetadata: {
+        for (final id in studentIds)
+          id: const PlanningGoalMetadata(favorite: true, notes: ''),
+      },
+      phases: [
+        if (studentIds.isNotEmpty)
+          PlanningDocumentPhase(
+            id: 'phase-1',
+            name: '페이즈 1',
+            stages: [
+              for (final id in studentIds)
+                PlanningDocumentStage(
+                  id: 'stage-$id',
+                  studentId: id,
+                  name: '목표',
+                  targets: {
+                    for (final key in planningDocumentTargetKeys) key: null,
+                  },
+                ),
+            ],
+          ),
+      ],
+    );
+
 GrowthCalculatorState _state({
   String studentId = 'hoshino',
   GrowthCalculatorBasis basis = GrowthCalculatorBasis.confirmed,
@@ -319,6 +350,7 @@ void main() {
       final request = GrowthCalculatorRequest.fromState(
         state,
         repository: repository,
+        activePlan: _activePlan(),
       );
       expect(
         request.currentStudent,
@@ -350,25 +382,33 @@ void main() {
       expect(unownedRequest.currentStudent['level'], 70);
     });
 
-    test('계획 포함 여부는 goals v1 기준, repository가 없으면 모름이다(FD-172)', () {
+    test('계획 포함 여부는 저장된 활성 계획 문서 기준, 문서가 없으면 모름이다(FD-172, FE4-h)', () {
       expect(
-        growthCalculatorPlanMembership(
-          _repository(
-            goals: [
-              {'student_id': 'hoshino', 'target_level': 90},
-            ],
-          ),
-          'hoshino',
-        ),
+        growthCalculatorPlanMembership(_activePlan(['hoshino']), 'hoshino'),
         GrowthCalculatorPlanMembership.inPlan,
       );
       expect(
-        growthCalculatorPlanMembership(_repository(), 'hoshino'),
+        growthCalculatorPlanMembership(_activePlan(), 'hoshino'),
         GrowthCalculatorPlanMembership.notInPlan,
       );
       expect(
         growthCalculatorPlanMembership(null, 'hoshino'),
         GrowthCalculatorPlanMembership.unknown,
+      );
+      // goals v1은 보지 않는다. goals에만 있는 학생은 문서에 없으면 계획에 없다.
+      final goalsOnly = _state();
+      addTearDown(goalsOnly.dispose);
+      expect(
+        GrowthCalculatorRequest.fromState(
+          goalsOnly,
+          repository: _repository(
+            goals: [
+              {'student_id': 'hoshino', 'target_level': 90},
+            ],
+          ),
+          activePlan: _activePlan(),
+        ).planMembership,
+        GrowthCalculatorPlanMembership.notInPlan,
       );
       final state = _state();
       addTearDown(state.dispose);
@@ -472,6 +512,7 @@ void main() {
     final request = GrowthCalculatorRequest.fromState(
       state,
       repository: repository,
+      activePlan: (await mock.loadRepositoryPlan(_profileId)).document,
     );
     final service = _RecordingService(mock);
 

@@ -17,6 +17,7 @@ import '../../services/scenario_service.dart';
 import '../widgets/plan_element_builder.dart' show planElementCurrentTargets;
 import 'planning_growth_rules.dart';
 import 'planning_models.dart';
+import 'repository_plan_snapshot.dart';
 
 /// 초안이 바뀐 뒤 계산을 부를 때까지 기다리는 시간.
 const planFlowCalculationDebounce = Duration(milliseconds: 250);
@@ -860,10 +861,18 @@ class PlanFlowContext {
   PlanFlowContext({
     required this.repositoryState,
     required Map<String, StudentCatalogEntry> catalog,
+    this.activePlan,
   }) : catalog = Map.unmodifiable(catalog);
 
   final RepositoryState repositoryState;
   final Map<String, StudentCatalogEntry> catalog;
+
+  /// 흐름을 열 때 [repositoryState]와 같은 revision으로 읽은 저장된 활성 계획 문서(FE4-h, `plan.get`).
+  /// 서비스가 문서를 주지 않으면 null이다(계획에 있는 학생이 없다).
+  final PlanningDocument? activePlan;
+
+  /// 활성 계획 문서에 단계가 있는 학생(1단계 PLAN 배지·계획 칩). goals v1은 보지 않는다.
+  Set<String> get plannedStudentIds => activePlanStudentIds(activePlan);
 
   String displayName(String studentId) =>
       catalog[studentId]?.displayName ?? studentId;

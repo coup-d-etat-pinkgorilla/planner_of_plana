@@ -13,6 +13,7 @@ import '../kit/skew_bar.dart';
 import '../models/plan_flow_draft.dart';
 import '../models/planning_models.dart';
 import '../models/planning_resource_assets.dart';
+import '../models/repository_plan_snapshot.dart';
 import '../studio/plan_studio_layout.dart';
 import 'animated_section_stack.dart';
 import 'ba_triangle_background.dart';
@@ -39,6 +40,10 @@ const planPhaseFlowGap = 20.0;
 const planResourceTabHeight = 44.0;
 const planResourceHeaderHeight = 94.0;
 const planSection1Motion = SectionMotionSpec(intro: 0, outro: 180);
+
+/// 저장된 활성 계획의 `calculation`이 null일 때 섹션 3 문구(FE4-h). 문서 내용(섹션 2)은 그대로 보인다.
+const planCalculationUnavailableMessage =
+    '계산할 수 없음\n지금은 이 계획을 계산할 수 없습니다. 계획 내용은 그대로 보여 줍니다.';
 const planSection2Motion = SectionMotionSpec(intro: 80, outro: 260);
 const planSection3Motion = SectionMotionSpec(intro: 80, outro: 260);
 const planSection4Motion = SectionMotionSpec(intro: 180, outro: 0);
@@ -1346,8 +1351,18 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       dummyPlanPhaseConsumptions;
   PlanConsumptionGroupPreview _overallConsumption = dummyPlanOverallConsumption;
   RepositoryState? _repositoryState;
+
+  /// 저장된 활성 계획(`plan.get`, FE4-h). [_repositoryState]와 같은 revision이다. 그 revision이 나중 저장(FE4-e)의
+  /// `expectedRevision`이다. 서비스가 문서를 주지 않으면 null이다.
+  RepositoryPlanState? _repositoryPlan;
+
+  /// 화면이 계산·비교에 쓰는 작업 문서. 처음에는 저장 문서(v2, null = 목표 없음) 그대로이고 편집·편입 뒤에는
+  /// 화면 상태에서 다시 만든다([_rebuildDocumentFromPhases]).
   PlanningDocument? _document;
   String? _calculationError;
+
+  /// `plan.get`의 `calculation`이 null이었다(계산할 수 없음). 문서 내용은 그대로 보인다.
+  bool _calculationUnavailable = false;
   int _calculationGeneration = 0;
   Set<PlanResourceCategory> _selectedResourceCategories = {
     ...PlanResourceCategory.values,
@@ -1375,6 +1390,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     if (widget.active) _setActive(true);
   }
 
+  /// 활성 계획을 저장 문서(`plan.get`)에서 읽는다(FE4-h). goals v1에서 문서를 다시 만들지 않는다. 빈 문서는 빈
+  /// 계획이다. `plan.get`과 `state.get`은 같은 revision으로 맞춘다([loadRepositoryPlanSnapshot]).
   Future<void> _loadRepositoryPlan() async {
     final service = widget.service;
     final RepositoryService? repository = service is RepositoryService
@@ -1404,12 +1421,14 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         }
         return;
       }
-      final results = await Future.wait([
-        repository.loadRepositoryState(selected.id),
+      final results = await Future.wait<Object>([
+        loadRepositoryPlanSnapshot(repository, selected.id),
         widget.service!.listStudents(),
       ]);
-      final state = results[0] as RepositoryState;
+      final snapshot = results[0] as RepositoryPlanSnapshot;
       final catalog = results[1] as List<StudentCatalogEntry>;
+      final state = snapshot.state;
+      final plan = snapshot.plan;
       final catalogById = {for (final item in catalog) item.studentId: item};
       final currentById = {
         for (final item in state.students) item.studentId: item,
@@ -1424,63 +1443,69 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
             owned: currentById.containsKey(student.studentId),
           ),
       };
+      // 문서가 없으면(문서를 주지 않는 서비스) 빈 계획이다.
+      final document =
+          plan?.document ??
+          PlanningDocument(
+            id: 'active-plan',
+            name: '활성 계획',
+            kind: PlanningDocumentKind.plan,
+            phases: const [],
+          );
+      // v2 null(목표 없음)은 기존 정수 화면에 넘길 때만 앞 단계 값(첫 단계는 확정 현재값)으로 채운다. 계산에는
+      // 저장 문서를 그대로 보낸다.
+      final integerTargets = planFlowDocumentIntegerTargets(
+        document,
+        seedFor: (studentId) =>
+            seedsById[studentId] ??
+            PlanningStudentSeed(
+              handoffId: 'repository-plan-$studentId',
+              studentId: studentId,
+              metadata: const {},
+              currentValues: currentById[studentId]?.values ?? const {},
+              owned: currentById.containsKey(studentId),
+            ),
+      );
       final drafts = <String, List<PlanElementStageDraft>>{};
       final elements = <PlanStudentStepPreview>[];
-      final documentStages = <PlanningDocumentStage>[];
-      for (var index = 0; index < state.goals.length; index++) {
-        final goal = state.goals[index];
-        final current = currentById[goal.studentId];
-        final targets = planningDocumentTargets(
-          current: current?.values ?? const {},
-          goal: goal.values,
-        );
-        final stageId = 'v6-${goal.studentId}-1';
-        final stageName =
-            goal.values['notes']?.toString().trim().isNotEmpty == true
-            ? goal.values['notes'].toString().trim()
-            : 'v6 목표';
-        final displayName =
-            catalogById[goal.studentId]?.displayName ?? goal.studentId;
-        drafts[goal.studentId] = [
-          PlanElementStageDraft(id: stageId, name: stageName, targets: targets),
-        ];
-        elements.add(
-          PlanStudentStepPreview(
-            studentId: goal.studentId,
-            displayName: displayName,
-            step: 1,
-            target: stageName,
+      final phases = <PlanPhasePreview>[];
+      final stepByStudent = <String, int>{};
+      for (final phase in document.phases) {
+        final steps = <PlanStudentStepPreview>[];
+        for (final stage in phase.stages) {
+          final targets = integerTargets[stage.id]!;
+          final step = (stepByStudent[stage.studentId] ?? 0) + 1;
+          stepByStudent[stage.studentId] = step;
+          final preview = PlanStudentStepPreview(
+            studentId: stage.studentId,
+            displayName:
+                catalogById[stage.studentId]?.displayName ?? stage.studentId,
+            step: step,
+            target: stage.name,
             bondRank: targets['bond_rank'],
-            stageId: stageId,
+            stageId: stage.id,
             targetValues: targets,
-          ),
-        );
-        documentStages.add(
-          PlanningDocumentStage(
-            id: stageId,
-            studentId: goal.studentId,
-            name: stageName,
-            targets: targets,
-          ),
+          );
+          steps.add(preview);
+          elements.add(preview);
+          drafts
+              .putIfAbsent(stage.studentId, () => [])
+              .add(
+                PlanElementStageDraft(
+                  id: stage.id,
+                  name: stage.name,
+                  targets: targets,
+                ),
+              );
+        }
+        phases.add(
+          PlanPhasePreview(id: phase.id, name: phase.name, steps: steps),
         );
       }
-      final document = PlanningDocument(
-        id: 'active-plan',
-        name: 'v6 가져온 계획',
-        kind: PlanningDocumentKind.plan,
-        phases: documentStages.isEmpty
-            ? const []
-            : [
-                PlanningDocumentPhase(
-                  id: 'v6-imported-plan',
-                  name: 'v6 가져온 계획',
-                  stages: documentStages,
-                ),
-              ],
-      );
       if (!mounted) return;
       setState(() {
         _repositoryState = state;
+        _repositoryPlan = plan;
         _studentSeedsById
           ..clear()
           ..addAll(seedsById);
@@ -1488,18 +1513,15 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         _usingLivePlanElements = true;
         _draftsByStudent
           ..clear()
-          ..addAll(drafts);
+          ..addAll({
+            for (final entry in drafts.entries)
+              entry.key: List<PlanElementStageDraft>.unmodifiable(
+                entry.value,
+              ),
+          });
         _planElements = List.unmodifiable(elements);
         _unassignedPlanElementIds = const {};
-        _planPhases = documentStages.isEmpty
-            ? const []
-            : [
-                PlanPhasePreview(
-                  id: 'v6-imported-plan',
-                  name: 'v6 가져온 계획',
-                  steps: elements,
-                ),
-              ];
+        _planPhases = List.unmodifiable(phases);
         _bottleneckDetails = const [];
         _phaseConsumptions = const [];
         _overallConsumption = const PlanConsumptionGroupPreview(
@@ -1507,7 +1529,11 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           label: '전체 계획',
           resources: [],
         );
+        _calculationError = null;
+        _calculationUnavailable = plan != null && plan.calculation == null;
       });
+      // 계산할 수 없는 문서는 자세한 계산도 부르지 않는다. 문서 내용(섹션 2)은 그대로 보인다.
+      if (_calculationUnavailable) return;
       await _calculateDocument();
     } catch (error) {
       if (mounted) setState(() => _calculationError = error.toString());
@@ -1679,6 +1705,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         _overallConsumption = nextOverall;
         _bottleneckDetails = List.unmodifiable(nextBottlenecks);
         _calculationError = null;
+        _calculationUnavailable = false;
       });
     } catch (error) {
       if (mounted && generation == _calculationGeneration) {
@@ -1876,6 +1903,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     });
   }
 
+  /// 계정 상태와 저장된 활성 계획(같은 revision). 계획 화면이 이미 읽었으면 그 snapshot을 쓰고, 아니면
+  /// [_loadRepositoryPlan]과 같은 경로([loadRepositoryPlanSnapshot])로 읽는다. 작업 문서([_document])는 바꾸지
+  /// 않는다.
   Future<RepositoryState?> _ensureRepositoryContext() async {
     if (_repositoryState case final state?) return state;
     final service = widget.service;
@@ -1887,9 +1917,14 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       orElse: () => null,
     );
     if (selected == null) return null;
-    final state = await repository.loadRepositoryState(selected.id);
-    if (mounted) setState(() => _repositoryState = state);
-    return state;
+    final snapshot = await loadRepositoryPlanSnapshot(repository, selected.id);
+    if (mounted) {
+      setState(() {
+        _repositoryState = snapshot.state;
+        _repositoryPlan = snapshot.plan;
+      });
+    }
+    return snapshot.state;
   }
 
   Future<void> _openScenarioList() async {
@@ -1972,7 +2007,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     }
   }
 
-  /// 흐름을 열 때 한 번 읽는 프로필 상태(확정 현재값·재고·카탈로그).
+  /// 흐름을 열 때 한 번 읽는 프로필 상태(확정 현재값·재고·카탈로그)와 저장된 활성 계획 문서(FE4-h).
   Future<PlanFlowContext?> _flowContext() async {
     final service = widget.service;
     if (service == null) return null;
@@ -1982,6 +2017,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     return PlanFlowContext(
       repositoryState: state,
       catalog: {for (final entry in catalog) entry.studentId: entry},
+      activePlan: _repositoryPlan?.document,
     );
   }
 
@@ -2073,31 +2109,36 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     final document = _document;
     if (document == null || document.kind != PlanningDocumentKind.plan) return;
     final stamp = DateTime.now().microsecondsSinceEpoch;
-    final targetFloor = <String, Map<String, int>>{};
-    final stepByStudent = <String, int>{};
-    for (final stage in document.stages) {
-      targetFloor[stage.studentId] = stage.targets;
-      stepByStudent[stage.studentId] =
-          (stepByStudent[stage.studentId] ?? 0) + 1;
-    }
-    // 시나리오는 FE4-b1부터 문서 v2로 저장된다. null(목표 없음)은 앞 단계 값으로 채운 정수 보기로 읽는다.
-    // 활성 계획에 없는 학생은 프로필 확정 현재값으로 바닥값을 만든다.
+    // 시나리오는 FE4-b1부터, 활성 계획은 FE4-h부터 문서 v2로 읽는다. null(목표 없음)은 앞 단계 값으로 채운 정수
+    // 보기로 읽는다. 문서에 처음 나오는 학생은 프로필 확정 현재값으로 바닥값을 만든다.
     final currentById = {
       for (final student
           in _repositoryState?.students ?? const <ConfirmedStudentState>[])
         student.studentId: student.values,
     };
+    PlanningStudentSeed seedFor(String studentId) =>
+        _studentSeedsById[studentId] ??
+        PlanningStudentSeed(
+          handoffId: 'scenario-import-$studentId',
+          studentId: studentId,
+          metadata: const {},
+          currentValues: currentById[studentId] ?? const {},
+          owned: currentById.containsKey(studentId),
+        );
+    final activeTargets = planFlowDocumentIntegerTargets(
+      document,
+      seedFor: seedFor,
+    );
+    final targetFloor = <String, Map<String, int>>{};
+    final stepByStudent = <String, int>{};
+    for (final stage in document.stages) {
+      targetFloor[stage.studentId] = activeTargets[stage.id]!;
+      stepByStudent[stage.studentId] =
+          (stepByStudent[stage.studentId] ?? 0) + 1;
+    }
     final sourceTargets = planFlowDocumentIntegerTargets(
       scenario.document,
-      seedFor: (studentId) =>
-          _studentSeedsById[studentId] ??
-          PlanningStudentSeed(
-            handoffId: 'scenario-import-$studentId',
-            studentId: studentId,
-            metadata: const {},
-            currentValues: currentById[studentId] ?? const {},
-            owned: currentById.containsKey(studentId),
-          ),
+      seedFor: seedFor,
     );
     final importedElements = <PlanStudentStepPreview>[];
     final importedPhases = <PlanPhasePreview>[];
@@ -2754,6 +2795,44 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           final containerPath = planBottleneckContainerPath(size);
           final containerBounds = containerPath.getBounds();
           final localPath = containerPath.shift(-containerBounds.topLeft);
+          // FE4-h: 읽기·계산 오류, 또는 저장 문서를 계산할 수 없음(`calculation == null`)이면 재화 탭 대신 그
+          // 상태를 보인다. 계획 내용(섹션 2)은 그대로 보인다.
+          final calculationError = _calculationError;
+          if (calculationError != null || _calculationUnavailable) {
+            return Stack(
+              key: const ValueKey('plan-section-3-status'),
+              fit: StackFit.expand,
+              children: [
+                const IgnorePointer(
+                  child: CustomPaint(
+                    key: ValueKey('plan-element-3-foundation'),
+                    painter: PlanSectionFoundationPainter('element-3'),
+                  ),
+                ),
+                Positioned.fromRect(
+                  rect: containerBounds,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: calculationError != null
+                          ? Text(
+                              '계산 오류\n$calculationError',
+                              key: const ValueKey('plan-calculation-error'),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.redAccent),
+                            )
+                          : const Text(
+                              planCalculationUnavailableMessage,
+                              key: ValueKey('plan-calculation-unavailable'),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
           return AnimatedSectionStack(
             key: const ValueKey('plan-section-3-tab-stack'),
             index: _selectedResourceView.index,
@@ -2833,29 +2912,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                     onToggleResource: _toggleSection3Resource,
                   ),
                 ],
-              ),
-            ],
-          );
-        }
-        if (id == 'element-4' && _calculationError != null) {
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              IgnorePointer(
-                child: CustomPaint(
-                  key: ValueKey('plan-$id-foundation'),
-                  painter: PlanSectionFoundationPainter(id),
-                ),
-              ),
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    '계산 오류\n$_calculationError',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.redAccent),
-                  ),
-                ),
               ),
             ],
           );

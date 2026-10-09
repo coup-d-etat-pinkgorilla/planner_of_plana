@@ -18,7 +18,6 @@ import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/mock_student_fixture.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scenario_service.dart';
-import 'package:ba_planner_v7/ui/models/active_plan_bond_target.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/widgets/asset_image_grid.dart';
 import 'package:ba_planner_v7/ui/widgets/student_grid_warmup.dart';
@@ -254,14 +253,13 @@ class GoldenMockAppService extends MockAppService {
 /// `MockAppService` 기본값은 바꾸지 않는다.
 /// - 아루: 보유, 계획 없음, 인연 목표 없음(첫 학생 = 기본 선택, `students-grid` S3)
 /// - 아야네: 보유 + PLAN, 인연 목표 두 단계 30 → 45(마지막 45 사용, 현재 24, `students-detail` S3)
-/// - 호시노: 보유, 긴 이름(말줄임), 인연 목표 20 ≤ 현재 30이라 목표 표시 없음
+/// - 호시노: 보유, 긴 이름(말줄임), 계획 없음(인연 목표 없음)
 /// - 슌(수영복): 미보유 + PLAN + JP(배지 3개 쌓기), 인연 목표 20
-/// - 히나: 보유 + PLAN(배지 1개, 첫 칸)
+/// - 히나: 보유 + PLAN(배지 1개, 첫 칸), 인연 목표 null(목표 없음)
 /// - 세리카: 미보유(UNOWNED, 흐린 이름)
 /// - 케이: 보유, 복합장갑 칩
 /// - 하스미·노아: 보유(둘째 줄), 나구사: 미보유(둘째 줄)
-class GoldenStudentMockAppService extends GoldenMockAppService
-    implements ActivePlanDocumentSource {
+class GoldenStudentMockAppService extends GoldenMockAppService {
   GoldenStudentMockAppService() : super();
 
   static const studentIds = <String>[
@@ -342,7 +340,7 @@ class GoldenStudentMockAppService extends GoldenMockAppService
     forms: source.forms,
   );
 
-  /// 보유 학생(mock 고정 값)과 계획 학생(goals v1)을 선택 계정에 저장한다. 화면을 열기 전에 부른다.
+  /// 보유 학생(mock 고정 값)과 활성 계획 문서를 선택 계정에 저장한다. 화면을 열기 전에 부른다.
   Future<void> seedStudentScene() async {
     final profile = (await listProfiles()).firstWhere((item) => item.selected);
     final valuesById = {
@@ -364,43 +362,44 @@ class GoldenStudentMockAppService extends GoldenMockAppService
       revision,
       'golden-student-scene-students',
     );
-    await saveRepositoryGoals(
-      profile.id,
-      {
-        'version': 1,
-        'goals': [
-          for (final id in plannedStudentIds) {'student_id': id},
-        ],
-      },
-      revision,
-      'golden-student-scene-goals',
+    await saveRepositoryPlan(
+      profileId: profile.id,
+      document: activePlanDocument(),
+      expectedRevision: revision,
+      idempotencyKey: 'golden-student-scene-plan',
     );
   }
 
-  @override
-  Future<PlanningDocument?> loadActivePlanDocument(String profileId) async {
-    PlanningDocumentStage stage(String id, String studentId, int bondRank) =>
+  /// 저장할 활성 계획 문서(v2). 인연 목표만 정하고 나머지 목표는 null(목표 없음)이다. goals 호환 보기는 계획
+  /// 학생([plannedStudentIds])만 남는다(통계·인벤토리 장면은 그대로).
+  static PlanningDocument activePlanDocument() {
+    PlanningDocumentStage stage(String id, String studentId, int? bondRank) =>
         PlanningDocumentStage(
           id: id,
           studentId: studentId,
           name: '목표',
           targets: {
-            for (final key in planningDocumentTargetMaximums.keys) key: 0,
+            for (final key in planningDocumentTargetKeys) key: null,
             'bond_rank': bondRank,
           },
         );
     return PlanningDocument(
-      id: 'golden-active-plan',
+      id: 'active-plan',
       name: '활성 계획',
       kind: PlanningDocumentKind.plan,
+      version: 2,
+      goalMetadata: {
+        for (final id in plannedStudentIds)
+          id: const PlanningGoalMetadata(favorite: true, notes: ''),
+      },
       phases: [
         PlanningDocumentPhase(
           id: 'golden-phase-1',
           name: '페이즈 1',
           stages: [
             stage('golden-ayane-1', 'ayane', 30),
-            stage('golden-hoshino-1', 'hoshino', 20),
             stage('golden-shun-1', 'shun_swimsuit', 20),
+            stage('golden-hina-1', 'hina', null),
           ],
         ),
         PlanningDocumentPhase(
