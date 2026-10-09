@@ -11,7 +11,7 @@ METHODS = frozenset({
     "repository.profile.list", "repository.profile.create", "repository.profile.current",
     "repository.profile.select", "repository.profile.rename", "repository.profile.update", "repository.profile.delete", "repository.state.get",
     "repository.students.update", "repository.inventory.update", "repository.goals.save",
-    "repository.plan.get", "repository.plan.save",
+    "repository.plan.get", "repository.plan.save", "repository.plan.replace",
     "repository.migration.preview", "repository.migration.import",
 })
 
@@ -91,6 +91,9 @@ class RepositoryProtocolV1:
         if method == "repository.plan.save":
             data, profile_id, revision, key = self._mutation(payload, {"document"})
             return self.repository.save_plan(profile_id, data["document"], revision, key)
+        if method == "repository.plan.replace":
+            data, profile_id, revision, key = self._mutation(payload, {"document", "expected_scenario_revision", "archive_name", "archive_description"})
+            return self.repository.replace_plan(profile_id, data["document"], revision, data["expected_scenario_revision"], key, data["archive_name"], data["archive_description"])
         if method == "repository.students.update":
             data, profile_id, revision, key = self._mutation(payload, {"students"})
             if not isinstance(data["students"], list): raise RepositoryError("invalid_payload", "students must be an array")

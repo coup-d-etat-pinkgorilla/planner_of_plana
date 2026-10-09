@@ -470,6 +470,66 @@ fixture는 `fixtures/repository_plan_migration_v1.json`(8개 정책)과
 mock은 목표 변환·revision·idempotency·손실 방지를 재현하고 기존 빈 mock document projection을
 요약합니다. 실제 성장 계산식을 Dart에 복제하지 않습니다. mock 계산 실패도 요약 null로 보존합니다.
 
+### 활성 계획 교체·보존 (FB-1c)
+
+FD-067(a)·FD-088의 교체는 `repository.plan.replace` 한 호출입니다. `save`와 scenario.create를
+클라이언트가 이어 호출하지 않습니다. 추가 fixture `fixtures/repository_plan_replace_v1.json`의
+20개 판정을 Python schema와 Dart strict DTO/validator가 공유합니다.
+
+| 방향 | payload |
+| --- | --- |
+| 요청 | `{profile_id, expected_revision, expected_scenario_revision, idempotency_key, document, archive_name, archive_description}` |
+| 성공 | `{revision, scenario_revision, archived_scenario_id}` |
+
+document는 v2/kind=plan이고 기존 save와 같은 nullable 목표·metadata·누적 회귀 검사를 받습니다.
+두 expected revision은 0 이상 정수입니다. expected_revision은 profile, expected_scenario_revision은
+**시나리오 collection** revision(개별 scenario revision 아님)입니다. archive_name은 공백뿐인 값을
+거부하고 description은 빈 문자열을 허용하며 둘 다 trim합니다. key는 비어 있으면 거부합니다.
+
+기존 활성 문서의 phases가 있으면 새 시나리오로 보존합니다. kind=scenario, document_id는 새
+scenario ID이며 원래 문서 이름·phase/stage ID·순서·19개 int/null 목표·goal_metadata는 보존합니다.
+고유 document_id는 기존 comparison의 서로 다른 문서 ID 조건을 충족하여 반복 교체의 보존본끼리도
+비교할 수 있게 합니다. outer record의 name/description은 archive 입력, base_profile_revision은
+교체 **직전** revision, 개별 scenario revision은 0입니다. collection revision은 한 번 증가합니다.
+all-null 단계나 단계가 없는 phase도 phases가 있으므로 보존 대상입니다. phases=[]면 archive ID는
+null이고 collection revision과 scenario 파일은 그대로입니다(파일이 없으면 만들지 않습니다).
+빈 경우에도 두 expected revision을 검사합니다. 새 활성 문서와 최종 단계 goals 파생은 profile
+revision +1 안에 함께 저장합니다. 현재 학생·인벤토리나 다른 시나리오를 변경하지 않습니다.
+
+충돌 코드는 기존 `revision_conflict`이며 details는
+`{revision_scope: "profile"|"scenario"|"both", current_revision, current_scenario_revision}`입니다.
+멱등 fingerprint에는 새 canonical 문서·trim한 보존 정보·두 expected revision·작업 종류가 들어갑니다.
+같은 key/fingerprint의 재시도는 현재 두 revision을 검사하기 전에 최초 세 필드 응답을 반환합니다.
+후속 편집이나 archive 삭제 후에도 최초 응답을 재사용하고 시나리오를 다시 만들지 않습니다.
+다른 작업·문서·보존 정보·revision이면 `idempotency_conflict`입니다. profile 캐시는 기존 `{revision}`
+응답과 새 세 필드 응답을 모두 엄격히 읽습니다. scenario 자체 CRUD 캐시 형식은 바꾸지 않습니다.
+
+공용 `repository_transaction` 경계는 root별 OS guard → `.repository.lock` 호환 marker → journal
+복구 → 파일 접근 순서입니다. 한 guard를 JsonRepository와 ScenarioStore가 같이 쓰며 같은 thread/root의
+중첩 callback은 재사용합니다. 다른 thread/process 경합은 retryable `repository_busy`입니다.
+Windows byte-range lock(다른 OS는 flock)은 프로세스 종료 시 풀립니다. guard를 얻은 뒤에만
+이 구현의 잔여 marker를 교체합니다. 과거/수동/알 수 없는 lock은 owner를 추측하여 삭제하지 않습니다.
+
+replace는 `.repository.transaction.json`에 profile/catalog/scenario의 원본 바이트와 완성본,
+checksum을 fsync한 prepared journal을 먼저 저장합니다. 각 파일은 fsync+atomic replace하고,
+모두 끝난 뒤 committed journal을 fsync+atomic replace한 다음 journal을 지웁니다.
+준비 상태 중단은 **교체 전 전부**, committed 이후 중단은 **교체 후 전부**로 복구합니다.
+복구 자체가 중단되어도 journal이 남아 다음 접근에서 반복합니다. rollback/recovery는 원본 바이트를
+보존하며 없었던 scenario 파일은 복구 때 제거합니다. 잡힌 오류는 `persistence_failed`로 드러내고
+같은 요청을 재시도할 수 있습니다. committed 이후 오류도 최초 응답 캐시가 보존됩니다.
+손상된 journal은 `corrupt_data`로 차단하고 빈 문서나 혼합 snapshot을 반환하지 않습니다.
+
+plan.get/state.get/scenario.list/get은 guard 안에서 미완료 transaction을 복구한 뒤 읽습니다.
+profile.list/current와 모든 repository/scenario writer도 같은 guard에서 먼저 복구합니다.
+기존 단일 파일 atomic 쓰기, FB-1b의 두 파일 예외 rollback·legacy 이관 정책은 유지합니다.
+이 journal의 다중 파일 중단 복구 보장은 replace transaction에 적용됩니다.
+
+Dart는 `RepositoryPlanReplaceRequest`, `RepositoryPlanReplaceResult`,
+`RepositoryPlanService.replaceRepositoryPlan`을 추가합니다. Process는 실제 Python 경계를 호출하고,
+Mock은 검증 후 동기 commit으로 동일 문서 보존·두 revision·멱등성을 재현합니다. Mock의 replace
+오류는 details가 있는 BackendRemoteException이며 실제 파일/journal 복구와 성장 비용 검증은 Python/
+process 테스트가 담당합니다. UI 연결과 golden 변경은 이 계약 slice에 포함하지 않습니다.
+
 ## scanner protocol v1
 
 P5 scanner 계약은 `scanner-protocol-v1.schema.json`과 공유 fixture

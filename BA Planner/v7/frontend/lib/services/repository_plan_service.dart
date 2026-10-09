@@ -84,6 +84,105 @@ class RepositoryPlanSaveRequest {
   }
 }
 
+class RepositoryPlanReplaceRequest extends RepositoryPlanSaveRequest {
+  const RepositoryPlanReplaceRequest({
+    required super.profileId,
+    required super.expectedRevision,
+    required super.idempotencyKey,
+    required super.document,
+    required this.expectedScenarioRevision,
+    required this.archiveName,
+    required this.archiveDescription,
+  });
+
+  final int expectedScenarioRevision;
+  final String archiveName;
+  final String archiveDescription;
+
+  factory RepositoryPlanReplaceRequest.fromWire(Map<String, dynamic> value) {
+    if (!_exact(value, {
+          'profile_id',
+          'expected_revision',
+          'expected_scenario_revision',
+          'idempotency_key',
+          'document',
+          'archive_name',
+          'archive_description',
+        }) ||
+        !_profileId(value['profile_id']) ||
+        value['expected_revision'] is! int ||
+        value['expected_scenario_revision'] is! int ||
+        value['idempotency_key'] is! String ||
+        value['archive_name'] is! String ||
+        value['archive_description'] is! String) {
+      throw const FormatException('Invalid plan replace request');
+    }
+    final request = RepositoryPlanReplaceRequest(
+      profileId: value['profile_id'] as String,
+      expectedRevision: value['expected_revision'] as int,
+      expectedScenarioRevision: value['expected_scenario_revision'] as int,
+      idempotencyKey: value['idempotency_key'] as String,
+      document: repositoryActiveDocument(value['document']),
+      archiveName: value['archive_name'] as String,
+      archiveDescription: value['archive_description'] as String,
+    );
+    request.toWire();
+    return request;
+  }
+
+  @override
+  Map<String, dynamic> toWire() {
+    if (expectedScenarioRevision < 0 || archiveName.trim().isEmpty) {
+      throw const FormatException('Invalid plan replace archive/revision');
+    }
+    return {
+      ...super.toWire(),
+      'expected_scenario_revision': expectedScenarioRevision,
+      'archive_name': archiveName.trim(),
+      'archive_description': archiveDescription.trim(),
+    };
+  }
+}
+
+class RepositoryPlanReplaceResult {
+  const RepositoryPlanReplaceResult._({
+    required this.revision,
+    required this.scenarioRevision,
+    required this.archivedScenarioId,
+  });
+
+  final int revision;
+  final int scenarioRevision;
+  final String? archivedScenarioId;
+
+  factory RepositoryPlanReplaceResult.fromWire(Map<String, dynamic> value) {
+    if (!_exact(value, {
+          'revision',
+          'scenario_revision',
+          'archived_scenario_id',
+        }) ||
+        value['revision'] is! int ||
+        value['revision'] < 0 ||
+        value['scenario_revision'] is! int ||
+        value['scenario_revision'] < 0 ||
+        (value['archived_scenario_id'] != null &&
+            !_profileId(value['archived_scenario_id']))) {
+      throw const FormatException('Invalid plan replace result');
+    }
+    return RepositoryPlanReplaceResult._(
+      revision: value['revision'] as int,
+      scenarioRevision: value['scenario_revision'] as int,
+      archivedScenarioId: value['archived_scenario_id'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'revision': revision,
+    'scenario_revision': scenarioRevision,
+    'archived_scenario_id': archivedScenarioId,
+  };
+}
+
 /// Capability keeps existing RepositoryService test doubles source compatible.
 abstract interface class RepositoryPlanService {
   Future<RepositoryPlanState> loadRepositoryPlan(String profileId);
@@ -92,5 +191,14 @@ abstract interface class RepositoryPlanService {
     required PlanningDocument document,
     required int expectedRevision,
     required String idempotencyKey,
+  });
+  Future<RepositoryPlanReplaceResult> replaceRepositoryPlan({
+    required String profileId,
+    required PlanningDocument document,
+    required int expectedRevision,
+    required int expectedScenarioRevision,
+    required String idempotencyKey,
+    required String archiveName,
+    required String archiveDescription,
   });
 }

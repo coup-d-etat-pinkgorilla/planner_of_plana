@@ -457,6 +457,9 @@ bool isValidRepositorySuccessPayload(
       case 'repository.plan.get':
         RepositoryPlanState.fromWire(payload);
         return true;
+      case 'repository.plan.replace':
+        RepositoryPlanReplaceResult.fromWire(payload);
+        return true;
       case 'repository.migration.preview':
         if (!_exact(payload, {'accounts'}) || payload['accounts'] is! List) {
           return false;
@@ -608,6 +611,9 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
       case 'repository.plan.save':
         if (!mutation({'document'})) return false;
         repositoryActiveDocument(payload['document']);
+        return true;
+      case 'repository.plan.replace':
+        RepositoryPlanReplaceRequest.fromWire(payload);
         return true;
       case 'repository.migration.preview':
         return payload.isEmpty;

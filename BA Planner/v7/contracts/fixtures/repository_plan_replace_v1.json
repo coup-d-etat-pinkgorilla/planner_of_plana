@@ -1,0 +1,911 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "replace_request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 6,
+          "expected_scenario_revision": 2,
+          "idempotency_key": "replace-1",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "archive_name": "Before replacement",
+          "archive_description": ""
+        }
+      }
+    },
+    {
+      "id": "replace_archived",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "response",
+        "method": "repository.plan.replace",
+        "payload": {
+          "revision": 7,
+          "scenario_revision": 3,
+          "archived_scenario_id": "bbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      }
+    },
+    {
+      "id": "replace_empty",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "response",
+        "method": "repository.plan.replace",
+        "payload": {
+          "revision": 7,
+          "scenario_revision": 2,
+          "archived_scenario_id": null
+        }
+      }
+    },
+    {
+      "id": "conflict_profile",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "response",
+        "method": "repository.plan.replace",
+        "payload": {
+          "error": {
+            "code": "revision_conflict",
+            "message": "stale replacement revisions",
+            "retryable": false,
+            "details": {
+              "revision_scope": "profile",
+              "current_revision": 7,
+              "current_scenario_revision": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "conflict_scenario",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "response",
+        "method": "repository.plan.replace",
+        "payload": {
+          "error": {
+            "code": "revision_conflict",
+            "message": "stale replacement revisions",
+            "retryable": false,
+            "details": {
+              "revision_scope": "scenario",
+              "current_revision": 7,
+              "current_scenario_revision": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "conflict_both",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "response",
+        "method": "repository.plan.replace",
+        "payload": {
+          "error": {
+            "code": "revision_conflict",
+            "message": "stale replacement revisions",
+            "retryable": false,
+            "details": {
+              "revision_scope": "both",
+              "current_revision": 7,
+              "current_scenario_revision": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "bool_profile_revision",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": true,
+          "expected_scenario_revision": 2,
+          "idempotency_key": "replace-1",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "archive_name": "Before replacement",
+          "archive_description": ""
+        }
+      }
+    },
+    {
+      "id": "bool_scenario_revision",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 6,
+          "expected_scenario_revision": false,
+          "idempotency_key": "replace-1",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "archive_name": "Before replacement",
+          "archive_description": ""
+        }
+      }
+    },
+    {
+      "id": "negative_scenario_revision",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 6,
+          "expected_scenario_revision": -1,
+          "idempotency_key": "replace-1",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "archive_name": "Before replacement",
+          "archive_description": ""
+        }
+      }
+    },
+    {
+      "id": "empty_archive_name",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 6,
+          "expected_scenario_revision": 2,
+          "idempotency_key": "replace-1",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "archive_name": "",
+          "archive_description": ""
+        }
+      }
+    },
+    {
+      "id": "blank_archive_name",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 6,
+          "expected_scenario_revision": 2,
+          "idempotency_key": "replace-1",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "archive_name": "  ",
+          "archive_description": ""
+        }
+      }
+    },
+    {
+      "id": "null_description",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 6,
+          "expected_scenario_revision": 2,
+          "idempotency_key": "replace-1",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "archive_name": "Before replacement",
+          "archive_description": null
+        }
+      }
+    },
+    {
+      "id": "empty_key",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 6,
+          "expected_scenario_revision": 2,
+          "idempotency_key": "",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "archive_name": "Before replacement",
+          "archive_description": ""
+        }
+      }
+    },
+    {
+      "id": "missing_scenario_revision",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 6,
+          "idempotency_key": "replace-1",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "archive_name": "Before replacement",
+          "archive_description": ""
+        }
+      }
+    },
+    {
+      "id": "missing_description",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 6,
+          "expected_scenario_revision": 2,
+          "idempotency_key": "replace-1",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "archive_name": "Before replacement"
+        }
+      }
+    },
+    {
+      "id": "scenario_as_active",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 6,
+          "expected_scenario_revision": 2,
+          "idempotency_key": "replace-1",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "scenario",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "archive_name": "Before replacement",
+          "archive_description": ""
+        }
+      }
+    },
+    {
+      "id": "extra_request",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 6,
+          "expected_scenario_revision": 2,
+          "idempotency_key": "replace-1",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "활성 계획",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "v6-imported-plan",
+                "name": "v6 목표",
+                "stages": [
+                  {
+                    "stage_id": "v6-aru-1",
+                    "student_id": "aru",
+                    "name": "v6 목표",
+                    "targets": {
+                      "level": 10,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null,
+                      "bond_rank": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": ""
+              }
+            }
+          },
+          "archive_name": "Before replacement",
+          "archive_description": "",
+          "extra": 0
+        }
+      }
+    },
+    {
+      "id": "bool_response_revision",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "response",
+        "method": "repository.plan.replace",
+        "payload": {
+          "revision": 7,
+          "scenario_revision": true,
+          "archived_scenario_id": "bbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      }
+    },
+    {
+      "id": "invalid_archive_id",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "response",
+        "method": "repository.plan.replace",
+        "payload": {
+          "revision": 7,
+          "scenario_revision": 3,
+          "archived_scenario_id": "active-plan"
+        }
+      }
+    },
+    {
+      "id": "old_revision_only_response",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace",
+        "type": "response",
+        "method": "repository.plan.replace",
+        "payload": {
+          "revision": 7
+        }
+      }
+    }
+  ]
+}

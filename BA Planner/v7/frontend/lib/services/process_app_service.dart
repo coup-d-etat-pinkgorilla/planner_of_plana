@@ -492,6 +492,30 @@ class ProcessAppService
   );
 
   @override
+  Future<RepositoryPlanReplaceResult> replaceRepositoryPlan({
+    required String profileId,
+    required PlanningDocument document,
+    required int expectedRevision,
+    required int expectedScenarioRevision,
+    required String idempotencyKey,
+    required String archiveName,
+    required String archiveDescription,
+  }) async => RepositoryPlanReplaceResult.fromWire(
+    await _client.send(
+      'repository.plan.replace',
+      RepositoryPlanReplaceRequest(
+        profileId: profileId,
+        document: document,
+        expectedRevision: expectedRevision,
+        expectedScenarioRevision: expectedScenarioRevision,
+        idempotencyKey: idempotencyKey,
+        archiveName: archiveName,
+        archiveDescription: archiveDescription,
+      ).toWire(),
+    ),
+  );
+
+  @override
   Future<int> saveRepositoryStudents(
     String profileId,
     List<ConfirmedStudentState> students,

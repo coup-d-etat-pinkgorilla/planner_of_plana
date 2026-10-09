@@ -1,6 +1,6 @@
 ---
 title: "Frontend Redesign Backend Status"
-summary: "Lane A 백엔드 워커의 FB-1b 활성 계획 저장·legacy 이관·revision 소비자 인계, FB-11b 선물 3안, FB-1a v2 및 FB-1 설계 조사 기록입니다."
+summary: "Lane A 백엔드 워커의 FB-1c 교체·보존·journal 복구와 FE4-e 연결, FB-1b 이관, FB-11b 인연, FB-1a v2 및 설계 조사 기록입니다."
 topics: [workflow, design]
 sources:
   - id: workflow
@@ -14,6 +14,149 @@ sources:
     path: backend/tests/test_student_calculation_fb11a.py
 ---
 백엔드 워커 전용(Lane A 병렬, 2026-10-07)
+
+# FB-1c 활성 계획 교체·시나리오 보존
+
+## 착수 (2026-10-09)
+
+- 시작 SHA: `b4bb199ae639dca7786edd691f7378f03f8bae84`. FB-1b `11426131` 커밋 뒤 편집을 재개했다.
+- FB-1 읽기 전용 조사의 repository 계약·저장 주의·필수 회귀, FB-1b 종료 기록, FD-067(a)·FD-088과 runtime 경계를 읽었다.
+- replace는 profile/catalog/scenario 공통 잠금 아래 journal로 교체 전/후 한쪽 전체만 복구한다. 관련 읽기도 같은 경계에서 먼저 복구한다.
+- phases=[]는 archive 없음·scenario revision 유지. 문서/goals/revision/idempotency 응답은 함께 저장한다.
+- UI·스캐너·tactic·metadata 파일은 수정하지 않는다. 기존 서비스 WIP는 pre에 보존한다. gate·stage·커밋·push는 하지 않는다.
+
+## 구현·직접 검증 종료 (2026-10-09)
+
+FB-1c의 backend·계약·Dart 서비스 구현을 마쳤다. Python 전체는 사용자 단계로 남긴다.
+gate·stage·커밋·push는 하지 않았다. UI·widget/golden·scanner/tactic·metadata 파일은 고치지 않았다.
+
+### 교체 계약
+
+| 항목 | 확정 계약 |
+| --- | --- |
+| 요청 | repository.plan.replace `{profile_id, expected_revision, expected_scenario_revision, idempotency_key, document, archive_name, archive_description}` |
+| 응답 | `{revision, scenario_revision, archived_scenario_id}`. strict RepositoryPlanReplaceResult |
+| 입력 | 새 document는 v2/kind=plan. 기존 nullable 목표·metadata·회귀 검증 재사용. 두 revision은 non-bool int≥0. 보존명은 trim 뒤 nonempty, 설명은 빈 문자열 허용 |
+| 보존 | 기존 phases가 있으면 scenario record revision=0, base_profile_revision=교체 직전 profile revision. collection revision +1 |
+| 문서 정체성 | kind=scenario·document_id=새 scenario ID. 원래 문서 이름·phase/stage ID·순서·목표·metadata는 그대로. 기존 비교는 서로 다른 document ID를 요구하므로 반복 보존본에도 고유 ID 필요 |
+| 빈 활성 | phases=[]면 archived_scenario_id=null, collection revision·scenario 파일 그대로. 없던 파일을 만들지 않음. 두 expected revision 검사는 유지 |
+| 활성 저장 | 새 문서·학생별 최종 단계 goals 파생·profile revision +1·catalog summary·멱등 응답을 같은 교체 transaction에 저장 |
+| 충돌 | revision_conflict details `{revision_scope: profile\|scenario\|both, current_revision, current_scenario_revision}`. expected_scenario_revision은 **collection** revision |
+| 재시도 | 같은 key/작업/canonical 문서/trim 보존 정보/두 expected revision은 최초 응답을 반환. 후속 저장·archive 삭제 후에도 재생성 안 함. 바뀌면 idempotency_conflict |
+| 이전 캐시 | 기존 `{revision}`과 새 세 필드 response를 모두 엄격히 읽음. 일반 저장과 replace는 profile key 공간 공유. 기존 scenario CRUD 캐시는 그대로 |
+
+archive outer name/description은 호출자 입력이며 문서 내부 name은 기존 값을 보존한다.
+현재 학생·인벤토리·다른 시나리오는 변경하지 않는다. 인연 목표는 문서에만 남고 goals에는 없다.
+문서 계산/비용식·FB-11b 선물 계산은 변경하지 않았다. Mock 비용식도 추가하지 않았다.
+
+### 공용 잠금·journal 복구
+
+`backend/core/repository_transaction.py`가 JsonRepository와 ScenarioStore의 경계를 소유한다.
+고정 순서는 **root별 OS guard → 호환 marker → journal 복구 → profile/catalog/scenario 접근**이다.
+서로 다른 store 잠금을 겹쳐 잡지 않는다. 같은 thread/root의 nested callback은 guard를 재사용하고,
+다른 thread/process는 retryable repository_busy를 받는다. Windows byte-range lock은 프로세스
+중단 때 OS가 해제한다(다른 OS는 flock). `.repository.guard`는 남아도 잠금 소유를 뜻하지 않는다.
+guard를 얻은 뒤 이 구현의 `.repository.lock` marker만 다시 쓸 수 있으며, 과거/수동/알 수 없는
+marker는 추측하여 제거하지 않고 busy로 막는다. 잠금 정리 실패도 guard를 해제하여 재시도를 허용한다.
+
+replace는 `.repository.transaction.json`에 원본 바이트/완성본과 SHA256을 fsync하여 prepared로
+쓴 뒤 profile → catalog → (archive가 있으면) scenario 순서로 각 파일을 fsync+atomic replace한다.
+committed journal을 fsync+atomic replace한 뒤 journal을 지운다. **prepared는 원본 전체 복원,
+committed는 완성본 전체 재적용**이다. 복구 자체가 중단되면 남은 journal로 다시 수행한다.
+잡힌 실패는 persistence_failed이고 committed 이후 실패는 보존된 최초 응답으로 재시도한다.
+손상된 journal은 corrupt_data로 막으며 혼합 snapshot이나 빈 문서를 반환하지 않는다.
+
+plan.get/state.get/scenario.list/get뿐 아니라 profile.list/current·repository/scenario writer도
+같은 guard에서 먼저 복구한다. 한 조회 안의 profile/current/collection snapshot은 잠금 아래 읽는다.
+FB-1b 이관과 일반 두 파일 저장의 기존 예외 rollback은 유지한다. 이번 journal의 다중 파일
+프로세스 중단 복구 보장은 replace transaction에 적용한다.
+
+### fixture·실패 주입·회귀
+
+공유 wire fixture `contracts/fixtures/repository_plan_replace_v1.json`은 20개 valid/invalid 사례다.
+완전 요청·archive/null 응답·두 revision 충돌 details, bool/음수 revision·누락/추가 key·공백 보존명·
+null 설명·빈 key·scenario 활성 문서·잘못된 archive ID·기존 응답만 있는 replace를 거부한다.
+v1 활성 문서 거부는 Dart DTO 테스트에서도 별도로 확인한다.
+기존 idempotency 저장 파일의 `{revision}`을 **읽는 호환성**과 replace 응답의 **세 필드 요구**는 별개다.
+
+| 실패/경계 | 검사한 결과 |
+| --- | --- |
+| before_journal / prepared / profile·catalog·scenario 쓰기 뒤 / before_commit | 잡힌 예외 및 os._exit(73) 뒤 원본 3파일 바이트 전체 복원 |
+| committed / journal 제거 뒤 | 예외 및 os._exit 뒤 교체 후 전체 유지. 같은 key 재시도 archive 1개 |
+| 파일별 before_write / before_fsync / before_replace | 3×3 실패 모두 원본 전체·revision/goals/cache 보존 |
+| 외부 process.kill | 살아 있을 때 조회 busy, 종료 뒤 OS guard 해제·잔여 marker/journal로 원본 전체 복구 |
+| 관련 읽기 4경로 | plan/state/scenario list/get 각각 prepared·committed 중단 상태를 먼저 복구하고 반환 |
+| 복구 도중 파일 실패 / marker 정리 실패 | journal 유지·재시도 가능, guard가 영구 busy로 남지 않음 |
+| 손상 journal header/path/checksum | corrupt_data, 대상 파일을 추가로 덮지 않음 |
+| 빈 활성·scenario 파일 없음 | collection 증가/생성 없음. stale collection revision은 명시적 충돌 |
+| 기존 scenario·현재 상태 | 원래 scenario record 내용·현재 students/inventory 보존. archive base는 교체 직전 값 |
+
+| 직접 검증 | 결과/로그 |
+| --- | --- |
+| Python 14모듈: replace 14건 + FB-1b·repository·v6·seed·scenario·문서 v1/v2·계산 parity·shortage | 90건 통과, debug/frontend_fb1c/python-targeted.txt |
+| Dart DTO/mock 7건 + FB-1b·repository fixture·protocol client·mock scanner | 46건 통과, debug/frontend_fb1c/dart-targeted.txt |
+| Process 새 교체 왕복 + 기존 FB-1b/repository/scenario | 4건 통과, debug/frontend_fb1c/dart-process.txt |
+| analyze / almanac | 통과: services·새 테스트 No issues, almanac 42페이지. dart-analyze.txt, almanac-validate.txt |
+| 슬라이스 diff·인계 | 통과: 수정 9파일 병합 충돌 없음·pre 11파일·post 15파일 고정·추가 파일 공백 오류 없음·스캐너 WIP 제외·보호 파일 및 index 변경 없음. diff-check-owned.txt, handoff-verification.json |
+| 전역 git diff --check | exit 2: 소유 범위 밖 frontend-redesign-orchestrator-log.md:467의 new blank line at EOF. diff-check.txt. 로그 소유자에게 EOF 빈 줄 정리 요청; 이번 slice에서 해당 로그를 수정하지 않음 |
+| Python 전체 / 공통 gate | 미실행. 전체 명령 아래. golden 변경 0 예상·baseline 포함 안 함 |
+
+새 process E2E는 legacy 첫 get(4→5) → v2 save(6) → 기존 scenario 생성(collection 1) →
+replace(profile 7, collection 2) → backend 재시작 → active/state/goals·archive 재조회 →
+기존 시나리오 유지·보존본의 실제 비용/인연 목표 비교·멱등 재시도/두 revision 충돌까지 묶었다.
+v6 가져오기/seed 반복, 시나리오 v1 frozen 비용·비교, FB-1a nullable 문서와 기존 goals 비용·
+재화·부족량 회귀도 통과했다. 비교 시 archive ID를 새 문서 ID로 써야 한다는 점을 process에서 확인했다.
+
+### FE4-e 프런트 연결 메모
+
+1. FE4-h의 `loadRepositoryPlan(profileId)`와 `loadRepositoryState`로 같은 profile revision을 확보한다.
+   `listScenarios(profileId)`의 revision을 **expectedScenarioRevision**으로 사용하며 그 결과의
+   currentProfileRevision도 같아야 한다. 다르면 재조회하여 한 기준으로 미리보기한다.
+2. 적용 초안은 v2/kind=plan이며 19개 nullable 목표와 goal_metadata를 그대로 둔다. 저장 전
+   document projection 미리보기를 사용한다. "페이즈로 추가"는 합친 문서 save,
+   "이걸로 바꾸기"만 아래 단일 replace를 쓴다. UI가 별도로 scenario.create/goals.save를 하지 않는다.
+3. 호출 전 초안·두 expected revision·보존명/설명·idempotency key를 고정한다. 성공 뒤에는
+   active/state/scenario 목록을 재조회하고 UI/cache의 두 revision을 갱신한다. archive ID가 null이면
+   빈 기존 계획이어서 보존본이 없다는 뜻이다. 오래된 성공 재시도의 반환 revision이 현재값보다
+   낮을 수 있으므로 반환값만 현재 snapshot으로 덮지 않는다.
+4. revision_conflict는 details.revision_scope로 profile/scenario/both를 구별한다. 초안을 보존한 채
+   재조회·다시 미리보기한다. timeout/disconnect/repository_busy/persistence_failed는 같은 고정 요청과
+   key로 재시도한다(이미 committed일 수 있음). idempotency_conflict에서 새 key로 자동 교체하지 않는다.
+   invalid_payload·corrupt_data·migration_required는 오류를 표시하고 빈 활성/빈 목록으로 처리하지 않는다.
+5. RepositoryPlanService capability가 replace 메서드를 추가했다. 이 capability를 구현한 프런트 테스트
+   대역은 새 메서드를 추가해야 한다. 기존 RepositoryService interface는 그대로다. 화면·widget/golden
+   대역과 실제 교체 버튼·인연 게이지 연결은 프런트 소유이며 이번 slice에서 수정하지 않았다.
+
+```dart
+final plans = service as RepositoryPlanService;
+final result = await plans.replaceRepositoryPlan(
+  profileId: profileId,
+  document: retainedDraftV2,
+  expectedRevision: retainedProfileRevision,
+  expectedScenarioRevision: retainedScenarioCollectionRevision,
+  idempotencyKey: retainedReplaceKey,
+  archiveName: retainedArchiveName,
+  archiveDescription: retainedArchiveDescription,
+);
+// 성공 뒤 active/state/scenario를 다시 읽어 갱신한다.
+```
+
+### 사용자 Python 전체·인계·동결
+
+루트에서 실행하고 결과를 debug/frontend_fb1c/python-full.txt에 남긴다.
+
+```powershell
+Push-Location backend
+py -3.11 -m unittest discover -s tests -v 2>&1 | Tee-Object -FilePath ..\debug\frontend_fb1c\python-full.txt
+$fb1cPythonExit = $LASTEXITCODE
+Pop-Location
+if ($fb1cPythonExit -ne 0) { throw "FB-1c Python full failed: $fb1cPythonExit" }
+```
+
+debug/frontend_fb1c/commit.json은 status=false, whole=이 backend 상태 문서,
+post_dir=debug/frontend_fb1c/post다. pre/post 사본을 고정하고 기존 스캐너 WIP는 슬라이스에서 제외한다.
+planning_protocol_client.dart는 변경하지 않고 시작 pre와 일치하는지 확인한다.
+gate·stage·커밋·push는 하지 않는다. 여기서 코드 편집을 멈추며 후속 작업은 오케스트레이터 프롬프트를 기다린다.
 
 # FB-1b 활성 계획 저장·legacy 이관
 

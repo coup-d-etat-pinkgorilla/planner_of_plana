@@ -16,6 +16,7 @@ from core.repository_dto import ConfirmedStudent, InventorySnapshot, StudentGoal
 from core.repository_merge import resolve_inventory_snapshot
 from core.repository_plan import canonical_active_document, document_from_goals, goals_from_document, legacy_write_loss, LegacyGoalsConflict
 from core.planning_summary import safe_calculation_summary
+from core.repository_transaction import Lease, acquire, release, locked, write_transaction
 from core.v6_migration import V6MigrationError, load_v6_accounts
 
 
@@ -154,11 +155,16 @@ class JsonRepository:
                 raise RepositoryError("corrupt_data", "profile contains an invalid idempotency record")
             fingerprint = record["fingerprint"]
             response = record["response"]
-            if not isinstance(fingerprint, str) or re.fullmatch(r"[0-9a-f]{64}", fingerprint) is None or not isinstance(response, dict) or set(response) != {"revision"}:
+            if not isinstance(fingerprint, str) or re.fullmatch(r"[0-9a-f]{64}", fingerprint) is None or not isinstance(response, dict) or set(response) not in ({"revision"}, {"revision", "scenario_revision", "archived_scenario_id"}):
                 raise RepositoryError("corrupt_data", "profile contains an invalid idempotency record")
             cached_revision = self._stored_revision(response["revision"], "idempotency response revision")
             if cached_revision > revision:
                 raise RepositoryError("corrupt_data", "idempotency response revision exceeds profile revision")
+            if "scenario_revision" in response:
+                self._stored_revision(response["scenario_revision"], "idempotency scenario revision")
+                archived_id = response["archived_scenario_id"]
+                if archived_id is not None:
+                    self._stored_profile_id(archived_id, "idempotency archived scenario ID")
         try:
             for student in value["students"]:
                 ConfirmedStudent.from_dict(student)
@@ -222,20 +228,11 @@ class JsonRepository:
         finally:
             self._unlock(descriptor)
 
-    def _lock(self) -> int:
-        self.root.mkdir(parents=True, exist_ok=True)
-        lock_path = self.root / ".repository.lock"
-        try:
-            return os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError as error:
-            raise RepositoryError("repository_busy", "another repository writer holds the lock", retryable=True) from error
+    def _lock(self) -> Lease:
+        return acquire(self.root, RepositoryError)
 
-    def _unlock(self, descriptor: int) -> None:
-        os.close(descriptor)
-        try:
-            (self.root / ".repository.lock").unlink()
-        except FileNotFoundError:
-            pass
+    def _unlock(self, descriptor: Lease) -> None:
+        release(descriptor)
 
     def _atomic_write(self, path: Path, value: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -262,6 +259,7 @@ class JsonRepository:
     def _profile_summary(profile: dict[str, Any], selected: str | None) -> dict[str, Any]:
         return {"profile_id": profile["profile_id"], "display_name": profile["display_name"], "avatar_student_id": profile.get("avatar_student_id", DEFAULT_PROFILE_AVATAR), "revision": profile["revision"], "selected": profile["profile_id"] == selected}
 
+    @locked(RepositoryError)
     def list_profiles(self) -> dict[str, Any]:
         catalog = self._catalog()
         profiles = [
@@ -307,6 +305,7 @@ class JsonRepository:
         finally:
             self._unlock(descriptor)
 
+    @locked(RepositoryError)
     def current_profile(self) -> dict[str, Any]:
         catalog = self._catalog()
         selected = catalog["selected_profile_id"]
@@ -422,10 +421,12 @@ class JsonRepository:
         finally:
             self._unlock(descriptor)
 
+    @locked(RepositoryError)
     def get_state(self, profile_id: str) -> dict[str, Any]:
         profile = self._profile_with_plan(profile_id)
         return {key: profile[key] for key in ("profile_id", "revision", "students", "inventory", "goals")}
 
+    @locked(RepositoryError)
     def get_plan(self, profile_id: str) -> dict[str, Any]:
         profile = self._profile_with_plan(profile_id)
         return {"profile_id": profile_id, "revision": profile["revision"], "document": profile["plan"], "calculation": safe_calculation_summary(profile["plan"], profile)}
@@ -436,6 +437,59 @@ class JsonRepository:
         def mutate(_catalog: dict[str, Any], profile: dict[str, Any]) -> None:
             profile["plan"], profile["goals"] = canonical, goals
         return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"plan:{canonical_json(canonical)}", mutate)
+
+    def replace_plan(self, profile_id: str, document: object, expected_revision: int, expected_scenario_revision: int, idempotency_key: str, archive_name: object, archive_description: object) -> dict[str, Any]:
+        from core.scenario_store import ScenarioStore, ScenarioStoreError
+        canonical = canonical_active_document(document)
+        for label, revision in (("expected_revision", expected_revision), ("expected_scenario_revision", expected_scenario_revision)):
+            if type(revision) is not int or revision < 0:
+                raise RepositoryError("invalid_payload", f"{label} must be a non-negative integer")
+        if not isinstance(idempotency_key, str) or not idempotency_key:
+            raise RepositoryError("invalid_payload", "idempotency_key must be non-empty")
+        try:
+            name = ScenarioStore._text(archive_name, "archive_name")
+            description = ScenarioStore._text(archive_description, "archive_description", allow_empty=True)
+        except ScenarioStoreError as error:
+            raise RepositoryError(error.code, str(error)) from error
+        operation = {"type": "replace", "document": canonical, "archive_name": name, "archive_description": description, "expected_revision": expected_revision, "expected_scenario_revision": expected_scenario_revision}
+        fingerprint = hashlib.sha256(canonical_json(operation).encode("utf-8")).hexdigest()
+        descriptor = self._lock()
+        try:
+            catalog = self._catalog(allow_missing=False)
+            profile = self._ensure_plan_locked(profile_id, catalog)
+            cached = profile["idempotency"].get(idempotency_key)
+            if cached:
+                if cached["fingerprint"] != fingerprint:
+                    raise RepositoryError("idempotency_conflict", "idempotency key was used for another mutation")
+                return cached["response"]
+            store = ScenarioStore(self.root, profile_revision=lambda _pid: profile["revision"], id_factory=self._id_factory)
+            try:
+                collection = store._read(profile_id)
+                profile_stale = profile["revision"] != expected_revision
+                scenario_stale = collection["revision"] != expected_scenario_revision
+                if profile_stale or scenario_stale:
+                    scope = "both" if profile_stale and scenario_stale else "profile" if profile_stale else "scenario"
+                    raise RepositoryError("revision_conflict", "plan replacement revisions are stale", details={"revision_scope": scope, "current_revision": profile["revision"], "current_scenario_revision": collection["revision"]})
+                archived_id = None
+                if profile["plan"]["phases"]:
+                    archived_id = store._append_record(collection, name, description, profile["revision"], {**profile["plan"], "kind": "scenario"}, archive=True)
+                    collection["revision"] += 1
+            except ScenarioStoreError as error:
+                raise RepositoryError(error.code, str(error), retryable=error.retryable, details=error.details) from error
+            profile["revision"] += 1
+            profile["plan"], profile["goals"] = canonical, goals_from_document(canonical)
+            response = {"revision": profile["revision"], "scenario_revision": collection["revision"], "archived_scenario_id": archived_id}
+            profile["idempotency"][idempotency_key] = {"fingerprint": fingerprint, "response": response}
+            for summary in catalog["profiles"]:
+                if summary["profile_id"] == profile_id:
+                    summary["revision"] = profile["revision"]
+            writes = [(self._profile_path(profile_id), profile), (self.catalog_path, catalog)]
+            if archived_id is not None:
+                writes.append((store._path(profile_id), collection))
+            write_transaction(self.root, writes, self._atomic_write, self._fault, RepositoryError)
+            return response
+        finally:
+            self._unlock(descriptor)
 
     def update_students(self, profile_id: str, students: list[dict[str, Any]], expected_revision: int, idempotency_key: str) -> dict[str, Any]:
         canonical = [ConfirmedStudent.from_dict(item).to_dict() for item in students]

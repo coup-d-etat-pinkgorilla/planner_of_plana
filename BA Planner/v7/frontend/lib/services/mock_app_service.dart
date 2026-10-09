@@ -12,6 +12,7 @@ import 'mock_student_calculation_fixture.dart';
 import 'mock_student_bond_fixture.dart';
 import 'repository_service.dart';
 import 'mock_repository_plan.dart';
+import 'planning_protocol_client.dart';
 import 'scanner_service.dart';
 import 'scenario_service.dart';
 import 'tactical_service.dart';
@@ -140,7 +141,7 @@ class MockAppService
   final List<RepositoryProfile> _profiles;
   final Map<String, Map<String, dynamic>> _repositoryStates = {};
   final Map<String, PlanningDocument> _repositoryPlans = {};
-  final Map<String, Map<String, ({String fingerprint, int revision})>> _planIdempotency = {};
+  final Map<String, Map<String, ({String fingerprint, Map<String, dynamic> response})>> _planIdempotency = {};
   final Map<String, TacticalState> _tacticalStates = {};
   final StreamController<ScannerEvent> _scannerEvents =
       StreamController.broadcast();
@@ -1490,7 +1491,7 @@ class MockAppService
       if (cached.fingerprint != fingerprint) {
         throw StateError('idempotency_conflict');
       }
-      return cached.revision;
+      return cached.response['revision'] as int;
     }
     if (state['revision'] != expectedRevision) {
       throw StateError('revision_conflict');
@@ -1506,7 +1507,10 @@ class MockAppService
     };
     _repositoryPlans[profileId] = repositoryActiveDocument(document.toWire());
     _syncMockPlanRevision(profileId, revision);
-    cache[idempotencyKey] = (fingerprint: fingerprint, revision: revision);
+    cache[idempotencyKey] = (
+      fingerprint: fingerprint,
+      response: Map.unmodifiable({'revision': revision}),
+    );
     return revision;
   }
 
@@ -1523,6 +1527,120 @@ class MockAppService
     idempotencyKey,
     'plan',
   );
+
+  @override
+  Future<RepositoryPlanReplaceResult> replaceRepositoryPlan({
+    required String profileId,
+    required PlanningDocument document,
+    required int expectedRevision,
+    required int expectedScenarioRevision,
+    required String idempotencyKey,
+    required String archiveName,
+    required String archiveDescription,
+  }) async {
+    final wire = RepositoryPlanReplaceRequest(
+      profileId: profileId,
+      document: document,
+      expectedRevision: expectedRevision,
+      expectedScenarioRevision: expectedScenarioRevision,
+      idempotencyKey: idempotencyKey,
+      archiveName: archiveName,
+      archiveDescription: archiveDescription,
+    ).toWire();
+    if (!_profiles.any((profile) => profile.id == profileId)) {
+      throw BackendRemoteException(
+        code: 'profile_not_found',
+        message: 'Profile does not exist',
+      );
+    }
+    final state = _ensureMockRepositoryPlan(profileId);
+    final fingerprint = mockPlanFingerprint({'operation': 'replace', ...wire});
+    final cache = _planIdempotency.putIfAbsent(profileId, () => {});
+    final cached = cache[idempotencyKey];
+    if (cached != null) {
+      if (cached.fingerprint != fingerprint) {
+        throw BackendRemoteException(
+          code: 'idempotency_conflict',
+          message: 'Key belongs to another mutation',
+        );
+      }
+      return RepositoryPlanReplaceResult.fromWire(cached.response);
+    }
+    final currentRevision = state['revision'] as int;
+    final collectionRevision = _scenarioCollectionRevision(profileId);
+    final profileStale = currentRevision != expectedRevision;
+    final scenarioStale = collectionRevision != expectedScenarioRevision;
+    if (profileStale || scenarioStale) {
+      throw BackendRemoteException(
+        code: 'revision_conflict',
+        message: 'Plan replacement revisions are stale',
+        details: {
+          'revision_scope': profileStale && scenarioStale
+              ? 'both'
+              : profileStale
+              ? 'profile'
+              : 'scenario',
+          'current_revision': currentRevision,
+          'current_scenario_revision': collectionRevision,
+        },
+      );
+    }
+    final previous = _repositoryPlans[profileId]!;
+    final goals = mockGoalsFromDocument(document);
+    final scenarios = <PlanningScenarioRecord>[
+      ...?_planningScenarios[profileId],
+    ];
+    String? archivedId;
+    var scenarioRevision = collectionRevision;
+    if (previous.phases.isNotEmpty) {
+      do {
+        archivedId = (_nextPlanningScenarioId++)
+            .toRadixString(16)
+            .padLeft(24, '0');
+      } while (scenarios.any((scenario) => scenario.id == archivedId));
+      final now = DateTime.now().toUtc().toIso8601String();
+      scenarios.add(
+        PlanningScenarioRecord(
+          id: archivedId,
+          revision: 0,
+          profileId: profileId,
+          name: wire['archive_name'] as String,
+          description: wire['archive_description'] as String,
+          baseProfileRevision: currentRevision,
+          document: PlanningDocument.fromWire({
+            ...previous.toWire(),
+            'kind': 'scenario',
+            'document_id': archivedId,
+          }),
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      scenarioRevision++;
+    }
+    final response = RepositoryPlanReplaceResult.fromWire({
+      'revision': currentRevision + 1,
+      'scenario_revision': scenarioRevision,
+      'archived_scenario_id': archivedId,
+    });
+    // All validation and record construction precede this synchronous commit.
+    _repositoryPlans[profileId] = document;
+    _repositoryStates[profileId] = {
+      ...state,
+      'revision': response.revision,
+      'goals': goals,
+    };
+    _syncMockPlanRevision(profileId, response.revision);
+    if (archivedId != null) {
+      _planningScenarios[profileId] = scenarios;
+      _planningScenarioRevisions[profileId] = scenarioRevision;
+    }
+    cache[idempotencyKey] = (
+      fingerprint: fingerprint,
+      response: Map.unmodifiable(response.toWire()),
+    );
+    return response;
+  }
 
   TacticalState _tactical(String profileId) =>
       _tacticalStates[profileId] ??

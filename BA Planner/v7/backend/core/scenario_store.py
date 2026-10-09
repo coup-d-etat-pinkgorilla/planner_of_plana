@@ -15,6 +15,7 @@ from core.planning_document import (
 )
 from core.repository_dto import canonical_json
 from core.planning_summary import calculation_summary
+from core.repository_transaction import Lease, acquire, release, locked
 
 
 STORE_VERSION = 1
@@ -83,7 +84,7 @@ class ScenarioStore:
             revision = self._profile_revision(profile_id)
         except Exception as error:
             code = getattr(error, "code", "profile_not_found")
-            raise ScenarioStoreError(code, str(error)) from error
+            raise ScenarioStoreError(code, str(error), retryable=getattr(error, "retryable", False), details=getattr(error, "details", {})) from error
         return self._integer(revision, "profile revision", corrupt=True)
 
     def _empty(self, profile_id: str) -> dict[str, Any]:
@@ -175,16 +176,11 @@ class ScenarioStore:
             raise ScenarioStoreError("invalid_payload", "scenario document kind must be scenario")
         return planning_document_to_wire(document)
 
-    def _lock(self) -> int:
-        self.root.mkdir(parents=True, exist_ok=True)
-        try:
-            return os.open(self.root / ".repository.lock", os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError as error:
-            raise ScenarioStoreError("repository_busy", "another repository writer holds the lock", retryable=True) from error
+    def _lock(self) -> Lease:
+        return acquire(self.root, ScenarioStoreError)
 
-    def _unlock(self, descriptor: int) -> None:
-        os.close(descriptor)
-        (self.root / ".repository.lock").unlink(missing_ok=True)
+    def _unlock(self, descriptor: Lease) -> None:
+        release(descriptor)
 
     def _write(self, path: Path, value: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -243,6 +239,7 @@ class ScenarioStore:
             "updated_at": item["updated_at"],
         }
 
+    @locked(ScenarioStoreError)
     def list(self, profile_id: str) -> dict[str, Any]:
         collection = self._read(profile_id)
         state = self._profile_state(profile_id) if self._profile_state is not None else None
@@ -253,6 +250,7 @@ class ScenarioStore:
             "scenarios": [self._summary(item, state) for item in collection["scenarios"]],
         }
 
+    @locked(ScenarioStoreError)
     def get(self, profile_id: str, scenario_id: str) -> dict[str, Any]:
         collection = self._read(profile_id)
         item = self._find(collection, scenario_id)
@@ -335,26 +333,26 @@ class ScenarioStore:
             current_profile_revision = self._profile_current_revision(profile_id)
             if base_revision > current_profile_revision:
                 raise ScenarioStoreError("invalid_payload", "base_profile_revision cannot be newer than the profile")
-            scenario_id = self._new_id(collection)
-            now = self._clock()
-            collection["scenarios"].append({
-                "version": 1,
-                "scenario_id": scenario_id,
-                "revision": 0,
-                "profile_id": profile_id,
-                "name": canonical_name,
-                "description": canonical_description,
-                "base_profile_revision": base_revision,
-                "document": canonical_document,
-                "created_at": now,
-                "updated_at": now,
-            })
-            return scenario_id
+            return self._append_record(collection, canonical_name, canonical_description, base_revision, canonical_document)
 
         return self._mutate(profile_id, expected_revision, idempotency_key, {
             "type": "create", "name": canonical_name, "description": canonical_description,
             "base_profile_revision": base_revision, "document": canonical_document,
         }, callback)
+
+    def _append_record(self, collection: dict[str, Any], name: str, description: str, base_revision: int, document: dict[str, Any], *, archive: bool = False) -> str:
+        scenario_id = self._new_id(collection)
+        if archive:
+            # Comparison requires distinct document IDs, including repeated active snapshots.
+            document = {**document, "document_id": scenario_id}
+        now = self._clock()
+        collection["scenarios"].append({
+            "version": 1, "scenario_id": scenario_id, "revision": 0,
+            "profile_id": collection["profile_id"], "name": name, "description": description,
+            "base_profile_revision": base_revision, "document": self._canonical_document(document),
+            "created_at": now, "updated_at": now,
+        })
+        return scenario_id
 
     def update(
         self,
