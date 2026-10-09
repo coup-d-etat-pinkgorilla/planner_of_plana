@@ -36,6 +36,7 @@ typedef _Replace = ({
 
 typedef _Create = ({
   PlanningDocument document,
+  PlanningAuthoring? authoring,
   int expectedRevision,
   int baseProfileRevision,
   String key,
@@ -116,11 +117,11 @@ class _RecordingService extends MockAppService {
     required String description,
     required int baseProfileRevision,
     required PlanningDocument document,
-    // FB-8b adds this optional parameter to MockAppService; FE4-e never sends authoring.
     PlanningAuthoring? authoring,
   }) async {
     creates.add((
       document: document,
+      authoring: authoring,
       expectedRevision: expectedRevision,
       baseProfileRevision: baseProfileRevision,
       key: idempotencyKey,
@@ -136,6 +137,7 @@ class _RecordingService extends MockAppService {
       description: description,
       baseProfileRevision: baseProfileRevision,
       document: document,
+      authoring: authoring,
     );
   }
 }
@@ -475,11 +477,16 @@ void main() {
       final stage = create.document.stages.single;
       expect(stage.nullableTargets['level'], 70);
       expect(stage.nullableTargets['ex_skill'], isNull);
+      // FE4-f1: authoring 전체를 함께 보낸다(여기서는 문서 기본값과 같다).
+      expect(create.authoring, isNotNull);
+      expect(create.authoring!.studentOrder, ['aru']);
+      expect(create.authoring!.stageOrderByStudent['aru'], [stage.id]);
+      expect(create.authoring!.isDefaultForDocument(create.document), isTrue);
       expect(service.planSaves, isEmpty);
       expect(service.replaces, isEmpty);
     });
 
-    test('페이즈로 추가: plan.save(활성 + 새 페이즈, plan.get revision), authoring은 보내지 않는다', () async {
+    test('페이즈로 추가: plan.save(활성 + 새 페이즈, plan.get revision), 활성 authoring과 합친 authoring을 보낸다', () async {
       final service = _RecordingService();
       addTearDown(service.dispose);
       await _seedActive(service, {
@@ -513,7 +520,13 @@ void main() {
       expect(outcome!.changedActivePlan, isTrue);
       final request = service.planSaves.single;
       expect(request.expectedRevision, revision);
-      expect(request.authoring, isNull);
+      // FE4-f1: 초안 단계 id가 활성 단계 id와 겹쳐 바꾼 id가 학생 체인에도 들어간다.
+      expect(request.authoring, isNotNull);
+      expect(request.authoring!.studentOrder, ['aru']);
+      expect(request.authoring!.stageOrderByStudent['aru'], [
+        'aru-stage-1',
+        'aru-stage-1-2',
+      ]);
       expect(request.key, startsWith('plan-flow-save-appendPhases-'));
       expect(request.document.id, plan.document.id);
       expect(request.document.phases, hasLength(2));
@@ -575,7 +588,8 @@ void main() {
       expect(request.expectedScenarioRevision, snapshot.scenarioRevision);
       expect(request.archiveName, planFlowDefaultArchiveName);
       expect(request.archiveDescription, '');
-      expect(request.authoring, isNull);
+      expect(request.authoring, isNotNull);
+      expect(request.authoring!.deferredStages, isEmpty);
       expect(request.document.kind, PlanningDocumentKind.plan);
       expect(request.document.stages.single.nullableTargets['skill1'], isNull);
       expect((await service.listScenarios(_profileId)).scenarios, isEmpty);

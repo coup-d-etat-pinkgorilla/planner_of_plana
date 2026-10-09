@@ -4,6 +4,8 @@
 // 쓰는 읽기 값을 맡는다.
 // FE4-d2(시안 Flow-3-Order-Many): 크게·작게 보기(단계가 [planFlowOrderCompactThreshold]개를 넘으면 작게), 작게
 // 보기 툴바(학생별 묶음 · 부족 있는 단계만 · 선택 풀기)와 보이는 카드 목록.
+// FE4-f1: "나중에" 칸으로 옮기기, 직접 선행 잇기(카드 아래 점 끌기 · C "선행 단계 추가" 뒤 카드 누르기)·지우기,
+// 고른 카드와 이어진 직접 선행, 규칙 위반 안내.
 import 'package:flutter/foundation.dart';
 
 import '../widgets/plan_element_builder.dart' show planElementCurrentTargets;
@@ -126,6 +128,7 @@ class PlanFlowOrderEditor extends ChangeNotifier {
   String? _selectedStageId;
   bool _selectionCleared = false;
   String? _message;
+  bool _linking = false;
   bool? _compactOverride;
   bool _groupByStudent = false;
   bool _shortOnly = false;
@@ -171,6 +174,7 @@ class PlanFlowOrderEditor extends ChangeNotifier {
     _selectionCleared = true;
     _selectedStageId = null;
     _message = null;
+    _linking = false;
     notifyListeners();
   }
 
@@ -190,10 +194,30 @@ class PlanFlowOrderEditor extends ChangeNotifier {
     return id == null ? null : draft.stageById(id);
   }
 
-  /// 마지막으로 거부한 이동의 이유. 다음 이동·정렬·선택에서 지운다.
+  /// 마지막으로 거부한 이동·잇기의 이유. 다음 이동·정렬·선택에서 지운다.
   String? get message => _message;
 
-  /// 3단계를 열 때 칸에 없는 단계를 칸에 넣는다([PlanFlowController.placeUnassignedStages]).
+  /// C "선행 단계 추가"를 눌러 먼저 끝나야 하는 단계 카드를 고르는 중이다(FE4-f1).
+  bool get linking => _linking && selectedStage != null;
+
+  /// 고르는 중 안내.
+  String? get linkingHint => linking
+      ? '${flow.stageLabel(selectedStage!)}보다 먼저 끝나야 하는 단계 카드를 누릅니다.'
+      : null;
+
+  /// 본문 머리 안내: 거부 이유 → 잇기 안내 → 초안 규칙 위반 → 저장 거절 순서.
+  ({String text, bool error})? get notice {
+    final message = _message;
+    if (message != null) return (text: message, error: true);
+    final hint = linkingHint;
+    if (hint != null) return (text: hint, error: false);
+    final issue = flow.orderIssues.firstOrNull ?? flow.savedIssue;
+    if (issue != null) return (text: issue.message, error: true);
+    return null;
+  }
+
+  /// 3단계를 열 때 칸에 없는 단계(임시 미배치)를 칸에 넣는다([PlanFlowController.placeUnassignedStages]). 명시
+  /// "나중에" 칸 단계는 다시 놓지 않는다.
   void ensurePlaced() {
     if (_disposed || draft.unassignedStages.isEmpty) return;
     flow.placeUnassignedStages();
@@ -201,13 +225,62 @@ class PlanFlowOrderEditor extends ChangeNotifier {
 
   void select(String stageId) {
     if (_disposed) return;
-    if (_selectedStageId == stageId && _message == null && !_selectionCleared) {
+    if (_selectedStageId == stageId &&
+        _message == null &&
+        !_selectionCleared &&
+        !_linking) {
       return;
     }
     _selectedStageId = stageId;
     _selectionCleared = false;
     _message = null;
+    _linking = false;
     notifyListeners();
+  }
+
+  /// 카드·칩 누르기. 선행 단계를 고르는 중이면 누른 카드를 고른 카드의 먼저 끝나야 하는 단계로 잇고, 아니면 고른다.
+  void tapCard(String stageId) {
+    if (_disposed) return;
+    final selected = selectedStageId;
+    if (linking && selected != null && selected != stageId) {
+      link(requiresStageId: stageId, stageId: selected);
+      return;
+    }
+    select(stageId);
+  }
+
+  /// C "선행 단계 추가": 고르기 시작·그만두기.
+  void toggleLinking() {
+    if (_disposed || selectedStage == null) return;
+    _linking = !_linking;
+    _message = null;
+    notifyListeners();
+  }
+
+  /// 직접 선행을 잇는다: [stageId]는 [requiresStageId]가 끝나야 한다(카드 아래 점 끌기, C 고르기). 거부하면 이유를
+  /// [message]에 두고 false다. 이은 뒤 [stageId]를 고른다.
+  bool link({required String requiresStageId, required String stageId}) {
+    if (_disposed) return false;
+    final violation = flow.addPrerequisite(
+      stageId: stageId,
+      requiresStageId: requiresStageId,
+    );
+    _selectedStageId = stageId;
+    _selectionCleared = false;
+    _linking = false;
+    _message = violation;
+    notifyListeners();
+    return violation == null;
+  }
+
+  /// 직접 선행을 지운다(C ×).
+  void unlink({required String requiresStageId, required String stageId}) {
+    if (_disposed) return;
+    flow.removePrerequisite(stageId: stageId, requiresStageId: requiresStageId);
+    if (_message != null) {
+      _message = null;
+      notifyListeners();
+    }
   }
 
   /// 카드를 칸 [phaseId]의 [index] 자리로 옮긴다. 거부하면 이유를 [message]에 두고 false다.
@@ -216,16 +289,27 @@ class PlanFlowOrderEditor extends ChangeNotifier {
     final violation = flow.moveStage(stageId, phaseId: phaseId, index: index);
     _selectedStageId = stageId;
     _selectionCleared = false;
+    _linking = false;
     _message = violation;
     notifyListeners();
     return violation == null;
   }
 
-  /// [stageId]를 [phaseId] 칸에 놓을 수 없으면 그 이유(끌고 있는 동안 칸 표시에 쓴다).
+  /// [stageId]를 [phaseId] 칸([planFlowDeferredLaneId]면 "나중에" 칸)에 놓을 수 없으면 그 이유(끌고 있는 동안 칸
+  /// 표시에 쓴다).
   String? violationFor(String stageId, String phaseId) {
-    final index = draft.phases.indexWhere((phase) => phase.id == phaseId);
+    final index = phaseId == planFlowDeferredLaneId
+        ? draft.phases.length
+        : draft.phases.indexWhere((phase) => phase.id == phaseId);
     return index < 0 ? null : flow.orderViolation(stageId, index);
   }
+
+  /// "나중에" 칸(보드 칸 하나로 그린다). 칸 이름은 고칠 수 없다.
+  PlanFlowPhase get deferredLane => PlanFlowPhase(
+    id: planFlowDeferredLaneId,
+    name: '나중에',
+    stageIds: draft.deferredStageIds,
+  );
 
   void renamePhase(String phaseId, String name) {
     if (_disposed) return;
@@ -306,13 +390,40 @@ class PlanFlowOrderEditor extends ChangeNotifier {
     return last < 0 ? phase.stageIds.length : last + 1;
   }
 
-  /// 고른 카드와 이어진 카드(고른 카드 · 같은 학생 바로 앞·뒤 단계). 고른 카드가 없으면 모두 true다.
+  /// 고른 카드와 이어진 카드(고른 카드 · 같은 학생 바로 앞·뒤 단계 · 직접 선행으로 이은 단계). 고른 카드가 없으면
+  /// 모두 true다.
   bool isConnected(String stageId) {
     final stage = selectedStage;
     if (stage == null || stage.id == stageId) return true;
     return predecessorOf(stage)?.id == stageId ||
-        successorOf(stage)?.id == stageId;
+        successorOf(stage)?.id == stageId ||
+        draft.prerequisites.any(
+          (item) =>
+              (item.stageId == stage.id && item.requiresStageId == stageId) ||
+              (item.requiresStageId == stage.id && item.stageId == stageId),
+        );
   }
+
+  /// [stage]의 직접 선행(먼저 끝나야 하는 단계, 만든 순서). 초안에 없는 단계를 가리키면 단계가 null이다.
+  List<({PlanFlowPrerequisite prerequisite, PlanFlowStage? stage})>
+  directPrerequisitesOf(PlanFlowStage stage) => [
+    for (final prerequisite in draft.prerequisites)
+      if (prerequisite.stageId == stage.id)
+        (
+          prerequisite: prerequisite,
+          stage: draft.stageById(prerequisite.requiresStageId),
+        ),
+  ];
+
+  /// [stage]를 직접 선행으로 기다리는 단계.
+  List<PlanFlowStage> directDependentsOf(PlanFlowStage stage) => [
+    for (final prerequisite in draft.prerequisites)
+      if (prerequisite.requiresStageId == stage.id)
+        ?draft.stageById(prerequisite.stageId),
+  ];
+
+  /// [stageId] 카드에 걸린 규칙 위반(초안 확인 + 저장 거절).
+  List<PlanFlowOrderIssue> issuesOf(String stageId) => flow.issuesOf(stageId);
 
   /// [stageId]가 든 칸. 칸에 없으면 null.
   PlanFlowPhase? phaseOf(String stageId) {

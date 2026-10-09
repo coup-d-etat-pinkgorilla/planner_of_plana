@@ -6,6 +6,11 @@
 // 계획 문서 DTO(`PlanningDocument`·`PlanningDocumentPhase`·`PlanningDocumentStage`, `planning_models.dart`)는
 // [PlanFlowDocumentBoundary] 한 곳에서만 만들고 읽는다. 초안은 문서 v2(FB-1a: 목표 없음 = null, 학생별
 // goal_metadata)이고(FE4-b1), 2·3단계의 기존 정수 편집기와는 [PlanFlowGoalCodec]으로 바꾼다.
+//
+// FE4-f1(FD-068, FB-8 authoring v1): 초안은 명시 "나중에" 칸 단계([PlanFlowDraft.deferredStageIds])와 학생 간 직접
+// 선행([PlanFlowDraft.prerequisites])을 가진다. 칸에도 나중에 칸에도 없는 단계는 목표 편집 중 임시 미배치다. 칸마다
+// 자동 체인(같은 학생 앞 → 뒤) + 직접 선행의 stable topological 순서로 배열을 정리하고, 저장할 때 문서 옆
+// authoring을 [PlanFlowDocumentBoundary.authoringFor]로 만든다.
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -67,6 +72,51 @@ class PlanFlowPhase {
   final String id;
   final String name;
   final List<String> stageIds;
+}
+
+/// "나중에" 칸 id(FE4-f1). 보드·끌기에서 칸 id 자리에 쓰고 문서 페이즈로는 저장하지 않는다. 칸 순번은 마지막
+/// 칸([PlanFlowDraft.phases] 길이)이다(FB-8: 나중에 = 마지막 칸).
+const planFlowDeferredLaneId = 'plan-flow-deferred';
+
+/// 학생 간 직접 선행 하나(FE4-f1, authoring `prerequisites`): [stageId]는 [requiresStageId]가 끝나야 한다.
+@immutable
+class PlanFlowPrerequisite {
+  const PlanFlowPrerequisite({
+    required this.stageId,
+    required this.requiresStageId,
+  });
+
+  /// 기다리는 단계.
+  final String stageId;
+
+  /// 먼저 끝나야 하는 단계.
+  final String requiresStageId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PlanFlowPrerequisite &&
+      other.stageId == stageId &&
+      other.requiresStageId == requiresStageId;
+
+  @override
+  int get hashCode => Object.hash(stageId, requiresStageId);
+}
+
+/// 단계 순서 graph의 edge 하나: [from]이 끝나야 [to]를 한다. [direct]가 아니면 같은 학생 자동 체인이다.
+typedef PlanFlowOrderEdge = ({String from, String to, bool direct});
+
+/// 단계 순서 규칙을 어긴 곳(FE4-f1). [reason]은 백엔드 authoring reason과 같은 말이고, [stageIds]는 표시할 카드다.
+@immutable
+class PlanFlowOrderIssue {
+  PlanFlowOrderIssue({
+    required this.reason,
+    required List<String> stageIds,
+    required this.message,
+  }) : stageIds = List.unmodifiable(stageIds);
+
+  final String reason;
+  final List<String> stageIds;
+  final String message;
 }
 
 /// 목표를 고르지 않은 학생의 goal_metadata 기본값(FB-1a).
@@ -222,7 +272,8 @@ class PlanFlowStage {
   Map<String, int?> get targets => draft.targets;
 }
 
-/// 계획 만들기 초안: 고른 학생(고른 순서) · 학생별 누적 단계(v2) · 칸 배치 · 학생별 goal_metadata.
+/// 계획 만들기 초안: 고른 학생(고른 순서) · 학생별 누적 단계(v2) · 칸 배치 · "나중에" 칸 · 직접 선행 · 학생별
+/// goal_metadata.
 @immutable
 class PlanFlowDraft {
   PlanFlowDraft({
@@ -230,6 +281,8 @@ class PlanFlowDraft {
     Map<String, List<PlanFlowStageDraft>> stagesByStudent = const {},
     List<PlanFlowPhase> phases = const [],
     Map<String, PlanningGoalMetadata> goalMetadata = const {},
+    List<String> deferredStageIds = const [],
+    List<PlanFlowPrerequisite> prerequisites = const [],
   }) : students = List.unmodifiable(students),
        stagesByStudent = Map.unmodifiable(<String, List<PlanFlowStageDraft>>{
          for (final entry in stagesByStudent.entries)
@@ -237,7 +290,9 @@ class PlanFlowDraft {
              entry.key: List<PlanFlowStageDraft>.unmodifiable(entry.value),
        }),
        phases = List.unmodifiable(phases),
-       goalMetadata = Map.unmodifiable(goalMetadata);
+       goalMetadata = Map.unmodifiable(goalMetadata),
+       deferredStageIds = List.unmodifiable(deferredStageIds),
+       prerequisites = List.unmodifiable(prerequisites);
 
   /// 고른 순서.
   final List<PlanningStudentSeed> students;
@@ -246,6 +301,13 @@ class PlanFlowDraft {
 
   /// 학생별 즐겨찾기·메모. 초안을 다시 만들거나 문서로 바꿔도 그대로 옮긴다(FB-1a).
   final Map<String, PlanningGoalMetadata> goalMetadata;
+
+  /// 명시 "나중에" 칸 단계(칸 안 순서, FE4-f1). 계산과 문서 페이즈에 넣지 않고 authoring `deferred_stages`로만
+  /// 저장한다. 목표 편집 중 칸에서 빠진 임시 미배치([unassignedStages])와 다르다.
+  final List<String> deferredStageIds;
+
+  /// 학생 간 직접 선행(FE4-f1, 만든 순서). 같은 학생 단계는 자동 체인이 맡는다.
+  final List<PlanFlowPrerequisite> prerequisites;
 
   static final empty = PlanFlowDraft();
 
@@ -279,6 +341,9 @@ class PlanFlowDraft {
           ),
   ];
 
+  /// 학생 순서(authoring `student_order`): 고른 순서 뒤에 고른 목록에 없는(불러온 문서의) 학생.
+  List<String> get studentOrder => _studentOrder;
+
   /// 고른 순서 뒤에, 고른 목록에 없는(불러온 문서의) 학생을 붙인다.
   List<String> get _studentOrder => [
     for (final seed in students) seed.studentId,
@@ -303,16 +368,42 @@ class PlanFlowDraft {
     for (final phase in phases) ...phase.stageIds,
   };
 
+  /// 칸에도 "나중에" 칸에도 없는 단계(목표 편집 중 임시 미배치). 3단계 보드가 칸에 넣는다.
   List<PlanFlowStage> get unassignedStages {
     final assigned = assignedStageIds;
+    final deferred = deferredStageIds.toSet();
     return [
       for (final stage in stages)
-        if (!assigned.contains(stage.id)) stage,
+        if (!assigned.contains(stage.id) && !deferred.contains(stage.id)) stage,
     ];
   }
 
-  /// 모든 단계가 칸에 들어 있다(3단계 완료, 저장 가능).
+  /// 모든 단계가 칸이나 "나중에" 칸에 있다(3단계 완료, 저장 가능). 모두 나중에여도 된다(FE4-f1).
   bool get allStagesAssigned => hasStages && unassignedStages.isEmpty;
+
+  bool isDeferred(String stageId) => deferredStageIds.contains(stageId);
+
+  /// "나중에" 칸 단계(칸 안 순서). 초안에 없는 id는 뺀다.
+  List<PlanFlowStage> get deferredStages {
+    final byId = {for (final stage in stages) stage.id: stage};
+    return [
+      for (final id in deferredStageIds) ?byId[id],
+    ];
+  }
+
+  /// 단계 id → 칸 순번. "나중에" 칸은 [phases] 길이(마지막 칸)다. 임시 미배치 단계는 없다.
+  Map<String, int> get laneIndexById => {
+    for (final (index, phase) in phases.indexed)
+      for (final id in phase.stageIds) id: index,
+    for (final id in deferredStageIds) id: phases.length,
+  };
+
+  /// 단계 id → 칸 안 자리(칸 순번은 [laneIndexById]).
+  Map<String, int> get lanePositionById => {
+    for (final phase in phases)
+      for (final (index, id) in phase.stageIds.indexed) id: index,
+    for (final (index, id) in deferredStageIds.indexed) id: index,
+  };
 
   PlanFlowStage? stageById(String id) {
     for (final stage in stages) {
@@ -326,12 +417,213 @@ class PlanFlowDraft {
     Map<String, List<PlanFlowStageDraft>>? stagesByStudent,
     List<PlanFlowPhase>? phases,
     Map<String, PlanningGoalMetadata>? goalMetadata,
+    List<String>? deferredStageIds,
+    List<PlanFlowPrerequisite>? prerequisites,
   }) => PlanFlowDraft(
     students: students ?? this.students,
     stagesByStudent: stagesByStudent ?? this.stagesByStudent,
     phases: phases ?? this.phases,
     goalMetadata: goalMetadata ?? this.goalMetadata,
+    deferredStageIds: deferredStageIds ?? this.deferredStageIds,
+    prerequisites: prerequisites ?? this.prerequisites,
   );
+}
+
+/// 단계 순서 graph(FE4-f1): 같은 학생 자동 체인(앞 → 뒤) + 직접 선행. 없는 단계·자기 자신·같은 학생·겹친 직접
+/// 선행은 뺀다(그것들은 [planFlowOrderIssues]가 알린다).
+List<PlanFlowOrderEdge> planFlowOrderEdges(PlanFlowDraft draft) {
+  final studentOf = <String, String>{
+    for (final entry in draft.stagesByStudent.entries)
+      for (final stage in entry.value) stage.id: entry.key,
+  };
+  final edges = <PlanFlowOrderEdge>[
+    for (final stages in draft.stagesByStudent.values)
+      for (var index = 1; index < stages.length; index++)
+        (from: stages[index - 1].id, to: stages[index].id, direct: false),
+  ];
+  final seen = <PlanFlowPrerequisite>{};
+  for (final prerequisite in draft.prerequisites) {
+    final from = studentOf[prerequisite.requiresStageId];
+    final to = studentOf[prerequisite.stageId];
+    if (from == null || to == null || from == to || !seen.add(prerequisite)) {
+      continue;
+    }
+    edges.add((
+      from: prerequisite.requiresStageId,
+      to: prerequisite.stageId,
+      direct: true,
+    ));
+  }
+  return edges;
+}
+
+/// [ids]를 [edges]의 선행 → 후행 순서로 다시 놓는다. 놓을 수 있는 것 중 원래 자리가 가장 앞인 것을 먼저 고르는
+/// stable topological sort다(관계없는 단계는 원래 순서 그대로). [ids] 밖 단계와 이은 edge는 보지 않는다. 순환이
+/// 있으면 남은 단계를 원래 순서대로 뒤에 붙인다.
+List<String> planFlowStableTopological(
+  List<String> ids,
+  Iterable<PlanFlowOrderEdge> edges,
+) {
+  final position = {for (final (index, id) in ids.indexed) id: index};
+  final successors = {for (final id in ids) id: <String>[]};
+  final indegree = {for (final id in ids) id: 0};
+  for (final edge in edges) {
+    if (edge.from == edge.to ||
+        !position.containsKey(edge.from) ||
+        !position.containsKey(edge.to)) {
+      continue;
+    }
+    successors[edge.from]!.add(edge.to);
+    indegree[edge.to] = indegree[edge.to]! + 1;
+  }
+  final result = <String>[];
+  final done = <String>{};
+  while (result.length < ids.length) {
+    String? next;
+    for (final id in ids) {
+      if (!done.contains(id) && indegree[id] == 0) {
+        next = id;
+        break;
+      }
+    }
+    if (next == null) {
+      result.addAll([
+        for (final id in ids)
+          if (!done.contains(id)) id,
+      ]);
+      break;
+    }
+    done.add(next);
+    result.add(next);
+    for (final successor in successors[next]!) {
+      indegree[successor] = indegree[successor]! - 1;
+    }
+  }
+  return result;
+}
+
+/// 단계 순서 규칙 확인(FE4-f1, 백엔드 authoring validator와 같은 reason).
+///
+/// - 직접 선행: `stage_reference`(없는 단계) · `self_reference` · `same_student_prerequisite` ·
+///   `duplicate_prerequisite`.
+/// - `cycle`: 자동 체인 + 직접 선행이 돌고 돈다.
+/// - `lane_order`: 선행 단계가 뒤 칸에 있다("나중에"는 마지막 칸). `stage_order`: 같은 칸 배열에서 선행이 뒤에 있다.
+/// 임시 미배치 단계는 칸 규칙에서 뺀다. [label]은 카드 이름(`학생 n단계`)이다.
+List<PlanFlowOrderIssue> planFlowOrderIssues(
+  PlanFlowDraft draft,
+  String Function(PlanFlowStage stage) label,
+) {
+  final stages = {for (final stage in draft.stages) stage.id: stage};
+  String name(String id) => switch (stages[id]) {
+    final stage? => label(stage),
+    null => '없어진 단계',
+  };
+  final issues = <PlanFlowOrderIssue>[];
+  final seen = <PlanFlowPrerequisite>{};
+  for (final prerequisite in draft.prerequisites) {
+    final stage = stages[prerequisite.stageId];
+    final required = stages[prerequisite.requiresStageId];
+    final ids = [
+      if (stage != null) stage.id,
+      if (required != null && required.id != stage?.id) required.id,
+    ];
+    if (stage == null || required == null) {
+      issues.add(
+        PlanFlowOrderIssue(
+          reason: 'stage_reference',
+          stageIds: ids,
+          message:
+              '${ids.isEmpty ? '직접 선행' : name(ids.first)}에 이은 선행 조건이 없어진 단계를 가리킵니다. '
+              '그 선행 조건을 지워 주십시오.',
+        ),
+      );
+    } else if (stage.id == required.id) {
+      issues.add(
+        PlanFlowOrderIssue(
+          reason: 'self_reference',
+          stageIds: ids,
+          message: '${name(stage.id)}를 자기 자신의 선행 단계로 이었습니다.',
+        ),
+      );
+    } else if (stage.studentId == required.studentId) {
+      issues.add(
+        PlanFlowOrderIssue(
+          reason: 'same_student_prerequisite',
+          stageIds: ids,
+          message:
+              '${name(stage.id)}와 ${name(required.id)}는 같은 학생 단계라 직접 이을 수 없습니다.',
+        ),
+      );
+    } else if (!seen.add(prerequisite)) {
+      issues.add(
+        PlanFlowOrderIssue(
+          reason: 'duplicate_prerequisite',
+          stageIds: ids,
+          message:
+              '${name(required.id)} → ${name(stage.id)} 선행 조건이 두 번 있습니다.',
+        ),
+      );
+    }
+  }
+  final edges = planFlowOrderEdges(draft);
+  // 순환: 모든 단계에서 Kahn으로 지우고 남는 단계.
+  final order = planFlowStableTopological([...stages.keys], edges);
+  final placed = <String>{};
+  final cyclic = <String>{};
+  for (final id in order) {
+    final blocked = edges.any(
+      (edge) => edge.to == id && !placed.contains(edge.from),
+    );
+    if (blocked) {
+      cyclic.add(id);
+    } else {
+      placed.add(id);
+    }
+  }
+  if (cyclic.isNotEmpty) {
+    final ids = [
+      for (final id in stages.keys)
+        if (cyclic.contains(id)) id,
+    ];
+    issues.add(
+      PlanFlowOrderIssue(
+        reason: 'cycle',
+        stageIds: ids,
+        message:
+            '선행 조건이 돌고 돌아 이어집니다(${ids.take(3).map(name).join(' → ')}${ids.length > 3 ? ' …' : ''}). '
+            '직접 선행 하나를 지워 주십시오.',
+      ),
+    );
+  }
+  final lane = draft.laneIndexById;
+  final position = draft.lanePositionById;
+  for (final edge in edges) {
+    if (cyclic.contains(edge.from) && cyclic.contains(edge.to)) continue;
+    final from = lane[edge.from];
+    final to = lane[edge.to];
+    if (from == null || to == null) continue;
+    final what = edge.direct ? '먼저 끝나야 하는 단계' : '선행 단계';
+    if (from > to) {
+      issues.add(
+        PlanFlowOrderIssue(
+          reason: 'lane_order',
+          stageIds: [edge.to, edge.from],
+          message:
+              '${name(edge.to)}는 $what(${name(edge.from)})보다 앞 칸에 있습니다.',
+        ),
+      );
+    } else if (from == to && position[edge.from]! >= position[edge.to]!) {
+      issues.add(
+        PlanFlowOrderIssue(
+          reason: 'stage_order',
+          stageIds: [edge.to, edge.from],
+          message:
+              '같은 칸에서 ${name(edge.to)}가 $what(${name(edge.from)})보다 앞에 있습니다.',
+        ),
+      );
+    }
+  }
+  return issues;
 }
 
 /// 초안 ↔ 계획 문서 DTO 경계.
@@ -374,7 +666,8 @@ abstract final class PlanFlowDocumentBoundary {
   /// 계산(`planning.document.calculate`)에 보낼 문서. 칸에 아직 넣지 않은 단계는 단계 번호마다 임시 페이즈에
   /// 넣는다(모두 1단계 → 모두 2단계 …). 같은 학생의 단계는 칸에 다 들어가거나 하나도 안 들어가므로(요소 편집기가
   /// 학생 단위로 바꾸고 3단계 보드는 학생 단계를 한꺼번에 배치하며 선행보다 앞 칸 이동을 거부한다) 문서 순서상
-  /// 목표가 퇴행하지 않는다(C 보고서 §1.6). 빈 칸은 보내지 않는다(FE4-d1).
+  /// 목표가 퇴행하지 않는다(C 보고서 §1.6). 빈 칸은 보내지 않는다(FE4-d1). "나중에" 칸 단계는 계산에서 뺀다(FE4-f1,
+  /// 같은 학생의 나중에 단계는 늘 체인 뒤쪽이라 앞 단계 목표만 계산한다).
   static Map<String, dynamic> calculationWire(
     PlanFlowDraft draft, {
     required String id,
@@ -452,42 +745,77 @@ abstract final class PlanFlowDocumentBoundary {
     ];
   }
 
-  /// 저장된 시나리오 문서를 초안으로 연다. 페이즈 순서·안의 단계 순서를 그대로 칸으로 쓴다.
+  /// 저장된 문서와 authoring(FE4-f1, FB-8)을 초안으로 연다. 페이즈 순서·안의 단계 순서를 그대로 칸으로 쓴다.
   ///
-  /// v2 문서는 `nullableTargets`·`goalMetadata`를 그대로 옮긴다. v1 문서(정수 목표)는 [PlanFlowGoalCodec.fromEditor]로
-  /// 지금 값보다 높은 키만 목표로 본다.
+  /// - [authoring]이 없으면(`hasAuthoring=false`) DTO 기본값([PlanningAuthoring.defaultForDocument])이다.
+  /// - 학생 순서는 `student_order`(문서에 단계가 없는 선택 학생 포함), 학생 단계 순서는 `stage_order_by_student`
+  ///   (배치 prefix + 나중에 suffix), "나중에" 칸은 `deferred_stages` 순서, 직접 선행은 `prerequisites`다.
+  /// - goal_metadata는 문서에 있는 학생이면 문서 것, 나머지 선택 학생이면 authoring 것이다.
+  /// - v2 문서는 `nullableTargets`를 그대로 옮긴다(정수로 바꾸지 않는다). v1 문서(정수 목표)는
+  ///   [PlanFlowGoalCodec.fromEditor]로 지금 값보다 높은 키만 목표로 본다.
   static PlanFlowDraft fromDocument(
     PlanningDocument document, {
     required PlanningStudentSeed Function(String studentId) seedFor,
+    PlanningAuthoring? authoring,
   }) {
-    final byStudent = <String, List<PlanningDocumentStage>>{};
-    for (final stage in document.stages) {
-      byStudent.putIfAbsent(stage.studentId, () => []).add(stage);
-    }
-    final seeds = {
-      for (final studentId in byStudent.keys) studentId: seedFor(studentId),
+    final bundle = authoring ?? PlanningAuthoring.defaultForDocument(document);
+    final stagesById = <String, PlanningDocumentStage>{
+      for (final stage in document.stages) stage.id: stage,
+      for (final stage in bundle.deferredStages) stage.id: stage,
     };
+    final order = <String>{
+      ...bundle.studentOrder,
+      for (final stage in document.stages)
+        if (!bundle.studentOrder.contains(stage.studentId)) stage.studentId,
+    }.toList();
+    final seeds = {for (final studentId in order) studentId: seedFor(studentId)};
+    List<PlanningDocumentStage> chainOf(String studentId) {
+      final ids =
+          bundle.stageOrderByStudent[studentId] ??
+          [
+            for (final stage in document.stages)
+              if (stage.studentId == studentId) stage.id,
+          ];
+      return [
+        for (final id in ids) ?stagesById[id],
+      ];
+    }
+
+    List<PlanFlowStageDraft> draftsOf(String studentId) {
+      final chain = chainOf(studentId);
+      if (document.version >= 2) {
+        return [
+          for (final stage in chain)
+            PlanFlowStageDraft(
+              id: stage.id,
+              name: stage.name,
+              targets: stage.nullableTargets,
+            ),
+        ];
+      }
+      // v1 문서: 정수 목표. 나중에 단계(v2 nullable)의 null은 앞 단계 값으로 채워 정수 보기로 만든다.
+      var previous = PlanFlowGoalCodec._floor(seeds[studentId]);
+      return PlanFlowGoalCodec.fromEditor(seeds[studentId], [
+        for (final stage in chain)
+          () {
+            final targets = <String, int>{
+              for (final key in planningDocumentTargetKeys)
+                key: stage.nullableTargets[key] ?? previous[key]!,
+            };
+            previous = targets;
+            return PlanElementStageDraft(
+              id: stage.id,
+              name: stage.name,
+              targets: targets,
+            );
+          }(),
+      ]);
+    }
+
     return PlanFlowDraft(
-      students: [for (final studentId in byStudent.keys) seeds[studentId]!],
+      students: [for (final studentId in order) seeds[studentId]!],
       stagesByStudent: {
-        for (final entry in byStudent.entries)
-          entry.key: document.version >= 2
-              ? [
-                  for (final stage in entry.value)
-                    PlanFlowStageDraft(
-                      id: stage.id,
-                      name: stage.name,
-                      targets: stage.nullableTargets,
-                    ),
-                ]
-              : PlanFlowGoalCodec.fromEditor(seeds[entry.key], [
-                  for (final stage in entry.value)
-                    PlanElementStageDraft(
-                      id: stage.id,
-                      name: stage.name,
-                      targets: stage.targets,
-                    ),
-                ]),
+        for (final studentId in order) studentId: draftsOf(studentId),
       },
       phases: [
         for (final phase in document.phases)
@@ -497,9 +825,74 @@ abstract final class PlanFlowDocumentBoundary {
             stageIds: [for (final stage in phase.stages) stage.id],
           ),
       ],
-      goalMetadata: document.goalMetadata,
+      goalMetadata: {...bundle.goalMetadata, ...document.goalMetadata},
+      deferredStageIds: [for (final stage in bundle.deferredStages) stage.id],
+      prerequisites: [
+        for (final prerequisite in bundle.prerequisites)
+          PlanFlowPrerequisite(
+            stageId: prerequisite.stageId,
+            requiresStageId: prerequisite.requiresStageId,
+          ),
+      ],
     );
   }
+
+  /// 저장할 authoring v1 wire(FE4-f1, FB-8). [document]는 같은 초안으로 만든 저장 문서다.
+  ///
+  /// - `student_order` = [PlanFlowDraft.studentOrder](단계 없는 선택 학생 포함).
+  /// - `stage_order_by_student` = 학생 단계 순서(자동 체인). 칸 배치가 규칙을 지키면 배치 prefix + 나중에 suffix와
+  ///   같다.
+  /// - `deferred_stages` = "나중에" 칸 순서의 단계 전체(v2 nullable 목표 그대로).
+  /// - `goal_metadata` = 선택 학생 중 [document]에 단계가 없는 학생의 것.
+  static Map<String, dynamic> authoringWire(
+    PlanFlowDraft draft,
+    PlanningDocument document,
+  ) {
+    final present = {for (final stage in document.stages) stage.studentId};
+    final order = draft.studentOrder;
+    return {
+      'version': 1,
+      'prerequisites': [
+        for (final prerequisite in draft.prerequisites)
+          {
+            'stage_id': prerequisite.stageId,
+            'requires_stage_id': prerequisite.requiresStageId,
+          },
+      ],
+      'deferred_stages': [
+        for (final stage in draft.deferredStages)
+          PlanningDocumentStage(
+            id: stage.id,
+            studentId: stage.studentId,
+            name: stage.name,
+            targets: stage.targets,
+          ).toWire(),
+      ],
+      'student_order': order,
+      'stage_order_by_student': {
+        for (final studentId in order)
+          studentId: [
+            for (final stage
+                in draft.stagesByStudent[studentId] ??
+                    const <PlanFlowStageDraft>[])
+              stage.id,
+          ],
+      },
+      'goal_metadata': {
+        for (final studentId in order)
+          if (!present.contains(studentId))
+            studentId:
+                (draft.goalMetadata[studentId] ?? planFlowDefaultGoalMetadata)
+                    .toWire(),
+      },
+    };
+  }
+
+  /// [authoringWire]를 공용 validator로 읽은 authoring. 규칙을 어기면 [PlanningAuthoringFormatException]을 던진다.
+  static PlanningAuthoring authoringFor(
+    PlanFlowDraft draft,
+    PlanningDocument document,
+  ) => PlanningAuthoring.fromWire(authoringWire(draft, document), document);
 }
 
 /// 부족 재화를 쓰는 학생 단계.
@@ -572,7 +965,7 @@ enum PlanFlowStageStatus { possible, short, blocked }
 /// - 부족: 그 단계가 어떤 병목의 단계이거나, 들어설 때 모자라는 재화가 있다.
 /// - 막힘: 다른 단계에서 이미 모자란 재화(병목)를 문서 순서상 그 뒤에 또 쓴다. 자기 부족과 겹치면 막힘이다.
 /// - 가능: 둘 다 아님.
-/// 문서 순서는 칸 순서 → 칸 안 순서(칸에 없는 단계는 맨 뒤)다.
+/// 문서 순서는 칸 순서 → 칸 안 순서(칸에 없는 단계는 맨 뒤)다. "나중에" 칸 단계는 계산에서 빠지므로 상태가 없다.
 Map<String, PlanFlowStageStatus> planFlowStageStatuses(
   PlanFlowDraft draft,
   PlanFlowCalculation? calculation,
@@ -608,13 +1001,15 @@ Map<String, PlanFlowStageStatus> planFlowStageStatuses(
       }
     }
   }
+  final deferred = draft.deferredStageIds.toSet();
   return {
     for (final stage in draft.stages)
-      stage.id: blocked.contains(stage.id)
-          ? PlanFlowStageStatus.blocked
-          : short.contains(stage.id)
-          ? PlanFlowStageStatus.short
-          : PlanFlowStageStatus.possible,
+      if (!deferred.contains(stage.id))
+        stage.id: blocked.contains(stage.id)
+            ? PlanFlowStageStatus.blocked
+            : short.contains(stage.id)
+            ? PlanFlowStageStatus.short
+            : PlanFlowStageStatus.possible,
   };
 }
 
@@ -1031,11 +1426,14 @@ class PlanFlowController extends ChangeNotifier {
 
   // --- 단계 이동 ------------------------------------------------------------
 
+  /// 3단계가 끝났다: 모든 단계가 칸이나 "나중에" 칸에 있고 단계 순서 규칙을 어긴 곳이 없다(FE4-f1).
+  bool get orderReady => _draft.allStagesAssigned && orderIssues.isEmpty;
+
   bool canEnter(PlanFlowStep target) => switch (target) {
     PlanFlowStep.students => true,
     PlanFlowStep.goals => _draft.students.isNotEmpty,
     PlanFlowStep.order => _draft.hasStages,
-    PlanFlowStep.save => _draft.allStagesAssigned,
+    PlanFlowStep.save => orderReady,
   };
 
   PlanFlowStepState stateOf(PlanFlowStep target) {
@@ -1045,7 +1443,7 @@ class PlanFlowController extends ChangeNotifier {
       PlanFlowStep.goals =>
         _draft.studentCount > 0 &&
             _draft.completedStudentCount == _draft.studentCount,
-      PlanFlowStep.order => _draft.allStagesAssigned,
+      PlanFlowStep.order => orderReady,
       PlanFlowStep.save => false,
     };
     return done ? PlanFlowStepState.done : PlanFlowStepState.remaining;
@@ -1054,8 +1452,48 @@ class PlanFlowController extends ChangeNotifier {
   /// "다음"(4단계에서는 저장)을 누를 수 있다.
   bool get canGoNext => switch (_step.next) {
     final next? => canEnter(next),
-    null => _draft.allStagesAssigned && canSaveScenario,
+    null => orderReady && canSaveScenario,
   };
+
+  // --- 단계 순서 규칙(FE4-f1) ------------------------------------------------
+
+  PlanFlowDraft? _issuesDraft;
+  List<PlanFlowOrderIssue> _issues = const [];
+  PlanFlowOrderIssue? _savedIssue;
+  PlanFlowDraft? _savedIssueDraft;
+
+  /// 카드 이름(`학생 n단계`).
+  String stageLabel(PlanFlowStage stage) =>
+      '${context.displayName(stage.studentId)} ${stage.step}단계';
+
+  /// 지금 초안이 어긴 단계 순서 규칙([planFlowOrderIssues]).
+  List<PlanFlowOrderIssue> get orderIssues {
+    if (!identical(_issuesDraft, _draft)) {
+      _issues = List.unmodifiable(planFlowOrderIssues(_draft, stageLabel));
+      _issuesDraft = _draft;
+    }
+    return _issues;
+  }
+
+  /// 저장 요청이 authoring 오류로 거절된 이유(4단계, 초안은 그대로). 초안이 바뀌면 없어진다.
+  PlanFlowOrderIssue? get savedIssue =>
+      identical(_savedIssueDraft, _draft) ? _savedIssue : null;
+
+  /// 저장 요청이 authoring 오류로 거절됐다(reason · stage ID를 카드에 잇는다). 초안은 지우지 않는다.
+  void reportSavedIssue(PlanFlowOrderIssue issue) {
+    if (_disposed) return;
+    _savedIssue = issue;
+    _savedIssueDraft = _draft;
+    notifyListeners();
+  }
+
+  /// [stageId] 카드에 걸린 규칙 위반(초안 확인 + 저장 거절).
+  List<PlanFlowOrderIssue> issuesOf(String stageId) => [
+    for (final issue in orderIssues)
+      if (issue.stageIds.contains(stageId)) issue,
+    if (savedIssue case final issue? when issue.stageIds.contains(stageId))
+      issue,
+  ];
 
   /// [target]으로 간다. 1단계에서 2단계로 가면 고른 순서대로 목표를 정한다(아직 단계가 없는 첫 학생부터).
   void goTo(PlanFlowStep target) {
@@ -1133,6 +1571,8 @@ class PlanFlowController extends ChangeNotifier {
         for (final entry in _draft.goalMetadata.entries)
           if (!studentIds.contains(entry.key)) entry.key: entry.value,
       },
+      deferredStageIds: _withoutDeferred(removedStages),
+      prerequisites: _withoutPrerequisites(removedStages),
     );
     _goalQueue = const [];
     _goalIndex = 0;
@@ -1181,6 +1621,7 @@ class PlanFlowController extends ChangeNotifier {
         stage.id,
     };
     final seed = _draft.seedOf(studentId) ?? context.seedFor(studentId);
+    final kept = {for (final stage in stages) stage.id};
     _draft = _draft.copyWith(
       students: _draft.seedOf(studentId) != null
           ? null
@@ -1194,6 +1635,8 @@ class PlanFlowController extends ChangeNotifier {
         ..._draft.goalMetadata,
         studentId: _draft.goalMetadata[studentId] ?? planFlowDefaultGoalMetadata,
       },
+      deferredStageIds: _withoutDeferred(removed.difference(kept)),
+      prerequisites: _withoutPrerequisites(removed.difference(kept)),
     );
     if (_goalIndex + 1 < _goalQueue.length) _goalIndex += 1;
     notifyListeners();
@@ -1219,6 +1662,7 @@ class PlanFlowController extends ChangeNotifier {
     ];
     final next = [for (final stage in stages) stage.id];
     final sameIds = listEquals(previous, next);
+    final dropped = previous.toSet().difference(next.toSet());
     final seed = _draft.seedOf(studentId) ?? context.seedFor(studentId);
     _draft = _draft.copyWith(
       students: _draft.seedOf(studentId) != null
@@ -1233,6 +1677,9 @@ class PlanFlowController extends ChangeNotifier {
         ..._draft.goalMetadata,
         studentId: _draft.goalMetadata[studentId] ?? planFlowDefaultGoalMetadata,
       },
+      // 남은 단계의 명시 나중에는 둔다(임시 미배치와 구별, FE4-f1). 지운 단계에 걸린 직접 선행은 함께 지운다.
+      deferredStageIds: sameIds ? null : _withoutDeferred(dropped),
+      prerequisites: sameIds ? null : _withoutPrerequisites(dropped),
     );
     notifyListeners();
     _scheduleCalculation();
@@ -1288,10 +1735,25 @@ class PlanFlowController extends ChangeNotifier {
             if (item.id != stageId) item,
         ],
       },
+      deferredStageIds: _withoutDeferred({stageId}),
+      prerequisites: _withoutPrerequisites({stageId}),
     );
     notifyListeners();
     _scheduleCalculation();
   }
+
+  List<String> _withoutDeferred(Set<String> stageIds) => [
+    for (final id in _draft.deferredStageIds)
+      if (!stageIds.contains(id)) id,
+  ];
+
+  /// 지운 단계에 걸린 직접 선행을 뺀다(사용자가 그 단계를 지웠다).
+  List<PlanFlowPrerequisite> _withoutPrerequisites(Set<String> stageIds) => [
+    for (final prerequisite in _draft.prerequisites)
+      if (!stageIds.contains(prerequisite.stageId) &&
+          !stageIds.contains(prerequisite.requiresStageId))
+        prerequisite,
+  ];
 
   List<PlanFlowPhase> _withoutStages(Set<String> stageIds) => [
     for (final phase in _draft.phases)
@@ -1310,8 +1772,17 @@ class PlanFlowController extends ChangeNotifier {
   /// 칸 배치를 통째로 바꾸고, 모든 단계가 칸에 있으면 4단계로 간다(FE4-a1 페이즈 편집기 완료 경로, 단위 테스트가 쓴다).
   void completeOrder(List<PlanFlowPhase> phases) {
     if (_disposed) return;
-    _draft = _draft.copyWith(phases: phases);
-    if (_draft.allStagesAssigned) _step = PlanFlowStep.save;
+    final placed = {
+      for (final phase in phases) ...phase.stageIds,
+    };
+    _draft = _draft.copyWith(
+      phases: phases,
+      deferredStageIds: [
+        for (final id in _draft.deferredStageIds)
+          if (!placed.contains(id)) id,
+      ],
+    );
+    if (orderReady) _step = PlanFlowStep.save;
     notifyListeners();
     _scheduleCalculation();
   }
@@ -1326,30 +1797,8 @@ class PlanFlowController extends ChangeNotifier {
     return 'flow-phase-${DateTime.now().microsecondsSinceEpoch}-$_phaseSerial';
   }
 
-  /// 단계 id → 칸 순번.
-  Map<String, int> _laneIndexById() => {
-    for (final (index, phase) in _draft.phases.indexed)
-      for (final id in phase.stageIds) id: index,
-  };
-
-  /// 칸 [lane] 안에서 같은 학생의 단계를 단계 번호 순서로 다시 놓는다(FD-069). 다른 학생 단계 자리는 그대로다.
-  void _sortLaneByStep(List<String> lane) {
-    final steps = {for (final stage in _draft.stages) stage.id: stage};
-    final slotsByStudent = <String, List<int>>{};
-    for (final (index, id) in lane.indexed) {
-      final stage = steps[id];
-      if (stage == null) continue;
-      slotsByStudent.putIfAbsent(stage.studentId, () => []).add(index);
-    }
-    for (final slots in slotsByStudent.values) {
-      if (slots.length < 2) continue;
-      final ids = [for (final slot in slots) lane[slot]]
-        ..sort((a, b) => steps[a]!.step.compareTo(steps[b]!.step));
-      for (final (index, slot) in slots.indexed) {
-        lane[slot] = ids[index];
-      }
-    }
-  }
+  /// "나중에" 칸 순번(마지막 칸).
+  int get _deferredLane => _draft.phases.length;
 
   /// [lanes]를 칸으로 만든다. id·이름은 지금 칸을 앞에서부터 다시 쓰고, 모자라면 새 "n순위" 칸을 만든다.
   List<PlanFlowPhase> _phasesFrom(List<List<String>> lanes) {
@@ -1366,103 +1815,302 @@ class PlanFlowController extends ChangeNotifier {
     ];
   }
 
-  /// 칸에 없는 단계를 칸에 넣는다. 3단계 보드를 처음 그릴 때 부른다("나중에" 칸은 FE4-f).
+  /// 칸 배열과 "나중에" 칸 배열을 자동 체인 + 직접 선행의 stable topological 순서로 정리한 초안(FD-069, FE4-f1).
+  /// 같은 칸 배분 순서가 계산의 부족 배분에 영향을 주므로(FB-8 조사 4절) 이 순서를 문서 배열에 그대로 쓴다.
+  PlanFlowDraft _arranged(
+    List<List<String>> lanes,
+    List<String> deferred, {
+    List<PlanFlowPrerequisite>? prerequisites,
+  }) {
+    final base = prerequisites == null
+        ? _draft
+        : _draft.copyWith(prerequisites: prerequisites);
+    final edges = planFlowOrderEdges(base);
+    return base.copyWith(
+      phases: _phasesFrom([
+        for (final lane in lanes) planFlowStableTopological(lane, edges),
+      ]),
+      deferredStageIds: planFlowStableTopological(deferred, edges),
+    );
+  }
+
+  bool _sameOrder(PlanFlowDraft next) =>
+      next.phases.length == _draft.phases.length &&
+      [
+        for (final (index, phase) in next.phases.indexed)
+          listEquals(phase.stageIds, _draft.phases[index].stageIds),
+      ].every((same) => same) &&
+      listEquals(next.deferredStageIds, _draft.deferredStageIds) &&
+      listEquals(next.prerequisites, _draft.prerequisites);
+
+  void _commitOrder(PlanFlowDraft next) {
+    _draft = next;
+    notifyListeners();
+    _scheduleCalculation();
+  }
+
+  /// 단계 id → (먼저 끝나야 하는 edge 목록, 기다리는 edge 목록).
+  ({
+    Map<String, List<PlanFlowOrderEdge>> incoming,
+    Map<String, List<PlanFlowOrderEdge>> outgoing,
+  })
+  _edgeIndex() {
+    final incoming = <String, List<PlanFlowOrderEdge>>{};
+    final outgoing = <String, List<PlanFlowOrderEdge>>{};
+    for (final edge in planFlowOrderEdges(_draft)) {
+      incoming.putIfAbsent(edge.to, () => []).add(edge);
+      outgoing.putIfAbsent(edge.from, () => []).add(edge);
+    }
+    return (incoming: incoming, outgoing: outgoing);
+  }
+
+  /// 칸에 없는 단계를 칸에 넣는다. 3단계 보드를 처음 그릴 때 부른다. 명시 "나중에" 칸 단계는 다시 놓지 않는다.
   ///
-  /// n단계는 n번째 칸에 넣되, 같은 학생의 앞 단계보다 앞 칸에 두지 않고 뒤 단계보다 뒤 칸에 두지 않는다. 칸이
-  /// 모자라면 "n순위" 칸을 더한다. 이미 칸에 있는 단계는 옮기지 않는다.
+  /// 선행부터(자동 체인 + 직접 선행 순서) n단계를 n번째 칸에 넣되, 먼저 끝나야 하는 단계보다 앞 칸에 두지 않고
+  /// 기다리는 단계보다 뒤 칸에 두지 않는다. 먼저 끝나야 하는 단계가 "나중에" 칸에 있으면 이 단계도 나중에 칸에
+  /// 둔다(배치 prefix + 나중에 suffix). 칸이 모자라면 "n순위" 칸을 더한다. 이미 칸에 있는 단계는 옮기지 않는다.
   void placeUnassignedStages() {
     if (_disposed) return;
-    final unassigned = _draft.unassignedStages;
-    if (unassigned.isEmpty) return;
+    final unassigned = {for (final stage in _draft.unassignedStages) stage.id};
+    if (unassigned.isEmpty) {
+      // 놓을 단계가 없어도 2단계에서 단계 순서가 바뀌었으면 칸 배열을 다시 정리한다.
+      final next = _arranged(
+        [
+          for (final phase in _draft.phases) [...phase.stageIds],
+        ],
+        [..._draft.deferredStageIds],
+      );
+      if (!_sameOrder(next)) _commitOrder(next);
+      return;
+    }
     final lanes = [
       for (final phase in _draft.phases) [...phase.stageIds],
     ];
-    final laneOf = _laneIndexById();
+    final deferred = [..._draft.deferredStageIds];
+    const deferredMark = -1;
+    final laneOf = <String, int>{
+      for (final (index, phase) in _draft.phases.indexed)
+        for (final id in phase.stageIds) id: index,
+      for (final id in deferred) id: deferredMark,
+    };
     final stages = _draft.stages;
-    for (final stage in unassigned) {
-      var lane = stage.step - 1;
+    final stepOf = {for (final stage in stages) stage.id: stage.step};
+    final index = _edgeIndex();
+    final order = planFlowStableTopological(
+      [for (final stage in stages) stage.id],
+      planFlowOrderEdges(_draft),
+    );
+    for (final id in order) {
+      if (!unassigned.contains(id)) continue;
+      var lane = stepOf[id]! - 1;
+      var toDeferred = false;
+      for (final edge in index.incoming[id] ?? const <PlanFlowOrderEdge>[]) {
+        final from = laneOf[edge.from];
+        if (from == null) continue;
+        if (from == deferredMark) {
+          toDeferred = true;
+        } else if (from > lane) {
+          lane = from;
+        }
+      }
       int? cap;
-      for (final sibling in stages) {
-        if (sibling.studentId != stage.studentId || sibling.id == stage.id) {
-          continue;
-        }
-        final siblingLane = laneOf[sibling.id];
-        if (siblingLane == null) continue;
-        if (sibling.step < stage.step) {
-          lane = math.max(lane, siblingLane);
-        } else {
-          cap = cap == null ? siblingLane : math.min(cap, siblingLane);
-        }
+      for (final edge in index.outgoing[id] ?? const <PlanFlowOrderEdge>[]) {
+        final to = laneOf[edge.to];
+        if (to == null || to == deferredMark) continue;
+        cap = cap == null ? to : math.min(cap, to);
+      }
+      if (toDeferred) {
+        deferred.add(id);
+        laneOf[id] = deferredMark;
+        continue;
       }
       if (cap != null && lane > cap) lane = cap;
       while (lanes.length <= lane) {
         lanes.add(<String>[]);
       }
-      lanes[lane].add(stage.id);
-      laneOf[stage.id] = lane;
+      lanes[lane].add(id);
+      laneOf[id] = lane;
     }
-    lanes.forEach(_sortLaneByStep);
-    _draft = _draft.copyWith(phases: _phasesFrom(lanes));
-    notifyListeners();
-    _scheduleCalculation();
+    _commitOrder(_arranged(lanes, deferred));
   }
 
-  /// [stageId]를 [laneIndex]번째 칸에 두면 깨지는 단계 순서 규칙의 이유. 괜찮으면 null.
+  /// [stageId]를 [laneIndex]번째 칸에 두면 깨지는 단계 순서 규칙의 이유. 괜찮으면 null. [laneIndex]가 칸 수와 같으면
+  /// "나중에" 칸이다(그 단계 뒤의 같은 학생 단계도 함께 간다).
   ///
-  /// 같은 학생의 앞 단계(선행)보다 앞 칸이나 뒤 단계보다 뒤 칸에는 둘 수 없다. 같은 칸은 허용한다(FD-069).
+  /// 먼저 끝나야 하는 단계(같은 학생 앞 단계 · 직접 선행)보다 앞 칸이나, 기다리는 단계(같은 학생 뒤 단계 · 직접
+  /// 선행으로 이은 단계)보다 뒤 칸에는 둘 수 없다. 같은 칸은 허용하고 선행 → 후행으로 다시 놓는다(FD-069).
   String? orderViolation(String stageId, int laneIndex) {
     final stage = _draft.stageById(stageId);
     if (stage == null) return null;
-    final laneOf = _laneIndexById();
-    final name = context.displayName(stage.studentId);
-    for (final sibling in _draft.stages) {
-      if (sibling.studentId != stage.studentId || sibling.id == stageId) {
-        continue;
+    final moving = laneIndex >= _deferredLane
+        ? _deferSuffix(stage)
+        : [stageId];
+    final movingSet = moving.toSet();
+    final laneOf = _draft.laneIndexById;
+    final stagesById = {for (final item in _draft.stages) item.id: item};
+    String label(String id) => switch (stagesById[id]) {
+      final item? => stageLabel(item),
+      null => id,
+    };
+    final index = _edgeIndex();
+    for (final id in moving) {
+      for (final edge in index.incoming[id] ?? const <PlanFlowOrderEdge>[]) {
+        if (movingSet.contains(edge.from)) continue;
+        final lane = laneOf[edge.from];
+        if (lane != null && lane > laneIndex) {
+          return edge.direct
+              ? '${label(id)}는 먼저 끝나야 하는 단계(${label(edge.from)})보다 앞 칸에 둘 수 없습니다.'
+              : '${label(id)}는 선행 단계(${label(edge.from)})보다 앞 칸에 둘 수 없습니다.';
+        }
       }
-      final lane = laneOf[sibling.id];
-      if (lane == null) continue;
-      if (sibling.step < stage.step && lane > laneIndex) {
-        return '$name ${stage.step}단계는 선행 단계($name ${sibling.step}단계)보다 앞 칸에 둘 수 없습니다.';
-      }
-      if (sibling.step > stage.step && lane < laneIndex) {
-        return '$name ${stage.step}단계는 뒤 단계($name ${sibling.step}단계)보다 뒤 칸에 둘 수 없습니다.';
+      for (final edge in index.outgoing[id] ?? const <PlanFlowOrderEdge>[]) {
+        if (movingSet.contains(edge.to)) continue;
+        final lane = laneOf[edge.to];
+        if (lane != null && lane < laneIndex) {
+          return edge.direct
+              ? '${label(id)}는 이 단계를 기다리는 ${label(edge.to)}보다 뒤 칸에 둘 수 없습니다.'
+              : '${label(id)}는 뒤 단계(${label(edge.to)})보다 뒤 칸에 둘 수 없습니다.';
+        }
       }
     }
     return null;
   }
 
-  /// [stageId]를 칸 [phaseId]의 [index] 자리(지금 보이는 칸 목록 기준, 없으면 맨 뒤)로 옮긴다. 같은 칸 안의 같은
-  /// 학생 단계는 단계 번호 순서로 다시 놓는다(FD-069). 단계 순서 규칙에 걸리면 옮기지 않고 이유를 돌려준다.
+  /// "나중에" 칸으로 함께 가는 단계: [stage]와 그 뒤의 같은 학생 단계 중 아직 나중에 칸에 없는 것(같은 학생 체인은
+  /// 배치 prefix + 나중에 suffix, FB-8).
+  List<String> _deferSuffix(PlanFlowStage stage) {
+    final chain =
+        _draft.stagesByStudent[stage.studentId] ??
+        const <PlanFlowStageDraft>[];
+    final start = chain.indexWhere((item) => item.id == stage.id);
+    return [
+      stage.id,
+      if (start >= 0)
+        for (final item in chain.skip(start + 1))
+          if (!_draft.isDeferred(item.id)) item.id,
+    ];
+  }
+
+  /// [stageId]를 칸 [phaseId]([planFlowDeferredLaneId]면 "나중에" 칸)의 [index] 자리(지금 보이는 칸 목록 기준, 없으면
+  /// 맨 뒤)로 옮긴다. 나중에 칸으로 옮기면 그 뒤의 같은 학생 단계도 함께 간다. 칸 배열은 자동 체인 + 직접 선행
+  /// 순서로 다시 놓는다(FD-069). 단계 순서 규칙에 걸리면 옮기지 않고 이유를 돌려준다.
   String? moveStage(String stageId, {required String phaseId, int? index}) {
     if (_disposed) return null;
     final stage = _draft.stageById(stageId);
-    final laneIndex = _draft.phases.indexWhere((phase) => phase.id == phaseId);
+    final toDeferred = phaseId == planFlowDeferredLaneId;
+    final laneIndex = toDeferred
+        ? _deferredLane
+        : _draft.phases.indexWhere((phase) => phase.id == phaseId);
     if (stage == null || laneIndex < 0) return null;
     final violation = orderViolation(stageId, laneIndex);
     if (violation != null) return violation;
+    final moving = toDeferred ? _deferSuffix(stage) : [stageId];
+    final movingSet = moving.toSet();
     final lanes = [
       for (final phase in _draft.phases)
         [
           for (final id in phase.stageIds)
-            if (id != stageId) id,
+            if (!movingSet.contains(id)) id,
         ],
     ];
-    final target = lanes[laneIndex];
-    var insertAt = index ?? target.length + 1;
-    final previousPosition = _draft.phases[laneIndex].stageIds.indexOf(stageId);
+    final deferred = [
+      for (final id in _draft.deferredStageIds)
+        if (!movingSet.contains(id)) id,
+    ];
+    final target = toDeferred ? deferred : lanes[laneIndex];
+    final previousIds = toDeferred
+        ? _draft.deferredStageIds
+        : _draft.phases[laneIndex].stageIds;
+    var insertAt = index ?? previousIds.length + 1;
+    final previousPosition = previousIds.indexOf(stageId);
     if (previousPosition >= 0 && previousPosition < insertAt) insertAt -= 1;
     insertAt = math.max(0, math.min(insertAt, target.length));
-    target.insert(insertAt, stageId);
-    _sortLaneByStep(target);
-    final changed = !listEquals(target, _draft.phases[laneIndex].stageIds) ||
-        _draft.phases.any(
-          (phase) => phase.id != phaseId && phase.stageIds.contains(stageId),
-        );
-    if (!changed) return null;
-    _draft = _draft.copyWith(phases: _phasesFrom(lanes));
-    notifyListeners();
-    _scheduleCalculation();
+    target.insertAll(insertAt, moving);
+    final next = _arranged(lanes, deferred);
+    if (_sameOrder(next)) return null;
+    _commitOrder(next);
     return null;
+  }
+
+  /// 직접 선행을 잇는다(FE4-f1): [stageId]는 [requiresStageId]가 끝나야 한다. 백엔드 authoring 규칙과 같은 이유로
+  /// 거부하고 그 이유를 돌려준다(자기 자신 · 같은 학생 · 이미 이음 · 순환 · 선행이 뒤 칸). 같은 칸이면 선행 → 후행으로
+  /// 다시 놓는다.
+  String? addPrerequisite({
+    required String stageId,
+    required String requiresStageId,
+  }) {
+    if (_disposed) return null;
+    final stage = _draft.stageById(stageId);
+    final required = _draft.stageById(requiresStageId);
+    if (stage == null || required == null) return null;
+    final prerequisite = PlanFlowPrerequisite(
+      stageId: stageId,
+      requiresStageId: requiresStageId,
+    );
+    if (stageId == requiresStageId) {
+      return '${stageLabel(stage)}를 자기 자신의 선행 단계로 이을 수 없습니다.';
+    }
+    if (stage.studentId == required.studentId) {
+      return '같은 학생의 단계는 자동으로 이어져 있어 직접 이을 수 없습니다.';
+    }
+    if (_draft.prerequisites.contains(prerequisite)) {
+      return '${stageLabel(required)}는 이미 ${stageLabel(stage)}의 먼저 끝나야 하는 단계입니다.';
+    }
+    if (_reaches(stageId, requiresStageId)) {
+      return '${stageLabel(required)}는 이미 ${stageLabel(stage)}보다 뒤에 끝나야 해서, 이으면 선행 순서가 돌고 돕니다.';
+    }
+    final laneOf = _draft.laneIndexById;
+    final from = laneOf[requiresStageId];
+    final to = laneOf[stageId];
+    if (from != null && to != null && from > to) {
+      return '${stageLabel(required)}가 ${stageLabel(stage)}보다 뒤 칸에 있어 이을 수 없습니다. 먼저 칸을 옮겨 주십시오.';
+    }
+    _commitOrder(
+      _arranged(
+        [
+          for (final phase in _draft.phases) [...phase.stageIds],
+        ],
+        [..._draft.deferredStageIds],
+        prerequisites: [..._draft.prerequisites, prerequisite],
+      ),
+    );
+    return null;
+  }
+
+  /// 직접 선행을 지운다(C ×). 칸 배열은 그대로다.
+  void removePrerequisite({
+    required String stageId,
+    required String requiresStageId,
+  }) {
+    if (_disposed) return;
+    final prerequisite = PlanFlowPrerequisite(
+      stageId: stageId,
+      requiresStageId: requiresStageId,
+    );
+    if (!_draft.prerequisites.contains(prerequisite)) return;
+    _commitOrder(
+      _draft.copyWith(
+        prerequisites: [
+          for (final item in _draft.prerequisites)
+            if (item != prerequisite) item,
+        ],
+      ),
+    );
+  }
+
+  /// [from]에서 자동 체인 + 직접 선행을 따라 [to]에 닿는다.
+  bool _reaches(String from, String to) {
+    final outgoing = _edgeIndex().outgoing;
+    final seen = <String>{from};
+    final queue = [from];
+    while (queue.isNotEmpty) {
+      final id = queue.removeLast();
+      if (id == to) return true;
+      for (final edge in outgoing[id] ?? const <PlanFlowOrderEdge>[]) {
+        if (seen.add(edge.to)) queue.add(edge.to);
+      }
+    }
+    return false;
   }
 
   /// 칸 이름을 바꾼다. 비우면 기본 이름("n순위", FD-071)이다.
@@ -1484,7 +2132,7 @@ class PlanFlowController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 마지막 칸 아래에 빈 칸을 더하고 그 id를 돌려준다. 빈 칸은 저장할 때 빠진다(FD-071).
+  /// 마지막 칸 아래("나중에" 칸 위)에 빈 칸을 더하고 그 id를 돌려준다. 빈 칸은 저장할 때 빠진다(FD-071).
   String? addPhase() {
     if (_disposed) return null;
     final phase = PlanFlowPhase(
@@ -1497,10 +2145,14 @@ class PlanFlowController extends ChangeNotifier {
     return phase.id;
   }
 
-  /// "자동으로 정렬": 모든 단계를 [mode] 규칙으로 다시 배치한다. 같은 학생 단계 순서는 늘 지킨다. 칸 이름·id는 앞에서부터
-  /// 다시 쓰고, 남는 칸은 지운다.
+  /// "자동으로 정렬": "나중에" 칸 밖의 단계를 [mode] 규칙으로 다시 배치한다. 같은 학생 단계 순서와 직접 선행(먼저
+  /// 끝나야 하는 단계보다 앞 칸 금지)은 늘 지킨다. 나중에 칸은 그대로 둔다. 칸 이름·id는 앞에서부터 다시 쓰고, 남는
+  /// 칸은 지운다.
   void autoArrange(PlanFlowAutoArrange mode) {
-    final stages = _draft.stages;
+    final stages = [
+      for (final stage in _draft.stages)
+        if (!_draft.isDeferred(stage.id)) stage,
+    ];
     if (_disposed || stages.isEmpty) return;
     final laneOf = <String, int>{};
     switch (mode) {
@@ -1521,32 +2173,39 @@ class PlanFlowController extends ChangeNotifier {
             _calculation?.stageCosts[stage.id]?.shortageKinds ?? 0;
         final buckets = {for (final stage in stages) kinds(stage)}.toList()
           ..sort();
-        final previousLane = <String, int>{};
         for (final stage in stages) {
-          final lane = math.max(
-            buckets.indexOf(kinds(stage)),
-            previousLane[stage.studentId] ?? 0,
-          );
-          laneOf[stage.id] = lane;
-          previousLane[stage.studentId] = lane;
+          laneOf[stage.id] = buckets.indexOf(kinds(stage));
         }
+    }
+    // 먼저 끝나야 하는 단계(같은 학생 앞 단계 · 직접 선행)보다 앞 칸에 가지 않게 민다. 먼저 끝나야 하는 단계가
+    // "나중에" 칸에 있으면 이 단계도 나중에 칸으로 간다(배치 prefix + 나중에 suffix).
+    final edges = planFlowOrderEdges(_draft);
+    final incoming = _edgeIndex().incoming;
+    final deferred = [..._draft.deferredStageIds];
+    for (final id in planFlowStableTopological(
+      [for (final stage in stages) stage.id],
+      edges,
+    )) {
+      for (final edge in incoming[id] ?? const <PlanFlowOrderEdge>[]) {
+        if (deferred.contains(edge.from)) {
+          laneOf.remove(id);
+          deferred.add(id);
+          break;
+        }
+        final from = laneOf[edge.from];
+        if (from != null && from > laneOf[id]!) laneOf[id] = from;
+      }
     }
     final used = laneOf.values.toSet().toList()..sort();
     final lanes = List.generate(used.length, (_) => <String>[]);
     for (final stage in stages) {
-      lanes[used.indexOf(laneOf[stage.id]!)].add(stage.id);
+      if (laneOf[stage.id] case final lane?) {
+        lanes[used.indexOf(lane)].add(stage.id);
+      }
     }
-    final phases = _phasesFrom(lanes);
-    final unchanged =
-        phases.length == _draft.phases.length &&
-        [
-          for (final (index, phase) in phases.indexed)
-            listEquals(phase.stageIds, _draft.phases[index].stageIds),
-        ].every((same) => same);
-    if (unchanged) return;
-    _draft = _draft.copyWith(phases: phases);
-    notifyListeners();
-    _scheduleCalculation();
+    final next = _arranged(lanes, deferred);
+    if (_sameOrder(next)) return;
+    _commitOrder(next);
   }
 
   // --- 계산 -----------------------------------------------------------------
@@ -1555,7 +2214,11 @@ class PlanFlowController extends ChangeNotifier {
     if (_disposed) return;
     _timer?.cancel();
     _calculationNumber += 1;
-    if (!_draft.hasStages || !canCalculate) {
+    // "나중에" 칸 밖 단계가 없으면(모두 나중에) 계산할 문서가 없다.
+    final calculable = _draft.stages.any(
+      (stage) => !_draft.isDeferred(stage.id),
+    );
+    if (!calculable || !canCalculate) {
       _timer = null;
       final changed = _calculation != null || _calculating;
       _calculation = null;

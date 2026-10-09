@@ -8,8 +8,10 @@
 // - 저장하는 문서는 흐름 초안(v2) 그대로다. 페이즈로 추가는 활성 문서 뒤에 초안 페이즈를 붙인 문서
 //   ([planFlowMergedPlanDocument])이고, 이걸로 바꾸기는 초안을 `kind=plan`으로 만든 문서다. 계획 화면 작업 문서나
 //   정수 편집기 보기(v1 재구성)를 거치지 않으므로 v2 null(목표 없음)이 정수로 바뀌지 않는다.
-// - authoring(페이즈 편집 순서 정보)은 보내지 않는다(FE4-f). 서비스가 `authoring_required`·`revision_conflict`로
-//   거절하면 초안은 두고 최신 상태를 다시 읽어 알린다.
+// - FE4-f1: 저장 3지선다 모두 authoring 전체를 보낸다(시나리오 create/update, 이걸로 바꾸기는 초안 authoring, 페이즈로
+//   추가는 활성 authoring과 병합한 것, [planFlowMergedPlanDocument]). 보내기 전에 공용 validator로 만든다.
+// - 서비스가 `authoring_required`·`revision_conflict`로 거절하면 초안은 두고 최신 상태를 다시 읽어 알린다. authoring
+//   규칙 오류(cycle·lane_order·stage_order 등)는 그 reason과 stage ID를 3단계 카드에 잇고 초안을 지우지 않는다.
 // - 같은 요청 키로 다시 보낼 때는 같은 문서·revision·이름이다([PlanFlowSaveController] 보류 요청). 연결이 끊기거나
 //   저장소가 바쁘면 그 요청을 그대로 다시 보내고, `idempotency_conflict`에서는 새 키를 저절로 만들지 않는다.
 // - 비교 타일은 `compareScenarios(활성, 후보)`다(FD-080). 페이즈로 추가는 후보가 병합 문서다. 충족률은 FD-031 (a).
@@ -122,46 +124,72 @@ Future<PlanFlowSaveSnapshot> loadPlanFlowSaveSnapshot(
 class PlanFlowMergedPlan {
   PlanFlowMergedPlan._({
     required this.document,
+    required this.authoring,
     required Map<String, String> phaseIds,
+    required Map<String, String> stageIds,
     required List<String> regressedStudentIds,
+    this.authoringReason,
   }) : phaseIds = Map.unmodifiable(phaseIds),
+       stageIds = Map.unmodifiable(stageIds),
        regressedStudentIds = List.unmodifiable(regressedStudentIds);
 
   /// 병합 문서(v2 `kind=plan`). [regressedStudentIds]가 있으면 null이다.
   final PlanningDocument? document;
 
+  /// 병합 authoring(FE4-f1): 활성 authoring 뒤에 초안의 나중에 단계·직접 선행·학생을 붙였다. 공용 validator가
+  /// 거절하면 null이고 이유는 [authoringReason]이다.
+  final PlanningAuthoring? authoring;
+
+  /// [authoring]을 만들지 못한 validator reason.
+  final String? authoringReason;
+
   /// 초안 페이즈 id → 병합 문서 페이즈 id(활성 페이즈 id와 겹치면 바꾼다).
   final Map<String, String> phaseIds;
+
+  /// 초안 단계 id → 병합 단계 id(활성 문서·활성 나중에 단계 id와 겹치면 바꾼다). 나중에 단계·직접 선행 끝점도
+  /// 이 표로 함께 바꾼다.
+  final Map<String, String> stageIds;
 
   /// 초안 목표가 활성 계획의 같은 학생 목표보다 낮아 붙일 수 없는 학생(초안 순서). 문서 규칙상 뒤 단계 목표는 앞
   /// 단계보다 낮을 수 없다. 낮은 값을 몰래 올리거나 버리지 않고 이 위치를 막는다.
   final List<String> regressedStudentIds;
 
-  bool get blocked => document == null;
+  bool get blocked => document == null || authoring == null;
 }
 
-/// 활성 계획 [active] 뒤에 초안 [draft]의 페이즈를 붙인 문서(FE4-e 페이즈로 추가, FD-080 비교 후보).
+/// 활성 계획 [active] 뒤에 초안 [draft]의 페이즈를 붙인 문서와 authoring(FE4-e 페이즈로 추가, FD-080 비교 후보,
+/// FE4-f1 authoring 병합).
 ///
 /// - 문서 id·이름은 [id]·[name](저장할 때는 활성 문서 것)이다. 활성 페이즈·단계는 그대로 두고 그 뒤에 초안 페이즈를
-///   칸 순서대로 붙인다. 페이즈·단계 id가 활성 문서와 겹치면 `-2`, `-3`…을 붙인다.
+///   칸 순서대로 붙인다. 페이즈·단계 id가 활성 문서(나중에 단계 포함)와 겹치면 `-2`, `-3`…을 붙인다.
 /// - 초안 목표는 v2 그대로 옮긴다. 다만 같은 학생이 활성 계획에서 이미 정한 키를 초안이 비워 두었으면(null) 그 앞
 ///   값을 이어 받는다(문서 규칙: 한 번 정한 목표는 뒤 단계에서 null로 돌아가지 않는다). 활성 계획에서도 정하지 않은
 ///   키는 null로 남는다.
 /// - 초안 값이 활성 값보다 낮으면 그 학생을 [PlanFlowMergedPlan.regressedStudentIds]에 넣고 문서를 만들지 않는다.
-/// - goal_metadata는 활성 문서 것을 먼저 쓰고, 활성 계획에 없는 학생만 초안 것을 쓴다.
+/// - goal_metadata는 활성 문서 → 활성 authoring → 초안 순서로 먼저 있는 것을 쓴다.
+/// - authoring([activeAuthoring], 없으면 활성 문서 기본값): 학생 순서는 활성 뒤에 초안의 새 학생, 같은 학생 체인은
+///   활성 배치 → 초안 배치 → 활성 나중에 → 초안 나중에, `deferred_stages`는 활성 것 뒤에 초안 것, 직접 선행은 활성
+///   것 뒤에 초안 것(끝점은 [PlanFlowMergedPlan.stageIds]로 바꾼다). 끝점이 빠진 직접 선행도 지우지 않고 보내므로
+///   validator가 거절한다.
 PlanFlowMergedPlan planFlowMergedPlanDocument({
   required PlanningDocument active,
   required PlanFlowDraft draft,
   required String id,
   required String name,
+  PlanningAuthoring? activeAuthoring,
 }) {
+  final activeBundle =
+      activeAuthoring ?? PlanningAuthoring.defaultForDocument(active);
   final candidate = PlanFlowDocumentBoundary.toPlanDocument(
     draft,
     id: id,
     name: name,
   );
   final usedPhaseIds = {for (final phase in active.phases) phase.id};
-  final usedStageIds = {for (final stage in active.stages) stage.id};
+  final usedStageIds = {
+    for (final stage in active.stages) stage.id,
+    for (final stage in activeBundle.deferredStages) stage.id,
+  };
   String unique(String base, Set<String> used) {
     var value = base;
     for (var suffix = 2; used.contains(value); suffix++) {
@@ -175,33 +203,40 @@ PlanFlowMergedPlan planFlowMergedPlanDocument({
     for (final stage in active.stages) stage.studentId: stage.nullableTargets,
   };
   final regressed = <String>[];
+  Map<String, int?> carried(String studentId, Map<String, int?> source) {
+    final previous = last[studentId];
+    final targets = <String, int?>{};
+    for (final key in planningDocumentTargetKeys) {
+      final value = source[key];
+      final floor = previous?[key];
+      if (floor != null &&
+          value != null &&
+          value < floor &&
+          !regressed.contains(studentId)) {
+        regressed.add(studentId);
+      }
+      targets[key] = value ?? floor;
+    }
+    last[studentId] = targets;
+    return targets;
+  }
+
   final phaseIds = <String, String>{};
+  final stageIds = <String, String>{};
   final phases = <PlanningDocumentPhase>[...active.phases];
   for (final phase in candidate.phases) {
     final phaseId = unique(phase.id, usedPhaseIds);
     phaseIds[phase.id] = phaseId;
     final stages = <PlanningDocumentStage>[];
     for (final stage in phase.stages) {
-      final previous = last[stage.studentId];
-      final targets = <String, int?>{};
-      for (final key in planningDocumentTargetKeys) {
-        final value = stage.nullableTargets[key];
-        final floor = previous?[key];
-        if (floor != null &&
-            value != null &&
-            value < floor &&
-            !regressed.contains(stage.studentId)) {
-          regressed.add(stage.studentId);
-        }
-        targets[key] = value ?? floor;
-      }
-      last[stage.studentId] = targets;
+      final stageId = unique(stage.id, usedStageIds);
+      stageIds[stage.id] = stageId;
       stages.add(
         PlanningDocumentStage(
-          id: unique(stage.id, usedStageIds),
+          id: stageId,
           studentId: stage.studentId,
           name: stage.name,
-          targets: targets,
+          targets: carried(stage.studentId, stage.nullableTargets),
         ),
       );
     }
@@ -209,26 +244,105 @@ PlanFlowMergedPlan planFlowMergedPlanDocument({
       PlanningDocumentPhase(id: phaseId, name: phase.name, stages: stages),
     );
   }
+  // 체인 순서: 활성 나중에 단계가 초안 배치 뒤에 온다. 초안 나중에 단계는 그 뒤 값을 이어 받는다.
+  for (final stage in activeBundle.deferredStages) {
+    last[stage.studentId] = stage.nullableTargets;
+  }
+  final deferred = <PlanningDocumentStage>[
+    for (final stage in draft.deferredStages)
+      () {
+        final stageId = unique(stage.id, usedStageIds);
+        stageIds[stage.id] = stageId;
+        return PlanningDocumentStage(
+          id: stageId,
+          studentId: stage.studentId,
+          name: stage.name,
+          targets: carried(stage.studentId, stage.targets),
+        );
+      }(),
+  ];
   if (regressed.isNotEmpty) {
     return PlanFlowMergedPlan._(
       document: null,
+      authoring: null,
       phaseIds: phaseIds,
+      stageIds: stageIds,
       regressedStudentIds: regressed,
     );
   }
+  final mergedStudents = {
+    for (final phase in phases)
+      for (final stage in phase.stages) stage.studentId,
+  };
+  final document = PlanningDocument(
+    id: id,
+    name: name,
+    kind: PlanningDocumentKind.plan,
+    phases: phases,
+    version: 2,
+    goalMetadata: {
+      ...candidate.goalMetadata,
+      for (final entry in activeBundle.goalMetadata.entries)
+        if (mergedStudents.contains(entry.key)) entry.key: entry.value,
+      ...active.goalMetadata,
+    },
+  );
+  final order = [
+    ...activeBundle.studentOrder,
+    for (final studentId in draft.studentOrder)
+      if (!activeBundle.studentOrder.contains(studentId)) studentId,
+  ];
+  String mapped(String stageId) => stageIds[stageId] ?? stageId;
+  final wire = <String, dynamic>{
+    'version': 1,
+    'prerequisites': [
+      for (final prerequisite in activeBundle.prerequisites)
+        prerequisite.toWire(),
+      for (final prerequisite in draft.prerequisites)
+        {
+          'stage_id': mapped(prerequisite.stageId),
+          'requires_stage_id': mapped(prerequisite.requiresStageId),
+        },
+    ],
+    'deferred_stages': [
+      for (final stage in activeBundle.deferredStages) stage.toWire(),
+      for (final stage in deferred) stage.toWire(),
+    ],
+    'student_order': order,
+    'stage_order_by_student': {
+      for (final studentId in order)
+        studentId: [
+          for (final stage in document.stages)
+            if (stage.studentId == studentId) stage.id,
+          for (final stage in activeBundle.deferredStages)
+            if (stage.studentId == studentId) stage.id,
+          for (final stage in deferred)
+            if (stage.studentId == studentId) stage.id,
+        ],
+    },
+    'goal_metadata': {
+      for (final studentId in order)
+        if (!mergedStudents.contains(studentId))
+          studentId:
+              (activeBundle.goalMetadata[studentId] ??
+                      draft.goalMetadata[studentId] ??
+                      planFlowDefaultGoalMetadata)
+                  .toWire(),
+    },
+  };
+  PlanningAuthoring? authoring;
+  String? reason;
+  try {
+    authoring = PlanningAuthoring.fromWire(wire, document);
+  } on PlanningAuthoringFormatException catch (error) {
+    reason = error.reason;
+  }
   return PlanFlowMergedPlan._(
-    document: PlanningDocument(
-      id: id,
-      name: name,
-      kind: PlanningDocumentKind.plan,
-      phases: phases,
-      version: 2,
-      goalMetadata: {
-        ...candidate.goalMetadata,
-        ...active.goalMetadata,
-      },
-    ),
+    document: document,
+    authoring: authoring,
+    authoringReason: reason,
     phaseIds: phaseIds,
+    stageIds: stageIds,
     regressedStudentIds: const [],
   );
 }
@@ -407,17 +521,76 @@ class PlanFlowSaveComparison {
   }
 }
 
+/// authoring validator reason(FB-8, 백엔드 `planning_authoring.py`와 Dart [PlanningAuthoring.fromWire]가 같다).
+const planFlowAuthoringReasons = {
+  'invalid_shape',
+  'unsupported_version',
+  'student_order',
+  'stage_set',
+  'stage_chain',
+  'target_regression',
+  'targets',
+  'goal_metadata',
+  'stage_reference',
+  'self_reference',
+  'same_student_prerequisite',
+  'duplicate_prerequisite',
+  'cycle',
+  'lane_order',
+  'stage_order',
+};
+
 /// 저장 실패 코드. 백엔드 오류 코드, mock `StateError` 메시지, 연결 끊김(`disconnected`)·시간 초과(`timeout`).
-/// `invalid_payload` + `reason: authoring_required`는 `authoring_required`로 읽는다(FB-8a).
+/// `invalid_payload` + `reason: authoring_required`는 `authoring_required`로 읽는다(FB-8a). authoring 규칙 오류
+/// (`invalid_payload` + validator reason, 또는 보내기 전 [PlanningAuthoringFormatException])는 `invalid_authoring`이다.
 String planFlowSaveErrorCode(Object error) => switch (error) {
   BackendRemoteException(code: 'invalid_payload', :final details?)
       when details['reason'] == 'authoring_required' =>
     'authoring_required',
+  BackendRemoteException(code: 'invalid_payload', :final details?)
+      when planFlowAuthoringReasons.contains(details['reason']) =>
+    'invalid_authoring',
   BackendRemoteException(:final code) => code,
   BackendDisconnectedException() => 'disconnected',
   TimeoutException() => 'timeout',
   StateError(:final message) => message,
+  PlanningAuthoringFormatException() => 'invalid_authoring',
   _ => 'unknown',
+};
+
+/// authoring 오류의 reason과 카드(stage ID). 백엔드 오류는 `details`(`reason`, `stage_id`, `requires_stage_id`)에서,
+/// 보내기 전 오류는 예외의 reason에서 읽는다. reason을 모르면 null.
+({String reason, List<String> stageIds})? planFlowAuthoringErrorOf(
+  Object error,
+) => switch (error) {
+  BackendRemoteException(:final details?)
+      when planFlowAuthoringReasons.contains(details['reason']) =>
+    (
+      reason: details['reason'] as String,
+      stageIds: [
+        for (final key in const ['stage_id', 'requires_stage_id'])
+          if (details[key] case final String id) id,
+      ],
+    ),
+  PlanningAuthoringFormatException(:final reason) => (
+    reason: reason,
+    stageIds: const <String>[],
+  ),
+  _ => null,
+};
+
+/// authoring reason 설명(~습니다체 문장 안에 넣는 말).
+String planFlowAuthoringReasonText(String reason) => switch (reason) {
+  'cycle' => '선행 조건이 돌고 돌아 이어집니다',
+  'lane_order' => '먼저 끝나야 하는 단계가 뒤 칸에 있습니다',
+  'stage_order' => '같은 칸에서 먼저 끝나야 하는 단계가 뒤에 있습니다',
+  'self_reference' => '단계를 자기 자신의 선행 단계로 이었습니다',
+  'same_student_prerequisite' => '같은 학생 단계를 직접 이었습니다',
+  'duplicate_prerequisite' => '같은 선행 조건이 두 번 있습니다',
+  'stage_reference' => '없어진 단계를 가리키는 선행 조건이 있습니다',
+  'target_regression' => '뒤 단계 목표가 앞 단계보다 낮습니다',
+  'stage_chain' => '같은 학생 단계 순서가 칸 배치와 맞지 않습니다',
+  _ => '나중에 칸·선행 조건 정보 모양이 맞지 않습니다',
 };
 
 /// 같은 요청(같은 키·같은 내용)을 다시 보내면 되는 실패.
@@ -443,6 +616,9 @@ String planFlowSaveErrorMessage(String code) => switch (code) {
   'authoring_required' =>
     '활성 계획의 페이즈 편집 정보를 새 페이즈에 맞출 수 없어 저장하지 않았습니다. 최신 상태를 다시 읽었습니다. '
         '"활성 계획을 이걸로 바꾸기"나 "시나리오로 저장"을 고를 수 있습니다.',
+  'invalid_authoring' =>
+    '나중에 칸·선행 조건 정보가 규칙에 맞지 않아 저장하지 않았습니다. 3단계에서 표시한 카드를 고쳐 주십시오. '
+        '만든 초안은 그대로입니다.',
   'idempotency_conflict' =>
     '같은 저장 요청 키가 다른 내용에 이미 쓰였습니다. "다시 읽기"로 최신 상태를 읽은 뒤 다시 저장해 주십시오.',
   'timeout' ||
@@ -452,6 +628,11 @@ String planFlowSaveErrorMessage(String code) => switch (code) {
     '연결이 끊기거나 저장소가 바빠 저장을 마치지 못했습니다. 다시 누르면 같은 요청을 그대로 보냅니다.',
   _ => '저장하지 못했습니다($code).',
 };
+
+/// authoring 규칙 오류 안내(reason 설명 포함).
+String planFlowAuthoringErrorMessage(String reason) =>
+    '나중에 칸·선행 조건 정보가 규칙에 맞지 않아 저장하지 않았습니다(${planFlowAuthoringReasonText(reason)}). '
+    '3단계에서 표시한 카드를 고쳐 주십시오. 만든 초안은 그대로입니다.';
 
 /// 저장을 마친 결과(계획 화면이 다시 읽기·시나리오 보기 이동에 쓴다).
 @immutable
@@ -488,6 +669,7 @@ class PlanFlowSaveRequest {
     required this.document,
     required this.expectedRevision,
     required this.name,
+    this.authoring,
     this.expectedScenarioRevision,
     this.baseProfileRevision,
     this.scenarioId,
@@ -503,6 +685,9 @@ class PlanFlowSaveRequest {
 
   /// 보내는 문서(v2). 시나리오는 `kind=scenario`, 활성 계획은 `kind=plan`.
   final PlanningDocument document;
+
+  /// 문서와 함께 보내는 authoring 전체(FE4-f1). 공용 validator로 만든 것이다.
+  final PlanningAuthoring? authoring;
 
   /// 시나리오: 목록 revision. 활성 계획: 계정 revision.
   final int expectedRevision;
@@ -596,6 +781,7 @@ class PlanFlowSaveController extends ChangeNotifier {
       draft: _draft,
       id: active.id,
       name: active.name,
+      activeAuthoring: _snapshot?.plan?.authoring,
     );
   }
 
@@ -628,6 +814,12 @@ class PlanFlowSaveController extends ChangeNotifier {
         if (snapshot == null) return null;
         if (snapshot.plan == null) return '활성 계획을 읽지 못했습니다';
         final merged = this.merged;
+        if (merged != null &&
+            merged.document != null &&
+            merged.authoring == null) {
+          return '활성 계획의 나중에 칸·선행 조건과 맞출 수 없어 붙일 수 없습니다'
+              '(${planFlowAuthoringReasonText(merged.authoringReason ?? '')})';
+        }
         if (merged != null && merged.blocked) {
           final names = [
             for (final id in merged.regressedStudentIds)
@@ -657,10 +849,10 @@ class PlanFlowSaveController extends ChangeNotifier {
   /// 저장 버튼(C 버튼·A primary)을 누를 수 있다.
   bool get canSave {
     if (_saving || _loading || _snapshot == null) return false;
-    if (!_draft.allStagesAssigned || !isAvailable(_target)) return false;
+    if (!flow.orderReady || !isAvailable(_target)) return false;
     return switch (_target) {
       PlanFlowSaveTarget.scenario => scenarioName.trim().isNotEmpty,
-      PlanFlowSaveTarget.appendPhases => merged?.document != null,
+      PlanFlowSaveTarget.appendPhases => merged?.blocked == false,
       PlanFlowSaveTarget.replace =>
         archiveName.trim().isNotEmpty || _snapshot?.activePhaseCount == 0,
     };
@@ -693,7 +885,8 @@ class PlanFlowSaveController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// "단계 순서는 페이즈 편집에서 다시 바꿀 수 있게 유지". 상태만 둔다(authoring 저장은 FE4-f).
+  /// "단계 순서는 페이즈 편집에서 다시 바꿀 수 있게 유지". 상태만 둔다. FE4-f1부터 authoring은 늘 보낸다(나중에 칸·
+  /// 직접 선행을 잃지 않게). 끄면 무엇을 덜 보낼지는 정하지 않았다.
   set keepOrderEditable(bool value) {
     if (_disposed || value == _keepOrderEditable) return;
     _keepOrderEditable = value;
@@ -793,7 +986,7 @@ class PlanFlowSaveController extends ChangeNotifier {
       return;
     }
     final draft = _draft;
-    if (!draft.allStagesAssigned) return;
+    if (!flow.orderReady) return;
     final number = ++_compareNumber;
     _comparing.clear();
     final stamp = _clock().microsecondsSinceEpoch;
@@ -885,16 +1078,18 @@ class PlanFlowSaveController extends ChangeNotifier {
         if (collection == null) return null;
         final name = scenarioName.trim();
         final editing = flow.scenario;
+        final document = PlanFlowDocumentBoundary.toScenarioDocument(
+          _draft,
+          id: editing?.document.id ?? 'scenario-draft-$stamp',
+          name: name,
+        );
         return PlanFlowSaveRequest(
           target: _target,
           draft: _draft,
           profileId: profileId,
           idempotencyKey: key,
-          document: PlanFlowDocumentBoundary.toScenarioDocument(
-            _draft,
-            id: editing?.document.id ?? 'scenario-draft-$stamp',
-            name: name,
-          ),
+          document: document,
+          authoring: PlanFlowDocumentBoundary.authoringFor(_draft, document),
           expectedRevision: collection,
           expectedScenarioRevision: editing == null
               ? null
@@ -906,13 +1101,15 @@ class PlanFlowSaveController extends ChangeNotifier {
         );
       case PlanFlowSaveTarget.appendPhases:
         final document = merged?.document;
-        if (document == null) return null;
+        final authoring = merged?.authoring;
+        if (document == null || authoring == null) return null;
         return PlanFlowSaveRequest(
           target: _target,
           draft: _draft,
           profileId: profileId,
           idempotencyKey: key,
           document: document,
+          authoring: authoring,
           expectedRevision: snapshot.revision,
           name: document.name,
         );
@@ -920,16 +1117,18 @@ class PlanFlowSaveController extends ChangeNotifier {
         final active = snapshot.activeDocument;
         final collection = snapshot.scenarioRevision;
         if (active == null || collection == null) return null;
+        final document = PlanFlowDocumentBoundary.toPlanDocument(
+          _draft,
+          id: active.id,
+          name: active.name,
+        );
         return PlanFlowSaveRequest(
           target: _target,
           draft: _draft,
           profileId: profileId,
           idempotencyKey: key,
-          document: PlanFlowDocumentBoundary.toPlanDocument(
-            _draft,
-            id: active.id,
-            name: active.name,
-          ),
+          document: document,
+          authoring: PlanFlowDocumentBoundary.authoringFor(_draft, document),
           expectedRevision: snapshot.revision,
           expectedScenarioRevision: collection,
           name: _archiveRequestName(snapshot),
@@ -951,9 +1150,20 @@ class PlanFlowSaveController extends ChangeNotifier {
     final snapshot = _snapshot;
     if (_disposed || !canSave || snapshot == null) return null;
     final pending = _pending;
-    final request = pending != null && _pendingMatches(pending, snapshot)
-        ? pending
-        : _buildRequest(snapshot);
+    final PlanFlowSaveRequest? request;
+    try {
+      request = pending != null && _pendingMatches(pending, snapshot)
+          ? pending
+          : _buildRequest(snapshot);
+    } on PlanningAuthoringFormatException catch (error) {
+      // 보내기 전에 공용 validator가 거절했다(초안 확인을 지나친 경우). 보내지 않는다.
+      _rejectAuthoring(
+        error,
+        merged: _target == PlanFlowSaveTarget.appendPhases,
+      );
+      notifyListeners();
+      return null;
+    }
     if (request == null) return null;
     _pending = request;
     _saving = true;
@@ -973,6 +1183,13 @@ class PlanFlowSaveController extends ChangeNotifier {
       if (_disposed) return null;
       final code = planFlowSaveErrorCode(error);
       final message = planFlowSaveErrorMessage(code);
+      if (code == 'invalid_authoring') {
+        _rejectAuthoring(
+          error,
+          merged: request.target == PlanFlowSaveTarget.appendPhases,
+        );
+        return null;
+      }
       if (planFlowSaveRereadCodes.contains(code)) {
         _saving = false;
         unawaited(reload(message: message));
@@ -995,6 +1212,38 @@ class PlanFlowSaveController extends ChangeNotifier {
     }
   }
 
+  /// authoring 규칙 오류: 같은 내용은 다시 보내도 거절되므로 보류 요청을 버리고, reason과 stage ID를 3단계 카드에
+  /// 잇는다([PlanFlowController.reportSavedIssue]). 초안은 지우지 않는다. 페이즈로 추가([merged])의 병합 id는 초안 id로
+  /// 되돌린다.
+  void _rejectAuthoring(Object error, {required bool merged}) {
+    _pending = null;
+    final found = planFlowAuthoringErrorOf(error);
+    final reason = found?.reason ?? 'invalid_shape';
+    final back = {
+      if (merged)
+        for (final entry
+            in (_merged?.stageIds ?? const <String, String>{}).entries)
+          entry.value: entry.key,
+    };
+    final known = {for (final stage in _draft.stages) stage.id};
+    final stageIds = <String>{
+      for (final id in found?.stageIds ?? const <String>[])
+        if (known.contains(back[id] ?? id)) back[id] ?? id,
+      for (final issue in flow.orderIssues)
+        if (issue.reason == reason) ...issue.stageIds,
+    }.toList();
+    final text = planFlowAuthoringReasonText(reason);
+    _message = planFlowAuthoringErrorMessage(reason);
+    _messageIsError = true;
+    flow.reportSavedIssue(
+      PlanFlowOrderIssue(
+        reason: reason,
+        stageIds: stageIds,
+        message: '저장하지 않았습니다: $text.',
+      ),
+    );
+  }
+
   /// 요청을 보낸다. 이걸로 바꾸기는 기존 계획을 옮겨 둔 시나리오 id를 준다.
   Future<String?> _send(PlanFlowSaveRequest request) async {
     final service = this.service;
@@ -1013,6 +1262,7 @@ class PlanFlowSaveController extends ChangeNotifier {
             description: request.description,
             baseProfileRevision: request.baseProfileRevision!,
             document: request.document,
+            authoring: request.authoring,
           );
         } else {
           await service.updateScenario(
@@ -1025,6 +1275,7 @@ class PlanFlowSaveController extends ChangeNotifier {
             description: request.description,
             baseProfileRevision: request.baseProfileRevision!,
             document: request.document,
+            authoring: request.authoring,
           );
         }
         return null;
@@ -1035,6 +1286,7 @@ class PlanFlowSaveController extends ChangeNotifier {
         await service.saveRepositoryPlan(
           profileId: request.profileId,
           document: request.document,
+          authoring: request.authoring,
           expectedRevision: request.expectedRevision,
           idempotencyKey: request.idempotencyKey,
         );
@@ -1046,6 +1298,7 @@ class PlanFlowSaveController extends ChangeNotifier {
         final result = await service.replaceRepositoryPlan(
           profileId: request.profileId,
           document: request.document,
+          authoring: request.authoring,
           expectedRevision: request.expectedRevision,
           expectedScenarioRevision: request.expectedScenarioRevision!,
           idempotencyKey: request.idempotencyKey,
@@ -1104,6 +1357,7 @@ String planFlowSaveTargetSubtitle(
           : '${editing.name} 시나리오를 고쳐 저장합니다';
     case PlanFlowSaveTarget.appendPhases:
       if (active == null) return '활성 계획 뒤에 페이즈로 붙입니다';
+      if (newPhaseCount == 0) return '붙일 페이즈 없이 나중에 칸 단계만 보관합니다';
       final first = active + 1;
       final last = active + newPhaseCount;
       final range = newPhaseCount <= 1 ? 'P$first' : 'P$first~P$last';

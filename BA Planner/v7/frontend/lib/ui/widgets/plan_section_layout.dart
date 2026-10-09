@@ -2111,9 +2111,11 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           purpose: PlanFlowPurpose.editScenario,
           context: flowContext,
           service: widget.service,
+          // FE4-f1: 시나리오 document + authoring(없으면 DTO 기본값)으로 나중에 칸·직접 선행·학생 순서까지 복원한다.
           initialDraft: PlanFlowDocumentBoundary.fromDocument(
             scenario.document,
             seedFor: flowContext.seedFor,
+            authoring: scenario.authoring,
           ),
           initialStep: PlanFlowStep.order,
           scenario: scenario,

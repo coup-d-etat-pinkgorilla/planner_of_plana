@@ -4516,3 +4516,114 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_231201\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-f 교차 선행·나중에 칸 (f1 구현 끝, gate 전)
+
+- 시작: 2026-10-09 23:35, 시작 SHA `7965e4620d7f05e7b522af250462eb274bdb10f3`(FE4-i `e5555b52`, 문서 커밋 뒤 HEAD).
+- 범위가 커서 둘로 나눈다. 이번에는 **FE4-f1**만 한다.
+  - **f1(이번)**: 초안 모델(명시 나중에 단계 목록 · 직접 선행 목록, 목표 편집 중 임시 미배치와 구별), 크게 보기 "나중에" 칸 · 분홍 점선 직접 선행 만들기(카드 아래 점 끌기 · C "선행 단계 추가")·지우기(C ×), 자기 학생·자기 자신·중복·순환·앞 칸 거부(백엔드 reason과 같은 말), 칸마다 자동 체인 + 직접 선행의 stable topological 순서를 phase.stages · deferred_stages 배열에 반영, `ensurePlaced`가 명시 나중에를 다시 배치하지 않음, 모두 나중에여도 저장, 저장 3지선다가 authoring 전체를 보냄(시나리오 create/update · 페이즈로 추가는 활성 authoring과 병합 · 이걸로 바꾸기), 시나리오 편집을 document + authoring으로 복원, authoring 오류 reason · stage ID를 카드에 잇기(초안 유지), 작게 보기도 "나중에" 칸과 고른 카드의 직접 선행 선(경로 다듬기 전).
+  - **f2(다음)**: 작게 보기 S 곡선이 사이 줄 칩 위를 지나지 않게 경로 다듬기(직접 선행 점선 포함, 16:25 후속), `_incorporateScenario` stage ID 재발급 시 deferred · 직접 edge endpoint · 학생 체인 remap(끝점 빠진 edge를 조용히 지우지 않음), 활성 계획(plan.get document + authoring)을 흐름 초안으로 여는 진입(지금은 진입 경로가 없다).
+- 고칠 기존 파일(사본 `debug/frontend_fe4f/pre/frontend/...`): `lib/ui/models/plan_flow_draft.dart`, `lib/ui/models/plan_flow_order_editor.dart`, `lib/ui/models/plan_flow_save.dart`, `lib/ui/widgets/plan_flow_order_step.dart`, `lib/ui/widgets/plan_flow_save_step.dart`, `lib/ui/widgets/plan_flow_rail.dart`, `lib/ui/widgets/plan_section_layout.dart`(시나리오 편집 복원에 authoring을 넘기는 한 곳), `test/plan_flow_order_step_test.dart`, `test/plan_flow_save_test.dart`, `test/goldens/fe1g_baseline_golden_test.dart`.
+
+### FE4-f1 종료 기록 (2026-10-10 00:40, 커밋 전)
+
+상태: f1 구현 끝, gate 미실행. 시작 SHA `7965e4620d7f05e7b522af250462eb274bdb10f3`. `debug/frontend_fe4f/commit.json`(baseline whole, status=true)을 두었다. 직접 커밋하지 않았다. 시작 기록의 파일 목록 그대로 고쳤고(사본 있음), 새 파일은 `test/plan_flow_authoring_test.dart` 하나다. `lib/services/**`·backend·contracts·스캐너·tactic·app_shell 미수정.
+
+#### 바꾼 것
+
+- 초안(`plan_flow_draft.dart`)
+  - `PlanFlowDraft.deferredStageIds`(명시 "나중에" 칸, 칸 안 순서) · `prerequisites`(`PlanFlowPrerequisite`, 학생 간 직접 선행). `unassignedStages`는 칸에도 나중에 칸에도 없는 단계(목표 편집 중 임시 미배치)만이다. `allStagesAssigned`는 "칸 또는 나중에 칸"이라 모두 나중에여도 참이다.
+  - `planFlowOrderEdges`(자동 체인 + 유효한 직접 선행), `planFlowStableTopological`(놓을 수 있는 것 중 원래 자리가 가장 앞인 것부터, 순환이면 남은 것을 원래 순서로), `planFlowOrderIssues`(백엔드 reason과 같은 말: `stage_reference`·`self_reference`·`same_student_prerequisite`·`duplicate_prerequisite`·`cycle`·`lane_order`·`stage_order`, 카드 id 포함). 나중에 칸 = 마지막 칸(칸 수).
+  - 컨트롤러: `orderReady`(모두 놓임 + 위반 없음)가 3단계 완료·4단계 진입·"다음"을 정한다. `orderIssues`(초안마다 한 번 계산), `savedIssue`/`reportSavedIssue`(저장 거절 reason을 카드에 잇고, 초안이 바뀌면 없어짐), `issuesOf`.
+  - 칸 배열은 이동·잇기·배치·자동 정렬마다 자동 체인 + 직접 선행의 stable topological 순서로 다시 놓는다(기존 `_sortLaneByStep` 대체, 기존 테스트의 순서는 그대로). 같은 칸 배분 순서가 부족 배분에 영향을 주므로 이 배열이 그대로 phase.stages · deferred_stages가 된다.
+  - `moveStage(phaseId: planFlowDeferredLaneId)`: 나중에 칸으로 옮기면 같은 학생 뒤 단계도 함께 간다(배치 prefix + 나중에 suffix). `orderViolation`은 자동 체인과 직접 선행 양쪽을 본다(선행보다 앞 칸 · 기다리는 단계보다 뒤 칸 거부, 기존 문구 그대로 + 직접 선행 문구).
+  - `addPrerequisite`/`removePrerequisite`: 자기 자신 · 같은 학생 · 이미 이음 · 순환 · 먼저 끝나야 하는 단계가 뒤 칸이면 거부하고 이유를 돌려준다. 같은 칸이면 선행을 앞으로 놓는다.
+  - `placeUnassignedStages`: 선행부터 놓고, 먼저 끝나야 하는 단계보다 앞 칸·기다리는 단계보다 뒤 칸에 두지 않는다. 앞 단계가 나중에 칸이면 나중에 칸으로 간다. 명시 나중에 단계는 다시 놓지 않는다(놓을 것이 없어도 2단계에서 순서가 바뀌었으면 배열만 다시 정리). `autoArrange`는 나중에 칸을 두고 직접 선행을 지킨다. `completeOrder`는 칸에 넣은 id를 나중에 칸에서 뺀다.
+  - 목표 편집(`setStudentStages`·`confirmStudentStages`)에서 남은 단계의 명시 나중에는 둔다. 학생 빼기·단계 지우기·목표 편집으로 **사용자가 지운 단계**에 걸린 직접 선행은 함께 지운다(아래 판단 1).
+  - 계산: 나중에 칸 단계는 계산 문서에서 빠지고(상태 없음), 모두 나중에면 계산을 부르지 않는다.
+  - 경계: `PlanFlowDocumentBoundary.fromDocument(document, authoring:)`(없으면 DTO 기본값; 학생 순서 = `student_order`, 학생 체인 = `stage_order_by_student`, 나중에 단계 nullable 목표 그대로, goal_metadata는 문서 학생은 문서 것·나머지 선택 학생은 authoring 것), `authoringWire`/`authoringFor`(공용 `PlanningAuthoring.fromWire`로 만든다. 단계 없는 선택 학생 포함).
+- 3단계 화면(`plan_flow_order_step.dart`, `plan_flow_order_editor.dart`)
+  - 크게 보기: 마지막 칸 아래 "칸 추가", 그 아래 "나중에" 칸(점선 타일 `.dash`, 머리 "나중에 · 아직 급하지 않은 단계를 여기로", 이름 고치기 없음, 상태 칩 없음). 나중에 칸 카드 상태는 "나중에", 비용 줄 "나중에 칸 단계는 계산에서 빠집니다".
+  - 직접 선행 분홍 점선(#f2b3ef 2.5, 7 5, 꺾쇠 실선 2.2): 같은 학생 화살표와 같은 경로 함수(칸 사이 틈 · 칸 머리 피하기)를 쓴다. 범례에 "직접 이은 선행 조건".
+  - 잇기: 카드 아래 점(분홍 원)을 다른 카드에 끌어 놓기, 또는 C "선행 단계 추가" → 카드 누르기(머리에 분홍 안내). 거부하면 머리에 이유. 규칙을 어긴 카드는 빨간 테두리 + 의미 구조에 이유.
+  - C: 위반 이유 행, "먼저 끝나야 하는 단계"에 자동 행 + 직접 선행 행(최대 3, 분홍 고리 아이콘, "직접"/"직접 · 나중에", × 지우기) + "선행 단계 추가"(고르는 중이면 "카드를 눌러 고릅니다 · 그만두기"), 나중에 칸 카드면 "나중에 칸 · 계산에서 빠집니다" 행.
+  - 작게 보기: "칸 추가" 아래 나중에 칸(점선, 머리 "나중에 · 단계 n개"), 칩도 점을 받아 잇는다, 고른 카드의 직접 선행·기다리는 단계 선을 분홍 점선으로(경로는 기존 S 곡선 그대로, 다듬기는 f2), 위반 칩은 빨간 테두리.
+- 저장(`plan_flow_save.dart`, `plan_flow_save_step.dart`, `plan_flow_rail.dart`)
+  - 시나리오 create/update · 이걸로 바꾸기: 초안 authoring 전체(`authoringFor`)를 보낸다. 페이즈로 추가: `planFlowMergedPlanDocument(activeAuthoring: plan.get authoring)`가 학생 순서(활성 뒤 새 학생) · 체인(활성 배치 → 초안 배치 → 활성 나중에 → 초안 나중에) · deferred_stages(활성 뒤 초안) · 직접 선행(바꾼 id로 끝점 remap, 끝점이 빠진 edge도 지우지 않고 보냄)을 합치고 공용 validator로 확인한다. 실패하면 위치를 고를 수 없고 reason을 보인다. 단계 id 재발급 표 `stageIds`.
+  - `invalid_payload` + validator reason, 또는 보내기 전 `PlanningAuthoringFormatException` → `invalid_authoring`: 보류 요청을 버리고 다시 읽지 않으며, reason 설명 + stage ID(페이즈로 추가면 병합 id → 초안 id)를 `reportSavedIssue`로 3단계 카드에 잇는다. 초안은 그대로다. `authoring_required`·`revision_conflict`는 기존대로 다시 읽기.
+  - 4단계 B 개수 칩에 "나중에 n개", 페이즈가 없으면 "모든 단계가 나중에 칸에 있어 만들어질 페이즈가 없습니다", 레일 3단계 부제 "… · 나중에 n개", 페이즈로 추가 부제(새 페이즈 0개) "붙일 페이즈 없이 나중에 칸 단계만 보관합니다".
+  - nullable 목표는 정수 v1로 바꾸지 않는다(초안 v2 → 문서·deferred_stages 그대로).
+- `plan_section_layout.dart`(CRLF, 2줄): 시나리오 비교 "편집"이 `scenario.document + scenario.authoring`으로 초안을 연다.
+
+#### 판단(오케스트레이터 확인 부탁)
+
+1. 사용자가 단계를 지우면(학생 빼기 · 2단계에서 단계 지우기 · 프리셋 재적용으로 id가 바뀜) 그 단계에 걸린 직접 선행도 지운다. 저장 실패 · 병합 · 복원에서는 지우지 않는다. 복원한 초안에 끝점이 빠진 edge가 있으면 `stage_reference` 위반으로 카드·C에 보이고 C ×로 지운다.
+2. "칸 추가"는 마지막 칸과 "나중에" 칸 사이에 둔다(새 칸은 나중에 칸 위에 생긴다). 시안에는 "칸 추가"가 없다. 그래서 칸 → 나중에 칸으로 가는 꺾인 선이 "칸 추가" 타일 위를 지난다(f2 경로 다듬기에서 같이 본다).
+3. 나중에 칸 타일은 시안 `.plain`(투명) 대신 `.dash`(옅은 바탕 + 점선)로 그렸다. 끌어 놓는 칸이라 경계가 보이게 했다.
+4. 4단계 "단계 순서는 페이즈 편집에서 다시 바꿀 수 있게 유지" 토글은 여전히 상태만 둔다. FE4-f1부터 authoring은 늘 보낸다(나중에 칸·직접 선행을 잃지 않게). 끄면 무엇을 덜 보낼지 정하지 않았다.
+5. 페이즈로 추가에서 초안 배치 목표가 활성 나중에 단계 목표보다 높으면(체인상 활성 나중에가 뒤) validator `target_regression`으로 그 위치를 막고 "활성 계획의 나중에 칸·선행 조건과 맞출 수 없어 붙일 수 없습니다(뒤 단계 목표가 앞 단계보다 낮습니다)"를 보인다. 활성 나중에 단계를 몰래 올리지 않는다.
+6. 직접 선행에는 시안의 메모("노트 먼저 쓰기")를 두지 않았다(authoring v1에 자리가 없다). C 행 오른쪽은 "직접"이다.
+
+#### 서비스·백엔드 확인 요청(코드는 고치지 않았다)
+
+- 백엔드 `PlanningAuthoringError`(ValueError)가 repository/scenario 프로토콜에서 `invalid_payload` + `details{reason, stage_id, requires_stage_id}`로 나가는지 확인 부탁. 프로토콜 `except (TypeError, ValueError)` 경로로 가면 details가 빠져 프론트는 `invalid_payload` 일반 오류(재시도 없음)로만 보인다. 프론트는 보내기 전에 같은 공용 validator로 막으므로 정상 사용에서는 나오지 않는다.
+- compare(`planning.scenario.compare`)·계산에 페이즈가 0개인 문서(모두 나중에)를 넘겨도 되는지 확인 부탁. 계산은 프론트가 부르지 않게 했고, 4단계 비교는 그대로 부른다.
+
+#### 테스트
+
+- 새 `test/plan_flow_authoring_test.dart`(14건): 나중에 칸으로 옮기기(뒤 단계 함께 · ensurePlaced가 다시 놓지 않음 · 계산 문서에서 빠짐 · 앞 단계가 나중에면 꺼낼 수 없음), 모두 나중에 → 3단계 완료 · 계산 안 부름 · authoring(nullable 그대로), 목표 편집 중 임시 미배치와 명시 나중에 구별, 직접 선행 거부 5종 · 같은 칸 정렬 · 나중에 칸 안 정렬 · 지우기, 자동 정렬과 직접 선행, 위반 reason·카드(lane_order · cycle · stage_reference), authoring wire ↔ 복원(목표 없는 선택 학생 · goal_metadata), 시나리오 create authoring 저장 · 페이즈로 추가 병합(활성 나중에 보존 · id 재발급 remap · edge 끝점), authoring 오류 → 카드 · 초안 유지 · 다시 읽지 않음, 오류 코드 매핑, 위젯 3건(나중에 칸 끌어 놓기 · C 선행 단계 추가 → 카드 누르기 → 분홍 점선 → C × · 카드 아래 점 끌기와 거부 이유).
+- `test/plan_flow_save_test.dart`: 시나리오 대역이 authoring을 기록·전달한다. "authoring은 보내지 않는다" 기대 2곳을 "보낸다"로 바꾸고 내용(학생 순서 · 바꾼 id 체인 · 나중에 없음)을 본다.
+- `test/plan_flow_order_step_test.dart`: 칸 추가 뒤 "여기로 끌어다 놓기"는 빈 나중에 칸에도 있어 새 칸 안에서 찾는다(1곳).
+- 테스트 대역 시그니처: `_AuthoringService.createScenario`·`saveRepositoryPlan`, 기존 `_RecordingService` 세 개 모두 `PlanningAuthoring? authoring` 선택 매개변수까지 서비스와 같다.
+- 정적 검토(별도 검토 1회): 컴파일·시그니처 문제 없음. 지적 반영 — 모두 나중에일 때 계산 안 부름, 2단계에서 나중에 칸 순서가 바뀌면 배열 다시 정리, 자동 정렬에서 앞 단계가 나중에면 나중에 칸으로, `completeOrder` 겹침 제거, 테스트 주석.
+
+#### golden ① 예상
+
+- 새 장면(기준 없음): `plan-flow-step3-deferred` — plan-flow-step3와 같은 세 명. 아루 3단계를 "나중에" 칸으로 옮겨 3순위 칸은 빈 칸("여기로 끌어다 놓기"), 그 아래 "칸 추가", 그 아래 점선 나중에 칸에 아루 3단계 카드(상태 "나중에", 비용 줄 "나중에 칸 단계는 계산에서 빠집니다"). 아루 1단계(1순위) → 호시노 2단계(2순위) 분홍 점선 화살표(같은 학생 회색 화살표와 같은 꺾인 경로, 끝이 호시노 2단계 윗변에서 회색과 겹칠 수 있음). 호시노 2단계를 골라 C에 "먼저 끝나야 하는 단계": 호시노 1단계 · 자동, 아루 1단계 · 직접 · ×, "선행 단계 추가". 레일 3단계 부제 "단계 7개 · 순서 2칸 · 나중에 1개". 아루 3단계가 계산에서 빠져 상태 배지·칸 머리 칩이 plan-flow-step3와 다를 수 있다.
+- 바뀜 2: `plan-flow-step3`(크게 보기: "칸 추가" 아래 빈 점선 나중에 칸 + 머리 글자, 카드 7장 아래 가운데 쪽 분홍 점, 범례에 분홍 점선 "직접 이은 선행 조건", C "먼저 끝나야 하는 단계" 아래 "선행 단계 추가" 행이 생겨 그 아래 "이 칸에서 부족한 재화"·"자동으로 정렬"이 약 58px 내려감), `plan-flow-step3-many`(작게 보기: "칸 추가" 아래 점선 나중에 칸 — 보드 아래쪽이라 일부 또는 전부가 스크롤 밖일 수 있음, 범례에 분홍 점선, 펼친 호시노 2단계 카드에 분홍 점, C 같은 변화).
+- 그대로: 나머지 전부(`plan-flow-step1*`·`-step2*`·`-step4`·`-step4-append` 포함 — 나중에 칸·직접 선행이 없고 4단계 글자·비교 그대로).
+
+#### 검수표
+
+| 항목 | 확인 |
+|---|---|
+| 직접 선행 만들기(점 끌기 · C 추가 뒤 카드)·지우기(C ×), 분홍 점선 | 위젯 2건, golden 새 장면 |
+| 자기 자신 · 같은 학생 · 이미 이음 · 순환 · 앞 칸 거부(백엔드 reason과 같은 말) | 단위 1건 + 위반 reason 1건 |
+| "나중에" 칸 보관, 임시 미배치와 구별, ensurePlaced가 다시 놓지 않음, 모두 나중에여도 저장 | 단위 3건, 위젯 1건 |
+| 같은 칸 stable topological 순서를 phase.stages · deferred_stages에, 같은 학생 배치 prefix + 나중에 suffix | 단위 2건(칸 · 나중에 칸) + authoring 왕복 |
+| plan.get/scenario.get document + authoring 복원(없으면 DTO 기본값) | 단위 1건(시나리오 편집 진입 연결), 활성 계획을 흐름으로 여는 진입은 f2 |
+| 저장 3지선다가 authoring 전체 전송, 시나리오 create/update, nullable 유지 | 단위 4건 |
+| authoring 오류 reason · stage ID를 카드에, 초안 자동 삭제 없음 | 단위 2건 |
+| 금지 파일 미수정, ~습니다체 | 코드 확인 |
+
+#### 확인하지 못한 것
+
+- analyze · 테스트 · golden 실행 전부(이 환경에 Flutter 없음). 정적 검토만 했다.
+- 새 그림: 나중에 칸 점선·바탕, 카드 아래 점 크기(10px)와 자리(카드 아래 가운데 쪽 x 186), 분홍 점선 간격, C 직접 선행 행의 × 크기, 작게 보기 나중에 칸이 보이는 위치.
+- 끌기 체감: 카드 아래 점(24×20 터치 자리)을 끌 때 카드 끌기와 섞이지 않는지(위젯 테스트는 점이 위에 있어 카드가 맞지 않는다고 본다).
+- ProcessAppService(실제 Python)에서 authoring 왕복과 오류 details 모양(위 확인 요청).
+
+#### 남은 일(f2)
+
+- 작게 보기 S 곡선이 사이 줄 칩 위를 지나지 않게 경로 다듬기(직접 선행 점선 포함, 16:25 후속). 크게 보기에서 칸 → 나중에 칸 선이 "칸 추가" 위를 지나는 것도 같이 본다.
+- `_incorporateScenario`: stage ID 재발급 때 deferred · 직접 edge 끝점 · 학생 체인 remap(끝점 빠진 edge를 조용히 지우지 않음). 지금 편입은 계획 화면 작업 문서(정수 v1)에 붙이는 기존 경로라 authoring이 없다.
+- 활성 계획(plan.get document + authoring)을 흐름 초안으로 여는 진입(시안 A "계획 탭 페이즈 · 순서 바꾸기 → 3단계"). 경계 함수(`fromDocument(authoring:)`)는 f1에 있다.
+
+#### 사용자 실행 순서
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다(위 2장면 변경 + 새 장면 1건 RED 예상)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 승인 뒤 기준 이미지 갱신 → gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4f -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4f
+```
+
+### FE4-f commit record (2026-10-10 01:13, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261010_004148\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

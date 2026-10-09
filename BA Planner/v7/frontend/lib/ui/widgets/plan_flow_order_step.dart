@@ -10,7 +10,10 @@
 //   보드 스크롤). 고른 카드만 398×150으로 펼치고, 그 카드와 이어진 선만 그리며 나머지 칩은 흐리게 한다. 크게·작게
 //   세그먼트, 학생별 묶음, 툴바(부족 있는 단계만 · 선택 중 ×). 끌기·거부·자동 정렬은 크게 보기와 같다. 크게 보기
 //   화살표는 칸 사이 틈에서 옆으로 가고 칸 머리 오른쪽으로 카드 윗변에 들어간다.
-// - 직접 선행(분홍 점선)과 "나중에" 칸은 FE4-f.
+// - FE4-f1: 마지막 칸 아래 "칸 추가", 그 아래 "나중에" 칸(점선 타일, 계산에서 빠짐). 카드 아래 점을 다른 카드로 끌거나
+//   C "선행 단계 추가" 뒤 카드를 누르면 직접 선행(분홍 점선)을 잇고, C ×로 지운다. 자기 학생·자기 자신·순환·앞 칸은
+//   거부하고 이유를 보인다(백엔드 authoring reason과 같은 말). 규칙을 어긴 카드는 빨간 테두리. 작게 보기도 "나중에"
+//   칸과 고른 카드의 직접 선행 선을 그린다(경로 다듬기는 FE4-f2).
 // 좌표는 시안(2560×1392, 헤더 184 아래가 캔버스)의 값이다([planFlowProtoRect]).
 import 'dart:math' as math;
 
@@ -76,6 +79,24 @@ const _laneLineX = 183.4 + _laneBaseHeight * _railSlope;
 
 /// 같은 학생 자동 연결 화살표(시안 stroke rgba(195,207,219,.55)).
 const planFlowOrderArrowColor = Color.fromRGBO(195, 207, 219, 0.55);
+
+/// 직접 선행 화살표(시안 stroke #f2b3ef 2.5, dasharray 7 5).
+const planFlowOrderDirectArrowColor = Color(0xfff2b3ef);
+const planFlowOrderDirectDash = <double>[7, 5];
+
+/// "나중에" 칸 머리 설명(시안 "아직 급하지 않은 단계를 여기로").
+const _deferredCaption = '아직 급하지 않은 단계를 여기로';
+
+/// "나중에" 칸 머리 설명 자리(화살표가 머리 오른쪽으로 들어가는 x에 쓴다).
+const _deferredCaptionWidth = 190.0;
+
+/// 직접 선행을 잇는 끌기 데이터(카드 아래 점). [stageId]가 먼저 끝나야 하는 단계다.
+@immutable
+class PlanFlowLinkDrag {
+  const PlanFlowLinkDrag(this.stageId);
+
+  final String stageId;
+}
 const _dropText = Color(0xff9eb0c2);
 
 const _mutedStyle = TextStyle(
@@ -84,6 +105,14 @@ const _mutedStyle = TextStyle(
   fontSize: AppType.bodySmallSize,
   fontWeight: AppType.medium,
   color: AppColors.textMuted,
+);
+
+const _legendStyle = TextStyle(
+  fontFamily: AppFonts.body,
+  fontFamilyFallback: AppFonts.fallback,
+  fontSize: AppType.bodySmallSize,
+  fontWeight: AppType.medium,
+  color: _dropText,
 );
 
 const _bodyStyle = TextStyle(
@@ -114,12 +143,14 @@ String _shortName(String name) {
   return parts.length > 1 ? parts.last : name;
 }
 
-/// 카드 상태 배지(FD-035). 미보유 학생은 "모집 필요"(FD-076).
+/// 카드 상태 배지(FD-035). 미보유 학생은 "모집 필요"(FD-076), "나중에" 칸 단계는 "나중에"(계산에서 빠짐, FE4-f1).
 ({String label, AppTone tone}) planFlowOrderStatusChip(
   PlanFlowStageStatus? status, {
   required bool owned,
   required bool calculating,
+  bool deferred = false,
 }) {
+  if (deferred) return (label: '나중에', tone: AppTones.gray);
   if (!owned) return (label: '모집 필요', tone: AppTones.warn);
   return switch (status) {
     null => (label: calculating ? '계산 중' : '—', tone: AppTones.gray),
@@ -158,7 +189,9 @@ String planFlowOrderCostLine(
   PlanFlowStageCost? cost, {
   required bool owned,
   required bool calculating,
+  bool deferred = false,
 }) {
+  if (deferred) return '나중에 칸 단계는 계산에서 빠집니다';
   if (!owned) return '모집 비용은 계산하지 않습니다';
   if (cost == null) return calculating ? '비용을 계산하고 있습니다' : '비용 —';
   final short = [
@@ -195,9 +228,13 @@ class _LaneLayout {
     required this.phase,
     required this.tile,
     required this.cards,
+    this.deferred = false,
   });
 
   final PlanFlowPhase phase;
+
+  /// "나중에" 칸(FE4-f1).
+  final bool deferred;
 
   /// 칸 타일 상자(평행사변형의 바깥 상자).
   final Rect tile;
@@ -220,12 +257,17 @@ class _BoardLayout {
     required this.height,
   });
 
-  /// [phases]를 칸 순서대로 놓는다. [scroll]만큼 올라간 보드에서 보이는 높이로 레일 선의 x를 정한다.
-  factory _BoardLayout.of(List<PlanFlowPhase> phases, {double scroll = 0}) {
+  /// [phases]를 칸 순서대로 놓고, "칸 추가" 아래에 [deferred]("나중에" 칸)를 놓는다. [scroll]만큼 올라간 보드에서
+  /// 보이는 높이로 레일 선의 x를 정한다.
+  factory _BoardLayout.of(
+    List<PlanFlowPhase> phases, {
+    double scroll = 0,
+    PlanFlowPhase? deferred,
+  }) {
     double lineX(double y) => _laneLineX - (y - scroll) * _railSlope;
     final lanes = <_LaneLayout>[];
     var top = 0.0;
-    for (final phase in phases) {
+    _LaneLayout laneAt(PlanFlowPhase phase, {bool isDeferred = false}) {
       final count = phase.stageIds.length;
       final rows = math.max(
         1,
@@ -250,8 +292,17 @@ class _BoardLayout {
           planFlowOrderCardSize.height,
         );
       }
-      lanes.add(_LaneLayout(phase: phase, tile: tile, cards: cards));
       top += height + _laneGap;
+      return _LaneLayout(
+        phase: phase,
+        tile: tile,
+        cards: cards,
+        deferred: isDeferred,
+      );
+    }
+
+    for (final phase in phases) {
+      lanes.add(laneAt(phase));
     }
     final add = Rect.fromLTWH(
       lineX(top) - _addHeight * _railSlope,
@@ -259,10 +310,12 @@ class _BoardLayout {
       _addWidth,
       _addHeight,
     );
+    top = add.bottom + _laneGap;
+    if (deferred != null) lanes.add(laneAt(deferred, isDeferred: true));
     return _BoardLayout(
       lanes: lanes,
       add: add,
-      height: add.bottom + 24,
+      height: (deferred == null ? add.bottom : top - _laneGap) + 24,
     );
   }
 
@@ -445,32 +498,36 @@ class _PlanFlowOrderBodyState extends State<PlanFlowOrderBody> {
     final flow = widget.flow;
     final editor = widget.editor;
     final draft = flow.draft;
-    final message = editor.message;
+    final notice = editor.notice;
     final compact = editor.compact && draft.hasStages;
     final count = BaChip(
       key: const ValueKey('plan-flow-order-count'),
       label: '단계 ${draft.stageCount}개',
     );
-    final messageView = message == null
+    final messageView = notice == null
         ? const SizedBox.shrink()
         : Semantics(
             liveRegion: true,
             child: Row(
               children: [
-                const Icon(
-                  Icons.block_rounded,
+                Icon(
+                  notice.error ? Icons.block_rounded : Icons.link_rounded,
                   size: 18,
-                  color: AppColors.danger,
+                  color: notice.error
+                      ? AppColors.danger
+                      : planFlowOrderDirectArrowColor,
                 ),
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
-                    message,
+                    notice.text,
                     key: const ValueKey('plan-flow-order-message'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: _bodyStyle.copyWith(
-                      color: AppTones.danger.foreground,
+                      color: notice.error
+                          ? AppTones.danger.foreground
+                          : planFlowOrderDirectArrowColor,
                     ),
                   ),
                 ),
@@ -498,6 +555,7 @@ class _PlanFlowOrderBodyState extends State<PlanFlowOrderBody> {
                       '단계가 12개를 넘으면 자동으로 작게 보기로 바뀝니다. 크게·작게로 바꿀 수 있습니다.',
                       '선은 고른 카드와 이어진 것만 그립니다. 나머지 카드는 흐려집니다.',
                       '칸이 넘치면 줄이 바뀌고, 전체는 스크롤됩니다.',
+                      '먼저 끝나야 하는 단계는 오른쪽 "선행 단계 추가"를 누른 뒤 카드를 눌러 잇습니다.',
                     ]),
                   ],
                 )
@@ -509,9 +567,10 @@ class _PlanFlowOrderBodyState extends State<PlanFlowOrderBody> {
                   width: 360,
                   children: [
                     InfoPopoverList([
-                      '카드를 끌어 칸을 옮깁니다. 칸 안에서도 끌어 순서를 바꿉니다.',
+                      '카드를 끌어 1순위 · 2순위 · … · 나중에 칸을 옮깁니다. 칸 안에서도 끌어 순서를 바꿉니다.',
+                      '카드 아래쪽 점을 다른 카드로 끌면 먼저 끝나야 하는 단계가 이어집니다.',
                       '같은 학생의 단계는 자동으로 이어지고, 선행 단계보다 앞 칸에는 놓을 수 없습니다.',
-                      '칸 이름을 눌러 바꿉니다. 칸이 그대로 계획의 페이즈가 되고, 빈 칸은 저장할 때 빠집니다.',
+                      '칸 이름을 눌러 바꿉니다. 칸이 그대로 계획의 페이즈가 되고, 빈 칸은 저장할 때 빠집니다. 나중에 칸은 계산에서 빠집니다.',
                     ]),
                   ],
                 ),
@@ -612,16 +671,11 @@ class _PlanFlowOrderBodyState extends State<PlanFlowOrderBody> {
                   child: ColoredBox(color: planFlowOrderArrowColor),
                 ),
                 SizedBox(width: 8),
-                Text(
-                  '같은 학생 · 자동',
-                  style: TextStyle(
-                    fontFamily: AppFonts.body,
-                    fontFamilyFallback: AppFonts.fallback,
-                    fontSize: AppType.bodySmallSize,
-                    fontWeight: AppType.medium,
-                    color: _dropText,
-                  ),
-                ),
+                Text('같은 학생 · 자동', style: _legendStyle),
+                SizedBox(width: 20),
+                _DashSample(),
+                SizedBox(width: 8),
+                Text('직접 이은 선행 조건', style: _legendStyle),
               ],
             ),
             alignment: Alignment.centerLeft,
@@ -667,55 +721,60 @@ class _OrderBoardState extends State<_OrderBoard> {
     final flow = widget.flow;
     final editor = widget.editor;
     final draft = flow.draft;
-    final layout = _BoardLayout.of(draft.phases, scroll: scroll);
+    final layout = _BoardLayout.of(
+      draft.phases,
+      scroll: scroll,
+      deferred: editor.deferredLane,
+    );
     final statuses = editor.statuses;
     final selected = editor.selectedStageId;
-    final arrows = <PlanFlowOrderArrow>[];
-    final byStudent = <String, List<PlanFlowStage>>{};
-    for (final stage in draft.stages) {
-      byStudent.putIfAbsent(stage.studentId, () => []).add(stage);
-    }
     final laneOfStage = <String, _LaneLayout>{
       for (final lane in layout.lanes)
         for (final id in lane.phase.stageIds) id: lane,
     };
     final textScaler = MediaQuery.textScalerOf(context);
-    for (final stages in byStudent.values) {
-      for (var index = 1; index < stages.length; index++) {
-        final from = layout.cardOf(stages[index - 1].id);
-        final to = layout.cardOf(stages[index].id);
-        final fromLane = laneOfStage[stages[index - 1].id];
-        final toLane = laneOfStage[stages[index].id];
-        if (from == null || to == null || fromLane == null || toLane == null) {
-          continue;
-        }
-        double? enterX;
-        if (toLane.phase.stageIds.indexOf(stages[index].id) == 0) {
-          // 칸 첫 카드 위에는 칸 머리가 있다. 머리 오른쪽으로 들어간다.
+    PlanFlowOrderArrow? arrowBetween(String fromId, String toId) {
+      final from = layout.cardOf(fromId);
+      final to = layout.cardOf(toId);
+      final fromLane = laneOfStage[fromId];
+      final toLane = laneOfStage[toId];
+      if (from == null || to == null || fromLane == null || toLane == null) {
+        return null;
+      }
+      double? enterX;
+      if (toLane.phase.stageIds.indexOf(toId) == 0) {
+        // 칸 첫 카드 위에는 칸 머리가 있다. 머리 오른쪽으로 들어간다.
+        final double chipWidth;
+        if (toLane.deferred) {
+          chipWidth = _deferredCaptionWidth;
+        } else {
           final chip = planFlowOrderLaneChip(
             toLane.phase,
             statuses,
             editor.laneShortages(toLane.phase),
             calculating: flow.calculating,
           );
-          enterX = planFlowOrderHeaderClearX(
-            to,
-            chip == null
-                ? 0
-                : BaChip.widthFor(chip.label, textScaler: textScaler),
-          );
+          chipWidth = chip == null
+              ? 0
+              : BaChip.widthFor(chip.label, textScaler: textScaler);
         }
-        arrows.add(
-          planFlowOrderArrowBetween(
-            from,
-            to,
-            gapY: identical(fromLane, toLane)
-                ? null
-                : toLane.tile.top - _laneGap / 2,
-            enterX: enterX,
-          ),
-        );
+        enterX = planFlowOrderHeaderClearX(to, chipWidth);
       }
+      return planFlowOrderArrowBetween(
+        from,
+        to,
+        gapY: identical(fromLane, toLane)
+            ? null
+            : toLane.tile.top - _laneGap / 2,
+        enterX: enterX,
+      );
+    }
+
+    final arrows = <PlanFlowOrderArrow>[];
+    final directArrows = <PlanFlowOrderArrow>[];
+    for (final edge in planFlowOrderEdges(draft)) {
+      final arrow = arrowBetween(edge.from, edge.to);
+      if (arrow != null) (edge.direct ? directArrows : arrows).add(arrow);
     }
     return SizedBox(
       width: _boardSize.width,
@@ -743,6 +802,19 @@ class _OrderBoardState extends State<_OrderBoard> {
               ),
             ),
           ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                key: const ValueKey('plan-flow-order-direct-arrows'),
+                painter: PlanFlowOrderArrowPainter(
+                  directArrows,
+                  color: planFlowOrderDirectArrowColor,
+                  strokeWidth: 2.5,
+                  dash: planFlowOrderDirectDash,
+                ),
+              ),
+            ),
+          ),
           Positioned.fromRect(
             rect: layout.add,
             child: DiagonalRow(
@@ -765,17 +837,42 @@ class _OrderBoardState extends State<_OrderBoard> {
   }
 }
 
-/// 같은 학생 자동 연결 화살표(회색 실선, 끝에 꺾쇠). 작게 보기는 시안대로 조금 진하고 굵다.
+/// [source]를 [pattern](그림 길이, 틈 길이, …)으로 끊은 path.
+Path planFlowDashedPath(Path source, List<double> pattern) {
+  final result = Path();
+  if (pattern.isEmpty || pattern.any((length) => length <= 0)) return source;
+  for (final metric in source.computeMetrics()) {
+    var distance = 0.0;
+    var index = 0;
+    while (distance < metric.length) {
+      final end = math.min(
+        distance + pattern[index % pattern.length],
+        metric.length,
+      );
+      if (index.isEven) {
+        result.addPath(metric.extractPath(distance, end), Offset.zero);
+      }
+      distance = end;
+      index += 1;
+    }
+  }
+  return result;
+}
+
+/// 같은 학생 자동 연결 화살표(회색 실선, 끝에 꺾쇠). 작게 보기는 시안대로 조금 진하고 굵다. [dash]가 있으면 그
+/// 길이·틈으로 끊어 그린다(직접 선행 분홍 점선, FE4-f1). 꺾쇠는 늘 실선이다.
 class PlanFlowOrderArrowPainter extends CustomPainter {
   const PlanFlowOrderArrowPainter(
     this.arrows, {
     this.color = planFlowOrderArrowColor,
     this.strokeWidth = 2,
+    this.dash,
   });
 
   final List<PlanFlowOrderArrow> arrows;
   final Color color;
   final double strokeWidth;
+  final List<double>? dash;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -785,9 +882,20 @@ class PlanFlowOrderArrowPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
+    final head = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = dash == null ? 2 : 2.2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
     for (final arrow in arrows) {
       if ((arrow.to - arrow.from).distance < 1) continue;
-      canvas.drawPath(arrow.path(), paint);
+      final path = arrow.path();
+      final pattern = dash;
+      canvas.drawPath(
+        pattern == null ? path : planFlowDashedPath(path, pattern),
+        paint,
+      );
       final direction = arrow.endDirection;
       final normal = Offset(-direction.dy, direction.dx);
       final back = arrow.to - direction * 6;
@@ -796,9 +904,8 @@ class PlanFlowOrderArrowPainter extends CustomPainter {
           ..moveTo(back.dx + normal.dx * 5, back.dy + normal.dy * 5)
           ..lineTo(arrow.to.dx, arrow.to.dy)
           ..lineTo(back.dx - normal.dx * 5, back.dy - normal.dy * 5),
-        paint..strokeWidth = 2,
+        head,
       );
-      paint.strokeWidth = strokeWidth;
     }
   }
 
@@ -806,6 +913,7 @@ class PlanFlowOrderArrowPainter extends CustomPainter {
   bool shouldRepaint(PlanFlowOrderArrowPainter oldDelegate) =>
       oldDelegate.color != color ||
       oldDelegate.strokeWidth != strokeWidth ||
+      !listEquals(oldDelegate.dash, dash) ||
       !listEquals(oldDelegate.arrows, arrows);
 }
 
@@ -846,12 +954,14 @@ class _Lane extends StatelessWidget {
   Widget build(BuildContext context) {
     final phase = lane.phase;
     final calculating = flow.calculating;
-    final chip = planFlowOrderLaneChip(
-      phase,
-      statuses,
-      editor.laneShortages(phase),
-      calculating: calculating,
-    );
+    final chip = lane.deferred
+        ? null
+        : planFlowOrderLaneChip(
+            phase,
+            statuses,
+            editor.laneShortages(phase),
+            calculating: calculating,
+          );
     final origin = lane.tile.topLeft;
     // 머리는 타일 윗변 왼쪽 꼭짓점(타일 상자 왼쪽 + 높이·tan10)에서 [_headerInset]만큼 오른쪽이다.
     final headerLeft = lane.tile.height * _railSlope + _headerInset;
@@ -872,8 +982,12 @@ class _Lane extends StatelessWidget {
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            const Positioned.fill(
-              child: DiagonalRow(variant: DiagonalRowVariant.tile),
+            Positioned.fill(
+              child: lane.deferred
+                  ? const IgnorePointer(
+                      child: CustomPaint(painter: _DeferredLanePainter()),
+                    )
+                  : const DiagonalRow(variant: DiagonalRowVariant.tile),
             ),
             if (candidate != null)
               Positioned.fill(
@@ -891,25 +1005,37 @@ class _Lane extends StatelessWidget {
               top: 11.8,
               width: 900,
               height: 26,
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: _laneNameWidth,
-                    child: _LaneNameField(
+              child: lane.deferred
+                  ? Row(
                       key: ValueKey('plan-flow-order-lane-${phase.id}-name'),
-                      name: phase.name,
-                      onSubmitted: (name) => editor.renamePhase(phase.id, name),
+                      children: [
+                        Text(
+                          phase.name,
+                          style: kitDisplayStyle(AppType.titleLargeSize),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(_deferredCaption, style: _mutedStyle),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        SizedBox(
+                          width: _laneNameWidth,
+                          child: _LaneNameField(
+                            key: ValueKey('plan-flow-order-lane-${phase.id}-name'),
+                            name: phase.name,
+                            onSubmitted: (name) => editor.renamePhase(phase.id, name),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (chip != null)
+                          BaChip(
+                            key: ValueKey('plan-flow-order-lane-${phase.id}-status'),
+                            label: chip.label,
+                            tone: chip.tone,
+                          ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  if (chip != null)
-                    BaChip(
-                      key: ValueKey('plan-flow-order-lane-${phase.id}-status'),
-                      label: chip.label,
-                      tone: chip.tone,
-                    ),
-                ],
-              ),
             ),
             if (phase.stageIds.isEmpty)
               Positioned(
@@ -965,6 +1091,35 @@ class _LaneOutlinePainter extends CustomPainter {
   bool shouldRepaint(_LaneOutlinePainter oldDelegate) =>
       oldDelegate.color != color;
 }
+
+/// "나중에" 칸 타일(시안 `.dash`: 바탕 rgba(16,24,35,.35), 점선 테두리 rgba(158,176,194,.45) 3 · 7 5).
+class _DeferredLanePainter extends CustomPainter {
+  const _DeferredLanePainter();
+
+  static const DiagonalRowVariant variant = DiagonalRowVariant.tile;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = diagonalRowPath(size, variant);
+    canvas.drawPath(path, Paint()..color = _deferredFill);
+    canvas.save();
+    canvas.clipPath(path);
+    canvas.drawPath(
+      planFlowDashedPath(path, planFlowOrderDirectDash),
+      Paint()
+        ..color = _deferredStroke
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_DeferredLanePainter oldDelegate) => false;
+}
+
+const _deferredFill = Color.fromRGBO(16, 24, 35, 0.35);
+const _deferredStroke = Color.fromRGBO(158, 176, 194, 0.45);
 
 /// 빈 칸 안내(시안 "여기로 끌어다 놓기").
 class _DropHint extends StatelessWidget {
@@ -1100,10 +1255,13 @@ class _OrderCard extends StatelessWidget {
     final stageId = stage.id;
     final name = flow.context.displayName(stage.studentId);
     final owned = editor.isOwned(stage.studentId);
+    final deferred = flow.draft.isDeferred(stageId);
+    final issues = editor.issuesOf(stageId);
     final chip = planFlowOrderStatusChip(
       status,
       owned: owned,
       calculating: flow.calculating,
+      deferred: deferred,
     );
     final summary = planFlowOrderGoalSummary(
       editor.changesOf(stage),
@@ -1113,90 +1271,103 @@ class _OrderCard extends StatelessWidget {
       flow.calculation?.stageCosts[stageId],
       owned: owned,
       calculating: flow.calculating,
+      deferred: deferred,
     );
     Widget card({required bool dragging}) => Semantics(
       container: true,
       label: '$name ${stage.step}단계',
-      value: '${chip.label}, $summary',
-      child: DiagonalRow(
-        variant: DiagonalRowVariant.srow,
-        mark: selected ? DiagonalRowMark.selected : DiagonalRowMark.none,
-        onTap: dragging ? null : () => editor.select(stageId),
-        padding: const EdgeInsets.symmetric(horizontal: 36.4),
-        child: ExcludeSemantics(
-          child: Row(
-            children: [
-              PortraitStrip(
-                studentIds: [stage.studentId],
-                maxVisible: 1,
-                portraitSize: const Size(138, 112),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: _bodyStyle.copyWith(
-                              fontSize: AppType.titleSize,
-                              fontWeight: AppType.bold,
+      value: [
+        chip.label,
+        summary,
+        if (issues.isNotEmpty) issues.first.message,
+      ].join(', '),
+      child: CustomPaint(
+        key: issues.isEmpty
+            ? null
+            : ValueKey('plan-flow-order-card-$stageId-issue'),
+        foregroundPainter: issues.isEmpty
+            ? null
+            : const _CardOutlinePainter(AppColors.danger),
+        child: DiagonalRow(
+          variant: DiagonalRowVariant.srow,
+          mark: selected ? DiagonalRowMark.selected : DiagonalRowMark.none,
+          onTap: dragging ? null : () => editor.tapCard(stageId),
+          padding: const EdgeInsets.symmetric(horizontal: 36.4),
+          child: ExcludeSemantics(
+            child: Row(
+              children: [
+                PortraitStrip(
+                  studentIds: [stage.studentId],
+                  maxVisible: 1,
+                  portraitSize: const Size(138, 112),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: _bodyStyle.copyWith(
+                                fontSize: AppType.titleSize,
+                                fontWeight: AppType.bold,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        StageTag(stage: stage.step),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      summary,
-                      key: ValueKey('plan-flow-order-card-$stageId-goals'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _bodyStyle.copyWith(
-                        fontSize: AppType.titleSmallSize,
-                        fontWeight: AppType.bold,
+                          const SizedBox(width: 8),
+                          StageTag(stage: stage.step),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            cost,
-                            key: ValueKey('plan-flow-order-card-$stageId-cost'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: _mutedStyle,
-                          ),
+                      const SizedBox(height: 8),
+                      Text(
+                        summary,
+                        key: ValueKey('plan-flow-order-card-$stageId-goals'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _bodyStyle.copyWith(
+                          fontSize: AppType.titleSmallSize,
+                          fontWeight: AppType.bold,
                         ),
-                        const SizedBox(width: 6),
-                        BaChip(
-                          key: ValueKey(
-                            'plan-flow-order-card-$stageId-status',
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              cost,
+                              key: ValueKey('plan-flow-order-card-$stageId-cost'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: _mutedStyle,
+                            ),
                           ),
-                          label: chip.label,
-                          tone: chip.tone,
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 6),
+                          BaChip(
+                            key: ValueKey(
+                              'plan-flow-order-card-$stageId-status',
+                            ),
+                            label: chip.label,
+                            tone: chip.tone,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
 
-    return Draggable<String>(
+    final body = Draggable<String>(
       data: stageId,
       dragAnchorStrategy: pointerDragAnchorStrategy,
       feedback: _DragFeedback(
@@ -1207,7 +1378,170 @@ class _OrderCard extends StatelessWidget {
       childWhenDragging: Opacity(opacity: 0.35, child: card(dragging: true)),
       child: card(dragging: false),
     );
+    // 카드 아래쪽 점을 다른 카드로 끌면 이 단계가 그 카드의 먼저 끝나야 하는 단계가 된다(FE4-f1).
+    return _LinkTarget(
+      editor: editor,
+      stageId: stageId,
+      outline: (color) => _CardOutlinePainter(color),
+      child: Stack(
+        children: [
+          Positioned.fill(child: body),
+          Positioned(
+            left: _linkDotLeft,
+            bottom: 2,
+            width: 24,
+            height: 20,
+            child: _LinkDot(
+              key: ValueKey('plan-flow-order-card-$stageId-dot'),
+              stageId: stageId,
+              label: '$name ${stage.step}단계',
+            ),
+          ),
+        ],
+      ),
+    );
   }
+}
+
+/// 카드 아래 점 자리(시안: 화살표가 나가는 x 186 가운데).
+const _linkDotLeft = 186.0 - 12;
+
+/// 직접 선행을 받는 자리(카드·칩). 다른 카드의 아래 점을 놓으면 그 카드가 먼저 끝나야 하는 단계가 된다. 끄는 동안
+/// 분홍 테두리, 놓을 수 없는 자기 자신이면 표시하지 않는다.
+class _LinkTarget extends StatelessWidget {
+  const _LinkTarget({
+    required this.editor,
+    required this.stageId,
+    required this.outline,
+    required this.child,
+  });
+
+  final PlanFlowOrderEditor editor;
+  final String stageId;
+  final CustomPainter Function(Color color) outline;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => DragTarget<PlanFlowLinkDrag>(
+    onWillAcceptWithDetails: (details) => details.data.stageId != stageId,
+    onAcceptWithDetails: (details) => editor.link(
+      requiresStageId: details.data.stageId,
+      stageId: stageId,
+    ),
+    builder: (context, candidates, rejected) => CustomPaint(
+      foregroundPainter: candidates.isEmpty
+          ? null
+          : outline(planFlowOrderDirectArrowColor),
+      child: child,
+    ),
+  );
+}
+
+/// 카드 아래 점(직접 선행 잇기 손잡이). 끌어서 다른 카드에 놓는다.
+class _LinkDot extends StatelessWidget {
+  const _LinkDot({super.key, required this.stageId, required this.label});
+
+  final String stageId;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: '$label 뒤에 할 단계 잇기',
+    hint: '끌어서 이 단계 다음에 할 카드에 놓습니다',
+    child: Draggable<PlanFlowLinkDrag>(
+      data: PlanFlowLinkDrag(stageId),
+      dragAnchorStrategy: pointerDragAnchorStrategy,
+      feedback: const _LinkFeedback(),
+      child: const MouseRegion(
+        cursor: SystemMouseCursors.grab,
+        child: Center(
+          child: SizedBox(
+            width: 10,
+            height: 10,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Color.fromRGBO(242, 179, 239, 0.35),
+                shape: BoxShape.circle,
+                border: Border.fromBorderSide(
+                  BorderSide(color: planFlowOrderDirectArrowColor, width: 1.5),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// 점을 끄는 동안 포인터 옆 표시.
+class _LinkFeedback extends StatelessWidget {
+  const _LinkFeedback();
+
+  @override
+  Widget build(BuildContext context) => Transform.translate(
+    offset: const Offset(-7, -7),
+    child: const Material(
+      type: MaterialType.transparency,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: planFlowOrderDirectArrowColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          SizedBox(width: 6),
+          Text(
+            '먼저 끝나야 하는 단계로 잇기',
+            style: TextStyle(
+              fontFamily: AppFonts.body,
+              fontFamilyFallback: AppFonts.fallback,
+              fontSize: AppType.bodySmallSize,
+              fontWeight: AppType.semiBold,
+              color: planFlowOrderDirectArrowColor,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// 카드 테두리 강조(규칙 위반 빨강 · 잇기 대상 분홍). 행 path 안쪽 4px.
+class _CardOutlinePainter extends CustomPainter {
+  const _CardOutlinePainter(this.color, {this.radius = AppRadii.row});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = diagonalRowPath(
+      size,
+      DiagonalRowVariant.srow,
+      radius: radius,
+    );
+    canvas.save();
+    canvas.clipPath(path);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 6,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_CardOutlinePainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
 }
 
 // ---------------------------------------------------------------------------
@@ -1287,9 +1621,13 @@ class _CompactLaneLayout {
     required this.slots,
     required this.rows,
     this.card,
+    this.deferred = false,
   });
 
   final PlanFlowPhase phase;
+
+  /// "나중에" 칸(FE4-f1).
+  final bool deferred;
 
   /// 칸 평행사변형의 바깥 상자.
   final Rect box;
@@ -1322,18 +1660,21 @@ class _CompactBoardLayout {
   /// - 위: 카드 윗변이 위 칩(같은 칸 앞 줄, 앞 칸)보다 14 아래가 되도록 그 줄을 내린다. 위에 칩이 없으면(첫 칸 첫 줄)
   ///   시안 자리 그대로라 윗부분이 보드 위로 넘친다.
   /// - 아래: 다음 줄·뒤 칸·"칸 추가"를 카드 아래 끝 기준으로 내린다(칸 상자도 늘어난다).
+  ///
+  /// "칸 추가" 아래에 [deferred]("나중에" 칸, FE4-f1)를 같은 규칙으로 놓는다.
   factory _CompactBoardLayout.of(
     List<PlanFlowPhase> phases,
     List<String> Function(PlanFlowPhase phase) visibleFor, {
     double scroll = 0,
     String? selectedId,
+    PlanFlowPhase? deferred,
   }) {
     double lineX(double y) => _compactLineX - (y - scroll) * _railSlope;
     final lanes = <_CompactLaneLayout>[];
     var top = _compactLaneFirstTop;
     // 위에 놓은 칩·카드 아래 끝(첫 칸 위에는 없다).
     double? contentAbove;
-    for (final phase in phases) {
+    void addLane(PlanFlowPhase phase, {bool isDeferred = false}) {
       final visible = visibleFor(phase);
       // 1) 줄 나누기(레일 선 기준 x). 카드는 칩 자리에서 시작해 398.4 폭을 차지한다. 줄 첫 카드는 머리 열을 피해
       //    오른쪽으로 밀릴 수 있어 [_cardLeadAllowance]만큼 더 잡는다.
@@ -1422,10 +1763,15 @@ class _CompactBoardLayout {
           slots: slots,
           rows: rows,
           card: card,
+          deferred: isDeferred,
         ),
       );
       contentAbove = contentBottom;
       top += height + _laneGap;
+    }
+
+    for (final phase in phases) {
+      addLane(phase);
     }
     final add = Rect.fromLTWH(
       lineX(top) - _compactAddHeight * _railSlope,
@@ -1433,7 +1779,14 @@ class _CompactBoardLayout {
       _compactAddWidth,
       _compactAddHeight,
     );
-    return _CompactBoardLayout(lanes: lanes, add: add, height: add.bottom + 24);
+    var bottom = add.bottom;
+    if (deferred != null) {
+      top = add.bottom + _laneGap;
+      contentAbove = add.bottom;
+      addLane(deferred, isDeferred: true);
+      bottom = lanes.last.box.bottom;
+    }
+    return _CompactBoardLayout(lanes: lanes, add: add, height: bottom + 24);
   }
 
   final List<_CompactLaneLayout> lanes;
@@ -1501,15 +1854,18 @@ class _CompactBoardState extends State<_CompactBoard> {
     final draft = flow.draft;
     final statuses = editor.statuses;
     final selected = editor.selectedStage;
+    final deferredLane = editor.deferredLane;
     final layout = _CompactBoardLayout.of(
       draft.phases,
       (phase) => editor.visibleStageIds(phase, statuses: statuses),
       scroll: scroll,
       selectedId: selected?.id,
+      deferred: deferredLane,
     );
     // 고른 카드 자리는 배치가 펼친 크기로 잡아 둔다(다른 칩을 가리지 않음).
     final expanded = selected == null ? null : layout.slotOf(selected.id);
     final arrows = <PlanFlowOrderArrow>[];
+    final directArrows = <PlanFlowOrderArrow>[];
     if (selected != null && expanded != null) {
       final predecessor = editor.predecessorOf(selected);
       final successor = editor.successorOf(selected);
@@ -1517,8 +1873,24 @@ class _CompactBoardState extends State<_CompactBoard> {
       final to = successor == null ? null : layout.slotOf(successor.id);
       if (from != null) arrows.add(planFlowOrderCompactArrow(from, expanded));
       if (to != null) arrows.add(planFlowOrderCompactArrow(expanded, to));
+      // 직접 선행(분홍 점선): 고른 카드의 먼저 끝나야 하는 단계 → 카드, 카드 → 기다리는 단계. 경로 다듬기는 FE4-f2.
+      for (final item in editor.directPrerequisitesOf(selected)) {
+        final rect = item.stage == null ? null : layout.slotOf(item.stage!.id);
+        if (rect != null) {
+          directArrows.add(planFlowOrderCompactArrow(rect, expanded));
+        }
+      }
+      for (final dependent in editor.directDependentsOf(selected)) {
+        final rect = layout.slotOf(dependent.id);
+        if (rect != null) {
+          directArrows.add(planFlowOrderCompactArrow(expanded, rect));
+        }
+      }
     }
-    final selectedPhase = selected == null ? null : editor.phaseOf(selected.id);
+    final selectedPhase = selected == null
+        ? null
+        : editor.phaseOf(selected.id) ??
+              (draft.isDeferred(selected.id) ? deferredLane : null);
     return SizedBox(
       width: _compactSize.width,
       height: math.max(layout.height, _compactSize.height),
@@ -1561,6 +1933,19 @@ class _CompactBoardState extends State<_CompactBoard> {
                   arrows,
                   color: planFlowOrderCompactArrowColor,
                   strokeWidth: 2.2,
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                key: const ValueKey('plan-flow-order-direct-arrows'),
+                painter: PlanFlowOrderArrowPainter(
+                  directArrows,
+                  color: planFlowOrderDirectArrowColor,
+                  strokeWidth: 2.5,
+                  dash: planFlowOrderDirectDash,
                 ),
               ),
             ),
@@ -1638,29 +2023,38 @@ class _CompactPanelPainter extends CustomPainter {
   bool shouldRepaint(_CompactPanelPainter oldDelegate) => false;
 }
 
-/// 작게 보기 칸 바탕(시안 rgba(16,24,35,.55) + 테두리 1px). 끄는 동안 [highlight] 색 테두리.
+/// 작게 보기 칸 바탕(시안 rgba(16,24,35,.55) + 테두리 1px). 끄는 동안 [highlight] 색 테두리. "나중에" 칸은 옅은
+/// 바탕에 점선 테두리다(FE4-f1).
 class _CompactLanePainter extends CustomPainter {
-  const _CompactLanePainter({this.highlight});
+  const _CompactLanePainter({this.highlight, this.deferred = false});
 
   final Color? highlight;
+  final bool deferred;
 
   @override
   void paint(Canvas canvas, Size size) {
     final path = diagonalRowPath(size, DiagonalRowVariant.srow, radius: 8);
-    canvas.drawPath(path, Paint()..color = _compactLaneFill);
-    final highlight = this.highlight;
     canvas.drawPath(
       path,
+      Paint()..color = deferred ? _deferredFill : _compactLaneFill,
+    );
+    final highlight = this.highlight;
+    final stroke = deferred && highlight == null
+        ? planFlowDashedPath(path, planFlowOrderDirectDash)
+        : path;
+    canvas.drawPath(
+      stroke,
       Paint()
-        ..color = highlight ?? _compactLaneStroke
+        ..color =
+            highlight ?? (deferred ? _deferredStroke : _compactLaneStroke)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = highlight == null ? 1 : 2.5,
+        ..strokeWidth = highlight == null ? (deferred ? 1.5 : 1) : 2.5,
     );
   }
 
   @override
   bool shouldRepaint(_CompactLanePainter oldDelegate) =>
-      oldDelegate.highlight != highlight;
+      oldDelegate.highlight != highlight || oldDelegate.deferred != deferred;
 }
 
 /// 펼친 카드 뒤 그림자와 불투명 바탕(시안 #131d29, drop-shadow). 아래 칩이 비치지 않게 한다.
@@ -1736,12 +2130,14 @@ class _CompactLane extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final phase = lane.phase;
-    final chip = planFlowOrderLaneChip(
-      phase,
-      statuses,
-      editor.laneShortages(phase),
-      calculating: flow.calculating,
-    );
+    final chip = lane.deferred
+        ? null
+        : planFlowOrderLaneChip(
+            phase,
+            statuses,
+            editor.laneShortages(phase),
+            calculating: flow.calculating,
+          );
     final origin = lane.box.topLeft;
     // 머리 열은 칸 윗변 왼쪽 꼭짓점(상자 왼쪽 + 높이·tan10)에서 12.1 오른쪽이다.
     final headerLeft = lane.box.height * _railSlope + _compactHeaderInset;
@@ -1769,6 +2165,7 @@ class _CompactLane extends StatelessWidget {
             Positioned.fill(
               child: CustomPaint(
                 painter: _CompactLanePainter(
+                  deferred: lane.deferred,
                   highlight: candidate == null
                       ? null
                       : violation == null
@@ -1787,12 +2184,23 @@ class _CompactLane extends StatelessWidget {
                 children: [
                   SizedBox(
                     height: 20,
-                    child: _LaneNameField(
-                      key: ValueKey('plan-flow-order-lane-${phase.id}-name'),
-                      name: phase.name,
-                      style: kitDisplayStyle(AppType.titleMediumSize),
-                      onSubmitted: (name) => editor.renamePhase(phase.id, name),
-                    ),
+                    child: lane.deferred
+                        ? Text(
+                            phase.name,
+                            key: ValueKey(
+                              'plan-flow-order-lane-${phase.id}-name',
+                            ),
+                            style: kitDisplayStyle(AppType.titleMediumSize),
+                          )
+                        : _LaneNameField(
+                            key: ValueKey(
+                              'plan-flow-order-lane-${phase.id}-name',
+                            ),
+                            name: phase.name,
+                            style: kitDisplayStyle(AppType.titleMediumSize),
+                            onSubmitted: (name) =>
+                                editor.renamePhase(phase.id, name),
+                          ),
                   ),
                   const SizedBox(height: 3),
                   Text(
@@ -1884,28 +2292,35 @@ class _OrderChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = flow.context.displayName(stage.studentId);
     final owned = editor.isOwned(stage.studentId);
+    final issues = editor.issuesOf(stage.id);
     final chip = planFlowOrderStatusChip(
       status,
       owned: owned,
       calculating: flow.calculating,
+      deferred: flow.draft.isDeferred(stage.id),
     );
-    final border = connected
+    final border = issues.isNotEmpty
+        ? AppColors.danger
+        : connected
         ? AppColors.accent.withValues(alpha: 0.55)
         : StageTag.colorOf(stage.step).withValues(alpha: 0.55);
     Widget body({required bool dragging}) => Semantics(
       container: true,
       button: true,
       label: '$name ${stage.step}단계',
-      value: chip.label,
+      value: [
+        chip.label,
+        if (issues.isNotEmpty) issues.first.message,
+      ].join(', '),
       child: ClipPath(
         clipper: const _RowPathClipper(radius: 6),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: dragging ? null : () => editor.select(stage.id),
+          onTap: dragging ? null : () => editor.tapCard(stage.id),
           child: CustomPaint(
             painter: _ChipPainter(
               border: border,
-              borderWidth: connected ? 3 : 2,
+              borderWidth: connected || issues.isNotEmpty ? 3 : 2,
             ),
             child: Padding(
               padding: const EdgeInsets.only(left: 13.8, right: 8),
@@ -1955,16 +2370,24 @@ class _OrderChip extends StatelessWidget {
     );
     return Opacity(
       opacity: dimmed ? planFlowOrderDimOpacity : 1,
-      child: Draggable<String>(
-        data: stage.id,
-        dragAnchorStrategy: pointerDragAnchorStrategy,
-        feedback: _DragFeedback(
-          name: name,
-          step: stage.step,
-          studentId: stage.studentId,
+      child: _LinkTarget(
+        editor: editor,
+        stageId: stage.id,
+        outline: (color) => _CardOutlinePainter(color, radius: 6),
+        child: Draggable<String>(
+          data: stage.id,
+          dragAnchorStrategy: pointerDragAnchorStrategy,
+          feedback: _DragFeedback(
+            name: name,
+            step: stage.step,
+            studentId: stage.studentId,
+          ),
+          childWhenDragging: Opacity(
+            opacity: 0.35,
+            child: body(dragging: true),
+          ),
+          child: body(dragging: false),
         ),
-        childWhenDragging: Opacity(opacity: 0.35, child: body(dragging: true)),
-        child: body(dragging: false),
       ),
     );
   }
@@ -2043,7 +2466,7 @@ class _CompactToolbar extends StatelessWidget {
   }
 }
 
-/// 작게 보기 범례(같은 학생 · 자동, 상태 점 가능 · 부족 · 막힘).
+/// 작게 보기 범례(같은 학생 · 자동, 직접 이은 선행 조건, 상태 점 가능 · 부족 · 막힘).
 class _CompactLegend extends StatelessWidget {
   const _CompactLegend();
 
@@ -2066,6 +2489,10 @@ class _CompactLegend extends StatelessWidget {
       ),
       const SizedBox(width: 8),
       const Text('같은 학생 · 자동', style: _textStyle),
+      const SizedBox(width: 16),
+      const _DashSample(),
+      const SizedBox(width: 8),
+      const Text('직접 이은 선행 조건', style: _textStyle),
       for (final (label, tone) in const [
         ('가능', AppTones.ok),
         ('부족', AppTones.warn),
@@ -2138,6 +2565,42 @@ class _DragFeedback extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// 범례의 분홍 점선(시안 30×6, 2.5, dasharray 7 5).
+class _DashSample extends StatelessWidget {
+  const _DashSample();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(
+    width: 30,
+    height: 6,
+    child: CustomPaint(painter: _DashSamplePainter()),
+  );
+}
+
+class _DashSamplePainter extends CustomPainter {
+  const _DashSamplePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final y = size.height / 2;
+    canvas.drawPath(
+      planFlowDashedPath(
+        Path()
+          ..moveTo(0, y)
+          ..lineTo(size.width, y),
+        planFlowOrderDirectDash,
+      ),
+      Paint()
+        ..color = planFlowOrderDirectArrowColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_DashSamplePainter oldDelegate) => false;
 }
 
 // ---------------------------------------------------------------------------
@@ -2251,6 +2714,43 @@ class PlanFlowOrderAside extends StatelessWidget {
       );
       top = header.bottom + 14 * sy;
 
+      // 이 카드가 어긴 단계 순서 규칙(FE4-f1).
+      final issues = editor.issuesOf(stage.id);
+      if (issues.isNotEmpty) {
+        final rect = row(top, 50, 6);
+        children.add(
+          Positioned.fromRect(
+            rect: rect,
+            child: DiagonalRow(
+              key: const ValueKey('plan-flow-order-aside-issue'),
+              variant: DiagonalRowVariant.row,
+              padding: const EdgeInsets.only(left: 20.8, right: 14),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    size: 18,
+                    color: AppColors.danger,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      issues.first.message,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: _mutedStyle.copyWith(
+                        color: AppTones.danger.foreground,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        top = rect.bottom + 12 * sy;
+      }
+
       // 포함한 목표.
       final goalsCaption = row(top, 24, 16.2);
       children.add(
@@ -2283,7 +2783,7 @@ class PlanFlowOrderAside extends StatelessWidget {
       );
       top = goals.bottom + 12 * sy;
 
-      // 먼저 끝나야 하는 단계(같은 학생 앞 단계, 자동). 직접 선행은 FE4-f.
+      // 먼저 끝나야 하는 단계: 같은 학생 앞 단계(자동) + 직접 선행(분홍, × 지우기, FE4-f1) + "선행 단계 추가".
       final predecessorCaption = row(top, 24, 16.2);
       children.add(
         Positioned.fromRect(
@@ -2293,49 +2793,204 @@ class PlanFlowOrderAside extends StatelessWidget {
       );
       top = predecessorCaption.bottom + 6 * sy;
       final predecessor = editor.predecessorOf(stage);
-      final predecessorRow = row(top, 50, 6);
-      children.add(
-        Positioned.fromRect(
-          rect: predecessorRow,
-          child: DiagonalRow(
-            key: const ValueKey('plan-flow-order-aside-predecessor'),
-            variant: DiagonalRowVariant.row,
-            padding: const EdgeInsets.only(left: 20.8, right: 14),
-            child: predecessor == null
-                ? const Align(
-                    alignment: Alignment.centerLeft,
+      final directs = editor.directPrerequisitesOf(stage);
+      if (predecessor != null || directs.isEmpty) {
+        final predecessorRow = row(top, 50, 6);
+        children.add(
+          Positioned.fromRect(
+            rect: predecessorRow,
+            child: DiagonalRow(
+              key: const ValueKey('plan-flow-order-aside-predecessor'),
+              variant: DiagonalRowVariant.row,
+              padding: const EdgeInsets.only(left: 20.8, right: 14),
+              child: predecessor == null
+                  ? const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '이 학생의 첫 단계라 먼저 끝나야 하는 단계가 없습니다',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _mutedStyle,
+                      ),
+                    )
+                  : Row(
+                      children: [
+                        const Icon(
+                          Icons.subdirectory_arrow_right_rounded,
+                          size: 18,
+                          color: AppColors.textMuted,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            '${flow.context.displayName(predecessor.studentId)} '
+                            '${predecessor.step}단계',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: _bodyStyle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const BaChip(label: '자동', tone: AppTones.gray),
+                      ],
+                    ),
+            ),
+          ),
+        );
+        top = predecessorRow.bottom + 6 * sy;
+      }
+      for (final item in directs.take(3)) {
+        final required = item.stage;
+        final rect = row(top, 50, 6);
+        final requiresId = item.prerequisite.requiresStageId;
+        children.add(
+          Positioned.fromRect(
+            rect: rect,
+            child: DiagonalRow(
+              key: ValueKey('plan-flow-order-aside-prerequisite-$requiresId'),
+              variant: DiagonalRowVariant.row,
+              padding: const EdgeInsets.only(left: 20.8, right: 10),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.link_rounded,
+                    size: 18,
+                    color: required == null
+                        ? AppColors.danger
+                        : planFlowOrderDirectArrowColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
                     child: Text(
-                      '이 학생의 첫 단계라 먼저 끝나야 하는 단계가 없습니다',
+                      required == null ? '없어진 단계' : flow.stageLabel(required),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: _mutedStyle,
+                      style: required == null
+                          ? _bodyStyle.copyWith(
+                              color: AppTones.danger.foreground,
+                            )
+                          : _bodyStyle,
                     ),
-                  )
-                : Row(
-                    children: [
-                      const Icon(
-                        Icons.subdirectory_arrow_right_rounded,
-                        size: 18,
-                        color: AppColors.textMuted,
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          '${flow.context.displayName(predecessor.studentId)} '
-                          '${predecessor.step}단계',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _bodyStyle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const BaChip(label: '자동', tone: AppTones.gray),
-                    ],
                   ),
+                  const SizedBox(width: 8),
+                  Text(
+                    required != null && flow.draft.isDeferred(required.id)
+                        ? '직접 · 나중에'
+                        : '직접',
+                    style: _mutedStyle.copyWith(fontSize: AppType.captionSize),
+                  ),
+                  const SizedBox(width: 4),
+                  KitPressable(
+                    key: ValueKey(
+                      'plan-flow-order-aside-prerequisite-$requiresId-remove',
+                    ),
+                    onPressed: () => editor.unlink(
+                      requiresStageId: requiresId,
+                      stageId: stage.id,
+                    ),
+                    semanticLabel: '선행 조건 지우기',
+                    builder: (context, state) => SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: state.hovered || state.focused
+                            ? AppColors.text
+                            : AppColors.textMuted,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        top = rect.bottom + 6 * sy;
+      }
+      if (directs.length > 3) {
+        final rest = row(top, 20, 20);
+        children.add(
+          Positioned.fromRect(
+            rect: rest,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '직접 선행 외 ${directs.length - 3}개',
+                style: _mutedStyle,
+              ),
+            ),
+          ),
+        );
+        top = rest.bottom + 4 * sy;
+      }
+      final linking = editor.linking;
+      final linkRow = row(top, 44, 6);
+      children.add(
+        Positioned.fromRect(
+          rect: linkRow,
+          child: DiagonalRow(
+            key: const ValueKey('plan-flow-order-aside-link'),
+            variant: DiagonalRowVariant.srow,
+            mark: linking ? DiagonalRowMark.selected : DiagonalRowMark.none,
+            onTap: editor.toggleLinking,
+            padding: const EdgeInsets.only(left: 19.8, right: 14),
+            child: Row(
+              children: [
+                Icon(
+                  linking ? Icons.close_rounded : Icons.add_rounded,
+                  size: 16,
+                  color: linking
+                      ? planFlowOrderDirectArrowColor
+                      : AppColors.text,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    linking ? '카드를 눌러 고릅니다 · 그만두기' : '선행 단계 추가',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _bodyStyle.copyWith(
+                      fontSize: AppType.bodySmallSize,
+                      color: linking ? planFlowOrderDirectArrowColor : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
-      top = predecessorRow.bottom + 14 * sy;
+      top = linkRow.bottom + 14 * sy;
+
+      if (flow.draft.isDeferred(stage.id)) {
+        final deferredCaption = row(top, 24, 16.2);
+        children.add(
+          Positioned.fromRect(rect: deferredCaption, child: caption('나중에 칸')),
+        );
+        top = deferredCaption.bottom + 6 * sy;
+        final rect = row(top, 50, 6);
+        children.add(
+          Positioned.fromRect(
+            rect: rect,
+            child: const DiagonalRow(
+              key: ValueKey('plan-flow-order-aside-deferred'),
+              variant: DiagonalRowVariant.row,
+              padding: EdgeInsets.only(left: 20.8, right: 14),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '계산에서 빠집니다. 칸으로 옮기면 다시 계산합니다.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _mutedStyle,
+                ),
+              ),
+            ),
+          ),
+        );
+        top = rect.bottom + 16 * sy;
+      }
 
       // 이 칸에서 부족한 재화.
       final phase = editor.phaseOf(stage.id);

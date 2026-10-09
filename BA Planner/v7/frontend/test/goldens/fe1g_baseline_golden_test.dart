@@ -731,6 +731,57 @@ void main() {
     await expectGoldenScene(tester, 'plan-flow-step3');
   }, variant: goldenPlatform);
 
+  testWidgets('plan-flow-step3-deferred', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _planFlowService();
+    await _openPlanFlow(
+      tester,
+      service,
+      presets: [goldenFlowStagePreset(), goldenFlowTwoStagePreset()],
+    );
+    // plan-flow-step3와 같은 세 명(호시노 2단계 · 아루 3단계 · 미보유 슌 2단계).
+    for (final id in const ['hoshino', 'aru', 'shun_swimsuit']) {
+      await _tapFlowCard(tester, id);
+    }
+    await _tapKey(tester, 'plan-flow-next');
+    await _tapKey(tester, 'plan-flow-goal-preset-two-stage');
+    await _tapKey(tester, 'plan-flow-goal-tab-aru');
+    await _tapKey(tester, 'plan-flow-goal-preset-raid-three-stage');
+    await _tapKey(tester, 'plan-flow-goal-tab-shun_swimsuit');
+    await _tapKey(tester, 'plan-flow-goal-preset-two-stage');
+    await _tapKey(tester, 'plan-flow-next');
+    final flow = tester
+        .widget<PlanFlowWorkspace>(find.byType(PlanFlowWorkspace))
+        .flow;
+    final aru = flow.draft.stagesByStudent['aru']!;
+    final hoshinoSecond = flow.draft.stagesByStudent['hoshino']![1].id;
+    // FE4-f1: 아루 3단계를 "나중에" 칸으로, 아루 1단계 → 호시노 2단계를 직접 선행(분홍 점선)으로 잇는다.
+    expect(flow.moveStage(aru[2].id, phaseId: planFlowDeferredLaneId), isNull);
+    expect(
+      flow.addPrerequisite(stageId: hoshinoSecond, requiresStageId: aru[0].id),
+      isNull,
+    );
+    await tester.pump();
+    await _tapKey(tester, 'plan-flow-order-card-$hoshinoSecond');
+    await tester.pump();
+    await tester.pump(planFlowCalculationDebounce);
+    await tester.pump();
+    expect(flow.draft.deferredStageIds, [aru[2].id]);
+    expect(flow.orderIssues, isEmpty);
+    expect(
+      find.byKey(
+        const ValueKey('plan-flow-order-lane-$planFlowDeferredLaneId'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(ValueKey('plan-flow-order-aside-prerequisite-${aru[0].id}')),
+      findsOneWidget,
+    );
+    expect(find.text('직접 이은 선행 조건'), findsOneWidget);
+    await expectGoldenScene(tester, 'plan-flow-step3-deferred');
+  }, variant: goldenPlatform);
+
   testWidgets('plan-flow-step4', (tester) async {
     setGoldenViewport(tester);
     final service = await _planFlowService();

@@ -97,7 +97,8 @@ abstract final class PlanFlowRailMetrics {
 /// 연결선 색 rgba(56,81,107,.9).
 const planFlowRailConnectorColor = Color.fromRGBO(56, 81, 107, 0.9);
 
-/// 스텝 버튼 부제(시안 `3명 · 여러 명 모드`, `3명 중 2명 완료`, `단계 7개 · 순서 3칸`).
+/// 스텝 버튼 부제(시안 `3명 · 여러 명 모드`, `3명 중 2명 완료`, `단계 7개 · 순서 3칸`, 나중에 칸이 있으면
+/// `· 나중에 n개`).
 ///
 /// 4단계 부제는 고른 저장 위치([saveLabel], FE4-e)이고, 없으면 "시나리오로 저장"이다.
 String planFlowStepSubtitle(
@@ -116,7 +117,9 @@ String planFlowStepSubtitle(
           : '${draft.studentCount}명 중 ${draft.completedStudentCount}명 완료';
     case PlanFlowStep.order:
       final lanes = draft.phases.where((phase) => phase.stageIds.isNotEmpty);
-      return '단계 ${draft.stageCount}개 · 순서 ${lanes.length}칸';
+      final deferred = draft.deferredStageIds.length;
+      return '단계 ${draft.stageCount}개 · 순서 ${lanes.length}칸'
+          '${deferred > 0 ? ' · 나중에 $deferred개' : ''}';
     case PlanFlowStep.save:
       return saveLabel ?? '시나리오로 저장';
   }

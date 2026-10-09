@@ -6,6 +6,8 @@
 // - 화면: 처음 그리면 칸에 넣기, 끌어 옮기기와 거부 이유, 카드 고르기 → C 상세, 칸 이름 바꾸기, 칸 추가, 자동 정렬.
 // - FE4-d2: 화살표가 칸 머리를 피해 들어가기, 단계가 12개를 넘으면 작게 보기(크게·작게, 펼친 카드, 이어진 선만,
 //   흐리게, 선택 풀기, 부족 있는 단계만, 학생별 묶음, 끌어 옮기기·거부).
+// - FE4-f1: "칸 추가" 아래 빈 "나중에" 칸도 "여기로 끌어다 놓기"를 보인다(교차 선행·나중에 칸은
+//   `plan_flow_authoring_test.dart`).
 //
 // 계산 디바운스(Timer)가 있어서 pumpAndSettle 대신 명시적인 pump를 쓴다.
 import 'package:ba_planner_v7/app/theme.dart';
@@ -701,7 +703,16 @@ void main() {
       await tester.pump();
       expect(flow.draft.phases, hasLength(3));
       expect(flow.draft.phases.last.name, '3순위');
-      expect(find.text('여기로 끌어다 놓기'), findsOneWidget);
+      // FE4-f1: 빈 "나중에" 칸에도 같은 안내가 있어 새 칸 안에서 찾는다.
+      expect(
+        find.descendant(
+          of: find.byKey(
+            ValueKey('plan-flow-order-lane-${flow.draft.phases.last.id}'),
+          ),
+          matching: find.text('여기로 끌어다 놓기'),
+        ),
+        findsOneWidget,
+      );
       // 빈 칸에도 끌어 놓을 수 있다(아루 2단계는 아루 1단계보다 뒤 칸이다).
       await _drag(tester, 'aru-stage-2', flow.draft.phases.last.id);
       expect(_lanes(flow), [

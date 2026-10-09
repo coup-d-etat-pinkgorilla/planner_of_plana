@@ -209,6 +209,14 @@ class _PlanFlowSaveBodyState extends State<PlanFlowSaveBody> {
                 BaChip(label: '페이즈 ${phases.length}개', tone: AppTones.gray),
                 const SizedBox(width: 6),
                 BaChip(label: '단계 ${draft.stageCount}개', tone: AppTones.gray),
+                if (draft.deferredStageIds.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  BaChip(
+                    key: const ValueKey('plan-flow-save-deferred-count'),
+                    label: '나중에 ${draft.deferredStageIds.length}개',
+                    tone: AppTones.gray,
+                  ),
+                ],
               ],
             ),
           ],
@@ -275,8 +283,13 @@ class _PlanFlowSaveBodyState extends State<PlanFlowSaveBody> {
         child: KeyedSubtree(
           key: const ValueKey('plan-flow-save-phases'),
           child: phases.isEmpty
-              ? const Center(
-                  child: Text('만들어질 페이즈가 없습니다', style: _mutedStyle),
+              ? Center(
+                  child: Text(
+                    draft.deferredStageIds.isNotEmpty
+                        ? '모든 단계가 나중에 칸에 있어 만들어질 페이즈가 없습니다'
+                        : '만들어질 페이즈가 없습니다',
+                    style: _mutedStyle,
+                  ),
                 )
               : DiagonalScrollViewport(
                   keyPrefix: 'plan-flow-save-phase',
