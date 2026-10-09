@@ -10,6 +10,11 @@
 // - 데이터가 없는 값은 null이 아니라 명시 값이다(FD-172): 크레딧 보유 = 스캔 없음(FD-096 (c)),
 //   재화 보유 = 확인/미확인, 계획 포함 = 저장된 활성 계획 문서 기준(FE4-h) 있음/없음/모름.
 // - [GrowthCalculatorEngine]은 디바운스로 한 번만 부르고, 늦게 온 이전 요청 응답은 요청 번호로 버린다.
+// - 인연 선물(FE3-g, FB-11b·FD-163~165): 서비스가 [PlanningStudentBondCalculationService]면 같은 호출에
+//   `bond`(확정 인연 랭크, 모르면 null)를 함께 보내 성장 + 인연을 한 번에 받는다. 현재 인연은 `currentStudent`에
+//   넣지 않고(`planningCurrentFields`에 없다), 모르는 현재 인연을 1로 채우지 않는다. 인연 선물은 성장 재화
+//   목록·부족 종류 수에 합치지 않는다(FD-165). 그 입력을 인연 계산이 지원하지 않으면(`UnsupportedError`, 공유
+//   fixture만 아는 mock) 성장만 계산하고 인연은 "계산할 수 없음"이다.
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -124,6 +129,7 @@ class GrowthCalculatorRequest {
     required Map<String, dynamic> currentStudent,
     required Map<String, dynamic> inventory,
     required this.planMembership,
+    this.currentBondRank,
   }) : targets = Map.unmodifiable(targets),
        currentStudent = Map.unmodifiable(currentStudent),
        inventory = Map.unmodifiable(inventory);
@@ -134,6 +140,9 @@ class GrowthCalculatorRequest {
   /// - 직접 입력이거나 미보유 학생이면 계산기 현재값으로 만든 항목을 보낸다.
   /// - 인벤토리는 repository 것을 쓰고, 없으면 빈 인벤토리다.
   /// - 계획 포함 여부는 [activePlan](저장된 활성 계획 문서) 기준이다. 없으면 모름이다.
+  /// - 현재 인연([currentBondRank]): 확정값 기준이면 repository 학생 값에 `bond_rank`가 있을 때만 계산기의 확정
+  ///   현재값(행·S3와 같은 값)이고, 없거나 미보유면 null이다. 직접 입력이면 계산기에 적은 현재 인연이다.
+  ///   확정값을 모를 때 계산기 현재값(채운 값)을 쓰지 않는다.
   factory GrowthCalculatorRequest.fromState(
     GrowthCalculatorState state, {
     RepositoryState? repository,
@@ -145,9 +154,21 @@ class GrowthCalculatorRequest {
         if (student.studentId == state.studentId) confirmed = student;
       }
     }
+    final int? currentBondRank;
+    if (state.basis == GrowthCalculatorBasis.direct) {
+      currentBondRank = growthCalculatorBondRank(state.current['bond_rank']);
+    } else if (confirmed?.values['bond_rank'] is int) {
+      // 확정 인연이 있으면 계산기 행·S3와 같은 정규화된 현재값(성급 상한 적용)을 쓴다.
+      currentBondRank = growthCalculatorBondRank(
+        state.confirmedCurrent['bond_rank'],
+      );
+    } else {
+      currentBondRank = null;
+    }
     return GrowthCalculatorRequest(
       studentId: state.studentId,
       targets: state.targets,
+      currentBondRank: currentBondRank,
       currentStudent: confirmed != null
           ? confirmedStudentPlanningCurrent(confirmed)
           : growthCalculatorCurrentStudentWire(state.studentId, state.current),
@@ -166,8 +187,39 @@ class GrowthCalculatorRequest {
   final Map<String, dynamic> inventory;
   final GrowthCalculatorPlanMembership planMembership;
 
+  /// 현재 인연 랭크. 모르면 null(1로 채우지 않는다).
+  final int? currentBondRank;
+
+  /// 목표 인연 랭크(계산기 목표 `bond_rank`).
+  int? get targetBondRank => targets['bond_rank'];
+
+  /// 인연 선물 계산 입력(FB-11b `bond`).
+  StudentBondRequest get bondRequest =>
+      StudentBondRequest(currentRank: currentBondRank);
+
   /// 이 요청의 임시 문서.
   PlanningDocument get document => growthCalculatorDocument(studentId, targets);
+}
+
+/// 인연 랭크로 쓸 수 있는 값(1~100 정수)만 남긴다. 그 밖은 모름(null)이다.
+int? growthCalculatorBondRank(Object? value) =>
+    value is int && value >= 1 && value <= 100 ? value : null;
+
+/// 인연 선물 계산 결과(FE3-g). 성장 결과와 같은 호출에서 받는다.
+sealed class GrowthCalculatorBond {
+  const GrowthCalculatorBond();
+}
+
+/// 백엔드 인연 계산 결과(FB-11b `bond`).
+final class GrowthCalculatorBondCalculated extends GrowthCalculatorBond {
+  const GrowthCalculatorBondCalculated(this.result);
+
+  final StudentBondResult result;
+}
+
+/// 이 연결(또는 이 입력)에서는 인연 선물을 계산할 수 없다.
+final class GrowthCalculatorBondUnavailable extends GrowthCalculatorBond {
+  const GrowthCalculatorBondUnavailable();
 }
 
 /// 보유량. 없는 값도 명시 상태로 둔다(FD-172).
@@ -329,6 +381,9 @@ class GrowthCalculatorResult {
     required this.planMembership,
     required List<String> warnings,
     this.creditBreakdown = GrowthCalculatorCreditBreakdown.unavailable,
+    this.bond = const GrowthCalculatorBondUnavailable(),
+    this.bondCurrentRank,
+    this.bondTargetRank,
   }) : resources = List.unmodifiable(resources),
        warnings = List.unmodifiable(warnings);
 
@@ -349,6 +404,12 @@ class GrowthCalculatorResult {
     creditBreakdown: GrowthCalculatorCreditBreakdown.of(
       calculation.creditBreakdown,
     ),
+    bond: switch (calculation.bond) {
+      final bond? => GrowthCalculatorBondCalculated(bond),
+      null => const GrowthCalculatorBondUnavailable(),
+    },
+    bondCurrentRank: request.currentBondRank,
+    bondTargetRank: request.targetBondRank,
   );
 
   /// `planning.document.calculate` 응답의 projection을 읽는다.
@@ -394,6 +455,8 @@ class GrowthCalculatorResult {
         for (final item in warnings)
           if (item is String) item,
       ],
+      bondCurrentRank: request.currentBondRank,
+      bondTargetRank: request.targetBondRank,
     );
   }
 
@@ -413,8 +476,15 @@ class GrowthCalculatorResult {
   final List<GrowthCalculatorResourceRow> resources;
   final GrowthCalculatorPlanMembership planMembership;
 
-  /// 백엔드 경고(예: 현재 상태가 없는 학생 단계 제외).
+  /// 성장 계산 백엔드 경고(예: 현재 상태가 없는 학생 단계 제외). 인연 경고는 [bond] 안에 있다.
   final List<String> warnings;
+
+  /// 인연 선물 계산(FE3-g). 성장 재화 목록·[shortageTypeCount]에는 합치지 않는다(FD-165).
+  final GrowthCalculatorBond bond;
+
+  /// 이 결과를 계산할 때 보낸 현재 인연(모르면 null)과 목표 인연.
+  final int? bondCurrentRank;
+  final int? bondTargetRank;
 
   /// "부족 n종": 보유를 아는 재화 중 부족한 종류 수.
   int get shortageTypeCount => resources.where((row) => row.isShort).length;
@@ -423,16 +493,47 @@ class GrowthCalculatorResult {
 /// [service]로 계산기를 쓸 수 있는가(단일 학생 계산 또는 문서 계산).
 bool growthCalculatorSupports(Object service) =>
     service is PlanningStudentCalculationService ||
+    service is PlanningStudentBondCalculationService ||
     service is PlanningDocumentService;
 
 /// 디바운스 없이 한 번 계산한다. 단일 학생 계산(FB-11a)이 있으면 그것을 한 번 부르고, 없으면 임시 문서로
 /// 계산한다. 둘 다 없으면 [UnsupportedError].
+///
+/// 인연 선물 계산(FB-11b)이 있으면 같은 한 번의 호출에 `bond`를 함께 보낸다. 그 입력을 인연 계산이 지원하지
+/// 않으면(`UnsupportedError`) 성장만 계산한다(인연은 [GrowthCalculatorBondUnavailable]).
 Future<GrowthCalculatorResult> calculateGrowthTargets(
   Object service,
   GrowthCalculatorRequest request,
 ) async {
-  if (service is PlanningStudentCalculationService) {
-    final calculation = await service.calculateStudent(
+  if (service case final PlanningStudentBondCalculationService bondService) {
+    final StudentCalculationResult calculation;
+    try {
+      calculation = await bondService.calculateStudentWithBond(
+        currentStudent: request.currentStudent,
+        targets: request.targets,
+        inventory: request.inventory,
+        bond: request.bondRequest,
+      );
+    } on UnsupportedError {
+      if (service case final PlanningStudentCalculationService growth) {
+        return GrowthCalculatorResult.fromStudentCalculation(
+          await growth.calculateStudent(
+            currentStudent: request.currentStudent,
+            targets: request.targets,
+            inventory: request.inventory,
+          ),
+          request: request,
+        );
+      }
+      rethrow;
+    }
+    return GrowthCalculatorResult.fromStudentCalculation(
+      calculation,
+      request: request,
+    );
+  }
+  if (service case final PlanningStudentCalculationService growth) {
+    final calculation = await growth.calculateStudent(
       currentStudent: request.currentStudent,
       targets: request.targets,
       inventory: request.inventory,

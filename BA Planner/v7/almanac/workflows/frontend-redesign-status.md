@@ -4182,3 +4182,156 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_171109\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE3-g 종료 기록 (2026-10-09 저녁, 성장 계산기 인연 선물 타일, 코드 작성 완료·gate 미실행)
+
+작업 지시(17:37): 계산기가 인연 선물 계산(FB-11b)을 함께 받아 인연 타일·선물 팝오버를 채운다. FE4-h 커밋 뒤 HEAD에서 시작했다. 읽은 것: 워크플로 FE3-g 행, FD-163·164·165, backend status FB-11b 절 전체("계약과 계산"·배분 예시·"FE3-g 연결 메모"), 시안 Calc-Student 인연 타일·`.gpop` 두 팝오버(`dc_outline.py` + 원본 HTML 스타일), FE3-f2b 계산기 어댑터·디바운스, 서비스 DTO(`student_bond_service.dart`, `calculateStudentWithBond`, mock fixture 7건).
+
+이 환경에는 Flutter·Dart가 없다. 그래서 `flutter analyze`·Dart 테스트·golden을 돌리지 못했고, 통과를 주장하지 않는다.
+- 별도 검토 에이전트 1개가 바뀐 파일 전부를 정적으로 읽었다. 대상은 컴파일·lint, 그리고 mock fixture 값과 학생 탭 흐름에 대한 테스트 기대다. 컴파일 오류·분석 경고는 찾지 못했다. 고친 지적:
+  1. 창이 좁으면(인연 타일 최소 폭 420) 쓰다듬기 안 버튼이 넘칠 수 있다 → 큰 수를 `FittedBox`로 줄이고, 이름 칸 flex 3.
+  2. FD-165 단언이 `Item_Icon_Favor` 접두로 찾아 성장 재화 fixture의 `Item_Icon_Favor_Selection`(정당한 성장 present 행)과 겹칠 수 있었다 → 이 사례의 선물 key 3개로 좁히고, 결과 재화 key 목록이 고르기 전후 같음을 단언한다.
+  3. (i) 도움말이 섹션 플라이아웃 묶음과 같아 마우스만 올려도 고정한 선물 팝오버가 닫혔다 → 선물 팝오버 묶음을 따로 둔다.
+  4. 확정 인연이 성급 상한을 넘는 자료(예 ★1 · 인연 15)에서 보내는 값과 계산기 행 값이 달랐다 → repository에 `bond_rank`가 있으면 계산기 확정 현재값(정규화된 값)을 보낸다. 없으면 null이다.
+- PC `.git/index`로 확인했다: 바꾼 추적 파일 6개는 작업 시작 때 PC 내용 = HEAD 블롭이다. 작업 중 PC mtime도 그대로다.
+
+### 바뀐 파일
+
+| 파일 | 줄(+/−) | 내용 |
+|---|---|---|
+| `frontend/lib/ui/widgets/growth_calculator_bond_tile.dart` (새 파일) | +926 | 아래 "인연 타일"의 위젯과 순수 함수(안 문구 · 기본 안 · 안내 문구) |
+| `frontend/lib/ui/models/growth_calculator_adapter.dart` | +104 −3 | 아래 "계산 호출" |
+| `frontend/lib/ui/widgets/growth_calculator_section.dart` | +37 −43 | 빈 인연 타일(`_BondTile`)을 `GrowthCalculatorBondTile`로 바꿨다(결과를 기다리는 동안 흐림은 크레딧 타일과 같다). 고른 안 상태(학생이 바뀌면 처음으로), 선물 팝오버 묶음, "필요 재화" 제목 줄에 성장 경고 |
+| `frontend/test/growth_calculator_adapter_test.dart` | +238 | 아래 테스트 |
+| `frontend/test/growth_calculator_view_test.dart` | +324 −4 | 아래 테스트 |
+| `frontend/test/goldens/fe1g_baseline_golden_test.dart` | +38 −2 | `students-calculator` 장면을 함수로 묶고 인연 목표 1 → 3을 더했다. 새 장면 `students-calculator-bond-popover` |
+| `frontend/test/goldens/golden_harness.dart` | +4 | 주석만(계산기 golden 대역의 인연은 기본 mock의 공유 fixture 응답) |
+
+`lib/services/**`, `backend/`, `contracts/`, 스캐너·tactic·metadata 소유 파일, `app_shell.dart`는 고치지 않았다. 서비스에 요청할 빠진 기능은 없다.
+
+### 동작
+
+**계산 호출(어댑터)**
+- 서비스가 `PlanningStudentBondCalculationService`면 디바운스 한 번에 `calculateStudentWithBond`를 한 번 부른다. 성장 입력(currentStudent·19 key 정수 targets·inventory)은 그대로이고, 거기에 `bond: StudentBondRequest(currentRank)`를 더한다.
+- 이전 요청 응답 버림(요청 번호)은 그대로다.
+- `GrowthCalculatorRequest.currentBondRank`:
+  - 확정값 기준이면 repository 학생 값에 `bond_rank`가 있을 때만 그 값이다(계산기 확정 현재값).
+  - 미보유이거나 값이 없거나 repository를 아직 못 읽었으면 null이다. 계산기 현재값의 채운 1을 보내지 않는다.
+  - 직접 입력 기준이면 계산기에 적은 현재 인연이다.
+  - `currentStudent`에는 인연을 넣지 않는다(`planningCurrentFields`에 없다).
+- 결과(`GrowthCalculatorResult`):
+  - `bond`(계산됨 / 계산할 수 없음), 보낸 `bondCurrentRank`·`bondTargetRank`를 갖는다.
+  - `resources`·`shortageTypeCount`·`warnings`는 성장 결과만이다(FD-165).
+- 인연 호출이 `UnsupportedError`이면 같은 요청으로 성장만 다시 계산하고, 인연은 "계산할 수 없음"이다. 지금 mock은 공유 fixture의 학생·랭크·보유 입력만 인연을 계산하기 때문이다. 이 처리가 없으면 mock 모드와 기존 계산기 테스트 대역에서 fixture 밖 입력의 계산기 전체가 실패한다. 실제 프로세스 서비스는 이 오류를 내지 않으므로 한 번만 부른다.
+
+**인연 타일**(시안 112 높이, 왼쪽·오른쪽 29.7)
+- 머리 줄: "인연 현재 → 목표"와 "필요 경험치 n · 현재 랭크 시작 기준 · 셋 중 하나로 채웁니다".
+- 오른쪽에는 `bond.warnings`가 있으면 "경고 n건" 칩(warn)을 둔다. (i) "인연 계산 기준"에는 현재 랭크 시작 가정 · 자료 `jp-1.73.0` · 쓰다듬기 조건 · 경고 원문을 적는다.
+- 세 안(시안 `.gbtn`, 고르면 분홍 바탕 + 안쪽 1.5 링, 별 아이콘 분홍):
+  - 선호 선물 (대) · 일반 선물: 큰 수는 필요 개수 합 "×n"이다. 아래 줄은 "부족 n" / "보유로 충분" / "보유 미확인" / "쓸 수 없음"(`available=false`, 큰 수 "—")이다. 오른쪽은 꺾쇠다.
+  - 카페 · 쓰다듬기: 큰 수는 필요 횟수 "n회"이다. 아래 줄 "최소 n시간 · 첫 회 즉시 가정"은 `minimumHours`와 조건 `first_interaction=immediate`를 함께 적는다. 오른쪽 "[?]"(툴팁 "하루 가능 횟수는 확인되지 않았습니다")가 `availableCount=null`이다. 하루 횟수·일수는 만들지 않는다.
+- 기본 안은 선호 선물 (대)이고, 쓸 수 없으면 일반 선물이다(시안 g1 on).
+- 안내 상태(문구만, 키 `calculator-bond-guide`):
+  - 현재 인연을 모르면 "현재 인연 랭크를 모릅니다 · 학생 스캔이나 직접 입력으로 현재 랭크를 정하면 선물을 계산합니다", 머리 줄은 "인연 미확인 → n"이다.
+  - 목표가 현재 이하이면 "인연 목표가 현재 랭크 이하입니다 · 목표 인연을 올리면 필요한 선물을 계산합니다"이다.
+  - 계산할 수 없는 입력이면 "이 입력으로는 인연 선물을 계산할 수 없습니다"이다.
+
+**선물 팝오버**(시안 `.gpop`, 폭 520, 아래 10, 꼬리 left 30)
+- 선물 안을 누르면 그 안을 고르고 목록을 고정해 연다. 다시 누르기·Esc·바깥 누르기로 닫는다. 다른 안을 누르면 그 목록으로 바뀐다. 쓰다듬기를 누르면 선물 목록을 닫고 쓰다듬기를 고른다.
+- 고르기는 고정·강조만 바꾼다. 다시 계산하지 않고, 재화 목록·"부족 n종"도 그대로다(FD-165).
+- 내용:
+  - 머리 줄: 안 이름(경기천년제목 16)과 설명.
+  - 열 이름: 선물 · 경험치 · 수량 · 보유.
+  - 선물 행(백엔드 배분 순서 그대로, FD-164): 아이콘 40(present 아이콘), 이름 + "1개 경험치 n · 선호 ×m", 경험치 합, "×필요" + "보유 사용 n", "보유 n" + 부족 n(분홍)/충분(초록). 보유를 모르면 빗금 + "미확인".
+  - 합계 줄: "합계 ×n · 경험치 제공 / 필요 · 보유가 많은 선물부터 씁니다".
+  - `available=false`면 "이 학생에게 맞는 선물이 없어 이 안은 쓸 수 없습니다"이다.
+
+**경고 연결**
+- `bond.warnings`는 인연 타일 칩 + (i)에 둔다.
+- `result.warnings`(성장)는 "필요 재화" 제목 줄의 "계산 경고 n건" 칩 + (i)에 둔다. 경고가 없으면 칩이 없다. 계산 실패 문구가 있으면 그것을 먼저 보인다.
+
+### 테스트
+
+**`growth_calculator_adapter_test.dart`**: 새 그룹 "인연 선물(FB-11b, FE3-g)" 7건
+- 확정 인연을 따로 보내고 currentStudent에 넣지 않음.
+- 모르는 인연은 null(1·채운 값으로 채우지 않음), 직접 입력은 적은 값.
+- 한 호출로 성장 + 인연(fixture 10→12: 필요 150, 일반 안 보유 사용 6), 같은 입력의 성장만 결과와 재화 key·부족 종류 수·크레딧이 같음(FD-165).
+- 현재 미확인은 `{'current_rank': null}`, 안내 상태.
+- `UnsupportedError`이면 성장만.
+- 안 문구 4종과 기본 안.
+- 재계산기는 디바운스 한 번에 마지막 요청의 성장 + 인연.
+
+**`growth_calculator_view_test.dart`**: 새 그룹 "인연 타일(FE3-g)" 4건(공유 fixture 입력을 쓰는 `_BondService`: 기본 계정에 보유 아루 + fixture 인벤토리)
+- 확정 인연 10을 따로 보내고 목표가 현재 이하면 안내.
+- 10→12: "인연 10 → 12", 필요 경험치 150, 선호 ×1 "부족 1", 일반 ×7 "보유로 충분", 쓰다듬기 "10회" · "최소 27시간 · 첫 회 즉시 가정" · [?], 타일 안에 "하루" 없음.
+- 팝오버: 일반 안 행(웨이브캣 베개 ×6 · 보유 사용 6, 매장금의 지도 ×1), 합계 ×7, "경험치 180 / 필요 150". 선호 안 행 "부족 1".
+- 고르기는 강조만 바꾼다(호출 수 그대로, 재화 key 그대로, 부족 종류 수 그대로). 쓰다듬기를 누르면 목록이 닫힌다.
+- 1→3(보유 스캔 없음): "보유 미확인", 행 "미확인", 인연 경고 칩은 있고 성장 경고 칩은 없음.
+- 성장 경고 칩 "계산 경고 1건"(`_CalculatorService`에 warnings 매개변수를 더함, 기본 빈 목록이라 기존 테스트는 그대로).
+
+**기대를 바꾼 것**
+- "\"이 목표로 계획에 추가\"는 FE4-g 전까지 비활성 …"의 마지막 단언 `calculator-bond-empty`(빈 타일)를 `calculator-bond-guide`와 "인연 미확인" 머리 줄로 바꿨다.
+- 이유: 빈 타일을 FE3-g 타일로 바꿨고, 그 mock의 첫 학생(아루)은 미보유라 현재 인연을 모른다. 그래서 안내 상태가 맞다.
+
+**기존 테스트 대역**
+- `_CalculatorService`처럼 `calculateStudent`만 덮어쓴 `MockAppService` 하위 클래스는 인연 호출이 fixture 밖이라 `UnsupportedError` → 성장만이다. 그래서 `calls` 수·결과가 그대로다.
+
+### golden 예측
+
+- 바뀜 1: `students-calculator`.
+  - 장면에 인연 목표 1 → 3을 더했다. 공유 fixture "아루 1→3, present 스캔 없음"과 같은 입력이고, 계산기 golden 대역은 성장만 덮어쓰고 인연은 기본 mock 응답이다.
+  - 그래서 S2 인연 목표 행이 3(바뀐 칸 분홍), "바꾼 목표" 칩에 인연, S3 인연 게이지에 목표 3 빗금·"현재 …" 태그가 생긴다.
+  - 인연 타일: "인연 1 → 3 · 필요 경험치 45 · 현재 랭크 시작 기준 · 셋 중 하나로 채웁니다", "경고 1건" 칩 + (i). 세 안은 선호 선물 (대) ×1 "보유 미확인"(고름, 분홍) / 일반 선물 ×1 "보유 미확인" / 카페 · 쓰다듬기 3회 "최소 6시간 · 첫 회 즉시 가정" [?]이다.
+  - 크레딧·재화 목록 숫자는 그대로(18,420,000, 재화 15행)다.
+- 새 장면 1: `students-calculator-bond-popover`. 같은 장면에서 선호 선물 (대)를 눌러 목록을 연다. 고풍스러운 달걀 공예품 1행(1개 경험치 180 · 선호 ×3, 경험치 180, ×1 · 보유 사용 0, 빗금 + 미확인), 합계 ×1 · 경험치 180 / 필요 45가 보인다.
+- 그대로: 나머지 장면. 계산기를 여는 장면은 이 둘뿐이고, 성장 경고 칩은 golden 결과에 경고가 없어 그려지지 않는다.
+- 그래서 ① gate는 golden 2건 RED(바뀜 1 + 기준 없음 1)가 예상이다.
+
+### 바뀐 동작(검토 때 볼 것)
+
+1. mock 모드(MockAppService)에서는 공유 fixture 7건과 같은 입력일 때만 인연이 계산되고, 그 밖은 "이 입력으로는 인연 선물을 계산할 수 없습니다"이다. 이 경우 한 디바운스에 서비스 호출이 둘(인연 시도 → 성장)이다. 프로세스 서비스는 한 번이다.
+2. 선물 목록은 마우스를 올리거나 포커스만으로는 열지 않는다. 시안처럼 고른 안의 목록만 열고, 누르면 고정한다. 닫아도 고른 안은 남는다.
+3. 백엔드 경고 문장(영어 원문)은 (i) 안에 그대로 보인다. 칩 글자만 한국어다.
+4. 선물 행 순서는 백엔드 배분 순서이고, 팝오버 설명에 "경험치가 높은 순"을 쓰지 않는다(FD-164 배분과 다를 수 있다).
+5. 첫 결과가 오기 전 한 프레임은 머리 줄이 계산기 값("인연 1")이다. 현재 인연을 모르면 결과가 온 뒤 "인연 미확인 → n"이 된다.
+6. 현재 인연을 모르는데 목표도 현재(채운 값)와 같으면 머리 줄이 "인연 미확인 → 1"처럼 보인다.
+
+### 검수표
+
+| 항목 | 확인 |
+|---|---|
+| bond(현재 인연, 모르면 null)를 같은 호출로, currentStudent에 bond_rank 없음, 1로 채우지 않음 | 어댑터 테스트 3건, 화면 테스트 1건 |
+| 디바운스 한 번에 성장 + 인연, 이전 응답 버림 그대로 | 재계산기 테스트, 기존 디바운스 테스트 |
+| 필요 경험치 · 세 안(필요량 · 보유 사용 · 부족), available=false "쓸 수 없음" | 어댑터 문구 테스트, 화면 테스트 |
+| 모르는 값 빗금/미확인, availableCount=null → [?], 하루 횟수·일수 없음 | 화면 테스트 2건 |
+| 쓰다듬기 minimumHours와 조건(첫 회 즉시) 구분 | 화면·어댑터 문구 테스트 |
+| 선물 팝오버, 고르기는 고정·강조만 | 화면 테스트, golden 새 장면 |
+| bond.warnings → 인연 타일, result.warnings → 성장 경고 | 화면 테스트 2건 |
+| 선물은 성장 재화·부족 종류 수에 없음(FD-165) | 어댑터·화면 테스트 |
+| 현재 인연 모름 / 목표 없음 → 안내 상태 | 화면 테스트 2건, 기존 테스트(바꾼 기대) |
+| `lib/services/**`·금지 파일 미수정, ~습니다체 | 코드 확인(실행 안 됨) |
+
+### 확인하지 못한 것
+
+- analyze·테스트·golden 실행 전부(이 환경에 Flutter 없음).
+- 새 그림: 안 버튼 글자 크기·줄임, 팝오버 열 폭(경험치 64 · 수량 70 · 보유 104)과 행 높이, present 아이콘 바탕, 작은 창(타일 최소 폭 420)에서 안 버튼 모양.
+- ProcessAppService(실제 Python)에서 fixture 밖 입력의 인연 결과 화면.
+
+### 사용자 실행 순서
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다(golden 2건 RED 예상)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 승인 뒤 기준 이미지 갱신 → gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3g -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe3g
+```
+
+### FE3-g commit record (2026-10-09 19:18, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_185920\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

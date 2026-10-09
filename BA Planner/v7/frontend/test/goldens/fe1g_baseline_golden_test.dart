@@ -345,8 +345,9 @@ void main() {
   // 칸 분홍)·바꾼 목표 칩, 크레딧 타일(보유 "스캔 없음" 빗금 + 9범주를 묶은 내역 막대 5줄)·재화 목록 6줄과
   // "더 보기"가 장면에 보인다. S3는 목표값(바뀐 칸 분홍, ★ 목표 테두리)과 "현재 …" 태그, S4는 선택 학생
   // 요약·"기준: 확정값" 칩·최근 계산(아루 한 칸)이다.
-  testWidgets('students-calculator', (tester) async {
-    setGoldenViewport(tester);
+  // FE3-g: 인연 목표를 1 → 3으로 올려 인연 타일을 채운다(공유 fixture 사례 "아루 1→3, present 스캔 없음").
+  // 필요 경험치 45, 선호 선물 (대) ×1 · 일반 선물 ×1(보유 미확인), 쓰다듬기 3회 · 최소 6시간, 인연 경고 1건.
+  Future<void> openCalculatorScene(WidgetTester tester) async {
     final service = GoldenCalculatorMockAppService();
     addTearDown(service.dispose);
     await service.seedStudentScene();
@@ -363,6 +364,7 @@ void main() {
       GrowthCalculatorRow.equipment1,
       state.rowTarget(GrowthCalculatorRow.equipment1) + 2,
     );
+    state.setRowTarget(GrowthCalculatorRow.bond, 3);
     await tester.pump();
     await tester.pump(growthCalculatorDebounce);
     await tester.pump();
@@ -385,7 +387,41 @@ void main() {
       find.byKey(const ValueKey('calculator-resource-more')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey('calculator-bond-option-preferredLarge')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('calculator-bond-warnings')),
+      findsOneWidget,
+    );
+  }
+
+  testWidgets('students-calculator', (tester) async {
+    setGoldenViewport(tester);
+    await openCalculatorScene(tester);
     await expectGoldenScene(tester, 'students-calculator');
+  }, variant: goldenPlatform);
+
+  // FE3-g: 선호 선물 (대)를 눌러 선물 목록 팝오버를 고정해 연다(고른 안 강조). 선물 1행(고풍스러운 달걀 공예품,
+  // 1개 경험치 180 · 선호 ×3, ×1, 보유 빗금 + 미확인)과 합계 줄이 보인다.
+  testWidgets('students-calculator-bond-popover', (tester) async {
+    setGoldenViewport(tester);
+    await openCalculatorScene(tester);
+    await tester.tap(
+      find.byKey(const ValueKey('calculator-bond-option-preferredLarge')),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('calculator-bond-popover-preferredLarge')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('calculator-bond-gift-Item_Icon_Favor_Lv2_3')),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'students-calculator-bond-popover');
   }, variant: goldenPlatform);
 
   // --- 계획 메인 -------------------------------------------------------------

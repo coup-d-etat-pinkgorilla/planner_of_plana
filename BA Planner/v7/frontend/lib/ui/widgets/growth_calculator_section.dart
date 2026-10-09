@@ -5,8 +5,9 @@
 // 고정 px이다(작은 창에서 일괄 축소하지 않는다). 목록은 80° 레일을 따라가는 [DiagonalScrollViewport]에 담아
 // 다 들어가지 않으면 스크롤한다(기준 viewport에서는 다 들어간다).
 // - 왼쪽 행: 시안 12행 + 애장품(장비 3 뒤, 애장품 없는 학생은 12행). 행마다 x가 63·tan10°씩 들어간다.
-// - 오른쪽: 크레딧 타일(합계만, 내역 막대는 FB-11 전 숨김, 보유는 "스캔 없음" 빗금), 인연 타일(빈 상태,
-//   FE3-g), 성장 재화 목록(정렬 3종, 6행 + 접힘).
+// - 오른쪽: 크레딧 타일(합계 + 9범주 내역, 보유는 "스캔 없음" 빗금), 인연 타일(FE3-g, 세 안 + 선물 팝오버,
+//   [GrowthCalculatorBondTile]), 성장 재화 목록(정렬 3종, 6행 + 접힘). 성장 계산 경고는 "필요 재화" 제목 줄에,
+//   인연 경고는 인연 타일에 둔다. 선물은 성장 재화 목록·"부족 n종"에 넣지 않는다(FD-165).
 // - 아래: "이 목표로 계획에 추가"(FE4-g 전 비활성). "인벤토리 · 부족 위험에서 보기"는 숨긴다(FD-173 (c)).
 // - 계산 상태: 기다리는 동안 직전 결과를 흐리게, 실패하면 오류 문구와 직전 결과를 보인다.
 // 목표는 저장하지 않고, 학생 탭 인연 게이지의 활성 계획 목표(FD-049)와 섞지 않는다.
@@ -38,6 +39,7 @@ import '../models/growth_calculator_rules.dart';
 import '../models/growth_calculator_state.dart';
 import '../models/planning_growth_rules.dart';
 import '../models/planning_resource_assets.dart';
+import 'growth_calculator_bond_tile.dart';
 import 'student_section_layout.dart';
 
 /// 시안 내용 영역(기준 viewport에서 머리말 아래).
@@ -294,7 +296,7 @@ class GrowthCalculatorLayout {
       math.max(932.5 * sx, 420),
       creditHeight,
     );
-    const bondHeight = 112.0;
+    const bondHeight = growthCalculatorBondTileHeight;
     final bondTop = creditTile.bottom + 18 * sy;
     final bondTile = Rect.fromLTWH(
       railLeft(rightRail, bondTop + bondHeight),
@@ -452,6 +454,18 @@ class _GrowthCalculatorSectionState extends State<GrowthCalculatorSection> {
   var _sort = GrowthCalculatorResourceSort.shortage;
   var _expanded = false;
   final _flyoutGroup = KitOverlayGroup(debugLabel: 'growth-calculator');
+  final _bondGiftGroup = KitOverlayGroup(debugLabel: 'growth-calculator-bond');
+
+  /// 인연 타일에서 고른 안. 고르기는 고정·강조만 바꾼다(FD-165). null이면 기본 안이다.
+  GrowthCalculatorBondOption? _bondOption;
+
+  @override
+  void didUpdateWidget(GrowthCalculatorSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state.studentId != widget.state.studentId) {
+      _bondOption = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -482,7 +496,7 @@ class _GrowthCalculatorSectionState extends State<GrowthCalculatorSection> {
                 ),
                 Positioned.fromRect(
                   rect: layout.rightTitle,
-                  child: _NeedTitle(status: status),
+                  child: _NeedTitle(status: status, group: _flyoutGroup),
                 ),
                 ..._results(layout, state, status, engine != null),
                 Positioned.fromRect(
@@ -569,7 +583,18 @@ class _GrowthCalculatorSectionState extends State<GrowthCalculatorSection> {
       ),
       Positioned.fromRect(
         rect: layout.bondTile,
-        child: _BondTile(state: state),
+        child: faded(
+          GrowthCalculatorBondTile(
+            state: state,
+            result: result,
+            available: available,
+            selected: _bondOption,
+            onSelected: (option) => setState(() => _bondOption = option),
+            group: _flyoutGroup,
+            giftGroup: _bondGiftGroup,
+            studentName: widget.student?.displayName,
+          ),
+        ),
       ),
       Positioned.fromRect(
         rect: layout.resourceHeader,
@@ -1433,9 +1458,10 @@ class _ChangeChip extends StatelessWidget {
 // 오른쪽 열
 
 class _NeedTitle extends StatelessWidget {
-  const _NeedTitle({required this.status});
+  const _NeedTitle({required this.status, this.group});
 
   final GrowthCalculatorStatus? status;
+  final KitOverlayGroup? group;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -1454,7 +1480,11 @@ class _NeedTitle extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: _bodyStyle(AppType.bodySmallSize, color: AppColors.danger),
           ),
-        ),
+        )
+      // 성장 계산 경고(`result.warnings`). 인연 경고는 인연 타일에 있다.
+      else if (status?.lastResult?.warnings case final warnings?
+          when warnings.isNotEmpty)
+        GrowthCalculatorWarnings(warnings: warnings, group: group),
     ],
   );
 }
@@ -1655,42 +1685,6 @@ class _CreditBreakdownBars extends StatelessWidget {
       );
     },
   );
-}
-
-class _BondTile extends StatelessWidget {
-  const _BondTile({required this.state});
-
-  final GrowthCalculatorState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final current = state.current['bond_rank']!;
-    final target = state.targets['bond_rank']!;
-    return DiagonalRow(
-      key: const ValueKey('calculator-bond-tile'),
-      variant: DiagonalRowVariant.tile,
-      padding: const EdgeInsets.only(left: 29.7),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            target > current ? '인연 $current → $target' : '인연 $current',
-            style: _bodyStyle(AppType.titleSmallSize, weight: AppType.bold),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '인연 선물 계산은 아직 지원하지 않습니다',
-            key: const ValueKey('calculator-bond-empty'),
-            style: _bodyStyle(
-              AppType.bodySmallSize,
-              color: AppColors.textMuted,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _ResourceHeader extends StatelessWidget {

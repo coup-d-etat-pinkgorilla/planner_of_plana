@@ -418,6 +418,10 @@ class GoldenStudentMockAppService extends GoldenMockAppService {
 /// FE3-f2b부터 계산기는 단일 학생 계산(`planning.student.calculate`)을 부른다. golden 대역은 그 응답 모양
 /// (`StudentCalculationResult.fromWire` 검증 통과)의 고정 결과를 돌려준다. 숫자는 Calc-Student 예시를 따른다.
 /// 행 15개(접힘 6 + "9종 더"), 보유를 아는 행(부족·충분)과 모르는 행(스캔 없음)이 함께 있다.
+///
+/// FE3-g: 계산기는 인연(`bond`)을 함께 보낸다(`calculateStudentWithBond`). 인연은 [MockAppService]의 공유
+/// fixture 응답 그대로이고(장면은 "아루 1→3, present 스캔 없음" 입력), 성장 부분은 이 대역의
+/// [calculateStudent]가 준다(기본 mock이 그것을 부른다).
 class GoldenCalculatorMockAppService extends GoldenStudentMockAppService {
   GoldenCalculatorMockAppService() : super();
 

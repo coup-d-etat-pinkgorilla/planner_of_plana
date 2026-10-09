@@ -7,12 +7,15 @@ import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/services/mock_student_bond_fixture.dart';
+import 'package:ba_planner_v7/services/mock_student_fixture.dart';
 import 'package:ba_planner_v7/ui/kit/buttons.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_adapter.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_rules.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_state.dart';
 import 'package:ba_planner_v7/ui/models/planning_growth_rules.dart';
 import 'package:ba_planner_v7/ui/pages/settings_page.dart';
+import 'package:ba_planner_v7/ui/widgets/growth_calculator_bond_tile.dart';
 import 'package:ba_planner_v7/ui/widgets/growth_calculator_section.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
@@ -35,10 +38,15 @@ const _resourceIds = [
 /// 단일 학생 계산(FB-11a) 호출 수를 세고, 정한 결과(또는 오류)를 돌려주는 mock. 크레딧 내역은 합이
 /// 1,234,567인 9범주다.
 class _CalculatorService extends MockAppService {
-  _CalculatorService({this.fail = false, this.resourceCount = 0});
+  _CalculatorService({
+    this.fail = false,
+    this.resourceCount = 0,
+    this.warnings = const [],
+  });
 
   final bool fail;
   final int resourceCount;
+  final List<String> warnings;
   int calls = 0;
   final List<Map<String, int>> requestedTargets = [];
 
@@ -91,10 +99,69 @@ class _CalculatorService extends MockAppService {
             affectedStageIds: const ['growth-calculator-stage'],
           ),
       ],
-      warnings: const [],
+      warnings: warnings,
     );
   }
 }
+
+/// 인연 선물(FE3-g) mock: 기본 계정에 아루(보유, 확정 인연 [bondRank])와 공유 fixture 인벤토리를 둔다.
+/// Mock 인연 계산은 공유 fixture의 학생·랭크·보유 입력만 지원한다(FB-11b). 인연 요청을 기록한다.
+class _BondService extends MockAppService {
+  _BondService({required int bondRank, required Map<String, dynamic> inventory})
+    : super(
+        repositoryStates: {
+          '000000000000000000000001': {
+            'profile_id': '000000000000000000000001',
+            'revision': 0,
+            'students': [
+              {
+                'version': 1,
+                'student_id': 'aru',
+                'values': {
+                  ...Map<String, dynamic>.from(
+                    buildMockOwnedStudents().first['values'] as Map,
+                  ),
+                  'bond_rank': bondRank,
+                },
+              },
+            ],
+            'inventory': inventory,
+            'goals': {'version': 1, 'goals': <dynamic>[]},
+          },
+        },
+      );
+
+  final bondRequests = <int?>[];
+  final bondCurrentStudents = <Map<String, dynamic>>[];
+
+  @override
+  Future<StudentCalculationResult> calculateStudentWithBond({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    required StudentBondRequest bond,
+    Map<String, dynamic>? inventory,
+  }) {
+    bondRequests.add(bond.currentRank);
+    bondCurrentStudents.add(Map.of(currentStudent));
+    return super.calculateStudentWithBond(
+      currentStudent: currentStudent,
+      targets: targets,
+      bond: bond,
+      inventory: inventory,
+    );
+  }
+}
+
+/// 공유 fixture 사례의 인벤토리(현재 [current] → 목표 [target]).
+Map<String, dynamic> _bondCaseInventory(int current, int target) =>
+    Map<String, dynamic>.from(
+      mockStudentBondCases.firstWhere(
+            (entry) =>
+                entry['current_rank'] == current &&
+                entry['target_rank'] == target,
+          )['inventory']
+          as Map,
+    );
 
 /// 단일 학생 계산이 없는 서비스(임시 문서 경로, FD-162 (a)). 크레딧 내역이 없다.
 class _DocumentOnlyService implements PlanningDocumentService {
@@ -364,8 +431,9 @@ void main() {
     );
     expect(tester.widget<InkWell>(railButton).onTap, isNull);
     expect(find.text('인벤토리 · 부족 위험에서 보기'), findsNothing);
-    // 인연 타일은 빈 상태다(FE3-g).
-    expect(find.byKey(const ValueKey('calculator-bond-empty')), findsOneWidget);
+    // FE3-g: 이 mock의 첫 학생(아루)은 미보유라 현재 인연을 모른다. 인연 타일은 안내 상태다(1로 채우지 않는다).
+    expect(find.byKey(const ValueKey('calculator-bond-guide')), findsOneWidget);
+    expect(_text(tester, 'calculator-bond-title'), startsWith('인연 미확인'));
   });
 
   testWidgets('능력 개방 행은 HP/ATK/HEAL 플라이아웃을 연다', (tester) async {
@@ -733,6 +801,258 @@ void main() {
       }),
       '★1 · Lv.30',
     );
+  });
+
+  group('인연 타일(FE3-g)', () {
+    // 이 사례의 인연 선물(성장 재화 fixture에는 다른 present 행 `Item_Icon_Favor_Selection`이 있어 그것과 구분한다).
+    const giftKeys = [
+      'Item_Icon_Favor_0',
+      'Item_Icon_Favor_17',
+      'Item_Icon_Favor_Lv2_3',
+    ];
+    Finder favorRows() => find.byWidgetPredicate(
+      (widget) =>
+          widget.key is ValueKey<String> &&
+          giftKeys.any(
+            (key) =>
+                (widget.key! as ValueKey<String>).value ==
+                'calculator-resource-$key',
+          ),
+    );
+
+    List<String> resourceKeys(WidgetTester tester) => [
+      for (final row
+          in tester
+              .widget<StudentSectionLayout>(find.byType(StudentSectionLayout))
+              .calculator!
+              .engine!
+              .status
+              .lastResult!
+              .resources)
+        row.resourceKey,
+    ];
+
+    GrowthCalculatorBondTile tile(WidgetTester tester) =>
+        tester.widget<GrowthCalculatorBondTile>(
+          find.byType(GrowthCalculatorBondTile),
+        );
+
+    testWidgets('확정 인연을 따로 보내고, 목표가 현재 이하이면 안내 상태다', (tester) async {
+      final service = _BondService(
+        bondRank: 10,
+        inventory: _bondCaseInventory(10, 12),
+      );
+      await _openStudents(tester, service);
+      await _openCalculator(tester);
+      // 디바운스 한 번에 성장 + 인연을 한 호출로 받는다. 현재 인연은 currentStudent에 넣지 않는다.
+      expect(service.bondRequests, isNotEmpty);
+      expect(service.bondRequests, everyElement(10));
+      expect(
+        service.bondCurrentStudents.any(
+          (student) => student.containsKey('bond_rank'),
+        ),
+        isFalse,
+      );
+      expect(_text(tester, 'calculator-bond-title'), '인연 10');
+      expect(find.byKey(const ValueKey('calculator-bond-guide')), findsOneWidget);
+    });
+
+    testWidgets('필요 경험치 · 세 안 · 선물 팝오버, 고르기는 강조만 바꾼다', (tester) async {
+      final service = _BondService(
+        bondRank: 10,
+        inventory: _bondCaseInventory(10, 12),
+      );
+      await _openStudents(tester, service);
+      await _openCalculator(tester);
+      _state(tester).setRowTarget(GrowthCalculatorRow.bond, 12);
+      await _settleCalculation(tester);
+
+      expect(service.bondRequests.last, 10);
+      expect(_text(tester, 'calculator-bond-title'), '인연 10 → 12');
+      expect(_text(tester, 'calculator-bond-exp'), startsWith('필요 경험치 150'));
+      expect(_text(tester, 'calculator-bond-option-preferredLarge-value'), '×1');
+      expect(_text(tester, 'calculator-bond-option-preferredLarge-note'), '부족 1');
+      expect(_text(tester, 'calculator-bond-option-normal-value'), '×7');
+      expect(_text(tester, 'calculator-bond-option-normal-note'), '보유로 충분');
+      // 쓰다듬기: 필요 횟수 · 첫 회 즉시 가정의 최소 시간. 하루 가능 횟수는 [?](하루 횟수·일수를 만들지 않는다).
+      expect(_text(tester, 'calculator-bond-option-petting-value'), '10회');
+      expect(
+        _text(tester, 'calculator-bond-option-petting-note'),
+        '최소 27시간 · 첫 회 즉시 가정',
+      );
+      expect(
+        find.byKey(const ValueKey('calculator-bond-petting-available-count')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('calculator-bond-tile')),
+          matching: find.textContaining('하루'),
+        ),
+        findsNothing,
+      );
+      // 기본 안은 선호 선물 (대)다. 팝오버는 아직 닫혀 있다.
+      expect(tile(tester).selected, isNull);
+      expect(
+        find.byKey(const ValueKey('calculator-bond-popover-preferredLarge')),
+        findsNothing,
+      );
+      // FD-165: 선물은 성장 재화 목록에 넣지 않는다.
+      expect(favorRows(), findsNothing);
+      final growthKeys = resourceKeys(tester);
+      expect(growthKeys.where(giftKeys.contains), isEmpty);
+      final shortageTypes = tester
+          .widget<StudentSectionLayout>(find.byType(StudentSectionLayout))
+          .calculator!
+          .engine!
+          .status
+          .lastResult!
+          .shortageTypeCount;
+
+      await tester.tap(
+        find.byKey(const ValueKey('calculator-bond-option-normal')),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(tile(tester).selected, GrowthCalculatorBondOption.normal);
+      expect(
+        find.byKey(const ValueKey('calculator-bond-popover-normal')),
+        findsOneWidget,
+      );
+      // 보유 많은 선물부터(웨이브캣 베개 6개), 남은 경험치는 매장금의 지도 1개(FD-164, 백엔드 배분 그대로).
+      expect(
+        _text(tester, 'calculator-bond-gift-Item_Icon_Favor_0-required'),
+        '×6',
+      );
+      expect(
+        _text(tester, 'calculator-bond-gift-Item_Icon_Favor_0-used'),
+        '보유 사용 6',
+      );
+      expect(
+        _text(tester, 'calculator-bond-gift-Item_Icon_Favor_17-required'),
+        '×1',
+      );
+      expect(_text(tester, 'calculator-bond-gift-total'), '합계 ×7');
+      expect(
+        _text(tester, 'calculator-bond-gift-exp'),
+        '경험치 180 / 필요 150',
+      );
+      // 고르기는 고정·강조만 바꾼다: 계산을 다시 부르지 않고 재화 목록·부족 종류 수도 그대로다.
+      final calls = service.bondRequests.length;
+      await tester.tap(
+        find.byKey(const ValueKey('calculator-bond-option-preferredLarge')),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(tile(tester).selected, GrowthCalculatorBondOption.preferredLarge);
+      expect(
+        find.byKey(const ValueKey('calculator-bond-popover-normal')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('calculator-bond-popover-preferredLarge')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(
+            const ValueKey('calculator-bond-gift-Item_Icon_Favor_Lv2_3'),
+          ),
+          matching: find.text('부족 1'),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('calculator-bond-option-petting')),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(tile(tester).selected, GrowthCalculatorBondOption.petting);
+      expect(
+        find.byKey(const ValueKey('calculator-bond-popover-preferredLarge')),
+        findsNothing,
+      );
+      await tester.pump(growthCalculatorDebounce);
+      await tester.pump();
+      expect(service.bondRequests, hasLength(calls));
+      expect(favorRows(), findsNothing);
+      expect(resourceKeys(tester), growthKeys);
+      expect(
+        tester
+            .widget<StudentSectionLayout>(find.byType(StudentSectionLayout))
+            .calculator!
+            .engine!
+            .status
+            .lastResult!
+            .shortageTypeCount,
+        shortageTypes,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('보유를 모르면 미확인 · 인연 경고는 타일에 보인다', (tester) async {
+      final service = _BondService(
+        bondRank: 1,
+        inventory: _bondCaseInventory(1, 3),
+      );
+      await _openStudents(tester, service);
+      await _openCalculator(tester);
+      _state(tester).setRowTarget(GrowthCalculatorRow.bond, 3);
+      await _settleCalculation(tester);
+
+      expect(_text(tester, 'calculator-bond-title'), '인연 1 → 3');
+      expect(
+        _text(tester, 'calculator-bond-option-preferredLarge-note'),
+        '보유 미확인',
+      );
+      expect(_text(tester, 'calculator-bond-option-normal-note'), '보유 미확인');
+      // bond.warnings는 인연 타일, result.warnings(여기서는 없음)는 성장 경고다.
+      expect(
+        find.byKey(const ValueKey('calculator-bond-warnings')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('calculator-growth-warnings')),
+        findsNothing,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('calculator-bond-option-preferredLarge')),
+      );
+      await tester.pump();
+      await tester.pump();
+      final row = find.byKey(
+        const ValueKey('calculator-bond-gift-Item_Icon_Favor_Lv2_3'),
+      );
+      expect(
+        find.descendant(of: row, matching: find.text('미확인')),
+        findsOneWidget,
+      );
+      expect(
+        _text(tester, 'calculator-bond-gift-Item_Icon_Favor_Lv2_3-used'),
+        '보유 사용 0',
+      );
+      await tester.pump(growthCalculatorDebounce);
+      await tester.pump();
+    });
+
+    testWidgets('성장 계산 경고는 "필요 재화" 제목 줄에 보인다', (tester) async {
+      await _openStudents(
+        tester,
+        _CalculatorService(warnings: const ['Bond growth cost is unavailable']),
+      );
+      await _openCalculator(tester);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('calculator-growth-warnings')),
+          matching: find.text('계산 경고 1건'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('calculator-bond-warnings')),
+        findsNothing,
+      );
+    });
   });
 }
 

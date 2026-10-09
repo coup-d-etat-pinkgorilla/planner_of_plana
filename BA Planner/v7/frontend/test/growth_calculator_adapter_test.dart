@@ -6,11 +6,13 @@ import 'dart:async';
 
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/services/mock_student_bond_fixture.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_adapter.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_rules.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_state.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
+import 'package:ba_planner_v7/ui/widgets/growth_calculator_bond_tile.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -278,6 +280,82 @@ class _StudentAndDocumentService
 
   Future<void> dispose() => _inner.dispose();
 }
+
+/// 인연 계산(FB-11b)을 가진 서비스. 성장만·성장+인연 호출을 따로 센다. 인연 계산은 [MockAppService]에 넘긴다
+/// (공유 fixture 입력만 지원). [unsupported]이면 인연 호출이 [UnsupportedError]다.
+class _BondRecordingService
+    implements
+        PlanningStudentCalculationService,
+        PlanningStudentBondCalculationService {
+  _BondRecordingService({this.unsupported = false});
+
+  final bool unsupported;
+  final _inner = MockAppService();
+  final bondCalls = <Map<String, Object?>>[];
+  var growthCalls = 0;
+
+  @override
+  Future<StudentCalculationResult> calculateStudent({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    Map<String, dynamic>? inventory,
+  }) {
+    growthCalls += 1;
+    return _inner.calculateStudent(
+      currentStudent: currentStudent,
+      targets: targets,
+      inventory: inventory,
+    );
+  }
+
+  @override
+  Future<StudentCalculationResult> calculateStudentWithBond({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    required StudentBondRequest bond,
+    Map<String, dynamic>? inventory,
+  }) async {
+    bondCalls.add({
+      'current_student': currentStudent,
+      'targets': targets,
+      'bond': bond.toWire(),
+    });
+    if (unsupported) throw UnsupportedError('fixture inputs only');
+    return _inner.calculateStudentWithBond(
+      currentStudent: currentStudent,
+      targets: targets,
+      bond: bond,
+      inventory: inventory,
+    );
+  }
+
+  Future<void> dispose() => _inner.dispose();
+}
+
+/// 공유 fixture 사례(아루, 현재 [current] → 목표 [target])의 인벤토리.
+Map<String, dynamic> _bondCaseInventory(int? current, int target) =>
+    Map<String, dynamic>.from(
+      mockStudentBondCases.firstWhere(
+            (entry) =>
+                entry['student_id'] == 'aru' &&
+                entry['current_rank'] == current &&
+                entry['target_rank'] == target,
+          )['inventory']
+          as Map,
+    );
+
+/// 공유 fixture 입력 그대로의 아루 요청.
+GrowthCalculatorRequest _bondRequest({
+  required int? current,
+  required int target,
+}) => GrowthCalculatorRequest(
+  studentId: 'aru',
+  targets: {..._current, 'bond_rank': target},
+  currentStudent: growthCalculatorCurrentStudentWire('aru', _current),
+  inventory: _bondCaseInventory(current, target),
+  planMembership: GrowthCalculatorPlanMembership.notInPlan,
+  currentBondRank: current,
+);
 
 void main() {
   group('임시 문서', () {
@@ -743,6 +821,166 @@ void main() {
       expect(service.documentCalls, 0);
       expect(engine.status, isA<GrowthCalculatorReady>());
       expect(engine.status.lastResult!.creditBreakdown.available, isTrue);
+    });
+  });
+
+  group('인연 선물(FB-11b, FE3-g)', () {
+    test('확정값 기준이면 repository 인연을 따로 보내고 currentStudent에는 넣지 않는다', () {
+      final repository = _repository();
+      final state = _state();
+      addTearDown(state.dispose);
+      final request = GrowthCalculatorRequest.fromState(
+        state,
+        repository: repository,
+      );
+      expect(request.currentBondRank, 15);
+      expect(request.bondRequest.toWire(), {'current_rank': 15});
+      expect(request.currentStudent.containsKey('bond_rank'), isFalse);
+      expect(request.targetBondRank, request.targets['bond_rank']);
+    });
+
+    test('확정 인연을 모르면 null이다(계산기 현재값 1·채운 값으로 채우지 않는다)', () {
+      final repository = _repository();
+      final unowned = _state(studentId: 'unowned');
+      final noRepository = _state();
+      addTearDown(unowned.dispose);
+      addTearDown(noRepository.dispose);
+      // 계산기 현재값에는 인연 15가 있지만 확정값이 없으므로 보내지 않는다.
+      expect(unowned.current['bond_rank'], 15);
+      expect(
+        GrowthCalculatorRequest.fromState(
+          unowned,
+          repository: repository,
+        ).bondRequest.toWire(),
+        {'current_rank': null},
+      );
+      expect(
+        GrowthCalculatorRequest.fromState(noRepository).currentBondRank,
+        isNull,
+      );
+      // 직접 입력이면 계산기에 적은 현재 인연이다.
+      final direct = _state(basis: GrowthCalculatorBasis.direct);
+      addTearDown(direct.dispose);
+      expect(
+        GrowthCalculatorRequest.fromState(
+          direct,
+          repository: repository,
+        ).currentBondRank,
+        15,
+      );
+      expect(growthCalculatorBondRank(0), isNull);
+      expect(growthCalculatorBondRank(101), isNull);
+      expect(growthCalculatorBondRank('10'), isNull);
+    });
+
+    test('한 호출로 성장 + 인연을 받고, 선물은 성장 재화에 합치지 않는다(FD-165)', () async {
+      final service = _BondRecordingService();
+      final growthOnly = _StudentAndDocumentService();
+      addTearDown(service.dispose);
+      addTearDown(growthOnly.dispose);
+      final request = _bondRequest(current: 10, target: 12);
+
+      final result = await calculateGrowthTargets(service, request);
+
+      expect(service.growthCalls, 0);
+      final call = service.bondCalls.single;
+      expect(call['bond'], {'current_rank': 10});
+      expect((call['targets']! as Map)['bond_rank'], 12);
+      expect(
+        (call['current_student']! as Map).containsKey('bond_rank'),
+        isFalse,
+      );
+      final bond = (result.bond as GrowthCalculatorBondCalculated).result;
+      expect(bond.requiredExp, 150);
+      expect(bond.normal.gifts.first.usedOwned, 6);
+      expect(result.bondCurrentRank, 10);
+      expect(result.bondTargetRank, 12);
+      expect(growthCalculatorBondGuide(result), isNull);
+      // 같은 성장 입력의 성장만 결과와 재화 목록·부족 종류 수가 같다.
+      final plain = await calculateGrowthTargets(growthOnly, request);
+      expect(
+        result.resources.map((row) => row.resourceKey).toList(),
+        plain.resources.map((row) => row.resourceKey).toList(),
+      );
+      expect(result.shortageTypeCount, plain.shortageTypeCount);
+      expect(result.credits, plain.credits);
+      expect(plain.bond, isA<GrowthCalculatorBondUnavailable>());
+    });
+
+    test('현재 인연을 모르면 null로 보내고 타일은 안내 상태다', () async {
+      final service = _BondRecordingService();
+      addTearDown(service.dispose);
+      final result = await calculateGrowthTargets(
+        service,
+        _bondRequest(current: null, target: 3),
+      );
+      expect(service.bondCalls.single['bond'], {'current_rank': null});
+      final bond = (result.bond as GrowthCalculatorBondCalculated).result;
+      expect(bond.requiredExp, isNull);
+      expect(bond.preferredLarge.available, isFalse);
+      expect(bond.petting.availableCount, isNull);
+      expect(growthCalculatorBondGuide(result), isNotNull);
+    });
+
+    test('인연 계산이 그 입력을 지원하지 않으면 성장만 계산한다', () async {
+      final service = _BondRecordingService(unsupported: true);
+      addTearDown(service.dispose);
+      final result = await calculateGrowthTargets(
+        service,
+        _bondRequest(current: 10, target: 12),
+      );
+      expect(service.bondCalls, hasLength(1));
+      expect(service.growthCalls, 1);
+      expect(result.bond, isA<GrowthCalculatorBondUnavailable>());
+      expect(result.credits, greaterThanOrEqualTo(0));
+    });
+
+    test('선물 안 문구: 쓸 수 없음 · 보유 미확인 · 충분 · 부족', () async {
+      final service = _BondRecordingService();
+      addTearDown(service.dispose);
+      Future<StudentBondResult> bondOf(int? current, int target) async =>
+          ((await calculateGrowthTargets(
+                    service,
+                    _bondRequest(current: current, target: target),
+                  )).bond
+                  as GrowthCalculatorBondCalculated)
+              .result;
+      final unknown = await bondOf(null, 3);
+      expect(growthCalculatorBondPlanNote(unknown.preferredLarge), '쓸 수 없음');
+      final unscanned = await bondOf(1, 3);
+      expect(growthCalculatorBondPlanNote(unscanned.normal), '보유 미확인');
+      final partial = await bondOf(10, 12);
+      expect(growthCalculatorBondPlanNote(partial.normal), '보유로 충분');
+      expect(growthCalculatorBondPlanNote(partial.preferredLarge), '부족 1');
+      expect(growthCalculatorBondGiftCount(partial.normal), 7);
+      expect(
+        growthCalculatorPettingNote(partial.petting),
+        '최소 27시간 · 첫 회 즉시 가정',
+      );
+      expect(
+        growthCalculatorDefaultBondOption(unknown),
+        GrowthCalculatorBondOption.normal,
+      );
+      expect(
+        growthCalculatorDefaultBondOption(partial),
+        GrowthCalculatorBondOption.preferredLarge,
+      );
+    });
+
+    testWidgets('재계산기는 디바운스 한 번에 마지막 요청의 성장 + 인연을 부른다', (tester) async {
+      final service = _BondRecordingService();
+      addTearDown(service.dispose);
+      final engine = GrowthCalculatorEngine(service: service);
+      addTearDown(engine.dispose);
+      engine.schedule(_bondRequest(current: 1, target: 3));
+      engine.schedule(_bondRequest(current: 10, target: 12));
+      await tester.pump(growthCalculatorDebounce);
+      await tester.pump();
+      expect(service.bondCalls, hasLength(1));
+      expect(service.bondCalls.single['bond'], {'current_rank': 10});
+      expect(service.growthCalls, 0);
+      final status = engine.status as GrowthCalculatorReady;
+      expect(status.result.bond, isA<GrowthCalculatorBondCalculated>());
     });
   });
 }
