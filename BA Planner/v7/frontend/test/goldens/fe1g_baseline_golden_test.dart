@@ -18,6 +18,7 @@ import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
+import 'package:ba_planner_v7/ui/kit/buttons.dart';
 import 'package:ba_planner_v7/ui/kit/kit_pressable.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_adapter.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_rules.dart';
@@ -124,6 +125,32 @@ Future<void> _openPlanFlow(
     find.byKey(const ValueKey('plan-flow-student-grid')),
     findsOneWidget,
   );
+}
+
+/// plan-flow-step3와 같은 세 명(호시노 2단계 · 아루 3단계 · 미보유 슌 2단계)으로 4단계 저장을 연다(FE4-e).
+Future<void> _openPlanFlowSave(
+  WidgetTester tester,
+  GoldenPlanFlowMockAppService service,
+) async {
+  await _openPlanFlow(
+    tester,
+    service,
+    presets: [goldenFlowStagePreset(), goldenFlowTwoStagePreset()],
+  );
+  for (final id in const ['hoshino', 'aru', 'shun_swimsuit']) {
+    await _tapFlowCard(tester, id);
+  }
+  await _tapKey(tester, 'plan-flow-next');
+  await _tapKey(tester, 'plan-flow-goal-preset-two-stage');
+  await _tapKey(tester, 'plan-flow-goal-tab-aru');
+  await _tapKey(tester, 'plan-flow-goal-preset-raid-three-stage');
+  await _tapKey(tester, 'plan-flow-goal-tab-shun_swimsuit');
+  await _tapKey(tester, 'plan-flow-goal-preset-two-stage');
+  await _tapKey(tester, 'plan-flow-next');
+  await _tapKey(tester, 'plan-flow-next');
+  await tester.pump(planFlowCalculationDebounce);
+  await tester.pumpAndSettle();
+  expect(find.byKey(const ValueKey('plan-flow-save-body')), findsOneWidget);
 }
 
 /// 1단계 B 그리드의 학생 카드를 누른다.
@@ -666,6 +693,50 @@ void main() {
     expect(find.text('막힘'), findsNWidgets(4));
     expect(find.text('모집 필요'), findsNWidgets(2));
     await expectGoldenScene(tester, 'plan-flow-step3');
+  }, variant: goldenPlatform);
+
+  testWidgets('plan-flow-step4', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _planFlowService();
+    await _openPlanFlowSave(tester, service);
+    // FE4-e: B는 페이즈 P1~P3 · 활성 계획 비교 타일 · 크게 늘어나는 재화, C는 3지선다(시나리오로 저장 고름) ·
+    // 패널 안 이름 · 저장한 뒤 토글 2개. A primary 글자는 C 선택과 같다.
+    expect(find.byKey(const ValueKey('plan-flow-save-body')), findsOneWidget);
+    expect(find.byKey(const ValueKey('plan-flow-save-aside')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('plan-flow-save-compare-fulfillment')),
+      findsOneWidget,
+    );
+    expect(find.text('새 시나리오 1'), findsOneWidget);
+    expect(
+      tester
+          .widget<RailButton>(find.byKey(const ValueKey('plan-flow-next')))
+          .semanticLabel,
+      '시나리오로 저장',
+    );
+    await expectGoldenScene(tester, 'plan-flow-step4');
+  }, variant: goldenPlatform);
+
+  testWidgets('plan-flow-step4-append', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _planFlowService();
+    await _openPlanFlowSave(tester, service);
+    // 활성 계획에 페이즈로 추가: 활성 P1·P2 뒤 P3~P5, 비교는 활성 + 새 페이즈 병합 문서 기준(FD-080).
+    await _tapKey(tester, 'plan-flow-save-target-appendPhases');
+    expect(find.text('지금 P2 뒤에 P3~P5로 붙입니다'), findsOneWidget);
+    expect(
+      tester
+          .widget<RailButton>(find.byKey(const ValueKey('plan-flow-next')))
+          .semanticLabel,
+      '활성 계획에 페이즈로 추가',
+    );
+    // P4(2순위) 행을 눌러 필요 재화 팝오버를 고정한다(앞 페이즈에서 쓰고 남은 양 기준).
+    final flow = tester
+        .widget<PlanFlowWorkspace>(find.byType(PlanFlowWorkspace))
+        .flow;
+    await _tapKey(tester, 'plan-flow-save-phase-${flow.draft.phases[1].id}');
+    expect(find.text('앞 페이즈에서 쓰고 남은 양 기준입니다'), findsOneWidget);
+    await expectGoldenScene(tester, 'plan-flow-step4-append');
   }, variant: goldenPlatform);
 
   testWidgets('plan-flow-step3-many', (tester) async {

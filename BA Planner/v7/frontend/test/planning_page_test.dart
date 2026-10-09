@@ -5,6 +5,7 @@ import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scenario_service.dart';
+import 'package:ba_planner_v7/ui/kit/buttons.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/models/repository_plan_snapshot.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
@@ -4097,7 +4098,9 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
       await tester.pumpAndSettle();
 
-      // 4단계: 저장 대화상자는 레일의 "저장하고 닫기"가 연다.
+      // 4단계(FE4-e): 저장 위치·이름은 C 패널 안에서 정한다(다이얼로그 없음). 레일 primary는 C에서 고른 위치
+      // ("시나리오로 저장")와 같은 동작·같은 글자다(FD-079). "저장한 뒤 · 시나리오 보기로 이동"이 켜져 있으면
+      // 저장한 뒤 시나리오 목록이 열린다.
       expect(
         find.byKey(const ValueKey('plan-flow-save-counts')),
         findsOneWidget,
@@ -4106,32 +4109,34 @@ void main() {
         find.byKey(const ValueKey('plan-scenario-save-dialog')),
         findsNothing,
       );
+      final saveButton = tester.widget<RailButton>(
+        find.byKey(const ValueKey('plan-flow-save-confirm')),
+      );
+      expect(saveButton.semanticLabel, '시나리오로 저장');
+      expect(
+        tester
+            .widget<RailButton>(find.byKey(const ValueKey('plan-flow-next')))
+            .semanticLabel,
+        '시나리오로 저장',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('plan-flow-save-name-field')),
+        '빠른 성장 후보',
+      );
+      await tester.pump();
       await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
       await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('plan-scenario-save-dialog')),
-        findsOneWidget,
+        findsNothing,
       );
-      await tester.enterText(
-        find.byKey(const ValueKey('plan-scenario-name-field')),
-        '빠른 성장 후보',
-      );
-      await tester.tap(
-        find.byKey(const ValueKey('plan-scenario-save-confirm')),
-      );
-      await tester.pumpAndSettle();
 
       final list = await service.listScenarios('000000000000000000000001');
       expect(list.scenarios, hasLength(1));
       expect(list.scenarios.single.name, '빠른 성장 후보');
+      expect(list.scenarios.single.description, '');
       expect(list.scenarios.single.phaseCount, 1);
       expect(find.byKey(const ValueKey('plan-flow-rail')), findsNothing);
-      expect(
-        find.byKey(const ValueKey('plan-scenario-create-launch')),
-        findsOneWidget,
-      );
-      await tester.tap(find.byKey(const ValueKey('plan-scenario-list-launch')));
-      await tester.pumpAndSettle();
       expect(find.text('빠른 성장 후보'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('plan-scenario-diagonal-scroll')),

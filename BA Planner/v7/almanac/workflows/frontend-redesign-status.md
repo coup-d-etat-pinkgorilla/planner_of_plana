@@ -4335,3 +4335,94 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_185920\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-e 계획 만들기 4단계 저장 (구현 끝, gate 전)
+
+- 시작: 2026-10-09 20:10, 시작 SHA `0160910f2c803e28aee1bf04ab5abc7b2bb4cfde`(FE3-g 커밋 `6eb04542` 뒤 HEAD).
+- 범위: 시안 Flow-4-Save. B(페이즈 행 미리보기 + hover 필요 재화, 활성 계획 비교 타일, 크게 늘어나는 재화), C(시나리오로 저장 / 활성 계획에 페이즈로 추가 / 이걸로 바꾸기, 패널 안 이름 입력, "저장한 뒤" 토글 2개), A primary 라벨 = C 선택.
+- 고칠 기존 파일(사본 `debug/frontend_fe4e/pre/frontend/...`): `lib/ui/widgets/plan_flow_workspace.dart`, `lib/ui/models/plan_flow_draft.dart`, `lib/ui/widgets/plan_flow_rail.dart`, `lib/ui/widgets/plan_section_layout.dart`, `test/planning_page_test.dart`, `test/plan_flow_test.dart`, `test/goldens/fe1g_baseline_golden_test.dart`. 새 파일: `lib/ui/models/plan_flow_save.dart`, `test/plan_flow_save_test.dart`.
+
+### FE4-e 종료 기록 (2026-10-09 20:52, 커밋 전)
+
+상태: 구현 끝, gate 미실행. 시작 SHA `0160910f2c803e28aee1bf04ab5abc7b2bb4cfde`. `debug/frontend_fe4e/commit.json`(baseline whole)을 두었다. 직접 커밋하지 않았다.
+
+#### 바꾼 것
+
+시작 기록과 달리 `test/plan_flow_test.dart`는 고치지 않았고(사본만 남음), `test/goldens/golden_harness.dart`를 고쳤다(사본 추가). 새 파일은 `lib/ui/models/plan_flow_save.dart`, `lib/ui/widgets/plan_flow_save_step.dart`, `test/plan_flow_save_test.dart`다.
+
+- 새 `lib/ui/models/plan_flow_save.dart`
+  - `PlanFlowSaveTarget` 3지선다. 옵션 제목이 곧 C 버튼·A primary 글자다(FD-079).
+  - `loadPlanFlowSaveSnapshot`: `plan.get`·`state.get` 같은 revision([loadRepositoryPlanSnapshot]) + `scenario.list`. 목록의 `current_profile_revision`이 계정 revision과 다르면 3번까지 다시 읽는다(FB-1c 메모 1).
+  - `planFlowMergedPlanDocument`: 활성 문서 뒤에 초안 페이즈를 붙인다. 페이즈·단계 id가 겹치면 `-2`… 접미사. 초안 null은 그 학생이 활성 계획에서 이미 정한 키만 앞 값을 이어 받고(문서 퇴행 규칙), 나머지 null은 그대로다. 초안 값이 활성 값보다 낮으면 문서를 만들지 않고 "페이즈로 추가"를 막는다(학생 이름 안내). goal_metadata는 활성 우선.
+  - `PlanFlowSaveComparison`: `compareScenarios(활성, 후보)`. 후보는 시나리오·바꾸기 = 초안(`kind=plan`), 페이즈로 추가 = 병합 문서(FD-080). 후보 문서 id는 `plan-flow-compare-*`(활성 id와 다르다). 충족률 FD-031 (a)는 비교 `resources[]`의 owned·required로 계산하고 보유를 모르는 재화는 "n종 모름"으로 센다. 부족 = `known_shortage_type_count`, 크레딧 = `credits_a/b`, 학생 = `students[].presence`. 크게 늘어나는 재화 = `required_delta_b_minus_a` 큰 순 3개. 페이즈 팝오버는 `projection_b.phase_results`.
+  - `PlanFlowSaveController`: 4단계에 들어올 때마다 저장 직전 상태를 읽고 비교한다. 초안이 바뀌면 비교·보류 요청을 버린다.
+    - 시나리오로 저장 = `createScenario`(목록 revision, base = 계정 revision, 설명 ''). 편집 흐름은 `updateScenario`(연 시나리오 revision, 첫 읽기는 편집을 열 때의 목록 revision).
+    - 페이즈로 추가 = `saveRepositoryPlan(병합 문서, expectedRevision = plan.get revision, key)`.
+    - 이걸로 바꾸기 = `replaceRepositoryPlan(초안 kind=plan, 활성 문서 id·이름, expectedScenarioRevision = scenario.list revision, archiveName, archiveDescription '')`. `archivedScenarioId` null이면 "활성 계획을 바꿨습니다."만 알린다.
+    - authoring은 어느 경로에서도 보내지 않는다(FE4-f).
+    - 실패: `revision_conflict`·`authoring_required`(`invalid_payload` + `reason`) → 보류 요청을 버리고 초안은 두고 다시 읽어 알린다. timeout·끊김·`repository_busy`·`persistence_failed`(또는 retryable) → 보류 요청을 그대로 두고 다시 누르면 같은 키·같은 문서 객체를 보낸다. `idempotency_conflict` → 새 키를 만들지 않고 "다시 읽기"를 안내한다. 그 밖의 코드는 코드와 함께 알린다.
+    - 보류 요청은 위치·초안 객체·이름·snapshot revision이 같을 때만 다시 쓴다(바뀌면 새 키).
+    - 저장하는 문서는 흐름 초안(v2)에서 바로 만든다. 계획 화면 `_document`·`_incorporateScenario`·정수 편집기 보기(v1 재구성)를 거치지 않는다(오케스트레이터 17:30 후속).
+- 새 `lib/ui/widgets/plan_flow_save_step.dart`(시안 Flow-4-Save)
+  - B: 제목 + 페이즈·단계 칩, 페이즈 행 P1~Pn(80° 사선 스크롤, 3행 넘으면 스크롤; 페이즈로 추가는 활성 페이즈 뒤 번호) — 학생 초상·이름·단계 태그, 상태 칩(모두 지금 가능 / 부족 n종, 막힌 단계가 있으면 빨강), "재화 ▸". 행에 마우스를 올리면(누르면 고정) 필요 재화 팝오버(부족 큰 순 6줄, 필요 N, −N/충분/여유, "앞 페이즈에서 쓰고 남은 양 기준입니다"). 시안의 "인벤토리에서 보기" 버튼은 넣지 않았다.
+  - B: "지금 활성 계획과 비교" 타일 4칸, "가장 크게 늘어나는 재화" 3줄(막대 = 후보 기준 보유/필요).
+  - C: "어디에 넣으시겠습니까" + (i), 3지선다(고를 수 없으면 흐리게 + 이유), 이름 칸(시나리오 이름 / 바꾸기는 옮겨 둘 기존 계획 이름, 기존 활성이 비면 안내 / 페이즈로 추가는 이름 없음 안내), "저장한 뒤" 토글 2개, 저장 버튼, 실패 안내 + "다시 읽기".
+- `plan_flow_workspace.dart`: 저장 대화상자를 없애고 위 B·C를 그린다. A primary(`plan-flow-next`)와 C 버튼(`plan-flow-save-confirm`)은 같은 `_save`, 글자·활성은 C 선택을 따른다. `onSaved`를 더했다. 쓰지 않게 된 `planFlowSavePhaseContainerPath`·`_PlanFlowSaveAside`를 지웠다.
+- `plan_flow_rail.dart`: `saveLabel`·`saveEnabled`(4단계 primary 글자·활성, 4단계 스텝 부제). 기본값은 그대로라 1~3단계 화면은 같다.
+- `plan_flow_draft.dart`: `_document`에 kind 인자, `toPlanDocument` 추가. `PlanFlowCalculation.phaseResources`와 `planFlowPhaseResources`(`phase_results` 읽기). 쓰지 않게 된 `prepareScenarioSave`·`saveScenario`·`PlanFlowSavePreparation` 삭제.
+- `plan_section_layout.dart`(최소 diff, CRLF 유지): 흐름 저장 결과를 받아, 활성 계획을 바꿨으면 계정 상태·활성 계획 snapshot을 비우고 다시 읽는다(`loadRepositoryPlan`이면 화면도). "시나리오 보기로 이동"이 켜져 있으면 닫은 뒤 시나리오 목록을 연다.
+- 테스트
+  - 새 `test/plan_flow_save_test.dart`: 병합(id 접미사, null 이어 받기·유지, goal_metadata, 퇴행 차단), FD-031 충족률, 비교 읽기, 시나리오 저장(패널 이름, v2 null), 페이즈로 추가(plan.save revision·key·authoring 없음), 퇴행 시 고를 수 없음, 바꾸기(빈 활성 → archivedScenarioId null / 기존 활성 → 고친 이름으로 보관), revision_conflict·authoring_required(다시 읽기, 초안 유지), 끊김(같은 키·같은 문서), idempotency_conflict(새 키 없음), A·C 글자 동기 위젯 테스트.
+  - `planning_page_test.dart` "scenario creation builds goals and orders stages in the plan flow": 저장 대화상자 대신 패널 이름 칸에 입력하고 레일 primary로 저장한다. "시나리오 보기로 이동"이 기본 켜짐이라 저장 뒤 시나리오 목록이 저절로 열리므로 `plan-scenario-create-launch` 확인과 `plan-scenario-list-launch` 누르기를 뺐다(바꾼 이유: FD-079 패널 안 이름 입력·저장한 뒤 토글). 설명은 ''인지 본다.
+  - golden: `golden_harness.dart` `GoldenPlanFlowMockAppService.compareScenarios`(단계 결과를 문서별로 모아 `phase_results`·비교 줄을 만드는 대역, 계산 대역은 그대로). 새 장면 `plan-flow-step4`, `plan-flow-step4-append`.
+
+#### golden ① 예상
+
+- RED(기준 이미지 없음): `plan-flow-step4`(시나리오로 저장 선택, B 페이즈 P1~P3 · 비교 타일 · 늘어나는 재화), `plan-flow-step4-append`(페이즈로 추가 선택, P3~P5, P4 필요 재화 팝오버 고정).
+- 그대로: 나머지 장면 전부. `plan-flow-step1`~`plan-flow-step3-many`는 4단계 스텝 부제("시나리오로 저장")와 1~3단계 primary 글자가 같다. 계산 대역(`calculatePlanningDocument`)은 바꾸지 않았다.
+
+#### 검수표
+
+| 항목 | 확인 |
+|---|---|
+| B 페이즈 행 P1~Pn + hover 필요 재화 팝오버("앞 페이즈에서 쓰고 남은 양 기준") | golden append 장면, 위젯 테스트(행 키) |
+| 비교 타일: 충족률 FD-031 (a)·부족·크레딧·학생, 페이즈로 추가 = compareScenarios(active, merged) | 단위 테스트 2건, golden |
+| C 3지선다, 이름은 패널 안(다이얼로그 없음), "저장한 뒤" 독립 토글 2개, 설명 입력 없음 | 위젯 테스트, planning_page_test |
+| A primary와 C 버튼 같은 동작, 글자 = C 선택 | 위젯 테스트(세 위치), golden 2장면 |
+| 시나리오 = createScenario / 페이즈로 추가 = plan.save(plan.get revision, key) / 바꾸기 = plan.replace(scenario.list revision), archivedScenarioId null | 단위 테스트 4건 |
+| 저장 문서는 v2 초안 그대로(null 유지), v1 재구성 경로 안 거침 | 단위 테스트(nullableTargets null 확인), 코드 확인 |
+| authoring 안 보냄, authoring_required·revision_conflict → 초안 유지 + 다시 읽기 | 단위 테스트 2건 |
+| 같은 key 재시도 = 같은 payload, idempotency_conflict는 새 키 없음 | 단위 테스트 2건 |
+| `lib/services/**`·backend·contracts·스캐너·tactic 미수정, app_shell 미수정, `plan_section_layout` 최소 diff | 코드 확인 |
+
+#### 확인하지 못한 것
+
+- analyze·테스트·golden 실행 전부(이 환경에 Flutter 없음). 정적 검토만 했다(별도 검토 1회, 지적 반영).
+- 새 그림: 페이즈 행 칩 폭(150 고정)·"+n명", 팝오버 위치(행 아래 오른쪽 맞춤), 비교 타일 글자 크기(26)와 작은 창에서의 줄임, C 패널 행 간격(작은 창에서 세로 넘침 가능).
+- 실제 백엔드(ProcessAppService)에서 `plan.replace`·`plan.save`·`scenario.compare` 왕복과 오류 코드 모양(`repository_busy`·`persistence_failed` retryable 여부 포함).
+- `loadRepositoryPlan == false`인 계획 화면은 활성 계획을 바꾼 뒤 계정 snapshot만 다시 읽고 작업 문서(`_document`)는 다시 만들지 않는다(앱은 `loadRepositoryPlan: true`로 쓰는지 확인 필요).
+
+#### 남은 일·서비스 요청
+
+- 서비스 요청 없음. "단계 순서는 페이즈 편집에서 다시 바꿀 수 있게 유지" 토글은 상태만 둔다(authoring 저장은 FE4-f).
+- 초안 목표가 활성 목표보다 낮은 학생이 있으면 "페이즈로 추가"를 막는다. 올려서 붙일지(활성 값으로 맞춤)·그 학생만 빼고 붙일지는 정하지 않았다(오케스트레이터 판단 필요).
+- 4단계 스텝 부제는 시안의 "시나리오 또는 활성 계획" 대신 고른 위치 글자다(1~3단계 golden을 흔들지 않으려고). 바꾸려면 7장면 갱신.
+
+#### 사용자 실행 순서
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다(새 장면 2건 RED 예상)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 승인 뒤 기준 이미지 갱신 → gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4e -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4e
+```
+
+### FE4-e commit record (2026-10-09 22:05, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_215639\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

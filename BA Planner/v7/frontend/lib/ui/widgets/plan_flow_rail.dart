@@ -98,7 +98,13 @@ abstract final class PlanFlowRailMetrics {
 const planFlowRailConnectorColor = Color.fromRGBO(56, 81, 107, 0.9);
 
 /// 스텝 버튼 부제(시안 `3명 · 여러 명 모드`, `3명 중 2명 완료`, `단계 7개 · 순서 3칸`).
-String planFlowStepSubtitle(PlanFlowController flow, PlanFlowStep step) {
+///
+/// 4단계 부제는 고른 저장 위치([saveLabel], FE4-e)이고, 없으면 "시나리오로 저장"이다.
+String planFlowStepSubtitle(
+  PlanFlowController flow,
+  PlanFlowStep step, {
+  String? saveLabel,
+}) {
   final draft = flow.draft;
   switch (step) {
     case PlanFlowStep.students:
@@ -112,7 +118,7 @@ String planFlowStepSubtitle(PlanFlowController flow, PlanFlowStep step) {
       final lanes = draft.phases.where((phase) => phase.stageIds.isNotEmpty);
       return '단계 ${draft.stageCount}개 · 순서 ${lanes.length}칸';
     case PlanFlowStep.save:
-      return '시나리오로 저장';
+      return saveLabel ?? '시나리오로 저장';
   }
 }
 
@@ -172,6 +178,8 @@ class PlanFlowRail extends StatelessWidget {
     required this.onSelectStep,
     required this.onNext,
     required this.onPrevious,
+    this.saveLabel,
+    this.saveEnabled,
   });
 
   final PlanFlowController flow;
@@ -184,6 +192,12 @@ class PlanFlowRail extends StatelessWidget {
 
   /// 이전(1단계에서는 그만두기).
   final VoidCallback onPrevious;
+
+  /// 4단계 primary 글자(C에서 고른 저장 위치, FD-079). 없으면 "저장하고 닫기"다. 4단계 스텝 버튼 부제도 이 글자다.
+  final String? saveLabel;
+
+  /// 4단계 primary를 누를 수 있는가(C 저장 버튼과 같다). 없으면 [PlanFlowController.canGoNext]다.
+  final bool? saveEnabled;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -240,7 +254,11 @@ class PlanFlowRail extends StatelessWidget {
               key: ValueKey('plan-flow-step-${target.number}'),
               step: target,
               state: flow.stateOf(target),
-              subtitle: planFlowStepSubtitle(flow, target),
+              subtitle: planFlowStepSubtitle(
+                flow,
+                target,
+                saveLabel: saveLabel,
+              ),
               height: height,
               onPressed: target == step || !flow.canEnter(target)
                   ? null
@@ -354,6 +372,13 @@ class PlanFlowRail extends StatelessWidget {
         );
       }
 
+      final saving = step.next == null;
+      final primaryLabel = saving
+          ? saveLabel ?? planFlowNextLabel(step)
+          : planFlowNextLabel(step);
+      final primaryEnabled = saving
+          ? saveEnabled ?? flow.canGoNext
+          : flow.canGoNext;
       final primaryTop =
           railBottom - PlanFlowRailMetrics.primaryFromBottom * scale;
       final primaryHeight = PlanFlowRailMetrics.primaryHeight * scale;
@@ -364,10 +389,10 @@ class PlanFlowRail extends StatelessWidget {
             key: const ValueKey('plan-flow-next'),
             variant: RailButtonVariant.primary,
             height: primaryHeight,
-            semanticLabel: planFlowNextLabel(step),
-            onPressed: flow.canGoNext ? onNext : null,
+            semanticLabel: primaryLabel,
+            onPressed: primaryEnabled ? onNext : null,
             child: _ButtonLabel(
-              label: planFlowNextLabel(step),
+              label: primaryLabel,
               fontSize: AppType.bodyLargeSize,
               trailing: step.next == null
                   ? Icons.check_rounded

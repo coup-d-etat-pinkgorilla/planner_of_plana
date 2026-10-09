@@ -4,64 +4,40 @@
 // 2단계는 새 목표 정하기(FE4-c, [PlanFlowGoalBody]·[PlanFlowGoalAside], 편집 상태 [PlanFlowGoalEditor])다.
 // 3단계는 새 단계 순서 칸 보드(FE4-d1, [PlanFlowOrderBody]·[PlanFlowOrderAside], 화면 상태 [PlanFlowOrderEditor])다.
 // FE4-a1에서 축소해 넣었던 기존 페이즈 편집기는 이 화면으로 바꿨다(FD-070). 활성 계획의 페이즈 편집기는 그대로다.
-// 4단계는 B·C 섹션에 만들어질 페이즈와 저장 위치를 보여 주고, 저장은 기존 시나리오 저장 대화상자를 쓴다(FE4-e에서
-// 다시 만든다).
+// 4단계는 저장(FE4-e, [PlanFlowSaveBody]·[PlanFlowSaveAside], 상태 [PlanFlowSaveController])이다. 저장 위치
+// 3지선다와 이름 입력이 C 패널 안에 있고(다이얼로그 없음), A 레일 primary는 C 버튼과 같은 동작·같은 글자다(FD-079).
 // 섹션 모션은 부착면 규칙(FD-078): 레일 0/180(왼쪽), B 80/260(아래), C 180/0(오른쪽).
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
-import '../geometry/diagonal_geometry.dart';
-import '../kit/ba_chip.dart';
-import '../kit/buttons.dart';
-import '../kit/titles.dart';
 import '../models/plan_flow_draft.dart';
 import '../models/plan_flow_goal_editor.dart';
 import '../models/plan_flow_order_editor.dart';
+import '../models/plan_flow_save.dart';
 import '../models/planning_models.dart';
 import '../studio/plan_flow_studio_layout.dart';
 import 'animated_section_stack.dart';
 import 'plan_flow_goal_step.dart';
 import 'plan_flow_order_step.dart';
 import 'plan_flow_rail.dart';
+import 'plan_flow_save_step.dart';
 import 'plan_flow_student_step.dart';
-import 'plan_section_layout.dart'
-    show PlanPhaseDiagonalList, PlanPhasePreview, PlanSectionMotion;
-import 'plan_student_step_tile.dart';
-import 'section_template_surface.dart';
+import 'plan_section_layout.dart' show PlanSectionMotion;
 
 const planFlowRailMotion = SectionMotionSpec(intro: 0, outro: 180);
 const planFlowBodyMotion = SectionMotionSpec(intro: 80, outro: 260);
 const planFlowAsideMotion = SectionMotionSpec(intro: 180, outro: 0);
 
-/// 4단계 B 안의 페이즈 목록 자리(제목 줄 아래, 폭은 최대 900).
-Path planFlowSavePhaseContainerPath(Size size) {
-  final sectionPath = planFlowSectionPath(size, planFlowBodySectionId);
-  final bounds = sectionPath.getBounds();
-  final top = bounds.top + 64;
-  final bottom = bounds.bottom - 12;
-  final height = math.max(0.0, bottom - top);
-  final depth = diagonalCutDepth(height);
-  final left = bounds.left + 12;
-  final right = math.min(bounds.right - 12, left + depth + 900);
-  final raw = buildRoundedSectionPolygon([
-    Offset(left + depth, top),
-    Offset(right, top),
-    Offset(right - depth, bottom),
-    Offset(left, bottom),
-  ], radius: 10);
-  return Path.combine(PathOperation.intersect, raw, sectionPath);
-}
-
-/// 흐름 화면. [flow]를 듣고 그린다. 닫히면 [onClosed](저장했으면 true)를 부른다.
+/// 흐름 화면. [flow]를 듣고 그린다. 저장을 마치면 [onSaved]를 부르고 닫는다. 닫히면 [onClosed](저장했으면 true)를
+/// 부른다.
 class PlanFlowWorkspace extends StatefulWidget {
   const PlanFlowWorkspace({
     super.key,
     required this.flow,
     required this.service,
     required this.onClosed,
+    this.onSaved,
     this.presets = const [],
     this.active = true,
   });
@@ -71,6 +47,9 @@ class PlanFlowWorkspace extends StatefulWidget {
   final List<PlanElementPreset> presets;
   final bool active;
   final ValueChanged<bool> onClosed;
+
+  /// 4단계 저장 결과(활성 계획을 바꿨는지, 시나리오 보기로 갈지). 닫기 모션 전에 부른다.
+  final ValueChanged<PlanFlowSaveOutcome>? onSaved;
 
   @override
   State<PlanFlowWorkspace> createState() => _PlanFlowWorkspaceState();
@@ -110,6 +89,12 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
   PlanFlowOrderEditor get _orderEditor =>
       _orderEditorState ??= PlanFlowOrderEditor(flow: _flow);
 
+  /// 4단계 저장 상태(위치·이름·토글·저장 직전 상태·비교). 흐름마다 하나다.
+  late PlanFlowSaveController _saveState;
+
+  PlanFlowSaveController _newSaveState(PlanFlowController flow) =>
+      PlanFlowSaveController(flow: flow)..addListener(_saveChanged);
+
   PlanFlowController get _flow => widget.flow;
 
   AnimationController _motionController() => AnimationController(
@@ -123,6 +108,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     super.initState();
     _shownStep = _flow.step;
     _flow.addListener(_flowChanged);
+    _saveState = _newSaveState(_flow);
     if (widget.active) _setActive(true);
   }
 
@@ -139,13 +125,14 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
       _goalEditorState = null;
       final previousOrder = _orderEditorState;
       _orderEditorState = null;
-      if (previous != null || previousEditor != null || previousOrder != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          previous?.dispose();
-          previousEditor?.dispose();
-          previousOrder?.dispose();
-        });
-      }
+      final previousSave = _saveState..removeListener(_saveChanged);
+      _saveState = _newSaveState(widget.flow);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        previous?.dispose();
+        previousEditor?.dispose();
+        previousOrder?.dispose();
+        previousSave.dispose();
+      });
     }
     if (oldWidget.presets != widget.presets) {
       _goalEditorState?.updatePresets(widget.presets);
@@ -181,9 +168,16 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     setState(() {});
   }
 
+  void _saveChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
     _flow.removeListener(_flowChanged);
+    _saveState
+      ..removeListener(_saveChanged)
+      ..dispose();
     _pickerState?.dispose();
     _goalEditorState?.dispose();
     _orderEditorState?.dispose();
@@ -246,99 +240,27 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     if (mounted) widget.onClosed(saved);
   }
 
-  /// 기존 시나리오 저장 대화상자(이름·설명). 취소하면 4단계에 남는다.
+  /// 고른 위치로 저장한다(C 버튼·A primary, FD-079). 실패하면 4단계에 남고 C 패널이 안내한다(초안은 그대로).
   Future<void> _save() async {
-    if (_saving || _closing || !_flow.canGoNext) return;
+    if (_saving || _closing || !_saveState.canSave) return;
     setState(() => _saving = true);
     try {
-      final preparation = await _flow.prepareScenarioSave();
-      if (!mounted) return;
-      var scenarioName = preparation.name;
-      var scenarioDescription = preparation.description;
-      final editing = _flow.purpose == PlanFlowPurpose.editScenario;
-      final result = await showDialog<(String, String)>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
-          key: const ValueKey('plan-scenario-save-dialog'),
-          title: Text(editing ? '시나리오 편집 저장' : '시나리오 저장'),
-          content: SizedBox(
-            width: 420,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  key: const ValueKey('plan-scenario-name-field'),
-                  initialValue: scenarioName,
-                  onChanged: (value) => scenarioName = value,
-                  autofocus: true,
-                  decoration: const InputDecoration(labelText: '이름'),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  key: const ValueKey('plan-scenario-description-field'),
-                  initialValue: scenarioDescription,
-                  onChanged: (value) => scenarioDescription = value,
-                  maxLines: 3,
-                  decoration: const InputDecoration(labelText: '설명'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('취소'),
-            ),
-            FilledButton(
-              key: const ValueKey('plan-scenario-save-confirm'),
-              onPressed: () {
-                final name = scenarioName.trim();
-                if (name.isNotEmpty) {
-                  Navigator.pop(dialogContext, (
-                    name,
-                    scenarioDescription.trim(),
-                  ));
-                }
-              },
-              child: const Text('저장'),
-            ),
-          ],
-        ),
-      );
-      if (result == null || !mounted) return;
-      await _flow.saveScenario(
-        name: result.$1,
-        description: result.$2,
-        preparation: preparation,
-      );
-      if (!mounted) return;
+      final outcome = await _saveState.save();
+      if (outcome == null || !mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('${result.$1} 시나리오를 저장했습니다.')));
+      ).showSnackBar(SnackBar(content: Text(outcome.message)));
+      widget.onSaved?.call(outcome);
       await _close(saved: true);
-    } catch (error) {
+    } on Object catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('시나리오 저장 실패: $error')));
+      ).showSnackBar(SnackBar(content: Text('저장하지 못했습니다: $error')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
-
-  List<PlanStudentStepPreview> _stepPreviews() => [
-    for (final stage in _flow.draft.stages)
-      PlanStudentStepPreview(
-        studentId: stage.studentId,
-        displayName: _flow.context.displayName(stage.studentId),
-        step: stage.step,
-        target: stage.name,
-        bondRank: stage.editorTargets['bond_rank'],
-        stageId: stage.id,
-        targetValues: stage.editorTargets,
-      ),
-  ];
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -366,6 +288,8 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                   onSelectStep: _selectStep,
                   onNext: _next,
                   onPrevious: _previous,
+                  saveLabel: _saveState.target.label,
+                  saveEnabled: _saveState.canSave && !_saving,
                 ),
               ),
             ),
@@ -395,7 +319,14 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                   painter: PlanFlowSectionPainter(planFlowBodySectionId),
                 ),
               ),
-              if (saving) ..._saveBodyContent(size),
+              if (saving)
+                Positioned.fill(
+                  child: PlanFlowSaveBody(
+                    key: const ValueKey('plan-flow-save-body-view'),
+                    flow: _flow,
+                    save: _saveState,
+                  ),
+                ),
               if (step == PlanFlowStep.students)
                 Positioned.fill(
                   child: PlanFlowStudentBody(
@@ -440,7 +371,15 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                   painter: PlanFlowSectionPainter(planFlowAsideSectionId),
                 ),
               ),
-              if (saving) ..._saveAsideContent(size),
+              if (saving)
+                Positioned.fill(
+                  child: PlanFlowSaveAside(
+                    key: const ValueKey('plan-flow-save-aside-view'),
+                    flow: _flow,
+                    save: _saveState,
+                    onSave: _save,
+                  ),
+                ),
               if (step == PlanFlowStep.students)
                 Positioned.fill(
                   child: PlanFlowStudentAside(
@@ -471,200 +410,4 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
       ),
     ];
   }
-
-  /// 4단계 B: 제목·개수 + 만들어질 페이즈.
-  List<Widget> _saveBodyContent(Size size) {
-    final draft = _flow.draft;
-    final previews = {for (final step in _stepPreviews()) step.stageId: step};
-    final phases = [
-      for (final phase in draft.phases)
-        if (phase.stageIds.isNotEmpty)
-          PlanPhasePreview(
-            id: phase.id,
-            name: phase.name,
-            steps: [for (final id in phase.stageIds) ?previews[id]],
-          ),
-    ];
-    final bodyBounds = planFlowSectionPath(
-      size,
-      planFlowBodySectionId,
-    ).getBounds();
-    final bodyPolygon = planFlowSectionPolygon(size, planFlowBodySectionId);
-    final containerPath = planFlowSavePhaseContainerPath(size);
-    final containerBounds = containerPath.getBounds();
-    return [
-      Positioned(
-        left: bodyPolygon.first.dx + 28,
-        top: bodyBounds.top + 18,
-        width: math.max(0.0, bodyBounds.right - bodyPolygon.first.dx - 56),
-        height: 32,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '이렇게 만들어집니다',
-                style: kitDisplayStyle(AppType.headlineSize),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '페이즈 ${phases.length}개 · 단계 ${draft.stageCount}개',
-                key: const ValueKey('plan-flow-save-counts'),
-                style: const TextStyle(
-                  fontFamily: AppFonts.body,
-                  fontFamilyFallback: AppFonts.fallback,
-                  fontSize: AppType.bodySize,
-                  fontWeight: AppType.semiBold,
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      Positioned.fromRect(
-        rect: containerBounds,
-        child: ClipPath(
-          clipper: _LocalPathClipper(
-            containerPath.shift(-containerBounds.topLeft),
-          ),
-          child: PlanPhaseDiagonalList(
-            key: const ValueKey('plan-flow-save-phases'),
-            phases: phases,
-            highlightedStudentIds: const {},
-            highlightedStageKeys: const {},
-          ),
-        ),
-      ),
-    ];
-  }
-
-  /// 4단계 C: 저장 위치와 저장 버튼.
-  List<Widget> _saveAsideContent(Size size) {
-    final asidePolygon = planFlowSectionPolygon(size, planFlowAsideSectionId);
-    // 꼭짓점 순서: 윗변 오른쪽, 아랫변 오른쪽, 아랫변 왼쪽, 윗변 왼쪽.
-    final asideTop = asidePolygon.first.dy;
-    final asideLeft = asidePolygon[3].dx + 20;
-    final asideRight = asidePolygon[1].dx - 24;
-    return [
-      Positioned(
-        left: asideLeft,
-        top: asideTop + 18,
-        width: math.max(0.0, asideRight - asideLeft),
-        child: _PlanFlowSaveAside(
-          canSave: _flow.canGoNext && !_saving,
-          onSave: _save,
-        ),
-      ),
-    ];
-  }
-}
-
-/// 4단계 C: 저장 위치(FE4-a1은 시나리오만, 활성 계획 두 갈래는 FB-1 뒤 FE4-e) + 저장 버튼(A primary와 같은 동작,
-/// FD-079).
-class _PlanFlowSaveAside extends StatelessWidget {
-  const _PlanFlowSaveAside({required this.canSave, required this.onSave});
-
-  final bool canSave;
-  final VoidCallback onSave;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerLeft,
-        child: Text(
-          '어디에 넣으시겠습니까',
-          style: kitDisplayStyle(AppType.headlineSize),
-        ),
-      ),
-      const SizedBox(height: 14),
-      Semantics(
-        container: true,
-        selected: true,
-        label: '시나리오로 저장',
-        value: '활성 계획은 그대로 두고 따로 비교합니다',
-        child: ExcludeSemantics(
-          child: Container(
-            key: const ValueKey('plan-flow-save-target-scenario'),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.accent.withValues(alpha: 0.12),
-              borderRadius: const BorderRadius.all(
-                Radius.circular(AppRadii.row),
-              ),
-              border: Border.all(color: AppColors.accent, width: 1.5),
-            ),
-            child: const Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '시나리오로 저장',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: AppFonts.body,
-                          fontFamilyFallback: AppFonts.fallback,
-                          fontSize: AppType.bodyLargeSize,
-                          fontWeight: AppType.bold,
-                          color: AppColors.text,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '활성 계획은 그대로 두고 따로 비교합니다',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: AppFonts.body,
-                          fontFamilyFallback: AppFonts.fallback,
-                          fontSize: AppType.bodySmallSize,
-                          fontWeight: AppType.medium,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 10),
-                BaChip(label: '선택', tone: AppTones.pink),
-              ],
-            ),
-          ),
-        ),
-      ),
-      const SizedBox(height: 16),
-      Align(
-        alignment: Alignment.centerRight,
-        child: TonalButton(
-          key: const ValueKey('plan-flow-save-scenario'),
-          label: '시나리오로 저장',
-          icon: Icons.save_outlined,
-          variant: TonalButtonVariant.primary,
-          onPressed: canSave ? onSave : null,
-        ),
-      ),
-    ],
-  );
-}
-
-class _LocalPathClipper extends CustomClipper<Path> {
-  const _LocalPathClipper(this.path);
-
-  final Path path;
-
-  @override
-  Path getClip(Size size) => path;
-
-  @override
-  bool shouldReclip(_LocalPathClipper oldClipper) => oldClipper.path != path;
 }

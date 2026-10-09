@@ -348,11 +348,28 @@ abstract final class PlanFlowDocumentBoundary {
     draft,
     id: id,
     name: name,
-    phases: [
-      for (final phase in _phases(draft, includeUnassigned: false))
-        if (phase.stages.isNotEmpty) phase,
-    ],
+    kind: PlanningDocumentKind.scenario,
+    phases: _savedPhases(draft),
   );
+
+  /// 저장할 활성 계획 문서(`kind=plan`, FE4-e "이걸로 바꾸기"·비교 후보). 시나리오 문서와 같은 페이즈·단계·목표(v2
+  /// null 그대로)·goal_metadata이고 종류만 다르다. 정수 편집기 보기([PlanFlowGoalCodec.toEditor])를 거치지 않는다.
+  static PlanningDocument toPlanDocument(
+    PlanFlowDraft draft, {
+    required String id,
+    required String name,
+  }) => _document(
+    draft,
+    id: id,
+    name: name,
+    kind: PlanningDocumentKind.plan,
+    phases: _savedPhases(draft),
+  );
+
+  static List<PlanningDocumentPhase> _savedPhases(PlanFlowDraft draft) => [
+    for (final phase in _phases(draft, includeUnassigned: false))
+      if (phase.stages.isNotEmpty) phase,
+  ];
 
   /// 계산(`planning.document.calculate`)에 보낼 문서. 칸에 아직 넣지 않은 단계는 단계 번호마다 임시 페이즈에
   /// 넣는다(모두 1단계 → 모두 2단계 …). 같은 학생의 단계는 칸에 다 들어가거나 하나도 안 들어가므로(요소 편집기가
@@ -365,6 +382,7 @@ abstract final class PlanFlowDocumentBoundary {
     draft,
     id: id,
     name: '계획 만들기 초안',
+    kind: PlanningDocumentKind.scenario,
     phases: [
       for (final phase in _phases(draft, includeUnassigned: true))
         if (phase.stages.isNotEmpty) phase,
@@ -375,6 +393,7 @@ abstract final class PlanFlowDocumentBoundary {
     PlanFlowDraft draft, {
     required String id,
     required String name,
+    required PlanningDocumentKind kind,
     required List<PlanningDocumentPhase> phases,
   }) {
     final studentIds = {
@@ -384,7 +403,7 @@ abstract final class PlanFlowDocumentBoundary {
     return PlanningDocument(
       id: id,
       name: name,
-      kind: PlanningDocumentKind.scenario,
+      kind: kind,
       phases: phases,
       version: 2,
       goalMetadata: {
@@ -735,9 +754,11 @@ class PlanFlowCalculation {
     List<PlanFlowShortage> shortages = const [],
     Map<String, PlanFlowStageCost> stageCosts = const {},
     List<PlanFlowBottleneck> bottlenecks = const [],
+    Map<String, List<PlanFlowStageResource>> phaseResources = const {},
   }) : shortages = List.unmodifiable(shortages),
        stageCosts = Map.unmodifiable(stageCosts),
-       bottlenecks = List.unmodifiable(bottlenecks);
+       bottlenecks = List.unmodifiable(bottlenecks),
+       phaseResources = Map.unmodifiable(phaseResources);
 
   /// 필요 크레딧. 응답에 없으면 null("—").
   final int? credits;
@@ -755,6 +776,10 @@ class PlanFlowCalculation {
 
   /// 병목(`bottlenecks`, 재화마다 처음 모자라는 단계).
   final List<PlanFlowBottleneck> bottlenecks;
+
+  /// 페이즈 id → 그 페이즈에 드는 재화(`phase_results[].resources`, FE4-e 4단계 페이즈 팝오버). 응답에 없는 페이즈는
+  /// 빠진다. [PlanFlowStageResource.ownedAtEntry]는 앞 페이즈에서 쓰고 남은 양이다.
+  final Map<String, List<PlanFlowStageResource>> phaseResources;
 
   /// `planning.document.calculate` 응답의 `overall`과 `stage_results`를 읽는다. [stageLookup]은 단계 id → 학생
   /// 단계.
@@ -851,8 +876,48 @@ class PlanFlowCalculation {
       shortages: shortages,
       stageCosts: stageCosts,
       bottlenecks: bottlenecks,
+      phaseResources: planFlowPhaseResources(projection),
     );
   }
+}
+
+/// 계산 응답의 `phase_results[]`를 페이즈 id → 재화 줄로 읽는다(FE4-e).
+///
+/// 줄의 `owned`는 그 페이즈에 들어설 때 남은 보유량(앞 페이즈에서 쓰고 남은 양), `shortage`는 그때 모자라는 양이다.
+/// 보유를 모르면 둘 다 null이다. `required`가 정수가 아닌 줄은 버린다.
+Map<String, List<PlanFlowStageResource>> planFlowPhaseResources(
+  Map<String, dynamic> projection,
+) {
+  final rawPhases = projection['phase_results'];
+  final result = <String, List<PlanFlowStageResource>>{};
+  for (final raw in rawPhases is List ? rawPhases : const <Object?>[]) {
+    if (raw is! Map) continue;
+    final phaseId = raw['phase_id'];
+    if (phaseId is! String) continue;
+    final rawResources = raw['resources'];
+    result[phaseId] = [
+      for (final row in rawResources is List ? rawResources : const <Object?>[])
+        if (row is Map && row['required'] is int)
+          PlanFlowStageResource(
+            resourceKey:
+                row['resource_key']?.toString() ??
+                row['item_id']?.toString() ??
+                '',
+            name:
+                row['display_name']?.toString() ??
+                row['item_id']?.toString() ??
+                '알 수 없는 재화',
+            itemId: row['item_id']?.toString(),
+            category: row['category']?.toString() ?? 'unresolved',
+            required: row['required'] as int,
+            ownedAtEntry: row['owned'] is int ? row['owned'] as int : null,
+            shortageAtEntry: row['shortage'] is int
+                ? row['shortage'] as int
+                : null,
+          ),
+    ];
+  }
+  return result;
 }
 
 /// 흐름이 계산·학생 정보에 쓰는 프로필 상태(흐름을 열 때 한 번 읽는다).
@@ -901,20 +966,6 @@ class PlanFlowContext {
   ];
 
   Map<String, dynamic> get inventoryWire => repositoryState.inventory.toWire();
-}
-
-/// 시나리오 저장 준비값(기존 저장 대화상자의 기본값과 목록 revision).
-@immutable
-class PlanFlowSavePreparation {
-  const PlanFlowSavePreparation({
-    required this.name,
-    required this.description,
-    required this.collectionRevision,
-  });
-
-  final String name;
-  final String description;
-  final int collectionRevision;
 }
 
 /// 계획 만들기 흐름 상태: 지금 단계, 초안(고른 학생은 1단계에서 바로 초안에 들어간다), 2단계 학생 순번, 계산.
@@ -1496,72 +1547,6 @@ class PlanFlowController extends ChangeNotifier {
     _draft = _draft.copyWith(phases: phases);
     notifyListeners();
     _scheduleCalculation();
-  }
-
-  // --- 4단계 저장 -------------------------------------------------------------
-
-  /// 저장 대화상자 기본값(기존 경로와 같다: 새 시나리오는 "새 시나리오 n+1").
-  Future<PlanFlowSavePreparation> prepareScenarioSave() async {
-    final repository = service;
-    if (repository is! PlanningScenarioRepositoryService) {
-      throw StateError('Scenario repository is unavailable');
-    }
-    final list = await repository.listScenarios(
-      context.repositoryState.profileId,
-    );
-    final editing = scenario;
-    return PlanFlowSavePreparation(
-      name: editing?.name ?? '새 시나리오 ${list.scenarios.length + 1}',
-      description: editing?.description ?? '',
-      collectionRevision: scenarioCollectionRevision ?? list.revision,
-    );
-  }
-
-  /// 초안을 시나리오로 저장한다(새로 만들기 또는 고치기).
-  Future<void> saveScenario({
-    required String name,
-    required String description,
-    required PlanFlowSavePreparation preparation,
-  }) async {
-    final repository = service;
-    if (repository is! PlanningScenarioRepositoryService ||
-        !_draft.allStagesAssigned) {
-      throw StateError('Scenario draft cannot be saved');
-    }
-    final state = context.repositoryState;
-    final stamp = DateTime.now().microsecondsSinceEpoch;
-    final editing = scenario;
-    if (editing == null) {
-      await repository.createScenario(
-        profileId: state.profileId,
-        expectedRevision: preparation.collectionRevision,
-        idempotencyKey: 'scenario-create-$stamp',
-        name: name,
-        description: description,
-        baseProfileRevision: state.revision,
-        document: PlanFlowDocumentBoundary.toScenarioDocument(
-          _draft,
-          id: 'scenario-draft-$stamp',
-          name: name,
-        ),
-      );
-    } else {
-      await repository.updateScenario(
-        profileId: state.profileId,
-        scenarioId: editing.id,
-        expectedRevision: preparation.collectionRevision,
-        expectedScenarioRevision: editing.revision,
-        idempotencyKey: 'scenario-update-$stamp',
-        name: name,
-        description: description,
-        baseProfileRevision: state.revision,
-        document: PlanFlowDocumentBoundary.toScenarioDocument(
-          _draft,
-          id: editing.document.id,
-          name: name,
-        ),
-      );
-    }
   }
 
   // --- 계산 -----------------------------------------------------------------

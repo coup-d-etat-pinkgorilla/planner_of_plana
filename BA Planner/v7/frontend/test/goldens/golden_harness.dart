@@ -697,6 +697,187 @@ class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
       'warnings': const <dynamic>[],
     };
   }
+
+  /// 4단계 저장 비교(FE4-e, `planning.scenario.compare` 대역). 위 계산 결과의 `stage_results`를 문서마다 모아
+  /// 페이즈별 재화(`phase_results`)와 비교 줄(`resources`)을 만든다. 백엔드 `compare_document_projections`와 같은
+  /// 키를 쓴다. 보유량은 단계에 들어설 때 남은 양 중 가장 큰 값(고정 재고)이다.
+  @override
+  Future<PlanningScenarioComparisonResult> compareScenarios({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required PlanningDocument documentA,
+    required PlanningDocument documentB,
+  }) async {
+    if (documentA.id == documentB.id) throw StateError('invalid_payload');
+    Future<Map<String, dynamic>> project(PlanningDocument document) async {
+      final base = await calculatePlanningDocument(
+        currentStudents: currentStudents,
+        inventory: inventory,
+        document: document.toWire(),
+      );
+      return {
+        ...base,
+        'phase_results': _goldenPhaseResults(base, document),
+      };
+    }
+
+    final projectionA = await project(documentA);
+    final projectionB = await project(documentB);
+    final totalsA = _goldenResourceTotals(projectionA);
+    final totalsB = _goldenResourceTotals(projectionB);
+    final resources = <Map<String, dynamic>>[];
+    for (final key in ({...totalsA.keys, ...totalsB.keys}.toList()..sort())) {
+      final left = totalsA[key];
+      final right = totalsB[key];
+      final representative = (left ?? right)!;
+      final requiredA = left?['required'] as int? ?? 0;
+      final requiredB = right?['required'] as int? ?? 0;
+      final owned = representative['owned'] as int?;
+      int? shortage(int required) =>
+          owned == null ? null : (required > owned ? required - owned : 0);
+      final shortageA = shortage(requiredA);
+      final shortageB = shortage(requiredB);
+      resources.add({
+        'resource_key': key,
+        'item_id': representative['item_id'],
+        'display_name': representative['display_name'],
+        'category': representative['category'],
+        'owned': owned,
+        'required_a': requiredA,
+        'required_b': requiredB,
+        'required_delta_b_minus_a': requiredB - requiredA,
+        'shortage_a': shortageA,
+        'shortage_b': shortageB,
+        'shortage_delta_b_minus_a': shortageA == null || shortageB == null
+            ? null
+            : shortageB - shortageA,
+      });
+    }
+    Set<String> students(PlanningDocument document) => {
+      for (final stage in document.stages) stage.studentId,
+    };
+    final studentsA = students(documentA);
+    final studentsB = students(documentB);
+    final creditsA = totalsA['credits']?['required'] as int? ?? 0;
+    final creditsB = totalsB['credits']?['required'] as int? ?? 0;
+    return PlanningScenarioComparisonResult(
+      projectionA: projectionA,
+      projectionB: projectionB,
+      comparison: {
+        'credits_a': creditsA,
+        'credits_b': creditsB,
+        'credits_delta_b_minus_a': creditsB - creditsA,
+        'resource_type_count_a': totalsA.length,
+        'resource_type_count_b': totalsB.length,
+        'known_shortage_type_count_a': resources
+            .where((row) => (row['shortage_a'] as int? ?? 0) > 0)
+            .length,
+        'known_shortage_type_count_b': resources
+            .where((row) => (row['shortage_b'] as int? ?? 0) > 0)
+            .length,
+        'students': [
+          for (final id in ({...studentsA, ...studentsB}.toList()..sort()))
+            {
+              'student_id': id,
+              'presence': studentsA.contains(id) && studentsB.contains(id)
+                  ? 'both'
+                  : studentsA.contains(id)
+                  ? 'a_only'
+                  : 'b_only',
+              'target_differences': const <String, dynamic>{},
+            },
+        ],
+        'resources': resources,
+        'bottlenecks': const <dynamic>[],
+      },
+    );
+  }
+}
+
+/// 계산 결과 `stage_results[].resources`의 재화별 필요량 합과 보유량(들어설 때 남은 양 중 가장 큰 값).
+Map<String, Map<String, dynamic>> _goldenResourceTotals(
+  Map<String, dynamic> projection,
+) {
+  final totals = <String, Map<String, dynamic>>{};
+  for (final result in projection['stage_results'] as List<dynamic>) {
+    for (final raw in (result as Map)['resources'] as List<dynamic>) {
+      final row = raw as Map;
+      final key = row['resource_key'] as String;
+      final owned = row['owned_at_entry'] as int?;
+      final total = totals.putIfAbsent(
+        key,
+        () => {
+          'item_id': row['item_id'],
+          'display_name': row['display_name'],
+          'category': row['category'],
+          'required': 0,
+          'owned': owned,
+        },
+      );
+      total['required'] = (total['required'] as int) + (row['required'] as int);
+      final known = total['owned'] as int?;
+      if (owned != null && (known == null || owned > known)) {
+        total['owned'] = owned;
+      }
+    }
+  }
+  return totals;
+}
+
+/// 문서 페이즈마다 단계 재화를 모은 `phase_results`(필요량 합, 보유 = 그 페이즈 첫 단계에 들어설 때 남은 양).
+List<Map<String, dynamic>> _goldenPhaseResults(
+  Map<String, dynamic> projection,
+  PlanningDocument document,
+) {
+  final byStage = {
+    for (final raw in projection['stage_results'] as List<dynamic>)
+      (raw as Map)['stage_id'] as String: raw,
+  };
+  final results = <Map<String, dynamic>>[];
+  for (final phase in document.phases) {
+    final rows = <String, Map<String, dynamic>>{};
+    for (final stage in phase.stages) {
+      final result = byStage[stage.id];
+      if (result == null) continue;
+      for (final raw in result['resources'] as List<dynamic>) {
+        final row = raw as Map;
+        final key = row['resource_key'] as String;
+        final existing = rows[key];
+        if (existing == null) {
+          rows[key] = {
+            'resource_key': key,
+            'item_id': row['item_id'],
+            'display_name': row['display_name'],
+            'category': row['category'],
+            'required': row['required'] as int,
+            'owned': row['owned_at_entry'] as int?,
+          };
+        } else {
+          existing['required'] =
+              (existing['required'] as int) + (row['required'] as int);
+        }
+      }
+    }
+    results.add({
+      'phase_id': phase.id,
+      'name': phase.name,
+      'stage_ids': [for (final stage in phase.stages) stage.id],
+      'cost': const <String, dynamic>{},
+      'resources': [
+        for (final row in rows.values)
+          {
+            ...row,
+            'shortage': switch ((row['required'] as int, row['owned'] as int?)) {
+              (final required, final owned?) =>
+                required > owned ? required - owned : 0,
+              (_, null) => null,
+            },
+            'affected_stage_ids': const <String>[],
+          },
+      ],
+    });
+  }
+  return results;
 }
 
 /// 요소 빌더·프리셋 관리 장면이 쓰는 프리셋(`planning_page_test`와 같은 값).

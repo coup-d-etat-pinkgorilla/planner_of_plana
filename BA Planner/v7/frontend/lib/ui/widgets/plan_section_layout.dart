@@ -11,6 +11,7 @@ import '../kit/diagonal_scrollbar.dart';
 import '../kit/game_assets.dart';
 import '../kit/skew_bar.dart';
 import '../models/plan_flow_draft.dart';
+import '../models/plan_flow_save.dart' show PlanFlowSaveOutcome;
 import '../models/planning_models.dart';
 import '../models/planning_resource_assets.dart';
 import '../models/repository_plan_snapshot.dart';
@@ -1334,6 +1335,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   /// 계획 만들기 흐름(FE4-a1). 시나리오 만들기·시나리오 편집이 이 흐름으로 열린다. 초안은 흐름이 따로
   /// 가지므로 활성 계획 작업 상태를 건드리지 않는다.
   PlanFlowController? _flow;
+
+  /// 흐름 4단계 저장 결과(FE4-e). 흐름을 닫을 때 다시 읽기·시나리오 보기 이동에 쓰고 비운다.
+  PlanFlowSaveOutcome? _flowSaveOutcome;
   bool _usingLivePlanElements = false;
   String? _consumedHandoffId;
   PlanningStudentSeed? _builderSeed;
@@ -2048,12 +2052,33 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   }
 
   /// 흐름을 닫고 계획 홈 섹션을 다시 들인다.
+  ///
+  /// 4단계에서 활성 계획을 바꿨으면(FE4-e) 돌려받은 revision으로 snapshot을 덮지 않고 계정 상태·활성 계획을
+  /// 다시 읽는다(FB-1c 연결 메모). 계획 화면이 저장 문서를 읽는 중이면 화면도 다시 읽는다. 시나리오 목록은 열 때
+  /// 새로 읽는다. "시나리오 보기로 이동"을 켰으면 시나리오 목록을 연다.
   void _closeFlow(bool saved) {
     if (_flow == null) return;
-    setState(_discardFlow);
+    final outcome = saved ? _flowSaveOutcome : null;
+    _flowSaveOutcome = null;
+    final changedActivePlan = outcome?.changedActivePlan ?? false;
+    setState(() {
+      _discardFlow();
+      if (changedActivePlan) {
+        _repositoryState = null;
+        _repositoryPlan = null;
+      }
+    });
     for (final controller in _controllers.values) {
       controller.forward(from: controller.value);
     }
+    if (changedActivePlan) {
+      if (widget.loadRepositoryPlan) {
+        _loadRepositoryPlan();
+      } else {
+        _ensureRepositoryContext();
+      }
+    }
+    if (outcome?.openScenarioList ?? false) _openScenarioList();
   }
 
   /// 흐름 컨트롤러를 버린다(화면이 내려간 다음 프레임에 dispose).
@@ -3089,6 +3114,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                   service: widget.service!,
                   presets: _presets,
                   active: widget.active,
+                  onSaved: (outcome) => _flowSaveOutcome = outcome,
                   onClosed: _closeFlow,
                 ),
               ),
