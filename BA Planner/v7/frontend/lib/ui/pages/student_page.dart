@@ -11,6 +11,7 @@ import '../kit/ba_modal.dart';
 import '../kit/kit_overlay.dart';
 import '../models/active_plan_bond_target.dart';
 import '../models/growth_calculator_adapter.dart';
+import '../models/growth_calculator_rules.dart';
 import '../models/growth_calculator_state.dart';
 import '../models/planning_models.dart';
 import '../models/recent_students.dart';
@@ -84,6 +85,11 @@ class _StudentPageState extends State<StudentPage> {
   /// 성장 계산기 모드(FE3-f2a, FD-160 (a)). 열려 있으면 null이 아니다. 목표는 저장하지 않는다.
   GrowthCalculatorState? _calculator;
   GrowthCalculatorEngine? _calculatorEngine;
+
+  /// 계산기 "빠른 목표"의 단계 프리셋 항목(FD-169 (a), FE4-i). 계산기를 열 때마다 선택 프로필 저장소(FB-14)에서
+  /// 다시 읽는다. 저장소가 없거나 못 읽으면 비어 있다(고정 항목만).
+  List<GrowthCalculatorPresetTarget> _calculatorPresets = const [];
+  int _calculatorPresetsRequest = 0;
 
   /// 최근 계산(FD-170): 앱 실행 동안만, 계정이 바뀌면 비운다(최근 본 학생과 같은 규칙).
   final RecentGrowthCalculations _recentCalculations =
@@ -185,6 +191,34 @@ class _StudentPageState extends State<StudentPage> {
     );
     _syncCalculatorEscape();
     _scheduleCalculation();
+    _loadCalculatorPresets();
+  }
+
+  /// 선택 프로필에 저장된 단계 프리셋의 마지막 단계를 읽는다(2단계 프리셋과 같은 저장소).
+  Future<void> _loadCalculatorPresets() async {
+    final service = widget.service;
+    final profile = _profile;
+    final request = ++_calculatorPresetsRequest;
+    if (service is! RepositoryPresetsService || profile == null) return;
+    try {
+      final state = await (service as RepositoryPresetsService)
+          .loadRepositoryPresets(profile.id);
+      if (!mounted || request != _calculatorPresetsRequest) return;
+      setState(() {
+        _calculatorPresets = [
+          for (final preset in state.stagePresets)
+            if (preset.stages.isNotEmpty)
+              GrowthCalculatorPresetTarget(
+                id: preset.presetId,
+                name: preset.name,
+                targets: preset.stages.last.targets,
+              ),
+        ];
+      });
+    } on Object {
+      if (!mounted || request != _calculatorPresetsRequest) return;
+      setState(() => _calculatorPresets = const []);
+    }
   }
 
   /// 학생 목록으로 돌아간다(복귀 칩 · Esc · 주 탭 "학생" 다시 누르기, FD-161 (a)).
@@ -384,6 +418,8 @@ class _StudentPageState extends State<StudentPage> {
       });
       _syncEditors();
       _refreshCalculatorCurrent();
+      // 계정이 바뀌면 계산기 빠른 목표의 프리셋 항목도 그 계정 것으로 다시 읽는다.
+      if (_calculator != null) _loadCalculatorPresets();
     } catch (error) {
       if (mounted) setState(() => _message = 'Could not load profile: $error');
     }
@@ -578,6 +614,7 @@ class _StudentPageState extends State<StudentPage> {
                             (record: record, student: entry),
                       ],
                       onOpenRecent: _openRecentCalculation,
+                      presetTargets: _calculatorPresets,
                     ),
                     null => null,
                   },

@@ -50,14 +50,27 @@ class PlanElementPreset {
     required this.name,
     required this.isDefault,
     required List<Map<String, int>> stages,
+    List<String> stageNames = const [],
+    this.repositoryPresetId,
   }) : stages = List.unmodifiable([
          for (final stage in stages) Map<String, int>.unmodifiable(stage),
-       ]);
+       ]),
+       stageNames = List.unmodifiable(stageNames);
 
   final String id;
   final String name;
   final bool isDefault;
   final List<Map<String, int>> stages;
+
+  /// 단계 이름(FD-074, 저장된 단계 프리셋). [stages]와 같은 순서이고, 비어 있으면 적용할 때 "n단계"를 쓴다.
+  final List<String> stageNames;
+
+  /// 프로필 저장소(FB-14)의 프리셋 id. 계획 화면 프리셋 관리의 인메모리 프리셋이면 null이다.
+  final String? repositoryPresetId;
+
+  /// [index] 단계 이름. 없으면 null.
+  String? stageNameAt(int index) =>
+      index >= 0 && index < stageNames.length ? stageNames[index] : null;
 }
 
 enum PlanningDocumentKind { plan, scenario }

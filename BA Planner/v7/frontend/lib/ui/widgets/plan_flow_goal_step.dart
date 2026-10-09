@@ -6,8 +6,9 @@
 //   성급 9칸(학생 5 + 전용무기 4), SKILL SUMMARY, EQUIPMENT(티어), ABILITY + "더 보기"(카드에 칸이 없는 목표, FD-072),
 //   COST(`stage_results[].cost`·`resources`, 디바운스 계산).
 // - C 보조: 단계 프리셋 목록, 다른 학생에도 적용(학생별 · 모두), 이 학생 재화 요약.
-// - FD-074: 단계 프리셋 저장("지금 구성을 프리셋으로")은 저장소(FB-1b) 전까지 그리지 않는다. 프리셋 목록은 계획 화면
-//   프리셋 관리의 인메모리 목록이다.
+// - FD-074·FE4-i: 단계 프리셋은 프로필 저장소(FB-14, [RepositoryPresetsController])에 둔다. 프리셋 바 "지금 구성을
+//   프리셋으로"가 지금 학생의 단계(이름 + 19키 nullable 원본)를 저장하고, C 행에서 적용·이름 바꾸기·삭제한다. 계획
+//   화면 프리셋 관리의 인메모리 프리셋은 저장된 프리셋 뒤에 적용만 할 수 있게 둔다.
 // - FD-076: 미보유 학생은 목표 최솟값을 지금 값으로 보고 "모집 필요" 칩만 단다(모집 비용은 FB-9).
 // 좌표는 시안(2560×1392, 헤더 184 아래가 캔버스)의 값이다([planFlowProtoRect]). 블록은 시안 크기로 그린 뒤
 // 자리에 맞춰 같은 비율로 줄인다(기준 캔버스 2560×1208에서 배율 1).
@@ -35,10 +36,13 @@ import '../models/plan_flow_goal_editor.dart';
 import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
 import '../models/planning_resource_assets.dart';
+import '../models/repository_presets_controller.dart';
+import '../../services/repository_service.dart' show RepositoryPresetStage;
 import 'diagonal_media_list_item.dart'
     show formatDiagonalMediaSkillLevels, relationshipRankHeartPath;
 import 'growth_calculator_section.dart' show growthCalculatorCompactNumber;
-import 'plan_flow_student_step.dart' show planFlowAsideLeftAt, planFlowProtoRect;
+import 'plan_flow_student_step.dart'
+    show PlanFlowStoreMessage, planFlowAsideLeftAt, planFlowProtoRect;
 
 /// 단계 카드 시안 크기(지금 상태 카드는 폭만 [planFlowGoalCurrentCardWidth]).
 const planFlowGoalCardSize = Size(473.3, 716);
@@ -254,14 +258,22 @@ Widget _designBox(
 
 /// 2단계 B 본문. 콘텐츠 캔버스 전체를 받는다.
 class PlanFlowGoalBody extends StatelessWidget {
-  const PlanFlowGoalBody({super.key, required this.flow, required this.editor});
+  const PlanFlowGoalBody({
+    super.key,
+    required this.flow,
+    required this.editor,
+    this.presets,
+  });
 
   final PlanFlowController flow;
   final PlanFlowGoalEditor editor;
 
+  /// 단계 프리셋 저장소(FE4-i). 없으면 "지금 구성을 프리셋으로"를 그리지 않는다.
+  final RepositoryPresetsController? presets;
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([flow, editor]),
+    listenable: Listenable.merge([flow, editor, ?presets]),
     builder: (context, _) => LayoutBuilder(
       builder: (context, constraints) => _build(constraints.biggest),
     ),
@@ -300,7 +312,7 @@ class PlanFlowGoalBody extends StatelessWidget {
         _designBox(
           planFlowProtoRect(size, 624.2, 291.2, 1425.3, 44),
           const Size(1425.3, 44),
-          _PresetBar(editor: editor, studentId: studentId),
+          _PresetBar(editor: editor, studentId: studentId, store: presets),
           alignment: Alignment.centerLeft,
         ),
         _designBox(
@@ -464,12 +476,37 @@ class _StudentTab extends StatelessWidget {
   }
 }
 
-/// 프리셋 바(시안 1425×44: `단계 프리셋` + 세그먼트 h32 12px + (i)). 저장 버튼은 FD-074로 그리지 않는다.
+/// "지금 구성을 프리셋으로"의 기본 이름(이름은 C 행에서 바꾼다).
+String planFlowGoalNewPresetName(String studentName, int stageCount) =>
+    '$studentName 목표 $stageCount단계';
+
+/// 프리셋 바(시안 1425×44: `단계 프리셋` + 세그먼트 h32 12px + "지금 구성을 프리셋으로" + (i)).
 class _PresetBar extends StatelessWidget {
-  const _PresetBar({required this.editor, required this.studentId});
+  const _PresetBar({
+    required this.editor,
+    required this.studentId,
+    required this.store,
+  });
 
   final PlanFlowGoalEditor editor;
   final String studentId;
+  final RepositoryPresetsController? store;
+
+  /// 지금 학생의 단계(이름 + 19키 nullable 원본)를 새 프리셋으로 저장한다.
+  void _save(RepositoryPresetsController store) {
+    final stages = editor.presetStagesOf(studentId);
+    if (stages.isEmpty) return;
+    store.addStagePreset(
+      name: planFlowGoalNewPresetName(
+        editor.displayName(studentId),
+        stages.length,
+      ),
+      stages: [
+        for (final stage in stages)
+          RepositoryPresetStage(name: stage.name, targets: stage.targets),
+      ],
+    );
+  }
 
   Widget _segment(String key, String mode, String label) {
     final selected = editor.modeOf(studentId) == mode;
@@ -518,6 +555,21 @@ class _PresetBar extends StatelessWidget {
           ),
         ),
       ),
+      if (store case final store? when store.available) ...[
+        const SizedBox(width: 10),
+        TonalButton(
+          key: const ValueKey('plan-flow-goal-preset-save'),
+          label: '지금 구성을 프리셋으로',
+          icon: Icons.bookmark_add_outlined,
+          height: 32,
+          horizontalPadding: 12,
+          fontSize: AppType.bodySmallSize,
+          onPressed:
+              store.canEdit && editor.presetStagesOf(studentId).isNotEmpty
+              ? () => _save(store)
+              : null,
+        ),
+      ],
       const SizedBox(width: 10),
       const InfoPopover(
         key: ValueKey('plan-flow-goal-preset-info'),
@@ -527,9 +579,9 @@ class _PresetBar extends StatelessWidget {
         align: KitOverlayAlign.end,
         children: [
           InfoPopoverText.plain(
-            '단계 여러 개를 한 묶음으로 불러옵니다. 불러온 뒤 칸마다 값을 고칠 수 있고, 목표가 현재보다 낮은 항목은 '
-            '자동으로 현재 값에 맞춰집니다. 한 번에 MAX는 1단계에 모든 목표를 최대로, 직접 입력은 빈 1단계로 '
-            '시작합니다.',
+            '단계 여러 개를 한 묶음으로 저장해 두고 불러옵니다. 불러온 뒤 칸마다 값을 고칠 수 있고, 목표가 현재보다 '
+            '낮은 항목은 자동으로 현재 값에 맞춰집니다. 한 번에 MAX는 1단계에 모든 목표를 최대로, 직접 입력은 빈 '
+            '1단계로 시작합니다.',
           ),
         ],
       ),
@@ -2404,14 +2456,22 @@ String planFlowGoalPresetSummary(PlanElementPreset preset) {
 
 /// 2단계 C 보조(단계 프리셋 · 다른 학생에도 적용 · 이 학생 재화). 캔버스 전체를 받는다.
 class PlanFlowGoalAside extends StatelessWidget {
-  const PlanFlowGoalAside({super.key, required this.flow, required this.editor});
+  const PlanFlowGoalAside({
+    super.key,
+    required this.flow,
+    required this.editor,
+    this.presets,
+  });
 
   final PlanFlowController flow;
   final PlanFlowGoalEditor editor;
 
+  /// 단계 프리셋 저장소(FE4-i). 저장된 프리셋 행에 이름 바꾸기·삭제와 저장 안내를 단다.
+  final RepositoryPresetsController? presets;
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([flow, editor]),
+    listenable: Listenable.merge([flow, editor, ?presets]),
     builder: (context, _) => LayoutBuilder(
       builder: (context, constraints) => _build(constraints.biggest),
     ),
@@ -2444,7 +2504,8 @@ class PlanFlowGoalAside extends StatelessWidget {
               children: [
                 InfoPopoverText.plain(
                   '프리셋은 학생과 상관없이 단계 구성만 담습니다. 학생에게 적용하면 그 학생의 현재 값에서 시작해 목표만 '
-                  '채웁니다. 프리셋은 계획 화면의 프리셋 관리에서 만들고, 저장소가 생기기 전까지는 앱을 닫으면 사라집니다.',
+                  '채웁니다. 위 바의 "지금 구성을 프리셋으로"가 지금 학생의 단계를 이 계정에 저장하고, 저장한 프리셋은 '
+                  '여기서 이름을 바꾸거나 지웁니다.',
                 ),
               ],
             ),
@@ -2472,7 +2533,7 @@ class PlanFlowGoalAside extends StatelessWidget {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                '만든 단계 프리셋이 없습니다. 위 바에서 한 번에 MAX나 직접 입력으로 시작합니다.',
+                '만든 단계 프리셋이 없습니다. 한 번에 MAX나 직접 입력으로 시작한 뒤 "지금 구성을 프리셋으로"로 저장합니다.',
                 maxLines: 2,
                 style: _mutedStyle,
               ),
@@ -2482,6 +2543,7 @@ class PlanFlowGoalAside extends StatelessWidget {
       );
       top = rect.bottom + 8 * sy;
     }
+    final store = presets;
     for (final preset in editor.presets.take(4)) {
       final presetMode = planFlowGoalPresetMode(preset.id);
       final applied = mode == presetMode;
@@ -2497,54 +2559,38 @@ class PlanFlowGoalAside extends StatelessWidget {
               mark: applied ? DiagonalRowMark.selected : DiagonalRowMark.none,
               onTap: () => editor.applyMode(presetMode),
               padding: const EdgeInsets.only(left: 23.3, right: 14),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                preset.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: _bodyStyle.copyWith(
-                                  fontSize: AppType.titleSmallSize,
-                                  fontWeight: AppType.bold,
-                                ),
-                              ),
-                            ),
-                            if (applied) ...[
-                              const SizedBox(width: 8),
-                              const BaChip(label: '적용 중', tone: AppTones.pink),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          planFlowGoalPresetSummary(preset),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _mutedStyle,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 18,
-                    color: AppColors.textMuted,
-                  ),
-                ],
+              child: _PresetRowContent(
+                key: ValueKey('plan-flow-goal-aside-preset-${preset.id}-content'),
+                preset: preset,
+                applied: applied,
+                store: preset.repositoryPresetId == null || store == null
+                    ? null
+                    : store,
               ),
             ),
           ),
         ),
       );
       top = rect.bottom + 8 * sy;
+    }
+    // 저장 안내(저장 결과 · 실패 · 다시 읽음) + 다시 저장.
+    if (store != null) {
+      if (store.message case final message?
+          when message.shownIn(RepositoryPresetsScope.presets)) {
+        final rect = row(top, 44, 16.2);
+        children.add(
+          Positioned.fromRect(
+            rect: rect,
+            child: PlanFlowStoreMessage(
+              key: const ValueKey('plan-flow-goal-presets-message'),
+              message: message,
+              retryKey: const ValueKey('plan-flow-goal-presets-retry'),
+              onRetry: store.canRetry ? store.retry : null,
+            ),
+          ),
+        );
+        top = rect.bottom + 6 * sy;
+      }
     }
 
     final others = [
@@ -2757,6 +2803,129 @@ class PlanFlowGoalAside extends StatelessWidget {
     return Stack(
       key: const ValueKey('plan-flow-goal-aside'),
       children: children,
+    );
+  }
+}
+
+/// C 프리셋 행 내용: 이름(저장된 프리셋은 인라인으로 바꾼다) · 적용 중 칩 · 단계 요약 · 이름 바꾸기/지우기.
+class _PresetRowContent extends StatefulWidget {
+  const _PresetRowContent({
+    super.key,
+    required this.preset,
+    required this.applied,
+    required this.store,
+  });
+
+  final PlanElementPreset preset;
+  final bool applied;
+
+  /// 저장된 프리셋이면 그 저장소. 인메모리 프리셋(계획 화면 프리셋 관리)이면 null이다.
+  final RepositoryPresetsController? store;
+
+  @override
+  State<_PresetRowContent> createState() => _PresetRowContentState();
+}
+
+class _PresetRowContentState extends State<_PresetRowContent> {
+  bool _renaming = false;
+
+  void _rename(String value) {
+    final store = widget.store;
+    final presetId = widget.preset.repositoryPresetId;
+    setState(() => _renaming = false);
+    if (store == null || presetId == null) return;
+    if (value.trim().isEmpty || value.trim() == widget.preset.name) return;
+    store.renameStagePreset(presetId, value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preset = widget.preset;
+    final store = widget.store;
+    final presetId = preset.repositoryPresetId;
+    final nameStyle = _bodyStyle.copyWith(
+      fontSize: AppType.titleSmallSize,
+      fontWeight: AppType.bold,
+    );
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: _renaming
+                        ? TextFormField(
+                            key: ValueKey(
+                              'plan-flow-goal-aside-preset-${preset.id}-name-field',
+                            ),
+                            initialValue: preset.name,
+                            autofocus: true,
+                            maxLines: 1,
+                            textInputAction: TextInputAction.done,
+                            style: nameStyle,
+                            decoration: const InputDecoration.collapsed(
+                              hintText: '프리셋 이름',
+                              hintStyle: _mutedStyle,
+                            ),
+                            onFieldSubmitted: _rename,
+                          )
+                        : Text(
+                            preset.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: nameStyle,
+                          ),
+                  ),
+                  if (widget.applied) ...[
+                    const SizedBox(width: 8),
+                    const BaChip(label: '적용 중', tone: AppTones.pink),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                planFlowGoalPresetSummary(preset),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _mutedStyle,
+              ),
+            ],
+          ),
+        ),
+        if (store != null && presetId != null) ...[
+          IconButton(
+            key: ValueKey('plan-flow-goal-aside-preset-${preset.id}-rename'),
+            tooltip: '프리셋 이름 바꾸기',
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            color: AppColors.textMuted,
+            onPressed: store.canEdit
+                ? () => setState(() => _renaming = !_renaming)
+                : null,
+            icon: const Icon(Icons.edit_outlined),
+          ),
+          IconButton(
+            key: ValueKey('plan-flow-goal-aside-preset-${preset.id}-delete'),
+            tooltip: '프리셋 지우기',
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            color: AppColors.textMuted,
+            onPressed: store.canEdit
+                ? () => store.deleteStagePreset(presetId)
+                : null,
+            icon: const Icon(Icons.delete_outline_rounded),
+          ),
+        ] else
+          const Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: AppColors.textMuted,
+          ),
+      ],
     );
   }
 }

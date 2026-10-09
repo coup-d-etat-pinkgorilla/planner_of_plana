@@ -6,7 +6,9 @@
 //   경고 줄, FD-077). 그 아래 역할군 칩과 "보이는 학생 모두 고르기".
 // - 필터 모달(FE3-d)은 흐름이 가진 [StudentFilterController]를 받는다(FD-104). 계획 칩 그룹을 더한다.
 // - 고른 학생은 바로 초안([PlanFlowController])에 들어가고, 레일 "다음"이 그 순서로 2단계를 연다.
-// - FD-074 "내 그룹"·그룹 저장과 필터 프리셋은 저장소(FB-1b 이후)가 없어 그리지 않는다.
+// - FD-074·FE4-i: C "내 그룹"은 프로필 저장소(FB-14, [RepositoryPresetsController])의 학생 그룹이다. 지금 고른 학생을
+//   그룹으로 저장하고, 누르면 그룹 학생을 한꺼번에 고르고(이미 고른 학생은 그대로), 지울 수 있다. 카탈로그에 없는
+//   학생 ID는 그룹에서 지우지 않고 저장한 그대로 둔다(고를 때만 뺀다). 필터 프리셋은 범위 밖이다(칩 숨김).
 // 좌표는 시안(2560×1392, 헤더 184)을 콘텐츠 캔버스로 옮긴 값이다([planFlowProtoRect]).
 import 'dart:math' as math;
 
@@ -24,6 +26,7 @@ import '../kit/portrait_strip.dart';
 import '../kit/skew_controls.dart';
 import '../kit/titles.dart';
 import '../models/plan_flow_draft.dart';
+import '../models/repository_presets_controller.dart';
 import '../models/student_filter_controller.dart';
 import '../models/student_filter_selection.dart';
 import '../studio/plan_flow_studio_layout.dart';
@@ -596,14 +599,18 @@ class PlanFlowStudentAside extends StatelessWidget {
     super.key,
     required this.flow,
     required this.picker,
+    this.presets,
   });
 
   final PlanFlowController flow;
   final PlanFlowStudentPicker picker;
 
+  /// 내 그룹 저장소(FE4-i). 없거나 서비스가 저장소를 주지 않으면 "내 그룹"을 그리지 않는다.
+  final RepositoryPresetsController? presets;
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([flow, picker]),
+    listenable: Listenable.merge([flow, picker, ?presets]),
     builder: (context, _) => LayoutBuilder(
       builder: (context, constraints) => _build(constraints.biggest),
     ),
@@ -804,6 +811,11 @@ class PlanFlowStudentAside extends StatelessWidget {
       next = warning.bottom + 22;
     }
 
+    // 내 그룹(FD-074, FE4-i).
+    if (presets case final store? when store.available) {
+      next = _addGroups(children, store, picked, next, row);
+    }
+
     // 역할군으로 한꺼번에 + 보이는 학생 모두 고르기.
     final caption = row(next, 24, 19.7);
     children.add(
@@ -892,7 +904,203 @@ class PlanFlowStudentAside extends StatelessWidget {
       children: children,
     );
   }
+
+  /// "내 그룹" 머리 줄 + 그룹 행(최대 [planFlowShownGroupLimit]) + 저장 안내. 다음 자리의 위쪽을 돌려준다.
+  double _addGroups(
+    List<Widget> children,
+    RepositoryPresetsController store,
+    List<String> picked,
+    double top,
+    Rect Function(double top, double height, double inset) row,
+  ) {
+    final header = row(top, 28, 19.7);
+    children.add(
+      Positioned.fromRect(
+        rect: header,
+        child: Row(
+          children: [
+            const Text('내 그룹', style: _mutedStyle),
+            const SizedBox(width: 6),
+            const InfoPopover(
+              key: ValueKey('plan-flow-group-info'),
+              label: '내 그룹',
+              title: '내 그룹',
+              width: 290,
+              children: [
+                InfoPopoverText.plain(
+                  '여기서 만든 학생 묶음입니다. 누르면 그룹 학생이 한꺼번에 선택되고, 이미 고른 학생은 그대로 둡니다. '
+                  '목록에 없는 학생은 고르지 않지만 그룹에서 지우지 않습니다.',
+                ),
+              ],
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: TonalButton(
+                  key: const ValueKey('plan-flow-group-save'),
+                  label: '지금 고른 학생으로 그룹 만들기',
+                  icon: Icons.group_add_outlined,
+                  height: 28,
+                  horizontalPadding: 10,
+                  fontSize: AppType.bodySmallSize,
+                  onPressed: store.canEdit && picked.isNotEmpty
+                      ? () => store.addStudentGroup(
+                          name: planFlowNewGroupName(
+                            [for (final id in picked) flow.context.displayName(id)],
+                          ),
+                          studentIds: picked,
+                        )
+                      : null,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    var next = header.bottom + 6;
+    final groups = store.studentGroups;
+    if (groups.isEmpty) {
+      final rect = row(next, 40, 16.2);
+      children.add(
+        Positioned.fromRect(
+          rect: rect,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              store.loading && store.state == null
+                  ? '그룹을 읽고 있습니다'
+                  : '만든 그룹이 없습니다. 학생을 고른 뒤 그룹으로 저장하면 다음에 한 번에 고릅니다.',
+              key: const ValueKey('plan-flow-groups-empty'),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: _mutedStyle,
+            ),
+          ),
+        ),
+      );
+      next = rect.bottom + 6;
+    }
+    final pickedSet = picked.toSet();
+    for (final group in groups.take(planFlowShownGroupLimit)) {
+      final known = [
+        for (final id in group.studentIds)
+          if (flow.context.catalog.containsKey(id)) id,
+      ];
+      final unpicked = [
+        for (final id in known)
+          if (!pickedSet.contains(id)) id,
+      ];
+      final rect = row(next, 50, 10.2);
+      children.add(
+        Positioned.fromRect(
+          rect: rect,
+          child: DiagonalRow(
+            key: ValueKey('plan-flow-group-${group.groupId}'),
+            variant: DiagonalRowVariant.srow,
+            onTap: unpicked.isEmpty ? null : () => flow.addStudents(unpicked),
+            padding: const EdgeInsets.only(left: 20.8, right: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    group.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _bodyStyle.copyWith(fontWeight: AppType.bold),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                PortraitStrip(
+                  studentIds: known,
+                  maxVisible: 3,
+                  portraitSize: const Size(32, 26),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    planFlowGroupCountLabel(
+                      known: known.length,
+                      total: group.studentIds.length,
+                    ),
+                    key: ValueKey('plan-flow-group-${group.groupId}-count'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _mutedStyle,
+                  ),
+                ),
+                IconButton(
+                  key: ValueKey('plan-flow-group-${group.groupId}-delete'),
+                  tooltip: '그룹 지우기',
+                  visualDensity: VisualDensity.compact,
+                  iconSize: 18,
+                  color: AppColors.textMuted,
+                  onPressed: store.canEdit
+                      ? () => store.deleteStudentGroup(group.groupId)
+                      : null,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      next = rect.bottom + 6;
+    }
+    if (groups.length > planFlowShownGroupLimit) {
+      final rest = row(next, 20, 20);
+      children.add(
+        Positioned.fromRect(
+          rect: rest,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '외 ${groups.length - planFlowShownGroupLimit}개',
+              style: _mutedStyle,
+            ),
+          ),
+        ),
+      );
+      next = rest.bottom + 6;
+    }
+    if (store.message case final message?
+        when message.shownIn(RepositoryPresetsScope.groups)) {
+      final rect = row(next, 44, 16.2);
+      children.add(
+        Positioned.fromRect(
+          rect: rect,
+          child: PlanFlowStoreMessage(
+            key: const ValueKey('plan-flow-groups-message'),
+            message: message,
+            retryKey: const ValueKey('plan-flow-groups-retry'),
+            onRetry: store.canRetry ? store.retry : null,
+          ),
+        ),
+      );
+      next = rect.bottom + 6;
+    }
+    return next + 16;
+  }
 }
+
+/// C "내 그룹"에 보이는 그룹 수.
+const planFlowShownGroupLimit = 3;
+
+/// "지금 고른 학생으로 그룹 만들기"의 기본 이름(`호시노 외 2명`).
+String planFlowNewGroupName(List<String> names) => names.isEmpty
+    ? '내 그룹'
+    : names.length == 1
+    ? names.single
+    : '${names.first} 외 ${names.length - 1}명';
+
+/// 그룹 행 학생 수. 목록에 없는 학생은 저장은 되어 있지만 고르지 않는다(`3명 · 목록에 없음 1`).
+String planFlowGroupCountLabel({required int known, required int total}) =>
+    known == total ? '$known명' : '$known명 · 목록에 없음 ${total - known}';
 
 /// C 목록 행(시안 `div.row` 410×70: 번호 · 초상 59×48 · 이름/요약 · ×).
 class _SelectedRow extends StatelessWidget {
@@ -997,4 +1205,46 @@ class _PathClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(_PathClipper oldClipper) => oldClipper.builder != builder;
+}
+
+/// 프리셋·그룹 저장소 안내 한 줄 + "다시 저장"(1단계 내 그룹, 2단계 프리셋이 함께 쓴다).
+class PlanFlowStoreMessage extends StatelessWidget {
+  const PlanFlowStoreMessage({
+    super.key,
+    required this.message,
+    required this.retryKey,
+    required this.onRetry,
+  });
+
+  final RepositoryPresetsMessage message;
+  final Key retryKey;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          message.text,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: _mutedStyle.copyWith(
+            color: message.error ? AppColors.danger : AppColors.textMuted,
+          ),
+        ),
+      ),
+      if (onRetry != null) ...[
+        const SizedBox(width: 8),
+        TonalButton(
+          key: retryKey,
+          label: '다시 저장',
+          icon: Icons.refresh_rounded,
+          height: 28,
+          horizontalPadding: 10,
+          fontSize: AppType.bodySmallSize,
+          onPressed: onRetry,
+        ),
+      ],
+    ],
+  );
 }

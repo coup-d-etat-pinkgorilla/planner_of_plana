@@ -9,11 +9,13 @@ import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/mock_student_bond_fixture.dart';
 import 'package:ba_planner_v7/services/mock_student_fixture.dart';
+import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/kit/buttons.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_adapter.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_rules.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_state.dart';
 import 'package:ba_planner_v7/ui/models/planning_growth_rules.dart';
+import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/pages/settings_page.dart';
 import 'package:ba_planner_v7/ui/widgets/growth_calculator_bond_tile.dart';
 import 'package:ba_planner_v7/ui/widgets/growth_calculator_section.dart';
@@ -1053,6 +1055,63 @@ void main() {
         findsNothing,
       );
     });
+  });
+
+  testWidgets('빠른 목표에 선택 계정 단계 프리셋의 마지막 단계가 붙는다(FD-169, FE4-i)', (
+    tester,
+  ) async {
+    final service = _CalculatorService();
+    final profile = (await service.listProfiles()).firstWhere(
+      (item) => item.selected,
+    );
+    Map<String, int?> targets(int level) => {
+      for (final key in planningDocumentTargetKeys)
+        key: key == 'level' ? level : null,
+    };
+    await service.saveRepositoryPresets(
+      RepositoryPresetsSaveRequest(
+        profileId: profile.id,
+        expectedRevision: 0,
+        idempotencyKey: 'calculator-presets',
+        stagePresets: [
+          RepositoryStagePreset(
+            presetId: 'level-70',
+            name: '레벨 올리기',
+            stages: [
+              RepositoryPresetStage(name: '1단계', targets: targets(50)),
+              RepositoryPresetStage(name: '2단계', targets: targets(70)),
+            ],
+          ),
+        ],
+        studentGroups: const [],
+      ),
+    );
+    await _openStudents(tester, service);
+    await _openCalculator(tester);
+    final current = _state(tester).current;
+
+    await tester.tap(
+      find.byKey(const ValueKey('calculator-quick-target-dropdown')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('calculator-quick-target-fullGrowth')),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('calculator-quick-target-preset-level-70')),
+    );
+    await tester.pumpAndSettle();
+    final targetsAfter = _state(tester).targets;
+    // 마지막 단계(Lv.70)가 정한 레벨만 올리고, 정하지 않은 목표는 현재값이다.
+    expect(
+      targetsAfter['level'],
+      current['level']! > 70 ? current['level'] : 70,
+    );
+    expect(targetsAfter['ex_skill'], current['ex_skill']);
+    expect(targetsAfter['equip1_tier'], current['equip1_tier']);
+    await tester.pump(growthCalculatorDebounce);
+    await tester.pump();
   });
 }
 

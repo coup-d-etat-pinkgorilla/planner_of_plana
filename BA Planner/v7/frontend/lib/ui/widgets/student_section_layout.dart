@@ -1267,6 +1267,8 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
       _CalculatorQuickTargetDropdown(
         canvasSize: size,
         onSelected: state.applyQuickTarget,
+        presets: calculator.presetTargets,
+        onPresetSelected: state.applyPresetTarget,
       ),
       _StudentActionButton(
         canvasSize: size,
@@ -2446,15 +2448,29 @@ class _StudentSortDropdown extends StatelessWidget {
   }
 }
 
-/// 계산기 S1 "빠른 목표 고르기"(FD-169). 학생 정렬 드롭다운과 같은 자리·모양이다.
+/// 계산기 S1 "빠른 목표 고르기"(FD-169). 학생 정렬 드롭다운과 같은 자리·모양이다. 고정 항목 뒤에 선택 프로필에
+/// 저장된 단계 프리셋 마지막 단계([presets], FE4-i)를 붙인다.
 class _CalculatorQuickTargetDropdown extends StatelessWidget {
   const _CalculatorQuickTargetDropdown({
     required this.canvasSize,
     required this.onSelected,
+    this.presets = const [],
+    this.onPresetSelected,
   });
 
   final Size canvasSize;
   final ValueChanged<GrowthCalculatorQuickTarget> onSelected;
+  final List<GrowthCalculatorPresetTarget> presets;
+  final ValueChanged<GrowthCalculatorPresetTarget>? onPresetSelected;
+
+  void _select(Object value) {
+    switch (value) {
+      case final GrowthCalculatorQuickTarget quickTarget:
+        onSelected(quickTarget);
+      case final GrowthCalculatorPresetTarget preset:
+        onPresetSelected?.call(preset);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2469,15 +2485,15 @@ class _CalculatorQuickTargetDropdown extends StatelessWidget {
           clipper: _LocalPathClipper(localPath),
           child: Material(
             color: Colors.transparent,
-            child: PopupMenuButton<GrowthCalculatorQuickTarget>(
+            child: PopupMenuButton<Object>(
               key: const ValueKey('calculator-quick-target-dropdown'),
               tooltip: '빠른 목표 고르기',
               color: AppColors.surfaceRaised,
               padding: EdgeInsets.zero,
-              onSelected: onSelected,
+              onSelected: _select,
               itemBuilder: (context) => [
                 for (final option in GrowthCalculatorQuickTarget.values)
-                  PopupMenuItem(
+                  PopupMenuItem<Object>(
                     key: ValueKey('calculator-quick-target-${option.name}'),
                     value: option,
                     child: Text(
@@ -2488,6 +2504,25 @@ class _CalculatorQuickTargetDropdown extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (onPresetSelected != null &&
+                    presets.any((preset) => preset.hasTargets)) ...[
+                  const PopupMenuDivider(),
+                  for (final preset in presets)
+                    if (preset.hasTargets)
+                      PopupMenuItem<Object>(
+                        key: ValueKey('calculator-quick-target-preset-${preset.id}'),
+                        value: preset,
+                        child: Text(
+                          '${preset.name} · 마지막 단계',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: studentSortAccentColor,
+                            fontSize: studentSortMenuFontSize,
+                          ),
+                        ),
+                      ),
+                ],
               ],
               child: bounds.width < 26
                   ? const SizedBox.expand()

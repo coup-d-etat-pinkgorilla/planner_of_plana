@@ -188,6 +188,18 @@ class GrowthCalculatorState extends ChangeNotifier {
     );
   }
 
+  /// 빠른 목표의 단계 프리셋 항목을 고른다(FD-169 (a), FE4-i). 프리셋 마지막 단계가 정한 목표만 올린다.
+  void applyPresetTarget(GrowthCalculatorPresetTarget preset) {
+    _toggleMemory.clear();
+    _setTargets(
+      growthCalculatorPresetTargets(
+        current: current,
+        presetTargets: preset.targets,
+        hasFavoriteItem: hasFavoriteItem,
+      ),
+    );
+  }
+
   /// S3 칸 토글(FD-167): 목표가 현재값과 다르면 현재값으로 두고 직전 목표를 기억한다. 현재값과 같고
   /// 기억한 직전 목표가 있으면 그 목표로 돌린다. 바뀐 것이 없으면 false.
   ///

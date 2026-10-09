@@ -4426,3 +4426,93 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_215639\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-i 프리셋·내 그룹 저장 연결 (구현 끝, gate 전)
+
+- 시작: 2026-10-09 22:20, 시작 SHA `df547db746534def4316e24b3b983a689f1ada56`(FB-8b `9aab5453`, FE4-e `3af5246c`, 문서 커밋 뒤 HEAD).
+- 범위: 0) golden 비교 대역을 계산 대역 기준으로 맞추고 레일 = 비교 b 단언 추가(22:10 후속), 1) FB-14 `repository.presets.get/save` 화면 연결, 2) 2단계 단계 프리셋 저장·적용·이름 바꾸기·삭제, 3) 1단계 "내 그룹" 저장·불러오기·삭제, 4) 계산기 "빠른 목표"에 단계 프리셋 마지막 단계(FD-169). 필터 프리셋은 범위 밖.
+- 고칠 기존 파일(사본 `debug/frontend_fe4i/pre/frontend/...`): `lib/ui/models/planning_models.dart`, `lib/ui/models/plan_flow_goal_editor.dart`, `lib/ui/widgets/plan_flow_goal_step.dart`, `lib/ui/widgets/plan_flow_student_step.dart`, `lib/ui/widgets/plan_flow_workspace.dart`, `lib/ui/models/growth_calculator_rules.dart`, `lib/ui/models/growth_calculator_state.dart`, `lib/ui/widgets/growth_calculator_section.dart`, `lib/ui/widgets/student_section_layout.dart`, `lib/ui/pages/student_page.dart`, `test/goldens/golden_harness.dart`, `test/goldens/fe1g_baseline_golden_test.dart`.
+
+### FE4-i 종료 기록 (2026-10-09 23:15, 커밋 전)
+
+상태: 구현 끝, gate 미실행. 시작 SHA `df547db746534def4316e24b3b983a689f1ada56`. `debug/frontend_fe4i/commit.json`(baseline whole, status=true)을 두었다. 직접 커밋하지 않았다. 시작 기록 목록에 더해 `test/plan_flow_test.dart`, `test/growth_calculator_view_test.dart`를 고쳤다(사본 추가). 새 파일은 `lib/ui/models/repository_presets_controller.dart`, `test/plan_flow_presets_test.dart`다.
+
+#### 0. golden 비교 대역 맞추기(22:10 후속)
+
+- `GoldenPlanFlowMockAppService.compareScenarios`가 두 문서를 계산 대역으로 계산하고 그 `overall`로 비교 줄을 만든다(백엔드 `compare_document_projections`와 같은 식: a쪽 줄이 있으면 그 보유량, 부족 = 필요 − 보유, 크레딧 = `overall.cost.credits`). 페이즈 팝오버용 `phase_results`만 단계 결과를 페이즈마다 모아 더한다(계산 대역은 빈 목록).
+- 계산 대역 `overall`은 문서와 상관없이 고정(48.2M, 부족 5종)이므로 a·b 값이 같다. 1~3단계 장면의 레일 숫자를 흔들지 않으려고 계산 대역은 바꾸지 않았다.
+- 단언(`plan-flow-step4`): 같은 초안이면 비교 `credits_b` = 레일 필요 크레딧, `known_shortage_type_count_b` = 레일 부족 재화 종 수, 비교 타일 크레딧·부족 칸의 b쪽 글자 = 레일 글자.
+
+#### 1~4. 바꾼 것
+
+- 새 `repository_presets_controller.dart`(`RepositoryPresetsController`): 선택 프로필의 묶음(단계 프리셋 + 학생 그룹)과 묶음 자체 revision. 저장은 두 목록 전체 교체 + 사용자 저장마다 새 키. 성공하면 get으로 다시 읽는다(replay revision을 믿지 않음).
+  - `revision_conflict`: 최신 묶음을 다시 읽고 하려던 편집(새 프리셋·이름·삭제·그룹)을 남겨 알린다. 저절로 다시 보내지 않고 "다시 저장"이 그 편집을 최신 목록 위에 새 키로 적용한다(적용할 대상이 없어졌으면 알린다).
+  - 연결 끊김·`repository_busy`·`persistence_failed`(또는 retryable): 같은 요청 객체(같은 키·같은 내용)를 "다시 저장"으로 다시 보낸다.
+  - `idempotency_conflict`: 새 키를 만들지 않고 다시 읽는다. 읽기 실패는 "다시 저장"이 다시 읽는다.
+  - 안내는 어느 목록의 것인지(프리셋/그룹) 나눠 2단계는 프리셋, 1단계는 그룹 안내만 보인다.
+  - `planElementPresetFromRepository`: 저장된 프리셋 → 적용 모델(non-null만 듬성한 목표, 단계 이름, id `stored:<preset_id>`). 저장 원본은 바꾸지 않는다.
+- `planning_models.dart` `PlanElementPreset`: `stageNames`, `repositoryPresetId`, `stageNameAt`(선택 인자라 기존 호출 그대로).
+- 2단계(`plan_flow_goal_editor.dart`, `plan_flow_goal_step.dart`)
+  - 프리셋 바 "지금 구성을 프리셋으로"(숨겨 둔 저장): 지금 학생의 초안 v2 단계(앞 단계보다 올린 단계, 단계 이름 + 19키 nullable 원본, null을 지금 값으로 채우지 않음)를 새 프리셋으로 저장한다. 기본 이름 "학생 목표 n단계". 단계가 없거나 저장 중이면 비활성.
+  - 프리셋 적용은 기존 누적 펼침 규칙 그대로이고 저장된 단계 이름을 카드 이름으로 쓴다.
+  - C 프리셋 행: 저장된 프리셋이 먼저(이름 바꾸기 = 행 안 입력, 지우기 아이콘), 계획 화면 프리셋 관리의 인메모리 프리셋은 뒤에 적용만. 저장 안내 줄 + "다시 저장".
+- 1단계(`plan_flow_student_step.dart`) C "내 그룹": 머리 줄(+ (i), "지금 고른 학생으로 그룹 만들기"), 그룹 행 최대 3개(이름 · 초상 3 · "n명" / "n명 · 목록에 없음 m" · 지우기). 행을 누르면 카탈로그에 있는 그룹 학생만 고른 순서 뒤에 더한다(이미 고른 학생 그대로). 카탈로그에 없는 ID는 고르지 않지만 저장 요청에서 빼지 않는다. 기본 이름 "첫 학생 외 n명".
+- `plan_flow_workspace.dart`: 흐름마다 저장소 하나를 만들어 다음 프레임에 읽는다. 1단계 C·2단계 B·C에 넘기고, 저장된 프리셋 + 인메모리 프리셋을 2단계 편집 상태에 넣는다.
+- 계산기(`growth_calculator_rules.dart`·`_state.dart`·`_section.dart`, `student_section_layout.dart`, `student_page.dart`): "빠른 목표" 고정 3항목 뒤에 선택 계정 단계 프리셋의 마지막 단계("이름 · 마지막 단계")를 붙인다. 고르면 그 단계가 정한 키만 올리고(현재값보다 낮으면 현재값) 나머지는 현재값, 정규화. 계산기를 열 때·계정이 바뀔 때 저장소에서 다시 읽는다.
+- 필터 프리셋은 범위 밖(칩 숨김 유지). `lib/services/**`·backend·contracts·스캐너·tactic·app_shell 미수정.
+
+#### 테스트
+
+- 새 `test/plan_flow_presets_test.dart`: 저장소(원본 nullable·단계 이름 저장, 전체 교체로 반대쪽 목록 유지, 저장 뒤 다시 읽기, 이름 바꾸기·삭제, 그룹의 목록에 없는 ID·순서 보존·중복 제거, revision_conflict → 다시 읽기·편집 유지·다시 저장 새 키, retryable → 같은 요청 객체, idempotency_conflict → 새 키 없음, 저장소 없는 서비스), 적용 모델, 2단계 단계 이름 적용·저장 단계 v2 원본, 2단계 위젯(저장·이름 바꾸기·삭제), 1단계 위젯(목록에 없음 표시, 누르면 고르기, 그룹 저장, 지우기), 계산기 프리셋 항목 규칙·상태. 테스트 대역은 `loadRepositoryPresets(String)`·`saveRepositoryPresets(RepositoryPresetsSaveRequest)` 현재 시그니처 그대로다.
+- `test/plan_flow_test.dart`(바꾼 기대, 1줄): 2단계 "저장 버튼은 없다(FD-074)" → 프로필 저장소가 있으면 `plan-flow-goal-preset-save`가 있다(FE4-i가 숨겨 둔 저장을 연다).
+- `test/growth_calculator_view_test.dart`: 빠른 목표에 저장된 프리셋 마지막 단계 항목이 붙고 고르면 레벨만 오르는 테스트 1건 추가.
+- golden: `golden_harness.dart` 비교 대역(0번)과 `seedPresetScene`, `fe1g_baseline_golden_test.dart` 0번 단언과 새 장면.
+
+#### golden ① 예상
+
+- 새 장면(기준 없음): `plan-flow-step2-saved` — 1단계에서 저장된 그룹 "총력전 · 신비 딜러"(호시노·아루 + 목록에 없는 학생 1)로 두 명을 고르고, 2단계에서 저장된 프리셋 "총력전 3단계 · 내 프리셋"(단계 이름 성장 기반 → 스킬·인연 → 성급·전용무기)을 적용한 상태. 프리셋 바 맨 앞 저장된 프리셋 · 인메모리 2개 · MAX · 직접 입력 · "지금 구성을 프리셋으로", C 첫 행에 이름 바꾸기·지우기 아이콘과 저장 안내 없음.
+- 바뀜 7: `plan-flow-step1`·`plan-flow-step1-many`·`plan-flow-step1-filter`(C에 "내 그룹" 머리 줄 + 버튼 + "만든 그룹이 없습니다" 줄, 그 아래 역할군 칩·보이는 학생 줄이 아래로 밀림), `plan-flow-step2`·`plan-flow-step2-more`(프리셋 바에 "지금 구성을 프리셋으로"), `plan-flow-step4`·`plan-flow-step4-append`(비교 숫자: 충족률·부족 5 → 5종·크레딧 48.2M → 48.2M 처럼 a·b가 같고, "가장 크게 늘어나는 재화"는 "활성 계획보다 늘어나는 재화가 없습니다" 한 줄. append 팝오버 숫자는 그대로).
+- 그대로: 나머지 장면 전부(`plan-flow-step3`·`-many`, 학생·계산기 장면 포함 — 계산기 드롭다운은 닫힌 상태).
+
+#### 검수표
+
+| 항목 | 확인 |
+|---|---|
+| 0: 비교 대역 = 계산 대역 기준, 레일 = 비교 b 단언 | golden 테스트 단언 4개 |
+| presets.get/save, 프로필별·자체 revision·두 목록 전체 교체·idempotency key | 단위 테스트 3건 |
+| revision_conflict → 다시 읽고 편집 유지·알림, retryable → 같은 요청, idempotency_conflict → 새 키 없음 | 단위 테스트 3건 |
+| 단계 프리셋 저장(이름 + 단계 이름·19키 nullable 원본)·적용(단계 이름)·이름 바꾸기·삭제, 숨긴 "저장" 열기 | 단위·위젯 테스트, golden 새 장면 |
+| 내 그룹 저장·불러오기·삭제, 목록에 없는 학생 ID 보존 | 단위·위젯 테스트, golden 새 장면 |
+| 계산기 빠른 목표에 프리셋 마지막 단계(같은 저장소) | 단위 2건, 계산기 위젯 1건 |
+| 필터 프리셋 범위 밖, 금지 파일 미수정, ~습니다체 | 코드 확인 |
+
+#### 확인하지 못한 것
+
+- analyze·테스트·golden 실행 전부(이 환경에 Flutter 없음). 정적 검토만 했다(별도 검토 1회, 지적 반영: 기존 테스트 1줄, 내 그룹 머리 줄 배치, 재시도·읽기 실패·안내 범위, 이름 입력 닫기, 좁은 창 그룹 행).
+- 새 그림: 프리셋 바가 길어질 때 가로 스크롤과 저장 버튼 자리, C 프리셋 행 아이콘 두 개와 이름 줄임, 내 그룹 행(초상 32×26)과 작은 창에서 C 아래쪽 넘침(1단계 6명 + 그룹 3개 + 역할군 칩).
+- ProcessAppService(실제 Python)에서 presets 왕복·오류 모양.
+
+#### 남은 일·판단
+
+- 그룹 이름 바꾸기는 없다(저장·불러오기·삭제만). 새 그룹·프리셋 이름은 기본 이름으로 바로 저장하고, 프리셋만 C에서 이름을 바꾼다.
+- 계획 화면 프리셋 관리(인메모리)는 그대로다. 2단계에서는 저장된 프리셋 뒤에 적용 전용으로 보인다. 프리셋 관리를 저장소로 옮길지는 정하지 않았다(오케스트레이터 판단).
+- 계산 대역 `overall`이 고정이라 4단계 비교 장면은 a·b가 같다. 비교 타일의 차이 표현을 golden으로 보려면 계산 대역을 문서 의존으로 바꿔야 하고 1~3단계 장면이 함께 바뀐다.
+
+#### 사용자 실행 순서
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다(위 7장면 변경 + 새 장면 1건 RED 예상)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 승인 뒤 기준 이미지 갱신 → gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4i -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4i
+```
+
+### FE4-i commit record (2026-10-09 23:23, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_231201\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

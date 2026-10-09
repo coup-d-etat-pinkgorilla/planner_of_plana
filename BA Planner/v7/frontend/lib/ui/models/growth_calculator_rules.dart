@@ -67,7 +67,7 @@ enum GrowthCalculatorAbility {
 }
 
 /// 빠른 목표(FD-169 (a)). 고른 행은 MAX로, 나머지 행은 현재값으로 둔다. 행 사이 조건(스킬 → 성급 등)은
-/// 정규화가 맞춘다. 단계 프리셋 연결은 FD-074 저장소(FE4-b·c) 전까지 보류한다.
+/// 정규화가 맞춘다. 단계 프리셋 항목은 [GrowthCalculatorPresetTarget]이다(FE4-i).
 enum GrowthCalculatorQuickTarget {
   fullGrowth('완전 육성'),
   levelAndEquipment('레벨·장비만 MAX'),
@@ -306,6 +306,45 @@ Map<String, int> growthCalculatorQuickTargets({
       for (final key in keys) key: maximums[key]!,
     },
     changedKeys: keys,
+    hasFavoriteItem: hasFavoriteItem,
+  );
+}
+
+/// 빠른 목표의 단계 프리셋 항목(FD-169 (a), FE4-i): 프로필 저장소(FB-14)에 저장된 단계 프리셋의 마지막 단계.
+/// [targets]는 19키 nullable 원본이다(null = 그 프리셋이 정하지 않은 목표).
+@immutable
+class GrowthCalculatorPresetTarget {
+  GrowthCalculatorPresetTarget({
+    required this.id,
+    required this.name,
+    required Map<String, int?> targets,
+  }) : targets = Map.unmodifiable(targets);
+
+  final String id;
+  final String name;
+  final Map<String, int?> targets;
+
+  /// 정한 목표가 하나라도 있다.
+  bool get hasTargets => targets.values.any((value) => value != null);
+}
+
+/// 단계 프리셋 마지막 단계를 고른 결과(FD-169 (a)). 프리셋이 정한 키만 그 값으로 올리고(현재값보다 낮으면
+/// 현재값), 나머지는 현재값이다. 정규화가 행 사이 조건과 MAX(애장품 없는 학생의 애장품 0 등)를 맞춘다.
+Map<String, int> growthCalculatorPresetTargets({
+  required Map<String, int> current,
+  required Map<String, int?> presetTargets,
+  required bool hasFavoriteItem,
+}) {
+  final chosen = <String, int>{
+    for (final entry in presetTargets.entries)
+      if (entry.value case final int value
+          when current.containsKey(entry.key))
+        entry.key: math.max(value, current[entry.key]!),
+  };
+  return normalizeGrowthCalculatorTargets(
+    current: current,
+    targets: {...current, ...chosen},
+    changedKeys: chosen.keys.toSet(),
     hasFavoriteItem: hasFavoriteItem,
   );
 }

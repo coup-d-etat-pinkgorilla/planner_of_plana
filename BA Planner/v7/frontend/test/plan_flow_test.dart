@@ -889,12 +889,16 @@ void main() {
     expect(find.byType(PlanElementBuilder), findsNothing);
     expect(find.byKey(const ValueKey('plan-flow-legacy-slot')), findsNothing);
     expect(find.byKey(ValueKey('plan-flow-goal-tab-$firstId')), findsOneWidget);
-    // 프리셋 바: 계획 화면 프리셋 관리의 인메모리 프리셋 + 한 번에 MAX + 직접 입력(FD-075). 저장 버튼은 없다(FD-074).
+    // 프리셋 바: 계획 화면 프리셋 관리의 인메모리 프리셋 + 한 번에 MAX + 직접 입력(FD-075). FE4-i부터 프로필 저장소
+    // (FB-14)가 있으면 "지금 구성을 프리셋으로"가 있다(FD-074).
     expect(
       find.byKey(const ValueKey('plan-flow-goal-preset-balanced-growth')),
       findsOneWidget,
     );
-    expect(find.text('지금 구성을 프리셋으로'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('plan-flow-goal-preset-save')),
+      findsOneWidget,
+    );
     // 기존 미배정 목록은 없다.
     expect(find.text('미배정'), findsNothing);
 

@@ -513,6 +513,70 @@ class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
 
   static const credits = 48200000;
 
+  /// 저장된 단계 프리셋 하나(단계 이름 3개, 19키 nullable 목표)와 학생 그룹 하나(목록에 없는 학생 ID 포함)를
+  /// 선택 계정에 저장한다(FE4-i `plan-flow-step2-saved` 장면).
+  Future<void> seedPresetScene() async {
+    final profile = (await listProfiles()).firstWhere((item) => item.selected);
+    final current = await loadRepositoryPresets(profile.id);
+    RepositoryPresetStage stage(String name, Map<String, int> targets) =>
+        RepositoryPresetStage(
+          name: name,
+          targets: {
+            for (final key in planningDocumentTargetKeys) key: targets[key],
+          },
+        );
+    await saveRepositoryPresets(
+      RepositoryPresetsSaveRequest(
+        profileId: profile.id,
+        expectedRevision: current.revision,
+        idempotencyKey: 'golden-preset-scene',
+        stagePresets: [
+          RepositoryStagePreset(
+            presetId: 'golden-raid',
+            name: '총력전 3단계 · 내 프리셋',
+            stages: [
+              stage('성장 기반', {
+                'level': 90,
+                'equip1_tier': 9,
+                'equip2_tier': 9,
+                'equip3_tier': 9,
+              }),
+              stage('스킬·인연', {
+                'level': 90,
+                'equip1_tier': 9,
+                'equip2_tier': 9,
+                'equip3_tier': 9,
+                'ex_skill': 5,
+                'skill1': 10,
+                'skill2': 10,
+                'bond_rank': 20,
+              }),
+              stage('성급·전용무기', {
+                'level': 90,
+                'equip1_tier': 9,
+                'equip2_tier': 9,
+                'equip3_tier': 9,
+                'ex_skill': 5,
+                'skill1': 10,
+                'skill2': 10,
+                'bond_rank': 20,
+                'student_star': 5,
+                'weapon_level': 30,
+              }),
+            ],
+          ),
+        ],
+        studentGroups: [
+          RepositoryStudentGroup(
+            groupId: 'golden-group',
+            name: '총력전 · 신비 딜러',
+            studentIds: const ['hoshino', 'aru', 'future_student_kr'],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Future<Map<String, dynamic>> calculatePlanningDocument({
     required List<Map<String, dynamic>> currentStudents,
@@ -698,9 +762,11 @@ class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
     };
   }
 
-  /// 4단계 저장 비교(FE4-e, `planning.scenario.compare` 대역). 위 계산 결과의 `stage_results`를 문서마다 모아
-  /// 페이즈별 재화(`phase_results`)와 비교 줄(`resources`)을 만든다. 백엔드 `compare_document_projections`와 같은
-  /// 키를 쓴다. 보유량은 단계에 들어설 때 남은 양 중 가장 큰 값(고정 재고)이다.
+  /// 4단계 저장 비교(FE4-e, `planning.scenario.compare` 대역).
+  ///
+  /// 백엔드 `compare_document_projections`처럼 두 문서를 위 계산 대역으로 계산하고 그 `overall`로 비교 줄을 만든다
+  /// (FE4-i: 계산 대역과 같은 기준). 그래서 같은 초안이면 레일의 필요 크레딧·부족 재화 종 수와 비교 b쪽 값이
+  /// 같다. 페이즈 팝오버용 `phase_results`만 단계 결과를 페이즈마다 모아 더한다(계산 대역은 빈 목록을 준다).
   @override
   Future<PlanningScenarioComparisonResult> compareScenarios({
     required List<Map<String, dynamic>> currentStudents,
@@ -723,16 +789,24 @@ class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
 
     final projectionA = await project(documentA);
     final projectionB = await project(documentB);
-    final totalsA = _goldenResourceTotals(projectionA);
-    final totalsB = _goldenResourceTotals(projectionB);
+    Map<String, Map<String, dynamic>> overall(Map<String, dynamic> projection) => {
+      for (final raw in (projection['overall'] as Map)['resources'] as List)
+        (raw as Map)['resource_key'] as String: Map<String, dynamic>.from(raw),
+    };
+    int overallCredits(Map<String, dynamic> projection) =>
+        ((projection['overall'] as Map)['cost'] as Map)['credits'] as int? ?? 0;
+    final resourcesA = overall(projectionA);
+    final resourcesB = overall(projectionB);
     final resources = <Map<String, dynamic>>[];
-    for (final key in ({...totalsA.keys, ...totalsB.keys}.toList()..sort())) {
-      final left = totalsA[key];
-      final right = totalsB[key];
+    for (final key
+        in ({...resourcesA.keys, ...resourcesB.keys}.toList()..sort())) {
+      final left = resourcesA[key];
+      final right = resourcesB[key];
       final representative = (left ?? right)!;
       final requiredA = left?['required'] as int? ?? 0;
       final requiredB = right?['required'] as int? ?? 0;
-      final owned = representative['owned'] as int?;
+      // 백엔드와 같이 a쪽 줄이 있으면 그 보유량(null 포함)을 쓴다.
+      final owned = (left != null ? left['owned'] : right!['owned']) as int?;
       int? shortage(int required) =>
           owned == null ? null : (required > owned ? required - owned : 0);
       final shortageA = shortage(requiredA);
@@ -758,8 +832,8 @@ class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
     };
     final studentsA = students(documentA);
     final studentsB = students(documentB);
-    final creditsA = totalsA['credits']?['required'] as int? ?? 0;
-    final creditsB = totalsB['credits']?['required'] as int? ?? 0;
+    final creditsA = overallCredits(projectionA);
+    final creditsB = overallCredits(projectionB);
     return PlanningScenarioComparisonResult(
       projectionA: projectionA,
       projectionB: projectionB,
@@ -767,8 +841,8 @@ class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
         'credits_a': creditsA,
         'credits_b': creditsB,
         'credits_delta_b_minus_a': creditsB - creditsA,
-        'resource_type_count_a': totalsA.length,
-        'resource_type_count_b': totalsB.length,
+        'resource_type_count_a': resourcesA.length,
+        'resource_type_count_b': resourcesB.length,
         'known_shortage_type_count_a': resources
             .where((row) => (row['shortage_a'] as int? ?? 0) > 0)
             .length,
@@ -792,36 +866,6 @@ class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
       },
     );
   }
-}
-
-/// 계산 결과 `stage_results[].resources`의 재화별 필요량 합과 보유량(들어설 때 남은 양 중 가장 큰 값).
-Map<String, Map<String, dynamic>> _goldenResourceTotals(
-  Map<String, dynamic> projection,
-) {
-  final totals = <String, Map<String, dynamic>>{};
-  for (final result in projection['stage_results'] as List<dynamic>) {
-    for (final raw in (result as Map)['resources'] as List<dynamic>) {
-      final row = raw as Map;
-      final key = row['resource_key'] as String;
-      final owned = row['owned_at_entry'] as int?;
-      final total = totals.putIfAbsent(
-        key,
-        () => {
-          'item_id': row['item_id'],
-          'display_name': row['display_name'],
-          'category': row['category'],
-          'required': 0,
-          'owned': owned,
-        },
-      );
-      total['required'] = (total['required'] as int) + (row['required'] as int);
-      final known = total['owned'] as int?;
-      if (owned != null && (known == null || owned > known)) {
-        total['owned'] = owned;
-      }
-    }
-  }
-  return totals;
 }
 
 /// 문서 페이즈마다 단계 재화를 모은 `phase_results`(필요량 합, 보유 = 그 페이즈 첫 단계에 들어설 때 남은 양).

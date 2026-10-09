@@ -394,6 +394,7 @@ class GrowthCalculatorModeData {
     this.planMembership = GrowthCalculatorPlanMembership.unknown,
     this.recent = const [],
     this.onOpenRecent,
+    this.presetTargets = const [],
   });
 
   final GrowthCalculatorState state;
@@ -416,6 +417,9 @@ class GrowthCalculatorModeData {
 
   /// 최근 계산을 누르면 그 기준·목표로 다시 연다.
   final ValueChanged<GrowthCalculationRecord>? onOpenRecent;
+
+  /// 빠른 목표의 단계 프리셋 항목(FD-169 (a), FE4-i). 선택 프로필 저장소의 단계 프리셋 마지막 단계다.
+  final List<GrowthCalculatorPresetTarget> presetTargets;
 }
 
 /// S4 최근 계산 한 칸: 기록과 그 학생.

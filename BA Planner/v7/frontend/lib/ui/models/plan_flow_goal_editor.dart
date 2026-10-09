@@ -10,7 +10,8 @@
 // - 값 바꾸기: 아래 한계는 앞 단계 값(첫 단계는 지금 값), 위 한계는 목표 최댓값. 성장 규칙으로 정규화하고, 올린
 //   값은 뒤 단계에도 올려 준다(바뀐 칸은 900ms 동안 표시).
 // - 단계 추가: 고른 단계 바로 뒤에 그 단계 복사본. 단계 삭제: 1개는 남긴다. 기본 이름(`n단계`)은 번호를 다시 매긴다.
-// - 프리셋 적용: 프리셋의 듬성한 단계를 앞 단계 값에 누적해 펼치고, 앞 단계보다 올린 단계만 남긴다.
+// - 프리셋 적용: 프리셋의 듬성한 단계를 앞 단계 값에 누적해 펼치고, 앞 단계보다 올린 단계만 남긴다. 저장된
+//   프리셋(FE4-i)은 단계 이름도 옮긴다.
 // 새로 더한 것:
 // - 모드(FD-075): "한 번에 MAX" = 1단계에 모든 목표 최댓값, "직접 입력" = 지금 값 그대로인 빈 1단계. 저장하지 않는다.
 // - 목표 지우기: 고른 키를 그 학생의 모든 단계에서 지금 값으로 되돌린다(v2에서는 모든 단계 null, 누적 회귀 방지).
@@ -94,7 +95,8 @@ class PlanFlowGoalEditor extends ChangeNotifier {
   bool _syncing = false;
   bool _disposed = false;
 
-  /// 프리셋 바·C 목록에 보이는 단계 프리셋(계획 화면 프리셋 관리의 인메모리 목록, FD-074 저장소 전).
+  /// 프리셋 바·C 목록에 보이는 단계 프리셋. 프로필 저장소(FB-14)의 프리셋이 먼저, 계획 화면 프리셋 관리의
+  /// 인메모리 프리셋이 뒤다(FE4-i).
   List<PlanElementPreset> get presets => _presets;
 
   /// 프리셋 목록을 바꾼다(위젯 갱신에서 부르므로 알리지 않는다).
@@ -396,6 +398,11 @@ class PlanFlowGoalEditor extends ChangeNotifier {
     );
   }
 
+  /// "지금 구성을 프리셋으로"(FE4-i)에 넣을 [studentId]의 단계: 초안의 v2 단계(앞 단계보다 올린 단계만, 이름과
+  /// 19키 nullable 목표 원본). 지금 값으로 null을 채우지 않는다. 단계가 없으면 빈 목록이다.
+  List<PlanFlowStageDraft> presetStagesOf(String studentId) =>
+      flow.draft.stagesByStudent[studentId] ?? const <PlanFlowStageDraft>[];
+
   /// 모드 이름(프리셋 바·C 행 글자).
   String modeLabel(String mode) {
     if (mode == planFlowGoalModeMax) return '한 번에 MAX';
@@ -482,7 +489,7 @@ class PlanFlowGoalEditor extends ChangeNotifier {
     if (preset == null) return null;
     var previous = Map<String, int>.from(current);
     final next = <PlanElementStageDraft>[];
-    for (final sparse in preset.stages) {
+    for (final (presetIndex, sparse) in preset.stages.indexed) {
       final expanded = {...previous};
       for (final entry in sparse.entries) {
         expanded[entry.key] = math.max(
@@ -502,7 +509,8 @@ class PlanFlowGoalEditor extends ChangeNotifier {
         next.add(
           PlanElementStageDraft(
             id: _newStageId(studentId),
-            name: '${next.length + 1}단계',
+            // 저장된 프리셋의 단계 이름(FD-074). 없으면 기본 이름이다.
+            name: preset.stageNameAt(presetIndex) ?? '${next.length + 1}단계',
             targets: effective,
           ),
         );

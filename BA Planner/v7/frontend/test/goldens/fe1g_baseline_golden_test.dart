@@ -27,6 +27,7 @@ import 'package:ba_planner_v7/ui/models/plan_flow_goal_editor.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/models/student_filter_selection.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_flow_rail.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_student_review_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/student_form_cycle.dart';
@@ -614,6 +615,41 @@ void main() {
     await expectGoldenScene(tester, 'plan-flow-step2');
   }, variant: goldenPlatform);
 
+  testWidgets('plan-flow-step2-saved', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _planFlowService();
+    await service.seedPresetScene();
+    await _openPlanFlow(
+      tester,
+      service,
+      presets: [goldenFlowStagePreset(), goldenTestPreset()],
+    );
+    // FE4-i: 1단계 C "내 그룹"(저장된 그룹, 목록에 없는 학생 1명은 고르지 않고 남긴다)으로 호시노·아루를 고른다.
+    expect(
+      find.byKey(const ValueKey('plan-flow-group-golden-group-count')),
+      findsOneWidget,
+    );
+    await _tapKey(tester, 'plan-flow-group-golden-group');
+    final flow = tester
+        .widget<PlanFlowWorkspace>(find.byType(PlanFlowWorkspace))
+        .flow;
+    expect(flow.selectedStudentIds, ['hoshino', 'aru']);
+    await _tapKey(tester, 'plan-flow-next');
+    // 저장된 프리셋(단계 이름 포함)이 인메모리 프리셋 앞에 있다. 적용하면 카드 이름이 저장된 단계 이름이다.
+    await _tapKey(tester, 'plan-flow-goal-preset-stored:golden-raid');
+    await tester.pump();
+    await tester.pump(planFlowCalculationDebounce);
+    await tester.pump();
+    expect(find.text('성장 기반'), findsWidgets);
+    expect(
+      find.byKey(
+        const ValueKey('plan-flow-goal-aside-preset-stored:golden-raid-rename'),
+      ),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'plan-flow-step2-saved');
+  }, variant: goldenPlatform);
+
   testWidgets('plan-flow-step2-more', (tester) async {
     setGoldenViewport(tester);
     final service = await _planFlowService();
@@ -708,6 +744,41 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('새 시나리오 1'), findsOneWidget);
+    // FE4-i: 비교 대역은 계산 대역과 같은 기준이다. 시나리오로 저장 대상이면 레일의 필요 크레딧·부족 재화 종 수
+    // (초안 계산)와 비교 b쪽 값이 같다.
+    final flow = tester
+        .widget<PlanFlowWorkspace>(find.byType(PlanFlowWorkspace))
+        .flow;
+    final calculation = flow.calculation!;
+    final compared = await service.compareScenarios(
+      currentStudents: flow.context.currentStudentsWire,
+      inventory: flow.context.inventoryWire,
+      documentA: GoldenStudentMockAppService.activePlanDocument(),
+      documentB: PlanFlowDocumentBoundary.toPlanDocument(
+        flow.draft,
+        id: 'golden-compare-check',
+        name: '계획 만들기 초안',
+      ),
+    );
+    expect(compared.comparison['credits_b'], calculation.credits);
+    expect(
+      compared.comparison['known_shortage_type_count_b'],
+      calculation.shortageKinds,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('plan-flow-save-compare-credits')),
+        matching: find.textContaining('→ ${planFlowCreditsLabel(flow)}'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('plan-flow-save-compare-shortage')),
+        matching: find.textContaining('→ ${planFlowShortageLabel(flow)}'),
+      ),
+      findsOneWidget,
+    );
     expect(
       tester
           .widget<RailButton>(find.byKey(const ValueKey('plan-flow-next')))

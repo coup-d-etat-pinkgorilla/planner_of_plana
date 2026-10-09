@@ -15,6 +15,7 @@ import '../models/plan_flow_draft.dart';
 import '../models/plan_flow_goal_editor.dart';
 import '../models/plan_flow_order_editor.dart';
 import '../models/plan_flow_save.dart';
+import '../models/repository_presets_controller.dart';
 import '../models/planning_models.dart';
 import '../studio/plan_flow_studio_layout.dart';
 import 'animated_section_stack.dart';
@@ -81,7 +82,30 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
   PlanFlowGoalEditor? _goalEditorState;
 
   PlanFlowGoalEditor get _goalEditor => _goalEditorState ??=
-      PlanFlowGoalEditor(flow: _flow, presets: widget.presets);
+      PlanFlowGoalEditor(flow: _flow, presets: _mergedPresets());
+
+  /// 선택 프로필의 단계 프리셋·내 그룹 저장소(FE4-i, FB-14). 흐름마다 하나이고 열 때 읽는다.
+  late RepositoryPresetsController _presetsStore;
+
+  /// 저장소를 만들고 다음 프레임에 읽는다(읽기 시작 알림이 initState·didUpdateWidget 안에서 setState를 부르지
+  /// 않게).
+  RepositoryPresetsController _newPresetsStore(PlanFlowController flow) {
+    final store = RepositoryPresetsController(
+      service: widget.service,
+      profileId: flow.context.repositoryState.profileId,
+    )..addListener(_presetsChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && identical(_presetsStore, store)) store.load();
+    });
+    return store;
+  }
+
+  /// 2단계 프리셋 목록: 저장된 프리셋이 먼저, 계획 화면 프리셋 관리의 인메모리 프리셋이 뒤다.
+  List<PlanElementPreset> _mergedPresets() => [
+    for (final preset in _presetsStore.stagePresets)
+      planElementPresetFromRepository(preset),
+    ...widget.presets,
+  ];
 
   /// 3단계 화면 상태(고른 카드·거부 이유). 3단계를 처음 그릴 때 만들고 흐름 동안 유지한다.
   PlanFlowOrderEditor? _orderEditorState;
@@ -109,6 +133,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     _shownStep = _flow.step;
     _flow.addListener(_flowChanged);
     _saveState = _newSaveState(_flow);
+    _presetsStore = _newPresetsStore(_flow);
     if (widget.active) _setActive(true);
   }
 
@@ -127,15 +152,18 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
       _orderEditorState = null;
       final previousSave = _saveState..removeListener(_saveChanged);
       _saveState = _newSaveState(widget.flow);
+      final previousPresets = _presetsStore..removeListener(_presetsChanged);
+      _presetsStore = _newPresetsStore(widget.flow);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         previous?.dispose();
         previousEditor?.dispose();
         previousOrder?.dispose();
         previousSave.dispose();
+        previousPresets.dispose();
       });
     }
     if (oldWidget.presets != widget.presets) {
-      _goalEditorState?.updatePresets(widget.presets);
+      _goalEditorState?.updatePresets(_mergedPresets());
     }
     if (oldWidget.active != widget.active) _setActive(widget.active);
   }
@@ -172,11 +200,19 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     if (mounted) setState(() {});
   }
 
+  void _presetsChanged() {
+    _goalEditorState?.updatePresets(_mergedPresets());
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
     _flow.removeListener(_flowChanged);
     _saveState
       ..removeListener(_saveChanged)
+      ..dispose();
+    _presetsStore
+      ..removeListener(_presetsChanged)
       ..dispose();
     _pickerState?.dispose();
     _goalEditorState?.dispose();
@@ -342,6 +378,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                     key: const ValueKey('plan-flow-goal-body-view'),
                     flow: _flow,
                     editor: _goalEditor,
+                    presets: _presetsStore,
                   ),
                 ),
               if (step == PlanFlowStep.order)
@@ -386,6 +423,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                     key: const ValueKey('plan-flow-student-aside-view'),
                     flow: _flow,
                     picker: _picker,
+                    presets: _presetsStore,
                   ),
                 ),
               if (step == PlanFlowStep.goals)
@@ -394,6 +432,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                     key: const ValueKey('plan-flow-goal-aside-view'),
                     flow: _flow,
                     editor: _goalEditor,
+                    presets: _presetsStore,
                   ),
                 ),
               if (step == PlanFlowStep.order)
