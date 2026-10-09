@@ -503,3 +503,17 @@ topics: [workflow, design]
 - 후속 확인(FE4-f로 넘김): S 곡선이 사이 줄의 흐린 칩(1순위 세리카, 2순위 히나·노아) 위를 지나간다. 읽기에는 문제없다. FE4-f에서 직접 선행 점선을 더할 때 선 경로를 한 번에 다듬는다.
 - 커밋 순서: fb14 → fe4d2 → redesigndocs.
 - 다음 배정: 프론트 FE4-h(저장 문서 읽기 연결). 백엔드 FB-8 읽기 전용 설계 조사(FD-068 (b) authoring 메타). FD-068은 문서 v1 시절 결정이라, 문서 v2·plan.save/replace·시나리오 저장과 어떻게 맞출지(특히 "나중에" 칸 단계의 목표를 어디에 두는지) 계약안을 먼저 받는다.
+
+## 2026-10-09 17:30 — 커밋 확인, FE4-h gate GREEN, FB-8 설계 승인
+
+- 커밋: FB-14 `780705ff`, FE4-d2 `7cd9592e`, 문서 `a79f5d1d`.
+- FE4-h + FB-8 조사 gate ① `20261009_171109` GREEN: analyze 0, 테스트 335+392+127, process 44, golden 28 차이 0. FE4-h 범위 13파일(새 `repository_plan_snapshot.dart`, golden harness는 plan.save로 v2 계획을 심음). 승인.
+  · 후속(FE4-e로): `_incorporateScenario`가 바닥값을 정수 보기로 읽고(v2 null이던 StateError 해소), 편집·편입 뒤 작업 문서를 정수 v1로 다시 만든다. 지금은 저장하지 않으니 손실이 없지만, FE4-e 저장 연결 때 v2 null이 정수로 바뀌어 저장되지 않게 한다.
+- FB-8 읽기 전용 설계 조사 승인(status-backend). 결정 4건:
+  1. 안 A: 문서 v2 그대로, 레코드 옆 `authoring` v1 6키(prerequisites, deferred_stages 전체 단계, student_order, stage_order_by_student, 문서에 없는 선택 학생의 goal_metadata). 문서 v3·계산 제외 페이즈 표시는 쓰지 않는다.
+  2. 같은 학생 체인 = 배치 prefix + 나중에 suffix. 자동+직접 선행 전체 graph DAG, 앞 칸 금지(나중에 = 마지막 칸), 같은 칸 배열 순서는 프론트가 stable topological sort해서 보내고 백엔드는 검증만. 목표 없는 선택 학생 복원 허용.
+  3. optional 의미: create/replace 누락 = 문서 기반 기본값, save/update 누락 = 기존 authoring 보존(맞지 않으면 `authoring_required`), null로 지우기 금지. authoring 없는 요청은 옛 fingerprint 그대로.
+  4. FB-1c "빈 phases면 보관 없음"을 "문서·authoring 모두 빌 때만"으로 확장(나중에만 남은 계획도 보존).
+  · 같은 칸 배분 순서 확인 결과(계산이 페이즈 안 배열 순서대로 잔량을 넘김)는 FD-069 자동 정렬이 실제 부족 배분에 영향을 준다는 근거다. FE4-f가 칸별 정렬을 document 배열에 반영해야 한다.
+  · 크기 때문에 FB-8a(활성 계획)·FB-8b(시나리오)로 나눈다. 조사 문서는 FB-8a 커밋의 status-backend whole에 함께 들어간다.
+- 다음: 프론트 FE3-g(인연 선물 타일, FB-11b 연결 메모), 백엔드 FB-8a.

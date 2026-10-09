@@ -245,7 +245,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 **분할(2026-10-08, 백엔드 워커 설계 조사 `frontend-redesign-status-backend.md` "FB-1 읽기 전용 설계 조사" 승인).**
 - FB-1a 문서 v2: 19-key nullable targets(`null` = 목표 없음, 0은 실제 값), 학생별 `goal_metadata`(favorite·notes), 계산 경로가 null을 원본 목표로 보존(유효 상태는 계산 중에만), `planning.document.calculate`·시나리오 저장/비교가 v1·v2를 함께 읽음. v1 정수 의미와 FB-11a 계약은 바꾸지 않는다.
 - FB-1b 저장·이관: `repository.plan.get/save`, goals v1 파생(학생별 마지막 단계, bond_rank는 문서에만), legacy 첫 로드 이관(bond_rank 항상 null, 현재값으로 목표를 채우지 않음, 중복 goal 정책 fixture 먼저), legacy `repository.goals.save` 경로 정리. 이관으로 revision이 바뀌므로 title·scan·tactical 쪽 소비자는 소유자에게 알린다. — a **완료 2026-10-08** `682b2a7b`. b **완료 2026-10-09** `11426131`(21파일, Python 898 통과) + 소비자 연결 `86589da6`(fe1brev: title·계정 화면 revision 전파). scan·tactical은 tactic 오케스트레이터에 알림(10-09 00:50).
-- FB-1c 교체 보존: `repository.plan.replace`(기존 활성 문서를 시나리오로 보존 + 새 활성 문서를 한 transaction, lock 순서·journal 복구). FE4-e 전에만 있으면 된다. — **코드 승인 2026-10-09**(Python 912 통과), 커밋 대기.
+- FB-1c 교체 보존: `repository.plan.replace`(기존 활성 문서를 시나리오로 보존 + 새 활성 문서를 한 transaction, lock 순서·journal 복구). FE4-e 전에만 있으면 된다. — **완료 2026-10-09**(Python 912 통과, fb1c·fe4d1·문서 커밋, HEAD `e2502aed`).
 - 프론트 연결(FE4-h, 아래 FE4 표): 화면이 FB-1b 저장 문서를 읽도록 바꾼다(`_loadRepositoryPlan` 메모리 변환 → `RepositoryPlanService`, 학생 →N·계산기 계획 포함 판정을 문서 기준으로). 백엔드 상태 문서 FB-1b "프런트 연결 메모"·"소비자 영향" 표가 입력이다.
 
 `repository.plan.*`(가칭: 활성 계획 문서 조회·저장) 신설. 기존 goals v1만 있는 프로필은 첫 로드 때 지금 메모리에서 하던 1페이즈 변환을
@@ -262,11 +262,11 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | FE4-a 흐름 골격 | Studio 문서, StepRail(스텝 4개·요약 4행·다음/이전), 초안 `PlanningDocument` 컨트롤러 + 디바운스 계산, 부족 재화 플라이아웃. 현 `_showStudentSelector/_showElementBuilder/_showPhaseEditor/_creatingScenario` 플래그 묶음을 대체 | FD-082 — **완료 2026-10-08**: 커밋 `a18897a1`(초안 컨트롤러·StepRail·Studio 문서, 기존 세 화면은 B 본문에 축소 수용, golden `plan-flow-step1/2` 추가). 임시 상태: 기존 화면이 작게 보이고 C 보조가 비어 있다(FE4-b~d에서 교체) |
 | FE4-b 1단계 학생 고르기 | 8열 그리드·순서 배지·C 패널 목록/압축, 한 명 모드(학생 상세 인디케이터 재사용), 필터 모달 + 계획 칩 그룹 | FE3-a·FE3-d, FD-074 — **완료 2026-10-08**: 커밋 `2a5a7655`(새 1단계, 초안 문서 v2 전환, golden `plan-flow-step1` 갱신·`-many`·`-filter` 추가). 후속 확인: 필터 장면 왼쪽 레일 위 "필터 · 2" 알약 위치 |
 | FE4-c 2단계 목표 정하기 | 학생 탭 줄·가로 단계 카드·COST(`stage_results[].cost`)·현재→최종, 프리셋 바. 미배정 목록 폐기 | FD-074 — **완료 2026-10-09**: 커밋 `4a831177`(새 2단계 B·C, `PlanFlowGoalEditor`, 더 보기 패널 FD-072, golden `plan-flow-step2` 갱신·`-step2-more` 추가, `-step1-filter` 알약 수정) |
-| FE4-d 3단계 단계 순서 | 칸(=페이즈) 보드, 드래그, 같은 학생 선행 강제(기존 `_sequenceOrderIsValid` 재사용), 상태 배지, 자동 정렬, Many 모드 | — **분할(2026-10-09)**: d1 = Flow-3-Order(칸 보드·드래그·드롭 거부·같은 학생 회색 화살표·상태 배지 FD-035·C 상세·자동 정렬 3종·칸 이름/추가 FD-069·071, 3단계 축소 페이즈 편집기 교체 FD-070). d2 = Flow-3-Order-Many(12개 초과 작게 보기·크게/작게 seg·선택 카드 확장·이어진 선만·툴바·줄바꿈 스크롤). 직접 선행(분홍 점선)·"나중에" 칸은 FE4-f |
+| FE4-d 3단계 단계 순서 | 칸(=페이즈) 보드, 드래그, 같은 학생 선행 강제(기존 `_sequenceOrderIsValid` 재사용), 상태 배지, 자동 정렬, Many 모드 | — **분할(2026-10-09)**: d1 = Flow-3-Order(칸 보드·드래그·드롭 거부·같은 학생 회색 화살표·상태 배지 FD-035·C 상세·자동 정렬 3종·칸 이름/추가 FD-069·071, 3단계 축소 페이즈 편집기 교체 FD-070). d2 = Flow-3-Order-Many(12개 초과 작게 보기·크게/작게 seg·선택 카드 확장·이어진 선만·툴바·줄바꿈 스크롤). 직접 선행(분홍 점선)·"나중에" 칸은 FE4-f — **완료 2026-10-09**: d1(fb1c 뒤 커밋, golden `plan-flow-step3`), d2 `7cd9592e`(golden `plan-flow-step3-many` 추가, 펼친 카드는 칩을 가리지 않고 아래를 민다). 후속: 사이 줄 칩 위를 지나는 곡선은 FE4-f에서 |
 | FE4-e 4단계 저장 | 미리보기, 활성 계획 비교, 시나리오로 저장(기존 `createScenario`), 활성 계획에 페이즈로 추가/이걸로 바꾸기(FB-1) | FB-1, FD-031 |
-| FE4-f 교차 선행·나중에 칸 | 학생 간 선행 연결, "나중에" 칸 저장 | FB-8, FD-068 |
+| FE4-f 교차 선행·나중에 칸 | 학생 간 선행 연결, "나중에" 칸 저장 | FB-8, FD-068. FB-8 조사의 소비자 표(초안 복원·명시 deferred와 임시 미배치 구별·칸별 stable topological sort를 document 배열에 반영·편입 ID remap)가 입력 |
 | FE4-g 계산기 → 계획 넘김 | `PlanningStudentSeed`에 목표를 실어 계획 만들기 2단계를 계산기 목표로 열기, 이미 초안·활성 계획에 있는 학생 처리(FD-171) | FE4-c, FE3-f |
-| FE4-h 저장 문서 읽기 연결 | 계획 화면·학생 탭·계산기가 `repository.plan.get` 문서를 읽도록 전환(`_loadRepositoryPlan` 메모리 변환 제거, 빈 문서를 goals로 되살리지 않음, state·plan revision 일치 재조회, `get.calculation=null`은 계산 불가 표시). 학생 →N은 문서의 마지막 nullable bond. 통계·인벤토리는 호환 경로 유지 | FB-1b. FE4-e 전에 끝낸다 |
+| FE4-h 저장 문서 읽기 연결 | 계획 화면·학생 탭·계산기가 `repository.plan.get` 문서를 읽도록 전환(`_loadRepositoryPlan` 메모리 변환 제거, 빈 문서를 goals로 되살리지 않음, state·plan revision 일치 재조회, `get.calculation=null`은 계산 불가 표시). 학생 →N은 문서의 마지막 nullable bond. 통계·인벤토리는 호환 경로 유지 | FB-1b. FE4-e 전에 끝낸다 — **코드 승인 2026-10-09**(gate `20261009_171109` GREEN, golden 변경 0), 커밋 대기. 후속(FE4-e): 기존 페이즈 편집기·편입 뒤 작업 문서를 정수 v1로 다시 만드는 경로가 남아 있다. 저장 때 v2 null이 정수로 바뀌지 않게 한다 |
 
 ### FE5 — 시나리오·활성 계획 보기 (계획 탭 안의 뷰 전환)
 
@@ -345,13 +345,13 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | FB-5 | 학생 카탈로그에 폼 목록·폼 초상 경로(사용자 설치본 추출 대상 확장 포함) | — 완료 2026-10-07 `a3692424`(폼 2개 이상 학생만 선택 필드 `forms`, 단일 폼은 그대로) |
 | FB-6 | 전술 v2 기록·족보 쓰기(빈칸·슬롯 출처·상대 identity 보존), 시도 횟수, 족보 이름, `MockAppService` v2 구현 | FD-127, FD-128 |
 | FB-7 | 엑셀 가져오기 해석 preview/commit(Python, 파일 지문 확인, 처리 규칙 저장) | FD-128 |
-| FB-8 | 계획 문서 v2 또는 authoring 메타(교차 선행·나중에 칸·학생 순서) | FD-068 |
+| FB-8 | 계획 문서 v2 또는 authoring 메타(교차 선행·나중에 칸·학생 순서) | FD-068 — **설계 승인 2026-10-09**(status-backend "FB-8 읽기 전용 설계 조사"): 문서 v2 유지 + 레코드 옆 `authoring` v1(6키, 나중에 단계 전체 보관, 안 A), 같은 학생 체인 = 배치 prefix + 나중에 suffix, 자동+직접 선행 전체 DAG·앞 칸 금지·같은 칸 배열 순서는 백엔드가 검증만, optional 의미(create/replace 누락 = 기본값, save/update 누락 = 보존 또는 authoring_required), 옛 fingerprint 호환, FB-1c 빈 활성 예외를 "문서·authoring 모두 빌 때만"으로 확장. 분할: **FB-8a** 활성 계획(DTO·validator·plan.get/save/replace·legacy goals.save 손실 방지·archive 확장), **FB-8b** 시나리오(create/get/update/duplicate·compare 전달). FE4-f 전에 둘 다 |
 | FB-9 | 계산 응답 보강(페이즈 진입/종료 잔량 의미 확정, 다중 비교) — FE5-d/FE5-e에서 필요가 확인될 때만 | — |
 | FB-10 | 스캐너 프로토콜 추가 — **스캐너 워크플로가 구현**(additive): `scanner.session.pause/resume`·`paused` 이벤트(D21 개정, FD-142), 학생 폴백 필드 crop·역산값(FD-145), 인벤토리 entry별 승인·부분 commit·`needs_review` 영속 표시(FD-146), 진행 중 후보·feedback 스트리밍(FD-156), 정답 샘플 수, **크레딧·엘리그마 보유량 스캔**(FD-096 (c): 새 인식 대상, 스캔 탭 고르기에 종류로 추가). 이 워크플로는 요청서를 스캐너 오케스트레이터 로그에 남기고 프론트는 필드가 오면 그린다 | FD-142·FD-146·FD-096 확정(2026-10-06) |
 | FB-11 | 학생 성장 계산 + 인연 선물: 단일 학생 계산 메서드(totals + 범주별 크레딧 + 재화 행 + 인연 블록, FD-162), 인연 랭크별 누적 경험치 표·쓰다듬기 상수 메타데이터, 선물 카탈로그·선호 배수로 선물 3안 계산(FD-163) | FD-162, FD-163 — a(계산 메서드 `planning.student.calculate`, 9범주 크레딧)와 b(인연 선물)로 나눔. b는 자료 선행: `FavorLevelExcel`·`CafeInteractionExcel` 실제 행과 쓰다듬기 횟수 근거가 필요하다(저장소에 없음, 2026-10-08 조사). 공용 클라이언트 자료 저장소를 맡은 택틱 오케스트레이터에게 요청했다 — a **완료 2026-10-08**: 커밋 `facdd1d3`(Python 847 통과). b는 택틱 W4 자료 도착(커밋 `9d14b2b5`) 후 ExpType 해석 확정(택틱 W4b) 대기 — b **완료 2026-10-08**: 커밋 `7d0af068`(Python 881 통과, `student_bond.py`·`planning-student-bond-v1`, 자료 스냅샷 `core/student_bond_data.py`) |
 | FB-12 | 계획 계산 버그 2건(FE3-f1 발견, 2026-10-07): ① `planning_calc._calculate_star_cost`가 `record.star`를 읽어 wire의 `student_star`가 무시되고 성급 비용이 늘 ★0부터 계산됨 ② `planning_document._advance`가 장비 티어를 `"Tier<n>"`으로 이월하는데 `_parse_tier_number`는 `T<n>`만 읽어 2단계 이상 장비 비용이 T0부터 계산됨. 계획 탭·계산기 공통 | FE3-f2 전 단독 slice — **완료 2026-10-07**: 커밋 `50dbed6c`(Python 836건 통과, 기존 기대값 변화 0, 새 테스트 9건) |
 | FB-13 | 학생 catalog 항목에 `has_favorite_item: bool`(KR 서버 애장품 제공 여부, `student_meta.favorite_item_enabled`). 계약·Python·Dart DTO·mock·자산 재생성·process 검증 한 slice. 계산기 애장품 행 폴백 해소용(FE3-f2a 발견) | FB-1과 독립, FE3-f2b의 golden 갱신 전에 커밋 — **완료 2026-10-08**: 커밋 `fa15e87c`(13파일) |
-| FB-14 | 단계 프리셋·내 그룹 저장(FD-074 (b)): 프로필별 저장 묶음, 자체 collection revision(활성 계획 저장과 충돌하지 않게), 전체 교체 저장 + idempotency. 단계 프리셋은 이름 + 단계(이름, 19키 nullable 목표), 내 그룹은 이름 + 학생 ID 목록. 필터 프리셋은 범위 밖 | FD-074, FE4-b·FE4-c 연결은 프론트 — **착수 2026-10-09**(백엔드 워커, FB-1c 뒤) |
+| FB-14 | 단계 프리셋·내 그룹 저장(FD-074 (b)): 프로필별 저장 묶음, 자체 collection revision(활성 계획 저장과 충돌하지 않게), 전체 교체 저장 + idempotency. 단계 프리셋은 이름 + 단계(이름, 19키 nullable 목표), 내 그룹은 이름 + 학생 ID 목록. 필터 프리셋은 범위 밖 | FD-074, FE4-b·FE4-c 연결은 프론트 — **완료 2026-10-09**: 커밋 `780705ff`(Python 923 통과) |
 
 **스캐너 변동 대응(2026-10-06).** 스캐너 워크플로가 그리드 스캔 방식 개선 실험을 진행 중이라 FB-10의 응답 형식이 바뀔 수 있다.
 프론트는 인식 방식이 아니라 프로토콜 형식에만 기대고, FB-10 필드가 오기 전에는 해당 표시를 숨기거나 "스캔 없음" 빗금으로 그린다
@@ -442,3 +442,4 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-08(밤 2): FE4-b `2a5a7655`. FB-11b 코드 완료(커밋 대기). 다음 행동: 프론트 FE4-c(2단계 목표 정하기) → FE4-d → FE3-g, 백엔드 FB-1b(활성 계획 저장·이관).
 - 2026-10-09(새벽): FB-11b `7d0af068`(10-08 21:58), 문서 `e9baa249`. FB-1b `11426131`(Python 898), fe1brev `86589da6`, FE4-c `4a831177`, 문서 `b4bb199a`. 다음 행동: 프론트 FE4-d1(3단계 칸 보드) → FE4-d2(Many) → FE4-h(저장 문서 읽기) → FE3-g, 백엔드 FB-1c(replace). FE4-e는 FB-1c·FE4-h 뒤.
 - 2026-10-09(낮): FE4-d1·FB-1c gate `20261009_124241` GREEN, `plan-flow-step3` 승인, FB-1c Python 912 통과. 커밋 대기(fb1c → fe4d1 → 문서). 다음 행동: 프론트 FE4-d2(Many + 화살표가 칸 머리 칩을 피하게), 백엔드 FB-14(단계 프리셋·내 그룹 저장, FD-074 (b)).
+- 2026-10-09(오후): FB-14 `780705ff`, FE4-d2 `7cd9592e`, 문서 `a79f5d1d`. FE4-h gate `20261009_171109` GREEN(커밋 대기). FB-8 설계 승인·a/b 분할. 다음 행동: 프론트 FE3-g(인연 선물 타일) → FE4-e(4단계 저장), 백엔드 FB-8a → FB-8b. FE4-f는 FB-8a·b 뒤.
