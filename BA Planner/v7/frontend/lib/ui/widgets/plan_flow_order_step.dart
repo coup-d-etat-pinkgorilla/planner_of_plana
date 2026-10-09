@@ -6,10 +6,15 @@
 //   선행 → 후행 순서로 다시 놓는다(FD-069). 카드 상태 배지는 가능·부족·막힘(FD-035, 초안 계산 결과).
 // - 칸 머리 이름은 바로 고친다(기본 "n순위"), 마지막 칸 아래 "칸 추가", 빈 칸은 저장 때 빠진다(FD-071).
 // - C 보조: 고른 카드 상세(포함한 목표 · 먼저 끝나야 하는 단계 · 이 칸에서 부족한 재화) + 자동 정렬 3종.
-// - 직접 선행(분홍 점선)과 "나중에" 칸은 FE4-f, 단계가 많을 때 작게 보기는 FE4-d2에서 더한다.
+// - FE4-d2(시안 Flow-3-Order-Many): 단계가 12개를 넘으면 작게 보기(204×44 칩, 한 줄에 다섯, 넘치면 줄바꿈 +
+//   보드 스크롤). 고른 카드만 398×150으로 펼치고, 그 카드와 이어진 선만 그리며 나머지 칩은 흐리게 한다. 크게·작게
+//   세그먼트, 학생별 묶음, 툴바(부족 있는 단계만 · 선택 중 ×). 끌기·거부·자동 정렬은 크게 보기와 같다. 크게 보기
+//   화살표는 칸 사이 틈에서 옆으로 가고 칸 머리 오른쪽으로 카드 윗변에 들어간다.
+// - 직접 선행(분홍 점선)과 "나중에" 칸은 FE4-f.
 // 좌표는 시안(2560×1392, 헤더 184 아래가 캔버스)의 값이다([planFlowProtoRect]).
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -18,7 +23,9 @@ import '../kit/ba_chip.dart';
 import '../kit/diagonal_row.dart';
 import '../kit/info_popover.dart';
 import '../kit/item_icon_tile.dart';
+import '../kit/kit_pressable.dart';
 import '../kit/portrait_strip.dart';
+import '../kit/skew_controls.dart';
 import '../kit/titles.dart';
 import '../models/plan_flow_draft.dart';
 import '../models/plan_flow_order_editor.dart';
@@ -273,16 +280,82 @@ class _BoardLayout {
 }
 
 /// 같은 학생 단계 사이 화살표 하나(보드 좌표).
+///
+/// - [elbowY]가 있으면 꺾인 선: [from]에서 아래로 [elbowY]까지, 옆으로 [to]의 x까지, 다시 아래로 [to]까지(모서리는
+///   둥글게). 칸 사이 틈에서만 옆으로 가서 칸 머리(이름 · 상태 칩)를 지나지 않는다(FE4-d2).
+/// - [curve]면 시안 Flow-3-Order-Many처럼 위아래 접선이 수직인 S 곡선.
+/// - 둘 다 아니면 곧은 선(같은 줄의 옆 카드).
 @immutable
 class PlanFlowOrderArrow {
-  const PlanFlowOrderArrow(this.from, this.to);
+  const PlanFlowOrderArrow(this.from, this.to, {this.elbowY, this.curve = false});
 
   final Offset from;
   final Offset to;
+  final double? elbowY;
+  final bool curve;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PlanFlowOrderArrow &&
+      other.from == from &&
+      other.to == to &&
+      other.elbowY == elbowY &&
+      other.curve == curve;
+
+  @override
+  int get hashCode => Object.hash(from, to, elbowY, curve);
+
+  /// 선 경로(꺾쇠 제외).
+  Path path() {
+    final path = Path()..moveTo(from.dx, from.dy);
+    final elbow = elbowY;
+    if (curve) {
+      final middle = (from.dy + to.dy) / 2;
+      return path..cubicTo(from.dx, middle, to.dx, middle, to.dx, to.dy);
+    }
+    final dx = to.dx - from.dx;
+    if (elbow == null || dx.abs() < 1) return path..lineTo(to.dx, to.dy);
+    final radius = math.min(
+      10.0,
+      math.min(
+        dx.abs() / 2,
+        math.min((elbow - from.dy).abs(), (to.dy - elbow).abs()),
+      ),
+    );
+    final direction = dx.sign;
+    return path
+      ..lineTo(from.dx, elbow - radius)
+      ..quadraticBezierTo(from.dx, elbow, from.dx + direction * radius, elbow)
+      ..lineTo(to.dx - direction * radius, elbow)
+      ..quadraticBezierTo(to.dx, elbow, to.dx, elbow + radius)
+      ..lineTo(to.dx, to.dy);
+  }
+
+  /// 끝에서의 진행 방향(꺾쇠 방향).
+  Offset get endDirection {
+    if (curve || (elbowY != null && (to.dx - from.dx).abs() >= 1)) {
+      return const Offset(0, 1);
+    }
+    final delta = to - from;
+    final length = delta.distance;
+    return length < 1 ? const Offset(0, 1) : delta / length;
+  }
 }
 
-/// [from] 카드에서 [to] 카드로 가는 화살표. 같은 줄이면 옆으로, 아니면 아래 카드 위로 간다.
-PlanFlowOrderArrow planFlowOrderArrowBetween(Rect from, Rect to) {
+/// 칸 머리 왼쪽 끝은 첫 줄 첫 카드 왼쪽보다 25.7 오른쪽이다(머리 14.9 + 카드 48·tan10 + 2.3).
+const _headerCardOffset = _headerInset + _cardTop * _railSlope - _cardInset;
+
+/// 칸 머리 이름 칸 폭.
+const _laneNameWidth = 220.0;
+
+/// 크게 보기에서 [from] 카드에서 [to] 카드로 가는 화살표. 같은 줄이면 옆으로 곧게 간다. 아니면 카드 아래에서 내려와
+/// [gapY](칸 사이·줄 사이 틈)에서 옆으로 가고, [to] 윗변의 [enterX]로 들어간다.
+PlanFlowOrderArrow planFlowOrderArrowBetween(
+  Rect from,
+  Rect to, {
+  double? gapY,
+  double? enterX,
+}) {
   final sameRow = (from.top - to.top).abs() < 1;
   if (sameRow) {
     final cut = diagonalCutDepth(from.height);
@@ -294,7 +367,42 @@ PlanFlowOrderArrow planFlowOrderArrowBetween(Rect from, Rect to) {
   }
   return PlanFlowOrderArrow(
     Offset(from.left + 186, from.bottom),
-    Offset(to.left + 212.5, to.top - 6),
+    Offset(enterX ?? to.left + 212.5, to.top - 6),
+    elbowY: gapY ?? to.top - (_rowPitch - planFlowOrderCardSize.height) / 2,
+  );
+}
+
+/// 칸 첫 줄 첫 카드로 들어가는 x: 칸 머리(이름 [_laneNameWidth] + 상태 칩 [chipWidth]) 오른쪽 끝보다 16 오른쪽, 카드
+/// 윗변 안(212.5 ~ 372).
+double planFlowOrderHeaderClearX(Rect card, double chipWidth) {
+  final headerRight = _headerCardOffset + _laneNameWidth + 8 + chipWidth;
+  return card.left + math.min(372.0, math.max(212.5, headerRight + 16));
+}
+
+/// 작게 보기 화살표(시안: 고른 카드와 이어진 것만, S 곡선). [from] 아래 가운데에서 [to] 위 가운데로 간다. 둘이
+/// 같은 높이에 걸치면(같은 칸 같은 줄, FD-069) 옆 가운데끼리 곧게 잇는다.
+PlanFlowOrderArrow planFlowOrderCompactArrow(Rect from, Rect to) {
+  if (to.top - 5 < from.bottom) {
+    final forward = to.center.dx >= from.center.dx;
+    return PlanFlowOrderArrow(
+      Offset(
+        forward
+            ? from.right - diagonalCutDepth(from.height) / 2
+            : from.left + diagonalCutDepth(from.height) / 2,
+        from.center.dy,
+      ),
+      Offset(
+        forward
+            ? to.left + diagonalCutDepth(to.height) / 2
+            : to.right - diagonalCutDepth(to.height) / 2,
+        to.center.dy,
+      ),
+    );
+  }
+  return PlanFlowOrderArrow(
+    Offset(from.center.dx - diagonalCutDepth(from.height) / 2, from.bottom),
+    Offset(to.center.dx, to.top - 5),
+    curve: true,
   );
 }
 
@@ -338,6 +446,37 @@ class _PlanFlowOrderBodyState extends State<PlanFlowOrderBody> {
     final editor = widget.editor;
     final draft = flow.draft;
     final message = editor.message;
+    final compact = editor.compact && draft.hasStages;
+    final count = BaChip(
+      key: const ValueKey('plan-flow-order-count'),
+      label: '단계 ${draft.stageCount}개',
+    );
+    final messageView = message == null
+        ? const SizedBox.shrink()
+        : Semantics(
+            liveRegion: true,
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.block_rounded,
+                  size: 18,
+                  color: AppColors.danger,
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    message,
+                    key: const ValueKey('plan-flow-order-message'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _bodyStyle.copyWith(
+                      color: AppTones.danger.foreground,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
     return Stack(
       key: const ValueKey('plan-flow-order-body'),
       children: [
@@ -348,53 +487,65 @@ class _PlanFlowOrderBodyState extends State<PlanFlowOrderBody> {
             children: [
               Text('단계 순서 정하기', style: kitDisplayStyle(AppType.headlineSize)),
               const SizedBox(width: 10),
-              const InfoPopover(
-                key: ValueKey('plan-flow-order-info'),
-                label: '단계 순서 정하는 법',
-                title: '단계 순서 정하는 법',
-                width: 360,
-                children: [
-                  InfoPopoverList([
-                    '카드를 끌어 칸을 옮깁니다. 칸 안에서도 끌어 순서를 바꿉니다.',
-                    '같은 학생의 단계는 자동으로 이어지고, 선행 단계보다 앞 칸에는 놓을 수 없습니다.',
-                    '칸 이름을 눌러 바꿉니다. 칸이 그대로 계획의 페이즈가 되고, 빈 칸은 저장할 때 빠집니다.',
-                  ]),
-                ],
-              ),
-              const SizedBox(width: 12),
-              BaChip(
-                key: const ValueKey('plan-flow-order-count'),
-                label: '단계 ${draft.stageCount}개',
-              ),
+              if (compact)
+                const InfoPopover(
+                  key: ValueKey('plan-flow-order-info'),
+                  label: '많을 때',
+                  title: '많을 때',
+                  width: 330,
+                  children: [
+                    InfoPopoverList([
+                      '단계가 12개를 넘으면 자동으로 작게 보기로 바뀝니다. 크게·작게로 바꿀 수 있습니다.',
+                      '선은 고른 카드와 이어진 것만 그립니다. 나머지 카드는 흐려집니다.',
+                      '칸이 넘치면 줄이 바뀌고, 전체는 스크롤됩니다.',
+                    ]),
+                  ],
+                )
+              else
+                const InfoPopover(
+                  key: ValueKey('plan-flow-order-info'),
+                  label: '단계 순서 정하는 법',
+                  title: '단계 순서 정하는 법',
+                  width: 360,
+                  children: [
+                    InfoPopoverList([
+                      '카드를 끌어 칸을 옮깁니다. 칸 안에서도 끌어 순서를 바꿉니다.',
+                      '같은 학생의 단계는 자동으로 이어지고, 선행 단계보다 앞 칸에는 놓을 수 없습니다.',
+                      '칸 이름을 눌러 바꿉니다. 칸이 그대로 계획의 페이즈가 되고, 빈 칸은 저장할 때 빠집니다.',
+                    ]),
+                  ],
+                ),
+              if (!compact) ...[const SizedBox(width: 12), count],
               const SizedBox(width: 16),
-              Expanded(
-                child: message == null
-                    ? const SizedBox.shrink()
-                    : Semantics(
-                        liveRegion: true,
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.block_rounded,
-                              size: 18,
-                              color: AppColors.danger,
-                            ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                message,
-                                key: const ValueKey('plan-flow-order-message'),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: _bodyStyle.copyWith(
-                                  color: AppTones.danger.foreground,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-              ),
+              Expanded(child: messageView),
+              if (compact) ...[count, const SizedBox(width: 10)],
+              if (editor.many || compact)
+                SkewSegmented<bool>(
+                  key: const ValueKey('plan-flow-order-view'),
+                  segments: const [
+                    SkewSegment(value: false, label: '크게'),
+                    SkewSegment(value: true, label: '작게'),
+                  ],
+                  selected: compact,
+                  onChanged: editor.setCompact,
+                  height: 30,
+                  fontSize: AppType.bodySmallSize,
+                  horizontalPadding: 14,
+                ),
+              if (compact) ...[
+                const SizedBox(width: 6),
+                SkewSegmented<bool>(
+                  key: const ValueKey('plan-flow-order-group'),
+                  segments: const [
+                    SkewSegment(value: true, label: '학생별 묶음'),
+                  ],
+                  selected: editor.groupByStudent ? true : null,
+                  onChanged: (_) => editor.toggleGroupByStudent(),
+                  height: 30,
+                  fontSize: AppType.bodySmallSize,
+                  horizontalPadding: 14,
+                ),
+              ],
             ],
           ),
           alignment: Alignment.centerLeft,
@@ -411,7 +562,25 @@ class _PlanFlowOrderBodyState extends State<PlanFlowOrderBody> {
               ),
             ),
           )
-        else
+        else if (compact) ...[
+          _designBox(
+            planFlowProtoRect(size, 633.2, 279.2, 1413.3, 34),
+            const Size(1413.3, 34),
+            _CompactToolbar(flow: flow, editor: editor),
+            alignment: Alignment.centerLeft,
+          ),
+          _designBox(
+            planFlowProtoRect(
+              size,
+              _compactLeft,
+              _compactTop,
+              _compactSize.width,
+              _compactSize.height,
+            ),
+            _compactSize,
+            _CompactBoard(flow: flow, editor: editor),
+          ),
+        ] else
           _designBox(
             planFlowProtoRect(
               size,
@@ -423,32 +592,40 @@ class _PlanFlowOrderBodyState extends State<PlanFlowOrderBody> {
             _boardSize,
             _OrderBoard(flow: flow, editor: editor),
           ),
-        _designBox(
-          planFlowProtoRect(size, 442, 1342, 600, 24),
-          const Size(600, 24),
-          const Row(
-            key: ValueKey('plan-flow-order-legend'),
-            children: [
-              SizedBox(
-                width: 28,
-                height: 2,
-                child: ColoredBox(color: planFlowOrderArrowColor),
-              ),
-              SizedBox(width: 8),
-              Text(
-                '같은 학생 · 자동',
-                style: TextStyle(
-                  fontFamily: AppFonts.body,
-                  fontFamilyFallback: AppFonts.fallback,
-                  fontSize: AppType.bodySmallSize,
-                  fontWeight: AppType.medium,
-                  color: _dropText,
+        if (compact)
+          _designBox(
+            planFlowProtoRect(size, 445.1, 1348, 1413.3, 30),
+            const Size(1413.3, 30),
+            const _CompactLegend(),
+            alignment: Alignment.centerLeft,
+          )
+        else
+          _designBox(
+            planFlowProtoRect(size, 442, 1342, 600, 24),
+            const Size(600, 24),
+            const Row(
+              key: ValueKey('plan-flow-order-legend'),
+              children: [
+                SizedBox(
+                  width: 28,
+                  height: 2,
+                  child: ColoredBox(color: planFlowOrderArrowColor),
                 ),
-              ),
-            ],
+                SizedBox(width: 8),
+                Text(
+                  '같은 학생 · 자동',
+                  style: TextStyle(
+                    fontFamily: AppFonts.body,
+                    fontFamilyFallback: AppFonts.fallback,
+                    fontSize: AppType.bodySmallSize,
+                    fontWeight: AppType.medium,
+                    color: _dropText,
+                  ),
+                ),
+              ],
+            ),
+            alignment: Alignment.centerLeft,
           ),
-          alignment: Alignment.centerLeft,
-        ),
       ],
     );
   }
@@ -498,13 +675,46 @@ class _OrderBoardState extends State<_OrderBoard> {
     for (final stage in draft.stages) {
       byStudent.putIfAbsent(stage.studentId, () => []).add(stage);
     }
+    final laneOfStage = <String, _LaneLayout>{
+      for (final lane in layout.lanes)
+        for (final id in lane.phase.stageIds) id: lane,
+    };
+    final textScaler = MediaQuery.textScalerOf(context);
     for (final stages in byStudent.values) {
       for (var index = 1; index < stages.length; index++) {
         final from = layout.cardOf(stages[index - 1].id);
         final to = layout.cardOf(stages[index].id);
-        if (from != null && to != null) {
-          arrows.add(planFlowOrderArrowBetween(from, to));
+        final fromLane = laneOfStage[stages[index - 1].id];
+        final toLane = laneOfStage[stages[index].id];
+        if (from == null || to == null || fromLane == null || toLane == null) {
+          continue;
         }
+        double? enterX;
+        if (toLane.phase.stageIds.indexOf(stages[index].id) == 0) {
+          // 칸 첫 카드 위에는 칸 머리가 있다. 머리 오른쪽으로 들어간다.
+          final chip = planFlowOrderLaneChip(
+            toLane.phase,
+            statuses,
+            editor.laneShortages(toLane.phase),
+            calculating: flow.calculating,
+          );
+          enterX = planFlowOrderHeaderClearX(
+            to,
+            chip == null
+                ? 0
+                : BaChip.widthFor(chip.label, textScaler: textScaler),
+          );
+        }
+        arrows.add(
+          planFlowOrderArrowBetween(
+            from,
+            to,
+            gapY: identical(fromLane, toLane)
+                ? null
+                : toLane.tile.top - _laneGap / 2,
+            enterX: enterX,
+          ),
+        );
       }
     }
     return SizedBox(
@@ -555,49 +765,48 @@ class _OrderBoardState extends State<_OrderBoard> {
   }
 }
 
-/// 같은 학생 자동 연결 화살표(회색 실선, 끝에 꺾쇠).
+/// 같은 학생 자동 연결 화살표(회색 실선, 끝에 꺾쇠). 작게 보기는 시안대로 조금 진하고 굵다.
 class PlanFlowOrderArrowPainter extends CustomPainter {
-  const PlanFlowOrderArrowPainter(this.arrows);
+  const PlanFlowOrderArrowPainter(
+    this.arrows, {
+    this.color = planFlowOrderArrowColor,
+    this.strokeWidth = 2,
+  });
 
   final List<PlanFlowOrderArrow> arrows;
+  final Color color;
+  final double strokeWidth;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = planFlowOrderArrowColor
+      ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
+      ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
     for (final arrow in arrows) {
-      final delta = arrow.to - arrow.from;
-      final length = delta.distance;
-      if (length < 1) continue;
-      final direction = delta / length;
+      if ((arrow.to - arrow.from).distance < 1) continue;
+      canvas.drawPath(arrow.path(), paint);
+      final direction = arrow.endDirection;
       final normal = Offset(-direction.dy, direction.dx);
-      canvas.drawLine(arrow.from, arrow.to, paint);
       final back = arrow.to - direction * 6;
       canvas.drawPath(
         Path()
           ..moveTo(back.dx + normal.dx * 5, back.dy + normal.dy * 5)
           ..lineTo(arrow.to.dx, arrow.to.dy)
           ..lineTo(back.dx - normal.dx * 5, back.dy - normal.dy * 5),
-        paint,
+        paint..strokeWidth = 2,
       );
+      paint.strokeWidth = strokeWidth;
     }
   }
 
   @override
-  bool shouldRepaint(PlanFlowOrderArrowPainter oldDelegate) {
-    if (oldDelegate.arrows.length != arrows.length) return true;
-    for (var index = 0; index < arrows.length; index++) {
-      if (oldDelegate.arrows[index].from != arrows[index].from ||
-          oldDelegate.arrows[index].to != arrows[index].to) {
-        return true;
-      }
-    }
-    return false;
-  }
+  bool shouldRepaint(PlanFlowOrderArrowPainter oldDelegate) =>
+      oldDelegate.color != color ||
+      oldDelegate.strokeWidth != strokeWidth ||
+      !listEquals(oldDelegate.arrows, arrows);
 }
 
 /// 칸 하나(타일 · 머리 · 카드). 칸 전체가 끌어 놓는 자리다.
@@ -685,7 +894,7 @@ class _Lane extends StatelessWidget {
               child: Row(
                 children: [
                   SizedBox(
-                    width: 220,
+                    width: _laneNameWidth,
                     child: _LaneNameField(
                       key: ValueKey('plan-flow-order-lane-${phase.id}-name'),
                       name: phase.name,
@@ -807,10 +1016,14 @@ class _LaneNameField extends StatefulWidget {
     super.key,
     required this.name,
     required this.onSubmitted,
+    this.style,
   });
 
   final String name;
   final ValueChanged<String> onSubmitted;
+
+  /// 없으면 크게 보기 머리 글자(18).
+  final TextStyle? style;
 
   @override
   State<_LaneNameField> createState() => _LaneNameFieldState();
@@ -858,7 +1071,7 @@ class _LaneNameFieldState extends State<_LaneNameField> {
     maxLines: 1,
     textInputAction: TextInputAction.done,
     onSubmitted: widget.onSubmitted,
-    style: kitDisplayStyle(AppType.titleLargeSize),
+    style: widget.style ?? kitDisplayStyle(AppType.titleLargeSize),
     decoration: const InputDecoration.collapsed(
       hintText: '칸 이름',
       hintStyle: _mutedStyle,
@@ -995,6 +1208,885 @@ class _OrderCard extends StatelessWidget {
       child: card(dragging: false),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// 작게 보기(FE4-d2, 시안 Flow-3-Order-Many)
+
+/// 작게 보기 보드 자리(시안 x 435.87, y 325.17, 1619.57×1010.83 평행사변형).
+const _compactLeft = 435.87;
+const _compactTop = 325.17;
+const _compactSize = Size(1619.57, 1010.83);
+
+/// 칩 시안 크기(204×44)와 간격(시안 x 327.9 → 541.7, 줄 54).
+const planFlowOrderChipSize = Size(203.8, 44);
+const planFlowOrderChipPitch = 213.75;
+const planFlowOrderChipsPerRow = 5;
+const _chipRowPitch = 54.0;
+
+/// 칸 위에서 첫 칩 줄까지, 레일 선에서 첫 칩까지(머리 열 자리).
+const _chipTop = 14.0;
+const _chipLeft = 142.3;
+
+/// 첫 칸 위치, 칸 윗변 폭, 레일 선(칸 윗변 왼쪽 꼭짓점: x = 190.2 − y·tan10).
+const _compactLaneFirstTop = 12.0;
+const _compactLaneTopWidth = 1403.4;
+const _compactLineX = 190.2;
+
+/// 칸 머리 열(이름 17 · 단계 n개 11 · 상태 칩).
+const _compactHeaderInset = 12.1;
+const _compactHeaderWidth = 126.0;
+
+const _compactAddHeight = 44.0;
+const _compactAddWidth = 300.0;
+
+const _compactPanelFill = Color(0xff162431);
+const _compactPanelStroke = Color.fromRGBO(56, 81, 107, 0.75);
+const _compactLaneFill = Color.fromRGBO(16, 24, 35, 0.55);
+const _compactLaneStroke = Color.fromRGBO(56, 81, 107, 0.6);
+const _chipFill = Color.fromRGBO(16, 24, 35, 0.85);
+const _expandedFill = Color(0xff131d29);
+
+/// 작게 보기 화살표(시안 stroke rgba(195,207,219,.7) 2.2).
+const planFlowOrderCompactArrowColor = Color.fromRGBO(195, 207, 219, 0.7);
+
+/// 고른 카드와 이어지지 않은 칩의 불투명도(시안 opacity .55).
+const planFlowOrderDimOpacity = 0.55;
+
+/// 칩 사이 가로 틈(시안 213.75 − 203.8).
+const _chipGap = planFlowOrderChipPitch - 203.8;
+
+/// 한 줄 오른쪽 끝(레일 선 기준): 칩 다섯 개 자리.
+const _rowLimit =
+    _chipLeft + planFlowOrderChipPitch * planFlowOrderChipsPerRow - _chipGap;
+
+/// 줄 첫 카드가 칸 머리 열을 피해 오른쪽으로 밀릴 수 있는 여유(줄 나누기에서만 쓴다).
+const _cardLeadAllowance = 15.0;
+
+/// 칸 머리 열 위치(칸 위에서 6). 한 줄 칸(높이 72) 안에 머리 열이 들어간다.
+const _compactHeaderTop = 6.0;
+const _compactHeaderBottom = 70.0;
+
+/// 펼친 카드 위·아래로 칩과 두는 틈.
+const _cardClearance = 14.0;
+
+/// 펼친 카드는 칩 줄 가운데 높이에 둔다(시안: 칩 위 53, 아래 53).
+const _cardOverhang =
+    (150 - 44) / 2; // (planFlowOrderCardSize.height − 칩 높이) / 2
+
+String _ellipsize(String text, int maxLength) =>
+    text.length <= maxLength ? text : '${text.substring(0, maxLength)}…';
+
+/// 작게 보기 칸 하나의 배치(보드 시안 좌표).
+@immutable
+class _CompactLaneLayout {
+  const _CompactLaneLayout({
+    required this.phase,
+    required this.box,
+    required this.visible,
+    required this.slots,
+    required this.rows,
+    this.card,
+  });
+
+  final PlanFlowPhase phase;
+
+  /// 칸 평행사변형의 바깥 상자.
+  final Rect box;
+
+  /// 보이는 단계(학생별 묶음 · 부족만 반영).
+  final List<String> visible;
+
+  /// 단계 id → 칩 자리(보드 좌표). 고른 카드는 펼친 카드 자리(398.4×150)다.
+  final Map<String, Rect> slots;
+
+  /// 줄마다 보이는 단계(보이는 순서).
+  final List<List<String>> rows;
+
+  /// 이 칸에 펼친 카드 자리.
+  final Rect? card;
+}
+
+@immutable
+class _CompactBoardLayout {
+  const _CompactBoardLayout({
+    required this.lanes,
+    required this.add,
+    required this.height,
+  });
+
+  /// 칸을 차례로 놓는다. [selectedId] 카드는 펼친 크기(398.4×150)로 자리를 차지하고, 다른 칩을 가리지 않게
+  /// 밀어낸다(FE4-d2 gate ① 결정):
+  /// - 같은 줄: 카드 폭만큼 오른쪽 칩을 옆으로 밀고, 줄 끝을 넘는 칩은 다음 줄로 넘긴다. 줄 첫 카드면 칸 머리 열
+  ///   오른쪽에서 시작한다.
+  /// - 위: 카드 윗변이 위 칩(같은 칸 앞 줄, 앞 칸)보다 14 아래가 되도록 그 줄을 내린다. 위에 칩이 없으면(첫 칸 첫 줄)
+  ///   시안 자리 그대로라 윗부분이 보드 위로 넘친다.
+  /// - 아래: 다음 줄·뒤 칸·"칸 추가"를 카드 아래 끝 기준으로 내린다(칸 상자도 늘어난다).
+  factory _CompactBoardLayout.of(
+    List<PlanFlowPhase> phases,
+    List<String> Function(PlanFlowPhase phase) visibleFor, {
+    double scroll = 0,
+    String? selectedId,
+  }) {
+    double lineX(double y) => _compactLineX - (y - scroll) * _railSlope;
+    final lanes = <_CompactLaneLayout>[];
+    var top = _compactLaneFirstTop;
+    // 위에 놓은 칩·카드 아래 끝(첫 칸 위에는 없다).
+    double? contentAbove;
+    for (final phase in phases) {
+      final visible = visibleFor(phase);
+      // 1) 줄 나누기(레일 선 기준 x). 카드는 칩 자리에서 시작해 398.4 폭을 차지한다. 줄 첫 카드는 머리 열을 피해
+      //    오른쪽으로 밀릴 수 있어 [_cardLeadAllowance]만큼 더 잡는다.
+      final rows = <List<String>>[<String>[]];
+      var cursor = _chipLeft;
+      for (final id in visible) {
+        final isCard = id == selectedId;
+        final width = isCard
+            ? planFlowOrderCardSize.width
+            : planFlowOrderChipSize.width;
+        if (rows.last.isNotEmpty && cursor + width > _rowLimit + 0.5) {
+          rows.add(<String>[]);
+          cursor = _chipLeft;
+        }
+        if (isCard && rows.last.isEmpty) cursor += _cardLeadAllowance;
+        rows.last.add(id);
+        cursor += width + _chipGap;
+      }
+      // 2) 줄 높이와 자리.
+      final slots = <String, Rect>{};
+      Rect? card;
+      var rowTop = top + _chipTop;
+      var previousBottom = contentAbove;
+      var contentBottom = top + _chipTop + planFlowOrderChipSize.height;
+      for (final row in rows) {
+        final hasCard = row.contains(selectedId);
+        if (hasCard && previousBottom != null) {
+          rowTop = math.max(
+            rowTop,
+            previousBottom + _cardClearance + _cardOverhang,
+          );
+        }
+        var cursorX = lineX(rowTop) + _chipLeft;
+        for (final (column, id) in row.indexed) {
+          if (id == selectedId) {
+            final cardTop = rowTop - _cardOverhang;
+            // 시안 자리(칩 자리 24 왼쪽). 줄 첫 카드는 칸 머리 열과 겹치지 않게, 다음 카드는 왼쪽 칩과 겹치지 않게 민다.
+            var left = column == 0 ? cursorX - 24 : cursorX;
+            if (column == 0 && cardTop < top + _compactHeaderBottom) {
+              left = math.max(
+                left,
+                lineX(top) + _compactHeaderInset + _compactHeaderWidth + 4,
+              );
+            }
+            card = Rect.fromLTWH(
+              left,
+              cardTop,
+              planFlowOrderCardSize.width,
+              planFlowOrderCardSize.height,
+            );
+            slots[id] = card;
+            cursorX = card.right + _chipGap;
+          } else {
+            slots[id] = Rect.fromLTWH(
+              cursorX,
+              rowTop,
+              planFlowOrderChipSize.width,
+              planFlowOrderChipSize.height,
+            );
+            cursorX += planFlowOrderChipPitch;
+          }
+        }
+        final rowBottom = hasCard && card != null
+            ? card.bottom
+            : rowTop + planFlowOrderChipSize.height;
+        contentBottom = math.max(contentBottom, rowBottom);
+        previousBottom = rowTop + planFlowOrderChipSize.height;
+        if (hasCard) previousBottom = rowBottom;
+        rowTop = rowBottom + _chipRowPitch - planFlowOrderChipSize.height;
+      }
+      final height = math.max(
+        18 + _chipRowPitch,
+        contentBottom + _chipTop - top,
+      );
+      final box = Rect.fromLTWH(
+        lineX(top) - height * _railSlope,
+        top,
+        _compactLaneTopWidth + height * _railSlope,
+        height,
+      );
+      lanes.add(
+        _CompactLaneLayout(
+          phase: phase,
+          box: box,
+          visible: visible,
+          slots: slots,
+          rows: rows,
+          card: card,
+        ),
+      );
+      contentAbove = contentBottom;
+      top += height + _laneGap;
+    }
+    final add = Rect.fromLTWH(
+      lineX(top) - _compactAddHeight * _railSlope,
+      top,
+      _compactAddWidth,
+      _compactAddHeight,
+    );
+    return _CompactBoardLayout(lanes: lanes, add: add, height: add.bottom + 24);
+  }
+
+  final List<_CompactLaneLayout> lanes;
+  final Rect add;
+  final double height;
+
+  Rect? slotOf(String stageId) {
+    for (final lane in lanes) {
+      final slot = lane.slots[stageId];
+      if (slot != null) return slot;
+    }
+    return null;
+  }
+}
+
+/// 작게 보기 보드(시안 평행사변형 판 #162431, 세로 스크롤). 칸은 칩 다섯 개씩 줄을 바꾼다.
+class _CompactBoard extends StatefulWidget {
+  const _CompactBoard({required this.flow, required this.editor});
+
+  final PlanFlowController flow;
+  final PlanFlowOrderEditor editor;
+
+  @override
+  State<_CompactBoard> createState() => _CompactBoardState();
+}
+
+class _CompactBoardState extends State<_CompactBoard> {
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    key: const ValueKey('plan-flow-order-compact-board'),
+    children: [
+      const Positioned.fill(
+        child: IgnorePointer(
+          child: CustomPaint(painter: _CompactPanelPainter()),
+        ),
+      ),
+      Positioned.fill(
+        child: ClipPath(
+          clipper: const _RowPathClipper(radius: 10),
+          child: SingleChildScrollView(
+            key: const ValueKey('plan-flow-order-scroll'),
+            controller: _scroll,
+            child: ListenableBuilder(
+              listenable: _scroll,
+              builder: (context, _) =>
+                  _content(_scroll.hasClients ? _scroll.offset : 0.0),
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+
+  Widget _content(double scroll) {
+    final flow = widget.flow;
+    final editor = widget.editor;
+    final draft = flow.draft;
+    final statuses = editor.statuses;
+    final selected = editor.selectedStage;
+    final layout = _CompactBoardLayout.of(
+      draft.phases,
+      (phase) => editor.visibleStageIds(phase, statuses: statuses),
+      scroll: scroll,
+      selectedId: selected?.id,
+    );
+    // 고른 카드 자리는 배치가 펼친 크기로 잡아 둔다(다른 칩을 가리지 않음).
+    final expanded = selected == null ? null : layout.slotOf(selected.id);
+    final arrows = <PlanFlowOrderArrow>[];
+    if (selected != null && expanded != null) {
+      final predecessor = editor.predecessorOf(selected);
+      final successor = editor.successorOf(selected);
+      final from = predecessor == null ? null : layout.slotOf(predecessor.id);
+      final to = successor == null ? null : layout.slotOf(successor.id);
+      if (from != null) arrows.add(planFlowOrderCompactArrow(from, expanded));
+      if (to != null) arrows.add(planFlowOrderCompactArrow(expanded, to));
+    }
+    final selectedPhase = selected == null ? null : editor.phaseOf(selected.id);
+    return SizedBox(
+      width: _compactSize.width,
+      height: math.max(layout.height, _compactSize.height),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          for (final lane in layout.lanes)
+            Positioned.fromRect(
+              key: ValueKey('plan-flow-order-lane-${lane.phase.id}'),
+              rect: lane.box,
+              child: _CompactLane(
+                flow: flow,
+                editor: editor,
+                lane: lane,
+                statuses: statuses,
+                selectedStageId: expanded == null ? null : selected?.id,
+              ),
+            ),
+          Positioned.fromRect(
+            rect: layout.add,
+            child: DiagonalRow(
+              key: const ValueKey('plan-flow-order-add-lane'),
+              variant: DiagonalRowVariant.tile,
+              onTap: editor.addPhase,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: const Row(
+                children: [
+                  Icon(Icons.add_rounded, size: 18, color: AppColors.text),
+                  SizedBox(width: 8),
+                  Text('칸 추가', style: _bodyStyle),
+                ],
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                key: const ValueKey('plan-flow-order-arrows'),
+                painter: PlanFlowOrderArrowPainter(
+                  arrows,
+                  color: planFlowOrderCompactArrowColor,
+                  strokeWidth: 2.2,
+                ),
+              ),
+            ),
+          ),
+          if (selected != null && expanded != null && selectedPhase != null)
+            Positioned.fromRect(
+              key: ValueKey('plan-flow-order-card-${selected.id}'),
+              rect: expanded,
+              // 펼친 카드 위에 놓아도 그 카드 자리(같은 칸)로 옮긴다.
+              child: DragTarget<String>(
+                onWillAcceptWithDetails: (details) => true,
+                onAcceptWithDetails: (details) => editor.move(
+                  details.data,
+                  phaseId: selectedPhase.id,
+                  index: selectedPhase.stageIds.indexOf(selected.id),
+                ),
+                builder: (context, candidates, rejected) => Stack(
+                  children: [
+                    const Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(painter: _ExpandedBackdropPainter()),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: _OrderCard(
+                        flow: flow,
+                        editor: editor,
+                        stage: selected,
+                        status: statuses[selected.id],
+                        selected: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// [diagonalRowPath] 모양으로 자른다.
+class _RowPathClipper extends CustomClipper<Path> {
+  const _RowPathClipper({required this.radius});
+
+  final double radius;
+
+  @override
+  Path getClip(Size size) =>
+      diagonalRowPath(size, DiagonalRowVariant.srow, radius: radius);
+
+  @override
+  bool shouldReclip(_RowPathClipper oldClipper) => oldClipper.radius != radius;
+}
+
+/// 작게 보기 판(시안 #162431 + 테두리 rgba(56,81,107,.75)).
+class _CompactPanelPainter extends CustomPainter {
+  const _CompactPanelPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = diagonalRowPath(size, DiagonalRowVariant.srow, radius: 10);
+    canvas.drawPath(path, Paint()..color = _compactPanelFill);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = _compactPanelStroke
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.9,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CompactPanelPainter oldDelegate) => false;
+}
+
+/// 작게 보기 칸 바탕(시안 rgba(16,24,35,.55) + 테두리 1px). 끄는 동안 [highlight] 색 테두리.
+class _CompactLanePainter extends CustomPainter {
+  const _CompactLanePainter({this.highlight});
+
+  final Color? highlight;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = diagonalRowPath(size, DiagonalRowVariant.srow, radius: 8);
+    canvas.drawPath(path, Paint()..color = _compactLaneFill);
+    final highlight = this.highlight;
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = highlight ?? _compactLaneStroke
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = highlight == null ? 1 : 2.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CompactLanePainter oldDelegate) =>
+      oldDelegate.highlight != highlight;
+}
+
+/// 펼친 카드 뒤 그림자와 불투명 바탕(시안 #131d29, drop-shadow). 아래 칩이 비치지 않게 한다.
+class _ExpandedBackdropPainter extends CustomPainter {
+  const _ExpandedBackdropPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = diagonalRowPath(size, DiagonalRowVariant.srow);
+    canvas.drawShadow(path, Colors.black, 12, false);
+    canvas.drawPath(path, Paint()..color = _expandedFill);
+  }
+
+  @override
+  bool shouldRepaint(_ExpandedBackdropPainter oldDelegate) => false;
+}
+
+/// 작게 보기 칸 하나(바탕 · 머리 열 · 칩). 칸 전체가 끌어 놓는 자리다.
+class _CompactLane extends StatelessWidget {
+  const _CompactLane({
+    required this.flow,
+    required this.editor,
+    required this.lane,
+    required this.statuses,
+    required this.selectedStageId,
+  });
+
+  final PlanFlowController flow;
+  final PlanFlowOrderEditor editor;
+  final _CompactLaneLayout lane;
+  final Map<String, PlanFlowStageStatus> statuses;
+
+  /// 펼쳐 그리는 카드(이 칸에서는 자리만 비운다).
+  final String? selectedStageId;
+
+  /// 칸 안 [local] 위치에 놓을 때의 보이는 목록 자리: 높이가 가장 가까운 줄에서 놓은 x보다 가운데가 왼쪽인 칩 뒤.
+  int _displayIndex(Offset local) {
+    final visible = lane.visible;
+    if (visible.isEmpty) return 0;
+    final point = local + lane.box.topLeft;
+    var start = 0;
+    var bestStart = 0;
+    List<String>? best;
+    var bestDistance = double.infinity;
+    for (final row in lane.rows) {
+      final rects = [for (final id in row) ?lane.slots[id]];
+      if (rects.isNotEmpty) {
+        final center = rects
+                .map((rect) => rect.center.dy)
+                .reduce((a, b) => a + b) /
+            rects.length;
+        final distance = (point.dy - center).abs();
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          best = row;
+          bestStart = start;
+        }
+      }
+      start += row.length;
+    }
+    final row = best;
+    if (row == null) return visible.length;
+    var index = bestStart;
+    for (final (column, id) in row.indexed) {
+      final slot = lane.slots[id];
+      if (slot != null && point.dx > slot.center.dx) {
+        index = bestStart + column + 1;
+      }
+    }
+    return math.min(index, visible.length);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final phase = lane.phase;
+    final chip = planFlowOrderLaneChip(
+      phase,
+      statuses,
+      editor.laneShortages(phase),
+      calculating: flow.calculating,
+    );
+    final origin = lane.box.topLeft;
+    // 머리 열은 칸 윗변 왼쪽 꼭짓점(상자 왼쪽 + 높이·tan10)에서 12.1 오른쪽이다.
+    final headerLeft = lane.box.height * _railSlope + _compactHeaderInset;
+    return DragTarget<String>(
+      onWillAcceptWithDetails: (details) => true,
+      onAcceptWithDetails: (details) {
+        final box = context.findRenderObject();
+        final index = box is RenderBox
+            ? editor.stageIndexFor(
+                phase,
+                lane.visible,
+                _displayIndex(box.globalToLocal(details.offset)),
+              )
+            : null;
+        editor.move(details.data, phaseId: phase.id, index: index);
+      },
+      builder: (context, candidates, rejected) {
+        final candidate = candidates.whereType<String>().firstOrNull;
+        final violation = candidate == null
+            ? null
+            : editor.violationFor(candidate, phase.id);
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _CompactLanePainter(
+                  highlight: candidate == null
+                      ? null
+                      : violation == null
+                      ? AppColors.accent
+                      : AppColors.danger,
+                ),
+              ),
+            ),
+            Positioned(
+              left: headerLeft,
+              top: _compactHeaderTop,
+              width: _compactHeaderWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: 20,
+                    child: _LaneNameField(
+                      key: ValueKey('plan-flow-order-lane-${phase.id}-name'),
+                      name: phase.name,
+                      style: kitDisplayStyle(AppType.titleMediumSize),
+                      onSubmitted: (name) => editor.renamePhase(phase.id, name),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '단계 ${phase.stageIds.length}개',
+                    key: ValueKey('plan-flow-order-lane-${phase.id}-count'),
+                    style: _mutedStyle.copyWith(fontSize: AppType.captionSize),
+                  ),
+                  if (chip != null) ...[
+                    const SizedBox(height: 3),
+                    BaChip(
+                      key: ValueKey('plan-flow-order-lane-${phase.id}-status'),
+                      label: chip.label,
+                      tone: chip.tone,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (lane.visible.isEmpty)
+              Positioned(
+                // 첫 칩 자리: 상자 왼쪽에서 (높이 − 14)·tan10 + 142.3.
+                left: (lane.box.height - _chipTop) * _railSlope + _chipLeft,
+                top: _chipTop,
+                width: planFlowOrderChipPitch * 2,
+                height: planFlowOrderChipSize.height,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    phase.stageIds.isEmpty
+                        ? '여기로 끌어다 놓기'
+                        : '조건에 맞는 단계가 없습니다',
+                    style: const TextStyle(
+                      fontFamily: AppFonts.body,
+                      fontFamilyFallback: AppFonts.fallback,
+                      fontSize: AppType.bodySmallSize,
+                      fontWeight: AppType.medium,
+                      color: _dropText,
+                    ),
+                  ),
+                ),
+              ),
+            for (final id in lane.visible)
+              if (id != selectedStageId)
+                if (lane.slots[id] case final slot?)
+                  if (flow.draft.stageById(id) case final stage?)
+                    Positioned.fromRect(
+                      key: ValueKey('plan-flow-order-chip-$id'),
+                      rect: slot.shift(-origin),
+                      child: _OrderChip(
+                        flow: flow,
+                        editor: editor,
+                        stage: stage,
+                        status: statuses[id],
+                        dimmed: !editor.isConnected(id),
+                        connected:
+                            selectedStageId != null && editor.isConnected(id),
+                      ),
+                    ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// 작게 보기 칩(시안 204×44: 초상 37×30 · 이름 12 · 단계 태그 · 상태 점 7). 누르면 고르고, 끌어 옮긴다.
+class _OrderChip extends StatelessWidget {
+  const _OrderChip({
+    required this.flow,
+    required this.editor,
+    required this.stage,
+    required this.status,
+    required this.dimmed,
+    required this.connected,
+  });
+
+  final PlanFlowController flow;
+  final PlanFlowOrderEditor editor;
+  final PlanFlowStage stage;
+  final PlanFlowStageStatus? status;
+
+  /// 고른 카드와 이어지지 않았다(흐리게).
+  final bool dimmed;
+
+  /// 고른 카드의 같은 학생 앞·뒤 단계(분홍 테두리).
+  final bool connected;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = flow.context.displayName(stage.studentId);
+    final owned = editor.isOwned(stage.studentId);
+    final chip = planFlowOrderStatusChip(
+      status,
+      owned: owned,
+      calculating: flow.calculating,
+    );
+    final border = connected
+        ? AppColors.accent.withValues(alpha: 0.55)
+        : StageTag.colorOf(stage.step).withValues(alpha: 0.55);
+    Widget body({required bool dragging}) => Semantics(
+      container: true,
+      button: true,
+      label: '$name ${stage.step}단계',
+      value: chip.label,
+      child: ClipPath(
+        clipper: const _RowPathClipper(radius: 6),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: dragging ? null : () => editor.select(stage.id),
+          child: CustomPaint(
+            painter: _ChipPainter(
+              border: border,
+              borderWidth: connected ? 3 : 2,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 13.8, right: 8),
+              child: ExcludeSemantics(
+                child: Row(
+                  children: [
+                    PortraitStrip(
+                      studentIds: [stage.studentId],
+                      maxVisible: 1,
+                      portraitSize: const Size(37, 30),
+                    ),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _bodyStyle.copyWith(
+                          fontSize: AppType.bodySmallSize,
+                          fontWeight: AppType.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    StageTag(stage: stage.step),
+                    const SizedBox(width: 7),
+                    SizedBox(
+                      key: ValueKey('plan-flow-order-chip-${stage.id}-dot'),
+                      width: 7,
+                      height: 7,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: chip.tone.foreground,
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return Opacity(
+      opacity: dimmed ? planFlowOrderDimOpacity : 1,
+      child: Draggable<String>(
+        data: stage.id,
+        dragAnchorStrategy: pointerDragAnchorStrategy,
+        feedback: _DragFeedback(
+          name: name,
+          step: stage.step,
+          studentId: stage.studentId,
+        ),
+        childWhenDragging: Opacity(opacity: 0.35, child: body(dragging: true)),
+        child: body(dragging: false),
+      ),
+    );
+  }
+}
+
+/// 칩 바탕(시안 rgba(16,24,35,.85))과 안쪽 테두리(잘린 path stroke라 반만 보인다).
+class _ChipPainter extends CustomPainter {
+  const _ChipPainter({required this.border, required this.borderWidth});
+
+  final Color border;
+  final double borderWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = diagonalRowPath(size, DiagonalRowVariant.srow, radius: 6);
+    canvas.drawPath(path, Paint()..color = _chipFill);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = border
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = borderWidth,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ChipPainter oldDelegate) =>
+      oldDelegate.border != border || oldDelegate.borderWidth != borderWidth;
+}
+
+/// 작게 보기 툴바(시안 1413×34: 학생 · 초상 8명 + 나머지 수 · 부족 있는 단계만 · 선택 중 ×).
+class _CompactToolbar extends StatelessWidget {
+  const _CompactToolbar({required this.flow, required this.editor});
+
+  final PlanFlowController flow;
+  final PlanFlowOrderEditor editor;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = editor.selectedStage;
+    final shortOnly = editor.shortOnly;
+    return Row(
+      key: const ValueKey('plan-flow-order-toolbar'),
+      children: [
+        const Text('학생', style: KV.labelStyle),
+        const SizedBox(width: 10),
+        PortraitStrip(
+          studentIds: flow.draft.studentIds,
+          maxVisible: 8,
+          portraitSize: const Size(32, 26),
+        ),
+        const Spacer(),
+        KitPressable(
+          key: const ValueKey('plan-flow-order-short-only'),
+          onPressed: editor.toggleShortOnly,
+          toggled: shortOnly,
+          semanticLabel: '부족 있는 단계만',
+          builder: (context, state) => BaChip(
+            label: '부족 있는 단계만',
+            tone: shortOnly ? AppTones.pink : AppTones.info,
+          ),
+        ),
+        if (selected != null) ...[
+          const SizedBox(width: 10),
+          BaChip(
+            key: const ValueKey('plan-flow-order-selection'),
+            label:
+                '${_ellipsize(flow.context.displayName(selected.studentId), 12)} 선택 중',
+            tone: AppTones.pink,
+            onRemove: editor.clearSelection,
+            removeLabel: '선택 풀기',
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// 작게 보기 범례(같은 학생 · 자동, 상태 점 가능 · 부족 · 막힘).
+class _CompactLegend extends StatelessWidget {
+  const _CompactLegend();
+
+  static const _textStyle = TextStyle(
+    fontFamily: AppFonts.body,
+    fontFamilyFallback: AppFonts.fallback,
+    fontSize: AppType.bodySmallSize,
+    fontWeight: AppType.medium,
+    color: _dropText,
+  );
+
+  @override
+  Widget build(BuildContext context) => Row(
+    key: const ValueKey('plan-flow-order-legend'),
+    children: [
+      const SizedBox(
+        width: 28,
+        height: 2,
+        child: ColoredBox(color: planFlowOrderCompactArrowColor),
+      ),
+      const SizedBox(width: 8),
+      const Text('같은 학생 · 자동', style: _textStyle),
+      for (final (label, tone) in const [
+        ('가능', AppTones.ok),
+        ('부족', AppTones.warn),
+        ('막힘', AppTones.danger),
+      ]) ...[
+        const SizedBox(width: 16),
+        SizedBox(
+          width: 8,
+          height: 8,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: tone.foreground,
+              borderRadius: const BorderRadius.all(Radius.circular(4)),
+            ),
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(label, style: _textStyle),
+      ],
+    ],
+  );
 }
 
 /// 끌고 있는 카드(포인터 가운데에 작은 행).

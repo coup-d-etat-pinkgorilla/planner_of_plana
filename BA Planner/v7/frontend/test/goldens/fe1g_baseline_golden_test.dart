@@ -632,6 +632,56 @@ void main() {
     await expectGoldenScene(tester, 'plan-flow-step3');
   }, variant: goldenPlatform);
 
+  testWidgets('plan-flow-step3-many', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _planFlowService();
+    await _openPlanFlow(tester, service, presets: [goldenFlowManyPreset()]);
+    // 열 명 × 3단계 = 단계 30개. 12개를 넘어 3단계가 작게 보기로 열린다(FE4-d2).
+    for (final id in const [
+      'hoshino',
+      'aru',
+      'shun_swimsuit',
+      'ayane',
+      'hina',
+      'serika',
+      'kei',
+      'hasumi',
+      'nagusa',
+      'noa',
+    ]) {
+      await _tapFlowCard(tester, id);
+    }
+    await _tapKey(tester, 'plan-flow-next');
+    await _tapKey(tester, 'plan-flow-goal-preset-many-three');
+    await _tapKey(tester, 'plan-flow-goal-apply-all');
+    await _tapKey(tester, 'plan-flow-next');
+    expect(
+      find.byKey(const ValueKey('plan-flow-order-compact-board')),
+      findsOneWidget,
+    );
+    final flow = tester
+        .widget<PlanFlowWorkspace>(find.byType(PlanFlowWorkspace))
+        .flow;
+    expect(flow.draft.stageCount, 30);
+    expect(flow.draft.phases, hasLength(3));
+    expect(find.text('단계 30개'), findsOneWidget);
+    // 호시노 2단계 칩을 골라 펼친다: 호시노 1 → 2 → 3 선만 그리고 나머지 칩은 흐리게.
+    final hoshinoSecond = flow.draft.stagesByStudent['hoshino']![1].id;
+    await _tapKey(tester, 'plan-flow-order-chip-$hoshinoSecond');
+    await tester.pump();
+    await tester.pump(planFlowCalculationDebounce);
+    await tester.pump();
+    expect(
+      find.byKey(ValueKey('plan-flow-order-card-$hoshinoSecond')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-flow-order-selection')),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'plan-flow-step3-many');
+  }, variant: goldenPlatform);
+
   // --- 시나리오 ---------------------------------------------------------------
   testWidgets('plan-scenario-list', (tester) async {
     setGoldenViewport(tester);

@@ -4,10 +4,13 @@
 //   자동 정렬 3종, 빈 칸은 저장·계산 문서에서 뺀다.
 // - 상태(FD-035): 부족 · 막힘 · 가능, 응답 `bottlenecks` · `affected_stage_ids` 읽기.
 // - 화면: 처음 그리면 칸에 넣기, 끌어 옮기기와 거부 이유, 카드 고르기 → C 상세, 칸 이름 바꾸기, 칸 추가, 자동 정렬.
+// - FE4-d2: 화살표가 칸 머리를 피해 들어가기, 단계가 12개를 넘으면 작게 보기(크게·작게, 펼친 카드, 이어진 선만,
+//   흐리게, 선택 풀기, 부족 있는 단계만, 학생별 묶음, 끌어 옮기기·거부).
 //
 // 계산 디바운스(Timer)가 있어서 pumpAndSettle 대신 명시적인 pump를 쓴다.
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/ui/kit/kit_pressable.dart';
 import 'package:ba_planner_v7/ui/models/plan_flow_draft.dart';
 import 'package:ba_planner_v7/ui/models/plan_flow_order_editor.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
@@ -45,6 +48,19 @@ PlanFlowDraft _draft({List<PlanFlowPhase> phases = const []}) => PlanFlowDraft(
   },
   phases: phases,
 );
+
+/// 단계가 많은 초안(학생 5명 × 3단계 = 15개, 작게 보기). [phases]가 없으면 칸에 넣지 않는다.
+const _manyStudents = ['aru', 'ayane', 'hoshino', 'hina', 'noa'];
+
+PlanFlowDraft _manyDraft({List<PlanFlowPhase> phases = const []}) =>
+    PlanFlowDraft(
+      students: [for (final id in _manyStudents) _seed(id)],
+      stagesByStudent: {
+        for (final id in _manyStudents)
+          id: [for (var step = 1; step <= 3; step++) _v2Stage(id, step)],
+      },
+      phases: phases,
+    );
 
 PlanFlowPhase _phase(String id, String name, List<String> stageIds) =>
     PlanFlowPhase(id: id, name: name, stageIds: stageIds);
@@ -548,6 +564,18 @@ void main() {
           )
           .painter! as PlanFlowOrderArrowPainter;
       expect(painter.arrows, hasLength(1));
+      // FE4-d2: 다음 칸 첫 카드로 가는 화살표는 칸 사이 틈에서 옆으로 가고, 칸 머리(이름 칸 220 + 상태 칩) 오른쪽으로
+      // 카드 윗변에 들어간다(보드 좌표, 보드 왼쪽 위 = 캔버스 (400, 101.2)).
+      const board = Offset(400, 101.2);
+      final arrow = painter.arrows.single;
+      final target = tester
+          .getRect(find.byKey(const ValueKey('plan-flow-order-card-aru-stage-2')))
+          .shift(-board);
+      expect(arrow.curve, isFalse);
+      expect(arrow.elbowY, closeTo(secondLane.top - board.dy - 7, 0.5));
+      expect(arrow.to.dy, closeTo(target.top - 6, 0.5));
+      expect(arrow.to.dx, greaterThan(target.left + 25.6 + 220 + 8));
+      expect(arrow.to.dx, lessThanOrEqualTo(target.left + 372 + 0.01));
       // 처음 고른 카드는 첫 칸의 첫 단계다.
       expect(
         tester
@@ -691,6 +719,252 @@ void main() {
         ['ayane-stage-1'],
       ]);
       expect(flow.draft.phases.first.name, '먼저 할 것');
+      await _settle(tester);
+    });
+  });
+
+  group('작게 보기(FE4-d2)', () {
+    Finder chipOf(String stageId) =>
+        find.byKey(ValueKey('plan-flow-order-chip-$stageId'));
+    Finder cardOf(String stageId) =>
+        find.byKey(ValueKey('plan-flow-order-card-$stageId'));
+    double opacityOf(WidgetTester tester, String stageId) => tester
+        .widget<Opacity>(
+          find.descendant(of: chipOf(stageId), matching: find.byType(Opacity)).first,
+        )
+        .opacity;
+    PlanFlowOrderArrowPainter arrows(WidgetTester tester) =>
+        tester
+                .widget<CustomPaint>(
+                  find.byKey(const ValueKey('plan-flow-order-arrows')),
+                )
+                .painter!
+            as PlanFlowOrderArrowPainter;
+
+    test('화살표 경로: 같은 칸 다음 줄은 줄 사이 틈, 머리 피하는 x는 카드 윗변 안', () {
+      const from = Rect.fromLTWH(1000, 48, 398.4, 150);
+      const to = Rect.fromLTWH(170, 212, 398.4, 150);
+      final arrow = planFlowOrderArrowBetween(from, to);
+      expect(arrow.elbowY, closeTo(to.top - 7, 0.01));
+      expect(arrow.to, Offset(to.left + 212.5, to.top - 6));
+      expect(arrow.endDirection, const Offset(0, 1));
+      expect(arrow.path().getBounds().top, closeTo(from.bottom, 0.01));
+      expect(
+        planFlowOrderHeaderClearX(to, 60),
+        closeTo(to.left + 25.66 + 228 + 76, 0.01),
+      );
+      expect(planFlowOrderHeaderClearX(to, 400), closeTo(to.left + 372, 0.01));
+      final compact = planFlowOrderCompactArrow(
+        const Rect.fromLTWH(327.9, 26, 203.8, 44),
+        const Rect.fromLTWH(269.7, 167, 398.4, 150),
+      );
+      // 시안 Flow-3-Order-Many: M425.9 70 C … 468.9 162.
+      expect(compact.from.dx, closeTo(425.9, 0.1));
+      expect(compact.from.dy, closeTo(70, 0.01));
+      expect(compact.to.dx, closeTo(468.9, 0.01));
+      expect(compact.to.dy, closeTo(162, 0.01));
+      expect(compact.curve, isTrue);
+    });
+
+    testWidgets('단계가 12개를 넘으면 작게 보기: 고른 카드만 펼치고 이어진 선만, 나머지는 흐리게', (
+      tester,
+    ) async {
+      final service = _OrderService();
+      addTearDown(service.dispose);
+      final flow = await _controller(service, draft: _manyDraft());
+      await _pumpOrder(tester, flow);
+      expect(flow.draft.stageCount, 15);
+      expect(
+        find.byKey(const ValueKey('plan-flow-order-compact-board')),
+        findsOneWidget,
+      );
+      expect(find.text('단계 15개'), findsOneWidget);
+      expect(find.byKey(const ValueKey('plan-flow-order-toolbar')), findsOneWidget);
+      // 처음 고른 카드(아루 1단계)는 398×150으로 펼치고 칩 자리는 비운다. 나머지 14개는 204×44 칩.
+      expect(cardOf('aru-stage-1'), findsOneWidget);
+      expect(chipOf('aru-stage-1'), findsNothing);
+      final card = tester.getSize(cardOf('aru-stage-1'));
+      expect(card.width, closeTo(planFlowOrderCardSize.width, 0.01));
+      expect(card.height, closeTo(planFlowOrderCardSize.height, 0.01));
+      final chip = tester.getSize(chipOf('ayane-stage-1'));
+      expect(chip.width, closeTo(planFlowOrderChipSize.width, 0.01));
+      expect(chip.height, closeTo(planFlowOrderChipSize.height, 0.01));
+      for (final id in _manyStudents.skip(1)) {
+        expect(chipOf('$id-stage-1'), findsOneWidget);
+      }
+      // 같은 칸 칩은 한 줄에 다섯, 줄마다 레일을 따라 같은 간격.
+      final first = tester.getRect(chipOf('ayane-stage-1'));
+      final second = tester.getRect(chipOf('hoshino-stage-1'));
+      expect(second.left - first.left, closeTo(planFlowOrderChipPitch, 0.5));
+      // 펼친 카드는 보이는 칩을 하나도 가리지 않는다(gate ① 20261009_150924 뒤 배치 결정).
+      final expandedRect = tester.getRect(cardOf('aru-stage-1'));
+      for (final stage in flow.draft.stages) {
+        final chipFinder = chipOf(stage.id);
+        if (chipFinder.evaluate().isEmpty) continue;
+        expect(
+          tester.getRect(chipFinder).overlaps(expandedRect),
+          isFalse,
+          reason: '${stage.id} 칩이 펼친 카드에 가려진다',
+        );
+      }
+      // 선은 고른 카드와 이어진 것(아루 1 → 2)만, 이어지지 않은 칩은 흐리게.
+      expect(arrows(tester).arrows, hasLength(1));
+      expect(arrows(tester).arrows.single.curve, isTrue);
+      expect(opacityOf(tester, 'aru-stage-2'), 1);
+      expect(opacityOf(tester, 'ayane-stage-1'), planFlowOrderDimOpacity);
+
+      // 크게 · 작게 세그먼트로 되돌린다.
+      await tester.tap(find.text('크게'));
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('plan-flow-order-compact-board')),
+        findsNothing,
+      );
+      expect(cardOf('ayane-stage-1'), findsOneWidget);
+      expect(find.byKey(const ValueKey('plan-flow-order-toolbar')), findsNothing);
+      await tester.tap(find.text('작게'));
+      await tester.pump();
+      expect(chipOf('ayane-stage-1'), findsOneWidget);
+    });
+
+    testWidgets('칩을 누르면 그 카드를 펼치고, 선택 중 × 는 선택을 푼다', (tester) async {
+      final service = _OrderService();
+      addTearDown(service.dispose);
+      final flow = await _controller(service, draft: _manyDraft());
+      await _pumpOrder(tester, flow);
+
+      await tester.tap(chipOf('aru-stage-2'));
+      await tester.pump();
+      expect(cardOf('aru-stage-2'), findsOneWidget);
+      expect(chipOf('aru-stage-1'), findsOneWidget);
+      // 앞(1단계)·뒤(3단계)로 두 선.
+      expect(arrows(tester).arrows, hasLength(2));
+      expect(opacityOf(tester, 'aru-stage-1'), 1);
+      expect(opacityOf(tester, 'aru-stage-3'), 1);
+      expect(opacityOf(tester, 'hoshino-stage-2'), planFlowOrderDimOpacity);
+      final selection = find.byKey(const ValueKey('plan-flow-order-selection'));
+      expect(
+        find.descendant(
+          of: selection,
+          matching: find.text('${flow.context.displayName('aru')} 선택 중'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.descendant(of: selection, matching: find.byType(KitPressable)),
+      );
+      await tester.pump();
+      expect(cardOf('aru-stage-2'), findsNothing);
+      expect(chipOf('aru-stage-2'), findsOneWidget);
+      expect(selection, findsNothing);
+      expect(arrows(tester).arrows, isEmpty);
+      expect(opacityOf(tester, 'hoshino-stage-2'), 1);
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('plan-flow-order-aside-title')),
+            )
+            .data,
+        '고른 단계가 없습니다',
+      );
+    });
+
+    testWidgets('부족 있는 단계만 · 학생별 묶음은 보기만 바꾸고 배치는 그대로다', (tester) async {
+      final service = _OrderService();
+      addTearDown(service.dispose);
+      final flow = await _controller(
+        service,
+        draft: _manyDraft(
+          phases: [
+            _phase('p1', '1순위', [
+              'ayane-stage-1',
+              'aru-stage-1',
+              'hoshino-stage-1',
+              'hina-stage-1',
+              'noa-stage-1',
+            ]),
+            _phase('p2', '2순위', [
+              for (final id in _manyStudents) '$id-stage-2',
+            ]),
+            _phase('p3', '3순위', [
+              for (final id in _manyStudents) '$id-stage-3',
+            ]),
+          ],
+        ),
+      );
+      await _pumpOrder(tester, flow);
+      final before = _lanes(flow);
+      // 처음 고른 카드는 1순위 첫 카드(아야네 1단계).
+      expect(cardOf('ayane-stage-1'), findsOneWidget);
+      expect(
+        tester.getRect(cardOf('ayane-stage-1')).left,
+        lessThan(tester.getRect(chipOf('aru-stage-1')).left),
+      );
+
+      // 1단계(병목·막힘)만 남고 2·3단계(가능)는 숨는다.
+      await tester.tap(find.byKey(const ValueKey('plan-flow-order-short-only')));
+      await tester.pump();
+      expect(chipOf('aru-stage-1'), findsOneWidget);
+      expect(chipOf('aru-stage-2'), findsNothing);
+      expect(find.text('조건에 맞는 단계가 없습니다'), findsNWidgets(2));
+      await tester.tap(find.byKey(const ValueKey('plan-flow-order-short-only')));
+      await tester.pump();
+      expect(chipOf('aru-stage-2'), findsOneWidget);
+
+      // 고른 학생 순서(아루 → 아야네 …)로 묶는다.
+      await tester.tap(find.byKey(const ValueKey('plan-flow-order-group')));
+      await tester.pump();
+      expect(
+        tester.getRect(cardOf('ayane-stage-1')).left,
+        greaterThan(tester.getRect(chipOf('aru-stage-1')).left),
+      );
+      expect(_lanes(flow), before);
+    });
+
+    testWidgets('작게 보기에서도 끌어 옮기고, 선행 규칙에 걸리면 거부한다', (tester) async {
+      final service = _OrderService();
+      addTearDown(service.dispose);
+      final flow = await _controller(service, draft: _manyDraft());
+      final editor = await _pumpOrder(tester, flow);
+      final lanes = [for (final phase in flow.draft.phases) phase.id];
+
+      Future<void> drag(String stageId, String phaseId) async {
+        final lane = tester.getRect(
+          find.byKey(ValueKey('plan-flow-order-lane-$phaseId')),
+        );
+        final gesture = await tester.startGesture(
+          tester.getCenter(chipOf(stageId)),
+        );
+        await gesture.moveBy(const Offset(30, 0));
+        await tester.pump();
+        await gesture.moveTo(
+          Offset(lane.left + lane.width * 0.8, lane.top + 36),
+        );
+        await tester.pump();
+        await gesture.up();
+        await tester.pump();
+      }
+
+      // 호시노 2단계를 1순위로(같은 칸 허용, 1단계 뒤로 정렬).
+      await drag('hoshino-stage-2', lanes[0]);
+      expect(editor.message, isNull);
+      final first = _lanes(flow)[0];
+      expect(first, contains('hoshino-stage-2'));
+      expect(
+        first.indexOf('hoshino-stage-1'),
+        lessThan(first.indexOf('hoshino-stage-2')),
+      );
+      // 호시노 1단계를 3순위로: 뒤 단계(2단계)보다 뒤 칸이라 거부.
+      await drag('hoshino-stage-1', lanes[2]);
+      expect(editor.message, contains('뒤 단계'));
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('plan-flow-order-message')))
+            .data,
+        contains('뒤 단계'),
+      );
+      expect(_lanes(flow)[0], first);
       await _settle(tester);
     });
   });

@@ -2,6 +2,8 @@
 //
 // 칸 배치 자체는 초안([PlanFlowController])에 있다. 이 상태는 화면에만 필요한 값(고른 카드, 거부 이유)과 C 보조에
 // 쓰는 읽기 값을 맡는다.
+// FE4-d2(시안 Flow-3-Order-Many): 크게·작게 보기(단계가 [planFlowOrderCompactThreshold]개를 넘으면 작게), 작게
+// 보기 툴바(학생별 묶음 · 부족 있는 단계만 · 선택 풀기)와 보이는 카드 목록.
 import 'package:flutter/foundation.dart';
 
 import '../widgets/plan_element_builder.dart' show planElementCurrentTargets;
@@ -112,20 +114,69 @@ List<PlanFlowGoalChange> planFlowGoalChanges(
   return changes;
 }
 
-/// 3단계 화면 상태: 고른 카드, 마지막 거부 이유.
+/// 단계가 이 수를 넘으면 3단계는 작게 보기로 연다(시안 Flow-3-Order-Many).
+const planFlowOrderCompactThreshold = 12;
+
+/// 3단계 화면 상태: 고른 카드, 마지막 거부 이유, 크게·작게 보기와 작게 보기 툴바.
 class PlanFlowOrderEditor extends ChangeNotifier {
   PlanFlowOrderEditor({required this.flow});
 
   final PlanFlowController flow;
 
   String? _selectedStageId;
+  bool _selectionCleared = false;
   String? _message;
+  bool? _compactOverride;
+  bool _groupByStudent = false;
+  bool _shortOnly = false;
   bool _disposed = false;
 
   PlanFlowDraft get draft => flow.draft;
 
-  /// 고른 카드. 고르지 않았거나 그 단계가 없어지면 첫 칸의 첫 단계다.
+  /// 단계가 [planFlowOrderCompactThreshold]개를 넘는다(크게·작게 세그먼트를 보인다).
+  bool get many => draft.stageCount > planFlowOrderCompactThreshold;
+
+  /// 작게 보기(204×44 칩). 세그먼트로 고르지 않았으면 [many]를 따른다.
+  bool get compact => _compactOverride ?? many;
+
+  void setCompact(bool compact) {
+    if (_disposed || this.compact == compact && _compactOverride != null) {
+      return;
+    }
+    _compactOverride = compact;
+    notifyListeners();
+  }
+
+  /// 작게 보기에서 칸 안 카드를 고른 학생 순서로 묶어 보인다(배치는 그대로).
+  bool get groupByStudent => _groupByStudent;
+
+  void toggleGroupByStudent() {
+    if (_disposed) return;
+    _groupByStudent = !_groupByStudent;
+    notifyListeners();
+  }
+
+  /// 작게 보기에서 부족·막힘 단계(와 고른 카드)만 보인다. 계산 전이면 모두 보인다.
+  bool get shortOnly => _shortOnly;
+
+  void toggleShortOnly() {
+    if (_disposed) return;
+    _shortOnly = !_shortOnly;
+    notifyListeners();
+  }
+
+  /// 고른 카드를 푼다(작게 보기 툴바 "선택 중 ×"). 다시 고르기 전까지 [selectedStageId]는 null이다.
+  void clearSelection() {
+    if (_disposed || _selectionCleared) return;
+    _selectionCleared = true;
+    _selectedStageId = null;
+    _message = null;
+    notifyListeners();
+  }
+
+  /// 고른 카드. 고르지 않았거나 그 단계가 없어지면 첫 칸의 첫 단계다. [clearSelection] 뒤에는 null이다.
   String? get selectedStageId {
+    if (_selectionCleared) return null;
     final id = _selectedStageId;
     if (id != null && draft.stageById(id) != null) return id;
     for (final phase in draft.phases) {
@@ -150,8 +201,11 @@ class PlanFlowOrderEditor extends ChangeNotifier {
 
   void select(String stageId) {
     if (_disposed) return;
-    if (_selectedStageId == stageId && _message == null) return;
+    if (_selectedStageId == stageId && _message == null && !_selectionCleared) {
+      return;
+    }
     _selectedStageId = stageId;
+    _selectionCleared = false;
     _message = null;
     notifyListeners();
   }
@@ -161,6 +215,7 @@ class PlanFlowOrderEditor extends ChangeNotifier {
     if (_disposed) return false;
     final violation = flow.moveStage(stageId, phaseId: phaseId, index: index);
     _selectedStageId = stageId;
+    _selectionCleared = false;
     _message = violation;
     notifyListeners();
     return violation == null;
@@ -198,6 +253,66 @@ class PlanFlowOrderEditor extends ChangeNotifier {
   /// 카드 상태(FD-035). 계산 전이면 빈 맵이다.
   Map<String, PlanFlowStageStatus> get statuses =>
       planFlowStageStatuses(draft, flow.calculation);
+
+  /// 칸 [phase]에서 보이는 카드 순서. 작게 보기([compact])에서만 [shortOnly]·[groupByStudent]를 쓴다. 고른 카드는
+  /// 늘 보인다.
+  List<String> visibleStageIds(
+    PlanFlowPhase phase, {
+    Map<String, PlanFlowStageStatus>? statuses,
+  }) {
+    if (!compact) return phase.stageIds;
+    final selected = selectedStageId;
+    var ids = phase.stageIds;
+    final known = statuses ?? this.statuses;
+    if (_shortOnly && known.isNotEmpty) {
+      ids = [
+        for (final id in ids)
+          if (id == selected ||
+              known[id] == PlanFlowStageStatus.short ||
+              known[id] == PlanFlowStageStatus.blocked)
+            id,
+      ];
+    }
+    if (_groupByStudent) {
+      final order = <String, int>{
+        for (final (index, id) in draft.studentIds.indexed) id: index,
+      };
+      final position = {for (final (index, id) in ids.indexed) id: index};
+      int rank(String id) {
+        final stage = draft.stageById(id);
+        return stage == null ? 1 << 20 : order[stage.studentId] ?? 1 << 20;
+      }
+
+      ids = [...ids]
+        ..sort((a, b) {
+          final byStudent = rank(a).compareTo(rank(b));
+          return byStudent != 0
+              ? byStudent
+              : position[a]!.compareTo(position[b]!);
+        });
+    }
+    return ids;
+  }
+
+  /// 보이는 목록의 [displayIndex] 자리를 칸 [phase]의 실제 자리로 바꾼다(그 자리 카드 앞, 끝이면 마지막 보이는 카드
+  /// 뒤).
+  int stageIndexFor(PlanFlowPhase phase, List<String> visible, int displayIndex) {
+    if (displayIndex < visible.length) {
+      final index = phase.stageIds.indexOf(visible[displayIndex]);
+      return index < 0 ? phase.stageIds.length : index;
+    }
+    if (visible.isEmpty) return phase.stageIds.length;
+    final last = phase.stageIds.indexOf(visible.last);
+    return last < 0 ? phase.stageIds.length : last + 1;
+  }
+
+  /// 고른 카드와 이어진 카드(고른 카드 · 같은 학생 바로 앞·뒤 단계). 고른 카드가 없으면 모두 true다.
+  bool isConnected(String stageId) {
+    final stage = selectedStage;
+    if (stage == null || stage.id == stageId) return true;
+    return predecessorOf(stage)?.id == stageId ||
+        successorOf(stage)?.id == stageId;
+  }
 
   /// [stageId]가 든 칸. 칸에 없으면 null.
   PlanFlowPhase? phaseOf(String stageId) {

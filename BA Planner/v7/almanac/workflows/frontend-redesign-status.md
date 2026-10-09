@@ -3949,3 +3949,127 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_124241\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-d2 종료 기록 (2026-10-09 오후, 코드 작성 완료·gate 미실행)
+
+작업 지시(14:31): 계획 만들기 3단계 · 단계가 많은 경우(Flow-3-Order-Many) + FE4-d1 golden 후속(화살표가 칸 머리 칩을 지나감). FE4-d1 커밋 뒤 HEAD에서 시작했다. 읽은 것: 워크플로 FE4-d 분할 메모, artboard-map Flow-3-Order-Many 행, 시안 Flow-3-Order-Many(`dc_outline.py` + 원본 HTML의 칸·칩·곡선 path), FE4-d1 종료 기록, 오케스트레이터 로그 12:50.
+
+이 환경에는 Flutter·Dart가 없다. 그래서 `flutter analyze`·Dart 테스트·golden을 돌리지 못했고, 통과를 주장하지 않는다.
+- 별도 검토 에이전트 1개가 바뀐 파일 전부를 정적으로 읽고 새 테스트·golden 장면을 좌표까지 따라갔다. 고친 지적:
+  1. `listEquals`를 `material.dart`가 내보내지 않는다(컴파일 오류). → `package:flutter/foundation.dart` show `listEquals`.
+  2. 칩·카드 크기를 `Size ==`로 비교하면 소수 오차로 실패한다. → 너비·높이를 `closeTo`.
+  3. 머리 피하는 x 상한 비교(372)가 1 ulp 차이에 걸릴 수 있다. → 0.01 여유.
+  4. 같은 칸 같은 줄의 앞·뒤 단계(FD-069)로 가는 작게 보기 화살표가 위로 휘고 꺾쇠는 아래를 향했다. → 아래에 있지 않으면 옆 가운데끼리 곧게 잇는다.
+  5. 작게 보기 칸 머리 열(118)이 "모두 지금 가능" 칩(약 117)과 거의 같았다. → 126(첫 칩 자리 139.8 안).
+  6. 위젯 파일 머리 주석이 "작게 보기는 FE4-d2에서 더한다"로 남아 있었다.
+- PC `.git/index`로 확인했다: 바꾼 추적 파일 5개는 작업 시작 때 PC 내용 = HEAD 블롭이다. 시작 뒤 PC 파일 mtime도 그대로다. 새 파일은 없다.
+
+### 바뀐 파일
+
+| 파일 | 줄(+/−) | 내용 |
+|---|---|---|
+| `frontend/lib/ui/widgets/plan_flow_order_step.dart` | +1092 −100 | 화살표: `PlanFlowOrderArrow`에 꺾인 선(`elbowY`)·S 곡선(`curve`)·경로·끝 방향. 크게 보기는 카드 아래에서 내려와 칸 사이(줄 사이) 틈에서 옆으로 가고, 칸 첫 카드로는 칸 머리(이름 칸 220 + 상태 칩) 오른쪽으로 윗변에 들어간다(`planFlowOrderHeaderClearX`). 작게 보기: 판(평행사변형 #162431), 칸(머리 열 이름 17 · 단계 n개 · 상태 칩, 칩 다섯 개씩 줄바꿈, 칸 높이 18 + 54·줄), 칩(204×44: 초상 37×30 · 이름 12 · 단계 태그 · 상태 점 7), 고른 카드만 398×150으로 펼침(칩 자리 가운데, 그림자 + 불투명 바탕), 고른 카드와 이어진 선만(S 곡선), 이어지지 않은 칩 불투명도 .55, 툴바(학생 초상 8명 + 나머지 수 · 부족 있는 단계만 · 선택 중 ×), 범례(상태 점 가능 · 부족 · 막힘). B 제목 줄: 12개를 넘으면 크게·작게 세그먼트, 작게 보기에서는 "단계 n개" 칩을 오른쪽으로 옮기고 학생별 묶음 토글. (i)는 작게 보기에서 "많을 때" |
+| `frontend/lib/ui/models/plan_flow_order_editor.dart` | +118 −3 | `planFlowOrderCompactThreshold`(12), `many`·`compact`·`setCompact`, `groupByStudent`·`shortOnly` 토글, `clearSelection`(다시 고르기 전까지 고른 카드 없음), `visibleStageIds`(부족만 · 학생별 묶음, 고른 카드는 늘 보임), `stageIndexFor`(보이는 자리 → 실제 칸 자리), `isConnected` |
+| `frontend/test/plan_flow_order_step_test.dart` | +263 | 아래 테스트 |
+| `frontend/test/goldens/golden_harness.dart` | +13 | `goldenFlowManyPreset()`(셋으로 나누기: 레벨 → EX·스킬 → 장비 T10) |
+| `frontend/test/goldens/fe1g_baseline_golden_test.dart` | +50 | 새 장면 `plan-flow-step3-many` |
+
+`lib/services/**`, `backend/`, `contracts/`, 스캐너·tactic·metadata 소유 파일, `app_shell.dart`는 고치지 않았다. 초안 컨트롤러(`plan_flow_draft.dart`)·워크스페이스도 그대로다.
+
+### 동작
+
+- 단계가 12개를 넘으면 3단계는 작게 보기로 열린다. 크게·작게 세그먼트로 바꾼 뒤에는 그 고른 값을 흐름 동안 지킨다. 12개 이하면 세그먼트를 그리지 않는다(FE4-d1 화면 그대로).
+- 작게 보기의 끌기·놓기 거부·같은 칸 정렬·자동 정렬·칸 이름·칸 추가는 크게 보기와 같은 컨트롤러 규칙이다. 칩·펼친 카드 모두 끌 수 있고, 펼친 카드 위에 놓으면 그 카드 자리(같은 칸)로 옮긴다.
+- 학생별 묶음·부족 있는 단계만은 보기만 바꾼다(칸 배치는 그대로). 놓을 자리는 보이는 목록의 자리를 실제 칸 자리로 바꿔 계산한다(그 자리 카드 앞, 끝이면 마지막 보이는 카드 뒤). 부족만은 계산 결과가 있을 때만 거르고, 다 숨은 칸은 "조건에 맞는 단계가 없습니다"다.
+- 선택 중 ×: 고른 카드를 풀면 펼친 카드·선·흐림이 없어지고 C는 "고른 단계가 없습니다"다. 칩을 누르면 다시 고른다.
+- 크게 보기 화살표(후속): 칸 사이 14 틈의 가운데(다음 칸 위 7)에서 옆으로 가고, 칸 첫 카드로는 머리 오른쪽 + 16(카드 윗변 212.5 ~ 372 안)으로 내려간다. 같은 칸 다음 줄은 줄 사이 틈(카드 위 7)에서 옆으로 간다. 모서리는 반지름 10까지 둥글게.
+
+### 테스트
+
+- `plan_flow_order_step_test.dart`:
+  - 기존 "처음 그리면 …"에 단언 추가: 다음 칸 첫 카드로 가는 화살표가 꺾인 선이고, 칸 사이 틈 높이에서 옆으로 가며, 칸 머리(이름 칸 오른쪽) 오른쪽 · 카드 윗변 안으로 들어간다.
+  - 새 그룹 "작게 보기(FE4-d2)" 6건: 화살표 경로 계산(줄 사이 틈, 머리 피하는 x 상한, 시안 곡선 시작·끝 좌표), 12개 초과 자동 작게 보기(펼친 카드 398×150 · 칩 204×44 · 칩 간격 · 이어진 선 1개 · 흐림 .55 · 크게/작게 왕복), 칩 고르기 → 펼침 · 앞뒤 선 2개 · 선택 중 × → 선택 풀기, 부족 있는 단계만 · 학생별 묶음(배치 그대로), 작게 보기 끌기(같은 칸 허용 · 뒤 단계보다 뒤 칸 거부와 이유 문구).
+- 기존 테스트 기대는 바꾸지 않았다(단언만 더함).
+
+### golden 예측
+
+- 바뀜 1: `plan-flow-step3` — 화살표 경로만. 2순위 아루 → 3순위 아루 선이 3순위 머리("막힘" 칩)를 지나지 않고 칸 사이 틈에서 옆으로 간 뒤 머리 오른쪽으로 아루 3단계 윗변에 들어간다. 1→2순위 선도 같은 꺾인 모양이 된다(호시노·아루·슌 1→2는 2순위 첫 카드 호시노만 머리 피하는 x). 카드·칸·글자는 그대로다.
+- 새 장면 1: `plan-flow-step3-many` — 열 명 × 3단계 = 단계 30개, 작게 보기. 1·2·3순위 칸에 칩 10개씩(두 줄), 호시노 2단계를 골라 펼침(분홍 테두리), 호시노 1 → 2 → 3 곡선 두 개, 나머지 칩 흐림, 툴바 "학생" 초상 8명 + 나머지 수 · "부족 있는 단계만" · "호시노(카드 하단 변보… 선택 중 ×", 제목 줄 "단계 30개" · 크게/작게(작게) · 학생별 묶음, 범례 상태 점. 상태 점은 거의 빨강(mock에서 병목 뒤 같은 재화를 쓰는 단계가 막힘).
+- 그대로: 나머지 장면(2단계 장면·활성 계획 페이즈 편집기 포함). 바꾼 파일은 3단계 화면과 새 프리셋 함수뿐이다.
+- 그래서 ① gate는 golden 2건 RED(바뀜 1 + 기준 없음 1)가 예상이다.
+
+### 바뀐 동작(검토 때 볼 것)
+
+1. 작게 보기를 처음 열면 첫 칸 첫 카드가 골라져 펼쳐진다. 그 카드는 시안 자리(칩 가운데 높이)라 윗부분 27이 보드 위로 잘린다(내리면 아래 칸 칩을 더 가린다).
+2. 펼친 카드는 시안처럼 이웃 칩(아래 칸 첫 줄 일부)을 덮는다. 덮인 칩은 펼친 카드를 풀거나 다른 카드를 고르면 다시 누를 수 있다.
+3. 크게 보기에서 두 칸 이상 아래로 가는 선과, 두 줄 칸의 첫 줄에서 내려오는 선은 사이 카드 위를 세로로 지나간다(선은 카드 위에 그린다).
+4. 작게 보기 "학생" 초상 줄은 보기만 한다(누르는 동작 없음).
+5. "선택 중" 칩 이름은 12자에서 줄인다(긴 이름 학생).
+6. 작게 보기 칸 머리 열은 한 줄 칸(높이 72)보다 조금 길어 칸 사이 틈으로 넘친다(시안과 같음).
+
+### 검수표
+
+| 항목 | 확인 |
+|---|---|
+| 12개 초과 자동 작게 보기, 크게·작게로 되돌리기 | 작게 보기 테스트 |
+| 선택 카드만 398×150, 이어진 선만, 나머지 흐리게 | 작게 보기 테스트, golden |
+| 툴바: 학생별 묶음 · 부족 있는 단계만 · 선택 중 × | 툴바 테스트 2건 |
+| 칸 줄바꿈 + 보드 스크롤 | 칸 높이·칩 간격 단언, golden(두 줄 칸) |
+| 끌기 · 거부 · 자동 정렬이 작게 보기에서도 같은 규칙 | 작게 보기 끌기 테스트(자동 정렬은 같은 C 행·컨트롤러) |
+| 후속: 화살표가 칸 머리를 피해 카드 윗변으로 | 화살표 단언 2건, golden `plan-flow-step3` |
+| 범위 밖 미구현: 직접 선행(분홍 점선) · "나중에" 칸(FE4-f) | 코드 확인 |
+| ~습니다체, 명시적 pump, 금지 파일 미수정 | 코드 확인(실행 안 됨) |
+
+### 확인하지 못한 것
+
+- analyze·테스트·golden 실행 전부(이 환경에 Flutter 없음).
+- 새 그림: 칩 안 글자 크기, 펼친 카드 그림자, 곡선 굵기, 머리 열 줄 간격, 툴바 칩 자리, 크게 보기 꺾인 선 모서리.
+- 작게 보기에서 끄는 동안 보드 자동 스크롤은 없다(크게 보기와 같음).
+
+### 사용자 실행 순서
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 승인 뒤 기준 이미지 갱신 → gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4d2 -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4d2
+```
+
+### FE4-d2 수정 기록 (gate ① `20261009_150924` 뒤, 2026-10-09 오후, gate 미실행)
+
+실패 1건: `plan_flow_order_step_test` "단계가 12개를 넘으면 …"의 `arrows.single.curve`가 false였다. 원인(오케스트레이터 진단): 아루 1단계(1순위 첫 칩)를 펼친 카드가 칩 자리 가운데 높이에 그려져 아래 끝이 y≈123이 되고, 2순위 첫 칩(아루 2단계, y 112~156)을 가렸다. 그래서 화살표가 "아래에 있지 않다"고 보고 옆 직선을 그렸다. 결정: 펼친 카드는 다른 칩을 가리지 않는다. 테스트 기대는 바꾸지 않았다.
+
+고친 것(`plan_flow_order_step.dart` +151 −51, `plan_flow_order_step_test.dart` +11):
+- `_CompactBoardLayout`이 고른 단계를 받아 펼친 카드(398.4×150) 자리를 배치 안에서 잡는다. `planFlowOrderExpandedRect`는 없앴다.
+  - 같은 줄: 카드가 칩 두 자리 가까이 차지한다. 그 줄의 오른쪽 칩은 카드 오른쪽 끝 + 칩 간격으로 **옆으로 민다**. 줄 끝(칩 다섯 자리)을 넘는 칩은 다음 줄로 넘긴다. 옆으로 미는 쪽을 고른 이유: 칩 순서가 보이는 목록 순서와 그대로 같고(끌어 놓을 자리 계산이 단순), 한 칩만 넘어가므로 줄 수가 덜 늘어난다. 다음 줄로 통째로 넘기면 카드 오른쪽에 넓은 빈자리가 생긴다.
+  - 왼쪽: 줄 첫 카드는 시안 자리(칩 자리 24 왼쪽)지만 칸 머리 열(이름 · 단계 n개 · 상태 칩)과 겹치면 머리 열 오른쪽 + 4에서 시작한다. 줄 중간 카드는 왼쪽 칩과 겹치지 않게 칩 자리에서 시작한다(24 왼쪽으로 가면 왼쪽 칩 오른쪽 끝 14를 덮는다).
+  - 위: 카드 윗변이 위 칩(같은 칸 앞 줄 또는 앞 칸의 맨 아래 칩·카드)보다 14 아래가 되게 그 줄을 내린다. 위에 칩이 없는 첫 칸 첫 줄은 시안 자리 그대로라 윗부분 27이 보드 위로 넘친다.
+  - 아래: 카드가 있는 줄 다음 줄은 카드 아래 끝 + 10, 칸 상자는 카드 아래 끝 + 14까지 늘어나고, 뒤 칸·"칸 추가"·스크롤 높이가 따라간다.
+- 칸 머리 열을 칸 위 12 → 6, 줄 간격 5 → 3으로 줄여 한 줄 칸(높이 72) 안에 넣었다. 머리 열이 칸 아래로 넘쳐 다음 칸 카드와 겹칠 수 있었다(시안보다 6 위).
+- 작게 보기 화살표는 둘이 같은 높이에 걸칠 때(같은 칸 같은 줄, FD-069)만 옆 직선이고, 아래 칸·다음 줄이면 S 곡선(카드 아래 → 칩 위)이다.
+- 놓을 자리 계산: 줄 높이가 고르지 않아 "높이가 가장 가까운 줄 → 그 줄에서 놓은 x보다 가운데가 왼쪽인 칩 뒤"로 바꿨다.
+- 테스트: 그 테스트에 "펼친 카드가 보이는 칩 rect 어느 것과도 겹치지 않음" 단언(보이는 칩 전부)을 더했다.
+- 정적 확인: 같은 배치 규칙을 Python으로 옮겨 테스트 초안(5명 × 3단계)과 golden 초안(10명 × 3단계)에서 30·15개 단계를 하나씩 골라 보았다. 펼친 카드와 칩, 칩끼리 겹침 0. 아루 1단계 → 2단계, 아루 2단계 앞·뒤 선 모두 곡선 조건이다. 테스트 초안에서 1순위는 [아루 1(카드) · 아야네 1 · 호시노 1 · 히나 1] / [노아 1] 두 줄이 되고, 아야네 1 → 호시노 1 간격은 칩 간격 그대로다.
+
+golden: `plan-flow-step3`(화살표 경로)는 승인됨(오케스트레이터). `plan-flow-step3-many`는 이 배치가 기준이다: 1순위 칩 10개(두 줄), 2순위는 호시노 2단계 카드가 첫 자리를 차지하고 카드 윗변이 1순위 마지막 칩 줄보다 14 아래가 되도록 그 줄이 내려가며 [카드 + 칩 3] / [칩 5] / [칩 1] 세 줄, 3순위 칩 10개. 다른 장면은 바뀌지 않는다. ① gate 예상: `plan-flow-step3-many` 기준 없음 1건(이전 gate의 새 그림은 버린다).
+
+commit.json·pre 사본은 그대로다(바꾼 파일 2개 모두 FE4-d2 범위 안).
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4d2 -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4d2
+```
+
+### FE4-d2 commit record (2026-10-09 16:23, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261009_161730\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

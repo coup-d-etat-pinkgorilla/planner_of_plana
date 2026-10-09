@@ -729,6 +729,19 @@ PlanElementPreset goldenFlowTwoStagePreset() => PlanElementPreset(
   ],
 );
 
+/// 3단계 작게 보기 장면이 쓰는 3단계 프리셋(FE4-d2). 장면의 열 명(보유 · 미보유 모두)이 세 단계 모두 무언가를
+/// 올리도록 레벨 → EX·스킬 → 장비 T10으로 나눴다(올린 것이 없는 단계는 버려지므로).
+PlanElementPreset goldenFlowManyPreset() => PlanElementPreset(
+  id: 'many-three',
+  name: '셋으로 나누기',
+  isDefault: false,
+  stages: const [
+    {'level': 90},
+    {'ex_skill': 5, 'skill1': 10, 'skill2': 10, 'skill3': 10},
+    {'equip1_tier': 10, 'equip2_tier': 10, 'equip3_tier': 10},
+  ],
+);
+
 /// 시나리오 장면에 쓰는 문서(`planning_page_test`의 비교 문서와 같은 구조).
 PlanningDocument goldenScenarioDocument(
   String id,
