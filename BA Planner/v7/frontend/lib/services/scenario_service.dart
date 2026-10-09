@@ -1,4 +1,5 @@
 import '../ui/models/planning_models.dart';
+import 'planning_authoring.dart';
 
 final _scenarioId = RegExp(r'^[0-9a-f]{24}$');
 
@@ -221,6 +222,7 @@ class PlanningScenarioRecord {
     required this.description,
     required this.baseProfileRevision,
     required this.document,
+    this.storedAuthoring,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -232,6 +234,10 @@ class PlanningScenarioRecord {
   final String description;
   final int baseProfileRevision;
   final PlanningDocument document;
+  final PlanningAuthoring? storedAuthoring;
+  bool get hasAuthoring => storedAuthoring != null;
+  PlanningAuthoring get authoring =>
+      storedAuthoring ?? PlanningAuthoring.defaultForDocument(document);
 
   /// Scenario storage remains v1; its nested document can be v1 or v2.
   int get documentVersion => document.version;
@@ -241,6 +247,20 @@ class PlanningScenarioRecord {
 
   bool isStaleAgainst(int currentProfileRevision) =>
       baseProfileRevision < currentProfileRevision;
+
+  Map<String, dynamic> toWire() => {
+    'version': 1,
+    'scenario_id': id,
+    'revision': revision,
+    'profile_id': profileId,
+    'name': name,
+    'description': description,
+    'base_profile_revision': baseProfileRevision,
+    'document': document.toWire(),
+    'created_at': createdAt,
+    'updated_at': updatedAt,
+    if (storedAuthoring != null) 'authoring': storedAuthoring!.toWire(),
+  };
 
   factory PlanningScenarioRecord.fromWire(Map<String, dynamic> value) {
     const keys = {
@@ -255,7 +275,10 @@ class PlanningScenarioRecord {
       'created_at',
       'updated_at',
     };
-    if (!_exact(value, keys) ||
+    if (!_exact(value, {
+          ...keys,
+          if (value.containsKey('authoring')) 'authoring',
+        }) ||
         value['version'] != 1 ||
         value['scenario_id'] is! String ||
         !_scenarioId.hasMatch(value['scenario_id'] as String) ||
@@ -288,6 +311,9 @@ class PlanningScenarioRecord {
       description: value['description'] as String,
       baseProfileRevision: value['base_profile_revision'] as int,
       document: document,
+      storedAuthoring: value.containsKey('authoring')
+          ? PlanningAuthoring.fromWire(value['authoring'], document)
+          : null,
       createdAt: value['created_at'] as String,
       updatedAt: value['updated_at'] as String,
     );

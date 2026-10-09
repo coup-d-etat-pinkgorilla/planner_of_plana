@@ -8,6 +8,7 @@ import re
 from typing import Any, Callable
 import uuid
 
+from core.planning_authoring import AUTHORING_UNSET, PlanningAuthoringError, planning_authoring_from_wire
 from core.planning_document import (
     PlanningDocumentError,
     planning_document_from_wire,
@@ -145,7 +146,7 @@ class ScenarioStore:
             "version", "scenario_id", "revision", "profile_id", "name", "description",
             "base_profile_revision", "document", "created_at", "updated_at",
         }
-        if not isinstance(value, dict) or set(value) != required or value.get("version") != 1:
+        if not isinstance(value, dict) or set(value) not in (required, required | {"authoring"}) or value.get("version") != 1:
             raise ScenarioStoreError(code, "scenario record has an invalid shape")
         if not isinstance(value["scenario_id"], str) or _ID.fullmatch(value["scenario_id"]) is None:
             raise ScenarioStoreError(code, "scenario_id is invalid")
@@ -165,6 +166,12 @@ class ScenarioStore:
             raise ScenarioStoreError(code, f"scenario document is invalid: {error}") from error
         if document.kind != "scenario":
             raise ScenarioStoreError(code, "scenario document kind must be scenario")
+        if "authoring" in value:
+            try:
+                value["authoring"] = planning_authoring_from_wire(value["authoring"], value["document"])
+            except PlanningAuthoringError as error:
+                stored_code = "migration_required" if corrupt and error.reason == "unsupported_version" else code
+                raise ScenarioStoreError(stored_code, str(error), details=error.details) from error
         return value
 
     def _canonical_document(self, value: object) -> dict[str, Any]:
@@ -340,18 +347,21 @@ class ScenarioStore:
             "base_profile_revision": base_revision, "document": canonical_document,
         }, callback)
 
-    def _append_record(self, collection: dict[str, Any], name: str, description: str, base_revision: int, document: dict[str, Any], *, archive: bool = False) -> str:
+    def _append_record(self, collection: dict[str, Any], name: str, description: str, base_revision: int, document: dict[str, Any], *, archive: bool = False, authoring: object = AUTHORING_UNSET) -> str:
         scenario_id = self._new_id(collection)
         if archive:
             # Comparison requires distinct document IDs, including repeated active snapshots.
             document = {**document, "document_id": scenario_id}
         now = self._clock()
-        collection["scenarios"].append({
+        record = {
             "version": 1, "scenario_id": scenario_id, "revision": 0,
             "profile_id": collection["profile_id"], "name": name, "description": description,
             "base_profile_revision": base_revision, "document": self._canonical_document(document),
             "created_at": now, "updated_at": now,
-        })
+        }
+        if authoring is not AUTHORING_UNSET:
+            record["authoring"] = authoring
+        collection["scenarios"].append(self._validate_record(record, collection["profile_id"]))
         return scenario_id
 
     def update(
@@ -379,6 +389,12 @@ class ScenarioStore:
             current_profile_revision = self._profile_current_revision(profile_id)
             if base_revision > current_profile_revision:
                 raise ScenarioStoreError("invalid_payload", "base_profile_revision cannot be newer than the profile")
+            # FB-8a archives must remain valid even through the legacy update API.
+            if "authoring" in item:
+                try:
+                    planning_authoring_from_wire(item["authoring"], canonical_document)
+                except PlanningAuthoringError as error:
+                    raise ScenarioStoreError("invalid_payload", str(error), details={"reason": "authoring_required", "authoring_reason": error.reason}) from error
             item.update({
                 "revision": item["revision"] + 1,
                 "name": canonical_name,

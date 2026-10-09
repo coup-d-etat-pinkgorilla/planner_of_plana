@@ -12,6 +12,10 @@ import uuid
 
 from core.inventory_catalog import BY_KEY as INVENTORY_CATALOG_BY_KEY, CATALOG_REVISION, canonical_resource_key
 from core.planning import GrowthPlan, StudentGoal
+from core.planning_authoring import (
+    AUTHORING_UNSET, PlanningAuthoringError, planning_authoring_from_wire,
+    default_authoring, authoring_is_default, authoring_has_content,
+)
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, StudentGoalRecord, canonical_json
 from core.repository_merge import resolve_inventory_snapshot
 from core.repository_plan import canonical_active_document, document_from_goals, goals_from_document, legacy_write_loss, LegacyGoalsConflict
@@ -139,7 +143,7 @@ class JsonRepository:
     def _profile(self, profile_id: str) -> dict[str, Any]:
         value = self._read(self._profile_path(profile_id), "profile")
         required = {"version", "profile_id", "revision", "students", "inventory", "goals", "idempotency"}
-        if set(value) not in (required, required | {"plan"}) or value["profile_id"] != profile_id:
+        if set(value) not in (required, required | {"plan"}, required | {"plan", "plan_authoring"}) or value["profile_id"] != profile_id:
             raise RepositoryError("corrupt_data", "profile has an invalid shape")
         revision = self._stored_revision(value["revision"], "profile revision")
         if not isinstance(value["students"], list):
@@ -173,8 +177,13 @@ class JsonRepository:
                 StudentGoalRecord.from_dict({"version": 1, "goal": goal})
             if "plan" in value:
                 value["plan"] = canonical_active_document(value["plan"])
+                if "plan_authoring" in value:
+                    value["plan_authoring"] = planning_authoring_from_wire(value["plan_authoring"], value["plan"])
                 if goals != goals_from_document(value["plan"]):
                     raise ValueError("stored goals do not match the active document")
+        except PlanningAuthoringError as error:
+            code = "migration_required" if error.reason == "unsupported_version" else "corrupt_data"
+            raise RepositoryError(code, str(error), details=error.details) from error
         except (TypeError, ValueError, AttributeError, KeyError) as error:
             raise RepositoryError("corrupt_data", "profile contains invalid repository data") from error
         value["inventory"] = rebase_inventory_snapshot(value["inventory"])
@@ -435,18 +444,41 @@ class JsonRepository:
     @locked(RepositoryError)
     def get_plan(self, profile_id: str) -> dict[str, Any]:
         profile = self._profile_with_plan(profile_id)
-        return {"profile_id": profile_id, "revision": profile["revision"], "document": profile["plan"], "calculation": safe_calculation_summary(profile["plan"], profile)}
+        result = {"profile_id": profile_id, "revision": profile["revision"], "document": profile["plan"], "calculation": safe_calculation_summary(profile["plan"], profile)}
+        if "plan_authoring" in profile:
+            result["authoring"] = profile["plan_authoring"]
+        return result
 
-    def save_plan(self, profile_id: str, document: object, expected_revision: int, idempotency_key: str) -> dict[str, Any]:
+    @staticmethod
+    def _authoring(value: object, document: object, *, preserving: bool = False) -> dict[str, Any]:
+        try:
+            return planning_authoring_from_wire(value, document)
+        except PlanningAuthoringError as error:
+            details = {"reason": "authoring_required", "authoring_reason": error.reason} if preserving else error.details
+            raise RepositoryError("invalid_payload", str(error), details=details) from error
+
+    def save_plan(self, profile_id: str, document: object, expected_revision: int, idempotency_key: str, authoring: object = AUTHORING_UNSET) -> dict[str, Any]:
         canonical = canonical_active_document(document)
         goals = goals_from_document(canonical)
+        supplied = authoring is not AUTHORING_UNSET
+        canonical_authoring = self._authoring(authoring, canonical) if supplied else None
         def mutate(_catalog: dict[str, Any], profile: dict[str, Any]) -> None:
+            # Cached responses are checked by _catalog_mutation before compatibility.
+            if supplied:
+                profile["plan_authoring"] = canonical_authoring
+            elif "plan_authoring" in profile:
+                profile["plan_authoring"] = self._authoring(profile["plan_authoring"], canonical, preserving=True)
             profile["plan"], profile["goals"] = canonical, goals
-        return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"plan:{canonical_json(canonical)}", mutate)
+        operation = f"plan:{canonical_json(canonical)}"
+        if supplied:
+            operation = f"plan-authoring:{canonical_json({'document': canonical, 'authoring': canonical_authoring})}"
+        return self._catalog_mutation(profile_id, expected_revision, idempotency_key, operation, mutate)
 
-    def replace_plan(self, profile_id: str, document: object, expected_revision: int, expected_scenario_revision: int, idempotency_key: str, archive_name: object, archive_description: object) -> dict[str, Any]:
+    def replace_plan(self, profile_id: str, document: object, expected_revision: int, expected_scenario_revision: int, idempotency_key: str, archive_name: object, archive_description: object, authoring: object = AUTHORING_UNSET) -> dict[str, Any]:
         from core.scenario_store import ScenarioStore, ScenarioStoreError
         canonical = canonical_active_document(document)
+        supplied = authoring is not AUTHORING_UNSET
+        canonical_authoring = self._authoring(authoring, canonical) if supplied else None
         for label, revision in (("expected_revision", expected_revision), ("expected_scenario_revision", expected_scenario_revision)):
             if type(revision) is not int or revision < 0:
                 raise RepositoryError("invalid_payload", f"{label} must be a non-negative integer")
@@ -458,6 +490,8 @@ class JsonRepository:
         except ScenarioStoreError as error:
             raise RepositoryError(error.code, str(error)) from error
         operation = {"type": "replace", "document": canonical, "archive_name": name, "archive_description": description, "expected_revision": expected_revision, "expected_scenario_revision": expected_scenario_revision}
+        if supplied:
+            operation["authoring"] = canonical_authoring
         fingerprint = hashlib.sha256(canonical_json(operation).encode("utf-8")).hexdigest()
         descriptor = self._lock()
         try:
@@ -477,13 +511,18 @@ class JsonRepository:
                     scope = "both" if profile_stale and scenario_stale else "profile" if profile_stale else "scenario"
                     raise RepositoryError("revision_conflict", "plan replacement revisions are stale", details={"revision_scope": scope, "current_revision": profile["revision"], "current_scenario_revision": collection["revision"]})
                 archived_id = None
-                if profile["plan"]["phases"]:
-                    archived_id = store._append_record(collection, name, description, profile["revision"], {**profile["plan"], "kind": "scenario"}, archive=True)
+                old_authoring = profile.get("plan_authoring", AUTHORING_UNSET)
+                if profile["plan"]["phases"] or (old_authoring is not AUTHORING_UNSET and authoring_has_content(old_authoring)):
+                    archived_id = store._append_record(collection, name, description, profile["revision"], {**profile["plan"], "kind": "scenario"}, archive=True, authoring=old_authoring)
                     collection["revision"] += 1
             except ScenarioStoreError as error:
                 raise RepositoryError(error.code, str(error), retryable=error.retryable, details=error.details) from error
             profile["revision"] += 1
             profile["plan"], profile["goals"] = canonical, goals_from_document(canonical)
+            if supplied:
+                profile["plan_authoring"] = canonical_authoring
+            else:
+                profile.pop("plan_authoring", None)
             response = {"revision": profile["revision"], "scenario_revision": collection["revision"], "archived_scenario_id": archived_id}
             profile["idempotency"][idempotency_key] = {"fingerprint": fingerprint, "response": response}
             for summary in catalog["profiles"]:
@@ -512,9 +551,13 @@ class JsonRepository:
         canonical = goals_from_document(document)
         def mutate(_catalog: dict[str, Any], profile: dict[str, Any]) -> None:
             reasons = legacy_write_loss(profile["plan"])
+            if "plan_authoring" in profile and not authoring_is_default(profile["plan_authoring"], profile["plan"]):
+                reasons.append("authoring_metadata")
             if reasons:
                 raise RepositoryError("plan_lossy_write", "legacy goals writer would discard active document structure or bond targets", details={"reasons": reasons})
             profile["plan"], profile["goals"] = document, canonical
+            if "plan_authoring" in profile:
+                profile["plan_authoring"] = default_authoring(document)
         return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"goals:{canonical_json(canonical)}", mutate)
 
     @staticmethod

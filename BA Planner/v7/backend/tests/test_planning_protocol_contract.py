@@ -78,6 +78,7 @@ class PlanningProtocolContractTests(unittest.TestCase):
             "asset-map-v1.schema.json",
             "metadata-provenance-v1.schema.json",
             "planning-student-bond-v1.schema.json",
+            "planning-authoring-v1.schema.json",
             *METHOD_SCHEMAS.values(),
         }
         self.assertEqual(set(self.schemas), expected)

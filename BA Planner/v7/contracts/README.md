@@ -654,3 +654,108 @@ Both lists, revision and replay cache are atomically written to one profile-scop
 file. The shared repository guard serializes collection saves with profile deletion
 and recovers pending plan transactions before reads. A corrupt collection is an
 error and is never silently replaced with an empty one. Filter presets are excluded.
+
+# Active plan authoring v1 (FB-8a; FD-068(b), FD-069, FD-071)
+
+Calculation documents remain v2. Optional `authoring` lives beside `document` in
+`repository.plan.get/save/replace`, beside `plan` as `plan_authoring` in the profile
+file, and beside the archived document in a scenario record. Profile/scenario file
+versions and calculation protocol shapes stay unchanged. The strict sidecar schema
+is `planning-authoring-v1.schema.json`; all six keys are required:
+
+```json
+{
+  "version": 1,
+  "prerequisites": [{"stage_id": "dependent", "requires_stage_id": "prerequisite"}],
+  "deferred_stages": [],
+  "student_order": [],
+  "stage_order_by_student": {},
+  "goal_metadata": {}
+}
+```
+
+The example shows field shapes; actual references must exist in the paired bundle.
+Deferred stages contain the complete `{stage_id, student_id, name, targets}` object.
+Targets have all 19 document-v2 keys with their existing ranges: null means no goal,
+zero is a real goal, and bond_rank is null or 1–100. Saved targets never incorporate
+current state or calculation prerequisites. Deferred stages are excluded from
+calculation, goals v1 derivation, scenario comparison and list calculation/counts.
+Selected students without any goals and unknown catalog IDs are preserved.
+
+Stage IDs are unique across document and deferred stages. `student_order` is the
+unique selected order and includes every stage student. `stage_order_by_student`
+has exactly these student keys, each covering exactly its own stages once. For each
+student, placed stages are the chain's prefix and deferred stages its suffix, both
+in chain order. Targets are monotonic over that whole chain: an integer followed
+by a smaller integer or null is rejected. Equal targets and all-null stages are
+allowed. Names/IDs use non-blank trimmed text; metadata notes are preserved verbatim.
+`goal_metadata` contains exactly selected students absent from the placed document,
+including deferred-only students. Each value has only `favorite: bool` and
+`notes: string`. Placed students use only document.goal_metadata.
+
+Direct prerequisite pairs are cross-student only, point `requires_stage_id → stage_id`,
+and cannot reference an absent stage, themselves or duplicate another pair. The
+whole graph, including implicit adjacent same-student edges, must be a DAG.
+Prerequisites cannot occupy a later lane; deferred stages form the final lane.
+Within the same phase/deferred array, the prerequisite must already precede its
+dependent. The backend validates the supplied order and never reorders it. The
+frontend applies stable topological ordering before saving. Calculation consumes
+document phase/stage order as before; direct edges do not gate cost calculation.
+Prerequisite pairs are canonicalized as a sorted set; selected, chain and deferred
+array orders retain their meaning.
+
+| Optional field | Meaning |
+|---|---|
+| get, stored field absent | Preserve the old response shape and file bytes; Dart exposes a document-derived default and `hasAuthoring=false`. No authoring migration/revision bump |
+| save, field absent | Preserve existing authoring and validate against incoming document; absent stored metadata follows the old path. Incompatibility rejects with `invalid_payload`, `details.reason=authoring_required` |
+| replace, field absent | New active plan uses its document-derived default; old authoring belongs only to the archived bundle |
+| explicit object | Full replacement; pass the document-derived default object to clear metadata |
+| explicit null | Rejected; null never clears metadata |
+
+Defaults use document first-appearance student order and flattened student chains;
+prerequisites/deferred stages/extra metadata are empty. They never depend on current
+state or catalog ordering. Authoring-only saves increment profile revision and its
+catalog mirror once. Preset and scenario collection revisions are unaffected by
+plan.save. All plan data, derived goals, revision and cache share the existing save
+transaction. Replacement archives the entire old document+authoring and writes the
+new bundle/goals/cache under the existing profile/catalog/scenario journal and lock.
+Only a completely empty document and authoring skip archival: deferred-only or
+selected-only bundles produce an empty-calculation scenario and increment the
+scenario collection revision. Recovery restores all before or all after, including
+the sidecars. Related reads recover unfinished replacements before returning.
+
+Requests omitting authoring use the exact pre-FB-8a fingerprint, including legacy
+`{revision}` replay caches. Explicit authoring joins the canonical request
+fingerprint. Cache replay precedes omitted-metadata compatibility and revision
+checks; retries return the original response and never create another archive.
+Revision/idempotency conflicts, repository_busy and persistence_failed retain
+their existing semantics. Legacy repository.goals.save refuses any non-default
+authoring with `plan_lossy_write`, `details.reasons` including `authoring_metadata`.
+
+Authoring input errors use `invalid_payload` with `details.reason`:
+
+| reason | Violation |
+|---|---|
+| invalid_shape / unsupported_version | Wrong strict shape/types or unsupported authoring version |
+| targets / target_regression | Invalid deferred 19-key targets/ranges/types, or whole-chain regression |
+| student_order / stage_set / stage_chain | Selected/order keys incomplete or duplicate; own-stage coverage wrong; placed prefix/deferred suffix mismatch |
+| goal_metadata | Wrong selected-only metadata set or strict favorite/notes types |
+| stage_reference / self_reference / same_student_prerequisite / duplicate_prerequisite | Invalid direct pair |
+| cycle / lane_order / stage_order | Whole graph cycle, prerequisite in later lane, or inverted same-lane array |
+| authoring_required | Omitted existing authoring cannot match the new document; `authoring_reason` identifies the underlying violation |
+
+Stored malformed authoring is corrupt_data; unsupported stored authoring version is
+migration_required. Neither silently defaults or erases data. JSON Schema checks
+strict shapes/ranges; paired stage references, chain/metadata coverage, regression
+and graph/lane rules are validated in Python and Dart. Both strict parsers reject
+booleans, strings and floating-point tokens for integer targets/versions.
+`fixtures/planning_authoring_v1.json` pins semantic verdicts/reasons and canonical
+results; `fixtures/repository_plan_authoring_v1.json` pins optional wire shapes.
+
+FB-8a adds only the scenario record path needed by replacement: archive append,
+get/list strict reading, duplication preservation, and a legacy update guard that
+preserves compatible metadata or rejects incompatible omission as authoring_required.
+The common validator preserves nested v1/v2 document versions and their existing
+target semantics; the active-plan boundary continues to require v2 kind=plan.
+Scenario create/update request authoring, complete CRUD omission/fingerprint tests
+and editor integration are FB-8b. Comparison still receives only document_a/b.

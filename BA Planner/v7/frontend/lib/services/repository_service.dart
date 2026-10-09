@@ -616,8 +616,7 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         }
         return true;
       case 'repository.plan.save':
-        if (!mutation({'document'})) return false;
-        repositoryActiveDocument(payload['document']);
+        RepositoryPlanSaveRequest.fromWire(payload);
         return true;
       case 'repository.plan.replace':
         RepositoryPlanReplaceRequest.fromWire(payload);

@@ -142,6 +142,7 @@ class MockAppService
   final List<RepositoryProfile> _profiles;
   final Map<String, Map<String, dynamic>> _repositoryStates = {};
   final Map<String, PlanningDocument> _repositoryPlans = {};
+  final Map<String, PlanningAuthoring> _repositoryPlanAuthoring = {};
   final Map<String, RepositoryPresetsState> _repositoryPresets = {};
   final Map<String, Map<String, ({String fingerprint, int revision})>> _presetIdempotency = {};
   final Map<String, Map<String, ({String fingerprint, Map<String, dynamic> response})>> _planIdempotency = {};
@@ -1144,6 +1145,24 @@ class MockAppService
     if (previous.revision != expectedScenarioRevision) {
       throw StateError('revision_conflict');
     }
+    PlanningAuthoring? preserved;
+    if (previous.storedAuthoring != null) {
+      try {
+        preserved = PlanningAuthoring.fromWire(
+          previous.authoring.toWire(),
+          document,
+        );
+      } on PlanningAuthoringFormatException catch (error) {
+        throw BackendRemoteException(
+          code: 'invalid_payload',
+          message: error.message.toString(),
+          details: {
+            'reason': 'authoring_required',
+            'authoring_reason': error.reason,
+          },
+        );
+      }
+    }
     scenarios[index] = PlanningScenarioRecord(
       id: scenarioId,
       revision: expectedScenarioRevision + 1,
@@ -1152,6 +1171,7 @@ class MockAppService
       description: description,
       baseProfileRevision: baseProfileRevision,
       document: document,
+      storedAuthoring: preserved,
       createdAt: previous.createdAt,
       updatedAt: DateTime.now().toUtc().toIso8601String(),
     );
@@ -1202,7 +1222,7 @@ class MockAppService
     if (source.revision != expectedScenarioRevision) {
       throw StateError('revision_conflict');
     }
-    return createScenario(
+    final result = await createScenario(
       profileId: profileId,
       expectedRevision: expectedRevision,
       idempotencyKey: idempotencyKey,
@@ -1218,6 +1238,17 @@ class MockAppService
         goalMetadata: source.document.goalMetadata,
       ),
     );
+    if (source.storedAuthoring != null) {
+      final scenarios = _planningScenarios[profileId]!;
+      final index = scenarios.indexWhere(
+        (item) => item.id == result.scenarioId,
+      );
+      scenarios[index] = PlanningScenarioRecord.fromWire({
+        ...scenarios[index].toWire(),
+        'authoring': source.authoring.toWire(),
+      });
+    }
+    return result;
   }
 
   @override
@@ -1344,6 +1375,7 @@ class MockAppService
     _profiles.removeAt(index);
     _repositoryStates.remove(profileId);
     _repositoryPlans.remove(profileId);
+    _repositoryPlanAuthoring.remove(profileId);
     _planIdempotency.remove(profileId);
     _repositoryPresets.remove(profileId);
     _presetIdempotency.remove(profileId);
@@ -1534,6 +1566,8 @@ class MockAppService
       'revision': state['revision'],
       'document': document.toWire(),
       'calculation': calculation,
+      if (_repositoryPlanAuthoring.containsKey(profileId))
+        'authoring': _repositoryPlanAuthoring[profileId]!.toWire(),
     });
   }
 
@@ -1544,10 +1578,12 @@ class MockAppService
     String idempotencyKey,
     String operation, {
     bool legacy = false,
+    PlanningAuthoring? authoring,
   }) {
     final request = RepositoryPlanSaveRequest(
       profileId: profileId,
       document: document,
+      authoring: authoring,
       expectedRevision: expectedRevision,
       idempotencyKey: idempotencyKey,
     ).toWire();
@@ -1559,6 +1595,7 @@ class MockAppService
       'operation': operation,
       'expected_revision': expectedRevision,
       'value': legacy ? mockGoalsFromDocument(document) : request['document'],
+      if (request.containsKey('authoring')) 'authoring': request['authoring'],
     });
     final cache = _planIdempotency.putIfAbsent(profileId, () => {});
     final cached = cache[idempotencyKey];
@@ -1571,8 +1608,41 @@ class MockAppService
     if (state['revision'] != expectedRevision) {
       throw StateError('revision_conflict');
     }
-    if (legacy && mockLegacyWriteLosesPlan(_repositoryPlans[profileId]!)) {
+    final previousAuthoring = _repositoryPlanAuthoring[profileId];
+    if (legacy &&
+        (mockLegacyWriteLosesPlan(_repositoryPlans[profileId]!) ||
+            (previousAuthoring != null &&
+                !previousAuthoring.isDefaultForDocument(
+                  _repositoryPlans[profileId]!,
+                )))) {
       throw StateError('plan_lossy_write');
+    }
+    PlanningAuthoring? nextAuthoring;
+    if (authoring != null) {
+      nextAuthoring = PlanningAuthoring.fromWire(
+        request['authoring'],
+        document,
+      );
+    } else if (previousAuthoring != null) {
+      if (legacy) {
+        nextAuthoring = PlanningAuthoring.defaultForDocument(document);
+      } else {
+        try {
+          nextAuthoring = PlanningAuthoring.fromWire(
+            previousAuthoring.toWire(),
+            document,
+          );
+        } on PlanningAuthoringFormatException catch (error) {
+          throw BackendRemoteException(
+            code: 'invalid_payload',
+            message: error.message.toString(),
+            details: {
+              'reason': 'authoring_required',
+              'authoring_reason': error.reason,
+            },
+          );
+        }
+      }
     }
     final revision = expectedRevision + 1;
     _repositoryStates[profileId] = {
@@ -1581,6 +1651,9 @@ class MockAppService
       'goals': mockGoalsFromDocument(document),
     };
     _repositoryPlans[profileId] = repositoryActiveDocument(document.toWire());
+    if (nextAuthoring != null) {
+      _repositoryPlanAuthoring[profileId] = nextAuthoring;
+    }
     _syncMockPlanRevision(profileId, revision);
     cache[idempotencyKey] = (
       fingerprint: fingerprint,
@@ -1593,6 +1666,7 @@ class MockAppService
   Future<int> saveRepositoryPlan({
     required String profileId,
     required PlanningDocument document,
+    PlanningAuthoring? authoring,
     required int expectedRevision,
     required String idempotencyKey,
   }) async => _saveMockRepositoryPlan(
@@ -1601,12 +1675,14 @@ class MockAppService
     expectedRevision,
     idempotencyKey,
     'plan',
+    authoring: authoring,
   );
 
   @override
   Future<RepositoryPlanReplaceResult> replaceRepositoryPlan({
     required String profileId,
     required PlanningDocument document,
+    PlanningAuthoring? authoring,
     required int expectedRevision,
     required int expectedScenarioRevision,
     required String idempotencyKey,
@@ -1616,6 +1692,7 @@ class MockAppService
     final wire = RepositoryPlanReplaceRequest(
       profileId: profileId,
       document: document,
+      authoring: authoring,
       expectedRevision: expectedRevision,
       expectedScenarioRevision: expectedScenarioRevision,
       idempotencyKey: idempotencyKey,
@@ -1667,7 +1744,9 @@ class MockAppService
     ];
     String? archivedId;
     var scenarioRevision = collectionRevision;
-    if (previous.phases.isNotEmpty) {
+    final previousAuthoring = _repositoryPlanAuthoring[profileId];
+    if (previous.phases.isNotEmpty ||
+        (previousAuthoring?.hasContent ?? false)) {
       do {
         archivedId = (_nextPlanningScenarioId++)
             .toRadixString(16)
@@ -1687,6 +1766,7 @@ class MockAppService
             'kind': 'scenario',
             'document_id': archivedId,
           }),
+          storedAuthoring: previousAuthoring,
           createdAt: now,
           updatedAt: now,
         ),
@@ -1700,6 +1780,14 @@ class MockAppService
     });
     // All validation and record construction precede this synchronous commit.
     _repositoryPlans[profileId] = document;
+    if (authoring != null) {
+      _repositoryPlanAuthoring[profileId] = PlanningAuthoring.fromWire(
+        wire['authoring'],
+        document,
+      );
+    } else {
+      _repositoryPlanAuthoring.remove(profileId);
+    }
     _repositoryStates[profileId] = {
       ...state,
       'revision': response.revision,

@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/planning-authoring-v1.schema.json",
+  "title": "Planning authoring v1 sidecar",
+  "$ref": "#/$defs/authoring",
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "prerequisite": {
+      "type": "object",
+      "required": [
+        "stage_id",
+        "requires_stage_id"
+      ],
+      "properties": {
+        "stage_id": {
+          "$ref": "#/$defs/text"
+        },
+        "requires_stage_id": {
+          "$ref": "#/$defs/text"
+        }
+      },
+      "additionalProperties": false
+    },
+    "authoring": {
+      "type": "object",
+      "required": [
+        "version",
+        "prerequisites",
+        "deferred_stages",
+        "student_order",
+        "stage_order_by_student",
+        "goal_metadata"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "prerequisites": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/prerequisite"
+          }
+        },
+        "deferred_stages": {
+          "type": "array",
+          "items": {
+            "$ref": "planning-document-calculate-v1.schema.json#/$defs/stageV2"
+          }
+        },
+        "student_order": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "stage_order_by_student": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/text"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/$defs/text"
+            }
+          }
+        },
+        "goal_metadata": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/text"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "favorite",
+              "notes"
+            ],
+            "properties": {
+              "favorite": {
+                "type": "boolean"
+              },
+              "notes": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

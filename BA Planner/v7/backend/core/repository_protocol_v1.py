@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from core.planning_authoring import AUTHORING_UNSET
 from core.repository_store import JsonRepository, RepositoryError
 from core.preset_store import PresetStore
 from core.runtime_paths import resolve_v6_root
@@ -92,11 +93,13 @@ class RepositoryProtocolV1:
             data = _require(payload, {"profile_id"})
             return self.repository.get_plan(_text(data["profile_id"], "profile_id"))
         if method == "repository.plan.save":
-            data, profile_id, revision, key = self._mutation(payload, {"document"})
-            return self.repository.save_plan(profile_id, data["document"], revision, key)
+            optional = {"authoring"} if isinstance(payload, dict) and "authoring" in payload else set()
+            data, profile_id, revision, key = self._mutation(payload, {"document"} | optional)
+            return self.repository.save_plan(profile_id, data["document"], revision, key, data.get("authoring", AUTHORING_UNSET))
         if method == "repository.plan.replace":
-            data, profile_id, revision, key = self._mutation(payload, {"document", "expected_scenario_revision", "archive_name", "archive_description"})
-            return self.repository.replace_plan(profile_id, data["document"], revision, data["expected_scenario_revision"], key, data["archive_name"], data["archive_description"])
+            optional = {"authoring"} if isinstance(payload, dict) and "authoring" in payload else set()
+            data, profile_id, revision, key = self._mutation(payload, {"document", "expected_scenario_revision", "archive_name", "archive_description"} | optional)
+            return self.repository.replace_plan(profile_id, data["document"], revision, data["expected_scenario_revision"], key, data["archive_name"], data["archive_description"], data.get("authoring", AUTHORING_UNSET))
         if method == "repository.presets.get":
             data = _require(payload, {"profile_id"})
             return self.presets.get(_text(data["profile_id"], "profile_id"))

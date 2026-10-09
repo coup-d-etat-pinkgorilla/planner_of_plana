@@ -1,6 +1,6 @@
 ---
 title: "Frontend Redesign Backend Status"
-summary: "Lane A 백엔드 워커의 FB-14 독립 프리셋·그룹 저장과 FE4 연결, FB-1c 교체·복구, FB-1b 이관, FB-11b 인연, FB-1a v2 및 설계 조사 기록입니다."
+summary: "FB-8 authoring 메타 읽기 전용 설계 조사와 Lane A의 FB-14 프리셋·그룹, FB-1c 교체·복구, FB-1b 이관 및 문서 v2 기록입니다."
 topics: [workflow, design]
 sources:
   - id: workflow
@@ -14,6 +14,289 @@ sources:
     path: backend/tests/test_student_calculation_fb11a.py
 ---
 백엔드 워커 전용(Lane A 병렬, 2026-10-07)
+
+# FB-8a 활성 계획 authoring 저장
+
+## 착수 (2026-10-09)
+
+- 시작 SHA: `611ec7a1d243f5b3524b480183600fdcead368c6`. FE4-h `8beab94e` 이후 HEAD.
+- FB-8 설계 조사와 워크플로 FB-8 행, 오케스트레이터 2026-10-09 17:30 승인을 읽었다. 문서 v2 옆 authoring v1 6키, prefix/suffix·전체 DAG·칸/배열 순서 검증, optional 보존 및 기존 fingerprint 호환, deferred-only 교체 보존을 구현한다.
+- 활성 계획 get/save/replace와 legacy goals 손실 방지. 시나리오는 교체 보존 레코드를 읽고 유지하는 최소 경로이며 CRUD 확장은 FB-8b로 넘긴다.
+- 공유 서비스 스캐너 WIP를 pre/post로 보존한다. UI·metadata·스캐너·tactic은 편집하지 않으며 gate·stage·커밋·push는 하지 않는다.
+
+## 종료 (2026-10-09) — 구현·직접 검증 완료, 사용자 전체 실행 대기
+
+### 계약·저장 결과
+
+- 공용 `planning_authoring.py` + `planning-authoring-v1.schema.json` + Dart `PlanningAuthoring`의 strict 6키를 맞췄다. 자동 같은 학생 edge + 직접 교차 edge의 전체 DAG, 배치 prefix/나중에 suffix, 전체 체인의 nullable 누적 목표, 같은 칸 배열 순서를 검증한다. 계산 문서나 배열을 재정렬하지 않는다.
+- 프로필 `plan_authoring`, wire `authoring`. 활성 문서는 계속 v2 kind=plan이다. 공용 validator/시나리오 record는 기존 nested v1/v2 버전을 유지한다. 문서·비용식·정규화·goals 파생 함수·통계 입력은 수정하지 않았다.
+- `RepositoryPlanState.authoring`은 누락 시 document 기반 기본값, `hasAuthoring`은 실제 wire 필드 존재 여부다. Save/ReplaceRequest 및 Process/Mock은 typed optional authoring을 전달하고 명시 null wire를 거부한다. DTO의 배열·map·nullable targets는 불변이며 toWire는 독립 사본이다.
+- 직접 pair는 의미상 집합으로 정렬한다. Unicode code point 정렬을 Python/Dart에서 일치시켰다. student_order·stage_order_by_student 배열·deferred_stages의 순서는 보존한다. 미등록 학생 ID·목표 없는 선택 학생과 notes 공백을 보존한다.
+
+| 경계 | 최종 동작 |
+|---|---|
+| plan.get, stored authoring 없음 | 기존 4키 response·파일 bytes 유지. authoring 이관/추가 revision 없음. FB-1b legacy 첫 plan 이관만 원래대로 |
+| plan.save 누락 | stored authoring 없으면 옛 경로. 있으면 보존·새 문서와 재검증. 맞지 않으면 invalid_payload, reason=authoring_required, authoring_reason=원인. mutation/cache 쓰기 없음 |
+| plan.save 명시 object | 전체 metadata 교체. document/goals/plan_authoring/profile revision/catalog/cache를 한 저장 transaction으로. metadata만 바뀌어도 profile +1 |
+| plan.replace 누락 | 새 active는 새 document 기본값. 옛 authoring은 archive로만. 옛 fingerprint 그대로 |
+| plan.replace 명시 object | 새 active bundle 전체 교체. 옛 document+authoring 보관 후 같은 journal transaction으로 profile/catalog/scenario 반영 |
+| replace 보관 조건 | old phases 또는 authoring 선택 학생/나중에 단계가 있으면 보관. 양쪽 모두 비었을 때만 archived_scenario_id=null·scenario revision 불변 |
+| clear | document 기반 default authoring object를 명시. null은 지우기 의미가 아니며 거부 |
+| idempotency | 누락 요청은 옛 fingerprint를 그대로 사용. 명시 metadata는 canonical fingerprint에 포함. cache를 omission 호환성·revision 검사보다 먼저 확인, 최초 응답 replay·중복 archive 금지 |
+| legacy goals.save | non-default authoring은 plan_lossy_write, details.reasons에 authoring_metadata. default metadata는 기존 구조/인연 손실 검사 통과 시 새 legacy 문서 기본값으로 맞춤 |
+| 시나리오 최소 경로 | replace archive에 optional authoring 저장·get/list strict 읽기·duplicate 보존. 기존 update는 metadata를 유지·재검증하고 불일치면 authoring_required로 거부. CRUD 요청 authoring 확장은 FB-8b |
+
+오류 reason은 README에 정리했다: invalid_shape, unsupported_version, targets, target_regression, student_order, stage_set, stage_chain, goal_metadata, stage_reference, self_reference, same_student_prerequisite, duplicate_prerequisite, cycle, lane_order, stage_order, authoring_required. 저장 손상은 corrupt_data, 미지원 저장 version은 migration_required이며 기본값으로 덮지 않는다. revision_conflict/profile·scenario·both details, idempotency_conflict, repository_busy, persistence_failed는 기존 규칙을 재사용한다.
+
+### 정책 fixture·회귀
+
+`contracts/fixtures/planning_authoring_v1.json` **55건**(canonical 결과·reason 포함), `repository_plan_authoring_v1.json` **11건**(optional request/response·보관 record wire)을 Python/Dart 공용 기준으로 고정했다. JSON Schema는 shape/range를, 양 언어 공용 DTO는 bundle 의미를 검사한다. bool/string/float token을 int로 인정하지 않는다.
+
+| 조사 5절 묶음 | 고정·검증한 내용 |
+|---|---|
+| legacy-no-authoring(plan) | get 필드 누락·default DTO·bytes 불변·원래 legacy plan 첫 이관 후 revision 안정. 기존 v1 scenario default도 버전 보존 |
+| deferred-targets, selected-order | 전체 19키 nullable·0·bond, notes/favorite, 미등록·목표 없는 선택 학생과 선택 순서 복원 |
+| stage-set-and-chain | 양쪽 ID 중복, 자기 학생 단계 집합의 누락/중복/다른 학생 참조, prefix/suffix·체인 역전 거부. 같은 목표/all-null은 허용 |
+| monotonic | 전체 학생 체인의 integer→작은 값/null, bond 감소/null 회귀 거부; null→정수·동일 목표·부분 목표 허용 |
+| direct-reference, cycles | 없는 endpoint·self·같은 학생 직접 pair·중복·extra 거부, 직접 cycle과 자동 체인을 거친 간접 cycle 거부 |
+| same-lane-and-cross-lane | 같은 칸/나중에 배열 역전, 더 늦은 phase·나중에 선행→배치 후행 거부. 배치→나중에 허용. 조용한 재정렬 없음 |
+| deferred-exclusion, all-deferred | goals는 마지막 배치 단계만. 나중에 bond/높은 목표·선택 학생은 계산/비교/통계 goals·scenario counts에서 제외. 전부 나중에면 계산 0·빈 goals지만 편집 bundle 보존 |
+| save omission-and-clear | compatible 누락 보존, incompatible 누락 reason=authoring_required, 명시 default clear, null 거부 |
+| metadata-only-revision/idempotency | 문서/goals 값 불변인 metadata 저장에도 profile/catalog revision 증가, 원 응답 replay, changed key 충돌. 옛 save·replace fingerprint를 직접 비교 |
+| replace-full-bundle/deferred-only | 옛 document+authoring 완전 보존, 전부 나중에·선택만인 bundle도 archive, 완전 empty는 skip. 재시작/후속 metadata 변경 후 원 응답 replay |
+| exception/crash/journal | 8 transaction 경계의 exception/os._exit, 3 파일 × 3 atomic write 실패, save rollback, 4 관련 reader의 선복구, 복구 자체 중단 후 재복구. 문서·authoring·goals·revision·cache·archive가 전부 전/전부 후 |
+| strict cross-language | shape·version·targets·metadata·집합/graph reason 일치, Unicode pair 정렬, deep immutable/독립 직렬화, 새 strict record·request DTO·mock |
+
+- Python 관련 **112 PASS**: 신규 FB-8a 21 + 기존 91. v1/v2 문서 frozen 계산/비교·기존 v1 scenario bytes, FB-1b legacy/v6/통계 parity, FB-1c journal·기존 cache, 시나리오 CRUD, FB-14 독립 collection 회귀 포함. `debug/frontend_fb8a/python-targeted.txt`.
+- Dart 서비스 **166 PASS**: 신규 FB-8a 75 + 기존 계약/계획/replace/presets/scenario/v2 DTO 91. `debug/frontend_fb8a/dart-services.txt`.
+- process E2E **7 PASS**: 신규 save → 재시작 get → replace → 재시작 get → archive/계산 비교 → idempotent replay → all-deferred 재보관 1건, 기존 plan/replace/presets/scenario/v2 계산·시나리오 6건. `debug/frontend_fb8a/dart-process.txt`.
+- 관련 Dart analyze **0 issues**. `debug/frontend_fb8a/dart-analyze.txt`. FB-8a diff check를 확인했다. 전체 Python·fe_gate·golden·stage·커밋·push는 실행하지 않았다. FB-8a 자체 UI/golden 코드·baseline 변경은 없다.
+- 학생/인벤토리/이름/선택 profile writer가 metadata를 보존하고, presets collection과 revision이 독립임을 확인했다. scanner/tactic/metadata 소유 코드는 편집하지 않았다.
+
+### FE4-f 연결 메모
+
+1. `loadRepositoryPlan(profileId)`의 `document`와 `authoring`을 같은 초안으로 복원한다. `hasAuthoring=false`여도 DTO 기본값을 사용하며 GET으로 metadata를 다시 저장할 필요는 없다. 선택 순서는 studentOrder, 원래 학생 체인은 stageOrderByStudent다. 학생의 notes/favorite는 배치 학생이면 document.goalMetadata, 나머지 선택 학생이면 authoring.goalMetadata에서 읽는다.
+2. 기존 v2 nullable 원본을 유지한다. 배치 단계만 document.phases에 넣고 나중에 단계 전체를 deferred_stages에 넣는다. 목표 편집 중 임시 unassigned와 명시 나중에를 구별하고 ensurePlaced가 후자를 다시 배치하지 않게 한다. 빈 칸은 제거하되 stage ID는 유지한다. 모든 단계가 나중에여도 유효 bundle은 저장 가능하다.
+3. 자동 체인·직접 선행 graph의 stable topological 순서를 phase.stages/deferred_stages 배열에 반영한다. backend는 student_order로 비용 배열을 다시 정렬하지 않는다. 같은 학생 배치 prefix/나중에 suffix와 graph·lane 오류는 편집 단계에서 표시한다.
+4. `PlanningAuthoring.fromWire({...6키...}, document)`로 엄격한 bundle을 만들고 `saveRepositoryPlan(..., document: document, authoring: authoring, expectedRevision: loaded.revision, idempotencyKey: key)`를 한 번 호출한다. 편집한 authoring을 전부 보내는 쪽을 권장한다. nullable 목표를 기존 정수 v1 보기로 변환하여 저장하지 않는다.
+5. 교체는 plan.get revision과 scenario.list collection revision을 읽고 `replaceRepositoryPlan(..., authoring: 새 bundle, expectedScenarioRevision: list.revision, archiveName/Description)`으로 보낸다. archivedScenarioId가 null이면 보관 없음이다. deferred-only도 ID가 반환된다. 활성 metadata와 보관 metadata를 각각 결과에서 읽는다.
+6. revision_conflict는 기존 revision_scope별 최신 snapshot을 다시 읽고 초안을 보존하여 충돌 처리한다. authoring_required는 최신 bundle을 함께 복원해 다시 검증해야 하며 자동 clear하지 않는다. cycle/lane_order/stage_order 등의 reason과 stage IDs를 해당 카드에 연결한다. 같은 key의 재시도는 최초 payload/revision 그대로, 수정 요청에는 새 key를 사용한다.
+
+### FB-8b 연결 메모
+
+- 공용 schema/validator와 `PlanningScenarioRecord.storedAuthoring/authoring/hasAuthoring/toWire`를 재사용한다. create/update request DTO·Process/Mock의 typed optional authoring, create 누락=default·update 누락=보존, 명시 null 거부와 옛 fingerprint 호환을 확장한다. 이번에는 그 요청 인자를 추가하지 않았다.
+- `_append_record(..., authoring=...)`가 replace 보관을 받으며 read/duplicate는 이미 보존한다. 기존 update에는 orphan 방지 guard만 있다. 전체 CRUD의 명시 metadata 교체·metadata-only record/collection revision·idempotent replay는 FB-8b fixture로 고정해야 한다.
+- scenario.list summary의 계산 대상 counts와 comparison 문서 API는 그대로다. deferred/선택 학생 복원은 get.authoring에서 한다. v1 nested document의 기존 의미·누락 default 호환은 유지한다. 새 active 계획 경계는 계속 v2다.
+- scenario 편입에서 stage ID를 재발급하면 deferred·직접 edge endpoint·학생 체인까지 함께 remap해야 한다. endpoint 탈락을 조용히 삭제하지 않는다. 프론트 FE4-e/f와 조율한다.
+
+### 사용자 전체 실행·인계
+
+v7 루트에서 실행(결과 `debug\frontend_fb8a\python-full.txt`):
+
+```powershell
+New-Item -ItemType Directory -Force debug\frontend_fb8a | Out-Null
+Push-Location backend
+py -3.11 -X utf8 -m unittest discover -s tests -v *> ..\debug\frontend_fb8a\python-full.txt
+$fb8aPythonExit = $LASTEXITCODE
+Pop-Location
+Get-Content debug\frontend_fb8a\python-full.txt -Tail 12
+if ($fb8aPythonExit -ne 0) { throw "FB-8a Python full failed ($fb8aPythonExit)" }
+```
+
+- `debug/frontend_fb8a/commit.json`: status=false, whole=본 backend 상태 문서(아래 승인 조사 포함), post_dir=`debug/frontend_fb8a/post`. 공유 서비스의 스캐너 WIP는 pre/post 차이로 분리했다. planning_protocol_client는 수정하지 않았다.
+- 사용자 Python 전체 후 두 워커가 멈춘 상태에서 오케스트레이터의 gate·커밋 순서를 따른다. 이 워커는 여기서 코드 편집을 멈춘다. FB-8b는 다음 구현 프롬프트를 받은 뒤 시작한다.
+
+# FB-8 읽기 전용 설계 조사
+
+## 조사 기준·결론 (2026-10-09)
+
+- 시작 HEAD: `a79f5d1d951528f3774fbd61efd6384f9a9c5b93`. FB-14 `780705ff`, FE4-d2 `7cd9592e` 커밋 이후다.
+- FD-068(b)·FD-069·FD-071, Flow-3-Order/Flow-4-Save 원본 HTML의 안내 문구, FE4-d1/d2 종료 기록, FB-1b/c 계약, 현재 문서·저장·시나리오·통계 소비자를 읽었다.
+- **권장: 계산 문서 v2는 그대로 두고, 활성 계획·시나리오 옆 `authoring` v1에 교차 선행·전체 학생 순서·학생별 논리 단계 순서·나중에 단계 전체를 저장한다.** 나중에 단계는 계산 문서에 넣지 않는다. 목표·선택 학생을 복원할 자료는 저장하되 계산/goals/비교/통계 입력과 분리한다.
+- 아래는 **승인 전 계약 제안**이다. 코드·schema·fixture·테스트는 수정하지 않았다. 이 상태 문서만 수정하며 commit.json·gate·커밋은 만들거나 실행하지 않는다. 승인된 구현 프롬프트를 받은 뒤 착수한다.
+
+### 현재 확인한 사실과 FD-068 적용
+
+| 근거 | 현재 동작·설계에 주는 제약 |
+|---|---|
+| FD-068(b) | 교차 선행은 편집 배치 규칙이다. 계산기에 prerequisite 실행 조건을 추가하는 결정이 아니다. 과거 문구의 “문서 v1 그대로”는 현재 v2를 유지하는 뜻으로 적용 |
+| FD-069 | 선행과 같은 칸 허용, 같은 칸에서는 선행→후행으로 자동 정렬. backend는 계산 배열 순서를 그대로 쓰므로 저장 시 이 순서도 검증해야 함 |
+| FD-071 | 빈 칸은 저장 때 제거. 순서 n칸은 나중에 제외. 빈 보드 칸 자체를 authoring에 별도로 보존하지 않는 안 |
+| Flow-3-Order 원문 | “1순위 · 2순위 · 3순위 · 나중에”, “선행 단계보다 앞 칸에는 놓을 수 없습니다”, “칸이 그대로 계획의 페이즈가 됩니다”. 직접 선행은 분홍 점선, 같은 학생 자동 선행은 회색 실선 |
+| Flow-4-Save 원문 | “어느 쪽을 골라도 학생·목표·단계는 한 묶음으로 남아서, 나중에 1~3단계 어디로든 돌아와 고칠 수 있습니다.” ID만 저장해 목표를 버리는 안은 불충분 |
+| FE4-d1/d2 | 같은 학생 이동·같은 칸 정렬은 구현됨. 직접 선행/나중에는 FE4-f. d2의 학생별 묶음·부족만·크게/작게는 보기 상태이며 저장 계산 순서를 바꾸지 않음 |
+
+## 1. authoring 모양과 검증 제안
+
+계산 문서 옆의 필드 이름은 wire/시나리오에서 `authoring`, profile 파일에서는 기존 `plan` 옆 `plan_authoring`으로 제안한다. 외부 profile/scenario 저장 version=1과 nested 계산 document.version=1/2는 유지한다. 새 authoring만 version=1이다.
+
+```text
+authoring = {
+  version: 1,
+  prerequisites: [{stage_id, requires_stage_id}],
+  deferred_stages: [{stage_id, student_id, name, targets}],
+  student_order: [student_id, ...],
+  stage_order_by_student: {student_id: [stage_id, ...]},
+  goal_metadata: {student_id: {favorite: bool, notes: string}}
+}
+```
+
+`stage_id`는 후행, `requires_stage_id`는 선행이다. `requires → stage` 방향으로 해석한다. 배열/객체 필드는 모두 필수이며 extra field·null object·잘못된 version/type은 거부한다. `deferred_stages`는 문서 stage와 동일한 **4키**를 쓰되 targets는 v2의 19키 int/null, 범위·0·bond 의미도 그대로다. 현재값이나 선행 성장을 채워 저장하지 않는다. 학생 ID는 카탈로그와 대조하여 지우지 않는다.
+
+### 왜 stage_order_by_student가 필요한가
+
+문서에는 배치한 단계만 들어가고 나중에 단계는 밖에 있으므로, 같은 학생의 원래 1→2→3 순서를 **칸 배치와 독립적으로** 알아야 한다. targets만 비교하면 같은 목표나 all-null 단계의 순서를 알 수 없고, opaque stage ID·이름에서 번호를 추측해서도 안 된다. 따라서 이 map을 추가한다. 이 키를 제외하려면 deferred stage마다 명시적 student_step 같은 추가 ordinal이 필요하다. 기존 4키 stage DTO를 재사용하고 전체 단계 체인을 한 곳에 두는 map 쪽을 권장한다.
+
+| 필드·규칙 | 제안하는 엄격 검증 |
+|---|---|
+| stage 집합 | document의 모든 stage + deferred_stages. 전체 stage_id 유일, 양쪽 중복 금지. 단계는 배치 또는 나중에 중 한 곳에만 있음 |
+| student_order | 중복 없는 고른 학생 순서. 모든 stage의 student_id를 포함. 목표를 아직 만들지 않은 선택 학생도 허용하여 1단계 복원. 미등록 ID도 보존 |
+| stage_order_by_student | key 집합은 student_order와 정확히 같음. 각 배열은 그 학생의 stage만 포함하고, 전체 stage 집합을 누락/중복 없이 정확히 덮음. 목표 없는 선택 학생은 [] |
+| 같은 학생 자동 선행 | 각 학생 map의 인접 단계 쌍으로 도출. wire prerequisites에는 반복 저장하지 않음. 문서의 학생별 단계 순서는 이 체인의 prefix여야 하며, 나중에는 남은 suffix. 앞 단계를 나중에 두고 뒤 단계만 계산하는 배치는 거부 |
+| targets | 학생별 전체 체인 순서로 공용 v2 target validator를 적용. integer 뒤 감소/null은 오류. all-null·동일 목표·부분 목표·명시적 0 허용. 목표만으로 순서를 다시 정하지 않음 |
+| deferred_stages 배열 순서 | 나중에 칸의 카드 순서. 같은 학생 자동 선행 및 deferred끼리 직접 선행의 선행→후행 순서를 지킴. student_order는 선택 순서이지 이 배열의 강제 정렬 키가 아님 |
+| goal_metadata | **문서에 stage가 없는 선택 학생**(student_order − document 학생 집합)만 정확히 포함. deferred-only/목표 없는 선택 학생의 favorite·notes 보존. 배치 학생 metadata는 document.goal_metadata가 유일한 원본이며 중복 허용하지 않음. v1 시나리오의 배치 학생은 기존 v1 의미 유지 |
+| 직접 선행 pair | 양 끝이 전체 stage 집합에 존재. 자기 참조·동일 pair 중복 금지. 같은 학생 pair는 자동 체인과 중복/충돌하므로 거부하고 교차 학생 pair만 저장 |
+| 순환 | 직접 선행만 검사하지 않고 **자동 같은 학생 선행 + 직접 선행** 전체 graph가 DAG인지 검사. 자동 선행을 거쳐 생기는 간접 순환도 거부 |
+| 앞 칸 금지 | 나중에를 마지막 lane으로 취급. 선행 lane ≤ 후행 lane. deferred 선행→배치 후행은 금지; 배치 선행→deferred 후행은 허용 |
+| 같은 칸 | 같은 phase 또는 나중에 안에서 선행의 실제 배열 index < 후행 index. frontend가 stable topological sort한 결과를 전송하고 backend는 검증만 함. backend가 문서를 조용히 재정렬하지 않음 |
+
+검증 순서는 document 파싱 → authoring shape/집합/학생 체인·목표 검증 → 직접 pair → 전체 graph 순환 → lane/칸 안 순서다. 입력 오류는 `invalid_payload`와 details.reason/관련 stage IDs로 드러내는 안이며, 저장된 손상은 `corrupt_data`로 막고 metadata를 버리지 않는다. 입력 authoring의 미지원 version은 invalid_payload, 저장 version 미지원은 migration_required로 제안한다.
+
+읽기 fallback은 `student_order = document 첫 등장 학생`, 학생별 stage_order는 document flatten 순서, prerequisites/deferred_stages/추가 goal_metadata는 빈 값이다. fallback은 현재 학생 값·catalog 정렬에 의존하지 않는다.
+
+범위에 넣지 않는 값: 같은 학생 자동 edge의 복제, 계산용 유효 목표, 카드 상태·비용·보유량, 보기 필터/compact 토글, 프리셋 출처. 직접 연결의 자유 서술 사유(시안 “노트 먼저 쓰기”)가 별도 편집 요구가 되면 그 text 필드는 오케스트레이터가 추가 결정해야 한다. 이번 pair 제안에는 두 ID만 둔다.
+
+## 2. 나중에 목표 저장 위치 비교
+
+| 안 | 복원·계산 영향 | 판단 |
+|---|---|---|
+| A. authoring에 단계 전체 + 체인/학생 metadata | document v2 shape/비용식 그대로. 계산용 문서는 배치 단계만. 별도 record validator로 ID/체인/선행 정합성 보장 | **권장**. FD-068(b), Flow-4의 한 묶음 복원과 가장 잘 맞음 |
+| B. document v2에 calculation-excluded phase 표시 | 현재 phase는 phase_id/name/stages만 엄격히 허용. flag를 추가하면 현재 v2 계약을 깨고, flag를 안 넣고 이름으로 구별하면 모든 계산기가 그 phase를 계산함. goals/비교/통계까지 필터가 필요 | 비권장. “계산 문서 그대로”와 충돌. 예약 phase ID/이름 sentinel도 사용하지 않음 |
+| C. document v3에 deferred와 prerequisites 넣기 | 버전을 새로 만들 수는 있으나 Python/Dart parser, v1/v2/v3 계산/파생/비교, 저장·mock 전체에 새 문서 분기 필요 | 현 FD-068(b) 범위에 과함. 선행을 실제 계산 실행 조건으로 바꾸는 후속 결정이 있을 때 재검토 |
+
+권장 A의 원본 단위는 `{document, authoring}`다. 계산에 넘길 때는 `document`만 꺼낸다. deferred-only 학생이 있으면 document.goal_metadata에 억지로 넣지 않고 authoring.goal_metadata에 둔다. 전부 나중에인 문서는 `phases=[]`, 문서 goal_metadata={}이며 goals=[]다. 학생·목표·체인·favorite/notes는 authoring으로 복원한다.
+
+### 나중에가 계산에서 빠지는지 확인한 경로
+
+| 소비 경로 | 코드상 확인·구현 시 불변식 |
+|---|---|
+| planning.document.calculate | payload는 current_students/inventory/document만. parser/계산기는 document.phases[].stages[]만 순회. authoring을 넣으면 현재 strict payload 오류; 새 계산 필드도 추가하지 않음 |
+| plan.get calculation / scenario.list calculation | 공용 planning_summary가 record의 document만 projection으로 계산. authoring/deferred를 붙이지 않으면 비용·부족·병목 모두 제외 |
+| goals v1 파생 | goals_from_document는 문서 phase→stage 학생별 마지막 배치 목표만 파생. bond는 문서에만. deferred-only 학생 및 deferred의 높은 목표는 goals에 넣지 않음 |
+| planning.scenario.compare | API는 두 **문서** 비교이며 시나리오 ID 저장 조회 API가 아님. final_targets도 phase→stage만 읽음. 두 문서가 같으면 비용/목표 비교는 같고, authoring 차이를 계산 차이로 만들지 않음 |
+| scenario.list counts | 현재 phase_count/stage_count/student_count/student_ids는 문서만 집계. 계산 대상 개수 의미 유지. 나중에/선택 학생 수는 FE4-f가 get.authoring에서 따로 읽으며 이 조사에서는 list summary 필드를 늘리지 않음 |
+| StatisticsPage | state.goals → planning.plan.calculate + shortages 경로 사용, goal 수는 state.goals.length. goals에 deferred를 넣지 않으면 제외. 기존 통계는 페이즈/인연/authoring을 복원하는 경로가 아님 |
+
+코드 근거: [문서 계산·비교](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/planning_document.py:234>), [goals 파생](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/repository_plan.py:22>), [공용 요약](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/planning_summary.py:9>), [시나리오 집계](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/scenario_store.py:220>), [통계 입력](<C:/Users/brigh/planner_of_plana/BA Planner/v7/frontend/lib/ui/pages/statistics_page.dart:165>).
+
+## 3. 저장·호환 경계 제안
+
+authoring은 FB-14처럼 별도 collection/revision을 두지 않는다. 해당 활성 계획/시나리오 record의 일부이며 **authoring만 변경해도 해당 revision이 오른다**. 문서와 따로 저장하는 2단 호출·별도 sidecar 파일은 사용하지 않는다.
+
+| 경계 | 제안 |
+|---|---|
+| plan.get | 기존 response에 optional `authoring` object 허용. 저장 필드가 없으면 기존 response shape 유지, 새 Dart DTO가 document 기반 default를 노출. GET으로 필드 생성/추가 revision 증가 없음. FB-1b의 원래 legacy plan 첫 이관은 기존대로 |
+| plan.save | 기존 payload + optional authoring. 명시하면 전체 authoring 교체, document/goals/plan_authoring/profile revision/catalog/cache를 기존 두 파일 transaction 안에서 같이 저장. authoring만 바뀌어도 profile revision +1 |
+| plan.replace | 기존 payload + optional **새 계획의** authoring. 기존 활성의 document와 authoring을 같은 scenario record로 보존, 새 활성 bundle과 goals/cache를 기존 공통 journal transaction으로 교체. 두 revision 검사/details/최초 응답 replay 유지 |
+| scenario.create | 기존 payload + optional authoring. document와 함께 정규화·검증하고 같은 collection atomic write/cache에 저장. scenario revision=0, collection +1, profile revision은 원래 규칙 유지 |
+| scenario.get | record에 optional authoring 허용. 누락은 DTO의 default. 기존 v1/v2 nested 문서 모두 읽으며 문서 버전을 강제로 올리지 않음 |
+| scenario.update | 기존 payload + optional authoring. 명시하면 전체 교체, record revision+1·collection+1·timestamp/cache 한 atomic write. name/description만 바꾸는 업데이트로 metadata가 사라지지 않아야 함 |
+| scenario.duplicate | document_id/record ID만 새로 발급하는 기존 방식. stage ID는 record 범위이므로 그대로 써도 됨. authoring을 deep copy하고 내부 stage 참조 그대로 보존. 원본/복사본 수정 격리 |
+| compare | get으로 record bundle을 읽고 document_a/b만 기존 API로 전달. authoring은 원본 복원에만 사용. metadata를 비교 요청 document 안에 넣지 않음 |
+| profile/current/inventory writer | 기존 profile dict의 plan_authoring을 보존. 계산 summary는 document로만 재계산. presets collection과 서로 변화 없음 |
+| legacy goals.save | 기존 plan_lossy_write 보호를 확장해 직접 선행·deferred·별도 선택/학생 순서를 잃는 쓰기도 차단(details.reasons에 authoring_metadata). 예전 최초 응답 replay는 mutation 없이 허용 |
+
+### optional 필드의 의미를 분리해야 한다
+
+- **create/replace에서 누락**: 새 record/new active의 document 기반 default. replace의 옛 authoring을 새 document에 잘못 붙이지 않는다. 옛 bundle은 보존 scenario로 간다.
+- **save/update에서 누락**: 기존 authoring이 없으면 종전 경로. 있으면 그대로 보존하되 incoming document와 정합성을 다시 검증한다. 참조/체인/선택 metadata가 더는 맞지 않는 경우 `invalid_payload(details.reason=authoring_required)`로 막는다. 조용히 clear하거나 고아 edge/deferred를 삭제하지 않는다.
+- **명시 object**: full replacement. 지우려면 document 기반 default authoring object를 명시한다. null을 “지움”으로 쓰지 않는다.
+- **old record에 누락**: 읽을 때만 default를 파생. 파일 bytes 및 revision을 유지하고 불필요한 이관을 만들지 않는다. 원래 document/goals의 의미를 바꾸지 않는다.
+- schema/Dart는 기존 키 집합 및 `+ authoring` 형태만 허용한다. authoring가 있으면 내부는 strict. **현재 strict Dart DTO는 새 필드를 곧바로 거부하므로** FB-8에서 schema·DTO·Process·Mock·shared fixture를 한 슬라이스로 맞춰야 한다. 배포 바이너리 간 버전 불일치를 보장하는 안은 아니다.
+
+### idempotency·복구 주의
+
+명시 authoring을 포함한 요청의 fingerprint에는 canonical document·authoring·기존 revision/보존 정보 전체를 넣는다. 순서 의미가 있는 student_order/stage_order/deferred 배열은 유지하고, prerequisites는 pair 정렬로 canonical하게 만들 수 있다. 입력에 authoring이 **없던** 요청은 기존 fingerprint 알고리즘을 유지하여 FB-1b/c·scenario의 옛 캐시가 계속 replay되어야 한다.
+
+현재 저장 상태에서 “effective authoring”을 계산하여 fingerprint에 넣으면, 나중 편집 후 최초 요청 replay가 달라진다. 따라서 요청의 authoring 필드 존재 여부/값에 따라 fingerprint를 정하고, 캐시 확인을 **현재 snapshot과 omission 호환성 검증보다 먼저** 한다. 최초 응답은 후속 변경·archive 삭제 뒤에도 그대로 반환하며 archive를 다시 만들지 않는다. `{revision}` 캐시와 replace의 세 필드 캐시는 기존 strict 읽기를 유지한다.
+
+기존 [공통 transaction](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/repository_transaction.py:1>)은 profile/catalog/scenario 전체 파일 이미지를 journal에 담는다. authoring을 기존 파일 객체 안에 넣으면 새 파일/lock 순서가 필요 없다. save의 잡힌 실패 rollback 보장은 유지하고, replace의 prepared=전부 전/committed=전부 후 복구 이미지에 authoring도 함께 들어가야 한다. 조회는 기존 guard·선복구 경계를 사용한다. 손상된 authoring을 발견해도 record를 “meta 없음”으로 fallback하지 않는다.
+
+### FB-1c의 빈 활성 예외는 승인 시 확장 필요
+
+현재 [replace](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/repository_store.py:480>)는 `old.plan.phases`가 비면 보존 scenario를 만들지 않는다. **배치 문서는 비었지만 나중에 단계/선택 학생이 남아 있는 활성 계획**에 이 조건을 그대로 쓰면 한 묶음 복원 자료를 잃는다.
+
+권장 조건은 “기존 배치 phases가 있거나, old authoring에 보존할 deferred stage/선택 학생이 있으면 archive”다. 이때 empty calculation document도 유효 scenario로 저장하고 scenario collection revision을 올린다. 문서·authoring 둘 다 비어 있는 옛 empty record는 종전처럼 archived_scenario_id=null·collection revision 불변이다. **이는 FB-1c 빈 조건의 추가 확장 제안이며, 구현 전에 오케스트레이터가 승인할 계약 차이**다.
+
+## 4. 같은 칸의 재화 배분 순서 확인
+
+[calculate_document_projection](<C:/Users/brigh/planner_of_plana/BA Planner/v7/backend/core/planning_document.py:254>)는 phase 배열을 순회하고 그 안의 stage 배열을 순회한다. 각 stage에서 `owned_at_entry = remaining[resource_key]`, 부족량을 계산한 뒤 `remaining = max(0, remaining-required)`로 바로 갱신한다. 같은 페이즈 안 다음 단계도 이 잔량을 받는다. phase resource의 owned는 phase 진입 snapshot이다. graph/student_order를 보고 계산기 내부에서 다시 정렬하지 않는다.
+
+코드 수정·파일 쓰기 없이 계산 전이의 비용 반환만 메모리 mock으로 치환한 확인: 같은 P1에 A(60 credit), B(50 credit), 보유 75를 넣었다.
+
+| 문서 단계 순서 | 단계 진입 보유량 | 단계 부족량 | 총 비용 | 첫 병목 |
+|---|---|---|---|---|
+| A→B | A=75, B=15 | A=0, B=35 | 110 | B |
+| B→A | B=75, A=25 | B=0, A=35 | 110 | A |
+
+이 확인은 재화 순회/배분만 검증한 것이며 실제 성장 비용식을 새로 검증한 테스트는 아니다. FD-069의 같은 칸 선행→후행 순서가 실제 부족 배분에 영향을 준다는 근거다. FE4-f는 lane별 stable topological sort(자동 같은 학생 edge+직접 edge)를 **document.stages 배열에** 반영해야 한다. 기존 `_sortLaneByStep`는 같은 학생이 차지한 자리 안에서만 순서를 바꿔 교차 선행을 처리하지 못한다.
+
+또한 부족이 발생해도 현재 계산기는 후행 비용 계산·가상 성장/재화 소진을 계속한다. 직접 선행을 비용 계산의 실행 gate나 새로운 병목 propagation 규칙으로 추가하지 않는다. 이 FD-068(b) 슬라이스에서 보장하는 것은 배치/배분 순서와 제외 범위이며, “선행이 실제 완료될 때까지 후행 비용 0” 같은 의미는 아니다.
+
+## 5. 영향받는 소비자와 필수 회귀 fixture
+
+### 소비자·소유 경계
+
+| 소비자 | 필요한 대응 |
+|---|---|
+| Python repository_plan/repository_store/protocol | bundle validator·optional field·legacy 손실 방지·save/replace fingerprint·deferred-only archive. 문서 목표/goals 파생은 공용 기존 경계 재사용 |
+| Python scenario_store/protocol | record shape·CRUD/duplicate·optional omission 보존·fingerprint·archive 전달. summary 계산/count는 배치 document 의미 유지 |
+| Python planning_document/planning_summary/protocol 계산 | 비용식/응답 필드/문서 shape 변경 없음. target validator 재사용과 순서/제외 회귀만. student_order로 backend 계산 순서를 재정렬하지 않음 |
+| contracts repository/scenario schema·fixture·README | 공용 authoring v1 DTO 정의/참조, optional key 호환·semantic validation·오류 reason 문서. 새 계산 문서 version 없음 |
+| Dart repository_plan_service/scenario_service | RepositoryPlanState·Save/ReplaceRequest·PlanningScenarioRecord 및 CRUD 요청에 strict authoring DTO. absent default·nullable deferred stage·deep immutable/직렬화 검증 |
+| Process/Mock/protocol client validators | 완전 bundle 전달·재시도·metadata-only revision·deep copy. 서비스 공유 scanner WIP가 있으므로 구현 때도 pre/post로 분리 |
+| FE4-f PlanFlowDraft/DocumentBoundary/Controller | 학생별 원본 체인·선택 순서·deferred를 복원. 현재 calculationWire는 unassigned를 임시 phase에 포함하므로 **명시 deferred와 목표 편집 중 임시 unassigned를 구별**해야 함. ensurePlaced가 deferred를 다시 배치하지 않게 함 |
+| FE4-f order editor/step | 교차 edge 편집·순환/앞 칸 금지·같은 칸 topological sort·나중에 suffix 이동·clear/delete 때 참조 정리의 명시 처리. d2 보기 그룹 정렬을 계산 순서로 오인하지 않음 |
+| FE4-e 저장/FE4-h 읽기/시나리오 재편집 | get의 authoring을 DTO→초안으로 연결. can-save는 “모두 배치” 대신 “배치 또는 명시 deferred로 모두 분류·유효”여야 함. 전부 deferred도 저장 가능한 안 |
+| 활성 계획 기존 phase editor·시나리오 편입/비교 | 현재 `_incorporateScenario`는 stage ID를 재발급하고 회귀 stage를 건너뜀. 병합 때 active/source 양쪽 stage/deferred/edge/체인 ID를 함께 remap하고 선택 순서 합치기·정합성 검증 필요. endpoint 탈락을 조용히 지우지 않음. bundle을 읽지 않은 기존 save가 손실 쓰기로 막히면 프런트 연결이 필요 |
+| 통계·학생 목표·인벤토리 소비자 | state.goals 의미 그대로, deferred 배제. authoring-only active 저장도 profile revision이 올라 변경 알림이 발생하나 비용/goals는 동일할 수 있음 |
+| title/account/scan/tactical·seed·metadata 세션 | 프로필 revision 경로는 기존 규칙. 별도 authoring 이관 revision 없음. profile 수정/스캔 commit이 optional 필드를 보존하는지 회귀 요청; 스캐너/tactic/metadata 소유 코드는 FB-8 워커가 고치지 않음 |
+| FB-14 preset/group 저장 | 별도 collection. authoring revision과 결합하지 않음. preset/group은 graph나 deferred 단계 ID의 저장소가 아님 |
+
+### 승인 후 먼저 고정할 fixture
+
+아래는 **fixture 목록 제안**이며 이번 조사에서 JSON/test 파일을 만들지 않았다.
+
+| 묶음·사례 | 반드시 확인할 결과 |
+|---|---|
+| legacy-no-authoring(v1 scenario/v2 plan/scenario) | read default·읽기 bytes/revision 불변, 기존 calculate/compare/goals 결과 동일, 예전 request/response fixture 계속 유효 |
+| deferred-targets-null-zero-bond | 19키·null·0·bond 1/100·favorite/notes 보존, 계산용 현재값으로 되쓰지 않음. bool/string/범위/누락/extra 거부 |
+| selected-order-with-no-stage/unknown-student | 카탈로그 순서와 다른 선택 순서·미등록·목표 없는 학생 복원. 순서 중복/참조 학생 누락/추가 metadata key 거부 |
+| stage-set-and-chain | placed/deferred ID 중복, 없는 stage 참조, 다른 학생 stage가 chain에 포함, chain 누락/중복 거부. all-null/동일 목표에서도 같은 학생 deferred prefix·placed suffix 배치 거부 |
+| monotonic-across-deferred-boundary | 배치 마지막→deferred 첫 단계 및 deferred끼리 integer 감소/null 회귀 거부. 동일 목표·all-null 체인 허용 |
+| direct-reference/self/duplicate/same-student | 잘못된 pair shape, 없는 endpoint, 자기 참조, 중복 pair, 자동 체인과 중복/역방향 같은 학생 pair 거부 |
+| cycles-direct-and-implicit | 직접 cycle + A1→A2·B1→B2 자동 edge를 거쳐 생기는 교차 cycle 모두 거부 |
+| same-lane-and-cross-lane | 같은 칸 선행→후행 허용/역순 거부; 앞 칸 금지; 후행 이동뿐 아니라 선행을 뒤로 옮길 때도 검사. deferred→placed 금지, placed→deferred/deferred→deferred 올바른 순서 허용 |
+| within-phase-allocation | 위 75/60/50 순서 사례처럼 총량과 첫 병목/진입 잔량 구별. 선행 부족으로 후행 비용 계산을 중단하지 않는 기존 의미 유지 |
+| deferred-exclusion | 높은 deferred 목표/희귀 재화/현재값 없는 deferred 학생을 넣어도 document projection/goals/compare/stats는 scheduled-only 기준과 값 동일. deferred 때문에 계산 warning/병목/학생 비교 행이 추가되지 않음 |
+| all-deferred/fully-empty | all-deferred의 비용/goals/배치 count=0, 원본은 복원. fully-empty 기존 empty 계약 유지 |
+| save/update omission-and-clear | 이름 변경·호환 문서 수정 omission 보존, 참조를 깨는 omission 오류·무변경, 명시 default object clear, null clear 거부, legacy goals 손실 오류 |
+| metadata-only-revision/idempotency | authoring만 수정하면 record/profile 또는 scenario/collection revision 정확히 +1. 동일 key replay, 같은 key 다른 metadata 충돌, 후속 변경 뒤 최초 replay. 옛 fingerprint/response 캐시도 replay |
+| replace-full-bundle/deferred-only | 원래 document+authoring archive 완전 보존·새 active bundle/goals 일치. all-deferred old archive 생성(승인 확장), 양쪽 빈 old archive 없음 |
+| duplicate-and-remap | 복제본 stage 참조·deferred chain 유지, deep copy 격리. 편입의 ID remap 전체 참조 보존/탈락 endpoint 명시 오류 |
+| exception/crash/journal | save 잡힌 profile/catalog 실패 원본 bytes, replace 각 write/commit 사이 예외·process 중단 후 document+authoring+goals+cache 전부 전/전부 후, 최초 replay archive 1개 |
+| process E2E | bundle 포함 plan save→재시작 get→replace→재시작 active/보존 scenario get→기존 document compare. scenario create→update→duplicate→재시작 get, stale/replay 함께 |
+| strict cross-language/stored-corruption | Python schema+semantic/Dart DTO 동일 판정·왕복·불변. 손상 authoring 읽기/저장 오류·원본 유지, UI fallback으로 빈 authoring 처리 금지 |
+
+### 오케스트레이터가 구현 전에 승인할 핵심
+
+1. 문서 v2 유지·authoring 전체 단계 보관 안 A와 6키 모양(추가 student_stage 체인 및 deferred-only/목표 없는 학생 metadata 범위).
+2. scheduled prefix/deferred suffix, 자동+직접 graph cycle/같은 칸 배열 순서 검증, 목표 없는 선택 학생 복원 정책.
+3. optional authoring의 create/replace default와 save/update 보존·손실 오류, 옛 fingerprint 호환.
+4. FB-1c의 “빈 phases면 archive 없음”을 **authoring도 비었을 때만**으로 확장하여 deferred-only bundle 보존.
+
+조사를 마쳤고 구현은 시작하지 않았다. 비용 순회 메모리 확인 외 Python/Dart 제품 테스트·gate를 실행하지 않았다. 승인 및 구현 프롬프트를 기다리며 여기서 멈춘다.
 
 # FB-14 단계 프리셋·내 그룹 저장
 

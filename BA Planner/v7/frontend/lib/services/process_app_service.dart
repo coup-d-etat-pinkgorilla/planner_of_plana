@@ -491,6 +491,7 @@ class ProcessAppService
   Future<int> saveRepositoryPlan({
     required String profileId,
     required PlanningDocument document,
+    PlanningAuthoring? authoring,
     required int expectedRevision,
     required String idempotencyKey,
   }) => _revisionMutation(
@@ -498,6 +499,7 @@ class ProcessAppService
     RepositoryPlanSaveRequest(
       profileId: profileId,
       document: document,
+      authoring: authoring,
       expectedRevision: expectedRevision,
       idempotencyKey: idempotencyKey,
     ).toWire(),
@@ -507,6 +509,7 @@ class ProcessAppService
   Future<RepositoryPlanReplaceResult> replaceRepositoryPlan({
     required String profileId,
     required PlanningDocument document,
+    PlanningAuthoring? authoring,
     required int expectedRevision,
     required int expectedScenarioRevision,
     required String idempotencyKey,
@@ -518,6 +521,7 @@ class ProcessAppService
       RepositoryPlanReplaceRequest(
         profileId: profileId,
         document: document,
+        authoring: authoring,
         expectedRevision: expectedRevision,
         expectedScenarioRevision: expectedScenarioRevision,
         idempotencyKey: idempotencyKey,
