@@ -1,6 +1,6 @@
 ---
 title: "Frontend Redesign Backend Status"
-summary: "FB-8 authoring 메타 읽기 전용 설계 조사와 Lane A의 FB-14 프리셋·그룹, FB-1c 교체·복구, FB-1b 이관 및 문서 v2 기록입니다."
+summary: "FB-8a/b 계획·시나리오 authoring 저장과 승인된 설계 조사, Lane A의 FB-14 프리셋·그룹, FB-1c 교체·복구 및 문서 v2 기록입니다."
 topics: [workflow, design]
 sources:
   - id: workflow
@@ -14,6 +14,92 @@ sources:
     path: backend/tests/test_student_calculation_fb11a.py
 ---
 백엔드 워커 전용(Lane A 병렬, 2026-10-07)
+
+# FB-8b 시나리오 authoring
+
+## 착수 (2026-10-09)
+
+- 시작 SHA: `0160910f2c803e28aee1bf04ab5abc7b2bb4cfde`. FB-8a `4accf46c` 커밋 이후 HEAD.
+- AGENTS·README·runtime 경계, 워크플로 FB-8/앞뒤 병렬, 오케스트레이터 17:30·19:40·20:05, FB-8a 종료 전체/FB-8b 연결 메모와 승인된 읽기 전용 조사를 읽었다.
+- 공용 authoring validator/schema/레코드 DTO를 재사용하여 create/update의 typed optional 저장, get/duplicate의 bundle 보존과 metadata-only revision/idempotency를 구현한다. compare는 document-only 의미를 유지하고 필요성 판단 근거를 종료 기록에 남긴다.
+- 스키마 목록 기대 집합의 `planning-authoring-v1.schema.json`은 이미 FB-8a 커밋에 반영되어 있다. 새 schema 없이 기존 scenario schema에 optional 필드를 참조하며 관련 계약 모듈을 직접 검증한다.
+- UI·스캐너·tactic·metadata 소유 파일은 고치지 않는다. 공유 서비스 pre/post를 남기며 전체 Python·gate·stage·커밋·push는 하지 않는다.
+
+## 종료 (2026-10-09)
+
+FB-8b의 Python·계약·Dart 서비스·Mock/Process와 직접 검증을 마쳤다. **코드 편집을 멈춘다.** 전체 Python과 공통 gate·stage·커밋·push는 실행하지 않았다. 화면·widget/golden 코드 및 baseline은 바꾸지 않았으며 golden 변화는 0을 예상한다.
+
+### 계약·저장 경계
+
+| 경계 | 확정 동작 |
+|---|---|
+| scenario.create authoring 누락 | 문서 기반 default. 저장 field는 생략하여 기존 v1/v2 레코드 모양을 보존 |
+| scenario.update authoring 누락 | 기존 sidecar를 새 문서에 공용 validator로 검증하여 보존. 불일치하면 `invalid_payload`, `details.reason=authoring_required`, `details.authoring_reason=공용 실패 reason` |
+| 명시 객체 | sidecar 전체 교체. 문서의 default 객체로 명시적으로 초기화 가능. 부분 merge 없음 |
+| 명시 null | `invalid_payload`, `reason=invalid_shape`. Dart strict fromWire에서도 거부 |
+| get | optional 저장 sidecar 반환. `PlanningScenarioRecord.hasAuthoring`는 실제 저장 여부, `.authoring`은 저장 값 또는 문서 default |
+| duplicate | 요청은 기존 식별자·두 revision·key 유지. 문서 버전·목표·메타·선택 순서·나중에 단계·체인·직접 선행 모두 보존. 레코드/문서 ID·이름·시각만 재발급 |
+| 메타만 update | record revision과 scenario collection revision 각각 1 증가. profile revision·active plan·goals 불변 |
+| idempotency | 누락 요청의 fingerprint는 이전 operation 그대로. 명시 authoring만 canonical operation에 포함. 최초 응답 cache를 revision 및 누락 메타 호환 검증보다 먼저 확인. 나중 수정·삭제·재시작 후에도 최초 `{revision, scenario_id}` 반환 |
+
+- `ScenarioStore._canonical_authoring`에서 FB-8a 공용 `planning_authoring_from_wire`를 재사용한다. 자동+직접 DAG, 학생 체인 prefix/suffix, 칸 및 같은 칸 배열 순서, 누적 목표, 메타 key 규칙은 복제하거나 완화하지 않았다.
+- 문서·authoring·record/collection revision·응답 cache가 기존 scenario 파일 atomic write 한 번에 저장된다. 기존 repository guard와 FB-1c journal recovery를 재사용한다. 활성 plan.replace로 보관한 레코드도 같은 get/update/duplicate 경계를 사용한다.
+- create/update의 Dart `PlanningScenarioCreateRequest`·`PlanningScenarioUpdateRequest`는 strict fromWire/toWire이며 `PlanningAuthoring? authoring`을 서비스로 전달한다. delete/duplicate도 strict identity DTO를 거친다. Mock은 같은 mutation cache·누락/교체·복제와 최초 응답 재시도를 구현한다.
+- 새 schema 파일은 추가하지 않았다. 기존 `scenario-protocol-v1.schema.json`의 create/update optional property가 공용 schema를 참조한다. `test_planning_protocol_contract.py`의 기대 집합에 이미 들어 있는 authoring schema를 그대로 검증했고 해당 모듈도 통과했다.
+
+### compare에 authoring을 넣지 않는 근거
+
+`planning.scenario.compare` 요청은 현재 학생·인벤토리와 `document_a/b`만 유지한다. `ScenarioStore._summary`·`_calculation_summary`는 record.document만 보고, 비교 경로도 기존 문서 계산을 그대로 호출한다. authoring.deferred_stages는 document.phases 밖에 있으므로 계산·비교·phase/stage/student counts·calculation summary에서 제외된다. 편집 복원에는 get.authoring이 필요하지만 계산 요청에는 필요하지 않다.
+
+같은 칸 재화 배분은 기존 document.phases의 stage 배열 순서다. 직접 선행은 그 배열을 검증하는 편집 규칙이며, 별도 실행 조건이나 재정렬을 비교 계산에 주입하지 않는다. 따라서 metadata만 바꾼 문서와 복제 문서의 계산값이 같다. all-deferred의 비교 비용은 0이다. 기존 v1/v2 문서 및 FE4-e의 메타 없는 호출을 유지한다.
+
+### fixture·직접 검증
+
+| 묶음 | 검증한 정책 |
+|---|---|
+| `planning_authoring_v1.json` 55개 공용 정책 | scenario create 경계와 strict Dart DTO에서 동일 valid/reason/canonical 결과. 단계 집합·체인·누적 목표·직접 참조·순환·칸/배열 순서·선택/메타·unknown ID·Unicode 선행 정렬 포함 |
+| `scenario_authoring_v1.json` 16개 wire | create/update 누락·객체·null·미래 버전·unknown key·bool target, duplicate identity, get 객체·legacy·null |
+| 저장·재시도 | 메타만 수정, 누락 보존/불일치 오류, 명시 default 초기화, source와 duplicate 분리, 선택/나중에만 있는 레코드, profile bucket 불변, metadata fingerprint 및 선행 pair 정렬, 오래된 최초 응답 |
+| legacy 회귀 | v1/v2 메타 없는 create/update operation SHA가 이전 공식과 동일. get/list/replay가 파일 byte를 바꾸지 않음. 현재 메타가 예전 문서에 맞지 않아도 옛 누락 요청 replay 우선 |
+| 실패 주입 | scenario 쓰기 before_write/before_fsync/before_replace 각각 예외·프로세스 강제 종료. 재시작 시 완전한 이전 bundle/cache, 성공 후 완전한 새 bundle/cache 및 재시도 동일 응답 |
+| process E2E | create → 메타만 update → duplicate → 재시작 get/compare → 누락 불일치 거부 → all-deferred 교체 → 재시작 get/compare → 최초 응답 replay. 별도 legacy v1 재시작. 기존 FB-8a 보관·v1/v2 시나리오 회귀 포함 |
+
+| 실행 | 결과·로그 |
+|---|---|
+| 관련 Python 8모듈 | **67 passed**, `debug/frontend_fb8b/python-targeted.txt` (새 FB-8b 11건 포함, scenario store/protocol/contract, FB-8a, planning schema 기대 집합, FB-1a, FB-1c) |
+| Dart 서비스 5파일 | **184 passed**, `debug/frontend_fb8b/dart-services.txt` (새 75건 포함, 기존 scenario/authoring/plan/v2) |
+| Dart process 4파일 | **5 passed**, `debug/frontend_fb8b/dart-process.txt` |
+| 관련 Dart analyze | **No issues found**, `debug/frontend_fb8b/dart-analyze.txt` |
+| 최종 변경 재검증 | Python 신규 11 passed `python-new-final.txt`, Dart 신규 75 passed `dart-new-final.txt` |
+| 전체 Python·공통 gate | **미실행**, 사용자 단계. UI/golden 변경 없음 |
+
+직접 명령은 backend에서 `py -3.11 -X utf8 -m unittest tests.test_scenario_authoring_fb8b tests.test_scenario_store tests.test_scenario_protocol tests.test_scenario_protocol_contract tests.test_planning_authoring_fb8a tests.test_planning_protocol_contract tests.test_planning_document_v2_fb1a tests.test_repository_plan_replace_fb1c -v`, frontend에서 `flutter test --no-pub --exclude-tags golden --concurrency=1` 뒤 위 서비스 또는 process 파일을 명시했다. 두 Flutter 실행은 순서대로 진행했다.
+
+### FE4-f 연결 메모
+
+1. 시나리오 편집 시작: `listScenarios(profileId)`의 collection revision과 `getScenario(...).scenario.revision`을 잡고, `.document` + `.authoring`을 하나의 draft로 복원한다. counts는 배치 학생만 세므로 선택 학생·나중에 칸을 summary에서 추론하지 않는다.
+2. 문서+칸 보드 저장: `createScenario` 또는 `updateScenario`에 FE4-f가 만든 전체 `PlanningAuthoring`을 `authoring:`으로 함께 준다. update에는 최신 collection/record 두 revision이 필요하다. 공용 validator가 요구하는 같은 칸 배열 순서까지 프론트가 정리하여 보낸다. stage ID 재발급 시 deferred·chain·직접 edge endpoint도 함께 remap한다.
+3. FE4-e의 기존 메타 없는 호출은 계속 사용 가능하다. update 누락은 보존이며 null을 지우기 용도로 보내지 않는다. 초기화는 `PlanningAuthoring.defaultForDocument(document)` 명시 객체다.
+4. `revision_conflict`는 `details.current_revision` 또는 `current_scenario_revision`을 보고 재조회·편집 충돌을 처리한다. `authoring_required`는 draft를 유지하고 새 문서와 맞는 sidecar를 함께 보낸다. `idempotency_conflict`는 같은 key에 다른 내용을 재사용한 오류다. `repository_busy/persistence_failed` 재시도는 같은 payload/revision/key를 유지한다. 응답 유실 후에는 같은 호출로 최초 응답을 받는다.
+5. duplicate는 추가 authoring 인자 없이 bundle을 보존한다. compare는 두 get 레코드의 `.document`만 넘긴다. 비교 결과로 편집 메타를 덮어쓰지 않는다. 현재값·필수 선행 계산용 값도 saved targets에 되쓰지 않는다.
+
+### 사용자 Python 전체·인계·동결
+
+v7 루트에서 실행(결과 `debug\frontend_fb8b\python-full.txt`):
+
+```powershell
+New-Item -ItemType Directory -Force debug\frontend_fb8b | Out-Null
+Push-Location backend
+py -3.11 -X utf8 -m unittest discover -s tests -v *> ..\debug\frontend_fb8b\python-full.txt
+$fb8bPythonExit = $LASTEXITCODE
+Pop-Location
+Get-Content debug\frontend_fb8b\python-full.txt -Tail 12
+if ($fb8bPythonExit -ne 0) { throw "FB-8b Python full failed ($fb8bPythonExit)" }
+```
+
+- `debug/frontend_fb8b/commit.json`: status=false, whole=본 backend 상태 문서, post_dir=`debug/frontend_fb8b/post`. 공유 서비스 mock/process/client의 pre/post 사본을 함께 둔다. client는 기존 scanner WIP 그대로이며 이번 modified 목록에는 없다.
+- `handoff-verification.json`에 HEAD·index 불변, HEAD/pre/post clean merge와 공유 서비스 scanner 영역 제외, 보호 파일 목록·post SHA를 기록한다. 이번 slice에 baseline 폴더를 넣지 않는다.
+- 전체 Python 후 **두 워커 모두 멈춘 상태**에서 gate·`fe_commit -Slice fb8b`·redesigndocs는 사용자/오케스트레이터가 진행한다. 이 워커는 여기서 멈추며 다음 프롬프트 전에는 코드 편집을 재개하지 않는다.
 
 # FB-8a 활성 계획 authoring 저장
 

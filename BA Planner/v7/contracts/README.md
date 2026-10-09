@@ -655,6 +655,40 @@ file. The shared repository guard serializes collection saves with profile delet
 and recovers pending plan transactions before reads. A corrupt collection is an
 error and is never silently replaced with an empty one. Filter presets are excluded.
 
+# Scenario authoring v1 (FB-8b)
+
+`repository.scenario.create/update` accept optional typed `authoring` beside
+`document`, reusing `planning-authoring-v1.schema.json` and the complete bundle
+validator below. Explicit null is `invalid_payload`, `details.reason=invalid_shape`.
+Create omission uses a document-derived default and keeps the stored field absent.
+Update omission preserves existing authoring; incompatible incoming documents fail
+with `invalid_payload`, `details.reason=authoring_required` and
+`details.authoring_reason` naming the shared validation failure. An explicit object
+replaces all metadata; send the document-derived default object to clear it.
+
+Get returns the optional stored sidecar. Duplicate preserves document version,
+targets, selected order, deferred stages, chains, goal metadata and prerequisites;
+only record identity/name/timestamps and document identity/name are regenerated.
+The duplicate request keeps its existing identity/revision fields. Metadata-only
+updates increment both record and scenario collection revision once and leave
+profile revision, active plan and goals unchanged. Bundle, revisions and idempotency
+cache share the existing atomic scenario file write and repository lock/recovery.
+
+Authoring-omitted create/update keep the exact old fingerprint. Explicit authoring
+joins the canonical operation fingerprint. Matching retries return the first
+`{revision, scenario_id}` response before current revision or omitted-authoring
+compatibility checks, including after later edits or deletion. Different content
+with the same key fails with `idempotency_conflict`. Revision conflicts retain
+`current_revision` (collection) or `current_scenario_revision` (record) details.
+
+`planning.scenario.compare` continues to receive only the two calculation documents.
+Authoring lives outside their phases, so deferred targets cannot enter calculation,
+comparison, phase/stage/student counts or calculation summaries. Same-phase stage
+array order remains the allocation order; metadata validates that order without
+changing calculation semantics. Restore authoring from get for editing, and pass
+only each record's document to compare. See `fixtures/scenario_authoring_v1.json`
+for strict wire cases and `fixtures/planning_authoring_v1.json` for semantic policies.
+
 # Active plan authoring v1 (FB-8a; FD-068(b), FD-069, FD-071)
 
 Calculation documents remain v2. Optional `authoring` lives beside `document` in

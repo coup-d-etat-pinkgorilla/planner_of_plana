@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from core.planning_authoring import AUTHORING_UNSET
 from core.scenario_store import ScenarioStore, ScenarioStoreError
 
 
@@ -68,16 +69,19 @@ class ScenarioProtocolV1:
             )
         common = {"profile_id", "expected_revision", "idempotency_key"}
         if method == "repository.scenario.create":
-            data = _require(payload, common | {"name", "description", "base_profile_revision", "document"})
+            optional = {"authoring"} if isinstance(payload, dict) and "authoring" in payload else set()
+            data = _require(payload, common | {"name", "description", "base_profile_revision", "document"} | optional)
             return self.store.create(
                 _text(data["profile_id"], "profile_id"),
                 _revision(data["expected_revision"]),
                 _text(data["idempotency_key"], "idempotency_key"),
                 data["name"], data["description"], data["base_profile_revision"], data["document"],
+                data.get("authoring", AUTHORING_UNSET),
             )
         mutation = common | {"scenario_id", "expected_scenario_revision"}
         if method == "repository.scenario.update":
-            data = _require(payload, mutation | {"name", "description", "base_profile_revision", "document"})
+            optional = {"authoring"} if isinstance(payload, dict) and "authoring" in payload else set()
+            data = _require(payload, mutation | {"name", "description", "base_profile_revision", "document"} | optional)
             return self.store.update(
                 _text(data["profile_id"], "profile_id"),
                 _text(data["scenario_id"], "scenario_id"),
@@ -85,6 +89,7 @@ class ScenarioProtocolV1:
                 _revision(data["expected_scenario_revision"], "expected_scenario_revision"),
                 _text(data["idempotency_key"], "idempotency_key"),
                 data["name"], data["description"], data["base_profile_revision"], data["document"],
+                data.get("authoring", AUTHORING_UNSET),
             )
         if method in {"repository.scenario.delete", "repository.scenario.duplicate"}:
             data = _require(payload, mutation)

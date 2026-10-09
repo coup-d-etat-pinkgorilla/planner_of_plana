@@ -273,16 +273,21 @@ class ProcessAppService
     required String description,
     required int baseProfileRevision,
     required PlanningDocument document,
+    PlanningAuthoring? authoring,
   }) async => PlanningScenarioMutationResult.fromWire(
-    await _client.send('repository.scenario.create', {
-      'profile_id': profileId,
-      'expected_revision': expectedRevision,
-      'idempotency_key': idempotencyKey,
-      'name': name,
-      'description': description,
-      'base_profile_revision': baseProfileRevision,
-      'document': document.toWire(),
-    }),
+    await _client.send(
+      'repository.scenario.create',
+      PlanningScenarioCreateRequest(
+        profileId: profileId,
+        expectedRevision: expectedRevision,
+        idempotencyKey: idempotencyKey,
+        name: name,
+        description: description,
+        baseProfileRevision: baseProfileRevision,
+        document: document,
+        authoring: authoring,
+      ).toWire(),
+    ),
   );
 
   @override
@@ -296,18 +301,23 @@ class ProcessAppService
     required String description,
     required int baseProfileRevision,
     required PlanningDocument document,
+    PlanningAuthoring? authoring,
   }) async => PlanningScenarioMutationResult.fromWire(
-    await _client.send('repository.scenario.update', {
-      'profile_id': profileId,
-      'scenario_id': scenarioId,
-      'expected_revision': expectedRevision,
-      'expected_scenario_revision': expectedScenarioRevision,
-      'idempotency_key': idempotencyKey,
-      'name': name,
-      'description': description,
-      'base_profile_revision': baseProfileRevision,
-      'document': document.toWire(),
-    }),
+    await _client.send(
+      'repository.scenario.update',
+      PlanningScenarioUpdateRequest(
+        profileId: profileId,
+        scenarioId: scenarioId,
+        expectedRevision: expectedRevision,
+        expectedScenarioRevision: expectedScenarioRevision,
+        idempotencyKey: idempotencyKey,
+        name: name,
+        description: description,
+        baseProfileRevision: baseProfileRevision,
+        document: document,
+        authoring: authoring,
+      ).toWire(),
+    ),
   );
 
   Future<PlanningScenarioMutationResult> _scenarioIdentityMutation(
@@ -318,13 +328,16 @@ class ProcessAppService
     required int expectedScenarioRevision,
     required String idempotencyKey,
   }) async => PlanningScenarioMutationResult.fromWire(
-    await _client.send(method, {
-      'profile_id': profileId,
-      'scenario_id': scenarioId,
-      'expected_revision': expectedRevision,
-      'expected_scenario_revision': expectedScenarioRevision,
-      'idempotency_key': idempotencyKey,
-    }),
+    await _client.send(
+      method,
+      PlanningScenarioIdentityRequest(
+        profileId: profileId,
+        scenarioId: scenarioId,
+        expectedRevision: expectedRevision,
+        expectedScenarioRevision: expectedScenarioRevision,
+        idempotencyKey: idempotencyKey,
+      ).toWire(),
+    ),
   );
 
   @override

@@ -115,6 +115,11 @@ class MockAppService
 
   final Map<String, List<PlanningScenarioRecord>> _planningScenarios = {};
   final Map<String, int> _planningScenarioRevisions = {};
+  final Map<
+    String,
+    Map<String, ({String fingerprint, PlanningScenarioMutationResult response})>
+  >
+  _scenarioIdempotency = {};
   int _nextPlanningScenarioId = 1;
 
   final MockScannerScenario scannerScenario;
@@ -1050,14 +1055,94 @@ class MockAppService
     );
   }
 
-  void _requireScenarioRevision(String profileId, int expectedRevision) {
-    if (_scenarioCollectionRevision(profileId) != expectedRevision) {
-      throw StateError('revision_conflict');
+  BackendRemoteException _scenarioError(
+    String code, [
+    Map<String, dynamic> details = const {},
+  ]) => BackendRemoteException(code: code, message: code, details: details);
+
+  int _scenarioIndex(
+    List<PlanningScenarioRecord> scenarios,
+    String id,
+    int? expected,
+  ) {
+    final index = scenarios.indexWhere((item) => item.id == id);
+    if (index < 0) {
+      throw _scenarioError('scenario_not_found', {'scenario_id': id});
     }
+    if (expected != null && scenarios[index].revision != expected) {
+      throw _scenarioError('revision_conflict', {
+        'current_scenario_revision': scenarios[index].revision,
+      });
+    }
+    return index;
   }
+
+  PlanningScenarioMutationResult _mutateScenario(
+    String profileId,
+    int expectedRevision,
+    String key,
+    Map<String, dynamic> operation,
+    String Function(List<PlanningScenarioRecord>) mutation,
+  ) {
+    _profileRevision(profileId);
+    _ensureMockRepositoryPlan(profileId);
+    final fingerprint = mockPlanFingerprint({
+      'operation': operation,
+      'expected_revision': expectedRevision,
+    });
+    final cached = _scenarioIdempotency[profileId]?[key];
+    if (cached != null) {
+      if (cached.fingerprint != fingerprint) {
+        throw _scenarioError('idempotency_conflict');
+      }
+      return cached.response;
+    }
+    final actual = _scenarioCollectionRevision(profileId);
+    if (actual != expectedRevision) {
+      throw _scenarioError('revision_conflict', {'current_revision': actual});
+    }
+    final scenarios = <PlanningScenarioRecord>[
+      ...?_planningScenarios[profileId],
+    ];
+    final id = mutation(scenarios);
+    final response = PlanningScenarioMutationResult(
+      revision: actual + 1,
+      scenarioId: id,
+    );
+    _planningScenarios[profileId] = scenarios;
+    _planningScenarioRevisions[profileId] = response.revision;
+    (_scenarioIdempotency[profileId] ??= {})[key] = (
+      fingerprint: fingerprint,
+      response: response,
+    );
+    return response;
+  }
+
+  String _newScenarioId(List<PlanningScenarioRecord> scenarios) {
+    String id;
+    do {
+      id = (_nextPlanningScenarioId++).toRadixString(16).padLeft(24, '0');
+    } while (scenarios.any((item) => item.id == id));
+    return id;
+  }
+
+  Map<String, dynamic> _scenarioOperation(
+    String type,
+    Map<String, dynamic> request,
+  ) => {
+    'type': type,
+    for (final entry in request.entries)
+      if (!{
+        'profile_id',
+        'expected_revision',
+        'idempotency_key',
+      }.contains(entry.key))
+        entry.key: entry.value,
+  };
 
   @override
   Future<PlanningScenarioListResult> listScenarios(String profileId) async {
+    _ensureMockRepositoryPlan(profileId);
     final scenarios = _planningScenarios[profileId] ?? const [];
     return PlanningScenarioListResult(
       profileId: profileId,
@@ -1072,14 +1157,14 @@ class MockAppService
     String profileId,
     String scenarioId,
   ) async {
-    final scenario = (_planningScenarios[profileId] ?? const []).firstWhere(
-      (item) => item.id == scenarioId,
-    );
+    _ensureMockRepositoryPlan(profileId);
+    final scenarios =
+        _planningScenarios[profileId] ?? const <PlanningScenarioRecord>[];
     return PlanningScenarioGetResult(
       profileId: profileId,
       revision: _scenarioCollectionRevision(profileId),
       currentProfileRevision: _profileRevision(profileId),
-      scenario: scenario,
+      scenario: scenarios[_scenarioIndex(scenarios, scenarioId, null)],
     );
   }
 
@@ -1092,35 +1177,46 @@ class MockAppService
     required String description,
     required int baseProfileRevision,
     required PlanningDocument document,
+    PlanningAuthoring? authoring,
   }) async {
-    _requireScenarioRevision(profileId, expectedRevision);
-    if (document.kind != PlanningDocumentKind.scenario) {
-      throw StateError('invalid_payload');
-    }
-    final now = DateTime.now().toUtc().toIso8601String();
-    final scenarioId = (_nextPlanningScenarioId++)
-        .toRadixString(16)
-        .padLeft(24, '0');
-    final record = PlanningScenarioRecord(
-      id: scenarioId,
-      revision: 0,
+    final wire = PlanningScenarioCreateRequest(
       profileId: profileId,
+      expectedRevision: expectedRevision,
+      idempotencyKey: idempotencyKey,
       name: name,
       description: description,
       baseProfileRevision: baseProfileRevision,
       document: document,
-      createdAt: now,
-      updatedAt: now,
-    );
-    _planningScenarios[profileId] = <PlanningScenarioRecord>[
-      ...(_planningScenarios[profileId] ?? const <PlanningScenarioRecord>[]),
-      record,
-    ];
-    final revision = expectedRevision + 1;
-    _planningScenarioRevisions[profileId] = revision;
-    return PlanningScenarioMutationResult(
-      revision: revision,
-      scenarioId: scenarioId,
+      authoring: authoring,
+    ).toWire();
+    return _mutateScenario(
+      profileId,
+      expectedRevision,
+      idempotencyKey,
+      _scenarioOperation('create', wire),
+      (scenarios) {
+        if (baseProfileRevision > _profileRevision(profileId)) {
+          throw _scenarioError('invalid_payload');
+        }
+        final now = DateTime.now().toUtc().toIso8601String();
+        final id = _newScenarioId(scenarios);
+        scenarios.add(
+          PlanningScenarioRecord.fromWire({
+            'version': 1,
+            'scenario_id': id,
+            'revision': 0,
+            'profile_id': profileId,
+            'name': wire['name'],
+            'description': wire['description'],
+            'base_profile_revision': baseProfileRevision,
+            'document': wire['document'],
+            if (wire.containsKey('authoring')) 'authoring': wire['authoring'],
+            'created_at': now,
+            'updated_at': now,
+          }),
+        );
+        return id;
+      },
     );
   }
 
@@ -1135,52 +1231,124 @@ class MockAppService
     required String description,
     required int baseProfileRevision,
     required PlanningDocument document,
+    PlanningAuthoring? authoring,
   }) async {
-    _requireScenarioRevision(profileId, expectedRevision);
-    final scenarios = <PlanningScenarioRecord>[
-      ...(_planningScenarios[profileId] ?? const <PlanningScenarioRecord>[]),
-    ];
-    final index = scenarios.indexWhere((item) => item.id == scenarioId);
-    final previous = scenarios[index];
-    if (previous.revision != expectedScenarioRevision) {
-      throw StateError('revision_conflict');
-    }
-    PlanningAuthoring? preserved;
-    if (previous.storedAuthoring != null) {
-      try {
-        preserved = PlanningAuthoring.fromWire(
-          previous.authoring.toWire(),
-          document,
-        );
-      } on PlanningAuthoringFormatException catch (error) {
-        throw BackendRemoteException(
-          code: 'invalid_payload',
-          message: error.message.toString(),
-          details: {
-            'reason': 'authoring_required',
-            'authoring_reason': error.reason,
-          },
-        );
-      }
-    }
-    scenarios[index] = PlanningScenarioRecord(
-      id: scenarioId,
-      revision: expectedScenarioRevision + 1,
+    final wire = PlanningScenarioUpdateRequest(
       profileId: profileId,
+      scenarioId: scenarioId,
+      expectedRevision: expectedRevision,
+      expectedScenarioRevision: expectedScenarioRevision,
+      idempotencyKey: idempotencyKey,
       name: name,
       description: description,
       baseProfileRevision: baseProfileRevision,
       document: document,
-      storedAuthoring: preserved,
-      createdAt: previous.createdAt,
-      updatedAt: DateTime.now().toUtc().toIso8601String(),
+      authoring: authoring,
+    ).toWire();
+    return _mutateScenario(
+      profileId,
+      expectedRevision,
+      idempotencyKey,
+      _scenarioOperation('update', wire),
+      (scenarios) {
+        final index = _scenarioIndex(
+          scenarios,
+          scenarioId,
+          expectedScenarioRevision,
+        );
+        final previous = scenarios[index];
+        if (baseProfileRevision > _profileRevision(profileId)) {
+          throw _scenarioError('invalid_payload');
+        }
+        PlanningAuthoring? next = authoring;
+        if (next == null && previous.storedAuthoring != null) {
+          try {
+            next = PlanningAuthoring.fromWire(
+              previous.authoring.toWire(),
+              document,
+            );
+          } on PlanningAuthoringFormatException catch (error) {
+            throw _scenarioError('invalid_payload', {
+              'reason': 'authoring_required',
+              'authoring_reason': error.reason,
+            });
+          }
+        }
+        scenarios[index] = PlanningScenarioRecord.fromWire({
+          ...previous.toWire(),
+          'revision': previous.revision + 1,
+          'name': wire['name'],
+          'description': wire['description'],
+          'base_profile_revision': baseProfileRevision,
+          'document': wire['document'],
+          if (next != null) 'authoring': next.toWire(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+        return scenarioId;
+      },
     );
-    _planningScenarios[profileId] = scenarios;
-    final revision = expectedRevision + 1;
-    _planningScenarioRevisions[profileId] = revision;
-    return PlanningScenarioMutationResult(
-      revision: revision,
+  }
+
+  Future<PlanningScenarioMutationResult> _mutateScenarioIdentity(
+    String type, {
+    required String profileId,
+    required String scenarioId,
+    required int expectedRevision,
+    required int expectedScenarioRevision,
+    required String idempotencyKey,
+  }) async {
+    final wire = PlanningScenarioIdentityRequest(
+      profileId: profileId,
       scenarioId: scenarioId,
+      expectedRevision: expectedRevision,
+      expectedScenarioRevision: expectedScenarioRevision,
+      idempotencyKey: idempotencyKey,
+    ).toWire();
+    return _mutateScenario(
+      profileId,
+      expectedRevision,
+      idempotencyKey,
+      _scenarioOperation(type, wire),
+      (scenarios) {
+        final index = _scenarioIndex(
+          scenarios,
+          scenarioId,
+          expectedScenarioRevision,
+        );
+        final source = scenarios[index];
+        if (type == 'delete') {
+          scenarios.removeAt(index);
+          return scenarioId;
+        }
+        final existingNames = scenarios
+            .map((item) => item.name.toLowerCase())
+            .toSet();
+        final baseName = '${source.name} (복사본)';
+        var name = baseName;
+        var suffix = 2;
+        while (existingNames.contains(name.toLowerCase())) {
+          name = '${source.name} (복사본 $suffix)';
+          suffix++;
+        }
+        final id = _newScenarioId(scenarios);
+        final now = DateTime.now().toUtc().toIso8601String();
+        scenarios.add(
+          PlanningScenarioRecord.fromWire({
+            ...source.toWire(),
+            'scenario_id': id,
+            'revision': 0,
+            'name': name,
+            'document': {
+              ...source.document.toWire(),
+              'document_id': id,
+              'name': name,
+            },
+            'created_at': now,
+            'updated_at': now,
+          }),
+        );
+        return id;
+      },
     );
   }
 
@@ -1191,24 +1359,14 @@ class MockAppService
     required int expectedRevision,
     required int expectedScenarioRevision,
     required String idempotencyKey,
-  }) async {
-    _requireScenarioRevision(profileId, expectedRevision);
-    final scenarios = <PlanningScenarioRecord>[
-      ...(_planningScenarios[profileId] ?? const <PlanningScenarioRecord>[]),
-    ];
-    final index = scenarios.indexWhere((item) => item.id == scenarioId);
-    if (scenarios[index].revision != expectedScenarioRevision) {
-      throw StateError('revision_conflict');
-    }
-    scenarios.removeAt(index);
-    _planningScenarios[profileId] = scenarios;
-    final revision = expectedRevision + 1;
-    _planningScenarioRevisions[profileId] = revision;
-    return PlanningScenarioMutationResult(
-      revision: revision,
-      scenarioId: scenarioId,
-    );
-  }
+  }) => _mutateScenarioIdentity(
+    'delete',
+    profileId: profileId,
+    scenarioId: scenarioId,
+    expectedRevision: expectedRevision,
+    expectedScenarioRevision: expectedScenarioRevision,
+    idempotencyKey: idempotencyKey,
+  );
 
   @override
   Future<PlanningScenarioMutationResult> duplicateScenario({
@@ -1217,39 +1375,14 @@ class MockAppService
     required int expectedRevision,
     required int expectedScenarioRevision,
     required String idempotencyKey,
-  }) async {
-    final source = (await getScenario(profileId, scenarioId)).scenario;
-    if (source.revision != expectedScenarioRevision) {
-      throw StateError('revision_conflict');
-    }
-    final result = await createScenario(
-      profileId: profileId,
-      expectedRevision: expectedRevision,
-      idempotencyKey: idempotencyKey,
-      name: '${source.name} (복사본)',
-      description: source.description,
-      baseProfileRevision: source.baseProfileRevision,
-      document: PlanningDocument(
-        id: '${source.document.id}-copy',
-        name: '${source.document.name} (복사본)',
-        kind: PlanningDocumentKind.scenario,
-        phases: source.document.phases,
-        version: source.document.version,
-        goalMetadata: source.document.goalMetadata,
-      ),
-    );
-    if (source.storedAuthoring != null) {
-      final scenarios = _planningScenarios[profileId]!;
-      final index = scenarios.indexWhere(
-        (item) => item.id == result.scenarioId,
-      );
-      scenarios[index] = PlanningScenarioRecord.fromWire({
-        ...scenarios[index].toWire(),
-        'authoring': source.authoring.toWire(),
-      });
-    }
-    return result;
-  }
+  }) => _mutateScenarioIdentity(
+    'duplicate',
+    profileId: profileId,
+    scenarioId: scenarioId,
+    expectedRevision: expectedRevision,
+    expectedScenarioRevision: expectedScenarioRevision,
+    idempotencyKey: idempotencyKey,
+  );
 
   @override
   Future<List<RepositoryProfile>> listProfiles() async =>
@@ -1381,6 +1514,7 @@ class MockAppService
     _presetIdempotency.remove(profileId);
     _planningScenarios.remove(profileId);
     _planningScenarioRevisions.remove(profileId);
+    _scenarioIdempotency.remove(profileId);
     if (wasSelected && _profiles.isNotEmpty) {
       final first = _profiles.first;
       _profiles[0] = RepositoryProfile(

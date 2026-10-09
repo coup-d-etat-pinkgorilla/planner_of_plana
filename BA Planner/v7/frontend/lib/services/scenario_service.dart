@@ -1,5 +1,6 @@
 import '../ui/models/planning_models.dart';
 import 'planning_authoring.dart';
+export 'planning_authoring.dart';
 
 final _scenarioId = RegExp(r'^[0-9a-f]{24}$');
 
@@ -456,6 +457,270 @@ class PlanningScenarioComparisonResult {
   }
 }
 
+PlanningDocument scenarioDocumentFromWire(Object? value) {
+  try {
+    final document = PlanningDocument.fromWire(
+      _map(value, 'scenario document'),
+    );
+    if (document.kind != PlanningDocumentKind.scenario) {
+      throw const FormatException('Scenario document requires scenario kind');
+    }
+    return document;
+  } on TypeError {
+    throw const FormatException('Invalid scenario document fields');
+  }
+}
+
+void _requestIdentity(Object? profileId, Object? revision, Object? key) {
+  if (profileId is! String ||
+      !_scenarioId.hasMatch(profileId) ||
+      revision is! int ||
+      revision < 0 ||
+      key is! String ||
+      key.isEmpty) {
+    throw const FormatException('Invalid scenario mutation identity');
+  }
+}
+
+class PlanningScenarioCreateRequest {
+  const PlanningScenarioCreateRequest({
+    required this.profileId,
+    required this.expectedRevision,
+    required this.idempotencyKey,
+    required this.name,
+    required this.description,
+    required this.baseProfileRevision,
+    required this.document,
+    this.authoring,
+  });
+  final String profileId;
+  final int expectedRevision;
+  final String idempotencyKey;
+  final String name;
+  final String description;
+  final int baseProfileRevision;
+  final PlanningDocument document;
+  final PlanningAuthoring? authoring;
+
+  factory PlanningScenarioCreateRequest.fromWire(Map<String, dynamic> value) {
+    if (!_exact(value, {
+          'profile_id',
+          'expected_revision',
+          'idempotency_key',
+          'name',
+          'description',
+          'base_profile_revision',
+          'document',
+          if (value.containsKey('authoring')) 'authoring',
+        }) ||
+        value['name'] is! String ||
+        value['description'] is! String ||
+        value['base_profile_revision'] is! int) {
+      throw const FormatException('Invalid scenario create request');
+    }
+    _requestIdentity(
+      value['profile_id'],
+      value['expected_revision'],
+      value['idempotency_key'],
+    );
+    final document = scenarioDocumentFromWire(value['document']);
+    final request = PlanningScenarioCreateRequest(
+      profileId: value['profile_id'] as String,
+      expectedRevision: value['expected_revision'] as int,
+      idempotencyKey: value['idempotency_key'] as String,
+      name: value['name'] as String,
+      description: value['description'] as String,
+      baseProfileRevision: value['base_profile_revision'] as int,
+      document: document,
+      authoring: value.containsKey('authoring')
+          ? PlanningAuthoring.fromWire(value['authoring'], document)
+          : null,
+    );
+    request.toWire();
+    return request;
+  }
+
+  Map<String, dynamic> toWire() {
+    _requestIdentity(profileId, expectedRevision, idempotencyKey);
+    if (name.trim().isEmpty || baseProfileRevision < 0) {
+      throw const FormatException('Invalid scenario name/base revision');
+    }
+    final wire = document.toWire();
+    scenarioDocumentFromWire(wire);
+    return {
+      'profile_id': profileId,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+      'name': name.trim(),
+      'description': description.trim(),
+      'base_profile_revision': baseProfileRevision,
+      'document': wire,
+      if (authoring != null)
+        'authoring': PlanningAuthoring.fromWire(
+          authoring!.toWire(),
+          document,
+        ).toWire(),
+    };
+  }
+}
+
+class PlanningScenarioUpdateRequest extends PlanningScenarioCreateRequest {
+  const PlanningScenarioUpdateRequest({
+    required super.profileId,
+    required super.expectedRevision,
+    required super.idempotencyKey,
+    required super.name,
+    required super.description,
+    required super.baseProfileRevision,
+    required super.document,
+    super.authoring,
+    required this.scenarioId,
+    required this.expectedScenarioRevision,
+  });
+  final String scenarioId;
+  final int expectedScenarioRevision;
+
+  factory PlanningScenarioUpdateRequest.fromWire(Map<String, dynamic> value) {
+    if (!_exact(value, {
+          'profile_id',
+          'expected_revision',
+          'idempotency_key',
+          'scenario_id',
+          'expected_scenario_revision',
+          'name',
+          'description',
+          'base_profile_revision',
+          'document',
+          if (value.containsKey('authoring')) 'authoring',
+        }) ||
+        value['scenario_id'] is! String ||
+        value['expected_scenario_revision'] is! int) {
+      throw const FormatException('Invalid scenario update request');
+    }
+    final base = PlanningScenarioCreateRequest.fromWire({
+      for (final entry in value.entries)
+        if (entry.key != 'scenario_id' &&
+            entry.key != 'expected_scenario_revision')
+          entry.key: entry.value,
+    });
+    final request = PlanningScenarioUpdateRequest(
+      profileId: base.profileId,
+      expectedRevision: base.expectedRevision,
+      idempotencyKey: base.idempotencyKey,
+      name: base.name,
+      description: base.description,
+      baseProfileRevision: base.baseProfileRevision,
+      document: base.document,
+      authoring: base.authoring,
+      scenarioId: value['scenario_id'] as String,
+      expectedScenarioRevision: value['expected_scenario_revision'] as int,
+    );
+    request.toWire();
+    return request;
+  }
+
+  @override
+  Map<String, dynamic> toWire() {
+    if (!_scenarioId.hasMatch(scenarioId) || expectedScenarioRevision < 0) {
+      throw const FormatException('Invalid scenario update identity/revision');
+    }
+    return {
+      ...super.toWire(),
+      'scenario_id': scenarioId,
+      'expected_scenario_revision': expectedScenarioRevision,
+    };
+  }
+}
+
+class PlanningScenarioIdentityRequest {
+  const PlanningScenarioIdentityRequest({
+    required this.profileId,
+    required this.scenarioId,
+    required this.expectedRevision,
+    required this.expectedScenarioRevision,
+    required this.idempotencyKey,
+  });
+  final String profileId;
+  final String scenarioId;
+  final int expectedRevision;
+  final int expectedScenarioRevision;
+  final String idempotencyKey;
+
+  factory PlanningScenarioIdentityRequest.fromWire(Map<String, dynamic> value) {
+    if (!_exact(value, {
+          'profile_id',
+          'scenario_id',
+          'expected_revision',
+          'expected_scenario_revision',
+          'idempotency_key',
+        }) ||
+        value['scenario_id'] is! String ||
+        value['expected_scenario_revision'] is! int) {
+      throw const FormatException('Invalid scenario identity request');
+    }
+    _requestIdentity(
+      value['profile_id'],
+      value['expected_revision'],
+      value['idempotency_key'],
+    );
+    final request = PlanningScenarioIdentityRequest(
+      profileId: value['profile_id'] as String,
+      scenarioId: value['scenario_id'] as String,
+      expectedRevision: value['expected_revision'] as int,
+      expectedScenarioRevision: value['expected_scenario_revision'] as int,
+      idempotencyKey: value['idempotency_key'] as String,
+    );
+    request.toWire();
+    return request;
+  }
+
+  Map<String, dynamic> toWire() {
+    _requestIdentity(profileId, expectedRevision, idempotencyKey);
+    if (!_scenarioId.hasMatch(scenarioId) || expectedScenarioRevision < 0) {
+      throw const FormatException('Invalid scenario identity/revision');
+    }
+    return {
+      'profile_id': profileId,
+      'scenario_id': scenarioId,
+      'expected_revision': expectedRevision,
+      'expected_scenario_revision': expectedScenarioRevision,
+      'idempotency_key': idempotencyKey,
+    };
+  }
+}
+
+bool isValidScenarioRequestPayload(
+  String method,
+  Map<String, dynamic> payload,
+) {
+  try {
+    switch (method) {
+      case 'repository.scenario.create':
+        PlanningScenarioCreateRequest.fromWire(payload);
+      case 'repository.scenario.update':
+        PlanningScenarioUpdateRequest.fromWire(payload);
+      case 'repository.scenario.delete':
+      case 'repository.scenario.duplicate':
+        PlanningScenarioIdentityRequest.fromWire(payload);
+      case 'repository.scenario.list':
+        return _exact(payload, {'profile_id'}) &&
+            payload['profile_id'] is String &&
+            _scenarioId.hasMatch(payload['profile_id'] as String);
+      case 'repository.scenario.get':
+        return _exact(payload, {'profile_id', 'scenario_id'}) &&
+            payload['profile_id'] is String &&
+            payload['scenario_id'] is String &&
+            _scenarioId.hasMatch(payload['profile_id'] as String) &&
+            _scenarioId.hasMatch(payload['scenario_id'] as String);
+      default:
+        return false;
+    }
+    return true;
+  } on Object {
+    return false;
+  }
+}
+
 bool isValidScenarioSuccessPayload(
   String method,
   Map<String, dynamic> payload,
@@ -494,6 +759,7 @@ abstract interface class PlanningScenarioRepositoryService {
     required String description,
     required int baseProfileRevision,
     required PlanningDocument document,
+    PlanningAuthoring? authoring,
   });
   Future<PlanningScenarioMutationResult> updateScenario({
     required String profileId,
@@ -505,6 +771,7 @@ abstract interface class PlanningScenarioRepositoryService {
     required String description,
     required int baseProfileRevision,
     required PlanningDocument document,
+    PlanningAuthoring? authoring,
   });
   Future<PlanningScenarioMutationResult> deleteScenario({
     required String profileId,

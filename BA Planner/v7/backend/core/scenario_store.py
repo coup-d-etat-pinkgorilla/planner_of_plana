@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
 import os
@@ -321,6 +322,14 @@ class ScenarioStore:
         finally:
             self._unlock(descriptor)
 
+    @staticmethod
+    def _canonical_authoring(value: object, document: object, *, preserving: bool = False) -> dict[str, Any]:
+        try:
+            return planning_authoring_from_wire(value, document)
+        except PlanningAuthoringError as error:
+            details = {"reason": "authoring_required", "authoring_reason": error.reason} if preserving else error.details
+            raise ScenarioStoreError("invalid_payload", str(error), details=details) from error
+
     def create(
         self,
         profile_id: str,
@@ -330,22 +339,27 @@ class ScenarioStore:
         description: object,
         base_profile_revision: object,
         document: object,
+        authoring: object = AUTHORING_UNSET,
     ) -> dict[str, Any]:
         canonical_name = self._text(name, "name")
         canonical_description = self._text(description, "description", allow_empty=True)
         base_revision = self._integer(base_profile_revision, "base_profile_revision")
         canonical_document = self._canonical_document(document)
+        canonical_authoring = self._canonical_authoring(authoring, canonical_document) if authoring is not AUTHORING_UNSET else AUTHORING_UNSET
 
         def callback(collection: dict[str, Any]) -> str:
             current_profile_revision = self._profile_current_revision(profile_id)
             if base_revision > current_profile_revision:
                 raise ScenarioStoreError("invalid_payload", "base_profile_revision cannot be newer than the profile")
-            return self._append_record(collection, canonical_name, canonical_description, base_revision, canonical_document)
+            return self._append_record(collection, canonical_name, canonical_description, base_revision, canonical_document, authoring=canonical_authoring)
 
-        return self._mutate(profile_id, expected_revision, idempotency_key, {
+        operation = {
             "type": "create", "name": canonical_name, "description": canonical_description,
             "base_profile_revision": base_revision, "document": canonical_document,
-        }, callback)
+        }
+        if authoring is not AUTHORING_UNSET:
+            operation["authoring"] = canonical_authoring
+        return self._mutate(profile_id, expected_revision, idempotency_key, operation, callback)
 
     def _append_record(self, collection: dict[str, Any], name: str, description: str, base_revision: int, document: dict[str, Any], *, archive: bool = False, authoring: object = AUTHORING_UNSET) -> str:
         scenario_id = self._new_id(collection)
@@ -375,12 +389,14 @@ class ScenarioStore:
         description: object,
         base_profile_revision: object,
         document: object,
+        authoring: object = AUTHORING_UNSET,
     ) -> dict[str, Any]:
         canonical_name = self._text(name, "name")
         canonical_description = self._text(description, "description", allow_empty=True)
         base_revision = self._integer(base_profile_revision, "base_profile_revision")
         scenario_revision = self._integer(expected_scenario_revision, "expected_scenario_revision")
         canonical_document = self._canonical_document(document)
+        canonical_authoring = self._canonical_authoring(authoring, canonical_document) if authoring is not AUTHORING_UNSET else AUTHORING_UNSET
 
         def callback(collection: dict[str, Any]) -> str:
             item = self._find(collection, scenario_id)
@@ -389,12 +405,12 @@ class ScenarioStore:
             current_profile_revision = self._profile_current_revision(profile_id)
             if base_revision > current_profile_revision:
                 raise ScenarioStoreError("invalid_payload", "base_profile_revision cannot be newer than the profile")
-            # FB-8a archives must remain valid even through the legacy update API.
-            if "authoring" in item:
-                try:
-                    planning_authoring_from_wire(item["authoring"], canonical_document)
-                except PlanningAuthoringError as error:
-                    raise ScenarioStoreError("invalid_payload", str(error), details={"reason": "authoring_required", "authoring_reason": error.reason}) from error
+            # Fingerprints use request presence, never effective current metadata.
+            # _mutate checks the old response cache before this compatibility check.
+            if authoring is not AUTHORING_UNSET:
+                item["authoring"] = canonical_authoring
+            elif "authoring" in item:
+                item["authoring"] = self._canonical_authoring(item["authoring"], canonical_document, preserving=True)
             item.update({
                 "revision": item["revision"] + 1,
                 "name": canonical_name,
@@ -405,11 +421,14 @@ class ScenarioStore:
             })
             return scenario_id
 
-        return self._mutate(profile_id, expected_revision, idempotency_key, {
+        operation = {
             "type": "update", "scenario_id": scenario_id, "expected_scenario_revision": scenario_revision,
             "name": canonical_name, "description": canonical_description,
             "base_profile_revision": base_revision, "document": canonical_document,
-        }, callback)
+        }
+        if authoring is not AUTHORING_UNSET:
+            operation["authoring"] = canonical_authoring
+        return self._mutate(profile_id, expected_revision, idempotency_key, operation, callback)
 
     def delete(
         self,
@@ -457,11 +476,11 @@ class ScenarioStore:
                 suffix += 1
             now = self._clock()
             collection["scenarios"].append({
-                **source,
+                **deepcopy(source),
                 "scenario_id": scenario_id_new,
                 "revision": 0,
                 "name": name,
-                "document": {**source["document"], "document_id": scenario_id_new, "name": name},
+                "document": {**deepcopy(source["document"]), "document_id": scenario_id_new, "name": name},
                 "created_at": now,
                 "updated_at": now,
             })
