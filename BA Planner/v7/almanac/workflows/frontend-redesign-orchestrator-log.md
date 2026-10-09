@@ -631,3 +631,34 @@ topics: [workflow, design]
 - FB-2a Python 전체 973 OK(1489초).
 - 커밋 순서: fb2a(post_dir, status=false, whole=status-backend — FB-2 조사 포함) → fe4f(baseline whole, status=true) → redesigndocs.
 - 다음 배정: 프론트 FE4-f2(S 곡선·선 경로 다듬기, `_incorporateScenario` remap, 활성 계획을 흐름 초안으로 여는 진입). 백엔드 FB-2c(events/diff/기간 조회) — FB-2b는 스캐너 쪽 회신 대기(tactic 로그 23:25 이후 회신 없음)라 저장된 manual/import/unattributed 이력으로 먼저 만든다. scan 선택자(latest/previous scan)는 source=scan fixture로 고정하고 실제 scan 연결은 FB-2b에서 확인한다.
+
+## 2026-10-10 01:35 — 레인 교통정리 (클로드 마스터 작성, 전 레인 알림)
+
+- 사용자 결정: **클로드 = 프론트(CF), 코덱스 = 백엔드·스캐너·택틱 구현·메타데이터 백엔드(XB, 신설), 클로드 마스터(CM, 이 세션) = 전체 계획·실험·택틱 연구·공용 저장소.** 규칙 원본 `almanac/workflows/lane-charter-2026-10-10.md`(레인·파일 소유·인계 규칙·gate·진행 중 항목 귀속표). XB 첫 프롬프트 `docs/orchestration/codex-master-orchestrator-prompt-2026-10-10.md`, XB 로그 `backend-orchestrator-log.md`(XB가 생성).
+- 이관: S4-C6·O3-4·S-FB1b·S-FB2b·T-FB1b·T-FB2d·M0/M1/M3/M5/M6 백엔드 → XB. M2·탭 UI·A2 → CF. FB-1b·FB-2a는 CF 백엔드 워커가 커밋까지, 그 뒤 FB-* 백엔드는 XB.
+- 레인 간 요청·회신은 상대 로그 끝 항목으로(사용자 중계 없이 각 오케스트레이터가 세션 시작 때 읽는다).
+
+## 2026-10-10 02:25 — 레인 헌장 수신, FE4-f2 + FB-2c gate ① `20261010_015618` 검토, XB 인계 요청
+
+- 커밋 확인: FB-2a `000aaa85`(19파일), FE4-f1 `7bff91ec`(15파일), redesigndocs `64f29afe`.
+- **레인 헌장(`lane-charter-2026-10-10.md`, CM 01:35) 수용.** 이 오케스트레이터는 CF(클로드 프론트)다: `frontend/lib/**`·`frontend/test/**`·golden·`frontend-redesign-*` 문서·fe_gate. `backend/**`·`contracts/**`는 XB 소유이고 요청만 한다. Lane A 백엔드 워커 배정은 이번 FB-2c로 끝낸다.
+  · FB-2c는 헌장 직전(01:20)에 배정해 01:52에 끝났다. 사용자 결정(02:20): **이번만 CF가 Python 전체 → 커밋까지 하고**, 이후 FB-* 백엔드는 XB.
+- gate ①: analyze 0, 테스트 349+633+178, process 50(FB-2c 2건 추가), diff-check 0.
+  · almanac-validate 실패 2건은 CM 문서 `lane-charter-2026-10-10.md`의 frontmatter source(agents, handoff)가 본문에서 인용되지 않은 것. 우리 gate를 막으므로 오케스트레이터가 인용 표시 2개(handoff를 §3.3 끝, agents를 §3.6 끝)만 더했다(02:40: 이 줄의 예시 표기가 이 로그 자체의 인용으로 읽혀 validate가 실패해 표기를 풀어 썼다). 내용 변경 없음. CM 로그에 알렸다. 이 파일 커밋은 CM 몫이다.
+  · golden 7건(FE4-f2 예측 확인):
+    - `plan-bottleneck`·`plan-by-phase`·`plan-overall`·`plan-student-selector`·`plan-scenario-list`·`plan-scenario-compare`(각 0.04%, 같은 1571px): 활성 계획 홈 왼쪽 "페이즈 만들기" 옆에 작은 아이콘 버튼(저장된 활성 계획을 흐름 3단계로 열기)이 생겨 그 버튼 폭만큼 줄었다. 승인. 아이콘만 있는 버튼이라 의미가 바로 보이지 않는다 — FE5-c(활성 계획 보기 정리)에서 라벨 있는 진입으로 바꾼다.
+    - `plan-flow-step3-many`(0.06%): 같은 학생 선이 S 곡선 대신 칩 사이 틈·줄 사이 틈으로 꺾여 지나간다(둥근 모서리). 사이 줄 칩 위를 지나는 곳이 없어졌다(16:25 후속 종료). 승인.
+- FB-2c 종료 기록 검토 승인: events(cursor·필터·`[from,to)`), one-of diff(at=경계 직전, sequence/scan=적용 직후, current), baseline+apply_event 복원, 세션 끝 1점 scan_points·trend_eligible(세션 3개 이상), coverage reasons, 모르는 수량·삭제를 0으로 채우지 않음. Python 123·Dart 263·process 8 통과.
+- 다음: 사용자 gate ②(`-UpdateGoldens`) + FB-2c Python 전체 → fb2c → fe4f2 → redesigndocs. 다음 프론트 배정 FE4-g(계산기 → 계획 넘김, FD-171).
+
+### XB(코덱스 백엔드)에 넘기는 프론트 쪽 백엔드 요청 (XB 로그가 생기기 전이라 여기에 둔다)
+
+- 인계 기준: FB-1b `11426131`, FB-2a `000aaa85`, FB-2c(이번 커밋 예정). 이력 포트는 FB-2a의 `repository.update_students/update_inventory(..., history_context=ScanHistoryContext)` 키워드다. CM 23:25 결정의 `contracts/scan-commit-history-context-v1.schema.json`(applied_keys·excluded_keys·retry_of)과 FB-2a `current-history-v1`의 context 모양을 XB가 맞춰 달라(필드 이름·excluded_keys 저장 여부).
+- 프론트가 기다리는 백엔드 slice와 필요한 시점:
+  1. **FB-2b**(= S-FB2b + summary 확장): raw (scan_kind, inventory_scan_profile)별 last_scan_at, 학생·아이템 latest 시각. FE8-c(계정 메타, 학생 행)·FE8-g1(종류별 막대)·FE6 아이템 시각 전에.
+  2. **FB-2d**(= T-FB2d 헬퍼 뒤 프로필 삭제 journal). 급하지 않음.
+  3. **FB-3** 아이템 카탈로그 메타(학교·티어·family·획득처, 학생·단계별 필요량 분해, 크레딧·엘리그마 항목, `InventoryCatalogEntry.fromWire` 고정 키 검사 수정, FD-096 (c)). FE6-c/e 전에. 메타데이터 출처(M3)와 얽히면 CM 판단.
+  4. **FB-9** 계산 응답 보강(페이즈 진입/종료 잔량, 다중 비교) — FE5-d/e에서 필요가 확인될 때만 요청한다.
+  5. **FB-4**(scanner.target.list 창 크기·게임 판별, FD-116) — FE8-d 전에. **FB-10**(스캐너 프로토콜, 형식 고정 선언) — FE8-g2~g5 전에.
+  6. **FB-6·FB-7**(전술 v2 기록·족보, 엑셀 가져오기) — FE9(Lane C) 전에.
+- 규칙(그대로 유지 요청): 공유 서비스 파일(mock·process·planning_protocol_client)의 스캐너 WIP는 pre/post + commit.json post_dir로 분리, 새 contract schema를 추가하면 `test_planning_protocol_contract.py` 스키마 목록도 갱신, Flutter에 닿는 변경은 CF에 gate 요청(헌장 §4). Dart 서비스 DTO를 바꾸면 테스트 대역이 덮어쓴 메서드의 선택 매개변수 추가가 프론트 테스트 컴파일을 깨뜨릴 수 있다(10-09 21:20 사례) — 변경 목록을 알려 주면 CF가 맞춘다.
