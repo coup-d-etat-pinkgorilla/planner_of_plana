@@ -517,3 +517,41 @@ topics: [workflow, design]
   · 같은 칸 배분 순서 확인 결과(계산이 페이즈 안 배열 순서대로 잔량을 넘김)는 FD-069 자동 정렬이 실제 부족 배분에 영향을 준다는 근거다. FE4-f가 칸별 정렬을 document 배열에 반영해야 한다.
   · 크기 때문에 FB-8a(활성 계획)·FB-8b(시나리오)로 나눈다. 조사 문서는 FB-8a 커밋의 status-backend whole에 함께 들어간다.
 - 다음: 프론트 FE3-g(인연 선물 타일, FB-11b 연결 메모), 백엔드 FB-8a.
+
+## 2026-10-09 17:45 — 커밋 확인, 오케스트레이터 세션 교대
+
+- 커밋: FE4-h `8beab94e`(14파일), 문서 `611ec7a1`(2파일).
+- 진행 중: 프론트 FE3-g, 백엔드 FB-8a(17:30 승인 내용으로 프롬프트 전달).
+- 메타데이터 로그에 FB-11b 인연 자료 스냅샷(`backend/core/student_bond_data.py`) M3 대상 알림을 남겼다(10-08 21:34에 미뤄 둔 항목).
+- 사용자 요청으로 오케스트레이터 역할을 다음 세션에 넘긴다. 인계 프롬프트: `debug/frontend_redesign_handoff/handoff-prompt-20261009.md`(커밋 대상 아님). 다음 세션은 FE3-g·FB-8a gate ①부터 맡는다.
+
+## 2026-10-09 18:58 — FE3-g + FB-8a gate ① `20261009_182843` RED(예상 범위)
+
+- 새 오케스트레이터 세션. HEAD `611ec7a1` 확인, 두 워커 모두 commit.json을 남기고 멈춤.
+- analyze 0, 테스트 346+465+129, process 45(FB-8a E2E 1건 추가), almanac 42쪽, diff-check 0. golden 27 통과, 실패 2건 — 워커 예측과 같다.
+- `students-calculator` 1.39%: 장면에 인연 목표 1 → 3을 더한 결과. S2 인연 행 3(분홍)·"바뀌는 칸 8 · 그대로 5"·바꾼 목표 "인연 +2", S3 인연 게이지에 "현재 1" 태그와 →3 점선, 빈 인연 타일이 FE3-g 타일로 바뀜("인연 1 → 3 · 필요 경험치 45 · 현재 랭크 시작 기준 · 셋 중 하나로 채웁니다", "경고 1건" + (i), 선호 선물 (대) ×1 보유 미확인(고름)/일반 선물 ×1 보유 미확인/카페 · 쓰다듬기 3회 "최소 6시간 · 첫 회 즉시 가정" [?]). 크레딧 18,420,000·재화 목록은 그대로. 겹침·잘림 없음. 승인.
+- `students-calculator-bond-popover`: 기준 없음(새 장면). ② 뒤 새 기준을 검토한다.
+- 코드 검토(FE3-g 종료 기록): currentStudent에 bond를 넣지 않고 모르는 인연은 null, 선물은 성장 재화·부족 종류 수에 들어가지 않음(FD-165), 하루 횟수를 만들지 않음. mock은 fixture 밖 입력이면 인연 시도 → 성장만으로 한 디바운스에 호출 2번 — mock 한정이라 받아들인다. 후속 확인(사용자 시각 검수): 쓰다듬기 "[?]" 표기가 시안 의도와 맞는지.
+- FB-8a 종료 기록 검토 승인: authoring v1 6키·DAG·prefix/suffix·lane 순서 검증, save 누락 보존/authoring_required, replace 보관 조건 확장, legacy goals.save 손실 거부, 옛 fingerprint 호환. Python 관련 112·Dart 서비스 166·process 7 통과, 공유 서비스 2파일은 스캐너 WIP 제외 3-way 확인(handoff-verification). Python 전체는 아직 없다 → 커밋 전 실행.
+- 다음: gate ② `-UpdateGoldens` + compare → 새 기준 검토 → FB-8a Python 전체 → fb8a → fe3g → redesigndocs.
+
+## 2026-10-09 19:20 — gate ② `20261009_185920` GREEN, `students-calculator-bond-popover` 승인
+
+- update-goldens 모드 GREEN(갱신 뒤 비교 29 통과). analyze 0, 테스트 346+465+129, process 45, almanac 42쪽, diff-check 0.
+- 새 기준 `students-calculator` = ①에서 승인한 testImage와 바이트 동일.
+- 새 기준 `students-calculator-bond-popover` 승인: 선호 선물 (대)를 눌러 고정한 목록(꺾쇠 위로, 분홍 테두리 유지). 머리 줄 "선호 선물 (대) · 아루 선호 큰 선물 · 선호 배수 포함", 열 선물·경험치·수량·보유, 고풍스러운 달걀 공예품 1행(1개 경험치 180 · 선호 ×3, 180, ×1 · 보유 사용 0, 빗금 + 미확인), 합계 ×1 · 경험치 180 / 필요 45 · "보유가 많은 선물부터 씁니다". 워커 예측과 같다. 팝오버는 성장 재화 목록 위에 뜨고 잘린 곳이 없다. 기준 이미지 바깥 차이는 팝오버 영역(994~1517, 515~719)뿐.
+- 사용자 시각 검수: 쓰다듬기 "[?]" 표기는 시안 의도와 맞음(18:58 후속 확인 종료).
+- 커밋 순서: FB-8a Python 전체(사용자 실행 중) 통과 → fb8a(post_dir, status=false) → fe3g(baseline whole, status=true) → redesigndocs. 파일이 겹치지 않으므로 Python이 길어지면 fe3g를 먼저 커밋해도 된다.
+
+## 2026-10-09 19:40 — fe3g 커밋, FB-8a Python 전체 실패 1건 수정
+
+- fe3g 커밋 완료(사용자). SHA는 다음 보고 때 확인한다.
+- FB-8a Python 전체 944건 중 실패 1: `test_planning_protocol_contract.test_schema_documents_use_draft_2020_12`의 스키마 목록 기대 집합에 새 `planning-authoring-v1.schema.json`이 없다. 스키마 자체는 draft 2020-12이고 check_schema 단계는 통과했다. FB-11b가 `planning-student-bond-v1`을 넣을 때와 같은 목록 갱신을 워커가 빠뜨렸다. 나머지 943건 통과.
+- 오케스트레이터가 고쳤다: 기대 집합에 이름 한 줄 추가. 이 테스트 파일을 FB-8a 매니페스트 modified에 넣고, pre(수정 전 작업트리)·post 사본을 `debug/frontend_fb8a/pre|post/backend/tests/`에 두었다. 기기 해시 확인(post = 작업트리 `b9128022…`, commit.json `43a00ed8…`).
+- 남은 확인: 이 모듈만 다시 실행해 통과를 본 뒤 fb8a를 커밋한다(다른 943건은 같은 코드로 이미 통과).
+
+## 2026-10-09 20:05 — fe3g·fb8a 커밋 확인, FE4-i 신설, 다음 배정
+
+- 커밋: FE3-g `6eb04542`(10파일, +1824/−52), FB-8a `4accf46c`(21파일, 공유 서비스 2파일은 3-way 병합으로 스캐너 WIP 제외, 스키마 목록 테스트 포함). 스키마 목록 테스트 모듈 재실행 통과(사용자). 처음 안내한 단일 모듈 명령은 `backend`에서 모듈을 찾지 못해 errors=1이었다 — discover `-p`로 다시 실행했다.
+- 결정: FB-14 화면 연결을 FE4-i로 따로 둔다(FE4-e 뒤, FE4-f 전). FE4-e는 저장 흐름만으로도 크고, FE4-f는 FB-8b를 기다려야 하므로 그 사이에 넣는다. 범위: 단계 프리셋 저장·적용·이름 바꾸기·삭제(nullable 목표 그대로), 내 그룹 저장·불러오기, 필터 프리셋 제외(FD-074 (b)).
+- 배정: 프론트 FE4-e(4단계 저장, FD-031·079·080·088, FB-1c "FE4-e 프런트 연결 메모", 17:30 후속: 저장 때 v2 null을 정수로 바꾸지 않음). FB-8a 이후 plan.save는 저장된 authoring이 있으면 누락을 보존·재검증하고 맞지 않으면 `authoring_required`를 낸다 — FE4-e는 authoring을 보내지 않고(FE4-f 몫), 이 오류는 초안을 지우지 않고 알리기만 한다. 백엔드 FB-8b(시나리오 create/get/update/duplicate의 authoring, compare 전달, FB-8a "FB-8b 연결 메모").
