@@ -610,3 +610,47 @@ P12는 `tactical.v2.recommend.query`에 6단계 완전 방어 근거 탐색과 �
 `predictions` 컬렉션에 state revision·filter·근거 결과와 함께 보존합니다. 공용
 `fixtures/tactical_recommendation_v2.json`은 좁은 상대 근거를 더 넓은 실제 관측으로
 보정하는 경우와 시간순 holdout gate를 고정합니다.
+
+# Repository stage presets and student groups (FB-14)
+
+`repository.presets.get {profile_id}` returns
+`{profile_id, revision, stage_presets, student_groups}`.
+`repository.presets.save {profile_id, expected_revision, idempotency_key,
+stage_presets, student_groups}` replaces both complete lists and returns `{revision}`.
+This revision belongs only to the preset collection. Profile, active plan and
+scenario writes do not change it, and preset writes do not change those revisions.
+An existing/new/v6-imported profile without a collection file has empty lists and
+revision 0. Reading presets does not trigger legacy plan migration. Deleting a
+profile deletes its collection under the same repository lock.
+
+Stage presets are `{preset_id, name, stages: [{name, targets}]}`. Every targets
+object has all 19 document-v2 keys, with the same ranges. `null` means no target;
+`0` is an explicit value (except bond_rank, which is null or 1–100). Targets are
+cumulative absolute values: a non-null integer followed by null or a smaller
+integer is invalid. Partial growth targets are stored verbatim; current values,
+growth prerequisites, normalization and costs are application/calculation concerns.
+Groups are `{group_id, name, student_ids}`. Unknown catalog IDs are retained in
+order; IDs may overlap across groups. Preset and group IDs have separate namespaces;
+within each list IDs are unique, and student IDs within one group are unique.
+Names need not be unique. IDs are opaque and preserved; names are trimmed.
+
+Limits: 100 presets, 50 stages per preset, 1,000 total stages; 100 groups,
+1,000 IDs per group, 10,000 total memberships; names at most 120 and IDs at most
+128 Unicode code points. These generous personal-list bounds limit transport and
+validation work; they are not game/catalog counts. Empty lists, empty preset stages,
+empty groups and all-null stages are valid. Blank names/IDs, extra fields, duplicate
+IDs, limit violations and target regression produce `invalid_payload`.
+The schema validates shape, ranges and per-array bounds; duplicate object IDs,
+cumulative regression and total nested bounds require semantic validation in
+Python/Dart. `fixtures/repository_presets_v1.json` pins both `schema_valid` and
+semantic `valid` expectations.
+
+`revision_conflict` details contain this collection's `current_revision`.
+An idempotency key identifies the canonical entire save including expected_revision;
+the same request replays its original `{revision}`, even after later saves/restart.
+Reusing the key with different content/revision produces `idempotency_conflict`.
+`repository_busy` and `persistence_failed` retain existing retryability rules.
+Both lists, revision and replay cache are atomically written to one profile-scoped
+file. The shared repository guard serializes collection saves with profile deletion
+and recovers pending plan transactions before reads. A corrupt collection is an
+error and is never silently replaced with an empty one. Filter presets are excluded.

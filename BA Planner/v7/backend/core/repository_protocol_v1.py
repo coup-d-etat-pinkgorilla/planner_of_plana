@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from core.repository_store import JsonRepository, RepositoryError
+from core.preset_store import PresetStore
 from core.runtime_paths import resolve_v6_root
 
 
@@ -12,6 +13,7 @@ METHODS = frozenset({
     "repository.profile.select", "repository.profile.rename", "repository.profile.update", "repository.profile.delete", "repository.state.get",
     "repository.students.update", "repository.inventory.update", "repository.goals.save",
     "repository.plan.get", "repository.plan.save", "repository.plan.replace",
+    "repository.presets.get", "repository.presets.save",
     "repository.migration.preview", "repository.migration.import",
 })
 
@@ -41,6 +43,7 @@ def _revision(value: object) -> int:
 class RepositoryProtocolV1:
     def __init__(self, repository: JsonRepository, *, v6_root: Path | None = None) -> None:
         self.repository = repository
+        self.presets = PresetStore(repository)
         self.v6_root = Path(v6_root) if v6_root is not None else resolve_v6_root()
 
     def handle(self, request: dict[str, Any]) -> dict[str, Any]:
@@ -94,6 +97,12 @@ class RepositoryProtocolV1:
         if method == "repository.plan.replace":
             data, profile_id, revision, key = self._mutation(payload, {"document", "expected_scenario_revision", "archive_name", "archive_description"})
             return self.repository.replace_plan(profile_id, data["document"], revision, data["expected_scenario_revision"], key, data["archive_name"], data["archive_description"])
+        if method == "repository.presets.get":
+            data = _require(payload, {"profile_id"})
+            return self.presets.get(_text(data["profile_id"], "profile_id"))
+        if method == "repository.presets.save":
+            data, profile_id, revision, key = self._mutation(payload, {"stage_presets", "student_groups"})
+            return self.presets.save(profile_id, revision, key, data["stage_presets"], data["student_groups"])
         if method == "repository.students.update":
             data, profile_id, revision, key = self._mutation(payload, {"students"})
             if not isinstance(data["students"], list): raise RepositoryError("invalid_payload", "students must be an array")

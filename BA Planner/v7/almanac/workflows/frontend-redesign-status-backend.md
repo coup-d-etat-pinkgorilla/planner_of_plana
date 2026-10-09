@@ -1,6 +1,6 @@
 ---
 title: "Frontend Redesign Backend Status"
-summary: "Lane A 백엔드 워커의 FB-1c 교체·보존·journal 복구와 FE4-e 연결, FB-1b 이관, FB-11b 인연, FB-1a v2 및 설계 조사 기록입니다."
+summary: "Lane A 백엔드 워커의 FB-14 독립 프리셋·그룹 저장과 FE4 연결, FB-1c 교체·복구, FB-1b 이관, FB-11b 인연, FB-1a v2 및 설계 조사 기록입니다."
 topics: [workflow, design]
 sources:
   - id: workflow
@@ -14,6 +14,99 @@ sources:
     path: backend/tests/test_student_calculation_fb11a.py
 ---
 백엔드 워커 전용(Lane A 병렬, 2026-10-07)
+
+# FB-14 단계 프리셋·내 그룹 저장
+
+## 착수 (2026-10-09)
+
+- 시작 SHA: `e2502aed0f1ae145d474ca1055a522b705cc5ad8`. FB-1c `6fcd5fa0` 커밋 이후 HEAD에서 편집을 재개했다.
+- FB-14 행, FD-074(b), 오케스트레이터 2026-10-09 14:30, tactical collection revision 방식, FE4-c 메모리 프리셋 모델과 적용 확장 규칙을 읽었다.
+- profile별 독립 collection revision·전체 교체·idempotency. nullable 목표와 단계 이름을 저장하며, 미등록 학생 ID를 보존한다. 프로필/활성 계획 revision과 서로 영향을 주지 않는다.
+- 상한: 프리셋 100개·각 50단계·총 1,000단계; 그룹 100개·각 1,000 ID·총 10,000 membership; 이름 120·ID 128 Unicode code point. 개인 재사용 목록에 여유를 두면서 JSONL 크기와 검증 작업량을 제한한다. 게임 데이터 개수에서 도출한 상한이 아니다.
+- 빈 목록·빈 프리셋·빈 그룹을 허용한다. 같은 그룹 안 학생 ID 중복은 거부하고, 그룹 간 겹침은 허용한다. preset/group ID는 별도 namespace다.
+- UI·스캐너·tactic·metadata는 수정하지 않는다. 공유 서비스 WIP는 pre/post로 보존하며 gate·stage·커밋·push는 하지 않는다.
+
+## 구현·직접 검증 종료 (2026-10-09)
+
+FB-14 backend·계약·Dart 서비스 구현과 직접 검증을 마쳤다. 코드 편집을 멈추고 사용자 Python 전체 실행을 기다린다. gate·stage·커밋·push는 하지 않았다. 화면 및 widget/golden 코드는 수정하지 않았으며 golden 변화는 0을 예상한다.
+
+### 계약·저장 요약
+
+| 항목 | 확정 구현 |
+|---|---|
+| get | `repository.presets.get {profile_id}` → `{profile_id, revision, stage_presets, student_groups}` |
+| save | `repository.presets.save {profile_id, expected_revision, idempotency_key, stage_presets, student_groups}` → `{revision}`; 두 목록 전체 교체 |
+| revision | 이 묶음의 collection revision. profile/state/plan/scenario revision과 독립. profile 변경으로 stale이 되지 않으며 프리셋 저장으로 plan 저장이 stale이 되지 않음 |
+| 목표 | 19 key 모두 필수, int/null. bond_rank는 null 또는 1–100, 다른 키의 0은 실제 목표. 누적 절대 목표이므로 integer 뒤 null/더 작은 integer 거부 |
+| 단계 | `{name, targets}`. 원본 nullable/부분 목표 보존, 현재값·성장 선행 조건·비용 계산을 저장에 섞지 않음 |
+| 그룹 | `{group_id, name, student_ids}`. 카탈로그 미등록 ID·순서 보존. 그룹 안 중복 거부, 그룹 간 겹침 허용 |
+| ID·이름 | preset/group 각각의 namespace 안 ID 유일. 두 종류끼리 같은 ID 허용. opaque ID는 보존, 이름은 trim; 이름 중복 허용 |
+| 빈 데이터 | [] 전체 교체·빈 stages·빈 student_ids·all-null 단계 허용 |
+| 새/v6/legacy | 유효 프로필에 파일이 없으면 논리적인 빈 revision 0. get은 파일 생성/계획 이관/프로필 revision 변경을 하지 않음. 새 프로필·v6 가져오기 transaction에 추가 파일 쓰기가 필요하지 않음 |
+| 파일·잠금 | `presets/{profile_id}.json`에 두 목록/revision/idempotency 한 번의 atomic write. 기존 OS repository guard 공유, pending plan journal 복구 뒤 조회/저장. 프로필 삭제와 직렬화 |
+| 삭제 | profile 삭제 때 파일도 삭제. 예외 발생 시 profile/catalog와 프리셋 원본 bytes 함께 복원 |
+| 재시도 | canonical 전체 save(expected_revision 포함) fingerprint. 동일 key/request는 나중 저장·재시작 후에도 최초 revision 응답 replay. 변경된 요청은 idempotency_conflict |
+| 오류 | invalid_payload·revision_conflict(details.current_revision = collection revision)·idempotency_conflict·repository_busy·persistence_failed 재사용. 손상 파일은 corrupt_data, 지원하지 않는 저장 version은 migration_required. 빈 데이터로 덮지 않음 |
+
+Python은 문서와 프리셋의 목표 검증을 `planning_targets_from_wire` 공용 경계로 뽑았다. 비용/정규화는 복제하지 않았고 v1 성장 검증·오류 의미를 유지했다. Dart는 기존 문서 v2 stage target parser를 재사용하고 프리셋 누적 회귀·중복·상한을 추가 검증한다. `RepositoryPresetsService` 별도 capability를 두어 기존 `RepositoryService` 소비자·테스트 더블을 깨지 않는다. Process/Mock 둘 다 구현한다. DTO는 deep immutable이며 toWire 결과는 분리된 복사본이다.
+
+### 정책 fixture·상한 근거
+
+공유 fixture: `contracts/fixtures/repository_presets_v1.json` 43건. schema_valid와 Python/Dart semantic valid를 구별했다. JSON Schema가 shape/range/per-array cap을 검증하고, object ID 중복·단계 회귀·전체 nested cap은 DTO 검증 책임이다.
+
+| 정책 | 검증 |
+|---|---|
+| all-null → 명시적 0·부분 성장 목표 → max·bond 1/100 | 원본 그대로 저장·왕복; 성장 선행 조건을 합성하지 않음 |
+| 미등록 future-student·그룹 간 aru 겹침·preset/group 동일 ID·이름 중복 | 보존/허용 |
+| 빈 묶음·빈 프리셋·빈 그룹 | 저장·clear·재시작 조회 |
+| bool/string/float 목표, bond 0, 누락/extra key·field, 빈 key/name/ID | invalid_payload/strict Dart 거부 |
+| preset/group ID 중복, 그룹 내 학생 중복, integer→null/감소 | 명시적 거부 |
+| 프리셋 100·각 50·총 1,000단계 / 그룹 100·각 1,000 ID·총 10,000 membership | Python/Dart 경계값과 초과값 생성 테스트 |
+| 이름 120·ID 128 Unicode code point | fixture maxLength; 이름 emoji 120/121 경계 Python/Dart 검증. raw 입력 길이를 검사한 뒤 이름 trim |
+| profile/plan 저장 ↔ 프리셋 저장 | revision 독립, 서로 파일 변경 없음; 두 프로필 격리 |
+| 신규·v6 가져오기·legacy 조회 | 빈 revision 0; legacy presets get/save로 plan 이관이 일어나지 않음 |
+| stale·key 충돌·이전 응답 replay | 무변경·details·재시작 이후 최초 응답 |
+| before_write / before_fsync / before_replace 예외 | 최초/기존 파일 모두 원본 bytes·두 목록·revision·cache 유지, temp 정리 |
+| 프로필 삭제 파일 unlink 실패 | profile/catalog/presets bytes 모두 복원; 성공 시 파일 제거 |
+| 손상 JSON/shape/revision/cache/회귀 | 읽기·저장 모두 오류, 원본 bytes 유지 |
+| live save 중 다른 thread get/delete | repository_busy; 잠금 해제 후 정상 삭제. mock 동시 save는 한 요청만 성공 |
+
+상한은 개인 재사용 목록을 넉넉하게 허용하면서 IPC payload·저장 크기와 검증 작업량을 제한하기 위해 정했다. 현재 게임 학생/기본 프리셋 개수에서 도출한 값이 아니다. 전체 단계·membership cap으로 중첩 배열의 곱이 무제한 커지는 것을 막고, 미등록/향후 학생 ID는 정해진 범위 안에서 그대로 보존한다. 필터 프리셋은 범위 밖이다.
+
+### 직접 검증·회귀 결과
+
+- Python **91 OK**: FB-14 11 + repository 계약/저장/parity/FB-1b/FB-1c + planning document v1/v2 + scenario store/protocol/contract. 로그 `debug/frontend_fb14/python-targeted.txt`.
+- Dart 계약·DTO·mock·기존 서비스 **70 passed**: FB-14 49 + repository contract/FB-1b/FB-1c 서비스 21. 로그 `debug/frontend_fb14/dart-targeted.txt`.
+- Process E2E **4 passed**: FB-14 save→restart get→stale/replay→clear→restart original replay→delete, 기존 repository restart·FB-1b·FB-1c 각 1. 로그 `debug/frontend_fb14/process-e2e.txt`.
+- 대상 6파일 `dart analyze`: No issues found (`debug/frontend_fb14/dart-analyze.txt`). 공유 process/mock는 FB-14 추가 메서드 블록만 format했다.
+- `codealmanac validate`: ok. 인계 3-way merge 8파일 clean, 공유 mock/process의 기존 스캐너 WIP 제외·나머지 블록 동일. planning_protocol_client 미수정, 보호된 tracked 파일 시작 후 변경 0, index 미수정.
+- v1 projection/comparison frozen output·v1 scenario bytes, nullable v2, v6 가져오기 및 기존 교체 journal 회귀 모두 통과. 계산·시나리오 비용 결과 변경 없음.
+- Python 전체는 **미실행**이며 다음 사용자 단계다. fe_gate·golden 갱신·stage·커밋·push는 실행하지 않았다.
+
+### 프런트 연결 메모 (FE4-c 이후)
+
+1. 선택 프로필별 `RepositoryPresetsService.loadRepositoryPresets(profileId)`로 묶음과 collection revision을 로드한다. Process/Mock는 이 capability를 구현하며 repository_service.dart가 DTO/service를 export한다. profile revision을 expected_revision으로 쓰지 않는다.
+2. FE4-c의 `PlanElementPreset`은 `List<Map<String,int>>` sparse 메모리 모델이고 단계 이름 필드가 없다. 저장에는 `RepositoryStagePreset`/`RepositoryPresetStage(name, targets)`의 **19키 nullable** 원본을 쓴다. 새 sparse 초안을 저장할 때 누락 키는 null로 채우며 현재값으로 채우지 않는다. 프런트는 적용 모델에 단계 이름을 확장해 저장 이름을 연결해야 한다.
+3. 프리셋 적용 때만 non-null 목표를 sparse map으로 넘겨 기존 `PlanFlowGoalEditor._stagesForMode` 확장 규칙(첫 단계 현재값, 다음 단계 직전 유효값, 성장 정규화, 현재값보다 낮지 않음, 증가 없는 단계 제거)을 사용한다. 이 결과를 원본 저장 프리셋에 되쓰지 않는다. 저장 단계 회귀는 서버/DTO가 거부하므로 조용한 자동 접기 대신 사용자 편집에 드러낸다.
+4. `RepositoryStudentGroup`의 ID 목록을 저장 모델에 보관한다. 현재 카탈로그와의 교집합은 선택/표시용으로만 계산하며, 미등록 ID를 저장 요청에서 필터링하지 않는다. 그룹 간 같은 학생은 유효하다.
+5. 저장은 `saveRepositoryPresets(RepositoryPresetsSaveRequest(profileId: profileId, expectedRevision: loaded.revision, idempotencyKey: ..., stagePresets: 전체 목록, studentGroups: 전체 목록))`. 변경하지 않은 반대쪽 목록도 포함한다. 한 사용자 저장 시도에 key를 한 번 발급하고 네트워크/busy/persistence 재시도는 동일 request/key를 사용한다. 수정된 내용은 새 key다.
+6. 성공 응답의 revision은 최초 replay 값일 수 있으므로 뒤이어 get으로 최신 목록/revision을 다시 읽는다. `revision_conflict`는 details.current_revision을 참고해 reload·사용자 재편집으로 해결하고, stale 초안을 최신 revision으로 자동 재전송하지 않는다. idempotency_conflict는 같은 key에 다른 요청을 썼다는 오류다. repository_busy/persistence_failed는 retryable이며 입력을 보존한다. profile 삭제/전환 때 해당 draft/revision을 분리·폐기한다.
+7. 저장 묶음은 활성 계획과 별도다. 프리셋/그룹 저장에 plan.save를 추가 호출할 필요가 없고, 활성 계획 저장으로 프리셋 revision이 바뀌지 않는다. 필터 chip 저장은 연결하지 않는다.
+
+### 인계·사용자 실행 단계
+
+- `debug/frontend_fb14/commit.json`: status=false, modified/added 목록, whole=`almanac/workflows/frontend-redesign-status-backend.md`, post_dir=`debug/frontend_fb14/post`.
+- pre/post 사본을 보존한다. 공유 mock/process의 FB-14 추가분을 제거하면 pre와 같아야 하고, HEAD/pre/post 3-way 적용 후 추가분을 제거하면 HEAD와 같아야 한다. 스캐너 WIP를 commit 후보에 섞지 않는다. planning_protocol_client.dart는 수정하지 않았다.
+- 인계 검증은 `debug/frontend_fb14/handoff-verification.json`; 기존 index를 건드리지 않는다. baseline 폴더는 manifest whole에 없다.
+- 먼저 v7 루트에서 아래 Python 전체 명령을 실행하고 `debug/frontend_fb14/python-full.txt` 결과를 확인한다. 이후 gate·커밋은 두 워커가 멈춘 뒤 사용자/오케스트레이터가 진행한다. 이 워커는 여기서 멈춘다.
+
+```powershell
+Push-Location backend
+py -3.11 -X utf8 -m unittest discover -s tests -v 2>&1 | Tee-Object -FilePath ..\debug\frontend_fb14\python-full.txt
+$fb14PythonExit = $LASTEXITCODE
+Pop-Location
+if ($fb14PythonExit -ne 0) { throw "FB-14 Python 전체 실패: $fb14PythonExit" }
+```
 
 # FB-1c 활성 계획 교체·시나리오 보존
 

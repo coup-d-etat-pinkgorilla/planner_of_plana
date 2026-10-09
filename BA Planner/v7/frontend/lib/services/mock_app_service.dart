@@ -30,6 +30,7 @@ class MockAppService
         MockScenarioController,
         RepositoryService,
         RepositoryPlanService,
+        RepositoryPresetsService,
         ScannerService,
         TacticalService,
         DiagnosticsService {
@@ -141,6 +142,8 @@ class MockAppService
   final List<RepositoryProfile> _profiles;
   final Map<String, Map<String, dynamic>> _repositoryStates = {};
   final Map<String, PlanningDocument> _repositoryPlans = {};
+  final Map<String, RepositoryPresetsState> _repositoryPresets = {};
+  final Map<String, Map<String, ({String fingerprint, int revision})>> _presetIdempotency = {};
   final Map<String, Map<String, ({String fingerprint, Map<String, dynamic> response})>> _planIdempotency = {};
   final Map<String, TacticalState> _tacticalStates = {};
   final StreamController<ScannerEvent> _scannerEvents =
@@ -1342,6 +1345,8 @@ class MockAppService
     _repositoryStates.remove(profileId);
     _repositoryPlans.remove(profileId);
     _planIdempotency.remove(profileId);
+    _repositoryPresets.remove(profileId);
+    _presetIdempotency.remove(profileId);
     _planningScenarios.remove(profileId);
     _planningScenarioRevisions.remove(profileId);
     if (wasSelected && _profiles.isNotEmpty) {
@@ -1420,6 +1425,76 @@ class MockAppService
       return migrated;
     }
     return state;
+  }
+
+  @override
+  Future<RepositoryPresetsState> loadRepositoryPresets(
+    String profileId,
+  ) async => _mockPresetsState(profileId);
+
+  RepositoryPresetsState _mockPresetsState(String profileId) {
+    if (!RegExp(r'^[0-9a-f]{24}$').hasMatch(profileId)) {
+      throw BackendRemoteException(
+        code: 'invalid_payload',
+        message: 'Invalid profile ID',
+      );
+    }
+    if (!_profiles.any((profile) => profile.id == profileId)) {
+      throw BackendRemoteException(
+        code: 'profile_not_found',
+        message: 'Profile does not exist',
+      );
+    }
+    return _repositoryPresets[profileId] ??
+        RepositoryPresetsState.fromWire({
+          'profile_id': profileId,
+          'revision': 0,
+          'stage_presets': <dynamic>[],
+          'student_groups': <dynamic>[],
+        });
+  }
+
+  @override
+  Future<int> saveRepositoryPresets(
+    RepositoryPresetsSaveRequest request,
+  ) async {
+    final wire = request.toWire();
+    final state = _mockPresetsState(request.profileId);
+    final fingerprint = jsonEncode({
+      'expected_revision': request.expectedRevision,
+      'stage_presets': wire['stage_presets'],
+      'student_groups': wire['student_groups'],
+    });
+    final cache = _presetIdempotency.putIfAbsent(request.profileId, () => {});
+    final cached = cache[request.idempotencyKey];
+    if (cached != null) {
+      if (cached.fingerprint != fingerprint) {
+        throw BackendRemoteException(
+          code: 'idempotency_conflict',
+          message: 'Key belongs to another preset save',
+        );
+      }
+      return cached.revision;
+    }
+    if (state.revision != request.expectedRevision) {
+      throw BackendRemoteException(
+        code: 'revision_conflict',
+        message: 'Expected preset revision is stale',
+        details: {'current_revision': state.revision},
+      );
+    }
+    final revision = state.revision + 1;
+    _repositoryPresets[request.profileId] = RepositoryPresetsState.fromWire({
+      'profile_id': request.profileId,
+      'revision': revision,
+      'stage_presets': wire['stage_presets'],
+      'student_groups': wire['student_groups'],
+    });
+    cache[request.idempotencyKey] = (
+      fingerprint: fingerprint,
+      revision: revision,
+    );
+    return revision;
   }
 
   @override

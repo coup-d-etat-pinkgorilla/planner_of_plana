@@ -397,6 +397,8 @@ class JsonRepository:
             tactical_before = tactical_path.read_bytes() if tactical_path.exists() else None
             scenario_path = self.root / "scenarios" / f"{profile_id}.json"
             scenario_before = scenario_path.read_bytes() if scenario_path.exists() else None
+            presets_path = self.root / "presets" / f"{profile_id}.json"
+            presets_before = presets_path.read_bytes() if presets_path.exists() else None
             catalog["profiles"] = [item for item in catalog["profiles"] if item["profile_id"] != profile_id]
             if catalog["selected_profile_id"] == profile_id:
                 catalog["selected_profile_id"] = catalog["profiles"][0]["profile_id"] if catalog["profiles"] else None
@@ -407,6 +409,8 @@ class JsonRepository:
                     tactical_path.unlink()
                 if scenario_before is not None:
                     scenario_path.unlink()
+                if presets_before is not None:
+                    presets_path.unlink()
             except Exception as error:
                 self._restore(self.catalog_path, catalog_before)
                 self._restore(profile_path, profile_before)
@@ -414,6 +418,8 @@ class JsonRepository:
                     self._restore(tactical_path, tactical_before)
                 if scenario_before is not None:
                     self._restore(scenario_path, scenario_before)
+                if presets_before is not None:
+                    self._restore(presets_path, presets_before)
                 if isinstance(error, RepositoryError):
                     raise
                 raise RepositoryError("persistence_failed", "profile deletion failed", retryable=True) from error

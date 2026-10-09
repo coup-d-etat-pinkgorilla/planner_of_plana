@@ -27,6 +27,7 @@ class ProcessAppService
         PlanningScenarioComparisonService,
         RepositoryService,
         RepositoryPlanService,
+        RepositoryPresetsService,
         ScannerService,
         TacticalService,
         TacticalEvidenceService,
@@ -468,6 +469,17 @@ class ProcessAppService
     'expected_revision': expectedRevision,
     'idempotency_key': idempotencyKey,
   });
+
+  @override
+  Future<RepositoryPresetsState> loadRepositoryPresets(
+    String profileId,
+  ) async => RepositoryPresetsState.fromWire(
+    await _client.send('repository.presets.get', {'profile_id': profileId}),
+  );
+
+  @override
+  Future<int> saveRepositoryPresets(RepositoryPresetsSaveRequest request) =>
+      _revisionMutation('repository.presets.save', request.toWire());
 
   @override
   Future<RepositoryPlanState> loadRepositoryPlan(String profileId) async =>

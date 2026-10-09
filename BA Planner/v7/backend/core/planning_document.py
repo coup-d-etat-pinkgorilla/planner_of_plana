@@ -145,19 +145,10 @@ def planning_document_from_wire(value: object) -> PlanningDocument:
                 raise PlanningDocumentError("document stage IDs must be unique")
             stage_ids.add(stage_id)
             student_id = _text(raw_stage["student_id"], f"{label}.student_id")
-            raw_targets = raw_stage["targets"]
-            if not isinstance(raw_targets, dict) or set(raw_targets) != set(TARGET_MAXIMUMS):
-                raise PlanningDocumentError(f"{label}.targets must contain the complete target set")
-            targets: dict[str, int | None] = {}
-            previous = last_step_by_student.get(student_id)
-            for key, maximum in TARGET_MAXIMUMS.items():
-                item = raw_targets[key]
-                minimum = 1 if key == "bond_rank" else 0
-                if not (version == 2 and item is None) and (type(item) is not int or not minimum <= item <= maximum):
-                    raise PlanningDocumentError(f"{label}.targets.{key} is outside its valid range")
-                if previous is not None and previous[key] is not None and (item is None or item < previous[key]):
-                    raise PlanningDocumentError(f"{label}.targets.{key} regresses from the previous student stage")
-                targets[key] = item
+            targets = planning_targets_from_wire(
+                raw_stage["targets"], label=label, nullable=version == 2,
+                previous=last_step_by_student.get(student_id),
+            )
             violation = growth_rule_violation(targets) if version == 1 else None
             if violation is not None:
                 raise PlanningDocumentError(f"{label}.targets {violation}")
@@ -181,6 +172,23 @@ def planning_document_from_wire(value: object) -> PlanningDocument:
         version,
         goal_metadata,
     )
+
+
+def planning_targets_from_wire(value: object, *, label: str, nullable: bool,
+                               previous: dict[str, int | None] | None = None) -> dict[str, int | None]:
+    """The shared absolute-target contract for documents and reusable presets."""
+    if not isinstance(value, dict) or set(value) != set(TARGET_MAXIMUMS):
+        raise PlanningDocumentError(f"{label}.targets must contain the complete target set")
+    targets: dict[str, int | None] = {}
+    for key, maximum in TARGET_MAXIMUMS.items():
+        item = value[key]
+        minimum = 1 if key == "bond_rank" else 0
+        if not (nullable and item is None) and (type(item) is not int or not minimum <= item <= maximum):
+            raise PlanningDocumentError(f"{label}.targets.{key} is outside its valid range")
+        if previous is not None and previous[key] is not None and (item is None or item < previous[key]):
+            raise PlanningDocumentError(f"{label}.targets.{key} regresses from the previous student stage")
+        targets[key] = item
+    return targets
 
 
 def _goal(stage: PlanningStage, metadata: GoalMetadata | None = None) -> StudentGoal:

@@ -1,0 +1,4184 @@
+{
+  "version": 1,
+  "limits": {
+    "stage_presets": 100,
+    "stages_per_preset": 50,
+    "total_stages": 1000,
+    "student_groups": 100,
+    "students_per_group": 1000,
+    "total_memberships": 10000,
+    "name_length": 120,
+    "id_length": 128
+  },
+  "cases": [
+    {
+      "id": "save_nullable_zero_partial_unknown_empty",
+      "valid": true,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "get",
+      "valid": true,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-get",
+        "type": "request",
+        "method": "repository.presets.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      }
+    },
+    {
+      "id": "get_saved",
+      "valid": true,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-get",
+        "type": "response",
+        "method": "repository.presets.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 1,
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "get_empty",
+      "valid": true,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-get",
+        "type": "response",
+        "method": "repository.presets.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0,
+          "stage_presets": [],
+          "student_groups": []
+        }
+      }
+    },
+    {
+      "id": "save_response",
+      "valid": true,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "response",
+        "method": "repository.presets.save",
+        "payload": {
+          "revision": 1
+        }
+      }
+    },
+    {
+      "id": "save_empty",
+      "valid": true,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [],
+          "student_groups": []
+        }
+      }
+    },
+    {
+      "id": "bool_revision",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": true,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "negative_revision",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": -1,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "empty_key",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "invalid_profile",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aru",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "null_presets",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": null,
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "object_groups",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": {}
+        }
+      }
+    },
+    {
+      "id": "missing_groups",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "missing_presets",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "target_bool",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": true,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "target_string",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": "0",
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "target_float",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": 0.5,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "target_negative",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": -1,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "target_over_max",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": 91,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bond_zero",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": 0,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "missing_target",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "extra_target",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null,
+                    "extra": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "blank_preset_name",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": " \t",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "blank_stage_name",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "  ",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "blank_group_name",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "long_name",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "blank_id",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "  ",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "long_id",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "null_student_id",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                null
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "blank_student_id",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "  "
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "duplicate_student_ids",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "aru"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "extra_stage_field",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  },
+                  "extra": 0
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "duplicate_preset_ids",
+      "valid": false,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "growth",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "duplicate_group_ids",
+      "valid": false,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "growth",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "integer_to_null_regression",
+      "valid": false,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "회귀",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "integer_to_smaller_regression",
+      "valid": false,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "회귀",
+                  "targets": {
+                    "level": 89,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "extra_request",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "request",
+        "method": "repository.presets.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "preset-save-1",
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ],
+          "extra": 0
+        }
+      }
+    },
+    {
+      "id": "extra_get",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-get",
+        "type": "request",
+        "method": "repository.presets.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0
+        }
+      }
+    },
+    {
+      "id": "bool_response_revision",
+      "valid": false,
+      "schema_valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "preset-get",
+        "type": "response",
+        "method": "repository.presets.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": true,
+          "stage_presets": [
+            {
+              "preset_id": "growth",
+              "name": "성장",
+              "stages": [
+                {
+                  "name": "목표 없음",
+                  "targets": {
+                    "level": null,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "준비",
+                  "targets": {
+                    "level": 0,
+                    "bond_rank": 1,
+                    "student_star": null,
+                    "weapon_level": 0,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "name": "완성",
+                  "targets": {
+                    "level": 90,
+                    "bond_rank": 100,
+                    "student_star": null,
+                    "weapon_level": 60,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ]
+            },
+            {
+              "preset_id": "empty",
+              "name": "빈 프리셋",
+              "stages": []
+            }
+          ],
+          "student_groups": [
+            {
+              "group_id": "growth",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru",
+                "future-student"
+              ]
+            },
+            {
+              "group_id": "empty",
+              "name": "빈 그룹",
+              "student_ids": []
+            },
+            {
+              "group_id": "overlap",
+              "name": "내 그룹",
+              "student_ids": [
+                "aru"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "revision_conflict",
+      "valid": true,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "response",
+        "method": "repository.presets.save",
+        "payload": {
+          "error": {
+            "code": "revision_conflict",
+            "message": "revision_conflict",
+            "retryable": false,
+            "details": {
+              "current_revision": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "idempotency_conflict",
+      "valid": true,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "response",
+        "method": "repository.presets.save",
+        "payload": {
+          "error": {
+            "code": "idempotency_conflict",
+            "message": "idempotency_conflict",
+            "retryable": false
+          }
+        }
+      }
+    },
+    {
+      "id": "repository_busy",
+      "valid": true,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "response",
+        "method": "repository.presets.save",
+        "payload": {
+          "error": {
+            "code": "repository_busy",
+            "message": "repository_busy",
+            "retryable": true
+          }
+        }
+      }
+    },
+    {
+      "id": "persistence_failed",
+      "valid": true,
+      "schema_valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "preset-save",
+        "type": "response",
+        "method": "repository.presets.save",
+        "payload": {
+          "error": {
+            "code": "persistence_failed",
+            "message": "persistence_failed",
+            "retryable": true
+          }
+        }
+      }
+    }
+  ]
+}

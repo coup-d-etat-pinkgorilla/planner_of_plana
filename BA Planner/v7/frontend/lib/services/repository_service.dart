@@ -1,5 +1,7 @@
 import 'repository_plan_service.dart';
+import 'repository_presets_service.dart';
 export 'repository_plan_service.dart';
+export 'repository_presets_service.dart';
 
 class RepositoryProfile {
   const RepositoryProfile({
@@ -450,12 +452,16 @@ bool isValidRepositorySuccessPayload(
       case 'repository.inventory.update':
       case 'repository.goals.save':
       case 'repository.plan.save':
+      case 'repository.presets.save':
         return _exact(payload, {'revision'}) && _revision(payload['revision']);
       case 'repository.state.get':
         RepositoryState.fromWire(payload);
         return true;
       case 'repository.plan.get':
         RepositoryPlanState.fromWire(payload);
+        return true;
+      case 'repository.presets.get':
+        RepositoryPresetsState.fromWire(payload);
         return true;
       case 'repository.plan.replace':
         RepositoryPlanReplaceResult.fromWire(payload);
@@ -579,6 +585,7 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         return mutation({});
       case 'repository.state.get':
       case 'repository.plan.get':
+      case 'repository.presets.get':
         return _exact(payload, {'profile_id'}) &&
             payload['profile_id'] is String &&
             RegExp(r'^[0-9a-f]{24}$').hasMatch(payload['profile_id'] as String);
@@ -614,6 +621,9 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         return true;
       case 'repository.plan.replace':
         RepositoryPlanReplaceRequest.fromWire(payload);
+        return true;
+      case 'repository.presets.save':
+        RepositoryPresetsSaveRequest.fromWire(payload);
         return true;
       case 'repository.migration.preview':
         return payload.isEmpty;
