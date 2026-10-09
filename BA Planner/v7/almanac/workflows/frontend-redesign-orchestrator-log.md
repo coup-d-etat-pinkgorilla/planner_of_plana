@@ -603,3 +603,31 @@ topics: [workflow, design]
 - 새 기준 `plan-flow-step2-saved` 승인: 저장된 그룹으로 호시노·아루 2명, 저장된 프리셋 "총력전 3단계 · 내 프리셋" 적용 중. 프리셋 바 맨 앞에 저장 프리셋, C 첫 행에 "적용 중"·이름 바꾸기·지우기 아이콘, 카드 이름이 저장된 단계 이름(성장 기반 / 스킬·인연), "다른 학생에도 적용 · 아루 목표 없음", "고른 2명 모두 …로".
   · 워커 예측은 단계 3개였지만 카드는 2개다. 코드 확인: 프리셋 펼치기(`plan_flow_goal_editor.dart` 프리셋 단계 확장)가 앞 단계보다 올리는 값이 없는 단계를 빼는 FE4-c 규칙 그대로다. 호시노는 이미 ★5·무기 Lv.30이라 3단계 "성급·전용무기"가 빠졌다. 정상.
 - 커밋: fe4i(baseline whole, status=true) → redesigndocs. 그다음 배정 프론트 FE4-f, 백엔드 FB-2a(FB-2 조사 문서는 FB-2a 커밋의 status-backend whole에 들어간다).
+
+## 2026-10-10 00:35 — FE4-f1 + FB-2a gate ① `20261010_001732` RED 검토
+
+- HEAD `7965e462`(FE4-i `e5555b52`, 문서 뒤). 두 워커 모두 commit.json을 남기고 멈춤. FE4-f는 워커가 f1(직접 선행·나중에 칸·authoring 저장/복원)과 f2(S 곡선·"칸 추가" 위 선 경로 다듬기, `_incorporateScenario` remap, 활성 계획을 흐름 초안으로 여는 진입)로 나눴다.
+- 테스트 345+562+174, process 48(FB-2a 2건 추가), almanac 42, diff-check 0 통과.
+- analyze 5건(info 4 + warning 1), 모두 FE4-f1 범위 파일이라 오케스트레이터가 고쳤다:
+  · `plan_flow_draft.dart` 391·782, `plan_flow_order_editor.dart` 422 use_null_aware_elements → `?map[id]` 요소.
+  · `plan_flow_draft.dart` 767 prefer_collection_literals → `[…].toSet().toList()`를 `<String>{…}.toList()`로(삽입 순서 같음).
+  · `plan_flow_order_step.dart` 1097 unused_element_parameter → `_DeferredLanePainter`의 쓰이지 않는 `variant` 매개변수를 static const로, shouldRepaint false.
+  · 기기 해시 확인(draft `b083598e…`, order_editor `29ac4439…`, order_step `5e9682d5…`).
+- golden 3건, 워커 예측과 같다:
+  · `plan-flow-step3`(12.5%): "칸 추가" 아래 빈 점선 "나중에" 칸(여기로 끌어다 놓기), 카드 아래 분홍 점(직접 선행 손잡이), 범례 "직접 이은 선행 조건", C "선행 단계 추가" 행으로 아래 묶음이 내려감. 승인.
+  · `plan-flow-step3-many`(6.9%): 작게 보기 아래 "나중에 · 단계 0개" 점선 칸, 범례, 펼친 카드 점, C 같은 변화. S 곡선은 이전과 같다(다듬기는 f2). 승인.
+  · `plan-flow-step3-deferred`: 기준 없음(새 장면). ② 뒤 검토.
+- FB-2a 종료 기록 검토 승인. 23:25 결정 대로이고, 추가 판단 2건을 받아들인다:
+  1. 스캐너 연결 전 옛 4인자 scan 저장은 source=`unattributed`(scan/manual로 잘못 세지 않음, FB-2b 뒤 새 적용부터 scan). 23:25 source 3종에 임시 호환 1종 추가.
+  2. 학생 중복: v6 가져오기가 중복을 만들 수 있는 경로를 확인했고, 실제 v7 프로필 10개·v6 1개에는 중복이 없다. 새 입력은 duplicate_identity 거부, 기존 파일 중복은 corrupt_data로 읽기를 막는다.
+  · 실측: 학생 217·인벤토리 614 프로필에서 같은 세션 동값 10,000 commit 이력 4.45 MB, 전체 수정 durable 쓰기 0.08초 — 16 MiB 상한이 정상 사용을 막지 않는다.
+  · `test_repository_plan_fb1b.py` 수정은 legacy 파일을 만드는 준비 단계에서 새 history를 빼는 것뿐이고 단언은 그대로다.
+- 다음: 사용자 gate ②(analyze 수정분 포함 재검증) → `plan-flow-step3-deferred` 검토, FB-2a Python 전체 → fb2a → fe4f → redesigndocs.
+
+## 2026-10-10 01:15 — gate ② `20261010_004148` GREEN, `plan-flow-step3-deferred` 승인, FB-2a Python 통과
+
+- ②: analyze 0(00:35 수정 확인), 테스트 345+562+174, process 48, golden 33 비교 통과. `plan-flow-step3`·`-many` 새 기준은 ①에서 승인한 testImage와 바이트 동일.
+- 새 기준 `plan-flow-step3-deferred` 승인: 3순위 칸이 비어 "여기로 끌어다 놓기", "칸 추가" 아래 점선 "나중에 · 아직 급하지 않은 단계를 여기로" 칸에 아루 3단계(★5·전용무기 Lv.30, "나중에" 배지, 비용 줄 "나중에 칸 단계는 계산…"). 아루 1단계 → 호시노 2단계 분홍 점선(칸 사이 틈에서 회색과 같은 꺾인 경로), 아루 2단계 → 나중에 아루 3단계 회색 선은 "칸 추가" 타일 아래 틈으로 지난다. C "먼저 끝나야 하는 단계": 호시노 1단계 · 자동, 아루 1단계 · 직접 ×, "선행 단계 추가". 레일 "단계 7개 · 순서 2칸 · 나중에 1개". 워커 예측과 같다.
+- FB-2a Python 전체 973 OK(1489초).
+- 커밋 순서: fb2a(post_dir, status=false, whole=status-backend — FB-2 조사 포함) → fe4f(baseline whole, status=true) → redesigndocs.
+- 다음 배정: 프론트 FE4-f2(S 곡선·선 경로 다듬기, `_incorporateScenario` remap, 활성 계획을 흐름 초안으로 여는 진입). 백엔드 FB-2c(events/diff/기간 조회) — FB-2b는 스캐너 쪽 회신 대기(tactic 로그 23:25 이후 회신 없음)라 저장된 manual/import/unattributed 이력으로 먼저 만든다. scan 선택자(latest/previous scan)는 source=scan fixture로 고정하고 실제 scan 연결은 FB-2b에서 확인한다.
