@@ -1875,3 +1875,71 @@ process E2E는 legacy 첫 get→새 문서 save→재시작 get→goals/문서 �
   몫이며 이번에 고치지 않았다. FB-1에는 이 필드를 의존 조건으로 묶지 않는다.
 
 조사 문서 검증: `codealmanac validate` OK. 변경 대상은 이 상태 문서뿐이며, 코드 동결을 유지한다.
+
+# FB 백엔드 인계 메모 (CF → XB, 2026-10-10)
+
+작성: CF(클로드 프론트 오케스트레이터). 근거: 레인 헌장 §3 2-1과 CF 프롬프트 "과도기". 이 문서 위쪽(FB-2c ~ FB-11a, 최신이 위)은 CF 레인 백엔드 워커의 기록이며 그대로 둔다. 이 절부터 아래로는 CF 요청서와 XB 결과를 **시간 순으로 끝에 덧붙인다**. XB는 첫 FB slice 전에 이 절을 읽는다.
+
+## 1. 인계 시점 커밋
+
+| slice | 커밋 | Python 전체 |
+|---|---|---|
+| FB-12 계산 버그 2건 | `50dbed6c` | 836 |
+| FB-11a 단일 학생 계산 | `facdd1d3` | 847 |
+| FB-13 catalog 애장품 가용성 | `fa15e87c` | — |
+| FB-11b 인연 경험치·선물 3안 | `7d0af068` | 881 |
+| FB-1a 문서 v2 nullable 목표 | `682b2a7b` | 873 |
+| FB-1b 활성 계획 저장·legacy 이관 | `11426131` | 898 |
+| FB-1c 활성 계획 교체·시나리오 보존 | `6fcd5fa0` | 912 |
+| FB-14 단계 프리셋·내 그룹 | `780705ff` | 923 |
+| FB-8a 활성 계획 authoring | `4accf46c` | 943(+스키마 목록 1건 재실행) |
+| FB-8b 시나리오 authoring | `9aab5453` | 955 |
+| FB-2a 이력 저장 기반 | `000aaa85` | 973 |
+| FB-2c 이력 기간 조회 | `4d9bbd5b` | 990 |
+
+## 2. 확정 규칙 (바꾸려면 CF·CM과 합의)
+
+1. **활성 계획**: profile 안 문서 v2(kind=plan) + authoring v1(FB-8a). plan이 있으면 goals fallback은 없고, goals v1은 문서에서 파생한다(학생별 마지막 단계, 첫 등장 순서). legacy 프로필은 `repository.state.get`/`repository.plan.get` 첫 읽기 때 lock 아래 한 번 이관하고 revision +1. legacy writer가 정보를 잃으면 `plan_lossy_write`, 중복 목표는 `legacy_goals_conflict`(원본 파일 보존). 교체는 FB-1c(활성 보관 + 원자적 시나리오 보존). 빈 활성 예외는 "문서·authoring 모두 빌 때만"(FB-8).
+2. **revision 권위값**: 응답(state·plan.get)의 revision이 권위값이다. catalog summary의 revision은 다를 수 있다. 저장의 expected revision은 같은 snapshot에서 읽은 값. 오래된 expected → `revision_conflict`(클라이언트 재조회), 경합 → `repository_busy`(retryable, 재시도). idempotency: 같은 key·같은 canonical 요청은 최초 응답 재사용, 다르면 `idempotency_conflict`. 재시도는 같은 key·문서·expected를 쓴다. **읽기 전용 메서드는 revision·파일을 바꾸지 않는다**(예외: state.get/plan.get의 첫 이관). history summary/events/diff도 이관·prune·cache 변경이 없다.
+3. **이력 저장 기반(FB-2a·FB-2c)**: profile 안 optional `current_history` v1, current 쓰기와 같은 공용 `write_transaction`(journal prepared/committed, 모든 읽기가 먼저 복구). source = `scan|manual|import|unattributed`. `unattributed` = scan port 없는 옛 4인자 내부 호출이며, 과거 기록을 scan으로 재분류하지 않는다. **받는 port**: `repository.update_students/update_inventory(..., history_context=ScanHistoryContext)` 키워드. 빈 승인 scope는 호출하지 않는다. 동값 적용도 기록한다(FD-147). raw `scan_kind`·`inventory_scan_profile`은 1..1024 UTF-8 bytes 문자열 그대로(trim·enum·case 변환 금지). 표시 단위 = scan session(`session_id`), 원시 commit 수는 진단용. 보존 365일/10,000건/16 MiB 중 먼저 → 오래된 prefix를 baseline으로 접는다. 단독으로도 못 넣으면 `invalid_payload reason=history_capacity_exceeded`. 학생 중복 새 입력 `duplicate_identity`, 기존 파일 중복 `corrupt_data`. 조회는 `[from,to)`·cursor anchor·`history_cursor_expired`(retryable=false, 첫 페이지 재조회).
+4. **S-FB2b와 맞출 것**: tactic 로그 01:20 ③의 `contracts/scan-commit-history-context-v1.schema.json`(applied_keys·excluded_keys·retry_of)과 FB-2a `current-history-v1`의 context 모양(필드 이름, excluded_keys 저장 여부)을 하나로. 기존 FB-2a fixture를 깨지 않는 방향이면 CF 확인 없이 진행해도 된다. Dart 쪽 모양이 바뀌면 CF에 알려 달라.
+5. **계약 변경 규칙**: 새 schema를 추가하면 `backend/tests/test_planning_protocol_contract.py`의 스키마 목록도 같은 slice에서 갱신(FB-8a에서 1건 실패 사례). 정책 fixture는 `contracts/fixtures/`에 두고 Python과 Dart가 같은 파일을 읽는다.
+
+## 3. 인계 뒤 레인 경계
+
+- XB: `backend/**`·`contracts/**`·Python 테스트·계약 README. CF: `frontend/lib/**`(services DTO·strict validator·`MockAppService`·`ProcessAppService`·`planning_protocol_client`)·`frontend/test/**`(process E2E 포함)·화면.
+- 같은 FB의 Dart 쪽은 CF가 XB 커밋 뒤 **`<fb>-dart` slice**(예 `fb4-dart`)로 한다. 그래서 XB slice 산출에는 반드시 **"Dart 연결 메모"**를 넣는다: 새 메서드·키, null·생략 의미, 오류 code·reason, fixture 경로, Mock에 넣을 예시 값.
+- **새 키가 기존 Dart를 깨뜨릴 수 있다.** strict DTO(예: history DTO의 unknown key 거부, `InventoryCatalogEntry.fromWire` 고정 키 검사)는 응답에 새 키가 오면 실패한다. 응답 모양을 바꾸는 XB slice는 워커가 `frontend/lib/services/`를 **읽기만** 해서 영향을 표로 적고, 깨지는 경우 XB 커밋과 CF `<fb>-dart`를 같은 gate에 묶는다(XB 커밋 전에 프론트 로그로 알림).
+- `contracts/fixtures/**` 변경은 Dart 테스트도 읽으므로 "Flutter에 닿는 변경"이다 → 커밋 전 CF에 fe_gate를 요청한다(헌장 §4).
+
+## 4. 함정
+
+1. **revision 경합**: 화면 여러 곳이 state·plan을 병렬로 읽는다. 첫 로드 이관이 +1 하는 것을 테스트 대역이 모르면 `revision_conflict`가 난다(10-09 fe1brev). 새 쓰기 메서드도 같은 snapshot revision을 요구하고, 오류 의미(busy/conflict)를 기존과 같게 둔다.
+2. **Mock commit과 Python upsert 불일치**: Mock scanner 인벤토리 commit은 bucket 전체 교체, Python은 upsert다. 지금 Mock은 repository map observer가 바뀐 bucket을 `unattributed`로 기록한다. S-FB2b에서 승인 scope·upsert·history helper를 Python과 같게 맞춰야 하며 Dart Mock은 CF에 요청한다.
+3. **legacy 첫 읽기 이관**: 시나리오 첫 접근은 공유 repository lock을 잡기 전에 profile 이관을 끝낸다(lock 순서). 새 경로가 profile을 읽으면 같은 공통 함수를 쓰고, 이관 실패를 빈 목표로 덮지 않는다.
+4. **공유 Dart 서비스 파일의 스캐너 WIP**: `mock_app_service.dart`·`process_app_service.dart`·`planning_protocol_client.dart`에 미커밋 스캐너 변경이 남아 있다. XB는 frontend를 고치지 않으니 직접 영향은 없지만, 스테이징 전 `git status`로 이 파일들을 절대 포함하지 않는다.
+5. **Python 전체 시간**: 990건 약 21~26분. 사용자 PC에서 `debug/<task>/python-full.txt`로 남긴다.
+
+## 5. 남은 FB 권장 순서
+
+1. **FB-4** 창 크기·게임 판별 — 첫 왕복(아래 요청서).
+2. **FB-3** 아이템 카탈로그 메타(학교·티어·family·획득처, 학생·단계별 필요량 분해, 크레딧·엘리그마 카탈로그 항목, FD-096 (c)). FE6-c/e 전. 메타데이터 M3와 출처가 얽히므로 착수 전 CM 판단. 요청서는 FB-4 왕복 뒤.
+3. **FB-2b summary 확장**(S-FB2b 뒤): raw (scan_kind, inventory_scan_profile)별 last_scan_at, 학생·아이템 latest 시각. FE8-c(계정 메타 학생 행)·FE8-g1(종류별 막대)·FE6 아이템 시각 전. S-FB2b와 같은 slice로 묶어도 된다.
+4. **FB-2d** 프로필 삭제 journal(T-FB2d 헬퍼 뒤).
+5. **FB-6·FB-7** 전술 v2 기록·족보, 엑셀 가져오기(FE9 Lane C 전).
+6. **FB-9** 계산 응답 보강 — FE5-d/e에서 필요가 확인될 때만.
+- FB-10(스캐너 프로토콜 추가)은 XB 스캐너 트랙이다. 형식 고정을 선언하면 프론트 로그 끝에 알려 달라(FE8-g2~g5 착수 조건). `scan-commit-history-context-v1` 경로도 그 선언에 1줄 넣어 달라(01:20 ③).
+
+# FB-4 요청서 (CF → XB, 2026-10-10) — 첫 이관 slice
+
+- **목적**: 홈·스캔 탭 머리글의 게임 창 연결 칩(FD-116 (a), 시안 Home-Connect-Pick/-Effect/-Connected-Scan: "연결됨 · Blue Archive · 2560×1440")과 창 선택 패널이 창 크기와 게임 여부를 보여 준다. 연결 유지·해제는 프론트가 목록을 주기적으로 다시 읽어 판단한다(백엔드 attach 세션 없음, dock 시점 변경 없음).
+- **현재**: `scanner.target.list` 응답 `targets[]` = `{target_id, title, status: ready|minimized|closed|unsupported}`, schema의 item은 `additionalProperties: true`.
+- **요청(additive만)**:
+  1. 각 target에 클라이언트 영역 크기 `client_width`·`client_height`(물리 픽셀 정수, 제목 표시줄·테두리 제외). 최소화·닫힘 등으로 읽을 수 없으면 null. DPI 배율 등 더 필요한 값이 있으면 이름과 의미를 제안해 달라.
+  2. 게임 판별: 그 target이 Blue Archive 클라이언트 창인지. 키 이름·모양은 XB가 정한다(예 `game: "blue_archive" | null`). 판별 근거(실행 파일 이름·창 클래스 등)를 계약 README에 적는다. 현재 스캐너 지원은 KR(Steam)만이다(사용자 결정 2026-09-27) — 다른 서버 클라이언트나 지원하지 않는 화면 비율을 어떻게 나타낼지(같은 값 / 별도 값 / 기존 `unsupported` status)를 제안해 달라.
+  3. 기존 키 이름·의미·`status` 값은 그대로.
+- **금지**(헌장 §3.6): 게임 프로세스 후킹·메모리 읽기·주입 없음. 창 목록·창 크기·프로세스 이름 같은 OS 창 정보만 쓴다.
+- **산출**: 계약 schema(버전 규칙은 XB가 정함) + `contracts/fixtures/` fixture + Python 구현·테스트 + 계약 README + **Dart 연결 메모**(§3). Dart DTO·Mock·process E2E·화면은 CF `fb4-dart`.
+- **Dart 호환 확인**: `ScannerTarget.fromWire`(`frontend/lib/services/scanner_service.dart` 74행)는 아는 키만 읽는다. `planning_protocol_client.dart`의 응답 검사기가 scanner 응답의 새 키를 막는지 워커가 읽기만으로 확인해 메모에 적는다. 막는다면 XB 커밋 전에 프론트 로그로 알려 같은 gate에 묶는다.
+- **완료 조건**: Python 전체 녹색, `codealmanac validate`, `git diff --check`. fixture를 Dart 테스트가 읽게 되면 CF fe_gate GREEN 뒤 커밋. XB 로그에 커밋 해시·근거 output.md·테스트 수, 프론트 로그 끝에 "XB 보고(FB-4)".
+- **왕복 확인**: CF가 프론트 로그에 `fb4-dart` 착수·커밋을 적으면 첫 왕복이 끝난다. 그 다음 FB-3 요청서를 이 문서 끝에 낸다.

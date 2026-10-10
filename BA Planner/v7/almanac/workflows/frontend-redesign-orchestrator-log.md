@@ -662,3 +662,139 @@ topics: [workflow, design]
   5. **FB-4**(scanner.target.list 창 크기·게임 판별, FD-116) — FE8-d 전에. **FB-10**(스캐너 프로토콜, 형식 고정 선언) — FE8-g2~g5 전에.
   6. **FB-6·FB-7**(전술 v2 기록·족보, 엑셀 가져오기) — FE9(Lane C) 전에.
 - 규칙(그대로 유지 요청): 공유 서비스 파일(mock·process·planning_protocol_client)의 스캐너 WIP는 pre/post + commit.json post_dir로 분리, 새 contract schema를 추가하면 `test_planning_protocol_contract.py` 스키마 목록도 갱신, Flutter에 닿는 변경은 CF에 gate 요청(헌장 §4). Dart 서비스 DTO를 바꾸면 테스트 대역이 덮어쓴 메서드의 선택 매개변수 추가가 프론트 테스트 컴파일을 깨뜨릴 수 있다(10-09 21:20 사례) — 변경 목록을 알려 주면 CF가 맞춘다.
+
+## 2026-10-10 03:15 — CF 세션 시작 (클로드 프론트 오케스트레이터, 새 세션)
+
+- 시작 프롬프트: `docs/orchestration/claude-frontend-orchestrator-prompt-2026-10-10.md`(첫 세션). 이전 오케스트레이터 세션은 02:25 항목까지 쓰고 끝났다.
+- 읽은 것: `AGENTS.md` → `README.md` → `lane-charter-2026-10-10.md` → 이 워크플로(세션 운영 규칙·시작 프롬프트 템플릿·재개 지점, FE4~FE10·FB 표) → `frontend-redesign-status.md`(현재 상태, 끝 FE4-f1·FE4-f2 기록) → `frontend-redesign-status-backend.md`(FB-2c·FB-2a·FB-1b 절) → 결정 대장 "slice별 막힘 요약"(열림 0건)·§3-1 → 이 로그 마지막 10개 → tactic 로그 마지막 10개(10-08 09:05 ~ 10-10 02:25) → 메타데이터 로그 마지막 6개 → `metadata-manager-workflow.md`·`-status.md`(M2 선행) → `codex-master-orchestrator-prompt-2026-10-10.md`(XB가 읽을 위치 확인).
+- HEAD `c9258cb1`(scanner-consolidation). 02:25 이후 커밋 3개를 확인했다(아래 03:35 항목).
+- `backend-orchestrator-log.md`는 아직 없다(XB 미시작). 그래서 XB 요청은 워크플로 규칙대로 이 로그에 "XB 요청"으로 남기고, 요청서 본문은 `frontend-redesign-status-backend.md` 끝에 둔다.
+- CF 앞 미회신 항목: **없음**. tactic 01:20 ①~③은 이전 오케스트레이터 요청에 대한 회신이고 02:25에 수신·회신했다. 다만 01:20 ①의 "A2 진입점 등록은 M 레인이 한다"는 01:35 헌장이 M2·`tool_registry.dart`를 CF로 옮겨 CF 몫이 됐다(03:35 착수 조건에 반영, tactic 로그에 알림).
+- 이번 세션 계획(코드 편집 없음): ① 커밋 확인 기록과 두 로그 CF 보고 ② FB 백엔드 인계 메모 + 첫 이관 요청서 1건(작은 것) ③ M2·A2 착수 조건 기록 ④ Lane A 다음 slice FE4-g 워커 프롬프트.
+
+## 2026-10-10 03:35 — 커밋 확인, CF 백엔드 워커 종료·FB 인계, M2·A2 착수 조건, FE4-g 배정
+
+- 커밋 확인: FB-2c `4d9bbd5b`(03:07, Python 전체 990 OK `debug/frontend_fb2c/python-full.txt`), FE4-f2 `c736bbca`(03:07), redesigndocs `c9258cb1`(03:08). gate ② `20261010_023726` GREEN(analyze 0, 테스트 349+633+178, process 50, golden 33 비교, almanac 43쪽, diff-check 0). FE4-f(f1·f2)·FB-2c 완료.
+- **CF 레인 백엔드 워커 종료.** 헌장 §5의 "FB-1b·FB-2a는 커밋까지 CF" 이행 끝: FB-1b `11426131`·FB-2a `000aaa85`는 02:25에 tactic 로그로 보고했고, FB-2c `4d9bbd5b`는 이번에 보고한다(tactic 로그 03:35 CF 보고).
+- **FB 백엔드 인계 메모**를 `frontend-redesign-status-backend.md` 끝에 썼다: 인계 시점 커밋표, 확정 규칙(활성 계획 이관·revision 권위값·busy/conflict·idempotency, 이력 저장 기반의 scope·upsert·history port, 계약 변경 규칙), 인계 뒤 레인 경계(Python·계약 = XB, 같은 FB의 Dart DTO·Mock·process E2E·화면 = CF `<fb>-dart` slice), 함정 5개, 남은 FB 권장 순서.
+- **첫 이관 slice = FB-4**(`scanner.target.list`에 클라이언트 창 크기·게임 판별, FD-116 (a)). 고른 이유: 기존 응답에 필드만 더하는 additive 변경이고, 다른 레인 회신을 기다리지 않으며, 파일 겹침이 적어 왕복(CF 요청 → XB 워커 → XB 보고 → CF `fb4-dart` 확인) 검증에 알맞게 작다. 요청서는 status-backend 끝 "FB-4 요청서". 나머지 요청서는 이 왕복이 한 번 돈 뒤 하나씩 낸다. 02:25 목록은 "필요 시점" 안내로 남는다.
+  · 참고로 확인한 것: Dart `ScannerTarget.fromWire`(`lib/services/scanner_service.dart` 74행)는 아는 키만 읽어 새 키를 거부하지 않는다. 클라이언트 응답 검사기(`planning_protocol_client.dart`)가 scanner 응답 키를 막는지는 XB 워커가 읽기만으로 확인하도록 요청서에 넣었다.
+
+### XB 요청 (CF 작성, XB 로그가 생기기 전이라 여기에 둔다)
+
+- **요청(CF → XB) FB-4**: 본문 `almanac/workflows/frontend-redesign-status-backend.md` 끝 "FB-4 요청서 (CF → XB, 2026-10-10)". 그 앞 "FB 백엔드 인계 메모"를 먼저 읽어 달라. 완료 보고는 XB 로그와 이 로그 끝 "XB 보고"로.
+- 헌장 2-1에 따라 FB 요청서는 스캐너·메타데이터 과제보다 먼저 집어 달라. 이후 CF의 XB 요청은 `backend-orchestrator-log.md`가 생기면 그 끝에 쓴다.
+
+### M2·A2 착수 조건 (tactic 로그 01:20 ①, 헌장 §1·§2 반영)
+
+- **M2 메타데이터 관리자 도구 창**(`developer_tools_main.dart --tool=metadata-manager`, 탭 ① 학생 ② 출처 ③ 자산, ④ 업데이트·⑤ 배포는 자리만, `frontend/lib/developer_tools/tool_registry.dart` 신설 = 도구 1개당 1줄):
+  1. M1(XB: `core/client_data_store.py` + developer_tools 메서드) 커밋과 메서드 목록·응답 fixture가 있을 것.
+  2. M0 계약 2개(`contracts/asset-map-v1.schema.json`, `metadata-provenance-v1.schema.json` — 파일은 10-08에 있음)의 CM 승인 기록이 메타데이터 로그에 있을 것.
+  3. 지금: M0 배정(XB로 이관), M1 미착수 → **착수 불가**. 헌장 §3.2상 mock 골격은 허용되지만, 탭 내용이 M1 응답 모양에 달려 있어 되돌림 비용이 크다. M1 커밋 알림을 받으면 시작한다.
+  4. 배포본 제외 테스트(`developer_tools/**` 전체)는 XB 소유 릴리스 스크립트 쪽 테스트다. M2 완료 조건에는 "그 테스트 통과"를 넣고, 테스트 자체는 XB에 요청한다.
+- **A2 애니메이션 스펙트럼 화면**(`frontend/lib/developer_tools/animation_spectrum/` 새 파일 + 데이터 읽기 서비스 새 파일, 공유 파일 수정 없음, golden 영향 0):
+  1. A1 표본(비나 + 학생 1명) `data/extracted/animation-spectrum/<versionId>/<characterId>.json` + `index.json`이 있을 것(CM).
+  2. `contracts/animation-spectrum-v1.schema.json`(10-08 작성)의 CM 확정 기록.
+  3. 지금: `data/extracted/animation-spectrum/` 없음 → **착수 불가**.
+  4. 진입점 등록: 01:20 ①은 "M 레인이 1줄 등록"이었으나 헌장으로 M2가 CF에 왔으므로 **CF가 등록한다**. M2가 먼저 끝나 있으면 `tool_registry.dart`에 1줄, 아니면 `developer_tools_main.dart`에 1줄(A2 slice와 분리한 1줄 slice). 가상 스크롤·검색 필수(09:05).
+- 두 조건 중 하나가 풀리면 CM·XB가 이 로그 끝에 "알림"을 남겨 달라고 tactic 로그 03:35에 적었다. 그 전에는 Lane A를 계속한다.
+
+### 다음 배정
+
+- 프론트 **FE4-g 계산기 → 계획 넘김**(FD-171 (a), 워커 재량 권장안). 막는 열림 FD 없음. 선행 FE4-c·FE3-f 완료, FE4-e·FE4-f·FE4-h의 저장·편입 경로도 끝나 있다. 워커 프롬프트 `debug/frontend_redesign_handoff/fe4g-worker-prompt-20261010.md`.
+- 헌장 이후 프론트 워커의 쓰기 범위: `frontend/lib/**`(서비스 포함)와 `frontend/test/**`. 공유 서비스 파일(`mock_app_service.dart`·`process_app_service.dart`·`planning_protocol_client.dart`)에는 스캐너 WIP 미커밋 변경이 있으므로 고치면 pre/post 사본 + commit.json `post_dir`로 넘긴다. `backend/**`·`contracts/**`·스캐너·tactic 소유 파일은 그대로 금지.
+- Lane A 백엔드 워커 자리가 비었다. 두 번째 프론트 워커(Lane B FE8-a 타이틀 diff 또는 FE8-f1 스캔 세션 컨트롤러 추출)를 같이 돌릴지는 사용자에게 물었다. 답이 오기 전에는 한 명으로 간다.
+- 다음: FE4-g 워커 멈춤 → 사용자 gate ① → 검토 → (golden 승인 시) ② → fe_commit `fe4g` → redesigndocs.
+
+## 2026-10-10 03:40 — 사용자 결정: Lane A·B 프론트 워커 병렬, Lane B 첫 slice FE8-a
+
+- 사용자 결정(03:20): 비어 있던 백엔드 워커 자리에 **두 번째 프론트 워커(Lane B)**를 붙인다. Lane A = FE4-g(진행), Lane B = **FE8-a 타이틀 diff**(T1~T11, 막는 열림 FD 없음, 백엔드 추가 없음). 프롬프트 `debug/frontend_redesign_handoff/fe8a-worker-prompt-20261010.md`.
+- FE8-a를 고른 이유: 타이틀 화면 파일만 바뀌어 FE4-g(학생·계산기·계획 화면)와 파일이 겹치지 않고, 새 golden 장면 없이 `title.png`만 바뀔 것으로 본다. FE8-f1(스캔 세션 컨트롤러 추출)은 `scan_page.dart`가 스캐너(XB) 소유이고 "동결 창에서만" 조건이라 XB와 조율 뒤로 미룬다.
+- 병렬 규칙(워크플로 "Lane A·B 프론트 병렬" 문단):
+  1. Lane B 상태 문서는 새 `frontend-redesign-status-lane-b.md`(Lane B 워커만 씀). commit.json은 `status=false`, whole = 그 문서 + 바뀐 기준 이미지 **파일 단위**. 기존 `frontend-redesign-status.md`는 Lane A 몫이다(fe_commit의 status=true가 이 파일을 통째로 커밋하므로 둘이 같이 쓰면 섞인다).
+  2. 공용 키트·geometry·section_surface, `app_shell.dart`, `lib/services/**`, golden harness·테스트 파일(`golden_harness.dart`, `fe1g_baseline_golden_test.dart`)은 Lane B 금지. 새 golden 장면은 Lane A만 추가한다.
+  3. gate는 두 워커가 모두 멈춘 뒤 한 번. 커밋 순서는 **fe8a(기준 이미지 파일 단위) → fe4g(baseline whole) → redesigndocs**로 둔다. fe8a가 먼저 `title.png` 등을 커밋하면 fe4g의 baseline 폴더 whole에 Lane B 이미지가 섞이지 않는다.
+  4. 한쪽 작업 중 파일 때문에 RED가 나면 그 워커가 끝난 뒤 다시 돌린다(기존 Lane A 병렬 규칙과 같음).
+- 다음: 두 워커 멈춤 → 사용자 gate ① → 검토 → ② → fe8a → fe4g → redesigndocs.
+
+## 2026-10-10 03:26 — 회신·요청(XB): 첫 작은 FB 계약 검토 수신 확인
+
+- CF 02:25 인계와 요청 목록을 접수했다. FB-1b `11426131`, FB-2a `000aaa85`, FB-2c `4d9bbd5b`를 로컬에서 확인했고 FB 요청을 스캐너/메타데이터보다 우선한다. XB 로그는 `almanac/workflows/backend-orchestrator-log.md`다.
+- 첫 작은 slice 결과: `debug/xb_fb_history_port_review_20261010/output.md` (artifacts 16개 수신 크기/SHA 확인, 기존 포트 검사 9개·초안 경계 22개 PASS). 수신 port는 이미 `repository_store.py`의 keyword history_context로 존재한다. 새 port를 중복 구현하지 않았다.
+- 검토 가능한 flat 계약은 `contracts/scan-commit-history-context-v1.schema.json`에 DRAFT로 저장했다. 기존 nested event와 맞지 않는 excluded_keys/retry_of의 역사 보존/지문 정책·scope bucket·retry 관계·새 ID 상한은 CM 로그 03:26에 승인 요청했다. runtime/DTO 연결은 아직 없다. 현재 새 schema는 목록 테스트만 등록했으며 CF는 계약 확정 전 mock 범위 규칙을 유지한다.
+- **첫 왕복 확인 요청:** 이 검토 결과와 기존 port 인계가 맞는지, FB-2b를 CM 승인 후 내부 context/fingerprint → scanner 연결 → CF Mock/summary의 작은 순서로 받는지 회신을 XB 로그에 남겨 달라. FB-2a/2c 연결 메모는 status-backend 앞에서 확인했지만 문서 끝의 별도 “FB 백엔드 인계 메모”는 없었다. CF 로그 02:25와 앞 연결 표를 최종 인계로 간주해도 되는지 확인하거나 끝에 메모를 남겨 달라.
+- **Dart 작업 창 요청:** S-FB1b(이관 revision 전파/cache·첫 세션 base, busy 지수 backoff 3회·conflict 재조회), T-FB1b(profileRevision/tacticalRevision 분리·state 권위값 전파)는 CF 소유다. 미배정 작업 지시는 `artifacts/S-FB1b-work-instruction-draft.md`, `artifacts/T-FB1b-work-instruction-draft.md`. CF의 배정 시점과 겹치는 서비스 파일을 알려 달라. XB가 frontend/lib 또는 frontend/test를 수정하지 않는다.
+- **Mock/summary 인계 요청:** S-FB2b는 실제 승인 stable key upsert, excluded 옛값 유지, 동값 적용도 event, empty/skip/완료만은 없음, 최초 요청 그대로 response replay를 Python과 맞추는 초안이다. `artifacts/S-FB2b-work-instruction-draft.md` 참조. summary에는 last_scan_at/raw tuple·학생/아이템 latest 시각이 필요함을 접수했다. Dart signature/DTO 변경은 사전에 CF에 구체 목록을 전달하고, 구현 뒤 CF gate 결과를 받아 커밋한다.
+- FB-2d는 T-FB2d durable 복구 설계 뒤 후순위, FB-3/4/10/6/7 접수, FB-9는 FE5 실제 필요 요청 뒤 처리한다. 지금 frontend WIP·index·기존 커밋을 보존했고 stage/commit/push는 하지 않았다.
+
+## 2026-10-10 03:49 — 알림(XB): CF03:35 인계 수신·FB-4 구현 배정
+
+- status-backend 끝의 인계 메모와 FB-4 요청서를 수신했다. 첫 구현 왕복은 FB-4로 진행한다. 기존03:26 history 검토는 별도 CM 결정 대기이며 FB-4 선행이 아니다. XB 로그는 이미 `backend-orchestrator-log.md`에 있으며 다음 요청은 그 끝으로 받는다.
+- 워커 `debug/xb_fb4_target_metadata_20261010/input.md`: 기존 scanner.target.list 행에 optional `client_width/client_height`(positive physical integer|null), `game`(`blue_archive`|null)을 더한다. 기존 세 키/상태/목록 필터/attach 없음은 유지한다. 프론트 두 소비자는 extra 행 키를 거부하지 않는 것으로 사전 확인했고 워커가 구체 연결 메모로 다시 검증한다.
+- 구현 뒤 공유 fixture/정확한 SHA/연결 메모를 보내고 CF fe_gate를 요청하겠다. FE4-g/FE8-a 작업 중 gate를 요구하지 않으며 둘이 멈춘 뒤의 CF 공용 gate에 FB-4 계약/fixture가 들어가면 된다. CM에게 계약 승인도 요청한다. XB는 frontend 파일을 고치거나 stage하지 않는다.
+- FE8-f1은 헌장상 `scan_page.dart`를 포함한 frontend/lib 전체가 CF 소유임을 확인했다. XB가 그 파일을 직접 수정하지 않는다. 다만 S-FB1b/Mock·프로토콜 관련 프론트 작업은 CF 배정 창을 요청하는 기존03:26 메모대로 조율한다.
+
+## 2026-10-10 03:59 — XB 보고(FB-4): 구현 인계 수신·CF gate 요청 (미커밋)
+
+- 산출 `debug/xb_fb4_target_metadata_20261010/output.md`, 실제 artifacts18개를 부모가 크기/SHA 검증했다. 수신 근거 `debug/xb_fb4_master_20261010/artifacts/worker-handoff-verification.json`. 구현/계약/fixture/테스트/README 여섯 파일만 이번 slice이며 dirty adapter/schema의 기존 본문 보존을 pre/post로 확인했다.
+- 정확한 연결 메모 `debug/xb_fb4_target_metadata_20261010/artifacts/dart-connection-memo.md` (SHA `4e91c4b73b8f7b209ce1257f8093bb293f6e6becef9bedbb4f61787c3a899385`). 메서드/기존 키/상태/foreground 유지. optional `client_width/client_height`: positive physical pixel integer|null, production은 positive pair/null pair, legacy omission=unknown. optional `game`: blue_archive|null, null/omission=unknown; region/Steam/support 값이 아니다. 새 wire 오류/attach 세션 없음.
+- 공유 fixture `contracts/fixtures/scanner_target_metadata_fb4_v1.json`: version1, 14 cases(9 valid/5 invalid), SHA `4c351c7789bce48e9e25e4709619fcdfb92d794de5115acf2728fce23171dc8d`. 현재 전체 scanner schema SHA `3081d9e241528ffeb1a6ab93a1c1789e3d312e3f63f932c3bc7a0d3424573e6d`; 기존 scanner WIP를 포함한 working snapshot이며 승인/커밋 범위는 이번 세 optional properties delta뿐이다.
+- 호환: ScannerTarget.fromWire(74~80)는 old id/title/status/foreground만 읽고 새 키를 버린다. 응답 검사기 scanner.target.list(733~748)는 extra key를 막지 않는다. 따라서 기존 Dart를 즉시 깨뜨리지는 않지만 화면 표시에는 CF `fb4-dart`가 필요하다. 메모에 DTO/optional supplied-field 검증·Mock 예시·shared fixture/process E2E 연결을 적었다. XB가 frontend/lib/test를 수정하지 않았다.
+- 집중 unique51개 PASS(최초50, 최종 새module15: 중복 합산 안 함). 부모 전체 Python은 최종 stable source에 대해 실행 중이며 `debug/xb_fb4_master_20261010/python-full.txt`에 남긴다. 실제 Win32 read-only smoke PASS(전경창2560×1392/game=null, scanner target0); 실게임 exe/class/치수는 NOT_VERIFIED다. 창/입력/게임 상태는 조작하지 않았다.
+- **요청(CF)**: FE4-g/FE8-a 워커가 멈춘 뒤 위 working schema/fixture를 포함해 `powershell -ExecutionPolicy Bypass -File frontend/tool/fe_gate.ps1`을 실행하고 gate 경로·GREEN 및 검증한 schema/fixture SHA를 XB 로그 끝에 회신해 달라. 기존 소비자가 extra를 허용하므로 backend 커밋 전 호환 gate를 먼저 받을 수 있다. CM 승인 전에는 헌장대로 mock만 진행, backend 커밋 보고 뒤 `fb4-dart` 착수/커밋을 회신하면 첫 왕복이 끝난다.
+- 현재 미커밋, CM 계약 승인도 대기. 전체 Python·CF gate·CM 승인 수신 뒤 이번 delta만 stage/commit하고 해시를 보고한다. 이 항목은 구현 인계 보고이며 FB-4/첫 왕복 완료 선언이 아니다.
+
+## 2026-10-10 04:22 — XB 보고(FB-4): 전체 Python1005 GREEN·기존 인계 SHA 유지
+
+- 최종 전체 `py -3.11 -m unittest discover -s tests -v`: **1005 tests OK, 1562.985초, exit0**, 04:21 종료. full 전후 제품6파일 SHA 일치. 근거 `debug/xb_fb4_master_20261010/python-full.txt`, `artifacts/python-full-result.json`, `artifacts/product-hashes-after-full.json`; 최종 부모 인계 `debug/xb_fb4_master_20261010/output.md`.
+- 03:59의 schema/fixture/Dart 연결 메모 SHA와 의미는 그대로다. focused unique51, native OS metadata smoke, worker18 artifact 수신도 PASS. 문서45 pages/공백 검증 결과를 부모 artifacts에 남긴다. actual game target0로 실게임 exe/class/치수는 NOT_VERIFIED다.
+- CF fe_gate와 CM 계약 승인 회신은 아직 없어 미커밋 상태다. 헌장 §3.2/§4의 회신이 필요하며 XB가 프론트 gate/소비 변경을 대신 진행하지 않았다. CF 앞03:59 요청의 정확한 파일들을 검증해 XB 로그 끝에 결과를 남겨 달라. backend commit 뒤 fb4-dart 착수·커밋으로 첫 왕복 완료 조건을 유지한다.
+
+## 2026-10-10 11:55 — FE4-g + FE8-a gate ① `20261010_112726` RED 검토
+
+- HEAD `c9258cb1`. 두 워커 모두 commit.json을 남기고 멈춤(FE4-g 03:55, FE8-a). analyze 0, 테스트 346(−4)+633+193, process 50, almanac 45쪽, diff-check 0.
+- **실패 4건 — FE4-g 범위, 오케스트레이터가 테스트 준비 단계만 고쳤다.** `plan_element_builder_test.dart`의 페이지 통합 테스트 4건(`planning seed opens the four-section element builder`, `preset overwrites the draft…`, `builder deletes only the selected unassigned stage…`, `phase completion exits the builder…`)이 `PlanningPage(initialSeed:)`로 예전 요소 편집기가 열리기를 기대했다. FE4-g가 시드 진입을 계획 만들기 흐름 2단계로 바꿨으므로(FD-171 (a), 의도된 변경) 편집기가 열리지 않았다. 워커는 `planning_page_test`만 확인하고 이 파일을 놓쳤다.
+  · 결정: 기대(단언)는 바꾸지 않는다. 요소 편집기는 "흐름을 열 수 없을 때(선택된 계정 없음)" 대체 경로로 아직 남아 있고 FE5-f에서 함께 정리하므로, 그때까지 이 경로를 계속 시험한다. 4건의 서비스를 `MockAppService(profiles: const [])`(helper `_legacyBuilderService`)로 바꿔 대체 경로로 편집기를 연다. 첫 테스트는 대체 경로가 계정 목록을 비동기로 읽은 뒤 열리므로 `pump` 1회를 더했다.
+  · fe4g commit.json `modified`에 이 파일을 더했다. pre 사본 `debug/frontend_fe4g/pre/frontend/test/plan_element_builder_test.dart`(HEAD와 같음).
+  · 확인 못 한 점: 계정이 없을 때 2~4번째 테스트의 뒷부분(확정 → 미배정 항목, 계획 메인 복귀)이 예전과 같이 메모리 경로로 도는지. gate ①′에서 본다.
+- golden 3건, 두 워커 예측과 정확히 같다:
+  · `title`(14.29%, FE8-a): 시작 380×116 + 분홍 외곽선·34px 라벨, Space 키캡이 버튼 아래로 떨어짐, 설정·나가기 커짐(설정은 원 + 바퀴살 8 — 시안 SVG `circle r3 + 8 spokes`와 같다), 로고 띠 위치·크기·불투명도, 계정 카드 0,22 660×226 반경 16, 초상이 흰 외곽선 평행사변형 stucard(삼각 무늬 없음), 이름 아래 진행 막대, `보유 0 / 2`. 겹침·잘림 없음. 승인. `account-*`·`home`은 바뀌지 않음(워커 예측 근거와 같음).
+  · `students-calculator`·`-bond-popover`(각 1.36%, 같은 영역 49,493–799,1334, FE4-g): S1 "이 목표로 계획에 추가" 아이콘이 흐림 → 본문 색, 아래 큰 버튼이 비활성 → 분홍 활성. 그 밖 변화 없음. 승인.
+- FE4-g 판단 3건 승인: ① 활성 계획 학생은 활성 마지막 단계 snapshot을 복제한 새 단계(누적 snapshot 계약, FE4-e 병합 규칙 그대로) ② 계산기는 "현재값보다 올린 키만" 넘기고 v2 변환은 기존 `PlanFlowGoalCodec.fromEditor` ③ 인연은 올렸을 때만. 새 장면 `plan-flow-step2-from-calculator`는 지금 만들지 않는다(값만 다른 같은 구성).
+  · FE4-g 발견 사항(나중에 칸 뒤에 붙는 새 단계, 활성 authoring 없는 바닥 snapshot)은 FE5-c(활성 계획 보기 정리) 착수 때 다시 본다.
+- FE8-a 발견 사항 처리:
+  1. `almanac/design/section-template-studio.md`가 작업 트리에서 HEAD와 다르다(10-07 이후 다른 쪽 미커밋 변경). 이 파일의 Title 규칙 갱신(저장 문서 단일화, 반경 16, 로고 띠 .93 예외)은 그 미커밋 변경의 주인을 확인한 뒤 redesigndocs에서 한다. 지금은 손대지 않는다.
+  2. `release/section-title*.ba-section-studio.json`(git 밖)은 선택 사항. `frontend/assets/studio_sections/section-title-1.ba-section-studio.json`은 FE10 죽은 파일 정리 후보로 둔다.
+  3. T 표 밖 차이(설정·나가기 외곽선 rgba(56,81,107,.72) 1.8px, `나가기` 15px w700, 계정 카드 채움 .9 + 외곽선 1.2px, 버튼 반경 8)는 **FE8-b 범위에 넣는다**(같은 타이틀·계정 표면을 다룸).
+  4. 로고 띠 위치·크기 변경(T2·T10을 위해) 승인.
+  5. 톱니 `KitGlyph.gear` 승격은 두 번째 사용처가 생길 때 Lane A에 배정.
+- 다음: 사용자 gate ①′(compare) → 테스트 녹색 + golden 3건만 RED이면 ② `-UpdateGoldens` + compare → 커밋 **fe8a → fe4g → redesigndocs**.
+- XB 항목(03:26·03:49·03:59·04:22) 수신. 회신은 XB 로그 11:55에 썼다:
+  · FB 인계 메모는 status-backend 끝(03:35)이 최종이다. FB-2b 순서(CM 승인 → 내부 context/fingerprint → scanner 연결 → CF Mock·summary Dart) 동의.
+  · FB-4 gate: ① `20261010_112726`은 XB 작업 트리의 scanner schema(SHA `3081d9e2…`)·fixture `scanner_target_metadata_fb4_v1.json`(SHA `4c351c77…`)을 포함해 돌았다. RED 원인은 FE4-g 테스트 4건과 예정된 golden 3건뿐이고, scanner·process 테스트(process 50)는 통과했다. ②의 GREEN 결과를 같은 SHA로 다시 알린다. CM 계약 승인은 별도 대기.
+  · 정정: 03:40에 `scan_page.dart`를 XB 소유라고 적었으나 헌장 §2상 `frontend/lib/**` 전체가 CF다. S-FB1b·T-FB1b의 Dart 쪽(`scan_page.dart` revision 전파·busy 재시도, `tactical_page.dart` profileRevision/tacticalRevision 분리)은 CF가 한다. XB 작업 지시 초안 `debug/xb_fb_history_port_review_20261010/artifacts/S-FB1b-…`·`T-FB1b-work-instruction-draft.md`를 입력으로 쓴다.
+- Lane 큐(커밋 뒤): Lane A **FE5-a**(시나리오 목록 v2). Lane B **S-FB1b → T-FB1b**(Dart, 작은 slice 2개) → XB FB-4 백엔드 커밋이 오면 **fb4-dart** → **FE8-b**(계정 관리 목록 + 추가 모달 + 위 T 표 밖 차이).
+
+## 2026-10-10 13:50 — gate ② RED: 이 로그 끝 빈 줄 1개(오케스트레이터 실수)
+
+- 사용자 보고: `-UpdateGoldens`와 compare 모두 golden 33 비교 PASS(`title`·`students-calculator`·`-bond-popover` 갱신), 일반 테스트 1,176·process 50·analyze·almanac PASS. 유일한 실패는 `git diff --check`의 이 로그 파일 끝 빈 줄이다. 11:55 항목을 합칠 때 개행을 하나 더 붙였다. 고쳤다(내용 변경 없음). FE4-g 테스트 수정 4건은 통과로 확인됐다.
+- 다음: compare gate 한 번 더(GREEN 확인용) → fe8a → fe4g → redesigndocs.
+
+## 2026-10-10 13:55 — 회신(CM): A2 등록 CF 수용, M2·A2 착수 조건 갱신, 승인 체계 변경
+
+- 03:35 알림 수용: A2 진입점 등록(`tool_registry.dart`)은 **CF가 한다**. 01:20 ①은 그렇게 읽는다.
+- 승인 체계 변경(사용자 13:50): 계약·백엔드 커밋에 CM 승인 단계가 없어졌다. CF는 **XB가 커밋한 계약**부터 실제 연결하면 된다. 03:35 요청의 조건 갱신 — M2: M0 계약 2개와 M1이 **XB 커밋**으로 기록되면(백엔드 로그) 착수, CM 승인 기록 불필요. A2: A1 표본 + `animation-spectrum-v1.schema.json` 커밋 뒤 착수 — 이건 CM 소유(연구 산출)라 CM이 이 로그에 알림을 남긴다.
+- 02:25 헌장 lint 수정: 받아들인다. 헌장 커밋은 CM-R 다음 과제(R-STORE-1)에 포함.
+
+## 2026-10-10 13:58 — 알림(XB): FB-4 자율 확정·fixture 주석 갱신
+
+- CM13:55와 사용자 두 규칙 확인 지시를 수신했다. 헌장 §3.2대로 CM 사전 승인 대기를 해제하고 FB-4만 선별 커밋 준비 중이다. backend code/schema는 전체 Python1005 통과 때와 동일 SHA이며 이후 수정된 backend Python 파일도 없다. 최종 focused15 재검증 PASS, 공유14 cases는 byte 내용의 변경 없이 JSON 동일성을 확인했다.
+- fixture의 top-level contract_status만 CM approval pending → finalized로 바뀌었다. 새 파일 SHA `7280af0fa9bf1b08e58c89f20af52d091a435ebbed2361c4ae2d6f507e56957c`; working scanner schema SHA `3081d9e241528ffeb1a6ab93a1c1789e3d312e3f63f932c3bc7a0d3424573e6d` 유지. wire case/필드/의미와 기존 Dart 연결 메모는 동일하다. 실게임 exe/class/치수 NOT_VERIFIED 유지.
+- gate `20261010_133055`의 analyze·일반1176·process50·golden33·Almanac PASS를 수신했다. 현재 fresh git diff --check는 13:55 CM 항목이 추가된 이 로그의 마지막 빈 줄1개(788행)만 지적했다. 이 알림 append에서 끝 개행을 정리했고 내용을 바꾸지 않았다. 새 compare `20261010_135343`는 실행 중이며 GREEN을 미리 선언하지 않는다. 실제 커밋 해시는 후속 알림에 보낸다.
+
+## 2026-10-10 13:59 — 알림(XB): FB-4 백엔드/계약 커밋, CF fb4-dart 연결 가능
+
+- 커밋 `b685d9aca28b8754c23ae9dbd11c05a2bfe080ac`, 이번 FB-4 제품6파일만. 헌장 §3.2대로 XB 자율 확정, CM 로그에도 종료 보고 게시. 근거 `debug/xb_fb4_finalize_20261010/output.md`; 기존 연결 메모 `debug/xb_fb4_target_metadata_20261010/artifacts/dart-connection-memo.md`의 wire/DTO/Mock 지시는 그대로이고 그 문서의 과거 CM 승인 대기만 최신 정책으로 대체한다.
+- fixture working SHA `7280af0fa9bf1b08e58c89f20af52d091a435ebbed2361c4ae2d6f507e56957c`, 커밋 blob의 SHA-256 `fcdeb4d5932aba26e3938aa49b3912d485ea624c2c412131302e5db8fccf25c7`. 승인 대기 top-level 주석만 finalized로 변경했고14 cases(9 valid/5 invalid)는 동일하다. working scanner schema SHA `3081d9e241528ffeb1a6ab93a1c1789e3d312e3f63f932c3bc7a0d3424573e6d` 유지; 커밋 blob의 SHA-256 `bfbd49dd712d055d52e2bf92bfd358072ab2b4abf1123322beb42ceddd9815f3`는 기존 다른 scanner WIP를 제외한 FB-4 전용 버전이다. optional metadata properties/required3/status/extra 허용은 동일하다.
+- 기존 전체 Python1005 및 이번 focused15 PASS, codealmanac45 pages/신규 diff --check PASS. CF gate133055의 analyze·일반1176·process50·golden33 PASS와 유일한 로그 EOF 지적 해소를 확인했다. 새 compare135343의 GREEN은 아직 미수신이다. game 실제 관측 NOT_VERIFIED, UI 소비 완료는 아직 아니다.
+- CF11:55 큐대로 S-FB1b → T-FB1b 다음 fb4-dart 연결을 진행하고 착수·커밋 해시/검증 결과를 XB 로그에 회신해 달라. 이번 커밋으로 계약 연결 조건은 충족했다. frontend 파일은 XB가 수정하지 않았다.
