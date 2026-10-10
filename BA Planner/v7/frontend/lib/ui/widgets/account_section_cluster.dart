@@ -10,14 +10,19 @@ import '../../services/planning_protocol_client.dart'
     show BackendRemoteException;
 import '../../services/repository_service.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../kit/ba_chip.dart';
+import '../kit/ba_modal.dart';
 import '../kit/diagonal_scrollbar.dart';
+import '../kit/skew_bar.dart';
 import '../studio/account_studio_layout.dart';
 import '../studio/section_template.dart';
+import 'account_create_modal.dart';
 import 'asset_image_grid.dart';
 import 'ba_triangle_background.dart';
 import 'lifted_path_shadow.dart';
 import 'section_surface.dart';
 import 'section_template_surface.dart';
+import 'student_section_layout.dart' show studentGridCardPath;
 
 enum AccountClusterEntry { createFirst, manage }
 
@@ -56,22 +61,6 @@ Offset portraitScrollbarTrackPoint(
     y,
   );
 }
-
-const _accountRowTexture = BATriangleTextureConfig(
-  baseColor: Color(0xb81c2b3b),
-  panelColor: Color(0x9931475d),
-  softColor: Color(0x889bb3c8),
-  accentColor: Color(0x9971c7f4),
-  triangleSize: 44,
-  tessellationContrast: 0.065,
-  randomSeed: 5197,
-  macroTriangleChance: 0.12,
-  macroTriangleScale: 2.3,
-  macroTriangleContrast: 0.05,
-  lightStrength: 0.18,
-  edgeVignetteStrength: 0.12,
-  fogStrength: 0.08,
-);
 
 const _accountActionTexture = BATriangleTextureConfig(
   baseColor: BATrianglePalette.softTitlePinkBase,
@@ -139,6 +128,189 @@ RepositoryProfile repositoryProfileWithRevision(
         selected: profile.selected,
       );
 
+// FE8-b(2026-10-10): 계정 관리 목록·레일·행은 시안 `Title-Accounts.dc.html` 값이다. 길이는 기준 viewport
+// 2560×1392에서의 px이고, 관리 섹션(element-5) 높이 비율([accountManagerScale])로 줄어든다.
+
+/// 관리 섹션(element-5) 높이(2560×1392 기준). 반경·간격의 축척 기준이다.
+const _accountReferenceSectionHeight = 1363.0;
+
+/// 레일 오른쪽 사선·행 왼쪽 사선과 목록 왼쪽 사선 사이의 가로 간격(시안 21.9~22.0).
+const accountManagerListEdgeGap = 22.0;
+
+/// 행 세로 간격(피치 158 − 높이 142).
+const _accountRowGap = 16.0;
+const _accountListRadius = 14.0;
+const _accountRailRadius = 9.0;
+const _accountRowRadius = 8.0;
+
+/// 목록 패널 채움 rgba(29,42,58,.9). 공용 섹션 표면(.76)의 예외다(FD-001 시안 우선).
+const accountListFill = Color.fromRGBO(29, 42, 58, 0.9);
+
+/// 레일 외곽선 rgba(56,81,107,.72) 1.8px, 누른 상태(지금 열린 모드) #f2b3ef 3.2px.
+const accountRailOutline = Color.fromRGBO(56, 81, 107, 0.72);
+const accountRailOutlineWidth = 1.8;
+const accountPressedOutline = AppColors.accent;
+const accountPressedOutlineWidth = 3.2;
+
+/// 계정 행 외곽선 rgba(56,81,107,.7) 1.2px, 고른 행 #f2b3ef 3.2px.
+const accountRowOutline = Color.fromRGBO(56, 81, 107, 0.7);
+const accountRowOutlineWidth = 1.2;
+
+/// 계정 행 배경 `linear-gradient(120deg, rgba(47,74,102,.75), rgba(29,42,58,.85))`.
+const accountRowGradientColors = [
+  Color.fromRGBO(47, 74, 102, 0.75),
+  Color.fromRGBO(29, 42, 58, 0.85),
+];
+
+/// 사선 스크롤바 트랙은 목록 오른쪽 사선에서 24px 안쪽이다(시안 x1 845 / 목록 오른쪽 869).
+const _accountScrollTrackInset = 24.0;
+
+/// 삭제 레일 글자·아이콘 #ffb3bb.
+const _accountDeleteColor = Color(0xffffb3bb);
+
+/// "이 계정으로 전환" 비활성: 덮개 rgba(10,16,24,.35) + 내용 불투명도 .42 + `지금 쓰는 계정`(#f7c9f4 10.5 w600).
+const _accountDisabledOverlay = Color.fromRGBO(10, 16, 24, 0.35);
+const _accountDisabledOpacity = 0.42;
+
+/// stucard 흰 외곽선 1.14px(카드 높이 114 기준).
+const _accountStucardOutlineFraction = 1.14 / 114;
+
+/// 진행 막대 높이 4, r3, 트랙 rgba(255,255,255,.14), 채움 #f4f8fb, skewX(−10°).
+const _accountProgressHeight = 4.0;
+const _accountProgressStyle = SkewBarStyle(
+  trackColor: Color.fromRGBO(255, 255, 255, 0.14),
+  radius: 3,
+);
+
+SectionCanvasElement _accountSection(String id) =>
+    accountStudioDocument.elements.singleWhere((item) => item.id == id);
+
+StudioContainerElement _accountContainer(String id) =>
+    accountStudioDocument.containers.singleWhere((item) => item.id == id);
+
+/// 관리 화면 길이 축척: 관리 섹션 높이 / 1363(기준 viewport에서 1).
+double accountManagerScale(Size size) =>
+    sectionCanvasElementRect(size, _accountSection('element-5')).height /
+    _accountReferenceSectionHeight;
+
+/// 관리 화면 컨테이너 [id]의 polygon bounds(둥글리기 전). 평행사변형은 Studio rect 폭에 높이/tan80°를 더한
+/// 폭이다(시안 path bounds와 같다).
+Rect accountManagerBox(Size size, String id) {
+  final container = _accountContainer(id);
+  final rect = studioContainerRect(
+    size,
+    accountStudioDocument.elements,
+    container,
+  )!;
+  return container.spec.mode == SectionShapeMode.parallelogram
+      ? Rect.fromLTWH(
+          rect.left,
+          rect.top,
+          rect.width + diagonalCutDepth(rect.height),
+          rect.height,
+        )
+      : rect;
+}
+
+/// 계정 목록 패널(container-11) 왼쪽 사선의 화면 y에서의 x.
+double accountManagerListLeftEdge(Size size, double y) {
+  final list = accountManagerBox(size, 'container-11');
+  return list.left + diagonalCutDepth(list.bottom - y);
+}
+
+Path _accountRoundedPolygon(
+  Rect rect,
+  AttachedSectionSpec spec,
+  double radius,
+) => buildRoundedSectionPolygon(
+  buildAttachedSectionPolygon(
+    rect.size,
+    spec,
+    gridSize: sectionTemplateDetailGridSize,
+  ).map((point) => point + rect.topLeft).toList(growable: false),
+  radius: radius,
+);
+
+/// 계정 목록 패널 path(평행사변형, 반경 14).
+Path accountManagerListPath(Size size) {
+  final container = _accountContainer('container-11');
+  final rect = studioContainerRect(
+    size,
+    accountStudioDocument.elements,
+    container,
+  )!;
+  return _accountRoundedPolygon(
+    rect,
+    container.spec,
+    _accountListRadius * accountManagerScale(size),
+  );
+}
+
+/// 레일 버튼 [id](container-12·13·14·18·19) path. 왼쪽은 수직, 오른쪽 사선은 목록 왼쪽 사선과
+/// [accountManagerListEdgeGap]만큼 떨어지므로 아래 버튼일수록 폭이 줄어든다(반경 9).
+Path accountManagerRailPath(Size size, String id) {
+  final container = _accountContainer(id);
+  final rect = studioContainerRect(
+    size,
+    accountStudioDocument.elements,
+    container,
+  )!;
+  final scale = accountManagerScale(size);
+  final width =
+      accountManagerListLeftEdge(size, rect.top) -
+      accountManagerListEdgeGap * scale -
+      rect.left;
+  return _accountRoundedPolygon(
+    Rect.fromLTWH(
+      rect.left,
+      rect.top,
+      math.max(diagonalCutDepth(rect.height) + 1, width),
+      rect.height,
+    ),
+    container.spec,
+    _accountRailRadius * scale,
+  );
+}
+
+/// 계정 행 path(행 상자 [accountManagerBox] `container-15` 안의 지역 좌표, 반경 8).
+Path accountManagerRowPath(Size size) {
+  final box = accountManagerBox(size, 'container-15');
+  final container = _accountContainer('container-15');
+  return _accountRoundedPolygon(
+    Rect.fromLTWH(
+      0,
+      0,
+      box.width - diagonalCutDepth(box.height),
+      box.height,
+    ),
+    container.spec,
+    _accountRowRadius * accountManagerScale(size),
+  );
+}
+
+/// 목록 지역 좌표에서 세로 가운데가 [centerY]인 행 상자의 왼쪽 x. 행 왼쪽 사선이 목록 왼쪽 사선에서
+/// [accountManagerListEdgeGap]만큼 떨어진다(시안 행이 158px마다 27.86px씩 왼쪽으로 가는 80° 계단).
+double accountManagerRowLeft(Size size, double centerY) {
+  final list = accountManagerBox(size, 'container-11');
+  final row = accountManagerBox(size, 'container-15');
+  return diagonalCutDepth(list.height - centerY) +
+      accountManagerListEdgeGap * accountManagerScale(size) -
+      diagonalCutDepth(row.height) / 2;
+}
+
+/// CSS `linear-gradient(<degrees>deg, …)`의 시작·끝을 [size] 상자의 [Alignment]로 옮긴다.
+(Alignment, Alignment) cssLinearGradientAlignments(Size size, double degrees) {
+  final radians = degrees * math.pi / 180;
+  final dx = math.sin(radians);
+  final dy = -math.cos(radians);
+  final half = (size.width * dx.abs() + size.height * dy.abs()) / 2;
+  final end = Alignment(
+    size.width <= 0 ? 0 : dx * half / (size.width / 2),
+    size.height <= 0 ? 0 : dy * half / (size.height / 2),
+  );
+  return (Alignment(-end.x, -end.y), end);
+}
+
 class AccountSectionCluster extends StatefulWidget {
   const AccountSectionCluster({
     super.key,
@@ -167,6 +339,13 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
   late final TextEditingController _nameController;
   late final ScrollController _profileListController;
   late final ScrollController _portraitGridController;
+
+  /// 계정 추가 모달(FE8-b, 시안 Title-Accounts-New). 첫 계정 만들기도 이 모달이다(FD-114).
+  late final _CreateModalController _createModal;
+  late final TextEditingController _createNameController;
+  bool _creating = false;
+  bool _created = false;
+  String? _createError;
   List<RepositoryProfile> _profiles = const [];
 
   /// 학생 수. state를 읽지 못한 계정(이관 실패 등)은 빠진다(0으로 보이지 않는다).
@@ -188,9 +367,12 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
   @override
   void initState() {
     super.initState();
-    _view = widget.entry == AccountClusterEntry.manage
-        ? _ClusterView.manager
-        : _ClusterView.editor;
+    // FE8-b·FD-114: 첫 계정 만들기는 편집기 대신 계정 추가 모달 하나로 연다.
+    _view = _ClusterView.manager;
+    _createModal = _CreateModalController(
+      initiallyOpen: widget.entry == AccountClusterEntry.createFirst,
+    )..addListener(_createModalChanged);
+    _createNameController = TextEditingController();
     _nameController = TextEditingController();
     _profileListController = ScrollController();
     _portraitGridController = ScrollController();
@@ -206,11 +388,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
       vsync: this,
       duration: AppMotion.shell,
     );
-    if (_view == _ClusterView.manager) {
-      _managerMotion.forward();
-    } else {
-      _editorMotion.forward();
-    }
+    if (widget.entry == AccountClusterEntry.manage) _managerMotion.forward();
     _load();
   }
 
@@ -225,6 +403,10 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
     _managerMotion.dispose();
     _editorMotion.dispose();
     _pickerMotion.dispose();
+    _createModal
+      ..removeListener(_createModalChanged)
+      ..dispose();
+    _createNameController.dispose();
     _nameController.dispose();
     _profileListController.dispose();
     _portraitGridController.dispose();
@@ -376,10 +558,83 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
   }
 
   void _startCreate() {
-    _editing = null;
-    _portraitId = 'hasumi';
-    _nameController.clear();
-    _openEditor();
+    if (_busy || _creating) return;
+    setState(() {
+      _created = false;
+      _createError = null;
+      _createNameController.clear();
+    });
+    _createModal.open();
+  }
+
+  /// 모달이 닫혔다(취소·X·Esc·스크림). 첫 계정 만들기에서 만들지 않고 닫으면 타이틀로 돌아간다.
+  void _createModalChanged() {
+    if (!mounted) return;
+    if (!_createModal.isOpen &&
+        !_created &&
+        widget.entry == AccountClusterEntry.createFirst) {
+      widget.onBackToTitle();
+      return;
+    }
+    setState(() {});
+  }
+
+  void _cancelCreate() {
+    if (_creating) return;
+    _createModal.close();
+  }
+
+  /// 이름만 받아 빈 계정을 만든다(초상은 기본 `hasumi`, 바꾸기는 "수정"에서). 첫 계정이면 고르고 홈으로 간다.
+  Future<void> _submitCreate() async {
+    final repository = _repository;
+    final name = _createNameController.text.trim();
+    if (repository == null || name.isEmpty || _creating) return;
+    // 만드는 동안에는 Esc·스크림·X로 닫지 않는다(첫 계정이면 닫기가 타이틀로 돌아가기다).
+    _createModal.locked = true;
+    setState(() {
+      _creating = true;
+      _createError = null;
+    });
+    try {
+      final created = await repository.createProfile(
+        name,
+        'account-create-${DateTime.now().microsecondsSinceEpoch}',
+      );
+      if (!mounted) return;
+      if (widget.entry == AccountClusterEntry.createFirst) {
+        if (!created.selected) {
+          await repository.selectProfile(
+            created.id,
+            created.revision,
+            'account-first-select-${created.id}',
+          );
+        }
+        _created = true;
+        if (mounted) widget.onEnterHome();
+        return;
+      }
+      _created = true;
+      _createModal
+        ..locked = false
+        ..close();
+      await _load();
+      if (!mounted) return;
+      setState(() {
+        _selected =
+            _profiles.where((item) => item.id == created.id).firstOrNull ??
+            _selected;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(
+          () => _createError =
+              '계정을 만들지 못했습니다: ${repositoryLoadErrorText(error)}',
+        );
+      }
+    } finally {
+      _createModal.locked = false;
+      if (mounted) setState(() => _creating = false);
+    }
   }
 
   void _startEdit() {
@@ -398,40 +653,21 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
     final repository = _repository;
     final name = _nameController.text.trim();
     if (repository == null || name.isEmpty || _busy) return;
+    // FE8-b: 새 계정은 계정 추가 모달이 만든다. 편집기는 고르는 계정의 이름·초상만 고친다.
+    final editing = _editing;
+    if (editing == null) return;
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      final editing = _editing;
-      if (editing == null) {
-        final created = await repository.createProfile(
-          name,
-          'account-create-${DateTime.now().microsecondsSinceEpoch}',
-          avatarStudentId: _portraitId,
-        );
-        if (widget.entry == AccountClusterEntry.createFirst) {
-          if (!created.selected) {
-            await repository.selectProfile(
-              created.id,
-              created.revision,
-              'account-first-select-${created.id}',
-            );
-          }
-          if (_view == _ClusterView.picker) await _pickerMotion.reverse();
-          await _editorMotion.reverse();
-          if (mounted) widget.onEnterHome();
-          return;
-        }
-      } else {
-        await repository.updateProfile(
-          editing.id,
-          name,
-          _portraitId,
-          editing.revision,
-          'account-update-${DateTime.now().microsecondsSinceEpoch}',
-        );
-      }
+      await repository.updateProfile(
+        editing.id,
+        name,
+        _portraitId,
+        editing.revision,
+        'account-update-${DateTime.now().microsecondsSinceEpoch}',
+      );
       await _load();
       if (mounted) await _closeEditor();
     } catch (error) {
@@ -510,33 +746,47 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
           _editorMotion,
           _pickerMotion,
         ]),
-        builder: (context, _) => Stack(
-          key: const ValueKey('account-section-cluster'),
-          children: [
-            if (widget.entry == AccountClusterEntry.manage) _buildManager(size),
-            if (_view == _ClusterView.editor || _view == _ClusterView.picker)
-              _buildEditor(size),
-            if (_view == _ClusterView.picker) _buildPicker(size),
-            if (_error != null)
-              Positioned(
-                left: 24,
-                right: 24,
-                bottom: 18,
-                child: Center(
-                  child: Material(
-                    color: AppColors.danger.withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Text(
-                        _error!,
-                        key: const ValueKey('account-cluster-error'),
+        builder: (context, _) => BaModal(
+          controller: _createModal,
+          scrim: BaScrim.scan,
+          label: '계정 추가',
+          alignment: accountCreateModalAlignment,
+          barrierDismissible: !_creating,
+          builder: (context) => AccountCreatePanel(
+            nameController: _createNameController,
+            busy: _creating,
+            error: _createError,
+            onCancel: _cancelCreate,
+            onSubmit: _submitCreate,
+          ),
+          child: Stack(
+            key: const ValueKey('account-section-cluster'),
+            children: [
+              if (widget.entry == AccountClusterEntry.manage) _buildManager(size),
+              if (_view == _ClusterView.editor || _view == _ClusterView.picker)
+                _buildEditor(size),
+              if (_view == _ClusterView.picker) _buildPicker(size),
+              if (_error != null)
+                Positioned(
+                  left: 24,
+                  right: 24,
+                  bottom: 18,
+                  child: Center(
+                    child: Material(
+                      color: AppColors.danger.withValues(alpha: 0.92),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Text(
+                          _error!,
+                          key: const ValueKey('account-cluster-error'),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       );
     },
@@ -833,34 +1083,80 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
   }
 
   Widget _buildManager(Size size) {
-    final sectionPath = buildSectionCanvasElementPath(
+    // FE8-b(FD-113): 바깥 Section 5 사다리꼴 표면은 그리지 않는다(섹션 rect는 이동·검수용 표지로만 둔다).
+    // 목록은 채움 .9 + lifted shadow 평행사변형, 레일 5개는 목록 사선을 따라 폭이 줄어든다.
+    final scale = accountManagerScale(size);
+    final listBox = accountManagerBox(size, 'container-11');
+    final listPath = accountManagerListPath(size);
+    final rowBox = accountManagerBox(size, 'container-15');
+    final rowPath = accountManagerRowPath(size);
+    final portraitBox = accountManagerBox(size, 'container-16');
+    Rect featureRect(String id) => studioFeatureRect(
       size,
-      _section('element-5'),
-    );
-    final listPath = _containerPath(size, 'container-11');
-    final rowPath = _containerPath(size, 'container-15');
-    final portraitPath = _containerPath(size, 'container-16');
-    final switchPath = _managerActionPath(size, 'container-12', listPath);
-    final addPath = _managerActionPath(size, 'container-13', listPath);
-    final editPath = _managerActionPath(size, 'container-14', listPath);
-    final deletePath = _managerActionPath(size, 'container-18', listPath);
-    final backPath = _managerActionPath(size, 'container-19', listPath);
-    final listBounds = listPath.getBounds();
-    final rowBounds = rowPath.getBounds();
-    final localRowPath = rowPath.shift(-rowBounds.topLeft);
-    Rect localRect(Rect rect) => rect.shift(-rowBounds.topLeft);
-    Rect featureRect(String id) => localRect(
-      studioFeatureRect(
-        size,
-        accountStudioDocument.elements,
-        accountStudioDocument.containers,
-        accountStudioDocument.features.singleWhere((item) => item.id == id),
-      )!,
-    );
-    final centeredRowLeft = (listBounds.width - rowBounds.width) / 2;
-    final rowTop = math.max(0.0, rowBounds.top - listBounds.top);
-    const rowGap = 7.0;
-    final diagonalRun = diagonalTan80;
+      accountStudioDocument.elements,
+      accountStudioDocument.containers,
+      accountStudioDocument.features.singleWhere((item) => item.id == id),
+    )!.shift(-rowBox.topLeft);
+    final rowTop = math.max(0.0, rowBox.top - listBox.top);
+    final rowGap = _accountRowGap * scale;
+    final current = _selected;
+    final currentInUse = current?.selected == true;
+    final editorOpen = _view != _ClusterView.manager && _editing != null;
+    final rails = [
+      (
+        key: 'account-switch',
+        id: 'container-12',
+        glyph: _AccountRailGlyph.switchAccount,
+        label: '이 계정으로 전환',
+        caption: currentInUse ? '지금 쓰는 계정' : null,
+        onTap: current == null || currentInUse || _busy ? null : _selectProfile,
+        pressed: false,
+        danger: false,
+      ),
+      (
+        key: 'account-add',
+        id: 'container-13',
+        glyph: _AccountRailGlyph.add,
+        label: '추가',
+        caption: null,
+        onTap: _busy ? null : _startCreate,
+        pressed: _createModal.isOpen,
+        danger: false,
+      ),
+      (
+        key: 'account-edit',
+        id: 'container-14',
+        glyph: _AccountRailGlyph.edit,
+        label: '수정',
+        caption: null,
+        onTap: current == null || _busy ? null : _startEdit,
+        pressed: editorOpen,
+        danger: false,
+      ),
+      (
+        key: 'account-delete',
+        id: 'container-18',
+        glyph: _AccountRailGlyph.delete,
+        label: '삭제',
+        caption: null,
+        onTap: current == null || _busy ? null : _deleteProfile,
+        pressed: false,
+        danger: true,
+      ),
+      (
+        key: 'account-manager-back',
+        id: 'container-19',
+        glyph: _AccountRailGlyph.back,
+        label: '뒤로',
+        caption: null,
+        onTap: _busy ? null : _back,
+        pressed: false,
+        danger: false,
+      ),
+    ];
+    final railPaths = {
+      for (final rail in rails) rail.id: accountManagerRailPath(size, rail.id),
+    };
     return _DirectionalAccountMotion(
       key: const ValueKey('account-manager-motion'),
       progress: _managerMotion.value,
@@ -871,74 +1167,77 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
         children: [
           LiftedPathShadow(
             key: const ValueKey('account-manager-section-shadow'),
-            path: sectionPath,
-          ),
-          _PathSurface(
-            key: const ValueKey('account-manager-base-surface'),
-            path: _subtractPaths(sectionPath, [
-              listPath,
-              switchPath,
-              addPath,
-              editPath,
-              deletePath,
-              backPath,
-            ]),
-          ),
-          _PathOutline(
-            key: const ValueKey('account-profile-list-outline'),
             path: listPath,
           ),
-          for (final path in [
-            switchPath,
-            addPath,
-            editPath,
-            deletePath,
-            backPath,
-          ])
-            _PathSurface(path: path, texture: _accountActionTexture),
+          _PathSurface(
+            key: const ValueKey('account-profile-list-surface'),
+            path: listPath,
+            color: accountListFill,
+          ),
+          // 이 Stack의 자식 수는 상태(바쁨·비활성 레일·빈 목록)에 따라 바뀐다. 목록이 다시 마운트되지 않도록
+          // (같은 ScrollController에 position이 둘 붙지 않도록) 앞뒤 자식에 key를 둔다(FE8-b gate ① RED 수정).
+          for (final rail in rails) ...[
+            _PathSurface(
+              key: ValueKey('${rail.key}-surface'),
+              path: railPaths[rail.id]!,
+              texture: _accountActionTexture,
+            ),
+            if (rail.onTap == null)
+              _PathSurface(
+                key: ValueKey('${rail.key}-disabled'),
+                path: railPaths[rail.id]!,
+                color: _accountDisabledOverlay,
+              ),
+          ],
           _positionedMarker(
             'account-manager-section',
             sectionCanvasElementRect(size, _section('element-5')),
           ),
           Positioned.fromRect(
-            rect: listBounds,
+            key: const ValueKey('account-profile-list-box'),
+            rect: listBox,
             child: ClipPath(
-              clipper: _FixedPathClipper(listPath.shift(-listBounds.topLeft)),
+              clipper: _FixedPathClipper(listPath.shift(-listBox.topLeft)),
               child: _DiagonalScrollbar(
                 controller: _profileListController,
                 keyPrefix: 'account-profile',
+                style: DiagonalScrollbarStyle.standard,
+                trackInset: _accountScrollTrackInset * scale,
+                showFog: true,
                 child: ListView.separated(
                   key: const ValueKey('account-profile-list'),
                   controller: _profileListController,
-                  padding: EdgeInsets.fromLTRB(0, rowTop, 0, 8),
+                  padding: EdgeInsets.fromLTRB(0, rowTop, 0, rowTop),
                   itemCount: _profiles.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: rowGap),
+                  separatorBuilder: (_, _) => SizedBox(height: rowGap),
                   itemBuilder: (context, index) {
                     final profile = _profiles[index];
+                    // 컨트롤러 전체 offset이 아니라 이 항목이 속한 Scrollable의 position을 읽는다. 컨트롤러에
+                    // position이 잠깐 둘이어도 `offset` assertion이 나지 않는다.
+                    final position = Scrollable.of(context).position;
                     return AnimatedBuilder(
-                      animation: _profileListController,
+                      animation: position,
                       builder: (context, _) {
-                        final scrollOffset = _profileListController.hasClients
-                            ? _profileListController.offset
+                        final scrollOffset = position.hasPixels
+                            ? position.pixels
                             : 0.0;
                         final visualTop =
                             rowTop +
-                            index * (rowBounds.height + rowGap) -
+                            index * (rowBox.height + rowGap) -
                             scrollOffset;
-                        final slantedLeft =
-                            centeredRowLeft +
-                            (listBounds.height / 2 -
-                                    (visualTop + rowBounds.height / 2)) /
-                                diagonalRun;
+                        final slantedLeft = accountManagerRowLeft(
+                          size,
+                          visualTop + rowBox.height / 2,
+                        );
                         return SizedBox(
-                          height: rowBounds.height,
+                          height: rowBox.height,
                           child: Stack(
                             clipBehavior: Clip.none,
                             children: [
                               Positioned(
                                 left: slantedLeft,
-                                width: rowBounds.width,
-                                height: rowBounds.height,
+                                width: rowBox.width,
+                                height: rowBox.height,
                                 child: _AccountListItem(
                                   key: ValueKey(
                                     'account-profile-${profile.id}',
@@ -947,14 +1246,15 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
                                   selected: _selected?.id == profile.id,
                                   ownedCount: _studentCounts[profile.id],
                                   totalCount: _totalStudents,
-                                  path: localRowPath,
-                                  portraitRect: localRect(
-                                    portraitPath.getBounds(),
+                                  path: rowPath,
+                                  size: rowBox.size,
+                                  portraitRect: portraitBox.shift(
+                                    -rowBox.topLeft,
                                   ),
                                   nameRect: featureRect('feature-5'),
-                                  dividerRect: featureRect('feature-6'),
+                                  progressRect: featureRect('feature-6'),
                                   countRect: featureRect('feature-7'),
-                                  height: rowBounds.height,
+                                  outlineScale: scale,
                                   onTap: () =>
                                       setState(() => _selected = profile),
                                 ),
@@ -971,39 +1271,41 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
           ),
           if (_profiles.isEmpty)
             _positionedContent(
-              listBounds,
+              listBox,
               const Center(child: Text('등록된 계정이 없습니다.')),
+              key: const ValueKey('account-profile-list-empty'),
             ),
-          _pathAction(
-            'account-switch',
-            switchPath,
-            _selected == null || _busy ? null : _selectProfile,
-            const Text('이 계정으로 전환'),
-          ),
-          _pathAction(
-            'account-add',
-            addPath,
-            _busy ? null : _startCreate,
-            const Text('추가'),
-          ),
-          _pathAction(
-            'account-edit',
-            editPath,
-            _selected == null || _busy ? null : _startEdit,
-            const Text('수정'),
-          ),
-          _pathAction(
-            'account-delete',
-            deletePath,
-            _selected == null || _busy ? null : _deleteProfile,
-            const Text('삭제'),
-          ),
-          _pathAction(
-            'account-manager-back',
-            backPath,
-            _busy ? null : _back,
-            const Text('뒤로'),
-          ),
+          for (final rail in rails) ...[
+            _pathAction(
+              rail.key,
+              railPaths[rail.id]!,
+              rail.onTap,
+              _AccountRailLabel(
+                glyph: rail.glyph,
+                label: rail.label,
+                caption: rail.caption,
+                danger: rail.danger,
+                dimmed: rail.onTap == null,
+              ),
+              padding: EdgeInsets.fromLTRB(3, 3, 3 + 13 * scale, 3),
+            ),
+            Positioned.fill(
+              key: ValueKey('${rail.key}-outline'),
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: AccountPathOutlinePainter(
+                    railPaths[rail.id]!,
+                    color: rail.pressed
+                        ? accountPressedOutline
+                        : accountRailOutline,
+                    strokeWidth: rail.pressed
+                        ? accountPressedOutlineWidth
+                        : accountRailOutlineWidth,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1067,42 +1369,23 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
       container.copyWith(rect: projectedRect),
     )!;
   }
+}
 
-  Path _managerActionPath(Size size, String id, Path listPath) {
-    final section = _section('element-5');
-    final sectionRect = sectionCanvasElementRect(size, section);
-    final container = accountStudioDocument.containers.singleWhere(
-      (item) => item.id == id,
-    );
-    final rect = container.rect;
-    final centerY =
-        sectionRect.top + sectionRect.height * (rect.top + rect.height / 2);
-    final listLeft = _leftPathEdgeAtY(listPath, centerY);
-    final gap = (size.shortestSide * 0.014).clamp(8.0, 16.0);
-    final left = sectionRect.left + sectionRect.width * rect.left;
-    final height = sectionRect.height * rect.height;
-    final width =
-        (listLeft - gap - left + sectionTemplateCutDepth(height) / 2) /
-        sectionRect.width;
-    final projected = container.copyWith(
-      rect: rect.copyWith(width: width.clamp(0.05, 0.95 - rect.left)),
-    );
-    return buildStudioContainerPath(
-      size,
-      accountStudioDocument.elements,
-      projected,
-    )!;
+/// 계정 추가 모달 컨트롤러. [locked] 동안에는 닫지 않는다(키트 [BaModal]은 Esc·스크림에서 [close]를 부른다).
+class _CreateModalController extends BaModalController {
+  _CreateModalController({super.initiallyOpen});
+
+  bool locked = false;
+
+  @override
+  void close() {
+    if (locked) return;
+    super.close();
   }
 }
 
-double _leftPathEdgeAtY(Path path, double y) {
-  final bounds = path.getBounds();
-  for (var x = bounds.left; x <= bounds.right; x += 0.25) {
-    if (path.contains(Offset(x, y))) return x;
-  }
-  return bounds.left;
-}
-
+/// 계정 행(FE8-b, 시안 Title-Accounts 행): 그라데이션 평행사변형 + 외곽선(고른 행 분홍 3.2) + stucard + 이름
+/// (지금 쓰는 계정이면 `지금` 칩) + 보유율 진행 막대 + `보유 n / 전체`.
 class _AccountListItem extends StatelessWidget {
   const _AccountListItem({
     super.key,
@@ -1111,142 +1394,399 @@ class _AccountListItem extends StatelessWidget {
     required this.ownedCount,
     required this.totalCount,
     required this.path,
+    required this.size,
     required this.portraitRect,
     required this.nameRect,
-    required this.dividerRect,
+    required this.progressRect,
     required this.countRect,
-    required this.height,
+    required this.outlineScale,
     required this.onTap,
   });
   final RepositoryProfile profile;
   final bool selected;
+
   /// state를 읽지 못했으면 null("읽지 못함").
   final int? ownedCount;
+
+  /// 전체 학생 수. 0이면 모른다(막대 빗금, `/ —`).
   final int totalCount;
   final Path path;
+  final Size size;
   final Rect portraitRect;
   final Rect nameRect;
-  final Rect dividerRect;
+  final Rect progressRect;
   final Rect countRect;
-  final double height;
+  final double outlineScale;
   final VoidCallback onTap;
 
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    height: height,
-    child: Stack(
-      children: [
-        Positioned.fill(
-          child: ClipPath(
-            clipper: _FixedPathClipper(path),
-            clipBehavior: Clip.antiAlias,
-            child: const BATriangleBackground(config: _accountRowTexture),
-          ),
-        ),
-        Positioned.fill(
-          child: IgnorePointer(
-            child: CustomPaint(
-              painter: _PathOutlinePainter(
-                path,
-                color: selected ? const Color(0xffff72b6) : AppColors.outline,
-                strokeWidth: selected ? 2 : 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned.fromRect(
-          key: ValueKey('account-profile-portrait-${profile.id}'),
-          rect: portraitRect,
-          child: IgnorePointer(
-            child: AssetImageGrid(
-              items: [
-                const AssetImageGridItem(
-                  asset: 'assets/studio_features/square.png',
-                  column: 0,
-                  row: 0,
-                ),
-                AssetImageGridItem(
-                  asset:
-                      'assets/student_portraits/${profile.avatarStudentId}.png',
-                  column: 0,
-                  row: 0,
-                  scale: 0.98,
-                  clipRadiusFraction: 0.12,
-                ),
-              ],
-            ),
-          ),
-        ),
-        Positioned.fromRect(
-          key: ValueKey('account-profile-name-${profile.id}'),
-          rect: nameRect,
-          child: IgnorePointer(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                profile.displayName,
-                style: const TextStyle(
-                  fontFamily: 'GyeonggiTitle',
-                  fontSize: 20,
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned.fromRect(
-          key: ValueKey('account-profile-divider-${profile.id}'),
-          rect: dividerRect,
-          child: IgnorePointer(
-            child: Center(child: Container(height: 3, color: AppColors.text)),
-          ),
-        ),
-        Positioned.fromRect(
-          key: ValueKey('account-profile-count-${profile.id}'),
-          rect: countRect,
-          child: IgnorePointer(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                ownedCount == null
-                    ? '보유 : 읽지 못함'
-                    : '보유 : $ownedCount/$totalCount',
-                style: const TextStyle(color: AppColors.textMuted),
-              ),
-            ),
-          ),
-        ),
-        Positioned.fromRect(
-          rect: path.getBounds(),
-          child: ClipPath(
-            clipper: _FixedPathClipper(path),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(onTap: onTap),
-            ),
-          ),
-        ),
-      ],
-    ),
+  static const _mutedStyle = TextStyle(
+    fontFamily: AppFonts.body,
+    fontFamilyFallback: AppFonts.fallback,
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textMuted,
   );
+
+  @override
+  Widget build(BuildContext context) {
+    final (begin, end) = cssLinearGradientAlignments(size, 120);
+    final owned = ownedCount;
+    final totalKnown = totalCount > 0;
+    final fraction = owned == null || !totalKnown
+        ? null
+        : (owned / totalCount).clamp(0.0, 1.0).toDouble();
+    return SizedBox(
+      width: size.width,
+      height: size.height,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ClipPath(
+              key: ValueKey('account-profile-surface-${profile.id}'),
+              clipper: _FixedPathClipper(path),
+              clipBehavior: Clip.antiAlias,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: begin,
+                    end: end,
+                    colors: accountRowGradientColors,
+                  ),
+                ),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            key: ValueKey('account-profile-outline-${profile.id}'),
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: AccountPathOutlinePainter(
+                  path,
+                  color: selected ? accountPressedOutline : accountRowOutline,
+                  strokeWidth:
+                      (selected
+                          ? accountPressedOutlineWidth
+                          : accountRowOutlineWidth) *
+                      outlineScale,
+                ),
+              ),
+            ),
+          ),
+          // 시안 stucard: 학생 카드와 같은 평행사변형(square.png 테두리 잘라 채움 + 초상 98%, 흰 1.14px 외곽선).
+          Positioned.fromRect(
+            key: ValueKey('account-profile-portrait-${profile.id}'),
+            rect: portraitRect,
+            child: IgnorePointer(
+              child: AssetImageGrid(
+                items: [
+                  AssetImageGridItem(
+                    asset: 'assets/studio_features/square.png',
+                    column: 0,
+                    row: 0,
+                    edgeCropFraction: 0.11,
+                    clipPathBuilder: studentGridCardPath,
+                    outlineColor: Colors.white,
+                    outlineWidthFraction: _accountStucardOutlineFraction,
+                  ),
+                  AssetImageGridItem(
+                    asset:
+                        'assets/student_portraits/${profile.avatarStudentId}.png',
+                    column: 0,
+                    row: 0,
+                    scale: 0.98,
+                    clipRadiusFraction: 0.12,
+                    alphaThreshold: 0.04,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned.fromRect(
+            key: ValueKey('account-profile-name-${profile.id}'),
+            rect: nameRect,
+            child: IgnorePointer(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                // 글자는 기준 크기(17px)로 놓고 창이 작으면 함께 줄인다(줄어든 폭에 다시 맞추지 않는다).
+                child: SizedBox(
+                  width: nameRect.width / math.min(1, outlineScale),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          profile.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: AppFonts.display,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.17,
+                            color: AppColors.text,
+                          ),
+                        ),
+                      ),
+                      if (profile.selected) ...[
+                        const SizedBox(width: 8),
+                        BaChip(
+                          key: ValueKey('account-profile-current-${profile.id}'),
+                          label: '지금',
+                          tone: AppTones.pink,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // 진행 막대 높이 4는 창 크기와 상관없이 feature 중심에 둔다(타이틀 T4와 같은 규칙).
+          Positioned.fromRect(
+            key: ValueKey('account-profile-progress-${profile.id}'),
+            rect: Rect.fromCenter(
+              center: progressRect.center,
+              width: progressRect.width,
+              height: _accountProgressHeight,
+            ),
+            child: IgnorePointer(
+              child: SkewBar(
+                fraction: fraction,
+                color: AppColors.text,
+                height: _accountProgressHeight,
+                style: _accountProgressStyle,
+              ),
+            ),
+          ),
+          Positioned.fromRect(
+            key: ValueKey('account-profile-count-${profile.id}'),
+            rect: countRect,
+            child: IgnorePointer(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    const Text('보유', style: _mutedStyle),
+                    const SizedBox(width: 6),
+                    if (owned == null)
+                      const Text('읽지 못함', style: _mutedStyle)
+                    else ...[
+                      Text(
+                        '$owned',
+                        style: const TextStyle(
+                          fontFamily: AppFonts.display,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          height: 1,
+                          color: AppColors.text,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '/ ${totalKnown ? totalCount : '—'}',
+                        style: _mutedStyle,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: ClipPath(
+              clipper: _FixedPathClipper(path),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(onTap: onTap),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 레일 버튼 아이콘(시안 svg, viewBox 24, stroke 2, round).
+enum _AccountRailGlyph { switchAccount, add, edit, delete, back }
+
+class _AccountRailGlyphPainter extends CustomPainter {
+  const _AccountRailGlyphPainter(this.glyph, this.color);
+
+  final _AccountRailGlyph glyph;
+  final Color color;
+
+  Path _path() => switch (glyph) {
+    // `M20 12a8 8 0 01-14.5 4.6M4 12a8 8 0 0114.5-4.6` + `M20 4v4.5h-4.5M4 20v-4.5h4.5`
+    _AccountRailGlyph.switchAccount =>
+      Path()
+        ..moveTo(20, 12)
+        ..arcToPoint(const Offset(5.5, 16.6), radius: const Radius.circular(8))
+        ..moveTo(4, 12)
+        ..arcToPoint(const Offset(18.5, 7.4), radius: const Radius.circular(8))
+        ..moveTo(20, 4)
+        ..lineTo(20, 8.5)
+        ..lineTo(15.5, 8.5)
+        ..moveTo(4, 20)
+        ..lineTo(4, 15.5)
+        ..lineTo(8.5, 15.5),
+    // `M12 5v14M5 12h14`
+    _AccountRailGlyph.add =>
+      Path()
+        ..moveTo(12, 5)
+        ..lineTo(12, 19)
+        ..moveTo(5, 12)
+        ..lineTo(19, 12),
+    // `M4 20h4L19 9l-4-4L4 16z`
+    _AccountRailGlyph.edit =>
+      Path()
+        ..moveTo(4, 20)
+        ..lineTo(8, 20)
+        ..lineTo(19, 9)
+        ..lineTo(15, 5)
+        ..lineTo(4, 16)
+        ..close(),
+    // `M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13`
+    _AccountRailGlyph.delete =>
+      Path()
+        ..moveTo(4, 7)
+        ..lineTo(20, 7)
+        ..moveTo(9, 7)
+        ..lineTo(9, 4)
+        ..lineTo(15, 4)
+        ..lineTo(15, 7)
+        ..moveTo(6, 7)
+        ..lineTo(7, 20)
+        ..lineTo(17, 20)
+        ..lineTo(18, 7),
+    // `M19 12H5M11 6l-6 6 6 6`
+    _AccountRailGlyph.back =>
+      Path()
+        ..moveTo(19, 12)
+        ..lineTo(5, 12)
+        ..moveTo(11, 6)
+        ..lineTo(5, 12)
+        ..lineTo(11, 18),
+  };
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.shortestSide / 24);
+    canvas.drawPath(
+      _path(),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = color,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_AccountRailGlyphPainter oldDelegate) =>
+      oldDelegate.glyph != glyph || oldDelegate.color != color;
+}
+
+/// 레일 버튼 내용: 아이콘 17 + 간격 7 + 글자 15 w700. 비활성은 불투명도 .42, "이 계정으로 전환"은 지금 쓰는
+/// 계정이면 아래에 `지금 쓰는 계정`(10.5 w600 #f7c9f4)을 붙인다.
+class _AccountRailLabel extends StatelessWidget {
+  const _AccountRailLabel({
+    required this.glyph,
+    required this.label,
+    required this.caption,
+    required this.danger,
+    required this.dimmed,
+  });
+
+  final _AccountRailGlyph glyph;
+  final String label;
+  final String? caption;
+  final bool danger;
+  final bool dimmed;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? _accountDeleteColor : Colors.white;
+    final caption = this.caption;
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox.square(
+              dimension: 17,
+              child: CustomPaint(painter: _AccountRailGlyphPainter(glyph, color)),
+            ),
+            const SizedBox(width: 7),
+            Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(
+                fontFamily: AppFonts.body,
+                fontFamilyFallback: AppFonts.fallback,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        if (caption != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            caption,
+            maxLines: 1,
+            style: const TextStyle(
+              fontFamily: AppFonts.body,
+              fontFamilyFallback: AppFonts.fallback,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.accentText,
+            ),
+          ),
+        ],
+      ],
+    );
+    return dimmed
+        ? Opacity(opacity: _accountDisabledOpacity, child: content)
+        : content;
+  }
 }
 
 /// 계정 화면의 사선 스크롤바: 공용 [DiagonalScrollbar](FE2-a)에 계정 화면 값을 넘긴다.
 ///
-/// 포그가 없고, 썸은 #8edcff, 레일 점은 [portraitScrollbarTrackPoint]다.
+/// 레일 점은 [portraitScrollbarTrackPoint]다. 초상 고르기는 포그 없이 썸 #8edcff, 계정 목록은 시안 표준이다.
 class _DiagonalScrollbar extends StatelessWidget {
   const _DiagonalScrollbar({
     required this.controller,
     required this.keyPrefix,
     required this.child,
+    this.style,
+    this.trackInset = 10,
+    this.showFog = false,
   });
 
   final ScrollController controller;
   final String keyPrefix;
   final Widget child;
 
-  static final _style = DiagonalScrollbarStyle.standard.copyWith(
+  /// 없으면 초상 고르기 값(썸 #8edcff, FE8-c 전까지 그대로). 계정 목록(FE8-b)은 시안 표준(썸 #e5a0ea)이다.
+  final DiagonalScrollbarStyle? style;
+  final double trackInset;
+
+  /// 계정 목록은 시안대로 공용 포그(36px #263d52)를 올린다.
+  final bool showFog;
+
+  static final _pickerStyle = DiagonalScrollbarStyle.standard.copyWith(
     thumbColor: const Color(0xff8edcff),
   );
 
@@ -1254,9 +1794,10 @@ class _DiagonalScrollbar extends StatelessWidget {
   Widget build(BuildContext context) => DiagonalScrollbar(
     keyPrefix: keyPrefix,
     controller: controller,
-    style: _style,
+    style: style ?? _pickerStyle,
+    trackInset: trackInset,
     trackPoint: portraitScrollbarTrackPoint,
-    showFog: false,
+    showFog: showFog,
     child: child,
   );
 }
@@ -1300,9 +1841,17 @@ class _DirectionalAccountMotion extends StatelessWidget {
 }
 
 class _PathSurface extends StatelessWidget {
-  const _PathSurface({super.key, required this.path, this.texture});
+  const _PathSurface({
+    super.key,
+    required this.path,
+    this.texture,
+    this.color,
+  });
   final Path path;
   final BATriangleTextureConfig? texture;
+
+  /// 텍스처가 없을 때의 채움. 없으면 공용 섹션 표면색이다(계정 목록은 .9, FE8-b).
+  final Color? color;
 
   // FE1-c: 텍스처가 없는 섹션 바탕은 공용 섹션 표면(surface@.76, 블러 없음)이다.
   // 그림자는 화면이 따로 그리는 LiftedPathShadow가 맡는다. 텍스처 표면(FD-015)은 그대로 둔다.
@@ -1312,7 +1861,7 @@ class _PathSurface extends StatelessWidget {
     clipBehavior: Clip.antiAlias,
     child: texture == null
         ? ColoredBox(
-            color: sectionSurfaceColor,
+            color: color ?? sectionSurfaceColor,
             child: const SizedBox.expand(),
           )
         : BackdropFilter(
@@ -1331,15 +1880,16 @@ Path _subtractPaths(Path source, Iterable<Path> exclusions) {
 }
 
 class _PathOutline extends StatelessWidget {
-  const _PathOutline({super.key, required this.path});
+  const _PathOutline({required this.path});
   final Path path;
   @override
   Widget build(BuildContext context) =>
-      IgnorePointer(child: CustomPaint(painter: _PathOutlinePainter(path)));
+      IgnorePointer(child: CustomPaint(painter: AccountPathOutlinePainter(path)));
 }
 
-class _PathOutlinePainter extends CustomPainter {
-  const _PathOutlinePainter(
+/// path 외곽선(계정 클러스터). 기본은 [AppColors.outline] 1px이다.
+class AccountPathOutlinePainter extends CustomPainter {
+  const AccountPathOutlinePainter(
     this.path, {
     this.color = AppColors.outline,
     this.strokeWidth = 1,
@@ -1351,12 +1901,14 @@ class _PathOutlinePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) => canvas.drawPath(
     path,
     Paint()
+      ..isAntiAlias = true
       ..style = PaintingStyle.stroke
+      ..strokeJoin = StrokeJoin.round
       ..strokeWidth = strokeWidth
       ..color = color,
   );
   @override
-  bool shouldRepaint(_PathOutlinePainter oldDelegate) =>
+  bool shouldRepaint(AccountPathOutlinePainter oldDelegate) =>
       oldDelegate.path != path ||
       oldDelegate.color != color ||
       oldDelegate.strokeWidth != strokeWidth;
@@ -1367,12 +1919,20 @@ Widget _positionedMarker(String key, Rect rect) => Positioned.fromRect(
   rect: rect,
   child: const IgnorePointer(),
 );
-Widget _positionedContent(Rect rect, Widget child) => Positioned.fromRect(
-  rect: rect,
-  child: IgnorePointer(child: child),
-);
+Widget _positionedContent(Rect rect, Widget child, {Key? key}) =>
+    Positioned.fromRect(
+      key: key,
+      rect: rect,
+      child: IgnorePointer(child: child),
+    );
 
-Widget _pathAction(String key, Path path, VoidCallback? onTap, Widget child) {
+Widget _pathAction(
+  String key,
+  Path path,
+  VoidCallback? onTap,
+  Widget child, {
+  EdgeInsets padding = const EdgeInsets.all(3),
+}) {
   final bounds = path.getBounds();
   final localPath = path.shift(-bounds.topLeft);
   return Positioned.fromRect(
@@ -1387,7 +1947,7 @@ Widget _pathAction(String key, Path path, VoidCallback? onTap, Widget child) {
           onTap: onTap,
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.all(3),
+              padding: padding,
               child: FittedBox(fit: BoxFit.scaleDown, child: child),
             ),
           ),

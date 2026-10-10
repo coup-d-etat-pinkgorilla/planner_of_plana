@@ -1,0 +1,493 @@
+{
+  "format": "ba-planner-section-studio",
+  "version": 5,
+  "gridSize": 96,
+  "detailGridSize": 96,
+  "diagonal": {
+    "direction": "up-right",
+    "angleDegrees": 80
+  },
+  "workspace": {
+    "headerRows": 0,
+    "viewport": "standard",
+    "showGrid": true,
+    "showSafeArea": true,
+    "selectedElementId": "element-5",
+    "activeLayer": "feature",
+    "selectedContainerId": "container-15",
+    "selectedFeatureId": "feature-6",
+    "placementMode": "parent-relative-spacing",
+    "placementGap": 0.0
+  },
+  "elements": [
+    {
+      "id": "element-1",
+      "label": "섹션 1",
+      "rect": {
+        "x": 32,
+        "y": 32,
+        "width": 32,
+        "height": 16
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      }
+    },
+    {
+      "id": "element-4",
+      "label": "섹션 4",
+      "rect": {
+        "x": 27,
+        "y": 50,
+        "width": 32,
+        "height": 46
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      }
+    },
+    {
+      "id": "element-5",
+      "label": "섹션 5",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 35,
+        "height": 94
+      },
+      "shape": {
+        "mode": "trapezoid",
+        "face": "left",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      }
+    }
+  ],
+  "containers": [
+    {
+      "id": "container-3",
+      "label": "컨테이너 3",
+      "parentSectionId": "element-1",
+      "rect": {
+        "left": 0.03122349857374142,
+        "top": 0.7825148407987047,
+        "width": 0.22217870634492334,
+        "height": 0.15524015110631406
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-4",
+      "label": "컨테이너 4",
+      "parentSectionId": "element-1",
+      "rect": {
+        "left": 0.035386631716906945,
+        "top": 0.08094981111710738,
+        "width": 0.23258653920283714,
+        "height": 0.6571289800323799
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-5",
+      "label": "컨테이너 5",
+      "parentSectionId": "element-1",
+      "rect": {
+        "left": 0.3172369131138695,
+        "top": 0.07015650296815974,
+        "width": 0.678041785521548,
+        "height": 0.23618996222342148
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-6",
+      "label": "컨테이너 6",
+      "parentSectionId": "element-1",
+      "rect": {
+        "left": 0.8977627014108396,
+        "top": 0.748872099298435,
+        "width": 0.08410145709660022,
+        "height": 0.17143011332973546
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-7",
+      "label": "컨테이너 7",
+      "parentSectionId": "element-1",
+      "rect": {
+        "left": 0.7973849356256264,
+        "top": 0.7488720992984349,
+        "width": 0.08,
+        "height": 0.17
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-8",
+      "label": "컨테이너 8",
+      "parentSectionId": "element-4",
+      "rect": {
+        "left": 0.043712898003238,
+        "top": 0.02110691371349782,
+        "width": 0.9530491095520778,
+        "height": 0.8639694346027202
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-9",
+      "label": "컨테이너 9",
+      "parentSectionId": "element-4",
+      "rect": {
+        "left": 0.8904479222881816,
+        "top": 0.9075972896803985,
+        "width": 0.08572045331894218,
+        "height": 0.06649517299274432
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-10",
+      "label": "컨테이너 10",
+      "parentSectionId": "element-4",
+      "rect": {
+        "left": 0.7771181867242312,
+        "top": 0.9075972896803984,
+        "width": 0.09,
+        "height": 0.07
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-11",
+      "label": "컨테이너 11",
+      "parentSectionId": "element-5",
+      "rect": {
+        "left": 0.031285714285714285,
+        "top": 0.02641232575201761,
+        "width": 0.6836232701408851,
+        "height": 0.9684519442406456
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-12",
+      "label": "컨테이너 12",
+      "parentSectionId": "element-5",
+      "rect": {
+        "left": 0.015,
+        "top": 0.032281731474688186,
+        "width": 0.24064285714285713,
+        "height": 0.05429200293470286
+      },
+      "shape": {
+        "mode": "trapezoid",
+        "face": "left",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-13",
+      "label": "컨테이너 13",
+      "parentSectionId": "element-5",
+      "rect": {
+        "left": 0.015,
+        "top": 0.09904622157006603,
+        "width": 0.22339285714285714,
+        "height": 0.05429200293470286
+      },
+      "shape": {
+        "mode": "trapezoid",
+        "face": "left",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-14",
+      "label": "컨테이너 14",
+      "parentSectionId": "element-5",
+      "rect": {
+        "left": 0.015,
+        "top": 0.16581071166544387,
+        "width": 0.20625,
+        "height": 0.05429200293470286
+      },
+      "shape": {
+        "mode": "trapezoid",
+        "face": "left",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-15",
+      "label": "컨테이너 15",
+      "parentSectionId": "element-5",
+      "rect": {
+        "left": 0.27364285714285713,
+        "top": 0.041085840058694055,
+        "width": 0.6128159665064978,
+        "height": 0.10418195157740279
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-16",
+      "label": "컨테이너 16",
+      "parentSectionId": "element-5",
+      "rect": {
+        "left": 0.3204214285714286,
+        "top": 0.05135730007336757,
+        "width": 0.12934149021346603,
+        "height": 0.08363903154805576
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-18",
+      "label": "컨테이너 18",
+      "parentSectionId": "element-5",
+      "rect": {
+        "left": 0.015,
+        "top": 0.23257520176082172,
+        "width": 0.18910714285714286,
+        "height": 0.05429200293470286
+      },
+      "shape": {
+        "mode": "trapezoid",
+        "face": "left",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    },
+    {
+      "id": "container-19",
+      "label": "컨테이너 19",
+      "parentSectionId": "element-5",
+      "rect": {
+        "left": 0.015,
+        "top": 0.2993396918561996,
+        "width": 0.17185714285714285,
+        "height": 0.05429200293470286
+      },
+      "shape": {
+        "mode": "trapezoid",
+        "face": "left",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "triangleTexture": false
+    }
+  ],
+  "features": [
+    {
+      "id": "feature-4",
+      "label": "텍스트 4",
+      "parentContainerId": "container-5",
+      "kind": "text",
+      "rect": {
+        "left": 0.02924574634217213,
+        "top": 0.0,
+        "width": 0.2035919080192112,
+        "height": 1.0
+      },
+      "shape": {
+        "mode": "trapezoid",
+        "face": "left",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 48
+      },
+      "imageAsset": null,
+      "aspectRatio": null,
+      "text": "계정명 : "
+    },
+    {
+      "id": "feature-5",
+      "label": "텍스트 5",
+      "parentContainerId": "container-15",
+      "kind": "text",
+      "rect": {
+        "left": 0.35491895101870485,
+        "top": 0.2535211267605634,
+        "width": 0.627664548845887,
+        "height": 0.16901408450704225
+      },
+      "shape": {
+        "mode": "trapezoid",
+        "face": "left",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 48
+      },
+      "imageAsset": null,
+      "aspectRatio": null,
+      "text": "거모이는존재한다 (v7 UI 테스트)"
+    },
+    {
+      "id": "feature-6",
+      "label": "선 6",
+      "parentContainerId": "container-15",
+      "kind": "line",
+      "rect": {
+        "left": 0.35491895101870485,
+        "top": 0.5070422535211268,
+        "width": 0.5629748878227733,
+        "height": 0.028169014084507043
+      },
+      "shape": {
+        "mode": "trapezoid",
+        "face": "left",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 48
+      },
+      "imageAsset": null,
+      "aspectRatio": null,
+      "text": null
+    },
+    {
+      "id": "feature-7",
+      "label": "텍스트 7",
+      "parentContainerId": "container-15",
+      "kind": "text",
+      "rect": {
+        "left": 0.35491895101870485,
+        "top": 0.6197183098591549,
+        "width": 0.627664548845887,
+        "height": 0.1267605633802817
+      },
+      "shape": {
+        "mode": "trapezoid",
+        "face": "left",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 48
+      },
+      "imageAsset": null,
+      "aspectRatio": null,
+      "text": "보유 217 / 265"
+    },
+    {
+      "id": "feature-8",
+      "label": "도형 8",
+      "parentContainerId": "container-5",
+      "kind": "shape",
+      "rect": {
+        "left": 0.23761316011018266,
+        "top": 0.18279029383539727,
+        "width": 0.7432240576335323,
+        "height": 0.6312781611296437
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      },
+      "imageAsset": null,
+      "aspectRatio": null,
+      "text": null
+    }
+  ]
+}

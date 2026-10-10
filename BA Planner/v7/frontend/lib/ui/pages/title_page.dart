@@ -27,8 +27,20 @@ import '../widgets/student_section_layout.dart' show studentGridCardPath;
 
 // FE8-a(2026-10-10): 시안 `Title.dc.html` 값. T 번호는 A 보고서 §2.4의 차이 표다.
 
-/// 로고 띠·계정 카드 path의 모서리 반경(시안 path `Q 16`, T3). 버튼은 Studio 기본 반경을 쓴다.
+/// 로고 띠·계정 카드 path의 모서리 반경(시안 path `Q 16`, T3).
 const _titleSurfaceRadius = 16.0;
+
+/// 설정·나가기·시작 버튼 path의 모서리 반경(시안 path `Q 8`, FE8-b: FE8-a 발견 사항 3). Studio 기본은 10이다.
+const titleButtonRadius = 8.0;
+
+/// 설정·나가기 외곽선 rgba(56,81,107,.72) 1.8px(FE8-b).
+const _titleCornerOutline = Color.fromRGBO(56, 81, 107, 0.72);
+const _titleCornerOutlineWidth = 1.8;
+
+/// 계정 카드 채움 rgba(29,42,58,.9) + 외곽선 rgba(56,81,107,.6) 1.2px(FE8-b). 공용 섹션 표면(.76)의 예외다(FD-001).
+const titleAccountCardFill = Color.fromRGBO(29, 42, 58, 0.9);
+const _titleAccountCardOutline = Color.fromRGBO(56, 81, 107, 0.6);
+const _titleAccountCardOutlineWidth = 1.2;
 
 /// 로고 띠 채움 rgba(29,42,58,.93)(T10). 공용 섹션 표면(.76)보다 불투명하다(FD-001 시안 우선).
 const _titleBrandFill = Color.fromRGBO(29, 42, 58, 0.93);
@@ -422,65 +434,6 @@ class _TitlePageState extends State<TitlePage>
     if (!mounted) return;
     await _exitController.reverse();
     if (mounted) setState(() => _transitioning = false);
-  }
-
-  Future<void> _createAccount() async {
-    final repository = _repository;
-    if (repository == null) return;
-    var accountName = '';
-    final name = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        key: const ValueKey('title-account-dialog'),
-        title: const Text('계정 생성'),
-        content: TextFormField(
-          key: const ValueKey('title-account-name'),
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: '계정 이름',
-            hintText: '예: 메인 계정',
-          ),
-          onChanged: (value) => accountName = value.trim(),
-          textInputAction: TextInputAction.done,
-          onFieldSubmitted: (value) =>
-              Navigator.pop(dialogContext, value.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, accountName),
-            child: const Text('생성'),
-          ),
-        ],
-      ),
-    );
-    if (name == null || name.isEmpty || !mounted) return;
-
-    setState(() {
-      _actionRunning = true;
-      _error = null;
-    });
-    try {
-      final created = await repository.createProfile(
-        name,
-        'title-create-${DateTime.now().microsecondsSinceEpoch}',
-      );
-      if (!created.selected) {
-        await repository.selectProfile(
-          created.id,
-          created.revision,
-          'title-select-${created.id}-${created.revision}',
-        );
-      }
-      if (mounted) _openShell(AppSection.home);
-    } catch (error) {
-      if (mounted) setState(() => _error = '$error');
-    } finally {
-      if (mounted) setState(() => _actionRunning = false);
-    }
   }
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
@@ -994,23 +947,12 @@ class _StudioTitleCanvas extends StatelessWidget {
       document.features.singleWhere((item) => item.id == id);
 
   /// FE8-a: 로고 띠(container-1)와 계정 카드(container-6)는 Studio 컨테이너 polygon을 시안 반경(16)으로
-  /// 둥글린다(T3). 다각형·부모 섹션 교차는 [buildStudioContainerPath]와 같은 함수다.
-  Path _surfacePath(Size size, StudioContainerElement container) {
-    final rect = studioContainerRect(size, document.elements, container)!;
-    final points = buildAttachedSectionPolygon(
-      rect.size,
-      container.spec,
-      gridSize: sectionTemplateDetailGridSize,
-    ).map((point) => point + rect.topLeft).toList(growable: false);
-    return Path.combine(
-      PathOperation.intersect,
-      buildRoundedSectionPolygon(points, radius: _titleSurfaceRadius),
-      buildSectionCanvasElementPath(
-        size,
-        _section(container.parentSectionId),
-      ),
-    );
-  }
+  /// 둥글린다(T3). FE8-b: 버튼(container-2·4·5)은 반경 8이다.
+  Path _surfacePath(
+    Size size,
+    StudioContainerElement container, {
+    double radius = _titleSurfaceRadius,
+  }) => titleStudioContainerPath(document, size, container.id, radius: radius);
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -1028,17 +970,17 @@ class _StudioTitleCanvas extends StatelessWidget {
       final settings = _container('container-4');
       final exit = _container('container-5');
       final primaryContainer = _container('container-2');
-      final settingsPath = buildStudioContainerPath(
+      final settingsPath = _surfacePath(
         size,
-        document.elements,
         settings,
-      )!;
-      final exitPath = buildStudioContainerPath(size, document.elements, exit)!;
-      final primaryContainerPath = buildStudioContainerPath(
+        radius: titleButtonRadius,
+      );
+      final exitPath = _surfacePath(size, exit, radius: titleButtonRadius);
+      final primaryContainerPath = _surfacePath(
         size,
-        document.elements,
         primaryContainer,
-      )!;
+        radius: titleButtonRadius,
+      );
 
       final titleFeature = _feature('feature-1');
       final titleRect = studioFeatureRect(
@@ -1081,6 +1023,23 @@ class _StudioTitleCanvas extends StatelessWidget {
                     texture: _actionTexture,
                   ),
                   _StudioPathSurface(path: exitPath, texture: _actionTexture),
+                  // FE8-b: 설정·나가기 외곽선(시안 rgba(56,81,107,.72) 1.8px).
+                  for (final (key, path) in [
+                    ('title-settings-outline', settingsPath),
+                    ('title-exit-outline', exitPath),
+                  ])
+                    Positioned.fill(
+                      key: ValueKey(key),
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: _TitlePathOutlinePainter(
+                            path: path,
+                            color: _titleCornerOutline,
+                            strokeWidth: _titleCornerOutlineWidth,
+                          ),
+                        ),
+                      ),
+                    ),
                   _positionedMarker('title-brand-section', brandRect),
                   _positionedContent(
                     titleRect,
@@ -1114,11 +1073,23 @@ class _StudioTitleCanvas extends StatelessWidget {
                     'title-exit',
                     exitPath,
                     onExit,
+                    // FE8-b: `나가기` 15px w700 흰색(시안).
                     const Padding(
                       padding: EdgeInsets.all(2),
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
-                        child: Text('나가기', maxLines: 1),
+                        child: Text(
+                          '나가기',
+                          key: ValueKey('title-exit-label'),
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontFamily: AppFonts.body,
+                            fontFamilyFallback: AppFonts.fallback,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -1211,9 +1182,23 @@ class _StudioTitleCanvas extends StatelessWidget {
                       path: accountCardPath,
                     ),
                     // T11: 시안에 삼각 무늬 컨테이너가 없다. 카드 표면은 한 겹이다.
+                    // FE8-b: 채움 .9 + 외곽선 rgba(56,81,107,.6) 1.2px(시안).
                     _StudioPathSurface(
                       key: const ValueKey('title-account-glass'),
                       path: accountCardPath,
+                      color: titleAccountCardFill,
+                    ),
+                    Positioned.fill(
+                      key: const ValueKey('title-account-outline'),
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: _TitlePathOutlinePainter(
+                            path: accountCardPath,
+                            color: _titleAccountCardOutline,
+                            strokeWidth: _titleAccountCardOutlineWidth,
+                          ),
+                        ),
+                      ),
                     ),
                     _positionedMarker('title-account-section', accountRect),
                     // T6: 카드 전체가 `계정 관리 열기` 버튼이다. 내용은 IgnorePointer라 탭이 이 path로 온다.
@@ -1360,6 +1345,35 @@ class _StudioTitleCanvas extends StatelessWidget {
       ),
     ];
   }
+}
+
+/// 타이틀 Studio 컨테이너 [containerId]의 표면 path: 컨테이너 polygon을 [radius]로 둥글리고 부모 섹션과
+/// 교차한다([buildStudioContainerPath]와 같은 다각형, 반경만 다르다). FE8-a 로고 띠·계정 카드(16), FE8-b 버튼(8).
+Path titleStudioContainerPath(
+  SectionStudioDocument document,
+  Size size,
+  String containerId, {
+  required double radius,
+}) {
+  final container = document.containers.singleWhere(
+    (item) => item.id == containerId,
+  );
+  final rect = studioContainerRect(size, document.elements, container)!;
+  final points = buildAttachedSectionPolygon(
+    rect.size,
+    container.spec,
+    gridSize: sectionTemplateDetailGridSize,
+  ).map((point) => point + rect.topLeft).toList(growable: false);
+  return Path.combine(
+    PathOperation.intersect,
+    buildRoundedSectionPolygon(points, radius: radius),
+    buildSectionCanvasElementPath(
+      size,
+      document.elements.singleWhere(
+        (item) => item.id == container.parentSectionId,
+      ),
+    ),
+  );
 }
 
 Widget _positionedMarker(String key, Rect rect) => Positioned.fromRect(

@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**S-FB1b gate ① RED 수정 완료, gate 재실행 대기(2026-10-10 밤).** 시작 커밋 `11281bed`. 아래 "S-FB1b 착수 기록"·"S-FB1b 종료 기록"·"S-FB1b gate ① RED 수정 기록". 예상: S-FB1b 일반 테스트 +14건 전부 통과(실행하지 못함), golden 변화 0. fb4-dart는 커밋 `63a01318`, FE8-a는 커밋 `815e0589`로 끝났다(워크플로 재개 지점 2026-10-10 저녁 2).
+**T-FB1b·FE8-b 코드 작성 완료, FE8-b gate ① RED 수정 완료 → gate 재실행 대기(2026-10-11).** 시작 커밋 `18c5f0b0`. 아래 "T-FB1b 착수 기록"·"T-FB1b 종료 기록"·"FE8-b 착수 기록"·"FE8-b 종료 기록"·"사용자 실행 명령"·"FE8-b gate ① RED 수정 기록". S-FB1b는 커밋 `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`로 끝났다(오케스트레이터 로그 2026-10-10 23:00·23:35).
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -399,3 +399,329 @@ gate `debug/frontend_gate/20261010_185608`: S-FB1b 새 테스트 1건 실패 —
 1. 두 워커가 멈춘 뒤 `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1` 재실행 → 결과를 오케스트레이터에게. S-FB1b 쪽 예상: 새 14건 통과, 기존 scan 테스트 통과, golden 변화 0(다른 레인 RED는 위 범위 밖 항목).
 2. 커밋 순서는 오케스트레이터가 정한다(종료 기록 발견 사항 1: S-FB2b와의 순서).
 3. 발견 사항: 위 계정 패널(`RepositoryProfilePanel`, 공용 위젯)은 스크롤로 버려질 때마다 다시 만들어지며 목록을 다시 읽는다. 이번 수정으로 스캔 탭의 불필요한 state 재읽기는 막았지만 목록 읽기 자체는 남는다. 패널 상태 유지(keep-alive)나 스캔 탭 재구성(FE8-g1)에서 정리할 일이다.
+
+## T-FB1b 착수 기록 (2026-10-10)
+
+- 범위: 전술 탭(`tactical_page.dart`)의 revision 분리(CF 프롬프트 `debug/frontend_redesign_handoff/tfb1b-fe8b-worker-prompt-20261010.md` ①, 기준 XB 초안 `debug/xb_fb_history_port_review_20261010/artifacts/T-FB1b-work-instruction-draft.md`, FB-1b `11426131`).
+  1. 병렬 읽기(repository state·tactical state·catalog) 뒤 profile 표시·cache의 profile revision은 반환 repository state가 권위값(목록 summary 값을 그대로 쓰지 않음, legacy 첫 이관 +1 포함).
+  2. 필드 이름부터 profile(repository) revision과 tactical collection revision을 분리. tactical write(경기·족보·삭제)는 tactical revision만 쓴다.
+  3. 머리 줄 표시 판단은 종료 기록에 적는다.
+- 범위 밖: 계산식·battle rules·연구 evidence·v2 삭제 helper, `lib/services/**`, `app_shell.dart`.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `18c5f0b0a14e95aaa48cbbb6e006db23f6b43f85`.
+- 막힘: 열림 FD 없음.
+- 고칠 기존 파일과 WIP(작업 트리 내용을 git index blob과 비교, 줄바꿈 차이 제외):
+
+  | 파일 | WIP | 비고 |
+  |---|---|---|
+  | `frontend/lib/ui/pages/tactical_page.dart` | 없음(CRLF) | 줄바꿈 CRLF 그대로 둔다 |
+
+  착수 전 사본 `debug/frontend_tfb1b/pre/frontend/lib/ui/pages/tactical_page.dart`, slice 끝 사본 `debug/frontend_tfb1b/post/<경로>`, commit.json `post_dir`(규칙대로).
+- TacticalPage를 띄우는 테스트(grep): `frontend/test/tactical_page_test.dart`(고치지 않을 예정), 앱 셸(`app_shell.dart`)을 띄우는 테스트는 IndexedStack 안에서 같이 만든다(`widget_test.dart` 등, 기대 변화 없음 예정).
+- 새 파일(예정): `frontend/test/tactical_page_revision_test.dart`.
+- golden 변화 0 예정(전술 탭은 golden 장면에 없다).
+
+## T-FB1b 종료 기록 (2026-10-10, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없다. analyze·테스트를 돌리지 못했으므로 통과를 주장하지 않는다.
+- 정적 검토만 했다. 별도 검토 에이전트가 바뀐 파일을 원본·mock·기존 전술 테스트와 대조해 읽었다(컴파일·lint, 기존 테스트 회귀, 새 테스트 기대값 수치 추적, fake async 타이머, 삭제 버튼·확인 대화상자 탭 경로).
+  - 막는 문제 1건을 고쳤다: 새 테스트의 쓰지 않는 `dart:async` import(analyze 실패 원인).
+  - 사소한 지적 반영: 의미 없던 repository 쓰기 수 확인을 빼고, 족보 삭제가 tactical revision을 쓰는지 보는 테스트를 더했다.
+- 내가 직접 한 것: CRLF 유지(883줄 모두 CRLF), 끝 공백·괄호 확인, commit.json JSON·ASCII 확인.
+
+### 고친 파일
+
+| 파일 | 내용 |
+|---|---|
+| `frontend/lib/ui/pages/tactical_page.dart`(WIP 없음, CRLF) | `_state` → `_tacticalState`로 이름 분리, getter `_profileRevision`(= 반환 repository state revision)·`_tacticalRevision`(= tactical collection revision). 병렬 읽기 뒤 `_profile`을 목록 summary 대신 `repositoryProfileWithRevision(selected, state.revision)`으로 둔다. 응답의 계정(profileId)이 선택 계정과 다르면 받지 않고 오류로 보인다. 경기·족보 저장과 삭제는 대화상자·확인 뒤에 계정 id와 tactical revision을 final 지역 변수로 받아 그 값만 expected·key에 쓴다. 계정이 없을 때 `_repositoryState`도 비운다. 읽기 오류를 "선택된 프로필이 없습니다"보다 먼저 보인다(첫 읽기 실패가 가려지던 문제) |
+| 새 `frontend/test/tactical_page_revision_test.dart` | 아래 5건 |
+
+머리 줄 표시 판단: `이름 · id · profile revision P · tactical revision T`로 둘 다 보인다(key `tactical-revision-line`). 두 값이 다르다는 것이 이 slice의 요점이고, 검수 때 legacy 이관(+1)이 profile 쪽에만 반영되는지 바로 볼 수 있다. 이 화면은 FE9에서 재작성되므로 문구 다듬기는 그때 한다.
+
+### 새 테스트 (지운·고친 기존 테스트 없음)
+
+1. legacy 계정(목록 0 → 첫 state 1)과 tactical 2: 머리 줄 `profile revision 1 · tactical revision 2`, 경기 삭제 expected 2·key `…-2`, 뒤 `tactical revision 3`, profile 1 그대로.
+2·3. 병렬 읽기 응답 순서 두 가지(repository 먼저 / tactical 먼저, 50ms 지연): 완료 순서 기록, 머리 줄 `profile revision 7 · tactical revision 2`, 삭제 expected 2(profile 7 아님), 뒤 tactical 3.
+4. 족보 삭제: profile 5 · tactical 2에서 expected 2, key `delete-jokbo-1-2`, 뒤 tactical 3.
+5. 다른 계정의 tactical 응답: 오류 문구(`선택 계정과 다른 계정의 응답…`)가 보이고 머리 줄은 `tactical revision -`.
+
+TacticalPage를 띄우는 기존 테스트(`tactical_page_test.dart`, 앱 셸을 띄우는 테스트)는 바꾸지 않았다. 바뀐 문구·오류 순서를 찾는 기존 테스트는 없다(grep).
+
+### WIP 보존 확인
+
+- `tactical_page.dart`는 착수 때 index와 같았다(WIP 없음). 착수 전 사본 `debug/frontend_tfb1b/pre/frontend/lib/ui/pages/tactical_page.dart`(31,149 bytes), slice 끝 사본 `debug/frontend_tfb1b/post/frontend/lib/ui/pages/tactical_page.dart`(33,237 bytes, sha256 `6b0278a4…`), 새 테스트 끝 사본 `debug/frontend_tfb1b/post/frontend/test/tactical_page_revision_test.dart`. commit.json `post_dir: debug/frontend_tfb1b/post`, `status=false`, `whole=[]`(이 문서는 FE8-b commit.json이 가져간다).
+
+### 미검증 항목
+
+- analyze·테스트 미실행. golden 변화 0 예상(전술 탭은 golden 장면에 없다).
+- 삭제 버튼 탭이 `DiagonalSection` 자르기 밖에 떨어질 가능성은 낮다고 봤다(1440×900, 기존 테스트가 같은 크기에서 같은 tooltip을 찾는다).
+
+### 발견 사항
+
+1. 다시 읽기가 실패해도 이전 tactical state가 남아 이전 revision으로 쓰기가 가능하다(기존 동작). 서버가 `revision_conflict`로 막고, 화면은 "저장하지 못했습니다. 새로고침 후 다시 시도하세요."를 보인다. FE9-a 재작성 때 쓰기 버튼을 오류 상태에서 막을지 정하면 된다.
+
+## FE8-b 착수 기록 (2026-10-10)
+
+- 범위: FD-113 중 FE8-b 몫(레일 높이 74·목록 사선 따라 폭 감소·pressed 분홍 테두리·"이 계정으로 전환" 비활성 + "지금 쓰는 계정", 계정 행 그라데이션 + 진행 막대 + `지금` 칩, 선택 행 #f2b3ef 3.2px, 목록 하단 포그, 바깥 Section 5 사다리꼴 표면 제거)과 계정 추가 = 이름만 받는 모달(스크림 .72 + blur 2, 평행사변형, 제목 옆 (i), X·취소·만들기). FD-114(워커 재량, 권장안): 첫 실행 흐름은 현행, 첫 계정 만들기와 `title-account-dialog`를 새 모달로 통일, v6 가져오기 진입점은 현행. FE8-a에서 넘어온 T 표 밖 차이 4건(설정·나가기 외곽선, `나가기` 15 w700, 계정 카드 채움 .9 + 외곽선, 버튼 반경 8).
+- 범위 밖(FE8-c): 편집 패널 1000×262·입력 fill·분홍 포커스·초상 6열·편집 패널 확장·메타 줄 "마지막 스캔".
+- 시작 커밋(HEAD): `18c5f0b0a14e95aaa48cbbb6e006db23f6b43f85`(T-FB1b와 같은 세션, T-FB1b는 아직 미커밋이며 파일이 겹치지 않는다).
+- 막힘: 대장 막힘 요약에서 FE8-b는 `—`(열림 없음).
+- 고칠 기존 파일과 WIP(작업 트리 내용을 git index blob과 비교, 줄바꿈 차이 제외) — 모두 WIP 없음, LF:
+  - `frontend/lib/ui/pages/title_page.dart`
+  - `frontend/lib/ui/widgets/account_section_cluster.dart`
+  - `frontend/lib/ui/studio/account_studio_layout.dart`(계정 클러스터 Studio 저장 문서는 `release/`(git 밖)에만 있어 typed projection만 고친다)
+  - `frontend/test/title_page_test.dart`
+  착수 전 사본은 `debug/frontend_fe8b/pre/<경로>`.
+- 새 파일(예정): `frontend/lib/ui/widgets/account_create_modal.dart`(키트 `BaModal`·`InfoPopover`를 import해서 쓴다. 키트 파일은 고치지 않는다), `frontend/test/account_manager_fe8b_test.dart`, `frontend/test/goldens/fe8b_account_new_golden_test.dart`(harness 공개 함수만), 기준 이미지 `frontend/test/goldens/baseline/account-new.png`(사용자 `-UpdateGoldens`).
+- 고치지 않는 것: `lib/services/**`, 계획·학생 화면, `golden_harness.dart`·기존 golden 테스트, `app_shell.dart`, `almanac/design/**`(`section-template-studio.md`는 읽기만, 바뀔 규칙은 발견 사항에), 키트.
+
+## FE8-b 종료 기록 (2026-10-11, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없다(SDK 내려받기도 프록시가 막는다). analyze·테스트·golden을 돌리지 못했으므로 통과를 주장하지 않는다.
+- 정적 검토만 했다. 별도 검토 에이전트가 바뀐 파일을 원본·키트·mock·golden harness와 대조해 읽었다(쓴 API의 존재·시그니처, const, record 목록 타입 추론, ParentData 위치, `BaModal` `initiallyOpen` 경로, 새·바뀐 테스트의 key 유일성과 기대값 직접 계산).
+  - 컴파일·analyze 지적은 없었다.
+  - 테스트가 깨질 지적 3건을 고쳤다:
+    - 진행 막대를 key로 바로 `SkewBar`로 읽던 것 → 자손 `SkewBar`로 읽는다.
+    - 실패 테스트에서 `enterText` 뒤 pump가 없어 `만들기`가 아직 비활성이던 것.
+    - 작은 창 편집기 테스트에서 `뒤로`가 관리 레일과 편집기에 둘인 것 → 버튼 안 글자만 찾는다.
+  - 동작 지적 4건을 고쳤다:
+    - 만드는 중 Esc로 닫히던 것. 키트 Esc는 컨트롤러 `close`를 직접 부르므로, 만드는 동안 닫지 않는 컨트롤러 하위 클래스를 cluster 안에 두었다.
+    - `createProfile` 뒤 mounted 확인이 없던 것.
+    - 계정 이름이 줄어든 폭에서 한 번 더 줄던 것 → 기준 폭에서 놓고 한 번만 줄인다.
+    - 행 크기 비교를 정확 일치에서 허용 오차 비교로 바꿨다.
+- 내가 직접 한 것: 모든 새·바뀐 Dart 파일이 LF·끝 공백 없음·끝 개행 하나·괄호 짝 맞음인지 확인했다. 2560×1392 기준 기하(목록·레일·행·stucard·행 x·모달 위치)는 Python으로 다시 계산해 테스트 값과 맞췄다. commit.json은 JSON·ASCII다.
+- 시안 값은 `Title-Accounts.dc.html`·`Title-Accounts-New.dc.html`에서 목록·레일·행·모달 요소를 골라 읽었다.
+
+### 고친 파일
+
+- **`frontend/lib/ui/widgets/account_section_cluster.dart`**
+  - 관리 화면(FD-113 FE8-b 몫):
+    - 바깥 Section 5 사다리꼴 표면(`account-manager-base-surface`)을 없앴다. 목록 패널(container-11, 평행사변형 r14, 채움 rgba(29,42,58,.9))이 그림자를 가진다. 섹션 rect는 이동·검수용 표지로만 남는다.
+    - 레일 5개(전환·추가·수정·삭제·뒤로)는 높이 74, 왼쪽 수직, 오른쪽 사선이 목록 왼쪽 사선과 가로 22px(기준 viewport, 창 크기에 비례) 떨어져 나란하다. 그래서 아래 레일일수록 좁다(`accountManagerRailPath`).
+    - 레일 내용: 시안 svg 아이콘 17 + 글자 15 w700, 삭제는 #ffb3bb. 외곽선 rgba(56,81,107,.72) 1.8. 지금 열린 모드(추가 모달, 수정 편집기)의 레일은 누른 상태 #f2b3ef 3.2.
+    - "이 계정으로 전환": 고른 계정이 지금 쓰는 계정이면 비활성(덮개 .35, 내용 불투명도 .42)이고 아래에 `지금 쓰는 계정`(10.5 w600 #f7c9f4)을 붙인다.
+    - 계정 행:
+      - 배경 `linear-gradient(120deg, rgba(47,74,102,.75), rgba(29,42,58,.85))`, 외곽선 rgba(56,81,107,.7) 1.2, 고른 행 #f2b3ef 3.2.
+      - 학생 카드와 같은 평행사변형 stucard(흰 외곽선).
+      - 이름(경기천년제목 17) 옆에 지금 쓰는 계정이면 분홍 `지금` 칩(키트 `BaChip`).
+      - 보유율 진행 막대(키트 `SkewBar`, 높이 4). `보유` · 보유 수 · `/ 전체`. state를 못 읽은 계정은 `보유 읽지 못함`.
+      - 행 왼쪽 사선도 목록 왼쪽 사선에서 22px 안쪽이다(`accountManagerRowLeft`, 스크롤해도 유지).
+    - 스크롤바는 키트 표준 스타일(썸 #e5a0ea), 목록 오른쪽 사선에서 24px 안쪽이다. 목록 아래에 키트 포그가 있다.
+  - 계정 추가(FD-113·FD-114):
+    - "추가"는 새 모달을 연다. 이름만 받아 `createProfile`로 빈 계정을 만들고(초상 기본 `hasumi`), 목록을 다시 읽어 그 계정을 고른다. 지금 쓰는 계정은 바꾸지 않는다.
+    - 첫 계정 만들기(`AccountClusterEntry.createFirst`)도 같은 모달을 처음부터 열어 둔다. 만들면 선택하고 홈으로 간다. 만들지 않고 닫으면(취소·X·Esc·스크림) 타이틀로 돌아간다.
+    - 편집기는 이제 고른 계정의 이름·초상 수정만 한다. 새 계정 만들기 분기를 뺐다.
+    - 만드는 동안에는 모달이 닫히지 않는다.
+  - `AccountPathOutlinePainter`를 공개했다(테스트가 색·두께를 읽는다).
+  - 초상 고르기 스크롤바·편집기는 그대로다(FE8-c).
+- **새 `frontend/lib/ui/widgets/account_create_modal.dart`**(패널만, 스크림·포커스·Esc는 키트 `BaModal` + `BaScrim.scan`)
+  - 1000×330 평행사변형(r18, 채움 .98, lifted shadow). 2560×1392에서 900,520에 놓이고, 창이 작으면 비율대로 줄어든다.
+  - 제목 `계정 추가`(분홍 사선 막대 + 경기천년제목 24) + (i)(키트 `InfoPopover`).
+  - X 58×40. `계정 이름` 입력 821.8×56: 채움 rgba(10,16,24,.55), 포커스 #f2b3ef 2.4, 평소 .72 1.2. 열리면 입력에 포커스가 간다.
+  - 취소·만들기 130×56. 만들기는 분홍 외곽선이고, 이름이 비었거나 만드는 중이면 비활성이다. 실패 문구는 모달 안에 보인다.
+- **`frontend/lib/ui/pages/title_page.dart`**(FE8-a 발견 사항 3)
+  - 설정·나가기·시작 버튼 path 반경 8(`titleButtonRadius`, 새 공개 함수 `titleStudioContainerPath`).
+  - 설정·나가기 외곽선 rgba(56,81,107,.72) 1.8.
+  - `나가기` 15 w700 흰색.
+  - 계정 카드 채움 .9 + 외곽선 rgba(56,81,107,.6) 1.2.
+  - 쓰이지 않던 `_createAccount`(`title-account-dialog`)를 지웠다(FD-114).
+- **`frontend/lib/ui/studio/account_studio_layout.dart`**: 관리 화면 컨테이너 11~16·18·19와 행 feature 5~7을 시안 값으로 바꿨다. 기준 viewport 2560×1392에서:
+
+  | 대상 | 시안 값 |
+  |---|---|
+  | 목록 | 29.2,36 870.8×1320 |
+  | 레일 | x 14, y 44/135/226/317/408, 높이 74 |
+  | 첫 행 | 255.4,56 597×142 |
+  | stucard | 140.82×114 |
+
+- **새 `frontend/assets/studio_sections/section-account-create-manager.ba-section-studio.json`**(git 추적 사본, 들여쓰기 2, 끝 개행 없음)
+  - 착수 기록에서는 typed projection만 고칠 계획이었다. 하지만 projection 테스트의 원본이 git 밖 `release/` 사본이라, FE8-a 선례대로 추적 사본을 새로 두고 테스트가 그것을 읽게 했다.
+  - feature-5·7 문구는 시안 예시(`거모이는존재한다 (v7 UI 테스트)`, `보유 217 / 265`)다.
+- **`frontend/test/title_page_test.dart`**(25건 → 25건, 지운 테스트 없음)
+  - `typed account layout matches the saved Studio document`: assets 사본 + Studio 불러오기 왕복.
+  - `title follows the section studio placement and account state`: 버튼 path가 반경 8로 그린 path와 같은지, 설정·나가기 외곽선 색·두께·path, `나가기` 15 w700, 계정 카드 채움 .9·외곽선.
+  - `account manager uses Studio paths …`:
+    - 바깥 표면 없음.
+    - 목록 표면 path·채움·그림자.
+    - 레일 높이·간격·목록과 22px·아래로 갈수록 좁음.
+    - 행 상자 크기·위치, 행 사선 22px.
+    - stucard·이름·진행 막대(높이 4)·보유 줄 위치.
+  - `account rows follow the slanted list boundary while scrolling`: 새 목록·행 path.
+  - 첫 계정 흐름:
+    - `first account editor back returns to the title`를 `first account modal cancel returns to the title`로 바꿨다.
+    - `an account can be created from the title then enters home`은 모달로 만든다(빈 이름이면 만들기 비활성).
+  - 작은 창 편집기 테스트는 관리 → 수정으로 편집기를 연다.
+  - 이관 실패 계정 문구는 `읽지 못함`이다.
+- **새 `frontend/test/account_manager_fe8b_test.dart`**(5건)
+  - 2560×1392 기하를 시안 값과 비교.
+  - CSS 각도 → Alignment.
+  - 레일 상태(높이·외곽선·전환 비활성·`지금 쓰는 계정`·수정 누름), 행 상태(칩·외곽선·그라데이션·막대·보유 줄·포그), 다른 계정 고르기.
+  - 모달:
+    - 스크림 .72 + blur 2, 패널 900,520 1000×330, 제목·(i)·X, 초상 고르기 없음.
+    - 추가 레일 누름.
+    - 취소·Esc·만들기(새 계정 선택, 지금 쓰는 계정 유지).
+  - 실패하면 모달이 열린 채 문구가 보인다.
+- **새 `frontend/test/goldens/fe8b_account_new_golden_test.dart`**(golden 태그, harness 공개 함수만)
+  - 장면 `account-new`: 타이틀 → 설정 → 추가.
+  - 이름 입력에 포커스가 있어 `EditableText.debugDeterministicCursor`를 켜고, 테스트 뒤 되돌린다.
+  - 기준 이미지 `frontend/test/goldens/baseline/account-new.png`는 사용자 `-UpdateGoldens`로 만든다.
+
+### 검수표 (artboard `Title-Accounts.dc.html`·`Title-Accounts-New.dc.html`)
+
+앱에서 여는 방법: mock 모드(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`)로 실행하고 2560×1440 모니터에서 최대화한다. 타이틀에서 설정(톱니) 또는 계정 카드를 누르면 관리 화면이다. 추가 모달은 "추가" 레일이다. mock 계정은 `Main` 하나(지금 쓰는 계정)라, 전환 활성 상태는 "추가"로 계정을 하나 만든 뒤 그 행을 눌러 본다.
+
+| # | 확인 포인트 | 코드 |
+|---|---|---|
+| A1 | 바깥 사다리꼴 표면이 없고, 목록 패널(29.2,36 870.8×1320, 모서리 14, 채움 .9)만 그림자와 함께 떠 있다 | `account-profile-list-surface` |
+| A2 | 레일 5개 높이 74, x 14, y 44/135/226/317/408. 오른쪽 사선이 목록 사선과 22px 간격으로 나란하고 아래로 갈수록 좁다 | `accountManagerRailPath` |
+| A3 | 레일 아이콘(전환·더하기·연필·휴지통·화살표) + 글자 15 굵게, 삭제는 연한 빨강, 외곽선 .72 1.8 | `_AccountRailLabel` |
+| A4 | 지금 쓰는 계정을 고르면 "이 계정으로 전환"이 흐려지고 아래에 `지금 쓰는 계정`. 다른 계정을 고르면 활성 | `account-switch-disabled` |
+| A5 | 추가 모달·수정 편집기가 열려 있는 동안 그 레일 외곽선이 분홍 3.2 | `<레일>-outline` |
+| A6 | 계정 행 597×142, 대각 그라데이션, 외곽선 .7 1.2. 고른 행은 분홍 3.2. 행 왼쪽 사선이 목록 사선에서 22px 안쪽이고 스크롤해도 유지 | `_AccountListItem` |
+| A7 | stucard가 학생 카드 모양 평행사변형 + 흰 외곽선 | `account-profile-portrait-<id>` |
+| A8 | 이름 옆 분홍 `지금` 칩(지금 쓰는 계정만), 아래 보유율 막대(높이 4, 기울임), `보유 n / 전체` | `account-profile-current-/progress-/count-<id>` |
+| A9 | 스크롤바 썸 분홍(#e5a0ea), 계정이 많으면 목록 아래 포그 | `account-profile-fog` |
+| N1 | 스크림이 어둡고(.72) 뒤가 살짝 흐리다(blur 2) | `BaScrim.scan` |
+| N2 | 패널 1000×330 평행사변형이 900,520에 있다. 제목 `계정 추가` 앞 분홍 막대, 옆 (i). 오른쪽 위 X | `account-create-modal` |
+| N3 | `계정 이름` 입력: 열리자마자 포커스, 분홍 2.4 외곽선. 이름 말고 다른 입력(초상 등)은 없다 | `account-create-input-box` |
+| N4 | 취소·만들기(분홍 외곽선). 이름이 비면 만들기가 흐리다. 만들면 모달이 닫히고 새 계정이 목록에서 골라진다 | `account-create-cancel`·`-submit` |
+| N5 | Esc·스크림·X·취소로 닫힌다. 첫 실행(계정 없음)에서 닫으면 타이틀로 돌아가고, 만들면 바로 홈이다 | `_createModalChanged` |
+| T12 | 타이틀: 설정·나가기·시작 모서리가 조금 더 각지다(8). 설정·나가기에 얇은 외곽선, `나가기` 15 굵게, 계정 카드가 더 불투명(.9) + 얇은 외곽선 | `title-*-outline`, `title-exit-label` |
+
+### 처리한 FD
+
+- **FD-113**: FE8-b 몫은 모두 반영했다(고친 파일 참고). 편집 패널 1000×262·입력 채움·분홍 포커스·초상 6열·편집 패널 확장·"마지막 스캔"은 FE8-c라 손대지 않았다.
+- **FD-114**(워커 재량, 권장안): 첫 실행 흐름(계정 없음 → `계정 생성` → v6 계정이 있으면 가져오기 대화상자)은 그대로다. "새 계정 만들기"를 고르거나 v6 계정이 없을 때 여는 것이 편집기 대신 새 추가 모달이다. 쓰이지 않던 `title-account-dialog`는 지웠다. v6 가져오기 진입점은 그대로다.
+- **FD-001**: 목록 패널 .9와 타이틀 계정 카드 .9는 공용 섹션 표면 .76의 예외로 시안을 따랐다.
+- **FD-015 (a)**: 레일 버튼 절차 텍스처(seed 6229)는 그대로다. 모달 취소 버튼도 같은 팔레트 절차 텍스처, 만들기는 타이틀 시작 버튼 텍스처다.
+
+### golden 예측
+
+바뀔 장면(4 + 새 1):
+- `title`:
+  - 설정·나가기·시작 모서리 반경 10 → 8.
+  - 설정·나가기 외곽선이 생긴다.
+  - `나가기` 글자가 15 w700 흰색이 된다(이전엔 테마 기본 글자).
+  - 계정 카드 채움 .76 → .9, 외곽선이 생긴다.
+- `account-manager`:
+  - 바깥 Section 5 표면이 사라진다. 그림자는 목록 패널을 따른다.
+  - 목록이 시안 위치·크기로 바뀌고 채움 .9가 된다.
+  - 레일 5개의 위치·크기·폭·아이콘·글자·외곽선이 바뀐다. mock `Main`은 지금 쓰는 계정이라 전환 레일이 흐리고 `지금 쓰는 계정`이 붙는다.
+  - 행: 그라데이션·외곽선(분홍 3.2), stucard 모양, `지금` 칩, 진행 막대, 보유 줄이 바뀐다.
+  - 스크롤바 썸 색·위치가 바뀐다. 계정이 하나라 스크롤이 없으므로 포그는 그려지지 않는다.
+- `account-editor`: 편집기 자체는 그대로다. 그 뒤에 남은 관리 화면이 위처럼 바뀌고, 수정 레일 외곽선이 분홍 3.2가 된다.
+- `account-picker`: `account-editor`와 같은 이유(뒤의 관리 화면 + 수정 레일 누름). 초상 고르기는 그대로다.
+- `account-new`(새 기준 이미지): 관리 화면 위 스크림 + 추가 모달, 입력 포커스(커서 고정).
+
+바뀌지 않을 장면: `home`(타이틀 없이 셸), 학생·계획·스캔 장면(타이틀·계정 클러스터를 거치지 않는다).
+
+commit.json `whole`에는 `title.png`·`account-manager.png`·`account-editor.png`·`account-picker.png`를 하나씩 넣었고, `account-new.png`는 `added`다. gate ①에서 이 밖의 장면이 RED면 예측이 틀린 것이니 갱신하지 말고 알려 달라.
+
+### 미검증 항목
+
+- analyze·일반 테스트·golden·`codealmanac validate`·`git diff --check` 전부 미실행(사용자 PC gate 필요).
+- `BaModal`을 `initiallyOpen: true` 컨트롤러로 띄우는 것은 이번이 처음이다(키트 테스트에 없다). 코드상으로는 첫 프레임에 오버레이가 열린다.
+- 둥근 path bounds: `Path.getBounds`가 실제 bounds이면 80° 꼭짓점에서 약 2.7px 안쪽이다. 테스트는 목록 bounds를 3px까지 허용하고, 22px 간격은 모서리에서 먼 세로 가운데에서 잰다.
+- 경기천년제목은 Medium(500) 한 굵기만 등록되어 있다. 모달 제목·계정 이름은 시안과 같은 500이지만 `계정 이름` 머리글(800)은 합성 굵게일 수 있다.
+- 레일 아이콘은 시안 svg path를 옮겨 그렸다(선 두께 2, 둥근 끝). 17px 크기에서 원호 방향이 시안과 다를 수 있다(눈 검수 A3).
+- 계정 이름이 길면 Studio 규칙대로 `FittedBox.scaleDown` + 말줄임이다. 시안은 말줄임만이다.
+- 만드는 중 Esc는 막지만, 키트 Esc 처리는 닫기를 부르기 전에 등록을 지운다. 그래서 만들기가 실패한 뒤에는 그 모달에서 Esc가 듣지 않는다(X·취소·스크림은 된다). 발견 사항 2.
+- 진행 막대·보유 줄·이름의 세로 위치는 Studio feature 비율(시안 행 안 y 36/72/88)로 놓았다(±2px).
+
+### 발견 사항
+
+1. `almanac/design/section-template-studio.md`「Title 계정 생성·관리 클러스터」절에 반영할 규칙(이 slice는 고치지 않았다):
+   - 관리 섹션(element-5)은 표면을 그리지 않는다. 보이는 표면은 목록 컨테이너(container-11, r14, 채움 .9 = 공용 표면 예외)다.
+   - 레일(container-12·13·14·18·19)은 왼쪽 사다리꼴이다. 런타임 폭은 Studio rect 폭이 아니라 "오른쪽 사선이 목록 왼쪽 사선과 22px(기준 viewport 비례)" 규칙으로 정한다. Studio rect 폭은 2560×1392에서 같은 값이 되게 저장했다.
+   - 행(container-15)은 템플릿이다. 런타임 x는 목록 왼쪽 사선 + 22px이고 스크롤 위치를 따른다. feature-6은 구분선이 아니라 진행 막대(높이 4, feature 중심)다.
+   - 계정 추가는 Studio 섹션이 아니라 키트 모달(고정 1000×330 패널)이다. 첫 계정 만들기도 이 모달이고, 편집기(element-1)는 수정 전용이다.
+   - 저장 문서 원본은 `frontend/assets/studio_sections/section-account-create-manager.ba-section-studio.json`(추적)이다. `release/` 같은 이름 사본은 이제 이전 배치다. 맞추려면 `Copy-Item "frontend\assets\studio_sections\section-account-create-manager.ba-section-studio.json" release\ -Force`(선택, `release/**`는 XB 폴더).
+2. Lane A 키트 요청(고치지 않음):
+   - 레일 아이콘 5종(전환·추가·수정·삭제·뒤로)을 `KitGlyph`로 올려 달라. 지금은 cluster의 private painter다.
+   - 평행사변형 모달 패널: `BaModalPanel`의 평행사변형 변형이 있으면 `account_create_modal.dart`의 패널을 옮긴다.
+   - `BaModal`에 "지금은 닫지 않음" 옵션이 필요하다(작업 중 Esc 막기). 지금은 컨트롤러 `close`를 막는 하위 클래스로 피했다. 키트 Esc 처리가 닫기를 부르기 전에 등록을 지우므로 막은 뒤에는 Esc가 다시 듣지 않는다.
+3. (i) 팝오버(제목 `계정 추가`, 너비 340, 시안 문구 그대로)는 기본으로 닫혀 있다. 시안에서는 마우스를 올리면 뜨는 `.pop` 풍선이다(키트 `InfoPopover` 동작을 따랐다).
+4. 첫 계정은 초상 선택 없이 `hasumi`로 만들어진다. 이전 흐름(편집기)은 첫 계정 초상을 고를 수 있었다. 바꾸려면 만든 뒤 "수정"이다(FD-114 권장안대로 이름만).
+5. 편집기에 남은 해요체 문구 `계정명을 입력하세요`와 삭제 확인 `…삭제할까요?`는 FE8-c(편집 패널) 때 습니다체로 바꿀 후보다.
+6. 계정 만들기 실패 문구는 알려진 저장소 코드만 우리말로 바꾸고(`repositoryLoadErrorText`), 나머지는 원문 오류를 붙인다.
+
+### 다음 행동
+
+- T-FB1b와 FE8-b 코드는 끝났다. Lane B는 여기서 멈춘다.
+- gate 결과를 받으면 RED 원인을 보고 고친다. golden은 오케스트레이터 승인 뒤 갱신한다.
+- 다음 Lane B slice(FE8-c 편집 패널 등)는 오케스트레이터가 정한다.
+
+## 사용자 실행 명령 (T-FB1b·FE8-b, 2026-10-11)
+
+PowerShell, `C:\Users\brigh\planner_of_plana\BA Planner\v7`에서. 명령은 한 줄씩 실행하고, 하나가 실패하면 거기서 멈추고 결과를 오케스트레이터에게 보낸다.
+
+1. Lane A·B 두 워커가 모두 멈춘 뒤 실행하고, 결과(`debug/frontend_gate/` 요약)를 오케스트레이터에게 보낸 뒤 기다린다. 예상 golden RED: `title`·`account-manager`·`account-editor`·`account-picker`와 기준 이미지가 없는 `account-new`.
+   - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1`
+2. 오케스트레이터 승인 뒤:
+   - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1 -UpdateGoldens`
+   - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1`(GREEN 확인)
+3. 커밋(순서는 오케스트레이터가 정한다):
+   - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice tfb1b -DryRun`
+   - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice tfb1b`
+   - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fe8b -DryRun`
+   - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fe8b`
+
+## FE8-b gate ① RED 수정 기록 (2026-10-11, 코드 수정 완료·gate 미실행)
+
+gate ① `debug/frontend_gate/20261011_012751`에서 FE8-b 테스트 13건(`account_manager_fe8b_test.dart` 3건, `title_page_test.dart` 10건)과 golden 4장(`account-manager`·`account-editor`·`account-picker`·`account-new`)이 같은 assertion으로 실패했다:
+
+`ScrollController attached to multiple scroll views ('_positions.length == 1')`
+
+뒤따른 "Looking up a deactivated widget's ancestor"는 이 오류의 연쇄다. T-FB1b는 녹색이었고, `title` 장면 차이는 예측과 같았다(오케스트레이터 확인).
+
+### 원인 (오케스트레이터 추정 확인: 목록 다시 마운트)
+
+- 관리 화면 `_buildManager`의 Stack에서 FE8-b가 목록(`Positioned` → `ClipPath` → 사선 스크롤바 → `ListView`) **앞에** 조건부 자식을 넣었다. 비활성 레일 덮개(`<레일>-disabled`)가 그것이다.
+  - 착수 전 코드는 목록 앞 자식 수가 고정이었고, 조건부 자식은 목록 뒤의 빈 목록 문구 하나뿐이었다(pre 사본 확인).
+- 관리 화면을 열면 처음에는 로딩 중(바쁨, 계정 0개)이라 레일 5개가 모두 비활성이고 빈 목록 문구가 있다. 로드가 끝나면 덮개가 1개(지금 쓰는 계정의 전환)로 줄고 빈 목록 문구가 사라진다. 이 두 변화가 한 번의 rebuild에 함께 일어난다.
+- Flutter의 자식 맞추기(updateChildren)에서 일어난 일:
+  - 앞쪽은 덮개가 줄어든 자리에서 맞추기가 멈춘다.
+  - 뒤쪽은 key 없는 `Positioned`끼리라 새 목록 `Positioned`가 옛 빈 목록 문구 element에 맞춰졌다. 그 아래가 다른 위젯이라 `ListView`가 새로 마운트되었다.
+  - 옛 목록 element는 비활성화만 되고 프레임 끝까지 dispose되지 않는다. 그래서 그 프레임 동안 `_profileListController`에 position이 둘이다.
+  - 그때 새 항목 빌더의 `AnimatedBuilder`가 `_profileListController.offset`을 읽어 assertion이 났다.
+- 모달 열기·닫기, 진입 모션, `showFog`, BaModal 감싸기는 원인이 아니었다. 모두 위젯 종류·순서가 고정이다.
+
+### 수정 (`frontend/lib/ui/widgets/account_section_cluster.dart`만)
+
+권고 ①·② 둘 다 했다. 테스트 기대는 바꾸지 않았다.
+1. 다시 마운트를 없앴다. 상태에 따라 수가 바뀌는 자식의 앞뒤에 key를 두었다:
+   - 목록 상자 `Positioned`: `account-profile-list-box`
+   - 빈 목록 문구: `account-profile-list-empty`(`_positionedContent`에 선택 `key`)
+   - 레일 텍스처 표면: `<레일>-surface`
+
+   이제 목록은 key로 맞춰져 같은 element·같은 ScrollPosition을 유지한다.
+2. 행 항목은 컨트롤러 전체 `offset` 대신 자기가 속한 Scrollable의 position(`Scrollable.of(context).position`)을 읽는다. `AnimatedBuilder`의 animation도 그 position이다. 컨트롤러에 position이 잠깐 둘이어도 assertion이 나지 않는다. 사선 스크롤바(키트)는 목록의 조상이라 새 목록이 붙기 전에 빌드되므로 같은 문제가 없다.
+
+초상 고르기 격자(`_portraitGridController.offset`)는 그 Stack에 조건부 자식이 없어 그대로 두었다(FE8-c 범위).
+
+### 추가 테스트 (`frontend/test/account_manager_fe8b_test.dart`, 5건 → 6건)
+
+`the account list stays mounted through entry, loading, switching and the modal`:
+- 2560×1392에서 계정 둘로 시작한다. 타이틀 → 관리를 연 첫 프레임의 목록 `ScrollableState`를 잡는다.
+- 다음 구간에서 프레임마다 확인한다:
+  - 진입 모션 + 첫 로드 30프레임
+  - 다른 계정으로 전환(바쁨 → 덮개가 생겼다 사라짐) 10프레임
+  - 추가 모달 열기 5프레임, 닫기 5프레임
+- 각 프레임에서 확인하는 것: 예외 없음, 목록 Scrollable이 하나, 처음과 같은 `ScrollableState`.
+
+수정 전 코드에서는 첫 로드 프레임에서 실패한다.
+
+### 검증
+
+- 정적 검토만 했다(Flutter·Dart 없음). 바뀐 두 파일은 LF·끝 공백 없음·괄호 짝 맞음이다.
+- 실패 13건과 golden 4장은 모두 위 assertion 하나로 그려지지 못했다. 그래서 이 assertion 뒤에 가려진 다른 실패가 있는지는 gate 재실행에서 처음 드러난다.
+
+### 사본·commit.json
+
+- post 사본을 끝 상태로 갱신했다:
+  - `debug/frontend_fe8b/post/frontend/lib/ui/widgets/account_section_cluster.dart`
+  - `debug/frontend_fe8b/post/frontend/test/account_manager_fe8b_test.dart`
+- `debug/frontend_fe8b/commit.json`은 바뀐 파일 목록이 같아 그대로다.
+
+### 다음 행동
+
+위 "사용자 실행 명령"을 1번(`fe_gate.ps1`)부터 다시 한다. 예상 golden RED: `title`·`account-manager`·`account-editor`·`account-picker`, 그리고 기준 이미지가 없는 `account-new`. Lane B는 여기서 멈춘다.

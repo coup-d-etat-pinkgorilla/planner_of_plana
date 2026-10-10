@@ -7,6 +7,7 @@ import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/kit/skew_bar.dart';
+import 'package:ba_planner_v7/ui/pages/title_page.dart';
 import 'package:ba_planner_v7/ui/studio/section_studio_document.dart';
 import 'package:ba_planner_v7/ui/studio/account_studio_layout.dart';
 import 'package:ba_planner_v7/ui/studio/title_studio_layout.dart';
@@ -402,15 +403,20 @@ void main() {
     }
   });
 
+  // FE8-b: 계정 클러스터 저장 문서도 git 추적 사본(assets)이 원본이다. 관리 화면은 시안 Title-Accounts 값으로
+  // 다시 저장했다.
   test('typed account layout matches the saved Studio document', () {
-    final saved = jsonDecode(
-      File(
-        '../release/section-account-create-manager.ba-section-studio.json',
-      ).readAsStringSync(),
-    );
+    final source = File(
+      'assets/studio_sections/section-account-create-manager.ba-section-studio.json',
+    ).readAsStringSync();
     expect(
       jsonDecode(encodeSectionStudioDocument(accountStudioDocument)),
-      saved,
+      jsonDecode(source),
+    );
+    // 저장 문서는 Studio 불러오기 검증을 그대로 통과한다.
+    expect(
+      encodeSectionStudioDocument(decodeSectionStudioDocument(source)),
+      encodeSectionStudioDocument(accountStudioDocument),
     );
   });
 
@@ -517,14 +523,14 @@ void main() {
     expect(primary.top, closeTo(525, 0.01));
     expect(primary.width, closeTo(225, 0.01));
 
-    final primaryContainer = titleStudioDocument.containers.singleWhere(
-      (item) => item.id == 'container-2',
-    );
-    final primaryPath = buildStudioContainerPath(
+    // FE8-b: 버튼 path는 Studio 컨테이너 다각형을 반경 8로 둥글린다(시안 `Q 8`).
+    expect(titleButtonRadius, 8);
+    final primaryPath = titleStudioContainerPath(
+      titleStudioDocument,
       const Size(1440, 900),
-      titleStudioDocument.elements,
-      primaryContainer,
-    )!;
+      'container-2',
+      radius: titleButtonRadius,
+    );
     expect(
       tester.getRect(find.byKey(const ValueKey('title-primary-action'))),
       primaryPath.getBounds(),
@@ -533,19 +539,40 @@ void main() {
       'title-settings': 'container-4',
       'title-exit': 'container-5',
     }.entries) {
-      final container = titleStudioDocument.containers.singleWhere(
-        (item) => item.id == entry.value,
-      );
-      final path = buildStudioContainerPath(
+      final path = titleStudioContainerPath(
+        titleStudioDocument,
         const Size(1440, 900),
-        titleStudioDocument.elements,
-        container,
-      )!;
+        entry.value,
+        radius: titleButtonRadius,
+      );
       expect(
         tester.getRect(find.byKey(ValueKey(entry.key))).center,
         path.getBounds().center,
       );
+      // FE8-b: 설정·나가기 외곽선 rgba(56,81,107,.72) 1.8px.
+      final outline = find.byKey(ValueKey('${entry.key}-outline'));
+      expect(outline, findsOneWidget, reason: entry.key);
+      final painter =
+          tester
+                  .widget<CustomPaint>(
+                    find.descendant(
+                      of: outline,
+                      matching: find.byType(CustomPaint),
+                    ),
+                  )
+                  .painter!
+              as dynamic;
+      expect(painter.color, const Color.fromRGBO(56, 81, 107, 0.72));
+      expect(painter.strokeWidth, 1.8);
+      expect((painter.path as Path).getBounds(), path.getBounds());
     }
+    // FE8-b: `나가기` 15px w700 흰색.
+    final exitStyle = tester
+        .widget<Text>(find.byKey(const ValueKey('title-exit-label')))
+        .style!;
+    expect(exitStyle.fontSize, 15);
+    expect(exitStyle.fontWeight, FontWeight.w700);
+    expect(exitStyle.color, Colors.white);
 
     // T9: Space 키캡은 시작 버튼 path 아래 14px, 높이 26이다.
     final spaceKey = tester.getRect(
@@ -613,7 +640,8 @@ void main() {
       findsNothing,
     );
     expect(find.byKey(const ValueKey('title-brand-glow')), findsOneWidget);
-    // 계정 카드 바탕은 공용 섹션 표면 한 겹이다(T11: 삼각 무늬 컨테이너 없음).
+    // 계정 카드 바탕은 한 겹이다(T11: 삼각 무늬 컨테이너 없음). FE8-b: 시안 채움 .9(공용 표면 .76의 예외,
+    // FD-001) + 외곽선 rgba(56,81,107,.6) 1.2px.
     final accountGlass = find.byKey(const ValueKey('title-account-glass'));
     expect(
       tester
@@ -622,8 +650,22 @@ void main() {
           )
           .first
           .color,
-      sectionSurfaceColor,
+      titleAccountCardFill,
     );
+    expect(titleAccountCardFill, const Color.fromRGBO(29, 42, 58, 0.9));
+    expect(titleAccountCardFill, isNot(sectionSurfaceColor));
+    final accountOutlinePainter =
+        tester
+                .widget<CustomPaint>(
+                  find.descendant(
+                    of: find.byKey(const ValueKey('title-account-outline')),
+                    matching: find.byType(CustomPaint),
+                  ),
+                )
+                .painter!
+            as dynamic;
+    expect(accountOutlinePainter.color, const Color.fromRGBO(56, 81, 107, 0.6));
+    expect(accountOutlinePainter.strokeWidth, 1.2);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('title-exit-motion-account')),
@@ -1002,51 +1044,59 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('title-settings')));
       await tester.pumpAndSettle();
 
+      const size = Size(1440, 900);
       final managerSection = accountStudioDocument.elements.singleWhere(
         (item) => item.id == 'element-5',
       );
       expect(
         tester.getRect(find.byKey(const ValueKey('account-manager-section'))),
-        sectionCanvasElementRect(const Size(1440, 900), managerSection),
+        sectionCanvasElementRect(size, managerSection),
       );
-      final managerBase = find.byKey(
-        const ValueKey('account-manager-base-surface'),
-      );
-      final managerBaseClip = tester.widget<ClipPath>(
-        find.descendant(of: managerBase, matching: find.byType(ClipPath)),
-      );
-      final managerBasePath = managerBaseClip.clipper!.getClip(
-        const Size(1440, 900),
-      );
-      for (final id in const [
-        'container-11',
-        'container-12',
-        'container-13',
-        'container-14',
-        'container-18',
-        'container-19',
-      ]) {
-        final path = buildStudioContainerPath(
-          const Size(1440, 900),
-          accountStudioDocument.elements,
-          accountStudioDocument.containers.singleWhere((item) => item.id == id),
-        )!;
-        expect(managerBasePath.contains(path.getBounds().center), isFalse);
-      }
+      // FE8-b(FD-113): 바깥 Section 5 사다리꼴 표면은 없다. 목록 패널(채움 .9)이 섹션 그림자를 가진다.
       expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('account-profile-list-outline')),
-          matching: find.byType(BATriangleBackground),
-        ),
+        find.byKey(const ValueKey('account-manager-base-surface')),
         findsNothing,
+      );
+      final listPath = accountManagerListPath(size);
+      final listSurface = find.byKey(
+        const ValueKey('account-profile-list-surface'),
+      );
+      expect(
+        tester
+            .widget<ClipPath>(
+              find.descendant(of: listSurface, matching: find.byType(ClipPath)),
+            )
+            .clipper!
+            .getClip(size)
+            .getBounds(),
+        listPath.getBounds(),
+      );
+      expect(
+        tester
+            .widget<ColoredBox>(
+              find.descendant(
+                of: listSurface,
+                matching: find.byType(ColoredBox),
+              ),
+            )
+            .color,
+        accountListFill,
+      );
+      expect(
+        tester
+            .widget<LiftedPathShadow>(
+              find.byKey(const ValueKey('account-manager-section-shadow')),
+            )
+            .path
+            .getBounds(),
+        listPath.getBounds(),
       );
 
       Path containerPath(String id) => buildStudioContainerPath(
-        const Size(1440, 900),
+        size,
         accountStudioDocument.elements,
         accountStudioDocument.containers.singleWhere((item) => item.id == id),
       )!;
-      final listPath = containerPath('container-11');
       Path runtimeActionPath(String key) {
         final finder = find.byKey(ValueKey(key));
         final bounds = tester.getRect(finder);
@@ -1056,6 +1106,7 @@ void main() {
         return clip.clipper!.getClip(bounds.size).shift(bounds.topLeft);
       }
 
+      final scale = accountManagerScale(size);
       final actionPaths = const [
         'account-switch',
         'account-add',
@@ -1075,8 +1126,9 @@ void main() {
               actionPaths[index - 1].getBounds().bottom,
       ];
       for (final gap in verticalGaps.skip(1)) {
-        expect(gap, closeTo(verticalGaps.first, 2));
+        expect(gap, closeTo(verticalGaps.first, 0.5));
       }
+      // 레일 오른쪽 사선은 목록 왼쪽 사선과 22px(기준 viewport) 떨어져 나란하다. 그래서 아래 레일일수록 좁다.
       final listGaps = actionPaths
           .map((path) {
             final y = path.getBounds().center.dy;
@@ -1084,35 +1136,49 @@ void main() {
                 _horizontalSpan(path, y).right;
           })
           .toList(growable: false);
-      for (final gap in listGaps.skip(1)) {
-        expect(gap, closeTo(listGaps.first, 0.6));
+      for (final gap in listGaps) {
+        expect(gap, closeTo(accountManagerListEdgeGap * scale, 0.6));
       }
-      expect(listGaps.first, closeTo(12.6, 0.8));
+      for (var index = 1; index < actionPaths.length; index++) {
+        expect(
+          actionPaths[index].getBounds().width,
+          lessThan(actionPaths[index - 1].getBounds().width),
+        );
+      }
 
       const profileId = '000000000000000000000001';
-      Rect containerBounds(String id) => containerPath(id).getBounds();
       Rect featureBounds(String id) => studioFeatureRect(
-        const Size(1440, 900),
+        size,
         accountStudioDocument.elements,
         accountStudioDocument.containers,
         accountStudioDocument.features.singleWhere((item) => item.id == id),
       )!;
-      final templateRowBounds = containerBounds('container-15');
-      final runtimeRowBounds = tester.getRect(
-        find.byKey(const ValueKey('account-profile-$profileId')),
+      final templateRowBox = accountManagerBox(size, 'container-15');
+      final rowFinder = find.byKey(const ValueKey('account-profile-$profileId'));
+      final runtimeRowBounds = tester.getRect(rowFinder);
+      expect(runtimeRowBounds.width, closeTo(templateRowBox.width, 1e-6));
+      expect(runtimeRowBounds.height, closeTo(templateRowBox.height, 1e-6));
+      expect(runtimeRowBounds.top, closeTo(templateRowBox.top, 0.01));
+      // 행 왼쪽 사선도 목록 왼쪽 사선에서 22px 안쪽이다.
+      final runtimeRowPath = tester
+          .widget<ClipPath>(
+            find.byKey(const ValueKey('account-profile-surface-$profileId')),
+          )
+          .clipper!
+          .getClip(runtimeRowBounds.size)
+          .shift(runtimeRowBounds.topLeft);
+      final rowCenterY = runtimeRowBounds.center.dy;
+      expect(
+        _horizontalSpan(runtimeRowPath, rowCenterY).left -
+            _horizontalSpan(listPath, rowCenterY).left,
+        closeTo(accountManagerListEdgeGap * scale, 0.6),
       );
-      final listBounds = listPath.getBounds();
-      final expectedRowCenterX =
-          listBounds.center.dx +
-          (listBounds.center.dy - runtimeRowBounds.center.dy) /
-              math.tan(80 * math.pi / 180);
-      expect(runtimeRowBounds.center.dx, closeTo(expectedRowCenterX, 0.5));
-      final rowShift = runtimeRowBounds.topLeft - templateRowBounds.topLeft;
+      final rowShift = runtimeRowBounds.topLeft - templateRowBox.topLeft;
       _expectRectClose(
         tester.getRect(
           find.byKey(const ValueKey('account-profile-portrait-$profileId')),
         ),
-        containerBounds('container-16').shift(rowShift),
+        accountManagerBox(size, 'container-16').shift(rowShift),
       );
       _expectRectClose(
         tester.getRect(
@@ -1120,11 +1186,16 @@ void main() {
         ),
         featureBounds('feature-5').shift(rowShift),
       );
+      final progressBounds = featureBounds('feature-6').shift(rowShift);
       _expectRectClose(
         tester.getRect(
-          find.byKey(const ValueKey('account-profile-divider-$profileId')),
+          find.byKey(const ValueKey('account-profile-progress-$profileId')),
         ),
-        featureBounds('feature-6').shift(rowShift),
+        Rect.fromCenter(
+          center: progressBounds.center,
+          width: progressBounds.width,
+          height: 4,
+        ),
       );
       _expectRectClose(
         tester.getRect(
@@ -1378,24 +1449,10 @@ void main() {
     );
     expect(find.byType(Scrollbar), findsNothing);
     expect(find.byType(RawScrollbar), findsNothing);
-    final listPath = buildStudioContainerPath(
-      const Size(1440, 900),
-      accountStudioDocument.elements,
-      accountStudioDocument.containers.singleWhere(
-        (item) => item.id == 'container-11',
-      ),
-    )!;
-    final rowTemplate = buildStudioContainerPath(
-      const Size(1440, 900),
-      accountStudioDocument.elements,
-      accountStudioDocument.containers.singleWhere(
-        (item) => item.id == 'container-15',
-      ),
-    )!;
-    _expectPathInside(
-      rowTemplate.shift(before.topLeft - rowTemplate.getBounds().topLeft),
-      listPath,
-    );
+    // FE8-b: 행 path는 행 상자 지역 좌표다(상자 왼쪽 위 = 행 위젯 왼쪽 위).
+    final listPath = accountManagerListPath(const Size(1440, 900));
+    final rowTemplate = accountManagerRowPath(const Size(1440, 900));
+    _expectPathInside(rowTemplate.shift(before.topLeft), listPath);
 
     await tester.drag(
       find.byKey(const ValueKey('account-profile-list')),
@@ -1410,10 +1467,7 @@ void main() {
     expect(after.left, greaterThan(before.left));
     expect(scrollbarAfter.top, greaterThan(scrollbarBefore.top));
     expect(scrollbarAfter.left, lessThan(scrollbarBefore.left));
-    _expectPathInside(
-      rowTemplate.shift(after.topLeft - rowTemplate.getBounds().topLeft),
-      listPath,
-    );
+    _expectPathInside(rowTemplate.shift(after.topLeft), listPath);
   });
 
   testWidgets('nested account sections exit independently', (tester) async {
@@ -1475,7 +1529,8 @@ void main() {
     expect(find.byKey(const ValueKey('title-brand-section')), findsOneWidget);
   });
 
-  testWidgets('first account editor back returns to the title', (tester) async {
+  // FE8-b(FD-114): 첫 계정 만들기도 계정 추가 모달이다. 만들지 않고 닫으면 타이틀로 돌아간다.
+  testWidgets('first account modal cancel returns to the title', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1280, 720));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final service = MockAppService(profiles: const []);
@@ -1486,22 +1541,19 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('title-primary-action')));
     await _pumpUntilFound(
       tester,
-      find.byKey(const ValueKey('account-editor-section')),
+      find.byKey(const ValueKey('account-create-modal')),
     );
     await tester.pumpAndSettle();
-    tester
-        .widget<InkWell>(
-          find.descendant(
-            of: find.byKey(const ValueKey('account-editor-back')),
-            matching: find.byType(InkWell),
-          ),
-        )
-        .onTap!();
+    expect(find.byKey(const ValueKey('account-editor-section')), findsNothing);
+    expect(find.byKey(const ValueKey('account-manager-section')), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('account-create-cancel')));
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('account-editor-section')), findsNothing);
+    expect(find.byKey(const ValueKey('account-create-modal')), findsNothing);
     expect(find.byKey(const ValueKey('title-brand-section')), findsOneWidget);
+    expect(await service.listProfiles(), isEmpty);
   });
 
   testWidgets('first run imports a v6 account and opens its repository plan', (
@@ -1611,7 +1663,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('account-profile-count-$secondId')),
-          matching: find.text('보유 : 읽지 못함'),
+          matching: find.text('읽지 못함'),
         ),
         findsOneWidget,
       );
@@ -1711,12 +1763,27 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(480, 270));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final service = MockAppService(profiles: const []);
+      final service = MockAppService();
       addTearDown(service.dispose);
 
+      // FE8-b: 편집기는 관리 화면의 "수정"으로만 연다(첫 계정은 추가 모달).
       await tester.pumpWidget(BAPlannerApp(service: service, showTitle: true));
-      await _pumpUntilFound(tester, find.text('계정 생성'));
-      await tester.tap(find.byKey(const ValueKey('title-primary-action')));
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const ValueKey('title-settings')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('title-settings')));
+      await _pumpUntilFound(tester, find.byKey(const ValueKey('account-edit')));
+      await tester.pumpAndSettle();
+      tester
+          .widget<InkWell>(
+            find.descendant(
+              of: find.byKey(const ValueKey('account-edit')),
+              matching: find.byType(InkWell),
+            ),
+          )
+          .onTap!();
       await _pumpUntilFound(
         tester,
         find.byKey(const ValueKey('account-editor-section')),
@@ -1728,8 +1795,12 @@ void main() {
         'account-editor-back': '뒤로',
         'account-editor-save': '저장',
       }.entries) {
-        final action = tester.getRect(find.byKey(ValueKey(entry.key)));
-        final text = tester.getRect(find.text(entry.value));
+        final actionFinder = find.byKey(ValueKey(entry.key));
+        final action = tester.getRect(actionFinder);
+        // 관리 화면이 편집기 아래에 남아 있어 `뒤로`가 둘이다. 버튼 안의 글자만 본다.
+        final text = tester.getRect(
+          find.descendant(of: actionFinder, matching: find.text(entry.value)),
+        );
         expect(text.width, lessThanOrEqualTo(action.width));
         expect(text.height, lessThanOrEqualTo(action.height));
       }
@@ -1755,6 +1826,7 @@ void main() {
     },
   );
 
+  // FE8-b(FD-114): 첫 계정은 이름만 받는 계정 추가 모달로 만들고 곧바로 홈으로 간다.
   testWidgets('an account can be created from the title then enters home', (
     tester,
   ) async {
@@ -1770,14 +1842,12 @@ void main() {
     expect(find.byKey(const ValueKey('title-account-section')), findsNothing);
 
     const titleSize = Size(1280, 720);
-    final primaryContainer = titleStudioDocument.containers.singleWhere(
-      (item) => item.id == 'container-2',
-    );
-    final primaryPath = buildStudioContainerPath(
+    final primaryPath = titleStudioContainerPath(
+      titleStudioDocument,
       titleSize,
-      titleStudioDocument.elements,
-      primaryContainer,
-    )!;
+      'container-2',
+      radius: titleButtonRadius,
+    );
     final labelRect = studioFeatureRect(
       titleSize,
       titleStudioDocument.elements,
@@ -1802,29 +1872,26 @@ void main() {
     await tester.tapAt(fullShapeTap!);
     await _pumpUntilFound(
       tester,
-      find.byKey(const ValueKey('account-editor-section')),
+      find.byKey(const ValueKey('account-create-modal')),
     );
-    final editorEntrance = tester.widget<Transform>(
-      find.byKey(const ValueKey('account-editor-motion-transform')),
-    );
-    final editorStart = editorEntrance.transform.getTranslation();
-    expect(editorStart.x, lessThan(0));
-    expect(editorStart.y, greaterThan(0));
-    await tester.pump(const Duration(milliseconds: 100));
-    final editorLater = tester
-        .widget<Transform>(
-          find.byKey(const ValueKey('account-editor-motion-transform')),
-        )
-        .transform
-        .getTranslation();
-    expect(editorLater.x, greaterThan(editorStart.x));
-    expect(editorLater.y, lessThan(editorStart.y));
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('account-editor-section')), findsNothing);
+    expect(find.text('계정 추가'), findsOneWidget);
+
+    InkWell submitInk() => tester.widget<InkWell>(
+      find.descendant(
+        of: find.byKey(const ValueKey('account-create-submit')),
+        matching: find.byType(InkWell),
+      ),
+    );
+    expect(submitInk().onTap, isNull, reason: '이름이 비면 만들 수 없다');
     await tester.enterText(
-      find.byKey(const ValueKey('account-name-input')),
+      find.byKey(const ValueKey('account-create-name-input')),
       '테스트 계정',
     );
-    await tester.tap(find.byKey(const ValueKey('account-editor-save')));
+    await tester.pump();
+    expect(submitInk().onTap, isNotNull);
+    await tester.tap(find.byKey(const ValueKey('account-create-submit')));
     await _pumpUntilFound(
       tester,
       find.byKey(const ValueKey('home-menu-section')),

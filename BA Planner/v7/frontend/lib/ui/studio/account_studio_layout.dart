@@ -4,7 +4,10 @@ import 'section_template.dart';
 /// Runtime projection for the account create / portrait picker cluster.
 ///
 /// Every Section, Container, and Feature is copied numerically from
-/// `release/section-account-create-manager.ba-section-studio.json`.
+/// `assets/studio_sections/section-account-create-manager.ba-section-studio.json`
+/// (git 추적 사본, FE8-b). 관리 화면(Section 5)의 목록·레일·행·초상·행 글자는 시안
+/// `Title-Accounts.dc.html` 값이다: 기준 viewport 2560×1392에서 목록 29.2,36 870.8×1320,
+/// 레일 x 14 · y 44/135/226/317/408 · 높이 74, 행 597×142(첫 행 255.4,56), stucard 140.82×114.
 final SectionStudioDocument accountStudioDocument = SectionStudioDocument(
   headerRows: 0,
   viewport: 'standard',
@@ -154,35 +157,60 @@ final SectionStudioDocument accountStudioDocument = SectionStudioDocument(
       id: 'container-11',
       label: '컨테이너 11',
       parentSectionId: 'element-5',
-      rect: StudioPlacementRect(0.03, 0.02, 0.65, 0.96),
+      rect: StudioPlacementRect(
+        0.031285714285714285,
+        0.02641232575201761,
+        0.6836232701408851,
+        0.9684519442406456,
+      ),
       spec: _parallelogram,
     ),
     StudioContainerElement(
       id: 'container-12',
       label: '컨테이너 12',
       parentSectionId: 'element-5',
-      rect: StudioPlacementRect(0.015, 0.02, 0.27, 0.08),
+      rect: StudioPlacementRect(
+        0.015,
+        0.032281731474688186,
+        0.24064285714285713,
+        0.05429200293470286,
+      ),
       spec: _leftTrapezoid,
     ),
     StudioContainerElement(
       id: 'container-13',
       label: '컨테이너 13',
       parentSectionId: 'element-5',
-      rect: StudioPlacementRect(0.015, 0.11708142058306828, 0.24, 0.08),
+      rect: StudioPlacementRect(
+        0.015,
+        0.09904622157006603,
+        0.22339285714285714,
+        0.05429200293470286,
+      ),
       spec: _leftTrapezoid,
     ),
     StudioContainerElement(
       id: 'container-14',
       label: '컨테이너 14',
       parentSectionId: 'element-5',
-      rect: StudioPlacementRect(0.015, 0.216, 0.21, 0.08),
+      rect: StudioPlacementRect(
+        0.015,
+        0.16581071166544387,
+        0.20625,
+        0.05429200293470286,
+      ),
       spec: _leftTrapezoid,
     ),
     StudioContainerElement(
       id: 'container-15',
       label: '컨테이너 15',
       parentSectionId: 'element-5',
-      rect: StudioPlacementRect(0.29, 0.03908142058306829, 0.6, 0.105),
+      rect: StudioPlacementRect(
+        0.27364285714285713,
+        0.041085840058694055,
+        0.6128159665064978,
+        0.10418195157740279,
+      ),
       spec: _parallelogram,
     ),
     StudioContainerElement(
@@ -190,10 +218,10 @@ final SectionStudioDocument accountStudioDocument = SectionStudioDocument(
       label: '컨테이너 16',
       parentSectionId: 'element-5',
       rect: StudioPlacementRect(
-        0.32,
-        0.0491890660617065,
-        0.16,
-        0.0854453837137982,
+        0.3204214285714286,
+        0.05135730007336757,
+        0.12934149021346603,
+        0.08363903154805576,
       ),
       spec: _parallelogram,
     ),
@@ -201,14 +229,24 @@ final SectionStudioDocument accountStudioDocument = SectionStudioDocument(
       id: 'container-18',
       label: '컨테이너 18',
       parentSectionId: 'element-5',
-      rect: StudioPlacementRect(0.015, 0.314, 0.18, 0.08),
+      rect: StudioPlacementRect(
+        0.015,
+        0.23257520176082172,
+        0.18910714285714286,
+        0.05429200293470286,
+      ),
       spec: _leftTrapezoid,
     ),
     StudioContainerElement(
       id: 'container-19',
       label: '컨테이너 19',
       parentSectionId: 'element-5',
-      rect: StudioPlacementRect(0.015, 0.412, 0.15, 0.08),
+      rect: StudioPlacementRect(
+        0.015,
+        0.2993396918561996,
+        0.17185714285714285,
+        0.05429200293470286,
+      ),
       spec: _leftTrapezoid,
     ),
   ],
@@ -234,13 +272,13 @@ final SectionStudioDocument accountStudioDocument = SectionStudioDocument(
       parentContainerId: 'container-15',
       kind: StudioFeatureKind.text,
       rect: StudioPlacementRect(
-        0.38,
-        0.08906864561002914,
-        0.38693685010921314,
-        0.17951425199544124,
+        0.35491895101870485,
+        0.2535211267605634,
+        0.627664548845887,
+        0.16901408450704225,
       ),
       spec: _leftText,
-      text: '텍스트',
+      text: '거모이는존재한다 (v7 UI 테스트)',
     ),
     StudioFeatureElement(
       id: 'feature-6',
@@ -248,10 +286,10 @@ final SectionStudioDocument accountStudioDocument = SectionStudioDocument(
       parentContainerId: 'container-15',
       kind: StudioFeatureKind.line,
       rect: StudioPlacementRect(
-        0.37774231135351605,
-        0.21862303922461698,
-        0.6205943556844593,
-        0.20445692659661444,
+        0.35491895101870485,
+        0.5070422535211268,
+        0.5629748878227733,
+        0.028169014084507043,
       ),
       spec: _leftText,
     ),
@@ -261,13 +299,13 @@ final SectionStudioDocument accountStudioDocument = SectionStudioDocument(
       parentContainerId: 'container-15',
       kind: StudioFeatureKind.text,
       rect: StudioPlacementRect(
-        0.38,
-        0.37246888164194003,
-        0.28697414239842695,
-        0.2523885984036469,
+        0.35491895101870485,
+        0.6197183098591549,
+        0.627664548845887,
+        0.1267605633802817,
       ),
       spec: _leftText,
-      text: '텍스트',
+      text: '보유 217 / 265',
     ),
     StudioFeatureElement(
       id: 'feature-8',
