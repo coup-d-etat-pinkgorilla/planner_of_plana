@@ -532,6 +532,44 @@ process 테스트가 담당합니다. UI 연결과 golden 변경은 이 계약 s
 
 ## scanner protocol v1
 
+### FB-4 target metadata
+
+`scanner.target.list` keeps the existing required `target_id`, `title`, and
+`status` keys and accepts three additive optional fields. Production Windows
+enumeration emits all three; legacy/custom providers may omit them.
+`client_width` / `client_height` are positive integer **physical client-area
+pixels**, excluding title bars and borders, or a null pair when minimized,
+closed, invalid or unreadable. A temporary per-monitor-v2 **thread** DPI context
+is restored in `finally`; unavailable DPI awareness yields null sizes rather
+than guessed scaled values. No process-global DPI setting is changed.
+
+`game` is `"blue_archive"` or null. The conservative heuristic requires a
+visible window with exact class `UnityWndClass` and executable basename
+`BlueArchive.exe` (case-insensitive). Title text alone is insufficient. Only
+`OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)` plus
+`QueryFullProcessImageNameW` reads the OS process image name; the handle is
+always closed and the full path is transient, never returned or saved. The
+heuristic is not authenticated identity and has not been observed against a
+live game in FB-4. Null means unknown/unverified, not a negative assertion.
+No server/region is inferred from title, basename or path. A non-16:9 or
+unknown-server client can have the same game value; it does **not** imply
+scanner eligibility. Existing **KR Steam-only** scanner support, target title
+filter, readiness/diagnose status, capture/input and attachment behavior are
+unchanged. This field introduces no attach session or protocol method.
+
+PID/thread identity is checked before and after metadata queries, against the
+identity sampled at enumeration; closed/reused windows return null metadata.
+Geometry and identity queries fail independently: process-name permission
+denial preserves available dimensions, and DPI/rectangle failure preserves
+available game classification. Optional query failures introduce no new wire
+errors or target-list failure. Shared examples and invalid field types are in
+`fixtures/scanner_target_metadata_fb4_v1.json`; real game dimensions remain
+unverified until the master observes them. The schema is additive protocol v1,
+finalized by XB. CF `fb4-dart` consumption and gate remain the frontend follow-up.
+Win32 API references: [GetClientRect](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getclientrect),
+[SetThreadDpiAwarenessContext](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setthreaddpiawarenesscontext),
+and [QueryFullProcessImageNameW](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-queryfullprocessimagenamew).
+
 P5 scanner 계약은 `scanner-protocol-v1.schema.json`과 공유 fixture
 `fixtures/scanner_protocol_v1.json`에서 시작합니다. 요청 method는 target 목록,
 recognition readiness, session start/cancel/snapshot, candidate get/review/commit입니다.

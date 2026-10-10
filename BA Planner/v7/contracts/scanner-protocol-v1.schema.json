@@ -147,7 +147,10 @@
                         "properties": {
                           "target_id": { "type": "string", "minLength": 1 },
                           "title": { "type": "string" },
-                          "status": { "enum": ["ready", "minimized", "closed", "unsupported"] }
+                          "status": { "enum": ["ready", "minimized", "closed", "unsupported"] },
+                          "client_width": { "type": ["integer", "null"], "minimum": 1 },
+                          "client_height": { "type": ["integer", "null"], "minimum": 1 },
+                          "game": { "enum": ["blue_archive", null] }
                         },
                         "additionalProperties": true
                       }

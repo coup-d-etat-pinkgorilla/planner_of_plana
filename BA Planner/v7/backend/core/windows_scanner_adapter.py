@@ -13,6 +13,7 @@ from PIL import Image, ImageStat
 from core.scanner_matchers import image_similarity
 from core.scanner_session import ScannerError
 from core.user_input_guard import UserInputGuard
+from core.scanner_target_metadata import target_metadata, window_identity
 
 
 def _guarded(method):
@@ -152,12 +153,14 @@ class WindowsCaptureInputAdapter:
         callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
 
         def visit(hwnd, _lparam):
+            identity = self._identities.get(int(hwnd)) or window_identity(u, hwnd)
             title = ctypes.create_unicode_buffer(max(1, u.GetWindowTextLengthW(hwnd) + 1))
             u.GetWindowTextW(hwnd, title, len(title))
             if not title.value or self.title_contains not in title.value.casefold():
                 return True
             item = {"target_id": f"hwnd:{int(hwnd):x}", "title": title.value}
             item.update(self.diagnose(item))
+            item.update(target_metadata(int(hwnd), expected_identity=identity))
             targets.append(item)
             return True
 
