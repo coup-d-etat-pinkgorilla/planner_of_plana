@@ -6,6 +6,7 @@ import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scenario_service.dart';
 import 'package:ba_planner_v7/ui/kit/buttons.dart';
+import 'package:ba_planner_v7/ui/kit/diagonal_row.dart';
 import 'package:ba_planner_v7/ui/models/plan_flow_draft.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/models/repository_plan_snapshot.dart';
@@ -307,9 +308,10 @@ void main() {
     },
   );
 
-  testWidgets('scenario list card exposes identity calculation and portraits', (
+  testWidgets('scenario list row exposes identity calculation and portraits', (
     tester,
   ) async {
+    // FE5-a: 시나리오 행은 시안 Scenario-List `srow`(100px, 고른 행 146px + 행 액션)다.
     PlanningScenarioSummary summary({required String id, required int base}) =>
         PlanningScenarioSummary(
           id: id,
@@ -344,26 +346,32 @@ void main() {
         home: Scaffold(
           body: Center(
             child: SizedBox(
-              width: 900,
+              width: 1250,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
-                    height: 142,
-                    child: PlanScenarioListCard(
+                    height: 100,
+                    child: PlanScenarioListRow(
                       scenario: summary(id: 'current', base: 3),
                       stale: false,
-                      selected: false,
+                      expanded: false,
+                      compared: false,
                       onTap: () {},
                     ),
                   ),
                   SizedBox(
-                    height: 142,
-                    child: PlanScenarioListCard(
+                    height: 146,
+                    child: PlanScenarioListRow(
                       scenario: summary(id: 'stale', base: 2),
                       stale: true,
-                      selected: false,
+                      expanded: true,
+                      compared: true,
                       onTap: () {},
+                      onToggleCompare: () {},
+                      onDuplicate: () {},
+                      onRename: () {},
+                      onDelete: () {},
                     ),
                   ),
                 ],
@@ -376,17 +384,30 @@ void main() {
 
     expect(find.text('빠른 성장 후보'), findsOneWidget);
     expect(find.text('딜러를 먼저 육성'), findsOneWidget);
-    expect(find.text('학생 5 · 페이즈 2 · 성장 단계 7'), findsNWidgets(2));
-    expect(find.text('크레딧 18.2M · 부족 4종 · 최초 병목 페이즈 2'), findsNWidgets(2));
-    expect(find.text('최상급 활동 보고서 −84'), findsNWidgets(2));
-    expect(find.text('+1'), findsNWidgets(2));
-    expect(
-      find.byKey(const ValueKey('plan-scenario-portrait-current-ayane')),
-      findsOneWidget,
-    );
+    String metrics(String id) => tester
+        .widget<Text>(find.byKey(ValueKey('plan-scenario-calculation-$id')))
+        .textSpan!
+        .toPlainText();
+    for (final id in const ['current', 'stale']) {
+      expect(metrics(id), contains('크레딧 18.2M'));
+      expect(metrics(id), contains('부족 4종'));
+      expect(metrics(id), contains('첫 병목 P2'));
+      expect(metrics(id), contains('학생 5 · 페이즈 2 · 단계 7'));
+    }
+    expect(find.text('최상급 활동 보고서'), findsNWidgets(2));
+    expect(find.text('−84'), findsNWidgets(2));
+    // 초상 3명 + "…+2" 칩.
+    expect(find.text('…+2'), findsNWidgets(2));
     expect(find.text('현재 데이터 기준'), findsOneWidget);
     expect(find.text('저장 시점과 다름'), findsOneWidget);
-    expect(find.text('수정 2026.08.13 14:32'), findsNWidgets(2));
+    expect(find.text('수정 8.13 14:32'), findsNWidgets(2));
+    // 고른 행만 행 액션이 보인다. 열기(시나리오 보기, FE5-c)는 아직 비활성이다.
+    expect(find.byKey(const ValueKey('plan-scenario-open-current')), findsNothing);
+    expect(find.byKey(const ValueKey('plan-scenario-open-stale')), findsOneWidget);
+    expect(find.text('비교에서 빼기'), findsOneWidget);
+    expect(find.text('복제'), findsOneWidget);
+    expect(find.text('이름 · 설명'), findsOneWidget);
+    expect(find.text('삭제'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -3912,7 +3933,7 @@ void main() {
   );
 
   testWidgets(
-    'scenario list keeps section 1 and uses the 80 to 260 diagonal workspace',
+    'scenario list replaces the plan home with its three sections and returns to the active plan',
     (tester) async {
       final service = MockAppService();
       addTearDown(service.dispose);
@@ -3931,28 +3952,52 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('plan-scenario-list-launch')));
       await tester.pumpAndSettle();
 
+      // FE5-a: 목록은 S1 메뉴 · S2 목록 · S3 미리보기로 계획 홈 섹션(섹션 1 포함)을 대신한다.
       expect(find.byType(PlanScenarioListSection), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('plan-element-1-foundation')),
-        findsOneWidget,
+        tester
+            .widget<PlanSectionMotion>(
+              find.byKey(const ValueKey('plan-element-1-motion')),
+            )
+            .animation
+            .value,
+        0,
       );
       expect(
-        find.text('저장된 시나리오가 없습니다.\n섹션 1의 시나리오 생성 버튼으로 시작할 수 있습니다.'),
+        find.text('저장된 시나리오가 없습니다.\n왼쪽 "새 시나리오"로 시작할 수 있습니다.'),
         findsOneWidget,
       );
-      final motion = tester.widget<PlanSectionMotion>(
-        find.byKey(const ValueKey('plan-scenario-list-motion')),
-      );
-      expect(motion.introDegrees, 80);
-      expect(motion.outroDegrees, 260);
+      for (final (key, intro, outro) in const [
+        ('plan-scenario-menu-motion', 0.0, 180.0),
+        ('plan-scenario-list-motion', 80.0, 260.0),
+        ('plan-scenario-preview-motion', 180.0, 0.0),
+      ]) {
+        final motion = tester.widget<PlanSectionMotion>(find.byKey(ValueKey(key)));
+        expect(motion.introDegrees, intro, reason: key);
+        expect(motion.outroDegrees, outro, reason: key);
+      }
       expect(
         find.byKey(const ValueKey('plan-scenario-list-foundation')),
         findsOneWidget,
       );
+      expect(
+        find.byKey(const ValueKey('plan-scenario-active-row')),
+        findsOneWidget,
+      );
+      expect(find.text('1 / 4'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('plan-scenario-list-launch')));
+      await tester.tap(find.byKey(const ValueKey('plan-scenario-menu-back')));
       await tester.pumpAndSettle();
       expect(find.byType(PlanScenarioListSection), findsNothing);
+      expect(
+        tester
+            .widget<PlanSectionMotion>(
+              find.byKey(const ValueKey('plan-element-1-motion')),
+            )
+            .animation
+            .value,
+        1,
+      );
       expect(tester.takeException(), isNull);
     },
   );
@@ -4240,23 +4285,22 @@ void main() {
         find.byKey(const ValueKey('plan-scenario-diagonal-scroll')),
         findsOneWidget,
       );
+      // FE5-a: 행은 공용 사선 행(`srow`), 목록은 공용 사선 스크롤 뷰포트 + 포그(FD-087)다.
       expect(
-        tester
-            .widget<ClipPath>(
-              find.byKey(
-                ValueKey('plan-scenario-card-clip-${list.scenarios.single.id}'),
-              ),
-            )
-            .clipper,
-        isA<PlanScenarioParallelogramClipper>(),
+        find.descendant(
+          of: find.byKey(
+            ValueKey('plan-scenario-row-${list.scenarios.single.id}'),
+          ),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is ClipPath && widget.clipper is DiagonalRowClipper,
+          ),
+        ),
+        findsWidgets,
       );
       expect(
-        tester
-            .widget<ClipPath>(
-              find.byKey(const ValueKey('plan-scenario-fog-clip')),
-            )
-            .clipper,
-        isA<PlanScenarioParallelogramClipper>(),
+        find.byKey(const ValueKey('plan-scenario-diagonal-fog')),
+        findsOneWidget,
       );
       expect(tester.takeException(), isNull);
     },

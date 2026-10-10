@@ -31,11 +31,14 @@ import 'plan_element_builder.dart';
 import 'plan_flow_workspace.dart';
 import 'plan_phase_editor.dart';
 import 'plan_preset_manager.dart';
+import 'plan_scenario_list.dart';
 import 'plan_student_selector.dart';
 import 'plan_student_step_tile.dart';
 import 'section_surface.dart';
 import 'section_template_surface.dart';
 
+export 'plan_scenario_list.dart'
+    show PlanScenarioListSection, PlanScenarioListRow, PlanScenarioActiveRow;
 export 'plan_student_step_tile.dart';
 
 const planSectionOpacity = sectionSurfaceOpacity;
@@ -1337,6 +1340,10 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   bool _showScenarioComparison = false;
   bool _switchingScenarioWorkspace = false;
 
+  /// 시나리오 목록 "나란히 비교"(FE5-a)로 연 비교 화면이 처음 고를 대상(`active-plan` + 시나리오 id). 비교 화면을
+  /// 섹션 1 "시나리오 비교"로 열면 비어 있다.
+  List<String> _comparisonInitialIds = const [];
+
   /// 계획 만들기 흐름(FE4-a1). 시나리오 만들기·시나리오 편집이 이 흐름으로 열린다. 초안은 흐름이 따로
   /// 가지므로 활성 계획 작업 상태를 건드리지 않는다.
   PlanFlowController? _flow;
@@ -1872,7 +1879,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     if (_flow != null || _handoffPending) return;
     if (_showScenarioList || _showScenarioComparison) {
       for (final entry in _controllers.entries) {
-        if (entry.key == 'element-1') {
+        // 시나리오 목록(FE5-a)은 자기 S1 메뉴가 있어 계획 홈 섹션 1도 내린다. 비교 화면은 섹션 1을 둔다.
+        if (entry.key == 'element-1' && !_showScenarioList) {
           active ? entry.value.forward(from: 0) : entry.value.reverse(from: 1);
         } else {
           entry.value.value = 0;
@@ -2067,15 +2075,17 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       }
       final state = await _ensureRepositoryContext();
       if (state == null || !mounted) return;
+      // 시나리오 목록(FE5-a)은 자기 S1 메뉴가 있어 섹션 1도 내린다. 비교 화면은 섹션 1을 둔다.
       await Future.wait([
         for (final entry in _controllers.entries)
-          if (entry.key != 'element-1') entry.value.reverse(),
+          if (entry.key != 'element-1' || !comparison) entry.value.reverse(),
       ]);
       // 그 사이 계산기에서 학생이 넘어와 흐름이 열리면(FE4-g) 목록을 열지 않는다.
       if (!mounted || _flow != null || _handoffPending) return;
       setState(() {
         _showScenarioList = !comparison;
         _showScenarioComparison = comparison;
+        _comparisonInitialIds = const [];
       });
       await _scenarioListController.forward(from: 0);
     } on TickerCanceled {
@@ -2095,6 +2105,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         _switchingScenarioWorkspace) {
       return;
     }
+    final closingList = _showScenarioList;
     setState(() => _switchingScenarioWorkspace = true);
     try {
       await _scenarioListController.reverse(from: 1);
@@ -2102,15 +2113,103 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       setState(() {
         _showScenarioList = false;
         _showScenarioComparison = false;
+        _comparisonInitialIds = const [];
       });
+      // 목록을 닫으면 섹션 1도 다시 들어온다(목록이 내렸다). 비교 화면은 섹션 1을 그대로 둔다.
       await Future.wait([
         for (final entry in _controllers.entries)
-          if (entry.key != 'element-1') entry.value.forward(from: 0),
+          if (entry.key != 'element-1' || closingList)
+            entry.value.forward(from: 0),
       ]);
     } on TickerCanceled {
       return;
     } finally {
       if (mounted) setState(() => _switchingScenarioWorkspace = false);
+    }
+  }
+
+  /// 시나리오 목록 S1 "새 시나리오"(FE5-a): 목록을 내리고 계획 만들기 1단계를 연다. 계획 홈 섹션은 이미 내려가 있고,
+  /// 흐름을 닫으면([_closeFlow]) 다시 들어온다.
+  Future<void> _createScenarioFromList() async {
+    if (!_showScenarioList || _switchingScenarioWorkspace || _flow != null) {
+      return;
+    }
+    setState(() => _switchingScenarioWorkspace = true);
+    try {
+      // final로 받아야 아래 setState 클로저 안에서도 null이 아님이 유지된다.
+      final flowContext = await _flowContextOrNull();
+      if (flowContext == null || !mounted || _flow != null) return;
+      // 퇴장 Future를 기다리지 않는다(도중에 멈추면 끝나지 않는다). 모션 시간만 기다린다.
+      _scenarioListController.reverse(from: _scenarioListController.value);
+      await Future<void>.delayed(_motionDuration);
+      if (!mounted || _flow != null || !_showScenarioList) return;
+      setState(() {
+        _showScenarioList = false;
+        _flow = PlanFlowController(
+          purpose: PlanFlowPurpose.newScenario,
+          context: flowContext,
+          service: widget.service,
+        );
+      });
+    } finally {
+      if (mounted) setState(() => _switchingScenarioWorkspace = false);
+    }
+  }
+
+  /// 시나리오 목록 S1 "프리셋 관리"(FE5-a): 목록을 내리고 프리셋 관리를 연다. 닫으면 계획 홈으로 돌아간다.
+  Future<void> _openPresetManagerFromList() async {
+    if (!_showScenarioList || _switchingScenarioWorkspace) return;
+    setState(() => _switchingScenarioWorkspace = true);
+    try {
+      _scenarioListController.reverse(from: _scenarioListController.value);
+      await Future<void>.delayed(_motionDuration);
+      if (!mounted || _flow != null || !_showScenarioList) return;
+      setState(() {
+        _showScenarioList = false;
+        _showPresetManager = true;
+      });
+    } finally {
+      if (mounted) setState(() => _switchingScenarioWorkspace = false);
+    }
+  }
+
+  /// 시나리오 목록 "나란히 비교"(FE5-a, FD-084·FD-085): 활성 계획(A)과 담은 시나리오 하나(B)로 기존 A↔B 비교
+  /// 화면을 연다. 셋 이상(4열 비교)은 FE5-e에서 연다.
+  Future<void> _compareFromList(List<String> scenarioIds) async {
+    if (!_showScenarioList ||
+        _switchingScenarioWorkspace ||
+        scenarioIds.length != 1 ||
+        _document == null) {
+      return;
+    }
+    setState(() => _switchingScenarioWorkspace = true);
+    try {
+      _scenarioListController.reverse(from: _scenarioListController.value);
+      await Future<void>.delayed(_motionDuration);
+      if (!mounted || _flow != null || _handoffPending || !_showScenarioList) {
+        return;
+      }
+      setState(() {
+        _showScenarioList = false;
+        _showScenarioComparison = true;
+        _comparisonInitialIds = List.unmodifiable([
+          'active-plan',
+          scenarioIds.single,
+        ]);
+      });
+      _controllers['element-1']!.forward(from: 0);
+      _scenarioListController.forward(from: 0);
+    } finally {
+      if (mounted) setState(() => _switchingScenarioWorkspace = false);
+    }
+  }
+
+  /// [_flowContext]를 읽다 실패하면 null(목록 S1 "새 시나리오"가 예외를 버튼 밖으로 내보내지 않게 한다).
+  Future<PlanFlowContext?> _flowContextOrNull() async {
+    try {
+      return await _flowContext();
+    } on Object {
+      return null;
     }
   }
 
@@ -3208,26 +3307,29 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                     child: sectionLayer(id),
                   ),
                 ),
+            // FE5-a: 시나리오 목록은 S1 메뉴 · S2 목록 · S3 미리보기 3섹션이다(계획 홈 섹션 1도 나간다). 모션은 섹션마다
+            // 부착면 방향이고 같은 [_scenarioListController]로 움직인다.
             if (_showScenarioList &&
                 widget.service is PlanningScenarioRepositoryService &&
                 _repositoryState != null)
               Positioned.fill(
-                child: PlanSectionMotion(
-                  key: const ValueKey('plan-scenario-list-motion'),
+                child: PlanScenarioListSection(
+                  key: const ValueKey('plan-scenario-list-view'),
+                  service: widget.service! as PlanningScenarioRepositoryService,
+                  profileId: _repositoryState!.profileId,
+                  currentProfileRevision: _repositoryState!.revision,
                   animation: _scenarioListController,
-                  introDegrees: planScenarioListMotion.intro,
-                  outroDegrees: planScenarioListMotion.outro,
-                  child: PlanScenarioListSection(
-                    service:
-                        widget.service! as PlanningScenarioRepositoryService,
-                    profileId: _repositoryState!.profileId,
-                    currentProfileRevision: _repositoryState!.revision,
-                    section1Bounds: planSectionPath(
-                      size,
-                      'element-1',
-                    ).getBounds(),
-                    active: widget.active && !_switchingScenarioWorkspace,
-                  ),
+                  active: widget.active && !_switchingScenarioWorkspace,
+                  activePlan: _repositoryPlan,
+                  activeDocument: _document,
+                  onBackToActivePlan: _closeScenarioList,
+                  onCreateScenario: _createScenarioFromList,
+                  onOpenPresets: _openPresetManagerFromList,
+                  onCompare:
+                      widget.service is PlanningScenarioComparisonService &&
+                          _document != null
+                      ? _compareFromList
+                      : null,
                 ),
               ),
             if (_showScenarioComparison &&
@@ -3245,6 +3347,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                     service: widget.service!,
                     repositoryState: _repositoryState!,
                     activePlan: _document!,
+                    initialSelectedIds: _comparisonInitialIds,
                     section1Bounds: planSectionPath(
                       size,
                       'element-1',
@@ -3429,6 +3532,7 @@ class PlanScenarioComparisonSection extends StatefulWidget {
     required this.active,
     required this.onEdit,
     required this.onIncorporate,
+    this.initialSelectedIds = const [],
   });
 
   final Object service;
@@ -3438,6 +3542,10 @@ class PlanScenarioComparisonSection extends StatefulWidget {
   final bool active;
   final Future<void> Function(PlanningScenarioRecord, int) onEdit;
   final Future<void> Function(PlanningScenarioRecord) onIncorporate;
+
+  /// 처음 고를 두 대상(`active-plan` 또는 시나리오 id, FE5-a 시나리오 목록 "나란히 비교"). 둘이면 목록을 읽은 뒤
+  /// 바로 비교한다.
+  final List<String> initialSelectedIds;
 
   @override
   State<PlanScenarioComparisonSection> createState() =>
@@ -3455,6 +3563,9 @@ class _PlanScenarioComparisonSectionState
   bool _working = false;
   Map<String, StudentCatalogEntry> _comparisonStudents = {};
 
+  /// 시나리오 목록에서 두 대상을 골라 열었으면(FE5-a) 첫 읽기 뒤 한 번만 바로 비교한다.
+  late bool _autoComparePending = widget.initialSelectedIds.length == 2;
+
   PlanningScenarioRepositoryService get _repository =>
       widget.service as PlanningScenarioRepositoryService;
   PlanningScenarioComparisonService get _calculator =>
@@ -3463,6 +3574,7 @@ class _PlanScenarioComparisonSectionState
   @override
   void initState() {
     super.initState();
+    _selectedIds.addAll(widget.initialSelectedIds.take(2));
     _load();
   }
 
@@ -3488,6 +3600,11 @@ class _PlanScenarioComparisonSectionState
               !result.scenarios.any((scenario) => scenario.id == id),
         );
       });
+      // 시나리오 목록에서 두 대상을 골라 열었으면(FE5-a) 바로 비교한다(한 번만).
+      if (_autoComparePending) {
+        _autoComparePending = false;
+        if (_selectedIds.length == 2 && _comparison == null) _compare();
+      }
     } catch (error) {
       if (mounted) setState(() => _error = error);
     }
@@ -4972,454 +5089,6 @@ class _ComparisonResourceTitle extends StatelessWidget {
   }
 }
 
-class PlanScenarioListSection extends StatefulWidget {
-  const PlanScenarioListSection({
-    super.key,
-    required this.service,
-    required this.profileId,
-    required this.currentProfileRevision,
-    required this.section1Bounds,
-    required this.active,
-  });
-
-  final PlanningScenarioRepositoryService service;
-  final String profileId;
-  final int currentProfileRevision;
-  final Rect section1Bounds;
-  final bool active;
-
-  @override
-  State<PlanScenarioListSection> createState() =>
-      _PlanScenarioListSectionState();
-}
-
-class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
-  final ScrollController _controller = ScrollController();
-  PlanningScenarioListResult? _result;
-  Object? _error;
-  String? _selectedScenarioId;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void didUpdateWidget(PlanScenarioListSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.profileId != widget.profileId) _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      final result = await widget.service.listScenarios(widget.profileId);
-      if (!mounted) return;
-      setState(() {
-        _result = result;
-        _error = null;
-        if (!result.scenarios.any(
-          (scenario) => scenario.id == _selectedScenarioId,
-        )) {
-          _selectedScenarioId = null;
-        }
-      });
-    } catch (error) {
-      if (mounted) setState(() => _error = error);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final size = constraints.biggest;
-      final path = planScenarioListSectionPath(size, widget.section1Bounds);
-      final bounds = path.getBounds();
-      final localPath = path.shift(-bounds.topLeft);
-      return Stack(
-        children: [
-          IgnorePointer(
-            child: CustomPaint(
-              key: const ValueKey('plan-scenario-list-foundation'),
-              size: size,
-              painter: _PlanScenarioListSectionPainter(path),
-            ),
-          ),
-          Positioned.fromRect(
-            rect: bounds,
-            child: ClipPath(
-              clipper: _PlanLocalPathClipper(localPath),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.view_list_rounded),
-                        const SizedBox(width: 10),
-                        Text(
-                          '시나리오 리스트',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          key: const ValueKey('plan-scenario-list-refresh'),
-                          onPressed: widget.active ? _load : null,
-                          icon: const Icon(Icons.refresh_rounded),
-                          tooltip: '새로고침',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Expanded(child: _buildContent()),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    },
-  );
-
-  Widget _buildContent() {
-    if (_error case final error?) {
-      return Center(
-        child: TextButton.icon(
-          key: const ValueKey('plan-scenario-list-retry'),
-          onPressed: _load,
-          icon: const Icon(Icons.refresh_rounded),
-          label: Text('목록을 불러오지 못했습니다.\n$error'),
-        ),
-      );
-    }
-    final result = _result;
-    if (result == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (result.scenarios.isEmpty) {
-      return const Center(
-        child: Text(
-          '저장된 시나리오가 없습니다.\n섹션 1의 시나리오 생성 버튼으로 시작할 수 있습니다.',
-          textAlign: TextAlign.center,
-        ),
-      );
-    }
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const rowHeight = 142.0;
-        const rowGap = 10.0;
-        const inset = 8.0;
-        final contentHeight =
-            inset * 2 + result.scenarios.length * (rowHeight + rowGap) - rowGap;
-        return DiagonalScrollbar(
-          keyPrefix: 'plan-scenario',
-          controller: _controller,
-          contentExtent: contentHeight,
-          fogClipper: const PlanScenarioParallelogramClipper(),
-          child: SingleChildScrollView(
-            key: const ValueKey('plan-scenario-diagonal-scroll'),
-            controller: _controller,
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, _) {
-                final scroll = _controller.hasClients
-                    ? _controller.offset
-                    : 0.0;
-                return SizedBox(
-                  height: contentHeight,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      for (
-                        var index = 0;
-                        index < result.scenarios.length;
-                        index++
-                      )
-                        () {
-                          final scenario = result.scenarios[index];
-                          final top = inset + index * (rowHeight + rowGap);
-                          final offset = planPhaseRowHorizontalOffset(
-                            viewportHeight: constraints.maxHeight,
-                            rowTop: top,
-                            rowHeight: rowHeight,
-                            scrollOffset: scroll,
-                          );
-                          final width = planPhaseRowWidth(
-                            viewportWidth: constraints.maxWidth,
-                            viewportHeight: constraints.maxHeight,
-                            rowHeight: rowHeight,
-                          );
-                          return Positioned(
-                            key: ValueKey('plan-scenario-row-${scenario.id}'),
-                            left: inset + offset,
-                            top: top,
-                            width: width,
-                            height: rowHeight,
-                            child: PlanScenarioListCard(
-                              scenario: scenario,
-                              stale:
-                                  scenario.baseProfileRevision <
-                                  result.currentProfileRevision,
-                              selected: scenario.id == _selectedScenarioId,
-                              onTap: widget.active
-                                  ? () => setState(
-                                      () => _selectedScenarioId = scenario.id,
-                                    )
-                                  : null,
-                            ),
-                          );
-                        }(),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class PlanScenarioListCard extends StatelessWidget {
-  const PlanScenarioListCard({
-    super.key,
-    required this.scenario,
-    required this.stale,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final PlanningScenarioSummary scenario;
-  final bool stale;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  String _updatedLabel() {
-    final parsed = DateTime.tryParse(scenario.updatedAt);
-    if (parsed == null) return '수정 시각 미상';
-    final local = parsed.toLocal();
-    String twoDigits(int value) => value.toString().padLeft(2, '0');
-    return '수정 ${local.year}.${twoDigits(local.month)}.${twoDigits(local.day)} '
-        '${twoDigits(local.hour)}:${twoDigits(local.minute)}';
-  }
-
-  String _compactAmount(int value) {
-    if (value >= 1000000000) {
-      return '${(value / 1000000000).toStringAsFixed(value % 1000000000 == 0 ? 0 : 1)}B';
-    }
-    if (value >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(value % 1000000 == 0 ? 0 : 1)}M';
-    }
-    if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(value % 1000 == 0 ? 0 : 1)}K';
-    }
-    return value.toString();
-  }
-
-  String _calculationLabel() {
-    final calculation = scenario.calculation;
-    if (calculation == null) return '계산 요약 없음';
-    final shortage = calculation.inventoryComplete
-        ? '부족 ${calculation.knownShortageTypeCount}종'
-        : '부족 ${calculation.knownShortageTypeCount}종 · 일부 재고 미확인';
-    final bottleneck = calculation.firstBottleneckPhaseNumber == null
-        ? '병목 없음'
-        : '최초 병목 페이즈 ${calculation.firstBottleneckPhaseNumber}';
-    return '크레딧 ${_compactAmount(calculation.credits)} · $shortage · $bottleneck';
-  }
-
-  String? _shortageIconAsset(PlanningScenarioRepresentativeShortage shortage) =>
-      planningResourceIconAsset(
-        category: shortage.category,
-        itemId: shortage.itemId,
-      );
-
-  @override
-  Widget build(BuildContext context) => CustomPaint(
-    painter: _PlanScenarioListCardPainter(selected),
-    child: ClipPath(
-      key: ValueKey('plan-scenario-card-clip-${scenario.id}'),
-      clipper: const PlanScenarioParallelogramClipper(),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
-            child: Row(
-              children: [
-                Icon(
-                  selected ? Icons.check_circle : Icons.analytics_outlined,
-                  color: selected ? AppColors.primary : Colors.white70,
-                ),
-                const SizedBox(width: 10),
-                _ScenarioStudentPortraits(
-                  scenarioId: scenario.id,
-                  studentIds: scenario.studentIds,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        scenario.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      if (scenario.description.isNotEmpty) ...[
-                        const SizedBox(height: 3),
-                        Text(
-                          scenario.description,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.white70),
-                        ),
-                      ],
-                      const SizedBox(height: 3),
-                      Text(
-                        '학생 ${scenario.studentCount} · 페이즈 ${scenario.phaseCount} · 성장 단계 ${scenario.stageCount}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        _calculationLabel(),
-                        key: ValueKey(
-                          'plan-scenario-calculation-${scenario.id}',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color:
-                              scenario.calculation?.inventoryComplete == false
-                              ? Colors.amberAccent
-                              : AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Tooltip(
-                      message: stale
-                          ? '저장 시점보다 프로필이 변경되었습니다. 요약은 현재 데이터로 다시 계산되었습니다.'
-                          : '현재 계정 데이터를 기준으로 저장되었습니다.',
-                      child: Container(
-                        key: ValueKey('plan-scenario-status-${scenario.id}'),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: stale
-                              ? Colors.amber.withValues(alpha: 0.16)
-                              : AppColors.primary.withValues(alpha: 0.16),
-                          border: Border.all(
-                            color: stale
-                                ? Colors.amberAccent
-                                : AppColors.primary,
-                          ),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              stale
-                                  ? Icons.history_rounded
-                                  : Icons.check_rounded,
-                              size: 14,
-                              color: stale
-                                  ? Colors.amberAccent
-                                  : AppColors.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              stale ? '저장 시점과 다름' : '현재 데이터 기준',
-                              style: Theme.of(context).textTheme.labelSmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    if (scenario.calculation?.representativeShortage
-                        case final shortage?) ...[
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_shortageIconAsset(shortage) case final asset?)
-                            Image.asset(
-                              asset,
-                              key: ValueKey(
-                                'plan-scenario-shortage-icon-${scenario.id}',
-                              ),
-                              width: 22,
-                              height: 22,
-                              errorBuilder: (_, _, _) => const Icon(
-                                Icons.inventory_2_outlined,
-                                size: 18,
-                                color: Colors.amberAccent,
-                              ),
-                            )
-                          else
-                            const Icon(
-                              Icons.inventory_2_outlined,
-                              size: 18,
-                              color: Colors.amberAccent,
-                            ),
-                          const SizedBox(width: 5),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 160),
-                            child: Text(
-                              '${shortage.displayName} −${_compactAmount(shortage.shortage)}',
-                              key: ValueKey(
-                                'plan-scenario-shortage-${scenario.id}',
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(color: Colors.amberAccent),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                    ],
-                    Text(
-                      _updatedLabel(),
-                      key: ValueKey('plan-scenario-updated-${scenario.id}'),
-                      style: Theme.of(
-                        context,
-                      ).textTheme.labelSmall?.copyWith(color: Colors.white60),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
 class _ScenarioStudentPortraits extends StatelessWidget {
   const _ScenarioStudentPortraits({
     required this.scenarioId,
@@ -5492,27 +5161,6 @@ class _ScenarioStudentPortraits extends StatelessWidget {
       ),
     );
   }
-}
-
-class _PlanScenarioListSectionPainter extends CustomPainter {
-  const _PlanScenarioListSectionPainter(this.path);
-  final Path path;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawPath(path, Paint()..color = const Color(0xf01a2c3b));
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.outline.withValues(alpha: 0.72)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_PlanScenarioListSectionPainter oldDelegate) =>
-      oldDelegate.path.getBounds() != path.getBounds();
 }
 
 double planScenarioParallelogramDepth(double height) =>

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 enum AppSection {
   home('홈', Icons.home_outlined, '오늘의 현황과 빠른 메뉴'),
   students('학생', Icons.groups_2_outlined, '학생 목록과 육성 상태'),
-  plan('계획', Icons.fact_check_outlined, '육성 목표와 필요 재화'),
+  plan('계획', Icons.fact_check_outlined, '육성 목표와 필요 재화 · 시나리오'),
   inventory('인벤토리', Icons.inventory_2_outlined, '보유 재화와 장비'),
   pvp('전술대항전', Icons.sports_esports_outlined, '전술대항전 기록과 편성'),
   statistics('통계', Icons.query_stats_outlined, '계정 성장 통계'),

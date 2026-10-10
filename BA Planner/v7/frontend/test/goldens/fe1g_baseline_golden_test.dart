@@ -924,6 +924,28 @@ void main() {
     await expectGoldenScene(tester, 'plan-scenario-list');
   }, variant: goldenPlatform);
 
+  // FE5-a 시안 Scenario-List 상태: 시나리오 다섯 개(하나는 저장 시점과 다름), "07 3단계 우선순위" 행 펼침, 비교 3/4
+  // (A 활성 계획 + 02 · 07). 미리보기 내용은 FE5-b에서 채운다.
+  testWidgets('plan-scenario-list-expanded', (tester) async {
+    setGoldenViewport(tester);
+    final service = GoldenScenarioListMockAppService();
+    addTearDown(service.dispose);
+    final ids = await service.seedScenarioListScene();
+    await _openPlanning(tester, service, loadRepositoryPlan: true);
+    await _tapKey(tester, 'plan-scenario-list-launch');
+    await _tapKey(tester, 'plan-scenario-row-${ids['07 3단계 우선순위']}');
+    await _tapKey(tester, 'plan-scenario-compare-${ids['02 지원진 집중']}');
+    await _tapKey(tester, 'plan-scenario-compare-${ids['07 3단계 우선순위']}');
+    expect(find.text('3 / 4'), findsOneWidget);
+    expect(
+      find.byKey(
+        ValueKey('plan-scenario-delete-${ids['07 3단계 우선순위']}'),
+      ),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'plan-scenario-list-expanded');
+  }, variant: goldenPlatform);
+
   testWidgets('plan-scenario-compare', (tester) async {
     setGoldenViewport(tester);
     final service = await _service();

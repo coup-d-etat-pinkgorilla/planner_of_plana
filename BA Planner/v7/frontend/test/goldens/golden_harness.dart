@@ -412,6 +412,245 @@ class GoldenStudentMockAppService extends GoldenMockAppService {
   }
 }
 
+/// 시나리오 목록 장면 전용 mock(FE5-a, 시안 Scenario-List). 학생 장면 fixture(보유 학생 · 활성 계획) 위에 시나리오
+/// 다섯 개를 저장하고, 목록 요약의 계산 요약 · 수정 시각과 활성 계획 계산 요약을 시안 예시 값으로 바꾼다.
+///
+/// "04 공격대 핵심"은 학생 장면 저장 전에 만들어 저장 기준 revision이 지금보다 오래된(저장 시점과 다름) 시나리오다.
+/// 대표 부족 아이템은 asset이 있는 실제 오파츠 id만 쓴다.
+class GoldenScenarioListMockAppService extends GoldenStudentMockAppService {
+  GoldenScenarioListMockAppService() : super();
+
+  /// 이름 → (설명, 페이즈별 학생, 계산 요약, 수정 시각).
+  static final scenarios =
+      <
+        String,
+        ({
+          String description,
+          List<List<String>> phases,
+          PlanningScenarioCalculationSummary calculation,
+          String updatedAt,
+        })
+      >{
+        '07 3단계 우선순위': (
+          description: '3개 페이즈로 나눈 우선순위 배치',
+          phases: const [
+            ['aru', 'ayane'],
+            ['aru', 'hoshino'],
+            ['ayane'],
+          ],
+          calculation: const PlanningScenarioCalculationSummary(
+            credits: 112800000,
+            requiredResourceTypeCount: 12,
+            knownShortageTypeCount: 8,
+            inventoryComplete: true,
+            firstBottleneckPhaseNumber: 1,
+            representativeShortage: PlanningScenarioRepresentativeShortage(
+              resourceKey: 'Item_Icon_Material_Nebra_3',
+              itemId: 'Item_Icon_Material_Nebra_3',
+              displayName: '네브라 디스크 (최상급)',
+              category: 'oopart',
+              shortage: 449,
+            ),
+          ),
+          updatedAt: '2026-09-22T23:10:00',
+        ),
+        '01 단기 집중 - 아루': (
+          description: '한 학생 카드와 단일 페이즈 계산을 확인하는 최소 시나리오',
+          phases: const [
+            ['aru'],
+          ],
+          calculation: const PlanningScenarioCalculationSummary(
+            credits: 75300000,
+            requiredResourceTypeCount: 11,
+            knownShortageTypeCount: 10,
+            inventoryComplete: true,
+            firstBottleneckPhaseNumber: 1,
+            representativeShortage: PlanningScenarioRepresentativeShortage(
+              resourceKey: 'Item_Icon_Material_Nebra_2',
+              itemId: 'Item_Icon_Material_Nebra_2',
+              displayName: '네브라 디스크 (상급)',
+              category: 'oopart',
+              shortage: 120,
+            ),
+          ),
+          updatedAt: '2026-09-21T18:40:00',
+        ),
+        '02 지원진 집중': (
+          description: '복수 학생 조합과 지원진 자원 한계를 확인',
+          phases: const [
+            ['ayane', 'noa', 'hina'],
+            ['ayane', 'noa'],
+          ],
+          calculation: const PlanningScenarioCalculationSummary(
+            credits: 24400000,
+            requiredResourceTypeCount: 7,
+            knownShortageTypeCount: 3,
+            inventoryComplete: true,
+            firstBottleneckPhaseNumber: 2,
+            representativeShortage: PlanningScenarioRepresentativeShortage(
+              resourceKey: 'Item_Icon_Material_Phaistos_3',
+              itemId: 'Item_Icon_Material_Phaistos_3',
+              displayName: '파에스토스 원반 (최상급)',
+              category: 'oopart',
+              shortage: 8,
+            ),
+          ),
+          updatedAt: '2026-09-21T17:02:00',
+        ),
+        '03 방어선 강화': (
+          description: '탱커 두 명의 장비 우선',
+          phases: const [
+            ['hoshino', 'serika'],
+          ],
+          calculation: const PlanningScenarioCalculationSummary(
+            credits: 0,
+            requiredResourceTypeCount: 0,
+            knownShortageTypeCount: 0,
+            inventoryComplete: true,
+            firstBottleneckPhaseNumber: null,
+            representativeShortage: null,
+          ),
+          updatedAt: '2026-09-20T22:15:00',
+        ),
+        '04 공격대 핵심': (
+          description: '공격대 학생 두 명의 고배율 성장',
+          phases: const [
+            ['hina', 'aru'],
+            ['hina', 'aru'],
+          ],
+          calculation: const PlanningScenarioCalculationSummary(
+            credits: 63700000,
+            requiredResourceTypeCount: 6,
+            knownShortageTypeCount: 4,
+            inventoryComplete: true,
+            firstBottleneckPhaseNumber: 1,
+            representativeShortage: PlanningScenarioRepresentativeShortage(
+              resourceKey: 'Item_Icon_Material_Wolfsegg_0',
+              itemId: 'Item_Icon_Material_Wolfsegg_0',
+              displayName: '볼프세크 철광석 (하급)',
+              category: 'oopart',
+              shortage: 14,
+            ),
+          ),
+          updatedAt: '2026-09-14T11:30:00',
+        ),
+      };
+
+  /// 활성 계획 계산 요약(시안 고정 행 186.2M · 14종 · P1).
+  static const activeCalculation = {
+    'credits': 186200000,
+    'required_resource_type_count': 20,
+    'known_shortage_type_count': 14,
+    'inventory_complete': true,
+    'first_bottleneck_phase_number': 1,
+    'representative_shortage': null,
+  };
+
+  static PlanningDocument _document(String id, List<List<String>> phases) {
+    final targets = {
+      for (final entry in planningDocumentTargetMaximums.entries)
+        entry.key: entry.key == 'bond_rank' ? 1 : 0,
+      'level': 50,
+      'student_star': 1,
+      'ex_skill': 1,
+      'skill1': 1,
+    };
+    return PlanningDocument(
+      id: id,
+      name: id,
+      kind: PlanningDocumentKind.scenario,
+      phases: [
+        for (final (index, students) in phases.indexed)
+          PlanningDocumentPhase(
+            id: '$id-phase-${index + 1}',
+            name: '페이즈 ${index + 1}',
+            stages: [
+              for (final studentId in students)
+                PlanningDocumentStage(
+                  id: '$id-${index + 1}-$studentId',
+                  studentId: studentId,
+                  name: '목표',
+                  targets: {...targets, 'level': 50 + index * 10},
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Future<String> _create(String profileId, String name, int base) async {
+    final fixture = scenarios[name]!;
+    final list = await listScenarios(profileId);
+    final created = await createScenario(
+      profileId: profileId,
+      expectedRevision: list.revision,
+      idempotencyKey: 'golden-scenario-list-$name',
+      name: name,
+      description: fixture.description,
+      baseProfileRevision: base,
+      document: _document('golden-scenario-${list.revision}', fixture.phases),
+    );
+    return created.scenarioId;
+  }
+
+  /// 시나리오 다섯 개와 학생 장면을 저장한다. 이름 → 시나리오 id.
+  Future<Map<String, String>> seedScenarioListScene() async {
+    final profile = (await listProfiles()).firstWhere((item) => item.selected);
+    final ids = <String, String>{};
+    final staleBase = (await loadRepositoryState(profile.id)).revision;
+    ids['04 공격대 핵심'] = await _create(profile.id, '04 공격대 핵심', staleBase);
+    await seedStudentScene();
+    final base = (await loadRepositoryState(profile.id)).revision;
+    for (final name in scenarios.keys) {
+      if (ids.containsKey(name)) continue;
+      ids[name] = await _create(profile.id, name, base);
+    }
+    return ids;
+  }
+
+  @override
+  Future<PlanningScenarioListResult> listScenarios(String profileId) async {
+    final result = await super.listScenarios(profileId);
+    return PlanningScenarioListResult(
+      profileId: result.profileId,
+      revision: result.revision,
+      currentProfileRevision: result.currentProfileRevision,
+      scenarios: [
+        for (final summary in result.scenarios)
+          if (scenarios[summary.name] case final fixture?)
+            PlanningScenarioSummary(
+              id: summary.id,
+              revision: summary.revision,
+              name: summary.name,
+              description: summary.description,
+              baseProfileRevision: summary.baseProfileRevision,
+              phaseCount: summary.phaseCount,
+              stageCount: summary.stageCount,
+              studentCount: summary.studentCount,
+              studentIds: summary.studentIds,
+              calculation: fixture.calculation,
+              createdAt: summary.createdAt,
+              updatedAt: fixture.updatedAt,
+            )
+          else
+            summary,
+      ],
+    );
+  }
+
+  @override
+  Future<RepositoryPlanState> loadRepositoryPlan(String profileId) async {
+    final plan = await super.loadRepositoryPlan(profileId);
+    return RepositoryPlanState.fromWire({
+      'profile_id': plan.profileId,
+      'revision': plan.revision,
+      'document': plan.document.toWire(),
+      'calculation': activeCalculation,
+      if (plan.hasAuthoring) 'authoring': plan.authoring.toWire(),
+    });
+  }
+}
+
 /// 성장 계산기 장면 전용 mock(FE3-f2a·f2b). 학생 장면 fixture에 계산 결과(크레딧·9범주 내역·성장 재화 행)를
 /// 더한다.
 ///

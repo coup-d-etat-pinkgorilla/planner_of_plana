@@ -4823,3 +4823,190 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261010_135343\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE5-a 시나리오 목록 v2 (구현 끝, gate 전)
+
+### FE5-a 착수 기록 (2026-10-10 14:40)
+
+- 진행 중: FE5-a(Lane A 프론트 워커). 시작 SHA `1fa861942e15459fc479e8e91cb899b6af3ff0c8`(FE8-a `815e0589`, FE4-g `af745731`, 문서 커밋 뒤 HEAD, 브랜치 scanner-consolidation).
+- 범위: 워크플로 FE5 표 FE5-a — 정렬 세그먼트 · 필터 칩 · 검색 · 오래된 개수, 펼침 행 액션(열기/복제/이름·설명/삭제), 활성 계획 고정 행, 비교 담기(최대 4, 슬롯 A = 활성 계획 고정). 미리보기 내용(FE5-b), 보기 모드(FE5-c), 4열 비교(FE5-e)는 범위 밖이다.
+- 막힘: 대장 "slice별 막힘 요약" FE5-a 행 "—"(열림 0건). 워커 재량 FD-083·FD-084·FD-087, 확정 FD-091을 처리한다.
+- 고칠 기존 파일(사본 `debug/frontend_fe5a/pre/frontend/...`): `lib/ui/widgets/plan_section_layout.dart`(CRLF 유지), `lib/ui/app_section.dart`(FD-091 부제 한 줄), `test/planning_page_test.dart`, `test/goldens/fe1g_baseline_golden_test.dart`, `test/goldens/golden_harness.dart`.
+- 새 파일(예정): `lib/ui/studio/plan_scenario_list_studio_layout.dart`(Scenario-List 3섹션 Studio 문서), `lib/ui/models/plan_scenario_list_state.dart`(정렬·필터·검색·비교 담기 상태), `lib/ui/widgets/plan_scenario_list.dart`(S1 메뉴·비교 슬롯, S2 목록, S3 빈 미리보기), `test/plan_scenario_list_test.dart`.
+- 고치지 않는다: `lib/services/**`(Lane B fb4-dart 작업 중), backend·contracts, 스캐너 · 전술 · 타이틀 화면, `app_shell.dart`. 서비스에 필요한 것은 요청만 적는다.
+- 환경: PC 셸 없음(파일을 가져와 고친 뒤 되돌려 쓴다), Flutter·Python 실행 불가 → 정적 검토만.
+
+### FE5-a 종료 기록 (2026-10-10 15:20, 커밋 전)
+
+상태: 구현은 끝났고 gate는 아직 돌리지 않았다. 시작 SHA는 `1fa861942e15459fc479e8e91cb899b6af3ff0c8`이다. `debug/frontend_fe5a/commit.json`을 두었다(slice=fe5a, whole에는 기준 이미지 2장을 하나씩 적음, status=true). 직접 커밋하지 않았다.
+
+- 고친 기존 파일은 착수 기록 목록 그대로다(사본 `debug/frontend_fe5a/pre/frontend/...`).
+- 새 파일은 4개다: `lib/ui/studio/plan_scenario_list_studio_layout.dart`, `lib/ui/models/plan_scenario_list_state.dart`, `lib/ui/widgets/plan_scenario_list.dart`, `test/plan_scenario_list_test.dart`.
+- 고치지 않은 곳: `lib/services/**`(Lane B), backend, contracts, 스캐너 · 전술 · 타이틀 화면, `app_shell.dart`, 공용 키트(`lib/ui/kit/**`).
+- `plan_section_layout.dart`는 CRLF를 유지했다.
+
+#### 실행 명령·결과
+
+- 실행한 명령은 없다. 이 세션에는 PC 셸이 없고, 작업 공간에서 Flutter SDK를 받을 수 없다. analyze · 테스트 · golden을 하나도 돌리지 않았으므로 통과를 주장하지 않는다.
+- 정적 검토는 별도 검토 에이전트로 한 번 했다. 키트 생성자 · 서비스 API · mock 동작 · 테스트 기대값 · golden harness 문서 검증을 코드끼리 대조했고, 확실한 컴파일 · 테스트 실패는 찾지 못했다. 반영한 지적은 다음과 같다.
+  - 세 섹션 바탕 `CustomPaint`가 Stack의 느슨한 제약에서 크기 0으로 그려지던 것을 `Positioned.fill`로 감쌌다.
+  - 정보 팝오버 문구가 아직 없는 동작(두 번 누르기 · 열기)을 약속하지 않게 고쳤다.
+  - 비교 화면에 두 대상을 넘겨 열 때 자동 비교를 첫 읽기 뒤 한 번만 하게 했다.
+  - 목록 S1 "새 시나리오"에서 흐름 상태를 읽다 실패해도 예외가 새지 않게 했다.
+  - 목록이 바쁠 때 비교 슬롯 B~D를 잠갔다.
+  - 고정 행에서 쓰지 않던 매개변수를 지웠다.
+  - 불러오는 중 개수를 `—`로 보이게 했다.
+  - 테스트의 "섹션 1이 있음" 단언을 모션 값 단언으로 바꿨다.
+- grep 범위: `test/**` 전체(로컬에 없던 테스트 파일 24개를 더 가져와 확인)와 `lib/**`에서, 지운 심볼 · 키(`PlanScenarioListCard`, `plan-scenario-list-refresh`, `plan-scenario-card-clip-*`, `plan-scenario-shortage-icon-*`)와 바뀐 부제를 참조하는 곳을 찾았다. 아래 "테스트"에 적은 파일 말고는 없었다. `plan_scenario_comparison_test.dart`는 `PlanScenarioComparisonSection`을 직접 만들지만, 새 매개변수 `initialSelectedIds`에 기본값이 있어 고치지 않았다.
+
+#### 바뀐 것
+
+1. **3섹션 화면**(시안 Scenario-List, `plan_scenario_list_studio_layout.dart`): 목록을 열면 계획 홈 섹션 1도 내려가고 S1 메뉴 · S2 목록 · S3 미리보기가 들어온다. 모션은 S1 0→180, S2 80→260(기존 목록과 같음), S3 180→0이다.
+   - S1 `scenario-menu`(0,2,15,94, 왼쪽 면 사다리꼴)은 시안과 같다.
+   - S2 `scenario-list`(8,2,49,94, 아래 면 평행사변형)와 S3 `scenario-preview`(58,2,38,94, 오른쪽 면 사다리꼴)는 시안 x가 96 grid에 맞지 않아 가장 가까운 정수 칸에 두었다. 차이는 S2 −2.1 · +8.6px, S3 +11.3px다. Studio 문서 주석과 테스트에 적어 두었다.
+2. **S1 메뉴**:
+   - "보는 중 · 시나리오 목록 / 저장된 시나리오 n"(누르면 다시 읽음).
+   - 버튼 셋: 활성 계획으로(목록 닫기), 새 시나리오(목록을 내리고 계획 만들기 1단계), 프리셋 관리(목록을 내리고 프리셋 관리, 닫으면 계획 홈).
+   - "비교할 계획 n / 4" 슬롯 A~D와 "나란히 비교 n개", 아래 안내 문구.
+3. **S2 목록**(`plan_scenario_list_state.dart`, 서버 요약만으로 클라이언트 계산):
+   - 정렬 4종: 최근 수정 · 부족 적은 순 · 크레딧 적은 순 · 이름. 계산 요약이 없으면 맨 뒤고, 같으면 최근 수정 → 이름 → id 순이다.
+   - 필터 칩: "현재 데이터 기준만", "학생 · …"(목록에 든 학생 메뉴), 이름·설명 검색(지우기 ×), "오래된 시나리오 n개".
+   - 조건에 맞는 것이 없으면 "조건 지우기"가 나온다(정렬은 그대로 둔다).
+   - 카드는 `DiagonalRow` 위에 체크 · 초상 3 · 이름 · 상태 칩 · 수정 시각 · 설명 · 크레딧/부족 n종/첫 병목/학생 줄 · 대표 부족 재화(아이콘 + −양)를 둔다. 스크롤은 `DiagonalScrollViewport`(사선 스크롤바 + 포그)다.
+4. **펼침 행**: 카드를 누르면 펼쳐진다(한 번에 하나, 다시 누르면 접힘). 펼친 행이 S3 미리보기 대상이다. 액션은 다섯이다.
+   - 열기: FE5-c 전까지 꺼져 있고 툴팁을 단다.
+   - 비교에 담기 / 빼기.
+   - 복제: `duplicateScenario` → 다시 읽기 → 새 시나리오를 펼친다.
+   - 이름 · 설명: `BaModal`, `getScenario`로 문서를 읽고 같은 문서로 `updateScenario`를 부르며 authoring은 넘기지 않아 보존된다.
+   - 삭제: `BaModal` 확인 뒤 `deleteScenario`.
+   - expected revision은 목록 응답의 collection revision과 시나리오 revision이다. 충돌(`revision_conflict`)이면 다시 읽고 "목록이 그 사이 바뀌어 다시 불러왔습니다. 다시 … 주십시오."로 안내한다. 그 밖의 실패는 "… 못했습니다(코드)."다.
+5. **활성 계획 고정 행**(S2 위, 파란 행):
+   - 학생 · 페이즈 · 단계 수는 활성 계획 문서에서 읽는다.
+   - 크레딧 · 부족 · 첫 병목은 `plan.get` 계산 요약(`RepositoryPlanState.calculation`)에서 읽는다. 요약이 없으면 `—`이고, 병목이 없으면 "없음"이다.
+   - 초상은 5명까지, 넘으면 "+n"이다.
+6. **S3 미리보기**: FE5-b 전이라 최소한만 보인다. 고른 행이 없으면 "목록에서 시나리오를 고르면 여기에 보입니다."이고, 있으면 상태 칩 · 초상 · 이름 · 설명 · 수정 시각만 보인다. `getScenario` + compare 기반 내용은 FE5-b에서 채운다.
+7. **비교 담기 → 나란히 비교**:
+   - 시나리오를 하나 담으면 "나란히 비교"가 켜진다. 누르면 목록을 내리고 기존 A↔B 비교 화면(`PlanScenarioComparisonSection`)을 활성 계획 + 그 시나리오로 열어 바로 비교한다(새 매개변수 `initialSelectedIds`). 계획 홈 섹션 1은 비교 화면처럼 다시 들어온다.
+   - 둘 이상 담으면 꺼지고 툴팁 "셋 이상 나란히 비교하는 화면은 아직 열 수 없습니다."가 뜬다(FE5-e).
+   - 넷이 찬 뒤 더 담으면 "비교할 계획은 활성 계획을 포함해 4개까지 담을 수 있습니다."로 안내한다.
+8. **계획 탭 부제**(`app_section.dart`, FD-091): "육성 목표와 필요 재화 · 시나리오".
+9. **`plan_section_layout.dart` 정리**:
+   - 예전 `PlanScenarioListSection` · `PlanScenarioListCard` · `_PlanScenarioListSectionPainter`를 지웠다. 비교 화면이 쓰는 것(`_ScenarioStudentPortraits`, `_PlanScenarioListCardPainter`, `PlanScenarioParallelogramClipper`, `planScenarioListSectionRect/Path`)은 남겼다.
+   - 새 위젯은 같은 이름으로 다시 내보낸다(`export 'plan_scenario_list.dart' show …`).
+   - 목록을 열고 닫을 때와 `_setActive` 모두 섹션 1을 함께 움직인다. 비교 화면은 예전처럼 섹션 1을 둔다.
+   - FE4-g 넘김 경로(`_consumeInitialSeed`, `_handoffPending`, "목록 열기 도중 넘어오면 목록을 열지 않기" 가드)와 FE4-f2 "흐름으로 열기" 아이콘 버튼은 그대로 두었다.
+
+#### 판단(확인 부탁)
+
+- S1은 시안처럼 목록 화면 자체의 메뉴로 두고, 목록 동안 계획 홈 섹션 1을 내렸다. 예전에는 "섹션 1을 두고 목록만 바꿈"이었다. 비교 슬롯이 S1에 있어야 시안 상태(비교 3/4)를 나타낼 수 있어서다. FE5-c(FD-082)에서 S1을 홈 메뉴 섹션과 같은 자리로 맞추는 일은 그대로 남는다.
+- "열기"는 보기 모드(FE5-c)가 없어 꺼 두었다. 예전 목록 카드는 누르면 아무 동작이 없었으므로 잃은 동작은 없다.
+- "나란히 비교"는 A + 시나리오 하나일 때만 연다(FD-085 2분할 비교 화면 재사용). 셋 이상은 FE5-e 전까지 꺼 둔다.
+- 슬롯 A(활성 계획)는 눌러도 아무 일이 없는 칸이다(캡션 "기준 · 뺄 수 없습니다"). 비활성 모양으로 흐려지지 않게 하려고 이렇게 했다.
+
+#### 처리한 FD
+
+- FD-083(워커 재량, 권장안): 활성 계획 요약은 `plan.get` 계산 요약(FB-1에서 이미 내려옴)을 그대로 쓰고, 개수는 문서에서 센다. 서비스는 고치지 않았다.
+- FD-084(워커 재량, 권장안): 비교 슬롯 A는 활성 계획 고정, B~D는 담은 순서, 목록을 다시 읽어 없어진 시나리오는 슬롯에서 빠진다.
+- FD-087(워커 재량, 권장안): 사선 스크롤바와 포그는 공용 `DiagonalScrollViewport` + `ScrollFogSpec.panel`을 쓴다(키트는 고치지 않음).
+- FD-091(확정): 계획 탭 헤더 부제.
+
+#### 테스트
+
+- 새 `test/plan_scenario_list_test.dart`(10건):
+  - 상태 모델 5건: 정렬 · 필터와 오래된 개수 · 비교 담기 용량과 정리 · 펼침과 조건 지우기 · 표기.
+  - Studio 3섹션 기하 1건.
+  - 위젯 4건: 고정 행 · 정렬 · 검색 · 학생 필터 · 펼친 행 미리보기 / 복제 · 이름·설명 · 삭제가 서비스로 저장됨 / 비교 슬롯 1→4 · 넘침 안내 · 슬롯 빼기 · A↔B 비교 열기 / S1 새 시나리오 → 흐름, 활성 계획으로 → 홈 섹션 다섯 복귀.
+- `planning_page_test.dart` 기대 변경(모두 의도된 변경):
+  - 'scenario list card exposes identity calculation and portraits' → 'scenario list row exposes …'. 위젯이 `PlanScenarioListCard`에서 `PlanScenarioListRow`로 바뀌었다. 같은 정보(크레딧 · 부족 · 병목 · 초상 · 상태 · 수정 시각)를 새 표기로 확인하고, 펼침 액션 키 확인을 더했다.
+  - 'scenario list keeps section 1 and uses the 80 to 260 diagonal workspace' → 'scenario list replaces the plan home with its three sections and returns to the active plan'. 시안 3섹션 구성으로 섹션 1이 내려가는 것이 이번 slice의 의도다. S2 80→260 모션은 같은 단언으로 남겼다.
+  - 저장 → 목록 테스트에서 카드 clip 키 · 포그 clip 단언을 `DiagonalRowClipper` 자손 · `plan-scenario-diagonal-fog` 단언으로 바꿨다. 카드 모양이 키트 `DiagonalRow`로 바뀌었기 때문이다.
+- golden: `golden_harness.dart`에 `GoldenScenarioListMockAppService`(시나리오 5개 · 계산 요약 · 수정 시각 · 활성 계획 요약)를 더했고, `fe1g_baseline_golden_test.dart`에 새 장면을 더했다.
+- 지운 테스트는 없다. `plan_scenario_comparison_test.dart` · `plan_flow_*` · `plan_element_builder_test.dart`는 바꾸지 않았다(grep 확인).
+
+#### golden 예측
+
+- 바뀜(확실): `plan-scenario-list`. 예전 한 섹션 카드 목록이 S1 메뉴 · S2 목록(고정 행 + 시나리오 1개 카드) · S3 빈 미리보기로 전부 바뀐다. 계획 홈 섹션 1도 사라진다.
+- 새 장면: `plan-scenario-list-expanded`. `GoldenScenarioListMockAppService`의 시나리오 5개 중 "04 공격대 핵심"이 오래된 상태다. "07 3단계 우선순위" 행이 펼쳐지고, 비교 3/4(A 활성 계획 + 02 · 07)에, 미리보기는 이름 · 초상만 보인다.
+- 그대로: `plan-scenario-compare`(홈 비교 버튼으로 열고 처음 고른 대상이 없음, 섹션 1 처리 같음). 그 밖의 계획 장면, 학생 · 계정 · 스캔 · 타이틀 장면도 그대로다. 부제(FD-091)는 셸을 그리는 golden 장면이 없어 영향이 없다.
+- commit.json whole: `frontend/test/goldens/baseline/plan-scenario-list.png`, `frontend/test/goldens/baseline/plan-scenario-list-expanded.png`.
+
+#### 검수표
+
+| artboard / 확인 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Scenario-List 3섹션 | mock 모드 → 계획 탭 → "시나리오 리스트" | S1 메뉴 · S2 목록 · S3 미리보기, 계획 홈 섹션 1이 내려감 |
+| 고정 행 | 위 화면 S2 위 | 활성 계획 학생 · 페이즈 · 단계 수, 크레딧 · 부족 · 첫 병목(요약 없으면 `—`) |
+| 정렬 · 필터 · 검색 | S2 제목 줄 seg, 필터 칩 | 정렬 4종, 현재 데이터 기준만, 학생 메뉴, 검색 · 지우기, 오래된 개수, 조건 지우기 |
+| 펼침 행 | 카드 누르기 | 한 번에 하나, 액션 다섯(열기는 꺼짐 · 툴팁), S3에 이름 |
+| 복제 · 이름·설명 · 삭제 | 펼친 행 액션 | 목록 다시 읽기, 복제본이 펼쳐짐, 모달 문구(~습니다체) |
+| 비교 담기 | 카드 왼쪽 체크 | "n / 4", 슬롯 B~D, 넷 넘으면 안내, 슬롯 눌러 빼기 |
+| 나란히 비교 | 하나만 담고 "나란히 비교 2개" | A↔B 비교 화면이 그 둘로 열리고 비교 결과가 바로 보임 |
+| S1 버튼 | 새 시나리오 / 프리셋 관리 / 활성 계획으로 | 흐름 1단계 / 프리셋 관리 / 계획 홈 섹션 다섯 복귀 |
+| 계획 탭 부제 | 헤더 | "육성 목표와 필요 재화 · 시나리오" |
+
+#### 확인하지 못한 것
+
+- analyze · 테스트 · golden 실행 전부. 정적 검토만 했다.
+- 실제 화면 그림: 섹션 안 요소 위치(시안 offset을 옮겨 적음), 좁은 창(약 1280px)에서 펼친 행 액션 줄이 넘치는지, 학생 필터 팝업 메뉴 모양.
+- ProcessAppService(실제 Python)에서 복제 · 이름 변경 · 삭제 왕복과 revision 충돌 안내.
+- 목록 → 새 시나리오 → 흐름 닫기 뒤 계획 홈 복귀 모션(위젯 테스트로만 확인하게 해 둠).
+
+#### 서비스 요청
+
+- 없음. 기존 `PlanningScenarioRepositoryService`(list · get · update · delete · duplicate)와 `RepositoryPlanState.calculation`으로 충분했다.
+
+#### 발견 사항
+
+- 시안 Scenario-List S2 · S3의 x(215.4 · 1720 · 1535.4)는 96 grid 칸 경계가 아니다. 계획 만들기 흐름처럼 정수 칸으로 근사했다. 시안 쪽 조정이 필요하면 디자인 확인 항목이다.
+- 목록 응답에 학생 이름이 없어 학생 필터 메뉴는 앱 서비스 catalog로 이름을 붙인다. catalog를 못 읽으면 id가 보인다.
+
+#### 다음 행동
+
+- 오케스트레이터: gate ① 결과 검토(`plan-scenario-list` RED 1장 + 새 장면 1장 예상), 위 판단 4건 확인. 커밋 순서(Lane B → Lane A → redesigndocs)는 오케스트레이터가 정한다.
+- 사용자 실행 순서:
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① 두 워커가 모두 멈춘 뒤 gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다(plan-scenario-list RED, 새 장면 plan-scenario-list-expanded 기준 없음 예상)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 승인 뒤 기준 이미지 갱신 → gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋(순서는 오케스트레이터가 정한다)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe5a -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe5a
+```
+
+### FE5-a gate ① RED 수정 기록 (2026-10-10 15:45, 커밋 전)
+
+- gate `debug/frontend_gate/20261010_152318`(git `665b39bb`)은 RED였다. 원인은 컴파일 오류 하나다.
+  - analyze: 3건. 오류 1건과 lint info 2건이다.
+  - UI 테스트 3분할: 23건 실패. 전부 `loading … [E]`이고, 모두 같은 컴파일 오류(`plan_section_layout.dart:2154`)로 테스트 파일을 불러오지 못한 것이다. 기대값이 틀려서 실패한 테스트는 이번 gate에서 보이지 않았다. 컴파일이 막혀 테스트 본문이 돌지 않았으므로, 테스트가 맞는지는 아직 확인되지 않았다.
+  - golden: 같은 이유로 불러오지 못해 비교하지 못했다.
+  - process 51건 · almanac · git-diff-check는 PASS.
+- 고친 것:
+  1. `plan_section_layout.dart` `_createScenarioFromList`
+     - 원인: `PlanFlowContext? flowContext`를 try/catch 안에서 대입하는 non-final 지역 변수로 두었다. 그래서 null 검사로 좁힌 타입이 `setState` 클로저 안에서 풀렸다(`argument_type_not_assignable`).
+     - 수정: 실패하면 null을 돌려주는 `_flowContextOrNull()`을 새로 두고 `final`로 받는다.
+     - 동작은 그대로다(읽기 실패 시 흐름을 열지 않고 예외를 내보내지 않음). CRLF를 유지했다.
+  2. `plan_scenario_list_state.dart` `PlanScenarioListController`
+     - 원인: `prefer_initializing_formals` 2건.
+     - 수정: 어디서도 쓰지 않던 생성자 매개변수(sort · compareIds · expandedId)를 지우고, 필드 초기값(최근 수정 · 빈 비교 · 펼침 없음)으로 바꿨다. 코드와 테스트는 모두 인자 없이 만든다(grep 확인).
+- commit.json · golden 예측 · 사용자 실행 명령은 종료 기록 그대로다. 실행한 명령은 여전히 없고 통과를 주장하지 않는다. 다음 gate에서 테스트 본문이 처음 돈다.
+
+### FE5-a gate ① 재실행 결과 (2026-10-10 15:50, 커밋 전)
+
+- 결과: RED. 실패는 golden 2건뿐이고, 둘 다 종료 기록의 예측과 같다.
+  - `plan-scenario-list`: 89.97% 차이.
+  - `plan-scenario-list-expanded`: 기준 이미지 없음(새 장면).
+- 그 밖에는 모두 PASS다: analyze, UI 테스트 1,205건, process 51건, 나머지 golden(`plan-scenario-compare` 포함), almanac, 공백 검사.
+- `plan-scenario-list` 새 그림(`failures/plan-scenario-list_testImage.png`)을 직접 열어 봤다.
+  - 보인 것: S1 메뉴(보는 중 · 버튼 셋 · 비교 1 / 4 · 슬롯 A 활성 계획, B~D 빈 칸 · 나란히 비교 꺼짐), S2(제목 · 정렬 seg · 필터 칩 · 고정 행 · 시나리오 카드 1장), S3 빈 미리보기 문구. 세 섹션 바탕이 모두 그려졌다.
+  - 넘침 띠나 깨진 글자는 없었다.
+- 눈에 띈 점이 하나 있다. 부족 0종일 때도 "0종"이 강조색(분홍)이다(고정 행 · 카드 모두). 시안은 부족이 있는 경우만 보여 준다. 바꿀지는 오케스트레이터 판단에 맡기고, 이번에는 고치지 않았다.
+- 다음: 오케스트레이터 승인 뒤 ② `fe_gate.ps1 -UpdateGoldens` → `fe_gate.ps1`, ③ `fe_commit.ps1 -Slice fe5a -DryRun` → `fe_commit.ps1 -Slice fe5a`(순서는 오케스트레이터가 정한다).
+
+### fe5a commit record (2026-10-10 16:52, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261010_162247\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
