@@ -6,6 +6,7 @@ import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
+import 'package:ba_planner_v7/ui/kit/skew_bar.dart';
 import 'package:ba_planner_v7/ui/studio/section_studio_document.dart';
 import 'package:ba_planner_v7/ui/studio/account_studio_layout.dart';
 import 'package:ba_planner_v7/ui/studio/title_studio_layout.dart';
@@ -193,6 +194,13 @@ class _MigratingAccountsService extends MockAppService {
   }
 }
 
+/// 학생 카탈로그를 읽지 못하는 mock(타이틀 보유 줄의 전체 수가 '모름'이 된다).
+class _NoCatalogTitleService extends MockAppService {
+  @override
+  Future<List<StudentCatalogEntry>> listStudents() async =>
+      throw StateError('catalog unavailable');
+}
+
 class _ConnectionGatedTitleService extends MockAppService {
   _ConnectionGatedTitleService()
     : super(
@@ -308,32 +316,90 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  test('typed title layout combines the base and revised Studio documents', () {
-    final base =
-        jsonDecode(
-              File(
-                '../release/section-title.ba-section-studio.json',
-              ).readAsStringSync(),
-            )
-            as Map<String, dynamic>;
-    final revised =
-        jsonDecode(
-              File(
-                '../release/section-title-1.ba-section-studio.json',
-              ).readAsStringSync(),
-            )
-            as Map<String, dynamic>;
-    final baseContainers = base['containers'] as List<dynamic>;
-    final revisedContainers = revised['containers'] as List<dynamic>;
-    baseContainers[4] = revisedContainers[4];
-    final revisedPortrait =
-        Map<String, dynamic>.from(
-            (revised['features'] as List<dynamic>)[2] as Map,
-          )
-          ..['id'] = 'feature-3'
-          ..['label'] = '이미지 3';
-    (base['features'] as List<dynamic>)[2] = revisedPortrait;
-    expect(jsonDecode(encodeSectionStudioDocument(titleStudioDocument)), base);
+  // FE8-a: 시안 Title.dc.html로 재저장한 문서 하나가 typed projection의 원본이다(git 추적 사본).
+  test('typed title layout matches the saved Studio document', () {
+    final source = File(
+      'assets/studio_sections/section-title.ba-section-studio.json',
+    ).readAsStringSync();
+    expect(
+      jsonDecode(encodeSectionStudioDocument(titleStudioDocument)),
+      jsonDecode(source),
+    );
+    // 저장 문서는 Studio 불러오기 검증(96 grid·부모 비율 범위·ID)을 그대로 통과한다.
+    expect(
+      encodeSectionStudioDocument(decodeSectionStudioDocument(source)),
+      encodeSectionStudioDocument(titleStudioDocument),
+    );
+  });
+
+  // FE8-a: 기준 viewport(2560×1392)에서 보이는 표면 path bounds가 시안 Title.dc.html과 같다.
+  // 섹션은 정수 칸으로 덮고 보이는 표면은 컨테이너다. 시안 path의 둥근 모서리 차이를 2px까지 허용한다.
+  test('title surfaces reproduce the draft bounds at the reference viewport', () {
+    const size = Size(2560, 1392);
+    Rect containerBounds(String id) => buildStudioContainerPath(
+      size,
+      titleStudioDocument.elements,
+      titleStudioDocument.containers.singleWhere((item) => item.id == id),
+    )!.getBounds();
+    Rect featureRect(String id) => studioFeatureRect(
+      size,
+      titleStudioDocument.elements,
+      titleStudioDocument.containers,
+      titleStudioDocument.features.singleWhere((item) => item.id == id),
+    )!;
+    void expectRect(Rect actual, Rect expected, String reason) {
+      expect(actual.left, closeTo(expected.left, 2), reason: '$reason left');
+      expect(actual.top, closeTo(expected.top, 2), reason: '$reason top');
+      expect(actual.right, closeTo(expected.right, 2), reason: '$reason right');
+      expect(
+        actual.bottom,
+        closeTo(expected.bottom, 2),
+        reason: '$reason bottom',
+      );
+    }
+
+    expectRect(
+      containerBounds('container-1'),
+      const Rect.fromLTWH(520, 470, 1520, 250),
+      'logo band',
+    );
+    expectRect(
+      containerBounds('container-4'),
+      const Rect.fromLTWH(544, 646, 92, 54),
+      'settings',
+    );
+    expectRect(
+      containerBounds('container-5'),
+      const Rect.fromLTWH(1875, 646, 110, 54),
+      'exit',
+    );
+    expectRect(
+      containerBounds('container-2'),
+      const Rect.fromLTWH(1090, 820, 380, 116),
+      'start',
+    );
+    expectRect(
+      containerBounds('container-6'),
+      const Rect.fromLTWH(0, 22, 660, 226),
+      'account card',
+    );
+    expectRect(
+      featureRect('feature-3'),
+      const Rect.fromLTWH(52, 58.1, 190, 153.81),
+      'stucard',
+    );
+    expectRect(
+      featureRect('feature-1'),
+      const Rect.fromLTWH(980, 497, 600, 180),
+      'logo image',
+    );
+    final progress = featureRect('feature-6');
+    expect(progress.left, closeTo(280, 1));
+    expect(progress.width, closeTo(300, 1));
+    expect(progress.center.dy, closeTo(108, 2));
+    for (final id in const ['feature-4', 'feature-5']) {
+      expect(featureRect(id).left, closeTo(progress.left, 0.01), reason: id);
+    }
   });
 
   test('typed account layout matches the saved Studio document', () {
@@ -406,7 +472,20 @@ void main() {
 
     expect(find.byKey(const ValueKey('title-page')), findsOneWidget);
     expect(find.text('Main'), findsOneWidget);
-    expect(find.text('보유 : 0/2'), findsOneWidget);
+    // T5: `보유` · 보유 수 · `/ 전체`가 한 줄이다(이전 `보유 : 0/2`).
+    final ownedRow = find.byKey(const ValueKey('title-owned-count'));
+    expect(
+      find.descendant(of: ownedRow, matching: find.text('보유')),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('title-owned-value'))).data,
+      '0',
+    );
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('title-owned-total'))).data,
+      '/ 2',
+    );
     expect(find.text('시작'), findsOneWidget);
     expect(find.text('Space'), findsOneWidget);
     for (final key in const [
@@ -431,11 +510,12 @@ void main() {
     final primary = tester.getRect(
       find.byKey(const ValueKey('title-primary-position')),
     );
-    expect(brand, const Rect.fromLTWH(300, 300, 840, 150));
-    expect(account, const Rect.fromLTWH(0, 0, 375, 150));
-    expect(primary.left, closeTo(615, 0.01));
+    // FE8-a 재저장 문서: element-1 (19,32,57,18), element-3 (0,1,26,17), element-2 (40,56,15,9).
+    expect(brand, const Rect.fromLTWH(285, 300, 855, 168.75));
+    expect(account, const Rect.fromLTWH(0, 9.375, 390, 159.375));
+    expect(primary.left, closeTo(600, 0.01));
     expect(primary.top, closeTo(525, 0.01));
-    expect(primary.width, closeTo(180, 0.01));
+    expect(primary.width, closeTo(225, 0.01));
 
     final primaryContainer = titleStudioDocument.containers.singleWhere(
       (item) => item.id == 'container-2',
@@ -467,8 +547,55 @@ void main() {
       );
     }
 
+    // T9: Space 키캡은 시작 버튼 path 아래 14px, 높이 26이다.
+    final spaceKey = tester.getRect(
+      find.byKey(const ValueKey('title-space-key')),
+    );
+    expect(spaceKey.top, closeTo(primaryPath.getBounds().bottom + 14, 0.5));
+    expect(spaceKey.height, closeTo(26, 0.01));
+    expect(
+      spaceKey.center.dx,
+      closeTo(primaryPath.getBounds().center.dx, 0.5),
+    );
+    // T7: 설정 버튼은 톱니 그림 + 의미 라벨 `계정 관리`다(Material 아이콘 없음).
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('title-settings')),
+        matching: find.byType(Icon),
+      ),
+      findsNothing,
+    );
+    expect(find.byKey(const ValueKey('title-settings-gear')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('title-settings')),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is Semantics && widget.properties.label == '계정 관리',
+        ),
+      ),
+      findsOneWidget,
+    );
+    // T8: 시작 라벨 34 w700, 분홍 외곽선.
+    final startStyle = tester.widget<Text>(find.text('시작')).style!;
+    expect(startStyle.fontSize, 34);
+    expect(startStyle.fontWeight, FontWeight.w700);
+    expect(find.byKey(const ValueKey('title-primary-outline')), findsOneWidget);
+    // T6: 계정 카드 전체가 버튼이고 의미 라벨은 `계정 관리 열기`다.
+    final accountCard = find.byKey(const ValueKey('title-account-card'));
+    expect(accountCard, findsOneWidget);
+    expect(
+      find.descendant(
+        of: accountCard,
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics && widget.properties.label == '계정 관리 열기',
+        ),
+      ),
+      findsOneWidget,
+    );
+
     final brandGlass = find.byKey(const ValueKey('title-brand-glass'));
-    // FE1-c(FD-006): 섹션 바탕은 블러 없이 공용 섹션 표면 색(surface@.76) 하나로 칠한다.
+    // FE1-c(FD-006): 섹션 바탕은 블러 없이 한 색으로 칠한다. 로고 띠만 시안 .93(T10, FD-001).
     expect(
       find.descendant(of: brandGlass, matching: find.byType(BackdropFilter)),
       findsNothing,
@@ -479,10 +606,29 @@ void main() {
         )
         .first
         .color;
-    expect(glassColor, sectionSurfaceColor);
+    expect(glassColor, const Color.fromRGBO(29, 42, 58, 0.93));
     expect(glassColor.a, lessThan(1));
     expect(
       find.descendant(of: brandGlass, matching: find.byType(CustomPaint)),
+      findsNothing,
+    );
+    expect(find.byKey(const ValueKey('title-brand-glow')), findsOneWidget);
+    // 계정 카드 바탕은 공용 섹션 표면 한 겹이다(T11: 삼각 무늬 컨테이너 없음).
+    final accountGlass = find.byKey(const ValueKey('title-account-glass'));
+    expect(
+      tester
+          .widgetList<ColoredBox>(
+            find.descendant(of: accountGlass, matching: find.byType(ColoredBox)),
+          )
+          .first
+          .color,
+      sectionSurfaceColor,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('title-exit-motion-account')),
+        matching: find.byType(BATriangleBackground),
+      ),
       findsNothing,
     );
     expect(find.byType(FractionallySizedBox), findsNothing);
@@ -501,6 +647,10 @@ void main() {
     expect(grid.items, hasLength(2));
     expect(grid.items.first.asset, 'assets/studio_features/square.png');
     expect(grid.items.last.asset, 'assets/student_portraits/hasumi.png');
+    // T11: 학생 카드와 같은 평행사변형 stucard + 흰 외곽선.
+    expect(grid.items.first.clipPathBuilder, studentGridCardPath);
+    expect(grid.items.first.outlineColor, Colors.white);
+    expect(grid.items.last.scale, 0.98);
 
     final primaryMotion = find.byKey(
       const ValueKey('title-exit-motion-primary'),
@@ -537,31 +687,45 @@ void main() {
       reason: 'the icon action must be placed directly without an expand box',
     );
 
-    final divider = tester.getRect(
-      find.byKey(const ValueKey('title-account-divider')),
-    );
+    // T4: 구분선 대신 보유율 진행 막대(높이 5). 이름·보유 줄은 막대 왼쪽 끝에 맞춘다.
+    expect(find.byKey(const ValueKey('title-account-divider')), findsNothing);
+    final progressBar = find.byKey(const ValueKey('title-account-progress'));
+    final progress = tester.getRect(progressBar);
+    expect(progress.height, closeTo(5, 0.01));
+    // mock: 보유 0명 / 전체 2명.
+    expect(tester.widget<SkewBar>(progressBar).fraction, 0);
     final accountName = tester.getRect(
       find.byKey(const ValueKey('title-account-name-label')),
     );
-    final ownedText = tester.getRect(
-      find.byKey(const ValueKey('title-owned-count')),
-    );
-    expect(accountName.left, closeTo(divider.left, 0.5));
-    expect(ownedText.left, closeTo(divider.left, 0.5));
+    final ownedText = tester.getRect(ownedRow);
+    expect(accountName.left, closeTo(progress.left, 0.5));
+    expect(ownedText.left, closeTo(progress.left, 0.5));
 
+    // 로고 띠 path = container-1(시안 반경 16). 같은 다각형이라 Studio 컨테이너 path와 bounds가 같고
+    // 모서리 밖·안 판정도 모서리에서 떨어진 점에서는 같다.
     final clip = tester.widget<ClipPath>(
       find.descendant(of: brandGlass, matching: find.byType(ClipPath)),
     );
     final actualPath = clip.clipper!.getClip(const Size(1440, 900));
-    final studioPath = buildSectionCanvasElementPath(
+    final studioPath = buildStudioContainerPath(
       const Size(1440, 900),
-      titleStudioDocument.elements.first,
-    );
-    for (final point in const [
-      Offset(300, 300),
-      Offset(330, 302),
-      Offset(600, 375),
-      Offset(1110, 448),
+      titleStudioDocument.elements,
+      titleStudioDocument.containers.singleWhere(
+        (item) => item.id == 'container-1',
+      ),
+    )!;
+    final studioBounds = studioPath.getBounds();
+    final actualBounds = actualPath.getBounds();
+    expect(actualBounds.left, closeTo(studioBounds.left, 1.5));
+    expect(actualBounds.top, closeTo(studioBounds.top, 1.5));
+    expect(actualBounds.right, closeTo(studioBounds.right, 1.5));
+    expect(actualBounds.bottom, closeTo(studioBounds.bottom, 1.5));
+    for (final point in [
+      studioBounds.center,
+      studioBounds.centerLeft + const Offset(2, 0),
+      studioBounds.centerRight - const Offset(2, 0),
+      studioBounds.topCenter - const Offset(0, 2),
+      studioBounds.bottomCenter + const Offset(0, 2),
     ]) {
       expect(actualPath.contains(point), studioPath.contains(point));
     }
@@ -709,6 +873,66 @@ void main() {
     expect(managerExitTranslation.x, lessThan(0));
     expect(managerExitTranslation.y, closeTo(0, 0.001));
     await tester.pumpAndSettle();
+  });
+
+  // FE8-a T6: 계정 카드 어디를 눌러도 계정 관리가 열린다(설정 버튼과 같은 경로).
+  testWidgets('tapping the title account card opens the account manager', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 720));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final service = MockAppService();
+    addTearDown(service.dispose);
+
+    await tester.pumpWidget(BAPlannerApp(service: service, showTitle: true));
+    await _pumpUntilFound(
+      tester,
+      find.byKey(const ValueKey('title-account-card')),
+    );
+    await tester.pumpAndSettle();
+    // 초상·글자 위를 눌러도 카드 버튼이 받는다(내용은 IgnorePointer).
+    await tester.tap(
+      find.byKey(const ValueKey('title-account-name-label')),
+      warnIfMissed: false,
+    );
+    await _pumpUntilFound(
+      tester,
+      find.byKey(const ValueKey('account-manager-section')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('account-manager-section')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('account-editor-section')), findsNothing);
+  });
+
+  // 전체 학생 수를 모르면 0으로 채우지 않는다: 막대는 빗금(fraction null), 전체는 '—'.
+  testWidgets('title owned count shows an unknown total without a zero', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 720));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final service = _NoCatalogTitleService();
+    addTearDown(service.dispose);
+
+    await tester.pumpWidget(BAPlannerApp(service: service, showTitle: true));
+    await _pumpUntilFound(
+      tester,
+      find.byKey(const ValueKey('title-owned-count')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('title-owned-total'))).data,
+      '/ —',
+    );
+    expect(
+      tester
+          .widget<SkewBar>(find.byKey(const ValueKey('title-account-progress')))
+          .fraction,
+      isNull,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('title action textures use the softened logo-pink palette', (
