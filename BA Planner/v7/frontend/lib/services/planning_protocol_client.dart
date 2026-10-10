@@ -720,6 +720,21 @@ class PlanningProtocolClient {
         value['message'] is String;
   }
 
+  /// FB-4 optional target metadata. 키가 없거나 null이면 "모름"으로 통과하고, 값이 있으면
+  /// `client_width`·`client_height`는 양의 정수, `game`은 `blue_archive`만 받는다.
+  /// 그 밖의 추가 키는 지금처럼 허용한다(schema `additionalProperties: true`).
+  bool _validScannerTargetMetadata(Map<dynamic, dynamic> item) {
+    bool optionalPositiveInt(String key) {
+      final value = item[key];
+      return value == null || (value is int && value > 0);
+    }
+
+    final game = item['game'];
+    return optionalPositiveInt('client_width') &&
+        optionalPositiveInt('client_height') &&
+        (game == null || game == 'blue_archive');
+  }
+
   bool _validScannerSuccessPayload(
     String method,
     Map<String, dynamic> payload,
@@ -738,7 +753,8 @@ class PlanningProtocolClient {
                     'minimized',
                     'closed',
                     'unsupported',
-                  }.contains(item['status']),
+                  }.contains(item['status']) &&
+                  _validScannerTargetMetadata(item),
             ),
       'scanner.recognition.status' =>
         payload['ready'] is bool &&

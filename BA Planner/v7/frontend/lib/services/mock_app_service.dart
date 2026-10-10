@@ -54,6 +54,10 @@ class MockAppService
                  title: 'Mock Blue Archive',
                  status: ScannerTargetStatus.ready,
                  foreground: true,
+                 // FB-4 연결 메모의 Mock 예시 값(물리 client 2560×1440, blue_archive).
+                 clientWidth: 2560,
+                 clientHeight: 1440,
+                 game: ScannerTargetGame.blueArchive,
                ),
              ],
        ),

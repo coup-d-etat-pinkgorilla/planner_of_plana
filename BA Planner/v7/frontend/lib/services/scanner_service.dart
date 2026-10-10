@@ -57,24 +57,71 @@ enum ScannerEventDecision {
   afterTerminal,
 }
 
+/// `scanner.target.list` 행의 `game` 판별값(FB-4, `blue_archive` 또는 null).
+///
+/// 값이 없으면(null) "모름"이다. 게임 창이 아니라는 뜻이 아니며, 서버·지역·스캔 지원 여부도
+/// 담지 않는다(계약 README "FB-4 target metadata").
+enum ScannerTargetGame {
+  blueArchive('blue_archive');
+
+  const ScannerTargetGame(this.wireName);
+  final String wireName;
+
+  static ScannerTargetGame fromWire(String value) => values.firstWhere(
+    (item) => item.wireName == value,
+    orElse: () => throw FormatException('Unknown scanner target game: $value'),
+  );
+}
+
 class ScannerTarget {
   const ScannerTarget({
     required this.id,
     required this.title,
     required this.status,
     this.foreground = false,
+    this.clientWidth,
+    this.clientHeight,
+    this.game,
   });
   final String id;
   final String title;
   final ScannerTargetStatus status;
   final bool foreground;
 
+  /// 게임 창 client 영역의 물리 픽셀 폭·높이(FB-4). 제목 표시줄·테두리 제외.
+  /// null = 모름: 구 provider가 키를 생략했거나(legacy) 최소화·닫힘·측정 실패로 null을 보냈다.
+  /// 0이나 다른 기본값으로 채우지 않는다.
+  final int? clientWidth;
+  final int? clientHeight;
+
+  /// 게임 판별(FB-4). null = 모름(생략 또는 null). 게임 아님으로 단정하지 않는다.
+  final ScannerTargetGame? game;
+
+  /// 폭·높이가 둘 다 알려져 있을 때만 참이다.
+  bool get hasClientSize => clientWidth != null && clientHeight != null;
+
   factory ScannerTarget.fromWire(Map<String, dynamic> wire) => ScannerTarget(
     id: wire['target_id'] as String,
     title: wire['title'] as String,
     status: ScannerTargetStatus.values.byName(wire['status'] as String),
     foreground: wire['foreground'] == true,
+    clientWidth: _optionalClientExtent(wire, 'client_width'),
+    clientHeight: _optionalClientExtent(wire, 'client_height'),
+    game: switch (wire['game']) {
+      null => null,
+      final String value => ScannerTargetGame.fromWire(value),
+      final Object value => throw FormatException(
+        'Invalid scanner target game: $value',
+      ),
+    },
   );
+
+  static int? _optionalClientExtent(Map<String, dynamic> wire, String key) {
+    final value = wire[key];
+    if (value == null) return null;
+    if (value is int && value > 0) return value;
+    throw FormatException('Invalid scanner target $key: $value');
+  }
 }
 
 class ScannerSession {
