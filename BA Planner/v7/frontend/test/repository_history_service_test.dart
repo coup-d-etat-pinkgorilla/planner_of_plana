@@ -71,7 +71,11 @@ void main() {
     expect(s.before.value!.values.containsKey('bond_rank'), isTrue);
     expect(s.after.value!.values.containsKey('bond_rank'), isFalse);
     final summary = h.summarize('aaaaaaaaaaaaaaaaaaaaaaaa', 4);
+    // FB-2b intended change: the shared summary now has 13 keys (required nullable last_scan_at).
     expect(summary.toWire(), fixture['summary']);
+    expect(summary.toWire().length, 13);
+    expect(summary.lastScanAt, h.toWire()['last_applied_at']['scan']);
+    expect(summary.lastScanAt, fixture['summary']['last_scan_at']);
     expect(summary.totalScanSessionCount, 1);
     expect(summary.totalCounts['scan'], 2);
     expect(h.events[2].scanKind, ' 未知 Kind ');
@@ -121,6 +125,24 @@ void main() {
     expect(
       () => RepositoryHistorySummary.fromWire(malformed),
       throwsFormatException,
+    );
+    // FB-2b: last_scan_at is required (no missing-key fallback) and null iff scan count is 0.
+    final missing = copy(fixture['summary'] as Map)..remove('last_scan_at');
+    expect(
+      () => RepositoryHistorySummary.fromWire(missing),
+      throwsFormatException,
+    );
+    final nulled = copy(response['payload'] as Map);
+    nulled['profiles'][0]['last_scan_at'] = null;
+    expect(
+      isValidRepositorySuccessPayload('repository.history.summary', nulled),
+      isFalse,
+    );
+    final old12 = copy(response['payload'] as Map);
+    (old12['profiles'][0] as Map).remove('last_scan_at');
+    expect(
+      isValidRepositorySuccessPayload('repository.history.summary', old12),
+      isFalse,
     );
     expect(
       isValidRepositorySuccessPayload('repository.students.update', {
@@ -286,66 +308,140 @@ void main() {
   });
 
   test(
-    'old Mock scanner writes stay unattributed and following manual writes reconstruct',
+    'seeded unattributed history is not reclassified; new Mock scanner commits record scan once',
     () async {
+      const id = 'aaaaaaaaaaaaaaaaaaaaaaaa';
+      var calls = 0;
+      final at = DateTime.utc(2026, 10, 10, 9, 30);
+      final initial = <String, dynamic>{
+        'profile_id': id,
+        'revision': 1,
+        'students': [
+          {
+            'version': 1,
+            'student_id': 'aru',
+            'values': {'level': 1},
+          },
+        ],
+        'inventory': {'version': 1, 'entries': <dynamic>[]},
+        'goals': {'version': 1, 'goals': <dynamic>[]},
+      };
+      // History written before S-FB2b by the old four-argument internal port.
+      final seeded = RepositoryCurrentHistory.empty().appendManual(
+        RepositoryState.fromWire({
+          ...initial,
+          'revision': 0,
+          'students': <dynamic>[],
+        }),
+        RepositoryState.fromWire(initial),
+        'students',
+        DateTime.utc(2026, 10, 9),
+        source: 'unattributed',
+      );
       final mock = MockAppService(
-        historyClock: () => DateTime.utc(2026, 10, 10),
+        profiles: const [
+          RepositoryProfile(
+            id: id,
+            displayName: 'Scanner history',
+            revision: 1,
+            selected: true,
+          ),
+        ],
+        repositoryStates: {id: initial},
+        repositoryHistories: {id: seeded},
+        historyClock: () {
+          calls++;
+          return at;
+        },
       );
       addTearDown(mock.dispose);
-      final profile = await mock.createProfile(
-        'Scanner compatibility',
-        'scanner-history',
-      );
-      final id = profile.id;
-      await mock.saveRepositoryStudents(
-        id,
-        [
-          ConfirmedStudentState.fromValues('aru', {'level': 1}),
-        ],
-        0,
-        'manual',
-      );
+      Future<RepositoryHistorySummary> load() async =>
+          (await mock.loadRepositoryHistorySummary([id])).profiles.single;
+      final state = await mock.loadRepositoryState(id);
       final session = await mock.startScannerSession(
         ScannerKind.student,
         'mock-window',
       );
       await Future<void>.delayed(const Duration(milliseconds: 40));
       final candidate = (await mock.scannerSnapshot(session)).candidates.single;
+      final first = await mock.commitScannerCandidate(
+        session,
+        candidate,
+        profileId: id,
+        expectedRepositoryRevision: state.revision,
+        idempotencyKey: 'scan-1',
+      );
+      expect(first, {
+        'candidate_id': candidate.id,
+        'candidate_revision': candidate.revision,
+        'profile_id': id,
+        'revision': state.revision + 1,
+      });
+      var summary = await load();
+      expect(summary.totalCounts, {
+        'scan': 1,
+        'manual': 0,
+        'import': 0,
+        'unattributed': 1,
+      });
+      expect(summary.lastScanAt, historyUtcTimestamp(at));
+      expect(summary.totalScanSessionCount, 1);
+      expect(calls, 1);
+      // Receipt replay: original response, no read/write/clock/history.
+      expect(
+        await mock.commitScannerCandidate(
+          session,
+          candidate,
+          profileId: id,
+          expectedRepositoryRevision: state.revision,
+          idempotencyKey: 'scan-1',
+        ),
+        first,
+      );
+      expect((await load()).historySequence, 2);
+      expect(calls, 1);
+      // A same-value apply under a new key is still a scan application.
       await mock.commitScannerCandidate(
         session,
         candidate,
         profileId: id,
-        expectedRepositoryRevision: 1,
-        idempotencyKey: 'old-scan',
+        expectedRepositoryRevision: state.revision + 1,
+        idempotencyKey: 'scan-nochange',
       );
-      var summary = (await mock.loadRepositoryHistorySummary([
+      final current = await mock.loadRepositoryState(id);
+      await mock.saveRepositoryStudents(
         id,
-      ])).profiles.single;
+        current.students,
+        current.revision,
+        'manual-after',
+      );
+      summary = await load();
       expect(summary.totalCounts, {
-        'scan': 0,
+        'scan': 2,
         'manual': 1,
         'import': 0,
         'unattributed': 1,
       });
-      expect(summary.totalScanSessionCount, 0);
-      // No-change application is still an application at the old internal port.
-      await mock.commitScannerCandidate(
-        session,
-        candidate,
-        profileId: id,
-        expectedRepositoryRevision: 2,
-        idempotencyKey: 'old-nochange',
-      );
-      final state = await mock.loadRepositoryState(id);
-      await mock.saveRepositoryStudents(id, state.students, 3, 'manual-after');
-      summary = (await mock.loadRepositoryHistorySummary([id])).profiles.single;
-      expect(summary.totalCounts, {
-        'scan': 0,
-        'manual': 2,
-        'import': 0,
-        'unattributed': 2,
-      });
+      expect(summary.totalScanSessionCount, 1);
       expect(summary.historySequence, 4);
+      expect(summary.lastManualAt, historyUtcTimestamp(at));
+      expect(calls, 3);
+      final events = (await mock.loadRepositoryHistoryEvents(
+        RepositoryHistoryEventsRequest(profileId: id),
+      )).events;
+      expect(events.map((e) => e.source), [
+        'unattributed',
+        'scan',
+        'scan',
+        'manual',
+      ]);
+      expect(events[1].scanKind, 'student');
+      expect(events[1].inventoryScanProfile, isNull);
+      expect(events[1].scanSessionId, session.id);
+      expect(events[1].appliedStudentIds, ['aru']);
+      expect(events[1].studentChanges.single.studentId, 'aru');
+      expect(events[2].studentChanges, isEmpty);
+      expect(events[2].appliedStudentIds, ['aru']);
     },
   );
 }

@@ -483,6 +483,9 @@ bool isValidRepositorySuccessPayload(
       case 'repository.history.diff':
         RepositoryHistoryDiffResult.fromWire(payload);
         return true;
+      case 'repository.history.scan_latest':
+        RepositoryHistoryScanLatestResult.fromWire(payload);
+        return true;
       case 'repository.plan.get':
         RepositoryPlanState.fromWire(payload);
         return true;
@@ -665,6 +668,9 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
       case 'repository.history.diff':
         RepositoryHistoryDiffRequest.fromWire(payload);
         return true;
+      case 'repository.history.scan_latest':
+        RepositoryHistoryScanLatestRequest.fromWire(payload);
+        return true;
       case 'repository.migration.import':
         return _exact(payload, {'source_profile_key'}) &&
             payload['source_profile_key'] is String &&
@@ -716,6 +722,13 @@ abstract interface class RepositoryService {
   );
   Future<RepositoryHistoryDiffResult> loadRepositoryHistoryDiff(
     RepositoryHistoryDiffRequest request,
+  );
+
+  /// FB-2b `repository.history.scan_latest`: read-only latest scan metadata.
+  /// A stale anchor fails with invalid_payload / details.reason=stale_scan_latest
+  /// (not retryable): discard the accumulated by-kind pages and restart.
+  Future<RepositoryHistoryScanLatestResult> loadRepositoryHistoryScanLatest(
+    RepositoryHistoryScanLatestRequest request,
   );
   Future<int> saveRepositoryStudents(
     String profileId,

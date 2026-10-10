@@ -74,6 +74,10 @@ void main() {
           'import': 0,
           'unattributed': 0,
         });
+        // FB-2b exact13: manual writes never fill the profile scan time.
+        expect(saved.length, 13);
+        expect(saved.containsKey('last_scan_at'), isTrue);
+        expect(saved['last_scan_at'], isNull);
         final current = await service.loadRepositoryState(id);
         expect(current.students.single.toWire(), students.single.toWire());
         final plan = await service.loadRepositoryPlan(id);
@@ -229,6 +233,9 @@ void main() {
         expect(saved.profiles[0].coverage.baselineAt, isNull);
         expect(saved.profiles[1].lastImportAt, isNotNull);
         expect(saved.profiles[1].totalCounts['import'], 1);
+        expect(unrecorded.lastScanAt, isNull);
+        expect(saved.profiles[0].lastScanAt, isNull);
+        expect(saved.profiles[1].lastScanAt, isNull);
         expect(saved.profiles[1].totalScanSessionCount, 0);
         await service.dispose();
         service = start();

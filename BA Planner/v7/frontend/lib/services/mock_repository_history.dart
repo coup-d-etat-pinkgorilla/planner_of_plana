@@ -23,3 +23,27 @@ class MockRepositoryCurrentMap extends MapBase<String, Map<String, dynamic>> {
   @override
   Map<String, dynamic>? remove(Object? key) => _values.remove(key);
 }
+
+/// Observe Mock scanner candidate writes (creation, review, revalidation and
+/// identity assignment) so the S-FB2b commit can derive identified inventory keys
+/// the way the backend session does, without touching each scanner method.
+class MockScannerCandidateMap<V> extends MapBase<String, V> {
+  MockScannerCandidateMap(this.afterWrite);
+  final void Function(String, V) afterWrite;
+  final Map<String, V> _values = {};
+
+  @override
+  V? operator [](Object? key) => _values[key];
+  @override
+  void operator []=(String key, V value) {
+    _values[key] = value;
+    afterWrite(key, value);
+  }
+
+  @override
+  Iterable<String> get keys => _values.keys;
+  @override
+  void clear() => _values.clear();
+  @override
+  V? remove(Object? key) => _values.remove(key);
+}

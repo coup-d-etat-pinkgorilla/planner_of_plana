@@ -261,6 +261,10 @@ void main() {
         ])).profiles.single;
         expect(summary.totalScanSessionCount, 4);
         expect(summary.totalCounts['scan'], 6);
+        // FB-2b exact13: the persisted latest scan application time.
+        expect(summary.toWire().length, 13);
+        expect(summary.lastScanAt, f['history']['last_applied_at']['scan']);
+        expect(summary.lastScanAt, isNotNull);
         expect((await service.loadRepositoryState(id)).revision, 9);
       } finally {
         await service.dispose();

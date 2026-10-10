@@ -493,6 +493,14 @@ class ProcessAppService
   );
 
   @override
+  Future<RepositoryHistoryScanLatestResult> loadRepositoryHistoryScanLatest(
+    RepositoryHistoryScanLatestRequest request,
+  ) async => RepositoryHistoryScanLatestResult.fromWireFor(
+    request,
+    await _client.send('repository.history.scan_latest', request.toWire()),
+  );
+
+  @override
   Future<int> saveRepositoryGoals(
     String profileId,
     Map<String, dynamic> goals,

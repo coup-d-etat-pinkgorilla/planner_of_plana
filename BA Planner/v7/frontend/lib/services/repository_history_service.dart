@@ -3,8 +3,18 @@ import 'dart:convert';
 import 'repository_service.dart' show ConfirmedStudentState, RepositoryState;
 
 part 'repository_history_query.dart';
+part 'repository_history_scan_latest.dart';
 
 const currentHistorySources = ['scan', 'manual', 'import', 'unattributed'];
+
+/// Backend `LEGACY_RESOURCE_KEYS` (inventory_catalog.py): an old stored/imported key → current key.
+/// FB-2b/S-FB2b canonicalize these before identity uniqueness checks.
+const historyLegacyResourceKeys = {
+  'Item_Icon_SkillBook_Ultimate_Piece': 'Item_Icon_SkillBook_Ultimate',
+};
+
+String historyCanonicalResourceKey(String key) =>
+    historyLegacyResourceKeys[key] ?? key;
 const currentHistoryMaxEvents = 10000;
 const currentHistoryMaxBytes = 16 * 1024 * 1024;
 
@@ -236,6 +246,119 @@ Map<String, dynamic> _apply(Map state, Map event) {
     ];
   }
   return result;
+}
+
+Map<String, dynamic> _historyDiffs(
+  Map<String, dynamic> a,
+  Map<String, dynamic> b,
+) {
+  final diffs = <String, dynamic>{};
+  for (final row in [
+    ('students', 'student_id', 'value', 'student_changes'),
+    ('inventory', 'resource_key', 'quantity', 'inventory_changes'),
+  ]) {
+    final (key, id, name, changes) = row;
+    final aa = {
+      for (final item in a[key] as List)
+        item[id]: name == 'quantity' ? item['quantity'] : item,
+    };
+    final bb = {
+      for (final item in b[key] as List)
+        item[id]: name == 'quantity' ? item['quantity'] : item,
+    };
+    final keys = {...aa.keys, ...bb.keys}.cast<String>().toList()..sort();
+    diffs[changes] = [
+      for (final identity in keys)
+        if (!_same(
+          {'present': aa.containsKey(identity), name: aa[identity]},
+          {'present': bb.containsKey(identity), name: bb[identity]},
+        ))
+          {
+            id: identity,
+            'before': {'present': aa.containsKey(identity), name: aa[identity]},
+            'after': {'present': bb.containsKey(identity), name: bb[identity]},
+          },
+    ];
+  }
+  return diffs;
+}
+
+/// Shared append tail: counters, the persisted scan index and prefix folding.
+RepositoryCurrentHistory _appendHistoryEvent(
+  Map<String, dynamic> result,
+  Map<String, dynamic> event,
+  DateTime now,
+) {
+  final source = event['source'] as String;
+  final at = event['recorded_at'] as String;
+  final events = result['events'] as List;
+  events.add(event);
+  result['next_sequence'] = (result['next_sequence'] as int) + 1;
+  result['total_counts'][source]++;
+  result['last_applied_at'][source] = at;
+  if (source == 'scan') {
+    final session = event['scan_context']['session_id'] as String;
+    final sessions = result['scan_session_ids'] as List;
+    if (!sessions.contains(session)) sessions.add(session);
+    final entry = <String, dynamic>{
+      'sequence': event['sequence'],
+      'recorded_at': at,
+      'scan_kind': event['scan_kind'],
+      'inventory_scan_profile': event['inventory_scan_profile'],
+      'session_id': session,
+    };
+    final index = result['latest_scans'] as Map;
+    // The newest application of a raw tuple moves to the end (latest sequence order).
+    index['by_kind'] = [
+      for (final item in index['by_kind'] as List)
+        if (item['scan_kind'] != entry['scan_kind'] ||
+            item['inventory_scan_profile'] != entry['inventory_scan_profile'])
+          item,
+      entry,
+    ];
+    for (final (bucket, identity, scopeKey) in [
+      ('by_student_id', 'student_id', 'student_ids'),
+      ('by_resource_key', 'resource_key', 'resource_keys'),
+    ]) {
+      final mapping = <String, dynamic>{
+        for (final item in index[bucket] as List) item[identity] as String: item,
+      };
+      for (final key in event['applied_scope'][scopeKey] as List) {
+        mapping[key as String] = {identity: key, ...entry};
+      }
+      final keys = mapping.keys.toList()..sort(_historyIdCompare);
+      index[bucket] = [for (final key in keys) mapping[key]];
+    }
+  }
+  void fold() {
+    final removed = events.removeAt(0) as Map;
+    final baseline = result['baseline'] as Map;
+    final projection = _apply({
+      'students': baseline['students'],
+      'inventory': baseline['inventory'],
+    }, removed);
+    result['baseline'] = {
+      'sequence': removed['sequence'],
+      'recorded_at': removed['recorded_at'],
+      'origin': 'compacted',
+      ...projection,
+    };
+  }
+
+  final cutoff = now.toUtc().subtract(const Duration(days: 365));
+  while (events.length > 1 &&
+      (events.length > currentHistoryMaxEvents ||
+          DateTime.parse(
+            events.first['recorded_at'] as String,
+          ).isBefore(cutoff))) {
+    fold();
+  }
+  while (utf8.encode(historyCanonicalJson(result)).length >
+      currentHistoryMaxBytes) {
+    if (events.length <= 1) _bad('history_capacity_exceeded');
+    fold();
+  }
+  return RepositoryCurrentHistory.fromWire(result);
 }
 
 class RepositoryCurrentHistory {
@@ -477,7 +600,7 @@ class RepositoryCurrentHistory {
         },
       });
 
-  /// Mock manual writes use the same wire policy; scanner wiring belongs to FB-2b.
+  /// Mock manual writes use the same wire policy. Scanner writes use [appendScan].
   RepositoryCurrentHistory appendManual(
     RepositoryState before,
     RepositoryState after,
@@ -489,46 +612,10 @@ class RepositoryCurrentHistory {
         !['students', 'inventory', 'current'].contains(bucket)) {
       _bad('This compatibility helper cannot claim scan or import');
     }
-    final result = toWire();
     final a = _projection(before), b = _projection(after);
-    final diffs = <String, dynamic>{};
-    for (final row in [
-      ('students', 'student_id', 'value', 'student_changes'),
-      ('inventory', 'resource_key', 'quantity', 'inventory_changes'),
-    ]) {
-      final (key, id, name, changes) = row;
-      final aa = {
-        for (final item in a[key] as List)
-          item[id]: name == 'quantity' ? item['quantity'] : item,
-      };
-      final bb = {
-        for (final item in b[key] as List)
-          item[id]: name == 'quantity' ? item['quantity'] : item,
-      };
-      final keys = {...aa.keys, ...bb.keys}.cast<String>().toList()..sort();
-      diffs[changes] = [
-        for (final identity in keys)
-          if (!_same(
-            {'present': aa.containsKey(identity), name: aa[identity]},
-            {'present': bb.containsKey(identity), name: bb[identity]},
-          ))
-            {
-              id: identity,
-              'before': {
-                'present': aa.containsKey(identity),
-                name: aa[identity],
-              },
-              'after': {
-                'present': bb.containsKey(identity),
-                name: bb[identity],
-              },
-            },
-      ];
-    }
-    final at = historyUtcTimestamp(now);
     final event = {
       'sequence': nextSequence,
-      'recorded_at': at,
+      'recorded_at': historyUtcTimestamp(now),
       'source': source,
       'revision_before': before.revision,
       'revision_after': after.revision,
@@ -550,42 +637,79 @@ class RepositoryCurrentHistory {
               }.cast<String>().toList()..sort())
             : <String>[],
       },
+      ..._historyDiffs(a, b),
+    };
+    return _appendHistoryEvent(toWire(), event, now);
+  }
+
+  /// Mock scanner commit port (S-FB2b). Records one `source=scan` application whose
+  /// applied scope is the approved identity scope (never the whole bucket), with the
+  /// existing nested context exact4 (session_id/generation/candidate_id/candidate_revision).
+  /// A same-value apply is still recorded. Excluded/retry provenance is not persisted.
+  RepositoryCurrentHistory appendScan(
+    RepositoryState before,
+    RepositoryState after,
+    DateTime now, {
+    required String rawScanKind,
+    required String? rawInventoryScanProfile,
+    required Map<String, dynamic> scanContext,
+    required List<String> studentIds,
+    required List<String> resourceKeys,
+  }) {
+    _text(rawScanKind, raw: true);
+    if (rawInventoryScanProfile != null) {
+      _text(rawInventoryScanProfile, raw: true);
+    }
+    final context = _map(scanContext, {
+      'session_id',
+      'generation',
+      'candidate_id',
+      'candidate_revision',
+    });
+    _text(context['session_id'], raw: true);
+    _text(context['candidate_id'], raw: true);
+    _int(context['generation'], 1);
+    _int(context['candidate_revision']);
+    if (after.revision != before.revision + 1) {
+      _bad('Invalid scan application revisions');
+    }
+    final scope = <String, List<String>>{};
+    for (final (key, ids) in [
+      ('student_ids', studentIds),
+      ('resource_keys', resourceKeys),
+    ]) {
+      final list = [for (final id in ids) _text(id)];
+      if (list.toSet().length != list.length) _bad('duplicate_identity');
+      scope[key] = list..sort(_historyIdCompare);
+    }
+    if (scope['student_ids']!.isEmpty && scope['resource_keys']!.isEmpty) {
+      _bad('empty_scan_scope');
+    }
+    final diffs = _historyDiffs(_projection(before), _projection(after));
+    for (final (changes, id, scopeKey) in [
+      ('student_changes', 'student_id', 'student_ids'),
+      ('inventory_changes', 'resource_key', 'resource_keys'),
+    ]) {
+      for (final change in diffs[changes] as List) {
+        if (!scope[scopeKey]!.contains(change[id])) {
+          _bad('scan_scope_mismatch');
+        }
+      }
+    }
+    final event = {
+      'sequence': nextSequence,
+      'recorded_at': historyUtcTimestamp(now),
+      'source': 'scan',
+      'revision_before': before.revision,
+      'revision_after': after.revision,
+      'scan_kind': rawScanKind,
+      'inventory_scan_profile': rawInventoryScanProfile,
+      'scan_context': context,
+      'catalog_revision': after.inventory.catalogRevision,
+      'applied_scope': scope,
       ...diffs,
     };
-    final events = result['events'] as List;
-    events.add(event);
-    result['next_sequence'] = nextSequence + 1;
-    result['total_counts'][source]++;
-    result['last_applied_at'][source] = at;
-    void fold() {
-      final removed = events.removeAt(0) as Map;
-      final baseline = result['baseline'] as Map;
-      final projection = _apply({
-        'students': baseline['students'],
-        'inventory': baseline['inventory'],
-      }, removed);
-      result['baseline'] = {
-        'sequence': removed['sequence'],
-        'recorded_at': removed['recorded_at'],
-        'origin': 'compacted',
-        ...projection,
-      };
-    }
-
-    final cutoff = now.toUtc().subtract(const Duration(days: 365));
-    while (events.length > 1 &&
-        (events.length > currentHistoryMaxEvents ||
-            DateTime.parse(
-              events.first['recorded_at'] as String,
-            ).isBefore(cutoff))) {
-      fold();
-    }
-    while (utf8.encode(historyCanonicalJson(result)).length >
-        currentHistoryMaxBytes) {
-      if (events.length <= 1) _bad('history_capacity_exceeded');
-      fold();
-    }
-    return RepositoryCurrentHistory.fromWire(result);
+    return _appendHistoryEvent(toWire(), event, now);
   }
 
   RepositoryHistorySummary summarize(String profileId, int revision) =>
@@ -610,6 +734,11 @@ class RepositoryHistorySummary {
   String get profileId => _wire['profile_id'] as String;
   int get revision => _wire['revision'] as int;
   int get historySequence => _wire['history_sequence'] as int;
+
+  /// FB-2b: the persisted latest scan application time (`last_applied_at.scan`).
+  /// null iff no scan application was ever recorded (`total_counts.scan == 0`);
+  /// never a manual/import/unattributed time or a maximum timestamp.
+  String? get lastScanAt => _wire['last_scan_at'] as String?;
   String? get lastManualAt => _wire['last_manual_at'] as String?;
   String? get lastImportAt => _wire['last_import_at'] as String?;
   int get totalEventCount => _wire['total_event_count'] as int;
@@ -630,6 +759,7 @@ class RepositoryHistorySummary {
       'profile_id',
       'revision',
       'history_sequence',
+      'last_scan_at',
       'last_manual_at',
       'last_import_at',
       'total_event_count',
@@ -642,6 +772,7 @@ class RepositoryHistorySummary {
     });
     _profileId(d['profile_id']);
     _int(d['revision']);
+    _time(d['last_scan_at'], nullable: true);
     _time(d['last_manual_at'], nullable: true);
     _time(d['last_import_at'], nullable: true);
     final total = _int(d['total_event_count']),
@@ -659,7 +790,7 @@ class RepositoryHistorySummary {
         _bad('Summary retained count exceeds total');
       }
     }
-    for (final source in ['manual', 'import']) {
+    for (final source in ['scan', 'manual', 'import']) {
       if ((d['last_${source}_at'] == null) != (counts[source] == 0)) {
         _bad('Summary last application mismatch');
       }
@@ -777,6 +908,7 @@ RepositoryHistorySummary _summarize(
     'history_sequence': history == null
         ? 0
         : (history['next_sequence'] as int) - 1,
+    'last_scan_at': history?['last_applied_at']['scan'],
     'last_manual_at': history?['last_applied_at']['manual'],
     'last_import_at': history?['last_applied_at']['import'],
     'total_event_count': counts.values.cast<int>().fold(0, (a, b) => a + b),

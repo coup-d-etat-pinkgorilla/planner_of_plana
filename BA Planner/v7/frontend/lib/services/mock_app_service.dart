@@ -174,7 +174,8 @@ class MockAppService
   final StreamController<ScannerEvent> _scannerEvents =
       StreamController.broadcast();
   final Map<String, List<ScannerEvent>> _scannerHistory = {};
-  final Map<String, ScannerCandidate> _scannerCandidates = {};
+  late final Map<String, ScannerCandidate> _scannerCandidates =
+      MockScannerCandidateMap(_rememberScannerInventoryKeys);
   final Map<String, String> _scannerTerminals = {};
   final List<Timer> _scannerTimers = [];
   var _scannerGeneration = 0;
@@ -324,6 +325,12 @@ class MockAppService
       studentScanMode: studentScanMode,
     );
     _scannerHistory[session.id] = [];
+    _scannerSessionRaw[session.id] = (
+      scanKind: kind.wireName,
+      inventoryScanProfile: kind == ScannerKind.inventory
+          ? inventoryScanProfile?.wireName
+          : null,
+    );
     _emitScannerEvent(session, ScannerEventKind.phase, {'phase': 'capturing'});
     _scannerTimers.add(
       Timer(const Duration(milliseconds: 10), () {
@@ -480,6 +487,16 @@ class MockAppService
     required int expectedRepositoryRevision,
     required String idempotencyKey,
   }) async {
+    if (session.kind != ScannerKind.tacticalLobby) {
+      return _commitMockScanCurrent(
+        session,
+        candidate,
+        profileId: profileId,
+        expectedRepositoryRevision: expectedRepositoryRevision,
+        idempotencyKey: idempotencyKey,
+      );
+    }
+    // Tactical lobby keeps its existing four-argument path (no scan history port).
     if (candidate.reviewRequired && !candidate.approved) {
       throw StateError('review_required');
     }
@@ -514,6 +531,290 @@ class MockAppService
       'profile_id': profileId,
       'revision': revision,
     };
+  }
+
+  // ---- S-FB2b Mock scanner commit (Python scanner_session parity) ----
+  // Raw session metadata, identified inventory keys and the session/key receipt
+  // cache are Mock-internal. No public scanner DTO, method or RPC field grows.
+  final Map<String, ({String scanKind, String? inventoryScanProfile})>
+  _scannerSessionRaw = {};
+  final Map<String, List<String>> _scannerIdentifiedInventoryKeys = {};
+  final Map<String, _MockScanCommitReceipt> _scannerCommitReceipts = {};
+  bool _scannerMockCurrentWrite = false;
+
+  /// Test injection for raw scan metadata the public start API cannot express
+  /// (e.g. an unknown future inventory profile). Strings are kept raw.
+  @visibleForTesting
+  void debugSetScannerSessionRawMetadata(
+    ScannerSession session, {
+    required String scanKind,
+    required String? inventoryScanProfile,
+  }) {
+    for (final value in [scanKind, ?inventoryScanProfile]) {
+      if (value.isEmpty || utf8.encode(value).length > 1024) {
+        throw const FormatException('Raw scan metadata must be 1..1024 bytes');
+      }
+    }
+    _scannerSessionRaw[session.id] = (
+      scanKind: scanKind,
+      inventoryScanProfile: inventoryScanProfile,
+    );
+  }
+
+  void _rememberScannerInventoryKeys(String key, ScannerCandidate candidate) {
+    if (candidate.kind != ScannerKind.inventory) return;
+    final known = _scannerIdentifiedInventoryKeys.putIfAbsent(key, () => []);
+    final entries = candidate.payload['entries'];
+    if (entries is! List) return;
+    for (final entry in entries) {
+      if (entry is! Map) continue;
+      final identity = entry['item_id'] ?? entry['key'];
+      if (identity is! String || identity.isEmpty) continue;
+      final canonical = historyCanonicalResourceKey(identity);
+      if (!known.contains(canonical)) known.add(canonical);
+    }
+  }
+
+  /// Receipt first: the same session/key with the same public request returns the
+  /// first response without reading or writing again; a different public request
+  /// under that key is idempotency_conflict. A pending receipt keeps the original
+  /// frozen bucket/context, so a retry never re-merges from a later repository.
+  Map<String, dynamic> _commitMockScanCurrent(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    required String profileId,
+    required int expectedRepositoryRevision,
+    required String idempotencyKey,
+  }) {
+    final publicRequest = historyCanonicalJson({
+      'session_id': session.id,
+      'generation': session.generation,
+      'candidate_id': candidate.id,
+      'candidate_revision': candidate.revision,
+      'profile_id': profileId,
+      'expected_repository_revision': expectedRepositoryRevision,
+      'idempotency_key': idempotencyKey,
+    });
+    final cacheKey = '${session.id}\u0000$idempotencyKey';
+    var receipt = _scannerCommitReceipts[cacheKey];
+    if (receipt != null) {
+      if (receipt.publicRequest != publicRequest) {
+        throw StateError('idempotency_conflict');
+      }
+      final response = receipt.response;
+      if (response != null) return Map<String, dynamic>.from(response);
+    } else {
+      final stored = _scannerCandidates['${session.id}:${candidate.id}'];
+      if (stored != null && stored.revision != candidate.revision) {
+        throw StateError('candidate_revision_conflict');
+      }
+      final item = stored ?? candidate;
+      if (item.reviewRequired && !item.approved) {
+        throw StateError('review_required');
+      }
+      receipt = _MockScanCommitReceipt(
+        publicRequest,
+        _prepareMockScanCommit(session, item, profileId),
+      );
+      _scannerCommitReceipts[cacheKey] = receipt;
+    }
+    final frozen = receipt.frozen!;
+    final current = _mockRepositoryState(profileId);
+    if (current['revision'] != expectedRepositoryRevision) {
+      throw StateError('revision_conflict');
+    }
+    final revision = expectedRepositoryRevision + 1;
+    final next = <String, dynamic>{
+      ...current,
+      'revision': revision,
+      frozen.bucket: jsonDecode(frozen.currentJson),
+    };
+    final before = RepositoryState.fromWire(current);
+    final after = RepositoryState.fromWire(next);
+    final history =
+        _currentHistories[profileId] ??
+        RepositoryCurrentHistory.empty(legacy: before);
+    final updated = history.appendScan(
+      before,
+      after,
+      _historyClock(),
+      rawScanKind: frozen.scanKind,
+      rawInventoryScanProfile: frozen.inventoryScanProfile,
+      scanContext: frozen.context,
+      studentIds: frozen.bucket == 'students' ? frozen.appliedKeys : const [],
+      resourceKeys: frozen.bucket == 'inventory'
+          ? frozen.appliedKeys
+          : const [],
+    );
+    // The scan event above is the only history record: the current-map observer
+    // must not add an unattributed duplicate for this write.
+    _scannerMockCurrentWrite = true;
+    try {
+      _repositoryStates[profileId] = next;
+    } finally {
+      _scannerMockCurrentWrite = false;
+    }
+    _currentHistories[profileId] = updated;
+    if (_profiles.any((item) => item.id == profileId)) {
+      _syncMockPlanRevision(profileId, revision);
+    }
+    final response = Map<String, dynamic>.unmodifiable({
+      'candidate_id': candidate.id,
+      'candidate_revision': candidate.revision,
+      'profile_id': profileId,
+      'revision': revision,
+    });
+    receipt
+      ..response = response
+      ..frozen = null; // keep signature + response, release the full bucket.
+    return Map<String, dynamic>.from(response);
+  }
+
+  _MockFrozenScanCommit _prepareMockScanCommit(
+    ScannerSession session,
+    ScannerCandidate item,
+    String profileId,
+  ) {
+    final raw =
+        _scannerSessionRaw[session.id] ??
+        (scanKind: session.kind.wireName, inventoryScanProfile: null);
+    final inventory = session.kind == ScannerKind.inventory;
+    final bucket = inventory ? 'inventory' : 'students';
+    final (scanned, applied) = _mockScanPayload(inventory, item.payload);
+    // Validate the scope before reading state: empty/all-excluded never commits.
+    if (applied.isEmpty) {
+      throw BackendRemoteException(
+        code: 'invalid_candidate',
+        message: 'Scan applied scope must be non-empty',
+        details: const {'reason': 'empty_scan_scope'},
+      );
+    }
+    if (applied.toSet().length != applied.length) {
+      throw BackendRemoteException(
+        code: 'invalid_candidate',
+        message: 'Duplicate canonical scan identity',
+        details: const {'reason': 'duplicate_identity'},
+      );
+    }
+    final excluded = inventory
+        ? [
+            for (final key
+                in _scannerIdentifiedInventoryKeys['${session.id}:${item.id}'] ??
+                    const <String>[])
+              if (!applied.contains(key)) key,
+          ]
+        : const <String>[];
+    final state = _ensureMockRepositoryPlan(profileId);
+    final Object current;
+    if (inventory) {
+      // Upsert by canonical identity; a scan never deletes entries it did not observe.
+      final saved = Map<String, dynamic>.from(state['inventory'] as Map);
+      String identity(Map entry) =>
+          historyCanonicalResourceKey((entry['item_id'] ?? entry['key']) as String);
+      final updates = <String, dynamic>{
+        for (final entry in scanned['entries'] as List)
+          identity(entry as Map): entry,
+      };
+      final entries = [
+        for (final entry in saved['entries'] as List)
+          updates.remove(identity(entry as Map)) ?? entry,
+        ...updates.values,
+      ];
+      final catalog = scanned['catalog_revision'] ?? saved['catalog_revision'];
+      current = {
+        'version': 1,
+        'catalog_revision': ?catalog,
+        'entries': entries,
+      };
+    } else {
+      current = [
+        for (final row in state['students'] as List)
+          if ((row as Map)['student_id'] != scanned['student_id']) row,
+        scanned,
+      ];
+    }
+    final context = <String, dynamic>{
+      'session_id': session.id,
+      'generation': session.generation,
+      'candidate_id': item.id,
+      'candidate_revision': item.revision,
+    };
+    return _MockFrozenScanCommit(
+      bucket: bucket,
+      currentJson: jsonEncode(current),
+      scanKind: raw.scanKind,
+      inventoryScanProfile: raw.inventoryScanProfile,
+      context: context,
+      appliedKeys: List.unmodifiable(applied),
+      // Server-internal provenance (Python flat context): kept with the frozen
+      // request, never persisted in history or sent over the public RPC.
+      provenance: historyCanonicalJson({
+        'source': 'scan',
+        ...context,
+        'scan_kind': raw.scanKind,
+        'inventory_scan_profile': raw.inventoryScanProfile,
+        'applied_keys': applied,
+        'excluded_keys': excluded,
+        'retry_of': null,
+      }),
+    );
+  }
+
+  (Map<String, dynamic>, List<String>) _mockScanPayload(
+    bool inventory,
+    Map<String, dynamic> raw,
+  ) {
+    try {
+      final payload = Map<String, dynamic>.from(
+        jsonDecode(jsonEncode(raw)) as Map,
+      );
+      if (!inventory) {
+        final student = ConfirmedStudentState.fromWire(payload).toWire();
+        return (student, [student['student_id'] as String]);
+      }
+      final scanned = _mockScannedInventory(payload);
+      return (
+        scanned,
+        [
+          for (final entry in scanned['entries'] as List)
+            historyCanonicalResourceKey(
+              (entry['item_id'] ?? entry['key']) as String,
+            ),
+        ],
+      );
+    } on FormatException catch (error) {
+      throw BackendRemoteException(
+        code: 'invalid_candidate',
+        message: error.message,
+        details: const {'reason': 'invalid_candidate'},
+      );
+    }
+  }
+
+  /// Python `_repository_inventory` + canonical rebase of the scanned entries:
+  /// drop scanner-only entry fields and map legacy aliases to current keys.
+  Map<String, dynamic> _mockScannedInventory(Map<String, dynamic> payload) {
+    final entries = payload['entries'];
+    if (entries is! List) throw const FormatException('Invalid inventory');
+    final cleaned = <String, dynamic>{
+      ...payload,
+      'entries': [
+        for (final raw in entries)
+          if (raw is Map)
+            <String, dynamic>{
+              for (final entry in raw.entries)
+                if (entry.key != 'inventory_scan_profile')
+                  entry.key as String:
+                      (entry.key == 'key' || entry.key == 'item_id') &&
+                          entry.value is String
+                      ? historyCanonicalResourceKey(entry.value as String)
+                      : entry.value,
+            }
+          else
+            raw,
+      ],
+    };
+    return RepositoryInventoryState.fromWire(cleaned).toWire();
   }
 
   ScannerCandidate _mockCandidate(ScannerSession session) {
@@ -1590,9 +1891,35 @@ class MockAppService
       _currentHistories[request.profileId],request);
   }
 
+  /// FB-2b read-only query: authoritative profile revision + current history only.
+  /// No plan migration, observer, clock, cache or map writes; results are detached.
+  @override
+  Future<RepositoryHistoryScanLatestResult> loadRepositoryHistoryScanLatest(
+    RepositoryHistoryScanLatestRequest request,
+  ) async {
+    if (!_profiles.any((item) => item.id == request.profileId)) {
+      throw StateError('profile_not_found');
+    }
+    try {
+      return repositoryHistoryScanLatest(
+        request.profileId,
+        _mockRepositoryState(request.profileId)['revision'] as int,
+        _currentHistories[request.profileId],
+        request,
+      );
+    } on RepositoryHistoryScanLatestError catch (error) {
+      throw BackendRemoteException(
+        code: error.code,
+        message: error.message,
+        details: {'reason': error.reason},
+      );
+    }
+  }
+
   void _observeMockCurrentWrite(String profileId, Map<String, dynamic>? stored,
     Map<String, dynamic> next) {
     if (!_trackMockCurrentWrites || _manualMockCurrentWrite) return;
+    if (_scannerMockCurrentWrite) return;
     final current = stored ?? _mockRepositoryState(profileId);
     final studentsChanged = !identical(current['students'],next['students']);
     final inventoryChanged = !identical(current['inventory'],next['inventory']);
@@ -2221,4 +2548,30 @@ class MockAppService
   void setMissingMetadata(bool value) {
     _state.value = _state.value.copyWith(hasMissingMetadata: value);
   }
+}
+
+class _MockFrozenScanCommit {
+  _MockFrozenScanCommit({
+    required this.bucket,
+    required this.currentJson,
+    required this.scanKind,
+    required this.inventoryScanProfile,
+    required this.context,
+    required this.appliedKeys,
+    required this.provenance,
+  });
+  final String bucket;
+  final String currentJson;
+  final String scanKind;
+  final String? inventoryScanProfile;
+  final Map<String, dynamic> context;
+  final List<String> appliedKeys;
+  final String provenance;
+}
+
+class _MockScanCommitReceipt {
+  _MockScanCommitReceipt(this.publicRequest, this.frozen);
+  final String publicRequest;
+  _MockFrozenScanCommit? frozen;
+  Map<String, dynamic>? response;
 }
