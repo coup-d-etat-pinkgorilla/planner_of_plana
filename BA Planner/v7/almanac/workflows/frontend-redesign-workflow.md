@@ -279,8 +279,8 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 
 | slice | 범위 | 선행 |
 |---|---|---|
-| FE5-a 목록 v2 | 정렬 seg·필터 칩·검색·오래된 개수·펼침 행 액션(열기/복제/이름·설명/삭제 — 서비스는 있음), 활성 계획 고정 행, 비교 담기(최대 4) | FE2 — **완료 2026-10-10**: gate `20261010_162247`(golden `plan-scenario-list` 갱신, `plan-scenario-list-expanded` 추가). 목록 동안 홈 섹션 1을 내리고 S1 = 목록 메뉴·비교 슬롯, "열기"는 FE5-c까지 꺼짐, "나란히 비교"는 A + 1개만(FE5-e 전) |
-| FE5-b 미리보기 | 선택 시 `getScenario` + `compareScenarios(active, s)`, 지연 표시·캐시 | FE5-a |
+| FE5-a 목록 v2 | 정렬 seg·필터 칩·검색·오래된 개수·펼침 행 액션(열기/복제/이름·설명/삭제 — 서비스는 있음), 활성 계획 고정 행, 비교 담기(최대 4) | FE2 — **완료 2026-10-10**: 커밋 `3e3f26c1`, gate `20261010_162247`(golden `plan-scenario-list` 갱신, `plan-scenario-list-expanded` 추가). 목록 동안 홈 섹션 1을 내리고 S1 = 목록 메뉴·비교 슬롯, "열기"는 FE5-c까지 꺼짐, "나란히 비교"는 A + 1개만(FE5-e 전) |
+| FE5-b 미리보기 | 선택 시 `getScenario` + `compareScenarios(active, s)`, 지연 표시·캐시 | FE5-a — **완료 2026-10-10**: gate `20261010_220311`(golden plan-flow-step2~4 8장·`plan-scenario-list-expanded` 갱신, `plan-scenario-list-shortage` 추가). golden 계산 대역을 문서 의존으로 바꿈(10-09 23:25 후속 해결) |
 | FE5-c 보기 모드 + 병목 탭 | 읽기 전용 보기 상태, 3섹션 레이아웃(활성 계획 홈 포함, FD-082), 활성 대비 KPI 4개·delta 칩, 병목 카드. 요약 행 3종을 상수(`planOverallProgressPercent = 72` 등)에서 projection으로 | FD-034, FD-082 |
 | FE5-d 페이즈별·전체 탭 | 진입/필요/종료 + 막대 + delta, 전체 2~5열 그리드 | FD-031, (필요시 FB-9) |
 | FE5-e 4열 비교 | 기준 계획 선택, 행 그룹, 세로 넘침 처리 | FD-034, (필요시 FB-9 다중 비교) |
@@ -397,10 +397,10 @@ XB가 커밋한 백엔드·계약의 Dart 쪽(DTO·strict validator·Mock·proce
 
 | slice | 범위 | 선행 |
 |---|---|---|
-| fb4-dart | `ScannerTarget`에 client_width·client_height·game, 응답 검사, Mock 기본 target, 공유 fixture 14 cases·process E2E. 화면 표시는 FE8-d/e | XB FB-4 `b685d9ac`(완료), 연결 메모 `debug/xb_fb4_target_metadata_20261010/artifacts/dart-connection-memo.md` — **완료 2026-10-10**: gate `20261010_162247`(golden 변화 0, 일반 +19·process +1). `game`은 enum(모름 = null) |
-| S-FB1b | `scan_page.dart`: state 반환 revision을 profile 표시·cache·첫 세션 base에 전파, 순차 commit 응답 revision 이어 쓰기, `repository_busy` 지수 backoff 3회, `revision_conflict` 재조회 | FB-1b. XB 초안 `debug/xb_fb_history_port_review_20261010/artifacts/S-FB1b-work-instruction-draft.md` |
+| fb4-dart | `ScannerTarget`에 client_width·client_height·game, 응답 검사, Mock 기본 target, 공유 fixture 14 cases·process E2E. 화면 표시는 FE8-d/e | XB FB-4 `b685d9ac`(완료), 연결 메모 `debug/xb_fb4_target_metadata_20261010/artifacts/dart-connection-memo.md` — **완료 2026-10-10**: 커밋 `63a01318`, gate `20261010_162247`(golden 변화 0, 일반 +19·process +1). `game`은 enum(모름 = null) |
+| S-FB1b | `scan_page.dart`: state 반환 revision을 profile 표시·cache·첫 세션 base에 전파, 순차 commit 응답 revision 이어 쓰기, `repository_busy` 지수 backoff 3회, `revision_conflict` 재조회 | FB-1b. XB 초안 `debug/xb_fb_history_port_review_20261010/artifacts/S-FB1b-work-instruction-draft.md` — **완료 2026-10-10**: gate `20261010_220311`(새 테스트 14, 같은 계정 재선택 시 불필요한 state 재읽기 제거). 커밋은 XB S-FB2b 뒤 |
 | T-FB1b | `tactical_page.dart`: `profileRevision`/`tacticalRevision` 분리, 반환 state로 profile·cache 갱신 | FB-1b. XB 초안 `T-FB1b-work-instruction-draft.md` |
-| S-FB2b-dart | Mock scanner commit을 Python upsert·승인 scope·history helper와 맞춤, summary 확장 DTO | XB S-FB2b·history context 커밋과 Dart 변경 목록 |
+| fb2b/sfb2b-dart | summary 13키(`last_scan_at`)·`repository.history.scan_latest` DTO·validator·Process·Mock + Mock scanner commit upsert·appendScan·observer 중복 억제 | XB paired history(S-FB2b+FB-2b) **최종 후보 고정 → 같은 CF gate → XB 커밋 → CF 커밋**(XB 16:52, CF 17:05). 변경 목록: XB 15:27·15:30·16:17 — **완료 2026-10-10**: gate `20261010_220311`(XB 동결 계약 7 SHA 일치, process 52) |
 
 ### FE10 — 마감
 
@@ -484,3 +484,5 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-10(새벽 3, 2): 사용자 결정으로 Lane A·B 프론트 병렬. Lane A FE4-g, Lane B FE8-a(프롬프트 `debug/frontend_redesign_handoff/fe8a-worker-prompt-20261010.md`, 상태 `frontend-redesign-status-lane-b.md`). 다음 행동: 두 워커 멈춤 → gate ① → 검토 → ② → fe8a → fe4g → 문서.
 - 2026-10-10(오후): FE8-a `815e0589`, FE4-g `af745731`, 문서 `1fa86194`(gate `20261010_135343` GREEN). XB FB-4 `b685d9ac` 커밋, 승인 체계 변경(헌장 §3.2: XB 커밋 계약부터 연결, CM 승인 없음). 다음 행동: Lane A FE5-a, Lane B fb4-dart → S-FB1b → T-FB1b → FE8-b.
 - 2026-10-10(저녁): FE5-a·fb4-dart gate `20261010_162247` GREEN, 커밋 순서 fb4dart → fe5a → redesigndocs. XB H1 `d53331da` 커밋, S-FB2b+FB-2b 묶음 구현 중(같은 소스 CF gate 요청 예정), FB-3 설계 확정. 다음 행동: Lane A FE5-b(미리보기), Lane B S-FB1b.
+- 2026-10-10(저녁 2): fb4-dart `63a01318`(XB 첫 왕복 완료), FE5-a `3e3f26c1`, 문서 `11281bed`. 다음 행동: Lane A FE5-b, Lane B S-FB1b → (XB 최종 후보 뒤) fb2b/sfb2b-dart → T-FB1b → FE8-b.
+- 2026-10-10(밤): FE5-b·fb2b/sfb2b-dart·S-FB1b gate `20261010_220311` GREEN. 커밋 순서 XB history backend → fb2bdart → fe5b → sfb1b → redesigndocs. 다음 행동: Lane A FE5-c, Lane B T-FB1b → FE8-b, XB FB-3 → CF fb3-dart.

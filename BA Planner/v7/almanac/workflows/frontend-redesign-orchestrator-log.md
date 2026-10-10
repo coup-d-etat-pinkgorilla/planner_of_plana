@@ -1045,3 +1045,146 @@ topics: [workflow, design]
   최초52 test PASS가 editable import fallback에 의존하여 독립HEAD GREEN은 아니다.
   기존O2-WIP를 history 커밋에 포함하지 않고 mocked factory 의존성을 import 전에
   격리한 좁은 테스트 후보를 준비한다. 전체Python은 최종 source가 고정된 뒤 시작.
+
+## 2026-10-10 17:05 — 커밋 확인, 첫 왕복 완료, 다음 배정
+
+- 커밋: fb4-dart `63a01318`, FE5-a `3e3f26c1`, redesigndocs `11281bed`. FE5-a·fb4-dart 완료. **XB 첫 FB 왕복 완료**(XB 로그 17:05 CF 보고).
+- XB 16:52 수신: paired history(S-FB2b + FB-2b)는 summary에 `last_scan_at`이 붙어 strict Dart가 깨지므로 **XB 커밋 전 같은 gate**가 필요하다는 요청. 동의 — XB 최종 후보 고정 → CF Lane B가 fb2b-dart + sfb2b-dart 한 slice로 준비 → full gate GREEN → XB 커밋 → CF 커밋. 인계 메모 §3의 "같은 gate" 규칙 그대로다.
+- 배정:
+  · Lane A **FE5-b** 시나리오 미리보기(getScenario + compare 1회·revision 키 캐시, KPI delta, 목표 차이, ShortagePopover = Flow-4 플라이아웃과 공용, 10-09 23:25 후속인 golden 계산 대역 문서 의존화 포함). 프롬프트 `debug/frontend_redesign_handoff/fe5b-worker-prompt-20261010.md`.
+  · Lane B **S-FB1b**(scan_page.dart: state revision 전파, 순차 commit revision, busy 지수 backoff 3회, conflict 재조회 + XB 15:30 ScanPage pending apply 고정). 프롬프트 `debug/frontend_redesign_handoff/sfb1b-worker-prompt-20261010.md`. XB 최종 후보가 오면 다음 Lane B slice는 fb2b/sfb2b-dart, 그다음 T-FB1b → FE8-b.
+- 두 프롬프트에 FE5-a 컴파일 오류 교훈(setState 클로저 안 nullable 지역 변수 → final)을 넣었다.
+
+## 2026-10-10 16:56 — 수신·요청(XB→CF): FB-2b 최종 후보 계약 고정·Dart 준비
+
+- actualFB2b output91 purpose/bytes/SHA PASS 및 current11=최종focused source SHA를
+  부모가 확인했다. 최종110/13.561s PASS(신규29=actual11+memory18, 기존81).
+  첫adapter ERROR와첫110 PASS는보존했다. product/source watch종료, frontend수정0.
+- 최종 Dart 변경 상세표는 `debug/xb_fb2b_actual_20261010/artifacts/cf-precommit-list.md`
+  SHA a2d30366966b1ce0331d9a8d6e6e3c9fcf210b045aa04e03e1214f37b54f01fa이며, 15:27/15:53 목록을 actual source로 확정한다.
+  Summary exact12→13(last_scan_at), 새 scan_latest request7allowed/result8/scan5/
+  entity3, DTO/RepositoryService/Process/Mock/strictclient/sharedfixture가대상이다.
+  `_historyIdCompare` 재사용(E000<10000), 새query scalar사전검사/UTF8byte1024,
+  aliases-before-unique, anchor stale invalid_payload/nonretryable도같이검증한다.
+- 최종 후보 계약 SHA: new schema dc0e759982064f7dbdaad03f03ad6ff854a7922aa4b1da58d4dbafb94214bbf3,
+  repository root e86473602316833adf9f9a76df87a74e18cdde7c4060cf6035899898bd80782d,
+  scan_latest fixture d4686283c2967a2482f95acfd4a4327565990524d20254980c44dadf44ab2446,
+  current_history fixture 9c930060c9a7a258e7d7dff521f3733e371f24854e5b4c15c382ef7af3f86928.
+  전체7목록은 `debug/xb_fb2b_actual_20261010/artifacts/cf-contract-hashes.json`.
+- CF는 이 고정후보로 fb2b-dart DTO/Mock/fixture 준비를 시작할 수 있다. 실제 연결은
+  backend확정뒤다. 부모는 factory 테스트 import 경계만 artifact에서 보완하고 적용
+  focused뒤 backend전체source를고정하여 fullPython과 최종CF fe_gate 요청을보낸다.
+  지금은 fullCF gate 시작요청이 아니다. 실행중source변경으로gate를무효화하지않는다.
+- H1 완료→SFB+FB2b paired확정→3s/a/b/c→M1. independent HEAD origin검증은별도
+  /root/intake에배정하며 actual전체source/Python/CF/Almanac/diff가필수다. push0.
+
+## 2026-10-10 17:01 — 회신·최종 gate 요청(XB→CF): paired history source 동결
+
+- CF17:05의 fb4-dart `63a01318c8e5b58c8043bd676fc3de54010a6b65`를 실제git으로 확인했다(frontend5경로).
+  첫FB왕복은완료했다. FB-4 실제게임 관측 NOT_VERIFIED는그대로다. paired history의
+  DTO/Mock 준비→same-source CF GREEN→XB backend먼저→CF Dart바로커밋 방식에동의한다.
+- SFB+FB2b 최종working17 source를고정했다. factory 테스트만인식/OS import전
+  stub으로좁게격리했고 메서드외 AST0, isolated1 PASS. actual최종focused110/
+  14.354s PASS/source17전후동일. old52 PASS+origin FAIL은그대로보존했다.
+- **지금 CF full gate를 요청한다.** 16:56 exact DTO/method/fixture 목록과 고정된
+  `debug/xb_fb2b_actual_20261010/artifacts/cf-contract-hashes.json`의7 SHA가기준이다.
+  summary13/scan_latest8 + SFB Mock upsert/appendScan/observer 억제/replay를같은
+  slice로준비하고 `powershell -ExecutionPolicy Bypass -File frontend/tool/fe_gate.ps1`
+  GREEN과실제logs/최종frontendsource를회신해달라. 161158/162247 재사용0.
+- 백엔드working17 pin은 `debug/xb_sfb2b_master_20261010/artifacts/paired-working-source-after-focused.json`,
+  선택commit용17 pin은 paired-index-source.json이다. 차이는기존WIP제외/텍스트LF이며
+  독립HEAD실행은 /root/intake가원점격리검증중이다. 현재HEAD `11281beda57efadbbc2860f374d0367f556ffff4`.
+  parent전체Python을동시에시작하며backend/core/tests/data/assets/contracts source를
+  유지한다. CF frontend 구현/문서커밋은가능하며 XB frontend수정0.
+- 전체Python/CF/Almanac/diff 및선별17 검증 뒤한backendhistory commit, push0.
+  후속3s/a/b/c→M1은제품적용을보류하고준비artifact 작업만계속한다.
+
+## 2026-10-10 17:21 — 진행(XB): 선별 HEAD122 수신·후속 artifact 준비
+
+- 독립 선별 HEAD output80 actual purpose/bytes/SHA PASS, source17 exact/177 전후
+  불변 및 parent+child23 외부 origin0을 확인했다. 새122/17.395s PASS이며 최초48
+  PASS+bootstrap FAIL과 old52 PASS+origin FAIL은 그대로 보존한다. 원본 임시복제본
+  삭제가 자동 정책에서 거절돼 삭제0/우회0이며 원본을 유지했다.
+- 백엔드 working17/계약7 동결 SHA를 다시 확인했다. actual 전체 Python은 계속
+  진행 중이며 완료 결과는 아직 미수신이다. CF17:01 paired DTO/Mock same-source
+  full GREEN 요청도 유효하다. 새 CF gate 및 backend full 뒤 exact17만 커밋한다.
+- 후속 /root/fb_history_port는 xb_fb3_integrated_prepare_20261010의3s/a/b/c 통합
+  candidate·HEAD/WIP 경계·테스트 초안을 artifacts-only 준비 중이다. /root/intake는
+  새 xb_m1_prepare_20261010/input.md로 M1 reader/도구계약/fixture/test 초안을 준비한다.
+  둘 다 제품 import/실행/적용0이고 실제 구현 순서 history→FB3→M1은 유지한다.
+  frontend는CF소유이며 stage/commit/push0.
+
+## 2026-10-10 17:30 — 검증(XB): paired history 전체 Python1070 PASS·CF 최종 gate 대기
+
+- actual 전체 Python1070/1070 PASS1577.240s/exit0(17:01:58~17:28:16).
+  broad2231 source 전후 추가/삭제/변경0, raw log SHA
+  a1a0e67cded1319cc97465cf54d6ca1c1c06af90962de734e9e8048e85feda77.
+  근거 debug/xb_sfb2b_master_20261010/artifacts/python-full-verification.json.
+- 독립 선별HEAD122/17.395s/source17+177/originchild23 PASS 수신을별도확인했다.
+  working17/계약7 동결은유지하며 backend history확정에남은소비gate는 CF의새
+  fb2b/sfb2b-dart 같은source fullGREEN이다. 이전162247을새형식gate로재사용0.
+  회신수신/semantic검토뒤 freshAlmanac/diff와exact17 index/commit, push0.
+- FB3 통합준비output22 actualSHA PASS(신규36회귀는미실행/schema162만PASS).
+  CF후속정확목록은 debug/xb_fb3_integrated_prepare_20261010/artifacts/cf-exact-change-list.md
+  SHA22fe705e0046e7e6f7948ee360ddd0ef1641251070681aed2b0cbff62cc251d4이다.
+  FB3제품적용은history커밋뒤다. 지금은새 xb_fb3_isolated_prepare_gate_20261010으로
+  고정소스후보를artifact별도환경에서검증하고 /root/intake는M1초안을준비한다.
+  둘다actual제품/프론트/공용저장소/lock 쓰기0이다.
+
+## 2026-10-10 18:48 — 진행·기존 gate 요청 유지(XB→CF): history source 유지·후속153 준비
+
+- history actual full1070/1070 PASS1577.240s, working17/계약7/broad2231 SHA 유지.
+  새 fb2b/sfb2b-dart summary13/scan_latest8와 SFB Mock/observer/replay의 같은
+  source full GREEN을 기다린다. 기존162247은 이 gate를 대체하지 않는다.
+  소비 의미 검토 후 XB backend 먼저→CF Dart 바로 커밋 합의를 유지한다.
+- 후속 FB3는 새 독립 후보153/153 PASS22.125s(신규36 포함)와 source123/child24
+  외부 origin0 수신. 제품 적용0이며 실제 catalog pin/fullPython/CF는 별도다.
+  정확한 Dart 변경표는 기존 debug/xb_fb3_integrated_prepare_20261010/artifacts/
+  cf-exact-change-list.md(SHA22fe705e0046e7e6f7948ee360ddd0ef1641251070681aed2b0cbff62cc251d4)이다.
+  actual allowlist21→22는 기존 SFB 테스트의 live catalog binding/negative 회귀
+  보완뿐이며 공개 Dart 목록 추가0. actual 적용 뒤 최종 source/contract SHA를
+  새로 보내고 별도 CF full gate를 요청한다.
+- M1 synthetic42 PASS 및 실제 출처 비교의 ID/필드·계약 초안은 준비했다.
+  실제 비교 구현/association/프론트 연결은 미완료다. 프론트 코드 수정0.
+
+## 2026-10-10 19:55 — FE5-b + S-FB1b gate ① `20261010_185608` RED 검토
+
+- git `11281bed`. analyze 1(info), 일반 350+635(−3)+238, process 48(−3), golden 25 PASS / 10 FAIL, almanac 45, diff 0.
+- 실패를 셋으로 나눴다:
+  1. **XB 미커밋 backend(동결된 S-FB2b + FB-2b) 때문 5건**: `repository_history_service_test` 2건(summary에 `last_scan_at` 없음 → 기대 불일치·strict 검사), process `repository_history_process_e2e_test` 2건·`repository_history_query_process_e2e_test` 1건(`Invalid success response for repository.history.summary` — Dart strict DTO가 새 13번째 키를 거부). 작업 트리의 Python이 이미 13키를 낸다. 우리 slice 탓이 아니고, fb2b-dart가 들어와야 풀린다. **이 상태로는 어떤 CF 커밋도 GREEN gate를 받을 수 없다** → fb2b-dart를 지금 배정한다.
+  2. **S-FB1b 1건**: `scan_page_revision_test.dart:311` — 적용 성공 문구가 `_selectProfile` 읽기 실패 문구로 덮임. 추정 원인: commit revision 반영 뒤 `RepositoryProfilePanel`이 같은 계정을 다시 넘겨 state를 다시 읽다가 대역 실패로 안내를 덮음. 테스트 기대가 맞다 → Lane B 워커에게 수정 요청(`debug/frontend_redesign_handoff/sfb1b-fix-message-20261010.md`).
+  3. **FE5-b**: analyze info 1건(`plan_scenario_list.dart` 불필요 import `repository_plan_service.dart`) — **오케스트레이터가 지웠다**(FE5-b 범위 파일, 동작 변화 없음). golden 10장 = 워커 예측과 정확히 같다(plan-flow-step2·-saved·-more·step3·-deferred·-many·step4·-append·plan-scenario-list-expanded 바뀜 + plan-scenario-list-shortage 새 장면).
+- FE5-b golden 검토(실패 이미지): `plan-scenario-list-expanded` S3가 채워짐 — 활성 대비 KPI(112M → 73.8M 초록, 6종 → 7종 노랑, P1 → P1), 학생·단계 줄과 칩("이 시나리오에만"·"활성보다 낮은 목표"·"활성 계획과 같음"), 분야별 부족 상위 5줄, 열기·비교에서 빼기·계획에 적용… 버튼. `plan-flow-step4`는 비교 타일 a ≠ b(76% → 52%, 4 → 7종, 46M → 57.4M)와 늘어나는 재화 3줄이 다시 보인다(10-09 23:25 후속 해결). 크레딧이 늘어나는 재화 맨 위에 오는 것은 시안 Flow-4-Save도 같다(시안을 그려 확인 — "크레딧 +48.2M · 여유 있음"), 그대로 둔다. 판단 4건(시나리오 목록 golden 숫자를 대역 값으로 등) 승인. 새 장면 `plan-scenario-list-shortage`는 ② 뒤 기준 이미지를 본다.
+- **배정 변경**: Lane A(FE5-b 끝) 새 세션 → **fb2b-dart + sfb2b Mock**(XB 동결 후보 7 SHA 기준, 이 5건을 녹색으로). 프롬프트 `debug/frontend_redesign_handoff/fb2bdart-worker-prompt-20261010.md`. Lane B → S-FB1b 수정.
+- 다음: 두 워커 멈춤 → gate ①′ → (FE5-b golden 10 + 새 장면만 RED 기대) → ② → 새 기준 확인 → XB에 같은 소스 GREEN 회신 → **XB backend 커밋 → fb2bdart → fe5b → sfb1b(XB S-FB2b receipt replay 뒤라야 안내 문구가 맞음, 워커 발견 사항 1) → redesigndocs**.
+  · 참고: fb2bdart와 fe5b 모두 `frontend-redesign-status.md`(status=true)를 쓰므로 먼저 커밋하는 쪽에 다른 쪽 기록도 같이 들어간다. 코드는 섞이지 않는다.
+
+## 2026-10-10 21:15 — gate ①′ `20261010_204850` 검토: fb2b-dart·S-FB1b 수정 반영
+
+- analyze 0, 일반 336+653(−1)+248, **process 52 전부 통과**(XB 동결 summary 13키·scan_latest를 실제 Python으로 확인한 새 E2E 포함), golden 25 PASS / 10 FAIL(FE5-b 예측 그대로), almanac 45, diff 0.
+- 남은 일반 실패 1건 = fb2b-dart 새 파일 `test/repository_history_scan_latest_test.dart`가 `main()` 본문(39행)에서 `expect`를 불러 **파일 로드 자체가 실패**(OutsideTestException) — 그 파일의 테스트 전부가 돌지 않았다. 오케스트레이터가 그 `expect`를 `test(...)` 안으로 옮겼다(작업 트리 + `debug/frontend_fb2bdart/post/` 사본 둘 다, 단언 변화 없음). 이 파일 테스트는 ①″에서 처음 돈다.
+- **S-FB1b 수정 확인**: 워커가 실제 원인을 찾았다 — 스크롤로 `ListView` 밖에 밀린 `RepositoryProfilePanel`이 다시 만들어질 때마다 같은 계정으로 `_selectProfile`이 불려 state를 다시 읽고(불필요), 실패하면 안내를 덮었다. 같은 계정·목록 revision ≤ 권위값이면 다시 읽지 않고, 실패는 덧붙이도록 고쳤다. 새 테스트 2건 포함 14건, 이번 gate에서 모두 통과. 패널 keep-alive는 FE8-g1 후속.
+- **fb2b-dart**: XB `cf-semantic-review-checklist` 9항목에 답을 적었다(7번 pending UI는 S-FB1b 소관으로 구분). 소비자 파일 표(bytes·SHA)가 종료 기록에 있다. scan_latest 테스트 파일은 위 수정으로 SHA가 바뀐다.
+- 다음: ①″ compare(기대: golden 10만 RED, 나머지 GREEN) → 바로 ② `-UpdateGoldens` + compare → 새 기준(특히 새 장면 `plan-scenario-list-shortage`) 확인 → XB에 같은 소스 GREEN 회신 → XB backend 커밋 → **fb2bdart → fe5b → sfb1b → redesigndocs**.
+
+## 2026-10-10 22:25 — gate ② `20261010_220311` GREEN, 새 장면 승인, XB 커밋 대기
+
+- GREEN: analyze 0, 일반 1,285, process 52, golden 35(갱신 9 + 새 `plan-scenario-list-shortage`), almanac 45, diff 0.
+- 새 기준 `plan-scenario-list-shortage` 승인: expanded 상태에서 "부족 재화" KPI를 눌러 연 팝오버 — 제목 "부족 재화 7종 · 활성 계획 6종", 분야 4묶음(엘레프 1 · 오파츠 3 · 노트·BD 2 · 장비 설계도 1), 행마다 아이콘·이름·−수량·태그("이 시나리오에만"·"활성 계획과 같음"·델타 칩). 시안 Scenario-List 팝오버와 같은 구성. 겹침·잘림 없음.
+- XB 동결 계약 7개 SHA를 기기에서 다시 대조해 7/7 일치. XB 로그에 같은 소스 GREEN을 회신하고 backend 먼저 커밋을 요청했다(22:25).
+- 커밋 순서: **XB history backend → fb2bdart → fe5b → sfb1b → redesigndocs**. fb2bdart·fe5b는 둘 다 `frontend-redesign-status.md`를 통째로 커밋하므로 먼저 커밋되는 fb2bdart에 FE5-b 기록도 들어간다(코드는 섞이지 않음).
+- 그다음 배정 예정: Lane A FE5-c(보기 모드 + 병목 탭, 활성 계획 홈 정리), Lane B T-FB1b → FE8-b. XB는 FB-3 실제 적용 → 커밋 전 Dart 목록(`cf-exact-change-list.md`) → CF fb3-dart.
+
+## 2026-10-10 22:47 — 보고(XB→CF): paired history backend 커밋·Dart커밋회신
+
+- paired history `17d5ceaf2268ebb2c7a77c905946b30a270d61d4` 정확히 17경로 커밋 완료.
+  Python 1070 PASS, 독립 선별 HEAD 122 PASS, CF `20261010_220311` 같은 소스
+  full GREEN 및 소비 의미 검토 PASS. working 17/계약 7/Dart 소비 소스 282 SHA를
+  커밋 직전·직후 확인했다. Dart DTO 변경 목록은 기존 사전 통지와 동일하다.
+- index의 신규 Python 파일 두 개에서 EOF 빈 줄만 각 1바이트 정리했다.
+  AST(위치 포함)와 컴파일 결과 동일, 실제 working source 변경 0이다.
+  commit diff 공백 검사 PASS. 작업 트리는 보존하여 전체 working diff 공백 검사에
+  repository_inventory.py의 기존 EOF 빈 줄 1건이 남는다(exit 2); 새 backend 변경이 아니다.
+- 합의 순서대로 CF가 같은 gate의 fb2bdart → fe5b → sfb1b → redesigndocs를
+  커밋하고 해시·범위를 backend 로그 끝에 회신해 달라. root output은 실제 검증과
+  commit receipt를 보존한다. FB-3는 새 source/fixture SHA와 새 gate로 진행한다.
