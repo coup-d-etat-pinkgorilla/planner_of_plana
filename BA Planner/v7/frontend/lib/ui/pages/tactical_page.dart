@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/tactical_service.dart';
+import '../widgets/account_section_cluster.dart'
+    show repositoryProfileWithRevision;
 import '../widgets/diagonal_section.dart';
 
 enum TacticalMode { records, jokbo }
@@ -24,9 +26,21 @@ class _TacticalPageState extends State<TacticalPage> {
   TacticalService? get _tactical => widget.service is TacticalService
       ? widget.service as TacticalService
       : null;
+  /// 선택 계정. revision은 목록 summary가 아니라 마지막으로 읽은 repository state 값이다(FB-1b: legacy 첫
+  /// 이관이 +1 할 수 있다).
   RepositoryProfile? _profile;
   RepositoryState? _repositoryState;
-  TacticalState? _state;
+
+  /// 전술 기록·족보 collection. 그 revision(`_tacticalRevision`)은 profile revision과 독립이며 tactical
+  /// write의 expected에만 쓴다.
+  TacticalState? _tacticalState;
+
+  /// profile(repository) revision. repository mutation·scanner commit의 expected는 이 값이어야 한다(이 화면은
+  /// 지금 repository에 쓰지 않는다).
+  int? get _profileRevision => _repositoryState?.revision;
+
+  /// tactical collection revision. 경기·족보 저장과 삭제의 expected.
+  int? get _tacticalRevision => _tacticalState?.revision;
   List<StudentCatalogEntry> _catalog = const [];
   TacticalMode _mode = TacticalMode.records;
   String _query = '', _kind = 'all', _result = 'all';
@@ -92,7 +106,8 @@ class _TacticalPageState extends State<TacticalPage> {
         if (mounted && generation == _generation)
           setState(() {
             _profile = null;
-            _state = null;
+            _repositoryState = null;
+            _tacticalState = null;
             _loading = false;
           });
         return;
@@ -103,10 +118,21 @@ class _TacticalPageState extends State<TacticalPage> {
         widget.service.listStudents(),
       ]);
       if (!mounted || generation != _generation) return;
+      // 응답이 어떤 순서로 끝나도 결과는 요청 순서대로 온다. 그래도 계정이 다른 응답은 받지 않는다.
+      final repositoryState = results[0] as RepositoryState;
+      final tacticalState = results[1] as TacticalState;
+      if (repositoryState.profileId != selected.id ||
+          tacticalState.profileId != selected.id) {
+        throw StateError('선택 계정과 다른 계정의 응답을 받았습니다.');
+      }
+      final profile = repositoryProfileWithRevision(
+        selected,
+        repositoryState.revision,
+      );
       setState(() {
-        _profile = selected;
-        _repositoryState = results[0] as RepositoryState;
-        _state = results[1] as TacticalState;
+        _profile = profile;
+        _repositoryState = repositoryState;
+        _tacticalState = tacticalState;
         _catalog = results[2] as List<StudentCatalogEntry>;
         _loading = false;
       });
@@ -125,7 +151,7 @@ class _TacticalPageState extends State<TacticalPage> {
           for (final item in _catalog)
             item.studentId: item.displayName.toLowerCase(),
         };
-    final items = (_state?.matches ?? const <TacticalMatch>[]).where((item) {
+    final items = (_tacticalState?.matches ?? const <TacticalMatch>[]).where((item) {
       if (_kind != 'all' && item.kind != _kind ||
           _result != 'all' && item.result != _result) {
         return false;
@@ -324,7 +350,9 @@ class _TacticalPageState extends State<TacticalPage> {
         },
       ),
     );
-    if (saved != true || _profile == null || _state == null) return;
+    final profileId = _profile?.id;
+    final tacticalRevision = _tacticalRevision;
+    if (saved != true || profileId == null || tacticalRevision == null) return;
     final item = TacticalMatch(
       id: original?.id ?? 'match-${DateTime.now().microsecondsSinceEpoch}',
       kind: kind,
@@ -338,10 +366,10 @@ class _TacticalPageState extends State<TacticalPage> {
     );
     await _mutation(
       (service) => service.saveTacticalMatch(
-        _profile!.id,
+        profileId,
         item,
-        _state!.revision,
-        'match-${item.id}-${_state!.revision}',
+        tacticalRevision,
+        'match-${item.id}-$tacticalRevision',
       ),
     );
   }
@@ -398,7 +426,9 @@ class _TacticalPageState extends State<TacticalPage> {
         ],
       ),
     );
-    if (saved != true || _profile == null || _state == null) return;
+    final profileId = _profile?.id;
+    final tacticalRevision = _tacticalRevision;
+    if (saved != true || profileId == null || tacticalRevision == null) return;
     final item = TacticalJokbo(
       id: original?.id ?? 'jokbo-${DateTime.now().microsecondsSinceEpoch}',
       defenseDeck: defense,
@@ -407,10 +437,10 @@ class _TacticalPageState extends State<TacticalPage> {
     );
     await _mutation(
       (service) => service.saveTacticalJokbo(
-        _profile!.id,
+        profileId,
         item,
-        _state!.revision,
-        'jokbo-${item.id}-${_state!.revision}',
+        tacticalRevision,
+        'jokbo-${item.id}-$tacticalRevision',
       ),
     );
   }
@@ -445,29 +475,31 @@ class _TacticalPageState extends State<TacticalPage> {
   }
 
   Future<void> _deleteMatch(TacticalMatch item) async {
-    if (!await _confirm('이 대전 기록을 삭제할까요?') ||
-        _profile == null ||
-        _state == null)
-      return;
+    if (!await _confirm('이 대전 기록을 삭제할까요?')) return;
+    final profileId = _profile?.id;
+    final tacticalRevision = _tacticalRevision;
+    if (profileId == null || tacticalRevision == null) return;
     await _mutation(
       (s) => s.deleteTacticalMatch(
-        _profile!.id,
+        profileId,
         item.id,
-        _state!.revision,
-        'delete-${item.id}-${_state!.revision}',
+        tacticalRevision,
+        'delete-${item.id}-$tacticalRevision',
       ),
     );
   }
 
   Future<void> _deleteJokbo(TacticalJokbo item) async {
-    if (!await _confirm('이 족보를 삭제할까요?') || _profile == null || _state == null)
-      return;
+    if (!await _confirm('이 족보를 삭제할까요?')) return;
+    final profileId = _profile?.id;
+    final tacticalRevision = _tacticalRevision;
+    if (profileId == null || tacticalRevision == null) return;
     await _mutation(
       (s) => s.deleteTacticalJokbo(
-        _profile!.id,
+        profileId,
         item.id,
-        _state!.revision,
-        'delete-${item.id}-${_state!.revision}',
+        tacticalRevision,
+        'delete-${item.id}-$tacticalRevision',
       ),
     );
   }
@@ -516,7 +548,10 @@ class _TacticalPageState extends State<TacticalPage> {
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       Text(
-                        '${_profile?.displayName ?? '프로필 없음'} · ${_profile?.id ?? '-'} · tactical revision ${_state?.revision ?? '-'}',
+                        '${_profile?.displayName ?? '프로필 없음'} · ${_profile?.id ?? '-'} · '
+                        'profile revision ${_profileRevision ?? '-'} · '
+                        'tactical revision ${_tacticalRevision ?? '-'}',
+                        key: const ValueKey('tactical-revision-line'),
                       ),
                     ],
                   ),
@@ -538,15 +573,16 @@ class _TacticalPageState extends State<TacticalPage> {
 
   Widget _body() {
     if (_loading) return const Center(child: CircularProgressIndicator());
+    // 읽기 오류(첫 읽기 포함)를 "선택된 프로필이 없습니다"로 가리지 않는다.
+    if (_error != null && _tacticalState == null)
+      return _Message(icon: Icons.cloud_off, text: _error!, action: _reload);
     if (_profile == null)
       return _Message(icon: Icons.person_off_outlined, text: '선택된 프로필이 없습니다.');
-    if (_error != null && _state == null)
-      return _Message(icon: Icons.cloud_off, text: _error!, action: _reload);
     final labels = {
       for (final item in _catalog)
         item.studentId: item.displayName.toLowerCase(),
     };
-    final jokbo = (_state?.jokbo ?? const <TacticalJokbo>[]).where((item) {
+    final jokbo = (_tacticalState?.jokbo ?? const <TacticalJokbo>[]).where((item) {
       final needle = _query.trim().toLowerCase();
       final ids = [
         ...item.defenseDeck.strikers,
