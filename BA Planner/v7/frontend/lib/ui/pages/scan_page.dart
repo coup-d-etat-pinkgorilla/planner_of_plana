@@ -8,6 +8,9 @@ import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
 import '../../services/student_scan_diagnostic.dart';
 import '../../services/window_dock_service.dart';
+import '../scan/scan_repository_sync.dart';
+import '../widgets/account_section_cluster.dart'
+    show repositoryLoadErrorText, repositoryProfileWithRevision;
 import '../widgets/diagonal_section.dart';
 import '../widgets/repository_profile_panel.dart';
 import '../widgets/scan_companion_dock.dart';
@@ -54,6 +57,13 @@ class _ScanPageState extends State<ScanPage> {
   Map<String, dynamic>? _readiness;
   RepositoryProfile? _profile;
   RepositoryState? _repositoryState;
+
+  /// 다음 적용의 expected revision(권위값). state 응답과 commit 응답에서만 받는다. catalog summary(목록)
+  /// revision은 legacy 첫 이관(+1) 전 값일 수 있으므로 쓰지 않는다(FB-1b).
+  int? _repositoryRevision;
+  final Map<String, ScanPendingApply> _pendingApplies = {};
+  int _applyIntentSequence = 0;
+  Future<void> _applyQueue = Future<void>.value();
   Map<String, StudentCatalogEntry> _studentCatalog = const {};
   String? _targetId;
   ScannerKind _kind = ScannerKind.student;
@@ -194,29 +204,96 @@ class _ScanPageState extends State<ScanPage> {
   Future<void> _selectProfile(RepositoryProfile profile) async {
     final repository = _repository;
     final profileChanged = _profile?.id != profile.id;
+    // 위 계정 패널은 목록(ListView)이 화면 밖으로 밀어내면 버려졌다가 다시 만들어지며, 그때마다 같은 계정을 다시
+    // 넘긴다. 이미 이 계정의 state와 그 이상인 권위 revision이 있으면 다시 읽지 않는다(이름 등 표시만 받는다).
+    // 목록 revision이 더 높을 때(다른 곳의 저장·이름 변경)만 다시 읽는다.
+    final known = profileChanged ? null : _repositoryRevision;
+    final current =
+        !profileChanged &&
+        _repositoryState != null &&
+        known != null &&
+        profile.revision <= known;
     setState(() {
-      _profile = profile;
-      _repositoryState = null;
-      if (profileChanged) _candidateNotice = null;
+      if (profileChanged) {
+        _profile = profile;
+        _repositoryRevision = null;
+        _repositoryState = null;
+        _pendingApplies.clear();
+        _candidateNotice = null;
+      } else {
+        // 같은 계정을 목록이 다시 넘기면 이름 등 표시만 받고 revision은 권위값(state·commit 응답)을 유지한다.
+        // 목록 값이 더 높으면 아래에서 state를 다시 읽어 맞춘다.
+        _profile = known != null
+            ? repositoryProfileWithRevision(profile, known)
+            : profile;
+      }
     });
-    if (repository == null) return;
+    if (repository == null || current) return;
     try {
       final results = await Future.wait<Object>([
-        repository.loadRepositoryState(profile.id),
+        retryRepositoryBusy(() => repository.loadRepositoryState(profile.id)),
         widget.service.listStudents(),
       ]);
       if (!mounted || _profile?.id != profile.id) return;
       final state = results[0] as RepositoryState;
       final catalog = results[1] as List<StudentCatalogEntry>;
       setState(() {
-        _repositoryState = state;
+        _acceptRepositoryState(state);
         _studentCatalog = {for (final item in catalog) item.studentId: item};
       });
     } catch (error) {
       if (mounted && _profile?.id == profile.id) {
-        setState(() => _candidateNotice = '프로필 현재값을 불러오지 못했습니다: $error');
+        final failure =
+            '프로필 현재값을 다시 읽지 못했습니다: ${repositoryLoadErrorText(error)}';
+        setState(() {
+          final previous = _candidateNotice;
+          // 같은 계정 재선택의 실패는 직전 안내(적용 결과 등)를 지우지 않고 뒤에 덧붙인다. 처음 고른 계정이면
+          // 기존 문구 그대로 바꾼다. 이미 같은 실패를 덧붙였으면 다시 붙이지 않는다.
+          _candidateNotice = profileChanged || previous == null
+              ? '프로필 현재값을 불러오지 못했습니다: ${repositoryLoadErrorText(error)}'
+              : previous.endsWith(failure)
+              ? previous
+              : '$previous\n$failure';
+        });
       }
     }
+  }
+
+  /// state 응답을 cache·권위 revision·profile 표시에 반영한다(setState 안에서 부른다). 같은 계정의 더 낮은
+  /// revision 응답(늦게 도착한 이전 읽기)은 버린다. 반영했으면 true.
+  bool _acceptRepositoryState(RepositoryState state) {
+    final profile = _profile;
+    if (profile == null || state.profileId != profile.id) return false;
+    final known = _repositoryRevision;
+    if (known != null && state.revision < known) return false;
+    _repositoryState = state;
+    _repositoryRevision = state.revision;
+    _profile = repositoryProfileWithRevision(profile, state.revision);
+    return true;
+  }
+
+  /// commit 응답 revision을 권위값으로 받는다(setState 안에서 부른다). state를 다시 읽지 못해도 다음 순차
+  /// 적용이 이 값을 expected로 쓴다(FD-144).
+  void _acceptCommittedRevision(String profileId, int revision) {
+    final profile = _profile;
+    if (profile == null || profile.id != profileId) return;
+    final known = _repositoryRevision;
+    if (known != null && revision <= known) return;
+    _repositoryRevision = revision;
+    _profile = repositoryProfileWithRevision(profile, revision);
+  }
+
+  /// [profileId]의 state를 다시 읽어 반영한다(busy면 같은 읽기를 backoff 재시도). 실패하면 오류를 던진다.
+  Future<RepositoryState?> _reloadRepositoryState(String profileId) async {
+    final repository = _repository;
+    if (repository == null) return null;
+    final state = await retryRepositoryBusy(
+      () => repository.loadRepositoryState(profileId),
+    );
+    if (mounted && _profile?.id == profileId) {
+      setState(() => _acceptRepositoryState(state));
+    }
+    return state;
   }
 
   Future<void> _start() async {
@@ -230,6 +307,22 @@ class _ScanPageState extends State<ScanPage> {
       _pendingStartEvents.clear();
       _resetProjection();
     });
+    // 세션의 첫 적용 base revision: 시작 직전 state를 다시 읽어 권위값을 맞춘다. 읽지 못하면 이미 받은 값을
+    // 그대로 쓰고 알린다(적용은 revision_conflict 재조회로 다시 맞춘다).
+    final baseProfileId = _profile?.id;
+    if (baseProfileId != null) {
+      try {
+        await _reloadRepositoryState(baseProfileId);
+      } catch (error) {
+        if (mounted && _profile?.id == baseProfileId) {
+          setState(
+            () => _candidateNotice =
+                '스캔 시작 전 현재값을 다시 읽지 못했습니다: ${repositoryLoadErrorText(error)}',
+          );
+        }
+      }
+      if (!mounted) return;
+    }
     try {
       if (_kind == ScannerKind.student &&
           _studentScanMode == StudentScanMode.full) {
@@ -353,7 +446,7 @@ class _ScanPageState extends State<ScanPage> {
     try {
       final results = await Future.wait<Object>([
         scanner.scannerSnapshot(session),
-        repository.loadRepositoryState(profile.id),
+        retryRepositoryBusy(() => repository.loadRepositoryState(profile.id)),
       ]);
       final generatedAt = widget.now();
       final document = buildStudentScanDiagnosticDocument(
@@ -371,7 +464,7 @@ class _ScanPageState extends State<ScanPage> {
       );
       if (!mounted || path == null) return;
       setState(() {
-        _repositoryState = results[1] as RepositoryState;
+        _acceptRepositoryState(results[1] as RepositoryState);
         _candidateNotice = '학생 스캔 진단 파일을 저장했습니다.';
       });
     } catch (error) {
@@ -636,16 +729,75 @@ class _ScanPageState extends State<ScanPage> {
     }
   }
 
-  Future<void> _applyStudentCandidate(ScannerCandidate candidate) async {
+  String _newApplyKey(ScannerCandidate approved) {
+    _applyIntentSequence += 1;
+    final stamp = widget.now().microsecondsSinceEpoch.toRadixString(36);
+    return 'scan-apply-${approved.id}-${approved.revision}-'
+        '$stamp-$_applyIntentSequence';
+  }
+
+  /// 학생 결과 적용은 한 번에 하나씩 차례로 한다(FD-144 순차 적용). 뒤 적용은 앞 commit 응답 revision을
+  /// expected로 쓴다. 기다리는 동안에도 후보 버튼은 바쁨으로 표시한다.
+  Future<void> _applyStudentCandidate(ScannerCandidate candidate) {
+    final tappedProfileId = _profile?.id;
+    setState(() => _busyCandidateIds.add(candidate.id));
+    final run = _applyQueue.then((_) async {
+      try {
+        if (mounted) {
+          await _applyStudentCandidateInOrder(candidate, tappedProfileId);
+        }
+      } finally {
+        if (mounted) setState(() => _busyCandidateIds.remove(candidate.id));
+      }
+    });
+    _applyQueue = run.catchError((Object _) {});
+    return run;
+  }
+
+  /// [candidate]가 아직 지금 보이는 후보(같은 세션·generation)인가. 차례를 기다리거나 재시도하는 사이 새 스캔이
+  /// 시작되면 이전 세션의 결과로 새 후보를 지우거나 빨갛게 만들지 않는다.
+  bool _isShownCandidate(ScannerCandidate candidate) {
+    final shown = _candidates[candidate.id];
+    return shown != null &&
+        shown.sessionId == candidate.sessionId &&
+        shown.generation == candidate.generation;
+  }
+
+  Future<void> _applyStudentCandidateInOrder(
+    ScannerCandidate candidate,
+    String? tappedProfileId,
+  ) async {
     final scanner = _scanner;
     final repository = _repository;
     final profile = _profile;
-    final state = _repositoryState;
     final session = _sessionFor(candidate);
+    if (profile != null &&
+        tappedProfileId != null &&
+        profile.id != tappedProfileId) {
+      setState(
+        () => _candidateNotice = '적용 차례를 기다리는 동안 계정이 바뀌어 적용하지 않았습니다.',
+      );
+      return;
+    }
+    final pinned = session == null
+        ? null
+        : _pendingApplies[scanPendingApplySlot(session, candidate.id)];
+    // 같은 의도의 재시도: 고정한 요청을 그대로 다시 보낸다(review 재호출·새 expected 없음). 고정한 expected를
+    // 쓰므로 지금 state cache가 비어 있어도 보낼 수 있다.
+    final retry =
+        pinned != null &&
+            session != null &&
+            profile != null &&
+            pinned.isRetryOf(session, candidate, profile.id)
+        ? pinned
+        : null;
+    final expected = retry != null
+        ? retry.expectedRepositoryRevision
+        : (_repositoryState == null ? null : _repositoryRevision);
     if (scanner == null ||
         repository == null ||
         profile == null ||
-        state == null ||
+        expected == null ||
         session == null) {
       setState(() {
         const message = '적용에 필요한 프로필 또는 세션 상태가 없습니다.';
@@ -654,52 +806,125 @@ class _ScanPageState extends State<ScanPage> {
       });
       return;
     }
-    setState(() {
-      _busyCandidateIds.add(candidate.id);
-      _candidateNotice = null;
-    });
+    final slot = scanPendingApplySlot(session, candidate.id);
+    if (retry == null) _pendingApplies.remove(slot);
+    // 안내 문구는 지우지 않는다: 앞 적용의 "다시 적용하면 같은 요청을…" 안내가 이 적용의 결과가 나올 때까지 남는다.
+    setState(() => _busyCandidateIds.add(candidate.id));
+    ScanPendingApply? sent;
     try {
-      final approved = candidate.approved
-          ? candidate
-          : await scanner.reviewScannerCandidate(
-              session,
-              candidate,
-              candidate.payload,
-              approve: true,
-              reason: 'applied_in_scan_page',
-            );
-      if (!mounted) return;
-      setState(() => _keepCandidate(approved));
-      final committed = await scanner.commitScannerCandidate(
-        session,
-        approved,
-        profileId: profile.id,
-        expectedRepositoryRevision: state.revision,
-        idempotencyKey: 'scan-apply-${approved.id}-${approved.revision}',
-      );
-      final refreshed = await repository.loadRepositoryState(profile.id);
-      if (!mounted) return;
-      setState(() {
-        _repositoryState = refreshed;
-        _candidates.remove(candidate.id);
-        _candidateErrors.remove(candidate.id);
-        _candidateNotice =
-            '결과를 repository revision ${committed['revision']}에 적용했습니다.';
-      });
-    } catch (error) {
-      if (mounted) {
-        RepositoryState? refreshed;
-        try {
-          refreshed = await repository.loadRepositoryState(profile.id);
-        } catch (_) {}
+      final ScanPendingApply request;
+      if (retry != null) {
+        request = retry;
+      } else {
+        final approved = candidate.approved
+            ? candidate
+            : await scanner.reviewScannerCandidate(
+                session,
+                candidate,
+                candidate.payload,
+                approve: true,
+                reason: 'applied_in_scan_page',
+              );
         if (!mounted) return;
-        final message = '적용 실패: $error. 후보와 수정값을 유지했습니다.';
-        setState(() {
-          if (refreshed != null) _repositoryState = refreshed;
-          _candidateErrors[candidate.id] = message;
-          _candidateNotice = message;
-        });
+        final created = ScanPendingApply(
+          session: session,
+          candidate: approved,
+          profileId: profile.id,
+          expectedRepositoryRevision: expected,
+          idempotencyKey: _newApplyKey(approved),
+        );
+        _pendingApplies[slot] = created;
+        request = created;
+        setState(() => _keepCandidate(approved));
       }
+      sent = request;
+      final committed = await retryRepositoryBusy(
+        () => scanner.commitScannerCandidate(
+          request.session,
+          request.candidate,
+          profileId: request.profileId,
+          expectedRepositoryRevision: request.expectedRepositoryRevision,
+          idempotencyKey: request.idempotencyKey,
+        ),
+      );
+      if (identical(_pendingApplies[slot], request)) {
+        _pendingApplies.remove(slot);
+      }
+      if (!mounted) return;
+      final committedRevision = committed['revision'];
+      setState(() {
+        if (committedRevision is int) {
+          _acceptCommittedRevision(request.profileId, committedRevision);
+        }
+        if (_isShownCandidate(candidate)) {
+          _candidates.remove(candidate.id);
+          _candidateErrors.remove(candidate.id);
+        }
+        _candidateNotice =
+            '결과를 repository revision $committedRevision에 적용했습니다.';
+      });
+      try {
+        await _reloadRepositoryState(request.profileId);
+      } catch (error) {
+        if (mounted) {
+          setState(
+            () => _candidateNotice =
+                '결과를 repository revision $committedRevision에 적용했습니다. '
+                '현재값을 다시 읽지 못했습니다: ${repositoryLoadErrorText(error)}',
+          );
+        }
+      }
+    } catch (error) {
+      final request = sent;
+      final failure = request == null
+          ? ScanApplyFailure.rejected
+          : classifyScanApplyFailure(error);
+      // 저장 여부를 모르거나(busy를 다 쓴 경우 포함) 아직 저장되지 않은 같은 의도만 고정해 둔다. 거절·충돌은
+      // 저장되지 않았으므로 버린다. 다음 적용은 새 key·새 expected다.
+      if (request != null &&
+          failure != ScanApplyFailure.unknownOutcome &&
+          failure != ScanApplyFailure.busy &&
+          identical(_pendingApplies[slot], request)) {
+        _pendingApplies.remove(slot);
+      }
+      if (!mounted) return;
+      try {
+        await _reloadRepositoryState(profile.id);
+      } catch (_) {}
+      if (!mounted) return;
+      final wasRetry = retry != null;
+      setState(() {
+        final shown = _isShownCandidate(candidate);
+        switch (failure) {
+          case ScanApplyFailure.unknownOutcome:
+            // 후보를 빨간 상태로 바꾸지 않는다: "적용"을 다시 누르면 같은 요청을 다시 보낸다.
+            if (shown) _candidateErrors.remove(candidate.id);
+            _candidateNotice =
+                '적용 결과를 확인하지 못했습니다: $error. '
+                '다시 적용하면 같은 요청을 다시 보냅니다.';
+          case ScanApplyFailure.busy:
+            if (shown) _candidateErrors.remove(candidate.id);
+            _candidateNotice =
+                '저장소가 다른 작업을 하고 있어 '
+                '${scanRepositoryBusyRetryDelays.length}번 다시 시도한 뒤 멈췄습니다. '
+                '잠시 뒤 다시 적용하면 같은 요청을 다시 보냅니다.';
+          case ScanApplyFailure.revisionConflict:
+            {
+              final message = wasRetry
+                  ? '적용 실패: 같은 요청을 다시 보냈지만 그사이 저장소가 바뀌어 적용되지 '
+                        '않았습니다. 현재값을 다시 읽었습니다. 재검증한 뒤 다시 적용해 주십시오.'
+                  : '적용 실패: $error. 현재값을 다시 읽었습니다. 후보와 수정값을 유지했습니다.';
+              if (shown) _candidateErrors[candidate.id] = message;
+              _candidateNotice = message;
+            }
+          case ScanApplyFailure.rejected:
+            {
+              final message = '적용 실패: $error. 후보와 수정값을 유지했습니다.';
+              if (shown) _candidateErrors[candidate.id] = message;
+              _candidateNotice = message;
+            }
+        }
+      });
     } finally {
       if (mounted) setState(() => _busyCandidateIds.remove(candidate.id));
     }
@@ -856,7 +1081,8 @@ class _ScanPageState extends State<ScanPage> {
                     _StatusChip(
                       label: _profile == null
                           ? 'No profile selected'
-                          : 'Profile: ${_profile!.displayName}',
+                          : 'Profile: ${_profile!.displayName} · '
+                                'r${_profile!.revision}',
                       ok: _profile != null,
                     ),
                     OutlinedButton.icon(

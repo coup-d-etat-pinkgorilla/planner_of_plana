@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**fb4-dart 코드 작성 완료, gate ① 대기(2026-10-10 오후).** 시작 커밋 `1fa86194`. 아래 "fb4-dart 착수 기록"·"fb4-dart 종료 기록". 예상: gate GREEN(golden 변화 0), 일반 테스트 +19건, process 테스트 +1건(실행하지 못함). FE8-a는 커밋 `815e0589`로 끝났다(워크플로 재개 지점 2026-10-10 오후).
+**S-FB1b gate ① RED 수정 완료, gate 재실행 대기(2026-10-10 밤).** 시작 커밋 `11281bed`. 아래 "S-FB1b 착수 기록"·"S-FB1b 종료 기록"·"S-FB1b gate ① RED 수정 기록". 예상: S-FB1b 일반 테스트 +14건 전부 통과(실행하지 못함), golden 변화 0. fb4-dart는 커밋 `63a01318`, FE8-a는 커밋 `815e0589`로 끝났다(워크플로 재개 지점 2026-10-10 저녁 2).
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -263,3 +263,139 @@ PowerShell, `C:\Users\brigh\planner_of_plana\BA Planner\v7`에서:
    - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fb4dart -DryRun`
    - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fb4dart`
 3. 커밋 해시가 나오면 오케스트레이터가 XB 로그 끝에 "CF 보고(fb4-dart)"를 적는다(첫 왕복 완료, 14:20 회신).
+
+## S-FB1b 착수 기록 (2026-10-10)
+
+- 범위: 스캔 탭(`scan_page.dart`)의 revision 전파와 재시도, 같은 파일의 pending apply 고정(CF 프롬프트 `debug/frontend_redesign_handoff/sfb1b-worker-prompt-20261010.md`, 기준 XB 초안 `debug/xb_fb_history_port_review_20261010/artifacts/S-FB1b-work-instruction-draft.md`, FB-1b `11426131`).
+  1. `repository.state.get` 반환 revision을 profile 표시·cache·첫 scan session base revision에 전파(catalog summary 값을 권위값으로 계속 쓰지 않음).
+  2. 학생 순차 적용(FD-144)에서 앞 commit 응답 revision을 다음 요청 expected로.
+  3. `repository_busy` 지수 backoff 최대 3회 재시도(같은 key·같은 요청), 그 뒤에도 busy면 알리고 멈춤.
+  4. `revision_conflict`는 state 재조회로 권위값·cache 갱신, 응답 유실 replay와 새 적용 구분.
+  5. pending apply 고정(XB 15:30 메모): 최초 승인 candidate·profile·expected·idempotency key 고정, 같은 key 재시도에 review 재호출·새 expected 없음, 새 적용 의도는 새 key.
+- 범위 밖: history context(서버가 만든다), scanner public DTO·method·Mock(XB 커밋 뒤 sfb2b-dart), `lib/services/**`, 계획·학생·타이틀 화면(Lane A), golden harness·golden 테스트·기준 이미지, `app_shell.dart`, `backend/**`·`contracts/**`.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `11281beda57efadbbc2860f374d0367f556ffff4`.
+- 막힘: 대장 막힘 요약 열림 0건. XB 초안의 "CM 승인 이후" 조건은 헌장 §3.2(2026-10-10 13:50, XB 커밋 계약부터 연결·CM 승인 없음)와 CF 배정(오케스트레이터 로그 17:05)으로 풀렸다.
+- 고칠 기존 파일과 WIP(작업 트리 내용을 git index blob과 비교, 줄바꿈 차이 제외):
+
+  | 파일 | WIP | 비고 |
+  |---|---|---|
+  | `frontend/lib/ui/pages/scan_page.dart` | 있음(LF) | index `312d4dec` ≠ 작업 트리 `c31aa6bd`. HEAD blob이 pack 안이라 WIP 위치는 확인 못 함 |
+
+  착수 전 사본 `debug/frontend_sfb1b/pre/frontend/lib/ui/pages/scan_page.dart`, slice 끝 사본 `debug/frontend_sfb1b/post/<경로>`, commit.json `post_dir`. WIP는 지우거나 정리하지 않는다.
+- 고치지 않는 기존 파일: `frontend/test/scan_page_test.dart`(WIP 있음, index `21f5c17a` ≠ `6af44970`). 새 테스트는 새 파일에 둔다. 기존 기대를 바꿔야 하면 그때 사본을 두고 이 기록에 적는다.
+- 새 파일(예정): `frontend/lib/ui/scan/scan_repository_sync.dart`(busy 재시도·오류 분류·pending apply 값), `frontend/test/scan_page_revision_test.dart`.
+- golden 변화 0 예정(스캔 화면은 golden 장면에 없다. 새 장면 금지).
+- 이 환경에는 Flutter·Dart가 없다. gate는 사용자 PC에서 한다.
+
+## S-FB1b 종료 기록 (2026-10-10, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없다(SDK 내려받기도 프록시가 막는다). analyze·테스트를 돌리지 못했으므로 통과를 주장하지 않는다.
+- 정적 검토만 했다. 별도 검토 에이전트가 바뀐 파일을 원본·mock·workspace·기존 `scan_page_test.dart`와 대조해 두 번 읽었다(컴파일·analyze 쟁점, 기존 13개 테스트 회귀 추적, 새 테스트 기대값 수치 추적, fake async 타이머 시각, 목록 지연 생성).
+  - 1차: 막는 문제 없음. 고칠 것 4건(대기 중 계정 전환, 고정 재시도가 state cache에 막힘, 대기 적용이 안내 문구를 지움, 새 스캔 뒤 이전 결과가 같은 id 후보를 건드림)과 사소한 것(불필요 import, 칩 문구 길이로 800px 화면 줄바꿈 위험)을 모두 반영했다.
+  - 2차(반영분만): 문제 없음.
+- 내가 직접 한 것: 괄호 균형, 줄바꿈(LF)·끝 공백·파일 끝 개행 확인, commit.json JSON·ASCII 확인.
+
+### 고친 파일
+
+| 파일 | 내용 |
+|---|---|
+| `frontend/lib/ui/pages/scan_page.dart`(WIP 있음, pre/post) | 권위 revision `_repositoryRevision`: state 응답(`_acceptRepositoryState`, 같은 계정의 더 낮은 revision은 버림)과 commit 응답(`_acceptCommittedRevision`)에서만 받는다. profile 칩 `Profile: <이름> · r<n>`·`_profile.revision`·`_repositoryState` 함께 갱신. 같은 계정을 목록이 다시 넘기면 이미 받은 권위값보다 낮게 내리지 않는다. `_start`가 세션 시작 전 state를 다시 읽는다(첫 session base, 실패하면 알리고 이전 값으로 진행). 학생 적용은 큐로 한 번에 하나(`_applyStudentCandidate` → `_applyStudentCandidateInOrder`), 탭한 계정과 차례가 온 때의 계정이 다르면 적용하지 않는다. 적용 = pending 고정 + busy 재시도 + 실패 분류(아래). state 읽기(선택·시작·적용 뒤·진단 추출)도 busy면 같은 backoff. 진단 추출의 state도 권위값으로 받는다 |
+| 새 `frontend/lib/ui/scan/scan_repository_sync.dart` | `retryRepositoryBusy`(200/400/800ms, 최대 3회 재시도 = 4번 전송, busy 외 오류는 바로), `ScanApplyFailure`·`classifyScanApplyFailure`(BackendRemoteException·mock StateError = 백엔드 응답, 그 밖 = 결과 모름), `ScanPendingApply`(세션·승인 후보·profile·expected·key, `isRetryOf`), `scanPendingApplySlot` |
+| 새 `frontend/test/scan_page_revision_test.dart` | 아래 12건 |
+
+적용 흐름(`_applyStudentCandidateInOrder`):
+- 같은 세션·generation·후보 revision·계정의 고정 요청이 있으면 **재시도**: review를 다시 부르지 않고 고정한 candidate·expected·key를 그대로 보낸다(그사이 다시 읽은 state revision으로 바꾸지 않음).
+- 없으면 **새 의도**: review(approve) → 지금 권위 revision을 expected로, 새 key `scan-apply-<후보>-<revision>-<시각36진>-<순번>`(같은 후보 revision이라도 새 의도는 새 key)로 고정.
+- 성공: commit 응답 revision을 권위값으로 받고(다시 읽기에 실패해도 다음 적용 expected가 된다) state를 다시 읽는다. 고정 해제.
+- 실패 분류: 결과 모름(연결 끊김·시간 초과·응답 형식 오류) → 고정 유지, 후보는 초록 그대로, "다시 적용하면 같은 요청을 다시 보냅니다". busy 재시도 소진 → 고정 유지, 같은 안내. `revision_conflict` → 고정 해제, state 재조회, 후보 빨강(재검증 = 새 의도), 재시도였으면 "같은 요청을 다시 보냈지만 그사이 저장소가 바뀌어 적용되지 않았습니다". 그 밖의 거절 → 고정 해제, 빨강(기존 문구). 모든 실패 뒤 state를 다시 읽는다(기존 동작).
+- history context(source=scan 등)는 RPC에 넣지 않는다. scanner public DTO·method·Mock은 바꾸지 않았다.
+
+### 새 테스트 (지운·고친 기존 테스트 없음)
+
+`frontend/test/scan_page_revision_test.dart` — 대역 `_RevisionScanService`(MockAppService + 백엔드식 idempotency receipt 재생, busy·응답 유실·요청 유실·충돌 주입, commit 기록):
+1. `retryRepositoryBusy`: busy를 200/400/800ms 간격으로 3번 재시도하고 4번째 뒤 멈춘다.
+2. `retryRepositoryBusy`: busy가 아닌 오류는 재시도하지 않는다.
+3. `classifyScanApplyFailure` 분류표.
+4. `ScanPendingApply.isRetryOf`·slot(세션 generation·후보 revision·계정이 다르면 다른 의도).
+5. legacy 첫 state 로드: 목록 revision 0 → state 1을 칩·적용 expected로, 적용 뒤 2.
+6. 시작 전 state 재조회: 화면 로드 뒤 다른 곳의 저장(0 → 1)을 시작 때 받아 첫 적용 expected 1, 충돌 없음.
+7. 순차 적용: 적용 뒤·시작 때 state 읽기가 실패해도 두 번째 적용 expected = 첫 commit 응답 revision(expected 0, 1).
+8. busy 2번 뒤 성공: 같은 key·같은 expected로 3번, review 1번.
+9. busy 소진: 4번 보내고 멈춤, 후보 초록 유지, 다시 적용하면 같은 key·expected로 5번째(review 1번).
+10. 응답 유실: 저장됐지만 응답을 못 받은 뒤 다시 적용하면 다시 읽은 revision 1이 아니라 고정 expected 0·같은 key로 보내 receipt 재생(review 1번).
+11. 요청 유실 + 그사이 다른 저장: 재시도가 `revision_conflict` → 재시도 문구·칩 1·빨강, 재검증 뒤 새 key·expected 1로 성공.
+12. 첫 시도 `revision_conflict`(백엔드 오류 형식): state 재조회(칩 2), 재검증 뒤 새 key·expected 2로 성공.
+
+### WIP 보존 확인
+
+- `scan_page.dart`는 착수 때 작업 트리 내용(index와 다름 = 스캐너 WIP 포함)에서 시작했고 WIP 줄은 지우거나 정리하지 않았다. 착수 전 사본 `debug/frontend_sfb1b/pre/frontend/lib/ui/pages/scan_page.dart`(49,792 bytes, sha256 `82ac04e6…`), slice 끝 사본 `debug/frontend_sfb1b/post/frontend/lib/ui/pages/scan_page.dart`(59,377 bytes, sha256 `033ee8da…`). 새 파일 2개의 끝 사본도 post에 둔다. commit.json `post_dir: debug/frontend_sfb1b/post`.
+- HEAD blob이 pack 안이라 WIP 위치를 확인하지 못했다. WIP와 같은 줄을 고쳤다면 fe_commit이 충돌로 멈춘다(그때 `.conflict` 파일을 오케스트레이터에게 보낸다). 고친 곳: import 3줄, 상태 필드, `_selectProfile`, `_start` 앞부분, 진단 추출 2줄, `_applyStudentCandidate` 전체, profile 칩 문구.
+- 사본 확인: 기기 도구가 7단계보다 깊은 파일을 다시 읽지 못해 pre/post 사본은 바이트 수로만 대조했다(경로 9단계). status 문서는 다시 읽어 sha256으로 대조했다.
+- `frontend/test/scan_page_test.dart`(WIP 있음)는 고치지 않았다.
+
+### 미검증 항목
+
+- analyze·일반 테스트·golden·`codealmanac validate`·`git diff --check` 전부 미실행(사용자 PC gate 필요).
+- 실제 Python process에서 busy·conflict·응답 유실 재시도는 돌려 보지 않았다(새 process E2E 없음). 재시도 문구 "적용되지 않았습니다"는 서버의 receipt 우선 재생(`contracts/README.md` "S-FB2b scanner current commit")을 전제로 한다(발견 사항 1).
+- golden 변화 0 예상: 스캔 화면은 golden 장면에 없고, 앱 셸 장면에서 스캔 탭은 화면 밖이다.
+
+### 발견 사항
+
+1. **커밋 순서 주의(XB S-FB2b와)**: 같은 key 재시도에서 "이미 저장된 요청이면 원래 응답을 돌려준다"(receipt 우선 재생)는 XB S-FB2b 후보에 있다. S-FB2b가 커밋되기 전의 Python이 저장된 요청의 재전송에 `revision_conflict`를 준다면, 이 화면은 "적용되지 않았습니다"라고 잘못 알린다(데이터는 이미 저장됨, 현재값 재조회로 화면 값은 맞음). S-FB1b를 S-FB2b와 같은 gate 또는 그 뒤에 커밋할지는 오케스트레이터가 정한다.
+2. `RepositoryProfilePanel`(`lib/ui/widgets/repository_profile_panel.dart`, 스캔 탭 위 계정 패널)은 목록 revision으로 선택·이름 변경을 한다. legacy 첫 이관(+1) 뒤 스캔 탭 패널에서 이름 변경·선택을 하면 `revision_conflict`가 날 수 있다. 공용 위젯이라 고치지 않았다(fe1brev가 계정 화면에서 한 것과 같은 대응 필요).
+3. Mock `commitScannerCandidate`에는 receipt 재생이 없고 profile 목록 revision도 맞추지 않는다. 새 테스트는 대역이 receipt를 흉내 낸다. Mock 쪽은 sfb2b-dart 범위.
+4. 안내 문구가 한 줄이라 뒤 적용의 결과가 앞 후보의 "같은 요청을 다시 보냅니다" 안내를 덮는다(고정 요청은 남아 있어 다시 누르면 재시도된다). 후보별 상태 표시는 FE8-g4 결과 검토 보드 몫.
+5. "최근 세션 열기"(`_openRecent`)는 승인 전 후보(revision 1)를 되살리므로 그 뒤 적용은 고정 요청(승인 후 revision)과 맞지 않아 새 의도(새 key)로 간다. 값은 같아 결과는 같지만 revision이 하나 더 오를 수 있다.
+6. 기존 문구 `_CandidateSummary`의 `Tactical lobby 쨌 current rank … 쨌`는 `·`가 깨진 글자다(기존 코드, 이번 범위 밖이라 그대로 둠).
+7. FD-144 "계산 일치 일괄 적용"(여러 학생 순차 commit)은 FE8-g4다. 이번 큐가 그 순서·revision 이어 쓰기의 바탕이다.
+
+### 다음 행동과 사용자 실행 명령
+
+PowerShell, `C:\Users\brigh\planner_of_plana\BA Planner\v7`에서:
+
+1. Lane A·B 두 워커가 모두 멈춘 뒤 `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1`을 실행하고, 결과(`debug/frontend_gate/` 요약)를 오케스트레이터에게 보낸 뒤 기다린다. 예상: GREEN, golden 변화 0, 일반 +12, process 변화 0.
+2. 커밋(순서는 오케스트레이터가 정한다, 발견 사항 1 참고):
+   - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice sfb1b -DryRun`
+   - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice sfb1b`
+3. 다음 Lane B slice(오케스트레이터 로그 17:05): XB 최종 후보가 오면 fb2b/sfb2b-dart, 그다음 T-FB1b → FE8-b.
+
+## S-FB1b gate ① RED 수정 기록 (2026-10-10 밤, 코드 수정 완료·gate 미실행)
+
+gate `debug/frontend_gate/20261010_185608`: S-FB1b 새 테스트 1건 실패 — `scan_page_revision_test.dart:311` "sequential applies carry the previous commit revision when rereads fail", 기대 `repository revision 1` 포함, 실제 `프로필 현재값을 불러오지 못했습니다: Bad state: persistence_failed`. 다른 S-FB1b 11건과 기존 scan 테스트는 통과. `repository_history_*` 2건·process 3건(XB 미커밋 summary `last_scan_at`, fb2b-dart 담당)과 golden 10장(FE5-b)은 이번 범위 밖이라 손대지 않았다.
+
+### 원인
+
+오케스트레이터 진단대로 적용 결과 안내를 `_selectProfile`의 catch가 덮었다. 다만 패널이 다시 넘긴 계기는 "commit 응답으로 `_profile` revision이 바뀌어서"가 아니다(패널은 `_profile`을 보지 않는다). 실제 경로:
+1. 테스트 도우미 `_seek`가 후보의 "적용" 버튼까지 내려가면, 스캔 페이지 `ListView`가 화면 밖(기본 cache 250px 밖)으로 밀려난 맨 위 `RepositoryProfilePanel`을 버린다(keep-alive 없음).
+2. 다음 `_notice`가 맨 위로 돌아오면 패널이 새로 만들어지고 `initState → _reload → listProfiles → onSelected(같은 계정)`이 같은 `pump()` 안에서 돈다.
+3. 예전 `_selectProfile`은 같은 계정이어도 `_repositoryState`를 비우고 state를 다시 읽었다. 대역의 `failLoads`로 읽기가 실패하자 catch가 `_candidateNotice`를 통째로 바꿨다.
+- 실제 앱에서도 사용자가 스캔 탭을 아래로 내렸다 올리면 같은 일이 생긴다. **같은 계정 재선택이 불필요한 state 재읽기를 하고 있었다**(스크롤로 패널이 다시 만들어질 때마다 목록 1번 + state 1번 + 학생·아이템 목록 읽기, 그동안 `_repositoryState`가 잠깐 비어 적용이 "상태가 없습니다"로 막힐 수 있었다). 별도 검토 에이전트가 같은 경로를 코드로 확인했다(패널의 다른 호출 계기는 만들기·선택·이름 변경·v6 가져오기 탭뿐).
+
+### 수정 (`frontend/lib/ui/pages/scan_page.dart` `_selectProfile`만)
+
+- 같은 계정을 다시 넘겼고 state cache가 있으며 목록 revision ≤ 권위 revision이면 **다시 읽지 않는다**(이름 등 표시만 받는다). 목록 revision이 더 높을 때(다른 곳의 저장·이름 변경)만 다시 읽는다.
+- 같은 계정이면 `_profile` revision은 목록 값이 아니라 권위값을 유지한다(다시 읽기에 성공하면 그때 올라간다). `_repositoryState`도 비우지 않는다(다시 읽는 동안 이전 cache로 적용 가능). 다른 계정을 고르면 예전처럼 모두 비운다.
+- 같은 계정 다시 읽기가 실패하면 직전 안내(적용 결과 등)를 지우지 않고 뒤에 줄을 바꿔 `프로필 현재값을 다시 읽지 못했습니다: …`를 덧붙인다(같은 실패는 한 번만). 처음 고른 계정의 실패 문구는 예전 그대로다.
+- 테스트 기대는 바꾸지 않았다.
+
+### 추가 테스트 (`frontend/test/scan_page_revision_test.dart`, 2건 → S-FB1b 새 테스트 모두 14건)
+
+13. 스크롤로 다시 만들어진 패널(목록 호출 수 증가로 확인)이 최신 state를 다시 읽지 않는다(state 읽기 수 그대로).
+14. 다른 곳의 저장으로 목록 revision이 권위값보다 높아진 뒤 같은 계정 다시 읽기가 실패하면, 앞의 "적용 결과를 확인하지 못했습니다" 안내가 남고 실패 줄이 덧붙는다. 그 뒤 다시 적용하면 고정 요청(같은 key·expected 0)이 receipt로 재생된다.
+- 대역 `_RevisionScanService`에 `listCalls`(목록 호출 수)를 더했다.
+
+### 검증
+
+- 이 환경에는 Flutter가 없어 실행하지 못했다. 별도 검토 에이전트가 원인 경로, 실패했던 테스트의 통과, 새 2건의 기대값(800×600에서 패널이 실제로 버려졌다 다시 만들어지는지 포함), 나머지 S-FB1b·기존 scan 테스트의 결과 불변을 코드로 추적했다. 문제 없음.
+- 괄호 균형, LF·끝 공백·파일 끝 개행 확인.
+
+### 사본·commit.json
+
+- post 사본 갱신: `debug/frontend_sfb1b/post/frontend/lib/ui/pages/scan_page.dart`(60584 bytes, sha256 `1eaa1716…`), `debug/frontend_sfb1b/post/frontend/test/scan_page_revision_test.dart`(25162 bytes). `scan_repository_sync.dart`는 바뀌지 않았다. pre 사본은 그대로(착수 전 내용).
+- commit.json은 그대로다(바뀐 파일 집합이 같다: modified `scan_page.dart`, added `scan_repository_sync.dart`·`scan_page_revision_test.dart`).
+
+### 다음 행동
+
+1. 두 워커가 멈춘 뒤 `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1` 재실행 → 결과를 오케스트레이터에게. S-FB1b 쪽 예상: 새 14건 통과, 기존 scan 테스트 통과, golden 변화 0(다른 레인 RED는 위 범위 밖 항목).
+2. 커밋 순서는 오케스트레이터가 정한다(종료 기록 발견 사항 1: S-FB2b와의 순서).
+3. 발견 사항: 위 계정 패널(`RepositoryProfilePanel`, 공용 위젯)은 스크롤로 버려질 때마다 다시 만들어지며 목록을 다시 읽는다. 이번 수정으로 스캔 탭의 불필요한 state 재읽기는 막았지만 목록 읽기 자체는 남는다. 패널 상태 유지(keep-alive)나 스캔 탭 재구성(FE8-g1)에서 정리할 일이다.
