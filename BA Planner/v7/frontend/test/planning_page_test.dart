@@ -1499,20 +1499,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('가장 심한 병목 요소'), findsOneWidget);
-    expect(
-      find.text(
-        '보유량 : $planPrimaryBottleneckOwned / '
-        '필요량 : $planPrimaryBottleneckRequired',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.text(
-        '확보 시 학생 $planPrimaryBottleneckStudentCount명의 '
-        '목표 단계가 가능해집니다',
-      ),
-      findsOneWidget,
-    );
+    // FE5-c1: 요약 행은 화면 병목 목록(계산 전 견본)의 첫 병목 · 첫 재화다. 견본 병목 1은 호시노 2단계의 기초 전술교육
+    // BD(진입 4 / 필요 12), 확보하면 호시노 · 노노미 · 아코(지연 단계 학생) 3명이 이어서 진행한다.
+    expect(find.text('보유량 : 4 / 필요량 : 12'), findsOneWidget);
+    expect(find.text('확보 시 학생 3명의 목표 단계가 가능해집니다'), findsOneWidget);
     final bottleneckImages = tester
         .widgetList<Image>(
           find.descendant(
@@ -1524,11 +1514,11 @@ void main() {
         .toList();
     expect(
       bottleneckImages,
-      contains(const AssetImage(planPrimaryBottleneckBackgroundAsset)),
+      contains(const AssetImage(planDefaultItemBackgroundAsset)),
     );
     expect(
       bottleneckImages,
-      contains(const AssetImage(planPrimaryBottleneckIconAsset)),
+      contains(const AssetImage(planBasicTacticalBdIconAsset)),
     );
     expect(
       tester
@@ -1701,8 +1691,10 @@ void main() {
         find.byKey(const ValueKey('plan-overall-summary')),
         findsOneWidget,
       );
-      expect(find.text('전체 요구량의 72% 확보'), findsOneWidget);
-      expect(find.text('14종 부족 · 6명의 성장 계획에 영향'), findsOneWidget);
+      // FE5-c1: 견본 전체 목록의 projection. 충족률은 FD-031 (a)(재화 7종 min(보유, 필요)/필요 평균 = 60%), 부족 6종,
+      // 부족 재화(크레딧 포함)를 쓰는 학생 11명.
+      expect(find.text('전체 요구량의 60% 확보'), findsOneWidget);
+      expect(find.text('6종 부족 · 11명의 성장 계획에 영향'), findsOneWidget);
 
       await tester.tap(
         find.byKey(const ValueKey('plan-resource-tab-bottleneck')),
@@ -1737,16 +1729,19 @@ void main() {
             ),
           );
 
+      // FE5-c1: 가장 심한 병목(견본 병목 1)의 학생 = 막힌 단계 호시노 + 지연 단계 호시노 · 노노미 · 아코.
       const affectedRows = [
-        'plan-step-phase-1-haruka-1',
+        'plan-step-phase-1-hoshino-1',
         'plan-step-phase-2-nonomi-1',
+        'plan-step-phase-2-hoshino-2',
         'plan-step-phase-3-nonomi-2',
-        'plan-step-phase-3-azusa-3',
+        'plan-step-phase-4-ako-3',
       ];
       for (final key in affectedRows) {
         expect(item(key).highlighted, isFalse);
       }
       expect(item('plan-step-phase-1-shiroko-1').highlighted, isFalse);
+      expect(item('plan-step-phase-1-haruka-1').highlighted, isFalse);
 
       await tester.tap(
         find.byKey(const ValueKey('plan-primary-bottleneck-action')),
@@ -1757,6 +1752,7 @@ void main() {
         expect(item(key).highlighted, isTrue);
       }
       expect(item('plan-step-phase-1-shiroko-1').highlighted, isFalse);
+      expect(item('plan-step-phase-1-haruka-1').highlighted, isFalse);
 
       await tester.tap(find.byKey(const ValueKey('plan-resource-tab-overall')));
       await tester.pumpAndSettle();
@@ -1766,18 +1762,19 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('plan-overall-action')));
       await tester.pumpAndSettle();
+      // FE5-c1: 부족 재화(크레딧 포함)를 쓰는 학생 전부라 견본의 모든 단계 행이 강조된다.
       const overallRows = [
         'plan-step-phase-1-shiroko-1',
         'plan-step-phase-1-hoshino-1',
         'plan-step-phase-1-serika-1',
         'plan-step-phase-1-haruka-1',
         'plan-step-phase-2-nonomi-1',
+        'plan-step-phase-2-yuuka-2',
         'plan-step-phase-3-azusa-3',
       ];
       for (final key in overallRows) {
         expect(item(key).highlighted, isTrue);
       }
-      expect(item('plan-step-phase-2-yuuka-2').highlighted, isFalse);
 
       await tester.tap(find.byKey(const ValueKey('plan-resource-tab-byPhase')));
       await tester.pumpAndSettle();
@@ -1788,7 +1785,10 @@ void main() {
       for (final key in overallRows) {
         expect(item(key).highlighted, isFalse);
       }
-      expect(find.text('2단계에서 4명 중 1명만 완료 가능'), findsOneWidget);
+      // FE5-c1: 부족 재화가 있는 첫 페이즈(P2)에서 충족률이 가장 낮은 안티키테라(3/5). P2 학생 4명 중 모자란 재화를
+      // 쓰지 않는 학생은 유우카를 뺀 3명이다.
+      expect(find.text('보유량 : 3 / 필요량 : 5'), findsOneWidget);
+      expect(find.text('P2에서 4명 중 3명만 완료 가능'), findsOneWidget);
       final phaseImages = tester
           .widgetList<Image>(
             find.descendant(
@@ -2286,13 +2286,15 @@ void main() {
         find.byKey(const ValueKey('plan-primary-bottleneck-action')),
       );
       await tester.pumpAndSettle();
-      expect(item('plan-step-phase-2-hoshino-2').highlighted, isFalse);
-      expect(item('plan-step-phase-4-ako-3').highlighted, isFalse);
+      // FE5-c1: 요약 행은 학생 단위 강조다(호시노 · 노노미 · 아코의 모든 단계).
+      expect(item('plan-step-phase-1-haruka-1').highlighted, isFalse);
+      expect(item('plan-step-phase-3-azusa-3').highlighted, isFalse);
       for (final key in const [
-        'plan-step-phase-1-haruka-1',
+        'plan-step-phase-1-hoshino-1',
+        'plan-step-phase-2-hoshino-2',
         'plan-step-phase-2-nonomi-1',
         'plan-step-phase-3-nonomi-2',
-        'plan-step-phase-3-azusa-3',
+        'plan-step-phase-4-ako-3',
       ]) {
         expect(item(key).highlighted, isTrue);
       }

@@ -21,6 +21,7 @@ import '../../services/repository_service.dart';
 import '../../services/scenario_service.dart';
 import '../widgets/plan_element_builder.dart'
     show planElementCurrentTargets, planStudentHasFavoriteItemMetadata;
+import 'plan_flow_save.dart' show PlanFlowSaveTarget;
 import 'planning_growth_rules.dart';
 import 'planning_models.dart';
 import 'repository_plan_snapshot.dart';
@@ -1449,6 +1450,7 @@ class PlanFlowController extends ChangeNotifier {
     this.scenario,
     this.scenarioCollectionRevision,
     this.activePlanRevision,
+    this.initialSaveTarget,
     this.debounce = planFlowCalculationDebounce,
   }) : _draft = initialDraft ?? PlanFlowDraft.empty,
        _step = initialStep {
@@ -1468,6 +1470,9 @@ class PlanFlowController extends ChangeNotifier {
   /// [PlanFlowPurpose.editActivePlan]일 때 초안을 연 활성 계획의 revision(`plan.get`). 4단계 처음 저장의 expected
   /// revision이라, 그 사이 활성 계획이 바뀌었으면 `revision_conflict`로 알린다.
   final int? activePlanRevision;
+
+  /// 4단계 저장 위치를 미리 고른 채 연다(FE5-c1 시나리오 "계획에 적용…", FD-088). null이면 목적의 기본 위치다.
+  final PlanFlowSaveTarget? initialSaveTarget;
 
   PlanFlowStep _step;
   PlanFlowDraft _draft;

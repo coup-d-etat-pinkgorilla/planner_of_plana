@@ -220,6 +220,8 @@ class PlanScenarioPreview {
     required List<PlanScenarioPreviewShortage> shortages,
     required List<PlanScenarioPreviewFieldRow> fields,
     required this.activeOnlyShortageKinds,
+    required this.result,
+    this.activeDocument,
   }) : students = List.unmodifiable(students),
        shortages = List.unmodifiable(shortages),
        fields = List.unmodifiable(fields);
@@ -241,6 +243,12 @@ class PlanScenarioPreview {
   /// 활성 계획에서만 모자라는 재화 수(두 부족량을 알고, 시나리오에서는 모자라지 않는 재화).
   final int activeOnlyShortageKinds;
 
+  /// 이 미리보기를 만든 비교 응답 그대로(FE5-c1 시나리오 보기 모드가 같은 캐시로 Detail을 그린다).
+  final PlanningScenarioComparisonResult result;
+
+  /// 비교의 A 문서(활성 계획). 보기 모드의 단계 맞춤(FD-039)에 쓴다. 넘기지 않았으면 null.
+  final PlanningDocument? activeDocument;
+
   /// [shortages]를 분야별로 묶는다(분야 순서 = [PlanScenarioResourceField] 순서, 분야 안은 부족량 큰 순).
   List<(PlanScenarioResourceField, List<PlanScenarioPreviewShortage>)>
   get shortageGroups => [
@@ -254,6 +262,7 @@ class PlanScenarioPreview {
     required PlanningScenarioRecord scenario,
     required PlanningScenarioComparisonResult result,
     required PlanScenarioAmountFormat format,
+    PlanningDocument? activeDocument,
   }) {
     final comparison = result.comparison;
     int? integer(String key) {
@@ -422,6 +431,8 @@ class PlanScenarioPreview {
       shortages: shortages,
       fields: fields,
       activeOnlyShortageKinds: activeOnly,
+      result: result,
+      activeDocument: activeDocument,
     );
   }
 }

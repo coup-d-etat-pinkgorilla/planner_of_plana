@@ -11,7 +11,12 @@
 // - S3 미리보기(오른쪽 사다리꼴, FE5-b): 고른 행마다 `getScenario` + `compareScenarios(활성, 시나리오)`를 한 번 부르고
 //   (시나리오 · 활성 · 프로필 revision 키 캐시, FD-089) 활성 계획 대비 KPI · 학생·단계 차이 · 분야별 부족 · 부족 재화
 //   팝오버(FD-090)를 보인다. 내용은 [PlanScenarioPreviewLayer](`plan_scenario_preview.dart`)가 그린다.
-// 행 액션: 열기(시나리오 보기 화면 FE5-c 전까지 비활성) · 비교에 담기/빼기 · 복제 · 이름·설명(모달) · 삭제(확인 모달).
+// 행 액션: 열기(FE5-c1 시나리오 보기 모드) · 비교에 담기/빼기 · 복제 · 이름·설명(모달) · 삭제(확인 모달).
+// - 보기 모드(FE5-c1): [PlanScenarioListSection.viewingScenarioId]가 있으면 같은 위젯이 Detail 3섹션
+//   ([PlanDetailWorkspace], `plan_scenario_detail.dart`)을 그린다. 위젯이 그대로 남으므로 미리보기 캐시(FD-089)를
+//   그대로 쓴다(열기 전 펼친 행의 비교 응답). 열기 · 뒤로의 섹션 모션은 계획 화면이 맡는다.
+// - 계획에 적용…(FD-088): 2선택 모달(페이즈로 추가 / 이걸로 바꾸기, 기존 활성은 시나리오로 자동 보존 FD-067) 뒤
+//   [PlanScenarioListSection.onApplyScenario]를 부른다. 계획 화면이 FE4-e 저장 경로(계획 만들기 4단계)를 그 위치로 연다.
 // 서비스는 이미 있는 `duplicateScenario`·`updateScenario`·`deleteScenario`를 쓴다(이름·설명은 `getScenario`로 문서를
 // 읽어 그대로 보내고 authoring은 생략해 보존한다). 바뀌면 목록을 다시 읽는다.
 // 좌표는 시안(기준 viewport, 섹션 위 y=209.2)의 값이고, 섹션 rect는 Studio 문서를 따른다.
@@ -38,7 +43,9 @@ import '../kit/scroll_viewport_fog.dart';
 import '../kit/skew_box.dart';
 import '../kit/skew_controls.dart';
 import '../kit/titles.dart';
-import '../models/plan_flow_save.dart' show planFlowSaveErrorCode;
+import '../models/plan_flow_save.dart'
+    show PlanFlowSaveTarget, planFlowSaveErrorCode;
+import '../models/plan_scenario_detail.dart';
 import '../models/plan_scenario_list_state.dart';
 import '../models/plan_scenario_preview.dart';
 import '../models/planning_models.dart';
@@ -46,6 +53,7 @@ import '../models/planning_resource_assets.dart';
 import '../studio/plan_scenario_list_studio_layout.dart';
 import 'growth_calculator_section.dart'
     show growthCalculatorCompactNumber, growthCalculatorNumber;
+import 'plan_scenario_detail.dart';
 import 'plan_scenario_preview.dart';
 import 'plan_section_layout.dart' show PlanSectionMotion;
 import 'section_surface.dart';
@@ -226,6 +234,11 @@ class PlanScenarioListSection extends StatefulWidget {
     this.onOpenPresets,
     this.onCompare,
     this.controller,
+    this.viewingScenarioId,
+    this.onOpenScenario,
+    this.onCloseScenario,
+    this.onEditScenario,
+    this.onApplyScenario,
   });
 
   final PlanningScenarioRepositoryService service;
@@ -260,6 +273,27 @@ class PlanScenarioListSection extends StatefulWidget {
   /// 없으면 화면이 직접 만든다(테스트·golden이 상태를 미리 정할 때 넘긴다).
   final PlanScenarioListController? controller;
 
+  /// 보기 모드로 연 시나리오(FE5-c1). null이면 목록이다.
+  final String? viewingScenarioId;
+
+  /// 열기(행 액션 · S3 "열기"). null이면 열기가 꺼진다.
+  final ValueChanged<String>? onOpenScenario;
+
+  /// 보기 모드 S1 "시나리오 목록"(목록으로 돌아가기).
+  final VoidCallback? onCloseScenario;
+
+  /// 보기 모드 S1 "페이즈 편집": 시나리오(문서 + authoring)와 목록 revision.
+  final void Function(PlanningScenarioRecord scenario, int collectionRevision)?
+  onEditScenario;
+
+  /// 계획에 적용…(FD-088): 시나리오, 목록 revision, 고른 위치(페이즈로 추가 / 이걸로 바꾸기).
+  final void Function(
+    PlanningScenarioRecord scenario,
+    int collectionRevision,
+    PlanFlowSaveTarget target,
+  )?
+  onApplyScenario;
+
   @override
   State<PlanScenarioListSection> createState() =>
       _PlanScenarioListSectionState();
@@ -275,6 +309,10 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
   final _searchController = TextEditingController();
   final _renameModal = BaModalController();
   final _deleteModal = BaModalController();
+  final _applyModal = BaModalController();
+
+  /// 보기 모드에서 고른 병목 카드(0부터). 시안처럼 처음에는 병목 1이다.
+  int? _selectedCard = 0;
   final _renameName = TextEditingController();
   final _renameDescription = TextEditingController();
   PlanningScenarioSummary? _renameTarget;
@@ -307,6 +345,9 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
       _state.addListener(_listChanged);
     }
     if (oldWidget.profileId != widget.profileId) _load();
+    if (oldWidget.viewingScenarioId != widget.viewingScenarioId) {
+      _selectedCard = 0;
+    }
     // 비교의 A 문서가 바뀌면(같은 revision이라도) 캐시를 버린다(FD-089 키 밖의 입력).
     if (!identical(oldWidget.activeDocument, widget.activeDocument) ||
         !identical(oldWidget.repositoryState, widget.repositoryState)) {
@@ -323,6 +364,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
     _searchController.dispose();
     _renameModal.dispose();
     _deleteModal.dispose();
+    _applyModal.dispose();
     _renameName.dispose();
     _renameDescription.dispose();
     super.dispose();
@@ -343,9 +385,9 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
       widget.activeDocument != null &&
       widget.repositoryState != null;
 
-  /// 고른 행(펼친 행)의 미리보기 키를 정한다(FD-089). 고른 행이 없거나 비교할 수 없으면 null.
+  /// 고른 행(펼친 행, 보기 모드면 연 시나리오)의 미리보기 키를 정한다(FD-089). 없거나 비교할 수 없으면 null.
   void _syncPreview() {
-    final id = _state.expandedId;
+    final id = widget.viewingScenarioId ?? _state.expandedId;
     PlanningScenarioSummary? selected;
     for (final scenario
         in _result?.scenarios ?? const <PlanningScenarioSummary>[]) {
@@ -389,6 +431,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
       scenario: loaded.scenario,
       result: result,
       format: planScenarioPreviewAmount,
+      activeDocument: active,
     );
   }
 
@@ -569,9 +612,65 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
     widget.onCompare?.call(List.unmodifiable(ids));
   }
 
+  /// 열 수 있다(활성 계획과 비교할 수 있고 계획 화면이 열기를 받는다). 보기 모드는 미리보기와 같은 비교 응답을 쓴다.
+  bool get _canOpen => _comparable && widget.onOpenScenario != null;
+
+  void _open(String scenarioId) {
+    final open = widget.onOpenScenario;
+    if (open == null || !_canOpen || _busy || !widget.active) return;
+    open(scenarioId);
+  }
+
+  /// 계획에 적용…을 쓸 수 있다: 저장된 활성 계획이 있고 지금 시나리오의 비교를 읽었다.
+  bool get _canApply =>
+      widget.onApplyScenario != null &&
+      widget.activePlan != null &&
+      _result != null &&
+      _previewLoader.preview != null;
+
+  void _openApply() {
+    if (!_canApply || _busy || !widget.active) return;
+    _applyModal.open();
+  }
+
+  /// 2선택 중 하나를 골랐다. 계획 화면이 FE4-e 저장 경로를 그 위치로 연다.
+  void _apply(PlanFlowSaveTarget target) {
+    final preview = _previewLoader.preview;
+    final result = _result;
+    final apply = widget.onApplyScenario;
+    _applyModal.close();
+    if (preview == null || result == null || apply == null) return;
+    apply(preview.scenario, result.revision, target);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final workspace = LayoutBuilder(
+    final viewing = widget.viewingScenarioId;
+    final Widget workspace = viewing != null
+        ? _detail(viewing)
+        : _listWorkspace();
+    return BaModal(
+      controller: _applyModal,
+      scrim: BaScrim.anchored,
+      label: '계획에 적용',
+      builder: _applyPanel,
+      child: BaModal(
+        controller: _deleteModal,
+        scrim: BaScrim.anchored,
+        label: '시나리오 지우기',
+        builder: _deletePanel,
+        child: BaModal(
+          controller: _renameModal,
+          scrim: BaScrim.anchored,
+          label: '시나리오 이름 · 설명',
+          builder: _renamePanel,
+          child: workspace,
+        ),
+      ),
+    );
+  }
+
+  Widget _listWorkspace() => LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(
           constraints.maxWidth,
@@ -615,19 +714,143 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
         );
       },
     );
-    return BaModal(
-      controller: _deleteModal,
-      scrim: BaScrim.anchored,
-      label: '시나리오 지우기',
-      builder: _deletePanel,
-      child: BaModal(
-        controller: _renameModal,
-        scrim: BaScrim.anchored,
-        label: '시나리오 이름 · 설명',
-        builder: _renamePanel,
-        child: workspace,
+
+  // --- 보기 모드(FE5-c1) -------------------------------------------------------
+
+  Widget _detail(String scenarioId) {
+    final result = _result;
+    final summary = (result?.scenarios ?? const <PlanningScenarioSummary>[])
+        .where((scenario) => scenario.id == scenarioId)
+        .firstOrNull;
+    final preview = _previewLoader.preview;
+    final data =
+        _comparable &&
+            _previewLoader.status == PlanScenarioPreviewStatus.ready &&
+            preview != null &&
+            preview.scenario.id == scenarioId
+        ? planScenarioDetailData(preview, format: planScenarioPreviewAmount)
+        : null;
+    final enabled = widget.active && !_busy;
+    final edit = widget.onEditScenario;
+    final stale =
+        summary != null &&
+        result != null &&
+        planScenarioIsStale(summary, result.currentProfileRevision);
+    return PlanDetailWorkspace(
+      key: const ValueKey('plan-scenario-detail-view'),
+      keyPrefix: 'plan-scenario-detail',
+      animation: widget.animation,
+      data: data,
+      studentName: _studentName,
+      selectedCard: _selectedCard,
+      onSelectCard: enabled
+          ? (index) => setState(() => _selectedCard = index)
+          : null,
+      shortageKpi: data == null || preview == null
+          ? null
+          : (tile) => planScenarioShortageFlyout(
+              key: const ValueKey('plan-scenario-detail-shortage-flyout'),
+              preview: preview,
+              child: tile,
+            ),
+      placeholder: _detailState(summary),
+      menuBuilder: (frame) => PlanScenarioDetailMenu(
+        key: const ValueKey('plan-scenario-detail-menu'),
+        frame: frame,
+        name: summary?.name ?? preview?.scenario.name ?? '—',
+        students: summary?.studentCount,
+        phases: summary?.phaseCount,
+        stages: summary?.stageCount,
+        savedLabel: summary == null ? '—' : _savedLabel(summary.updatedAt),
+        stale: stale,
+        compared: _state.isCompared(scenarioId),
+        compareCount: _state.compareCount,
+        compareCapacity: planScenarioCompareCapacity,
+        onRefresh: enabled && _comparable ? _previewLoader.invalidate : null,
+        onBack: enabled ? widget.onCloseScenario : null,
+        onEdit:
+            enabled &&
+                edit != null &&
+                data != null &&
+                preview != null &&
+                result != null
+            ? () => edit(preview.scenario, result.revision)
+            : null,
+        onDuplicate: enabled && summary != null
+            ? () => _duplicate(summary)
+            : null,
+        onToggleCompare: enabled && summary != null
+            ? () => _toggleCompare(scenarioId)
+            : null,
+        onApply: enabled && data != null && _canApply ? _openApply : null,
       ),
     );
+  }
+
+  /// 보기 모드에서 비교를 아직 그릴 수 없을 때(목록 · 비교를 읽는 중, 실패, 비교할 수 없음, 지워진 시나리오).
+  Widget _detailState(PlanningScenarioSummary? summary) {
+    final error = _previewLoader.error;
+    if (_result == null ||
+        (summary != null &&
+            _comparable &&
+            _previewLoader.status != PlanScenarioPreviewStatus.failed)) {
+      return const Row(
+        key: ValueKey('plan-scenario-detail-loading'),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox.square(
+            dimension: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          SizedBox(width: 10),
+          Text('활성 계획과 비교하는 중입니다.', style: _muted),
+        ],
+      );
+    }
+    if (summary == null) {
+      return const Text(
+        '이 시나리오를 찾지 못했습니다. 시나리오 목록으로 돌아가 주십시오.',
+        key: ValueKey('plan-scenario-detail-missing'),
+        style: _muted,
+      );
+    }
+    if (!_comparable) {
+      return const Text(
+        '활성 계획과 비교할 수 없습니다.',
+        key: ValueKey('plan-scenario-detail-unavailable'),
+        style: _muted,
+      );
+    }
+    return Column(
+      key: const ValueKey('plan-scenario-detail-error'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '활성 계획과 비교하지 못했습니다'
+          '${error == null ? '' : '(${planFlowSaveErrorCode(error)})'}.',
+          style: _muted.copyWith(color: AppColors.danger),
+        ),
+        const SizedBox(height: 8),
+        TonalButton(
+          key: const ValueKey('plan-scenario-detail-retry'),
+          label: '다시 읽기',
+          icon: Icons.refresh_rounded,
+          height: 28,
+          horizontalPadding: 10,
+          fontSize: AppType.bodySmallSize,
+          onPressed: _previewLoader.retry,
+        ),
+      ],
+    );
+  }
+
+  /// 저장 시각(시안 `9.22 23:10`). 읽지 못하면 —.
+  static String _savedLabel(String updatedAt) {
+    final parsed = DateTime.tryParse(updatedAt);
+    if (parsed == null) return '—';
+    final local = parsed.toLocal();
+    String two(int value) => value.toString().padLeft(2, '0');
+    return '${local.month}.${local.day} ${two(local.hour)}:${two(local.minute)}';
   }
 
   // --- S1 메뉴 --------------------------------------------------------------
@@ -1059,7 +1282,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
             ),
             InfoPopoverText.em('비교할 계획'),
             const TextSpan(
-              text: '에 담깁니다(활성 계획을 포함해 최대 4). 시나리오 보기(열기)는 아직 열 수 없습니다.',
+              text: '에 담깁니다(활성 계획을 포함해 최대 4). 열기를 누르면 그 시나리오를 활성 계획과 비교해 봅니다.',
             ),
           ]),
         ],
@@ -1215,6 +1438,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
           compared: compared,
           onTap: enabled ? () => _state.toggleExpanded(scenario.id) : null,
           onToggleCompare: enabled ? () => _toggleCompare(scenario.id) : null,
+          onOpen: enabled && _canOpen ? () => _open(scenario.id) : null,
           onDuplicate: enabled ? () => _duplicate(scenario) : null,
           onRename: enabled ? () => _openRename(scenario) : null,
           onDelete: enabled ? () => _openDelete(scenario) : null,
@@ -1295,6 +1519,13 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
             onToggleCompare: selectedId == null || _busy || !widget.active
                 ? null
                 : () => _toggleCompare(selectedId),
+            onOpen:
+                selectedId == null || _busy || !widget.active || !_canOpen
+                ? null
+                : () => _open(selectedId),
+            onApply: selectedId == null || _busy || !widget.active || !_canApply
+                ? null
+                : _openApply,
           ),
         ),
       ],
@@ -1355,6 +1586,104 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
       ),
     ),
   );
+
+  /// 계획에 적용…(FD-088) 2선택. 고르면 계획 만들기 4단계(FE4-e 저장)가 그 위치로 열린다.
+  Widget _applyPanel(BuildContext context) {
+    final name = _previewLoader.preview?.scenario.name ?? '';
+    Widget choice({
+      required String key,
+      required IconData icon,
+      required String title,
+      required String detail,
+      required PlanFlowSaveTarget target,
+    }) => RailButton(
+      key: ValueKey(key),
+      height: 58,
+      onPressed: _busy ? null : () => _apply(target),
+      child: Row(
+        children: [
+          Icon(icon),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: AppType.bodyLargeSize,
+                    fontWeight: AppType.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  detail,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: AppType.captionSize,
+                    fontWeight: AppType.medium,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    return Material(
+      type: MaterialType.transparency,
+      child: BaModalPanel.dialog(
+        key: const ValueKey('plan-scenario-apply-modal'),
+        width: 480,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const TileTitle('계획에 적용'),
+            const SizedBox(height: 12),
+            Text(
+              '"$name" 시나리오를 활성 계획에 어떻게 넣을지 고릅니다. 고르면 계획 만들기 4단계에서 활성 계획과의 비교를 '
+              '보고 저장합니다.',
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 14),
+            choice(
+              key: 'plan-scenario-apply-append',
+              icon: Icons.playlist_add_rounded,
+              title: PlanFlowSaveTarget.appendPhases.label,
+              detail: '지금 활성 계획 뒤에 이 시나리오의 페이즈를 붙입니다.',
+              target: PlanFlowSaveTarget.appendPhases,
+            ),
+            const SizedBox(height: 8),
+            choice(
+              key: 'plan-scenario-apply-replace',
+              icon: Icons.swap_horiz_rounded,
+              title: PlanFlowSaveTarget.replace.label,
+              detail: '지금 활성 계획은 시나리오로 옮겨 둡니다.',
+              target: PlanFlowSaveTarget.replace,
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TonalButton(
+                  key: const ValueKey('plan-scenario-apply-cancel'),
+                  label: '그만두기',
+                  variant: TonalButtonVariant.ghost,
+                  onPressed: _applyModal.close,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _deletePanel(BuildContext context) {
     final target = _deleteTarget;
@@ -2182,7 +2511,7 @@ class PlanScenarioListRow extends StatelessWidget {
         icon: Icons.visibility_outlined,
         tone: _RowActionTone.primary,
         onPressed: onOpen,
-        tooltip: onOpen == null ? '시나리오 보기 화면은 아직 열 수 없습니다.' : null,
+        tooltip: onOpen == null ? planScenarioOpenUnavailable : null,
       ),
       const SizedBox(width: 10),
       _RowAction(

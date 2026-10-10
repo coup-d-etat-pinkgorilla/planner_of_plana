@@ -14,7 +14,9 @@ import '../models/plan_flow_draft.dart';
 import '../models/plan_flow_save.dart'
     show
         PlanFlowSaveOutcome,
+        PlanFlowSaveTarget,
         planFlowAuthoringReasonText,
+        planFlowFulfillment,
         planFlowIncorporateScenario,
         planFlowSaveErrorCode;
 import '../models/planning_models.dart';
@@ -28,6 +30,7 @@ import 'diagonal_flow_indicator.dart';
 import 'diagonal_media_list_item.dart';
 import 'lifted_path_shadow.dart';
 import 'plan_element_builder.dart';
+import 'plan_flow_save_step.dart' show planFlowSavePercent;
 import 'plan_flow_workspace.dart';
 import 'plan_phase_editor.dart';
 import 'plan_preset_manager.dart';
@@ -103,9 +106,8 @@ enum PlanResourceSort {
 typedef PlanResourceToggle =
     void Function(String resourceKey, Set<String> stageKeys);
 
-const planPrimaryBottleneckOwned = 42;
-const planPrimaryBottleneckRequired = 60;
-const planPrimaryBottleneckStudentCount = 3;
+// FE5-c1: 요약 행 3종의 숫자(보유 · 필요 · 학생 수 · 충족률 등)는 상수가 아니라 화면 목록의 projection이다
+// ([PlanResourceSummaryProjection]). 아래 이름 · 아이콘 상수는 계산 전 견본 목록(dummy)과 아이콘 대체값이 쓴다.
 const planPrimaryBottleneckItemId = 'Item_Icon_Material_Nebra_2';
 // Canonical display names follow the v6 item-id catalogs. Opart icon suffixes
 // are zero-based rarity indices, while equipment TierN suffixes are 1-based.
@@ -113,28 +115,10 @@ const planPrimaryBottleneckItemName = '마모된 네브라 디스크';
 const planPrimaryBottleneckIconAsset =
     '${GameAssets.itemIconDirectory}/ooparts/Item_Icon_Material_Nebra_2.png';
 const planPrimaryBottleneckBackgroundAsset = GameAssets.itemBackgroundYellow;
-const planPrimaryBottleneckStudentIds = {'azusa', 'nonomi', 'haruka'};
-const planPhaseShortageOwned = 42;
-const planPhaseShortageRequired = 60;
-const planPhaseShortageNumber = 2;
-const planPhaseShortageStudentCount = 4;
-const planPhaseShortageCompletableCount = 1;
 const planPhaseShortageItemName = '온전한 안티키테라 장치';
 const planPhaseShortageIconAsset =
     '${GameAssets.itemIconDirectory}/ooparts/Item_Icon_Material_Antikythera_3.png';
 const planPhaseShortageBackgroundAsset = GameAssets.itemBackgroundPurple;
-const planPhaseShortageStudentIds = {'yuuka'};
-const planOverallProgressPercent = 72;
-const planOverallShortageKindCount = 14;
-const planOverallAffectedPlanCount = 6;
-const planOverallAffectedStudentIds = {
-  'shiroko',
-  'hoshino',
-  'serika',
-  'haruka',
-  'nonomi',
-  'azusa',
-};
 const planBottleneckContainerScale = 0.95;
 const planBottleneckContainerTopRatio = 0.025;
 const planCreditIconAsset = GameAssets.creditIcon;
@@ -1337,6 +1321,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   bool _showStudentSelector = false;
   bool _switchingStudentSelector = false;
   bool _showScenarioList = false;
+
+  /// 시나리오 목록에서 연 시나리오(FE5-c1 보기 모드). 목록 위젯이 같은 자리에서 Detail 3섹션을 그린다.
+  String? _viewingScenarioId;
   bool _showScenarioComparison = false;
   bool _switchingScenarioWorkspace = false;
 
@@ -1794,6 +1781,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     _showPresetManager = false;
     _showStudentSelector = false;
     _showScenarioList = false;
+    _viewingScenarioId = null;
     _showScenarioComparison = false;
     _scenarioListController.value = 0;
     for (final controller in _controllers.values) {
@@ -2084,6 +2072,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       if (!mounted || _flow != null || _handoffPending) return;
       setState(() {
         _showScenarioList = !comparison;
+        _viewingScenarioId = null;
         _showScenarioComparison = comparison;
         _comparisonInitialIds = const [];
       });
@@ -2112,6 +2101,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       if (!mounted) return;
       setState(() {
         _showScenarioList = false;
+        _viewingScenarioId = null;
         _showScenarioComparison = false;
         _comparisonInitialIds = const [];
       });
@@ -2145,6 +2135,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       if (!mounted || _flow != null || !_showScenarioList) return;
       setState(() {
         _showScenarioList = false;
+        _viewingScenarioId = null;
         _flow = PlanFlowController(
           purpose: PlanFlowPurpose.newScenario,
           context: flowContext,
@@ -2166,6 +2157,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       if (!mounted || _flow != null || !_showScenarioList) return;
       setState(() {
         _showScenarioList = false;
+        _viewingScenarioId = null;
         _showPresetManager = true;
       });
     } finally {
@@ -2191,6 +2183,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       }
       setState(() {
         _showScenarioList = false;
+        _viewingScenarioId = null;
         _showScenarioComparison = true;
         _comparisonInitialIds = List.unmodifiable([
           'active-plan',
@@ -2199,6 +2192,112 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       });
       _controllers['element-1']!.forward(from: 0);
       _scenarioListController.forward(from: 0);
+    } finally {
+      if (mounted) setState(() => _switchingScenarioWorkspace = false);
+    }
+  }
+
+  /// 시나리오 목록 "열기"(FE5-c1): 같은 목록 위젯을 그 시나리오의 읽기 전용 보기 모드로 바꾼다. 3섹션이 나가고
+  /// 들어오는 모션만 다시 튼다(미리보기 캐시를 가진 목록 위젯은 그대로 남는다).
+  Future<void> _openScenarioView(String scenarioId) =>
+      _switchScenarioView(scenarioId);
+
+  /// 보기 모드 S1 "시나리오 목록": 목록으로 돌아간다.
+  Future<void> _closeScenarioView() => _switchScenarioView(null);
+
+  Future<void> _switchScenarioView(String? scenarioId) async {
+    if (!_showScenarioList ||
+        _switchingScenarioWorkspace ||
+        _flow != null ||
+        _viewingScenarioId == scenarioId) {
+      return;
+    }
+    setState(() => _switchingScenarioWorkspace = true);
+    try {
+      // 퇴장 Future를 기다리지 않는다(도중에 멈추면 끝나지 않는다). 모션 시간만 기다린다.
+      _scenarioListController.reverse(from: _scenarioListController.value);
+      await Future<void>.delayed(_motionDuration);
+      if (!mounted || _flow != null || _handoffPending || !_showScenarioList) {
+        return;
+      }
+      setState(() => _viewingScenarioId = scenarioId);
+      _scenarioListController.forward(from: 0);
+    } finally {
+      if (mounted) setState(() => _switchingScenarioWorkspace = false);
+    }
+  }
+
+  /// 보기 모드 S1 "페이즈 편집": 시나리오 비교 "편집"과 같은 길(계획 만들기 3단계, FE4-f1 복원)로 연다.
+  Future<void> _editScenarioFromView(
+    PlanningScenarioRecord scenario,
+    int collectionRevision,
+  ) => _openFlowFromView(
+    scenario,
+    collectionRevision,
+    initialStep: PlanFlowStep.order,
+  );
+
+  /// 계획에 적용…(FD-088): 시나리오를 초안으로 계획 만들기 4단계(FE4-e 저장)를 [target] 위치로 연다. 저장 · 비교 ·
+  /// revision 확인 · 다시 보내기는 FE4-e 그대로다(이걸로 바꾸기는 기존 활성 계획을 시나리오로 옮겨 둔다, FD-067).
+  /// 시나리오 단계 순서에 고칠 점이 있어 4단계에 들어갈 수 없으면 3단계로 연다.
+  Future<void> _applyScenarioFromView(
+    PlanningScenarioRecord scenario,
+    int collectionRevision,
+    PlanFlowSaveTarget target,
+  ) => _openFlowFromView(
+    scenario,
+    collectionRevision,
+    initialStep: PlanFlowStep.save,
+    saveTarget: target,
+  );
+
+  Future<void> _openFlowFromView(
+    PlanningScenarioRecord scenario,
+    int collectionRevision, {
+    required PlanFlowStep initialStep,
+    PlanFlowSaveTarget? saveTarget,
+  }) async {
+    if (!_showScenarioList ||
+        _switchingScenarioWorkspace ||
+        _flow != null ||
+        _handoffPending) {
+      return;
+    }
+    setState(() => _switchingScenarioWorkspace = true);
+    try {
+      // final로 받아야 아래 setState 클로저 안에서도 null이 아님이 유지된다.
+      final flowContext = await _flowContextOrNull();
+      if (flowContext == null || !mounted || _flow != null) return;
+      _scenarioListController.reverse(from: _scenarioListController.value);
+      await Future<void>.delayed(_motionDuration);
+      if (!mounted || _flow != null || _handoffPending || !_showScenarioList) {
+        return;
+      }
+      PlanFlowController open(PlanFlowStep step) => PlanFlowController(
+        purpose: PlanFlowPurpose.editScenario,
+        context: flowContext,
+        service: widget.service,
+        initialDraft: PlanFlowDocumentBoundary.fromDocument(
+          scenario.document,
+          seedFor: flowContext.seedFor,
+          authoring: scenario.authoring,
+        ),
+        initialStep: step,
+        initialSaveTarget: saveTarget,
+        scenario: scenario,
+        scenarioCollectionRevision: collectionRevision,
+      );
+      var flow = open(initialStep);
+      if (initialStep == PlanFlowStep.save && !flow.orderReady) {
+        flow.dispose();
+        flow = open(PlanFlowStep.order);
+      }
+      final opened = flow;
+      setState(() {
+        _showScenarioList = false;
+        _viewingScenarioId = null;
+        _flow = opened;
+      });
     } finally {
       if (mounted) setState(() => _switchingScenarioWorkspace = false);
     }
@@ -2817,6 +2916,12 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                     onSelected: _selectResourceView,
                     highlightedStudentIds: _highlightedStudentIds,
                     onHighlightStudents: _toggleHighlightedStudents,
+                    summary: PlanResourceSummaryProjection.of(
+                      bottlenecks: _bottleneckDetails,
+                      phases: _phaseConsumptions,
+                      overall: _overallConsumption,
+                      planPhases: _planPhases,
+                    ),
                   ),
                 ],
               ),
@@ -3330,6 +3435,15 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                       widget.service is PlanningScenarioComparisonService &&
                           _document != null
                       ? _compareFromList
+                      : null,
+                  viewingScenarioId: _viewingScenarioId,
+                  onOpenScenario: _openScenarioView,
+                  onCloseScenario: _closeScenarioView,
+                  onEditScenario: _editScenarioFromView,
+                  onApplyScenario:
+                      widget.service is RepositoryPlanService &&
+                          _repositoryPlan != null
+                      ? _applyScenarioFromView
                       : null,
                 ),
               ),
@@ -5731,8 +5845,11 @@ class PlanResourceHeader extends StatefulWidget {
     required this.onSelected,
     required this.highlightedStudentIds,
     required this.onHighlightStudents,
+    this.summary = PlanResourceSummaryProjection.empty,
   });
 
+  /// 요약 행 3종의 값(FE5-c1, 화면 목록의 projection).
+  final PlanResourceSummaryProjection summary;
   final PlanResourceView selected;
   final ValueChanged<PlanResourceView> onSelected;
   final Set<String> highlightedStudentIds;
@@ -5744,12 +5861,17 @@ class PlanResourceHeader extends StatefulWidget {
 
 class _PlanResourceHeaderState extends State<PlanResourceHeader> {
   bool _isHighlighted(Set<String> studentIds) =>
+      studentIds.isNotEmpty &&
       widget.highlightedStudentIds.length == studentIds.length &&
       widget.highlightedStudentIds.every(studentIds.contains);
 
   void _toggle(Set<String> studentIds) => widget.onHighlightStudents(
     _isHighlighted(studentIds) ? const {} : studentIds,
   );
+
+  /// 강조할 학생이 없으면 누를 수 없다.
+  VoidCallback? _toggler(Set<String> studentIds) =>
+      studentIds.isEmpty ? null : () => _toggle(studentIds);
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -5812,18 +5934,29 @@ class _PlanResourceHeaderState extends State<PlanResourceHeader> {
                 ),
                 child: switch (widget.selected) {
                   PlanResourceView.bottleneck => PlanPrimaryBottleneckSummary(
+                    projection: widget.summary.bottleneck,
                     highlighted: _isHighlighted(
-                      planPrimaryBottleneckStudentIds,
+                      widget.summary.bottleneck?.studentIds ?? const {},
                     ),
-                    onTap: () => _toggle(planPrimaryBottleneckStudentIds),
+                    onTap: _toggler(
+                      widget.summary.bottleneck?.studentIds ?? const {},
+                    ),
                   ),
                   PlanResourceView.byPhase => PlanPhaseResourceSummary(
-                    highlighted: _isHighlighted(planPhaseShortageStudentIds),
-                    onTap: () => _toggle(planPhaseShortageStudentIds),
+                    projection: widget.summary.phase,
+                    highlighted: _isHighlighted(
+                      widget.summary.phase?.studentIds ?? const {},
+                    ),
+                    onTap: _toggler(
+                      widget.summary.phase?.studentIds ?? const {},
+                    ),
                   ),
                   PlanResourceView.overall => PlanOverallResourceSummary(
-                    highlighted: _isHighlighted(planOverallAffectedStudentIds),
-                    onTap: () => _toggle(planOverallAffectedStudentIds),
+                    projection: widget.summary.overall,
+                    highlighted: _isHighlighted(
+                      widget.summary.overall.studentIds,
+                    ),
+                    onTap: _toggler(widget.summary.overall.studentIds),
                   ),
                 },
               ),
@@ -5935,83 +6068,378 @@ class _PlanResourceTab extends StatelessWidget {
   }
 }
 
+/// 스테이지 키(`phase:student:step`)의 학생.
+String _stageKeyStudent(String key) {
+  final parts = key.split(':');
+  return parts.length >= 3 ? parts[parts.length - 2] : key;
+}
+
+/// 요약 행 "가장 심한 병목 요소"(FE5-c1): 화면 병목 목록의 첫 병목(문서 순서) · 그 첫 재화.
+@immutable
+class PlanPrimaryBottleneckProjection {
+  const PlanPrimaryBottleneckProjection({
+    required this.name,
+    required this.owned,
+    required this.required,
+    required this.iconAsset,
+    required this.backgroundAsset,
+    required this.studentIds,
+  });
+
+  final String name;
+
+  /// 그 단계에 들어설 때 남은 양.
+  final int owned;
+
+  /// 그 단계 필요량.
+  final int required;
+  final String iconAsset;
+  final String backgroundAsset;
+
+  /// 확보하면 이어서 진행하는 학생(막힌 단계 학생 + 지연 단계 학생).
+  final Set<String> studentIds;
+}
+
+/// 요약 행 "가장 부족한 재화"(FE5-c1): 부족 재화가 있는 첫 페이즈에서 충족률(보유/필요)이 가장 낮은 재화.
+@immutable
+class PlanPhaseShortageProjection {
+  const PlanPhaseShortageProjection({
+    required this.name,
+    required this.owned,
+    required this.required,
+    required this.iconAsset,
+    required this.backgroundAsset,
+    required this.phaseNumber,
+    required this.studentCount,
+    required this.completableCount,
+    required this.studentIds,
+  });
+
+  final String name;
+
+  /// 그 페이즈에 들어설 때 보유.
+  final int owned;
+  final int required;
+  final String iconAsset;
+  final String backgroundAsset;
+
+  /// 페이즈 번호(1부터).
+  final int phaseNumber;
+
+  /// 그 페이즈의 학생 수.
+  final int studentCount;
+
+  /// 그 페이즈의 모자란 재화를 하나도 쓰지 않는 학생 수.
+  final int completableCount;
+
+  /// 이 재화를 쓰는 그 페이즈 학생(강조).
+  final Set<String> studentIds;
+}
+
+/// 요약 행 "전체 요구량"(FE5-c1): 충족률은 FD-031 (a)(재화별 min(보유, 필요)/필요 평균, 크레딧 포함, 보유를 모르는 재화는
+/// 빼고 [unknownKinds]로 센다). FE4-e 저장 비교 타일과 같은 함수([planFlowFulfillment])다.
+@immutable
+class PlanOverallProjection {
+  const PlanOverallProjection({
+    required this.rate,
+    required this.unknownKinds,
+    required this.shortageKinds,
+    required this.studentIds,
+  });
+
+  final double? rate;
+  final int unknownKinds;
+  final int shortageKinds;
+
+  /// 모자란 재화를 쓰는 학생.
+  final Set<String> studentIds;
+}
+
+/// 계획 홈 요약 행 3종(FE5-c1). 상수가 아니라 화면이 그리는 병목 · 페이즈별 · 전체 목록(문서 계산 projection에서 만든 것,
+/// 계산 전에는 견본 목록)에서 정한다.
+@immutable
+class PlanResourceSummaryProjection {
+  const PlanResourceSummaryProjection({
+    this.bottleneck,
+    this.phase,
+    required this.overall,
+  });
+
+  /// 목록이 비었을 때.
+  static const empty = PlanResourceSummaryProjection(
+    overall: PlanOverallProjection(
+      rate: null,
+      unknownKinds: 0,
+      shortageKinds: 0,
+      studentIds: {},
+    ),
+  );
+
+  /// 병목이 없으면 null.
+  final PlanPrimaryBottleneckProjection? bottleneck;
+
+  /// 모자란 재화가 있는 페이즈가 없으면 null.
+  final PlanPhaseShortageProjection? phase;
+  final PlanOverallProjection overall;
+
+  factory PlanResourceSummaryProjection.of({
+    required List<PlanBottleneckDetailPreview> bottlenecks,
+    required List<PlanConsumptionGroupPreview> phases,
+    required PlanConsumptionGroupPreview overall,
+    required List<PlanPhasePreview> planPhases,
+  }) {
+    PlanPrimaryBottleneckProjection? bottleneck;
+    if (bottlenecks.firstOrNull case final first?
+        when first.resources.isNotEmpty) {
+      final resource = first.resources.first;
+      bottleneck = PlanPrimaryBottleneckProjection(
+        name: resource.displayName,
+        owned: resource.remainingAtEntry,
+        required: resource.requiredAtEntry,
+        iconAsset: resource.iconAsset,
+        backgroundAsset:
+            resource.effectiveBackgroundAsset ?? planDefaultItemBackgroundAsset,
+        studentIds: {
+          first.focusStudentId,
+          for (final stage in first.delayedStages) stage.studentId,
+        },
+      );
+    }
+
+    PlanPhaseShortageProjection? phase;
+    for (final (index, group) in phases.indexed) {
+      final short = [
+        for (final (order, resource) in group.resources.indexed)
+          if (resource.isBottleneck) (order: order, resource: resource),
+      ];
+      if (short.isEmpty) continue;
+      short.sort((a, b) {
+        final ratio = a.resource.coverageRatio.compareTo(
+          b.resource.coverageRatio,
+        );
+        if (ratio != 0) return ratio;
+        final amount = b.resource.shortageAmount.compareTo(
+          a.resource.shortageAmount,
+        );
+        return amount != 0 ? amount : a.order.compareTo(b.order);
+      });
+      final top = short.first.resource;
+      final planPhase = planPhases
+          .where((candidate) => candidate.id == group.id)
+          .firstOrNull;
+      final students = planPhase != null
+          ? {for (final step in planPhase.steps) step.studentId}
+          : {
+              for (final resource in group.resources)
+                for (final key in resource.affectedStageKeys)
+                  _stageKeyStudent(key),
+            };
+      final stuck = {
+        for (final item in short)
+          for (final key in item.resource.affectedStageKeys)
+            _stageKeyStudent(key),
+      };
+      phase = PlanPhaseShortageProjection(
+        name: top.displayName,
+        owned: top.owned,
+        required: top.amount,
+        iconAsset: top.iconAsset,
+        backgroundAsset:
+            top.effectiveBackgroundAsset ?? planDefaultItemBackgroundAsset,
+        phaseNumber: index + 1,
+        studentCount: students.length,
+        completableCount: students
+            .where((student) => !stuck.contains(student))
+            .length,
+        studentIds: {
+          for (final key in top.affectedStageKeys) _stageKeyStudent(key),
+        },
+      );
+      break;
+    }
+
+    final fulfillment = planFlowFulfillment([
+      for (final resource in overall.resources)
+        {
+          'required_a': resource.amount,
+          'owned': resource.inventoryKnown ? resource.owned : null,
+        },
+    ], 'a');
+    final shortages = [
+      for (final resource in overall.resources)
+        if (resource.isBottleneck) resource,
+    ];
+    return PlanResourceSummaryProjection(
+      bottleneck: bottleneck,
+      phase: phase,
+      overall: PlanOverallProjection(
+        rate: fulfillment.rate,
+        unknownKinds: fulfillment.unknown,
+        shortageKinds: shortages.length,
+        studentIds: {
+          for (final resource in shortages)
+            for (final key in resource.affectedStageKeys)
+              _stageKeyStudent(key),
+        },
+      ),
+    );
+  }
+}
+
 class PlanPrimaryBottleneckSummary extends StatelessWidget {
   const PlanPrimaryBottleneckSummary({
     super.key,
+    required this.projection,
     required this.highlighted,
     required this.onTap,
   });
 
+  /// null이면 병목 없음.
+  final PlanPrimaryBottleneckProjection? projection;
   final bool highlighted;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => PlanResourceItemSummary(
-    keyPrefix: 'plan-primary-bottleneck',
-    semanticsLabel: '가장 심한 병목 요소, $planPrimaryBottleneckItemName',
-    kicker: '가장 심한 병목 요소',
-    quantity:
-        '보유량 : $planPrimaryBottleneckOwned / '
-        '필요량 : $planPrimaryBottleneckRequired',
-    detail:
-        '확보 시 학생 $planPrimaryBottleneckStudentCount명의 '
-        '목표 단계가 가능해집니다',
-    backgroundAsset: planPrimaryBottleneckBackgroundAsset,
-    iconAsset: planPrimaryBottleneckIconAsset,
-    highlighted: highlighted,
-    onTap: onTap,
-  );
+  Widget build(BuildContext context) {
+    final projection = this.projection;
+    if (projection == null) {
+      return PlanResourceItemSummary(
+        keyPrefix: 'plan-primary-bottleneck',
+        semanticsLabel: '가장 심한 병목 요소 없음',
+        kicker: '가장 심한 병목 요소',
+        quantity: '병목 없음',
+        detail: '알려진 보유로는 막히는 단계가 없습니다',
+        backgroundAsset: planDefaultItemBackgroundAsset,
+        iconAsset: null,
+        highlighted: highlighted,
+        onTap: onTap,
+      );
+    }
+    return PlanResourceItemSummary(
+      keyPrefix: 'plan-primary-bottleneck',
+      semanticsLabel: '가장 심한 병목 요소, ${projection.name}',
+      kicker: '가장 심한 병목 요소',
+      quantity:
+          '보유량 : ${formatPlanAmount(projection.owned)} / '
+          '필요량 : ${formatPlanAmount(projection.required)}',
+      detail:
+          '확보 시 학생 ${projection.studentIds.length}명의 '
+          '목표 단계가 가능해집니다',
+      backgroundAsset: projection.backgroundAsset,
+      iconAsset: projection.iconAsset,
+      highlighted: highlighted,
+      onTap: onTap,
+    );
+  }
 }
 
 class PlanPhaseResourceSummary extends StatelessWidget {
   const PlanPhaseResourceSummary({
     super.key,
+    required this.projection,
     required this.highlighted,
     required this.onTap,
   });
 
+  /// null이면 모자란 재화가 있는 페이즈가 없다.
+  final PlanPhaseShortageProjection? projection;
   final bool highlighted;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => PlanResourceItemSummary(
-    keyPrefix: 'plan-phase-shortage',
-    semanticsLabel: '가장 부족한 재화, $planPhaseShortageItemName',
-    kicker: '가장 부족한 재화',
-    quantity:
-        '보유량 : $planPhaseShortageOwned / '
-        '필요량 : $planPhaseShortageRequired',
-    detail:
-        '$planPhaseShortageNumber단계에서 '
-        '$planPhaseShortageStudentCount명 중 '
-        '$planPhaseShortageCompletableCount명만 완료 가능',
-    backgroundAsset: planPhaseShortageBackgroundAsset,
-    iconAsset: planPhaseShortageIconAsset,
-    highlighted: highlighted,
-    onTap: onTap,
-  );
+  Widget build(BuildContext context) {
+    final projection = this.projection;
+    if (projection == null) {
+      return PlanResourceItemSummary(
+        keyPrefix: 'plan-phase-shortage',
+        semanticsLabel: '가장 부족한 재화 없음',
+        kicker: '가장 부족한 재화',
+        quantity: '부족한 재화 없음',
+        detail: '알려진 보유로는 모든 페이즈를 마칠 수 있습니다',
+        backgroundAsset: planDefaultItemBackgroundAsset,
+        iconAsset: null,
+        highlighted: highlighted,
+        onTap: onTap,
+      );
+    }
+    return PlanResourceItemSummary(
+      keyPrefix: 'plan-phase-shortage',
+      semanticsLabel: '가장 부족한 재화, ${projection.name}',
+      kicker: '가장 부족한 재화',
+      quantity:
+          '보유량 : ${formatPlanAmount(projection.owned)} / '
+          '필요량 : ${formatPlanAmount(projection.required)}',
+      detail:
+          'P${projection.phaseNumber}에서 '
+          '${projection.studentCount}명 중 '
+          '${projection.completableCount}명만 완료 가능',
+      backgroundAsset: projection.backgroundAsset,
+      iconAsset: projection.iconAsset,
+      highlighted: highlighted,
+      onTap: onTap,
+    );
+  }
 }
 
 class PlanOverallResourceSummary extends StatelessWidget {
   const PlanOverallResourceSummary({
     super.key,
+    required this.projection,
     required this.highlighted,
     required this.onTap,
   });
 
+  final PlanOverallProjection projection;
   final bool highlighted;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final compact = constraints.maxHeight < 52;
+      final progress = '전체 요구량의 ${planFlowSavePercent(projection.rate)} 확보';
+      final impact = [
+        '${projection.shortageKinds}종 부족',
+        '${projection.studentIds.length}명의 성장 계획에 영향',
+        if (projection.unknownKinds > 0) '보유 모름 ${projection.unknownKinds}종',
+      ].join(' · ');
+      final content = Padding(
+        padding: EdgeInsets.symmetric(horizontal: compact ? 4 : 8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              progress,
+              key: const ValueKey('plan-overall-progress'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.text,
+                fontSize: compact ? 13 : 24,
+                height: 1,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            SizedBox(height: compact ? 3 : 10),
+            Text(
+              impact,
+              key: const ValueKey('plan-overall-impact'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: diagonalMediaHighlightColor,
+                fontSize: compact ? 8.5 : 15,
+                height: 1,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
       return Semantics(
-        label:
-            '전체 요구량의 $planOverallProgressPercent% 확보, '
-            '$planOverallShortageKindCount종 부족, '
-            '$planOverallAffectedPlanCount명의 성장 계획에 영향',
-        button: true,
+        label: '$progress, $impact',
+        button: onTap != null,
         selected: highlighted,
         child: Material(
           key: const ValueKey('plan-overall-summary'),
@@ -6021,41 +6449,7 @@ class PlanOverallResourceSummary extends StatelessWidget {
           child: InkWell(
             key: const ValueKey('plan-overall-action'),
             onTap: onTap,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: compact ? 4 : 8),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '전체 요구량의 $planOverallProgressPercent% 확보',
-                    key: const ValueKey('plan-overall-progress'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.text,
-                      fontSize: compact ? 13 : 24,
-                      height: 1,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  SizedBox(height: compact ? 3 : 10),
-                  Text(
-                    '$planOverallShortageKindCount종 부족 · '
-                    '$planOverallAffectedPlanCount명의 성장 계획에 영향',
-                    key: const ValueKey('plan-overall-impact'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: diagonalMediaHighlightColor,
-                      fontSize: compact ? 8.5 : 15,
-                      height: 1,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            child: content,
           ),
         ),
       );
@@ -6083,13 +6477,16 @@ class PlanResourceItemSummary extends StatelessWidget {
   final String quantity;
   final String detail;
   final String backgroundAsset;
-  final String iconAsset;
+
+  /// null이면 바탕만 보인다(요약할 재화가 없음).
+  final String? iconAsset;
   final bool highlighted;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
+      final iconAsset = this.iconAsset;
       final compact = constraints.maxHeight < 52;
       final iconHeight = constraints.maxHeight * 0.85;
       final iconWidth = iconHeight * 256 / 204;
@@ -6109,16 +6506,17 @@ class PlanResourceItemSummary extends StatelessWidget {
                     filterQuality: FilterQuality.medium,
                   ),
                 ),
-                FractionallySizedBox(
-                  widthFactor: 227 / 234,
-                  heightFactor: 181 / 190,
-                  child: Image.asset(
-                    iconAsset,
-                    key: ValueKey('$keyPrefix-icon'),
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.medium,
+                if (iconAsset != null)
+                  FractionallySizedBox(
+                    widthFactor: 227 / 234,
+                    heightFactor: 181 / 190,
+                    child: Image.asset(
+                      iconAsset,
+                      key: ValueKey('$keyPrefix-icon'),
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.medium,
+                    ),
                   ),
-                ),
               ],
             ),
           ),

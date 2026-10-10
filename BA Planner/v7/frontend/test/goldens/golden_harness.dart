@@ -1096,6 +1096,13 @@ Map<String, dynamic> goldenCalculationBand({
       });
     }
   }
+  // 백엔드(`planning_document.py`)처럼 병목마다 그 재화를 쓰는 모든 단계(문서 순서)를 붙인다(FE5-c1 지연 단계 · 단계
+  // 상태 FD-035).
+  for (final bottleneck in bottlenecks) {
+    bottleneck['affected_stage_ids'] = List<String>.unmodifiable(
+      usedBy[bottleneck['resource_key']] ?? const <String>[],
+    );
+  }
   final totalCredits = requiredSum['credits'] ?? 0;
   Map<String, dynamic> overallRow(String key) {
     final row = representative[key];
@@ -1198,6 +1205,29 @@ PlanningScenarioComparisonResult goldenComparisonBand({
   };
   final targetsA = finalTargets(documentA);
   final targetsB = finalTargets(documentB);
+  // 백엔드 `compare_document_projections`처럼 재화마다 처음 모자라는 페이즈 · 단계 · 부족량을 나란히 둔다(FE5-c1 병목 카드
+  // 활성 대비 칩).
+  Map<String, Map<String, dynamic>> firstBottlenecks(
+    Map<String, dynamic> projection,
+  ) => {
+    for (final raw in projection['bottlenecks'] as List)
+      (raw as Map)['resource_key'] as String: Map<String, dynamic>.from(raw),
+  };
+  final bottlenecksA = firstBottlenecks(projectionA);
+  final bottlenecksB = firstBottlenecks(projectionB);
+  final bottleneckRows = [
+    for (final key
+        in ({...bottlenecksA.keys, ...bottlenecksB.keys}.toList()..sort()))
+      {
+        'resource_key': key,
+        'first_phase_a': bottlenecksA[key]?['phase_number'],
+        'first_phase_b': bottlenecksB[key]?['phase_number'],
+        'first_stage_a': bottlenecksA[key]?['stage_id'],
+        'first_stage_b': bottlenecksB[key]?['stage_id'],
+        'shortage_a': bottlenecksA[key]?['shortage'] ?? 0,
+        'shortage_b': bottlenecksB[key]?['shortage'] ?? 0,
+      },
+  ];
   final creditsA = overallCredits(projectionA);
   final creditsB = overallCredits(projectionB);
   return PlanningScenarioComparisonResult(
@@ -1234,7 +1264,7 @@ PlanningScenarioComparisonResult goldenComparisonBand({
           },
       ],
       'resources': resources,
-      'bottlenecks': const <dynamic>[],
+      'bottlenecks': bottleneckRows,
     },
   );
 }

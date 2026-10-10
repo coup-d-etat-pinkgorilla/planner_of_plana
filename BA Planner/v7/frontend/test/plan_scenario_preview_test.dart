@@ -2,7 +2,8 @@
 //
 // - 모델: compare 응답 → KPI(모르는 값 null) · 학생 차이 칩 4종 · 부족 재화(큰 순) · 분야 다섯 줄 · 병목 위치 · 분야별 묶음.
 // - 캐시 · 늦은 응답: 같은 키는 한 번만 부르고, 다른 행을 고른 사이 늦게 온 응답은 지금 행을 덮지 않는다.
-// - S3 층: KPI · 학생 · 분야 행, 부족 재화 팝오버(키트 `GroupedShortageFlyout`), 열기 · 계획에 적용 꺼짐.
+// - S3 층: KPI · 학생 · 분야 행, 부족 재화 팝오버(키트 `GroupedShortageFlyout`), 콜백을 넘기지 않으면 열기 · 계획에 적용 꺼짐
+//   (FE5-c1부터 계획 화면은 넘긴다. 보기 모드 · 적용은 `plan_scenario_detail_test.dart`).
 // - 계획 화면: 행을 고르면 getScenario + compare 한 번, 접었다 다시 펼치면 캐시(부르지 않음).
 import 'dart:async';
 
@@ -549,7 +550,7 @@ void main() {
         '부족 없음',
       );
 
-      // 열기 · 계획에 적용은 꺼져 있고 비교에 담기만 동작한다.
+      // 열기 · 계획에 적용 콜백을 넘기지 않았으므로 꺼져 있고 비교에 담기만 동작한다.
       await tester.tap(
         find.byKey(const ValueKey('plan-scenario-preview-compare-toggle')),
       );

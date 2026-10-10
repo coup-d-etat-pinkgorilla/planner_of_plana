@@ -5304,3 +5304,160 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fb
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261010_220311\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: frontend/lib/services/process_app_service.dart, frontend/lib/services/mock_app_service.dart
+
+## FE5-c1 착수 기록 (2026-10-10 23:50, Lane A)
+
+- 상태: 진행 중. 시작 SHA = `18c5f0b0a14e95aaa48cbbb6e006db23f6b43f85`(scanner-consolidation HEAD).
+- 범위: 시나리오 보기 모드(열기 · 뒤로 · 다른 시나리오 열기) · Detail 3섹션 위젯(비교 KPI · delta를 끌 수 있게, c2 재사용) · 활성 대비 KPI 4개 · 병목 카드(같은 단계 묶음 · 지연 단계 · 카드 ↔ 단계 행 강조) · 요약 행 3종 projection · "계획에 적용…"(FD-088, FE4-e 저장 경로 재사용).
+- 막힘 요약의 이 slice 열림 FD 0건 확인. 워커 재량 FD-035 · FD-038 · FD-039 · FD-067 · FD-088은 권장안대로 처리한다.
+- 고칠 기존 파일(사본: `debug/frontend_fe5c1/pre/<경로>`):
+  - `frontend/lib/ui/widgets/plan_scenario_list.dart`
+  - `frontend/lib/ui/widgets/plan_scenario_preview.dart`
+  - `frontend/lib/ui/models/plan_scenario_preview.dart`
+  - `frontend/lib/ui/widgets/plan_section_layout.dart`
+  - `frontend/lib/ui/models/plan_flow_draft.dart`(흐름을 4단계 · 저장 위치를 미리 고른 채 여는 값 하나)
+  - `frontend/lib/ui/models/plan_flow_save.dart`(그 값을 첫 저장 위치로 쓰기)
+  - `frontend/test/goldens/golden_harness.dart`, `frontend/test/goldens/fe1g_baseline_golden_test.dart`
+  - `frontend/test/planning_page_test.dart`, `frontend/test/plan_scenario_list_test.dart`, `frontend/test/plan_scenario_preview_test.dart`
+- 새 파일(예정): `frontend/lib/ui/models/plan_scenario_detail.dart`, `frontend/lib/ui/widgets/plan_scenario_detail.dart`, `frontend/lib/ui/studio/plan_scenario_detail_studio_layout.dart`, `frontend/test/plan_scenario_detail_test.dart`.
+- 이 환경에는 flutter가 없다(정적 검토만 가능). `frontend/lib/services/**`는 고치지 않는다.
+
+## FE5-c1 종료 기록 (2026-10-11 01:08, Lane A)
+
+- 상태: 구현 끝, **정적 검토만 했다**. 이 환경에는 flutter · dart가 없다(pub.dev · storage.googleapis.com 접속 거절). analyze · 테스트 · golden은 한 번도 돌리지 않았다. 통과를 주장하지 않는다.
+- 시작 SHA `18c5f0b0`. 사본은 `debug/frontend_fe5c1/pre/`에 있다. `plan_scenario_list_test.dart` 사본도 두었지만 그 파일은 고치지 않았다(commit.json `modified`에 없음).
+- commit.json: `debug/frontend_fe5c1/commit.json`(slice=fe5c1, status=true, whole = 기준 이미지 6장, 하나씩).
+
+### 실행 명령 · 결과
+
+- `flutter analyze` · `flutter test`: 실행하지 못했다(SDK 없음).
+- 정적 검토 에이전트 1회(바뀐 파일 전부 · 새 테스트 기대값 손 계산): 확실한 컴파일 오류 1건. `plan_scenario_detail.dart`에서 반복문 안에서 `int?` 카운터를 `+= 1` 했다(반복 안에서는 null 승격이 풀린다). 지역 `var` 카운터로 세고 반복 뒤에 넣도록 고쳤다. lint 지적 · 남은 참조 · 테스트 최상위 `expect`는 0건이었다.
+- 장치 반영: 바뀐 파일 10개 · 새 파일 4개를 `expectedMtimeMs`로 쓰고 다시 받아 `cmp`로 14개 모두 같음을 확인했다. `plan_section_layout.dart`는 CRLF 그대로다(8328줄 모두 CRLF).
+
+### 한 일
+
+1. **열기**(목록 행 액션 · S3 "열기"): 계획 화면이 `_viewingScenarioId`를 들고, 같은 `PlanScenarioListSection`(같은 key)이 Detail 3섹션을 그린다. 위젯이 그대로 남으므로 FE5-b 미리보기 캐시를 그대로 쓴다(열기 전 펼친 행의 compare 응답, 다시 부르지 않음 — 테스트로 확인). 섹션 모션은 목록 열기 · 닫기와 같은 `_scenarioListController` reverse → 상태 전환 → forward다. S1 "시나리오 목록"이 뒤로, 목록에서 다른 행을 열면 그 시나리오다. 목록을 닫거나 흐름 · 프리셋 관리 · 비교로 나가는 모든 곳에서 `_viewingScenarioId`를 비운다. 열기는 활성 계획과 비교할 수 있을 때만 켜진다(꺼지면 툴팁).
+2. **Detail 3섹션 위젯** `PlanDetailWorkspace`(`widgets/plan_scenario_detail.dart`) + Studio 문서 `plan_scenario_detail_studio_layout.dart`(메뉴 0,2,15,94 · 페이즈 8,2,25,94 평행사변형 · 재화 34,2,62,94 사다리꼴, 시안 대비 +8.6 · +11.3px). S3 맨 위 한 줄은 seg(병목 / 페이즈별 · 전체) + 칩 3개다. **페이즈별 · 전체는 seg 자리만 두고 꺼 두었다**(툴팁 "아직 열 수 없습니다", FE5-d). 칩 3개("재화 유형 · 전체", "충족 재화 숨기기", "부족량 많은 순")도 자리 · 상태 표시만이고 동작은 없다.
+3. **KPI 4개**(필요 크레딧 · 부족 재화 · 첫 병목 · 끝까지 가는 학생 n/m). 값은 FE5-b 미리보기에 이번에 저장한 compare 응답 그대로(`PlanScenarioPreview.result` · `activeDocument` 추가)에서 계산한다. 새 서비스 메서드는 없다. "부족 재화" 칸은 FE5-b 팝오버(`planScenarioShortageFlyout`, FD-090)다.
+4. **병목 카드**: 같은 `stage_id` 병목을 한 장으로 묶는다(번호 = 처음 나온 순서). 재화 타일은 모자란 것 먼저, 둘보다 적으면 그 단계 `stage_results` 중 충분한 재화(크레딧 먼저)로 채우고 최대 3개다(넘치면 "모자란 재화 외 n종"). 지연 단계와 활성 대비 칩도 단다. 카드를 고르면 S2 그 단계 행이 분홍 테두리(`DiagonalRowMark.selected`)이고, 병목 단계 행이나 요약 행을 눌러도 카드가 골라진다. 처음에는 병목 1이 골라져 있다(시안 상태).
+5. **요약 행 projection**: 상수 14개(`planPrimaryBottleneckOwned/Required/StudentCount/StudentIds`, `planPhaseShortage*` 6개, `planOverall*` 4개)를 지우고 `PlanResourceSummaryProjection.of(병목 · 페이즈별 · 전체 목록 · 페이즈)`로 바꿨다. 계획 홈 레이아웃은 그대로다(같은 위젯 · 같은 키, `PlanResourceItemSummary.iconAsset`만 null 허용). grep으로 찾은 사용처는 `plan_section_layout.dart` 헤더와 `planning_page_test.dart`뿐이었다.
+   - 가장 심한 병목 = 화면 병목 목록의 첫 병목(문서 순서) · 첫 재화. "보유량 : 진입 잔량 / 필요량 : 그 단계 필요". 학생 = 막힌 학생 + 지연 단계 학생.
+   - 가장 부족한 재화 = 모자란 재화가 있는 첫 페이즈에서 충족률(보유/필요)이 가장 낮은 재화. "P{n}에서 m명 중 k명만 완료 가능"(k = 그 페이즈의 모자란 재화를 하나도 쓰지 않는 학생).
+   - 전체 = FD-031 (a) 충족률(FE4-e `planFlowFulfillment` 그대로, 보유 모름은 "보유 모름 n종"으로 덧붙임) · 부족 종 수 · 부족 재화를 쓰는 학생 수.
+   - 병목 · 부족 페이즈가 없으면 "병목 없음" / "부족한 재화 없음"이고 아이콘 없이 바탕만 보인다.
+6. **계획에 적용…(FD-088)**: 미리보기 · 보기 모드 버튼이 켜진다(저장된 활성 계획과 비교 응답이 있을 때). 2선택 모달(활성 계획에 페이즈로 추가 / 활성 계획을 이걸로 바꾸기 — "지금 활성 계획은 시나리오로 옮겨 둡니다")에서 고르면 계획 만들기 흐름을 그 시나리오 초안(`PlanFlowDocumentBoundary.fromDocument`, authoring 포함)으로 **4단계에서 그 위치를 고른 채** 연다. 저장 · 비교 · revision · 다시 보내기 · 이걸로 바꾸기의 기존 활성 보존(FD-067)은 FE4-e `PlanFlowSaveController` 그대로다. 새 규칙은 없고 기존 코드와 충돌도 없었다. 바꾼 것은 흐름 값 하나(`PlanFlowController.initialSaveTarget`)와, 저장 컨트롤러가 그것을 첫 위치로 쓰는 것뿐이다. 단계 순서에 고칠 점이 있으면(`orderReady` 거짓) 3단계로 연다. "c2로 넘김" 없음.
+7. 보기 모드 S1 나머지: "페이즈 편집" = 비교 화면 "편집"과 같은 길(흐름 3단계), "복제해서 새로" = 목록의 복제(복제 뒤 보기 모드에 머물고 목록에서는 사본이 펼쳐진다), "비교에 담기 · n/4" = 목록 담기, 분홍 현재 버튼 = 다시 비교(캐시 무효화). 정보 5줄 = 학생 · 페이즈 · 단계 · 저장 시각 · 데이터(현재 기준 / 저장 시점과 다름).
+
+### 처리한 FD
+
+- FD-034 (a) 확정안: 끝까지 가는 학생 = 아래 FD-035 두 상태에 단계가 없는 학생 / `stage_results` 학생 수. **판단**: 백엔드 `affected_stage_ids`는 그 재화를 쓰는 **모든** 단계(병목 단계 앞 단계 포함, `planning_document.py`)다. 그래서 글자 그대로 "어디에도 없으면"으로 세면 병목 앞에서 이미 그 재화를 쓰고 끝난 학생까지 막힌 학생이 된다. FE4-d(`planFlowStageStatuses`)와 같이 **병목 단계 뒤의 affected 단계만** 막힘으로 셌다. FD-034 결정문의 "FD-035와 같은 원천" 취지를 따른 것이다. 오케스트레이터 확인을 바란다.
+- FD-035(워커 재량, 권장안): 여기서 막힘 = 어떤 병목의 `stage_id`, 앞 단계 대기 = 다른 병목의 affected 중 문서 순서상 뒤, 겹치면 앞 단계 대기. 병목 줄에 `affected_stage_ids`가 없으면 전체 재화 줄의 것을 쓴다.
+- FD-038 (c)(워커 재량, 권장안): 부족량 차이(FE5-b 함수), 두 문서 모두 부족 0이면 필요량 차이를 회색, 크레딧은 필요량 차이. 병목 카드 타일은 "활성보다 ±n".
+- FD-039(워커 재량, 권장안): `stage_id`(같은 학생) → (학생, 학생 안 순번). 차이 칩은 FE5-b `planScenarioStudentDelta` 그대로. "활성 계획과 다른 단계 n" = 같음이 아닌 단계 수.
+- FD-067 · FD-088(워커 재량, 권장안): 위 6번.
+- FD-082 (a): Detail 위젯을 비교 스위치가 있는 하나로 만들었다(아래 c2 매개변수). 홈 첫 화면은 바꾸지 않았다.
+- FD-089 · FD-090: 캐시 · 팝오버 재사용. FD-031 (a): 요약 행 전체 충족률.
+
+### 판단(워커 재량, 기록)
+
+- 페이즈 헤더 "부족 n종"은 그 페이즈 단계들의 `stage_results[].resources[].shortage_at_entry > 0` 재화 종 수다. `phase_results.owned`의 뜻은 문서화되지 않았기 때문이다(D §2-5). 보유를 하나도 모르면 칩이 없다.
+- 병목 카드 활성 대비 칩은 비교 `bottlenecks[]`(재화별 first_phase · shortage)의 첫 재화 기준이다: 이 시나리오에만 / 활성보다 n페이즈 빨리(경고) / 늦게(ok) / 부족 줄어듦 · 늘어남 / 활성 계획과 같음. "활성 계획 대비" 줄은 다른 병목(시나리오에 있고 활성에 없거나 페이즈 · 부족량이 다름) n개 · 활성 계획에만 있는 병목 n개다.
+- 페이즈 배지 색은 홀수 P 파랑 · 짝수 P 분홍이다(시안 P1 파랑 · P2 분홍).
+- 보기 모드는 비교 응답이 준비된 뒤에만 S2 · S3를 그린다(그 전에는 읽는 중 · 실패 · 비교할 수 없음 · 시나리오 없음 안내).
+
+### c2가 쓸 레이아웃 매개변수(`PlanDetailWorkspace`)
+
+- `keyPrefix`: 키 앞부분(c1 = `plan-scenario-detail`). 키: `-workspace`, `-menu|phase|resource-motion`, `-phase-title/-count/-different`, `-phase-{n}`, `-stage-{stageId}`(`-state`, `-delta`), `-toolbar`, `-tab`(병목), `-tab-later`(꺼진 페이즈별 · 전체), `-summary`(`-title`, `-detail`, `-delta`), `-compare-caption`, `-kpis`, `-kpi-credits|shortage|bottleneck|finishing`, `-body-panel`, `-cards`, `-cards-empty`, `-card-{n}`(`-phase`, `-delta`, `-resource-{key}`, `-delayed`).
+- `animation`: 섹션 모션(S1 0/180 · S2 80/260 · S3 180/0).
+- `data`: `PlanDetailData`. c2는 `PlanDetailData.fromProjection(document: 활성 문서, projection: 문서 계산, format:)`로 비교 없이 만든다(`comparison` 생략 → a쪽 KPI · 칩 null).
+- `menuBuilder(PlanDetailMenuFrame)`: S1 내용. `frame.row(offset, height)`가 시안 S1 버튼 자리(왼쪽 14, 오른쪽 변 − 22)다. 좌표는 `PlanDetailMetrics.menu*`이고, 시나리오 S1은 `PlanScenarioDetailMenu`, 정보 줄은 `PlanDetailInfoRow`다.
+- `showComparison`: false면 S2 활성 대비 칩 · "활성 계획과 다른 단계" · S3 "활성 계획 대비" 줄 · KPI 줄을 그리지 않는다. 본문 패널은 요약 행 아래(`PlanDetailMetrics.bodyTopWithoutComparison` = 섹션 위 +152)부터다(비교 있음 +262).
+- `selectedCard` · `onSelectCard`: 카드(0부터) ↔ 단계 행 강조.
+- `shortageKpi`: 부족 재화 KPI 칸 감싸기(팝오버).
+- `placeholder`: data가 null일 때 S2 · S3 가운데.
+- 페이즈별 · 전체 탭은 `PlanDetailResourceTab`에 자리만 있다(FE5-d가 S3 본문 분기 · seg 동작을 더한다).
+
+### golden 예측(장면별)
+
+- `plan-scenario-list-expanded`: 펼친 07 행의 "열기" 행 액션이 켜진다(흐림 → 핑크 선명). S3 아래 "열기" · "계획에 적용…"도 켜진다(흐림 → 선명). 다른 곳은 그대로다. 계산 대역에 더한 필드(병목 `affected_stage_ids`, 비교 `bottlenecks[]`)는 미리보기가 읽지 않는다.
+- `plan-scenario-list-shortage`: 위와 같은 버튼 변화(팝오버가 덮지 않는 부분)뿐이다.
+- `plan-scenario-detail-bottleneck`(새 장면): 보기 모드 · 병목 탭 · 병목 1 선택. 계산 대역 기준으로 보이는 것:
+  - S1: 07 이름, 정보 줄 학생 3명 · 페이즈 3개 · 단계 5개 · 저장 9.22 23:10 · 현재 기준.
+  - S2: 페이즈 3개 · 단계 5, "활성 계획과 다른 단계 3"(아루 1 · 2 "이 시나리오에만", 아야네 2 "목표 다름 3"). P1 부족 1종 · P2 3종 · P3 2종. 아루 1 "병목 1 · 여기서 막힘"(분홍 테두리), 아루 2 "병목 2 · 여기서 막힘", 아야네 1 · 호시노 1 · 아야네 2 "앞 단계 대기".
+  - S3 요약: "오파츠 · 네브라 디스크 (최상급) · 14 부족 / P1 아루 1단계에서 막힙니다 · 이 병목으로 지연되는 단계 2개" + "활성 계획과 같음". "활성 계획과 다른 병목 0개 · 활성 계획에만 있는 병목 0개".
+  - KPI: 112M → 73.8M(초록) · 6종 → 7종(경고) · P1 → P1 · 0 / 5 → 0 / 3.
+  - 카드 1(P1 아루 1단계): 네브라 14 부족 "활성보다 −180" + 크레딧 충분 "활성보다 −38.2M", 지연 "아야네 1단계 (P1) · 호시노 1단계 (P2)"(호시노는 긴 이름이라 말줄임).
+  - 카드 2(P2 아루 2단계): 파이스토스 30 부족 "활성 계획과 같음" + 볼프세크 8 부족 "활성보다 −54", 지연 "호시노 1단계 (P2) · 아야네 2단계 (P3)".
+- `plan-bottleneck`: 요약 행이 견본 병목 1의 첫 재화로 바뀐다. 아이콘 네브라(노랑 바탕) → 기초 전술교육 BD 아비도스(기본 바탕), "보유량 : 42 / 필요량 : 60" → "보유량 : 4 / 필요량 : 12". "확보 시 학생 3명…" 문구는 같다(학생 = 호시노 · 노노미 · 아코).
+- `plan-by-phase`: "보유량 : 42 / 필요량 : 60" → "보유량 : 3 / 필요량 : 5", "2단계에서 4명 중 1명만 완료 가능" → "P2에서 4명 중 3명만 완료 가능". 아이콘(안티키테라 · 보라)은 같다.
+- `plan-overall`: "전체 요구량의 72% 확보" → "60% 확보", "14종 부족 · 6명의 성장 계획에 영향" → "6종 부족 · 11명의 성장 계획에 영향".
+- 바뀌지 않을 장면:
+  - `plan-scenario-list`: 펼친 행이 없어 S3 버튼이 없다.
+  - `plan-scenario-compare`: 대역이 아닌 `GoldenMockAppService`이고 섹션 5가 내려가 있다.
+  - `plan-phase-editor` · `plan-element-builder` · `plan-preset-manager`: 홈 섹션을 그리지 않는다.
+  - `plan-student-selector`: 섹션 5 값이 0이다. 섹션 5가 보이면 `plan-bottleneck`처럼 요약 행이 바뀐다.
+  - `plan-flow-*`: 흐름 UI는 병목 `stage_id` · `shortage`와 전체 줄 affected만 읽는다.
+  - `home` · `students-*` · `scan-student-review` · `title` · `account-*`: 이 slice와 상관없다(Lane B 장면에 영향 없음).
+
+### 테스트 변경(의도된 변경)
+
+- `planning_page_test.dart`: 상수 요약 행 기대(42/60, 72% · 14종 · 6명, "2단계에서 4명 중 1명", 학생 강조 집합 아즈사 · 노노미 · 하루카 / 전체 6명)를 견본 목록 projection 값으로 바꿨다. 위 golden 예측과 같은 숫자다. 강조 기대는 학생 단위다: 병목 = 호시노 · 노노미 · 아코의 모든 단계, 전체 = 견본의 모든 단계(유우카 포함).
+- `plan_scenario_preview_test.dart`: 주석만 고쳤다(층에 콜백을 넘기지 않으면 꺼짐). 기대는 그대로다.
+- `plan_scenario_list_test.dart` · `plan_element_builder_test.dart`: grep 결과 영향 없음(열기 꺼짐 · 요약 상수를 보지 않는다).
+- 새 `plan_scenario_detail_test.dart`:
+  - 모델: 단계 상태 · 끝까지 가는 학생 · 단계 맞춤 · 재화 ± · 병목 칩 · 카드 묶음/채움/지연 · KPI · 비교 없음.
+  - 위젯: 카드 ↔ 행 강조, 비교를 끄면 KPI · 칩 없음.
+  - 계획 화면: 열기는 compare를 다시 부르지 않고, 목록으로 돌아가고, 계획에 적용 → 이걸로 바꾸기 → 흐름 4단계가 replace를 고른 채 열린다.
+- golden 테스트: 새 장면 1개와 그 기대(카드 2장, 상태 칩, "활성 계획과 다른 단계 3", "0 / 3").
+
+### 미검증 항목
+
+- analyze(flutter_lints info 단계 포함) · 컴파일 · 모든 테스트 · golden. 위 숫자는 손 계산이다.
+- 화면 배치: S2 행 들여쓰기(헤더 대비 22px) · 카드 타일 폭 · 툴바 한 줄 폭 · 긴 학생 이름 말줄임을 렌더로 보지 못했다. golden 검수 때 시안과 대조가 필요하다.
+- 흐름 4단계를 시나리오 초안(editScenario 목적)으로 바로 열 때 3지선다 중 "시나리오로 저장"은 그 시나리오 고치기로 보인다(FE4-e 그대로). 페이즈로 추가는 FE4-e 규칙(초안 목표가 활성보다 낮으면 막힘)을 따른다. 비교 화면 "편입"(낮은 단계는 빼고 붙임)과는 다른 기존 경로다.
+- 실제 백엔드 compare 응답으로 보기 모드를 그려 본 적 없다(Mock은 병목 · 재화가 비어 "막히는 단계가 없습니다"가 보인다).
+
+### 검수표
+
+| 프롬프트 항목 | 상태 |
+|---|---|
+| 1 열기 · 뒤로 · 다른 시나리오 열기 · 캐시 재사용 | 했다(테스트: compare 1회 유지) |
+| 2 Detail 3섹션 · 비교 끄기 · c2 매개변수 · seg + 칩 3 | 했다(페이즈별 · 전체는 꺼 둠, 칩은 표시만) |
+| 3 KPI 4개 · ± FD-038 (c) · 새 서비스 메서드 없음 | 했다 |
+| 4 병목 카드 묶음 · 지연 단계 · 카드 ↔ 행 강조 · FD-035 · FD-039 | 했다 |
+| 5 요약 행 projection · 사용처 grep · 홈 레이아웃 유지 · golden 예측 | 했다 |
+| 6 계획에 적용 2선택 · FE4-e 경로 | 했다(충돌 없음) |
+| services/** 안 고침 · Lane B 파일 · app_shell 안 고침 | 지켰다 |
+| golden 새 장면 1개, 적용 모달 장면은 제안하지 않음 | 지켰다 |
+| 정적 검토만 · 직접 커밋 안 함 · ~습니다체 | 지켰다 |
+
+### 발견 사항
+
+- 계획 홈 `_calculateDocument`의 병목 지연 단계(`delayedStages`)는 `affected_stage_ids` 전부(병목 단계 자신과 앞 단계 포함)다. FD-035 · 이번 보기 모드(병목 단계 뒤만)와 뜻이 다르다. 홈을 Detail로 바꾸는 FE5-c2에서 맞추면 된다.
+- golden 계산 대역은 그동안 병목 줄에 `affected_stage_ids`가 없었고, 비교 대역은 `bottlenecks`가 빈 목록이었다(백엔드는 둘 다 준다). 이번에 백엔드 모양으로 맞췄다.
+- MockAppService `compareScenarios`는 크레딧 0 · 재화 · 병목 빈 목록을 준다. 보기 모드 위젯 테스트는 그 위에서 "막히는 단계가 없습니다"만 확인한다.
+
+### 다음 행동
+
+- 오케스트레이터: gate 결과를 검토한다. 기대는 다음과 같다.
+  - analyze · UI 테스트 녹색.
+  - golden RED는 위 예측 6장(바뀜 5 + 새 1)이고, 그 밖의 장면 변화는 0이다.
+  - 다른 장면이 바뀌거나 컴파일 · lint 지적이 나오면 이 slice 몫으로 돌려받아 고친다.
+- 사용자 실행 순서:
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① 두 워커가 모두 멈춘 뒤 gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 오케스트레이터 승인 뒤 기준 이미지 갱신 → 다시 gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋(순서는 오케스트레이터가 정한다)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe5c1 -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe5c1
+```
+
+### fe5c1 commit record (2026-10-11 03:06, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261011_025111\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

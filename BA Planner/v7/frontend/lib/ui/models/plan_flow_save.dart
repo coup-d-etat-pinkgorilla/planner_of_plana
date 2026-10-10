@@ -885,10 +885,13 @@ class PlanFlowSaveController extends ChangeNotifier {
 
   PlanFlowDraft _draft;
   PlanFlowStep _step;
-  // 활성 계획을 고치는 흐름(FE4-f2)은 "이걸로 바꾸기"를 먼저 고른다.
-  late PlanFlowSaveTarget _target = _editingActivePlan
-      ? PlanFlowSaveTarget.replace
-      : PlanFlowSaveTarget.scenario;
+  // 활성 계획을 고치는 흐름(FE4-f2)은 "이걸로 바꾸기"를 먼저 고른다. 시나리오 "계획에 적용…"(FE5-c1)은 고른 위치로
+  // 연다. 그 위치를 쓸 수 없으면 [unavailableReason]이 안내하고 [canSave]가 막는다(다른 위치를 고를 수 있다).
+  late PlanFlowSaveTarget _target =
+      flow.initialSaveTarget ??
+      (_editingActivePlan
+          ? PlanFlowSaveTarget.replace
+          : PlanFlowSaveTarget.scenario);
   String? _scenarioName;
   String? _archiveName;
   bool _openScenarioList = true;

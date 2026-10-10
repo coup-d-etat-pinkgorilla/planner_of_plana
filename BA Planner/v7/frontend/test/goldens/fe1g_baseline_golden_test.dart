@@ -1003,6 +1003,37 @@ void main() {
     await expectGoldenScene(tester, 'plan-scenario-list-shortage');
   }, variant: goldenPlatform);
 
+  // FE5-c1 시안 Scenario-Detail-Bottleneck 상태: 위 장면에서 "07 3단계 우선순위"를 열어 보기 모드(병목 탭, 병목 1 선택).
+  // 미리보기와 같은 비교 응답(캐시)으로 그린다. 계산 대역에서 병목은 P1 아루 1단계(네브라 최상급 −14)와 P2 아루
+  // 2단계(파이스토스 −30 · 볼프세크 −8) 두 카드이고, 단계 상태는 아루 1 · 2단계가 여기서 막힘, 나머지는 앞 단계 대기다.
+  testWidgets('plan-scenario-detail-bottleneck', (tester) async {
+    setGoldenViewport(tester);
+    final service = GoldenScenarioListMockAppService();
+    addTearDown(service.dispose);
+    final ids = await _openScenarioListScene(tester, service);
+    await _tapKey(tester, 'plan-scenario-open-${ids['07 3단계 우선순위']}');
+    await pumpUntilFound(
+      tester,
+      find.byKey(const ValueKey('plan-scenario-detail-card-1')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('plan-scenario-detail-card-2')),
+      findsOneWidget,
+    );
+    expect(find.text('병목 1 · 여기서 막힘'), findsOneWidget);
+    expect(find.text('병목 2 · 여기서 막힘'), findsOneWidget);
+    expect(find.text('활성 계획과 다른 단계 3'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('plan-scenario-detail-kpi-finishing')),
+        matching: find.text('0 / 3'),
+      ),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'plan-scenario-detail-bottleneck');
+  }, variant: goldenPlatform);
+
   testWidgets('plan-scenario-compare', (tester) async {
     setGoldenViewport(tester);
     final service = await _service();

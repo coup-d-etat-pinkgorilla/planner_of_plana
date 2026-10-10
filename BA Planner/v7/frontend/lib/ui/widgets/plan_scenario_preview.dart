@@ -7,7 +7,8 @@
 //   a → b). "부족 재화" 칸이 부족 재화 팝오버(키트 `GroupedShortageFlyout`, FD-090) 트리거다.
 // - 288: "학생 · 단계", 318부터 62 간격 56px 행 최대 3개(학생 · 단계 경로 · 마지막 단계 목표 · 활성 대비 칩)
 // - 512: "분야별 가장 큰 부족", 542부터 50 간격 44px 행 5개(엘레프 · 오파츠 · 노트 · BD · 장비 설계도 · 크레딧)
-// - 804: 열기(FE5-c 전 꺼짐) · 비교에 담기/빼기 · 계획에 적용…(FD-088, FE5-c 전 꺼짐)
+// - 804: 열기(FE5-c1, 시나리오 보기 모드) · 비교에 담기/빼기 · 계획에 적용…(FD-088, FE5-c1: 2선택 → FE4-e 저장)
+// KPI 칸 · 소제목 · 부족 재화 팝오버는 시나리오 보기 모드(`plan_scenario_detail.dart`)도 쓴다.
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -98,16 +99,67 @@ AppTone planScenarioDeltaTone(PlanScenarioDeltaTone tone) => switch (tone) {
 };
 
 /// 값이 작을수록 좋은 KPI의 b 색(같거나 모르면 흰색).
-Color _lowerBetterColor(int? a, int? b) {
+Color planScenarioLowerBetterColor(int? a, int? b) {
   if (a == null || b == null || a == b) return AppColors.text;
   return b < a ? AppTones.ok.foreground : AppTones.warn.foreground;
 }
 
 /// 첫 병목의 b 색: 늦을수록(없으면 가장) 좋다.
-Color _bottleneckColor(int? a, int? b) {
+Color planScenarioBottleneckColor(int? a, int? b) {
   if (a == null || b == null || a == b) return AppColors.text;
   int rank(int phase) => phase == 0 ? 1 << 20 : phase;
   return rank(b) > rank(a) ? AppTones.ok.foreground : AppTones.warn.foreground;
+}
+
+/// 열기를 쓸 수 없을 때 안내.
+const planScenarioOpenUnavailable = '활성 계획과 비교할 수 있을 때 열 수 있습니다.';
+
+/// 계획에 적용…을 쓸 수 없을 때 안내.
+const planScenarioApplyUnavailable = '저장된 활성 계획과 비교를 읽은 뒤 적용할 수 있습니다.';
+
+/// 부족 재화 KPI 팝오버(FD-090, 키트 [GroupedShortageFlyout]). 부족 재화가 없으면 [child] 그대로다. 미리보기 S3와 시나리오
+/// 보기 모드의 "부족 재화" KPI 칸이 같이 쓴다.
+Widget planScenarioShortageFlyout({
+  required Key key,
+  required PlanScenarioPreview preview,
+  required Widget child,
+}) {
+  final groups = preview.shortageGroups;
+  if (groups.isEmpty) return child;
+  final activeKinds = preview.shortageKinds.a;
+  final note = [
+    if (activeKinds != null) '활성 계획 $activeKinds종',
+    if (preview.activeOnlyShortageKinds > 0)
+      '활성 계획에만 부족 ${preview.activeOnlyShortageKinds}종',
+  ].join(' · ');
+  return GroupedShortageFlyout(
+    key: key,
+    semanticLabel: '부족 재화 자세히 보기',
+    title: '부족 재화 ${preview.shortages.length}종',
+    note: note.isEmpty ? null : note,
+    groups: [
+      for (final (field, items) in groups)
+        ShortageGroup(
+          label: field.label,
+          items: [
+            for (final item in items)
+              ShortageItem(
+                name: item.name,
+                shortage: item.shortage,
+                iconAsset: planningResourceIconAsset(
+                  category: item.category,
+                  itemId: item.itemId,
+                ),
+                note: item.delta?.label,
+                noteTone: item.delta == null
+                    ? AppTones.gray
+                    : planScenarioDeltaTone(item.delta!.tone),
+              ),
+          ],
+        ),
+    ],
+    child: child,
+  );
 }
 
 /// S3 미리보기 내용층. [leftAt]은 섹션 왼쪽 80° 변의 x, [top]은 섹션 위, [right]는 섹션 오른쪽 여백 안쪽.
@@ -126,6 +178,8 @@ class PlanScenarioPreviewLayer extends StatelessWidget {
     required this.studentName,
     this.onRetry,
     this.onToggleCompare,
+    this.onOpen,
+    this.onApply,
   });
 
   final double Function(double y) leftAt;
@@ -146,6 +200,12 @@ class PlanScenarioPreviewLayer extends StatelessWidget {
   final String Function(String studentId) studentName;
   final VoidCallback? onRetry;
   final VoidCallback? onToggleCompare;
+
+  /// 열기(시나리오 보기 모드, FE5-c1). null이면 꺼진다.
+  final VoidCallback? onOpen;
+
+  /// 계획에 적용…(FD-088). null이면 꺼진다.
+  final VoidCallback? onApply;
 
   @override
   Widget build(BuildContext context) {
@@ -206,7 +266,7 @@ class PlanScenarioPreviewLayer extends StatelessWidget {
         PlanScenarioPreviewMetrics.kpiCaptionTop,
         24,
         PlanScenarioPreviewMetrics.textInset,
-        const _Caption(
+        const PlanScenarioCaption(
           '활성 계획 대비',
           note: '왼쪽 = 활성 계획 · 오른쪽 = 이 시나리오',
         ),
@@ -237,7 +297,7 @@ class PlanScenarioPreviewLayer extends StatelessWidget {
         PlanScenarioPreviewMetrics.studentCaptionTop,
         24,
         PlanScenarioPreviewMetrics.textInset,
-        _Caption('학생 · 단계', note: hidden > 0 ? '외 $hidden명' : null),
+        PlanScenarioCaption('학생 · 단계', note: hidden > 0 ? '외 $hidden명' : null),
       );
       for (final (index, student)
           in students.take(PlanScenarioPreviewMetrics.maxStudents).indexed) {
@@ -258,7 +318,7 @@ class PlanScenarioPreviewLayer extends StatelessWidget {
         PlanScenarioPreviewMetrics.fieldCaptionTop,
         24,
         PlanScenarioPreviewMetrics.textInset,
-        const _Caption(
+        const PlanScenarioCaption(
           '분야별 가장 큰 부족',
           note: '분야마다 1개 · 부족 없는 분야는 흐리게',
         ),
@@ -297,13 +357,13 @@ class PlanScenarioPreviewLayer extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const _PreviewAction(
-              key: ValueKey('plan-scenario-preview-open'),
+            _PreviewAction(
+              key: const ValueKey('plan-scenario-preview-open'),
               label: '열기',
               icon: Icons.visibility_outlined,
               primary: true,
-              onPressed: null,
-              tooltip: '시나리오 보기 화면은 아직 열 수 없습니다.',
+              onPressed: onOpen,
+              tooltip: onOpen == null ? planScenarioOpenUnavailable : null,
             ),
             const SizedBox(width: 10),
             _PreviewAction(
@@ -313,12 +373,12 @@ class PlanScenarioPreviewLayer extends StatelessWidget {
               onPressed: onToggleCompare,
             ),
             const SizedBox(width: 10),
-            const _PreviewAction(
-              key: ValueKey('plan-scenario-preview-apply'),
+            _PreviewAction(
+              key: const ValueKey('plan-scenario-preview-apply'),
               label: '계획에 적용…',
               icon: Icons.fact_check_outlined,
-              onPressed: null,
-              tooltip: '계획에 적용은 시나리오 보기 화면과 함께 열립니다.',
+              onPressed: onApply,
+              tooltip: onApply == null ? planScenarioApplyUnavailable : null,
             ),
           ],
         ),
@@ -415,71 +475,39 @@ class PlanScenarioPreviewLayer extends StatelessWidget {
     String amount(int? value) =>
         value == null ? '—' : growthCalculatorCompactNumber(value);
     String count(int? value) => value == null ? '—' : '$value종';
-    final shortageTile = _KpiTile(
+    final shortageTile = PlanScenarioKpiTile(
       key: const ValueKey('plan-scenario-preview-kpi-shortage'),
       label: '부족 재화',
       before: count(kinds.a),
       after: count(kinds.b),
-      afterColor: _lowerBetterColor(kinds.a, kinds.b),
+      afterColor: planScenarioLowerBetterColor(kinds.a, kinds.b),
     );
-    final groups = preview.shortageGroups;
-    final activeKinds = kinds.a;
-    final note = [
-      if (activeKinds != null) '활성 계획 $activeKinds종',
-      if (preview.activeOnlyShortageKinds > 0)
-        '활성 계획에만 부족 ${preview.activeOnlyShortageKinds}종',
-    ].join(' · ');
-    final shortage = groups.isEmpty
-        ? shortageTile
-        : GroupedShortageFlyout(
-            key: const ValueKey('plan-scenario-preview-shortage-flyout'),
-            semanticLabel: '부족 재화 자세히 보기',
-            title: '부족 재화 ${preview.shortages.length}종',
-            note: note.isEmpty ? null : note,
-            groups: [
-              for (final (field, items) in groups)
-                ShortageGroup(
-                  label: field.label,
-                  items: [
-                    for (final item in items)
-                      ShortageItem(
-                        name: item.name,
-                        shortage: item.shortage,
-                        iconAsset: planningResourceIconAsset(
-                          category: item.category,
-                          itemId: item.itemId,
-                        ),
-                        note: item.delta?.label,
-                        noteTone: item.delta == null
-                            ? AppTones.gray
-                            : planScenarioDeltaTone(item.delta!.tone),
-                      ),
-                  ],
-                ),
-            ],
-            child: shortageTile,
-          );
+    final shortage = planScenarioShortageFlyout(
+      key: const ValueKey('plan-scenario-preview-shortage-flyout'),
+      preview: preview,
+      child: shortageTile,
+    );
     return Row(
       children: [
         Expanded(
-          child: _KpiTile(
+          child: PlanScenarioKpiTile(
             key: const ValueKey('plan-scenario-preview-kpi-credits'),
             label: '필요 크레딧',
             before: amount(credits.a),
             after: amount(credits.b),
-            afterColor: _lowerBetterColor(credits.a, credits.b),
+            afterColor: planScenarioLowerBetterColor(credits.a, credits.b),
           ),
         ),
         const SizedBox(width: PlanScenarioPreviewMetrics.kpiGap),
         Expanded(child: shortage),
         const SizedBox(width: PlanScenarioPreviewMetrics.kpiGap),
         Expanded(
-          child: _KpiTile(
+          child: PlanScenarioKpiTile(
             key: const ValueKey('plan-scenario-preview-kpi-bottleneck'),
             label: '첫 병목',
             before: planScenarioBottleneckValue(bottleneck.a),
             after: planScenarioBottleneckValue(bottleneck.b),
-            afterColor: _bottleneckColor(bottleneck.a, bottleneck.b),
+            afterColor: planScenarioBottleneckColor(bottleneck.a, bottleneck.b),
           ),
         ),
       ],
@@ -496,8 +524,8 @@ String _updatedLabel(String updatedAt) {
 }
 
 /// 소제목(`.ihdr` 10px) + 설명(11px).
-class _Caption extends StatelessWidget {
-  const _Caption(this.title, {this.note});
+class PlanScenarioCaption extends StatelessWidget {
+  const PlanScenarioCaption(this.title, {super.key, this.note});
 
   final String title;
   final String? note;
@@ -525,8 +553,8 @@ class _Caption extends StatelessWidget {
 }
 
 /// KPI 한 칸(시안: 바탕 skewX −10° #203243, 라벨 9px, 활성 13px #9eb0c2 → 핑크 화살표 → 시나리오 21px).
-class _KpiTile extends StatelessWidget {
-  const _KpiTile({
+class PlanScenarioKpiTile extends StatelessWidget {
+  const PlanScenarioKpiTile({
     super.key,
     required this.label,
     required this.before,
