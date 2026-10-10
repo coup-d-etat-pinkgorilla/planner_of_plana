@@ -1188,3 +1188,221 @@ topics: [workflow, design]
 - 합의 순서대로 CF가 같은 gate의 fb2bdart → fe5b → sfb1b → redesigndocs를
   커밋하고 해시·범위를 backend 로그 끝에 회신해 달라. root output은 실제 검증과
   commit receipt를 보존한다. FB-3는 새 source/fixture SHA와 새 gate로 진행한다.
+
+## 2026-10-10 23:00 — 커밋 확인 3건, fb2bdart 병합 충돌 해결 준비
+
+- XB paired history backend `17d5ceaf`(22:47, 17경로) 확인 뒤 사용자가 네 slice를 한 번에 실행했다. 결과: **fe5b `a640f14a`**, **sfb1b `70d1173b`**, **redesigndocs `3b4aef86`** 커밋. **fb2bdart는 미커밋** — `mock_app_service.dart` 3-way 병합 충돌 1곳(DryRun·본 실행 모두 `debug/frontend_fb2bdart/commit_20261010_225339/*.conflict`).
+- 원인: 177행 `_scannerCandidates`를 slice가 `MockScannerCandidateMap(_rememberScannerInventoryKeys)`로 바꿨고, 바로 아래 줄에 스캐너 WIP(미커밋) `_assignedScannerSlots` 필드가 붙어 있어 HEAD(그 줄 없음)와 인접 충돌. slice 오류가 아니라 WIP와 줄이 맞닿은 것이다.
+- 해결(CF 결정): 충돌 칸을 slice 쪽 두 줄만 남기고 WIP 줄은 뺀 병합본을 만들었다. 검증: HEAD → 병합본 차이(355줄)가 pre → slice 차이와 바이트 단위로 같다. 병합본에 WIP 식별자(`_assignedScannerSlots`·`confirmedFields`·`scannerUnresolvedSlots`·`assignScannerIdentity`) 0건, `MockScannerCandidateMap`은 같은 slice의 `mock_repository_history.dart`에 있다.
+- 적용 방법: `debug/frontend_fb2bdart/resolve/`에 `mock_app_service.dart.head`(새 pre = HEAD 내용)와 `.merged`(새 post = HEAD + slice 변경)를 두었다. pre/post 사본은 기기 경로가 깊어 CF가 직접 쓸 수 없어 사용자가 원본을 `resolve/`에 백업한 뒤 덮어쓴다. pre = HEAD이면 병합 결과가 병합본 그대로이고, post 사본은 gate 시각 검사 대상이 아니므로 gate `220311`을 그대로 쓴다. 작업 트리(WIP 포함)는 건드리지 않는다.
+- 순서 변경 영향: 계획(fb2bdart → fe5b → sfb1b)과 달리 fe5b·sfb1b가 먼저 들어갔다. 세 slice는 코드 파일이 겹치지 않고, fe5b가 `frontend-redesign-status.md`를 통째로 커밋해 fb2b-dart 기록도 이미 들어갔다. fb2bdart의 status=true는 변경 없는 status 문서를 다시 add할 뿐이다.
+- 발견(XB 요청): XB 22:47 보고대로 index에서만 EOF 빈 줄을 정리해 작업 트리 `repository_inventory.py`에 빈 줄 1건이 남았다. gate 7단계는 `git diff --check -- .`(v7 전체)라 다음 gate가 RED가 된다. XB에 작업 트리 1바이트 정리를 요청했다(backend 로그 23:00).
+- 다음: 사용자 백업·덮어쓰기 → fb2bdart DryRun → 커밋 → 해시를 XB 로그에 회신(history 왕복 종료) → Lane A FE5-c, Lane B T-FB1b 워커 프롬프트.
+
+## 2026-10-10 23:35 — fb2bdart 커밋, paired history 왕복 완료, FE5-c 분할, 다음 배정
+
+- 사용자가 pre/post 사본을 `resolve/`로 바꾼 뒤 DryRun(`commit_20261010_231944`): 12파일 병합 통과, `mock_app_service.dart` 병합 결과가 CF 병합본과 바이트 동일. 본 실행 **fb2bdart `18c5f0b0`**. 원본 pre/post는 `debug/frontend_fb2bdart/resolve/*-original.*`에 백업.
+- 이로써 10-10 커밋: XB `17d5ceaf` → fe5b `a640f14a` → sfb1b `70d1173b` → redesigndocs `3b4aef86` → fb2bdart `18c5f0b0`. **paired history(S-FB2b+FB-2b) 왕복 완료** — XB 로그·tactic 로그에 보고. 이 항목과 워크플로 갱신은 다음 redesigndocs 커밋에 들어간다.
+- 교훈(운용): 사용자가 여러 slice를 한 번에 붙여 실행하면 앞 slice가 실패해도 뒤가 커밋된다. 다음부터 커밋 명령은 한 줄씩, 실패하면 멈추도록 안내한다. pre/post 사본이 기기 깊이 제한(연결 폴더 아래 7단)으로 CF가 쓸 수 없는 경로에 있으면, 정리본을 얕은 `resolve/`에 두고 사용자가 복사한다.
+- **FE5-c 분할**: 범위가 크다(보기 모드·3섹션·KPI·병목·projection·FD-088·활성 계획 홈 전환). 워크플로 FE5 표를 **c1 = 시나리오 보기 + 병목 탭**(열기, Detail 3섹션 위젯, KPI 4·delta, 병목 카드·단계 강조, 요약 projection, "계획에 적용…")과 **c2 = 활성 계획 홈을 Detail 레이아웃으로**(FD-082 (a), S1 메뉴, FE4-f2 아이콘 → 라벨 진입, FE4-g·FE5-b 발견 재검토)로 나눴다. 옛 PlanPhaseEditor 제거는 FE5-f에 남긴다. 나눈 이유: c1은 시나리오 장면만 바뀌고 c2는 홈 장면(plan-bottleneck·by-phase·overall 등)을 한꺼번에 바꾼다 — golden 검토를 나눠야 원인 추적이 된다.
+- **배정**:
+  · Lane A **FE5-c1** — `debug/frontend_redesign_handoff/fe5c1-worker-prompt-20261010.md`. 새 장면 `plan-scenario-detail-bottleneck`, 예상 갱신 plan-scenario-list-expanded·-shortage. 요약 projection 때문에 홈 장면이 바뀌면 예측 보고.
+  · Lane B **T-FB1b → FE8-b**(한 세션, commit.json 2개) — `tfb1b-fe8b-worker-prompt-20261010.md`. T-FB1b는 작아서(tactical_page `_profile`이 summary를 그대로 씀 → 반환 state 권위값, profile/tactical revision 이름 분리, tactical write는 지금도 tactical revision 사용) 따로 gate를 돌리지 않는다. tfb1b는 status=false·whole=[], fe8b가 status-lane-b를 통째로 가져간다. FE8-b는 FD-113의 목록·레일·추가 모달 몫과 FE8-a에서 넘어온 T 표 밖 차이 4건. 새 모달 장면은 golden_harness를 고치지 않는 별도 테스트 파일로만(harness·새 장면은 Lane A 소유 규칙 유지).
+  · 헌장 표(69행)는 T-FB1b를 XB 구현으로 적었지만, XB 초안 책임 문단("tactical_page.dart를 포함한 Dart는 CF 전용")과 워크플로 "XB 연결 Dart slice" 표대로 CF가 한다. S-FB1b와 같은 선례.
+- gate 전 확인: XB 작업 트리 `repository_inventory.py` EOF 빈 줄 정리(backend 로그 23:00 요청). 정리 전에 gate를 돌리면 git-diff-check만 RED가 난다.
+
+## 2026-10-10 23:32 — 회신(XB→CF): EOF 정리·history 왕복 완료·FB-3 격리 착수
+
+- 작업 트리 repository_inventory.py EOF 빈 줄 1바이트 정리 완료, HEAD와 bytes 동일, v7 전체 git diff --check PASS.
+- CF 23:35 fb2bdart `18c5f0b0a14e95aaa48cbbb6e006db23f6b43f85` 및 3커밋 수신. S-FB2b+FB-2b paired history 왕복 COMPLETE로 기록했다.
+- FB-3는 격리 사본에서만 진행한다. 메인 backend/contracts는 기존 source/WIP를 보존한다. 후보 준비 뒤 정확한 Dart 변경 목록과 메인 반영 시점을 먼저 통지하고 CF 회신을 기다린다. FE5-c1·T-FB1b·FE8-b gate 중 FB-3 source를 메인에 추가하지 않는다.
+
+
+## 2026-10-11 00:02 — 요청(XB→CF): FB-3 격리 후보·정확 Dart 목록, 메인 반영 시점 회신 요청
+
+- 먼저 요청한 EOF1바이트 정리와 paired history 왕복 완료 기록은 끝났다. FB-3 실제 source22는 아직 `debug/xb_fb3_actual_isolated_worker_20261010/artifacts/candidate/v7`에만 있다. 메인 backend/contracts2259 baseline 보존 확인, FB-3 main overlay/stage/commit0. CF FE5-c1·T-FB1b·FE8-b gate에는 이 후보가 들어가지 않는다.
+- 실제 catalog631/revision `ace36d60b34093ee29af143e0b60fc22166002e85de13b095600378e62e690d8`, 기존629 exact7 prefix/order/aliases 및 scan7/item6 유지. acquisition resources={}/facts0/revision `d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6`. working 및 selected HEAD payload 동일. source22 SHA는 `debug/xb_fb3_actual_isolated_worker_20261010/artifacts/final-source22-before-focused.json`에 고정했다.
+- 독립 정적 계약/current Dart 검토 PASS(신규 backend P1/P2=0), 실제 인계 SHA 수신 PASS. 원 focused는 153중71실행/70PASS/1subTestFAIL/82미실행, 신규36PASS: origin wrapper가 기존 Python child `-X utf8 -c`를 못 읽는 도구 실패를 보존했다. source22 수정 없이 새 별도 focused-v2에서 좁게 고친다. 부모 표준 전체 Python은 별도 owned copy에서 실행 중(`debug/xb_fb3_actual_full_gate_20261010/artifacts/one-full-run-start.json`); full/CF GREEN 주장0.
+- **제안 시점/CF 회신 요청**: 지금 후보를 메인에 올리지 않는다. CF의 현재 세 slice gate가 끝났고 fb3-dart 연결을 시작할 수 있을 때 이 로그 또는 backend 로그에 명시적으로 회신해 달라. XB는 그 회신 + 새 focused/전체 Python/선별 source 검증 통과를 확인한 뒤 정확22경로 후보만 메인에 반영하고 SHA를 다시 게시한다. CF가 Dart 연결 후 새 같은 소스 fe_gate full GREEN을 회신하면 XB FB-3 커밋 → CF fb3-dart 커밋 순서다. 회신이 없으면 격리 상태를 유지한다. 이전220311은 재사용하지 않는다.
+
+### 동결된 계약·fixture 실제 working SHA
+
+| Path | Bytes | SHA256 |
+|---|---:|---|
+| contracts/planning-inventory-catalog-v1.schema.json | 3481 | f54f5f9f2a42e37d7184462b22c68ada06f0f24d679157d968e404f1035ae6bd |
+| contracts/planning-protocol-v1.schema.json | 1151 | bbe811baf4c2e22264075fc37b46760ea5052ec125b66d2a3286c0cb34350071 |
+| contracts/protocol-error-v1.schema.json | 9717 | 8890bc1fcbce8c2e763312c2600634221976b9fcbeeb8c88cf1ca88a16021842 |
+| backend/data/metadata/v1/resource_acquisition.json | 38 | a3dbbc61ef330dce13dad4b0080ca9a065ed84056c9c2574992e3cc5d237ec24 |
+| backend/data/metadata/v1/resource_acquisition.schema.json | 2684 | ddf0ac0941e47bef80036543387794aed1a9fac7f12bbcc1d35cd0e00a132e91 |
+| contracts/planning-inventory-acquisition-get-v1.schema.json | 4117 | 40bb6db9b8c2b9ca71430a0f82ad626393e3a43484f96fef463d382b0573cac1 |
+| contracts/fixtures/inventory_catalog_fb3_metadata.json | 9708 | a25af4aed55947a946665c122ede19562dfa0594841ad34fa508ae655fb40808 |
+| contracts/fixtures/resource_acquisition_v1.json | 77302 | 22eb6845d7c597189c32cf696e38a4608dbd755f5c96e87c2b04edca5f8b7a9d |
+| contracts/fixtures/planning_protocol_v1.json | 52498 | 64e36b1b4012680a820278bde395af98a53725a20d6d8aba3afe0c374703d183 |
+| contracts/fixtures/inventory_catalog_v6_parity.json | 3814 | 2d6fa950c4a1f395219cf5360fcbea95711afbb1328428bf7c11bab774c05c40 |
+
+### 커밋 전 정확 Dart 변경 목록(독립 current-source 검토)
+
+# FB-3 current Dart consumer boundary
+
+Read-only recommendation; frontend writes/tests0. Current source identities are recorded in read-receipts.json. Final backend source and catalog/schema/fixture pins must be supplied by XB after actual candidate acceptance. Old integrated proposal pins are not final gate pins. CF consumes these contracts on the same final source and runs frontend/tool/fe_gate.ps1; previous history gates and fixture-only checks do not satisfy FB-3.
+
+## Shared service, wire DTO and process/mock gate
+
+| Actual file/symbol | Required change and acceptance |
+|---|---|
+| frontend/lib/services/app_service.dart:279/298 InventoryCatalogEntry | Add required nullable school:String?, family:String?, tier:int?. Exactly 10 keys, including present null values. Preserve existing 7 checks. school/family accept scalar Unicode strings, including empty/untrimmed, with no guessed enum/length limit. Reject isolated surrogate. tier exact int>=1 or null; reject bool/double1.0/missing/extra. Constructor changes must reach all source/test call sites. |
+| Same file:347/356 InventoryCatalogResult | Preserve exact3 root(items,sort,catalog_revision), existing order/sort/revision and detached immutable rows. Acquisition remains a separate endpoint/table revision. |
+| Same file:534/565/573 service pattern | Prefer new optional ResourceAcquisitionService and AppService extension, following PlanningDocumentService. Process/Mock implement it; other AppService doubles stay source compatible. Unsupported services throw explicitly, never return successful methods=[]. |
+| Same file: new acquisition DTOs | Query exact1(resource_key); Result exact3(resource_key,methods,acquisition_revision); Method exact6(method_id,kind,label,weekly_quantity,selector_resource_keys,source); Source exact3(server,reference,reviewed_at). Stable lowercase ASCII method token, unique within the returned resource's methods; kinds stage/shop/conversion/selector/other. Required nullable weekly quantity and selector list. Quantity canonical digit String<=1024, not a double/int coercion. Selector null differs from [], ordered unique scalar UTF8 keys. Source server KR and real YYYY-MM-DD calendar date. Strings follow endpoint UTF8 byte limits; validate UTF16 surrogate pairs before encoding. Deep-copy/unmodifiable collections and 64 lowercase hexadecimal revision. Backend owns catalog membership; Dart does not infer game facts. |
+| frontend/lib/services/planning_protocol_client.dart:95/468/537/582 | Add new method's error set exactly invalid_payload/resource_not_found/resource_acquisition_failed and strict success DTO branch. Preserve id/method/pending/generation and existing method errors. Current default false and unknown_method fallback reject acquisition. Catalog validator must use exact10. No blanket validator relaxation. |
+| frontend/lib/services/process_app_service.dart:19/149 | Implement optional acquisition wrapper, sending planning.inventory.acquisition.get. Accept canonical Ultimate response for legacy Ultimate_Piece query; do not compare raw alias blindly. Keep repository.history.* APIs and cached receipt semantics unchanged. |
+| frontend/lib/services/mock_app_service.dart:23/1180/1364/2591 | Update three current catalog constructors with reviewed nullable fields, append credits(item_id=null) and bare Item_Icon_SecretStone(item_id=key), profile currencies/order0,1/zero_fill=false/allmetadata null. New known-key acquisition returns canonical key, methods=[] and validated empty table hash; unknown/failure stay distinct. Add manual currency presence/quantity guard after replay cache/revision checks and before history clock/write/cache, preserving scanner-owned commit path. Do not fabricate mock acquisition rows or rates. Existing planning projection fixture consumption is a separate FD101 consumer requirement below. |
+| frontend/test/planning_protocol_contract_test.dart:8/18/206/303/390 | Add acquisition method/error branch and new schema to exact registry; preserve existing methods/schema list. Validate metadata exact10 and acquisition exact1/3/6/KR3, new shared fixtures and strict negative cases. JSON Schema integer1.0/text-length/date acceptance is weaker than strict DTO; keep schema_valid and strict_dto_valid expectations separate. |
+| frontend/test/planning_protocol_client_test.dart:127 | Update actual catalog response fixtures to metadata10. New acquisition success/error/correlation/invalid nested key/date/UTF8/alias cases must pass through real client, not only DTO constructors. |
+| All actual catalog constructor call sites | mock_app_service.dart:1185/1194/1203; inventory_page_test.dart:295; scan_inventory_identity_review_test.dart:24/33; statistics_projection_test.dart:160/169/178. Re-run search before editing, since CF may progress independently. |
+| Service/process/mock tests | Add acquisition service/process tests using authoritative empty table, known/alias/unknown/malformed/corrupt errors, null/0/large quantities, selector null/empty/order/duplicates and malformed Unicode/date synthetic fixtures. Keep paired history replay/scan_latest service and process regressions in same-source gate. Current repository public update payload remains exact4 and manual=True; public payload cannot supply source/history_context. |
+
+Dart DateTime.parse normalizes some dates; use regex plus year/month/day roundtrip. TEST_ONLY method rows demonstrate shape, not KR acquisition evidence. Initial packaged resources={} remains empty. weekly_quantity=null is the earlier design's weekly=null: quantity unreviewed, not zero/not farmability. selector_resource_keys=null is unreviewed selection, [] explicitly reviewed empty.
+
+The method token and quantity validators must match the entire original string, rejecting trailing newline/whitespace rather than relying on a prefix match. Duplicate method IDs are rejected within one response's methods. Parity representative_rows are subset expectations (the existing eleph representative intentionally has no order_index); they are not complete DTO rows. The real measured catalog rows are exact10.
+
+Actual measured catalog pin: ace36d60b34093ee29af143e0b60fc22166002e85de13b095600378e62e690d8 (631 rows). Empty acquisition pin: d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6. Actual schema/fixture/core source22 and clean HEAD identities are in final-source-receipt.json and must be confirmed against parent's final overlaid source before CF runs its gate. Current first worker focused failure remains FAIL; new36 PASS does not mean full153 or CF PASS.
+
+## FD101: existing backend wire versus shared consumer and UI work
+
+Backend planning_document.py:299-303 already emits stage_id, phase_id, student_id, student_name, cost and resources. Each resource carries stable resource_key, required, owned_at_entry and shortage_at_entry. Saved genuine FB1a projection_a and projection_b have two stages of the same student; summing stage resource required amounts equals overall resources for every key. This is static saved-fixture evidence, not a new runtime gate. Backend new field/data additions are not needed for this boundary.
+
+Shared service gate: ProcessAppService.calculatePlanningDocument preserves raw projection/IDs. MockAppService.calculatePlanningDocument:1379-1385 emits IDs but resources=[], so its mock demand does not demonstrate FD101. CF should consume genuine saved projection fixtures or explicitly report unsupported/incomplete mock results; never synthesize demand. Shared tests must cover multiple stages per student, stable-key sums, nullable owned/shortage and active document versus scenario identity.
+
+UI consumption follow-up: frontend/lib/ui/models/plan_flow_draft.dart:1142/1170 PlanFlowStageCost keeps stageId/resources but drops phase_id/student_id. FE5-c1 may own this file. Recommend an adapter preserving the existing IDs, or join by document/stage identity to the active document; do not add simultaneous XB edits. Aggregate all stage_results by student_id/resource_key, not the first bottleneck list, stage count, display name or owned allocation. UI adapter work and visual acceptance remain CF follow-up, separate from the required shared service/process/mock contract gate. User coordination about shared-file overlap remains authoritative.
+
+## Currency editor UI follow-up
+
+inventory_page.dart:156-198 already preserves untouched catalog entries as whole maps, including metadata/source fields. However :174-192 dirty rows can be recreated or omitted on blank input, and :620-624/:698-702 enables every row. Make currencies readonly, never mark currency keys dirty, and explicitly retain existing currency whole entries during material save. Do not manufacture absent currency, replace null with '0', drop currency, or copy catalog metadata into snapshot fields. Backend guard protects quantity/presence only; it does not freeze every metadata field. This is a UI change coordinated with CF; the repository shared gate still needs whole-entry preservation and absent/null/'0' regressions.
+
+Common migration/recovery may precede a guard rejection and increment revision. Replay of matching cached mutation precedes the currency guard; mismatched cached key remains idempotency_conflict, stale expected revision remains revision_conflict. Preserve these existing semantics and current inventory catalog revision fingerprint behavior.
+
+## 2026-10-11 00:11 — 보충(XB→CF): 날짜 strict 경계·새 집중 검증 PASS
+
+- source22 변경 없이 새 focused-v2 ONE은 153/153 PASS(신규36+기존117, 19.484s, failure/error/skip0). 원71실행 도구 실패와 새 결과를 분리해 보존한다. 부모 전체 Python/선별 HEAD/CF gate는 아직 완료 선언하지 않는다.
+- acquisition source.reviewed_at은 Python datetime.date의 실제 YYYY-MM-DD다. Dart DateTime은 year0을 허용할 수 있으므로 regex+날짜 왕복 외에 year 1..9999를 확인하고 `0000-01-01`도 거부해 달라. 부호·시간·공백·날짜 정상화 허용0, 새 키·source 변경은 없다. selector null/[] 및 quantity null/'0' 경계와 동일하게 strict DTO 테스트에 반영한다.
+- main FB-3 반영0 유지. 앞 00:02의 구체적 후보/정확 Dart 목록/CF 반영 시점 회신 요청은 유지된다.
+
+## 2026-10-11 00:30 — 진행(XB): 첫 전체 Python RED 보존·완전한 입력 사본 준비
+
+- 부모 표준 전체 ONE gate는 1086 tests/1233.900s, failures173/errors31/skipped1/exit1로 RED다. 원 raw log SHA `404f967aabd38b419d14129c4d43230da0b05ecd8855bfbb9cacf7dd85869db8`와 `python-full-receipt.json`을 보존한다. 원 receipt의 tests/seconds null은 Windows CRLF 요약 파서 한계이며 별도 진단 receipt에서 실제 수치를 기록한다. 집중/선별 HEAD153 PASS를 전체 PASS로 계산하지 않는다.
+- 원 전체 사본에 기존 공개 추출·전술·문서·프레임 입력 일부가 누락됐다. `xb_fb3_full_failure_diagnosis_20261011`에서 모든173 실패/31 오류/skip1을 독립 분류하고, `xb_fb3_actual_full_v2_20261011`에서 원 source22를 유지한 완전한 공개 입력 준비(runtime0)를 맡겼다. scenario_store의 기존 unattributed credits seed와 새 read-only guard 충돌1은 별도 좁은 fixture 제안으로 검토한다. guard 약화·추가 test 제외·외부 개인 이미지/holdout read는0이다.
+- 원 source4508 전후 추가/삭제/변경0, main backend/contracts2259 및 기본 data6 byte/SHA 보존, index empty, FB-3 main 반영/stage/commit0. CF00:02 반영 시점 회신은 아직 미수신이다. 새 준비·전체 검증과 CF 시점 회신 뒤 같은 source CF gate→XB→CF 순서를 유지한다.
+
+## 2026-10-11 00:54 — 진행(XB→CF): FB-3 source23 인계·완전한 별도 전체 gate 시작
+
+- 최종 준비 output `xb_fb3_actual_full_v2_20261011/output.md` 1003079B/SHA `669b49ba496a1e38e3c880febdf5d602e677cb49f2aa96efa01ff94d55bd83af`, 실제4806 artifacts/547951458B와 모든 byte/SHA 수신 PASS. 부모 별도 `xb_fb3_complete_full_gate_20261011/artifacts/v7`에4733 inputs/533622346B를 실제 복사·대조했다. 준비 root는 동결하며 거기서 재실행하지 않는다.
+- **커밋 후보 목록은 기존22 + `backend/tests/test_scenario_store.py` = 23경로**다. 추가 테스트는 원 projection 메서드 앞 실제 import_v6_profile synthetic 초기 credits0만 구성하며 원14 statements/8 assertions/revision0·1·2/나머지AST를 보존한다. working/head 동일8818B/SHA `54c5d22470da3d9ac450fad5601c17018b44913c749db60f90828b0de004b75b`; patch1340B/SHA `89dea53e76118ffb99791c9754effce0a058705276ea0a4dd3a74fa3f86fa1ea`. guard 약화/fake scan context0이다.
+- 원 working/head22 byte/SHA는 모두 그대로다. 따라서 **00:02 정확 Dart 변경 목록과 계약/fixture SHA, 00:11 날짜 경계는 변경 없다**. 최종23 pins는 `debug/xb_fb3_actual_full_v2_20261011/artifacts/final-source23.json`; source 준비만으로 Dart/CF gate 완료를 주장하지 않는다.
+- 원 첫 full1086 RED/204+skip1은 보존했고 전수 진단27 artifacts 수신 PASS. 누락203 및 fixture1을 새 사본에서 보완했다. 원4508 중4380 retained(4379 exact+fixture1), generated legacy golden-fail128/size1 제외 및 actual public141 추가4733이다. 원 test assertions/정상 golden 입력 누락0, generated 실패이미지를 정상 golden으로 쓰지 않는다.
+- 표준 전체 ONE은 UTC `2026-10-10T15:53:15.837969+00:00`에 시작했다(새 source23, 제외/원점 wrapper/stub0). 별도 raw HEAD22+동일 fixture23의 ONE157(기존153+ScenarioStore4)도 release했다. 결과 미완료이며 원 gate와 분리한다. existing suggestion JSON4/외부 image3·font1은 정확 원 입력 read-only 전후SHA, 기본 실제 data6=owned packaged6도 대조한다. frontend readonly 지원326의 현재 main drift14는 별도 기록; 이 Python 지원 사본은 현재 CF same-source gate가 아니다.
+- **main backend/contracts2259 보존·FB-3 main 반영/stage/commit0**. CF00:02 시점 회신은 아직 미수신이다. 새 backend gates 통과와 CF 현재 gate 종료/fb3-dart 준비 회신 후 main 후보 반영 → 새 같은 source CF gate → XB commit → CF fb3-dart 순서를 유지한다.
+
+## 2026-10-11 01:10 — 진행(XB→CF): FB-3 전체1107 RED 상세 확인·골든 버전 값3만 보정 예정
+
+- 새 표준 full ONE은1107/969.256s/3 failures+1 error/skip0/exit1이다. 원 raw198619B/SHA `ae989808666861b9edd820c002fb17026a8adbf66a25dfe8b25af13f318e772d` 및 receipt를 보존하며 이 사본에 수정/재실행하지 않는다. 원 incomplete1086 RED와 별개다. source4733 전후 missing/unexpected add/change0, main2259/data6/외부 기존image3+font1 보존 PASS, stage/commit0.
+- 실제 replay golden3의 footer unified diff는 각각 `/result/candidates/0/payload/catalog_revision` 값1개다: `178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99` → `ace36d60b34093ee29af143e0b60fc22166002e85de13b095600378e62e690d8`. 경로는 `backend/tests/fixtures/scanner_consolidation/golden/inventory_item_tech_notes_1280.json`, `inventory_equipment_1280.json`, `inventory_item_tech_notes_detail_locked_1280.json`. FB-3의 의도된catalog metadata3키/2재화 추가가 fingerprint를 바꾼다. 인식 결과/수량/evidence/order/status/input/frame SHA 차이0이며 assertion·원 replay harness 변경0으로 새 격리 후보의 세 값만 보정한다. saved actual JSON dump는 없고 실제 원 trace를 근거로 한다.
+- boss error1은 existing committed `docs/tactic-editor/diagrams/binah-lunatic.mmd`가 테스트 입력 사본에서 빠진 것이다. main 원 파일 exact bytes를 readonly copy하고 문서 생성/CM source 수정0. 새 `xb_fb3_final_candidate_fixture_prep_20261011`에서 원23+golden3=후보26을 준비하고 부모 별도 새 표준 full ONE을 실행한다. full GREEN 전 commit 불가.
+- Dart DTO/공개contract 목록은00:02/00:11과 동일하며 변경0이다. CF 메인 반영 시점 회신은 아직 미수신, main backend/contracts 신규FB3 overlay0을 유지한다. 최종26 SHA 목록은 준비 수신 후 CF 로그에 게시한다. 같은source CF gate→XB commit→CF fb3-dart 순서 유지.
+
+## 2026-10-11 01:16 — 보충(XB): selected HEAD23 실제157 PASS 수신·앞 표현2곳 정정
+
+- 새 `xb_fb3_selected_head23_v2_20261011/output.md`16843B/SHA `05828362c99e867538f63acdb3d5c46d000e76f69f92448a286eb5d8e7098490`, 실제3906 artifacts286549856B 전수 bytes/SHA 수신 PASS. ONE157/16.106208s=신규36+기존117+ScenarioStore4; failure/error/skip/unexecuted0. actual HEAD23/source전후 모두 최종23 authority exact, normal origin3/139rows/70modules/24launches/foreign-stub0. 원 firstHEAD23 FAIL61/60PASS/error1/96미실행 artifact3911도 실제 수신·불변 보존했다. full/CF/mainoverlay/commit 완료 주장은 없다.
+- 앞01:10 JSON pointer 표현을 정정한다: normal2는 `/result/candidates/0/payload/catalog_revision`, locked1은 원 result가 list이므로 `/result/0/payload/catalog_revision`다. 독립17 artifacts1753743B 수신 PASS, actual unified diffs284/284/280chars가 정확 pin1값 proposal과 같고 나머지 nested JSON delta0. saved actual dump는 없다.
+- 앞01:10의 `committed binah-lunatic.mmd`는 test 변수명으로 잘못 서술했다. 실제는 main에 존재하는 **미추적 공개 기대 파일**이며 rawHEAD18c5에는 없다. 새 working-full 검증 입력 exact readonly copy만 허용하고 CM source 생성/수정/커밋이나 selectedHEAD 복사0. whole HEAD full completeness는 NOT_VERIFIED다.
+- 새 source26는 원23+의도된golden pin3으로만 격리 준비한다. Dart/contract 목록 변화0, CF 반영 시점 회신 미수신 및 main2259/indexempty 유지.
+
+## 2026-10-11 01:30 — gate 진행 허가, XB FB-3 시점 회신
+
+- 두 워커(FE5-c1, T-FB1b → FE8-b) 멈춤. XB는 FB-3를 격리 사본에서 진행 중이며 메인 backend/contracts에 FB-3 반영 0, 작업 트리 EOF 정리 완료(23:32, v7 diff --check PASS)를 로그로 확인했다 → 메인 작업 트리가 HEAD `18c5f0b0` + 기존 인식 WIP 상태라 CF gate ①을 돌려도 된다고 사용자에게 안내.
+- XB 00:02 요청(메인 반영 시점 회신)에는 "세 slice 커밋 뒤 fb3-dart 준비와 함께 회신, 그 전 격리 유지"로 답했다(backend 로그 01:30). 00:02 정확 Dart 목록은 fb3-dart 워커 프롬프트의 입력으로 쓴다.
+
+## 2026-10-11 01:27 — 알림(XB→CF): FB-3 최종source26 SHA 고정·새 표준full ONE 시작
+
+- 새 final preparation output 1182605B/SHA `660ea86c6fada325b31b06abafa5c5ccd0cc8e645bd218262745117d65b0e908`, 실제4804 artifacts/551563096B를 부모가 전수 bytes/SHA 수신했다. 별도 `debug/xb_fb3_final_full_gate_20261011/artifacts/v7`의 실제4734 inputs/533624710B exact copy 및 필수 빈 output부모dir를 확인했다. 원 source23/product/contracts bytes 그대로, 신규golden3은 각각 catalog_revision 값1개만 old178609→newace36이며 normal2 dict/locked1 list 구조와 다른 bytes/EOL 보존했다.
+- 기존 public MMD1은 main 미추적·rawHEAD없음인 working-full readonly 검증지원이다. 커밋후보26 및 selectedHEAD overlay에는 포함하지 않는다. CM source생성/수정/커밋0. 원 full1086 RED·complete1107 RED·firstHEAD23 FAIL61은 불변 보존한다. 실제 HEAD23 ONE157 PASS 수신은 별도 근거이며 전체 HEAD full completeness는 NOT_VERIFIED다.
+- 표준full은 UTC `2026-10-10T16:27:34.904297+00:00`에 ONE 시작했다. 제외/원점wrapper/stub0, 결과 미완료. 아래 최종26 목록은 working과 선택HEAD bytes를 구분하며, `debug/xb_fb3_final_candidate_fixture_prep_20261011/artifacts/final-source26.json`이 권위다.
+- **Dart DTO 변경 목록과 공개계약/fixture SHA는00:02/00:11과 그대로**다. catalog school/family/tier required nullable, catalog-only credits/SecretStone readonly, optional acquisition service/query/result/source/method strict DTO 및 Process/Mock 소비·cache/revision/whole currency entry/FD101 경계는 앞 정확 목록대로 연결해 달라. 추가Dart 필드0.
+- **CF 현재 FE5-c1·T-FB1b·FE8-b gate 종료 및 FB-3 후보 main 반영 가능 시점 회신을 기다린다.** 새 full GREEN과 CF 시점 회신 전 main backend/contracts FB3 overlay0, indexempty/commit0. 이후 후보 main 반영→새 같은source CF gate→XB commit→CF fb3-dart 순서다. 먼저 final backend gate를 마무리하겠다.
+
+| Commit candidate path | Working bytes / SHA256 | Selected HEAD bytes / SHA256 |
+|---|---|---|
+| `README.md` | 12751 / `d1aa8c0ae133e9e86973840b6718b77f2753a9de1923bffe1363a12947248d12` | 12384 / `24bea501545b3a1ad9070da5107cde39bf1c99e0c782924fba8001bcac7b8347` |
+| `backend/core/inventory_catalog.py` | 12231 / `c060dcd29faa84efd6ae5353afe3003bae69afc1017ace700b0e05908d9e5bb0` | 10716 / `712f027bc8736786ec3fd459f26bdb0eae63f8f163c7f98c531348192afc55f3` |
+| `backend/core/protocol_v1.py` | 25550 / `9d900e8a9a245d74bed77e5ae784826d02e05d8e727b8b96ac8b094ec6d5e709` | 25550 / `9d900e8a9a245d74bed77e5ae784826d02e05d8e727b8b96ac8b094ec6d5e709` |
+| `backend/core/repository_store.py` | 46210 / `0c8caef05a23b9009bf791ab5a6860b3f5d79171c64c48d5dfefb52c8d48ff62` | 46210 / `af2293a95be4cfa58b1bdbf0350a3c4196751a9f75404f4236440e1750089123` |
+| `backend/core/resource_acquisition.py` | 6951 / `053413a477427076882a5ecfc0cabec8549d6d18e406e7ad8cda74809de14963` | 6951 / `053413a477427076882a5ecfc0cabec8549d6d18e406e7ad8cda74809de14963` |
+| `backend/data/metadata/v1/resource_acquisition.json` | 38 / `a3dbbc61ef330dce13dad4b0080ca9a065ed84056c9c2574992e3cc5d237ec24` | 38 / `a3dbbc61ef330dce13dad4b0080ca9a065ed84056c9c2574992e3cc5d237ec24` |
+| `backend/data/metadata/v1/resource_acquisition.schema.json` | 2684 / `ddf0ac0941e47bef80036543387794aed1a9fac7f12bbcc1d35cd0e00a132e91` | 2684 / `ddf0ac0941e47bef80036543387794aed1a9fac7f12bbcc1d35cd0e00a132e91` |
+| `backend/tests/fixtures/scanner_consolidation/golden/inventory_equipment_1280.json` | 2996 / `8ee004d32f3ad3e6b01ded2ab7b64fb132b25cbeeb79511062740c0730c7725f` | 2996 / `8ee004d32f3ad3e6b01ded2ab7b64fb132b25cbeeb79511062740c0730c7725f` |
+| `backend/tests/fixtures/scanner_consolidation/golden/inventory_item_tech_notes_1280.json` | 3795 / `57fa36611576765bde43745709075da5457299be67dc5ac59b02e6eea30c4ec7` | 3795 / `57fa36611576765bde43745709075da5457299be67dc5ac59b02e6eea30c4ec7` |
+| `backend/tests/fixtures/scanner_consolidation/golden/inventory_item_tech_notes_detail_locked_1280.json` | 48124 / `a3643ec167e8f93bfea273c352d90b5dd1006b310254e76103b62facf7c3cb5b` | 48124 / `a3643ec167e8f93bfea273c352d90b5dd1006b310254e76103b62facf7c3cb5b` |
+| `backend/tests/test_inventory_currencies_fb3b.py` | 12552 / `f12b4788dc60802cd6266d60f8bb756fc15ed575ea771a71cf14f58d2de60cea` | 12552 / `f12b4788dc60802cd6266d60f8bb756fc15ed575ea771a71cf14f58d2de60cea` |
+| `backend/tests/test_inventory_metadata_fb3a.py` | 7853 / `d020c4924c269df850b5d695190cb0ed8b02a05783c856c22dc217287d14b66d` | 7853 / `d020c4924c269df850b5d695190cb0ed8b02a05783c856c22dc217287d14b66d` |
+| `backend/tests/test_inventory_scan_support_fb3s.py` | 5791 / `be9f4fb5127e6ec1bdc44988de419bbdbd3fffeff3457bff61318e06f3d1fc84` | 5791 / `be9f4fb5127e6ec1bdc44988de419bbdbd3fffeff3457bff61318e06f3d1fc84` |
+| `backend/tests/test_planning_protocol_contract.py` | 7533 / `daf1a27b6a61843c685ff0eda090b2a731ae3f1a355b001db6f0a0225d4137b8` | 7533 / `daf1a27b6a61843c685ff0eda090b2a731ae3f1a355b001db6f0a0225d4137b8` |
+| `backend/tests/test_resource_acquisition_fb3c.py` | 11183 / `4315832185a1870fcb7348f46821ae8663fffe483fd3d23cfb14dde0dbb94802` | 11183 / `4315832185a1870fcb7348f46821ae8663fffe483fd3d23cfb14dde0dbb94802` |
+| `backend/tests/test_scanner_commit_history_sfb2b.py` | 42516 / `0c388fcc942ede5fb8616aa0399ee4f6be5a51c716f36969f80ffd6fa90e7dd1` | 42516 / `0c388fcc942ede5fb8616aa0399ee4f6be5a51c716f36969f80ffd6fa90e7dd1` |
+| `backend/tests/test_scenario_store.py` | 8818 / `54c5d22470da3d9ac450fad5601c17018b44913c749db60f90828b0de004b75b` | 8818 / `54c5d22470da3d9ac450fad5601c17018b44913c749db60f90828b0de004b75b` |
+| `backend/tests/test_stdio_protocol_server.py` | 7970 / `67c19a8384ddc46171d431640b3a821f72770d5151bd7ea8b2e2779a5fa1ee5a` | 7970 / `67c19a8384ddc46171d431640b3a821f72770d5151bd7ea8b2e2779a5fa1ee5a` |
+| `contracts/fixtures/inventory_catalog_fb3_metadata.json` | 9708 / `a25af4aed55947a946665c122ede19562dfa0594841ad34fa508ae655fb40808` | 9708 / `a25af4aed55947a946665c122ede19562dfa0594841ad34fa508ae655fb40808` |
+| `contracts/fixtures/inventory_catalog_v6_parity.json` | 3814 / `2d6fa950c4a1f395219cf5360fcbea95711afbb1328428bf7c11bab774c05c40` | 3814 / `2d6fa950c4a1f395219cf5360fcbea95711afbb1328428bf7c11bab774c05c40` |
+| `contracts/fixtures/planning_protocol_v1.json` | 52498 / `64e36b1b4012680a820278bde395af98a53725a20d6d8aba3afe0c374703d183` | 52498 / `64e36b1b4012680a820278bde395af98a53725a20d6d8aba3afe0c374703d183` |
+| `contracts/fixtures/resource_acquisition_v1.json` | 77302 / `22eb6845d7c597189c32cf696e38a4608dbd755f5c96e87c2b04edca5f8b7a9d` | 77302 / `22eb6845d7c597189c32cf696e38a4608dbd755f5c96e87c2b04edca5f8b7a9d` |
+| `contracts/planning-inventory-acquisition-get-v1.schema.json` | 4117 / `40bb6db9b8c2b9ca71430a0f82ad626393e3a43484f96fef463d382b0573cac1` | 4117 / `40bb6db9b8c2b9ca71430a0f82ad626393e3a43484f96fef463d382b0573cac1` |
+| `contracts/planning-inventory-catalog-v1.schema.json` | 3481 / `f54f5f9f2a42e37d7184462b22c68ada06f0f24d679157d968e404f1035ae6bd` | 3481 / `f54f5f9f2a42e37d7184462b22c68ada06f0f24d679157d968e404f1035ae6bd` |
+| `contracts/planning-protocol-v1.schema.json` | 1151 / `bbe811baf4c2e22264075fc37b46760ea5052ec125b66d2a3286c0cb34350071` | 1151 / `bbe811baf4c2e22264075fc37b46760ea5052ec125b66d2a3286c0cb34350071` |
+| `contracts/protocol-error-v1.schema.json` | 9717 / `8890bc1fcbce8c2e763312c2600634221976b9fcbeeb8c88cf1ca88a16021842` | 9717 / `8890bc1fcbce8c2e763312c2600634221976b9fcbeeb8c88cf1ca88a16021842` |
+
+## 2026-10-11 01:55 — gate ① `20261011_012751` RED 검토: FE5-c1 예측 일치(lint 1건 CF 수정), FE8-b ScrollController 오류 반려
+
+- 결과: analyze info 1, 테스트 1 −3 / 2 녹색 706 / 3 −10, process 52 녹색, golden −11, almanac·diff-check 녹색. 메인 backend는 HEAD + 기존 인식 WIP(XB FB-3 overlay 0, 01:27 확인).
+- **FE5-c1**: UI 테스트 실패 0(새 `plan_scenario_detail_test` 포함 test-2 녹색). golden RED 6장이 종료 기록 예측과 정확히 같다 — plan-bottleneck(요약 행 견본 병목 1 첫 재화: 네브라 42/60 → 기초 전술교육 BD 4/12), plan-by-phase(3/5, "P2에서 4명 중 3명만"), plan-overall("60% 확보 · 6종 부족 · 11명"), plan-scenario-list-expanded·-shortage(열기·계획에 적용… 켜짐, 12220px 같은 영역), 새 plan-scenario-detail-bottleneck(기준 없음). 이미지를 직접 대조했고 그 밖의 장면 변화 0. 상수 요약 행이 projection으로 바뀌어 숫자가 달라진 것은 의도된 변경으로 승인.
+  · analyze info `use_null_aware_elements`(`lib/ui/models/plan_scenario_detail.dart:116`)는 CF가 직접 고쳤다: `if (studentOf[id] case final student?) student,` → `?studentOf[id],`(같은 뜻, slice 새 파일, post_dir 없음).
+  · FD-034 판단 승인: `affected_stage_ids`가 병목 앞 단계까지 포함하므로 "병목 단계 뒤 affected만 막힘"으로 센 것은 FD-035·FE4-d와 같은 원천이라는 결정 취지에 맞다. 홈 `delayedStages`(affected 전부)와의 뜻 차이는 FE5-c2에서 맞춘다(워커 발견 사항).
+- **T-FB1b**: `tactical_page_revision_test` 녹색, golden 변화 0.
+- **FE8-b 반려**: 13건 모두 `ScrollController attached to multiple scroll views`(`account_section_cluster.dart` 1215행 itemBuilder의 `_profileListController.offset`, 2 clients). account-manager·editor·picker·account-new golden도 같은 오류로 렌더 실패. title 장면 차이(4.75%)는 예측(반경 8·외곽선·나가기 15 w700·카드 .9)과 맞아 보이나 최종 검토는 재실행 뒤. 진단: 목록 위 위젯 구조 변화로 ListView가 다시 마운트되며 옛 position이 프레임 끝까지 남는 경우로 추정(kit DiagonalScrollbar·fog·BaModal은 child를 복제하지 않음을 확인). 수정 요청 `debug/frontend_redesign_handoff/fe8b-fix-message-20261011.md`: 재마운트 원인 제거 + 항목은 자기 Scrollable position을 읽게, 추가 테스트 1.
+- 다음: Lane B 수정 → 사용자 gate ① 재실행 → title·account-* 검토 → ② `-UpdateGoldens` + 비교 → 새 기준(plan-scenario-detail-bottleneck·account-new 포함) 검토 → 커밋 fe5c1 → tfb1b → fe8b → redesigndocs → XB에 FB-3 메인 반영 시작 회신.
+
+## 2026-10-11 02:01 — 진행(XB): FB-3 source26 전체 오류1 보존·원 제한 단독 확인·CF 시점 회신 수신
+
+- 최종 source26 표준 full ONE은1107/1636.819s/failures0/errors1/skips0/exit1이다. 골든 pin3 비교와 diagram 입력 오류는 해소됐지만 실제 process transport 테스트가 원10초 communicate 제한을 초과했다. 원 raw194928B/SHA `058ffe01a28b01480ef9a87b5670719ab796ff3e05c9c53d4e8fd288efc41cc2`와 receipt는 보존한다. 전체 GREEN 또는 커밋 완료가 아니다.
+- 별도 새 격리 사본에서 같은 source4734/같은 테스트·10초 제한·assertions로 ONE 단독 실행:1/6.169s/OK. raw304B/SHA `29270ce5d1b16f892fc90d7aca3e2a40bf5a14b97a0435a8a9b1a17231f2859e`. 단독 PASS는 전체 RED를 대체하지 않는다. 두 실행에서 입력4734/main2259/data6/기존외부4 보존, 추가 제외·wrapper·제품/timeout 변경0. root cause는 아직 미확정이며 정적 원인 검토와 새 표준 full 실행을 진행한다.
+- CF01:30 회신을 수신했다. FE5-c1·T-FB1b·FE8-b gate와 세 slice 커밋 후 CF의 명시적 "메인 반영 시작" 회신 전에는 main FB3 overlay0을 유지한다. CF01:55 gate RED/FE8-b 수정 진행을 확인했다. 앞 정확 Dart/contract/source26 SHA 목록은 동일하다. 이후 후보 반영→새 같은-source CF gate→XB commit→CF fb3-dart 순서, 이전 CF gate 재사용0.
+
+## 2026-10-11 02:09 — 보충(XB→CF): 원제한 새 전체 실행·재화 오류 reason 명시
+
+- 새 격리 `debug/xb_fb3_final_full_v2_gate_20261011`에서 source26/입력4734 그대로 표준 full ONE을 UTC `2026-10-10T17:03:24.157568+00:00` 시작했다. 이전 source26 전체1107/timeout1과 단독1 PASS output은 실제5019/4836 artifacts 수신 후 동결했다. 추가제외/timeout·assertions·제품·환경변경0, 실행 결과는 아직 미완료다.
+- 재화 manual/unattributed presence/quantity 변경 거부는 기존 `invalid_payload` + `reason=currency_read_only`다(후보 README 및 repository_store). 캐시 동일 요청 재생·충돌·expected revision 확인 뒤 guard, common migration/recovery는 기존 순서대로 선행할 수 있다. CF Mock/클라이언트가 이 reason을 그대로 소비하도록 연결해 달라. 공개 update payload의 키4/DTO/앞 계약 목록에 추가변화는 없다.
+- CF01:30 조건을 유지한다. 세 slice 커밋 뒤 명시적 "메인 반영 시작" 회신 전 main FB3 overlay0, 이후 새 같은-source CF gate→XB→CF fb3-dart 순서다.
+
+## 2026-10-11 02:20 — gate ① 재실행 `20261011_015537`: 테스트 전부 녹색, golden 11장 승인 → ②
+
+- analyze 0, 테스트 324 + 706 + 278, process 52, almanac 45, diff-check 0. FE8-b ScrollController 오류 해소(Lane B 수정 기록은 status-lane-b).
+- golden RED 11장 = 예측 그대로: FE5-c1 6장(01:55 검토와 같은 차이 픽셀 수, 새 plan-scenario-detail-bottleneck) + FE8-b 5장. 직접 대조:
+  · account-manager(31.21%): 바깥 Section 5 표면 제거, 목록 패널 채움 .9, 레일 5개 높이 74·사선 따라 폭 감소·아이콘, 전환 레일 흐림 + "지금 쓰는 계정", 행 그라데이션·분홍 외곽선·`지금` 칩·진행 막대·`보유 0 / 2`. FD-113의 FE8-b 몫과 맞다.
+  · account-editor·account-picker(31.21%): 편집기·초상 고르기는 그대로, 뒤 관리 화면 변화 + 수정 레일 분홍 테두리. 예측대로.
+  · title(4.75%, 01:55와 같음): 반경 8, 설정·나가기 외곽선, 나가기 15 w700, 계정 카드 .9 + 외곽선. FE8-a에서 넘긴 4건.
+  · account-new(새 기준 없음) — ② 뒤 새 기준 이미지로 검토.
+- 다음: 사용자 ② `-UpdateGoldens` → `fe_gate.ps1` → 새 기준 plan-scenario-detail-bottleneck·account-new 검토 → 커밋 fe5c1 → tfb1b → fe8b → redesigndocs(한 줄씩).
+- XB 02:01·02:09 수신: FB-3 source26 전체 1107 중 process transport 10초 제한 1건(단독 PASS), 새 전체 실행 중. `currency_read_only` reason은 fb3-dart 프롬프트에 넣는다. 메인 반영 시작 회신은 세 slice 커밋 뒤.
+
+## 2026-10-11 02:23 — 회신(XB→CF): FB-3 source26 전체 Python GREEN·반영시점 및 새CF gate 대기
+
+- 최종 격리후보26의 ONE 표준full1107/1095.61s/OK, failure/error/skip0. source4734/main2259/data6/외부기존4 전후PASS. `debug/xb_fb3_final_full_v2_gate_20261011/output.md` SHA `654ac426a26c7af0350f40239568ae1b9abd0d0b8718deeaceaa35c1d5c82a45`. 기존RED2/HEAD firstFAIL61은 별도보존이며새결과와합산하지 않는다.
+- 최종26 SHA 표/정확Dart목록은 앞 알림 그대로, 추가DTO/contract 변경0. actualHEAD23 ONE157 PASS+HEAD26 정적범위 검토 별도근거이며 wholeHEAD full completeness는 NOT_VERIFIED다. README main에는working판으로기존glyph WIP보존, stage에는selectedHEAD판으로해당WIP제외. MMD는미추적검증support/커밋제외.
+- **CF01:30 조건과02:20 gate ① 재실행 결과를 수신했다. FE8-b 오류 해소·일반/process 테스트 녹색이며, 승인 golden11장 갱신·비교와 세 slice 커밋은 아직 후속이다. 세 slice 커밋 뒤 FB-3 main 후보반영 시작을 명시적으로 회신해 달라.** 사용자조건대로 이 회신 전 main backend/contracts FB3변경0 유지한다. 이후main후보→새같은source CF gate→XB commit→CF fb3-dart. CF gate는앞pairedhistory220311을재사용하지말고최종후보에새로실행해야한다. CFgate미수신/새XBcommit0.
+
+## 2026-10-11 03:10 — gate ② GREEN, 새 기준 2장 승인, 커밋 순서
+
+- `20261011_022934`(update-goldens, 37장) → `20261011_025111` compare GREEN: analyze 0, 테스트 324 + 706 + 278, process 52, golden 37, almanac 45, diff 0.
+- 새 기준 검토:
+  · `plan-scenario-detail-bottleneck`: S1 07 이름·정보 5줄(3명·3페이즈·5단계·9.22 23:10·현재 기준)·"계획에 적용…" 분홍, S2 페이즈 3·단계 5 "활성 계획과 다른 단계 3", 아루 1단계 분홍 테두리 "병목 1 · 여기서 막힘", 앞 단계 대기 3행, S3 seg(병목만 켜짐)·칩 3, 요약 "네브라 14 부족", KPI 112M → 73.8M · 6종 → 7종 · P1 → P1 · 0/5 → 0/3, 카드 2장(지연 단계 줄, 긴 호시노 이름 말줄임). FE5-c1 종료 기록 예측과 숫자까지 일치. 승인.
+  · `account-new`: 스크림 + 평행사변형 모달, "계정 추가" (i), 이름 입력 분홍 포커스·placeholder, 취소·만들기(빈 이름이라 흐림)·X. Title-Accounts-New 구성과 맞다. 승인.
+- 커밋 순서(한 줄씩, 실패 시 멈춤): fe5c1 → tfb1b → fe8b → redesigndocs. 이 항목과 워크플로 완료 표시는 redesigndocs에 들어가고, 해시는 다음 문서 커밋에 적는다.
+- XB 02:23 수신: FB-3 source26 전체 Python 1107 OK. 세 slice 커밋 확인 뒤 backend 로그에 "메인 반영 시작"을 회신한다.
