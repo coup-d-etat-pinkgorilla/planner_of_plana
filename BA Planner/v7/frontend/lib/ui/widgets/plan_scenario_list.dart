@@ -8,8 +8,9 @@
 // - S2 목록(평행사변형): 제목 줄(시나리오 n개 + (i) + 정렬 seg 4종), 필터 줄("현재 데이터 기준만" · 학생 · 이름·설명
 //   검색 · 오래된 시나리오 n개), 활성 계획 고정 행(FD-083: `plan.get`의 계산 요약), 사선 목록(행 100px, 고른 행은
 //   146px로 펼쳐져 행 액션). 목록은 공용 [DiagonalScrollViewport](translate)와 포그·사선 스크롤바를 쓴다(FD-087).
-// - S3 미리보기(오른쪽 사다리꼴): 고른 시나리오의 이름·설명·상태만 보인다. 활성 계획 대비 KPI · 학생·단계 차이 ·
-//   분야별 부족 · 부족 재화 팝오버는 FE5-b(getScenario + compare)에서 채운다.
+// - S3 미리보기(오른쪽 사다리꼴, FE5-b): 고른 행마다 `getScenario` + `compareScenarios(활성, 시나리오)`를 한 번 부르고
+//   (시나리오 · 활성 · 프로필 revision 키 캐시, FD-089) 활성 계획 대비 KPI · 학생·단계 차이 · 분야별 부족 · 부족 재화
+//   팝오버(FD-090)를 보인다. 내용은 [PlanScenarioPreviewLayer](`plan_scenario_preview.dart`)가 그린다.
 // 행 액션: 열기(시나리오 보기 화면 FE5-c 전까지 비활성) · 비교에 담기/빼기 · 복제 · 이름·설명(모달) · 삭제(확인 모달).
 // 서비스는 이미 있는 `duplicateScenario`·`updateScenario`·`deleteScenario`를 쓴다(이름·설명은 `getScenario`로 문서를
 // 읽어 그대로 보내고 authoring은 생략해 보존한다). 바뀌면 목록을 다시 읽는다.
@@ -20,7 +21,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
-import '../../services/repository_plan_service.dart';
+import '../../services/repository_service.dart';
 import '../../services/scenario_service.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/ba_chip.dart';
@@ -39,11 +40,13 @@ import '../kit/skew_controls.dart';
 import '../kit/titles.dart';
 import '../models/plan_flow_save.dart' show planFlowSaveErrorCode;
 import '../models/plan_scenario_list_state.dart';
+import '../models/plan_scenario_preview.dart';
 import '../models/planning_models.dart';
 import '../models/planning_resource_assets.dart';
 import '../studio/plan_scenario_list_studio_layout.dart';
 import 'growth_calculator_section.dart'
     show growthCalculatorCompactNumber, growthCalculatorNumber;
+import 'plan_scenario_preview.dart';
 import 'plan_section_layout.dart' show PlanSectionMotion;
 import 'section_surface.dart';
 import 'section_template_surface.dart';
@@ -122,7 +125,6 @@ abstract final class PlanScenarioListMetrics {
   static const previewTitleTop = 20.0;
   static const previewTitleLeft = 17.0;
   static const previewRight = 22.0;
-  static const previewBodyTop = 84.0;
 }
 
 /// 스크롤 패널 색(시안 rgba(26,44,59,.9), 테두리 rgba(56,81,107,.72)).
@@ -218,6 +220,7 @@ class PlanScenarioListSection extends StatefulWidget {
     required this.active,
     this.activePlan,
     this.activeDocument,
+    this.repositoryState,
     this.onBackToActivePlan,
     this.onCreateScenario,
     this.onOpenPresets,
@@ -236,8 +239,11 @@ class PlanScenarioListSection extends StatefulWidget {
   /// 저장된 활성 계획(`plan.get`, FD-083: 고정 행의 계산 요약). 없으면 [activeDocument]의 개수만 보인다.
   final RepositoryPlanState? activePlan;
 
-  /// [activePlan]이 없을 때 고정 행이 개수를 읽는 문서.
+  /// [activePlan]이 없을 때 고정 행이 개수를 읽는 문서. 미리보기 비교의 A 문서이기도 하다(FE5-b).
   final PlanningDocument? activeDocument;
+
+  /// 미리보기 비교에 보내는 확정 학생 · 재고(FE5-b). 없으면 비교하지 않는다.
+  final RepositoryState? repositoryState;
 
   /// S1 "활성 계획으로"(목록 닫기).
   final VoidCallback? onBackToActivePlan;
@@ -274,6 +280,9 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
   PlanningScenarioSummary? _renameTarget;
   PlanningScenarioSummary? _deleteTarget;
   String? _renameError;
+  late final PlanScenarioPreviewLoader _previewLoader =
+      PlanScenarioPreviewLoader(fetch: _fetchPreview)
+        ..addListener(_stateChanged);
 
   PlanScenarioListController get _state =>
       widget.controller ?? (_ownController ??= PlanScenarioListController());
@@ -284,7 +293,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
   @override
   void initState() {
     super.initState();
-    _state.addListener(_stateChanged);
+    _state.addListener(_listChanged);
     _searchController.text = _state.query;
     _load();
     _loadCatalog();
@@ -294,15 +303,22 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
   void didUpdateWidget(PlanScenarioListSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.controller, widget.controller)) {
-      (oldWidget.controller ?? _ownController)?.removeListener(_stateChanged);
-      _state.addListener(_stateChanged);
+      (oldWidget.controller ?? _ownController)?.removeListener(_listChanged);
+      _state.addListener(_listChanged);
     }
     if (oldWidget.profileId != widget.profileId) _load();
+    // 비교의 A 문서가 바뀌면(같은 revision이라도) 캐시를 버린다(FD-089 키 밖의 입력).
+    if (!identical(oldWidget.activeDocument, widget.activeDocument) ||
+        !identical(oldWidget.repositoryState, widget.repositoryState)) {
+      _previewLoader.invalidate();
+    }
+    _syncPreview();
   }
 
   @override
   void dispose() {
-    _state.removeListener(_stateChanged);
+    _state.removeListener(_listChanged);
+    _previewLoader.dispose();
     _ownController?.dispose();
     _searchController.dispose();
     _renameModal.dispose();
@@ -316,6 +332,66 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
     if (mounted) setState(() {});
   }
 
+  void _listChanged() {
+    _syncPreview();
+    _stateChanged();
+  }
+
+  /// 활성 계획과 비교할 수 있다(비교 서비스 · 활성 계획 문서 · 확정 상태가 있음).
+  bool get _comparable =>
+      widget.service is PlanningScenarioComparisonService &&
+      widget.activeDocument != null &&
+      widget.repositoryState != null;
+
+  /// 고른 행(펼친 행)의 미리보기 키를 정한다(FD-089). 고른 행이 없거나 비교할 수 없으면 null.
+  void _syncPreview() {
+    final id = _state.expandedId;
+    PlanningScenarioSummary? selected;
+    for (final scenario
+        in _result?.scenarios ?? const <PlanningScenarioSummary>[]) {
+      if (scenario.id == id) selected = scenario;
+    }
+    _previewLoader.select(
+      selected == null || !_comparable
+          ? null
+          : (
+              scenarioId: selected.id,
+              scenarioRevision: selected.revision,
+              activeRevision: widget.activePlan?.revision,
+              profileRevision: _currentRevision,
+            ),
+    );
+  }
+
+  /// 미리보기 한 번 읽기: 문서(`getScenario`) + 활성 계획(A) · 시나리오(B) 비교.
+  Future<PlanScenarioPreview> _fetchPreview(PlanScenarioPreviewKey key) async {
+    // 키를 만들 때 비교할 수 있음을 확인했다. 위젯이 바뀌어 그 사이 없어졌으면 실패로 둔다.
+    final service = widget.service;
+    final active = widget.activeDocument;
+    final repository = widget.repositoryState;
+    if (service is! PlanningScenarioComparisonService ||
+        active == null ||
+        repository == null) {
+      throw StateError('comparison_unavailable');
+    }
+    final loaded = await service.getScenario(widget.profileId, key.scenarioId);
+    final result = await (service as PlanningScenarioComparisonService)
+        .compareScenarios(
+          currentStudents: [
+            for (final student in repository.students)
+              confirmedStudentPlanningCurrent(student),
+          ],
+          inventory: repository.inventory.toWire(),
+          documentA: active,
+          documentB: loaded.scenario.document,
+        );
+    return PlanScenarioPreview.fromComparison(
+      scenario: loaded.scenario,
+      result: result,
+      format: planScenarioPreviewAmount,
+    );
+  }
+
   Future<void> _load() async {
     final generation = ++_loadGeneration;
     try {
@@ -326,6 +402,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
         _error = null;
       });
       _state.retainExisting(result.scenarios);
+      _syncPreview();
     } on Object catch (error) {
       if (mounted && generation == _loadGeneration) {
         setState(() => _error = error);
@@ -1159,7 +1236,6 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
     final top = topRight.dy;
     double leftAt(double y) => _edgeX(topLeft, bottomLeft, y);
     final titleTop = top + PlanScenarioListMetrics.previewTitleTop;
-    final bodyTop = top + PlanScenarioListMetrics.previewBodyTop;
     final right = topRight.dx - PlanScenarioListMetrics.previewRight;
     final result = _result;
     PlanningScenarioSummary? selected;
@@ -1172,7 +1248,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
         planScenarioIsStale(selected, result!.currentProfileRevision);
     final titleLeft =
         leftAt(titleTop) + PlanScenarioListMetrics.previewTitleLeft;
-    final bodyLeft = leftAt(bodyTop + 80) + 24;
+    final selectedId = selected?.id;
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -1196,65 +1272,30 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
             trailing: selected == null
                 ? null
                 : BaChip(
+                    key: const ValueKey('plan-scenario-preview-status'),
                     label: stale ? '저장 시점과 다름' : '현재 데이터 기준',
                     tone: stale ? AppTones.warn : AppTones.info,
                   ),
           ),
         ),
-        Positioned(
-          left: bodyLeft,
-          top: bodyTop,
-          width: math.max(0.0, right - bodyLeft),
-          child: selected == null
-              ? const Text(
-                  '목록에서 시나리오를 고르면 여기에 보입니다.',
-                  key: ValueKey('plan-scenario-preview-empty'),
-                  style: TextStyle(
-                    fontFamily: AppFonts.body,
-                    fontFamilyFallback: AppFonts.fallback,
-                    fontSize: AppType.bodySize,
-                    height: 1.45,
-                    color: AppColors.textMuted,
-                  ),
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    PortraitStrip(
-                      studentIds: selected.studentIds,
-                      maxVisible: 3,
-                      portraitSize: const Size(44, 36),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            selected.name,
-                            key: const ValueKey('plan-scenario-preview-name'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: kitDisplayStyle(AppType.titleMediumSize),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            [
-                              if (selected.description.isNotEmpty)
-                                selected.description,
-                              planScenarioUpdatedLabel(selected.updatedAt),
-                            ].join(' · '),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: _muted.copyWith(
-                              fontSize: AppType.bodySmallSize,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+        Positioned.fill(
+          child: PlanScenarioPreviewLayer(
+            key: const ValueKey('plan-scenario-preview-layer'),
+            leftAt: leftAt,
+            top: top,
+            right: right,
+            selected: selected,
+            status: _previewLoader.status,
+            preview: _previewLoader.preview,
+            error: _previewLoader.error,
+            comparable: _comparable,
+            compared: selectedId != null && _state.isCompared(selectedId),
+            studentName: _studentName,
+            onRetry: _previewLoader.retry,
+            onToggleCompare: selectedId == null || _busy || !widget.active
+                ? null
+                : () => _toggleCompare(selectedId),
+          ),
         ),
       ],
     );

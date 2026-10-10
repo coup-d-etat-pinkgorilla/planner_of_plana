@@ -5010,3 +5010,292 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261010_162247\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE5-b 시나리오 미리보기 (구현 끝, gate 전)
+
+### FE5-b 착수 기록 (2026-10-10 17:25)
+
+- 진행 중: FE5-b(Lane A 프론트 워커). 시작 SHA는 redesigndocs `11281bed`(오케스트레이터 로그 17:05: fb4-dart `63a01318` → FE5-a `3e3f26c1` → 문서 `11281bed` 뒤 HEAD, 브랜치 scanner-consolidation). 이 세션은 PC의 git을 읽을 수 없어 짧은 SHA로 적는다.
+- 범위: 워크플로 FE5 표 FE5-b.
+  - S3 미리보기: 행을 고르면 `getScenario` + `compareScenarios(활성, 시나리오)`를 한 번 부르고, (시나리오 revision, 활성 revision, 프로필 revision) 키로 캐시하고, 읽는 동안 로딩을 보인다(FD-089). 늦게 온 이전 응답은 화면을 덮지 않는다.
+  - 내용: 활성 대비 KPI 3개(a → b), 학생 · 단계 목표 차이 칩, 분야별 가장 큰 부족, "부족 재화 n종" → 부족 재화 팝오버(FD-090, 키트 `GroupedShortageFlyout` = Flow-4와 같은 `AnchoredFlyout` 프리셋 묶음), "현재 데이터 기준"/"저장 시점과 다름" 칩.
+  - S3 아래 버튼: "비교에 담기/빼기"만 FE5-a 행 액션과 같이 연결하고, "열기"(FE5-c)와 "계획에 적용…"(FD-088, FE5-c)은 꺼 둔다.
+  - golden 계산 대역 후속(오케스트레이터 로그 10-09 23:25): 계산 대역 `overall`을 문서 의존으로 바꾸고, 미리보기 장면도 같은 대역을 쓴다. 바뀌는 plan-flow-step1~4 장면을 예측해 보고한다.
+- 막힘: 대장 "slice별 막힘 요약" FE5-b 행 "—"(열림 0건). 워커 재량 FD-089 · FD-090을 권장안대로 처리한다.
+- 고칠 기존 파일(사본 `debug/frontend_fe5b/pre/frontend/...`): `lib/ui/widgets/plan_scenario_list.dart`, `lib/ui/widgets/plan_section_layout.dart`(CRLF 유지, 목록에 저장소 상태를 넘기는 줄만), `test/goldens/golden_harness.dart`, `test/goldens/fe1g_baseline_golden_test.dart`, `test/plan_scenario_list_test.dart`.
+- 새 파일(예정): `lib/ui/models/plan_scenario_preview.dart`(비교 결과 → 미리보기 모델, 캐시 · 늦은 응답 처리), `lib/ui/widgets/plan_scenario_preview.dart`(S3 내용), `test/plan_scenario_preview_test.dart`.
+- 고치지 않는다: `lib/services/**`, backend · contracts, 스캐너(`scan_page.dart` 등, Lane B 작업 중) · 전술 · 타이틀 화면, `app_shell.dart`. 서비스에 필요한 것은 요청만 적는다.
+- 환경: PC 셸이 없다(파일을 가져와 고친 뒤 되돌려 쓴다). Flutter · Python을 돌릴 수 없어 정적 검토만 한다.
+
+### FE5-b 종료 기록 (2026-10-10 18:00, 커밋 전)
+
+상태: 구현은 끝났고 gate는 아직 돌리지 않았다. 시작 SHA는 redesigndocs `11281bed`다. `debug/frontend_fe5b/commit.json`을 두었다(slice=fe5b, status=true, whole에는 기준 이미지 10장을 파일 하나씩 적음). 직접 커밋하지 않았다.
+
+- 고친 기존 파일: `lib/ui/widgets/plan_scenario_list.dart`, `lib/ui/widgets/plan_section_layout.dart`(한 줄, CRLF 유지), `test/goldens/golden_harness.dart`, `test/goldens/fe1g_baseline_golden_test.dart`.
+- 착수 기록에 적은 `test/plan_scenario_list_test.dart`는 고칠 필요가 없어 그대로다. 사본(`debug/frontend_fe5b/pre/...`)은 남아 있지만 commit.json `modified`에는 넣지 않았다.
+- 새 파일: `lib/ui/models/plan_scenario_preview.dart`, `lib/ui/widgets/plan_scenario_preview.dart`, `test/plan_scenario_preview_test.dart`.
+- 고치지 않은 곳: `lib/services/**`, backend · contracts, 스캐너(Lane B) · 전술 · 타이틀 화면, `app_shell.dart`, 공용 키트(`lib/ui/kit/**`).
+
+#### 실행 명령·결과
+
+- 실행한 명령은 없다. 이 세션은 PC 셸이 없고 Flutter SDK도 없다. analyze · 테스트 · golden을 하나도 돌리지 않았으므로 통과를 주장하지 않는다.
+- 정적 검토: 별도 검토 에이전트 1회. 확실한 실패 2건과 가능성 높은 문제 2건을 찾았고 모두 고쳤다.
+  1. **컴파일 오류**: `preview != null`을 따로 담은 bool(`ready`)로 검사해 null이 풀리지 않았다. FE5-a 때와 같은 종류다. 조건을 `if`에 바로 두어 고쳤다.
+  2. **v1 문서 성장 규칙 위반**: harness와 새 테스트의 v1 시나리오 문서가 ★1인데 스킬 2 · 3이 7이었다(스킬 2는 ★2, 스킬 3은 ★3이 필요). mock `createScenario`가 거부하므로 ★3으로 고쳤다.
+  3. 분야 행 라벨 "노트 · BD"가 74px 칸을 테스트 글꼴에서 넘칠 수 있어 `FittedBox`로 감쌌다.
+  4. 비교의 A 문서(활성 계획 문서)나 확정 상태가 바뀌면 캐시를 버린다(`invalidate`, 그 전에 보낸 응답은 버림). `required_a`가 응답에 없으면 0으로 보지 않는다.
+- grep 범위: `test/**` 전체에서 미리보기 키, `GoldenScenarioListMockAppService` · 계산 대역 참조, S3에 새로 생긴 글자("비교에서 빼기" · "비교에 담기" 등)와 겹치는 `find.text`를 찾았다. 계산 대역을 쓰는 테스트는 golden 테스트 하나뿐이다. 기존 위젯 테스트에서 기대를 바꿀 곳은 없었다(행 위젯 단독 테스트는 S3가 없다).
+
+#### 바뀐 것
+
+1. **미리보기 읽기**(`plan_scenario_preview.dart` 모델, FD-089)
+   - 펼친 행(= 고른 행)마다 `getScenario` + `compareScenarios(A = 활성 계획 문서, B = 시나리오 문서)`를 한 번 부른다. 확정 학생과 재고는 계획 화면의 저장소 상태를 쓴다(목록에 `repositoryState`를 새로 넘긴다).
+   - 키는 (시나리오 id, 시나리오 revision, 활성 계획 revision, 프로필 revision)이다. 같은 키는 다시 부르지 않는다(접었다 다시 펼쳐도 캐시).
+   - 응답은 자기 키에만 저장되므로, 빠르게 다른 행을 고른 사이 늦게 온 이전 응답이 지금 행의 화면을 덮지 않는다.
+   - 읽는 중에는 "활성 계획과 비교하는 중입니다."를, 실패하면 "활성 계획과 비교하지 못했습니다(코드)." + "다시 읽기"를, 비교 서비스나 활성 계획이 없으면 "활성 계획과 비교할 수 없습니다."를 보인다.
+2. **S3 내용**(`plan_scenario_preview.dart` 위젯 `PlanScenarioPreviewLayer`, 시안 Scenario-List S3 좌표, 왼쪽은 80° 변에서 잼)
+   - **84**: 초상 3 · 이름(20px) · 설명 · 수정 시각. 제목 칩 "현재 데이터 기준"/"저장 시점과 다름"은 FE5-a 그대로다.
+   - **168 · 198 KPI**: "활성 계획 대비 · 왼쪽 = 활성 계획 · 오른쪽 = 이 시나리오"와 KPI 3칸(필요 크레딧 · 부족 재화 · 첫 병목, a → b). b 색은 나아지면 초록, 나빠지면 경고, 같거나 모르면 흰색이다. 첫 병목은 projection `bottlenecks[].phase_number` 최솟값이고, 목록이 비면 "없음", 목록이 없으면 "—"다.
+   - **288 학생 · 단계**: 시나리오 문서 학생 최대 3줄. 단계 경로 `P1 1단계 → P2 2단계`, 마지막 단계 목표 요약(정하지 않은 목표와 최솟값 그대로인 성급 · 장비 · 전무 · 인연은 쓰지 않음), 차이 칩이 있다. 넘치면 소제목 옆 "외 n명".
+     - 칩: `b_only` → "이 시나리오에만"(분홍), 차이 없음 → "활성 계획과 같음"(회색), 모든 차이가 두 값을 알고 시나리오 쪽이 낮음 → "활성보다 낮은 목표"(초록), 그 밖 → "목표 다름 n"(파랑). 방향은 a/b 값으로 클라이언트가 판단한다(D §1-5).
+   - **512 분야별 가장 큰 부족**: 엘레프 · 오파츠 · 노트 · BD · 장비 설계도 · 크레딧 다섯 줄. 그 분야에서 `shortage_b`가 가장 큰 재화, 병목 위치("P1 아루 1단계", `projection_b.bottlenecks[].stage_id` → 문서 단계), 부족량, 활성 대비 칩을 보인다.
+     - 칩: 같음 / −n 초록 / +n 경고 / 활성 계획에 없는 재화는 "이 시나리오에만".
+     - 부족 없는 분야는 흐리게("부족 없음", 모르면 "—"). 크레딧이 모자라지 않으면 "충분"(초록) · "모든 페이즈"다.
+   - **"부족 재화" KPI = 팝오버 트리거**(FD-090): 키트 `GroupedShortageFlyout`(분야별 그룹 프리셋, 폭 500)다. Flow-4 레일 플라이아웃(`ShortageBreakdownFlyout`)과 같은 `AnchoredFlyout` 프리셋 묶음이다.
+     - 제목 "부족 재화 n종", 부제 "활성 계획 m종 · 활성 계획에만 부족 k종", 행마다 활성 대비 칩.
+     - 시안 하단 문구 "항목을 누르면 그 재화가 막는 단계로 이동합니다"와 "인벤토리에서 보기"는 동작이 없어(보기 모드 FE5-c, 인벤토리 FE6) 넣지 않았다.
+   - **804 버튼**: "비교에 담기/빼기"는 행 액션과 같다(넷이 차면 FE5-a 안내). "열기"와 "계획에 적용…"은 꺼져 있고 툴팁을 단다.
+3. **목록 화면**(`plan_scenario_list.dart`): 미리보기 로더를 상태에 두고, 펼친 행 · 목록 다시 읽기 · 활성 계획 revision 변화 때 키를 맞춘다. 빈 미리보기 안내는 FE5-a 자리 그대로라 `plan-scenario-list` golden은 바뀌지 않는다.
+4. **golden 계산 대역 문서 의존화**(오케스트레이터 로그 10-09 23:25 후속, `golden_harness.dart`)
+   - 공용 함수 `goldenCalculationBand` · `goldenComparisonBand` · `goldenBandSummary`를 두었다. 계획 만들기 mock과 시나리오 목록 mock이 같은 함수를 쓴다.
+   - `overall` = 단계 필요량의 합 vs 고정 재고(`goldenBandInventory`). 같은 문서면 같은 값이고, 단계가 늘면 필요 크레딧 · 부족이 는다. 크레딧 = 단계 크레딧 합.
+   - 단계 결과는 FE4 값 그대로다(학생 n번째 단계마다 크레딧 18.2M · 9.6M · 1.8M, 오파츠 · 볼프세크와 진입 보유량). 그래서 2단계 카드 상태 칩 · 3단계 배지 · 병목은 바뀌지 않는다.
+   - 미리보기 분야를 보이려고 단계 재화를 늘렸다. 기술 노트(게헨나 최상급) 24 · 40 · 16, 시계 T10 설계도 n≥2, 전술 교육 BD(게헨나 최상급) n≥2, 아루 엘레프(아루 단계마다 120)이고, 모두 진입 보유량 = 필요량이라 단계 부족은 없다. id는 계산기 golden 대역에서 실제 파일로 확인된 것만 썼다.
+   - 비교 대역의 학생 목표 차이는 `MockAppService`와 같이 학생마다 마지막 단계를 견준다(전에는 빈 값).
+   - **시나리오 목록 mock**: 목록 요약 · 활성 계획 요약(`plan.get` calculation) · 미리보기 비교를 모두 같은 대역에서 만든다. 백엔드가 세 값을 같은 계산 경로로 만들기 때문이다. FE5-a의 시안 예시 고정값(186.2M · 112.8M 등)은 대역 값으로 바뀐다.
+   - 이 장면 전용 활성 계획(`listActivePlanDocument`, 학생 장면 활성 계획보다 무거움)을 저장해, "07 3단계 우선순위" 미리보기가 크레딧 · 부족량은 나아지고 학생 칩 세 가지가 모두 보이게 했다.
+   - 시나리오 문서는 v1 ★3 · 페이즈별 목표(Lv.80 · EX 3 · 스킬 7 → Lv.90 · EX 5 · 스킬 10 · T9 → T10) · 단계 이름 "n단계"다. "03 방어선 강화"는 미보유 두 명(세리카 · 나구사)으로 바꿔 "부족 0종 · 병목 없음" 초록 행을 지켰다(설명도 바꿈).
+
+#### 처리한 FD
+
+- FD-089(워커 재량, 권장안): 선택 시 1회 호출 + (시나리오 revision, 활성 revision, 프로필 revision) 키 캐시, 로딩 표시. 키 밖의 입력(활성 계획 문서 · 확정 상태 객체)이 바뀌면 캐시를 버린다.
+- FD-090(워커 재량, 권장안): `AnchoredFlyout` 위 프리셋 2종 중 분야별 그룹(`GroupedShortageFlyout`)을 미리보기에 쓴다. Flow-4는 부족량 · 단계별 프리셋 그대로다.
+- FD-088 · FD-082(FE5-c 몫): "계획에 적용…"과 "열기"는 꺼 두었다.
+
+#### 판단(확인 부탁)
+
+- 시나리오 목록 golden 숫자를 FE5-a의 시안 예시 고정값에서 대역 값으로 바꿨다. 미리보기 KPI가 행 · 고정 행과 같은 대역에서 나와야 서로 맞기 때문이다. 시안 숫자를 다시 재현하려면 대역에 장면 전용 비용표가 필요하다.
+- 부족 재화 팝오버 부제의 시안 "빠진 6종은 이 시나리오에 없는 학생 몫"은 정의가 확인되지 않아(D §1-5) "활성 계획에만 부족 n종"(두 부족량을 알고 시나리오에서는 모자라지 않는 재화 수)으로 썼다.
+- 시안 하단의 "항목을 누르면 … 이동합니다" · "인벤토리에서 보기"는 동작할 곳이 없어 넣지 않았다.
+- 미리보기 KPI는 3칸(시안 그대로)이다. 충족률은 넣지 않았다.
+
+#### 테스트
+
+- 새 `test/plan_scenario_preview_test.dart`(9건)
+  - 모델 3건: KPI · 학생 칩 · 부족 순서 · 분야 다섯 줄 · 병목 위치 · 묶음 / 값이 없으면 null(0 아님) / 칩 규칙 · 목표 요약.
+  - 캐시 3건: 같은 키 한 번 · 늦은 응답이 지금 행을 덮지 않음 · revision 바뀌면 새 키 / invalidate 뒤 이전 응답 버림 / 실패 · 다시 읽기.
+  - S3 층 위젯 2건: KPI · 학생 · 분야 행 · 버튼 꺼짐/켜짐 · 팝오버 4행 · 부제 / 읽는 중 · 실패.
+  - 계획 화면 1건: 행을 고르면 getScenario 1 · compare 1, 접었다 펼치면 캐시, S3 비교에 담기 → "2 / 4".
+- `fe1g_baseline_golden_test.dart`(의도된 변경)
+  - `plan-flow-step2`의 `find.text('48.2M')`을 "레일 크레딧 = `planFlowCreditsLabel(flow)` · 48.2M이 아님"으로 바꿨다. 대역이 문서 의존이 되어 고정값이 없어졌기 때문이다.
+  - 시나리오 목록 장면 준비를 `_openScenarioListScene`으로 묶고, 미리보기 KPI(07 = 73.8M)와 학생 칩 세 가지를 단언한다.
+  - 새 장면 `plan-scenario-list-shortage`를 더했다. "부족 재화" KPI를 눌러 팝오버를 열고 7행 · "부족 재화 7종"을 단언한다.
+- 지운 테스트 없음. `plan_scenario_list_test.dart` · `planning_page_test.dart`는 바꾸지 않았다.
+
+#### golden 예측(장면별)
+
+계산은 대역 식을 그대로 옮긴 계산으로 확인했고, 화면 그림은 확인하지 못했다.
+
+| 장면 | 예측 | 이유 |
+|---|---|---|
+| `plan-flow-step1` · `-many` · `-filter` | 그대로 | 단계가 없어 계산을 부르지 않는다(레일 "—") |
+| `plan-flow-step2` | 바뀜 | 레일 48.2M · 5종 → 29.6M · 6종(아루 3단계). 카드 비용 줄 둘째 재화가 "아루의 엘레프 120"으로, COST 블록에 기술 노트 · 설계도 · BD · 엘레프 줄, 오른쪽 "이 학생 재화" 수 증가. 상태 칩은 그대로 |
+| `plan-flow-step2-saved` | 바뀜 | 레일 57.4M · 7종(호시노 2 + 아루 3 기준), 카드 비용 줄 · COST 행 |
+| `plan-flow-step2-more` | 바뀜 | 레일 18.2M · 2종(아루 MAX 1단계 + 미보유 슌), 카드 비용 |
+| `plan-flow-step3` | 바뀜(레일 중심) | 레일 57.4M · 7종, 충족률. 배지(부족 2 · 막힘 4 · 모집 필요 2) · 칸 머리는 그대로. 고른 카드 재화 목록에 새 줄이 생길 수 있음 |
+| `plan-flow-step3-deferred` | 바뀜 | 레일 55.6M · 7종(아루 3단계는 나중에 칸이라 계산 밖) |
+| `plan-flow-step3-many` | 바뀜 | 레일 207.2M · 8종(보유 7명 × 3단계) |
+| `plan-flow-step4` | 바뀜 | 비교 타일 a(활성 46M · 4종) → b(57.4M · 7종), 화살표 색과 충족률 a ≠ b. "가장 크게 늘어나는 재화" 3줄 = 크레딧 +11.4M · 아루의 엘레프 +360 · 파이스토스(최상급) +96. 레일 57.4M · 7종 |
+| `plan-flow-step4-append` | 바뀜 | b = 활성 + 새 페이즈 병합 103.4M · 7종(a 46M · 4종), 늘어나는 재화 크레딧 +57.4M · 엘레프 +360 · 파이스토스 +192. 고정된 P4 팝오버에 새 분야 줄 |
+| `plan-scenario-list` | 그대로 | 고른 행이 없고 빈 안내 자리는 FE5-a 그대로, 기본 mock 대역 |
+| `plan-scenario-list-expanded` | 바뀜 | 고정 행 112M · 6종 · P1(이 장면 활성 계획: 학생 5 · 페이즈 3 · 단계 8). 행 요약이 대역 값으로(07 73.8M · 7종 · P1 · 네브라(최상급) −194 / 01 18.2M · 2종 · P1 · 아루의 엘레프 −70 / 02 73.8M · 6종 · P1 · 네브라 −194 / 03 0 · 부족 0종 · 병목 없음 · 부족 없음(초록), 학생 세리카 · 나구사 / 04 55.6M · 7종 · P1 · 아루의 엘레프 −190 · 저장 시점과 다름). S3가 채워진다(아래) |
+| `plan-scenario-list-shortage` | 새 장면 | expanded와 같은 상태 + 팝오버. 제목 "부족 재화 7종", 부제 "활성 계획 6종", 분야 4묶음(엘레프 1 · 오파츠 3 · 노트 · BD 2 · 장비 설계도 1) |
+| `plan-scenario-compare` 외 나머지 | 그대로 | 기본 mock 비교, 학생 · 계정 · 스캔 · 타이틀 장면은 이 대역을 쓰지 않음 |
+
+expanded · shortage 장면의 S3 내용:
+
+- KPI: 112M → 73.8M(초록) · 6종 → 7종(경고) · P1 → P1(흰색).
+- 학생 줄: 아루 "P1 1단계 → P2 2단계 · Lv.90 · ★3 · 스킬 M/M/M/M · T9 · 이 시나리오에만" / 아야네 "P1 1단계 → P3 2단계 · … · T10 · 활성보다 낮은 목표" / 호시노 "P2 1단계 · … · T9 · 활성 계획과 같음".
+- 분야 행: 엘레프(아루의 엘레프 −190, 위치 없음, 이 시나리오에만) / 오파츠(네브라(최상급) −194, P1 아루 1단계, −180) / 노트 · BD(기술 노트 −92, −64) / 장비 설계도(시계 T10 설계도 −4, −8) / 크레딧(충분 · 모든 페이즈).
+- 버튼: 열기 꺼짐 · 비교에서 빼기 · 계획에 적용… 꺼짐.
+
+commit.json whole에는 위 "바뀜 · 새 장면" 10장을 적었다. 그 밖의 장면이 바뀌어 나오면 예측과 다른 것이니 알려 주기 바란다.
+
+#### 검수표
+
+| artboard / 확인 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Scenario-List S3 미리보기 | mock 모드 → 계획 탭 → "시나리오 리스트" → 행 누르기 | 읽는 중 표시 뒤 KPI 3칸(a → b, 색), 학생 · 단계 줄과 칩, 분야 다섯 줄(흐림 · 충분) |
+| 캐시 | 같은 행을 접었다 다시 펼치기, 다른 행으로 빠르게 옮기기 | 다시 읽기 표시 없이 바로 나옴, 늦게 온 이전 행 내용이 덮지 않음 |
+| 부족 재화 팝오버 | S3 "부족 재화" 칸에 마우스 올리기 / 누르기 | 폭 500 패널, 분야 소제목 + n종, 행 칩(같음 · −n · +n · 이 시나리오에만) |
+| S3 버튼 | 아래 버튼 | 비교에 담기/빼기 = S1 슬롯 수 변화, 열기 · 계획에 적용 꺼짐 + 툴팁 |
+| 저장 시점과 다름 | 오래된 시나리오 행 고르기 | 제목 칩 "저장 시점과 다름" |
+| 4단계 비교 타일(golden 대역 확인) | golden `plan-flow-step4` · `-append` | a · b 값이 다르고 화살표 색 · 늘어나는 재화 줄이 보임 |
+
+#### 확인하지 못한 것
+
+- analyze · 테스트 · golden 실행 전부. 정적 검토만 했다.
+- 실제 그림: S3 요소 위치(시안 offset을 옮겨 적음), 좁은 창에서 학생 줄 · 분야 줄 넘침, 팝오버가 S3 아래 버튼 위로 겹치는 정도.
+- ProcessAppService(실제 Python)의 compare 응답(`students[].target_differences` 모양, `bottlenecks[].stage_id` · `phase_number`)으로 위치 · 칩이 같은지.
+- `plan-flow-step2-saved`의 학생별 단계 수(저장 프리셋 펼치기 규칙)는 FE4-i 기록대로 호시노 2단계를 가정했다.
+
+#### 서비스 요청
+
+- 없음. 기존 `getScenario` · `compareScenarios`로 충분했다. 다만 `PlanningScenarioComparisonResult`의 세 맵은 지금도 타입 검증이 없다(D §5). 화면은 모르는 모양을 null로 읽고 넘어간다.
+
+#### 발견 사항
+
+- 실제 백엔드 compare의 `resources[]`에 크레딧 줄이 들어 있으면, 4단계 "가장 크게 늘어나는 재화"(`PlanFlowSaveComparison.increases`)가 크레딧을 재화로 맨 위에 올린다(golden 대역에서 보임, FE4-e 코드). 크레딧을 빼야 하는지는 FE4-e 담당 판단이다. 이번에는 고치지 않았다.
+
+#### 다음 행동
+
+- 오케스트레이터: gate ① 결과 검토(위 표의 바뀜 9장 + 새 장면 1장 예상), 판단 4건 확인. 커밋 순서는 오케스트레이터가 정한다.
+- 사용자 실행 순서:
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① 두 워커가 모두 멈춘 뒤 gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다(plan-flow-step2 · -saved · -more · step3 · -deferred · -many · step4 · -append · plan-scenario-list-expanded RED, 새 장면 plan-scenario-list-shortage 기준 없음 예상)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 승인 뒤 기준 이미지 갱신 → gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋(순서는 오케스트레이터가 정한다)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe5b -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe5b
+```
+
+## fb2b-dart + sfb2b Mock (Lane A, XB paired history Dart 쪽)
+
+### fb2b-dart 착수 기록 (2026-10-10 20:40)
+
+- 진행 중: fb2b-dart(+sfb2b Mock), Lane A 프론트 워커. 프롬프트 `debug/frontend_redesign_handoff/fb2bdart-worker-prompt-20261010.md`.
+- 시작 SHA: `11281beda57efadbbc2860f374d0367f556ffff4`(브랜치 scanner-consolidation). 이 세션은 PC의 git을 읽을 수 없어 가장 최근 gate 요약(`debug/frontend_gate/20261010_185608/summary.txt`의 `git` 줄)과 오케스트레이터 로그 19:55의 HEAD를 옮겨 적는다. 그 뒤 커밋이 있었다면 오케스트레이터가 고쳐 적는다.
+- 동결 계약 SHA 확인: `debug/xb_fb2b_actual_20261010/artifacts/cf-contract-hashes.json`의 7개 파일을 PC에서 가져와 바이트 수와 SHA-256을 다시 셌다. **7개 모두 일치**(멈출 이유 없음).
+  - `contracts/repository-history-scan-latest-v1.schema.json` 10465 B `dc0e7599…bbf3`
+  - `contracts/repository-protocol-v1.schema.json` 23558 B `e8647360…782d`
+  - `contracts/fixtures/repository_history_scan_latest_v1.json` 198652 B `d4686283…2446`
+  - `contracts/fixtures/current_history_v1.json` 135624 B `9c930060…6f28`
+  - `contracts/scan-commit-history-context-v1.schema.json` 3246 B `aeaa9fb3…9da8e`
+  - `contracts/fixtures/scan_commit_history_context_v1.json` 74500 B `0f8a89bf…53ff`
+  - `contracts/fixtures/scanner_commit_history_sfb2b_v1.json` 13433 B `3f7c1df7…ff9`
+- 범위: 프롬프트 1(FB-2b summary 13키 · `repository.history.scan_latest` DTO · 서비스 · Process · strict 검사 · 읽기 전용 Mock), 2(S-FB2b Mock scanner commit: 승인 identity upsert · 원 complete bucket과 공개 7필드 고정 · receipt 우선 replay · 내부 `appendScan` 1회 · observer 중복 억제 · 빈/전부 제외 scope 거절), 3(공유 fixture 직접 읽기 · 기대 갱신 · process E2E).
+- 고칠 기존 파일(사본 `debug/frontend_fb2bdart/pre/<경로>`, 8개):
+  - `frontend/lib/services/repository_history_service.dart` — 기존 미커밋 변경 없음(gate 185608 `git-diff-check.log`의 수정 파일 목록에 없음).
+  - `frontend/lib/services/repository_service.dart` — 기존 미커밋 변경 없음(같은 근거).
+  - `frontend/lib/services/process_app_service.dart` — **기존 미커밋 변경 있음**(스캐너 WIP). 새 wrapper 1개만 history 묶음 끝에 더한다.
+  - `frontend/lib/services/mock_app_service.dart` — **기존 미커밋 변경 있음**(스캐너 WIP). WIP 줄은 지우지 않고, 스캐너 메서드 안에는 짧은 삽입만 하고 새 로직은 한 덩어리로 더한다.
+  - `frontend/lib/services/mock_repository_history.dart` — 기존 미커밋 변경 없음.
+  - `frontend/test/repository_history_service_test.dart`, `frontend/test/repository_history_process_e2e_test.dart`, `frontend/test/repository_history_query_process_e2e_test.dart` — 기존 미커밋 변경 없음.
+- 새 파일(예정): `frontend/lib/services/repository_history_scan_latest.dart`(history 서비스 part), `frontend/test/repository_history_scan_latest_test.dart`, `frontend/test/repository_history_scan_latest_process_e2e_test.dart`, `frontend/test/mock_scanner_commit_history_test.dart`.
+- 고치지 않는다: `frontend/lib/ui/**`(scan_page.dart는 Lane B), `app_shell.dart`, `backend/**` · `contracts/**`(읽기만), `planning_protocol_client.dart`(repository.* 성공 검사가 이미 `isValidRepositorySuccessPayload`로 넘어가므로 고칠 필요가 없다).
+- 환경: PC 셸이 없다(파일을 가져와 고친 뒤 되돌려 쓴다). 이 작업 공간에서는 Dart SDK를 받을 수 없어(storage.googleapis.com · pub.dev 차단) Flutter · Dart를 돌리지 못한다. 정적 검토와, 같은 규칙을 Python으로 옮긴 fixture 대조만 한다. 통과를 주장하지 않는다.
+
+### fb2b-dart 종료 기록 (2026-10-10 20:45, 커밋 전)
+
+상태: 구현은 끝났고 gate는 아직 돌리지 않았다. 시작 SHA는 `11281bed`다. `debug/frontend_fb2bdart/commit.json`(slice=fb2bdart, status=true, post_dir=`debug/frontend_fb2bdart/post`)과 pre · post 사본을 두었다. 직접 커밋하지 않았다.
+
+- 고친 기존 파일 8개(pre 사본 있음): `frontend/lib/services/repository_history_service.dart`, `repository_service.dart`, `process_app_service.dart`, `mock_app_service.dart`, `mock_repository_history.dart`, `frontend/test/repository_history_service_test.dart`, `repository_history_process_e2e_test.dart`, `repository_history_query_process_e2e_test.dart`.
+- 새 파일 4개: `frontend/lib/services/repository_history_scan_latest.dart`(history 서비스 part), `frontend/test/repository_history_scan_latest_test.dart`, `frontend/test/repository_history_scan_latest_process_e2e_test.dart`(process 분류), `frontend/test/mock_scanner_commit_history_test.dart`.
+- 고치지 않은 곳: `frontend/lib/ui/**`(scan_page.dart · `ui/scan/**`는 Lane B), `app_shell.dart`, `planning_protocol_client.dart`(repository.* 성공 응답은 이미 `isValidRepositorySuccessPayload`로 위임되고, 여기에 새 메서드를 엄격하게 넣었다. 요청 쪽도 `isValidRepositoryProtocolMessage`에 넣었다), `repository_history_query.dart`(기존 stored history · cache 검사기를 강화하지 않는다), golden harness · golden 테스트, `backend/**` · `contracts/**`.
+
+#### 구현 요약
+
+1. **FB-2b summary**: `RepositoryHistorySummary` 12 → 13키. `last_scan_at`은 필수 nullable(6자리 UTC)이고 `total_counts.scan == 0`일 때만 null이다(`scan`도 `manual`·`import`와 같은 짝 검사에 넣음). 값은 저장된 `last_applied_at.scan` 그대로다(최대 시각 · manual/import/unattributed로 대체하지 않음). `lastScanAt` getter, `toWire`, `unrecorded`, `_summarize`, SummaryResult 중첩 검사가 모두 13키다. 키가 빠진 응답에 기본값을 채우지 않는다(옛 12키 응답은 strict하게 거부).
+2. **`repository.history.scan_latest`**(새 part `repository_history_scan_latest.dart`):
+   - `RepositoryHistoryScanLatestRequest`: 필수 `profile_id` + 선택 6개. 타입은 정확히(bool · int, 1.0 · true 거부), page 1..200(기본 100), after ≥ 0, after > 0이면 anchor 필수, after ≤ anchor, 페이지 조절 키는 `include_by_kind=true`일 때만, 대상 각 256개 이하. 새 query 문자열은 UTF-8 인코딩 **전에** 홀로 선 surrogate를 거부하고(`utf8.encode`는 U+FFFD로 바꿔 숨기므로), 1..1024 bytes를 원문 그대로(trim · enum 없음) 지킨다. resource key는 canonical alias(`Item_Icon_SkillBook_Ultimate_Piece` → `Item_Icon_SkillBook_Ultimate`, 백엔드 `LEGACY_RESOURCE_KEYS`와 같은 표 `historyLegacyResourceKeys`)를 먼저 적용한 뒤 중복을 거부한다. 정렬은 기존 `_historyIdCompare`(rune 순서, U+E000 < U+10000)를 그대로 쓴다. `nextKindPage(page)`는 첫 페이지의 `history_sequence`를 anchor로 붙인다.
+   - `RepositoryHistoryScanLatestResult`(exact8) · `HistoryLatestScan`(exact5, `inventory_scan_profile` 필수 nullable 원문) · `HistoryStudentScanLatest` / `HistoryResourceScanLatest`(exact3). 검사: by_kind는 latest sequence 오름차순 · 튜플 유일 · 200 이하, next-after는 마지막 sequence와 같을 때만, 행은 rune 순서로 유일 · resource 행은 canonical key, `latest_scan == null ⇔ reason ∈ {unrecorded, scan_not_found}`, `last_scan_at == null`이면 by_kind · next · 행 scan이 모두 비어야 한다, `unrecorded`는 history 없음(sequence 0)일 때만. `fromWireFor(request, wire)`는 요청 대상 행 일치 · include 여부 · page 경계 · anchor 일치까지 본다.
+   - `RepositoryService.loadRepositoryHistoryScanLatest` 추가. `ProcessAppService`는 `repository.history.scan_latest`를 보내고 `fromWireFor`로 받는다. 오류(`invalid_payload` reason=`stale_scan_latest`, retryable=false / `corrupt_data`)는 기존 repository 오류 처리 그대로 `BackendRemoteException`으로 온다.
+   - Mock: `repositoryHistoryScanLatest(...)`(저장 index · `last_applied_at.scan`만 읽음). profile revision은 `_mockRepositoryState`(이관 없음), history는 `_currentHistories`. observer · clock · cache · map 쓰기 없음, 결과는 분리된 사본. stale anchor는 `BackendRemoteException(invalid_payload, details.reason=stale_scan_latest, retryable=false)`, 불가능한 by_kind 중복은 include=false여도 `corrupt_data`(고치지 않음).
+3. **S-FB2b Mock scanner commit**(student/inventory 세션만, 전술 로비는 기존 4인자 경로 그대로):
+   - 공개 요청 7필드(`session_id` · `generation` · `candidate_id` · `candidate_revision` · `profile_id` · `expected_repository_revision` · `idempotency_key`)의 canonical JSON과 session/key로 receipt를 찾는다. 같은 요청이면 **revision 검사 · 읽기 · 쓰기 · clock보다 먼저** 최초 응답을 그대로 돌려준다. 같은 key에 다른 필드(generation 포함)면 `idempotency_conflict`. manual 저장 cache(`_planIdempotency`)와 섞지 않는다.
+   - 처음 보는 요청: 저장된 후보 revision이 다르면 `candidate_revision_conflict`, 검토 필요 · 미승인이면 `review_required`(둘 다 기존처럼 `StateError`). 그다음 승인 payload로 scope를 정하고(student = `[student_id]`, inventory = 항목의 canonical identity), 빈 scope(전부 제외 포함)는 상태를 읽기 전에 `BackendRemoteException(invalid_candidate, details.reason=empty_scan_scope)`이며 receipt를 남기지 않는다. 이어 state를 읽고(get_state처럼 첫 이관 포함) **원 complete bucket**을 만든다: inventory는 canonical identity upsert(관찰하지 않은 기존 항목 유지, scanner 전용 `inventory_scan_profile` 필드 제거, alias → 현재 key), student는 같은 ID만 교체. 이 bucket · 공개 요청 · nested context · 승인 scope · 원문 kind/profile · (내부 provenance: applied/excluded/retry_of=null)를 receipt에 고정한다.
+   - revision이 낡으면 `revision_conflict`(receipt는 pending으로 남고, 같은 key 재시도는 다시 merge하지 않고 같은 고정 bucket으로 같은 결과). 맞으면 한 번 쓰고 `RepositoryCurrentHistory.appendScan`으로 scan 적용 1건(source=scan, applied_scope = 승인 scope, nested context exact4, 동값 적용도 기록)을 남긴다. 이 쓰기 동안 `_scannerMockCurrentWrite`로 current-map observer를 막아 unattributed 중복이 없다. 성공 뒤 receipt는 응답만 남기고 bucket을 놓는다. profile 목록 revision도 맞춘다.
+   - 원문 kind/profile은 `startScannerSession`에서 세션별 내부 map에 남긴다(public `ScannerSession` 그대로). 공개 API로 표현할 수 없는 미래 원문 profile은 `@visibleForTesting debugSetScannerSessionRawMetadata`로만 넣는다. 제외 key 추적은 후보 map 쓰기 관찰(`MockScannerCandidateMap`)로 한다.
+   - `appendScan`(history 서비스): scope 밖 diff를 거부하고(`scan_scope_mismatch`), 빈 scope · 중복 ID · 잘못된 context를 거부한다. index 갱신은 Python `append_history`와 같다(by_kind는 같은 튜플을 빼고 끝에 추가, 학생 · 자원은 rune 순서, session ID 평생 목록). `appendManual`은 동작 그대로이고 diff · 접기 꼬리를 `appendScan`과 나눠 쓴다(`_historyDiffs`, `_appendHistoryEvent`).
+4. **테스트**:
+   - `repository_history_scan_latest_test.dart`: 공유 fixture의 valid 11건을 순수 query · Mock · 응답 검사기로 그대로 재현(+ Mock clock 0회 · 목록 revision 그대로 · 사본 분리 · summary `lastScanAt` 일치), metadata policy oracle 31건(요청 오류 → `FormatException` · 요청 메시지 검사 false, stale → `RepositoryHistoryScanLatestError`, payload → index query 결과 일치), oracle 적용 기록 7건을 Mock `appendScan`/`appendManual`로 다시 쌓아 index · last_scan_at · session · 결과를 대조(가지친 2건과 import 1건은 Mock helper로 만들 수 없어 index 대조에서만 쓴다), 요청 경계(rune 순서와 `String.compareTo` 반대 확인, 홀로 선 surrogate 4종 · 빈 문자열 · 1026 bytes 거부와 1023/1024 bytes 허용, alias 중복, 학생 ID 원문 유지, 잘못된 제어 키 10종), 결과 DTO strict 18종, Mock stale · corrupt · clock rollback(시각이 아니라 마지막 적용 sequence), summary exact13 검사.
+   - `mock_scanner_commit_history_test.dart`: `scanner_commit_history_sfb2b_v1.json` 6건마다 upsert(관련 없는 항목 유지, 제외 항목 이전 값 유지), scan 1건 · unattributed 0, 원문 kind/profile(알 수 없는 원문 profile 포함), 승인 scope, nochange면 변경 0, nested context exact4, scan_latest(승인 key만 갱신, 제외 key는 `scan_not_found`), 공개 성공 4키, receipt replay(다른 곳 쓰기 뒤에도 최초 응답 · clock 1회 그대로), 같은 key 다른 expected = `idempotency_conflict`. 빈 scope 거절(receipt 없음 · 상태 그대로), pending 손실 재시도(같은 key는 계속 conflict, expected를 바꾸면 idempotency_conflict, 새 의도는 새 key), 낡은 후보 revision · 검토 필요.
+   - `repository_history_service_test.dart`: "typed missing/null/zero…"와 "summary protocol is strict…"는 공유 summary가 13키가 된 것이 **의도된 변경**이라 그대로 녹색이 되어야 하고, `last_scan_at` 누락 · null 불일치 · 12키 응답 거부를 더했다. 옛 "old Mock scanner writes stay unattributed…"는 S-FB2b로 기대가 바뀌어 "seeded unattributed history is not reclassified; new Mock scanner commits record scan once"로 바꿨다(과거 unattributed 1건 유지, 새 scan 1건, replay는 기록 없음, 동값 scan 2 · session 1, 뒤 manual은 따로).
+   - process: `repository_history_process_e2e_test.dart` 2건에 summary 13키 · manual/import만 있으면 `last_scan_at` null을, `repository_history_query_process_e2e_test.dart`에 fixture `last_applied_at.scan`과 같은 `lastScanAt`을 더했다. 새 `repository_history_scan_latest_process_e2e_test.dart`는 실제 Python 저장소에 fixture history 11건을 넣고 결과 · summary를 대조하고, 첫 페이지 → 둘째 페이지 → manual 쓰기 → stale anchor(`invalid_payload`/`stale_scan_latest`/retryable=false) → 처음부터 다시 → 재시작 뒤 같은 결과 · 같은 파일 바이트를 본다.
+   - grep으로 찾은 영향 대상: summary를 단언하는 테스트는 위 3개 파일뿐이다. Mock commit을 쓰는 테스트는 `repository_history_service_test`, `scan_page_test`(UI 적용 · 충돌 · 재검증), `scan_page_revision_test`(Lane B, `super.commitScannerCandidate`), `inventory_page_test`(승인 commit · 낡은 revision). 이들은 고치지 않았다: 오류 형태(`StateError(code)`)와 응답 4키를 그대로 두었고, 저장소 밖에서 만든 후보(저장된 후보 없음)는 넘어온 후보로 처리한다. statistics · golden 대역은 `MockAppService`를 상속만 하고 scan commit · history를 부르지 않는다. `RepositoryService`를 직접 구현하는 테스트 대역은 없다(새 interface 메서드 영향 없음).
+
+#### 실행 명령 · 결과
+
+- Flutter · Dart: **실행하지 못했다.** 이 작업 공간은 Dart SDK를 받을 수 없고(storage.googleapis.com · pub.dev가 프록시 정책으로 막힘) PC 셸도 없다. analyze · 테스트 · golden 통과를 주장하지 않는다.
+- 계약 SHA 재계산(Python hashlib): 7개 모두 `cf-contract-hashes.json`과 일치.
+- 같은 규칙을 Python으로 옮긴 대조(`debug/frontend_fb2bdart/artifacts/scan_latest_policy_sim.py`, 출력 `scan_latest_policy_sim.txt`): valid 11/11, oracle 31/31(payload 18 · 요청 오류 11 · stale 2), 적용 재생 7건 index · 결과 일치. Dart 코드를 실행한 것이 아니라 Dart에 넣은 규칙(요청 검사 · 결과 검사 · query · index 갱신)을 옮겨 fixture와 맞춰 본 것이다.
+- 기기 쓰기 뒤 다시 읽어 SHA-256 비교: 코드 12개 · pre 8개 · 이 문서 모두 일치.
+
+#### cf-semantic-review-checklist 항목별 답
+
+1. Summary exact13 · 필수 nullable `last_scan_at`: 맞다. 누락 키 fallback · `latest_updated_at` · 최대 시각 대체 없음. null ⇔ scan 0을 DTO가 검사한다.
+2. scan_latest profile + 선택 6 · exact8/5/3: 서비스 interface · Process wrapper(`fromWireFor`) · 요청/응답 strict 검사 · DTO · Mock · 공유 fixture 소비자가 같은 DTO 하나를 쓴다.
+3. scalar/UTF-8 경계 · alias 먼저 · seek/anchor · stale 재시도 불가: 요청 DTO와 Mock query가 백엔드 `history_scan_latest.py`와 같은 순서로 검사한다(fixture 31건으로 대조).
+4. 행 정렬은 `_historyIdCompare`, U+E000 < U+10000(fixture `unicode_scalar_e000_before_10000` + 직접 테스트). surrogate 거부는 새 경계의 런타임 검사이며 JSON schema와 별개다.
+5. Mock latest = 저장 index(적용 sequence · source=scan · 승인 scope). 빈 · 제외만 있는 경우 보존, 필터 불일치 · include=false에도 profile `last_scan_at` 유지, clock rollback 테스트 있음.
+6. Mock inventory commit = upsert, 관련 없는 기존 항목 유지, scan 적용 1건, replay에서 observer 중복 없음(테스트로 unattributed 0 확인).
+7. Pending UI 재시도: **이 slice는 Mock 쪽만**(receipt 우선 replay, pending은 원 bucket 고정, 같은 key에 다른 expected는 conflict). 화면 쪽 고정(최초 candidate/profile/expected/key, busy · 응답 손실에 재구성 안 함)은 Lane B S-FB1b(`scan_page.dart`, `ui/scan/scan_repository_sync.dart`의 `ScanPendingApply`) 소관이고 이 slice는 손대지 않았다. Lane B `scan_page_revision_test`의 응답 손실 replay 기대가 이 Mock 위에서 도는지는 같은 gate에서 확인해야 한다.
+8. 공유 fixture는 고정 SHA 그대로다. process · golden 단계 GREEN은 **미검증**(gate 전).
+9. 소비자 경로 · 바이트 · SHA는 아래 표. gate 원본 파일과 CF 확인은 gate 뒤에 붙인다.
+
+| 경로 | bytes | SHA-256 |
+|---|---|---|
+| frontend/lib/services/repository_history_service.dart | 34028 | `f5d70291db6e5ec322b6ab9f913d4a3eccaa58017e2151bc617a7fdca6eeb946` |
+| frontend/lib/services/repository_history_scan_latest.dart | 18259 | `ebbdc7818154170b98a612bf24d8d9d02218a981e9b0a3c5cdcfaef20ce351ee` |
+| frontend/lib/services/repository_service.dart | 25944 | `3c9bb9516762ebe44208fb48be6a587d330d7feb474bc34733429bc9e039e575` |
+| frontend/lib/services/process_app_service.dart | 38277 | `0f23ddaa3819b0263eb6f4ac267b49cda4a987983d6ebd5a6d9d9e9a6e57a030` |
+| frontend/lib/services/mock_app_service.dart | 94884 | `48dda3278b6efa3a8bd5df789eedca11b26dda198545252d4850eddee04b5580` |
+| frontend/lib/services/mock_repository_history.dart | 1639 | `e6f6cb986687637666e1c0df4ef0b038c9aeb66fea685bfc100d4ffb154f8bf2` |
+| frontend/test/repository_history_scan_latest_test.dart | 25126 | `e142e4ab5c989616c36da66d5662459a6cb20488ea35eab0f19cdeb8e7c2468f` |
+| frontend/test/repository_history_scan_latest_process_e2e_test.dart | 7226 | `7e5d1b2313743e98dbd0b2756941d907d48fa12348074b37fb53205d20ef49f0` |
+| frontend/test/mock_scanner_commit_history_test.dart | 16183 | `9ac1b43dc538ce504f505d94d9b7e78554450e4fb89bbd5da4e0bdf6067f4cb3` |
+| frontend/test/repository_history_service_test.dart | 15257 | `52a28ffe5ea2292c249aad5e67df5e11f10edefbbb44512267ca5cffda1d6626` |
+| frontend/test/repository_history_process_e2e_test.dart | 9539 | `a4deb4ab9b2fc60b7377449177ed8374ecf19435c042b807c053df289675577f` |
+| frontend/test/repository_history_query_process_e2e_test.dart | 10443 | `b197fd985e1ad0082bed02e4c3f0ff097999658f14ceb336b631d154436589fb` |
+
+#### WIP 보존 확인
+
+- `mock_app_service.dart` · `process_app_service.dart`의 스캐너 WIP 줄은 지우거나 바꾸지 않았다. 이 slice의 변경은 `mock_app_service.dart`에서 후보 map 선언 1줄 교체, `startScannerSession` 4줄 삽입, `commitScannerCandidate` 앞머리 분기 삽입, observer 1줄 삽입, scan_latest 메서드 · 새 commit 묶음 · 파일 끝 private 클래스 추가뿐이고, `process_app_service.dart`는 wrapper 1개 추가뿐이다. 원래 줄의 줄끝(CRLF/LF 섞임)도 그대로 두었다.
+- PC git을 읽을 수 없어 WIP 줄과 겹치는지는 확인하지 못했다. 겹치면 `fe_commit.ps1 -DryRun`이 merge conflict로 멈추고 `.conflict` 파일을 남긴다(그때 오케스트레이터가 처리).
+
+#### 미검증 항목
+
+- analyze(특히 flutter_lints 6 info 단계) · 컴파일 · 모든 테스트 실행 · golden 비교 · 실제 Python과의 process E2E.
+- process E2E가 fixture history를 넣은 프로필(revision 3 · 99, 학생 · 자원 비어 있음, history 없는 프로필 포함)을 실제 저장소가 받아들이는지. 기존 FB-2c E2E와 같은 방식이지만 이번 fixture로는 처음이다.
+- Dart `RepositoryCurrentHistory.fromWire`가 fixture valid 11건을 모두 받아들이는지(XB는 Dart 소비용이라 했지만 Dart로는 처음 읽는다).
+- golden 변화: 0 예상. 화면 코드 · golden harness를 바꾸지 않았고 golden 장면은 scan commit · history를 부르지 않는다. 바뀌면 이 slice 탓인지 보고 이유를 적는다.
+- Lane B(S-FB1b) 테스트와의 상호작용: Mock commit이 이제 profile 목록 revision을 맞추고 receipt를 먼저 본다. `scan_page_revision_test`의 대역은 자기 receipt를 따로 가지므로 같은 key로 `super`를 두 번 부르지 않지만, gate에서 확인해야 한다.
+
+#### 발견 사항
+
+- 공유 서비스 파일 줄끝이 섞여 있다(`mock_app_service.dart` CRLF 2235/2351줄, `process_app_service.dart` 1181/1205줄, `repository_service.dart` 713/740줄). LF 줄이 대체로 미커밋 WIP나 최근 slice가 넣은 줄로 보인다. fe_commit의 Norm/Write-LikeHead가 처리하므로 막지는 않는다.
+- `_SnapshotMockService`(scan_page_test)처럼 Mock 밖에서 만든 세션 · 후보로 `super.commitScannerCandidate`를 부르는 대역이 있어, 저장된 후보가 없으면 넘어온 후보를 쓴다(백엔드는 `candidate_not_found`). 세션 존재 · terminal 검사도 같은 이유로 Mock에 넣지 않았다.
+
+#### 다음 행동
+
+- 오케스트레이터: gate 결과 검토. 기대: 직전 gate의 이 slice 몫 5건(`repository_history_service_test` 2건, `repository_history_process_e2e_test` 2건, `repository_history_query_process_e2e_test` 1건)이 녹색, 새 테스트 녹색, golden 변화 0(FE5-b 몫 RED는 그대로). 같은 소스 GREEN을 XB에 회신 → XB backend 커밋 → 이 slice 커밋(순서는 오케스트레이터가 정한다).
+- 사용자 실행 순서:
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① 두 워커가 모두 멈춘 뒤 gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 커밋은 XB backend 커밋 뒤(순서는 오케스트레이터가 정한다)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fb2bdart -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fb2bdart
+```
+
+### fe5b commit record (2026-10-10 22:53, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261010_220311\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

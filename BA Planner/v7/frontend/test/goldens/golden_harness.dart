@@ -18,6 +18,7 @@ import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/mock_student_fixture.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scenario_service.dart';
+import 'package:ba_planner_v7/ui/models/planning_growth_rules.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/widgets/asset_image_grid.dart';
 import 'package:ba_planner_v7/ui/widgets/student_grid_warmup.dart';
@@ -413,148 +414,120 @@ class GoldenStudentMockAppService extends GoldenMockAppService {
 }
 
 /// 시나리오 목록 장면 전용 mock(FE5-a, 시안 Scenario-List). 학생 장면 fixture(보유 학생 · 활성 계획) 위에 시나리오
-/// 다섯 개를 저장하고, 목록 요약의 계산 요약 · 수정 시각과 활성 계획 계산 요약을 시안 예시 값으로 바꾼다.
+/// 다섯 개를 저장하고 목록 요약의 수정 시각을 고정한다.
+///
+/// FE5-b: 목록 요약 · 활성 계획 요약(`plan.get` calculation) · 미리보기 비교를 모두 같은 계산 대역
+/// ([goldenCalculationBand] · [goldenComparisonBand] · [goldenBandSummary])에서 만든다. 백엔드가 세 값을 같은 계산
+/// 경로로 만들므로, 행 · 고정 행 · 미리보기 KPI가 서로 맞는다(FE5-a의 시안 예시 고정값은 대역 값으로 바뀌었다).
 ///
 /// "04 공격대 핵심"은 학생 장면 저장 전에 만들어 저장 기준 revision이 지금보다 오래된(저장 시점과 다름) 시나리오다.
-/// 대표 부족 아이템은 asset이 있는 실제 오파츠 id만 쓴다.
+/// "03 방어선 강화"는 미보유 학생만이라 비용 · 부족이 없다(부족 0종 · 병목 없음 초록 표시 장면).
 class GoldenScenarioListMockAppService extends GoldenStudentMockAppService {
   GoldenScenarioListMockAppService() : super();
 
-  /// 이름 → (설명, 페이즈별 학생, 계산 요약, 수정 시각).
-  static final scenarios =
+  /// 이름 → (설명, 페이즈별 학생, 수정 시각).
+  static const scenarios =
       <
         String,
-        ({
-          String description,
-          List<List<String>> phases,
-          PlanningScenarioCalculationSummary calculation,
-          String updatedAt,
-        })
+        ({String description, List<List<String>> phases, String updatedAt})
       >{
         '07 3단계 우선순위': (
           description: '3개 페이즈로 나눈 우선순위 배치',
-          phases: const [
+          phases: [
             ['aru', 'ayane'],
             ['aru', 'hoshino'],
             ['ayane'],
           ],
-          calculation: const PlanningScenarioCalculationSummary(
-            credits: 112800000,
-            requiredResourceTypeCount: 12,
-            knownShortageTypeCount: 8,
-            inventoryComplete: true,
-            firstBottleneckPhaseNumber: 1,
-            representativeShortage: PlanningScenarioRepresentativeShortage(
-              resourceKey: 'Item_Icon_Material_Nebra_3',
-              itemId: 'Item_Icon_Material_Nebra_3',
-              displayName: '네브라 디스크 (최상급)',
-              category: 'oopart',
-              shortage: 449,
-            ),
-          ),
           updatedAt: '2026-09-22T23:10:00',
         ),
         '01 단기 집중 - 아루': (
           description: '한 학생 카드와 단일 페이즈 계산을 확인하는 최소 시나리오',
-          phases: const [
+          phases: [
             ['aru'],
           ],
-          calculation: const PlanningScenarioCalculationSummary(
-            credits: 75300000,
-            requiredResourceTypeCount: 11,
-            knownShortageTypeCount: 10,
-            inventoryComplete: true,
-            firstBottleneckPhaseNumber: 1,
-            representativeShortage: PlanningScenarioRepresentativeShortage(
-              resourceKey: 'Item_Icon_Material_Nebra_2',
-              itemId: 'Item_Icon_Material_Nebra_2',
-              displayName: '네브라 디스크 (상급)',
-              category: 'oopart',
-              shortage: 120,
-            ),
-          ),
           updatedAt: '2026-09-21T18:40:00',
         ),
         '02 지원진 집중': (
           description: '복수 학생 조합과 지원진 자원 한계를 확인',
-          phases: const [
+          phases: [
             ['ayane', 'noa', 'hina'],
             ['ayane', 'noa'],
           ],
-          calculation: const PlanningScenarioCalculationSummary(
-            credits: 24400000,
-            requiredResourceTypeCount: 7,
-            knownShortageTypeCount: 3,
-            inventoryComplete: true,
-            firstBottleneckPhaseNumber: 2,
-            representativeShortage: PlanningScenarioRepresentativeShortage(
-              resourceKey: 'Item_Icon_Material_Phaistos_3',
-              itemId: 'Item_Icon_Material_Phaistos_3',
-              displayName: '파에스토스 원반 (최상급)',
-              category: 'oopart',
-              shortage: 8,
-            ),
-          ),
           updatedAt: '2026-09-21T17:02:00',
         ),
         '03 방어선 강화': (
-          description: '탱커 두 명의 장비 우선',
-          phases: const [
-            ['hoshino', 'serika'],
+          description: '아직 모집하지 않은 두 명의 장비 우선',
+          phases: [
+            ['serika', 'nagusa'],
           ],
-          calculation: const PlanningScenarioCalculationSummary(
-            credits: 0,
-            requiredResourceTypeCount: 0,
-            knownShortageTypeCount: 0,
-            inventoryComplete: true,
-            firstBottleneckPhaseNumber: null,
-            representativeShortage: null,
-          ),
           updatedAt: '2026-09-20T22:15:00',
         ),
         '04 공격대 핵심': (
           description: '공격대 학생 두 명의 고배율 성장',
-          phases: const [
+          phases: [
             ['hina', 'aru'],
             ['hina', 'aru'],
           ],
-          calculation: const PlanningScenarioCalculationSummary(
-            credits: 63700000,
-            requiredResourceTypeCount: 6,
-            knownShortageTypeCount: 4,
-            inventoryComplete: true,
-            firstBottleneckPhaseNumber: 1,
-            representativeShortage: PlanningScenarioRepresentativeShortage(
-              resourceKey: 'Item_Icon_Material_Wolfsegg_0',
-              itemId: 'Item_Icon_Material_Wolfsegg_0',
-              displayName: '볼프세크 철광석 (하급)',
-              category: 'oopart',
-              shortage: 14,
-            ),
-          ),
           updatedAt: '2026-09-14T11:30:00',
         ),
       };
 
-  /// 활성 계획 계산 요약(시안 고정 행 186.2M · 14종 · P1).
-  static const activeCalculation = {
-    'credits': 186200000,
-    'required_resource_type_count': 20,
-    'known_shortage_type_count': 14,
-    'inventory_complete': true,
-    'first_bottleneck_phase_number': 1,
-    'representative_shortage': null,
+  /// 선택 계정의 확정 학생(계산 대역 입력).
+  Future<List<Map<String, dynamic>>> _currentStudents(String profileId) async =>
+      [
+        for (final student in (await loadRepositoryState(profileId)).students)
+          confirmedStudentPlanningCurrent(student),
+      ];
+
+  @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async => goldenCalculationBand(
+    currentStudents: currentStudents,
+    document: document,
+  );
+
+  @override
+  Future<PlanningScenarioComparisonResult> compareScenarios({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required PlanningDocument documentA,
+    required PlanningDocument documentB,
+  }) async => goldenComparisonBand(
+    currentStudents: currentStudents,
+    documentA: documentA,
+    documentB: documentB,
+  );
+
+  /// 시나리오 문서(v1). 모두 ★3이고 페이즈가 뒤일수록 목표가 높다: P1 Lv.80 · EX 3 · 스킬 7, P2 Lv.90 · EX 5 · 스킬 10 ·
+  /// 장비 T9, P3 이후 장비 T10. 단계 이름은 그 학생 몇 번째 단계인지(n단계)다.
+  static Map<String, int> _targets(int phaseIndex) => {
+    for (final entry in planningDocumentTargetMaximums.entries)
+      entry.key: planElementTargetMinimums[entry.key] ?? 0,
+    // 스킬 2 · 3을 올리려면 ★3이 필요하다(성장 규칙).
+    'student_star': 3,
+    if (phaseIndex == 0) ...{
+      'level': 80,
+      'ex_skill': 3,
+      'skill1': 7,
+      'skill2': 7,
+      'skill3': 7,
+    } else ...{
+      'level': 90,
+      'ex_skill': 5,
+      'skill1': 10,
+      'skill2': 10,
+      'skill3': 10,
+      'equip1_tier': phaseIndex == 1 ? 9 : 10,
+      'equip2_tier': phaseIndex == 1 ? 9 : 10,
+      'equip3_tier': phaseIndex == 1 ? 9 : 10,
+    },
   };
 
   static PlanningDocument _document(String id, List<List<String>> phases) {
-    final targets = {
-      for (final entry in planningDocumentTargetMaximums.entries)
-        entry.key: entry.key == 'bond_rank' ? 1 : 0,
-      'level': 50,
-      'student_star': 1,
-      'ex_skill': 1,
-      'skill1': 1,
-    };
+    final steps = <String, int>{};
     return PlanningDocument(
       id: id,
       name: id,
@@ -569,8 +542,9 @@ class GoldenScenarioListMockAppService extends GoldenStudentMockAppService {
                 PlanningDocumentStage(
                   id: '$id-${index + 1}-$studentId',
                   studentId: studentId,
-                  name: '목표',
-                  targets: {...targets, 'level': 50 + index * 10},
+                  name:
+                      '${steps.update(studentId, (step) => step + 1, ifAbsent: () => 1)}단계',
+                  targets: _targets(index),
                 ),
             ],
           ),
@@ -593,13 +567,73 @@ class GoldenScenarioListMockAppService extends GoldenStudentMockAppService {
     return created.scenarioId;
   }
 
-  /// 시나리오 다섯 개와 학생 장면을 저장한다. 이름 → 시나리오 id.
+  /// 이 장면의 활성 계획(v2, FE5-b). 학생 장면 활성 계획보다 무거워 "07 3단계 우선순위"가 크레딧 · 부족량에서
+  /// 나아지고, 학생 차이 칩 세 가지(이 시나리오에만 · 활성보다 낮은 목표 · 활성 계획과 같음)가 모두 보인다.
+  /// - P1 아야네 · 히나 · 케이 · 노아(Lv.80 · EX 3 · 스킬 7) · 호시노(07의 호시노 단계와 같은 목표)
+  /// - P2 아야네 · 히나(Lv.90 · EX 5 · 스킬 10 · T9), P3 아야네(07의 아야네 마지막 단계 + 인연 20)
+  static PlanningDocument listActivePlanDocument() {
+    final ayaneLast = {..._targets(2), 'bond_rank': 20};
+    PlanningDocumentStage stage(
+      String studentId,
+      int step,
+      Map<String, int> targets,
+    ) => PlanningDocumentStage(
+      id: 'golden-list-active-$studentId-$step',
+      studentId: studentId,
+      name: '$step단계',
+      targets: targets,
+    );
+    return PlanningDocument(
+      id: 'active-plan',
+      name: '활성 계획',
+      kind: PlanningDocumentKind.plan,
+      version: 2,
+      goalMetadata: {
+        for (final id in const ['ayane', 'hina', 'kei', 'noa', 'hoshino'])
+          id: const PlanningGoalMetadata(favorite: false, notes: ''),
+      },
+      phases: [
+        PlanningDocumentPhase(
+          id: 'golden-list-active-1',
+          name: '페이즈 1',
+          stages: [
+            stage('ayane', 1, _targets(0)),
+            stage('hina', 1, _targets(0)),
+            stage('kei', 1, _targets(0)),
+            stage('noa', 1, _targets(0)),
+            stage('hoshino', 1, _targets(1)),
+          ],
+        ),
+        PlanningDocumentPhase(
+          id: 'golden-list-active-2',
+          name: '페이즈 2',
+          stages: [
+            stage('ayane', 2, _targets(1)),
+            stage('hina', 2, _targets(1)),
+          ],
+        ),
+        PlanningDocumentPhase(
+          id: 'golden-list-active-3',
+          name: '페이즈 3',
+          stages: [stage('ayane', 3, ayaneLast)],
+        ),
+      ],
+    );
+  }
+
+  /// 시나리오 다섯 개와 학생 장면을 저장하고 이 장면의 활성 계획([listActivePlanDocument])으로 바꾼다. 이름 → 시나리오 id.
   Future<Map<String, String>> seedScenarioListScene() async {
     final profile = (await listProfiles()).firstWhere((item) => item.selected);
     final ids = <String, String>{};
     final staleBase = (await loadRepositoryState(profile.id)).revision;
     ids['04 공격대 핵심'] = await _create(profile.id, '04 공격대 핵심', staleBase);
     await seedStudentScene();
+    await saveRepositoryPlan(
+      profileId: profile.id,
+      document: listActivePlanDocument(),
+      expectedRevision: (await loadRepositoryState(profile.id)).revision,
+      idempotencyKey: 'golden-scenario-list-active-plan',
+    );
     final base = (await loadRepositoryState(profile.id)).revision;
     for (final name in scenarios.keys) {
       if (ids.containsKey(name)) continue;
@@ -611,41 +645,57 @@ class GoldenScenarioListMockAppService extends GoldenStudentMockAppService {
   @override
   Future<PlanningScenarioListResult> listScenarios(String profileId) async {
     final result = await super.listScenarios(profileId);
+    final students = await _currentStudents(profileId);
+    final summaries = <PlanningScenarioSummary>[];
+    for (final summary in result.scenarios) {
+      final record = (await super.getScenario(profileId, summary.id)).scenario;
+      final calculation = PlanningScenarioCalculationSummary.fromWire(
+        goldenBandSummary(
+          goldenCalculationBand(
+            currentStudents: students,
+            document: record.document.toWire(),
+          ),
+        ),
+      );
+      summaries.add(
+        PlanningScenarioSummary(
+          id: summary.id,
+          revision: summary.revision,
+          name: summary.name,
+          description: summary.description,
+          baseProfileRevision: summary.baseProfileRevision,
+          phaseCount: summary.phaseCount,
+          stageCount: summary.stageCount,
+          studentCount: summary.studentCount,
+          studentIds: summary.studentIds,
+          calculation: calculation,
+          createdAt: summary.createdAt,
+          updatedAt: scenarios[summary.name]?.updatedAt ?? summary.updatedAt,
+        ),
+      );
+    }
     return PlanningScenarioListResult(
       profileId: result.profileId,
       revision: result.revision,
       currentProfileRevision: result.currentProfileRevision,
-      scenarios: [
-        for (final summary in result.scenarios)
-          if (scenarios[summary.name] case final fixture?)
-            PlanningScenarioSummary(
-              id: summary.id,
-              revision: summary.revision,
-              name: summary.name,
-              description: summary.description,
-              baseProfileRevision: summary.baseProfileRevision,
-              phaseCount: summary.phaseCount,
-              stageCount: summary.stageCount,
-              studentCount: summary.studentCount,
-              studentIds: summary.studentIds,
-              calculation: fixture.calculation,
-              createdAt: summary.createdAt,
-              updatedAt: fixture.updatedAt,
-            )
-          else
-            summary,
-      ],
+      scenarios: summaries,
     );
   }
 
   @override
   Future<RepositoryPlanState> loadRepositoryPlan(String profileId) async {
     final plan = await super.loadRepositoryPlan(profileId);
+    final students = await _currentStudents(profileId);
     return RepositoryPlanState.fromWire({
       'profile_id': plan.profileId,
       'revision': plan.revision,
       'document': plan.document.toWire(),
-      'calculation': activeCalculation,
+      'calculation': goldenBandSummary(
+        goldenCalculationBand(
+          currentStudents: students,
+          document: plan.document.toWire(),
+        ),
+      ),
       if (plan.hasAuthoring) 'authoring': plan.authoring.toWire(),
     });
   }
@@ -734,9 +784,9 @@ class GoldenCalculatorMockAppService extends GoldenStudentMockAppService {
   });
 }
 
-/// 계획 만들기 흐름 장면 전용 mock(FE4-a1). 초안 계산(`planning.document.calculate`)에 필요 크레딧과 부족 재화
-/// 5종을 돌려준다(시안 Flow-1-Students 요약 "48.2M · 5종"과 같은 숫자). 재화 id는 모두
-/// assets/item_icons/ooparts에 있는 오파츠다. 계획 홈 장면은 이 mock을 쓰지 않는다(그쪽 숫자는 그대로).
+/// 계획 만들기 흐름 장면 전용 mock(FE4-a1). 초안 계산(`planning.document.calculate`)과 비교는 공용 golden 대역
+/// [goldenCalculationBand] · [goldenComparisonBand]다. FE5-b부터 문서 의존이다(FE4까지는 문서와 상관없이 "48.2M · 5종"
+/// 고정이라 4단계 비교 a · b가 같았다). 재화 id는 모두 실제 asset 파일이 있는 id(계산기 golden 대역과 같은 id)다.
 ///
 /// FE4-b1: 1단계 새 학생 고르기 장면이 실제 카드·배지를 보이도록 학생 장면 fixture(학생 10명, 보유 7명,
 /// PLAN 3명)를 그대로 쓴다. 장면을 열기 전에 [seedStudentScene]을 부른다.
@@ -749,8 +799,6 @@ class GoldenCalculatorMockAppService extends GoldenStudentMockAppService {
 /// 순번이라 FE4-c 값과 같다.
 class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
   GoldenPlanFlowMockAppService() : super();
-
-  static const credits = 48200000;
 
   /// 저장된 단계 프리셋 하나(단계 이름 3개, 19키 nullable 목표)와 학생 그룹 하나(목록에 없는 학생 ID 포함)를
   /// 선택 계정에 저장한다(FE4-i `plan-flow-step2-saved` 장면).
@@ -816,166 +864,122 @@ class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
     );
   }
 
+  /// 문서 계산(`planning.document.calculate` 대역). [goldenCalculationBand]를 쓴다.
   @override
   Future<Map<String, dynamic>> calculatePlanningDocument({
     required List<Map<String, dynamic>> currentStudents,
     required Map<String, dynamic> inventory,
     required Map<String, dynamic> document,
-  }) async {
-    final stageIds = [
-      for (final phase in document['phases'] as List<dynamic>)
-        for (final stage in (phase as Map)['stages'] as List<dynamic>)
-          (stage as Map)['stage_id'] as String,
-    ];
-    // 아래 [stageResults]를 만든 뒤 채운다: 재화 키 → 그 재화를 쓰는 단계(문서 순서).
-    final usedBy = <String, List<String>>{};
-    Map<String, dynamic> resource(
-      String key,
-      String name,
-      int required,
-      int owned,
-    ) => {
-      'resource_key': key,
-      'item_id': key,
-      'display_name': name,
-      'category': 'oopart',
-      'required': required,
-      'owned': owned,
-      'shortage': (required - owned).clamp(0, required),
-      'affected_stage_ids': usedBy[key] ?? const <String>[],
-    };
-    final owned = {
-      for (final student in currentStudents) student['student_id'] as String,
-    };
-    final stages = [
-      for (final phase in document['phases'] as List<dynamic>)
-        for (final stage in (phase as Map)['stages'] as List<dynamic>)
-          (
-            phaseId: phase['phase_id'] as String,
-            stage: Map<String, dynamic>.from(stage as Map),
-          ),
-    ];
-    Map<String, dynamic> stageResource(
-      String key,
-      String name,
-      int required,
-      int ownedAtEntry,
-    ) => {
-      'resource_key': key,
-      'item_id': key,
-      'display_name': name,
-      'category': 'oopart',
-      'required': required,
-      'owned_at_entry': ownedAtEntry,
-      'shortage_at_entry': (required - ownedAtEntry).clamp(0, required),
-    };
-    const stageCredits = [18200000, 9600000, 1800000];
-    // 학생마다 문서 안에서 몇 번째 단계인지(1부터).
-    final seen = <String, int>{};
-    final steps = [
-      for (final entry in stages)
-        seen.update(
-          entry.stage['student_id'] as String,
-          (count) => count + 1,
-          ifAbsent: () => 1,
+  }) async => goldenCalculationBand(
+    currentStudents: currentStudents,
+    document: document,
+  );
+
+  /// 4단계 저장 비교(FE4-e, `planning.scenario.compare` 대역). [goldenComparisonBand]를 쓴다.
+  @override
+  Future<PlanningScenarioComparisonResult> compareScenarios({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required PlanningDocument documentA,
+    required PlanningDocument documentB,
+  }) async => goldenComparisonBand(
+    currentStudents: currentStudents,
+    documentA: documentA,
+    documentB: documentB,
+  );
+}
+
+/// golden 계산 대역의 재고(문서와 상관없이 고정, FE5-b).
+///
+/// 단계 결과(`stage_results`)의 진입 보유량은 FE4 장면 그대로 단계 순번마다 고정이다. 문서 전체(`overall`)만
+/// 필요량을 단계마다 더해 이 재고와 견준다. 그래서 같은 문서면 같은 값, 단계가 늘면 필요 크레딧 · 부족 재화가 는다.
+const goldenBandInventory = <String, int>{
+  'credits': 500000000,
+  'Item_Icon_Material_Nebra_3': 76,
+  'Item_Icon_Material_Phaistos_3': 66,
+  'Item_Icon_Material_Nebra_2': 52,
+  'Item_Icon_Material_Wolfsegg_0': 30,
+  'Item_Icon_SkillBook_Gehenna_3': 60,
+  'Equipment_Icon_Watch_Tier10_Piece': 20,
+  'Item_Icon_Material_ExSkill_Gehenna_3': 12,
+  'Item_Icon_SecretStone_aru': 50,
+};
+
+/// golden 문서 계산 대역(`planning.document.calculate` 응답 모양, FE5-b부터 문서 의존).
+///
+/// - 보유 학생의 단계마다 그 학생 몇 번째 단계인지(n)로 비용을 정한다(FE4 장면과 같다): 크레딧 18.2M · 9.6M · 1.8M,
+///   오파츠 n=1 네브라(최상급) 90 · n=2 파이스토스(최상급) 96 · n≥3 네브라(상급) 40, 볼프세크(하급) 18. 진입 보유량과
+///   단계 부족은 FE4 그대로(n=1 네브라 −14, n=2 파이스토스 −30 · 볼프세크 −8)라 단계 배지 · 병목은 바뀌지 않는다.
+/// - FE5-b에서 분야를 늘렸다(단계에서는 모자라지 않음): 기술 노트(게헨나 최상급) 24 · 40 · 16, 시계 T10 설계도
+///   n=2 12 · n≥3 8, 전술 교육 BD(게헨나 최상급) n≥2 10, 아루 엘레프(아루 단계마다 120).
+/// - 미보유 학생 단계는 비용 0 + 경고(FE4 그대로).
+/// - `overall`은 단계 필요량의 합과 [goldenBandInventory]로 정한다(문서 의존). 크레딧 = 단계 크레딧 합.
+Map<String, dynamic> goldenCalculationBand({
+  required List<Map<String, dynamic>> currentStudents,
+  required Map<String, dynamic> document,
+}) {
+  final phases = [
+    for (final phase in document['phases'] as List<dynamic>)
+      Map<String, dynamic>.from(phase as Map),
+  ];
+  final owned = {
+    for (final student in currentStudents) student['student_id'] as String,
+  };
+  final stages = [
+    for (final phase in phases)
+      for (final stage in phase['stages'] as List<dynamic>)
+        (
+          phaseId: phase['phase_id'] as String,
+          stage: Map<String, dynamic>.from(stage as Map),
         ),
-    ];
-    final stageResults = [
-      for (final (index, entry) in stages.indexed)
-        {
-          'stage_id': entry.stage['stage_id'],
-          'phase_id': entry.phaseId,
-          'student_id': entry.stage['student_id'],
-          'name': entry.stage['name'],
-          if (!owned.contains(entry.stage['student_id'])) ...{
-            'cost': {
-              'credits': 0,
-              'warnings': ['Current student state is missing.'],
-            },
-            'resources': const <dynamic>[],
-          } else ...{
-            'cost': {
-              'credits': stageCredits[(steps[index] - 1) % stageCredits.length],
-            },
-            'resources': [
-              {
-                'resource_key': 'credits',
-                'item_id': null,
-                'display_name': '크레딧',
-                'category': 'credits',
-                'required':
-                    stageCredits[(steps[index] - 1) % stageCredits.length],
-                'owned_at_entry': 99000000,
-                'shortage_at_entry': 0,
-              },
-              switch (steps[index]) {
-                1 => stageResource(
-                  'Item_Icon_Material_Nebra_3',
-                  '오파츠 · 네브라 디스크 (최상급)',
-                  90,
-                  76,
-                ),
-                2 => stageResource(
-                  'Item_Icon_Material_Phaistos_3',
-                  '오파츠 · 파이스토스 원반 (최상급)',
-                  96,
-                  66,
-                ),
-                _ => stageResource(
-                  'Item_Icon_Material_Nebra_2',
-                  '오파츠 · 네브라 디스크 (상급)',
-                  40,
-                  52,
-                ),
-              },
-              stageResource(
-                'Item_Icon_Material_Wolfsegg_0',
-                '오파츠 · 볼프세크 철광석 (하급)',
-                18,
-                steps[index] == 2 ? 10 : 30,
-              ),
-            ],
-          },
-        },
-    ];
-    final bottlenecks = <Map<String, dynamic>>[];
-    for (final result in stageResults) {
-      final stageId = result['stage_id'] as String;
-      for (final row in result['resources'] as List<dynamic>) {
-        final key = (row as Map)['resource_key'] as String;
-        usedBy.putIfAbsent(key, () => []).add(stageId);
-        final shortage = row['shortage_at_entry'] as int;
-        if (shortage <= 0 ||
-            bottlenecks.any((item) => item['resource_key'] == key)) {
-          continue;
-        }
-        final phaseIndex = [
-          for (final phase in document['phases'] as List<dynamic>)
-            (phase as Map)['phase_id'],
-        ].indexOf(result['phase_id']);
-        bottlenecks.add({
-          'resource_key': key,
-          'item_id': row['item_id'],
-          'display_name': row['display_name'],
-          'category': row['category'],
-          'remaining_at_entry': row['owned_at_entry'],
-          'required_at_entry': row['required'],
-          'shortage': shortage,
-          'phase_id': result['phase_id'],
-          'phase_number': phaseIndex + 1,
-          'stage_id': stageId,
-          'student_id': result['student_id'],
-          'student_step': steps[stageResults.indexOf(result)],
-          'stage_name': result['name'],
-        });
-      }
-    }
+  ];
+  Map<String, dynamic> stageResource(
+    String key,
+    String name,
+    String category,
+    int required, {
+    int? ownedAtEntry,
+  }) {
+    final atEntry = ownedAtEntry ?? required;
     return {
-      'document_id': document['document_id'],
-      'kind': document['kind'],
-      'stage_results': stageResults,
-      'phase_results': const <dynamic>[],
-      'overall': {
+      'resource_key': key,
+      'item_id': key,
+      'display_name': name,
+      'category': category,
+      'required': required,
+      'owned_at_entry': atEntry,
+      'shortage_at_entry': (required - atEntry).clamp(0, required),
+    };
+  }
+
+  const stageCredits = [18200000, 9600000, 1800000];
+  // 학생마다 문서 안에서 몇 번째 단계인지(1부터).
+  final seen = <String, int>{};
+  final steps = [
+    for (final entry in stages)
+      seen.update(
+        entry.stage['student_id'] as String,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      ),
+  ];
+  final stageResults = <Map<String, dynamic>>[];
+  for (final (index, entry) in stages.indexed) {
+    final studentId = entry.stage['student_id'] as String;
+    final step = steps[index];
+    final credits = stageCredits[(step - 1) % stageCredits.length];
+    stageResults.add({
+      'stage_id': entry.stage['stage_id'],
+      'phase_id': entry.phaseId,
+      'student_id': studentId,
+      'name': entry.stage['name'],
+      if (!owned.contains(studentId)) ...{
+        'cost': {
+          'credits': 0,
+          'warnings': ['Current student state is missing.'],
+        },
+        'resources': const <dynamic>[],
+      } else ...{
         'cost': {'credits': credits},
         'resources': [
           {
@@ -984,127 +988,293 @@ class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
             'display_name': '크레딧',
             'category': 'credits',
             'required': credits,
-            'owned': null,
-            'shortage': null,
-            'affected_stage_ids': stageIds,
+            'owned_at_entry': 99000000,
+            'shortage_at_entry': 0,
           },
-          resource('Item_Icon_Material_Nebra_3', '오파츠 · 네브라 디스크 (최상급)', 96, 66),
-          resource('Item_Icon_Material_Phaistos_3', '오파츠 · 파이스토스 원반 (최상급)', 90, 76),
-          resource('Item_Icon_Material_Wolfsegg_0', '오파츠 · 볼프세크 철광석 (하급)', 18, 10),
-          resource('Item_Icon_Material_Nebra_2', '오파츠 · 네브라 디스크 (상급)', 40, 34),
-          resource('Item_Icon_Material_Phaistos_2', '오파츠 · 파이스토스 원반 (상급)', 12, 9),
-          resource('Item_Icon_Material_Nebra_1', '오파츠 · 네브라 디스크 (일반)', 10, 13),
+          switch (step) {
+            1 => stageResource(
+              'Item_Icon_Material_Nebra_3',
+              '오파츠 · 네브라 디스크 (최상급)',
+              'oopart',
+              90,
+              ownedAtEntry: 76,
+            ),
+            2 => stageResource(
+              'Item_Icon_Material_Phaistos_3',
+              '오파츠 · 파이스토스 원반 (최상급)',
+              'oopart',
+              96,
+              ownedAtEntry: 66,
+            ),
+            _ => stageResource(
+              'Item_Icon_Material_Nebra_2',
+              '오파츠 · 네브라 디스크 (상급)',
+              'oopart',
+              40,
+              ownedAtEntry: 52,
+            ),
+          },
+          stageResource(
+            'Item_Icon_Material_Wolfsegg_0',
+            '오파츠 · 볼프세크 철광석 (하급)',
+            'oopart',
+            18,
+            ownedAtEntry: step == 2 ? 10 : 30,
+          ),
+          stageResource(
+            'Item_Icon_SkillBook_Gehenna_3',
+            '기술 노트 · 게헨나 (최상급)',
+            'tech_notes',
+            switch (step) {
+              1 => 24,
+              2 => 40,
+              _ => 16,
+            },
+          ),
+          if (step >= 2)
+            stageResource(
+              'Equipment_Icon_Watch_Tier10_Piece',
+              '설계도 · 시계 T10',
+              'equipment',
+              step == 2 ? 12 : 8,
+            ),
+          if (step >= 2)
+            stageResource(
+              'Item_Icon_Material_ExSkill_Gehenna_3',
+              '전술 교육 BD · 게헨나 (최상급)',
+              'tactical_bd',
+              10,
+            ),
+          if (studentId == 'aru')
+            stageResource(
+              'Item_Icon_SecretStone_aru',
+              '아루의 엘레프',
+              'student_eleph',
+              120,
+            ),
         ],
       },
-      'bottlenecks': bottlenecks,
-      'warnings': const <dynamic>[],
-    };
+    });
   }
-
-  /// 4단계 저장 비교(FE4-e, `planning.scenario.compare` 대역).
-  ///
-  /// 백엔드 `compare_document_projections`처럼 두 문서를 위 계산 대역으로 계산하고 그 `overall`로 비교 줄을 만든다
-  /// (FE4-i: 계산 대역과 같은 기준). 그래서 같은 초안이면 레일의 필요 크레딧·부족 재화 종 수와 비교 b쪽 값이
-  /// 같다. 페이즈 팝오버용 `phase_results`만 단계 결과를 페이즈마다 모아 더한다(계산 대역은 빈 목록을 준다).
-  @override
-  Future<PlanningScenarioComparisonResult> compareScenarios({
-    required List<Map<String, dynamic>> currentStudents,
-    required Map<String, dynamic> inventory,
-    required PlanningDocument documentA,
-    required PlanningDocument documentB,
-  }) async {
-    if (documentA.id == documentB.id) throw StateError('invalid_payload');
-    Future<Map<String, dynamic>> project(PlanningDocument document) async {
-      final base = await calculatePlanningDocument(
-        currentStudents: currentStudents,
-        inventory: inventory,
-        document: document.toWire(),
+  // 재화 키 → 그 재화를 쓰는 단계(문서 순서), 필요량 합, 대표 줄.
+  final usedBy = <String, List<String>>{};
+  final requiredSum = <String, int>{};
+  final representative = <String, Map<String, dynamic>>{};
+  final bottlenecks = <Map<String, dynamic>>[];
+  final phaseIds = [for (final phase in phases) phase['phase_id']];
+  for (final (index, result) in stageResults.indexed) {
+    final stageId = result['stage_id'] as String;
+    for (final raw in result['resources'] as List<dynamic>) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      final key = row['resource_key'] as String;
+      usedBy.putIfAbsent(key, () => []).add(stageId);
+      requiredSum.update(
+        key,
+        (sum) => sum + (row['required'] as int),
+        ifAbsent: () => row['required'] as int,
       );
-      return {
-        ...base,
-        'phase_results': _goldenPhaseResults(base, document),
-      };
-    }
-
-    final projectionA = await project(documentA);
-    final projectionB = await project(documentB);
-    Map<String, Map<String, dynamic>> overall(Map<String, dynamic> projection) => {
-      for (final raw in (projection['overall'] as Map)['resources'] as List)
-        (raw as Map)['resource_key'] as String: Map<String, dynamic>.from(raw),
-    };
-    int overallCredits(Map<String, dynamic> projection) =>
-        ((projection['overall'] as Map)['cost'] as Map)['credits'] as int? ?? 0;
-    final resourcesA = overall(projectionA);
-    final resourcesB = overall(projectionB);
-    final resources = <Map<String, dynamic>>[];
-    for (final key
-        in ({...resourcesA.keys, ...resourcesB.keys}.toList()..sort())) {
-      final left = resourcesA[key];
-      final right = resourcesB[key];
-      final representative = (left ?? right)!;
-      final requiredA = left?['required'] as int? ?? 0;
-      final requiredB = right?['required'] as int? ?? 0;
-      // 백엔드와 같이 a쪽 줄이 있으면 그 보유량(null 포함)을 쓴다.
-      final owned = (left != null ? left['owned'] : right!['owned']) as int?;
-      int? shortage(int required) =>
-          owned == null ? null : (required > owned ? required - owned : 0);
-      final shortageA = shortage(requiredA);
-      final shortageB = shortage(requiredB);
-      resources.add({
+      representative.putIfAbsent(key, () => row);
+      final shortage = row['shortage_at_entry'] as int;
+      if (shortage <= 0 ||
+          bottlenecks.any((item) => item['resource_key'] == key)) {
+        continue;
+      }
+      bottlenecks.add({
         'resource_key': key,
-        'item_id': representative['item_id'],
-        'display_name': representative['display_name'],
-        'category': representative['category'],
-        'owned': owned,
-        'required_a': requiredA,
-        'required_b': requiredB,
-        'required_delta_b_minus_a': requiredB - requiredA,
-        'shortage_a': shortageA,
-        'shortage_b': shortageB,
-        'shortage_delta_b_minus_a': shortageA == null || shortageB == null
-            ? null
-            : shortageB - shortageA,
+        'item_id': row['item_id'],
+        'display_name': row['display_name'],
+        'category': row['category'],
+        'remaining_at_entry': row['owned_at_entry'],
+        'required_at_entry': row['required'],
+        'shortage': shortage,
+        'phase_id': result['phase_id'],
+        'phase_number': phaseIds.indexOf(result['phase_id']) + 1,
+        'stage_id': stageId,
+        'student_id': result['student_id'],
+        'student_step': steps[index],
+        'stage_name': result['name'],
       });
     }
-    Set<String> students(PlanningDocument document) => {
-      for (final stage in document.stages) stage.studentId,
-    };
-    final studentsA = students(documentA);
-    final studentsB = students(documentB);
-    final creditsA = overallCredits(projectionA);
-    final creditsB = overallCredits(projectionB);
-    return PlanningScenarioComparisonResult(
-      projectionA: projectionA,
-      projectionB: projectionB,
-      comparison: {
-        'credits_a': creditsA,
-        'credits_b': creditsB,
-        'credits_delta_b_minus_a': creditsB - creditsA,
-        'resource_type_count_a': resourcesA.length,
-        'resource_type_count_b': resourcesB.length,
-        'known_shortage_type_count_a': resources
-            .where((row) => (row['shortage_a'] as int? ?? 0) > 0)
-            .length,
-        'known_shortage_type_count_b': resources
-            .where((row) => (row['shortage_b'] as int? ?? 0) > 0)
-            .length,
-        'students': [
-          for (final id in ({...studentsA, ...studentsB}.toList()..sort()))
-            {
-              'student_id': id,
-              'presence': studentsA.contains(id) && studentsB.contains(id)
-                  ? 'both'
-                  : studentsA.contains(id)
-                  ? 'a_only'
-                  : 'b_only',
-              'target_differences': const <String, dynamic>{},
-            },
-        ],
-        'resources': resources,
-        'bottlenecks': const <dynamic>[],
-      },
-    );
   }
+  final totalCredits = requiredSum['credits'] ?? 0;
+  Map<String, dynamic> overallRow(String key) {
+    final row = representative[key];
+    final required = requiredSum[key] ?? 0;
+    final ownedAmount = goldenBandInventory[key];
+    return {
+      'resource_key': key,
+      'item_id': row?['item_id'],
+      'display_name': row?['display_name'] ?? '크레딧',
+      'category': row?['category'] ?? 'credits',
+      'required': required,
+      'owned': ownedAmount,
+      'shortage': ownedAmount == null
+          ? null
+          : (required > ownedAmount ? required - ownedAmount : 0),
+      'affected_stage_ids': usedBy[key] ?? const <String>[],
+    };
+  }
+
+  return {
+    'document_id': document['document_id'],
+    'kind': document['kind'],
+    'stage_results': stageResults,
+    'phase_results': const <dynamic>[],
+    'overall': {
+      'cost': {'credits': totalCredits},
+      'resources': [
+        overallRow('credits'),
+        for (final key in requiredSum.keys)
+          if (key != 'credits') overallRow(key),
+      ],
+    },
+    'bottlenecks': bottlenecks,
+    'warnings': const <dynamic>[],
+  };
+}
+
+/// golden 비교 대역(`planning.scenario.compare` 응답 모양).
+///
+/// 백엔드 `compare_document_projections`처럼 두 문서를 [goldenCalculationBand]로 계산하고 그 `overall`로 비교 줄을
+/// 만든다(FE4-i: 계산 대역과 같은 기준). 그래서 같은 초안이면 레일의 필요 크레딧 · 부족 재화 종 수와 비교 b쪽 값이
+/// 같다. 페이즈 팝오버용 `phase_results`만 단계 결과를 페이즈마다 모아 더한다(계산 대역은 빈 목록을 준다). 학생
+/// 목표 차이는 `MockAppService`와 같이 학생마다 마지막 단계 목표를 견준다(FE5-b).
+PlanningScenarioComparisonResult goldenComparisonBand({
+  required List<Map<String, dynamic>> currentStudents,
+  required PlanningDocument documentA,
+  required PlanningDocument documentB,
+}) {
+  if (documentA.id == documentB.id) throw StateError('invalid_payload');
+  Map<String, dynamic> project(PlanningDocument document) {
+    final base = goldenCalculationBand(
+      currentStudents: currentStudents,
+      document: document.toWire(),
+    );
+    return {...base, 'phase_results': _goldenPhaseResults(base, document)};
+  }
+
+  final projectionA = project(documentA);
+  final projectionB = project(documentB);
+  Map<String, Map<String, dynamic>> overall(Map<String, dynamic> projection) => {
+    for (final raw in (projection['overall'] as Map)['resources'] as List)
+      (raw as Map)['resource_key'] as String: Map<String, dynamic>.from(raw),
+  };
+  int overallCredits(Map<String, dynamic> projection) =>
+      ((projection['overall'] as Map)['cost'] as Map)['credits'] as int? ?? 0;
+  final resourcesA = overall(projectionA);
+  final resourcesB = overall(projectionB);
+  final resources = <Map<String, dynamic>>[];
+  for (final key
+      in ({...resourcesA.keys, ...resourcesB.keys}.toList()..sort())) {
+    final left = resourcesA[key];
+    final right = resourcesB[key];
+    final representative = (left ?? right)!;
+    final requiredA = left?['required'] as int? ?? 0;
+    final requiredB = right?['required'] as int? ?? 0;
+    // 백엔드와 같이 a쪽 줄이 있으면 그 보유량(null 포함)을 쓴다.
+    final owned = (left != null ? left['owned'] : right!['owned']) as int?;
+    int? shortage(int required) =>
+        owned == null ? null : (required > owned ? required - owned : 0);
+    final shortageA = shortage(requiredA);
+    final shortageB = shortage(requiredB);
+    resources.add({
+      'resource_key': key,
+      'item_id': representative['item_id'],
+      'display_name': representative['display_name'],
+      'category': representative['category'],
+      'owned': owned,
+      'required_a': requiredA,
+      'required_b': requiredB,
+      'required_delta_b_minus_a': requiredB - requiredA,
+      'shortage_a': shortageA,
+      'shortage_b': shortageB,
+      'shortage_delta_b_minus_a': shortageA == null || shortageB == null
+          ? null
+          : shortageB - shortageA,
+    });
+  }
+  Map<String, Map<String, int?>> finalTargets(PlanningDocument document) => {
+    for (final stage in document.stages) stage.studentId: stage.nullableTargets,
+  };
+  final targetsA = finalTargets(documentA);
+  final targetsB = finalTargets(documentB);
+  final creditsA = overallCredits(projectionA);
+  final creditsB = overallCredits(projectionB);
+  return PlanningScenarioComparisonResult(
+    projectionA: projectionA,
+    projectionB: projectionB,
+    comparison: {
+      'credits_a': creditsA,
+      'credits_b': creditsB,
+      'credits_delta_b_minus_a': creditsB - creditsA,
+      'resource_type_count_a': resourcesA.length,
+      'resource_type_count_b': resourcesB.length,
+      'known_shortage_type_count_a': resources
+          .where((row) => (row['shortage_a'] as int? ?? 0) > 0)
+          .length,
+      'known_shortage_type_count_b': resources
+          .where((row) => (row['shortage_b'] as int? ?? 0) > 0)
+          .length,
+      'students': [
+        for (final id
+            in ({...targetsA.keys, ...targetsB.keys}.toList()..sort()))
+          {
+            'student_id': id,
+            'presence': targetsA.containsKey(id) && targetsB.containsKey(id)
+                ? 'both'
+                : targetsA.containsKey(id)
+                ? 'a_only'
+                : 'b_only',
+            'target_differences': {
+              if (targetsA.containsKey(id) && targetsB.containsKey(id))
+                for (final key in planningDocumentTargetKeys)
+                  if (targetsA[id]![key] != targetsB[id]![key])
+                    key: {'a': targetsA[id]![key], 'b': targetsB[id]![key]},
+            },
+          },
+      ],
+      'resources': resources,
+      'bottlenecks': const <dynamic>[],
+    },
+  );
+}
+
+/// [goldenCalculationBand] 응답의 계산 요약(`repository.scenario.list` · `plan.get`의 `calculation` 모양, FE5-b).
+/// 백엔드가 목록 요약 · 활성 계획 요약 · 비교를 같은 계산 경로로 만들므로 golden도 같은 대역에서 만든다.
+Map<String, dynamic> goldenBandSummary(Map<String, dynamic> projection) {
+  final rows = [
+    for (final raw in (projection['overall'] as Map)['resources'] as List)
+      Map<String, dynamic>.from(raw as Map),
+  ];
+  final shortages = [
+    for (final row in rows)
+      if (row['shortage'] case final int shortage when shortage > 0) row,
+  ]..sort((a, b) => (b['shortage'] as int).compareTo(a['shortage'] as int));
+  final phases = [
+    for (final raw in projection['bottlenecks'] as List)
+      (raw as Map)['phase_number'] as int,
+  ];
+  final top = shortages.firstOrNull;
+  return {
+    'credits': ((projection['overall'] as Map)['cost'] as Map)['credits'] as int,
+    'required_resource_type_count': rows
+        .where((row) => (row['required'] as int) > 0)
+        .length,
+    'known_shortage_type_count': shortages.length,
+    'inventory_complete': true,
+    'first_bottleneck_phase_number': phases.isEmpty
+        ? null
+        : phases.reduce((a, b) => a < b ? a : b),
+    'representative_shortage': top == null
+        ? null
+        : {
+            'resource_key': top['resource_key'],
+            'item_id': top['item_id'],
+            'display_name': top['display_name'],
+            'category': top['category'],
+            'shortage': top['shortage'],
+          },
+  };
 }
 
 /// 문서 페이즈마다 단계 재화를 모은 `phase_results`(필요량 합, 보유 = 그 페이즈 첫 단계에 들어설 때 남은 양).

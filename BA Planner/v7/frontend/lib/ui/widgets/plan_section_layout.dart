@@ -3322,6 +3322,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                   active: widget.active && !_switchingScenarioWorkspace,
                   activePlan: _repositoryPlan,
                   activeDocument: _document,
+                  repositoryState: _repositoryState,
                   onBackToActivePlan: _closeScenarioList,
                   onCreateScenario: _createScenarioFromList,
                   onOpenPresets: _openPresetManagerFromList,

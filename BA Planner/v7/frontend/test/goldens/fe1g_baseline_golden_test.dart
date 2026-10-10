@@ -20,6 +20,7 @@ import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
 import 'package:ba_planner_v7/ui/kit/buttons.dart';
 import 'package:ba_planner_v7/ui/kit/kit_pressable.dart';
+import 'package:ba_planner_v7/ui/kit/shortage_flyout.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_adapter.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_rules.dart';
 import 'package:ba_planner_v7/ui/models/plan_flow_draft.dart';
@@ -189,6 +190,50 @@ Future<String> _openPlanningWithScenario(
   );
   await _openPlanning(tester, service, loadRepositoryPlan: true);
   return created.scenarioId;
+}
+
+/// 시나리오 목록 장면(FE5-a · FE5-b): 시나리오 다섯 개 · 이 장면의 활성 계획을 저장하고 목록을 연 뒤 "07 3단계
+/// 우선순위"를 펼치고 02 · 07을 비교에 담는다. 미리보기(getScenario + compare)가 끝날 때까지 기다린다. 이름 → id.
+Future<Map<String, String>> _openScenarioListScene(
+  WidgetTester tester,
+  GoldenScenarioListMockAppService service,
+) async {
+  final ids = await service.seedScenarioListScene();
+  await _openPlanning(tester, service, loadRepositoryPlan: true);
+  await _tapKey(tester, 'plan-scenario-list-launch');
+  await _tapKey(tester, 'plan-scenario-row-${ids['07 3단계 우선순위']}');
+  await _tapKey(tester, 'plan-scenario-compare-${ids['02 지원진 집중']}');
+  await _tapKey(tester, 'plan-scenario-compare-${ids['07 3단계 우선순위']}');
+  // 미리보기: 활성 계획(112M · 6종 · P1) → 07(73.8M · 7종 · P1), 학생 칩 세 가지.
+  await pumpUntilFound(
+    tester,
+    find.byKey(const ValueKey('plan-scenario-preview-kpi-credits')),
+  );
+  await tester.pumpAndSettle();
+  expect(
+    find.descendant(
+      of: find.byKey(const ValueKey('plan-scenario-preview-kpi-credits')),
+      matching: find.text('73.8M'),
+    ),
+    findsOneWidget,
+  );
+  for (final (student, label) in const [
+    ('aru', '이 시나리오에만'),
+    ('ayane', '활성보다 낮은 목표'),
+    ('hoshino', '활성 계획과 같음'),
+  ]) {
+    expect(
+      find.descendant(
+        of: find.byKey(
+          ValueKey('plan-scenario-preview-student-$student-delta'),
+        ),
+        matching: find.text(label),
+      ),
+      findsOneWidget,
+      reason: student,
+    );
+  }
+  return ids;
 }
 
 void main() {
@@ -608,7 +653,12 @@ void main() {
     await tester.pump();
     await tester.pump(planFlowCalculationDebounce);
     await tester.pump();
-    expect(find.text('48.2M'), findsOneWidget);
+    // FE5-b: 계산 대역이 문서 의존이라 레일 크레딧은 이 초안의 단계 크레딧 합이다(고정 48.2M이 아니다).
+    final flow = tester
+        .widget<PlanFlowWorkspace>(find.byType(PlanFlowWorkspace))
+        .flow;
+    expect(flow.calculation?.credits, isNot(48200000));
+    expect(find.text(planFlowCreditsLabel(flow)), findsOneWidget);
     expect(find.text('부족 1종'), findsOneWidget);
     expect(find.text('부족 2종'), findsOneWidget);
     expect(find.text('지금 가능'), findsOneWidget);
@@ -925,17 +975,12 @@ void main() {
   }, variant: goldenPlatform);
 
   // FE5-a 시안 Scenario-List 상태: 시나리오 다섯 개(하나는 저장 시점과 다름), "07 3단계 우선순위" 행 펼침, 비교 3/4
-  // (A 활성 계획 + 02 · 07). 미리보기 내용은 FE5-b에서 채운다.
+  // (A 활성 계획 + 02 · 07). FE5-b: 미리보기 S3가 활성 계획 대비 KPI · 학생 · 단계 · 분야별 부족으로 채워진다(계산 대역).
   testWidgets('plan-scenario-list-expanded', (tester) async {
     setGoldenViewport(tester);
     final service = GoldenScenarioListMockAppService();
     addTearDown(service.dispose);
-    final ids = await service.seedScenarioListScene();
-    await _openPlanning(tester, service, loadRepositoryPlan: true);
-    await _tapKey(tester, 'plan-scenario-list-launch');
-    await _tapKey(tester, 'plan-scenario-row-${ids['07 3단계 우선순위']}');
-    await _tapKey(tester, 'plan-scenario-compare-${ids['02 지원진 집중']}');
-    await _tapKey(tester, 'plan-scenario-compare-${ids['07 3단계 우선순위']}');
+    final ids = await _openScenarioListScene(tester, service);
     expect(find.text('3 / 4'), findsOneWidget);
     expect(
       find.byKey(
@@ -944,6 +989,18 @@ void main() {
       findsOneWidget,
     );
     await expectGoldenScene(tester, 'plan-scenario-list-expanded');
+  }, variant: goldenPlatform);
+
+  // FE5-b 시안 Scenario-List의 부족 재화 팝오버(`.shw.open`): 위 장면에서 "부족 재화" KPI를 눌러 연다(FD-090).
+  testWidgets('plan-scenario-list-shortage', (tester) async {
+    setGoldenViewport(tester);
+    final service = GoldenScenarioListMockAppService();
+    addTearDown(service.dispose);
+    await _openScenarioListScene(tester, service);
+    await _tapKey(tester, 'plan-scenario-preview-kpi-shortage');
+    expect(find.byType(GroupedShortageRow), findsNWidgets(7));
+    expect(find.text('부족 재화 7종'), findsOneWidget);
+    await expectGoldenScene(tester, 'plan-scenario-list-shortage');
   }, variant: goldenPlatform);
 
   testWidgets('plan-scenario-compare', (tester) async {
